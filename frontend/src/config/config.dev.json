@@ -1,0 +1,9 @@
+{
+  "apiUrl": "https://9ezijj6mtg.execute-api.us-east-1.amazonaws.com",
+  "websocketUrl": "wss://avbvbv9bq6.execute-api.us-east-1.amazonaws.com/dev",
+  "stage": "dev",
+  "region": "us-east-1",
+  "allowedOrigins": [
+    "http://localhost:3000"
+  ]
+}

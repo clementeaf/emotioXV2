@@ -1,0 +1,292 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useApi } from '@/hooks/useApi';
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+
+interface UserProfile {
+  name?: string;
+  avatar?: string;
+  bio?: string;
+  preferences?: {
+    emailNotifications: boolean;
+    theme: 'light' | 'dark';
+    language: string;
+  };
+}
+
+interface User {
+  id: string;
+  email: string;
+  profile?: UserProfile;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export function UserProfileComponent() {
+  const { api, loading: apiLoading } = useApi();
+  const { isAuthenticated } = useAuth();
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState<UserProfile>({
+    name: '',
+    bio: '',
+    avatar: '',
+    preferences: {
+      emailNotifications: true,
+      theme: 'light',
+      language: 'es',
+    },
+  });
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchUserProfile();
+    }
+  }, [isAuthenticated]);
+
+  const fetchUserProfile = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await api.user.get();
+      
+      if (response.error) {
+        setError(response.error);
+      } else if (response.data) {
+        setUser(response.data);
+        if (response.data.profile) {
+          setFormData(response.data.profile);
+        }
+      }
+    } catch (err) {
+      setError('Error al cargar el perfil de usuario');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    
+    if (name.includes('.')) {
+      const [section, field] = name.split('.');
+      const sectionKey = section as keyof UserProfile;
+      const currentSectionValue = formData[sectionKey] || {};
+      
+      setFormData({
+        ...formData,
+        [section]: {
+          ...currentSectionValue,
+          [field]: value,
+        },
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value,
+      });
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await api.user.update({
+        profile: formData,
+      });
+
+      if (response.error) {
+        setError(response.error);
+      } else if (response.data) {
+        setUser(response.data);
+        setIsEditing(false);
+      }
+    } catch (err) {
+      setError('Error al actualizar el perfil');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading && !user) {
+    return (
+      <div className="flex justify-center items-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  if (error && !user) {
+    return (
+      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+        {error}
+        <button
+          onClick={fetchUserProfile}
+          className="ml-2 text-red-700 underline"
+        >
+          Reintentar
+        </button>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="text-center p-8">
+        <p className="text-gray-500">No se encontró información del usuario</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">Perfil de Usuario</h2>
+        {!isEditing ? (
+          <Button onClick={() => setIsEditing(true)}>Editar Perfil</Button>
+        ) : (
+          <Button variant="ghost" onClick={() => setIsEditing(false)}>
+            Cancelar
+          </Button>
+        )}
+      </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+          {error}
+        </div>
+      )}
+
+      {isEditing ? (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Input
+            label="Nombre"
+            name="name"
+            value={formData.name || ''}
+            onChange={handleInputChange}
+            placeholder="Tu nombre"
+          />
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              Biografía
+            </label>
+            <textarea
+              name="bio"
+              value={formData.bio || ''}
+              onChange={handleInputChange}
+              placeholder="Cuéntanos sobre ti"
+              className="w-full rounded-md border border-gray-200 p-2 min-h-[100px]"
+            />
+          </div>
+
+          <Input
+            label="URL de Avatar"
+            name="avatar"
+            value={formData.avatar || ''}
+            onChange={handleInputChange}
+            placeholder="https://ejemplo.com/tu-avatar.jpg"
+          />
+
+          <div className="flex items-center space-x-2 mt-4">
+            <input
+              type="checkbox"
+              id="emailNotifications"
+              name="preferences.emailNotifications"
+              checked={formData.preferences?.emailNotifications || false}
+              onChange={(e) => 
+                setFormData({
+                  ...formData,
+                  preferences: {
+                    ...formData.preferences!,
+                    emailNotifications: e.target.checked,
+                  },
+                })
+              }
+              className="rounded border-gray-300"
+            />
+            <label htmlFor="emailNotifications" className="text-sm">
+              Recibir notificaciones por email
+            </label>
+          </div>
+
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsEditing(false)}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" loading={apiLoading}>
+              Guardar Cambios
+            </Button>
+          </div>
+        </form>
+      ) : (
+        <div className="space-y-4">
+          <div className="flex items-center space-x-4">
+            {user.profile?.avatar ? (
+              <img
+                src={user.profile.avatar}
+                alt={user.profile.name || 'Avatar'}
+                className="w-20 h-20 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center">
+                <span className="text-gray-500 text-xl">
+                  {user.email.charAt(0).toUpperCase()}
+                </span>
+              </div>
+            )}
+            <div>
+              <h3 className="text-xl font-semibold">
+                {user.profile?.name || 'Usuario'}
+              </h3>
+              <p className="text-gray-500">{user.email}</p>
+            </div>
+          </div>
+
+          {user.profile?.bio && (
+            <div className="mt-4">
+              <h4 className="text-sm font-medium text-gray-500">Biografía</h4>
+              <p className="mt-1">{user.profile.bio}</p>
+            </div>
+          )}
+
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <h4 className="text-sm font-medium text-gray-500">Preferencias</h4>
+            <ul className="mt-2 space-y-1">
+              <li className="text-sm">
+                Notificaciones por email:{' '}
+                {user.profile?.preferences?.emailNotifications ? 'Activadas' : 'Desactivadas'}
+              </li>
+              <li className="text-sm">
+                Tema: {user.profile?.preferences?.theme === 'dark' ? 'Oscuro' : 'Claro'}
+              </li>
+              <li className="text-sm">
+                Idioma: {user.profile?.preferences?.language || 'Español'}
+              </li>
+            </ul>
+          </div>
+
+          <div className="text-sm text-gray-500 mt-4 pt-4 border-t border-gray-100">
+            <p>Miembro desde: {new Date(user.createdAt).toLocaleDateString()}</p>
+            <p>Última actualización: {new Date(user.updatedAt).toLocaleDateString()}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+} 

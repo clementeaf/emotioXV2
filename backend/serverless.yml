@@ -1,0 +1,175 @@
+service: emotiox-backend
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'us-east-1'}
+  profile: default
+  
+  httpApi:
+    cors:
+      allowedOrigins:
+        - http://localhost:4700
+        - https://app.emotiox.com
+      allowedHeaders:
+        - Content-Type
+        - Authorization
+        - X-Api-Key
+      allowedMethods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - OPTIONS
+      allowCredentials: true
+      maxAge: 300
+
+  environment:
+    OTP_TABLE: ${self:service}-otp-${self:provider.stage}
+    USERS_TABLE: ${self:service}-users-${self:provider.stage}
+    STAGE: ${self:provider.stage}
+    REGION: ${self:provider.region}
+    JWT_SECRET: ${env:JWT_SECRET, 'your-secret-key'}
+
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+          Resource: 
+            - arn:aws:logs:${self:provider.region}:*:log-group:/aws/lambda/*:*:*
+        - Effect: Allow
+          Action:
+            - dynamodb:PutItem
+            - dynamodb:GetItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+            - dynamodb:Query
+            - dynamodb:Scan
+          Resource:
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:service}-*
+        - Effect: Allow
+          Action:
+            - ses:SendEmail
+            - ses:SendRawEmail
+          Resource: "*"
+
+plugins:
+  - serverless-esbuild
+  - serverless-offline
+  - serverless-dotenv-plugin
+  - serverless-export-outputs
+  - serverless-plugin-export-endpoints
+
+custom:
+  esbuild:
+    bundle: true
+    minify: false
+    sourcemap: true
+    exclude:
+      - aws-sdk
+    target: 'node18'
+    platform: 'node'
+    format: 'cjs'
+  exportOutputs:
+    fileName: outputs.json
+  exportEndpoints:
+    fileName: endpoints.json
+    include:
+      - 'httpApi'
+  serverless-offline:
+    httpPort: 4000
+    noPrependStageInUrl: true
+
+functions:
+  # Funciones de autenticación
+  requestOTP:
+    handler: dist/controllers/user.controller.requestOTP
+    events:
+      - httpApi:
+          path: /auth/request-otp
+          method: POST
+
+  validateOTP:
+    handler: dist/controllers/user.controller.validateOTP
+    events:
+      - httpApi:
+          path: /auth/validate-otp
+          method: POST
+
+  # Funciones de gestión de usuarios
+  createUser:
+    handler: dist/controllers/user.controller.createUser
+    events:
+      - httpApi:
+          path: /user
+          method: POST
+
+  getUser:
+    handler: dist/controllers/user.controller.getUser
+    events:
+      - httpApi:
+          path: /user
+          method: GET
+
+  updateUser:
+    handler: dist/controllers/user.controller.updateUser
+    events:
+      - httpApi:
+          path: /user
+          method: PUT
+
+  deleteUser:
+    handler: dist/controllers/user.controller.deleteUser
+    events:
+      - httpApi:
+          path: /user
+          method: DELETE
+
+  # Función para manejar las opciones CORS
+  optionsHandler:
+    handler: dist/controllers/user.controller.optionsHandler
+    events:
+      - httpApi:
+          path: /{proxy+}
+          method: OPTIONS
+
+resources:
+  Resources:
+    UsersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:service}-users-${self:provider.stage}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+
+    OTPTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:service}-otp-${self:provider.stage}
+        AttributeDefinitions:
+          - AttributeName: email
+            AttributeType: S
+        KeySchema:
+          - AttributeName: email
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+        TimeToLiveSpecification:
+          AttributeName: expiresAt
+          Enabled: true
+
+  Outputs:
+    ApiEndpoint:
+      Description: "API Gateway endpoint URL"
+      Value: !GetAtt HttpApi.ApiEndpoint 
