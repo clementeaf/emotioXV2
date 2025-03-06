@@ -1,133 +1,79 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { jwtDecode } from 'jwt-decode';
-import { User, AuthResponse } from '@/types/auth';
+import { useMutation } from '@tanstack/react-query';
+import { authAPI } from '../lib/api';
+import type { User, APIResponse, AuthResponse } from '../lib/api';
 
-interface JWTPayload {
-  id: string;
-  email: string;
-  name: string;
-  exp: number;
-}
+export const useAuth = () => {
+  const requestOTPMutation = useMutation<
+    { message: string },
+    Error,
+    string
+  >({
+    mutationFn: async (email) => {
+      const response = await authAPI.requestOTP(email);
+      return { message: response.data.message || 'OTP enviado correctamente' };
+    }
+  });
 
-interface UseAuthReturn {
-  user: User | null;
-  token: string | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  requestOTP: (email: string) => Promise<void>;
-  validateOTP: (email: string, code: string) => Promise<void>;
-  logout: () => Promise<void>;
-  updateToken: (newToken: string) => void;
-}
-
-export function useAuth(): UseAuthReturn {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter();
-
-  useEffect(() => {
-    // Recuperar token del localStorage al iniciar
-    const storedToken = localStorage.getItem('auth_token');
-    if (storedToken) {
-      try {
-        const decoded = jwtDecode<JWTPayload>(storedToken);
-        const now = Date.now() / 1000;
-        
-        if (decoded.exp > now) {
-          setToken(storedToken);
-          setUser({
-            id: decoded.id,
-            email: decoded.email,
-            name: decoded.name
-          });
-        } else {
-          localStorage.removeItem('auth_token');
+  const validateOTPMutation = useMutation<
+    AuthResponse,
+    Error,
+    { email: string; otp: string }
+  >({
+    mutationFn: async ({ email, otp }) => {
+      const response = await authAPI.validateOTP(email, otp);
+      const { token, user } = response.data;
+      const authData = {
+        token,
+        user: {
+          id: user.id,
+          email: user.email
         }
-      } catch (error) {
-        localStorage.removeItem('auth_token');
+      };
+      if (authData.token) {
+        localStorage.setItem('token', authData.token);
       }
+      return authData;
     }
-    setIsLoading(false);
-  }, []);
+  });
 
-  const requestOTP = useCallback(async (email: string) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/auth/request-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Error al solicitar el código OTP');
-      }
-    } finally {
-      setIsLoading(false);
+  const logoutMutation = useMutation<
+    { message: string },
+    Error,
+    void
+  >({
+    mutationFn: async () => {
+      const response = await authAPI.logout();
+      localStorage.removeItem('token');
+      return { message: response.data.message || 'Sesión cerrada correctamente' };
     }
-  }, []);
+  });
 
-  const validateOTP = useCallback(async (email: string, code: string) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/auth/validate-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, code })
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Código OTP inválido');
-      }
-
-      const data: AuthResponse = await response.json();
-      localStorage.setItem('auth_token', data.token);
-      setToken(data.token);
-      setUser(data.user);
-      router.push('/dashboard');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [router]);
-
-  const logout = useCallback(async () => {
-    try {
-      if (token) {
-        await fetch('/api/auth/logout', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-      }
-    } finally {
-      localStorage.removeItem('auth_token');
-      setToken(null);
-      setUser(null);
-      router.push('/login');
-    }
-  }, [token, router]);
-
-  const updateToken = useCallback((newToken: string) => {
-    setToken(newToken);
-    localStorage.setItem('auth_token', newToken);
-  }, []);
+  const currentUser = validateOTPMutation.data?.user ? {
+    id: validateOTPMutation.data.user.id,
+    email: validateOTPMutation.data.user.email
+  } : null;
 
   return {
-    user,
-    token,
-    isAuthenticated: !!token,
-    isLoading,
-    requestOTP,
-    validateOTP,
-    logout,
-    updateToken
+    requestOTP: (email: string) => requestOTPMutation.mutate(email),
+    validateOTP: (email: string, otp: string) => 
+      validateOTPMutation.mutate({ email, otp }),
+    logout: () => logoutMutation.mutate(),
+    isLoading: 
+      requestOTPMutation.isPending || 
+      validateOTPMutation.isPending || 
+      logoutMutation.isPending,
+    error: 
+      requestOTPMutation.error?.message || 
+      validateOTPMutation.error?.message || 
+      logoutMutation.error?.message || null,
+    user: currentUser,
+    token: validateOTPMutation.data?.token || null,
+    message: 
+      requestOTPMutation.data?.message || 
+      logoutMutation.data?.message
   };
-} 
+};
+
+export default useAuth; 

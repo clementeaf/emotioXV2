@@ -1,62 +1,27 @@
-interface ApiConfig {
-  apiUrl: string;
-  websocketUrl: string;
-  stage: string;
-  region: string;
-}
+import endpoints from './endpoints.json';
 
-// Importar configuración dinámica según el ambiente
-const config: ApiConfig = {
-  apiUrl: process.env.NEXT_PUBLIC_API_URL || 'https://ucut04rvah.execute-api.us-east-1.amazonaws.com',
-  websocketUrl: process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'wss://50pf180l5f.execute-api.us-east-1.amazonaws.com/dev',
-  stage: process.env.NEXT_PUBLIC_STAGE || 'dev',
-  region: process.env.NEXT_PUBLIC_REGION || 'us-east-1',
+// Tipos para los endpoints
+type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'OPTIONS';
+type Endpoint = { [K in HttpMethod]?: string };
+type Endpoints = { [key: string]: Endpoint };
+
+// En desarrollo, usa localhost si está disponible
+const isDev = process.env.NODE_ENV === 'development';
+const localApiUrl = 'http://localhost:4000';
+
+// Si estamos en desarrollo, reemplaza la URL base en los endpoints
+const processedEndpoints = isDev
+  ? Object.entries(endpoints as Endpoints).reduce<Endpoints>((acc, [key, value]) => {
+      const method = Object.keys(value)[0] as HttpMethod;
+      const path = value[method]!.split('/').slice(3).join('/');
+      acc[key] = { [method]: `/${path}` };
+      return acc;
+    }, {})
+  : endpoints;
+
+export const API_CONFIG = {
+  baseURL: isDev ? localApiUrl : (endpoints as Endpoints).requestOTP.POST!.split('/auth')[0],
+  endpoints: processedEndpoints
 };
 
-// Endpoints de la API
-export const apiEndpoints = {
-  // Autenticación
-  auth: {
-    requestOTP: `${config.apiUrl}/auth/request-otp`,
-    validateOTP: `${config.apiUrl}/auth/validate-otp`,
-    logout: `${config.apiUrl}/auth/logout`,
-  },
-  
-  // Usuarios
-  user: {
-    create: `${config.apiUrl}/user`,
-    get: `${config.apiUrl}/user`,
-    update: `${config.apiUrl}/user`,
-    delete: `${config.apiUrl}/user`,
-  },
-  
-  // Emociones
-  emotions: {
-    base: `${config.apiUrl}/emotions`,
-    getAll: `${config.apiUrl}/emotions`,
-    getById: (id: string) => `${config.apiUrl}/emotions/${id}`,
-    create: `${config.apiUrl}/emotions`,
-    update: (id: string) => `${config.apiUrl}/emotions/${id}`,
-    delete: (id: string) => `${config.apiUrl}/emotions/${id}`,
-  },
-
-  // Archivos
-  files: {
-    upload: `${config.apiUrl}/files/upload`,
-    getUrl: (key: string) => `${config.apiUrl}/files/${key}`,
-  },
-  
-  // WebSocket
-  websocket: {
-    endpoint: config.websocketUrl,
-    connect: (token: string) => `${config.websocketUrl}?token=${token}`,
-  },
-};
-
-// Configuración para AWS
-export const awsConfig = {
-  region: process.env.NEXT_PUBLIC_REGION || 'us-east-1',
-  stage: process.env.NEXT_PUBLIC_STAGE || 'dev',
-};
-
-export default config; 
+export default API_CONFIG; 

@@ -243,182 +243,106 @@ export function SmartVOCForm({ className, onSave }: SmartVOCFormProps) {
   };
 
   return (
-    <div className={cn("space-y-6", className)}>
-      <header className="space-y-2">
-        <h1 className="text-lg font-semibold text-neutral-900">
-          2.0 - Smart VOC
-        </h1>
-        <p className="text-sm text-neutral-500">
-          In this section you can go deeper in the understanding of the participants by using declarative questions oriented to the working memory and comprehension of the previous elements exposed.
-        </p>
-      </header>
+    <div className={cn("max-w-3xl mx-auto", className)}>
+      <div className="bg-white rounded-xl border border-neutral-200/70 shadow-[0_6px_16px_-4px_rgba(0,0,0,0.05)] overflow-hidden">
+        <div className="px-8 py-8">
+          <header className="mb-6">
+            <h1 className="text-lg font-semibold text-neutral-900">
+              Smart VOC Configuration
+            </h1>
+            <p className="mt-1 text-sm text-neutral-500">
+              Configure voice of customer questions to gather valuable feedback from participants.
+            </p>
+          </header>
 
-      <div className="space-y-8">
-        {/* CSAT Question */}
-        <div className="space-y-4 bg-white rounded-lg border border-neutral-200 p-6">
-          <div className="space-y-1">
-            <h3 className="text-sm font-medium text-neutral-900">2.1 - Question: Customer Satisfaction Score (CSAT)</h3>
-            <p className="text-sm text-neutral-600">How would you rate your overall satisfaction level with [company]?</p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-neutral-700">CSAT</label>
-              <select className="w-full px-3 py-2 rounded-lg border border-neutral-200 text-sm">
-                <option>Stars</option>
-                <option>Numbers</option>
-                <option>Emojis</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between pt-4">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-neutral-600">Show conditionally</span>
-                <Switch />
+          <div className="space-y-6">
+            {/* Global Settings */}
+            <div className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg">
+              <div className="space-y-0.5">
+                <h2 className="text-sm font-medium text-neutral-900">Randomize Questions</h2>
+                <p className="text-sm text-neutral-500">Present questions in random order to participants</p>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-neutral-600">Required</span>
-                <Switch />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* CES Question */}
-        <div className="space-y-4 bg-white rounded-lg border border-neutral-200 p-6">
-          <div className="space-y-1">
-            <h3 className="text-sm font-medium text-neutral-900">2.2 - Question: Customer Effort Score (CES)</h3>
-            <p className="text-sm text-neutral-600">It was easy for me to handle my issue today</p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-neutral-700">CES</label>
-              <select className="w-full px-3 py-2 rounded-lg border border-neutral-200 text-sm">
-                <option>Scale 1-7</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between pt-4">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-neutral-600">Show conditionally</span>
-                <Switch />
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-neutral-600">Required</span>
-                <Switch />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* CV Question */}
-        <div className="space-y-4 bg-white rounded-lg border border-neutral-200 p-6">
-          <div className="space-y-1">
-            <h3 className="text-sm font-medium text-neutral-900">2.3 - Question: Cognitive Value (CV)</h3>
-            <p className="text-sm text-neutral-600">Evaluate how well the basic aspects are working</p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-neutral-700">CV</label>
-              <select className="w-full px-3 py-2 rounded-lg border border-neutral-200 text-sm">
-                <option>Scale 1-10</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 mt-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-neutral-700">Start value</label>
-              <input
-                type="number"
-                value="1"
-                className="w-full px-3 py-2 rounded-lg border border-neutral-200 text-sm"
+              <Switch 
+                checked={randomizeQuestions} 
+                onCheckedChange={setRandomizeQuestions} 
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-neutral-700">End value</label>
-              <input
-                type="number"
-                value="7"
-                className="w-full px-3 py-2 rounded-lg border border-neutral-200 text-sm"
-              />
-            </div>
-          </div>
 
-          <div className="flex items-center justify-between pt-4">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-neutral-600">Show conditionally</span>
-                <Switch />
+            {/* Question List */}
+            <div className="space-y-4">
+              <h2 className="text-sm font-medium text-neutral-900">Questions</h2>
+              <div className="space-y-4">
+                {questions.map((question) => (
+                  <div 
+                    key={question.id}
+                    className="bg-white rounded-lg border border-neutral-200 p-5 space-y-4"
+                  >
+                    <div className="space-y-1">
+                      <h3 className="text-sm font-medium text-neutral-900">{question.title}</h3>
+                      <p className="text-sm text-neutral-600">{question.description}</p>
+                    </div>
+
+                    <div>
+                      {renderQuestionConfig(question)}
+                    </div>
+
+                    <div className="flex items-center justify-between pt-3 border-t border-neutral-100">
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-neutral-600">Show conditionally</span>
+                          <Switch 
+                            checked={question.showConditionally}
+                            onCheckedChange={(checked: boolean) => updateQuestion(question.id, { showConditionally: checked })}
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-neutral-600">Required</span>
+                          <Switch 
+                            checked={question.required}
+                            onCheckedChange={(checked: boolean) => updateQuestion(question.id, { required: checked })}
+                          />
+                        </div>
+                      </div>
+                      <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-50">
+                        Remove
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-neutral-600">Required</span>
-                <Switch />
-              </div>
+            </div>
+
+            <div className="flex justify-center mt-4">
+              <Button variant="outline" className="w-full max-w-md">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                Add New Question
+              </Button>
             </div>
           </div>
         </div>
 
-        {/* NEV Question */}
-        <div className="space-y-4 bg-white rounded-lg border border-neutral-200 p-6">
-          <div className="space-y-1">
-            <h3 className="text-sm font-medium text-neutral-900">2.4 - Question: Net Emotional Value (NEV)</h3>
-            <p className="text-sm text-neutral-600">How do you feel about the experience offered by the [company]?</p>
+        <footer className="flex items-center justify-between px-8 py-4 bg-neutral-50 border-t border-neutral-100">
+          <p className="text-sm text-neutral-500">Estimated completion time: 3-5 minutes</p>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              className="px-4 py-2 text-sm font-medium text-neutral-700 bg-white border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors"
+            >
+              Preview
+            </button>
+            <button
+              type="button"
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors"
+              onClick={() => onSave && onSave(questions)}
+            >
+              Save and Continue
+            </button>
           </div>
-
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-neutral-700">NEV</label>
-              <select className="w-full px-3 py-2 rounded-lg border border-neutral-200 text-sm">
-                <option>Emojis</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between pt-4">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-neutral-600">Show conditionally</span>
-                <Switch />
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-neutral-600">Required</span>
-                <Switch />
-              </div>
-            </div>
-          </div>
-        </div>
+        </footer>
       </div>
-
-      {/* Estimated time */}
-      <div className="flex items-center gap-2 text-sm text-neutral-500">
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <span>Estimated time: 8 to 11 mins</span>
-      </div>
-
-      {/* Footer */}
-      <footer className="flex items-center justify-end gap-3 pt-6 border-t border-neutral-100">
-        <button
-          type="button"
-          className="px-4 py-2 text-sm font-medium text-neutral-700 bg-white border border-neutral-200 rounded-lg hover:bg-neutral-50"
-        >
-          Save and Preview
-        </button>
-        <button
-          type="button"
-          className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600"
-        >
-          Publish
-        </button>
-      </footer>
     </div>
   );
 } 

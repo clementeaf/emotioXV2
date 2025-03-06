@@ -8,12 +8,12 @@ import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 
 function CreateResearchContent() {
   return (
-    <div className="flex h-screen bg-neutral-50/50">
+    <div className="flex h-screen bg-white">
       {/* Sidebar */}
       <Sidebar className="w-60 shrink-0" />
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-h-screen">
+      <div className="flex-1 flex flex-col min-h-screen bg-neutral-50">
         <Navbar className="shrink-0" />
         
         <main className="flex-1 overflow-auto">

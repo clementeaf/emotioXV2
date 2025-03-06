@@ -5,6 +5,7 @@ import { useApi } from '@/hooks/useApi';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { cn } from '@/lib/utils';
 
 interface UserProfile {
   name?: string;
@@ -25,7 +26,11 @@ interface User {
   updatedAt: string;
 }
 
-export function UserProfileComponent() {
+interface UserProfileComponentProps {
+  className?: string;
+}
+
+export function UserProfileComponent({ className }: UserProfileComponentProps) {
   const { api, loading: apiLoading } = useApi();
   const { isAuthenticated } = useAuth();
   const [user, setUser] = useState<User | null>(null);
@@ -150,143 +155,160 @@ export function UserProfileComponent() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Perfil de Usuario</h2>
-        {!isEditing ? (
-          <Button onClick={() => setIsEditing(true)}>Editar Perfil</Button>
-        ) : (
-          <Button variant="ghost" onClick={() => setIsEditing(false)}>
-            Cancelar
-          </Button>
-        )}
-      </div>
+    <div className={cn("max-w-3xl mx-auto", className)}>
+      <div className="bg-white rounded-xl border border-neutral-200/70 shadow-[0_6px_16px_-4px_rgba(0,0,0,0.05)] overflow-hidden">
+        <div className="px-8 py-8">
+          <header className="mb-6">
+            <h1 className="text-lg font-semibold text-neutral-900">
+              Perfil de Usuario
+            </h1>
+            <p className="mt-1 text-sm text-neutral-500">
+              Administra tu información personal y preferencias
+            </p>
+          </header>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
-          {error}
-        </div>
-      )}
-
-      {isEditing ? (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            label="Nombre"
-            name="name"
-            value={formData.name || ''}
-            onChange={handleInputChange}
-            placeholder="Tu nombre"
-          />
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Biografía
-            </label>
-            <textarea
-              name="bio"
-              value={formData.bio || ''}
-              onChange={handleInputChange}
-              placeholder="Cuéntanos sobre ti"
-              className="w-full rounded-md border border-gray-200 p-2 min-h-[100px]"
-            />
-          </div>
-
-          <Input
-            label="URL de Avatar"
-            name="avatar"
-            value={formData.avatar || ''}
-            onChange={handleInputChange}
-            placeholder="https://ejemplo.com/tu-avatar.jpg"
-          />
-
-          <div className="flex items-center space-x-2 mt-4">
-            <input
-              type="checkbox"
-              id="emailNotifications"
-              name="preferences.emailNotifications"
-              checked={formData.preferences?.emailNotifications || false}
-              onChange={(e) => 
-                setFormData({
-                  ...formData,
-                  preferences: {
-                    ...formData.preferences!,
-                    emailNotifications: e.target.checked,
-                  },
-                })
-              }
-              className="rounded border-gray-300"
-            />
-            <label htmlFor="emailNotifications" className="text-sm">
-              Recibir notificaciones por email
-            </label>
-          </div>
-
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsEditing(false)}
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" loading={apiLoading}>
-              Guardar Cambios
-            </Button>
-          </div>
-        </form>
-      ) : (
-        <div className="space-y-4">
-          <div className="flex items-center space-x-4">
-            {user.profile?.avatar ? (
-              <img
-                src={user.profile.avatar}
-                alt={user.profile.name || 'Avatar'}
-                className="w-20 h-20 rounded-full object-cover"
-              />
-            ) : (
-              <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center">
-                <span className="text-gray-500 text-xl">
-                  {user.email.charAt(0).toUpperCase()}
-                </span>
-              </div>
-            )}
-            <div>
-              <h3 className="text-xl font-semibold">
-                {user.profile?.name || 'Usuario'}
-              </h3>
-              <p className="text-gray-500">{user.email}</p>
-            </div>
-          </div>
-
-          {user.profile?.bio && (
-            <div className="mt-4">
-              <h4 className="text-sm font-medium text-gray-500">Biografía</h4>
-              <p className="mt-1">{user.profile.bio}</p>
+          {error && (
+            <div className="p-3 rounded-lg bg-red-50 text-sm text-red-600 mb-4">
+              {error}
             </div>
           )}
 
-          <div className="mt-4 pt-4 border-t border-gray-100">
-            <h4 className="text-sm font-medium text-gray-500">Preferencias</h4>
-            <ul className="mt-2 space-y-1">
-              <li className="text-sm">
-                Notificaciones por email:{' '}
-                {user.profile?.preferences?.emailNotifications ? 'Activadas' : 'Desactivadas'}
-              </li>
-              <li className="text-sm">
-                Tema: {user.profile?.preferences?.theme === 'dark' ? 'Oscuro' : 'Claro'}
-              </li>
-              <li className="text-sm">
-                Idioma: {user.profile?.preferences?.language || 'Español'}
-              </li>
-            </ul>
-          </div>
+          {isEditing ? (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <Input
+                label="Nombre"
+                name="name"
+                value={formData.name || ''}
+                onChange={handleInputChange}
+                placeholder="Tu nombre"
+              />
 
-          <div className="text-sm text-gray-500 mt-4 pt-4 border-t border-gray-100">
-            <p>Miembro desde: {new Date(user.createdAt).toLocaleDateString()}</p>
-            <p>Última actualización: {new Date(user.updatedAt).toLocaleDateString()}</p>
-          </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Biografía
+                </label>
+                <textarea
+                  name="bio"
+                  value={formData.bio || ''}
+                  onChange={handleInputChange}
+                  placeholder="Cuéntanos sobre ti"
+                  className="w-full rounded-md border border-gray-200 p-2 min-h-[100px]"
+                />
+              </div>
+
+              <Input
+                label="URL de Avatar"
+                name="avatar"
+                value={formData.avatar || ''}
+                onChange={handleInputChange}
+                placeholder="https://ejemplo.com/tu-avatar.jpg"
+              />
+
+              <div className="flex items-center space-x-2 mt-4">
+                <input
+                  type="checkbox"
+                  id="emailNotifications"
+                  name="preferences.emailNotifications"
+                  checked={formData.preferences?.emailNotifications || false}
+                  onChange={(e) => 
+                    setFormData({
+                      ...formData,
+                      preferences: {
+                        ...formData.preferences!,
+                        emailNotifications: e.target.checked,
+                      },
+                    })
+                  }
+                  className="rounded border-gray-300"
+                />
+                <label htmlFor="emailNotifications" className="text-sm">
+                  Recibir notificaciones por email
+                </label>
+              </div>
+            </form>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center space-x-4">
+                {user.profile?.avatar ? (
+                  <img
+                    src={user.profile.avatar}
+                    alt={user.profile.name || 'Avatar'}
+                    className="w-20 h-20 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center">
+                    <span className="text-gray-500 text-xl">
+                      {user.email.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                )}
+                <div>
+                  <h3 className="text-xl font-semibold">
+                    {user.profile?.name || 'Usuario'}
+                  </h3>
+                  <p className="text-gray-500">{user.email}</p>
+                </div>
+              </div>
+
+              {user.profile?.bio && (
+                <div className="mt-4">
+                  <h4 className="text-sm font-medium text-gray-500">Biografía</h4>
+                  <p className="mt-1">{user.profile.bio}</p>
+                </div>
+              )}
+
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <h4 className="text-sm font-medium text-gray-500">Preferencias</h4>
+                <ul className="mt-2 space-y-1">
+                  <li className="text-sm">
+                    Notificaciones por email:{' '}
+                    {user.profile?.preferences?.emailNotifications ? 'Activadas' : 'Desactivadas'}
+                  </li>
+                  <li className="text-sm">
+                    Tema: {user.profile?.preferences?.theme === 'dark' ? 'Oscuro' : 'Claro'}
+                  </li>
+                  <li className="text-sm">
+                    Idioma: {user.profile?.preferences?.language || 'Español'}
+                  </li>
+                </ul>
+              </div>
+
+              <div className="text-sm text-gray-500 mt-4 pt-4 border-t border-gray-100">
+                <p>Miembro desde: {new Date(user.createdAt).toLocaleDateString()}</p>
+                <p>Última actualización: {new Date(user.updatedAt).toLocaleDateString()}</p>
+              </div>
+            </div>
+          )}
         </div>
-      )}
+
+        <footer className="flex items-center justify-end px-8 py-4 bg-neutral-50 border-t border-neutral-100">
+          {isEditing ? (
+            <div className="flex items-center gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsEditing(false)}
+                disabled={loading}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                onClick={handleSubmit}
+                loading={loading}
+              >
+                Guardar Cambios
+              </Button>
+            </div>
+          ) : (
+            <Button
+              onClick={() => setIsEditing(true)}
+            >
+              Editar Perfil
+            </Button>
+          )}
+        </footer>
+      </div>
     </div>
   );
 } 

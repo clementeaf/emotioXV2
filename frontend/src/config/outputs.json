@@ -1,0 +1,26 @@
+{
+  "ApiUrl": "https://fww0ghfvga.execute-api.us-east-1.amazonaws.com",
+  "Endpoints": {
+    "requestOTP": {
+      "POST": "/auth/request-otp"
+    },
+    "validateOTP": {
+      "POST": "/auth/validate-otp"
+    },
+    "logout": {
+      "POST": "/auth/logout"
+    },
+    "createUser": {
+      "POST": "/users"
+    },
+    "getUser": {
+      "GET": "/users/me"
+    },
+    "updateUser": {
+      "PUT": "/users/me"
+    },
+    "deleteUser": {
+      "DELETE": "/users/me"
+    }
+  }
+} 

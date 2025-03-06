@@ -1,4 +1,4 @@
-service: emotiox-backend
+service: backend-serverless
 
 frameworkVersion: '3'
 
@@ -6,18 +6,27 @@ provider:
   name: aws
   runtime: nodejs18.x
   stage: ${opt:stage, 'dev'}
-  region: ${opt:region, 'us-east-1'}
-  profile: default
-  
+  region: us-east-1
+  environment:
+    USERS_TABLE: ${self:service}-users-${self:provider.stage}
+    OTP_TABLE: ${self:service}-otp-${self:provider.stage}
+    JWT_SECRET: ${env:JWT_SECRET, 'emotiox-dev-secret-key-2024'}
+    SES_FROM_EMAIL: ${env:SES_FROM_EMAIL}
   httpApi:
     cors:
       allowedOrigins:
         - http://localhost:4700
-        - https://app.emotiox.com
+        - http://localhost:3000
+        - https://app.emotio-x.com
+        - https://dev.emotio-x.com
       allowedHeaders:
         - Content-Type
         - Authorization
+        - X-Amz-Date
         - X-Api-Key
+        - X-Amz-Security-Token
+        - X-Amz-User-Agent
+        - Accept
       allowedMethods:
         - GET
         - POST
@@ -25,127 +34,110 @@ provider:
         - DELETE
         - OPTIONS
       allowCredentials: true
-      maxAge: 300
-
-  environment:
-    OTP_TABLE: ${self:service}-otp-${self:provider.stage}
-    USERS_TABLE: ${self:service}-users-${self:provider.stage}
-    STAGE: ${self:provider.stage}
-    REGION: ${self:provider.region}
-    JWT_SECRET: ${env:JWT_SECRET, 'your-secret-key'}
+      maxAge: 600 # 10 minutos
 
   iam:
     role:
       statements:
         - Effect: Allow
           Action:
-            - logs:CreateLogGroup
-            - logs:CreateLogStream
-            - logs:PutLogEvents
-          Resource: 
-            - arn:aws:logs:${self:provider.region}:*:log-group:/aws/lambda/*:*:*
-        - Effect: Allow
-          Action:
-            - dynamodb:PutItem
-            - dynamodb:GetItem
-            - dynamodb:UpdateItem
-            - dynamodb:DeleteItem
             - dynamodb:Query
             - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
           Resource:
-            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:service}-*
+            - "arn:aws:dynamodb:${aws:region}:*:table/${self:provider.environment.USERS_TABLE}"
+            - "arn:aws:dynamodb:${aws:region}:*:table/${self:provider.environment.OTP_TABLE}"
         - Effect: Allow
           Action:
             - ses:SendEmail
             - ses:SendRawEmail
           Resource: "*"
 
-plugins:
-  - serverless-esbuild
-  - serverless-offline
-  - serverless-dotenv-plugin
-  - serverless-export-outputs
-  - serverless-plugin-export-endpoints
-
-custom:
-  esbuild:
-    bundle: true
-    minify: false
-    sourcemap: true
-    exclude:
-      - aws-sdk
-    target: 'node18'
-    platform: 'node'
-    format: 'cjs'
-  exportOutputs:
-    fileName: outputs.json
-  exportEndpoints:
-    fileName: endpoints.json
-    include:
-      - 'httpApi'
-  serverless-offline:
-    httpPort: 4000
-    noPrependStageInUrl: true
-
 functions:
   # Funciones de autenticación
   requestOTP:
-    handler: dist/controllers/user.controller.requestOTP
+    handler: src/handlers/auth.requestOTP
     events:
       - httpApi:
           path: /auth/request-otp
           method: POST
 
   validateOTP:
-    handler: dist/controllers/user.controller.validateOTP
+    handler: src/handlers/auth.validateOTP
     events:
       - httpApi:
           path: /auth/validate-otp
           method: POST
 
-  # Funciones de gestión de usuarios
-  createUser:
-    handler: dist/controllers/user.controller.createUser
+  logout:
+    handler: src/handlers/auth.logout
     events:
       - httpApi:
-          path: /user
+          path: /auth/logout
+          method: POST
+
+  # Funciones de gestión de usuarios
+  createUser:
+    handler: src/handlers/user.createUser
+    events:
+      - httpApi:
+          path: /users
           method: POST
 
   getUser:
-    handler: dist/controllers/user.controller.getUser
+    handler: src/handlers/user.getUser
     events:
       - httpApi:
-          path: /user
+          path: /users/me
           method: GET
 
   updateUser:
-    handler: dist/controllers/user.controller.updateUser
+    handler: src/handlers/user.updateUser
     events:
       - httpApi:
-          path: /user
+          path: /users/me
           method: PUT
 
   deleteUser:
-    handler: dist/controllers/user.controller.deleteUser
+    handler: src/handlers/user.deleteUser
     events:
       - httpApi:
-          path: /user
+          path: /users/me
           method: DELETE
 
   # Función para manejar las opciones CORS
   optionsHandler:
-    handler: dist/controllers/user.controller.optionsHandler
+    handler: src/handlers/cors.handler
     events:
       - httpApi:
           path: /{proxy+}
           method: OPTIONS
 
 resources:
+  Outputs:
+    ApiUrl:
+      Description: "API Gateway endpoint URL"
+      Value: !Join ['', ['https://', !Ref HttpApi, '.execute-api.', !Ref 'AWS::Region', '.amazonaws.com']]
+    Endpoints:
+      Description: "API Endpoints"
+      Value: !Join 
+        - ''
+        - - '{"requestOTP":{"POST":"/auth/request-otp"},'
+          - '"validateOTP":{"POST":"/auth/validate-otp"},'
+          - '"logout":{"POST":"/auth/logout"},'
+          - '"createUser":{"POST":"/users"},'
+          - '"getUser":{"GET":"/users/me"},'
+          - '"updateUser":{"PUT":"/users/me"},'
+          - '"deleteUser":{"DELETE":"/users/me"}}'
+
   Resources:
     UsersTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: ${self:service}-users-${self:provider.stage}
+        TableName: ${self:provider.environment.USERS_TABLE}
         AttributeDefinitions:
           - AttributeName: id
             AttributeType: S
@@ -157,7 +149,7 @@ resources:
     OTPTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: ${self:service}-otp-${self:provider.stage}
+        TableName: ${self:provider.environment.OTP_TABLE}
         AttributeDefinitions:
           - AttributeName: email
             AttributeType: S
@@ -169,7 +161,33 @@ resources:
           AttributeName: expiresAt
           Enabled: true
 
-  Outputs:
-    ApiEndpoint:
-      Description: "API Gateway endpoint URL"
-      Value: !GetAtt HttpApi.ApiEndpoint 
+plugins:
+  - serverless-esbuild
+  - serverless-offline
+  - serverless-dotenv-plugin
+  - serverless-export-outputs
+
+custom:
+  esbuild:
+    bundle: true
+    minify: false
+    sourcemap: true
+    exclude:
+      - aws-sdk
+    target: node18
+    platform: node
+    format: cjs
+    watch:
+      pattern: ['src/**/*.ts']
+      ignore: ['.build/**/*', 'node_modules/**/*']
+  exportOutputs:
+    fileName: '../frontend/src/config/outputs.json'
+    format: json
+    indent: 2
+  serverless-offline:
+    httpPort: 4000
+    noPrependStageInUrl: true
+    useChildProcesses: true
+  tablenames:
+    otp: ${self:provider.environment.OTP_TABLE}
+    users: ${self:provider.environment.USERS_TABLE} 

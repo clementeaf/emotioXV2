@@ -1,0 +1,26 @@
+{
+ "requestOTP": {
+  "POST": "https://fww0ghfvga.execute-api.us-east-1.amazonaws.com/auth/request-otp"
+ },
+ "validateOTP": {
+  "POST": "https://fww0ghfvga.execute-api.us-east-1.amazonaws.com/auth/validate-otp"
+ },
+ "logout": {
+  "POST": "https://fww0ghfvga.execute-api.us-east-1.amazonaws.com/auth/logout"
+ },
+ "createUser": {
+  "POST": "https://fww0ghfvga.execute-api.us-east-1.amazonaws.com/users"
+ },
+ "getUser": {
+  "GET": "https://fww0ghfvga.execute-api.us-east-1.amazonaws.com/users/me"
+ },
+ "updateUser": {
+  "PUT": "https://fww0ghfvga.execute-api.us-east-1.amazonaws.com/users/me"
+ },
+ "deleteUser": {
+  "DELETE": "https://fww0ghfvga.execute-api.us-east-1.amazonaws.com/users/me"
+ },
+ "optionsHandler": {
+  "OPTIONS": "https://ucut04rvah.execute-api.us-east-1.amazonaws.com/{{proxy+}}"
+ }
+}

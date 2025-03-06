@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
 interface SidebarProps {
@@ -17,6 +17,7 @@ const mainNavItems = [
   { id: 'new-research', label: 'New Research', href: '/dashboard/research/new' },
   { id: 'research-history', label: "Research's History", href: '/research-history' },
   { id: 'research', label: 'Research', href: '/research' },
+  { id: 'emotions', label: 'Emotions', href: '/emotions' },
 ];
 
 const researchStages = [
@@ -26,30 +27,35 @@ const researchStages = [
     isCompleted: false,
     isEnabled: true,
     subsections: [
-      { id: 'welcome', label: 'Welcome screen', isCompleted: false, isEnabled: true },
-      { id: 'smart-voc', label: 'Smart VOC', isCompleted: false, isEnabled: false },
-      { id: 'cognitive-task', label: 'Cognitive task', isCompleted: false, isEnabled: false },
-      { id: 'thank-you', label: 'Thank you screen', isCompleted: false, isEnabled: false },
+      { id: 'welcome', label: 'Welcome Screen', isCompleted: false, isEnabled: true },
+      { id: 'smart-voc', label: 'Smart VOC', isCompleted: false, isEnabled: true },
+      { id: 'cognitive', label: 'Cognitive Tasks', isCompleted: false, isEnabled: true },
+      { id: 'eye-tracking', label: 'Eye Tracking', isCompleted: false, isEnabled: true },
+      { id: 'thank-you', label: 'Thank You Screen', isCompleted: false, isEnabled: true },
     ],
   },
   {
     id: 'recruit',
     label: 'Recruit',
     isCompleted: false,
-    isEnabled: false,
+    isEnabled: true,
     subsections: [
-      { id: 'eye-tracking', label: 'Eye Tracking', isCompleted: false, isEnabled: false },
+      { id: 'screener', label: 'Screener', isCompleted: false, isEnabled: true },
+      { id: 'welcome-screen', label: 'Welcome screen', isCompleted: false, isEnabled: true },
+      { id: 'implicit-association', label: 'Implicit Association', isCompleted: false, isEnabled: true },
+      { id: 'cognitive-task', label: 'Cognitive task', isCompleted: false, isEnabled: true },
+      { id: 'eye-tracking', label: 'Eye Tracking', isCompleted: false, isEnabled: true },
+      { id: 'thank-you', label: 'Thank you screen', isCompleted: false, isEnabled: true },
     ],
   },
   {
     id: 'results',
     label: 'Results',
     isCompleted: false,
-    isEnabled: false,
+    isEnabled: true,
     subsections: [
-      { id: 'overview', label: 'Overview', isCompleted: false, isEnabled: false },
-      { id: 'responses', label: 'Responses', isCompleted: false, isEnabled: false },
-      { id: 'analysis', label: 'Analysis', isCompleted: false, isEnabled: false },
+      { id: 'smartvoc', label: 'Smart VOC', isCompleted: false, isEnabled: true },
+      { id: 'cognitive-task', label: 'Tareas Cognitivas', isCompleted: false, isEnabled: true },
     ],
   },
 ];
@@ -62,6 +68,12 @@ const researchTypes = [
 
 export function Sidebar({ className, activeResearch }: SidebarProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentSection = searchParams.get('section') || 'build';
+  const currentStage = searchParams.get('stage') || 'welcome';
+  
+  // Determinar si estamos en una página de investigación específica
+  const isResearchPage = pathname.includes('/research/') && activeResearch?.id;
 
   return (
     <div className={cn("w-64 flex-shrink-0 border-r border-neutral-200 bg-white", className)}>
@@ -75,9 +87,9 @@ export function Sidebar({ className, activeResearch }: SidebarProps) {
           </div>
 
           <nav className="flex flex-1 flex-col px-4">
-            {!activeResearch ? (
+            {!isResearchPage ? (
               <>
-                {/* Main Navigation */}
+                {/* Main Navigation - Solo mostrar en modo dashboard */}
                 <div className="mb-8">
                   <h2 className="px-3 text-xs font-medium text-neutral-500 uppercase tracking-wider mb-3">
                     Main
@@ -101,7 +113,7 @@ export function Sidebar({ className, activeResearch }: SidebarProps) {
                   </ul>
                 </div>
 
-                {/* Research Types */}
+                {/* Research Types - Solo mostrar en modo dashboard */}
                 <div>
                   <h2 className="px-3 text-xs font-medium text-neutral-500 uppercase tracking-wider mb-3">
                     Research Types
@@ -128,58 +140,29 @@ export function Sidebar({ className, activeResearch }: SidebarProps) {
               </>
             ) : (
               <div>
+                {/* Navegación de investigación - mostrar cuando estamos en una página de investigación */}
                 <ul className="flex flex-1 flex-col gap-y-7">
                   {researchStages.map((section) => (
                     <li key={section.id}>
                       <div className="mb-3">
-                        <div className="flex items-center gap-x-3">
-                          <div className={cn(
-                            "flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border",
-                            section.isCompleted 
-                              ? "bg-blue-500 border-blue-500" 
-                              : "border-neutral-300"
-                          )}>
-                            {section.isCompleted && (
-                              <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                            )}
-                          </div>
-                          <span className="text-sm font-medium text-neutral-900">
-                            {section.label}
-                          </span>
-                        </div>
+                        <h3 className="px-3 text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                          {section.label}
+                        </h3>
                       </div>
                       <ul className="space-y-1">
                         {section.subsections.map((subsection) => (
                           <li key={subsection.id}>
                             <Link
-                              href={`/dashboard?research=${activeResearch.id}&section=${section.id}&stage=${subsection.id}`}
+                              href={`/research/${activeResearch.id}?section=${section.id}&stage=${subsection.id}`}
                               className={cn(
-                                "block rounded-md transition-colors",
+                                "flex items-center gap-x-3 px-3 py-2 text-sm rounded-md transition-colors",
+                                currentSection === section.id && currentStage === subsection.id
+                                  ? "bg-neutral-50 text-neutral-900 font-medium"
+                                  : "text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900",
                                 !subsection.isEnabled && "opacity-50 cursor-not-allowed pointer-events-none"
                               )}
                             >
-                              <div className={cn(
-                                "flex items-center gap-x-3 px-4 py-2",
-                                pathname === `/dashboard?research=${activeResearch.id}&section=${section.id}&stage=${subsection.id}`
-                                  ? "bg-neutral-50 text-neutral-900"
-                                  : "text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900",
-                              )}>
-                                <div className={cn(
-                                  "flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border transition-colors",
-                                  subsection.isCompleted 
-                                    ? "bg-blue-500 border-blue-500" 
-                                    : "border-neutral-300 group-hover:border-neutral-400"
-                                )}>
-                                  {subsection.isCompleted && (
-                                    <svg className="h-3 w-3 text-white" viewBox="0 0 20 20" fill="currentColor">
-                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                    </svg>
-                                  )}
-                                </div>
-                                <span className="flex-1 text-sm">{subsection.label}</span>
-                              </div>
+                              <span className="flex-1">{subsection.label}</span>
                             </Link>
                           </li>
                         ))}

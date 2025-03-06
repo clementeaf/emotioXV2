@@ -594,66 +594,132 @@ export function CognitiveTaskForm({ className, onSave }: CognitiveTaskFormProps)
   };
 
   return (
-    <div className={cn("space-y-8", className)}>
-      <div className="space-y-6">
-        {questions.map((question) => (
-          <div
-            key={question.id}
-            className="bg-white rounded-lg border border-neutral-200 p-6 space-y-4"
-          >
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium text-neutral-900">
-                Question {question.id}
-              </h3>
-            </div>
-            {renderQuestionInput(question)}
-          </div>
-        ))}
+    <div className={cn("max-w-3xl mx-auto", className)}>
+      <div className="bg-white rounded-xl border border-neutral-200/70 shadow-[0_6px_16px_-4px_rgba(0,0,0,0.05)] overflow-hidden">
+        <div className="px-8 py-8">
+          <header className="mb-6">
+            <h1 className="text-lg font-semibold text-neutral-900">
+              Cognitive Task Configuration
+            </h1>
+            <p className="mt-1 text-sm text-neutral-500">
+              Create and manage questions to assess cognitive responses from participants.
+            </p>
+          </header>
 
-        <div className="flex justify-center">
-          <Button
-            onClick={() => setIsAddQuestionModalOpen(true)}
-            variant="outline"
-            className="w-full max-w-md"
-          >
-            Add another question
-          </Button>
+          <div className="space-y-6">
+            {/* Global Settings */}
+            <div className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg">
+              <div className="space-y-0.5">
+                <h2 className="text-sm font-medium text-neutral-900">Randomize Questions</h2>
+                <p className="text-sm text-neutral-500">Present questions in random order to each participant</p>
+              </div>
+              <Switch 
+                checked={randomizeQuestions} 
+                onCheckedChange={setRandomizeQuestions} 
+              />
+            </div>
+
+            {/* Questions List */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-medium text-neutral-900">Questions</h2>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setIsAddQuestionModalOpen(true)}
+                  className="text-blue-500 border-blue-200 hover:bg-blue-50"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                  Add Question
+                </Button>
+              </div>
+
+              <div className="space-y-4">
+                {questions.map((question) => (
+                  <div 
+                    key={question.id} 
+                    className="bg-white rounded-lg border border-neutral-200 p-5 space-y-4"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-center gap-2">
+                        <span className="bg-neutral-100 text-neutral-700 py-1 px-2.5 text-xs font-medium rounded">
+                          {questionTypes.find(t => t.id === question.type)?.label || question.type}
+                        </span>
+                        <p className="text-xs text-neutral-500">ID: {question.id}</p>
+                      </div>
+                      <button className="text-neutral-400 hover:text-red-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18"></line>
+                          <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                      </button>
+                    </div>
+
+                    {renderQuestionInput(question)}
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex justify-center pt-2">
+                <Button 
+                  variant="outline" 
+                  className="w-full max-w-md"
+                  onClick={() => setIsAddQuestionModalOpen(true)}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                  Add New Question
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
+
+        <footer className="flex items-center justify-between px-8 py-4 bg-neutral-50 border-t border-neutral-100">
+          <p className="text-sm text-neutral-500">Estimated completion time: 5-7 minutes</p>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              className="px-4 py-2 text-sm font-medium text-neutral-700 bg-white border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors"
+            >
+              Preview
+            </button>
+            <button
+              type="button"
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors"
+              onClick={() => onSave && onSave(questions)}
+            >
+              Save and Continue
+            </button>
+          </div>
+        </footer>
       </div>
 
+      {/* Add Question Modal */}
       <Dialog open={isAddQuestionModalOpen} onOpenChange={setIsAddQuestionModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Add Question</DialogTitle>
+            <DialogTitle>Add new question</DialogTitle>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-2 gap-4 py-4">
             {questionTypes.map((type) => (
               <button
                 key={type.id}
                 onClick={() => handleAddQuestion(type.id as Question['type'])}
-                className="flex items-center gap-4 p-4 hover:bg-neutral-50 rounded-lg transition-colors"
+                className="flex flex-col items-start p-4 border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors"
               >
-                <div className="flex-1 text-left">
-                  <h4 className="text-sm font-medium text-neutral-900">{type.label}</h4>
-                  <p className="text-sm text-neutral-500">{type.description}</p>
-                </div>
+                <h3 className="text-sm font-medium text-neutral-900">{type.label}</h3>
+                <p className="text-xs text-neutral-500 mt-1">{type.description}</p>
               </button>
             ))}
           </div>
         </DialogContent>
       </Dialog>
-
-      <div className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg">
-        <div className="flex items-center gap-2">
-          <Switch
-            checked={randomizeQuestions}
-            onCheckedChange={(checked: boolean) => setRandomizeQuestions(checked)}
-          />
-          <span className="text-sm text-neutral-600">
-            Randomize the order of questions
-          </span>
-        </div>
-      </div>
     </div>
   );
 } 

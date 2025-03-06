@@ -12,7 +12,13 @@ export class UserModel {
 
   constructor() {
     this.tableName = process.env.USERS_TABLE || '';
-    this.dynamoDB = new DynamoDB({});
+    
+    const config = {
+      region: process.env.AWS_REGION || 'us-east-1',
+      // Las credenciales se tomarán automáticamente del perfil configurado en la máquina
+    };
+    
+    this.dynamoDB = new DynamoDB(config);
   }
 
   // Convert DynamoDB item to User
