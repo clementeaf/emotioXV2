@@ -1,16 +1,19 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
+import { useAuth } from '@/providers/AuthProvider';
+import { authAPI } from '@/lib/api';
 
 interface LoginFormState {
   email: string;
-  code: string;
-  step: 'email' | 'code';
+  password: string;
   error?: string;
+  success?: boolean;
 }
 
 interface LoginFormProps {
@@ -18,114 +21,60 @@ interface LoginFormProps {
 }
 
 export function LoginForm({ className }: LoginFormProps) {
-  const { requestOTP, validateOTP, isLoading } = useAuth();
+  const router = useRouter();
+  const { updateToken } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
   const [state, setState] = useState<LoginFormState>({
     email: '',
-    code: '',
-    step: 'email',
-    error: undefined
+    password: '',
+    error: undefined,
+    success: false
   });
 
-  const handleEmailSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setState(prev => ({ ...prev, error: undefined }));
+    setState(prev => ({ ...prev, error: undefined, success: false }));
+
+    // Validar que los campos no estén vacíos
+    if (!state.email.trim()) {
+      setState(prev => ({ ...prev, error: 'El correo electrónico es obligatorio' }));
+      return;
+    }
+
+    if (!state.password.trim()) {
+      setState(prev => ({ ...prev, error: 'La contraseña es obligatoria' }));
+      return;
+    }
+
+    setIsLoading(true);
 
     try {
-      await requestOTP(state.email);
-      setState(prev => ({ ...prev, step: 'code' }));
-    } catch (error) {
+      const response = await authAPI.login({
+        email: state.email,
+        password: state.password
+      });
+
+      if (response.data.token) {
+        // Actualizar el token en el AuthProvider
+        updateToken(response.data.token);
+        setState(prev => ({ ...prev, success: true }));
+        
+        // Redirigir al dashboard después de mostrar el mensaje de éxito
+        setTimeout(() => {
+          router.push('/dashboard');
+        }, 2000);
+      } else {
+        setState(prev => ({ ...prev, error: 'Error al iniciar sesión' }));
+      }
+    } catch (error: any) {
       setState(prev => ({ 
         ...prev, 
-        error: error instanceof Error ? error.message : 'Error al solicitar el código'
+        error: error.response?.data?.message || 'Error al iniciar sesión'
       }));
+    } finally {
+      setIsLoading(false);
     }
   };
-
-  const handleCodeSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setState(prev => ({ ...prev, error: undefined }));
-
-    try {
-      await validateOTP(state.email, state.code);
-    } catch (error) {
-      setState(prev => ({ 
-        ...prev, 
-        error: error instanceof Error ? error.message : 'Código inválido'
-      }));
-    }
-  };
-
-  const handleBack = () => {
-    setState(prev => ({ ...prev, step: 'email', code: '', error: undefined }));
-  };
-
-  const renderEmailForm = () => (
-    <form onSubmit={handleEmailSubmit} className="space-y-6">
-      <div className="space-y-5">
-        <div className="space-y-2">
-          <Input
-            type="email"
-            label="Correo electrónico"
-            value={state.email}
-            onChange={e => setState(prev => ({ ...prev, email: e.target.value }))}
-            placeholder="tu@email.com"
-            required
-            error={!!state.error}
-            helperText={state.error}
-          />
-        </div>
-      </div>
-      <Button
-        type="submit"
-        fullWidth
-        loading={isLoading}
-      >
-        Solicitar código
-      </Button>
-    </form>
-  );
-
-  const renderCodeForm = () => (
-    <form onSubmit={handleCodeSubmit} className="space-y-6">
-      <div className="space-y-5">
-        <p className="text-center text-sm text-neutral-500">
-          Se ha enviado un código de verificación a {state.email}
-        </p>
-        <div className="space-y-2">
-          <Input
-            type="text"
-            label="Código de verificación"
-            value={state.code}
-            onChange={e => setState(prev => ({ ...prev, code: e.target.value }))}
-            placeholder="123456"
-            required
-            maxLength={6}
-            pattern="\d{6}"
-            error={!!state.error}
-            helperText={state.error}
-          />
-        </div>
-      </div>
-      <div className="flex flex-col gap-2">
-        <Button
-          type="submit"
-          fullWidth
-          loading={isLoading}
-        >
-          Verificar código
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          fullWidth
-          onClick={handleBack}
-          disabled={isLoading}
-        >
-          Volver
-        </Button>
-      </div>
-    </form>
-  );
 
   return (
     <div className={cn("max-w-xl mx-auto", className)}>
@@ -133,16 +82,55 @@ export function LoginForm({ className }: LoginFormProps) {
         <div className="px-8 py-8">
           <header className="mb-6">
             <h1 className="text-lg font-semibold text-neutral-900 text-center">
-              {state.step === 'email' ? 'Iniciar Sesión' : 'Ingresa el código'}
+              Iniciar Sesión
             </h1>
-            {state.step === 'email' && (
-              <p className="mt-1 text-sm text-neutral-500 text-center">
-                Ingresa tu correo electrónico para recibir un código de acceso
-              </p>
-            )}
+            <p className="mt-1 text-sm text-neutral-500 text-center">
+              Ingresa tus credenciales para acceder a tu cuenta
+            </p>
           </header>
 
-          {state.step === 'email' ? renderEmailForm() : renderCodeForm()}
+          {state.success ? (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+              <p className="text-green-700 text-center">
+                ¡Inicio de sesión exitoso! Redirigiendo al dashboard...
+              </p>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-5">
+                <div className="space-y-2">
+                  <Input
+                    type="email"
+                    label="Correo electrónico"
+                    value={state.email}
+                    onChange={e => setState(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="tu@email.com"
+                    required
+                    error={!!state.error}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Input
+                    type="password"
+                    label="Contraseña"
+                    value={state.password}
+                    onChange={e => setState(prev => ({ ...prev, password: e.target.value }))}
+                    placeholder="••••••••"
+                    required
+                    error={!!state.error}
+                    helperText={state.error}
+                  />
+                </div>
+              </div>
+              <Button
+                type="submit"
+                fullWidth
+                loading={isLoading}
+              >
+                {isLoading ? 'Iniciando sesión...' : 'Iniciar sesión'}
+              </Button>
+            </form>
+          )}
         </div>
       </div>
     </div>

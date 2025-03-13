@@ -1,9 +1,12 @@
 import { DynamoDB } from '@aws-sdk/client-dynamodb';
+import * as bcrypt from 'bcryptjs';
+import { v4 as uuidv4 } from 'uuid';
 
 export interface User {
   id: string;
   name: string;
   email: string;
+  password?: string;
 }
 
 export class UserModel {
@@ -15,7 +18,6 @@ export class UserModel {
     
     const config = {
       region: process.env.AWS_REGION || 'us-east-1',
-      // Las credenciales se tomarán automáticamente del perfil configurado en la máquina
     };
     
     this.dynamoDB = new DynamoDB(config);
@@ -26,7 +28,8 @@ export class UserModel {
     return {
       id: item.id.S!,
       name: item.name.S!,
-      email: item.email.S!
+      email: item.email.S!,
+      password: item.password?.S
     };
   }
 
@@ -37,46 +40,74 @@ export class UserModel {
     if (user.id) item.id = { S: user.id };
     if (user.name) item.name = { S: user.name };
     if (user.email) item.email = { S: user.email };
+    if (user.password) item.password = { S: user.password };
 
     return item;
   }
 
-  async create(name: string, email: string): Promise<User> {
+  // Hash password con bcrypt
+  private async hashPassword(password: string): Promise<string> {
+    const salt = await bcrypt.genSalt(12);
+    return bcrypt.hash(password, salt);
+  }
+
+  // Verificar contraseña con bcrypt
+  async comparePassword(password: string, hash: string): Promise<boolean> {
+    return bcrypt.compare(password, hash);
+  }
+
+  async create(name: string, email: string, password: string): Promise<User> {
+    const id = uuidv4();
+    const hashedPassword = await this.hashPassword(password);
+
     const user: User = {
-      id: email, // Usando el email como ID
+      id,
       name,
-      email
+      email,
+      password: hashedPassword
     };
+
+    // Primero verificar si existe un usuario con ese email
+    const existingUser = await this.findByEmail(email);
+    if (existingUser) {
+      throw new Error('User already exists');
+    }
 
     await this.dynamoDB.putItem({
       TableName: this.tableName,
-      Item: this.toDynamoDB(user),
-      ConditionExpression: 'attribute_not_exists(id)'
+      Item: this.toDynamoDB(user)
     });
 
     return user;
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    const result = await this.dynamoDB.getItem({
+    const result = await this.dynamoDB.query({
       TableName: this.tableName,
-      Key: {
-        id: { S: email }
+      IndexName: 'EmailIndex',
+      KeyConditionExpression: 'email = :email',
+      ExpressionAttributeValues: {
+        ':email': { S: email }
       }
     });
 
-    if (!result.Item) {
+    if (!result.Items || result.Items.length === 0) {
       return null;
     }
 
-    return this.fromDynamoDB(result.Item);
+    return this.fromDynamoDB(result.Items[0]);
   }
 
   async update(email: string, name: string): Promise<User> {
+    const user = await this.findByEmail(email);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
     const result = await this.dynamoDB.updateItem({
       TableName: this.tableName,
       Key: {
-        id: { S: email }
+        id: { S: user.id }
       },
       UpdateExpression: 'SET #name = :name',
       ExpressionAttributeNames: {
@@ -96,10 +127,15 @@ export class UserModel {
   }
 
   async delete(email: string): Promise<void> {
+    const user = await this.findByEmail(email);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
     await this.dynamoDB.deleteItem({
       TableName: this.tableName,
       Key: {
-        id: { S: email }
+        id: { S: user.id }
       }
     });
   }

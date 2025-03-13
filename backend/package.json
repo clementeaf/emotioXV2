@@ -1,11 +1,11 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "Backend para sistema de autenticación OTP",
+  "description": "Backend para sistema de autenticación con email y contraseña",
   "main": "index.js",
   "scripts": {
-    "clean": "rimraf dist",
-    "build": "tsc",
+    "clean": "rimraf .build",
+    "build": "esbuild src/**/*.ts --bundle --platform=node --target=node18 --outdir=.build",
     "dev": "serverless offline",
     "deploy": "serverless deploy",
     "deploy:dev": "serverless deploy --stage dev",
@@ -21,26 +21,28 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@aws-sdk/client-apigatewaymanagementapi": "^3.758.0",
     "@aws-sdk/client-dynamodb": "^3.751.0",
-    "@aws-sdk/client-ses": "^3.699.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/uuid": "^10.0.0",
     "aws-lambda": "^1.0.7",
+    "bcryptjs": "^3.0.2",
     "jsonwebtoken": "^9.0.2",
+    "uuid": "^9.0.1",
+    "ws": "^8.18.1",
     "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.145",
     "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^22.13.5",
+    "esbuild": "^0.20.1",
     "rimraf": "^6.0.1",
     "serverless": "^3.40.0",
     "serverless-dotenv-plugin": "^6.0.0",
     "serverless-esbuild": "^1.54.6",
     "serverless-export-outputs": "^1.0.2",
     "serverless-offline": "^11.3.0",
-    "serverless-plugin-export-endpoints": "^0.1.3",
-    "serverless-plugin-typescript": "^2.1.5",
-    "ts-node": "^10.9.2",
-    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.6.2"
   }
 }

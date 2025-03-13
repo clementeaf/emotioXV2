@@ -9,9 +9,8 @@ provider:
   region: us-east-1
   environment:
     USERS_TABLE: ${self:service}-users-${self:provider.stage}
-    OTP_TABLE: ${self:service}-otp-${self:provider.stage}
+    CONNECTIONS_TABLE: ${self:service}-connections-${self:provider.stage}
     JWT_SECRET: ${env:JWT_SECRET, 'emotiox-dev-secret-key-2024'}
-    SES_FROM_EMAIL: ${env:SES_FROM_EMAIL}
   httpApi:
     cors:
       allowedOrigins:
@@ -35,6 +34,7 @@ provider:
         - OPTIONS
       allowCredentials: true
       maxAge: 600 # 10 minutos
+  websocketsApiRouteSelectionExpression: $request.body.action
 
   iam:
     role:
@@ -47,29 +47,54 @@ provider:
             - dynamodb:PutItem
             - dynamodb:UpdateItem
             - dynamodb:DeleteItem
+            - execute-api:ManageConnections
           Resource:
             - "arn:aws:dynamodb:${aws:region}:*:table/${self:provider.environment.USERS_TABLE}"
-            - "arn:aws:dynamodb:${aws:region}:*:table/${self:provider.environment.OTP_TABLE}"
-        - Effect: Allow
-          Action:
-            - ses:SendEmail
-            - ses:SendRawEmail
-          Resource: "*"
+            - "arn:aws:dynamodb:${aws:region}:*:table/${self:provider.environment.USERS_TABLE}/index/*"
+            - "arn:aws:dynamodb:${aws:region}:*:table/${self:provider.environment.CONNECTIONS_TABLE}"
+            - "arn:aws:dynamodb:${aws:region}:*:table/${self:provider.environment.CONNECTIONS_TABLE}/index/*"
+            - "arn:aws:execute-api:${aws:region}:${aws:accountId}:*/*/@connections/*"
 
 functions:
+  # WebSocket handlers
+  websocketConnect:
+    handler: src/handlers/websocket.connect
+    events:
+      - websocket:
+          route: $connect
+          authorizer:
+            name: websocketAuthorizer
+            identitySource:
+              - 'route.request.querystring.token'
+
+  websocketDisconnect:
+    handler: src/handlers/websocket.disconnect
+    events:
+      - websocket:
+          route: $disconnect
+
+  websocketDefault:
+    handler: src/handlers/websocket.handleDefault
+    events:
+      - websocket:
+          route: $default
+
+  websocketAuthorizer:
+    handler: src/handlers/websocket.authorize
+
   # Funciones de autenticación
-  requestOTP:
-    handler: src/handlers/auth.requestOTP
+  login:
+    handler: src/handlers/auth.login
     events:
       - httpApi:
-          path: /auth/request-otp
+          path: /auth/login
           method: POST
 
-  validateOTP:
-    handler: src/handlers/auth.validateOTP
+  register:
+    handler: src/handlers/auth.register
     events:
       - httpApi:
-          path: /auth/validate-otp
+          path: /auth/register
           method: POST
 
   logout:
@@ -80,13 +105,6 @@ functions:
           method: POST
 
   # Funciones de gestión de usuarios
-  createUser:
-    handler: src/handlers/user.createUser
-    events:
-      - httpApi:
-          path: /users
-          method: POST
-
   getUser:
     handler: src/handlers/user.getUser
     events:
@@ -121,14 +139,23 @@ resources:
     ApiUrl:
       Description: "API Gateway endpoint URL"
       Value: !Join ['', ['https://', !Ref HttpApi, '.execute-api.', !Ref 'AWS::Region', '.amazonaws.com']]
+    WebSocketEndpoint:
+      Description: "WebSocket endpoint URL"
+      Value: !Join 
+        - ''
+        - - 'wss://'
+          - !Ref WebsocketsApi
+          - '.execute-api.'
+          - !Ref 'AWS::Region'
+          - '.amazonaws.com/'
+          - ${self:provider.stage}
     Endpoints:
       Description: "API Endpoints"
       Value: !Join 
         - ''
-        - - '{"requestOTP":{"POST":"/auth/request-otp"},'
-          - '"validateOTP":{"POST":"/auth/validate-otp"},'
+        - - '{"login":{"POST":"/auth/login"},'
+          - '"register":{"POST":"/auth/register"},'
           - '"logout":{"POST":"/auth/logout"},'
-          - '"createUser":{"POST":"/users"},'
           - '"getUser":{"GET":"/users/me"},'
           - '"updateUser":{"PUT":"/users/me"},'
           - '"deleteUser":{"DELETE":"/users/me"}}'
@@ -141,25 +168,50 @@ resources:
         AttributeDefinitions:
           - AttributeName: id
             AttributeType: S
-        KeySchema:
-          - AttributeName: id
-            KeyType: HASH
-        BillingMode: PAY_PER_REQUEST
-
-    OTPTable:
-      Type: AWS::DynamoDB::Table
-      Properties:
-        TableName: ${self:provider.environment.OTP_TABLE}
-        AttributeDefinitions:
           - AttributeName: email
             AttributeType: S
         KeySchema:
-          - AttributeName: email
+          - AttributeName: id
             KeyType: HASH
-        BillingMode: PAY_PER_REQUEST
-        TimeToLiveSpecification:
-          AttributeName: expiresAt
-          Enabled: true
+        GlobalSecondaryIndexes:
+          - IndexName: EmailIndex
+            KeySchema:
+              - AttributeName: email
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+            ProvisionedThroughput:
+              ReadCapacityUnits: 1
+              WriteCapacityUnits: 1
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+
+    ConnectionsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:service}-connections-${self:provider.stage}
+        AttributeDefinitions:
+          - AttributeName: connectionId
+            AttributeType: S
+          - AttributeName: userId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: connectionId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: UserIdIndex
+            KeySchema:
+              - AttributeName: userId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+            ProvisionedThroughput:
+              ReadCapacityUnits: 1
+              WriteCapacityUnits: 1
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
 
 plugins:
   - serverless-esbuild
@@ -187,7 +239,4 @@ custom:
   serverless-offline:
     httpPort: 4000
     noPrependStageInUrl: true
-    useChildProcesses: true
-  tablenames:
-    otp: ${self:provider.environment.OTP_TABLE}
-    users: ${self:provider.environment.USERS_TABLE} 
+    useChildProcesses: true 

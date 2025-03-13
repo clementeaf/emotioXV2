@@ -3,14 +3,19 @@ import { Emotion } from './emotion.types';
 
 // WebSocket Events
 export enum WebSocketEvent {
+  PING = 'PING',
+  PONG = 'PONG',
+  UNKNOWN = 'UNKNOWN',
+  TOKEN_REFRESH = 'TOKEN_REFRESH',
+  TOKEN_REFRESHED = 'TOKEN_REFRESHED',
+  ERROR = 'ERROR',
+  
   // Authentication events
-  TOKEN_REFRESH = 'token.refresh',
   TOKEN_UPDATE = 'token.update',
   
   // Connection events
   CONNECT = 'connect',
   DISCONNECT = 'disconnect',
-  ERROR = 'error',
   
   // Emotion events
   EMOTION_CREATED = 'emotion.created',
@@ -40,6 +45,8 @@ export interface ErrorMessage {
 
 // Configuration
 export interface WebSocketConfig {
+  url: string;
+  token?: string;
   cors: {
     origin: string[];
     credentials: boolean;
@@ -54,6 +61,8 @@ export interface WebSocketConfig {
 
 // Validation Schemas
 export const webSocketConfigSchema = z.object({
+  url: z.string(),
+  token: z.string().optional(),
   cors: z.object({
     origin: z.array(z.string()),
     credentials: z.boolean()

@@ -3,8 +3,11 @@
 import { useMutation } from '@tanstack/react-query';
 import { authAPI } from '../lib/api';
 import type { User, APIResponse, AuthResponse } from '../lib/api';
+import { useRouter } from 'next/navigation';
 
 export const useAuth = () => {
+  const router = useRouter();
+
   const requestOTPMutation = useMutation<
     { message: string },
     Error,
@@ -34,6 +37,31 @@ export const useAuth = () => {
       if (authData.token) {
         localStorage.setItem('token', authData.token);
       }
+      router.push('/dashboard');
+      return authData;
+    }
+  });
+
+  const loginMutation = useMutation<
+    AuthResponse,
+    Error,
+    { email: string; password: string }
+  >({
+    mutationFn: async ({ email, password }) => {
+      const response = await authAPI.login({ email, password });
+      const { token, user } = response.data;
+      const authData = {
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name
+        }
+      };
+      if (authData.token) {
+        localStorage.setItem('token', authData.token);
+      }
+      router.push('/dashboard');
       return authData;
     }
   });
@@ -50,26 +78,27 @@ export const useAuth = () => {
     }
   });
 
-  const currentUser = validateOTPMutation.data?.user ? {
-    id: validateOTPMutation.data.user.id,
-    email: validateOTPMutation.data.user.email
-  } : null;
+  const currentUser = loginMutation.data?.user || validateOTPMutation.data?.user || null;
 
   return {
     requestOTP: (email: string) => requestOTPMutation.mutate(email),
     validateOTP: (email: string, otp: string) => 
       validateOTPMutation.mutate({ email, otp }),
+    login: (email: string, password: string) =>
+      loginMutation.mutate({ email, password }),
     logout: () => logoutMutation.mutate(),
     isLoading: 
       requestOTPMutation.isPending || 
-      validateOTPMutation.isPending || 
+      validateOTPMutation.isPending ||
+      loginMutation.isPending ||
       logoutMutation.isPending,
     error: 
       requestOTPMutation.error?.message || 
-      validateOTPMutation.error?.message || 
+      validateOTPMutation.error?.message ||
+      loginMutation.error?.message ||
       logoutMutation.error?.message || null,
     user: currentUser,
-    token: validateOTPMutation.data?.token || null,
+    token: loginMutation.data?.token || validateOTPMutation.data?.token || null,
     message: 
       requestOTPMutation.data?.message || 
       logoutMutation.data?.message

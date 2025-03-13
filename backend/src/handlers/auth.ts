@@ -15,12 +15,115 @@ const validateOTPSchema = z.object({
   code: z.string().length(6, 'Code must be exactly 6 digits').regex(/^\d+$/, 'Code must contain only numbers')
 });
 
+const loginSchema = z.object({
+  email: z.string().email('Formato de email inválido'),
+  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres')
+});
+
+const registerSchema = z.object({
+  name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
+  email: z.string().email('Formato de email inválido'),
+  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres')
+});
+
 // Función auxiliar para crear respuestas
 const createResponse = (statusCode: number, body: any): APIGatewayProxyResult => {
   return {
     statusCode,
+    headers: {
+      'Access-Control-Allow-Origin': process.env.STAGE === 'prod' 
+        ? 'https://app.emotio-x.com' 
+        : 'http://localhost:4700',
+      'Access-Control-Allow-Credentials': 'true'
+    },
     body: JSON.stringify(body)
   };
+};
+
+/**
+ * Handler para registro de usuarios
+ */
+export const register = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+  try {
+    console.log('Recibida solicitud de registro:', event.body);
+    
+    if (!event.body) {
+      return createResponse(400, { error: 'Cuerpo de la solicitud vacío' });
+    }
+
+    const body = JSON.parse(event.body);
+    const result = registerSchema.safeParse(body);
+    
+    if (!result.success) {
+      console.log('Datos de entrada inválidos:', result.error.errors);
+      return createResponse(400, { 
+        error: 'Datos de entrada inválidos',
+        details: result.error.errors 
+      });
+    }
+
+    console.log(`Registrando usuario ${body.email}`);
+    const { token, user } = await userService.createUser(body.name, body.email, body.password);
+    console.log('Usuario registrado exitosamente');
+    
+    return createResponse(201, { token, user });
+  } catch (error: any) {
+    console.error('Error en registro:', error);
+    
+    if (error.message === 'User already exists') {
+      return createResponse(409, { error: 'El usuario ya existe' });
+    }
+    
+    return createResponse(500, { 
+      error: 'Error interno del servidor',
+      details: process.env.STAGE === 'dev' ? error.message : undefined
+    });
+  }
+};
+
+/**
+ * Handler para login con email y contraseña
+ */
+export const login = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+  try {
+    console.log('Recibida solicitud de login:', event.body);
+    
+    if (!event.body) {
+      return createResponse(400, { error: 'Cuerpo de la solicitud vacío' });
+    }
+
+    const body = JSON.parse(event.body);
+    const result = loginSchema.safeParse(body);
+    
+    if (!result.success) {
+      console.log('Datos de entrada inválidos:', result.error.errors);
+      return createResponse(400, { 
+        error: 'Datos de entrada inválidos',
+        details: result.error.errors 
+      });
+    }
+
+    console.log(`Autenticando a ${body.email}`);
+    const { token, user } = await userService.login(body.email, body.password);
+    console.log('Autenticación exitosa');
+    
+    return createResponse(200, { token, user });
+  } catch (error: any) {
+    console.error('Error en login:', error);
+    
+    if (error.message === 'User not found') {
+      return createResponse(404, { error: 'Usuario no encontrado' });
+    }
+    
+    if (error.message === 'Invalid credentials') {
+      return createResponse(401, { error: 'Credenciales inválidas' });
+    }
+    
+    return createResponse(500, { 
+      error: 'Error interno del servidor',
+      details: process.env.STAGE === 'dev' ? error.message : undefined
+    });
+  }
 };
 
 /**

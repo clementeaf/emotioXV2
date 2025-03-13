@@ -1,27 +1,29 @@
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
-import './globals.css'
-import { QueryProvider } from '@/providers/QueryProvider'
+'use client';
 
-const inter = Inter({ subsets: ['latin'] })
+import { Inter } from 'next/font/google';
+import './globals.css';
+import { QueryProvider } from '@/providers/QueryProvider';
+import { AuthProvider } from '@/providers/AuthProvider';
+import { WebSocketProvider } from '@/providers/WebSocketProvider';
 
-export const metadata: Metadata = {
-  title: 'EmotioX',
-  description: 'Gestión de emociones y bienestar',
-}
+const inter = Inter({ subsets: ['latin'] });
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="es">
       <body className={inter.className}>
-        <QueryProvider>
-          {children}
-        </QueryProvider>
+        <AuthProvider>
+          <WebSocketProvider>
+            <QueryProvider>
+              {children}
+            </QueryProvider>
+          </WebSocketProvider>
+        </AuthProvider>
       </body>
     </html>
-  )
+  );
 }

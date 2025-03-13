@@ -5,6 +5,9 @@
   "validateOTP": {
     "POST": "https://fww0ghfvga.execute-api.us-east-1.amazonaws.com/auth/validate-otp"
   },
+  "login": {
+    "POST": "https://fww0ghfvga.execute-api.us-east-1.amazonaws.com/auth/login"
+  },
   "logout": {
     "POST": "https://fww0ghfvga.execute-api.us-east-1.amazonaws.com/auth/logout"
   },
