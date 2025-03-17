@@ -3,7 +3,6 @@ service: emotio-x-backend-v2
 frameworkVersion: '3'
 
 plugins:
-  - serverless-plugin-typescript
   - serverless-offline
   - serverless-dotenv-plugin
   - serverless-export-outputs
@@ -11,16 +10,7 @@ plugins:
   - serverless-esbuild
 
 custom:
-  exportOutputs:
-    include:
-      - HttpApiUrl
-      - WebSocketApiUrl
-    output:
-      file: ./outputs.json
-  serverless-offline:
-    httpPort: 4000
-    noPrependStageInUrl: true
-    useChildProcesses: true
+  # Configuración de DynamoDB Local
   dynamodb:
     stages:
       - dev
@@ -29,21 +19,27 @@ custom:
       port: 8000
       inMemory: true
       migrate: true
-  esbuild:
-    bundle: true
-    minify: false
-    sourcemap: true
-    exclude: ['aws-sdk']
-    target: 'node18'
-    platform: 'node'
-    concurrency: 10
-    packager: 'npm'
-    external:
-      - 'aws-sdk'
+  
+  # Configuración de exportación de salidas
+  exportOutputs:
+    include:
+      - HttpApiUrl
+      - WebSocketApiUrl
+    output:
+      file: ./outputs.json
+  
+  # Configuración de Serverless Offline
+  serverless-offline:
+    httpPort: 4000
+    noPrependStageInUrl: true
+    useChildProcesses: true
+  
+  # Nombre de la tabla de Welcome Screen
   welcomeScreenTableName: ${self:service}-welcome-screen-${self:provider.stage}
 
 package:
   individually: true
+  excludeDevDependencies: true
   patterns:
     - '!node_modules/aws-sdk/**'
     - '!node_modules/@aws-sdk/**'
