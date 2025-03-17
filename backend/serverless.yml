@@ -7,7 +7,6 @@ plugins:
   - serverless-dotenv-plugin
   - serverless-export-outputs
   - serverless-dynamodb-local
-  - serverless-esbuild
 
 custom:
   # Configuración de DynamoDB Local
@@ -247,35 +246,35 @@ functions:
           authorizer: aws_iam
 
   forms-publish:
-    handler: src/controllers/forms.controller.publish
+    handler: .dist/controllers/forms.controller.publish
     events:
       - httpApi:
           path: /api/forms/{id}/publish
           method: POST
 
   forms-unpublish:
-    handler: src/controllers/forms.controller.unpublish
+    handler: .dist/controllers/forms.controller.unpublish
     events:
       - httpApi:
           path: /api/forms/{id}/unpublish
           method: POST
 
   forms-get-public:
-    handler: src/controllers/forms.controller.getPublic
+    handler: .dist/controllers/forms.controller.getPublic
     events:
       - httpApi:
           path: /api/public/forms/{id}
           method: GET
 
   forms-submit-responses:
-    handler: src/controllers/forms.controller.submitResponses
+    handler: .dist/controllers/forms.controller.submitResponses
     events:
       - httpApi:
           path: /api/public/forms/{id}/responses
           method: POST
 
   forms-get-responses:
-    handler: src/controllers/forms.controller.getResponses
+    handler: .dist/controllers/forms.controller.getResponses
     events:
       - httpApi:
           path: /api/forms/{id}/responses
@@ -301,7 +300,7 @@ functions:
           route: $default
 
   websocket-authorizer:
-    handler: src/controllers/websocket.controller.authorize
+    handler: .dist/controllers/websocket.controller.authorize
     events:
       - websocket:
           route: $connect
@@ -336,28 +335,28 @@ functions:
           method: OPTIONS
 
   cors-api-research:
-    handler: src/controllers/cors.controller.handler
+    handler: .dist/controllers/cors.controller.handler
     events:
       - httpApi:
           path: /api/research
           method: OPTIONS
 
   cors-api-research-id:
-    handler: src/controllers/cors.controller.handler
+    handler: .dist/controllers/cors.controller.handler
     events:
       - httpApi:
           path: /api/research/{id}
           method: OPTIONS
 
   cors-api-forms:
-    handler: src/controllers/cors.controller.handler
+    handler: .dist/controllers/cors.controller.handler
     events:
       - httpApi:
           path: /api/forms
           method: OPTIONS
 
   cors-api-forms-id:
-    handler: src/controllers/cors.controller.handler
+    handler: .dist/controllers/cors.controller.handler
     events:
       - httpApi:
           path: /api/forms/{id}
