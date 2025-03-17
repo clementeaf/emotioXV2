@@ -79,6 +79,7 @@ export const useAuth = () => {
   });
 
   const currentUser = loginMutation.data?.user || validateOTPMutation.data?.user || null;
+  const currentToken = loginMutation.data?.token || validateOTPMutation.data?.token || null;
 
   return {
     requestOTP: (email: string) => requestOTPMutation.mutate(email),
@@ -98,7 +99,8 @@ export const useAuth = () => {
       loginMutation.error?.message ||
       logoutMutation.error?.message || null,
     user: currentUser,
-    token: loginMutation.data?.token || validateOTPMutation.data?.token || null,
+    token: currentToken,
+    isAuthenticated: !!currentToken,
     message: 
       requestOTPMutation.data?.message || 
       logoutMutation.data?.message

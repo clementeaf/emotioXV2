@@ -3,23 +3,9 @@
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { ResearchSidebarProps, ResearchSection } from '@/interfaces/research';
 
-interface ResearchSidebarProps {
-  researchId: string;
-  activeStage: string;
-  className?: string;
-}
-
-interface Section {
-  id: string;
-  title: string;
-  stages?: {
-    id: string;
-    title: string;
-  }[];
-}
-
-const sections: Section[] = [
+const sections: ResearchSection[] = [
   {
     id: 'build',
     title: 'Build',

@@ -66,7 +66,7 @@ export class UserService {
       throw new Error('User not found');
     }
 
-    return await this.userModel.update(email, name);
+    return await this.userModel.update(existingUser.id, { name });
   }
 
   /**

@@ -1,160 +1,207 @@
 # EmotioX v2
 
-Aplicación para gestionar y registrar emociones con autenticación OTP y WebSockets para renovación de tokens.
+EmotioX es una plataforma para la creación y gestión de investigaciones de eye-tracking y otras técnicas de análisis de emociones y comportamiento de usuarios.
 
-## Estructura del Proyecto
+## Entorno de desarrollo
 
-El proyecto está organizado como un monorepo con los siguientes componentes:
-
-- **frontend**: Aplicación Next.js para la interfaz de usuario
-- **backend**: API serverless con AWS Lambda y DynamoDB
-- **shared**: Tipos y utilidades compartidas entre frontend y backend
-
-## Requisitos Previos
-
-- Node.js 18 o superior
-- npm 8 o superior
+### Requisitos
+- Node.js 18+ 
 - AWS CLI configurado con credenciales válidas
-- Cuenta de AWS con permisos para:
-  - Lambda
-  - DynamoDB
-  - API Gateway
-  - SES (para envío de emails)
-  - IAM
+- DynamoDB local (opcional)
 
-## Configuración Inicial
-
-1. Clonar el repositorio:
-   ```bash
-   git clone https://github.com/tu-usuario/emotiox-v2.git
-   cd emotiox-v2
-   ```
-
+### Configuración
+1. Clonar el repositorio
 2. Instalar dependencias:
    ```bash
+   # En la carpeta principal
+   cd emotioX.v2
+   
+   # Instalar dependencias del frontend
+   cd frontend
+   npm install
+   
+   # Volver a la carpeta principal e instalar backend (si es necesario)
+   cd ..
+   cd backend
    npm install
    ```
 
-3. Configurar AWS CLI (si aún no está configurado):
+3. Iniciar el proyecto en modo desarrollo:
    ```bash
-   aws configure --profile emotioX
+   # Frontend
+   cd frontend
+   npm run dev
    ```
 
-4. Configurar variables de entorno:
-   - Crear un archivo `.env` en la raíz del proyecto con las siguientes variables:
-     ```
-     JWT_SECRET=tu_secreto_jwt_seguro
-     SES_FROM_EMAIL=tu_email_verificado@ejemplo.com
-     AWS_PROFILE=emotioX
-     ```
+### Usuarios de prueba
+Para fines de desarrollo, se ha creado un usuario de prueba en la base de datos:
 
-## Desarrollo Local
+| Email | ID | Nombre |
+|-------|-----|-------|
+| test@example.com | testuser | Usuario Prueba |
 
-### Backend
+### Datos de ejemplo
+Se ha creado una investigación de ejemplo en la base de datos:
 
-Para ejecutar el backend localmente:
-
-```bash
-npm run backend:dev
+```json
+{
+  "id": "research-test-01",
+  "userId": "testuser",
+  "basic": {
+    "name": "Investigación de prueba",
+    "enterprise": "enterprise1",
+    "type": "eye-tracking",
+    "technique": "aim-framework"
+  },
+  "status": "draft",
+  "currentStage": "build",
+  "stageProgress": 0,
+  "createdAt": "2025-03-16T23:00:00.000Z",
+  "updatedAt": "2025-03-16T23:00:00.000Z"
+}
 ```
 
-Esto iniciará el servidor Serverless Offline en http://localhost:3001
+## Características principales
+- Gestión de usuarios e investigaciones
+- Creación de proyectos de eye-tracking
+- Dashboard para visualización de resultados
+- Sistema de autenticación basado en JWT
 
-### Frontend
+## Modos de desarrollo
+La aplicación incluye dos modos para desarrollo:
 
-Para ejecutar el frontend localmente:
+1. **Modo normal**: Conecta con las APIs reales en AWS
+2. **Modo bypass**: Utiliza endpoints simulados para evitar depender de la API backend
+
+## Verificar datos en DynamoDB
+Para verificar los datos en DynamoDB, puedes usar estos comandos:
 
 ```bash
-npm run frontend:dev
+# Ver tablas
+aws dynamodb list-tables --region us-east-1
+
+# Ver usuarios
+aws dynamodb scan --table-name emotio-x-backend-v2-dev-users --region us-east-1
+
+# Ver investigaciones
+aws dynamodb scan --table-name emotio-x-backend-v2-dev-research --region us-east-1
 ```
 
-Esto iniciará el servidor Next.js en http://localhost:4700
+## Problemas conocidos
+- **Error 401 Unauthorized**: Si no existen usuarios en la nueva tabla de usuarios v2, aparecerá este error. La solución es crear usuarios de prueba como se muestra arriba.
+- **CORS**: En desarrollo local, se utilizan proxies para evitar problemas de CORS.
 
-## Despliegue
+## Notas importantes
+Este proyecto es una migración desde el EmotioX original. Las bases de datos y APIs son nuevas, por lo que no existirá continuidad con los datos de la versión anterior a menos que se implementen procesos de migración.
 
-### Verificar Credenciales AWS
+## Configuración automática de API
 
-Antes de desplegar, verifica que tus credenciales AWS estén correctamente configuradas:
+El proyecto incluye un sistema automatizado para actualizar la configuración de la API del frontend después de un despliegue serverless.
+
+### Funcionamiento
+
+Cuando ejecutas `npm run deploy` en el backend:
+
+1. Se despliega la aplicación en AWS usando Serverless Framework
+2. Se ejecuta automáticamente un script post-despliegue
+3. El script obtiene las URLs y endpoints generados por AWS
+4. Se actualizan los archivos de configuración del frontend:
+   - `frontend/src/config/outputs.json`: Contiene las salidas del stack de CloudFormation
+   - `frontend/src/config/endpoints.json`: Contiene los endpoints de la API
+   - `frontend/src/config/api.config.ts`: Configuración de la API para el frontend
+
+### Ejecución manual
+
+Para ejecutar la actualización de configuración manualmente:
 
 ```bash
-npm run check-aws dev
+node scripts/auto-update-api-config.js [dev|test|prod]
 ```
 
-### Desplegar Backend
+### Modo de desarrollo vs. Producción
 
-Para desplegar el backend a AWS:
+El sistema detecta automáticamente si debe usar:
 
-```bash
-# Entorno de desarrollo
-npm run backend:deploy:dev
+- **Proxies locales**: Cuando estás en desarrollo sin una API_URL específica
+- **Endpoints reales**: Cuando hay una API_URL o estás en producción
 
-# Entorno de pruebas
-npm run backend:deploy:test
+### Desactivar datos simulados
 
-# Entorno de producción
-npm run backend:deploy:prod
+Si has estado usando datos simulados durante el desarrollo, después de actualizar la configuración, debes desactivar el modo de datos simulados:
+
+```javascript
+// En la consola del navegador
+localStorage.removeItem('use_simulated_api');
 ```
 
-### Actualizar Configuración del Frontend
+O simplemente recarga la aplicación, que ahora usará los endpoints reales.
 
-Después de desplegar el backend, actualiza la configuración del frontend con las URLs generadas:
+## Desarrollo
+
+### Requisitos previos
+
+- Node.js (v18 o superior)
+- AWS CLI configurado con credenciales
+- Serverless Framework instalado globalmente (`npm install -g serverless`)
+
+### Instalación
+
+1. Clona el repositorio
+2. Instala las dependencias:
 
 ```bash
-npm run update-frontend:dev
+# Instalar dependencias del frontend
+cd frontend
+npm install
+
+# Instalar dependencias del backend
+cd ../backend
+npm install
 ```
 
-### Desplegar Frontend
-
-Para construir y desplegar el frontend:
+### Ejecución local
 
 ```bash
-npm run frontend:deploy:dev
+# Frontend
+cd frontend
+npm run dev
+
+# Backend
+cd backend
+npm run dev
 ```
 
-### Despliegue Completo
-
-Para realizar un despliegue completo (backend + frontend):
+### Despliegue
 
 ```bash
+# Desplegar en desarrollo
+cd backend
 npm run deploy:dev
+
+# Desplegar en test
+npm run deploy:test
+
+# Desplegar en producción
+npm run deploy:prod
 ```
 
-## Monitoreo y Logs
+## Solución de problemas
 
-Para ver los logs del backend:
+### Error al cargar datos de la API
 
-```bash
-# Ver logs de una función específica (reemplaza FUNCTION_NAME)
-npm run backend:logs:dev -- FUNCTION_NAME
+Si experimentas errores al cargar datos de la API:
 
-# Ejemplos
-npm run backend:logs:dev -- requestOtp
-npm run backend:logs:dev -- validateOtp
-npm run backend:logs:dev -- websocketConnect
-```
+1. Verifica que la configuración de la API sea correcta en `frontend/src/config/api.config.ts`
+2. Comprueba que los endpoints estén correctamente definidos en `frontend/src/config/endpoints.json`
+3. En desarrollo, puedes activar el modo simulado para trabajar sin depender de la API:
+   ```javascript
+   localStorage.setItem('use_simulated_api', 'true');
+   ```
 
-## Rollback
+### Error en el despliegue
 
-Si necesitas revertir un despliegue:
+Si hay errores durante el despliegue:
 
-```bash
-npm run rollback:dev
-```
-
-## Características Principales
-
-- **Autenticación OTP**: Sistema de autenticación sin contraseña mediante códigos de un solo uso enviados por email
-- **WebSockets**: Renovación automática de tokens JWT mediante conexiones WebSocket
-- **Gestión de Usuarios**: CRUD completo para perfiles de usuario
-- **Gestión de Emociones**: Registro y seguimiento de emociones
-
-## Arquitectura
-
-- **Frontend**: Next.js, React, TailwindCSS
-- **Backend**: Serverless Framework, AWS Lambda, API Gateway, DynamoDB
-- **Autenticación**: JWT, OTP vía SES
-- **Comunicación en tiempo real**: WebSockets mediante API Gateway
-
-## Licencia
-
-Este proyecto es privado y confidencial.
+1. Verifica tus credenciales de AWS
+2. Comprueba los logs de CloudFormation
+3. Ejecuta `serverless logs` para ver los logs de las funciones Lambda

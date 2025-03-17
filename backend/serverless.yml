@@ -1,6 +1,60 @@
-service: backend-serverless
+service: emotio-x-backend-v2
 
 frameworkVersion: '3'
+
+plugins:
+  - serverless-plugin-typescript
+  - serverless-offline
+  - serverless-dotenv-plugin
+  - serverless-export-outputs
+  - serverless-dynamodb-local
+  - serverless-esbuild
+
+custom:
+  exportOutputs:
+    include:
+      - HttpApiUrl
+      - WebSocketApiUrl
+    output:
+      file: ./outputs.json
+  serverless-offline:
+    httpPort: 4000
+    noPrependStageInUrl: true
+    useChildProcesses: true
+  dynamodb:
+    stages:
+      - dev
+      - local
+    start:
+      port: 8000
+      inMemory: true
+      migrate: true
+  esbuild:
+    bundle: true
+    minify: false
+    sourcemap: true
+    exclude: ['aws-sdk']
+    target: 'node18'
+    platform: 'node'
+    concurrency: 10
+    packager: 'npm'
+    external:
+      - 'aws-sdk'
+  welcomeScreenTableName: ${self:service}-welcome-screen-${self:provider.stage}
+
+package:
+  individually: true
+  patterns:
+    - '!node_modules/aws-sdk/**'
+    - '!node_modules/@aws-sdk/**'
+    - '!**/*.ts'
+    - '!.git/**'
+    - '!.vscode/**'
+    - '!.serverless/**'
+    - '!.build/**'
+    - '!.dist/**/*.ts'
+    - '.dist/**'
+    - 'package.json'
 
 provider:
   name: aws
@@ -8,9 +62,13 @@ provider:
   stage: ${opt:stage, 'dev'}
   region: us-east-1
   environment:
-    USERS_TABLE: ${self:service}-users-${self:provider.stage}
-    CONNECTIONS_TABLE: ${self:service}-connections-${self:provider.stage}
-    JWT_SECRET: ${env:JWT_SECRET, 'emotiox-dev-secret-key-2024'}
+    USERS_TABLE: ${self:service}-${self:provider.stage}-users
+    RESEARCH_TABLE: ${self:service}-${self:provider.stage}-research
+    FORMS_TABLE: ${self:service}-${self:provider.stage}-forms
+    FORM_RESPONSES_TABLE: ${self:service}-${self:provider.stage}-form-responses
+    CONNECTIONS_TABLE: ${self:service}-${self:provider.stage}-connections
+    JWT_SECRET: ${env:JWT_SECRET, 'dev_jwt_secret_key_for_testing_only'}
+    STAGE: ${self:provider.stage}
   httpApi:
     cors:
       allowedOrigins:
@@ -26,6 +84,9 @@ provider:
         - X-Amz-Security-Token
         - X-Amz-User-Agent
         - Accept
+        - Origin
+        - Referer
+        - User-Agent
       allowedMethods:
         - GET
         - POST
@@ -33,138 +94,287 @@ provider:
         - DELETE
         - OPTIONS
       allowCredentials: true
-      maxAge: 600 # 10 minutos
+      maxAge: 600
   websocketsApiRouteSelectionExpression: $request.body.action
-
   iam:
     role:
       statements:
         - Effect: Allow
           Action:
-            - dynamodb:Query
-            - dynamodb:Scan
-            - dynamodb:GetItem
             - dynamodb:PutItem
+            - dynamodb:GetItem
             - dynamodb:UpdateItem
             - dynamodb:DeleteItem
-            - execute-api:ManageConnections
-          Resource:
-            - "arn:aws:dynamodb:${aws:region}:*:table/${self:provider.environment.USERS_TABLE}"
-            - "arn:aws:dynamodb:${aws:region}:*:table/${self:provider.environment.USERS_TABLE}/index/*"
-            - "arn:aws:dynamodb:${aws:region}:*:table/${self:provider.environment.CONNECTIONS_TABLE}"
-            - "arn:aws:dynamodb:${aws:region}:*:table/${self:provider.environment.CONNECTIONS_TABLE}/index/*"
-            - "arn:aws:execute-api:${aws:region}:${aws:accountId}:*/*/@connections/*"
+            - dynamodb:Query
+            - dynamodb:Scan
+          Resource: 
+            - !GetAtt UsersTable.Arn
+            - !Join ['', [!GetAtt UsersTable.Arn, '/index/*']]
+            - !GetAtt ResearchTable.Arn
+            - !Join ['', [!GetAtt ResearchTable.Arn, '/index/*']]
+            - !GetAtt FormsTable.Arn
+            - !Join ['', [!GetAtt FormsTable.Arn, '/index/*']]
+            - !GetAtt FormResponsesTable.Arn
+            - !Join ['', [!GetAtt FormResponsesTable.Arn, '/index/*']]
+            - !GetAtt ConnectionsTable.Arn
+            - !Join ['', [!GetAtt ConnectionsTable.Arn, '/index/*']]
 
+# Definición de funciones por controlador
 functions:
-  # WebSocket handlers
-  websocketConnect:
-    handler: src/handlers/websocket.connect
+  # API Gateway - Controlador de Autenticación
+  auth-login:
+    handler: .dist/controllers/auth.controller.login
+    events:
+      - httpApi:
+          path: /api/auth/login
+          method: POST
+
+  auth-register:
+    handler: .dist/controllers/auth.controller.register
+    events:
+      - httpApi:
+          path: /api/auth/register
+          method: POST
+
+  auth-logout:
+    handler: .dist/controllers/auth.controller.logout
+    events:
+      - httpApi:
+          path: /api/auth/logout
+          method: POST
+
+  # API Gateway - Controlador de Usuarios
+  user-get:
+    handler: .dist/controllers/user.controller.getUser
+    events:
+      - httpApi:
+          path: /api/users/me
+          method: GET
+          authorizer: aws_iam
+
+  user-update:
+    handler: .dist/controllers/user.controller.updateUser
+    events:
+      - httpApi:
+          path: /api/users/me
+          method: PUT
+          authorizer: aws_iam
+
+  user-delete:
+    handler: .dist/controllers/user.controller.deleteUser
+    events:
+      - httpApi:
+          path: /api/users/me
+          method: DELETE
+          authorizer: aws_iam
+
+  # API Gateway - Controlador de Investigaciones
+  research-create:
+    handler: .dist/controllers/research.controller.createResearch
+    events:
+      - httpApi:
+          path: /api/research
+          method: POST
+          authorizer: aws_iam
+
+  research-get:
+    handler: .dist/controllers/research.controller.getResearch
+    events:
+      - httpApi:
+          path: /api/research/{id}
+          method: GET
+          authorizer: aws_iam
+
+  research-get-all:
+    handler: .dist/controllers/research.controller.getAllResearch
+    events:
+      - httpApi:
+          path: /api/research
+          method: GET
+          authorizer: aws_iam
+
+  research-update:
+    handler: .dist/controllers/research.controller.updateResearch
+    events:
+      - httpApi:
+          path: /api/research/{id}
+          method: PUT
+          authorizer: aws_iam
+
+  research-delete:
+    handler: .dist/controllers/research.controller.deleteResearch
+    events:
+      - httpApi:
+          path: /api/research/{id}
+          method: DELETE
+          authorizer: aws_iam
+
+  # API Gateway - Controlador de Formularios
+  form-create:
+    handler: .dist/controllers/form.controller.createForm
+    events:
+      - httpApi:
+          path: /api/forms
+          method: POST
+          authorizer: aws_iam
+
+  form-get:
+    handler: .dist/controllers/form.controller.getForm
+    events:
+      - httpApi:
+          path: /api/forms/{id}
+          method: GET
+          authorizer: aws_iam
+
+  form-get-all:
+    handler: .dist/controllers/form.controller.getAllForms
+    events:
+      - httpApi:
+          path: /api/forms
+          method: GET
+          authorizer: aws_iam
+
+  form-update:
+    handler: .dist/controllers/form.controller.updateForm
+    events:
+      - httpApi:
+          path: /api/forms/{id}
+          method: PUT
+          authorizer: aws_iam
+
+  form-delete:
+    handler: .dist/controllers/form.controller.deleteForm
+    events:
+      - httpApi:
+          path: /api/forms/{id}
+          method: DELETE
+          authorizer: aws_iam
+
+  forms-publish:
+    handler: src/controllers/forms.controller.publish
+    events:
+      - httpApi:
+          path: /api/forms/{id}/publish
+          method: POST
+
+  forms-unpublish:
+    handler: src/controllers/forms.controller.unpublish
+    events:
+      - httpApi:
+          path: /api/forms/{id}/unpublish
+          method: POST
+
+  forms-get-public:
+    handler: src/controllers/forms.controller.getPublic
+    events:
+      - httpApi:
+          path: /api/public/forms/{id}
+          method: GET
+
+  forms-submit-responses:
+    handler: src/controllers/forms.controller.submitResponses
+    events:
+      - httpApi:
+          path: /api/public/forms/{id}/responses
+          method: POST
+
+  forms-get-responses:
+    handler: src/controllers/forms.controller.getResponses
+    events:
+      - httpApi:
+          path: /api/forms/{id}/responses
+          method: GET
+
+  # API Gateway - WebSocket
+  websocket-connect:
+    handler: .dist/controllers/websocket.controller.connect
     events:
       - websocket:
           route: $connect
-          authorizer:
-            name: websocketAuthorizer
-            identitySource:
-              - 'route.request.querystring.token'
 
-  websocketDisconnect:
-    handler: src/handlers/websocket.disconnect
+  websocket-disconnect:
+    handler: .dist/controllers/websocket.controller.disconnect
     events:
       - websocket:
           route: $disconnect
 
-  websocketDefault:
-    handler: src/handlers/websocket.handleDefault
+  websocket-default:
+    handler: .dist/controllers/websocket.controller.defaultHandler
     events:
       - websocket:
           route: $default
 
-  websocketAuthorizer:
-    handler: src/handlers/websocket.authorize
+  websocket-authorizer:
+    handler: src/controllers/websocket.controller.authorize
+    events:
+      - websocket:
+          route: $connect
+          authorizer:
+            name: websocket-authorizer
+            identitySource:
+              - 'route.request.querystring.token'
 
-  # Funciones de autenticación
-  login:
-    handler: src/handlers/auth.login
+  # API Gateway - Welcome Screen
+  welcome-screen-get:
+    handler: .dist/controllers/welcome-screen.controller.getWelcomeScreen
     events:
       - httpApi:
-          path: /auth/login
-          method: POST
-
-  register:
-    handler: src/handlers/auth.register
-    events:
-      - httpApi:
-          path: /auth/register
-          method: POST
-
-  logout:
-    handler: src/handlers/auth.logout
-    events:
-      - httpApi:
-          path: /auth/logout
-          method: POST
-
-  # Funciones de gestión de usuarios
-  getUser:
-    handler: src/handlers/user.getUser
-    events:
-      - httpApi:
-          path: /users/me
+          path: /api/welcome-screen
           method: GET
+          authorizer: aws_iam
 
-  updateUser:
-    handler: src/handlers/user.updateUser
+  welcome-screen-update:
+    handler: .dist/controllers/welcome-screen.controller.updateWelcomeScreen
     events:
       - httpApi:
-          path: /users/me
+          path: /api/welcome-screen
           method: PUT
+          authorizer: aws_iam
 
-  deleteUser:
-    handler: src/handlers/user.deleteUser
-    events:
-      - httpApi:
-          path: /users/me
-          method: DELETE
-
-  # Función para manejar las opciones CORS
-  optionsHandler:
-    handler: src/handlers/cors.handler
+  # API Gateway - CORS
+  options-handler:
+    handler: .dist/controllers/cors.controller.optionsHandler
     events:
       - httpApi:
           path: /{proxy+}
           method: OPTIONS
 
-resources:
-  Outputs:
-    ApiUrl:
-      Description: "API Gateway endpoint URL"
-      Value: !Join ['', ['https://', !Ref HttpApi, '.execute-api.', !Ref 'AWS::Region', '.amazonaws.com']]
-    WebSocketEndpoint:
-      Description: "WebSocket endpoint URL"
-      Value: !Join 
-        - ''
-        - - 'wss://'
-          - !Ref WebsocketsApi
-          - '.execute-api.'
-          - !Ref 'AWS::Region'
-          - '.amazonaws.com/'
-          - ${self:provider.stage}
-    Endpoints:
-      Description: "API Endpoints"
-      Value: !Join 
-        - ''
-        - - '{"login":{"POST":"/auth/login"},'
-          - '"register":{"POST":"/auth/register"},'
-          - '"logout":{"POST":"/auth/logout"},'
-          - '"getUser":{"GET":"/users/me"},'
-          - '"updateUser":{"PUT":"/users/me"},'
-          - '"deleteUser":{"DELETE":"/users/me"}}'
+  cors-api-research:
+    handler: src/controllers/cors.controller.handler
+    events:
+      - httpApi:
+          path: /api/research
+          method: OPTIONS
 
+  cors-api-research-id:
+    handler: src/controllers/cors.controller.handler
+    events:
+      - httpApi:
+          path: /api/research/{id}
+          method: OPTIONS
+
+  cors-api-forms:
+    handler: src/controllers/cors.controller.handler
+    events:
+      - httpApi:
+          path: /api/forms
+          method: OPTIONS
+
+  cors-api-forms-id:
+    handler: src/controllers/cors.controller.handler
+    events:
+      - httpApi:
+          path: /api/forms/{id}
+          method: OPTIONS
+
+resources:
   Resources:
+    # Tabla de Usuarios
     UsersTable:
       Type: AWS::DynamoDB::Table
       Properties:
         TableName: ${self:provider.environment.USERS_TABLE}
+        BillingMode: PAY_PER_REQUEST
         AttributeDefinitions:
           - AttributeName: id
             AttributeType: S
@@ -180,17 +390,87 @@ resources:
                 KeyType: HASH
             Projection:
               ProjectionType: ALL
-            ProvisionedThroughput:
-              ReadCapacityUnits: 1
-              WriteCapacityUnits: 1
-        ProvisionedThroughput:
-          ReadCapacityUnits: 1
-          WriteCapacityUnits: 1
 
+    # Tabla de Investigaciones
+    ResearchTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.RESEARCH_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: userId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: UserIdIndex
+            KeySchema:
+              - AttributeName: userId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+
+    # Tabla de Formularios
+    FormsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.FORMS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: researchId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: ResearchIdIndex
+            KeySchema:
+              - AttributeName: researchId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+
+    # Tabla de Respuestas de Formularios
+    FormResponsesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.FORM_RESPONSES_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: formId
+            AttributeType: S
+          - AttributeName: researchId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: FormIdIndex
+            KeySchema:
+              - AttributeName: formId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+          - IndexName: ResearchIdIndex
+            KeySchema:
+              - AttributeName: researchId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+
+    # Tabla de Conexiones WebSocket
     ConnectionsTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: ${self:service}-connections-${self:provider.stage}
+        TableName: ${self:provider.environment.CONNECTIONS_TABLE}
+        BillingMode: PAY_PER_REQUEST
         AttributeDefinitions:
           - AttributeName: connectionId
             AttributeType: S
@@ -206,37 +486,47 @@ resources:
                 KeyType: HASH
             Projection:
               ProjectionType: ALL
-            ProvisionedThroughput:
-              ReadCapacityUnits: 1
-              WriteCapacityUnits: 1
-        ProvisionedThroughput:
-          ReadCapacityUnits: 1
-          WriteCapacityUnits: 1
 
-plugins:
-  - serverless-esbuild
-  - serverless-offline
-  - serverless-dotenv-plugin
-  - serverless-export-outputs
+    WelcomeScreenTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.welcomeScreenTableName}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: researchId
+            AttributeType: S
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: researchId
+            KeyType: HASH
+          - AttributeName: id
+            KeyType: RANGE
+        StreamSpecification:
+          StreamViewType: NEW_AND_OLD_IMAGES
+        Tags:
+          - Key: Project
+            Value: EmotioX 
 
-custom:
-  esbuild:
-    bundle: true
-    minify: false
-    sourcemap: true
-    exclude:
-      - aws-sdk
-    target: node18
-    platform: node
-    format: cjs
-    watch:
-      pattern: ['src/**/*.ts']
-      ignore: ['.build/**/*', 'node_modules/**/*']
-  exportOutputs:
-    fileName: '../frontend/src/config/outputs.json'
-    format: json
-    indent: 2
-  serverless-offline:
-    httpPort: 4000
-    noPrependStageInUrl: true
-    useChildProcesses: true 
+  Outputs:
+    HttpApiUrl:
+      Description: URL of the HTTP API
+      Value: 
+        Fn::Join:
+          - ''
+          - - https://
+            - Ref: HttpApi
+            - '.execute-api.'
+            - Ref: AWS::Region
+            - '.amazonaws.com'
+    WebSocketApiUrl:
+      Description: URL of the WebSocket API
+      Value:
+        Fn::Join:
+          - ''
+          - - wss://
+            - Ref: WebsocketsApi
+            - '.execute-api.'
+            - Ref: AWS::Region
+            - '.amazonaws.com/'
+            - ${self:provider.stage} 

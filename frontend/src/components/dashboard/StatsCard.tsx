@@ -11,7 +11,7 @@ interface StatsCardProps {
 
 function StatsCardContent({ title, value, icon }: StatsCardProps) {
   return (
-    <div className="bg-white rounded-lg shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] p-6">
+    <div className="bg-white rounded-lg shadow-lg p-6">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-neutral-600">{title}</p>

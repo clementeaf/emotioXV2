@@ -65,9 +65,6 @@ export async function POST(request: Request) {
   }
 }
 
-// Configurar CORS para esta ruta
-export const config = {
-  api: {
-    bodyParser: true,
-  },
-}; 
+// Remove the old config export and replace with the new route segment config
+export const runtime = 'edge';
+export const dynamic = 'force-dynamic'; 

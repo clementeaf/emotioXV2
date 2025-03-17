@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { apiEndpoints } from '@/config/api.config';
+import API_CONFIG from '@/config/api.config';
 import { useAuth } from './useAuth';
 
 interface ApiResponse<T> {
@@ -96,26 +96,28 @@ export function useApi<T = any>(defaultOptions: UseApiOptions = {}) {
   const api = {
     // Autenticación
     auth: {
-      requestOTP: (data: { email: string }) => post(apiEndpoints.auth.requestOTP, data),
-      validateOTP: (data: { email: string; code: string }) => post(apiEndpoints.auth.validateOTP, data),
-      logout: () => del(apiEndpoints.auth.logout),
+      requestOTP: (data: { email: string }) => post(API_CONFIG.endpoints.requestOTP.POST as string, data),
+      validateOTP: (data: { email: string; code: string }) => post(API_CONFIG.endpoints.validateOTP.POST as string, data),
+      logout: () => del(API_CONFIG.endpoints.logout.POST as string),
     },
 
     // Usuario
     user: {
-      create: (data: any) => post(apiEndpoints.user.create, data),
-      get: () => get(apiEndpoints.user.get),
-      update: (data: any) => put(apiEndpoints.user.update, data),
-      delete: () => del(apiEndpoints.user.delete),
+      create: (data: any) => post(API_CONFIG.endpoints.createUser.POST as string, data),
+      get: () => get(API_CONFIG.endpoints.getUser.GET as string),
+      update: (data: any) => put(API_CONFIG.endpoints.updateUser.PUT as string, data),
+      delete: () => del(API_CONFIG.endpoints.deleteUser.DELETE as string),
     },
 
-    // Emociones
-    emotions: {
-      getAll: () => get(apiEndpoints.emotions.getAll),
-      getById: (id: string) => get(apiEndpoints.emotions.getById(id)),
-      create: (data: any) => post(apiEndpoints.emotions.create, data),
-      update: (id: string, data: any) => put(apiEndpoints.emotions.update(id), data),
-      delete: (id: string) => del(apiEndpoints.emotions.delete(id)),
+    // Investigaciones
+    research: {
+      create: (data: any) => post(API_CONFIG.endpoints.research.CREATE as string, data),
+      getById: (id: string) => get((API_CONFIG.endpoints.research.GET as string).replace('{id}', id)),
+      getAll: () => get(API_CONFIG.endpoints.research.LIST as string),
+      update: (id: string, data: any) => put((API_CONFIG.endpoints.research.UPDATE as string).replace('{id}', id), data),
+      delete: (id: string) => del((API_CONFIG.endpoints.research.DELETE as string).replace('{id}', id)),
+      updateStatus: (id: string, status: string) => put((API_CONFIG.endpoints.research.UPDATE_STATUS as string).replace('{id}', id), { status }),
+      updateStage: (id: string, stage: string) => put((API_CONFIG.endpoints.research.UPDATE_STAGE as string).replace('{id}', id), { stage }),
     },
 
     // Archivos
@@ -123,11 +125,12 @@ export function useApi<T = any>(defaultOptions: UseApiOptions = {}) {
       upload: (file: File) => {
         const formData = new FormData();
         formData.append('file', file);
-        return post(apiEndpoints.files.upload, formData, {
+        // Implementar cuando tengamos un endpoint para subir archivos
+        return post('/api/files/upload', formData, {
           headers: {}, // Permitir que el navegador establezca el Content-Type correcto
         });
       },
-      getUrl: (key: string) => get(apiEndpoints.files.getUrl(key)),
+      getUrl: (key: string) => get(`/api/files/${key}`),
     },
   };
 

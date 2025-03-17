@@ -2,9 +2,11 @@
 
 import { Inter } from 'next/font/google';
 import './globals.css';
-import { QueryProvider } from '@/providers/QueryProvider';
 import { AuthProvider } from '@/providers/AuthProvider';
-import { WebSocketProvider } from '@/providers/WebSocketProvider';
+import { QueryProvider } from '@/providers/QueryProvider';
+import { ResearchProvider } from '@/providers/ResearchProvider';
+import { Toaster } from 'react-hot-toast';
+import { DevModeInfo } from '@/components/common/DevModeInfo';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -16,13 +18,15 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className={inter.className}>
-        <AuthProvider>
-          <WebSocketProvider>
-            <QueryProvider>
+        <QueryProvider>
+          <AuthProvider>
+            <ResearchProvider>
               {children}
-            </QueryProvider>
-          </WebSocketProvider>
-        </AuthProvider>
+              <Toaster position="top-right" />
+              <DevModeInfo variant="floating" />
+            </ResearchProvider>
+          </AuthProvider>
+        </QueryProvider>
       </body>
     </html>
   );

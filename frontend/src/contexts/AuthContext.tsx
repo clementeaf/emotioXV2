@@ -31,7 +31,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Cargar token al iniciar
   useEffect(() => {
-    const storedToken = localStorage.getItem('auth_token');
+    const storedToken = localStorage.getItem('token');
     if (storedToken) {
       try {
         // Verificar si el token es válido
@@ -39,14 +39,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const expiryTime = (decoded as any).exp * 1000;
         
         if (expiryTime > Date.now()) {
+          console.log('Token válido encontrado, inicializando sesión');
           setToken(storedToken);
           setUser(decoded);
         } else {
-          localStorage.removeItem('auth_token');
+          console.log('Token expirado, removiendo...');
+          localStorage.removeItem('token');
         }
       } catch (error) {
         console.error('Error al decodificar el token:', error);
-        localStorage.removeItem('auth_token');
+        localStorage.removeItem('token');
       }
     }
   }, []);
@@ -76,21 +78,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const handleLogin = (newToken: string) => {
     try {
+      console.log('Iniciando proceso de login...');
       const decoded = jwtDecode<User>(newToken);
-      localStorage.setItem('auth_token', newToken);
+      localStorage.setItem('token', newToken);
       setToken(newToken);
       setUser(decoded);
+      console.log('Login exitoso, token almacenado');
+      
+      // Forzar la redirección al dashboard usando replace y asegurando que la navegación sea inmediata
+      console.log('Redirigiendo al dashboard...');
+      router.replace('/dashboard');
+      router.refresh(); // Forzar la actualización de la navegación
     } catch (error) {
       console.error('Error al iniciar sesión:', error);
+      throw error;
     }
   };
 
   const handleLogout = async () => {
     try {
+      console.log('Iniciando proceso de logout...');
       // Intentar hacer logout en el backend
-      const logoutUrl = process.env.NEXT_PUBLIC_API_URL 
-        ? `${process.env.NEXT_PUBLIC_API_URL}/auth/logout` 
-        : '/api/auth/logout';
+      const logoutUrl = 'https://fww0ghfvga.execute-api.us-east-1.amazonaws.com/auth/logout';
       
       if (token) {
         await fetch(logoutUrl, {
@@ -104,17 +113,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (error) {
       console.error('Error al hacer logout en el servidor:', error);
     } finally {
-      localStorage.removeItem('auth_token');
+      localStorage.removeItem('token');
       setToken(null);
       setUser(null);
-      router.push('/login');
+      console.log('Logout completado, redirigiendo a login');
+      router.replace('/login');
+      router.refresh(); // Forzar la actualización de la navegación
     }
   };
 
   const handleUpdateToken = (newToken: string) => {
     try {
       const decoded = jwtDecode<User>(newToken);
-      localStorage.setItem('auth_token', newToken);
+      localStorage.setItem('token', newToken);
       setToken(newToken);
       setUser(decoded);
       

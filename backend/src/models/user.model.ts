@@ -1,4 +1,5 @@
 import { DynamoDB } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocument } from '@aws-sdk/lib-dynamodb';
 import * as bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -7,42 +8,22 @@ export interface User {
   name: string;
   email: string;
   password?: string;
+  createdAt: number;
+  updatedAt: number;
 }
 
 export class UserModel {
   private readonly tableName: string;
-  private readonly dynamoDB: DynamoDB;
+  private readonly docClient: DynamoDBDocument;
 
   constructor() {
     this.tableName = process.env.USERS_TABLE || '';
     
-    const config = {
+    const client = new DynamoDB({
       region: process.env.AWS_REGION || 'us-east-1',
-    };
+    });
     
-    this.dynamoDB = new DynamoDB(config);
-  }
-
-  // Convert DynamoDB item to User
-  private fromDynamoDB(item: Record<string, any>): User {
-    return {
-      id: item.id.S!,
-      name: item.name.S!,
-      email: item.email.S!,
-      password: item.password?.S
-    };
-  }
-
-  // Convert User to DynamoDB item
-  private toDynamoDB(user: Partial<User>): Record<string, any> {
-    const item: Record<string, any> = {};
-
-    if (user.id) item.id = { S: user.id };
-    if (user.name) item.name = { S: user.name };
-    if (user.email) item.email = { S: user.email };
-    if (user.password) item.password = { S: user.password };
-
-    return item;
+    this.docClient = DynamoDBDocument.from(client);
   }
 
   // Hash password con bcrypt
@@ -57,6 +38,13 @@ export class UserModel {
   }
 
   async create(name: string, email: string, password: string): Promise<User> {
+    // Primero verificar si existe un usuario con ese email
+    const existingUser = await this.findByEmail(email);
+    if (existingUser) {
+      throw new Error('User already exists');
+    }
+
+    const now = Date.now();
     const id = uuidv4();
     const hashedPassword = await this.hashPassword(password);
 
@@ -64,30 +52,41 @@ export class UserModel {
       id,
       name,
       email,
-      password: hashedPassword
+      password: hashedPassword,
+      createdAt: now,
+      updatedAt: now
     };
 
-    // Primero verificar si existe un usuario con ese email
-    const existingUser = await this.findByEmail(email);
-    if (existingUser) {
-      throw new Error('User already exists');
-    }
-
-    await this.dynamoDB.putItem({
+    await this.docClient.put({
       TableName: this.tableName,
-      Item: this.toDynamoDB(user)
+      Item: user
     });
 
-    return user;
+    // No devolver la contraseña
+    const { password: _, ...userWithoutPassword } = user;
+    return userWithoutPassword as User;
+  }
+
+  async findById(id: string): Promise<User | null> {
+    const result = await this.docClient.get({
+      TableName: this.tableName,
+      Key: { id }
+    });
+
+    if (!result.Item) {
+      return null;
+    }
+
+    return result.Item as User;
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    const result = await this.dynamoDB.query({
+    const result = await this.docClient.query({
       TableName: this.tableName,
       IndexName: 'EmailIndex',
       KeyConditionExpression: 'email = :email',
       ExpressionAttributeValues: {
-        ':email': { S: email }
+        ':email': email
       }
     });
 
@@ -95,27 +94,49 @@ export class UserModel {
       return null;
     }
 
-    return this.fromDynamoDB(result.Items[0]);
+    return result.Items[0] as User;
   }
 
-  async update(email: string, name: string): Promise<User> {
-    const user = await this.findByEmail(email);
+  async update(id: string, data: Partial<User>): Promise<User> {
+    const user = await this.findById(id);
     if (!user) {
       throw new Error('User not found');
     }
 
-    const result = await this.dynamoDB.updateItem({
+    // Construir expresiones de actualización dinámicamente
+    const updateExpressions: string[] = [];
+    const expressionAttributeNames: Record<string, string> = {};
+    const expressionAttributeValues: Record<string, any> = {};
+
+    // Actualizar solo los campos proporcionados
+    Object.entries(data).forEach(([key, value]) => {
+      if (key !== 'id' && key !== 'email' && key !== 'password' && key !== 'createdAt') {
+        updateExpressions.push(`#${key} = :${key}`);
+        expressionAttributeNames[`#${key}`] = key;
+        expressionAttributeValues[`:${key}`] = value;
+      }
+    });
+
+    // Siempre actualizar updatedAt
+    updateExpressions.push('#updatedAt = :updatedAt');
+    expressionAttributeNames['#updatedAt'] = 'updatedAt';
+    expressionAttributeValues[':updatedAt'] = Date.now();
+
+    // Si hay una nueva contraseña, hashearla
+    if (data.password) {
+      updateExpressions.push('#password = :password');
+      expressionAttributeNames['#password'] = 'password';
+      expressionAttributeValues[':password'] = await this.hashPassword(data.password);
+    }
+
+    const updateExpression = `SET ${updateExpressions.join(', ')}`;
+
+    const result = await this.docClient.update({
       TableName: this.tableName,
-      Key: {
-        id: { S: user.id }
-      },
-      UpdateExpression: 'SET #name = :name',
-      ExpressionAttributeNames: {
-        '#name': 'name'
-      },
-      ExpressionAttributeValues: {
-        ':name': { S: name }
-      },
+      Key: { id },
+      UpdateExpression: updateExpression,
+      ExpressionAttributeNames: expressionAttributeNames,
+      ExpressionAttributeValues: expressionAttributeValues,
       ReturnValues: 'ALL_NEW'
     });
 
@@ -123,22 +144,18 @@ export class UserModel {
       throw new Error('Failed to update user');
     }
 
-    return this.fromDynamoDB(result.Attributes);
+    // No devolver la contraseña
+    const { password: _, ...userWithoutPassword } = result.Attributes as User;
+    return userWithoutPassword as User;
   }
 
-  async delete(email: string): Promise<void> {
-    const user = await this.findByEmail(email);
-    if (!user) {
-      throw new Error('User not found');
-    }
-
-    await this.dynamoDB.deleteItem({
+  async delete(id: string): Promise<void> {
+    await this.docClient.delete({
       TableName: this.tableName,
-      Key: {
-        id: { S: user.id }
-      }
+      Key: { id }
     });
   }
 }
 
+// Singleton para reutilizar en toda la aplicación
 export const userModel = new UserModel(); 

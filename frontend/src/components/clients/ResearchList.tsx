@@ -1,23 +1,10 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-
-interface Research {
-  id: string;
-  name: string;
-  status: 'pending' | 'in_progress' | 'completed';
-  progress: number;
-  date: string;
-  researcher: string;
-}
-
-interface ResearchListProps {
-  className?: string;
-  data?: Research[];
-}
+import { ClientResearch, ResearchListProps } from '@/interfaces/research';
 
 export function ResearchList({ className, data = [] }: ResearchListProps) {
-  const getStatusBadgeClass = (status: Research['status']) => {
+  const getStatusBadgeClass = (status: ClientResearch['status']) => {
     const baseClasses = "inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset";
     switch (status) {
       case 'pending':

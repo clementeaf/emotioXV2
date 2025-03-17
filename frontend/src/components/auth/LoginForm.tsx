@@ -1,80 +1,244 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { useAuth } from '@/providers/AuthProvider';
-import { authAPI } from '@/lib/api';
 
 interface LoginFormState {
   email: string;
   password: string;
-  error?: string;
-  success?: boolean;
+  rememberMe: boolean;
+}
+
+interface ValidationState {
+  email: {
+    isValid: boolean;
+    message: string | null;
+  };
+  password: {
+    isValid: boolean;
+    message: string | null;
+  };
 }
 
 interface LoginFormProps {
   className?: string;
 }
 
+type LoginStatus = 'idle' | 'validating' | 'connecting' | 'authenticating' | 'success' | 'error';
+
 export function LoginForm({ className }: LoginFormProps) {
   const router = useRouter();
-  const { updateToken } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
+  const { login, isLoading: authLoading, error: authError, clearError, isAuthenticated } = useAuth();
+  const [formError, setFormError] = useState<string | null>(null);
+  const [status, setStatus] = useState<LoginStatus>('idle');
   const [state, setState] = useState<LoginFormState>({
     email: '',
     password: '',
-    error: undefined,
-    success: false
+    rememberMe: false
   });
+  const [validation, setValidation] = useState<ValidationState>({
+    email: { isValid: true, message: null },
+    password: { isValid: true, message: null }
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [isDevMode, setIsDevMode] = useState(false);
+
+  // Verificar si estamos en modo desarrollo (localhost)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      setIsDevMode(hostname === 'localhost' || hostname === '127.0.0.1');
+    }
+  }, []);
+
+  // Redirigir si ya está autenticado
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace('/dashboard');
+    }
+  }, [isAuthenticated, router]);
+
+  // Limpiar errores al montar el componente
+  useEffect(() => {
+    clearError();
+    setFormError(null);
+  }, [clearError]);
+
+  // Validar email en tiempo real
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email) {
+      return { isValid: false, message: 'El correo electrónico es obligatorio' };
+    }
+    if (!emailRegex.test(email)) {
+      return { isValid: false, message: 'Ingresa un correo electrónico válido' };
+    }
+    return { isValid: true, message: null };
+  };
+
+  // Validar contraseña en tiempo real
+  const validatePassword = (password: string) => {
+    if (!password) {
+      return { isValid: false, message: 'La contraseña es obligatoria' };
+    }
+    if (password.length < 6) {
+      return { isValid: false, message: 'La contraseña debe tener al menos 6 caracteres' };
+    }
+    return { isValid: true, message: null };
+  };
+
+  const getStatusMessage = (status: LoginStatus) => {
+    switch (status) {
+      case 'validating':
+        return 'Validando datos...';
+      case 'connecting':
+        return 'Conectando con el servidor...';
+      case 'authenticating':
+        return 'Autenticando...';
+      case 'success':
+        return '¡Inicio de sesión exitoso! Redirigiendo...';
+      default:
+        return null;
+    }
+  };
+
+  const handleInputChange = (field: keyof LoginFormState, value: string | boolean) => {
+    setState(prev => ({ ...prev, [field]: value }));
+    
+    if (status === 'error') {
+      setStatus('idle');
+      setFormError(null);
+      clearError();
+    }
+
+    // Validar en tiempo real
+    if (field === 'email') {
+      setValidation(prev => ({
+        ...prev,
+        email: validateEmail(value as string)
+      }));
+    } else if (field === 'password') {
+      setValidation(prev => ({
+        ...prev,
+        password: validatePassword(value as string)
+      }));
+    }
+  };
+
+  // Función para usar el usuario de prueba
+  const handleUseTestUser = () => {
+    setState({
+      email: 'test@example.com',
+      password: 'password', // Contraseña de prueba
+      rememberMe: true
+    });
+    
+    setValidation({
+      email: { isValid: true, message: null },
+      password: { isValid: true, message: null }
+    });
+  };
+
+  const handleDevModeLogin = async () => {
+    // Solo permitir en entorno de desarrollo local
+    if (typeof window !== 'undefined' && 
+        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+      try {
+        setStatus('authenticating');
+        
+        // Obtener token de desarrollo del endpoint de debug
+        const response = await fetch('/api/debug/get-dev-token');
+        const data = await response.json();
+        
+        if (data.success && data.token) {
+          console.log('Token de desarrollo obtenido correctamente');
+          
+          // Iniciar sesión con el token de desarrollo
+          await login(data.token);
+          setStatus('success');
+          
+          // Redirigir al dashboard
+          router.push('/dashboard');
+        } else {
+          console.error('Error al obtener token de desarrollo:', data.message);
+          setFormError('Error al obtener token de desarrollo');
+          setStatus('error');
+        }
+      } catch (error) {
+        console.error('Error en inicio de sesión automático:', error);
+        setFormError('Error en inicio de sesión automático');
+        setStatus('error');
+      }
+    } else {
+      console.error('El inicio de sesión automático solo está disponible en desarrollo local');
+      setFormError('El inicio de sesión automático solo está disponible en desarrollo local');
+    }
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setState(prev => ({ ...prev, error: undefined, success: false }));
+    setFormError(null);
+    clearError();
+    setStatus('validating');
 
-    // Validar que los campos no estén vacíos
-    if (!state.email.trim()) {
-      setState(prev => ({ ...prev, error: 'El correo electrónico es obligatorio' }));
+    // Validar todos los campos antes de enviar
+    const emailValidation = validateEmail(state.email);
+    const passwordValidation = validatePassword(state.password);
+
+    setValidation({
+      email: emailValidation,
+      password: passwordValidation
+    });
+
+    if (!emailValidation.isValid || !passwordValidation.isValid) {
+      setStatus('error');
+      setFormError('Por favor, corrige los errores antes de continuar');
       return;
     }
-
-    if (!state.password.trim()) {
-      setState(prev => ({ ...prev, error: 'La contraseña es obligatoria' }));
-      return;
-    }
-
-    setIsLoading(true);
 
     try {
-      const response = await authAPI.login({
-        email: state.email,
-        password: state.password
+      setStatus('connecting');
+      console.log('Intentando login con:', { email: state.email });
+      
+      setStatus('authenticating');
+      const response = await fetch('https://fww0ghfvga.execute-api.us-east-1.amazonaws.com/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          email: state.email,
+          password: state.password,
+          rememberMe: state.rememberMe
+        })
       });
 
-      if (response.data.token) {
-        // Actualizar el token en el AuthProvider
-        updateToken(response.data.token);
-        setState(prev => ({ ...prev, success: true }));
-        
-        // Redirigir al dashboard después de mostrar el mensaje de éxito
-        setTimeout(() => {
-          router.push('/dashboard');
-        }, 2000);
+      const data = await response.json();
+      console.log('Respuesta del servidor:', data);
+
+      if (response.ok && data.token) {
+        setStatus('success');
+        await login(data.token);
       } else {
-        setState(prev => ({ ...prev, error: 'Error al iniciar sesión' }));
+        setStatus('error');
+        setFormError(data.message || 'Error al iniciar sesión: Credenciales inválidas');
       }
     } catch (error: any) {
-      setState(prev => ({ 
-        ...prev, 
-        error: error.response?.data?.message || 'Error al iniciar sesión'
-      }));
-    } finally {
-      setIsLoading(false);
+      console.error('Error durante el login:', error);
+      setStatus('error');
+      setFormError('Error al conectar con el servidor. Por favor, intenta nuevamente.');
     }
   };
+
+  const isLoading = status === 'validating' || status === 'connecting' || status === 'authenticating' || authLoading;
+  const error = formError || authError;
+  const statusMessage = getStatusMessage(status);
 
   return (
     <div className={cn("max-w-xl mx-auto", className)}>
@@ -89,48 +253,190 @@ export function LoginForm({ className }: LoginFormProps) {
             </p>
           </header>
 
-          {state.success ? (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-              <p className="text-green-700 text-center">
-                ¡Inicio de sesión exitoso! Redirigiendo al dashboard...
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 animate-fade-in">
+              <p className="text-red-700 text-center text-sm">
+                {error}
               </p>
             </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-5">
-                <div className="space-y-2">
-                  <Input
-                    type="email"
-                    label="Correo electrónico"
-                    value={state.email}
-                    onChange={e => setState(prev => ({ ...prev, email: e.target.value }))}
-                    placeholder="tu@email.com"
-                    required
-                    error={!!state.error}
-                  />
+          )}
+
+          {statusMessage && !error && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 animate-fade-in">
+              <div className="flex items-center justify-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                <p className="text-blue-700 text-center text-sm">
+                  {statusMessage}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {status === 'success' && !error && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 animate-fade-in">
+              <div className="flex items-center justify-center gap-2">
+                <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <p className="text-green-700 text-center text-sm">
+                  ¡Inicio de sesión exitoso! Redirigiendo...
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Modo desarrollo - Acceso rápido */}
+          {isDevMode && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+              <div className="flex flex-col items-center">
+                <p className="text-amber-700 text-center text-sm mb-2">
+                  <span className="font-semibold">Modo Desarrollo</span> - Acceso rápido con usuario de prueba
+                </p>
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleUseTestUser}
+                    className="border-amber-300 text-amber-700 hover:bg-amber-100"
+                  >
+                    <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    Usar usuario de prueba
+                  </Button>
+                  <Button 
+                    variant="default" 
+                    size="sm"
+                    onClick={handleDevModeLogin}
+                    className="bg-amber-600 hover:bg-amber-700 text-white"
+                  >
+                    <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                    </svg>
+                    Login automático
+                  </Button>
                 </div>
-                <div className="space-y-2">
+                <p className="text-amber-600 text-xs mt-2">
+                  Email: test@example.com | Contraseña: password
+                </p>
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-5">
+              <div className="space-y-2">
+                <Input
+                  type="email"
+                  label="Correo electrónico"
+                  value={state.email}
+                  onChange={e => handleInputChange('email', e.target.value)}
+                  placeholder="tu@email.com"
+                  required
+                  error={!validation.email.isValid}
+                  disabled={isLoading}
+                  autoComplete="username email"
+                  helperText={validation.email.message || undefined}
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="relative">
                   <Input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     label="Contraseña"
                     value={state.password}
-                    onChange={e => setState(prev => ({ ...prev, password: e.target.value }))}
+                    onChange={e => handleInputChange('password', e.target.value)}
                     placeholder="••••••••"
                     required
-                    error={!!state.error}
-                    helperText={state.error}
+                    error={!validation.password.isValid}
+                    disabled={isLoading}
+                    autoComplete="current-password"
+                    helperText={validation.password.message || undefined}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className={cn(
+                      "absolute right-3 top-9 text-neutral-500 hover:text-neutral-700",
+                      isLoading && "pointer-events-none opacity-50"
+                    )}
+                  >
+                    {showPassword ? (
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                      </svg>
+                    )}
+                  </button>
                 </div>
               </div>
-              <Button
-                type="submit"
-                fullWidth
-                loading={isLoading}
+            </div>
+
+            <div className="flex items-center justify-between">
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 text-blue-600 border-neutral-300 rounded focus:ring-blue-500"
+                  disabled={isLoading}
+                  checked={state.rememberMe}
+                  onChange={e => handleInputChange('rememberMe', e.target.checked)}
+                />
+                <span className="ml-2 text-sm text-neutral-600">Recordarme</span>
+              </label>
+
+              <Link
+                href="/forgot-password"
+                className={cn(
+                  "text-sm text-blue-600 hover:text-blue-700",
+                  isLoading && "pointer-events-none opacity-50"
+                )}
               >
-                {isLoading ? 'Iniciando sesión...' : 'Iniciar sesión'}
-              </Button>
-            </form>
-          )}
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </div>
+
+            <Button
+              type="submit"
+              fullWidth
+              loading={isLoading}
+              disabled={isLoading || !validation.email.isValid || !validation.password.isValid}
+              className="relative"
+            >
+              <span className={cn(
+                "transition-opacity duration-200",
+                isLoading ? "opacity-0" : "opacity-100"
+              )}>
+                Iniciar sesión
+              </span>
+              {isLoading && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    <span className="text-sm">{statusMessage || 'Cargando...'}</span>
+                  </div>
+                </div>
+              )}
+            </Button>
+
+            <div className="text-center">
+              <p className="text-sm text-neutral-600">
+                ¿No tienes una cuenta?{' '}
+                <Link 
+                  href="/register" 
+                  className={cn(
+                    "text-blue-600 hover:text-blue-700 font-medium",
+                    isLoading && "pointer-events-none opacity-50"
+                  )}
+                >
+                  Regístrate aquí
+                </Link>
+              </p>
+            </div>
+          </form>
         </div>
       </div>
     </div>
