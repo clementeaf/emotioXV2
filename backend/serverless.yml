@@ -145,7 +145,6 @@ functions:
       - httpApi:
           path: /api/users/me
           method: GET
-          authorizer: aws_iam
 
   user-update:
     handler: .dist/controllers/user.controller.updateUser
@@ -153,7 +152,6 @@ functions:
       - httpApi:
           path: /api/users/me
           method: PUT
-          authorizer: aws_iam
 
   user-delete:
     handler: .dist/controllers/user.controller.deleteUser
@@ -161,7 +159,6 @@ functions:
       - httpApi:
           path: /api/users/me
           method: DELETE
-          authorizer: aws_iam
 
   # API Gateway - Controlador de Investigaciones
   research-create:
@@ -170,7 +167,6 @@ functions:
       - httpApi:
           path: /api/research
           method: POST
-          authorizer: aws_iam
 
   research-get:
     handler: .dist/controllers/research.controller.getResearch
@@ -178,7 +174,6 @@ functions:
       - httpApi:
           path: /api/research/{id}
           method: GET
-          authorizer: aws_iam
 
   research-get-all:
     handler: .dist/controllers/research.controller.getAllResearch
@@ -186,7 +181,6 @@ functions:
       - httpApi:
           path: /api/research
           method: GET
-          authorizer: aws_iam
 
   research-update:
     handler: .dist/controllers/research.controller.updateResearch
@@ -194,7 +188,6 @@ functions:
       - httpApi:
           path: /api/research/{id}
           method: PUT
-          authorizer: aws_iam
 
   research-delete:
     handler: .dist/controllers/research.controller.deleteResearch
@@ -202,7 +195,6 @@ functions:
       - httpApi:
           path: /api/research/{id}
           method: DELETE
-          authorizer: aws_iam
 
   # API Gateway - Controlador de Formularios
   form-create:
@@ -211,7 +203,6 @@ functions:
       - httpApi:
           path: /api/forms
           method: POST
-          authorizer: aws_iam
 
   form-get:
     handler: .dist/controllers/form.controller.getForm
@@ -219,7 +210,6 @@ functions:
       - httpApi:
           path: /api/forms/{id}
           method: GET
-          authorizer: aws_iam
 
   form-get-all:
     handler: .dist/controllers/form.controller.getAllForms
@@ -227,7 +217,6 @@ functions:
       - httpApi:
           path: /api/forms
           method: GET
-          authorizer: aws_iam
 
   form-update:
     handler: .dist/controllers/form.controller.updateForm
@@ -235,7 +224,6 @@ functions:
       - httpApi:
           path: /api/forms/{id}
           method: PUT
-          authorizer: aws_iam
 
   form-delete:
     handler: .dist/controllers/form.controller.deleteForm
@@ -243,7 +231,6 @@ functions:
       - httpApi:
           path: /api/forms/{id}
           method: DELETE
-          authorizer: aws_iam
 
   forms-publish:
     handler: .dist/controllers/forms.controller.publish
@@ -316,7 +303,6 @@ functions:
       - httpApi:
           path: /api/welcome-screen
           method: GET
-          authorizer: aws_iam
 
   welcome-screen-update:
     handler: .dist/controllers/welcome-screen.controller.updateWelcomeScreen
@@ -324,7 +310,6 @@ functions:
       - httpApi:
           path: /api/welcome-screen
           method: PUT
-          authorizer: aws_iam
 
   # API Gateway - CORS
   options-handler:
