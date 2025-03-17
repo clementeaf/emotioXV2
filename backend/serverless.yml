@@ -47,8 +47,8 @@ package:
     - '!.vscode/**'
     - '!.serverless/**'
     - '!.build/**'
-    - '!.dist/**/*.ts'
-    - '.dist/**'
+    - '!dist/**/*.ts'
+    - 'dist/**'
     - 'package.json'
 
 provider:
@@ -118,21 +118,21 @@ provider:
 functions:
   # API Gateway - Controlador de Autenticación
   auth-login:
-    handler: .dist/controllers/auth.controller.login
+    handler: dist/controllers/auth.controller.login
     events:
       - httpApi:
           path: /api/auth/login
           method: POST
 
   auth-register:
-    handler: .dist/controllers/auth.controller.register
+    handler: dist/controllers/auth.controller.register
     events:
       - httpApi:
           path: /api/auth/register
           method: POST
 
   auth-logout:
-    handler: .dist/controllers/auth.controller.logout
+    handler: dist/controllers/auth.controller.logout
     events:
       - httpApi:
           path: /api/auth/logout
@@ -140,21 +140,21 @@ functions:
 
   # API Gateway - Controlador de Usuarios
   user-get:
-    handler: .dist/controllers/user.controller.getUser
+    handler: dist/controllers/user.controller.getUser
     events:
       - httpApi:
           path: /api/users/me
           method: GET
 
   user-update:
-    handler: .dist/controllers/user.controller.updateUser
+    handler: dist/controllers/user.controller.updateUser
     events:
       - httpApi:
           path: /api/users/me
           method: PUT
 
   user-delete:
-    handler: .dist/controllers/user.controller.deleteUser
+    handler: dist/controllers/user.controller.deleteUser
     events:
       - httpApi:
           path: /api/users/me
@@ -162,35 +162,35 @@ functions:
 
   # API Gateway - Controlador de Investigaciones
   research-create:
-    handler: .dist/controllers/research.controller.createResearch
+    handler: dist/controllers/research.controller.createResearch
     events:
       - httpApi:
           path: /api/research
           method: POST
 
   research-get:
-    handler: .dist/controllers/research.controller.getResearch
+    handler: dist/controllers/research.controller.getResearch
     events:
       - httpApi:
           path: /api/research/{id}
           method: GET
 
   research-get-all:
-    handler: .dist/controllers/research.controller.getAllResearch
+    handler: dist/controllers/research.controller.getAllResearch
     events:
       - httpApi:
           path: /api/research
           method: GET
 
   research-update:
-    handler: .dist/controllers/research.controller.updateResearch
+    handler: dist/controllers/research.controller.updateResearch
     events:
       - httpApi:
           path: /api/research/{id}
           method: PUT
 
   research-delete:
-    handler: .dist/controllers/research.controller.deleteResearch
+    handler: dist/controllers/research.controller.deleteResearch
     events:
       - httpApi:
           path: /api/research/{id}
@@ -198,70 +198,70 @@ functions:
 
   # API Gateway - Controlador de Formularios
   form-create:
-    handler: .dist/controllers/form.controller.createForm
+    handler: dist/controllers/form.controller.createForm
     events:
       - httpApi:
           path: /api/forms
           method: POST
 
   form-get:
-    handler: .dist/controllers/form.controller.getForm
+    handler: dist/controllers/form.controller.getForm
     events:
       - httpApi:
           path: /api/forms/{id}
           method: GET
 
   form-get-all:
-    handler: .dist/controllers/form.controller.getAllForms
+    handler: dist/controllers/form.controller.getAllForms
     events:
       - httpApi:
           path: /api/forms
           method: GET
 
   form-update:
-    handler: .dist/controllers/form.controller.updateForm
+    handler: dist/controllers/form.controller.updateForm
     events:
       - httpApi:
           path: /api/forms/{id}
           method: PUT
 
   form-delete:
-    handler: .dist/controllers/form.controller.deleteForm
+    handler: dist/controllers/form.controller.deleteForm
     events:
       - httpApi:
           path: /api/forms/{id}
           method: DELETE
 
   forms-publish:
-    handler: .dist/controllers/forms.controller.publish
+    handler: dist/controllers/forms.controller.publish
     events:
       - httpApi:
           path: /api/forms/{id}/publish
           method: POST
 
   forms-unpublish:
-    handler: .dist/controllers/forms.controller.unpublish
+    handler: dist/controllers/forms.controller.unpublish
     events:
       - httpApi:
           path: /api/forms/{id}/unpublish
           method: POST
 
   forms-get-public:
-    handler: .dist/controllers/forms.controller.getPublic
+    handler: dist/controllers/forms.controller.getPublic
     events:
       - httpApi:
           path: /api/public/forms/{id}
           method: GET
 
   forms-submit-responses:
-    handler: .dist/controllers/forms.controller.submitResponses
+    handler: dist/controllers/forms.controller.submitResponses
     events:
       - httpApi:
           path: /api/public/forms/{id}/responses
           method: POST
 
   forms-get-responses:
-    handler: .dist/controllers/forms.controller.getResponses
+    handler: dist/controllers/forms.controller.getResponses
     events:
       - httpApi:
           path: /api/forms/{id}/responses
@@ -269,25 +269,25 @@ functions:
 
   # API Gateway - WebSocket
   websocket-connect:
-    handler: .dist/controllers/websocket.controller.connect
+    handler: dist/controllers/websocket.controller.connect
     events:
       - websocket:
           route: $connect
 
   websocket-disconnect:
-    handler: .dist/controllers/websocket.controller.disconnect
+    handler: dist/controllers/websocket.controller.disconnect
     events:
       - websocket:
           route: $disconnect
 
   websocket-default:
-    handler: .dist/controllers/websocket.controller.defaultHandler
+    handler: dist/controllers/websocket.controller.defaultHandler
     events:
       - websocket:
           route: $default
 
   websocket-authorizer:
-    handler: .dist/controllers/websocket.controller.authorize
+    handler: dist/controllers/websocket.controller.authorize
     events:
       - websocket:
           route: $connect
@@ -298,14 +298,14 @@ functions:
 
   # API Gateway - Welcome Screen
   welcome-screen-get:
-    handler: .dist/controllers/welcome-screen.controller.getWelcomeScreen
+    handler: dist/controllers/welcome-screen.controller.getWelcomeScreen
     events:
       - httpApi:
           path: /api/welcome-screen
           method: GET
 
   welcome-screen-update:
-    handler: .dist/controllers/welcome-screen.controller.updateWelcomeScreen
+    handler: dist/controllers/welcome-screen.controller.updateWelcomeScreen
     events:
       - httpApi:
           path: /api/welcome-screen
@@ -313,35 +313,35 @@ functions:
 
   # API Gateway - CORS
   options-handler:
-    handler: .dist/controllers/cors.controller.optionsHandler
+    handler: dist/controllers/cors.controller.optionsHandler
     events:
       - httpApi:
           path: /{proxy+}
           method: OPTIONS
 
   cors-api-research:
-    handler: .dist/controllers/cors.controller.handler
+    handler: dist/controllers/cors.controller.handler
     events:
       - httpApi:
           path: /api/research
           method: OPTIONS
 
   cors-api-research-id:
-    handler: .dist/controllers/cors.controller.handler
+    handler: dist/controllers/cors.controller.handler
     events:
       - httpApi:
           path: /api/research/{id}
           method: OPTIONS
 
   cors-api-forms:
-    handler: .dist/controllers/cors.controller.handler
+    handler: dist/controllers/cors.controller.handler
     events:
       - httpApi:
           path: /api/forms
           method: OPTIONS
 
   cors-api-forms-id:
-    handler: .dist/controllers/cors.controller.handler
+    handler: dist/controllers/cors.controller.handler
     events:
       - httpApi:
           path: /api/forms/{id}

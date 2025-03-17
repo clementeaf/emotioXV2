@@ -4,7 +4,7 @@
   "description": "Backend para sistema de autenticación con email y contraseña",
   "main": "index.js",
   "scripts": {
-    "clean": "rimraf .dist",
+    "clean": "rimraf dist",
     "build": "tsc",
     "dev": "serverless offline",
     "deploy": "npm run clean && npm run build && serverless deploy && npm run postdeploy",
