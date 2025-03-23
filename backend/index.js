@@ -1,16 +1,32 @@
-// Este archivo sirve como punto de entrada para las funciones Lambda
-// Exportamos todas las funciones desde el controlador compilado
+'use strict';
 
-// Importar todas las funciones del controlador
-const userController = require('./dist/controllers/user.controller');
+// Este archivo sirve como punto de entrada alternativo para las funciones Lambda
+// Puede ayudar a resolver problemas de importación en el entorno AWS Lambda
 
-// Exportar todas las funciones para que sean accesibles
-module.exports = {
-  requestOTP: userController.requestOTP,
-  validateOTP: userController.validateOTP,
-  createUser: userController.createUser,
-  getUser: userController.getUser,
-  updateUser: userController.updateUser,
-  deleteUser: userController.deleteUser,
-  optionsHandler: userController.optionsHandler
-}; 
+// Exportar el controlador de prueba
+exports.test = require('./dist/controllers/test.controller').handler;
+
+// Exportar controladores de auth
+try {
+  const authController = require('./dist/controllers/auth.controller');
+  exports.authRegister = authController.register;
+  exports.authLogin = authController.login;
+  exports.authLogout = authController.logout;
+} catch (err) {
+  console.error('Error al cargar controlador de auth:', err);
+}
+
+// Exportar controladores de usuarios
+try {
+  const usersController = require('./dist/controllers/users.controller');
+  exports.userGet = usersController.getUser;
+  exports.userUpdate = usersController.updateUser;
+  exports.userDelete = usersController.deleteUser;
+  exports.usersGetAll = usersController.getAllUsers;
+} catch (err) {
+  console.error('Error al cargar controlador de usuarios:', err);
+}
+
+// Log para depurar
+console.log('Módulos cargados en index.js:');
+console.log(Object.keys(exports)); 

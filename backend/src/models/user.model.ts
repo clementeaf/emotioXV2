@@ -2,17 +2,14 @@ import { DynamoDB } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocument } from '@aws-sdk/lib-dynamodb';
 import * as bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
+import { IUser } from '../types/user';
+import { IUserRepository } from '../types/repository';
+import { PaginatedResult, PaginationOptions } from '../types/common';
 
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  password?: string;
-  createdAt: number;
-  updatedAt: number;
-}
-
-export class UserModel {
+/**
+ * Implementación del repositorio de usuarios utilizando DynamoDB
+ */
+export class UserRepository implements IUserRepository<IUser> {
   private readonly tableName: string;
   private readonly docClient: DynamoDBDocument;
 
@@ -20,38 +17,45 @@ export class UserModel {
     this.tableName = process.env.USERS_TABLE || '';
     
     const client = new DynamoDB({
-      region: process.env.AWS_REGION || 'us-east-1',
+      region: process.env.REGION || 'us-east-1',
     });
     
     this.docClient = DynamoDBDocument.from(client);
   }
 
-  // Hash password con bcrypt
+  /**
+   * Hash password con bcrypt
+   */
   private async hashPassword(password: string): Promise<string> {
     const salt = await bcrypt.genSalt(12);
     return bcrypt.hash(password, salt);
   }
 
-  // Verificar contraseña con bcrypt
+  /**
+   * Verificar contraseña con bcrypt
+   */
   async comparePassword(password: string, hash: string): Promise<boolean> {
     return bcrypt.compare(password, hash);
   }
 
-  async create(name: string, email: string, password: string): Promise<User> {
+  /**
+   * Crear un nuevo usuario
+   */
+  async create(userData: Omit<IUser, 'id' | 'createdAt' | 'updatedAt'>): Promise<IUser> {
     // Primero verificar si existe un usuario con ese email
-    const existingUser = await this.findByEmail(email);
+    const existingUser = await this.findByEmail(userData.email);
     if (existingUser) {
       throw new Error('User already exists');
     }
 
     const now = Date.now();
     const id = uuidv4();
-    const hashedPassword = await this.hashPassword(password);
+    const hashedPassword = await this.hashPassword(userData.password as string);
 
-    const user: User = {
+    const user: IUser = {
       id,
-      name,
-      email,
+      name: userData.name,
+      email: userData.email,
       password: hashedPassword,
       createdAt: now,
       updatedAt: now
@@ -64,10 +68,13 @@ export class UserModel {
 
     // No devolver la contraseña
     const { password: _, ...userWithoutPassword } = user;
-    return userWithoutPassword as User;
+    return userWithoutPassword as IUser;
   }
 
-  async findById(id: string): Promise<User | null> {
+  /**
+   * Buscar usuario por ID
+   */
+  async findById(id: string): Promise<IUser | null> {
     const result = await this.docClient.get({
       TableName: this.tableName,
       Key: { id }
@@ -77,10 +84,13 @@ export class UserModel {
       return null;
     }
 
-    return result.Item as User;
+    return result.Item as IUser;
   }
 
-  async findByEmail(email: string): Promise<User | null> {
+  /**
+   * Buscar usuario por email
+   */
+  async findByEmail(email: string): Promise<IUser | null> {
     const result = await this.docClient.query({
       TableName: this.tableName,
       IndexName: 'EmailIndex',
@@ -94,10 +104,49 @@ export class UserModel {
       return null;
     }
 
-    return result.Items[0] as User;
+    return result.Items[0] as IUser;
   }
 
-  async update(id: string, data: Partial<User>): Promise<User> {
+  /**
+   * Buscar todos los usuarios con paginación
+   */
+  async findAll(options?: PaginationOptions): Promise<PaginatedResult<IUser>> {
+    const limit = options?.limit || 50;
+    const params: any = {
+      TableName: this.tableName,
+      Limit: limit
+    };
+
+    // Si hay un token de siguiente página, usarlo
+    if (options?.nextToken) {
+      params.ExclusiveStartKey = JSON.parse(Buffer.from(options.nextToken, 'base64').toString());
+    }
+
+    const result = await this.docClient.scan(params);
+    
+    // Preparar token para la siguiente página si hay más resultados
+    let nextToken: string | undefined;
+    if (result.LastEvaluatedKey) {
+      nextToken = Buffer.from(JSON.stringify(result.LastEvaluatedKey)).toString('base64');
+    }
+
+    // Filtrar contraseñas de los resultados
+    const items = (result.Items || []).map(item => {
+      const { password, ...userWithoutPassword } = item as IUser;
+      return userWithoutPassword as IUser;
+    });
+
+    return {
+      items,
+      nextToken,
+      count: items.length
+    };
+  }
+
+  /**
+   * Actualizar usuario
+   */
+  async update(id: string, data: Partial<IUser>): Promise<IUser> {
     const user = await this.findById(id);
     if (!user) {
       throw new Error('User not found');
@@ -145,10 +194,13 @@ export class UserModel {
     }
 
     // No devolver la contraseña
-    const { password: _, ...userWithoutPassword } = result.Attributes as User;
-    return userWithoutPassword as User;
+    const { password: _, ...userWithoutPassword } = result.Attributes as IUser;
+    return userWithoutPassword as IUser;
   }
 
+  /**
+   * Eliminar usuario
+   */
   async delete(id: string): Promise<void> {
     await this.docClient.delete({
       TableName: this.tableName,
@@ -158,4 +210,4 @@ export class UserModel {
 }
 
 // Singleton para reutilizar en toda la aplicación
-export const userModel = new UserModel(); 
+export const userRepository = new UserRepository(); 

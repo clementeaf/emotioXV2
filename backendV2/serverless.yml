@@ -1,0 +1,142 @@
+service: emotio-x-backend-v4
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  stage: ${opt:stage, 'dev'}
+  region: us-east-1
+  profile: default
+  
+  environment:
+    NODE_ENV: ${opt:stage, 'dev'}
+    REGION: ${self:provider.region}
+    USERS_TABLE: ${self:service}-users-${self:provider.stage}
+    CONNECTIONS_TABLE: ${self:service}-connections-${self:provider.stage}
+    RESEARCH_TABLE: ${self:service}-research-${self:provider.stage}
+    FORMS_TABLE: ${self:service}-forms-${self:provider.stage}
+    JWT_SECRET: ${env:JWT_SECRET, 'dev_jwt_secret_key_for_testing_only'}
+    S3_BUCKET_NAME: ${self:custom.s3BucketName}
+  
+  httpApi:
+    cors:
+      allowedOrigins:
+        - "http://localhost:3000"
+      allowedMethods:
+        - GET
+        - POST
+        - DELETE
+        - PUT
+        - OPTIONS
+      allowCredentials: true
+      
+  iam:
+    role:
+      statements:
+        # Permissions for CloudWatch Logs
+        - Effect: "Allow"
+          Action:
+            - "logs:CreateLogGroup"
+            - "logs:CreateLogStream"
+            - "logs:PutLogEvents"
+          Resource: "arn:aws:logs:*:*:*"
+        
+        # Permissions for DynamoDB
+        - Effect: "Allow"
+          Action:
+            - "dynamodb:PutItem"
+            - "dynamodb:GetItem"
+            - "dynamodb:DeleteItem"
+            - "dynamodb:UpdateItem"
+            - "dynamodb:Query"
+            - "dynamodb:Scan"
+            - "dynamodb:BatchGetItem"
+            - "dynamodb:BatchWriteItem"
+          Resource:
+            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_TABLE}"
+            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_TABLE}/index/*"
+            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CONNECTIONS_TABLE}"
+            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.RESEARCH_TABLE}"
+            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.RESEARCH_TABLE}/index/*"
+            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.FORMS_TABLE}"
+            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.FORMS_TABLE}/index/*"
+        
+        # Permissions for S3
+        - Effect: "Allow"
+          Action:
+            - "s3:PutObject"
+            - "s3:GetObject"
+            - "s3:DeleteObject"
+            - "s3:ListBucket"
+          Resource:
+            - "arn:aws:s3:::${self:custom.s3BucketName}"
+            - "arn:aws:s3:::${self:custom.s3BucketName}/*"
+
+custom:
+  s3BucketName: "${self:service}-${self:provider.stage}-storage"
+  serverless-offline:
+    httpPort: 4800
+    host: 0.0.0.0
+
+plugins:
+  - serverless-offline
+  - serverless-dotenv-plugin
+
+package:
+  individually: false
+  patterns:
+    - '!node_modules/.bin/**'
+    - '!node_modules/aws-sdk/**'  # AWS Lambda ya tiene AWS SDK
+    - '!.git/**'
+    - '!.vscode/**'
+    - '!test/**'
+    - 'node_modules/**'
+    - 'dist/**'
+    - 'package.json'
+    - 'package-lock.json'
+
+functions:
+  # Test Controller
+  test:
+    handler: index.test
+    events:
+      - httpApi:
+          path: /api/test
+          method: get
+
+resources:
+  Resources:
+    # DynamoDB Tables
+    UsersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.USERS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: email
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: EmailIndex
+            KeySchema:
+              - AttributeName: email
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+              
+    # S3 Bucket
+    StorageBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:custom.s3BucketName}
+        CorsConfiguration:
+          CorsRules:
+            - AllowedHeaders: ['*']
+              AllowedMethods: [GET, PUT, POST, DELETE, HEAD]
+              AllowedOrigins: ['*']
+              MaxAge: 3000

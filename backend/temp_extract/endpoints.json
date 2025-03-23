@@ -1,0 +1,47 @@
+{
+  "login": {
+    "POST": "https://ghmbzfk5h8.execute-api.us-east-1.amazonaws.com/api/auth/login"
+  },
+  "register": {
+    "POST": "https://ghmbzfk5h8.execute-api.us-east-1.amazonaws.com/api/auth/register"
+  },
+  "logout": {
+    "POST": "https://ghmbzfk5h8.execute-api.us-east-1.amazonaws.com/api/auth/logout"
+  },
+  "getUser": {
+    "GET": "https://ghmbzfk5h8.execute-api.us-east-1.amazonaws.com/api/users/me"
+  },
+  "updateUser": {
+    "PUT": "https://ghmbzfk5h8.execute-api.us-east-1.amazonaws.com/api/users/me"
+  },
+  "deleteUser": {
+    "DELETE": "https://ghmbzfk5h8.execute-api.us-east-1.amazonaws.com/api/users/me"
+  },
+  "optionsHandler": {
+    "OPTIONS": "https://ghmbzfk5h8.execute-api.us-east-1.amazonaws.com/api/{proxy+}"
+  },
+  "research": {
+    "create": "https://ghmbzfk5h8.execute-api.us-east-1.amazonaws.com/api/research",
+    "get": "https://ghmbzfk5h8.execute-api.us-east-1.amazonaws.com/api/research/{id}",
+    "list": "https://ghmbzfk5h8.execute-api.us-east-1.amazonaws.com/api/research",
+    "update": "https://ghmbzfk5h8.execute-api.us-east-1.amazonaws.com/api/research/{id}",
+    "delete": "https://ghmbzfk5h8.execute-api.us-east-1.amazonaws.com/api/research/{id}"
+  },
+  "forms": {
+    "create": "https://ghmbzfk5h8.execute-api.us-east-1.amazonaws.com/api/forms",
+    "get": "https://ghmbzfk5h8.execute-api.us-east-1.amazonaws.com/api/forms/{id}",
+    "list": "https://ghmbzfk5h8.execute-api.us-east-1.amazonaws.com/api/forms",
+    "update": "https://ghmbzfk5h8.execute-api.us-east-1.amazonaws.com/api/forms/{id}",
+    "delete": "https://ghmbzfk5h8.execute-api.us-east-1.amazonaws.com/api/forms/{id}",
+    "publish": "https://ghmbzfk5h8.execute-api.us-east-1.amazonaws.com/api/forms/{id}/publish",
+    "unpublish": "https://ghmbzfk5h8.execute-api.us-east-1.amazonaws.com/api/forms/{id}/unpublish",
+    "getPublic": "https://ghmbzfk5h8.execute-api.us-east-1.amazonaws.com/api/public/forms/{id}",
+    "submitResponses": "https://ghmbzfk5h8.execute-api.us-east-1.amazonaws.com/api/public/forms/{id}/responses",
+    "getResponses": "https://ghmbzfk5h8.execute-api.us-east-1.amazonaws.com/api/forms/{id}/responses"
+  },
+  "welcomeScreen": {
+    "get": "https://ghmbzfk5h8.execute-api.us-east-1.amazonaws.com/api/welcome-screen",
+    "update": "https://ghmbzfk5h8.execute-api.us-east-1.amazonaws.com/api/welcome-screen"
+  },
+  "websocket": "wss://2egs48dn2f.execute-api.us-east-1.amazonaws.com/dev"
+}

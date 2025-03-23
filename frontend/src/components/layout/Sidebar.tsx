@@ -322,7 +322,7 @@ export function Sidebar({ className, activeResearch }: SidebarProps) {
 
   // Si tenemos una investigación activa de tipo AIM Framework
   if (activeResearch && isAimFrameworkResearch) {
-    return (
+  return (
       <div className={cn("w-56 bg-white border-r border-neutral-200 shadow-lg flex flex-col h-screen", className)}>
         <div className="p-4 border-b border-neutral-200">
           <a 
@@ -428,10 +428,10 @@ export function Sidebar({ className, activeResearch }: SidebarProps) {
               </li>
             </ul>
           </div>
-          
+
           <div className="mb-6">
             <h3 className="font-semibold text-xs text-neutral-500 uppercase mb-2">RECRUIT</h3>
-            <ul className="space-y-1">
+                  <ul className="space-y-1">
               <li>
                 <Link 
                   href={`/dashboard?research=${activeResearch.id}&aim=true&section=screener`}
@@ -446,9 +446,9 @@ export function Sidebar({ className, activeResearch }: SidebarProps) {
                 </Link>
               </li>
               <li>
-                <Link 
+                        <Link
                   href={`/dashboard?research=${activeResearch.id}&aim=true&section=welcome-screen-participant`}
-                  className={cn(
+                          className={cn(
                     "flex items-center text-sm px-3 py-2 rounded-md transition-colors",
                     searchParams.get('section') === 'welcome-screen-participant' 
                       ? "bg-blue-50 text-blue-600" 
@@ -456,14 +456,14 @@ export function Sidebar({ className, activeResearch }: SidebarProps) {
                   )}
                 >
                   Welcome screen
-                </Link>
-              </li>
-            </ul>
-          </div>
-          
-          <div>
+                        </Link>
+                      </li>
+                  </ul>
+                </div>
+
+                <div>
             <h3 className="font-semibold text-xs text-neutral-500 uppercase mb-2">RESULTS</h3>
-            <ul className="space-y-1">
+                  <ul className="space-y-1">
               <li>
                 <Link 
                   href={`/dashboard?research=${activeResearch.id}&aim=true&section=smart-voc-results`}
@@ -478,9 +478,9 @@ export function Sidebar({ className, activeResearch }: SidebarProps) {
                 </Link>
               </li>
               <li>
-                <Link 
+                        <Link
                   href={`/dashboard?research=${activeResearch.id}&aim=true&section=cognitive-task-results`}
-                  className={cn(
+                          className={cn(
                     "flex items-center text-sm px-3 py-2 rounded-md transition-colors",
                     searchParams.get('section') === 'cognitive-task-results' 
                       ? "bg-blue-50 text-blue-600" 
@@ -488,10 +488,10 @@ export function Sidebar({ className, activeResearch }: SidebarProps) {
                   )}
                 >
                   Cognitive Task
-                </Link>
-              </li>
-            </ul>
-          </div>
+                        </Link>
+                      </li>
+                  </ul>
+                </div>
         </nav>
         
         {/* Modal de confirmación */}
@@ -502,8 +502,8 @@ export function Sidebar({ className, activeResearch }: SidebarProps) {
             onConfirm={confirmDeleteResearch}
             researchName={researchToDelete.name}
           />
-        )}
-      </div>
+                            )}
+                          </div>
     );
   }
 
@@ -519,13 +519,13 @@ export function Sidebar({ className, activeResearch }: SidebarProps) {
           <div className="flex items-center">
             <span className="text-xl font-semibold text-neutral-900">EmotioX</span>
             <span className="text-xs ml-1 text-neutral-500">(Inicio)</span>
-          </div>
+                        </div>
         </a>
-      </div>
+                      </div>
       
       <div className="flex-1 overflow-y-auto">
         <nav className="p-4">
-          <ul className="space-y-1">
+                      <ul className="space-y-1">
             {mainNavItems.map((item) => {
               const isActive = 
                 pathname === item.href || 
@@ -555,9 +555,9 @@ export function Sidebar({ className, activeResearch }: SidebarProps) {
               
               return (
                 <li key={item.id}>
-                  <Link
+                            <Link
                     href={item.href}
-                    className={cn(
+                              className={cn(
                       "flex items-center py-2 px-3 rounded-md transition-colors",
                       isActive
                         ? "bg-blue-50 text-blue-600"
@@ -567,11 +567,11 @@ export function Sidebar({ className, activeResearch }: SidebarProps) {
                     {typeof item.label === 'function' 
                       ? item.getDynamicLabel!(hasDraft, currentDraft?.step, currentDraft?.lastUpdated)
                       : item.label}
-                  </Link>
-                </li>
+                            </Link>
+                          </li>
               );
             })}
-          </ul>
+                      </ul>
         </nav>
         
         {/* Mostrar solo la investigación más reciente */}
@@ -613,11 +613,11 @@ export function Sidebar({ className, activeResearch }: SidebarProps) {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
       </div>
       
       {/* Modal de confirmación */}

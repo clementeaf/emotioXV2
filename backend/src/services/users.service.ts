@@ -1,40 +1,31 @@
-import { userModel, User } from '../models/user.model';
-
-export interface UserUpdateData {
-  name?: string;
-  password?: string;
-}
+import { userRepository } from '../models/user.model';
+import { IUser, CreateUserDto, UpdateUserDto } from '../types/user';
+import { PaginatedResult, PaginationOptions } from '../types/common';
 
 export class UsersService {
-  /**
-   * Obtiene un usuario por su ID
-   */
-  async getUserById(userId: string): Promise<User | null> {
-    const user = await userModel.findById(userId);
-    
-    if (!user) {
-      return null;
-    }
-
-    // No devolver la contraseña
-    const { password, ...userWithoutPassword } = user;
-    return userWithoutPassword as User;
+  async createUser(userData: CreateUserDto): Promise<Omit<IUser, 'password'>> {
+    return userRepository.create(userData);
   }
 
-  /**
-   * Actualiza un usuario
-   */
-  async updateUser(userId: string, data: UserUpdateData): Promise<User> {
-    return userModel.update(userId, data);
+  async getUser(id: string): Promise<IUser | null> {
+    return userRepository.findById(id);
   }
 
-  /**
-   * Elimina un usuario
-   */
-  async deleteUser(userId: string): Promise<void> {
-    await userModel.delete(userId);
+  async getUserByEmail(email: string): Promise<IUser | null> {
+    return userRepository.findByEmail(email);
+  }
+
+  async getAllUsers(options?: PaginationOptions): Promise<PaginatedResult<IUser>> {
+    return userRepository.findAll(options);
+  }
+
+  async updateUser(id: string, data: UpdateUserDto): Promise<IUser> {
+    return userRepository.update(id, data);
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    return userRepository.delete(id);
   }
 }
 
-// Singleton para reutilizar en toda la aplicación
 export const usersService = new UsersService(); 

@@ -1,38 +1,32 @@
 {
- "requestOTP": "https://k9su94kgy9.execute-api.us-east-1.amazonaws.com/api/auth/request-otp",
- "validateOTP": "https://k9su94kgy9.execute-api.us-east-1.amazonaws.com/api/auth/validate-otp",
- "login": "https://k9su94kgy9.execute-api.us-east-1.amazonaws.com/api/auth/login",
- "register": "https://k9su94kgy9.execute-api.us-east-1.amazonaws.com/api/auth/register",
- "logout": "https://k9su94kgy9.execute-api.us-east-1.amazonaws.com/api/auth/logout",
- "createUser": "https://k9su94kgy9.execute-api.us-east-1.amazonaws.com/api/users",
- "getUser": "https://k9su94kgy9.execute-api.us-east-1.amazonaws.com/api/users/me",
- "updateUser": "https://k9su94kgy9.execute-api.us-east-1.amazonaws.com/api/users/me",
- "deleteUser": "https://k9su94kgy9.execute-api.us-east-1.amazonaws.com/api/users/me",
- "optionsHandler": "https://k9su94kgy9.execute-api.us-east-1.amazonaws.com/api/{proxy+}",
- "research": {
-  "create": "https://k9su94kgy9.execute-api.us-east-1.amazonaws.com/api/research",
-  "get": "https://k9su94kgy9.execute-api.us-east-1.amazonaws.com/api/research/{id}",
-  "list": "https://k9su94kgy9.execute-api.us-east-1.amazonaws.com/api/research",
-  "update": "https://k9su94kgy9.execute-api.us-east-1.amazonaws.com/api/research/{id}",
-  "delete": "https://k9su94kgy9.execute-api.us-east-1.amazonaws.com/api/research/{id}",
-  "UPDATE_STATUS": "https://k9su94kgy9.execute-api.us-east-1.amazonaws.com/api/research/{id}/status",
-  "UPDATE_STAGE": "https://k9su94kgy9.execute-api.us-east-1.amazonaws.com/api/research/{id}/stage"
- },
- "forms": {
-  "create": "https://k9su94kgy9.execute-api.us-east-1.amazonaws.com/api/forms",
-  "get": "https://k9su94kgy9.execute-api.us-east-1.amazonaws.com/api/forms/{id}",
-  "list": "https://k9su94kgy9.execute-api.us-east-1.amazonaws.com/api/forms",
-  "update": "https://k9su94kgy9.execute-api.us-east-1.amazonaws.com/api/forms/{id}",
-  "delete": "https://k9su94kgy9.execute-api.us-east-1.amazonaws.com/api/forms/{id}",
-  "publish": "https://k9su94kgy9.execute-api.us-east-1.amazonaws.com/api/forms/{id}/publish",
-  "unpublish": "https://k9su94kgy9.execute-api.us-east-1.amazonaws.com/api/forms/{id}/unpublish",
-  "getPublic": "https://k9su94kgy9.execute-api.us-east-1.amazonaws.com/api/public/forms/{id}",
-  "submitResponses": "https://k9su94kgy9.execute-api.us-east-1.amazonaws.com/api/public/forms/{id}/responses",
-  "getResponses": "https://k9su94kgy9.execute-api.us-east-1.amazonaws.com/api/forms/{id}/responses"
- },
- "welcomeScreen": {
-  "save": "https://k9su94kgy9.execute-api.us-east-1.amazonaws.com/api/research/{researchId}/welcome-screen",
-  "get": "https://k9su94kgy9.execute-api.us-east-1.amazonaws.com/api/research/{researchId}/welcome-screen"
- },
- "websocket": "wss://3zf2n6zdoe.execute-api.us-east-1.amazonaws.com/dev"
+  "apiUrl": "",
+  "websocketUrl": "",
+  "endpoints": {
+    "auth": {
+      "register": "/api/auth/register",
+      "login": "/api/auth/login",
+      "logout": "/api/auth/logout"
+    },
+    "users": {
+      "getUser": "/api/users/{id}",
+      "updateUser": "/api/users/{id}",
+      "deleteUser": "/api/users/{id}",
+      "getAllUsers": "/api/users"
+    },
+    "research": {
+      "createResearch": "/api/research",
+      "getResearch": "/api/research/{id}",
+      "getAllResearch": "/api/research",
+      "updateResearch": "/api/research/{id}",
+      "deleteResearch": "/api/research/{id}"
+    },
+    "forms": {
+      "createForm": "/api/forms",
+      "getForm": "/api/forms/{id}",
+      "getFormsByResearch": "/api/forms/research/{researchId}",
+      "updateForm": "/api/forms/{id}",
+      "deleteForm": "/api/forms/{id}"
+    }
+  },
+  "_original": {}
 }

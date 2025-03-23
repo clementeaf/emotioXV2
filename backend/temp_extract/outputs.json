@@ -1,0 +1,2 @@
+HttpApiUrl = "https://ghmbzfk5h8.execute-api.us-east-1.amazonaws.comamazonaws.com"
+WebSocketApiUrl = "wss://2egs48dn2f.execute-api.us-east-1.amazonaws.com/dev"

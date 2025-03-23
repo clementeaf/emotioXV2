@@ -1,85 +1,128 @@
-# Sistema OTP de EmotioX
+# Backend EmotioX
 
-Este módulo gestiona la autenticación mediante One-Time Password (OTP) enviado por email.
+Backend para EmotioX, construido con Serverless Framework y servicios AWS.
 
-## 🔑 Configuración
-
-1. Crear archivo `.env` en la raíz de la carpeta `backend`:
+## Estructura del Proyecto
 
 ```
-# AWS Credentials
-AWS_ACCESS_KEY_ID=TU_ACCESS_KEY
-AWS_SECRET_ACCESS_KEY=TU_SECRET_KEY
-AWS_REGION=us-east-1
-
-# Email configuration
-SES_FROM_EMAIL=tu_email_verificado@dominio.com
-
-# OTP configuration
-OTP_EXPIRY_MINUTES=5
-OTP_MAX_ATTEMPTS=3
-JWT_SECRET=tu_secreto_super_seguro_para_jwt
-
-# Otros ajustes
-NODE_ENV=development
+/backend
+├── src/
+│   ├── controllers/     # Controladores de la API
+│   ├── models/          # Modelos de datos
+│   ├── services/        # Servicios de negocio
+│   ├── repositories/    # Repositorios para acceso a datos
+│   ├── types/           # Definiciones de tipos e interfaces
+│   ├── utils/           # Utilidades y helpers
+│   └── validations/     # Esquemas de validación
+├── scripts/             # Scripts auxiliares de despliegue
+├── serverless.yml       # Configuración de Serverless Framework
+├── webpack.config.js    # Configuración de empaquetado
+├── tsconfig.json        # Configuración de TypeScript
+└── package.json         # Dependencias y scripts
 ```
 
-2. Asegurarse de que el email configurado en `SES_FROM_EMAIL` esté verificado en AWS SES.
+## Requisitos
 
-## 🚀 Ejecución
+- Node.js 14.x o superior
+- npm 6.x o superior
+- AWS CLI instalado y configurado
+- Credenciales de AWS configuradas
 
-Para iniciar el servidor de desarrollo:
+## Instalación
 
 ```bash
 # Instalar dependencias
 npm install
-
-# Iniciar servidor de desarrollo
-npm run dev
 ```
 
-## 🧪 Pruebas
+## Scripts Disponibles
 
-### Usando el script de prueba
+### Desarrollo Local
 
 ```bash
-# Otorgar permisos de ejecución
-chmod +x test-otp.js
+# Iniciar servidor de desarrollo local
+npm run start:offline
 
-# Solicitar OTP
-node test-otp.js request tu_email@ejemplo.com
-
-# Validar OTP (reemplaza 123456 con el código recibido)
-node test-otp.js validate tu_email@ejemplo.com 123456
+# Invocar función local
+npm run local -- --function=nombre-funcion --data='{"key": "value"}'
 ```
 
-### Usando curl directamente
+### Verificación
 
 ```bash
-# Solicitar OTP
-curl -X POST http://localhost:4000/auth/request-otp \
-  -H "Content-Type: application/json" \
-  -d '{"email": "tu_email@ejemplo.com"}'
+# Verificar requisitos de instalación
+npm run check-requirements
 
-# Validar OTP
-curl -X POST http://localhost:4000/auth/validate-otp \
-  -H "Content-Type: application/json" \
-  -d '{"email": "tu_email@ejemplo.com", "code": "123456"}'
+# Ejecutar linter
+npm run lint
+
+# Ejecutar tests
+npm run test
 ```
 
-## 🔍 Verificación de logs
-
-Para ver los logs y depurar posibles errores:
+### Despliegue
 
 ```bash
-npm run logs
+# Desplegar en ambiente de desarrollo
+npm run deploy:dev
+
+# Desplegar en ambiente de producción
+npm run deploy:prod
+
+# Generar paquete sin desplegar
+npm run package
+
+# Ver logs de una función
+npm run logs -- --function=nombre-funcion --stage=dev
+
+# Eliminar stack
+npm run remove
 ```
 
-## 🔒 Mejoras implementadas
+### Scripts Auxiliares
 
-- **Generación segura**: Uso de `crypto.randomInt()` para generación criptográficamente segura
-- **Límite de intentos**: Configurable mediante `OTP_MAX_ATTEMPTS`
-- **Expiración clara**: Configurable mediante `OTP_EXPIRY_MINUTES`
-- **Mejor manejo de errores**: Mensajes detallados para depuración
-- **Emails HTML mejorados**: Mejor experiencia de usuario
-- **Gestión de credenciales**: Carga desde archivo `.env` 
+```bash
+# Limpiar directorios de compilación
+npm run clean
+
+# Compilar TypeScript
+npm run build
+
+# Corregir endpoints generados
+npm run fix-endpoints
+
+# Actualizar configuración del frontend
+npm run update-frontend
+```
+
+## Flujo de Despliegue
+
+1. **Verificación de requisitos**: Se verifica que Node.js, npm y AWS CLI estén instalados correctamente.
+2. **Limpieza**: Se eliminan directorios de compilaciones anteriores.
+3. **Compilación**: Se transpila el código TypeScript.
+4. **Despliegue**: Se crea o actualiza el stack en AWS CloudFormation.
+5. **Post-despliegue**: Se corrigen los endpoints y se actualiza la configuración del frontend.
+
+## Ambiente de Desarrollo
+
+El ambiente de desarrollo utiliza la etapa `dev` y requiere menos recursos. Es ideal para pruebas y desarrollo iterativo.
+
+## Ambiente de Producción
+
+El ambiente de producción utiliza la etapa `prod` y está optimizado para rendimiento y seguridad. Utiliza más recursos para garantizar disponibilidad y escalabilidad.
+
+## Estructura de Tablas DynamoDB
+
+- **UsersTable**: Almacena información de usuarios.
+- **ConnectionsTable**: Administra conexiones WebSocket.
+- **ResearchTable**: Contiene datos de investigaciones.
+- **FormsTable**: Almacena formularios y respuestas.
+
+## Troubleshooting
+
+Si encuentras problemas durante el despliegue:
+
+1. Verifica tus credenciales AWS con `aws sts get-caller-identity`
+2. Revisa los logs de despliegue en `.serverless/cloudformation-template-update-stack-events.log`
+3. Ejecuta `npm run logs -- --function=nombre-funcion` para ver logs de funciones específicas
+4. Asegúrate de tener permisos adecuados en AWS para crear/modificar recursos 

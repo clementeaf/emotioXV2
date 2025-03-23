@@ -1,24 +1,12 @@
 import * as jwt from 'jsonwebtoken';
-import { userModel, User } from '../models/user.model';
+import { userRepository } from '../models/user.model';
+import { AuthResponse, CreateUserDto, IUser, JwtPayload, LoginCredentialsDto } from '../types/user';
+import { IAuthService } from '../types/service';
 
-export interface AuthTokenPayload {
-  id: string;
-  email: string;
-  name: string;
-  iat: number;
-  exp: number;
-}
-
-export interface LoginResponse {
-  token: string;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-  };
-}
-
-export class AuthService {
+/**
+ * Implementación del servicio de autenticación
+ */
+export class AuthService implements IAuthService {
   private readonly jwtSecret: string;
   private readonly tokenExpiration: string;
 
@@ -30,8 +18,8 @@ export class AuthService {
   /**
    * Genera un token JWT para un usuario
    */
-  generateToken(user: User): string {
-    const payload = {
+  generateToken(user: IUser): string {
+    const payload: JwtPayload = {
       id: user.id,
       email: user.email,
       name: user.name
@@ -43,9 +31,9 @@ export class AuthService {
   /**
    * Verifica un token JWT y devuelve el payload si es válido
    */
-  verifyToken(token: string): AuthTokenPayload {
+  verifyToken(token: string): JwtPayload {
     try {
-      return jwt.verify(token, this.jwtSecret) as AuthTokenPayload;
+      return jwt.verify(token, this.jwtSecret) as JwtPayload;
     } catch (error) {
       throw new Error('Invalid token');
     }
@@ -70,9 +58,9 @@ export class AuthService {
   /**
    * Autentica a un usuario con email y contraseña
    */
-  async login(email: string, password: string): Promise<LoginResponse> {
+  async login(credentials: LoginCredentialsDto): Promise<AuthResponse> {
     // Buscar usuario por email
-    const user = await userModel.findByEmail(email);
+    const user = await userRepository.findByEmail(credentials.email);
     if (!user) {
       throw new Error('User not found');
     }
@@ -82,7 +70,7 @@ export class AuthService {
       throw new Error('Invalid credentials');
     }
 
-    const isPasswordValid = await userModel.comparePassword(password, user.password);
+    const isPasswordValid = await userRepository.comparePassword(credentials.password, user.password);
     if (!isPasswordValid) {
       throw new Error('Invalid credentials');
     }
@@ -104,9 +92,9 @@ export class AuthService {
   /**
    * Registra un nuevo usuario
    */
-  async register(name: string, email: string, password: string): Promise<LoginResponse> {
+  async register(userData: CreateUserDto): Promise<AuthResponse> {
     // Crear usuario
-    const user = await userModel.create(name, email, password);
+    const user = await userRepository.create(userData);
 
     // Generar token
     const token = this.generateToken(user);

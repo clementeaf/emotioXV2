@@ -4,6 +4,7 @@ import { authMiddleware } from '../middlewares/auth.middleware';
 import { ValidationError, NotFoundError, UnauthorizedError } from '../middlewares/error.middleware';
 import { successResponse, noContentResponse } from '../middlewares/response.middleware';
 import { errorHandler } from '../middlewares/error.middleware';
+import { AuthService } from '../services/auth.service';
 
 /**
  * Controlador para los usuarios
@@ -14,11 +15,32 @@ export class UsersController {
    */
   async getUser(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
     try {
-      // Verificar autenticación
-      const userId = authMiddleware(event);
-
-      // Obtener usuario
-      const user = await usersService.getUserById(userId);
+      const userId = event.pathParameters?.id ?? '';
+      
+      // Si es solicitud para obtener el usuario actual
+      if (userId === 'me') {
+        // Extraer ID de usuario del token
+        const authService = new AuthService();
+        const token = authService.extractTokenFromHeader(event.headers?.Authorization);
+        const currentUserId = authService.getUserIdFromToken(token);
+        
+        const user = await usersService.getUser(currentUserId);
+        
+        if (!user) {
+          return {
+            statusCode: 404,
+            body: JSON.stringify({ message: 'User not found' })
+          };
+        }
+        
+        return {
+          statusCode: 200,
+          body: JSON.stringify(user)
+        };
+      }
+      
+      // Obtener usuario por ID
+      const user = await usersService.getUser(userId);
       if (!user) {
         throw new NotFoundError('User not found');
       }

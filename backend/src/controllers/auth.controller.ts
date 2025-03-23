@@ -3,9 +3,12 @@ import { authService } from '../services/auth.service';
 import { ValidationError, UnauthorizedError } from '../middlewares/error.middleware';
 import { successResponse, createdResponse } from '../middlewares/response.middleware';
 import { errorHandler } from '../middlewares/error.middleware';
+import { CreateUserDto, LoginCredentialsDto } from '../types/user';
+import { validateSchema } from '../utils/validation';
+import { loginSchema, registerSchema } from '../validation/auth.schema';
 
 /**
- * Controlador para la autenticación
+ * Controlador para la autenticación con funciones Lambda
  */
 export class AuthController {
   /**
@@ -19,15 +22,13 @@ export class AuthController {
       }
 
       // Parsear el cuerpo de la solicitud
-      const { email, password } = JSON.parse(event.body);
+      const credentials = JSON.parse(event.body) as LoginCredentialsDto;
 
-      // Validar campos requeridos
-      if (!email || !password) {
-        throw new ValidationError('Email and password are required');
-      }
+      // Validar el esquema de los datos
+      validateSchema(loginSchema, credentials);
 
       // Autenticar usuario
-      const result = await authService.login(email, password);
+      const result = await authService.login(credentials);
 
       // Devolver respuesta exitosa
       return successResponse(result, 'Login successful');
@@ -53,26 +54,13 @@ export class AuthController {
       }
 
       // Parsear el cuerpo de la solicitud
-      const { name, email, password } = JSON.parse(event.body);
+      const userData = JSON.parse(event.body) as CreateUserDto;
 
-      // Validar campos requeridos
-      if (!name || !email || !password) {
-        throw new ValidationError('Name, email and password are required');
-      }
-
-      // Validar formato de email
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        throw new ValidationError('Invalid email format');
-      }
-
-      // Validar longitud de contraseña
-      if (password.length < 6) {
-        throw new ValidationError('Password must be at least 6 characters long');
-      }
+      // Validar el esquema de los datos
+      validateSchema(registerSchema, userData);
 
       // Registrar usuario
-      const result = await authService.register(name, email, password);
+      const result = await authService.register(userData);
 
       // Devolver respuesta exitosa
       return createdResponse(result, 'Registration successful');
