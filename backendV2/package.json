@@ -2,14 +2,14 @@
   "name": "backendv2",
   "version": "1.0.0",
   "description": "Backend version 2 para EmotioX",
-  "main": "dist/index.js",
+  "main": ".build/src/index.js",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/index.js",
+    "start": "node .build/src/index.js",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "lint": "eslint . --ext .ts",
     "test": "jest",
-    "clean": "rimraf dist"
+    "clean": "rimraf .build"
   },
   "keywords": [],
   "author": "",

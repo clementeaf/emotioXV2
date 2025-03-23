@@ -92,7 +92,7 @@ package:
     - '!.vscode/**'
     - '!test/**'
     - 'node_modules/**'
-    - 'dist/**'
+    - '.build/**'
     - 'package.json'
     - 'package-lock.json'
 
