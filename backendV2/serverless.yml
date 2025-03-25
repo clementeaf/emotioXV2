@@ -263,6 +263,16 @@ resources:
             - ".execute-api."
             - Ref: "AWS::Region"
             - ".amazonaws.com/${self:provider.stage}/smart-voc"
+    ThankYouScreenApiUrl:
+      Description: "URL para las rutas de pantallas de agradecimiento"
+      Value: 
+        Fn::Join:
+          - ""
+          - - "https://"
+            - Ref: "ApiGatewayRestApi"
+            - ".execute-api."
+            - Ref: "AWS::Region"
+            - ".amazonaws.com/${self:provider.stage}/thank-you-screen"
     WebSocketEndpoint:
       Description: "WebSocket API Endpoint"
       Value: 
