@@ -62,7 +62,7 @@ export function EyeTrackingForm({ researchId, className }: EyeTrackingFormProps)
           )}
           onClick={() => setActiveTab('setup')}
         >
-          Configuración
+          Setup
         </button>
         <button
           className={cn(
@@ -73,7 +73,7 @@ export function EyeTrackingForm({ researchId, className }: EyeTrackingFormProps)
           )}
           onClick={() => setActiveTab('stimuli')}
         >
-          Estímulos
+          Stimuli
         </button>
         <button
           className={cn(
@@ -84,7 +84,7 @@ export function EyeTrackingForm({ researchId, className }: EyeTrackingFormProps)
           )}
           onClick={() => setActiveTab('preview')}
         >
-          Vista previa
+          Preview
         </button>
         <button
           className={cn(
@@ -95,7 +95,7 @@ export function EyeTrackingForm({ researchId, className }: EyeTrackingFormProps)
           )}
           onClick={() => setActiveTab('advanced')}
         >
-          Opciones avanzadas
+          Advanced Options
         </button>
       </div>
 
@@ -106,18 +106,18 @@ export function EyeTrackingForm({ researchId, className }: EyeTrackingFormProps)
             <>
               <header className="mb-6">
                 <h1 className="text-lg font-semibold text-neutral-900">
-                  Configuración de Seguimiento Ocular
+                  Eye Tracking Setup
                 </h1>
                 <p className="mt-1 text-sm text-neutral-500">
-                  Configure las opciones de seguimiento ocular para su estudio de investigación.
+                  Configure eye tracking options for your research study.
                 </p>
               </header>
 
               <div className="space-y-6">
                 <div className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg">
                   <div className="space-y-0.5">
-                    <h2 className="text-sm font-medium text-neutral-900">Activar Seguimiento Ocular</h2>
-                    <p className="text-sm text-neutral-500">Incluir la funcionalidad de seguimiento ocular en este estudio.</p>
+                    <h2 className="text-sm font-medium text-neutral-900">Enable Eye Tracking</h2>
+                    <p className="text-sm text-neutral-500">Include eye tracking functionality in this study.</p>
                   </div>
                   <Switch checked={config.calibration} onCheckedChange={(checked: boolean) => handleConfigChange('calibration', checked)} />
                 </div>
@@ -126,9 +126,9 @@ export function EyeTrackingForm({ researchId, className }: EyeTrackingFormProps)
                   <div className="space-y-6">
                     <div className="grid grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <h3 className="text-sm font-medium text-neutral-900">Dispositivo de Seguimiento</h3>
+                        <h3 className="text-sm font-medium text-neutral-900">Tracking Device</h3>
                         <select className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm">
-                          <option value="webcam">Webcam estándar</option>
+                          <option value="webcam">Standard Webcam</option>
                           <option value="tobii">Tobii Eye Tracker 5</option>
                           <option value="gazepoint">GazePoint GP3 HD</option>
                           <option value="eyetech">EyeTech VT3 Mini</option>
@@ -136,7 +136,7 @@ export function EyeTrackingForm({ researchId, className }: EyeTrackingFormProps)
                       </div>
 
                       <div className="space-y-2">
-                        <h3 className="text-sm font-medium text-neutral-900">Frecuencia de muestreo</h3>
+                        <h3 className="text-sm font-medium text-neutral-900">Sampling Rate</h3>
                         <div className="flex items-center space-x-2">
                           <Input
                             type="number"
@@ -152,52 +152,52 @@ export function EyeTrackingForm({ researchId, className }: EyeTrackingFormProps)
                     </div>
 
                     <div className="space-y-4">
-                      <h3 className="text-sm font-medium text-neutral-900">Opciones de seguimiento</h3>
+                      <h3 className="text-sm font-medium text-neutral-900">Tracking Options</h3>
                       
                       <div className="grid grid-cols-2 gap-4">
                         <div className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg">
-                          <span className="text-sm text-neutral-800">Calibración</span>
+                          <span className="text-sm text-neutral-800">Calibration</span>
                           <Switch checked={config.validation} onCheckedChange={(checked: boolean) => handleConfigChange('validation', checked)} />
                         </div>
                         
                         <div className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg">
-                          <span className="text-sm text-neutral-800">Validación</span>
+                          <span className="text-sm text-neutral-800">Validation</span>
                           <Switch checked={config.validation} onCheckedChange={(checked: boolean) => handleConfigChange('validation', checked)} />
                         </div>
                         
                         <div className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg">
-                          <span className="text-sm text-neutral-800">Grabar audio</span>
+                          <span className="text-sm text-neutral-800">Record Audio</span>
                           <Switch checked={config.recordAudio} onCheckedChange={(checked: boolean) => handleConfigChange('recordAudio', checked)} />
                         </div>
                         
                         <div className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg">
-                          <span className="text-sm text-neutral-800">Grabar video</span>
+                          <span className="text-sm text-neutral-800">Record Video</span>
                           <Switch checked={config.recordVideo} onCheckedChange={(checked: boolean) => handleConfigChange('recordVideo', checked)} />
                         </div>
                       </div>
                     </div>
 
                     <div className="space-y-4">
-                      <h3 className="text-sm font-medium text-neutral-900">Visualización en tiempo real</h3>
+                      <h3 className="text-sm font-medium text-neutral-900">Real-time Visualization</h3>
                       
                       <div className="grid grid-cols-2 gap-4">
                         <div className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg">
-                          <span className="text-sm text-neutral-800">Mostrar mirada</span>
+                          <span className="text-sm text-neutral-800">Show Gaze</span>
                           <Switch checked={config.showGaze} onCheckedChange={(checked: boolean) => handleConfigChange('showGaze', checked)} />
                         </div>
                         
                         <div className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg">
-                          <span className="text-sm text-neutral-800">Mostrar fijaciones</span>
+                          <span className="text-sm text-neutral-800">Show Fixations</span>
                           <Switch checked={config.showFixations} onCheckedChange={(checked: boolean) => handleConfigChange('showFixations', checked)} />
                         </div>
                         
                         <div className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg">
-                          <span className="text-sm text-neutral-800">Mostrar movimientos sacádicos</span>
+                          <span className="text-sm text-neutral-800">Show Saccadic Movements</span>
                           <Switch checked={config.showSaccades} onCheckedChange={(checked: boolean) => handleConfigChange('showSaccades', checked)} />
                         </div>
                         
                         <div className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg">
-                          <span className="text-sm text-neutral-800">Mostrar mapa de calor</span>
+                          <span className="text-sm text-neutral-800">Show Heatmap</span>
                           <Switch checked={config.showHeatmap} onCheckedChange={(checked: boolean) => handleConfigChange('showHeatmap', checked)} />
                         </div>
                       </div>
@@ -212,18 +212,18 @@ export function EyeTrackingForm({ researchId, className }: EyeTrackingFormProps)
             <>
               <header className="mb-6">
                 <h1 className="text-lg font-semibold text-neutral-900">
-                  Configuración de Estímulos Visuales
+                  Visual Stimuli Configuration
                 </h1>
                 <p className="mt-1 text-sm text-neutral-500">
-                  Suba y organice las imágenes estímulo para el experimento de seguimiento ocular.
+                  Upload and organize stimulus images for the eye tracking experiment.
                 </p>
               </header>
 
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <h3 className="text-sm font-medium text-neutral-900">Subir imágenes estímulo</h3>
+                  <h3 className="text-sm font-medium text-neutral-900">Upload Stimulus Images</h3>
                   <p className="text-sm text-neutral-500">
-                    Suba las imágenes que se mostrarán a los participantes durante la sesión de seguimiento ocular.
+                    Upload the images that will be shown to participants during the eye tracking session.
                   </p>
                   
                   <div className="mt-4 space-y-4">
@@ -243,15 +243,15 @@ export function EyeTrackingForm({ researchId, className }: EyeTrackingFormProps)
                           <svg className="w-8 h-8 text-neutral-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                           </svg>
-                          <span className="text-sm font-medium">Haga clic para subir</span>
-                          <span className="text-xs text-neutral-500 mt-1">PNG, JPG, WEBP hasta 10MB</span>
+                          <span className="text-sm font-medium">Click to upload</span>
+                          <span className="text-xs text-neutral-500 mt-1">PNG, JPG, WEBP up to 10MB</span>
                         </div>
                       </label>
                     </div>
 
                     {/* Uploaded files section */}
                     <div className="space-y-3">
-                      <h4 className="text-sm font-medium">Estímulos seleccionados:</h4>
+                      <h4 className="text-sm font-medium">Selected stimuli:</h4>
                       <div className="grid grid-cols-3 gap-4">
                         <div className="border rounded-lg p-3 bg-neutral-50">
                           <div className="aspect-video bg-neutral-200 rounded-md mb-2 overflow-hidden">
@@ -293,7 +293,7 @@ export function EyeTrackingForm({ researchId, className }: EyeTrackingFormProps)
                         <Button
                           className="px-4 py-2 text-sm"
                         >
-                          Subir archivos
+                          Upload Files
                         </Button>
                       </div>
                     </div>
@@ -307,61 +307,61 @@ export function EyeTrackingForm({ researchId, className }: EyeTrackingFormProps)
             <>
               <header className="mb-6">
                 <h1 className="text-lg font-semibold text-neutral-900">
-                  Vista previa del experimento
+                  Experiment Preview
                 </h1>
                 <p className="mt-1 text-sm text-neutral-500">
-                  Previsualice cómo los participantes verán el experimento de eye tracking.
+                  Preview how participants will see the eye tracking experiment.
                 </p>
                 <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                   <p className="text-sm text-amber-700 font-medium">
-                    Este flujo NO guarda datos. Es solo para previsualización.
+                    This flow does NOT save data. It's for preview purposes only.
                   </p>
                 </div>
               </header>
 
               <div className="space-y-6">
-                {/* Barra azul de navegación */}
+                {/* Blue navigation bar */}
                 <div className="bg-blue-500 text-white p-3 rounded-t-lg flex items-center justify-between">
-                  <span className="font-medium">Navegación del experimento</span>
+                  <span className="font-medium">Experiment Navigation</span>
                   <div className="flex space-x-2">
                     <button className="px-3 py-1 text-xs bg-blue-600 rounded hover:bg-blue-700 transition-colors">
-                      Anterior
+                      Previous
                     </button>
                     <button className="px-3 py-1 text-xs bg-blue-600 rounded hover:bg-blue-700 transition-colors">
-                      Siguiente
+                      Next
                     </button>
                   </div>
                 </div>
                 
-                {/* Pantalla inicial común */}
+                {/* Common initial screen */}
                 <div className="border border-neutral-200 rounded-b-lg">
                   <div className="p-4 border-b border-neutral-200 bg-neutral-50">
-                    <h3 className="text-sm font-medium">Pantalla inicial común</h3>
+                    <h3 className="text-sm font-medium">Common Initial Screen</h3>
                   </div>
                   <div className="p-6 text-center">
                     <div className="max-w-md mx-auto">
-                      <h2 className="text-xl font-semibold mb-4">Bienvenido al experimento de seguimiento ocular</h2>
+                      <h2 className="text-xl font-semibold mb-4">Welcome to the Eye Tracking Experiment</h2>
                       <p className="text-neutral-600 mb-6">
-                        A continuación, se le mostrarán una serie de imágenes. Por favor, observe cada imagen con naturalidad.
-                        Sus movimientos oculares serán registrados para fines de investigación.
+                        Next, you will be shown a series of images. Please observe each image naturally.
+                        Your eye movements will be recorded for research purposes.
                       </p>
                       <div className="bg-blue-50 p-4 rounded-lg mb-6">
                         <p className="text-sm text-blue-800">
-                          Haga clic en "Comenzar" cuando esté listo para iniciar el experimento.
+                          Click "Start" when you are ready to begin the experiment.
                         </p>
                       </div>
                       <button className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
-                        Comenzar
+                        Start
                       </button>
                     </div>
                   </div>
                 </div>
                 
-                {/* Información de secuencia del experimento */}
+                {/* Experiment sequence information */}
                 <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
-                  <h3 className="text-sm font-medium text-blue-800 mb-2">Orden recomendado del estudio</h3>
+                  <h3 className="text-sm font-medium text-blue-800 mb-2">Recommended Study Order</h3>
                   <p className="text-sm text-blue-700 mb-3">
-                    Generalmente, CX debe poner primero el bloque de "Smart VOC" y luego el de "Cognitive Task"
+                    Generally, CX should place the "Smart VOC" block first, followed by the "Cognitive Task" block
                   </p>
                   <div className="flex flex-col space-y-2">
                     <div className="flex items-center">
@@ -387,7 +387,7 @@ export function EyeTrackingForm({ researchId, className }: EyeTrackingFormProps)
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        <p className="text-sm font-medium">Haga clic para iniciar la previsualización</p>
+                        <p className="text-sm font-medium">Click to start the preview</p>
                       </div>
                     </div>
                   </div>
@@ -395,16 +395,16 @@ export function EyeTrackingForm({ researchId, className }: EyeTrackingFormProps)
                 
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <h3 className="text-sm font-medium text-neutral-900">Secuencia de presentación</h3>
+                    <h3 className="text-sm font-medium text-neutral-900">Presentation Sequence</h3>
                     <select className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm">
-                      <option value="sequential">Secuencial</option>
-                      <option value="random">Aleatorio</option>
-                      <option value="custom">Personalizado</option>
+                      <option value="sequential">Sequential</option>
+                      <option value="random">Random</option>
+                      <option value="custom">Custom</option>
                     </select>
                   </div>
 
                   <div className="space-y-2">
-                    <h3 className="text-sm font-medium text-neutral-900">Duración por estímulo</h3>
+                    <h3 className="text-sm font-medium text-neutral-900">Duration per Stimulus</h3>
                     <div className="flex items-center space-x-2">
                       <Input
                         type="number"
@@ -413,7 +413,7 @@ export function EyeTrackingForm({ researchId, className }: EyeTrackingFormProps)
                         max={60}
                         className="w-full"
                       />
-                      <span className="text-sm text-neutral-500">segundos</span>
+                      <span className="text-sm text-neutral-500">seconds</span>
                     </div>
                   </div>
                 </div>
@@ -425,17 +425,17 @@ export function EyeTrackingForm({ researchId, className }: EyeTrackingFormProps)
             <>
               <header className="mb-6">
                 <h1 className="text-lg font-semibold text-neutral-900">
-                  Opciones avanzadas
+                  Advanced Options
                 </h1>
                 <p className="mt-1 text-sm text-neutral-500">
-                  Configure parámetros avanzados de seguimiento ocular.
+                  Configure advanced eye tracking parameters.
                 </p>
               </header>
 
               <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <h3 className="text-sm font-medium text-neutral-900">Umbral de fijación</h3>
+                    <h3 className="text-sm font-medium text-neutral-900">Fixation Threshold</h3>
                     <div className="flex items-center space-x-2">
                       <Input
                         type="number"
@@ -447,11 +447,11 @@ export function EyeTrackingForm({ researchId, className }: EyeTrackingFormProps)
                       />
                       <span className="text-sm text-neutral-500">ms</span>
                     </div>
-                    <p className="text-xs text-neutral-500 mt-1">Tiempo mínimo que se considera una fijación ocular.</p>
+                    <p className="text-xs text-neutral-500 mt-1">Minimum time considered as an eye fixation.</p>
                   </div>
 
                   <div className="space-y-2">
-                    <h3 className="text-sm font-medium text-neutral-900">Umbral de velocidad para sacadas</h3>
+                    <h3 className="text-sm font-medium text-neutral-900">Saccade Velocity Threshold</h3>
                     <div className="flex items-center space-x-2">
                       <Input
                         type="number"
@@ -463,27 +463,27 @@ export function EyeTrackingForm({ researchId, className }: EyeTrackingFormProps)
                       />
                       <span className="text-sm text-neutral-500">°/s</span>
                     </div>
-                    <p className="text-xs text-neutral-500 mt-1">Velocidad mínima para detectar movimientos sacádicos.</p>
+                    <p className="text-xs text-neutral-500 mt-1">Minimum velocity to detect saccadic movements.</p>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <h3 className="text-sm font-medium text-neutral-900">Áreas de interés (AOI)</h3>
+                  <h3 className="text-sm font-medium text-neutral-900">Areas of Interest (AOI)</h3>
                   <p className="text-sm text-neutral-500">
-                    Configure las áreas de interés para el análisis de los datos de eye tracking.
+                    Configure areas of interest for eye tracking data analysis.
                   </p>
                   
                   <div className="p-4 bg-neutral-50 rounded-lg mt-3">
                     <div className="flex justify-between items-center mb-4">
-                      <span className="text-sm font-medium text-neutral-800">Habilitar áreas de interés</span>
+                      <span className="text-sm font-medium text-neutral-800">Enable Areas of Interest</span>
                       <Switch checked={true} />
                     </div>
                     
                     <div className="space-y-3">
                       <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-neutral-200">
                         <div>
-                          <span className="text-sm font-medium text-neutral-800">AOI 1: Área superior</span>
-                          <p className="text-xs text-neutral-500 mt-0.5">Región: x:120, y:80, ancho:400, alto:200</p>
+                          <span className="text-sm font-medium text-neutral-800">AOI 1: Upper Area</span>
+                          <p className="text-xs text-neutral-500 mt-0.5">Region: x:120, y:80, width:400, height:200</p>
                         </div>
                         <div className="flex items-center space-x-2">
                           <button className="text-blue-500 hover:text-blue-600">
@@ -502,7 +502,7 @@ export function EyeTrackingForm({ researchId, className }: EyeTrackingFormProps)
                       <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-neutral-200">
                         <div>
                           <span className="text-sm font-medium text-neutral-800">AOI 2: Logo</span>
-                          <p className="text-xs text-neutral-500 mt-0.5">Región: x:50, y:50, ancho:150, alto:80</p>
+                          <p className="text-xs text-neutral-500 mt-0.5">Region: x:50, y:50, width:150, height:80</p>
                         </div>
                         <div className="flex items-center space-x-2">
                           <button className="text-blue-500 hover:text-blue-600">
@@ -519,7 +519,7 @@ export function EyeTrackingForm({ researchId, className }: EyeTrackingFormProps)
                       </div>
                       
                       <button className="mt-3 w-full p-2 text-sm text-blue-500 border border-dashed border-blue-200 rounded-lg hover:bg-blue-50 transition-colors">
-                        + Añadir nueva área de interés
+                        + Add new area of interest
                       </button>
                     </div>
                   </div>
@@ -530,19 +530,19 @@ export function EyeTrackingForm({ researchId, className }: EyeTrackingFormProps)
         </div>
 
         <footer className="flex items-center justify-between px-8 py-4 bg-neutral-50 border-t border-neutral-100">
-          <p className="text-sm text-neutral-500">Los cambios se guardan automáticamente</p>
+          <p className="text-sm text-neutral-500">Changes are saved automatically</p>
           <div className="flex items-center gap-3">
             <button
               type="button"
               className="px-4 py-2 text-sm font-medium text-neutral-700 bg-white border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors"
             >
-              Vista previa
+              Preview
             </button>
             <button
               type="button"
               className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors"
             >
-              Guardar y continuar
+              Save and Continue
             </button>
           </div>
         </footer>
