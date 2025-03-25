@@ -1,0 +1,18 @@
+# Archivos JavaScript compilados
+*.js
+*.js.map
+!*.config.js
+
+# Directorios de compilación
+dist/
+build/
+
+# Dependencias
+node_modules/
+
+# Archivos de TypeScript
+*.tsbuildinfo
+
+# Archivos específicos del sistema
+.DS_Store
+Thumbs.db 
