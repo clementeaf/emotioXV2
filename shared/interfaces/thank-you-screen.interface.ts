@@ -32,8 +32,36 @@ export interface ThankYouScreenModel extends ThankYouScreenConfig {
   researchId: string;
   
   // Creation and update timestamps
-  createdAt?: string;
-  updatedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Data structure for creating or updating a Thank You Screen
+ */
+export interface ThankYouScreenFormData extends ThankYouScreenConfig {
+  // ID of the research this screen is associated with
+  researchId?: string;
+}
+
+/**
+ * Response structure when retrieving or modifying a Thank You Screen
+ */
+export interface ThankYouScreenResponse {
+  // Unique identifier of the saved screen
+  id?: string;
+  
+  // The thank you screen data
+  data?: ThankYouScreenConfig;
+  
+  // Success indicator
+  success?: boolean;
+  
+  // Error message if applicable
+  error?: string;
+  
+  // Flag indicating if the requested resource was not found
+  notFound?: boolean;
 }
 
 /**

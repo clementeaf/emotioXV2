@@ -8,5 +8,6 @@ export * from './user';
 export * from './welcomeScreen.model';
 export * from './newResearch.model';
 export * from './smartVocForm.model';
+export * from './thankYouScreen.model';
 
 // Otros modelos serán exportados aquí a medida que se creen 
