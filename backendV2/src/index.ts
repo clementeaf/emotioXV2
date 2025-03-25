@@ -2,6 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { authHandler } from './controllers/auth.controller';
 import { researchHandler } from './controllers/newResearch.controller';
 import { welcomeScreenHandler } from './controllers/welcomeScreen.controller';
+import { smartVocFormController } from './controllers/smartVocForm.controller';
 
 /**
  * Punto de entrada principal para las funciones serverless
@@ -24,6 +25,7 @@ const routeMap: Record<string, (event: APIGatewayProxyEvent) => Promise<APIGatew
   'auth': authHandler,
   'research': researchHandler,
   'welcome-screens': welcomeScreenHandler,
+  'smart-voc': smartVocFormController,
   // Aquí se añadirán otros controladores
   // 'emotions': emotionHandler,
 };
