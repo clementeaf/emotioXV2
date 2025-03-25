@@ -14,19 +14,19 @@ import API_CONFIG from '@/config/api.config';
 // Definir el tipo para la API
 const thankYouScreenAPI = {
   getByResearchId: (researchId: string) => 
-    alovaInstance.Get(`/api/thank-you-screens/research/${researchId}`),
+    alovaInstance.Get(API_CONFIG.endpoints.thankYouScreen.GET_BY_RESEARCH.replace('{researchId}', researchId)),
   
   getById: (id: string) => 
-    alovaInstance.Get(`/api/thank-you-screens/${id}`),
+    alovaInstance.Get(API_CONFIG.endpoints.thankYouScreen.GET.replace('{id}', id)),
   
   create: (data: any) => 
-    alovaInstance.Post(`/api/thank-you-screens`, data),
+    alovaInstance.Post(API_CONFIG.endpoints.thankYouScreen.CREATE, data),
   
   update: (id: string, data: any) => 
-    alovaInstance.Put(`/api/thank-you-screens/${id}`, data),
+    alovaInstance.Put(API_CONFIG.endpoints.thankYouScreen.UPDATE.replace('{id}', id), data),
   
   delete: (id: string) => 
-    alovaInstance.Delete(`/api/thank-you-screens/${id}`),
+    alovaInstance.Delete(API_CONFIG.endpoints.thankYouScreen.DELETE.replace('{id}', id)),
 };
 
 // Tipo para la respuesta de la API
@@ -35,6 +35,7 @@ interface ThankYouScreenResponse {
   id?: string;
   error?: string;
   success?: boolean;
+  notFound?: boolean;
 }
 
 interface ThankYouScreenFormProps {
@@ -44,8 +45,7 @@ interface ThankYouScreenFormProps {
 
 export function ThankYouScreenForm({ className, researchId }: ThankYouScreenFormProps) {
   console.log('DEBUG: ThankYouScreenForm inicializado con researchId:', researchId);
-  console.log('DEBUG: Usando la baseURL:', API_CONFIG.baseURL);
-  console.log('DEBUG: URL para get by research:', `${API_CONFIG.baseURL}/api/thank-you-screens/research/${researchId}`);
+  console.log('DEBUG: Usando la baseURL dinámica:', API_CONFIG.baseURL);
   const { token } = useAuth();
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState<ThankYouScreenConfig>({
@@ -67,13 +67,42 @@ export function ThankYouScreenForm({ className, researchId }: ThankYouScreenForm
       try {
         const response = await thankYouScreenAPI.getByResearchId(researchId).send();
         console.log('DEBUG: Respuesta de consulta thank you screen:', response);
+        
+        // Si es una respuesta 404 (manejo silencioso), no es un error
+        if (response && typeof response === 'object' && 'notFound' in response && response.notFound) {
+          console.log('DEBUG: No se encontró thank you screen para esta investigación (404), usando valores por defecto');
+          return { data: null, success: false };
+        }
+        
         return response as ThankYouScreenResponse;
       } catch (error) {
-        console.error('DEBUG: Error al consultar thank you screen:', error);
+        // Solo mostramos errores en consola si no son 404
+        if (error instanceof Error && !error.message.includes('404')) {
+          console.error('DEBUG: Error al consultar thank you screen:', error);
+        } else if (error instanceof Error && error.message.includes('404')) {
+          console.log('DEBUG: No se encontró thank you screen para esta investigación, usando valores por defecto');
+        }
+        
+        // Si el error es 404, devolvemos un objeto vacío en lugar de lanzar error
+        // esto evita que React Query intente reintentar la solicitud
+        if (error instanceof Error && error.message.includes('404')) {
+          return { data: null, success: false };
+        }
         throw error;
       }
     },
-    enabled: !!researchId && !!token
+    enabled: !!researchId && !!token,
+    // Configurar máximo de reintentos y opciones específicas
+    retry: (failureCount, error) => {
+      // No reintentar si el error es 404 (Not Found)
+      if (error instanceof Error && error.message.includes('404')) {
+        return false;
+      }
+      // Para otros errores, permitir hasta 2 reintentos
+      return failureCount < 2;
+    },
+    retryDelay: 1000, // Esperar 1 segundo entre reintentos
+    staleTime: 60000 // Mantener los datos frescos durante 1 minuto
   });
 
   // Actualizar el formulario cuando se reciben datos
@@ -93,9 +122,16 @@ export function ThankYouScreenForm({ className, researchId }: ThankYouScreenForm
         redirectUrl: thankYouScreenData.data.redirectUrl || ""
       });
       console.log('Thank you screen data loaded successfully');
-    } else if (thankYouScreenData) {
+    } else {
+      // Caso para cuando no hay datos o hay un error 404 manejado
       console.log('DEBUG: No se encontraron datos de thank you screen, usando valores por defecto');
       setThankYouScreenId(null);
+      setFormData({
+        isEnabled: DEFAULT_THANK_YOU_SCREEN_CONFIG.isEnabled,
+        title: DEFAULT_THANK_YOU_SCREEN_CONFIG.title,
+        message: DEFAULT_THANK_YOU_SCREEN_CONFIG.message,
+        redirectUrl: DEFAULT_THANK_YOU_SCREEN_CONFIG.redirectUrl || ""
+      });
       console.log('No thank you screen configuration found. Using defaults.');
     }
   }, [thankYouScreenData]);
@@ -147,12 +183,12 @@ export function ThankYouScreenForm({ className, researchId }: ThankYouScreenForm
         // Si tenemos un ID, actualizar el registro existente
         if (thankYouScreenId) {
           console.log(`DEBUG: Actualizando thank you screen con ID ${thankYouScreenId}`);
-          fullUrl = `/api/thank-you-screens/${thankYouScreenId}`;
+          fullUrl = `/thank-you-screens/${thankYouScreenId}`;
           console.log('DEBUG: URL completa para actualización:', fullUrl);
           response = await thankYouScreenAPI.update(thankYouScreenId, data).send();
         } else {
           // Si no tenemos ID, crear un nuevo registro
-          fullUrl = `/api/thank-you-screens`;
+          fullUrl = `/thank-you-screens`;
           console.log('DEBUG: URL completa para creación:', fullUrl);
           console.log('DEBUG: Creando nuevo thank you screen');
           response = await thankYouScreenAPI.create(data).send();

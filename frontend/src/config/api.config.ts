@@ -58,8 +58,8 @@ const getBaseURL = () => {
 
 // Configuración de la API
 const API_CONFIG = {
-  // URL base para todas las solicitudes de API - usando el sistema de rewrites de Next.js
-  baseURL: '/api',
+  // URL base para todas las solicitudes - utilizando sistema dinámico
+  baseURL: getBaseURL(),
 
   // Puntos finales para diferentes recursos
   endpoints: {
@@ -113,14 +113,10 @@ const API_CONFIG = {
 // Agregar logs para depuración
 console.log('API_CONFIG:', {
   baseURL: API_CONFIG.baseURL,
-  endpoints: {
-    research: {
-      CREATE: API_CONFIG.baseURL + API_CONFIG.endpoints.research.CREATE
-    }
-  }
+  endpointExample: API_CONFIG.baseURL + API_CONFIG.endpoints.research.CREATE
 });
 
-console.log('MODO API: Usando API de AWS directamente');
+console.log('MODO API: Usando URL dinámica desde configuración:', API_CONFIG.baseURL);
 
 export default API_CONFIG;
 export type APIConfig = typeof API_CONFIG; 
