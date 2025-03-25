@@ -334,10 +334,7 @@ export function SmartVOCForm({ className, onSave }: SmartVOCFormProps) {
       <div className="bg-white rounded-xl border border-neutral-200/70 shadow-[0_6px_16px_-4px_rgba(0,0,0,0.05)] overflow-hidden">
         <div className="px-8 py-8">
           <header className="mb-6">
-            <h1 className="text-lg font-semibold text-neutral-900">
-              Smart VOC
-            </h1>
-            <p className="mt-1 text-sm text-neutral-500">
+            <p className="text-sm text-neutral-500">
               Configure the Voice of Customer questions for your research.
             </p>
           </header>

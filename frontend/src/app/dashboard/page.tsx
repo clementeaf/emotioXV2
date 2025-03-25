@@ -129,10 +129,6 @@ function DashboardContent({ activeResearch }: { activeResearch?: { id: string; n
               console.log('DEBUG: Renderizando SimplifiedSmartVOCForm');
               return (
                 <div className="bg-white rounded-lg border border-neutral-200 p-6">
-                  <h2 className="text-xl font-medium mb-3">Smart VOC</h2>
-                  <p className="text-neutral-600 mb-3">
-                    Configure the Voice of Customer questions for your research.
-                  </p>
                   <SimplifiedSmartVOCForm 
                     onSave={(data) => {
                       console.log('Smart VOC data saved:', data);
