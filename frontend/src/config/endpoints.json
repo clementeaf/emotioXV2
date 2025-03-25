@@ -1,32 +1,49 @@
 {
-  "apiUrl": "",
+  "apiUrl": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev",
   "websocketUrl": "",
   "endpoints": {
     "auth": {
-      "register": "/api/auth/register",
-      "login": "/api/auth/login",
-      "logout": "/api/auth/logout"
+      "register": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/auth/register",
+      "login": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/auth/login",
+      "logout": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/auth/logout"
     },
     "users": {
-      "getUser": "/api/users/{id}",
-      "updateUser": "/api/users/{id}",
-      "deleteUser": "/api/users/{id}",
-      "getAllUsers": "/api/users"
+      "getUser": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/users/{id}",
+      "updateUser": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/users/{id}",
+      "deleteUser": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/users/{id}",
+      "getAllUsers": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/users"
     },
     "research": {
-      "createResearch": "/api/research",
-      "getResearch": "/api/research/{id}",
-      "getAllResearch": "/api/research",
-      "updateResearch": "/api/research/{id}",
-      "deleteResearch": "/api/research/{id}"
+      "createResearch": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/research",
+      "getResearch": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/research/{id}",
+      "getAllResearch": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/research",
+      "updateResearch": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/research/{id}",
+      "deleteResearch": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/research/{id}"
     },
     "forms": {
-      "createForm": "/api/forms",
-      "getForm": "/api/forms/{id}",
-      "getFormsByResearch": "/api/forms/research/{researchId}",
-      "updateForm": "/api/forms/{id}",
-      "deleteForm": "/api/forms/{id}"
+      "createForm": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/forms",
+      "getForm": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/forms/{id}",
+      "getFormsByResearch": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/forms/research/{researchId}",
+      "updateForm": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/forms/{id}",
+      "deleteForm": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/forms/{id}"
+    },
+    "welcomeScreen": {
+      "create": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/welcome-screens",
+      "get": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/welcome-screens/{id}",
+      "getByResearch": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/welcome-screens/research/{researchId}",
+      "update": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/welcome-screens/{id}",
+      "delete": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/welcome-screens/{id}"
+    },
+    "thankYouScreen": {
+      "create": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/thank-you-screens",
+      "get": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/thank-you-screens/{id}",
+      "getByResearch": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/thank-you-screens/research/{researchId}",
+      "update": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/thank-you-screens/{id}",
+      "delete": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/thank-you-screens/{id}"
     }
   },
-  "_original": {}
+  "_original": {
+    "endpointsData": "HttpApiUrl = \"https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev\""
+  },
+  "_cors_enabled": true
 }

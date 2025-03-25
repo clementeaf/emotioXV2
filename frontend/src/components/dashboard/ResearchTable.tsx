@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react';
 import { ErrorBoundary } from '../common/ErrorBoundary';
 import { Button } from '@/components/ui/Button';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { researchAPI } from '@/lib/api';
+// Eliminamos la importación de researchAPI ya que no la utilizaremos
+// import { researchAPI } from '@/lib/api';
 import { ResearchProject, ResearchTableProps } from '@/interfaces/research';
-import { formatDate, isDevelopmentMode, shouldUseSimulatedMode } from '@/lib/utils';
+import { formatDate, isDevelopmentMode } from '@/lib/utils';
 import { mockResearchAPI, generateMockResearchProjects } from '@/lib/mock-data';
 import { cn } from '@/lib/utils';
 
@@ -17,7 +18,8 @@ function ResearchTableContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [research, setResearch] = useState<ResearchProject[]>([]);
   const [isDevMode, setIsDevMode] = useState(false);
-  const [isSimulatedMode, setIsSimulatedMode] = useState(false);
+  // Ya no necesitamos estado para modo simulado, siempre usamos datos simulados
+  // const [isSimulatedMode, setIsSimulatedMode] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<ResearchProject | null>(null);
   const [lastUpdated, setLastUpdated] = useState<number>(0);
@@ -28,15 +30,8 @@ function ResearchTableContent() {
   // Verificar si estamos en modo desarrollo (localhost)
   useEffect(() => {
     setIsDevMode(isDevelopmentMode());
-    setIsSimulatedMode(shouldUseSimulatedMode());
-    
-    // Si el usuario ha elegido explícitamente el modo simulado, activarlo 
-    // en localStorage para futuras sesiones
-    if (searchParams.get('simulated') === 'true' && isDevelopmentMode()) {
-      localStorage.setItem('use_simulated_api', 'true');
-      setIsSimulatedMode(true);
-    }
-  }, [searchParams]);
+    // Ya no necesitamos configurar el modo simulado
+  }, []);
 
   // Función para cargar datos de investigación
   const loadResearchData = async (forceRefresh = false) => {
@@ -45,18 +40,9 @@ function ResearchTableContent() {
     }
 
     try {
-      // 1. Si estamos en modo simulado, usar directamente los datos mock
-      if (isSimulatedMode) {
-        console.log('Usando datos simulados para investigaciones...');
-        const mockResponse = await mockResearchAPI.list();
-        setResearch(mockResponse.data);
-        const now = Date.now();
-        setLastUpdated(now);
-        setIsLoading(false);
-        return;
-      }
+      console.log('Usando datos simulados para investigaciones...');
       
-      // 2. Intentar usar caché si no se fuerza actualización
+      // 1. Intentar usar caché si no se fuerza actualización
       if (!forceRefresh) {
         try {
           const cachedData = localStorage.getItem('cached_research_data');
@@ -82,88 +68,35 @@ function ResearchTableContent() {
           console.error('Error verificando caché:', cacheError);
         }
       } else {
-        console.log('Forzando recarga de datos desde la API...');
+        console.log('Forzando recarga de datos simulados...');
       }
       
-      // 3. Cargar desde la API usando researchAPI.list()
-      console.log('Cargando investigaciones desde la API...');
+      // 2. Usar siempre la API simulada
+      const mockResponse = await mockResearchAPI.list();
+      const dataArray = mockResponse.data;
       
+      // 3. Guardar datos y actualizar cache
+      setResearch(dataArray);
+      const now = Date.now();
+      setLastUpdated(now);
+      
+      // Guardar en caché
+      localStorage.setItem('cached_research_data', JSON.stringify(dataArray));
+      localStorage.setItem('cached_research_timestamp', now.toString());
+      
+    } catch (error: any) {
+      console.error('Error al cargar investigaciones simuladas:', error);
+      setError(error.message || 'Error al cargar las investigaciones simuladas');
+      
+      // Intentar generar datos simulados directamente como último recurso
       try {
-        const apiResponse: any = await researchAPI.list();
-        console.log('Respuesta de la API:', apiResponse);
-        
-        // 4. Extraer y procesar los datos
-        let dataArray: any[] = [];
-        
-        if (apiResponse && apiResponse.data) {
-          if (Array.isArray(apiResponse.data)) {
-            dataArray = apiResponse.data;
-          } else if (apiResponse.data.data && Array.isArray(apiResponse.data.data)) {
-            dataArray = apiResponse.data.data;
-          }
-        }
-        
-        // 5. Guardar datos y actualizar cache
-        setResearch(dataArray);
+        console.log('Generando datos simulados de respaldo...');
+        const mockData = generateMockResearchProjects(10);
+        setResearch(mockData);
         const now = Date.now();
         setLastUpdated(now);
-        
-        // Guardar en caché
-        localStorage.setItem('cached_research_data', JSON.stringify(dataArray));
-        localStorage.setItem('cached_research_timestamp', now.toString());
-        
-      } catch (apiError: any) {
-        console.error('Error al obtener datos de la API:', apiError);
-        
-        // Verificar si hay datos en caché para usar como fallback, sin importar la antigüedad
-        try {
-          const cachedData = localStorage.getItem('cached_research_data');
-          const cachedTime = localStorage.getItem('cached_research_timestamp');
-          
-          if (cachedData && cachedTime) {
-            console.log('Usando datos en caché como fallback después de error');
-            const parsedData = JSON.parse(cachedData);
-            const timestamp = parseInt(cachedTime, 10);
-            
-            setResearch(parsedData);
-            setLastUpdated(timestamp);
-            setShowApiErrorMessage(true);
-          } else if (isDevelopmentMode()) {
-            // En desarrollo, si no hay caché, automáticamente pasamos a modo simulado
-            console.log('Error al cargar datos reales, pasando a modo simulado automáticamente');
-            setIsSimulatedMode(true);
-            localStorage.setItem('use_simulated_api', 'true');
-            
-            // Cargar datos simulados inmediatamente
-            const mockResponse = await mockResearchAPI.list();
-            setResearch(mockResponse.data);
-            const now = Date.now();
-            setLastUpdated(now);
-          } else {
-            // En producción, mostrar el error
-            throw apiError;
-          }
-        } catch (cacheError) {
-          console.error('Error al usar caché como fallback:', cacheError);
-          throw apiError; // Re-lanzar error original
-        }
-      }
-    } catch (error: any) {
-      console.error('Error al cargar investigaciones:', error);
-      setError(error.message || 'Error al cargar las investigaciones');
-      // Si estamos en desarrollo, intentar usar datos simulados
-      if (isDevelopmentMode() && !isSimulatedMode) {
-        console.warn('Error en modo real, intentando pasar a datos simulados...');
-        setIsSimulatedMode(true);
-        localStorage.setItem('use_simulated_api', 'true');
-        try {
-          const mockResponse = await mockResearchAPI.list();
-          setResearch(mockResponse.data);
-          const now = Date.now();
-          setLastUpdated(now);
-        } catch (mockError) {
-          console.error('Error también con datos simulados:', mockError);
-        }
+      } catch (mockError) {
+        console.error('Error también con datos simulados de respaldo:', mockError);
       }
     } finally {
       setIsLoading(false);
@@ -173,7 +106,7 @@ function ResearchTableContent() {
   // Cargar datos iniciales
   useEffect(() => {
     loadResearchData();
-  }, [isSimulatedMode]); // También recargar cuando cambie el modo simulado
+  }, []); // Ya no necesitamos dependencia de isSimulatedMode
 
   // Detectar cambios que pueden requerir actualización de la tabla
   useEffect(() => {
@@ -213,13 +146,13 @@ function ResearchTableContent() {
     loadResearchData(true);
   };
 
-  // Toggle para cambiar entre modo real y simulado
-  const toggleSimulatedMode = () => {
-    const newMode = !isSimulatedMode;
-    setIsSimulatedMode(newMode);
-    localStorage.setItem('use_simulated_api', newMode ? 'true' : 'false');
-    loadResearchData(true);
-  };
+  // Ya no necesitamos toggle para cambiar entre modo real y simulado
+  // const toggleSimulatedMode = () => {
+  //   const newMode = !isSimulatedMode;
+  //   setIsSimulatedMode(newMode);
+  //   localStorage.setItem('use_simulated_api', newMode ? 'true' : 'false');
+  //   loadResearchData(true);
+  // };
 
   const handleViewResearch = (item: ResearchProject) => {
     // Si es de tipo AIM, redirigir a sección de formularios específica
@@ -241,26 +174,11 @@ function ResearchTableContent() {
     if (!projectToDelete) return;
     
     try {
-      let response;
-      
-      if (isSimulatedMode) {
-        // Usar API simulada
-        response = await mockResearchAPI.delete(projectToDelete.id);
-      } else {
-        try {
-          // Usar API real con manejo específico del objeto que devuelve
-          const apiResponse = await researchAPI.delete(projectToDelete.id);
-          
-          // Asignamos la respuesta procesada correctamente
-          response = apiResponse;
-        } catch (apiError) {
-          console.error('Error en eliminación con API real:', apiError);
-          throw apiError;
-        }
-      }
+      // Usar solo API simulada
+      const response = await mockResearchAPI.delete(projectToDelete.id);
       
       if (response && response.data) {
-        console.log('Respuesta del servidor:', response);
+        console.log('Respuesta del servidor simulado:', response);
         
         // Actualizar la lista de investigaciones removiendo la eliminada
         const updatedResearch = research.filter(r => r.id !== projectToDelete.id);
@@ -293,34 +211,7 @@ function ResearchTableContent() {
         console.error('Error al eliminar la investigación: respuesta vacía o incorrecta');
       }
     } catch (error) {
-      console.error('Error al eliminar la investigación:', error);
-      
-      // Si hay un error en la API, eliminar localmente de todas formas para una mejor experiencia de usuario
-      console.log('Eliminando localmente como fallback');
-      
-      // Actualizar la lista de investigaciones removiendo la eliminada
-      const updatedResearch = research.filter(r => r.id !== projectToDelete.id);
-      setResearch(updatedResearch);
-      
-      // Actualizar la caché con los datos más recientes
-      const now = Date.now();
-      localStorage.setItem('cached_research_data', JSON.stringify(updatedResearch));
-      localStorage.setItem('cached_research_timestamp', now.toString());
-      
-      // Eliminar del localStorage si existe
-      localStorage.removeItem(`research_${projectToDelete.id}`);
-      
-      // Actualizar la lista de investigaciones recientes en localStorage
-      try {
-        const storedList = localStorage.getItem('research_list');
-        if (storedList) {
-          const list = JSON.parse(storedList);
-          const updatedList = list.filter((item: any) => item.id !== projectToDelete.id);
-          localStorage.setItem('research_list', JSON.stringify(updatedList));
-        }
-      } catch (storageError) {
-        console.error('Error actualizando la lista de investigaciones:', storageError);
-      }
+      console.error('Error al eliminar la investigación simulada:', error);
     } finally {
       setShowDeleteModal(false);
       setProjectToDelete(null);
@@ -381,36 +272,7 @@ function ResearchTableContent() {
           </div>
           
           <div className="flex items-center space-x-2">
-            {isDevelopmentMode() && (
-              <div className="flex items-center mr-2">
-                <button
-                  onClick={toggleSimulatedMode}
-                  className={cn(
-                    "text-xs px-3 py-1.5 rounded-md flex items-center space-x-1",
-                    isSimulatedMode
-                      ? "bg-amber-50 text-amber-600 border border-amber-200"
-                      : "bg-blue-50 text-blue-600 border border-blue-200"
-                  )}
-                >
-                  {isSimulatedMode ? (
-                    <>
-                      <span>Datos simulados</span>
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </>
-                  ) : (
-                    <>
-                      <span>Datos reales</span>
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </>
-                  )}
-                </button>
-              </div>
-            )}
-            
+            {/* Eliminamos el botón de toggle entre datos reales y simulados */}
             <button
               onClick={handleRefreshData}
               className="bg-white text-neutral-600 hover:text-neutral-900 p-2 rounded-md border border-neutral-200 hover:bg-neutral-50"
@@ -427,78 +289,17 @@ function ResearchTableContent() {
           </div>
         </div>
         
-        {showApiErrorMessage && !isSimulatedMode && (
-          <div className="px-6 py-3 bg-amber-50 border-b border-amber-100">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-amber-700 flex items-center">
-                <svg className="w-5 h-5 mr-1.5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-                Error al conectar con la API. Mostrando datos en caché.
-              </p>
-              <div className="flex space-x-2">
-                <button 
-                  className="text-xs px-2 py-1 bg-amber-100 rounded text-amber-700 hover:bg-amber-200"
-                  onClick={() => {
-                    setIsSimulatedMode(true);
-                    localStorage.setItem('use_simulated_api', 'true');
-                    loadResearchData(true);
-                  }}
-                >
-                  Usar datos simulados
-                </button>
-                <button 
-                  className="text-xs px-2 py-1 bg-white rounded text-amber-700 border border-amber-200 hover:bg-amber-50"
-                  onClick={() => setShowApiErrorMessage(false)}
-                >
-                  Ocultar
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Eliminamos los mensajes de error relacionados con la API real */}
         
-        {error && !isSimulatedMode && !showApiErrorMessage && (
-          <div className="px-6 py-3 bg-red-50 border-b border-red-100">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-red-700 flex items-center">
-                <svg className="w-5 h-5 mr-1.5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                {error}
-              </p>
-              <div className="flex space-x-2">
-                <button 
-                  className="text-xs px-2 py-1 bg-red-100 rounded text-red-700 hover:bg-red-200"
-                  onClick={() => {
-                    setIsSimulatedMode(true);
-                    localStorage.setItem('use_simulated_api', 'true');
-                    loadResearchData(true);
-                  }}
-                >
-                  Usar datos simulados
-                </button>
-                <button 
-                  className="text-xs px-2 py-1 bg-white rounded text-red-700 border border-red-200 hover:bg-red-50"
-                  onClick={() => setError(null)}
-                >
-                  Ocultar
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {isSimulatedMode && (
-          <div className="px-6 py-3 bg-blue-50 border-b border-blue-100">
-            <p className="text-sm text-blue-700 flex items-center">
-              <svg className="w-5 h-5 mr-1.5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Usando datos simulados. Los cambios solo son temporales y no se guardan en la base de datos.
-            </p>
-          </div>
-        )}
+        {/* Mensaje permanente indicando que se usan datos simulados */}
+        <div className="px-6 py-3 bg-blue-50 border-b border-blue-100">
+          <p className="text-sm text-blue-700 flex items-center">
+            <svg className="w-5 h-5 mr-1.5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Usando datos simulados. Los cambios solo son temporales y no se guardan en la base de datos.
+          </p>
+        </div>
 
         <div className="overflow-x-auto">
           {isLoading ? (

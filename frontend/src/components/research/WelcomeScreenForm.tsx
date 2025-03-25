@@ -6,6 +6,8 @@ import { Textarea } from '@/components/ui/Textarea';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
 import { toast } from 'react-hot-toast';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { welcomeScreenAPI } from '@/config/alova.config';
 
 // Definir localmente los valores por defecto para evitar problemas de importación
 const DEFAULT_CONFIG = {
@@ -17,10 +19,19 @@ const DEFAULT_CONFIG = {
 
 // Define el tipo localmente
 interface WelcomeScreenData {
+  id?: string;
   isEnabled: boolean;
   title: string;
   message: string;
   startButtonText: string;
+}
+
+// Tipo para la respuesta de la API
+interface WelcomeScreenResponse {
+  data?: WelcomeScreenData;
+  error?: string;
+  success?: boolean;
+  id?: string;
 }
 
 interface WelcomeScreenFormProps {
@@ -29,64 +40,147 @@ interface WelcomeScreenFormProps {
 }
 
 export function WelcomeScreenForm({ className, researchId }: WelcomeScreenFormProps) {
+  console.log('DEBUG: WelcomeScreenForm inicializado con researchId:', researchId);
   const { token } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
+  const queryClient = useQueryClient();
   const [formData, setFormData] = useState<WelcomeScreenData>({
     isEnabled: DEFAULT_CONFIG.isEnabled,
     title: DEFAULT_CONFIG.title,
     message: DEFAULT_CONFIG.message,
     startButtonText: DEFAULT_CONFIG.startButtonText
   });
-  
-  // Determinar si estamos en modo desarrollo
-  const isDevelopment = process.env.NODE_ENV === 'development';
+  // Guardar el ID si ya existe un welcome screen
+  const [welcomeScreenId, setWelcomeScreenId] = useState<string | null>(null);
+  // Estado para errores de validación
+  const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
 
-  // Cargar datos existentes al montar el componente
-  useEffect(() => {
-    if (!researchId) return;
-    
-    const fetchWelcomeScreen = async () => {
+  // Consultar datos de welcome screen existentes
+  const { isLoading: isLoadingData, data: welcomeScreenData } = useQuery({
+    queryKey: ['welcomeScreen', researchId] as const,
+    queryFn: async () => {
+      console.log('DEBUG: Ejecutando consulta para obtener welcome screen con researchId:', researchId);
       try {
-        setIsLoading(true);
-        
-        // URL del endpoint basada en si estamos en desarrollo o producción
-        const apiUrl = isDevelopment 
-          ? `/api/debug/welcome-screen/${researchId}` 
-          : `/api/proxy/research/${researchId}/welcome-screen`;
-        
-        console.log('Fetching welcome screen from:', apiUrl);
-        
-        const response = await fetch(apiUrl, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.data) {
-            setFormData({
-              isEnabled: data.data.isEnabled,
-              title: data.data.title,
-              message: data.data.message,
-              startButtonText: data.data.startButtonText
-            });
-          }
-        } else {
-          console.log('No welcome screen configuration found. Using defaults.');
-        }
+        const response = await welcomeScreenAPI.getByResearchId(researchId).send();
+        console.log('DEBUG: Respuesta de consulta welcome screen:', response);
+        return response as WelcomeScreenResponse;
       } catch (error) {
-        console.error('Error fetching welcome screen:', error);
-      } finally {
-        setIsLoading(false);
+        console.error('DEBUG: Error al consultar welcome screen:', error);
+        throw error;
       }
-    };
+    },
+    enabled: !!researchId && !!token
+  });
+
+  // Actualizar el formulario cuando se reciben datos
+  useEffect(() => {
+    console.log('DEBUG: useEffect welcomeScreenData cambió:', welcomeScreenData);
+    if (welcomeScreenData?.data) {
+      console.log('DEBUG: Actualizando formulario con datos existentes:', welcomeScreenData.data);
+      // Si tenemos un ID en la respuesta, guardarlo
+      if (welcomeScreenData.data.id) {
+        setWelcomeScreenId(welcomeScreenData.data.id);
+        console.log('DEBUG: Welcome screen ID guardado:', welcomeScreenData.data.id);
+      }
+      setFormData({
+        isEnabled: welcomeScreenData.data.isEnabled,
+        title: welcomeScreenData.data.title,
+        message: welcomeScreenData.data.message,
+        startButtonText: welcomeScreenData.data.startButtonText
+      });
+      console.log('Welcome screen data loaded successfully');
+    } else if (welcomeScreenData) {
+      console.log('DEBUG: No se encontraron datos de welcome screen, usando valores por defecto');
+      setWelcomeScreenId(null);
+      console.log('No welcome screen configuration found. Using defaults.');
+    }
+  }, [welcomeScreenData]);
+
+  // Validar el formulario
+  const validateForm = (): boolean => {
+    const errors: {[key: string]: string} = {};
     
-    fetchWelcomeScreen();
-  }, [researchId, token, isDevelopment]);
+    // Solo validar si está habilitado
+    if (formData.isEnabled) {
+      if (!formData.title.trim()) {
+        errors.title = 'El título es obligatorio';
+      } else if (formData.title.length < 3) {
+        errors.title = 'El título debe tener al menos 3 caracteres';
+      }
+      
+      if (!formData.message.trim()) {
+        errors.message = 'El mensaje es obligatorio';
+      } else if (formData.message.length < 10) {
+        errors.message = 'El mensaje debe tener al menos 10 caracteres';
+      }
+      
+      if (!formData.startButtonText.trim()) {
+        errors.startButtonText = 'El texto del botón es obligatorio';
+      } else if (formData.startButtonText.length < 2) {
+        errors.startButtonText = 'El texto del botón debe tener al menos 2 caracteres';
+      }
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Mutación para guardar el formulario
+  const { mutate: saveWelcomeScreen, isPending: isSaving } = useMutation({
+    mutationFn: async (data: any) => {
+      console.log('DEBUG: Guardando welcome screen con datos:', data);
+      try {
+        let response;
+        
+        // Si tenemos un ID, actualizar el registro existente
+        if (welcomeScreenId) {
+          console.log(`DEBUG: Actualizando welcome screen con ID ${welcomeScreenId}`);
+          response = await welcomeScreenAPI.update(welcomeScreenId, data).send();
+        } else {
+          // Si no tenemos ID, crear un nuevo registro
+          console.log('DEBUG: Creando nuevo welcome screen');
+          response = await welcomeScreenAPI.create(data).send();
+        }
+        
+        console.log('DEBUG: Respuesta al guardar welcome screen:', response);
+        
+        // Convertir la respuesta a WelcomeScreenResponse
+        const typedResponse = response as WelcomeScreenResponse;
+        
+        // Si la respuesta incluye un ID y no teníamos uno, guardarlo
+        if (typedResponse && typedResponse.id && !welcomeScreenId) {
+          setWelcomeScreenId(typedResponse.id);
+          console.log('DEBUG: Nuevo welcome screen ID guardado:', typedResponse.id);
+        }
+        
+        return typedResponse;
+      } catch (error) {
+        console.error('DEBUG: Error al guardar welcome screen:', error);
+        throw error;
+      }
+    },
+    onSuccess: (data) => {
+      console.log('DEBUG: Welcome screen guardada exitosamente', data);
+      toast.success('Pantalla de bienvenida guardada exitosamente');
+      // Invalidar la consulta para recargar los datos
+      queryClient.invalidateQueries({ queryKey: ['welcomeScreen', researchId] });
+    },
+    onError: (error: Error) => {
+      console.error('Error saving welcome screen:', error);
+      toast.error(error.message || 'Error al guardar la pantalla de bienvenida');
+    }
+  });
 
   // Manejar cambios en el formulario
   const handleChange = (field: keyof WelcomeScreenData, value: any) => {
+    // Limpiar error de validación al cambiar el campo
+    if (validationErrors[field]) {
+      setValidationErrors(prev => {
+        const newErrors = {...prev};
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+    
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -94,53 +188,33 @@ export function WelcomeScreenForm({ className, researchId }: WelcomeScreenFormPr
   };
 
   // Guardar datos del formulario
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!researchId) {
-      toast.error('Research ID is required');
+      toast.error('Se requiere el ID de la investigación');
       return;
     }
 
-    try {
-      setIsLoading(true);
-      
-      // URL del endpoint basada en si estamos en desarrollo o producción
-      const apiUrl = isDevelopment 
-        ? `/api/debug/welcome-screen/${researchId}` 
-        : `/api/proxy/research/${researchId}/welcome-screen`;
-      
-      console.log('Saving welcome screen to:', apiUrl);
-      
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          researchId,
-          ...formData
-        })
-      });
-      
-      if (response.ok) {
-        toast.success('Welcome screen saved successfully');
-      } else {
-        const errorData = await response.json();
-        toast.error(errorData.message || 'Error saving welcome screen');
-      }
-    } catch (error) {
-      console.error('Error saving welcome screen:', error);
-      toast.error('Failed to save welcome screen');
-    } finally {
-      setIsLoading(false);
+    // Validar el formulario antes de enviar
+    if (!validateForm()) {
+      toast.error('Por favor, corrija los errores en el formulario');
+      return;
     }
+
+    const requestData = {
+      researchId,
+      ...formData
+    };
+    
+    saveWelcomeScreen(requestData);
   };
 
   // Vista previa del formulario
   const handlePreview = () => {
     // Implementar lógica de vista previa
-    toast.success('Preview functionality coming soon!');
+    toast.success('Vista previa próximamente!');
   };
+
+  const isLoading = isLoadingData || isSaving;
 
   return (
     <div className={cn("max-w-3xl mx-auto", className)}>
@@ -149,67 +223,89 @@ export function WelcomeScreenForm({ className, researchId }: WelcomeScreenFormPr
         <div className="px-6 py-6">
           <header className="mb-4">
             <h1 className="text-lg font-semibold text-neutral-900">
-              1.0 - Welcome screen
+              1.0 - Pantalla de bienvenida
             </h1>
             <p className="mt-1 text-sm text-neutral-500">
-              Configure the initial screen that participants will see when starting the research.
+              Configure la pantalla inicial que los participantes verán al comenzar la investigación.
             </p>
           </header>
 
           <div className="space-y-5">
             <div className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg">
               <div className="space-y-0.5">
-                <h2 className="text-sm font-medium text-neutral-900">Enable Welcome Screen</h2>
-                <p className="text-sm text-neutral-500">Show a welcome message to participants before starting the research.</p>
+                <h2 className="text-sm font-medium text-neutral-900">Habilitar pantalla de bienvenida</h2>
+                <p className="text-sm text-neutral-500">Mostrar un mensaje de bienvenida a los participantes antes de comenzar la investigación.</p>
               </div>
               <Switch 
                 checked={formData.isEnabled}
                 onCheckedChange={(checked: boolean) => handleChange('isEnabled', checked)}
+                disabled={isLoading}
               />
             </div>
 
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <label htmlFor="title" className="block text-sm font-medium text-neutral-900">
-                  Title
+                  Título
                 </label>
                 <input
                   type="text"
                   id="title"
                   value={formData.title}
                   onChange={(e) => handleChange('title', e.target.value)}
-                  placeholder="Enter a title for your welcome screen..."
-                  className="w-full px-3 py-2 rounded-lg border border-neutral-200 text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  placeholder="Ingrese un título para su pantalla de bienvenida..."
+                  className={cn(
+                    "w-full px-3 py-2 rounded-lg border text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
+                    validationErrors.title ? "border-red-500" : "border-neutral-200"
+                  )}
+                  disabled={isLoading || !formData.isEnabled}
                 />
+                {validationErrors.title && (
+                  <p className="text-red-500 text-xs mt-1">{validationErrors.title}</p>
+                )}
               </div>
 
               <div className="space-y-1.5">
                 <label htmlFor="message" className="block text-sm font-medium text-neutral-900">
-                  Message
+                  Mensaje
                 </label>
                 <Textarea
                   id="message"
                   value={formData.message}
                   onChange={(e) => handleChange('message', e.target.value)}
-                  placeholder="Write a welcome message for your participants..."
-                  className="min-h-[100px]"
+                  placeholder="Escriba un mensaje de bienvenida para sus participantes..."
+                  className={cn(
+                    "min-h-[100px]",
+                    validationErrors.message ? "border-red-500" : ""
+                  )}
+                  disabled={isLoading || !formData.isEnabled}
                 />
+                {validationErrors.message && (
+                  <p className="text-red-500 text-xs mt-1">{validationErrors.message}</p>
+                )}
               </div>
 
               <div className="space-y-1.5">
                 <label htmlFor="buttonText" className="block text-sm font-medium text-neutral-900">
-                  Start Button Text
+                  Texto del botón de inicio
                 </label>
                 <input
                   type="text"
                   id="buttonText"
                   value={formData.startButtonText}
                   onChange={(e) => handleChange('startButtonText', e.target.value)}
-                  placeholder="e.g., 'Start Research', 'Begin', 'Continue'"
-                  className="w-full px-3 py-2 rounded-lg border border-neutral-200 text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  placeholder="ej., 'Iniciar investigación', 'Comenzar', 'Continuar'"
+                  className={cn(
+                    "w-full px-3 py-2 rounded-lg border text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
+                    validationErrors.startButtonText ? "border-red-500" : "border-neutral-200"
+                  )}
+                  disabled={isLoading || !formData.isEnabled}
                 />
+                {validationErrors.startButtonText && (
+                  <p className="text-red-500 text-xs mt-1">{validationErrors.startButtonText}</p>
+                )}
                 <p className="text-xs text-neutral-500 mt-1">
-                  The text that will appear on the button to start the research.
+                  El texto que aparecerá en el botón para iniciar la investigación.
                 </p>
               </div>
             </div>
@@ -218,16 +314,18 @@ export function WelcomeScreenForm({ className, researchId }: WelcomeScreenFormPr
 
         <footer className="flex items-center justify-between px-6 py-3 bg-neutral-50 border-t border-neutral-100">
           <p className="text-sm text-neutral-500">
-            {isLoading ? 'Saving...' : 'Changes will be saved when you click Save'}
+            {isLoading ? 'Guardando...' : welcomeScreenId 
+              ? 'Se actualizará la configuración existente' 
+              : 'Se creará una nueva configuración'}
           </p>
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={handlePreview}
-              disabled={isLoading}
+              disabled={isLoading || !formData.isEnabled}
               className="px-4 py-2 text-sm font-medium text-neutral-700 bg-white border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors disabled:opacity-50"
             >
-              Preview
+              Vista previa
             </button>
             <button
               type="button"
@@ -235,7 +333,7 @@ export function WelcomeScreenForm({ className, researchId }: WelcomeScreenFormPr
               disabled={isLoading}
               className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50"
             >
-              Save Changes
+              {isSaving ? 'Guardando...' : 'Guardar cambios'}
             </button>
           </div>
         </footer>

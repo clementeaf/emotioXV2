@@ -8,6 +8,7 @@ EmotioX es una plataforma para la creación y gestión de investigaciones de eye
 - Node.js 18+ 
 - AWS CLI configurado con credenciales válidas
 - DynamoDB local (opcional)
+- Java Runtime Environment (JRE) versión 8.x o superior (para DynamoDB Local)
 
 ### Configuración
 1. Clonar el repositorio
@@ -24,6 +25,11 @@ EmotioX es una plataforma para la creación y gestión de investigaciones de eye
    cd ..
    cd backend
    npm install
+
+   # Instalar dependencias para backendV2
+   cd ..
+   cd backendV2
+   npm install
    ```
 
 3. Iniciar el proyecto en modo desarrollo:
@@ -31,6 +37,11 @@ EmotioX es una plataforma para la creación y gestión de investigaciones de eye
    # Frontend
    cd frontend
    npm run dev
+
+   # BackendV2 con DynamoDB Local
+   cd backendV2
+   serverless dynamodb install  # Solo la primera vez
+   serverless offline start
    ```
 
 ### Usuarios de prueba
@@ -66,12 +77,42 @@ Se ha creado una investigación de ejemplo en la base de datos:
 - Creación de proyectos de eye-tracking
 - Dashboard para visualización de resultados
 - Sistema de autenticación basado en JWT
+- Almacenamiento en DynamoDB
+
+## Documentación de la API
+
+La API de EmotioXV2 está completamente documentada en el directorio `backendV2/docs/`. Esta documentación incluye:
+
+- **[API Reference](backendV2/docs/api-reference.md)**: Documentación completa de todos los endpoints, parámetros, cuerpos de solicitud y respuestas.
+- **[Modelo de Investigación](backendV2/docs/research-model.md)**: Detalles sobre la estructura de datos, validaciones y operaciones del modelo de investigación.
+- **[DynamoDB Local](backendV2/docs/dynamodb-local.md)**: Guía para configurar y utilizar DynamoDB Local en desarrollo.
+
+### Scripts de utilidad para desarrollo
+
+Se han incluido scripts de utilidad en el directorio `backendV2/scripts/` para facilitar el desarrollo:
+
+- **login.sh**: Inicia sesión y recupera un token de autenticación.
+- **export-token.sh**: Exporta el token como variable de entorno para usarlo en solicitudes a la API.
+
+```bash
+# Iniciar sesión y obtener token
+source backendV2/scripts/login.sh
+
+# Exportar el token como variable de entorno
+source backendV2/scripts/export-token.sh
+
+# Usar el token en una solicitud curl
+curl -H "Authorization: Bearer $TOKEN" http://localhost:3000/dev/research/user
+```
+
+Consulta la [documentación de scripts](backendV2/scripts/README.md) para más detalles.
 
 ## Modos de desarrollo
 La aplicación incluye dos modos para desarrollo:
 
 1. **Modo normal**: Conecta con las APIs reales en AWS
 2. **Modo bypass**: Utiliza endpoints simulados para evitar depender de la API backend
+3. **Modo DynamoDB Local**: Utiliza una instancia local de DynamoDB para desarrollo
 
 ## Verificar datos en DynamoDB
 Para verificar los datos en DynamoDB, puedes usar estos comandos:
@@ -85,6 +126,11 @@ aws dynamodb scan --table-name emotio-x-backend-v2-dev-users --region us-east-1
 
 # Ver investigaciones
 aws dynamodb scan --table-name emotio-x-backend-v2-dev-research --region us-east-1
+
+# DynamoDB Local (modo desarrollo)
+aws dynamodb list-tables --endpoint-url http://localhost:8000
+aws dynamodb scan --table-name emotioxv2-users-dev --endpoint-url http://localhost:8000
+aws dynamodb scan --table-name emotioXV2-table-dev --endpoint-url http://localhost:8000
 ```
 
 ## Problemas conocidos
@@ -143,6 +189,7 @@ O simplemente recarga la aplicación, que ahora usará los endpoints reales.
 - Node.js (v18 o superior)
 - AWS CLI configurado con credenciales
 - Serverless Framework instalado globalmente (`npm install -g serverless`)
+- Java Runtime Environment (JRE) para DynamoDB Local
 
 ### Instalación
 
@@ -157,6 +204,10 @@ npm install
 # Instalar dependencias del backend
 cd ../backend
 npm install
+
+# Instalar dependencias del backendV2
+cd ../backendV2
+npm install
 ```
 
 ### Ejecución local
@@ -169,6 +220,11 @@ npm run dev
 # Backend
 cd backend
 npm run dev
+
+# BackendV2 con DynamoDB Local
+cd backendV2
+serverless dynamodb install  # Solo la primera vez
+serverless offline start
 ```
 
 ### Despliegue
@@ -197,6 +253,14 @@ Si experimentas errores al cargar datos de la API:
    ```javascript
    localStorage.setItem('use_simulated_api', 'true');
    ```
+
+### Problemas con DynamoDB Local
+
+Si encuentras problemas con DynamoDB Local:
+
+1. Verifica que Java esté instalado correctamente
+2. Comprueba que DynamoDB Local esté ejecutándose en el puerto 8000
+3. Consulta la [guía de solución de problemas](backendV2/docs/dynamodb-local.md#solución-de-problemas-comunes) en la documentación
 
 ### Error en el despliegue
 

@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import { useRouter } from 'next/navigation';
+import tokenService from '@/services/tokenService';
 
 interface User {
   email: string;
@@ -16,10 +17,11 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  login: (token: string) => Promise<void>;
+  login: (token: string, rememberMe?: boolean) => Promise<void>;
   logout: () => Promise<void>;
   updateToken: (newToken: string) => void;
   clearError: () => void;
+  refreshToken: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,34 +40,48 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Cargar token al iniciar
   useEffect(() => {
     const initializeAuth = async () => {
-      const storedToken = localStorage.getItem('token');
+      // Verificar el tipo de almacenamiento utilizado (localStorage o sessionStorage)
+      const storageType = localStorage.getItem('auth_storage_type') || 'local';
+      console.log('Tipo de almacenamiento detectado:', storageType);
+      
+      // Buscar token en el almacenamiento correspondiente
+      const storedToken = storageType === 'local' 
+        ? localStorage.getItem('token') 
+        : sessionStorage.getItem('token');
+        
       if (storedToken) {
         try {
+          console.log('Intentando inicializar con token almacenado:', storedToken.substring(0, 15) + '...');
           const decoded = jwtDecode<User>(storedToken);
-          const expiryTime = (decoded as any).exp * 1000;
+          console.log('Token decodificado con éxito:', decoded);
           
-          if (expiryTime > Date.now()) {
-            // Verificar si el token es válido con el backend
-            const response = await fetch('https://fww0ghfvga.execute-api.us-east-1.amazonaws.com/users/me', {
-              headers: {
-                'Authorization': `Bearer ${storedToken}`,
-                'Content-Type': 'application/json'
-              }
-            });
-
-            if (response.ok) {
-              console.log('Token válido encontrado, inicializando sesión');
-              setToken(storedToken);
-              setUser(decoded);
-            } else {
-              throw new Error('Token inválido');
-            }
+          const expiryTime = (decoded as any).exp * 1000;
+          const now = Date.now();
+          console.log('Tiempo actual:', new Date(now).toLocaleString());
+          console.log('Fecha de expiración del token:', new Date(expiryTime).toLocaleString());
+          console.log('Tiempo restante:', Math.floor((expiryTime - now) / (1000 * 60 * 60)) + ' horas');
+          
+          if (expiryTime > now) {
+            console.log('Token válido encontrado, inicializando sesión');
+            setToken(storedToken);
+            setUser(decoded);
+            
+            // Iniciar la renovación automática del token
+            tokenService.startAutoRefresh();
+            
+            console.log('Sesión inicializada con token existente, expira:', new Date(expiryTime).toLocaleString());
           } else {
-            throw new Error('Token expirado');
+            throw new Error(`Token expirado: venció el ${new Date(expiryTime).toLocaleString()}`);
           }
         } catch (error) {
           console.error('Error al inicializar la sesión:', error);
-          localStorage.removeItem('token');
+          // Limpiar token del almacenamiento correspondiente
+          if (storageType === 'local') {
+            localStorage.removeItem('token');
+          } else {
+            sessionStorage.removeItem('token');
+          }
+          localStorage.removeItem('auth_storage_type');
           setError('La sesión ha expirado. Por favor, inicia sesión nuevamente.');
         }
       }
@@ -73,57 +89,61 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
 
     initializeAuth();
+    
+    // Limpiar al desmontar el componente
+    return () => {
+      // Detener la renovación automática al desmontar
+      tokenService.stopAutoRefresh();
+    };
   }, []);
 
-  // Verificar expiración del token y renovarlo si es necesario
-  useEffect(() => {
-    if (!token) return;
-
+  // Función para renovar manualmente el token
+  const handleRefreshToken = async (): Promise<boolean> => {
     try {
-      const decoded = jwtDecode<any>(token);
-      const expiryTime = decoded.exp * 1000;
-      const timeUntilExpiry = expiryTime - Date.now();
-      const renewalTime = timeUntilExpiry - (5 * 60 * 1000); // Renovar 5 minutos antes de expirar
-
-      if (timeUntilExpiry <= 0) {
-        handleLogout();
-        return;
-      }
-
-      // Programar renovación del token
-      const renewalTimeout = setTimeout(async () => {
-        try {
-          // Aquí iría la lógica para renovar el token con el backend
-          // Por ahora solo manejamos la expiración
-          console.log('Token próximo a expirar');
-        } catch (error) {
-          console.error('Error al renovar el token:', error);
+      const renewed = await tokenService.refreshTokenIfNeeded();
+      
+      if (renewed) {
+        // Si se renovó el token, actualizar el estado
+        const newToken = tokenService.getToken();
+        if (newToken) {
+          const decoded = jwtDecode<User>(newToken);
+          setToken(newToken);
+          setUser(decoded);
         }
-      }, renewalTime);
-
-      // Programar logout para cuando expire el token
-      const logoutTimeout = setTimeout(handleLogout, timeUntilExpiry);
-
-      return () => {
-        clearTimeout(renewalTimeout);
-        clearTimeout(logoutTimeout);
-      };
+      }
+      
+      return renewed;
     } catch (error) {
-      console.error('Error al verificar la expiración del token:', error);
-      handleLogout();
+      console.error('Error al renovar token manualmente:', error);
+      return false;
     }
-  }, [token]);
+  };
 
-  const handleLogin = async (newToken: string) => {
+  const handleLogin = async (newToken: string, rememberMe: boolean = true) => {
     setIsLoading(true);
     setError(null);
     try {
-      console.log('Iniciando proceso de login...');
+      console.log('Iniciando proceso de login con rememberMe:', rememberMe);
       const decoded = jwtDecode<User>(newToken);
-      localStorage.setItem('token', newToken);
+      
+      if (rememberMe) {
+        // Si rememberMe es true, guardar en localStorage (persistente)
+        localStorage.setItem('token', newToken);
+        localStorage.setItem('auth_storage_type', 'local');
+        console.log('Token almacenado en localStorage (sesión persistente)');
+      } else {
+        // Si rememberMe es false, guardar en sessionStorage (no persistente)
+        sessionStorage.setItem('token', newToken);
+        localStorage.setItem('auth_storage_type', 'session');
+        console.log('Token almacenado en sessionStorage (sesión temporal)');
+      }
+      
       setToken(newToken);
       setUser(decoded);
       console.log('Login exitoso, token almacenado');
+      
+      // Iniciar la renovación automática del token
+      tokenService.startAutoRefresh();
       
       // Redirigir al dashboard
       router.replace('/dashboard');
@@ -140,24 +160,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setIsLoading(true);
     try {
       console.log('Iniciando proceso de logout...');
-      if (token) {
-        const response = await fetch('https://fww0ghfvga.execute-api.us-east-1.amazonaws.com/auth/logout', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error('Error al cerrar sesión en el servidor');
-        }
-      }
+      // Detener la renovación automática del token
+      tokenService.stopAutoRefresh();
+      
+      // No es necesario hacer logout en el servidor
+      // Simplemente limpiar los datos locales
     } catch (error) {
-      console.error('Error al hacer logout en el servidor:', error);
+      console.error('Error durante el proceso de logout:', error);
       setError('Error al cerrar sesión. Los datos locales han sido limpiados.');
     } finally {
+      // Limpiar token de ambos almacenamientos para mayor seguridad
       localStorage.removeItem('token');
+      sessionStorage.removeItem('token');
+      localStorage.removeItem('auth_storage_type');
+      
       setToken(null);
       setUser(null);
       setIsLoading(false);
@@ -169,7 +185,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const handleUpdateToken = (newToken: string) => {
     try {
       const decoded = jwtDecode<User>(newToken);
-      localStorage.setItem('token', newToken);
+      
+      // Obtener el tipo de almacenamiento actual
+      const storageType = localStorage.getItem('auth_storage_type') || 'local';
+      
+      // Guardar el token en el almacenamiento correspondiente
+      if (storageType === 'local') {
+        localStorage.setItem('token', newToken);
+      } else {
+        sessionStorage.setItem('token', newToken);
+      }
+      
       setToken(newToken);
       setUser(decoded);
       setError(null);
@@ -194,6 +220,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     logout: handleLogout,
     updateToken: handleUpdateToken,
     clearError,
+    refreshToken: handleRefreshToken,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

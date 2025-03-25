@@ -1,117 +1,162 @@
-service: emotio-x-backend-v4
+service: emotioxv2-backend
 
 frameworkVersion: '3'
+
+plugins:
+  - serverless-plugin-typescript
+  - serverless-offline
+  - serverless-dotenv-plugin
+  - serverless-dynamodb-local
+  - serverless-export-outputs
+  - serverless-plugin-export-endpoints
+
+# Configuración del paquete
+package:
+  individually: true
 
 provider:
   name: aws
   runtime: nodejs18.x
   stage: ${opt:stage, 'dev'}
-  region: us-east-1
-  profile: default
-  
+  region: ${opt:region, 'us-east-1'}
+  memorySize: 512
+  timeout: 10
   environment:
-    NODE_ENV: ${opt:stage, 'dev'}
-    REGION: ${self:provider.region}
-    USERS_TABLE: ${self:service}-users-${self:provider.stage}
-    CONNECTIONS_TABLE: ${self:service}-connections-${self:provider.stage}
-    RESEARCH_TABLE: ${self:service}-research-${self:provider.stage}
-    FORMS_TABLE: ${self:service}-forms-${self:provider.stage}
-    JWT_SECRET: ${env:JWT_SECRET, 'dev_jwt_secret_key_for_testing_only'}
-    S3_BUCKET_NAME: ${self:custom.s3BucketName}
+    NODE_ENV: ${self:provider.stage}
+    APP_REGION: ${self:provider.region}
+    USER_TABLE: ${self:service}-users-${self:provider.stage}
+    DYNAMODB_TABLE: ${self:service}-table-${self:provider.stage}
+    JWT_SECRET: ${env:JWT_SECRET, 'mi-clave-secreta-para-firmar-tokens'}
+    TOKEN_EXPIRATION: '604800' # 7 días en segundos (antes 86400 - 24 horas)
+    USE_MOCK_DB: 'false'  # FORZAR a false directamente, sin usar la variable custom
+    IS_OFFLINE: ${self:custom.isOffline, 'false'}
+    API_ENDPOINT: 
+      Fn::Join:
+        - ""
+        - - "https://"
+          - Ref: "ApiGatewayRestApi"
+          - ".execute-api."
+          - Ref: "AWS::Region"
+          - ".amazonaws.com/${self:provider.stage}"
   
-  httpApi:
-    cors:
-      allowedOrigins:
-        - "http://localhost:3000"
-      allowedMethods:
-        - GET
-        - POST
-        - DELETE
-        - PUT
-        - OPTIONS
-      allowCredentials: true
-      
+  # Nueva sintaxis recomendada para IAM roles
   iam:
     role:
       statements:
-        # Permissions for CloudWatch Logs
-        - Effect: "Allow"
+        - Effect: Allow
           Action:
-            - "logs:CreateLogGroup"
-            - "logs:CreateLogStream"
-            - "logs:PutLogEvents"
-          Resource: "arn:aws:logs:*:*:*"
-        
-        # Permissions for DynamoDB
-        - Effect: "Allow"
-          Action:
-            - "dynamodb:PutItem"
-            - "dynamodb:GetItem"
-            - "dynamodb:DeleteItem"
-            - "dynamodb:UpdateItem"
-            - "dynamodb:Query"
-            - "dynamodb:Scan"
-            - "dynamodb:BatchGetItem"
-            - "dynamodb:BatchWriteItem"
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+            - dynamodb:BatchGetItem
+            - dynamodb:BatchWriteItem
+            - dynamodb:DescribeTable
           Resource:
-            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_TABLE}"
-            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_TABLE}/index/*"
-            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CONNECTIONS_TABLE}"
-            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.RESEARCH_TABLE}"
-            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.RESEARCH_TABLE}/index/*"
-            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.FORMS_TABLE}"
-            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.FORMS_TABLE}/index/*"
-        
-        # Permissions for S3
-        - Effect: "Allow"
-          Action:
-            - "s3:PutObject"
-            - "s3:GetObject"
-            - "s3:DeleteObject"
-            - "s3:ListBucket"
-          Resource:
-            - "arn:aws:s3:::${self:custom.s3BucketName}"
-            - "arn:aws:s3:::${self:custom.s3BucketName}/*"
-
-custom:
-  s3BucketName: "${self:service}-${self:provider.stage}-storage"
-  serverless-offline:
-    httpPort: 4800
-    host: 0.0.0.0
-
-plugins:
-  - serverless-offline
-  - serverless-dotenv-plugin
-
-package:
-  individually: false
-  patterns:
-    - '!node_modules/.bin/**'
-    - '!node_modules/aws-sdk/**'  # AWS Lambda ya tiene AWS SDK
-    - '!.git/**'
-    - '!.vscode/**'
-    - '!test/**'
-    - 'node_modules/**'
-    - '.build/**'
-    - 'package.json'
-    - 'package-lock.json'
+            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USER_TABLE}"
+            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USER_TABLE}/index/*"
+            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
+            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}/index/*"
 
 functions:
-  # Test Controller
-  test:
-    handler: index.test
+  api:
+    handler: src/index.handler
     events:
-      - httpApi:
-          path: /api/test
-          method: get
+      # HTTP endpoint para tráfico regular
+      - http:
+          path: /{proxy+}
+          method: ANY
+          cors: 
+            origin: 'http://localhost:4700,*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Requested-With
+              - Accept
+            allowCredentials: true
+            maxAge: 86400
+      # Endpoint raíz
+      - http:
+          path: /
+          method: ANY
+          cors: 
+            origin: 'http://localhost:4700,*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Requested-With
+              - Accept
+            allowCredentials: true
+            maxAge: 86400
+  
+  # WebSocket para comunicación en tiempo real
+  websocket:
+    handler: src/index.handler
+    events:
+      - websocket:
+          route: $connect
+      - websocket:
+          route: $disconnect
+      - websocket:
+          route: $default
 
 resources:
   Resources:
-    # DynamoDB Tables
+    # Configuración CORS para integración de API Gateway
+    GatewayResponseDefault4XX:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'http://localhost:4700,*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Requested-With,Accept'"
+          gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS,PATCH'"
+          gatewayresponse.header.Access-Control-Expose-Headers: "'Authorization,X-Api-Key,WWW-Authenticate'"
+          gatewayresponse.header.Access-Control-Allow-Credentials: "'true'"
+        ResponseType: DEFAULT_4XX
+        RestApiId:
+          Ref: 'ApiGatewayRestApi'
+
+    GatewayResponseDefault5XX:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'http://localhost:4700,*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Requested-With,Accept'"
+          gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS,PATCH'"
+          gatewayresponse.header.Access-Control-Expose-Headers: "'Authorization,X-Api-Key,WWW-Authenticate'"
+          gatewayresponse.header.Access-Control-Allow-Credentials: "'true'"
+        ResponseType: DEFAULT_5XX
+        RestApiId:
+          Ref: 'ApiGatewayRestApi'
+
+    # Respuesta específica para OPTIONS (preflight)
+    GatewayResponseOptions:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'http://localhost:4700,*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Requested-With,Accept'"
+          gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS,PATCH'"
+          gatewayresponse.header.Access-Control-Max-Age: "'86400'"
+          gatewayresponse.header.Access-Control-Expose-Headers: "'Authorization,X-Api-Key,WWW-Authenticate'"
+          gatewayresponse.header.Access-Control-Allow-Credentials: "'true'"
+        ResponseType: UNAUTHORIZED
+        RestApiId:
+          Ref: 'ApiGatewayRestApi'
+
+    # Tabla de usuarios en DynamoDB
     UsersTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: ${self:provider.environment.USERS_TABLE}
+        TableName: ${self:provider.environment.USER_TABLE}
         BillingMode: PAY_PER_REQUEST
         AttributeDefinitions:
           - AttributeName: id
@@ -128,15 +173,138 @@ resources:
                 KeyType: HASH
             Projection:
               ProjectionType: ALL
-              
-    # S3 Bucket
-    StorageBucket:
-      Type: AWS::S3::Bucket
+        SSESpecification:
+          SSEEnabled: true
+    
+    # Tabla general para la aplicación (investigaciones y otros datos)
+    DynamoDBTable:
+      Type: AWS::DynamoDB::Table
       Properties:
-        BucketName: ${self:custom.s3BucketName}
-        CorsConfiguration:
-          CorsRules:
-            - AllowedHeaders: ['*']
-              AllowedMethods: [GET, PUT, POST, DELETE, HEAD]
-              AllowedOrigins: ['*']
-              MaxAge: 3000
+        TableName: ${self:provider.environment.DYNAMODB_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: sk
+            AttributeType: S
+          - AttributeName: userId
+            AttributeType: S
+          - AttributeName: researchId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+          - AttributeName: sk
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: userId-index
+            KeySchema:
+              - AttributeName: userId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+          - IndexName: researchId-index
+            KeySchema:
+              - AttributeName: researchId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+        SSESpecification:
+          SSEEnabled: true
+  
+  Outputs:
+    ApiEndpoint:
+      Description: "URL base de la API desplegada"
+      Value: 
+        Fn::Join:
+          - ""
+          - - "https://"
+            - Ref: "ApiGatewayRestApi"
+            - ".execute-api."
+            - Ref: "AWS::Region"
+            - ".amazonaws.com/${self:provider.stage}"
+    AuthApiUrl:
+      Description: "URL para las rutas de autenticación"
+      Value: 
+        Fn::Join:
+          - ""
+          - - "https://"
+            - Ref: "ApiGatewayRestApi"
+            - ".execute-api."
+            - Ref: "AWS::Region"
+            - ".amazonaws.com/${self:provider.stage}/auth"
+    ResearchApiUrl:
+      Description: "URL para las rutas de investigación"
+      Value: 
+        Fn::Join:
+          - ""
+          - - "https://"
+            - Ref: "ApiGatewayRestApi"
+            - ".execute-api."
+            - Ref: "AWS::Region"
+            - ".amazonaws.com/${self:provider.stage}/research"
+    WelcomeScreenApiUrl:
+      Description: "URL para las rutas de pantallas de bienvenida"
+      Value: 
+        Fn::Join:
+          - ""
+          - - "https://"
+            - Ref: "ApiGatewayRestApi"
+            - ".execute-api."
+            - Ref: "AWS::Region"
+            - ".amazonaws.com/${self:provider.stage}/welcome-screens"
+    WebSocketEndpoint:
+      Description: "WebSocket API Endpoint"
+      Value: 
+        Fn::Join:
+          - ""
+          - - "wss://"
+            - Ref: "WebsocketsApi"
+            - ".execute-api."
+            - Ref: "AWS::Region"
+            - ".amazonaws.com/${self:provider.stage}"
+
+custom:
+  serverless-offline:
+    httpPort: 3000
+    lambdaPort: 3002
+    websocketPort: 3001
+  
+  # Configuración para serverless-plugin-typescript
+  serverlessPluginTypescript:
+    tsConfigFileLocation: './tsconfig.json'
+    typescript:
+      # A veces es necesario especificar esto explícitamente para evitar warnings
+      compiler: './node_modules/typescript/bin/tsc'
+  
+  # Configuración específica por entorno
+  useMockDb:
+    dev: 'false'
+    test: 'false'
+    prod: 'false'
+  
+  # Configuración para DynamoDB Local
+  dynamodb:
+    start:
+      port: 8000
+      inMemory: true
+      migrate: true
+    stages:
+      - dev
+    migration:
+      dir: migrations
+  
+  # Variable para indicar si estamos en modo offline
+  isOffline: ${opt:offline, 'false'}
+  
+  # Configuración para exportar outputs de CloudFormation
+  exportOutputs:
+    fileName: outputs.json
+  
+  # Configuración para exportar endpoints
+  exportEndpoints:
+    fileName: endpoints.json
+    include:
+      - 'http'
+      - 'httpApi'
+      

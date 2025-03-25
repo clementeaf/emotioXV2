@@ -4,6 +4,7 @@ import ReactHook from 'alova/react';
 import API_CONFIG from '@/config/api.config';
 import { ResearchBasicData, Research } from '../../../shared/interfaces/research.model';
 import { ResearchCreationResponse } from '../../../shared/interfaces/research.interface';
+import tokenService from '@/services/tokenService';
 
 // Tipos para las respuestas de la API
 interface APIResponse<T = unknown> {
@@ -62,7 +63,25 @@ const customFetchAdapter = () => {
     
     console.log(`Enviando solicitud ${method} a ${config.url}`);
     
-    const fetchPromise = fetch(config.url, {
+    // Asegurarse de que config.url no sea una URL ya completa
+    let requestUrl = config.url;
+    // Si config.url ya comienza con http o https, no se concatena con baseURL
+    if (!requestUrl.startsWith('http://') && !requestUrl.startsWith('https://')) {
+      // Asegurarnos de que la URL comience con /api/
+      if (!requestUrl.startsWith('/api/')) {
+        // Si la ruta ya comienza con /, solo añadimos api
+        if (requestUrl.startsWith('/')) {
+          requestUrl = '/api' + requestUrl;
+        } else {
+          // Si no, añadimos /api/
+          requestUrl = '/api/' + requestUrl;
+        }
+      }
+    }
+    
+    console.log(`URL final a la que se envía la solicitud: ${requestUrl}`);
+    
+    const fetchPromise = fetch(requestUrl, {
       method: method,
       headers: config.headers,
       body: config.data && method !== 'GET' && method !== 'HEAD' ? JSON.stringify(config.data) : undefined,
@@ -130,47 +149,6 @@ const customFetchAdapter = () => {
         ) {
           console.error(`Error de CORS al intentar conectar con ${config.url}`, error);
           
-          // Intentar un segundo intento sin credentials
-          console.log('El problema parece ser de CORS, considerando fallback...');
-          
-          // Crear una respuesta simulada para desarrollo
-          if (config.url.includes('/research')) {
-            // Si es una creación de investigación, devolver un resultado simulado
-            console.log('Simulando respuesta para endpoint de investigación');
-            
-            // Para POST a /research (creación)
-            if (method === 'POST') {
-              const mockId = `research-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-              const mockData = config.data || {};
-              console.log('Usando simulación local como fallback:', {
-                id: mockId,
-                name: mockData.name || 'Nombre simulado',
-                enterprise: mockData.enterprise || 'enterprise1',
-                type: mockData.type || 'eye-tracking',
-                technique: mockData.technique || 'aim-framework',
-                status: 'draft'
-              });
-              
-              return new Response(JSON.stringify({
-                success: true,
-                data: {
-                  id: mockId,
-                  _id: mockId,
-                  name: mockData.name || 'Nombre simulado',
-                  enterprise: mockData.enterprise || 'enterprise1',
-                  type: mockData.type || 'eye-tracking',
-                  technique: mockData.technique || 'aim-framework',
-                  status: 'draft',
-                  createdAt: new Date().toISOString()
-                }
-              }), {
-                status: 200,
-                headers: new Headers({ 'Content-Type': 'application/json' })
-              });
-            }
-          }
-          
-          // Si no se ha simulado una respuesta específica, lanzar el error original
           const detailedError = new Error(`Error de permisos CORS: El servidor no permite solicitudes desde esta dirección (${window.location.origin}). Este es probablemente un problema de configuración del servidor o un firewall bloqueando las solicitudes cross-origin.`);
           detailedError.name = 'CORSError';
           throw detailedError;
@@ -190,8 +168,8 @@ const customFetchAdapter = () => {
 
 // Crear instancia de Alova
 const alovaInstance = createAlova({
-  // No usar baseURL ya que los endpoints ya contienen URLs completas
-  baseURL: '',
+  // Usar el baseURL de API_CONFIG para todas las solicitudes
+  baseURL: API_CONFIG.baseURL,
   statesHook: ReactHook,
   requestAdapter: customFetchAdapter(),
   timeout: 15000, // Aumentar timeout a 15 segundos para dar más margen
@@ -199,6 +177,13 @@ const alovaInstance = createAlova({
     // Imprimir la URL antes de enviar la solicitud para depuración
     console.log(`Preparando solicitud a: ${method.url}`);
     console.log(`Método explícito: ${method.type}`);
+    
+    // CONFIGURACIÓN CORS: Asegurar que las peticiones directas a AWS funcionan
+    if (method.url.includes('execute-api.us-east-1.amazonaws.com')) {
+      method.config.credentials = 'omit'; // Cambiar a 'omit' para compatibilidad con origen '*'
+      method.config.mode = 'cors'; // Asegurar que el modo es 'cors'
+      console.log('Configurada petición para NO incluir credenciales en CORS (compatible con wildcard origin)');
+    }
     
     // Asegurarse de que el método se está pasando correctamente
     if (!method.config.method) {
@@ -216,8 +201,15 @@ const alovaInstance = createAlova({
       ...method.config.headers,
     };
 
-    // Agregar token de autenticación si existe
-    const token = localStorage.getItem('token');
+    // Verificar el tipo de almacenamiento para obtener el token correspondiente
+    const storageType = localStorage.getItem('auth_storage_type') || 'local';
+    console.log('Tipo de almacenamiento detectado:', storageType);
+    
+    // Obtener token según el tipo de almacenamiento
+    const token = storageType === 'local' 
+      ? localStorage.getItem('token') 
+      : sessionStorage.getItem('token');
+      
     if (token) {
       // Asegurarse de que el token se envía con el prefijo Bearer y espacio
       const authToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
@@ -230,23 +222,6 @@ const alovaInstance = createAlova({
         ...method.config.headers,
         Authorization: authToken,
       };
-      
-      // Para endpoints proxy en desarrollo local, también añadir el token como parámetro URL
-      // para asegurar que se pasa correctamente al servidor
-      if (method.url.includes('/api/proxy/')) {
-        console.log('Detectado endpoint de proxy, añadiendo token como parámetro URL');
-        
-        // Preparar y añadir token como parámetro de URL
-        const tokenValue = token.startsWith('Bearer ') ? token.substring(7) : token;
-        
-        // Crear un objeto URL para manipular la URL
-        const url = new URL(method.url, window.location.origin);
-        url.searchParams.append('token', tokenValue);
-        
-        // Actualizar la URL del método
-        method.url = url.toString();
-        console.log(`URL actualizada con token: ${method.url.replace(tokenValue, tokenValue.substring(0, 10) + '...')}`);
-      }
     } else {
       console.warn('No se encontró token de autenticación');
     }
@@ -325,12 +300,65 @@ const alovaInstance = createAlova({
         throw new Error(`Error al procesar la respuesta del servidor: ${error instanceof Error ? error.message : 'Error desconocido'}`);
       }
     },
-    onError(error: Error) {
+    onError: async (error: Error, method: Method) => {
       console.error('Error en la solicitud (capturado por responded.onError):', {
         name: error.name,
         message: error.message,
         stack: error.stack
       });
+      
+      // Verificar si es un error 401 (Unauthorized)
+      if (error.message.includes('401') || 
+          error.message.includes('Token inválido') || 
+          error.message.includes('Token expirado') ||
+          error.message.includes('No autorizado')) {
+        
+        console.log('Detectado error de autorización, intentando renovar token...');
+        
+        try {
+          // Intentar renovar el token
+          const renewed = await tokenService.refreshTokenIfNeeded();
+          
+          if (renewed) {
+            console.log('Token renovado exitosamente, reintentando solicitud original...');
+            
+            // Obtener el nuevo token
+            const newToken = tokenService.getToken();
+            
+            if (newToken) {
+              // Actualizar el header de autorización en la solicitud original
+              const authToken = newToken.startsWith('Bearer ') ? newToken : `Bearer ${newToken}`;
+              
+              method.config.headers = {
+                ...method.config.headers,
+                Authorization: authToken,
+              };
+              
+              console.log('Reintentando solicitud con nuevo token...');
+              
+              // Reenviar la solicitud original con el nuevo token
+              // Nota: Aquí simplemente lanzamos un error personalizado para que la UI muestre
+              // un mensaje al usuario indicando que debe recargar o reintentar la operación
+              throw new Error('TOKEN_REFRESHED');
+            }
+          } else {
+            console.log('No se pudo renovar el token, manteniendo el error original');
+            throw error;
+          }
+        } catch (refreshError) {
+          console.error('Error al intentar renovar el token:', refreshError);
+          
+          // Si el error es nuestro mensaje específico de TOKEN_REFRESHED, propagarlo
+          if (refreshError instanceof Error && refreshError.message === 'TOKEN_REFRESHED') {
+            throw refreshError;
+          }
+          
+          // Si no se pudo renovar, mantener el error original
+          throw error;
+        }
+      }
+      
+      // Para otros tipos de errores, simplemente propagarlos
       throw error;
     },
   },
@@ -340,12 +368,16 @@ const alovaInstance = createAlova({
 export const authAPI = {
   login: (data: LoginRequest) =>
     alovaInstance.Post<APIResponse<AuthResponse>>(
-      API_CONFIG.endpoints.login.POST || '/auth/login',
+      API_CONFIG.endpoints.auth?.LOGIN || '/auth/login',
       data
     ),
   logout: () =>
     alovaInstance.Post<APIResponse>(
-      API_CONFIG.endpoints.logout.POST || '/auth/logout'
+      API_CONFIG.endpoints.auth?.LOGOUT || '/auth/logout'
+    ),
+  refreshToken: () =>
+    alovaInstance.Post<APIResponse<{token: string, renewed: boolean, expiresAt: number}>>(
+      API_CONFIG.endpoints.auth?.REFRESH_TOKEN || `${API_CONFIG.baseURL}/auth/refreshToken`
     ),
 };
 
@@ -353,24 +385,24 @@ export const authAPI = {
 export const userAPI = {
   create: (data: { email: string; name: string }) =>
     alovaInstance.Post<APIResponse<User>>(
-      API_CONFIG.endpoints.createUser.POST || '/users',
+      '/users', // Endpoint fijo para compatibilidad
       data
     ),
   
   get: () => 
     alovaInstance.Get<APIResponse<User>>(
-      API_CONFIG.endpoints.getUser.GET || '/users/me'
+      '/users/me' // Endpoint fijo para compatibilidad
     ),
   
   update: (data: { name?: string }) =>
     alovaInstance.Put<APIResponse<User>>(
-      API_CONFIG.endpoints.updateUser.PUT || '/users/me',
+      '/users/me', // Endpoint fijo para compatibilidad
       data
     ),
   
   delete: () =>
     alovaInstance.Delete<APIResponse<{ message: string }>>(
-      API_CONFIG.endpoints.deleteUser.DELETE || '/users/me'
+      '/users/me' // Endpoint fijo para compatibilidad
     ),
 };
 
@@ -378,11 +410,90 @@ export const userAPI = {
 export const researchAPI = {
   create: (data: ResearchBasicData) => {
     console.log(`Endpoint CREATE utilizado: ${API_CONFIG.endpoints.research.CREATE}`);
-    console.log('Datos enviados a la API de creación:', data);
-    return alovaInstance.Post<APIResponse<ResearchCreationResponse>>(
+    console.log(`URL completa con Alova: ${API_CONFIG.baseURL}${API_CONFIG.endpoints.research.CREATE}`);
+    console.log(`Data original:`, data);
+    
+    // Crear una copia de los datos para no modificar el original
+    const processedData = {...data};
+    
+    // Forzar el tipo 'behavioural' si es necesario para compatibilidad con el backend
+    // Esto es un workaround temporal hasta que el frontend y backend usen los mismos tipos
+    console.log('Verificando el tipo para asegurar compatibilidad con el backend');
+    try {
+      const originalType = String(processedData.type);
+      if (originalType.toLowerCase().includes('behaviour') || originalType.toLowerCase().includes('behavioral')) {
+        console.log(`Convertiendo tipo "${originalType}" a "behavioural" para compatibilidad`);
+        // Asignar un valor que el backend acepte
+        processedData.type = 'behavioural' as any;
+      }
+    } catch (e) {
+      console.error('Error al procesar el tipo:', e);
+    }
+    
+    console.log('Datos procesados enviados a la API de creación:', processedData);
+    
+    return alovaInstance.Post<any>(
       API_CONFIG.endpoints.research.CREATE || '/research',
-      data
-    );
+      processedData
+    )
+    .then(response => {
+      console.log('Respuesta original de la API CREATE:', response);
+      
+      // Verificar si la respuesta tiene el formato correcto con message y data (formato AWS)
+      if (response && response.message && response.data) {
+        console.log('Respuesta con formato AWS detectada (message + data)');
+        // Asegurar que se mantenga la estructura original de AWS
+        return {
+          success: true,
+          data: response.data, // Aquí está el objeto con id
+          message: response.message,
+          error: null
+        };
+      }
+      
+      // Verificar si la respuesta tiene solo data
+      if (response && response.data) {
+        console.log('Respuesta con data detectada');
+        return {
+          success: true,
+          data: response.data,
+          error: null
+        };
+      }
+      
+      // Si la respuesta es el objeto directo (sin estructuras anidadas)
+      if (response && typeof response === 'object' && !('data' in response) && !('message' in response)) {
+        console.log('Respuesta como objeto directo detectada');
+        return {
+          success: true,
+          data: response,
+          error: null
+        };
+      }
+      
+      // Si la respuesta es de otro tipo, es mejor registrarla para debug
+      console.warn('Formato de respuesta no reconocido:', response);
+      
+      // Si no tiene formato conocido pero parece válido, intentar devolverlo como está
+      if (response) {
+        return {
+          success: true,
+          data: response,
+          error: null
+        };
+      }
+      
+      // Si no se encontraron datos válidos
+      throw new Error('No se pudieron extraer datos válidos de la respuesta');
+    })
+    .catch(error => {
+      console.error('Error en researchAPI.create:', error);
+      return {
+        success: false,
+        data: null,
+        error: error instanceof Error ? error.message : String(error)
+      };
+    });
   },
   
   get: (id: string) => {
@@ -462,6 +573,24 @@ export const researchAPI = {
     console.log(`Endpoint UPDATE_STAGE utilizado: ${url}`);
     return alovaInstance.Put<APIResponse<Research>>(url, { stage, progress });
   },
+};
+
+// Manejar errores de API
+export const handleAPIError = (error: unknown): string => {
+  console.error('Error en la solicitud (capturado por handleAPIError):', error);
+  
+  // Verificar si es un error de CORS
+  if (error instanceof TypeError && error.message === 'Failed to fetch') {
+    console.error('Error de CORS detectado! No se puede acceder a la API directamente desde el navegador.');
+    return 'Error de conexión: No se puede acceder a la API directamente. Recomendamos usar las rewrites de Next.js con /api.';
+  }
+  
+  // Otros tipos de errores
+  if (error instanceof Error) {
+    return error.message || 'Error desconocido';
+  }
+  
+  return 'Error desconocido al procesar la solicitud';
 };
 
 export default alovaInstance; 

@@ -94,30 +94,47 @@ export function useApi<T = any>(defaultOptions: UseApiOptions = {}) {
   );
 
   const api = {
+    // Estas operaciones opcionales solo estarán disponibles si se definen en la configuración
+    
     // Autenticación
     auth: {
-      requestOTP: (data: { email: string }) => post(API_CONFIG.endpoints.requestOTP.POST as string, data),
-      validateOTP: (data: { email: string; code: string }) => post(API_CONFIG.endpoints.validateOTP.POST as string, data),
-      logout: () => del(API_CONFIG.endpoints.logout.POST as string),
+      login: (data: { email: string; password: string }) => post(API_CONFIG.endpoints.auth.LOGIN, data),
+      register: (data: any) => post(API_CONFIG.endpoints.auth.REGISTER, data),
+      logout: () => post(API_CONFIG.endpoints.auth.LOGOUT, {}),
+      
+      // Mantener compatibilidad con las operaciones opcionales anteriores
+      ...(API_CONFIG.endpoints.requestOTP ? {
+        requestOTP: (data: { email: string }) => post(API_CONFIG.endpoints.requestOTP?.POST as string, data),
+        validateOTP: (data: { email: string; code: string }) => post(API_CONFIG.endpoints.validateOTP?.POST as string, data),
+      } : {})
     },
 
     // Usuario
-    user: {
-      create: (data: any) => post(API_CONFIG.endpoints.createUser.POST as string, data),
-      get: () => get(API_CONFIG.endpoints.getUser.GET as string),
-      update: (data: any) => put(API_CONFIG.endpoints.updateUser.PUT as string, data),
-      delete: () => del(API_CONFIG.endpoints.deleteUser.DELETE as string),
+    user: API_CONFIG.endpoints.createUser ? {
+      create: (data: any) => post(API_CONFIG.endpoints.createUser?.POST as string, data),
+      get: () => get(API_CONFIG.endpoints.getUser?.GET as string),
+      update: (data: any) => put(API_CONFIG.endpoints.updateUser?.PUT as string, data),
+      delete: () => del(API_CONFIG.endpoints.deleteUser?.DELETE as string),
+    } : undefined,
+
+    // Investigaciones - Siempre disponible ya que es requerido en el tipo Endpoints
+    research: {
+      create: (data: any) => post(API_CONFIG.endpoints.research.CREATE, data),
+      getById: (id: string) => get(API_CONFIG.endpoints.research.GET.replace('{id}', id)),
+      getAll: () => get(API_CONFIG.endpoints.research.LIST),
+      update: (id: string, data: any) => put(API_CONFIG.endpoints.research.UPDATE.replace('{id}', id), data),
+      delete: (id: string) => del(API_CONFIG.endpoints.research.DELETE.replace('{id}', id)),
+      updateStatus: (id: string, status: string) => put(API_CONFIG.endpoints.research.UPDATE_STATUS.replace('{id}', id), { status }),
+      updateStage: (id: string, stage: string) => put(API_CONFIG.endpoints.research.UPDATE_STAGE.replace('{id}', id), { stage }),
     },
 
-    // Investigaciones
-    research: {
-      create: (data: any) => post(API_CONFIG.endpoints.research.CREATE as string, data),
-      getById: (id: string) => get((API_CONFIG.endpoints.research.GET as string).replace('{id}', id)),
-      getAll: () => get(API_CONFIG.endpoints.research.LIST as string),
-      update: (id: string, data: any) => put((API_CONFIG.endpoints.research.UPDATE as string).replace('{id}', id), data),
-      delete: (id: string) => del((API_CONFIG.endpoints.research.DELETE as string).replace('{id}', id)),
-      updateStatus: (id: string, status: string) => put((API_CONFIG.endpoints.research.UPDATE_STATUS as string).replace('{id}', id), { status }),
-      updateStage: (id: string, stage: string) => put((API_CONFIG.endpoints.research.UPDATE_STAGE as string).replace('{id}', id), { stage }),
+    // Welcome Screens - Siempre disponible ya que es requerido en el tipo Endpoints
+    welcomeScreen: {
+      create: (data: any) => post(API_CONFIG.endpoints.welcomeScreen.CREATE, data),
+      getById: (id: string) => get(API_CONFIG.endpoints.welcomeScreen.GET.replace('{id}', id)),
+      getByResearchId: (researchId: string) => get(API_CONFIG.endpoints.welcomeScreen.GET_BY_RESEARCH.replace('{researchId}', researchId)),
+      update: (id: string, data: any) => put(API_CONFIG.endpoints.welcomeScreen.UPDATE.replace('{id}', id), data),
+      delete: (id: string) => del(API_CONFIG.endpoints.welcomeScreen.DELETE.replace('{id}', id)),
     },
 
     // Archivos

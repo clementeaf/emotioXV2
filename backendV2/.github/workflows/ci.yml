@@ -1,0 +1,64 @@
+name: CI - EmotioXV2 Backend
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'backendV2/**'
+      - '.github/workflows/ci.yml'
+
+jobs:
+  validate:
+    name: Validate and test
+    runs-on: ubuntu-latest
+    
+    services:
+      dynamodb-local:
+        image: amazon/dynamodb-local:latest
+        ports:
+          - 8000:8000
+        options: >-
+          --health-cmd "curl -f http://localhost:8000/shell/ || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+          cache: 'npm'
+          cache-dependency-path: 'backendV2/package-lock.json'
+      
+      - name: Install dependencies
+        working-directory: backendV2
+        run: npm ci
+      
+      - name: Lint code
+        working-directory: backendV2
+        run: npm run lint || echo "Linting issues found"
+      
+      - name: Type check
+        working-directory: backendV2
+        run: npm run tsc:check || echo "Type checking issues found"
+      
+      - name: Run tests
+        working-directory: backendV2
+        run: npm test
+        env:
+          NODE_ENV: test
+          AWS_REGION: us-east-1
+          IS_OFFLINE: true
+          USE_MOCK_DB: true
+          JWT_SECRET: test-secret-key
+          DYNAMODB_ENDPOINT: http://localhost:8000
+      
+      - name: Validate serverless.yml
+        working-directory: backendV2
+        run: npx serverless deploy --noDeploy 

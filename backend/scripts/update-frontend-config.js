@@ -53,20 +53,21 @@ async function updateFrontendConfig() {
 // Función para actualizar el archivo .env del frontend
 function updateFrontendEnv(endpoints) {
   try {
-    const apiUrl = endpoints.apiUrl;
     const websocketUrl = endpoints.websocketUrl;
 
     // Crear variables de entorno para el frontend
+    // Ya no incluimos VITE_API_URL porque ahora se obtiene dinámicamente de endpoints.json
     const envContent = `
 # API Configuration
-VITE_API_URL=${apiUrl}
+# La URL base ahora se obtiene directamente de endpoints.json
 VITE_WS_URL=${websocketUrl}
 VITE_APP_ENV=${process.env.STAGE || 'dev'}
+VITE_DIRECT_API=true
 `;
 
     // Guardar archivo .env
     fs.writeFileSync(frontendEnvPath, envContent.trim());
-    console.log('✅ Archivo .env del frontend actualizado');
+    console.log('✅ Archivo .env del frontend actualizado (sin URL hardcodeada)');
 
     // Actualizar también .env.example si existe
     if (fs.existsSync(frontendEnvExamplePath)) {

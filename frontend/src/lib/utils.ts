@@ -13,15 +13,12 @@ export function cn(...inputs: ClassValue[]) {
  * @returns boolean indicando si estamos en desarrollo
  */
 export function isDevelopmentMode(): boolean {
+  // Solo usar NODE_ENV para determinar si estamos en desarrollo
   if (typeof process !== 'undefined' && process.env.NODE_ENV) {
     return process.env.NODE_ENV === 'development';
   }
   
-  if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname;
-    return hostname === 'localhost' || hostname === '127.0.0.1';
-  }
-  
+  // Si no hay NODE_ENV, asumir que no estamos en desarrollo
   return false;
 }
 
@@ -30,17 +27,7 @@ export function isDevelopmentMode(): boolean {
  * @returns boolean indicando si usar modo simulado
  */
 export function shouldUseSimulatedMode(): boolean {
-  // Si estamos en desarrollo, por defecto usamos modo simulado
-  // a menos que explícitamente se indique lo contrario
-  if (isDevelopmentMode()) {
-    if (typeof window !== 'undefined') {
-      // Si el flag no existe, consideramos que debe usar simulación por defecto
-      return localStorage.getItem('use_simulated_api') !== 'false';
-    }
-    // En desarrollo sin acceso a localStorage, usar simulación por defecto
-    return true;
-  }
-  
+  // Siempre devolver false para usar la API real en todo momento
   return false;
 }
 

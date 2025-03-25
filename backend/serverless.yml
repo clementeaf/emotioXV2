@@ -16,7 +16,9 @@ provider:
     CONNECTIONS_TABLE: ${self:service}-connections-${self:provider.stage}
     RESEARCH_TABLE: ${self:service}-research-${self:provider.stage}
     FORMS_TABLE: ${self:service}-forms-${self:provider.stage}
-    JWT_SECRET: ${env:JWT_SECRET, 'dev_jwt_secret_key_for_testing_only'}
+    WELCOME_SCREEN_TABLE: ${self:service}-welcome-screens-${self:provider.stage}
+    THANK_YOU_SCREEN_TABLE: ${self:service}-thank-you-screens-${self:provider.stage}
+    JWT_SECRET: ${env:JWT_SECRET, 'your-secret-key-for-local-dev'}
     S3_BUCKET_NAME: ${self:custom.s3BucketName}
     WEBSOCKET_API_URL: !GetAtt WebsocketsApi.ApiEndpoint
   
@@ -24,13 +26,32 @@ provider:
     cors:
       allowedOrigins:
         - "http://localhost:3000"
+        - "http://localhost:4700"
+        - "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com"
+        - "https://api.emotio-x.com"
+        - "https://emotio-x.com"
+        - "https://app.emotio-x.com"
+        - "https://emotio-x.netlify.app"
       allowedMethods:
         - GET
         - POST
         - DELETE
         - PUT
         - OPTIONS
+      allowedHeaders:
+        - Content-Type
+        - Authorization
+        - X-Requested-With
+        - X-Api-Key
       allowCredentials: true
+      exposedResponseHeaders:
+        - Content-Type
+        - X-Amz-Date
+        - Authorization
+        - X-Api-Key
+        - X-Amz-Security-Token
+        - X-Amz-User-Agent
+      maxAge: 3600
       
   iam:
     role:
@@ -90,6 +111,18 @@ custom:
     websocketPort: 4701
     host: 0.0.0.0
   tsConfig: ./tsconfig.json
+  exportOutputs:
+    include:
+      - HttpApiUrl
+      - ApiId
+      - WebsocketApiUrl
+    output:
+      file: ./endpoints.json
+  exportEndpoints:
+    output: ./endpoints.json
+    useApiGatewayDomain: true
+    includeStage: true
+    overrideApiUrl: ${env:OVERRIDE_API_URL, ''}
 
 plugins:
   - ./serverless-ts-paths-plugin.js
@@ -178,6 +211,27 @@ resources:
       Type: AWS::DynamoDB::Table
       Properties:
         TableName: ${self:provider.environment.FORMS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: researchId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: ResearchIdIndex
+            KeySchema:
+              - AttributeName: researchId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+              
+    ThankYouScreenTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.THANK_YOU_SCREEN_TABLE}
         BillingMode: PAY_PER_REQUEST
         AttributeDefinitions:
           - AttributeName: id
@@ -370,4 +424,40 @@ functions:
     handler: src/controllers/websocket.controller.message
     events:
       - websocket:
-          route: message 
+          route: message
+          
+  # Thank You Screen Controller
+  thank-you-screen-save:
+    handler: src/controllers/thank-you-screen.controller.save
+    events:
+      - httpApi:
+          path: /api/thank-you-screens
+          method: post
+          
+  thank-you-screen-get-by-research:
+    handler: src/controllers/thank-you-screen.controller.get
+    events:
+      - httpApi:
+          path: /api/thank-you-screens/research/{researchId}
+          method: get
+          
+  thank-you-screen-get-by-id:
+    handler: src/controllers/thank-you-screen.controller.getById
+    events:
+      - httpApi:
+          path: /api/thank-you-screens/{id}
+          method: get
+          
+  thank-you-screen-update:
+    handler: src/controllers/thank-you-screen.controller.update
+    events:
+      - httpApi:
+          path: /api/thank-you-screens/{id}
+          method: put
+          
+  thank-you-screen-delete:
+    handler: src/controllers/thank-you-screen.controller.remove
+    events:
+      - httpApi:
+          path: /api/thank-you-screens/{id}
+          method: delete 

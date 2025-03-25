@@ -1,0 +1,128 @@
+name: CD - EmotioXV2 Backend
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'backendV2/**'
+      - '.github/workflows/cd.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - test
+          - prod
+
+jobs:
+  deploy:
+    name: Deploy to AWS
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'prod' || 'dev') }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history for git info
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+          cache: 'npm'
+          cache-dependency-path: 'backendV2/package-lock.json'
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
+      
+      - name: Install dependencies
+        working-directory: backendV2
+        run: npm ci
+      
+      - name: Set environment variables
+        id: set-env
+        run: |
+          STAGE="${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'prod' || 'dev') }}"
+          REGION="${{ secrets.AWS_REGION || 'us-east-1' }}"
+          
+          echo "STAGE=${STAGE}" >> $GITHUB_ENV
+          echo "REGION=${REGION}" >> $GITHUB_ENV
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> $GITHUB_ENV
+      
+      - name: Deploy to AWS
+        working-directory: backendV2
+        run: |
+          echo "Deploying to ${{ env.STAGE }} environment in ${{ env.REGION }}..."
+          npx serverless deploy --stage ${{ env.STAGE }} --region ${{ env.REGION }}
+      
+      - name: Process outputs and export endpoints
+        working-directory: backendV2
+        run: |
+          echo "Processing deployment outputs and exporting endpoints..."
+          node scripts/export-endpoints.js
+      
+      - name: Upload endpoints configuration
+        uses: actions/upload-artifact@v3
+        with:
+          name: api-endpoints-${{ env.STAGE }}
+          path: |
+            backendV2/outputs.json
+            backendV2/endpoints.json
+            frontend/src/config/api-endpoints.*
+          if-no-files-found: warn
+      
+      - name: Create PR for frontend configuration (if needed)
+        if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
+        uses: peter-evans/create-pull-request@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "update: API endpoints configuration for ${{ env.STAGE }} environment"
+          branch: update-api-endpoints-${{ env.STAGE }}
+          base: ${{ github.ref_name }}
+          title: "Update API endpoints for ${{ env.STAGE }} environment"
+          body: |
+            This PR updates the API endpoints configuration for the ${{ env.STAGE }} environment.
+            
+            The endpoints were automatically generated from the AWS deployment outputs.
+            
+            **Generated files:**
+            - `frontend/src/config/api-endpoints.js`
+            - `frontend/src/config/api-endpoints.ts`
+          labels: |
+            automated
+            configuration
+            api-endpoints
+          delete-branch: true
+      
+      - name: Notify deployment success
+        if: success()
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_CHANNEL: deployments
+          SLACK_TITLE: "✅ Deployment Successful"
+          SLACK_MESSAGE: "EmotioXV2 Backend has been deployed to ${{ env.STAGE }} environment"
+          SLACK_COLOR: good
+          SLACK_FOOTER: "EmotioXV2 CI/CD Pipeline"
+      
+      - name: Notify deployment failure
+        if: failure()
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_CHANNEL: deployments
+          SLACK_TITLE: "❌ Deployment Failed"
+          SLACK_MESSAGE: "EmotioXV2 Backend deployment to ${{ env.STAGE }} environment failed"
+          SLACK_COLOR: danger
+          SLACK_FOOTER: "EmotioXV2 CI/CD Pipeline" 

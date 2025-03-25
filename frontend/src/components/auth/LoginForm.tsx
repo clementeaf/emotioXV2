@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { useAuth } from '@/providers/AuthProvider';
+import API_CONFIG from '@/config/api.config';
 
 interface LoginFormState {
   email: string;
@@ -133,8 +134,8 @@ export function LoginForm({ className }: LoginFormProps) {
   // Función para usar el usuario de prueba
   const handleUseTestUser = () => {
     setState({
-      email: 'test@example.com',
-      password: 'password', // Contraseña de prueba
+      email: 'clemente@gmail.com',
+      password: 'clemente', // Contraseña de prueba
       rememberMe: true
     });
     
@@ -151,24 +152,38 @@ export function LoginForm({ className }: LoginFormProps) {
       try {
         setStatus('authenticating');
         
-        // Obtener token de desarrollo del endpoint de debug
-        const response = await fetch('/api/debug/get-dev-token');
-        const data = await response.json();
+        // Simulación de token de desarrollo (ya no usamos el endpoint de debug que eliminamos)
+        console.log('Creando token de desarrollo simulado localmente');
         
-        if (data.success && data.token) {
-          console.log('Token de desarrollo obtenido correctamente');
-          
-          // Iniciar sesión con el token de desarrollo
-          await login(data.token);
-          setStatus('success');
-          
-          // Redirigir al dashboard
-          router.push('/dashboard');
-        } else {
-          console.error('Error al obtener token de desarrollo:', data.message);
-          setFormError('Error al obtener token de desarrollo');
-          setStatus('error');
-        }
+        // Token de desarrollo simulado manualmente (expira en 24 horas)
+        const now = Math.floor(Date.now() / 1000);
+        const expiresIn = 86400; // 24 horas en segundos
+        
+        // Crear payload simulado
+        const payload = {
+          id: "testuser",
+          sub: "testuser",
+          name: "Usuario Prueba",
+          email: "test@example.com",
+          role: "user",
+          iat: now,
+          exp: now + expiresIn
+        };
+        
+        // Crear un token simulado (esto no es seguro, solo para desarrollo)
+        // En producción, el token viene del servidor
+        const base64Payload = btoa(JSON.stringify(payload));
+        const fakeSignature = "TEST_SIGNATURE_FOR_DEV_ONLY";
+        const mockToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${base64Payload}.${fakeSignature}`;
+        
+        console.log('Token de desarrollo simulado creado correctamente');
+        
+        // Iniciar sesión con el token simulado
+        await login(mockToken, state.rememberMe);
+        setStatus('success');
+        
+        // Redirigir al dashboard
+        router.push('/dashboard');
       } catch (error) {
         console.error('Error en inicio de sesión automático:', error);
         setFormError('Error en inicio de sesión automático');
@@ -203,10 +218,15 @@ export function LoginForm({ className }: LoginFormProps) {
 
     try {
       setStatus('connecting');
-      console.log('Intentando login con:', { email: state.email });
+      console.log('Intentando login con:', { email: state.email, rememberMe: state.rememberMe });
       
       setStatus('authenticating');
-      const response = await fetch('https://fww0ghfvga.execute-api.us-east-1.amazonaws.com/auth/login', {
+      
+      // Usar la URL de login desde API_CONFIG
+      const loginUrl = API_CONFIG.endpoints.auth.LOGIN;
+      console.log('URL de login:', loginUrl);
+      
+      const response = await fetch(loginUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -219,15 +239,28 @@ export function LoginForm({ className }: LoginFormProps) {
         })
       });
 
+      if (!response.ok) {
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (e) {
+          errorData = { message: `Error HTTP ${response.status}: ${response.statusText}` };
+        }
+        
+        setStatus('error');
+        setFormError(errorData.message || 'Error al iniciar sesión: Credenciales inválidas');
+        return;
+      }
+      
       const data = await response.json();
       console.log('Respuesta del servidor:', data);
 
-      if (response.ok && data.token) {
+      if (data.auth && data.auth.token) {
         setStatus('success');
-        await login(data.token);
+        await login(data.auth.token, state.rememberMe);
       } else {
         setStatus('error');
-        setFormError(data.message || 'Error al iniciar sesión: Credenciales inválidas');
+        setFormError('La respuesta del servidor no contiene un token válido');
       }
     } catch (error: any) {
       console.error('Error durante el login:', error);
@@ -317,7 +350,7 @@ export function LoginForm({ className }: LoginFormProps) {
                   </Button>
                 </div>
                 <p className="text-amber-600 text-xs mt-2">
-                  Email: test@example.com | Contraseña: password
+                  Email: clemente@gmail.com | Contraseña: clemente
                 </p>
               </div>
             </div>

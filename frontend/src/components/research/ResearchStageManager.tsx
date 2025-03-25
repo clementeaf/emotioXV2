@@ -39,7 +39,7 @@ export function ResearchStageManager({ researchId }: ResearchStageManagerProps) 
       case 'build':
         switch (currentStage) {
           case 'welcome':
-            return <WelcomeScreenForm />;
+            return <WelcomeScreenForm researchId={researchId} />;
           case 'smart-voc':
             return <SmartVOCForm />;
           case 'cognitive':
@@ -47,9 +47,9 @@ export function ResearchStageManager({ researchId }: ResearchStageManagerProps) 
           case 'eye-tracking':
             return <EyeTrackingForm researchId={researchId} />;
           case 'thank-you':
-            return <ThankYouScreenForm />;
+            return <ThankYouScreenForm researchId={researchId} />;
           default:
-            return <WelcomeScreenForm />;
+            return <WelcomeScreenForm researchId={researchId} />;
         }
       case 'recruit':
         switch (currentStage) {
@@ -60,7 +60,7 @@ export function ResearchStageManager({ researchId }: ResearchStageManagerProps) 
               {/* Contenido del screener */}
             </div>;
           case 'welcome-screen':
-            return <WelcomeScreenForm />;
+            return <WelcomeScreenForm researchId={researchId} />;
           case 'implicit-association':
             return <div className="p-6 bg-white rounded-lg border border-neutral-200">
               <h2 className="text-lg font-medium mb-4">Prueba de Asociación Implícita</h2>
@@ -72,7 +72,7 @@ export function ResearchStageManager({ researchId }: ResearchStageManagerProps) 
           case 'eye-tracking':
             return <EyeTrackingForm researchId={researchId} />;
           case 'thank-you':
-            return <ThankYouScreenForm />;
+            return <ThankYouScreenForm researchId={researchId} />;
           default:
             return <div className="p-6 bg-white rounded-lg border border-neutral-200">
               <h2 className="text-lg font-medium mb-4">Etapas de Investigación</h2>

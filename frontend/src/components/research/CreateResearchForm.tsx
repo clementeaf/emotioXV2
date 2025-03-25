@@ -315,39 +315,80 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
               };
               
               console.log('Datos formateados para enviar a la API:', createData);
-
+              
+              // Verificar el tipo de almacenamiento configurado
+              const storageType = localStorage.getItem('auth_storage_type') || 'local';
+              
+              // Obtener token del almacenamiento correspondiente
+              const token = storageType === 'local'
+                ? localStorage.getItem('token')
+                : sessionStorage.getItem('token');
+                
+              if (!token) {
+                console.error('No se encontró token de autenticación');
+                throw new Error('No hay un token de autenticación disponible. Debe iniciar sesión nuevamente.');
+              }
+              
+              console.log('BASE URL:', API_CONFIG.baseURL);
+              console.log('ENDPOINT CREATE:', API_CONFIG.endpoints.research.CREATE);
+              console.log('URL completa:', API_CONFIG.baseURL + API_CONFIG.endpoints.research.CREATE);
+              console.log('Datos a enviar:', JSON.stringify(createData));
+              
               try {
-                console.log('Llamando a la API de creación...');
+                // Realizar la llamada usando researchAPI (que utiliza alova)
+                const apiResponse = await researchAPI.create(createData);
                 
-                // Verificar conectividad general antes de hacer la llamada API real
-                try {
-                  // Usar un ping a Google como verificación de conectividad general
-                  const connectivityCheck = await fetch('https://www.google.com', { mode: 'no-cors' });
-                  console.log('Verificación de conectividad general:', connectivityCheck.type);
-                  console.log('El problema parece ser específico del endpoint de la API');
-                } catch (connectError) {
-                  console.warn('Alerta de conectividad general:', connectError);
-                }
+                console.log('Respuesta completa de la API:', apiResponse);
                 
-                // Verificar si estamos en modo desarrollo
-                const isDevMode = debugAPI.isLocalDevelopment();
-                // Usar valores por defecto en caso de que las propiedades no existan
-                const isBypassEnabled = API_CONFIG.devMode?.enabled || false;
-                
-                // En modo desarrollo, usar el endpoint de bypass directamente
-                if (isDevMode && isBypassEnabled) {
-                  console.log('MODO DESARROLLO CON BYPASS: Usando el endpoint de simulación directamente');
+                // Verificar si la respuesta tiene datos y formato esperado
+                if (apiResponse && apiResponse.data && apiResponse.data.id) {
+                  // Si la API responde correctamente con un ID
+                  researchId = apiResponse.data.id;
+                  console.log('Investigación creada con éxito en el servidor:', apiResponse.data);
                   
-                  try {
-                    // Usar el endpoint de bypass que no requiere autenticación
-                    const response = await debugAPI.createResearch(createData);
-                    console.log('Respuesta del endpoint de bypass:', response);
+                  // Marcar que las investigaciones se han actualizado para que la tabla se refresque
+                  localStorage.setItem('research_updated', 'true');
+                  
+                  // Llamar a la función de éxito
+                  if (onResearchCreated) {
+                    onResearchCreated(researchId, researchName);
+                  }
+                  
+                  // Limpiar el borrador
+                  clearDraft();
+                  setIsSubmitting(false);
+                  
+                  // Mostrar notificación de éxito antes de redirigir
+                  setCreatedResearchId(researchId);
+                  
+                  // Esperar un momento antes de redirigir para que el usuario vea la notificación
+                  setTimeout(() => {
+                    // Redirigir a la página del dashboard con los parámetros correctos
+                    const redirectUrl = formData.basic.technique === 'aim-framework' 
+                      ? `/dashboard?research=${researchId}&aim=true&section=welcome-screen`
+                      : `/dashboard?research=${researchId}&section=forms`;
+                    router.push(redirectUrl);
+                  }, 2000);
+                  
+                  return;
+                } else if (apiResponse && apiResponse.data) {
+                  // Si hay datos pero no tienen el ID directamente - intentar extraerlo
+                  console.warn('Estructura de respuesta alternativa:', apiResponse);
+                  // Verificar si es la estructura {message, data: {id, ...}}
+                  if (apiResponse.data.data && apiResponse.data.data.id) {
+                    researchId = apiResponse.data.data.id;
+                    console.log('ID extraído de estructura anidada:', researchId);
+                  } else {
+                    // Intentar otras alternativas para extraer el ID
+                    const dataObj = apiResponse.data;
+                    researchId = typeof dataObj === 'string' ? dataObj : 
+                              dataObj._id || dataObj.id || '';
+                  }
+                  
+                  if (researchId) {
+                    console.log('Se extrajo ID de la respuesta:', researchId);
                     
-                    // Extraer datos de la respuesta
-                    researchId = response.id;
-                    console.log('Investigación creada con éxito en modo bypass:', researchId);
-                    
-                    // Marcar que las investigaciones se han actualizado para que la tabla se refresque
+                    // Marcar que las investigaciones se han actualizado
                     localStorage.setItem('research_updated', 'true');
                     
                     // Llamar a la función de éxito
@@ -359,208 +400,153 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
                     clearDraft();
                     setIsSubmitting(false);
                     
+                    // Redirigir a la página del dashboard con los parámetros correctos
+                    const redirectUrl = formData.basic.technique === 'aim-framework' 
+                      ? `/dashboard?research=${researchId}&aim=true&section=welcome-screen`
+                      : `/dashboard?research=${researchId}&section=forms`;
+                    router.push(redirectUrl);
+                    
                     return;
-                  } catch (bypassError) {
-                    console.error('Error en el endpoint de bypass:', bypassError);
-                    throw new Error('Error al crear la investigación en modo bypass');
                   }
                 }
                 
-                // Verificar que exista un token válido
-                const token = localStorage.getItem('token');
-                if (!token) {
-                  console.error('No se encontró token de autenticación en localStorage');
-                  throw new Error('No hay un token de autenticación disponible. Debe iniciar sesión nuevamente.');
-                } else {
-                  console.log('Token encontrado en localStorage:', token.substring(0, 15) + '...');
-                }
-                
-                // En la función createResearch, antes de llamar a la API
-                console.log('Endpoint a usar:', API_CONFIG.endpoints?.research?.CREATE || 'No disponible');
-                console.log('Modo desarrollo:', API_CONFIG.devMode?.enabled ? 'Activo' : 'Inactivo');
-                console.log('Nota: En entorno de desarrollo local, se usará un proxy para evitar problemas CORS.');
-                
-                // Mostrar información adicional en desarrollo
-                if (API_CONFIG.devMode?.enabled) {
-                  console.log('MODO DESARROLLO: Se simulará la creación de una investigación.');
-                  console.log('Los datos se almacenarán localmente para fines de prueba.');
-                } else {
-                  console.log('MODO PRODUCCIÓN: Se enviará la solicitud a la API real.');
-                }
-                
-                // Realizar la llamada real para crear la investigación
-                const apiResponse = await researchAPI.create(createData);
-                
-                console.log('Respuesta completa de la API:', apiResponse);
-                
-                if (apiResponse?.data?.id) {
-                  // Si la API responde correctamente con un ID
-                  researchId = apiResponse.data.id;
-                  console.log('Investigación creada con éxito en el servidor:', apiResponse.data);
-                } else if (apiResponse?.data) {
-                  // Si hay datos pero no tienen la estructura esperada
-                  console.warn('Estructura de respuesta inesperada:', apiResponse.data);
-                  researchId = typeof apiResponse.data === 'string' ? apiResponse.data : 
-                               (apiResponse.data as any)._id || apiResponse.data.id || '';
-                  if (researchId) {
-                    console.log('Se extrajo ID de la respuesta:', researchId);
-                  } else {
-                    throw new Error('La respuesta de la API no contiene un ID válido');
-                  }
-                } else {
-                  throw new Error('La respuesta de la API no contiene datos válidos');
-                }
+                // Si llegamos aquí, no se pudo extraer un ID válido
+                throw new Error('La respuesta de la API no contiene un ID válido');
               } catch (apiError) {
-                console.warn('Error al crear la investigación:', apiError);
-                console.error('Detalles del error:', {
-                  message: apiError instanceof Error ? apiError.message : 'Error desconocido',
-                  name: apiError instanceof Error ? apiError.name : 'N/A',
-                  stack: apiError instanceof Error ? apiError.stack : 'N/A'
-                });
-                
-                // Verificar si hay conectividad general antes de recurrir a simulación local
-                try {
-                  const connectivityCheck = await fetch('https://www.google.com', { mode: 'no-cors' });
-                  console.log('Verificación de conectividad general:', connectivityCheck.type);
-                  console.log('El problema parece ser específico del endpoint de la API');
-                } catch (connectError) {
-                  console.error('Problema general de conectividad:', connectError);
-                }
-                
-                // Si la API falla, generar un ID local
-                const mockResponse = createMockResearch(formData.basic);
-                researchId = mockResponse.id;
-                console.log('Usando simulación local como fallback:', mockResponse);
+                console.error('Error en la llamada API:', apiError);
+                throw apiError;
               }
-
-              if (!researchId) {
-                throw new Error('No se pudo obtener un ID para la investigación');
+            } catch (error) {
+              console.error('Error al crear la investigación:', error);
+              
+              setIsSubmitting(false);
+              setShowSummary(false);
+              // Mostrar mensaje de error al usuario
+              alert('Ha ocurrido un error al crear la investigación. Por favor, inténtelo de nuevo o contacte al soporte técnico.');
+            }
+          };
+          
+          // Ejecutar la creación de la investigación
+          createResearch();
+        }
+      }, 1000);
+    } else {
+      // Para otros tipos de investigación, crear inmediatamente
+      try {
+        setIsSubmitting(true);
+        
+        // Preparar los datos para la creación
+        const createData: ResearchBasicData = {
+          name: formData.basic.name,
+          enterprise: formData.basic.enterprise || '',
+          type: formData.basic.type || ResearchType.EYE_TRACKING,
+          technique: formData.basic.technique || '',
+          description: '',
+          targetParticipants: 100,
+          objectives: [],
+          tags: []
+        };
+        
+        console.log('Datos para crear investigación:', createData);
+        
+        try {
+          // Realizar la llamada a la API usando alova
+          const apiResponse = await researchAPI.create(createData);
+          
+          console.log('Respuesta de la API:', apiResponse);
+          
+          // Verificar si la estructura de la respuesta tiene el formato esperado
+          if (apiResponse && apiResponse.data && apiResponse.data.id) {
+            const researchId = apiResponse.data.id;
+            const researchName = formData.basic.name;
+            
+            console.log('Investigación creada con éxito:', researchId);
+            
+            // Marcar que las investigaciones se han actualizado
+            localStorage.setItem('research_updated', 'true');
+            
+            // Llamar a la función de éxito si existe
+            if (onResearchCreated) {
+              onResearchCreated(researchId, researchName);
+            }
+            
+            // Limpiar el borrador
+            clearDraft();
+            
+            // Mostrar notificación de éxito antes de redirigir
+            setCreatedResearchId(researchId);
+            
+            // Esperar un momento antes de redirigir para que el usuario vea la notificación
+            setTimeout(() => {
+              // Redirigir a la página del dashboard con los parámetros correctos
+              const redirectUrl = formData.basic.technique === 'aim-framework' 
+                ? `/dashboard?research=${researchId}&aim=true&section=welcome-screen`
+                : `/dashboard?research=${researchId}&section=forms`;
+              router.push(redirectUrl);
+            }, 2000);
+            
+            return;
+          } else if (apiResponse && apiResponse.data) {
+            // Intentar extraer un ID de estructura alternativa
+            console.warn('Estructura de respuesta alternativa:', apiResponse);
+            
+            // Verificar si es la estructura {message, data: {id, ...}}
+            let researchId = '';
+            if (apiResponse.data.data && apiResponse.data.data.id) {
+              researchId = apiResponse.data.data.id;
+              console.log('ID extraído de estructura anidada:', researchId);
+            } else {
+              // Intentar otras alternativas
+              const dataObj = apiResponse.data;
+              researchId = typeof dataObj === 'string' ? dataObj :
+                           dataObj._id || dataObj.id || '';
+            }
+            
+            if (researchId) {
+              const researchName = formData.basic.name;
+              console.log('Se extrajo ID de la respuesta alternativa:', researchId);
+              
+              // Marcar que las investigaciones se han actualizado
+              localStorage.setItem('research_updated', 'true');
+              
+              // Llamar a la función de éxito si existe
+              if (onResearchCreated) {
+                onResearchCreated(researchId, researchName);
               }
               
               // Limpiar el borrador
               clearDraft();
               
-              // Crear un objeto con los datos mínimos necesarios para persistencia local
-              const researchData = {
-                id: researchId,
-                name: researchName,
-                technique: formData.basic.technique,
-                createdAt: new Date().toISOString(),
-                status: 'draft'
-              };
+              // Mostrar notificación de éxito antes de redirigir
+              setCreatedResearchId(researchId);
               
-              // Guardar datos en localStorage como respaldo
-              localStorage.setItem(`research_${researchId}`, JSON.stringify(researchData));
+              // Esperar un momento antes de redirigir para que el usuario vea la notificación
+              setTimeout(() => {
+                // Redirigir a la página del dashboard con los parámetros correctos
+                const redirectUrl = formData.basic.technique === 'aim-framework' 
+                  ? `/dashboard?research=${researchId}&aim=true&section=welcome-screen`
+                  : `/dashboard?research=${researchId}&section=forms`;
+                router.push(redirectUrl);
+              }, 2000);
               
-              // Asegurarse de que solo haya una investigación activa
-              const researchList = [{
-                id: researchId,
-                name: researchName,
-                technique: formData.basic.technique,
-                createdAt: new Date().toISOString()
-              }];
-              
-              localStorage.setItem('research_list', JSON.stringify(researchList));
-              localStorage.setItem('activeResearch', researchId);
-              
-              // Marcar que las investigaciones se han actualizado para que la tabla se refresque
-              localStorage.setItem('research_updated', 'true');
-              
-              // Notificar al componente padre si existe
-              if (onResearchCreated) {
-                onResearchCreated(researchId, researchName);
-              }
-              
-              // Redirigir al usuario
-              router.push(`/dashboard?research=${researchId}&aim=true&section=welcome-screen`);
-            } catch (error) {
-              console.error('Error al crear la investigación:', error);
-              setIsSubmitting(false);
-              setShowSummary(false);
+              return;
             }
-          };
-
-          // Ejecutar la función asíncrona
-          createResearch();
+          }
+          
+          // Si llegamos aquí, no se pudo extraer un ID
+          throw new Error('La respuesta de la API no contiene un ID válido');
+        } catch (apiError) {
+          console.error('Error en la llamada a la API:', apiError);
+          throw apiError;
         }
-      }, 1000);
-      
-      return;
-    }
-
-    // Código para otras técnicas
-    try {
-      console.log('Enviando datos:', formData.basic);
-      
-      // Crear un objeto con los datos mínimos necesarios en caso de que la API falle
-      let researchId = '';
-      let researchName = formData.basic.name;
-      
-      // Intentar crear la investigación usando la API
-      try {
-        const apiResponse = await researchAPI.create(formData.basic);
+      } catch (error) {
+        console.error('Error al crear investigación:', error);
         
-        // Si la API devuelve datos, usar el ID
-        if (apiResponse?.data) {
-          researchId = apiResponse.data.id;
-          console.log('Investigación creada con éxito en el servidor:', apiResponse.data);
-        }
-      } catch (apiError) {
-        console.warn('API no disponible, usando simulación local:', apiError);
+        // Mostrar mensaje de error al usuario
+        alert('Ha ocurrido un error al crear la investigación. Por favor, inténtelo de nuevo o contacte al soporte técnico.');
+      } finally {
+        setIsSubmitting(false);
       }
-      
-      // Si la API falló o no devolvió un ID, usar la función del modelo como respaldo
-      if (!researchId) {
-        const mockResponse = createMockResearch(formData.basic);
-        researchId = mockResponse.id;
-        console.log('Usando simulación local - Investigación creada:', mockResponse);
-      }
-      
-      // Limpiar el borrador
-      clearDraft();
-      
-      // Marcar que las investigaciones se han actualizado para que la tabla se refresque
-      localStorage.setItem('research_updated', 'true');
-      
-      // Notificar al componente padre si existe
-      if (onResearchCreated) {
-        onResearchCreated(researchId, researchName);
-      }
-      
-      // Guardar ID de investigación para la pantalla de confirmación
-      setCreatedResearchId(researchId);
-      
-      // Crear un objeto con los datos mínimos necesarios para persistencia local
-      const researchData = {
-        id: researchId,
-        name: researchName,
-        technique: formData.basic.technique,
-        createdAt: new Date().toISOString(),
-        status: 'draft'
-      };
-      
-      // Guardar datos en localStorage como respaldo
-      localStorage.setItem(`research_${researchId}`, JSON.stringify(researchData));
-      
-      // Actualizar la lista de investigaciones (singleton)
-      localStorage.setItem('research_list', JSON.stringify([{
-        id: researchId,
-        name: researchName,
-        technique: formData.basic.technique,
-        createdAt: new Date().toISOString()
-      }]));
-      
-    } catch (error: any) {
-      console.error('Error al crear la investigación:', error);
-      setFormData(prev => ({
-        ...prev,
-        errors: {
-          ...prev.errors,
-          submit: error.message || 'Error al crear la investigación'
-        }
-      }));
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -599,7 +585,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
                 <a 
                   href={formData.basic.technique === 'aim-framework'
                     ? `/dashboard?research=${createdResearchId}&aim=true&section=welcome-screen`
-                    : `/dashboard?research=${createdResearchId}`
+                    : `/dashboard?research=${createdResearchId}&section=forms`
                   }
                   className="inline-flex justify-center items-center px-6 py-3 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 shadow-sm"
                 >

@@ -14,6 +14,9 @@ import { SimplifiedSmartVOCForm } from '@/components/research/SimplifiedSmartVOC
 import Link from 'next/link';
 import { DevModeInfo } from '@/components/common/DevModeInfo';
 import { WelcomeScreenForm } from '@/components/research/WelcomeScreenForm';
+import { CognitiveTaskForm } from '@/components/research/CognitiveTaskForm';
+import { EyeTrackingForm } from '@/components/research/EyeTrackingForm';
+import { ThankYouScreenForm } from '@/components/research/ThankYouScreenForm';
 
 interface User {
   id: string;
@@ -33,33 +36,50 @@ function DashboardContent({ activeResearch }: { activeResearch?: { id: string; n
   
   // Verificar si la investigación es de tipo AIM Framework basado en localStorage
   useEffect(() => {
+    // Verificar primero si la URL tiene el parámetro aim=true
+    const hasAimParam = searchParams.get('aim') === 'true';
+    
     // Resetear la bandera isAimFramework si no hay activeResearch
     if (!activeResearch) {
+      console.log('DEBUG: No hay activeResearch, reseteando isAimFramework a false');
       setIsAimFramework(false);
       return;
     }
     
-    // Si hay activeResearch, verificar su técnica
+    // Si la URL tiene aim=true, priorizar este valor sobre localStorage
+    if (hasAimParam) {
+      console.log('DEBUG: URL contiene aim=true, estableciendo isAimFramework=true independientemente de localStorage');
+      setIsAimFramework(true);
+      return;
+    }
+    
+    // Si no hay aim=true en la URL, verificar en localStorage
     try {
       const storedResearch = localStorage.getItem(`research_${activeResearch.id}`);
+      console.log(`DEBUG: Cargando datos de investigación ${activeResearch.id} desde localStorage:`, storedResearch);
       if (storedResearch) {
         const research = JSON.parse(storedResearch);
+        console.log('DEBUG: Datos de investigación parseados:', research);
         if (research.technique === 'aim-framework') {
+          console.log('DEBUG: Investigación es de tipo AIM Framework, estableciendo isAimFramework=true');
           setIsAimFramework(true);
         } else {
+          console.log('DEBUG: Investigación NO es de tipo AIM Framework, estableciendo isAimFramework=false');
           setIsAimFramework(false);
         }
       } else {
+        console.log('DEBUG: No se encontraron datos en localStorage para la investigación, estableciendo isAimFramework=false');
         setIsAimFramework(false);
       }
     } catch (error) {
       console.error('Error verificando tipo de investigación:', error);
       setIsAimFramework(false);
     }
-  }, [activeResearch]);
+  }, [activeResearch, searchParams]);
 
   // Si estamos en AIM Framework
   if (activeResearch && isAimFramework) {
+    console.log('DEBUG: Renderizando vista AIM Framework. activeResearch:', activeResearch, 'isAimFramework:', isAimFramework, 'section:', section);
     return (
       <div className="flex-1 overflow-y-auto">
         <div className="container mx-auto px-6 py-8">
@@ -92,7 +112,10 @@ function DashboardContent({ activeResearch }: { activeResearch?: { id: string; n
                 Configure the welcome screen for your research participants.
               </p>
               {/* Usar nuestro componente WelcomeScreenForm */}
-              {activeResearch && <WelcomeScreenForm researchId={activeResearch.id} />}
+              {activeResearch && (
+                console.log('DEBUG: Renderizando WelcomeScreenForm con researchId:', activeResearch.id),
+                <WelcomeScreenForm researchId={activeResearch.id} />
+              )}
               {!activeResearch && (
                 <div className="p-3 bg-white border border-neutral-200 rounded-md">
                   <p className="text-neutral-700">
@@ -102,33 +125,105 @@ function DashboardContent({ activeResearch }: { activeResearch?: { id: string; n
               )}
             </div>
           ) : section === 'smart-voc' ? (
-            <div className="bg-white rounded-lg border border-neutral-200 p-6">
-              <SimplifiedSmartVOCForm 
-                onSave={(data) => {
-                  console.log('Smart VOC data saved:', data);
-                  // Aquí iría la lógica para guardar los datos
-                  alert('Smart VOC configuration saved successfully!');
-                }}
-              />
-            </div>
+            (() => {
+              console.log('DEBUG: Renderizando SimplifiedSmartVOCForm');
+              return (
+                <div className="bg-white rounded-lg border border-neutral-200 p-6">
+                  <h2 className="text-xl font-medium mb-3">Smart VOC</h2>
+                  <p className="text-neutral-600 mb-3">
+                    Configure the Voice of Customer questions for your research.
+                  </p>
+                  <SimplifiedSmartVOCForm 
+                    onSave={(data) => {
+                      console.log('Smart VOC data saved:', data);
+                      // Aquí iría la lógica para guardar los datos
+                      alert('Smart VOC configuration saved successfully!');
+                    }}
+                  />
+                </div>
+              );
+            })()
           ) : section === 'cognitive-task' ? (
-            <div className="bg-white rounded-lg border border-neutral-200 p-6">
-              <h2 className="text-xl font-medium mb-4">Cognitive Tasks</h2>
-              <p className="text-neutral-600 mb-4">
-                Configure cognitive tasks for your research participants.
-              </p>
-              {/* Aquí iría el formulario de tareas cognitivas */}
-              <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                Save Cognitive Tasks
-              </button>
-            </div>
+            (() => {
+              console.log('DEBUG: Renderizando CognitiveTaskForm con researchId:', activeResearch?.id);
+              return (
+                <div className="bg-white rounded-lg border border-neutral-200 p-6">
+                  <h2 className="text-xl font-medium mb-3">Cognitive Tasks</h2>
+                  <p className="text-neutral-600 mb-3">
+                    Configure cognitive tasks for your research participants.
+                  </p>
+                  {activeResearch && <CognitiveTaskForm 
+                    onSave={(data) => {
+                      console.log('Cognitive tasks data saved:', data);
+                      // Aquí iría la lógica para guardar los datos
+                      alert('Cognitive tasks saved successfully!');
+                    }}
+                  />}
+                  {!activeResearch && (
+                    <div className="p-3 bg-white border border-neutral-200 rounded-md">
+                      <p className="text-neutral-700">
+                        Please select a research project to configure cognitive tasks.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              );
+            })()
+          ) : section === 'eye-tracking' ? (
+            (() => {
+              console.log('DEBUG: Renderizando EyeTrackingForm con researchId:', activeResearch?.id);
+              return (
+                <div className="bg-white rounded-lg border border-neutral-200 p-6">
+                  <h2 className="text-xl font-medium mb-3">Eye Tracking</h2>
+                  <p className="text-neutral-600 mb-3">
+                    Configure the eye tracking experiment for your research.
+                  </p>
+                  {activeResearch && <EyeTrackingForm 
+                    researchId={activeResearch.id}
+                  />}
+                  {!activeResearch && (
+                    <div className="p-3 bg-white border border-neutral-200 rounded-md">
+                      <p className="text-neutral-700">
+                        Please select a research project to configure eye tracking.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              );
+            })()
+          ) : section === 'thank-you' ? (
+            (() => {
+              console.log('DEBUG: Renderizando ThankYouScreenForm');
+              return (
+                <div className="bg-white rounded-lg border border-neutral-200 p-6">
+                  <h2 className="text-xl font-medium mb-3">Thank You Screen</h2>
+                  <p className="text-neutral-600 mb-3">
+                    Configure the final screen that participants will see after completing the research.
+                  </p>
+                  {activeResearch ? (
+                    <ThankYouScreenForm researchId={activeResearch.id} />
+                  ) : (
+                    <div className="p-3 bg-white border border-neutral-200 rounded-md">
+                      <p className="text-neutral-700">
+                        Por favor selecciona un proyecto de investigación para configurar la pantalla de agradecimiento.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              );
+            })()
           ) : (
-            <div className="bg-white rounded-lg border border-neutral-200 p-6">
-              <h2 className="text-xl font-medium mb-4">{section?.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</h2>
-              <p className="text-neutral-600">
-                Configure settings for this section.
-              </p>
-            </div>
+            (() => {
+              console.log('DEBUG: Sección no implementada:', section);
+              return (
+                <div className="bg-white rounded-lg border border-neutral-200 p-6">
+                  <h2 className="text-xl font-medium mb-4">{section?.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</h2>
+                  <p className="text-neutral-600">
+                    Configure settings for this section.
+                  </p>
+                </div>
+              );
+            })()
           )}
         </div>
       </div>
@@ -244,16 +339,30 @@ export default function DashboardPage() {
   // Cargar datos de la investigación desde localStorage si existe un ID en la URL
   useEffect(() => {
     if (researchId) {
+      console.log('DEBUG: URL contiene ID de investigación:', researchId);
       try {
         const storedResearch = localStorage.getItem(`research_${researchId}`);
+        console.log('DEBUG: Datos de localStorage para investigación:', storedResearch);
         let researchData;
+        
+        // Verificar si la URL contiene el parámetro aim=true
+        const hasAimParam = searchParams.get('aim') === 'true';
         
         if (storedResearch) {
           researchData = JSON.parse(storedResearch);
+          console.log('DEBUG: Datos de investigación parseados:', researchData);
           setActiveResearch({ 
             id: researchData.id, 
             name: researchData.name 
           });
+          
+          // Si la URL tiene aim=true pero la investigación en localStorage no es de tipo aim-framework,
+          // actualizar el localStorage con esta información
+          if (hasAimParam && researchData.technique !== 'aim-framework') {
+            console.log('DEBUG: Actualizando técnica de investigación a aim-framework');
+            researchData.technique = 'aim-framework';
+            localStorage.setItem(`research_${researchId}`, JSON.stringify(researchData));
+          }
           
           // En lugar de mantener una lista y añadir/reordenar, simplemente crear una lista con un solo elemento
           const newResearchList = [{
@@ -269,28 +378,64 @@ export default function DashboardPage() {
           
           // Verificar si la técnica es aim-framework
           const isAimFramework = researchData.technique === 'aim-framework';
+          console.log('DEBUG: ¿Es investigación AIM Framework?', isAimFramework);
           
           // Verificar si es AIM Framework y si no hay una sección especificada o si no tiene el parámetro aim=true
           const section = searchParams.get('section');
-          const hasAimParam = searchParams.get('aim') === 'true';
+          console.log('DEBUG: Parámetros URL - section:', section, 'aim=true:', hasAimParam);
           
           if (isAimFramework) {
             if (!hasAimParam || !section) {
               // Añadir el parámetro aim=true y redirigir a welcome-screen si no hay sección
-              console.log('Redirigiendo a vista AIM Framework');
+              console.log('DEBUG: Redirigiendo a vista AIM Framework');
               const redirectUrl = `/dashboard?research=${researchId}&aim=true${!section ? '&section=welcome-screen' : ''}`;
+              console.log('DEBUG: URL de redirección:', redirectUrl);
               router.replace(redirectUrl);
             }
           }
         } else {
-          // Si no existe en localStorage, usar un nombre genérico
+          // Si no existe en localStorage, crear un nuevo registro con los datos mínimos
+          console.log('DEBUG: No se encontraron datos en localStorage, creando nuevo registro');
+          
+          // Crear datos básicos para la investigación
+          const newResearchData = {
+            id: researchId,
+            name: 'Research Project',
+            // Si la URL contiene aim=true, establecer la técnica como aim-framework
+            technique: hasAimParam ? 'aim-framework' : '',
+            createdAt: new Date().toISOString(),
+            status: 'draft'
+          };
+          
+          // Guardar en localStorage
+          localStorage.setItem(`research_${researchId}`, JSON.stringify(newResearchData));
+          console.log('DEBUG: Guardado nuevo registro de investigación en localStorage:', newResearchData);
+          
+          // Actualizar también la lista de investigaciones
+          const newResearchList = [{
+            id: newResearchData.id,
+            name: newResearchData.name,
+            technique: newResearchData.technique,
+            createdAt: newResearchData.createdAt
+          }];
+          
+          localStorage.setItem('research_list', JSON.stringify(newResearchList));
+          console.log('DEBUG: Actualizada lista de investigaciones con la nueva investigación');
+          
           setActiveResearch({ 
             id: researchId, 
             name: 'Research Project' 
           });
+          
+          // Si la URL tiene aim=true pero no tiene una sección, redirigir a welcome-screen
+          if (hasAimParam && !searchParams.get('section')) {
+            const redirectUrl = `/dashboard?research=${researchId}&aim=true&section=welcome-screen`;
+            console.log('DEBUG: Redirigiendo a vista AIM Framework después de crear el registro:', redirectUrl);
+            router.replace(redirectUrl);
+          }
         }
       } catch (error) {
-        console.error('Error cargando investigación:', error);
+        console.error('DEBUG: Error cargando investigación:', error);
         setActiveResearch({ 
           id: researchId, 
           name: 'Research Project' 
@@ -299,7 +444,7 @@ export default function DashboardPage() {
     } else {
       // Importante: si no hay researchId en la URL, limpiar activeResearch
       // Esto asegura que al navegar a /dashboard sin parámetros, se limpie el contexto
-      console.log('No hay investigación activa en la URL, limpiando estado');
+      console.log('DEBUG: No hay investigación activa en la URL, limpiando estado');
       setActiveResearch(undefined);
     }
   }, [researchId, searchParams, router]);

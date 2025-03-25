@@ -25,24 +25,51 @@ async function fixEndpoints() {
 
     // Leer el archivo de endpoints
     const endpointsData = fs.readFileSync(endpointsPath, 'utf8');
-    const endpointsJson = JSON.parse(endpointsData);
-
-    // Procesar los endpoints
+    
+    // Intentar procesar el contenido, que puede estar en varios formatos
     let apiUrl = '';
     let wsUrl = '';
-
-    // Extraer API URL y WebSocket URL
-    if (endpointsJson.httpApiUrl) {
-      apiUrl = endpointsJson.httpApiUrl;
-      // Asegurar que no termina con una barra
-      if (apiUrl.endsWith('/')) {
-        apiUrl = apiUrl.slice(0, -1);
+    
+    try {
+      // Intentar como JSON primero
+      const endpointsJson = JSON.parse(endpointsData);
+      
+      // Extraer API URL y WebSocket URL
+      if (endpointsJson.httpApiUrl) {
+        apiUrl = endpointsJson.httpApiUrl;
+      } else if (endpointsJson.HttpApiUrl) {
+        apiUrl = endpointsJson.HttpApiUrl;
+      }
+      
+      if (endpointsJson.WebsocketsApiUrl) {
+        wsUrl = endpointsJson.WebsocketsApiUrl;
+      } else if (endpointsJson.websocketApiUrl) {
+        wsUrl = endpointsJson.websocketApiUrl;
+      }
+    } catch (error) {
+      // Si no es JSON, intentar con formato de variables
+      console.log('⚠️ El archivo no está en formato JSON, intentando parsear como variables...');
+      
+      // Buscar la URL de la API HTTP
+      const httpApiMatch = endpointsData.match(/HttpApiUrl\s*=\s*"([^"]+)"/);
+      if (httpApiMatch && httpApiMatch[1]) {
+        apiUrl = httpApiMatch[1];
+      }
+      
+      // Buscar la URL de WebSocket
+      const wsApiMatch = endpointsData.match(/ServiceEndpointWebsocket\s*=\s*"([^"]+)"/);
+      if (wsApiMatch && wsApiMatch[1]) {
+        wsUrl = wsApiMatch[1];
       }
     }
 
-    if (endpointsJson.WebsocketsApiUrl) {
-      wsUrl = endpointsJson.WebsocketsApiUrl;
+    // Asegurar que las URLs no terminan con una barra
+    if (apiUrl && apiUrl.endsWith('/')) {
+      apiUrl = apiUrl.slice(0, -1);
     }
+
+    console.log('📌 API URL detectada:', apiUrl);
+    console.log('📌 WebSocket URL detectada:', wsUrl);
 
     // Crear objeto actualizado
     const updatedEndpoints = {
@@ -78,11 +105,26 @@ async function fixEndpoints() {
           updateForm: `${apiUrl}/api/forms/{id}`,
           deleteForm: `${apiUrl}/api/forms/{id}`,
         },
+        // Welcome Screen endpoints
+        welcomeScreen: {
+          create: `${apiUrl}/api/welcome-screens`,
+          get: `${apiUrl}/api/welcome-screens/{id}`,
+          getByResearch: `${apiUrl}/api/welcome-screens/research/{researchId}`,
+          update: `${apiUrl}/api/welcome-screens/{id}`,
+          delete: `${apiUrl}/api/welcome-screens/{id}`,
+        },
+        // Thank You Screen endpoints
+        thankYouScreen: {
+          create: `${apiUrl}/api/thank-you-screens`,
+          get: `${apiUrl}/api/thank-you-screens/{id}`,
+          getByResearch: `${apiUrl}/api/thank-you-screens/research/{researchId}`,
+          update: `${apiUrl}/api/thank-you-screens/{id}`,
+          delete: `${apiUrl}/api/thank-you-screens/{id}`,
+        },
       },
       // Mantener las URLs originales para referencia
       _original: {
-        httpApiUrl: endpointsJson.httpApiUrl,
-        WebsocketsApiUrl: endpointsJson.WebsocketsApiUrl,
+        endpointsData
       }
     };
 

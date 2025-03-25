@@ -1,11 +1,9 @@
 {
-  "ServiceEndpoint": "http://localhost:4700/api",
-  "WebSocketEndpoint": "ws://localhost:4700",
+  "ServiceEndpoint": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev",
+  "WebSocketEndpoint": "",
   "Region": "us-east-1",
   "Stage": "dev",
-  "ResearchTableName": "ResearchTable-dev",
-  "WelcomeScreenTableName": "WelcomeScreenTable-dev",
-  "UserPoolId": "local-user-pool",
-  "UserPoolClientId": "local-user-pool-client",
-  "IdentityPoolId": "local-identity-pool"
+  "AuthApiUrl": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/auth",
+  "ResearchApiUrl": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/research",
+  "WelcomeScreenApiUrl": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/welcome-screens"
 }
