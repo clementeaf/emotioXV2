@@ -1,1 +1,0 @@
-{"id":{"S":"research-test-01"},"userId":{"S":"testuser"},"basic":{"M":{"name":{"S":"Investigaci?n de prueba"},"enterprise":{"S":"enterprise1"},"type":{"S":"eye-tracking"},"technique":{"S":"aim-framework"}}},"status":{"S":"draft"},"currentStage":{"S":"build"},"stageProgress":{"N":"0"},"createdAt":{"S":"2025-03-16T23:00:00.000Z"},"updatedAt":{"S":"2025-03-16T23:00:00.000Z"}}
