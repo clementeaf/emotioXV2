@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { toast } from 'react-hot-toast';
 
 import { Input } from '@/components/ui/Input';
 import { Switch } from '@/components/ui/Switch';
 import { cn } from '@/lib/utils';
+import { eyeTrackingAPI } from '@/lib/api';
 
 import { 
   EyeTrackingFormData, 
@@ -35,6 +37,33 @@ export function EyeTrackingForm({ researchId, className, onSave }: EyeTrackingFo
   });
 
   const [activeTab, setActiveTab] = useState('setup');
+  const [isSaving, setIsSaving] = useState(false);
+  const [eyeTrackingId, setEyeTrackingId] = useState<string | null>(null);
+
+  // Cargar datos existentes al montar el componente
+  useEffect(() => {
+    const fetchExistingData = async () => {
+      if (researchId) {
+        try {
+          const response = await eyeTrackingAPI.getByResearchId(researchId);
+          if (response && response.data) {
+            console.log('DEBUG: Datos de eye tracking encontrados:', response.data);
+            if (response.data.id) {
+              setEyeTrackingId(response.data.id);
+            }
+            setFormData(response.data);
+          }
+        } catch (error) {
+          // Ignorar errores 404, son esperados cuando no hay configuración previa
+          if (error instanceof Error && !error.message.includes('404')) {
+            console.error('Error al cargar datos de eye tracking:', error);
+          }
+        }
+      }
+    };
+
+    fetchExistingData();
+  }, [researchId]);
 
   // Helper function to update nested properties in formData
   const updateFormData = (path: string, value: any) => {
@@ -115,9 +144,42 @@ export function EyeTrackingForm({ researchId, className, onSave }: EyeTrackingFo
   };
   
   // Handle form submission
-  const handleSave = () => {
-    if (onSave) {
-      onSave(formData);
+  const handleSave = async () => {
+    if (!researchId) {
+      toast.error('Se requiere ID de investigación');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      let response;
+      
+      // Si ya existe un ID, actualizar
+      if (eyeTrackingId) {
+        response = await eyeTrackingAPI.update(eyeTrackingId, formData);
+      } else {
+        // Si no, crear nuevo
+        response = await eyeTrackingAPI.create(formData);
+      }
+      
+      console.log('Eye tracking guardado:', response);
+      
+      // Actualizar el ID si es nuevo
+      if (response && response.data && response.data.id && !eyeTrackingId) {
+        setEyeTrackingId(response.data.id);
+      }
+      
+      toast.success('Configuración de seguimiento ocular guardada');
+      
+      // Llamar al callback si existe
+      if (onSave) {
+        onSave(formData);
+      }
+    } catch (error) {
+      console.error('Error al guardar eye tracking:', error);
+      toast.error('Error al guardar la configuración de seguimiento ocular');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -656,21 +718,29 @@ export function EyeTrackingForm({ researchId, className, onSave }: EyeTrackingFo
           )}
         </div>
 
-        <footer className="flex items-center justify-between px-8 py-4 bg-neutral-50 border-t border-neutral-100">
-          <p className="text-sm text-neutral-500">Changes are saved automatically</p>
-          <div className="flex items-center gap-3">
+        <footer className="flex items-center justify-between mt-6 border-t border-neutral-200 pt-6">
+          <div className="text-sm text-neutral-500">
+            {isSaving ? 'Guardando configuración...' : 
+              eyeTrackingId ? 'Actualizando configuración existente' : 'Configuración nueva'}
+          </div>
+          <div className="flex items-center gap-4">
             <button
               type="button"
-              className="px-4 py-2 text-sm font-medium text-neutral-700 bg-white border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors"
+              onClick={() => setActiveTab('preview')}
+              className="px-4 py-2 text-sm bg-white border border-neutral-200 rounded-md hover:bg-neutral-50 text-neutral-700"
             >
-              Preview
+              Vista previa
             </button>
             <button
               type="button"
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors"
               onClick={handleSave}
+              disabled={isSaving}
+              className={cn(
+                "px-6 py-2 text-sm font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600 ml-3",
+                isSaving && "opacity-70 cursor-not-allowed"
+              )}
             >
-              Save and Continue
+              {isSaving ? 'Guardando...' : 'Guardar y continuar'}
             </button>
           </div>
         </footer>

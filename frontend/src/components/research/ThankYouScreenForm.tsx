@@ -6,31 +6,12 @@ import { toast } from 'react-hot-toast';
 
 import { Switch } from '@/components/ui/Switch';
 import { Textarea } from '@/components/ui/Textarea';
-import { alovaInstance } from '@/config/alova.config';
+import { thankYouScreenAPI } from '@/lib/api';  // Importamos la nueva API
 import API_CONFIG from '@/config/api.config';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
 
 import { ThankYouScreenConfig, DEFAULT_THANK_YOU_SCREEN_CONFIG, DEFAULT_THANK_YOU_SCREEN_VALIDATION } from '../../types';
-
-
-// Definir el tipo para la API
-const thankYouScreenAPI = {
-  getByResearchId: (researchId: string) => 
-    alovaInstance.Get(API_CONFIG.endpoints.thankYouScreen.GET_BY_RESEARCH.replace('{researchId}', researchId)),
-  
-  getById: (id: string) => 
-    alovaInstance.Get(API_CONFIG.endpoints.thankYouScreen.GET.replace('{id}', id)),
-  
-  create: (data: any) => 
-    alovaInstance.Post(API_CONFIG.endpoints.thankYouScreen.CREATE, data),
-  
-  update: (id: string, data: any) => 
-    alovaInstance.Put(API_CONFIG.endpoints.thankYouScreen.UPDATE.replace('{id}', id), data),
-  
-  delete: (id: string) => 
-    alovaInstance.Delete(API_CONFIG.endpoints.thankYouScreen.DELETE.replace('{id}', id)),
-};
 
 // Tipo para la respuesta de la API
 interface ThankYouScreenResponse {
@@ -68,7 +49,7 @@ export function ThankYouScreenForm({ className, researchId }: ThankYouScreenForm
     queryFn: async () => {
       console.log('DEBUG: Ejecutando consulta para obtener thank you screen con researchId:', researchId);
       try {
-        const response = await thankYouScreenAPI.getByResearchId(researchId).send();
+        const response = await thankYouScreenAPI.getByResearchId(researchId);
         console.log('DEBUG: Respuesta de consulta thank you screen:', response);
         
         // Si es una respuesta 404 (manejo silencioso), no es un error
@@ -188,13 +169,13 @@ export function ThankYouScreenForm({ className, researchId }: ThankYouScreenForm
           console.log(`DEBUG: Actualizando thank you screen con ID ${thankYouScreenId}`);
           fullUrl = `/thank-you-screens/${thankYouScreenId}`;
           console.log('DEBUG: URL completa para actualización:', fullUrl);
-          response = await thankYouScreenAPI.update(thankYouScreenId, data).send();
+          response = await thankYouScreenAPI.update(thankYouScreenId, data);
         } else {
           // Si no tenemos ID, crear un nuevo registro
           fullUrl = '/thank-you-screens';
           console.log('DEBUG: URL completa para creación:', fullUrl);
           console.log('DEBUG: Creando nuevo thank you screen');
-          response = await thankYouScreenAPI.create(data).send();
+          response = await thankYouScreenAPI.create(data);
         }
         
         console.log('DEBUG: Respuesta al guardar thank you screen:', response);

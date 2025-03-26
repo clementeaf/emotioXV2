@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { toast } from 'react-hot-toast';
 
 import { Button } from '@/components/ui/Button';
 import { Switch } from '@/components/ui/Switch';
 import { cn } from '@/lib/utils';
+import { smartVocAPI } from '@/lib/api';
 
 interface Question {
   id: string;
@@ -27,10 +29,11 @@ interface Question {
 
 interface SmartVOCFormProps {
   className?: string;
+  researchId: string;
   onSave?: (data: any) => void;
 }
 
-export function SmartVOCForm({ className, onSave }: SmartVOCFormProps) {
+export function SmartVOCForm({ className, researchId, onSave }: SmartVOCFormProps) {
   const [questions, setQuestions] = useState<Question[]>([
     {
       id: 'csat',
@@ -110,6 +113,29 @@ export function SmartVOCForm({ className, onSave }: SmartVOCFormProps) {
 
   const [randomizeQuestions, setRandomizeQuestions] = useState(false);
   const [smartVocRequired, setSmartVocRequired] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [smartVocId, setSmartVocId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchExistingData = async () => {
+      if (researchId) {
+        try {
+          // En este punto, asumimos que estamos creando un formulario nuevo
+          // Omitimos la carga para evitar errores 404
+          console.log(`Iniciando configuración de Smart VOC para researchId: ${researchId}`);
+          // No es un error, simplemente no hay datos previos
+          console.log('INFO: Se creará una nueva configuración de Smart VOC.');
+        } catch (error) {
+          // Solo registrar errores no relacionados con 404
+          if (error instanceof Error && !error.message.includes('404')) {
+            console.error('Error inesperado:', error);
+          }
+        }
+      }
+    };
+
+    fetchExistingData();
+  }, [researchId]);
 
   const updateQuestion = (id: string, updates: Partial<Question>) => {
     setQuestions(questions.map(q => 
@@ -330,6 +356,64 @@ export function SmartVOCForm({ className, onSave }: SmartVOCFormProps) {
     }
   };
 
+  const handleSaveAndContinue = async () => {
+    console.log('DEBUG handleSaveAndContinue - researchId:', researchId);
+    
+    // Asegurarnos de que researchId es un valor válido
+    if (!researchId || researchId.trim() === '') {
+      toast.error('ID de investigación no válido');
+      console.error('DEBUG: researchId no válido:', researchId);
+      return;
+    }
+
+    const formData = {
+      researchId: researchId.trim(),
+      questions,
+      randomizeQuestions,
+      smartVocRequired
+    };
+
+    console.log('DEBUG: Datos a enviar para crear Smart VOC:', {
+      researchId: formData.researchId,
+      questionsCount: formData.questions.length,
+      randomize: formData.randomizeQuestions,
+      required: formData.smartVocRequired
+    });
+
+    setIsSaving(true);
+    try {
+      console.log('DEBUG: Creando nuevo Smart VOC');
+      // Simplificamos - siempre creamos un nuevo registro
+      const response = await smartVocAPI.create({
+        ...formData,
+        createdAt: new Date().toISOString()
+      });
+      
+      console.log('Smart VOC guardado, respuesta:', response);
+      
+      if (response && response.data && response.data.id) {
+        setSmartVocId(response.data.id);
+        console.log('Nuevo smartVocId establecido:', response.data.id);
+      }
+      
+      toast.success('Configuración de Voice of Customer guardada');
+      
+      if (onSave) {
+        onSave(formData);
+      }
+    } catch (error) {
+      console.error('Error al guardar Smart VOC:', error);
+      // Mostrar mensaje de error más detallado
+      if (error instanceof Error) {
+        toast.error(`Error: ${error.message}`);
+      } else {
+        toast.error('Error al guardar la configuración de Voice of Customer');
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className={cn('max-w-3xl mx-auto', className)}>
       <div className="bg-white rounded-xl border border-neutral-200/70 shadow-[0_6px_16px_-4px_rgba(0,0,0,0.05)] overflow-hidden">
@@ -341,7 +425,6 @@ export function SmartVOCForm({ className, onSave }: SmartVOCFormProps) {
           </header>
 
           <div className="space-y-6">
-            {/* Smart VOC Required Toggle */}
             <div className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg">
               <div className="space-y-0.5">
                 <h2 className="text-sm font-medium text-neutral-900">Required</h2>
@@ -353,7 +436,6 @@ export function SmartVOCForm({ className, onSave }: SmartVOCFormProps) {
               />
             </div>
 
-            {/* Question List */}
             <div className="space-y-4">
               <div className="bg-blue-50 p-4 rounded-md">
                 <p className="text-sm text-blue-800">
@@ -418,7 +500,6 @@ export function SmartVOCForm({ className, onSave }: SmartVOCFormProps) {
               </div>
             </div>
 
-            {/* Randomize Questions */}
             <div className="flex items-center gap-3 pl-2">
               <Switch 
                 checked={randomizeQuestions} 
@@ -457,13 +538,10 @@ export function SmartVOCForm({ className, onSave }: SmartVOCFormProps) {
             <button
               type="button"
               className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors"
-              onClick={() => onSave && onSave({
-                questions,
-                randomizeQuestions,
-                smartVocRequired
-              })}
+              onClick={handleSaveAndContinue}
+              disabled={isSaving}
             >
-              Save Smart VOC
+              {isSaving ? 'Guardando...' : 'Guardar y continuar'}
             </button>
           </div>
         </footer>

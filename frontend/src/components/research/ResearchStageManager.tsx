@@ -30,9 +30,9 @@ function ResearchStageManagerContent({ researchId }: ResearchStageManagerProps) 
       case 'welcome-screen':
         return <WelcomeScreenForm researchId={researchId} />;
       case 'smart-voc':
-        return <SmartVOCForm />;
+        return <SmartVOCForm researchId={researchId} />;
       case 'cognitive':
-        return <CognitiveTaskForm />;
+        return <CognitiveTaskForm researchId={researchId} />;
       case 'eye-tracking':
         return <EyeTrackingForm researchId={researchId} />;
       case 'thank-you':

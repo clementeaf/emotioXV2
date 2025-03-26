@@ -26,6 +26,24 @@ interface AuthEndpoints {
   PROFILE: string;
 }
 
+// Estructura para smart VOC
+interface SmartVocEndpoints {
+  CREATE: string;
+  GET: string;
+  GET_BY_RESEARCH: string;
+  UPDATE: string;
+  DELETE: string;
+}
+
+// Estructura para eye tracking
+interface EyeTrackingEndpoints {
+  CREATE: string;
+  GET: string;
+  GET_BY_RESEARCH: string;
+  UPDATE: string;
+  DELETE: string;
+}
+
 // Modificamos la interfaz para incluir los endpoints añadidos
 interface Endpoints {
   auth: AuthEndpoints;
@@ -40,6 +58,8 @@ interface Endpoints {
   };
   welcomeScreen: WelcomeScreenEndpoints;
   thankYouScreen: ThankYouScreenEndpoints;
+  smartVoc: SmartVocEndpoints;
+  eyeTracking: EyeTrackingEndpoints;
 }
 
 // Obtener la URL base desde el archivo endpoints.json generado dinámicamente
@@ -99,6 +119,24 @@ const API_CONFIG = {
       CREATE: '/thank-you-screens',
       UPDATE: '/thank-you-screens/{id}',
       DELETE: '/thank-you-screens/{id}',
+    },
+    
+    // SmartVOC
+    smartVoc: {
+      GET_BY_RESEARCH: '/smart-voc/research/{researchId}/smart-voc',
+      GET: '/smart-voc/{id}',
+      CREATE: '/smart-voc',
+      UPDATE: '/smart-voc/{id}',
+      DELETE: '/smart-voc/{id}',
+    },
+    
+    // Eye Tracking
+    eyeTracking: {
+      GET_BY_RESEARCH: '/eye-tracking/research/{researchId}',
+      GET: '/eye-tracking/{id}',
+      CREATE: '/eye-tracking',
+      UPDATE: '/eye-tracking/{id}',
+      DELETE: '/eye-tracking/{id}',
     },
   },
   

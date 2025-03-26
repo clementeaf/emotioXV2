@@ -53,9 +53,37 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
     const fetchResearchName = async () => {
       try {
         if (researchId) {
-          const response = await researchAPI.get(researchId);
-          if (response && response.data && response.data.data) {
-            setResearchName(response.data.data.name);
+          try {
+            // Intentar obtener los datos desde la API
+            const response = await researchAPI.get(researchId);
+            // Se ajusta la estructuración para evitar errores de tipo
+            if (response?.data) {
+              // La respuesta puede tener diferentes estructuras, intentar extraer el nombre
+              const responseData = response.data as any;
+              if (responseData.data && responseData.data.name) {
+                setResearchName(responseData.data.name);
+              } else if (responseData.name) {
+                setResearchName(responseData.name);
+              }
+              return;
+            }
+          } catch (apiError) {
+            console.error('Error al obtener el nombre de la investigación desde la API:', apiError);
+            // Si la API falla, continuar con el fallback
+          }
+          
+          // Fallback: intentar obtener los datos desde localStorage
+          try {
+            const storedResearch = localStorage.getItem(`research_${researchId}`);
+            if (storedResearch) {
+              const researchData = JSON.parse(storedResearch);
+              if (researchData && researchData.name) {
+                console.log('Usando datos de localStorage como fallback para el nombre de la investigación');
+                setResearchName(researchData.name);
+              }
+            }
+          } catch (localStorageError) {
+            console.error('Error al obtener el nombre de la investigación desde localStorage:', localStorageError);
           }
         }
       } catch (error) {

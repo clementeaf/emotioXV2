@@ -42,13 +42,16 @@ const customFetchAdapter = () => {
     const controller = new AbortController();
     const { signal } = controller;
 
+    // Usar el tipo explícito directamente de la configuración o el valor predeterminado
+    const methodType = config.type || config.method || 'GET';
+    
     // Solo enviar body si el método no es GET o HEAD
-    const isGetOrHead = config.method === 'GET' || config.method === 'HEAD';
+    const isGetOrHead = methodType === 'GET' || methodType === 'HEAD';
     
     // Depuración - mostramos información detallada de la solicitud
     console.log('Request details:', {
       url: config.url,
-      method: config.method || 'POST', // Valor por defecto para depuración
+      methodType,
       hasData: !!config.data,
       willSendBody: !!config.data && !isGetOrHead,
       data: config.data, // Mostrar los datos que se están enviando
@@ -60,33 +63,34 @@ const customFetchAdapter = () => {
       console.error('URL contiene placeholder {id} sin reemplazar:', config.url);
     }
     
-    // Asegurar que el método es una cadena válida, por defecto POST si es undefined
-    const method = config.method || 'POST';
-    
-    console.log(`Enviando solicitud ${method} a ${config.url}`);
+    console.log(`Enviando solicitud ${methodType} a ${config.url}`);
     
     // Asegurarse de que config.url no sea una URL ya completa
     let requestUrl = config.url;
-    // Si config.url ya comienza con http o https, no se concatena con baseURL
-    if (!requestUrl.startsWith('http://') && !requestUrl.startsWith('https://')) {
-      // Asegurarnos de que la URL comience con /api/
-      if (!requestUrl.startsWith('/api/')) {
-        // Si la ruta ya comienza con /, solo añadimos api
-        if (requestUrl.startsWith('/')) {
-          requestUrl = '/api' + requestUrl;
-        } else {
-          // Si no, añadimos /api/
-          requestUrl = '/api/' + requestUrl;
+    
+    console.log(`URL final a la que se envía la solicitud: ${requestUrl}`);
+    
+    // Verificar que los datos se envían correctamente para solicitudes POST
+    let bodyData = undefined;
+    if (config.data && !isGetOrHead) {
+      // Si config.data ya es un string, usarlo directamente
+      if (typeof config.data === 'string') {
+        bodyData = config.data;
+      } else {
+        // De lo contrario, convertirlo a JSON
+        try {
+          bodyData = JSON.stringify(config.data);
+          console.log('DEBUG - Datos del body (convertidos a string):', bodyData);
+        } catch (error) {
+          console.error('ERROR - No se pudo convertir los datos a JSON:', error);
         }
       }
     }
     
-    console.log(`URL final a la que se envía la solicitud: ${requestUrl}`);
-    
     const fetchPromise = fetch(requestUrl, {
-      method: method,
+      method: methodType, // Usar el método correcto
       headers: config.headers,
-      body: config.data && method !== 'GET' && method !== 'HEAD' ? JSON.stringify(config.data) : undefined,
+      body: bodyData, // Usar la variable bodyData en lugar de la conversión inline
       signal,
       mode: 'cors',
       // No enviar credenciales automáticamente para evitar problemas CORS
@@ -192,6 +196,10 @@ const alovaInstance = createAlova({
       method.config.method = method.type;
       console.log(`Asignando método explícitamente: ${method.config.method}`);
     }
+    
+    // Asegurar que el metodType también está definido (para nuestro adaptador personalizado)
+    method.config.methodType = method.type;
+    console.log(`Asignando methodType explícitamente: ${method.config.methodType}`);
     
     // Configuración por defecto
     method.config.headers = {
@@ -501,7 +509,22 @@ export const researchAPI = {
   get: (id: string) => {
     const url = (API_CONFIG.endpoints.research.GET || '/research/{id}').replace('{id}', id);
     console.log(`Endpoint GET utilizado: ${url}`);
-    return alovaInstance.Get<APIResponse<Research>>(url);
+    
+    // Crear un método GET explícito
+    const method = alovaInstance.Get<APIResponse<Research>>(url);
+    
+    // Forzar el tipo de método en la configuración
+    if (method.config) {
+      method.config.methodType = 'GET';
+    }
+    
+    console.log('Configuración del método para research.get:', {
+      url: method.url,
+      type: method.type,
+      config: method.config
+    });
+    
+    return method;
   },
   
   list: () => {
@@ -575,6 +598,191 @@ export const researchAPI = {
     console.log(`Endpoint UPDATE_STAGE utilizado: ${url}`);
     return alovaInstance.Put<APIResponse<Research>>(url, { stage, progress });
   },
+};
+
+// Endpoints de pantalla de agradecimiento
+export const thankYouScreenAPI = {
+  create: (data: any) => {
+    const url = API_CONFIG.endpoints.thankYouScreen.CREATE || '/thank-you-screens';
+    console.log(`Endpoint CREATE thankYouScreen utilizado: ${url}`);
+    
+    // Crear un método POST explícito
+    const method = alovaInstance.Post<any>(url, data);
+    
+    // Forzar el tipo de método en la configuración
+    if (method.config) {
+      method.config.method = 'POST';
+    }
+    
+    console.log('Configuración del método para thankYouScreen.create:', {
+      url: method.url,
+      type: method.type,
+      config: method.config
+    });
+    
+    return method;
+  },
+  
+  getByResearchId: (researchId: string) => {
+    const url = (API_CONFIG.endpoints.thankYouScreen.GET_BY_RESEARCH || '/thank-you-screens/research/{researchId}').replace('{researchId}', researchId);
+    console.log(`Endpoint GET_BY_RESEARCH thankYouScreen utilizado: ${url}`);
+    
+    // Crear un método GET explícito
+    const method = alovaInstance.Get<any>(url);
+    
+    // Forzar el tipo de método en la configuración
+    if (method.config) {
+      method.config.method = 'GET';
+    }
+    
+    return method;
+  },
+  
+  getById: (id: string) => {
+    const url = (API_CONFIG.endpoints.thankYouScreen.GET || '/thank-you-screens/{id}').replace('{id}', id);
+    console.log(`Endpoint GET thankYouScreen utilizado: ${url}`);
+    
+    // Crear un método GET explícito
+    const method = alovaInstance.Get<any>(url);
+    
+    // Forzar el tipo de método en la configuración
+    if (method.config) {
+      method.config.method = 'GET';
+    }
+    
+    return method;
+  },
+  
+  update: (id: string, data: any) => {
+    const url = (API_CONFIG.endpoints.thankYouScreen.UPDATE || '/thank-you-screens/{id}').replace('{id}', id);
+    console.log(`Endpoint UPDATE thankYouScreen utilizado: ${url}`);
+    
+    // Crear un método PUT explícito
+    const method = alovaInstance.Put<any>(url, data);
+    
+    // Forzar el tipo de método en la configuración
+    if (method.config) {
+      method.config.method = 'PUT';
+    }
+    
+    return method;
+  },
+  
+  delete: (id: string) => {
+    const url = (API_CONFIG.endpoints.thankYouScreen.DELETE || '/thank-you-screens/{id}').replace('{id}', id);
+    console.log(`Endpoint DELETE thankYouScreen utilizado: ${url}`);
+    
+    // Crear un método DELETE explícito
+    const method = alovaInstance.Delete<any>(url);
+    
+    // Forzar el tipo de método en la configuración
+    if (method.config) {
+      method.config.method = 'DELETE';
+    }
+    
+    return method;
+  }
+};
+
+// También API para eye tracking
+export const eyeTrackingAPI = {
+  create: (data: any) => {
+    const url = API_CONFIG.endpoints.eyeTracking?.CREATE || '/eye-tracking';
+    console.log(`Endpoint CREATE eyeTracking utilizado: ${url}`);
+    
+    // Crear un método POST explícito
+    const method = alovaInstance.Post<any>(url, data);
+    
+    // Forzar el tipo de método en la configuración
+    if (method.config) {
+      method.config.method = 'POST';
+    }
+    
+    return method;
+  },
+  
+  getByResearchId: (researchId: string) => {
+    const url = (API_CONFIG.endpoints.eyeTracking?.GET_BY_RESEARCH || '/eye-tracking/research/{researchId}').replace('{researchId}', researchId);
+    console.log(`Endpoint GET_BY_RESEARCH eyeTracking utilizado: ${url}`);
+    
+    const method = alovaInstance.Get<any>(url);
+    if (method.config) {
+      method.config.method = 'GET';
+    }
+    
+    return method;
+  },
+  
+  update: (id: string, data: any) => {
+    const url = (API_CONFIG.endpoints.eyeTracking?.UPDATE || '/eye-tracking/{id}').replace('{id}', id);
+    console.log(`Endpoint UPDATE eyeTracking utilizado: ${url}`);
+    
+    const method = alovaInstance.Put<any>(url, data);
+    if (method.config) {
+      method.config.method = 'PUT';
+    }
+    
+    return method;
+  }
+};
+
+// API para SmartVOC
+export const smartVocAPI = {
+  create: (data: any) => {
+    const url = API_CONFIG.endpoints.smartVoc?.CREATE || '/smart-voc';
+    console.log(`Endpoint CREATE smartVoc utilizado: ${url}`);
+    
+    // Verificar explícitamente que el researchId está presente y es válido
+    if (!data || !data.researchId || typeof data.researchId !== 'string' || !data.researchId.trim()) {
+      console.error('ERROR: researchId inválido o faltante en los datos enviados:', data);
+      throw new Error('Se requiere un ID de investigación válido (researchId)');
+    }
+    
+    // Construir URL completa
+    const fullUrl = `${API_CONFIG.baseURL}${url}`;
+    console.log('URL completa para crear SmartVOC:', fullUrl);
+    
+    // Imprimir los datos que se enviarán para depuración
+    console.log('DEBUG - smartVocAPI.create - Datos a enviar:', {
+      researchId: data.researchId,
+      questionsCount: data.questions?.length || 0,
+      randomizeQuestions: data.randomizeQuestions,
+      smartVocRequired: data.smartVocRequired
+    });
+    
+    // Crear un método POST explícito con el cuerpo de la solicitud correctamente formateado
+    const method = alovaInstance.Post<any>(url, {
+      ...data,
+      // Asegurar que el researchId se envía correctamente
+      researchId: data.researchId.trim()
+    });
+    
+    return method;
+  },
+  
+  getByResearchId: (researchId: string) => {
+    const url = (API_CONFIG.endpoints.smartVoc?.GET_BY_RESEARCH || '/smart-voc/research/{researchId}').replace('{researchId}', researchId);
+    console.log(`Endpoint GET_BY_RESEARCH smartVoc utilizado: ${url}`);
+    
+    const method = alovaInstance.Get<any>(url);
+    if (method.config) {
+      method.config.method = 'GET';
+    }
+    
+    return method;
+  },
+  
+  update: (id: string, data: any) => {
+    const url = (API_CONFIG.endpoints.smartVoc?.UPDATE || '/smart-voc/{id}').replace('{id}', id);
+    console.log(`Endpoint UPDATE smartVoc utilizado: ${url}`);
+    
+    const method = alovaInstance.Put<any>(url, data);
+    if (method.config) {
+      method.config.method = 'PUT';
+    }
+    
+    return method;
+  }
 };
 
 // Manejar errores de API
