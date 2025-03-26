@@ -1,10 +1,9 @@
-
 /**
  * Configuración de endpoints de la API
  * Este archivo es generado automáticamente por el script export-endpoints.js
  * No modificar manualmente.
  * 
- * Generado: 2025-03-25T15:44:17.307Z
+ * Generado: 2025-03-26T09:44:34.572Z
  */
 
 export interface ApiEndpoint {
@@ -35,6 +34,15 @@ export interface ApiEndpoint {
       getByResearch: string;
       update: string;
       delete: string;
+    };
+    eyeTracking: {
+      create: string;
+      get: string;
+      getByResearch: string;
+      update: string;
+      updateByResearch: string;
+      delete: string;
+      getParticipant: string;
     };
   };
 }
@@ -67,6 +75,15 @@ const API_CONFIG: ApiEndpoint = {
       "getByResearch": "/research/{researchId}",
       "update": "/{id}",
       "delete": "/{id}"
+    },
+    "eyeTracking": {
+      "create": "",
+      "get": "/{id}",
+      "getByResearch": "/research/{researchId}",
+      "update": "/{id}",
+      "updateByResearch": "/research/{researchId}",
+      "delete": "/{id}",
+      "getParticipant": "/participant/{researchId}"
     }
   }
 };

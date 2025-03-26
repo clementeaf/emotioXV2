@@ -40,6 +40,15 @@
       "getByResearch": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/thank-you-screens/research/{researchId}",
       "update": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/thank-you-screens/{id}",
       "delete": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/thank-you-screens/{id}"
+    },
+    "eyeTracking": {
+      "create": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/eye-tracking",
+      "get": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/eye-tracking/{id}",
+      "getByResearch": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/research/{researchId}/eye-tracking",
+      "update": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/eye-tracking/{id}",
+      "updateByResearch": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/research/{researchId}/eye-tracking",
+      "delete": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/eye-tracking/{id}",
+      "getParticipant": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/participant/{researchId}/eye-tracking"
     }
   },
   "_original": {

@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
 import { toast } from 'react-hot-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ThankYouScreenConfig, DEFAULT_THANK_YOU_SCREEN_CONFIG, DEFAULT_THANK_YOU_SCREEN_VALIDATION } from '@/shared/interfaces/thank-you-screen.interface';
+import { ThankYouScreenConfig, DEFAULT_THANK_YOU_SCREEN_CONFIG, DEFAULT_THANK_YOU_SCREEN_VALIDATION } from '../../types';
 import { alovaInstance } from '@/config/alova.config';
 import API_CONFIG from '@/config/api.config';
 

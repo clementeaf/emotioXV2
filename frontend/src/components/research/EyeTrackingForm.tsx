@@ -13,7 +13,7 @@ import {
   EyeTrackingStimulus,
   EyeTrackingAreaOfInterest,
   EyeTrackingConfig
-} from '@/shared/interfaces/eye-tracking.interface';
+} from '../../types';
 
 // Función para generar un ID único ya que no existe en utils
 const generateId = (): string => {
