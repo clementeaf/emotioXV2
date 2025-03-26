@@ -1,9 +1,10 @@
+
 /**
  * Configuración de endpoints de la API
  * Este archivo es generado automáticamente por el script export-endpoints.js
  * No modificar manualmente.
  * 
- * Generado: 2025-03-26T09:44:34.568Z
+ * Generado: 2025-03-26T12:49:48.905Z
  */
 
 const API_CONFIG = {
@@ -34,15 +35,6 @@ const API_CONFIG = {
       "getByResearch": "/research/{researchId}",
       "update": "/{id}",
       "delete": "/{id}"
-    },
-    "eyeTracking": {
-      "create": "",
-      "get": "/{id}",
-      "getByResearch": "/research/{researchId}",
-      "update": "/{id}",
-      "updateByResearch": "/research/{researchId}",
-      "delete": "/{id}",
-      "getParticipant": "/participant/{researchId}"
     }
   }
 };

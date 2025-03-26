@@ -1,4 +1,4 @@
-// Script completo para prueba automatizada
+// Script completo para prueba automatizada de emotioXV2
 // 1. Inicia sesión, 2. Obtiene el token, 3. Crea una nueva investigación, 4. Crea un welcomeScreen,
 // 5. Crea un eyeTracking, 6. Crea un smartVOC, 7. Crea un thankYouScreen
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
@@ -87,7 +87,8 @@ async function createEyeTracking(token, researchId) {
     }
   };
   
-  // URL del endpoint para crear EyeTracking para una investigación específica
+  // URL del endpoint para crear EyeTracking
+  // Utilizamos la ruta correcta de la API
   const eyeTrackingUrl = 'https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/eye-tracking';
   
   console.log('Enviando solicitud de creación de EyeTracking...');
@@ -180,7 +181,8 @@ async function createSmartVOC(token, researchId) {
     smartVocRequired: true
   };
   
-  // URL del endpoint para crear SmartVOC para una investigación específica
+  // URL del endpoint para crear SmartVOC
+  // Utilizamos la ruta correcta de la API
   const smartVOCUrl = 'https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/smart-voc';
   
   console.log('Enviando solicitud de creación de SmartVOC...');
@@ -341,6 +343,9 @@ async function main() {
     } else if (loginData.data && loginData.data.access_token) {
       token = loginData.data.access_token;
       console.log('Token encontrado en loginData.data.access_token');
+    } else if (loginData.auth && loginData.auth.token) {
+      token = loginData.auth.token;
+      console.log('Token encontrado en loginData.auth.token');
     }
     
     // Si no se encuentra en las ubicaciones comunes, buscar en profundidad
@@ -418,25 +423,30 @@ async function main() {
         console.log('Respuesta recibida pero sin ID identificable:', researchResponseData);
       }
       
-      // Paso 4: Crear un welcomeScreen si se obtuvo un ID de investigación
+      // Paso 4-7: Crear componentes adicionales si se obtuvo un ID de investigación
       if (researchId) {
+        // Paso 4: Crear welcomeScreen
         const welcomeScreenId = await createWelcomeScreen(token, researchId);
         
-        // Paso 5: Crear un EyeTracking
+        // Paso 5: Crear EyeTracking
         const eyeTrackingId = await createEyeTracking(token, researchId);
         
-        // Paso 6: Crear un SmartVOC
+        // Paso 6: Crear SmartVOC
         const smartVOCId = await createSmartVOC(token, researchId);
         
-        // Paso 7: Crear un ThankYouScreen
+        // Paso 7: Crear ThankYouScreen
         const thankYouScreenId = await createThankYouScreen(token, researchId);
         
+        // Mostrar resumen de recursos creados
         console.log('\nResumen de recursos creados:');
         console.log(`Investigación: ${researchId}`);
         console.log(`Welcome Screen: ${welcomeScreenId || 'No creado'}`);
         console.log(`Eye Tracking: ${eyeTrackingId || 'No creado'}`);
         console.log(`Smart VOC: ${smartVOCId || 'No creado'}`);
         console.log(`Thank You Screen: ${thankYouScreenId || 'No creado'}`);
+        
+        console.log('\nPara acceder a la investigación, visite:');
+        console.log(`http://localhost:4700/dashboard?research=${researchId}`);
       }
       
     } catch (e) {

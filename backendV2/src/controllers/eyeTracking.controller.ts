@@ -325,20 +325,20 @@ export class EyeTrackingController {
  * Definición de rutas para el controlador de eye tracking
  */
 const routes: RouteMap = {
-  '/api/eye-tracking': {
+  '/eye-tracking': {
     'POST': new EyeTrackingController().createEyeTracking
   },
-  '/api/eye-tracking/:id': {
+  '/eye-tracking/:id': {
     'GET': new EyeTrackingController().getEyeTrackingById,
     'PUT': new EyeTrackingController().updateEyeTracking,
     'DELETE': new EyeTrackingController().deleteEyeTracking
   },
-  '/api/research/:researchId/eye-tracking': {
+  '/research/:researchId/eye-tracking': {
     'GET': new EyeTrackingController().getEyeTrackingByResearchId,
     'POST': new EyeTrackingController().createEyeTracking,
     'PUT': new EyeTrackingController().updateEyeTrackingByResearchId
   },
-  '/api/participant/:researchId/eye-tracking': {
+  '/participant/:researchId/eye-tracking': {
     'GET': new EyeTrackingController().getParticipantEyeTracking
   }
 };
@@ -347,7 +347,7 @@ const routes: RouteMap = {
  * Handler principal para las rutas de eye tracking
  */
 export const eyeTrackingHandler = createController(routes, {
-  basePath: '/api/eye-tracking',
+  basePath: '/eye-tracking',
   publicRoutes: [
     { path: '/participant/:researchId/eye-tracking', method: 'GET' }
   ]

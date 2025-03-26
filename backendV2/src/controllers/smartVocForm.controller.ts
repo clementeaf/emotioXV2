@@ -293,27 +293,27 @@ const controller = new SmartVOCFormController();
 
 // Definir mapa de rutas para el controlador
 const routes: RouteMap = {
-  '/api/smart-voc': {
+  '/smart-voc': {
     'POST': controller.createSmartVOCForm.bind(controller)
   },
-  '/api/smart-voc/:id': {
+  '/smart-voc/:id': {
     'GET': controller.getSmartVOCFormById.bind(controller),
     'PUT': controller.updateSmartVOCForm.bind(controller),
     'DELETE': controller.deleteSmartVOCForm.bind(controller)
   },
-  '/api/research/:researchId/smart-voc': {
+  '/research/:researchId/smart-voc': {
     'GET': controller.getSmartVOCFormByResearchId.bind(controller),
     'POST': controller.createOrUpdateSmartVOCForm.bind(controller),
     'PUT': controller.createOrUpdateSmartVOCForm.bind(controller)
   },
-  '/api/smart-voc/clone': {
+  '/smart-voc/clone': {
     'POST': controller.cloneSmartVOCForm.bind(controller)
   }
 };
 
 // Crear y exportar el controlador con las rutas definidas
 export const smartVocFormController = createController(routes, {
-  basePath: '/api/smart-voc',
+  basePath: '/smart-voc',
   publicRoutes: [] // Todas las rutas requieren autenticación
 });
 

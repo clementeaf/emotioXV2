@@ -178,8 +178,9 @@ export class SmartVOCFormModel {
   async getByResearchId(researchId: string): Promise<SmartVOCFormRecord | null> {
     const params: DynamoDB.DocumentClient.QueryInput = {
       TableName: this.tableName,
-      IndexName: 'GSI1',
-      KeyConditionExpression: 'researchId = :researchId AND begins_with(sk, :prefix)',
+      IndexName: 'researchId-index',
+      KeyConditionExpression: 'researchId = :researchId',
+      FilterExpression: 'begins_with(sk, :prefix)',
       ExpressionAttributeValues: {
         ':researchId': researchId,
         ':prefix': 'SMART_VOC_FORM#'

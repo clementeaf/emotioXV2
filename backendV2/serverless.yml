@@ -96,6 +96,70 @@ functions:
               - Accept
             allowCredentials: true
             maxAge: 86400
+      # Endpoint específico para eye-tracking
+      - http:
+          path: /eye-tracking
+          method: ANY
+          cors: 
+            origin: 'http://localhost:4700,*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Requested-With
+              - Accept
+            allowCredentials: true
+            maxAge: 86400
+      # Endpoint específico para eye-tracking con path param
+      - http:
+          path: /eye-tracking/{proxy+}
+          method: ANY
+          cors: 
+            origin: 'http://localhost:4700,*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Requested-With
+              - Accept
+            allowCredentials: true
+            maxAge: 86400
+      # Endpoint específico para smart-voc
+      - http:
+          path: /smart-voc
+          method: ANY
+          cors: 
+            origin: 'http://localhost:4700,*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Requested-With
+              - Accept
+            allowCredentials: true
+            maxAge: 86400
+      # Endpoint específico para smart-voc con path param
+      - http:
+          path: /smart-voc/{proxy+}
+          method: ANY
+          cors: 
+            origin: 'http://localhost:4700,*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Requested-With
+              - Accept
+            allowCredentials: true
+            maxAge: 86400
   
   # WebSocket para comunicación en tiempo real
   websocket:
@@ -273,6 +337,16 @@ resources:
             - ".execute-api."
             - Ref: "AWS::Region"
             - ".amazonaws.com/${self:provider.stage}/thank-you-screen"
+    EyeTrackingApiUrl:
+      Description: "URL para las rutas de eye tracking"
+      Value: 
+        Fn::Join:
+          - ""
+          - - "https://"
+            - Ref: "ApiGatewayRestApi"
+            - ".execute-api."
+            - Ref: "AWS::Region"
+            - ".amazonaws.com/${self:provider.stage}/eye-tracking"
     WebSocketEndpoint:
       Description: "WebSocket API Endpoint"
       Value: 
