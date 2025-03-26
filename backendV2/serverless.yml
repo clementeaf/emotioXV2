@@ -79,6 +79,7 @@ functions:
               - X-Requested-With
               - Accept
               - cache-control
+              - pragma
             allowCredentials: true
             maxAge: 86400
       # Endpoint raíz
@@ -96,6 +97,7 @@ functions:
               - X-Requested-With
               - Accept
               - cache-control
+              - pragma
             allowCredentials: true
             maxAge: 86400
       # Endpoint específico para eye-tracking
@@ -113,6 +115,7 @@ functions:
               - X-Requested-With
               - Accept
               - cache-control
+              - pragma
             allowCredentials: true
             maxAge: 86400
       # Endpoint específico para eye-tracking con path param
@@ -130,6 +133,7 @@ functions:
               - X-Requested-With
               - Accept
               - cache-control
+              - pragma
             allowCredentials: true
             maxAge: 86400
       # Endpoint específico para smart-voc
@@ -147,6 +151,7 @@ functions:
               - X-Requested-With
               - Accept
               - cache-control
+              - pragma
             allowCredentials: true
             maxAge: 86400
       # Endpoint específico para smart-voc con path param
@@ -164,6 +169,7 @@ functions:
               - X-Requested-With
               - Accept
               - cache-control
+              - pragma
             allowCredentials: true
             maxAge: 86400
   
@@ -186,7 +192,7 @@ resources:
       Properties:
         ResponseParameters:
           gatewayresponse.header.Access-Control-Allow-Origin: "'http://localhost:4700,*'"
-          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Requested-With,Accept,cache-control'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Requested-With,Accept,cache-control,pragma'"
           gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS,PATCH'"
           gatewayresponse.header.Access-Control-Expose-Headers: "'Authorization,X-Api-Key,WWW-Authenticate'"
           gatewayresponse.header.Access-Control-Allow-Credentials: "'true'"
@@ -199,7 +205,7 @@ resources:
       Properties:
         ResponseParameters:
           gatewayresponse.header.Access-Control-Allow-Origin: "'http://localhost:4700,*'"
-          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Requested-With,Accept,cache-control'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Requested-With,Accept,cache-control,pragma'"
           gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS,PATCH'"
           gatewayresponse.header.Access-Control-Expose-Headers: "'Authorization,X-Api-Key,WWW-Authenticate'"
           gatewayresponse.header.Access-Control-Allow-Credentials: "'true'"
@@ -213,7 +219,7 @@ resources:
       Properties:
         ResponseParameters:
           gatewayresponse.header.Access-Control-Allow-Origin: "'http://localhost:4700,*'"
-          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Requested-With,Accept'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Requested-With,Accept,cache-control,pragma'"
           gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS,PATCH'"
           gatewayresponse.header.Access-Control-Max-Age: "'86400'"
           gatewayresponse.header.Access-Control-Expose-Headers: "'Authorization,X-Api-Key,WWW-Authenticate'"

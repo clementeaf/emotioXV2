@@ -4,7 +4,7 @@
  * Este archivo es generado automáticamente por el script export-endpoints.js
  * No modificar manualmente.
  * 
- * Generado: 2025-03-26T14:47:36.240Z
+ * Generado: 2025-03-26T14:58:42.176Z
  */
 
 const API_CONFIG = {
