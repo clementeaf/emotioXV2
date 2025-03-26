@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useState, FormEvent } from 'react';
+
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { cn } from '@/lib/utils';
-import Link from 'next/link';
+
 
 interface RegisterFormState {
   name: string;
@@ -101,7 +103,7 @@ export function RegisterForm({ className }: RegisterFormProps) {
   };
 
   return (
-    <div className={cn("max-w-xl mx-auto", className)}>
+    <div className={cn('max-w-xl mx-auto', className)}>
       <div className="bg-white rounded-xl border border-neutral-200/70 shadow-[0_6px_16px_-4px_rgba(0,0,0,0.05)] overflow-hidden">
         <div className="px-8 py-8">
           <header className="mb-6">

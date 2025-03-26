@@ -22,6 +22,7 @@ export interface ResearchProject {
  */
 export interface ResearchTableProps {
   className?: string;
+  showActions?: boolean;
 }
 
 /**

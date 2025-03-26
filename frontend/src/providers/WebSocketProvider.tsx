@@ -1,6 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useCallback } from 'react';
+import React, { createContext, useContext } from 'react';
+
 import { WebSocketMessage } from '../../../shared/src/types/websocket.types';
 import { useWebSocketConnection } from '../hooks/useWebSocketConnection';
 

@@ -1,7 +1,8 @@
 'use client';
 
-import { cn } from '@/lib/utils';
 import Link from 'next/link';
+
+import { cn } from '@/lib/utils';
 
 interface BestPerformerProps {
   className?: string;
@@ -16,7 +17,7 @@ interface BestPerformerProps {
 
 export function BestPerformer({ className, data }: BestPerformerProps) {
   return (
-    <div className={cn("bg-white rounded-lg shadow-sm overflow-hidden", className)}>
+    <div className={cn('bg-white rounded-lg shadow-sm overflow-hidden', className)}>
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <h3 className="text-base font-medium text-neutral-900">

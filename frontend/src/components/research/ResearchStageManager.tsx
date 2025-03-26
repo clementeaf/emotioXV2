@@ -1,37 +1,29 @@
 'use client';
 
-import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Sidebar } from '@/components/layout/Sidebar';
+import { useState, Suspense } from 'react';
+
 import { Navbar } from '@/components/layout/Navbar';
-import { WelcomeScreenForm } from './WelcomeScreenForm';
-import { SmartVOCForm } from './SmartVOCForm';
+import { Sidebar } from '@/components/layout/Sidebar';
+import { withSearchParams } from '@/components/common/SearchParamsWrapper';
+
 import { CognitiveTaskForm } from './CognitiveTaskForm';
-import { ThankYouScreenForm } from './ThankYouScreenForm';
 import { EyeTrackingForm } from './EyeTrackingForm';
-import { RecruitConfiguration } from './RecruitConfiguration';
-import { ParticipantsForm } from './ParticipantsForm';
-import { DemographicsForm } from './DemographicsForm';
-import { LinkSettingsForm } from './LinkSettingsForm';
-import { QuotasForm } from './QuotasForm';
-import { ProgressMonitorForm } from './ProgressMonitorForm';
-import { SmartVOCResults } from './SmartVOCResults';
-import { SmartVOCTextAnalysis } from './SmartVOCTextAnalysis';
-import { SmartVOCTrendAnalysis } from './SmartVOCTrendAnalysis';
-import { SmartVOCEmotionalAnalysis } from './SmartVOCEmotionalAnalysis';
-import { SmartVOCNPSAnalysis } from './SmartVOCNPSAnalysis';
-import { SmartVOCSentimentAnalysis } from './SmartVOCSentimentAnalysis';
-import { SmartVOCDashboard } from './SmartVOCDashboard';
 import { SmartVOCCognitiveTaskAnalysis } from './SmartVOCCognitiveTaskAnalysis';
+import { SmartVOCForm } from './SmartVOCForm';
+import { SmartVOCResults } from './SmartVOCResults';
+import { ThankYouScreenForm } from './ThankYouScreenForm';
+import { WelcomeScreenForm } from './WelcomeScreenForm';
 
 interface ResearchStageManagerProps {
   researchId: string;
 }
 
-export function ResearchStageManager({ researchId }: ResearchStageManagerProps) {
+// Componente interno que usa useSearchParams
+function ResearchStageManagerContent({ researchId }: ResearchStageManagerProps) {
   const searchParams = useSearchParams();
-  const currentSection = searchParams.get('section') || 'build';
-  const currentStage = searchParams.get('stage') || 'welcome';
+  const currentSection = searchParams?.get('section') || 'build';
+  const currentStage = searchParams?.get('stage') || 'welcome';
   const [researchName, setResearchName] = useState('Research Project');
 
   const renderStageContent = () => {
@@ -211,14 +203,29 @@ export function ResearchStageManager({ researchId }: ResearchStageManagerProps) 
               <h1 className="text-2xl font-semibold text-neutral-900">
                 {getStageTitle()}
               </h1>
-              <p className="mt-2 text-sm text-neutral-600">
+              <p className="mt-1 text-sm text-neutral-600">
                 {getStageDescription()}
               </p>
             </div>
+            
             {renderStageContent()}
           </div>
         </main>
       </div>
     </div>
+  );
+}
+
+// Usar el HOC para envolver el componente
+const ResearchStageManagerContentWithSuspense = withSearchParams(ResearchStageManagerContent);
+
+// Componente público que exportamos
+export function ResearchStageManager(props: ResearchStageManagerProps) {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-neutral-600">
+      <p>Cargando detalles de la investigación...</p>
+    </div>}>
+      <ResearchStageManagerContentWithSuspense {...props} />
+    </Suspense>
   );
 } 

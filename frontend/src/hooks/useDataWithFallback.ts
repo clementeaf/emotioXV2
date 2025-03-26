@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+
 import { isDevelopmentMode, shouldUseSimulatedMode } from '@/lib/utils';
 
 interface UseDataWithFallbackOptions<TData, TMockData = TData> {

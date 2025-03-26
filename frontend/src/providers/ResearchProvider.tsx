@@ -1,8 +1,9 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useResearch as useResearchFromStore } from '@/stores/useResearchStore';
+import React, { createContext, useState, useEffect, ReactNode } from 'react';
+
 import { ResearchDraft, ResearchContextType } from '@/interfaces/research';
+import { useResearch as useResearchFromStore } from '@/stores/useResearchStore';
 
 const ResearchContext = createContext<ResearchContextType | undefined>(undefined);
 
@@ -54,7 +55,7 @@ export function ResearchProvider({ children }: { children: ReactNode }) {
 
   const updateDraft = (data: Partial<ResearchDraft['data']>, step: ResearchDraft['step']) => {
     setCurrentDraft(prev => {
-      if (!prev) return null;
+      if (!prev) {return null;}
       return {
         ...prev,
         step,

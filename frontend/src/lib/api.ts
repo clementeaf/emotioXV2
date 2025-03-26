@@ -1,10 +1,12 @@
 import { createAlova } from 'alova';
 import { Method } from 'alova';
 import ReactHook from 'alova/react';
+
 import API_CONFIG from '@/config/api.config';
-import { ResearchBasicData, Research } from '../../../shared/interfaces/research.model';
-import { ResearchCreationResponse } from '../../../shared/interfaces/research.interface';
 import tokenService from '@/services/tokenService';
+
+import { ResearchBasicData, Research } from '../../../shared/interfaces/research.model';
+
 
 // Tipos para las respuestas de la API
 interface APIResponse<T = unknown> {
@@ -144,7 +146,7 @@ const customFetchAdapter = () => {
         
         // Registrar errores de CORS
         if (error.name === 'TypeError' && (
-            error.message.includes('has been blocked by CORS policy') ||
+          error.message.includes('has been blocked by CORS policy') ||
             error.message.includes('NetworkError when attempting to fetch resource'))
         ) {
           console.error(`Error de CORS al intentar conectar con ${config.url}`, error);
@@ -230,8 +232,8 @@ const alovaInstance = createAlova({
     console.log('Headers de la solicitud:', {
       ...method.config.headers,
       Authorization: method.config.headers.Authorization ? 
-                    method.config.headers.Authorization.substring(0, 15) + '...' : 
-                    'No definido'
+        method.config.headers.Authorization.substring(0, 15) + '...' : 
+        'No definido'
     });
   },
   responded: {
@@ -411,7 +413,7 @@ export const researchAPI = {
   create: (data: ResearchBasicData) => {
     console.log(`Endpoint CREATE utilizado: ${API_CONFIG.endpoints.research.CREATE}`);
     console.log(`URL completa con Alova: ${API_CONFIG.baseURL}${API_CONFIG.endpoints.research.CREATE}`);
-    console.log(`Data original:`, data);
+    console.log('Data original:', data);
     
     // Crear una copia de los datos para no modificar el original
     const processedData = {...data};
@@ -436,64 +438,64 @@ export const researchAPI = {
       API_CONFIG.endpoints.research.CREATE || '/research',
       processedData
     )
-    .then(response => {
-      console.log('Respuesta original de la API CREATE:', response);
+      .then(response => {
+        console.log('Respuesta original de la API CREATE:', response);
       
-      // Verificar si la respuesta tiene el formato correcto con message y data (formato AWS)
-      if (response && response.message && response.data) {
-        console.log('Respuesta con formato AWS detectada (message + data)');
-        // Asegurar que se mantenga la estructura original de AWS
+        // Verificar si la respuesta tiene el formato correcto con message y data (formato AWS)
+        if (response && response.message && response.data) {
+          console.log('Respuesta con formato AWS detectada (message + data)');
+          // Asegurar que se mantenga la estructura original de AWS
+          return {
+            success: true,
+            data: response.data, // Aquí está el objeto con id
+            message: response.message,
+            error: null
+          };
+        }
+      
+        // Verificar si la respuesta tiene solo data
+        if (response && response.data) {
+          console.log('Respuesta con data detectada');
+          return {
+            success: true,
+            data: response.data,
+            error: null
+          };
+        }
+      
+        // Si la respuesta es el objeto directo (sin estructuras anidadas)
+        if (response && typeof response === 'object' && !('data' in response) && !('message' in response)) {
+          console.log('Respuesta como objeto directo detectada');
+          return {
+            success: true,
+            data: response,
+            error: null
+          };
+        }
+      
+        // Si la respuesta es de otro tipo, es mejor registrarla para debug
+        console.warn('Formato de respuesta no reconocido:', response);
+      
+        // Si no tiene formato conocido pero parece válido, intentar devolverlo como está
+        if (response) {
+          return {
+            success: true,
+            data: response,
+            error: null
+          };
+        }
+      
+        // Si no se encontraron datos válidos
+        throw new Error('No se pudieron extraer datos válidos de la respuesta');
+      })
+      .catch(error => {
+        console.error('Error en researchAPI.create:', error);
         return {
-          success: true,
-          data: response.data, // Aquí está el objeto con id
-          message: response.message,
-          error: null
+          success: false,
+          data: null,
+          error: error instanceof Error ? error.message : String(error)
         };
-      }
-      
-      // Verificar si la respuesta tiene solo data
-      if (response && response.data) {
-        console.log('Respuesta con data detectada');
-        return {
-          success: true,
-          data: response.data,
-          error: null
-        };
-      }
-      
-      // Si la respuesta es el objeto directo (sin estructuras anidadas)
-      if (response && typeof response === 'object' && !('data' in response) && !('message' in response)) {
-        console.log('Respuesta como objeto directo detectada');
-        return {
-          success: true,
-          data: response,
-          error: null
-        };
-      }
-      
-      // Si la respuesta es de otro tipo, es mejor registrarla para debug
-      console.warn('Formato de respuesta no reconocido:', response);
-      
-      // Si no tiene formato conocido pero parece válido, intentar devolverlo como está
-      if (response) {
-        return {
-          success: true,
-          data: response,
-          error: null
-        };
-      }
-      
-      // Si no se encontraron datos válidos
-      throw new Error('No se pudieron extraer datos válidos de la respuesta');
-    })
-    .catch(error => {
-      console.error('Error en researchAPI.create:', error);
-      return {
-        success: false,
-        data: null,
-        error: error instanceof Error ? error.message : String(error)
-      };
-    });
+      });
   },
   
   get: (id: string) => {

@@ -1,13 +1,14 @@
 'use client';
 
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
+import { toast } from 'react-hot-toast';
+
 import { Switch } from '@/components/ui/Switch';
 import { Textarea } from '@/components/ui/Textarea';
+import { welcomeScreenAPI } from '@/config/alova.config';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
-import { toast } from 'react-hot-toast';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { welcomeScreenAPI } from '@/config/alova.config';
 
 // Definir localmente los valores por defecto para evitar problemas de importación
 const DEFAULT_CONFIG = {
@@ -217,7 +218,7 @@ export function WelcomeScreenForm({ className, researchId }: WelcomeScreenFormPr
   const isLoading = isLoadingData || isSaving;
 
   return (
-    <div className={cn("max-w-3xl mx-auto", className)}>
+    <div className={cn('max-w-3xl mx-auto', className)}>
       {/* Form Content */}
       <div className="bg-white rounded-xl border border-neutral-200/70 shadow-[0_6px_16px_-4px_rgba(0,0,0,0.05)]">
         <div className="px-6 py-6">
@@ -255,8 +256,8 @@ export function WelcomeScreenForm({ className, researchId }: WelcomeScreenFormPr
                   onChange={(e) => handleChange('title', e.target.value)}
                   placeholder="Ingrese un título para su pantalla de bienvenida..."
                   className={cn(
-                    "w-full px-3 py-2 rounded-lg border text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
-                    validationErrors.title ? "border-red-500" : "border-neutral-200"
+                    'w-full px-3 py-2 rounded-lg border text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500',
+                    validationErrors.title ? 'border-red-500' : 'border-neutral-200'
                   )}
                   disabled={isLoading || !formData.isEnabled}
                 />
@@ -275,8 +276,8 @@ export function WelcomeScreenForm({ className, researchId }: WelcomeScreenFormPr
                   onChange={(e) => handleChange('message', e.target.value)}
                   placeholder="Escriba un mensaje de bienvenida para sus participantes..."
                   className={cn(
-                    "min-h-[100px]",
-                    validationErrors.message ? "border-red-500" : ""
+                    'min-h-[100px]',
+                    validationErrors.message ? 'border-red-500' : ''
                   )}
                   disabled={isLoading || !formData.isEnabled}
                 />
@@ -296,8 +297,8 @@ export function WelcomeScreenForm({ className, researchId }: WelcomeScreenFormPr
                   onChange={(e) => handleChange('startButtonText', e.target.value)}
                   placeholder="ej., 'Iniciar investigación', 'Comenzar', 'Continuar'"
                   className={cn(
-                    "w-full px-3 py-2 rounded-lg border text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
-                    validationErrors.startButtonText ? "border-red-500" : "border-neutral-200"
+                    'w-full px-3 py-2 rounded-lg border text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500',
+                    validationErrors.startButtonText ? 'border-red-500' : 'border-neutral-200'
                   )}
                   disabled={isLoading || !formData.isEnabled}
                 />

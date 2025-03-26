@@ -3,8 +3,9 @@
  * Estas funciones son útiles cuando la API no está disponible o hay errores
  */
 
-import { ResearchProject } from '@/interfaces/research';
 import { v4 as uuidv4 } from 'uuid';
+
+import { ResearchProject } from '@/interfaces/research';
 
 /**
  * Genera un ID único para elementos simulados

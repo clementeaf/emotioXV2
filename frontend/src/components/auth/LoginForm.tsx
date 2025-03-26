@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, FormEvent, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useState, FormEvent, useEffect } from 'react';
+
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { cn } from '@/lib/utils';
-import Link from 'next/link';
-import { useAuth } from '@/providers/AuthProvider';
 import API_CONFIG from '@/config/api.config';
+import { cn } from '@/lib/utils';
+import { useAuth } from '@/providers/AuthProvider';
 
 interface LoginFormState {
   email: string;
@@ -161,11 +162,11 @@ export function LoginForm({ className }: LoginFormProps) {
         
         // Crear payload simulado
         const payload = {
-          id: "testuser",
-          sub: "testuser",
-          name: "Usuario Prueba",
-          email: "test@example.com",
-          role: "user",
+          id: 'testuser',
+          sub: 'testuser',
+          name: 'Usuario Prueba',
+          email: 'test@example.com',
+          role: 'user',
           iat: now,
           exp: now + expiresIn
         };
@@ -173,7 +174,7 @@ export function LoginForm({ className }: LoginFormProps) {
         // Crear un token simulado (esto no es seguro, solo para desarrollo)
         // En producción, el token viene del servidor
         const base64Payload = btoa(JSON.stringify(payload));
-        const fakeSignature = "TEST_SIGNATURE_FOR_DEV_ONLY";
+        const fakeSignature = 'TEST_SIGNATURE_FOR_DEV_ONLY';
         const mockToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${base64Payload}.${fakeSignature}`;
         
         console.log('Token de desarrollo simulado creado correctamente');
@@ -274,7 +275,7 @@ export function LoginForm({ className }: LoginFormProps) {
   const statusMessage = getStatusMessage(status);
 
   return (
-    <div className={cn("max-w-xl mx-auto", className)}>
+    <div className={cn('max-w-xl mx-auto', className)}>
       <div className="bg-white rounded-xl border border-neutral-200/70 shadow-[0_6px_16px_-4px_rgba(0,0,0,0.05)] overflow-hidden">
         <div className="px-8 py-8">
           <header className="mb-6">
@@ -375,7 +376,7 @@ export function LoginForm({ className }: LoginFormProps) {
               <div className="space-y-2">
                 <div className="relative">
                   <Input
-                    type={showPassword ? "text" : "password"}
+                    type={showPassword ? 'text' : 'password'}
                     label="Contraseña"
                     value={state.password}
                     onChange={e => handleInputChange('password', e.target.value)}
@@ -390,8 +391,8 @@ export function LoginForm({ className }: LoginFormProps) {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className={cn(
-                      "absolute right-3 top-9 text-neutral-500 hover:text-neutral-700",
-                      isLoading && "pointer-events-none opacity-50"
+                      'absolute right-3 top-9 text-neutral-500 hover:text-neutral-700',
+                      isLoading && 'pointer-events-none opacity-50'
                     )}
                   >
                     {showPassword ? (
@@ -424,8 +425,8 @@ export function LoginForm({ className }: LoginFormProps) {
               <Link
                 href="/forgot-password"
                 className={cn(
-                  "text-sm text-blue-600 hover:text-blue-700",
-                  isLoading && "pointer-events-none opacity-50"
+                  'text-sm text-blue-600 hover:text-blue-700',
+                  isLoading && 'pointer-events-none opacity-50'
                 )}
               >
                 ¿Olvidaste tu contraseña?
@@ -440,8 +441,8 @@ export function LoginForm({ className }: LoginFormProps) {
               className="relative"
             >
               <span className={cn(
-                "transition-opacity duration-200",
-                isLoading ? "opacity-0" : "opacity-100"
+                'transition-opacity duration-200',
+                isLoading ? 'opacity-0' : 'opacity-100'
               )}>
                 Iniciar sesión
               </span>
@@ -461,8 +462,8 @@ export function LoginForm({ className }: LoginFormProps) {
                 <Link 
                   href="/register" 
                   className={cn(
-                    "text-blue-600 hover:text-blue-700 font-medium",
-                    isLoading && "pointer-events-none opacity-50"
+                    'text-blue-600 hover:text-blue-700 font-medium',
+                    isLoading && 'pointer-events-none opacity-50'
                   )}
                 >
                   Regístrate aquí

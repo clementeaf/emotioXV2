@@ -1,25 +1,25 @@
 'use client';
 
-import { cn } from '@/lib/utils';
 import { ClientResearch, ResearchListProps } from '@/interfaces/research';
+import { cn } from '@/lib/utils';
 
 export function ResearchList({ className, data = [] }: ResearchListProps) {
   const getStatusBadgeClass = (status: ClientResearch['status']) => {
-    const baseClasses = "inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset";
+    const baseClasses = 'inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset';
     switch (status) {
       case 'pending':
-        return cn(baseClasses, "bg-yellow-50 text-yellow-700 ring-yellow-600/20");
+        return cn(baseClasses, 'bg-yellow-50 text-yellow-700 ring-yellow-600/20');
       case 'in_progress':
-        return cn(baseClasses, "bg-blue-50 text-blue-700 ring-blue-600/20");
+        return cn(baseClasses, 'bg-blue-50 text-blue-700 ring-blue-600/20');
       case 'completed':
-        return cn(baseClasses, "bg-green-50 text-green-700 ring-green-600/20");
+        return cn(baseClasses, 'bg-green-50 text-green-700 ring-green-600/20');
       default:
-        return cn(baseClasses, "bg-neutral-50 text-neutral-700 ring-neutral-600/20");
+        return cn(baseClasses, 'bg-neutral-50 text-neutral-700 ring-neutral-600/20');
     }
   };
 
   return (
-    <div className={cn("bg-white rounded-lg shadow-sm overflow-hidden", className)}>
+    <div className={cn('bg-white rounded-lg shadow-sm overflow-hidden', className)}>
       <div className="p-6">
         <h3 className="text-base font-medium text-neutral-900 mb-4">
           List of research

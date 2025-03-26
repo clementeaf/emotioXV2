@@ -1,7 +1,8 @@
+import { useRouter } from 'next/router';
 import { useState } from 'react';
+
 import { useApi } from '@/hooks/useApi';
 import { useAuth } from '@/hooks/useAuth';
-import { useRouter } from 'next/router';
 
 export function OTPLogin() {
   const { api } = useApi();

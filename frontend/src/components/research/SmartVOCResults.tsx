@@ -1,10 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+
 import { Button } from '@/components/ui/Button';
-import { Switch } from '@/components/ui/Switch';
-import { Input } from '@/components/ui/Input';
-import { cn } from '@/lib/utils';
 
 interface SmartVOCResultsProps {
   className?: string;

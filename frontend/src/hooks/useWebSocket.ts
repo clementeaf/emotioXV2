@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
+
 import { useAuth } from './useAuth';
 
 interface WebSocketMessage {
@@ -15,7 +16,7 @@ export function useWebSocket() {
   const baseDelay = 1000; // 1 segundo
 
   const connect = useCallback(() => {
-    if (!token) return;
+    if (!token) {return;}
 
     const wsUrl = `${process.env.NEXT_PUBLIC_WS_URL}?token=${token}`;
     ws.current = new WebSocket(wsUrl);

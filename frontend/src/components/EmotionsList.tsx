@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useReducer, useCallback, useState } from 'react';
-import { useApi } from '@/hooks/useApi';
-import { Button } from '@/components/ui/Button';
-import { EmotionForm } from './emotions/EmotionForm';
 import { EmotionIntensity, EmotionCategory } from '@emotiox/shared';
+import { useEffect, useReducer, useCallback, useState } from 'react';
+
+import { Button } from '@/components/ui/Button';
+import { useApi } from '@/hooks/useApi';
+
+import { EmotionForm } from './emotions/EmotionForm';
 
 interface Emotion {
   id: string;

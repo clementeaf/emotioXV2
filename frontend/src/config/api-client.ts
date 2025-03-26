@@ -231,7 +231,7 @@ export class ApiClient {
    * @returns URL completa
    */
   private buildUrl(baseUrl: string, params?: Record<string, string>): string {
-    if (!params) return baseUrl;
+    if (!params) {return baseUrl;}
     
     const url = new URL(baseUrl);
     Object.entries(params).forEach(([key, value]) => {

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+
 import { ResearchDraft, ResearchStore } from '@/interfaces/research';
 
 // Clave para almacenamiento en localStorage
@@ -32,7 +33,7 @@ export const useResearchStore = create<ResearchStore>()(
       
       updateDraft: (data, step) => {
         set((state) => {
-          if (!state.currentDraft) return state;
+          if (!state.currentDraft) {return state;}
           
           const updatedDraft = {
             ...state.currentDraft,
@@ -66,7 +67,7 @@ export const useResearchStore = create<ResearchStore>()(
       partialize: (state) => ({ currentDraft: state.currentDraft }),
       // Personalizar cómo se manejan las fechas durante la persistencia
       onRehydrateStorage: () => (state) => {
-        if (!state) return;
+        if (!state) {return;}
         
         // Restaurar las fechas como objetos Date
         if (state.currentDraft?.lastUpdated) {

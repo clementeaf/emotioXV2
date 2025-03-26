@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 
@@ -210,7 +211,7 @@ export function SmartVOCTrendAnalysis({ className }: SmartVOCTrendAnalysisProps)
   };
 
   return (
-    <div className={cn("mt-10", className)}>
+    <div className={cn('mt-10', className)}>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-neutral-900">
           Smart VOC Performance Trends
@@ -220,10 +221,10 @@ export function SmartVOCTrendAnalysis({ className }: SmartVOCTrendAnalysisProps)
           <div className="bg-neutral-50 rounded-lg p-1 flex space-x-1 mr-4">
             <button
               className={cn(
-                "py-1 px-3 rounded-md text-xs font-medium transition-colors",
+                'py-1 px-3 rounded-md text-xs font-medium transition-colors',
                 activeView === 'day' 
-                  ? "bg-white shadow-sm text-neutral-900" 
-                  : "text-neutral-600 hover:text-neutral-900"
+                  ? 'bg-white shadow-sm text-neutral-900' 
+                  : 'text-neutral-600 hover:text-neutral-900'
               )}
               onClick={() => setActiveView('day')}
             >
@@ -231,10 +232,10 @@ export function SmartVOCTrendAnalysis({ className }: SmartVOCTrendAnalysisProps)
             </button>
             <button
               className={cn(
-                "py-1 px-3 rounded-md text-xs font-medium transition-colors",
+                'py-1 px-3 rounded-md text-xs font-medium transition-colors',
                 activeView === 'week' 
-                  ? "bg-white shadow-sm text-neutral-900" 
-                  : "text-neutral-600 hover:text-neutral-900"
+                  ? 'bg-white shadow-sm text-neutral-900' 
+                  : 'text-neutral-600 hover:text-neutral-900'
               )}
               onClick={() => setActiveView('week')}
             >
@@ -242,10 +243,10 @@ export function SmartVOCTrendAnalysis({ className }: SmartVOCTrendAnalysisProps)
             </button>
             <button
               className={cn(
-                "py-1 px-3 rounded-md text-xs font-medium transition-colors",
+                'py-1 px-3 rounded-md text-xs font-medium transition-colors',
                 activeView === 'month' 
-                  ? "bg-white shadow-sm text-neutral-900" 
-                  : "text-neutral-600 hover:text-neutral-900"
+                  ? 'bg-white shadow-sm text-neutral-900' 
+                  : 'text-neutral-600 hover:text-neutral-900'
               )}
               onClick={() => setActiveView('month')}
             >
@@ -253,10 +254,10 @@ export function SmartVOCTrendAnalysis({ className }: SmartVOCTrendAnalysisProps)
             </button>
             <button
               className={cn(
-                "py-1 px-3 rounded-md text-xs font-medium transition-colors",
+                'py-1 px-3 rounded-md text-xs font-medium transition-colors',
                 activeView === 'quarter' 
-                  ? "bg-white shadow-sm text-neutral-900" 
-                  : "text-neutral-600 hover:text-neutral-900"
+                  ? 'bg-white shadow-sm text-neutral-900' 
+                  : 'text-neutral-600 hover:text-neutral-900'
               )}
               onClick={() => setActiveView('quarter')}
             >
@@ -267,10 +268,10 @@ export function SmartVOCTrendAnalysis({ className }: SmartVOCTrendAnalysisProps)
           <div className="bg-neutral-50 rounded-lg p-1 flex space-x-1">
             <button
               className={cn(
-                "py-1 px-3 rounded-md text-xs font-medium transition-colors",
+                'py-1 px-3 rounded-md text-xs font-medium transition-colors',
                 comparisonPeriod === 'previous' 
-                  ? "bg-white shadow-sm text-neutral-900" 
-                  : "text-neutral-600 hover:text-neutral-900"
+                  ? 'bg-white shadow-sm text-neutral-900' 
+                  : 'text-neutral-600 hover:text-neutral-900'
               )}
               onClick={() => setComparisonPeriod('previous')}
             >
@@ -278,10 +279,10 @@ export function SmartVOCTrendAnalysis({ className }: SmartVOCTrendAnalysisProps)
             </button>
             <button
               className={cn(
-                "py-1 px-3 rounded-md text-xs font-medium transition-colors",
+                'py-1 px-3 rounded-md text-xs font-medium transition-colors',
                 comparisonPeriod === 'year' 
-                  ? "bg-white shadow-sm text-neutral-900" 
-                  : "text-neutral-600 hover:text-neutral-900"
+                  ? 'bg-white shadow-sm text-neutral-900' 
+                  : 'text-neutral-600 hover:text-neutral-900'
               )}
               onClick={() => setComparisonPeriod('year')}
             >
@@ -298,8 +299,8 @@ export function SmartVOCTrendAnalysis({ className }: SmartVOCTrendAnalysisProps)
             <h3 className="text-sm font-medium text-neutral-500 mb-2">{metric.name}</h3>
             <div className="flex items-end">
               <div className="text-2xl font-bold">{metric.current}</div>
-              <div className={cn("ml-2 text-sm flex items-center", 
-                metric.isPositive ? "text-green-600" : "text-red-600")}>
+              <div className={cn('ml-2 text-sm flex items-center', 
+                metric.isPositive ? 'text-green-600' : 'text-red-600')}>
                 <svg 
                   className="w-4 h-4 mr-0.5" 
                   fill="none" 

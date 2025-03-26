@@ -2,11 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname, useSearchParams, useRouter } from 'next/navigation';
-import { cn } from '@/lib/utils';
-import { useResearch } from '@/stores/useResearchStore';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+
 import { Button } from '@/components/ui/Button';
 import { researchAPI } from '@/lib/api';
+import { cn } from '@/lib/utils';
+import { useResearch } from '@/stores/useResearchStore';
+import { withSearchParams } from '@/components/common/SearchParamsWrapper';
 
 interface SidebarProps {
   className?: string;
@@ -23,7 +25,7 @@ const mainNavItems = [
     label: 'New Research', 
     href: '/dashboard/research/new',
     getDynamicLabel: (hasDraft: boolean, currentStep?: string, lastUpdated?: Date) => {
-      if (!hasDraft) return 'New Research';
+      if (!hasDraft) {return 'New Research';}
       const timeAgo = lastUpdated ? getTimeAgo(lastUpdated) : '';
       const stepText = {
         basic: 'Basic Data',
@@ -95,11 +97,11 @@ const getTimeAgo = (date: Date) => {
   const now = new Date();
   const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
   
-  if (diffInMinutes < 1) return 'just now';
-  if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+  if (diffInMinutes < 1) {return 'just now';}
+  if (diffInMinutes < 60) {return `${diffInMinutes}m ago`;}
   
   const diffInHours = Math.floor(diffInMinutes / 60);
-  if (diffInHours < 24) return `${diffInHours}h ago`;
+  if (diffInHours < 24) {return `${diffInHours}h ago`;}
   
   const diffInDays = Math.floor(diffInHours / 24);
   return `${diffInDays}d ago`;
@@ -115,7 +117,7 @@ interface DeleteConfirmationModalProps {
 
 // Componente de Modal de Confirmación de Eliminación
 function DeleteConfirmationModal({ isOpen, onClose, onConfirm, researchName }: DeleteConfirmationModalProps) {
-  if (!isOpen) return null;
+  if (!isOpen) {return null;}
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -167,16 +169,17 @@ function DeleteConfirmationModal({ isOpen, onClose, onConfirm, researchName }: D
   );
 }
 
-export function Sidebar({ className, activeResearch }: SidebarProps) {
+// Componente interno para el contenido del sidebar que usa useSearchParams
+function SidebarContent({ className, activeResearch }: SidebarProps) {
   const router = useRouter();
-  const pathname = usePathname();
+  const pathname = usePathname() || '';
   const searchParams = useSearchParams();
   const { hasDraft, currentDraft } = useResearch();
-  const isAimFramework = searchParams.get('aim') === 'true';
+  const isAimFramework = searchParams?.get('aim') === 'true';
   
-  const section = searchParams.get('section');
-  const stage = searchParams.get('stage');
-  const researchId = searchParams.get('research');
+  const section = searchParams?.get('section');
+  const stage = searchParams?.get('stage');
+  const researchId = searchParams?.get('research');
   
   // Agregar estado para investigaciones recientes
   const [recentResearch, setRecentResearch] = useState<Array<{id: string, name: string, technique: string}>>([]);
@@ -280,7 +283,7 @@ export function Sidebar({ className, activeResearch }: SidebarProps) {
   };
   
   const confirmDeleteResearch = async () => {
-    if (!researchToDelete) return;
+    if (!researchToDelete) {return;}
     
     try {
       // Llamar a la API para eliminar la investigación del backend
@@ -322,8 +325,8 @@ export function Sidebar({ className, activeResearch }: SidebarProps) {
 
   // Si tenemos una investigación activa de tipo AIM Framework
   if (activeResearch && isAimFrameworkResearch) {
-  return (
-      <div className={cn("w-56 bg-white border-r border-neutral-200 shadow-lg flex flex-col h-screen", className)}>
+    return (
+      <div className={cn('w-56 bg-white border-r border-neutral-200 shadow-lg flex flex-col h-screen', className)}>
         <div className="p-4 border-b border-neutral-200">
           <a 
             href="/dashboard" 
@@ -360,10 +363,10 @@ export function Sidebar({ className, activeResearch }: SidebarProps) {
                 <Link 
                   href={`/dashboard?research=${activeResearch.id}&aim=true&section=welcome-screen`}
                   className={cn(
-                    "flex items-center text-sm px-3 py-2 rounded-md transition-colors",
+                    'flex items-center text-sm px-3 py-2 rounded-md transition-colors',
                     searchParams.get('section') === 'welcome-screen' 
-                      ? "bg-blue-50 text-blue-600" 
-                      : "text-neutral-700 hover:bg-neutral-100"
+                      ? 'bg-blue-50 text-blue-600' 
+                      : 'text-neutral-700 hover:bg-neutral-100'
                   )}
                 >
                   <span className="w-5 h-5 mr-2 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 text-xs">1</span>
@@ -374,10 +377,10 @@ export function Sidebar({ className, activeResearch }: SidebarProps) {
                 <Link 
                   href={`/dashboard?research=${activeResearch.id}&aim=true&section=smart-voc`}
                   className={cn(
-                    "flex items-center text-sm px-3 py-2 rounded-md transition-colors",
+                    'flex items-center text-sm px-3 py-2 rounded-md transition-colors',
                     searchParams.get('section') === 'smart-voc' 
-                      ? "bg-blue-50 text-blue-600" 
-                      : "text-neutral-700 hover:bg-neutral-100"
+                      ? 'bg-blue-50 text-blue-600' 
+                      : 'text-neutral-700 hover:bg-neutral-100'
                   )}
                 >
                   <span className="w-5 h-5 mr-2 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 text-xs">2</span>
@@ -388,10 +391,10 @@ export function Sidebar({ className, activeResearch }: SidebarProps) {
                 <Link 
                   href={`/dashboard?research=${activeResearch.id}&aim=true&section=cognitive-task`}
                   className={cn(
-                    "flex items-center text-sm px-3 py-2 rounded-md transition-colors",
+                    'flex items-center text-sm px-3 py-2 rounded-md transition-colors',
                     searchParams.get('section') === 'cognitive-task' 
-                      ? "bg-blue-50 text-blue-600" 
-                      : "text-neutral-700 hover:bg-neutral-100"
+                      ? 'bg-blue-50 text-blue-600' 
+                      : 'text-neutral-700 hover:bg-neutral-100'
                   )}
                 >
                   <span className="w-5 h-5 mr-2 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 text-xs">3</span>
@@ -402,10 +405,10 @@ export function Sidebar({ className, activeResearch }: SidebarProps) {
                 <Link 
                   href={`/dashboard?research=${activeResearch.id}&aim=true&section=eye-tracking`}
                   className={cn(
-                    "flex items-center text-sm px-3 py-2 rounded-md transition-colors",
+                    'flex items-center text-sm px-3 py-2 rounded-md transition-colors',
                     searchParams.get('section') === 'eye-tracking' 
-                      ? "bg-blue-50 text-blue-600" 
-                      : "text-neutral-700 hover:bg-neutral-100"
+                      ? 'bg-blue-50 text-blue-600' 
+                      : 'text-neutral-700 hover:bg-neutral-100'
                   )}
                 >
                   <span className="w-5 h-5 mr-2 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 text-xs">4</span>
@@ -416,10 +419,10 @@ export function Sidebar({ className, activeResearch }: SidebarProps) {
                 <Link 
                   href={`/dashboard?research=${activeResearch.id}&aim=true&section=thank-you`}
                   className={cn(
-                    "flex items-center text-sm px-3 py-2 rounded-md transition-colors",
+                    'flex items-center text-sm px-3 py-2 rounded-md transition-colors',
                     searchParams.get('section') === 'thank-you' 
-                      ? "bg-blue-50 text-blue-600" 
-                      : "text-neutral-700 hover:bg-neutral-100"
+                      ? 'bg-blue-50 text-blue-600' 
+                      : 'text-neutral-700 hover:bg-neutral-100'
                   )}
                 >
                   <span className="w-5 h-5 mr-2 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 text-xs">5</span>
@@ -431,67 +434,67 @@ export function Sidebar({ className, activeResearch }: SidebarProps) {
 
           <div className="mb-6">
             <h3 className="font-semibold text-xs text-neutral-500 uppercase mb-2">RECRUIT</h3>
-                  <ul className="space-y-1">
+            <ul className="space-y-1">
               <li>
                 <Link 
                   href={`/dashboard?research=${activeResearch.id}&aim=true&section=screener`}
                   className={cn(
-                    "flex items-center text-sm px-3 py-2 rounded-md transition-colors",
+                    'flex items-center text-sm px-3 py-2 rounded-md transition-colors',
                     searchParams.get('section') === 'screener' 
-                      ? "bg-blue-50 text-blue-600" 
-                      : "text-neutral-700 hover:bg-neutral-100"
+                      ? 'bg-blue-50 text-blue-600' 
+                      : 'text-neutral-700 hover:bg-neutral-100'
                   )}
                 >
                   Screener
                 </Link>
               </li>
               <li>
-                        <Link
+                <Link
                   href={`/dashboard?research=${activeResearch.id}&aim=true&section=welcome-screen-participant`}
-                          className={cn(
-                    "flex items-center text-sm px-3 py-2 rounded-md transition-colors",
+                  className={cn(
+                    'flex items-center text-sm px-3 py-2 rounded-md transition-colors',
                     searchParams.get('section') === 'welcome-screen-participant' 
-                      ? "bg-blue-50 text-blue-600" 
-                      : "text-neutral-700 hover:bg-neutral-100"
+                      ? 'bg-blue-50 text-blue-600' 
+                      : 'text-neutral-700 hover:bg-neutral-100'
                   )}
                 >
                   Welcome screen
-                        </Link>
-                      </li>
-                  </ul>
-                </div>
+                </Link>
+              </li>
+            </ul>
+          </div>
 
-                <div>
+          <div>
             <h3 className="font-semibold text-xs text-neutral-500 uppercase mb-2">RESULTS</h3>
-                  <ul className="space-y-1">
+            <ul className="space-y-1">
               <li>
                 <Link 
                   href={`/dashboard?research=${activeResearch.id}&aim=true&section=smart-voc-results`}
                   className={cn(
-                    "flex items-center text-sm px-3 py-2 rounded-md transition-colors",
+                    'flex items-center text-sm px-3 py-2 rounded-md transition-colors',
                     searchParams.get('section') === 'smart-voc-results' 
-                      ? "bg-blue-50 text-blue-600" 
-                      : "text-neutral-700 hover:bg-neutral-100"
+                      ? 'bg-blue-50 text-blue-600' 
+                      : 'text-neutral-700 hover:bg-neutral-100'
                   )}
                 >
                   Smart VOC
                 </Link>
               </li>
               <li>
-                        <Link
+                <Link
                   href={`/dashboard?research=${activeResearch.id}&aim=true&section=cognitive-task-results`}
-                          className={cn(
-                    "flex items-center text-sm px-3 py-2 rounded-md transition-colors",
+                  className={cn(
+                    'flex items-center text-sm px-3 py-2 rounded-md transition-colors',
                     searchParams.get('section') === 'cognitive-task-results' 
-                      ? "bg-blue-50 text-blue-600" 
-                      : "text-neutral-700 hover:bg-neutral-100"
+                      ? 'bg-blue-50 text-blue-600' 
+                      : 'text-neutral-700 hover:bg-neutral-100'
                   )}
                 >
                   Cognitive Task
-                        </Link>
-                      </li>
-                  </ul>
-                </div>
+                </Link>
+              </li>
+            </ul>
+          </div>
         </nav>
         
         {/* Modal de confirmación */}
@@ -502,14 +505,14 @@ export function Sidebar({ className, activeResearch }: SidebarProps) {
             onConfirm={confirmDeleteResearch}
             researchName={researchToDelete.name}
           />
-                            )}
-                          </div>
+        )}
+      </div>
     );
   }
 
   // Sidebar estándar para el resto de vistas
   return (
-    <div className={cn("w-56 bg-white border-r border-neutral-200 shadow-lg flex flex-col h-screen", className)}>
+    <div className={cn('w-56 bg-white border-r border-neutral-200 shadow-lg flex flex-col h-screen', className)}>
       <div className="p-4 border-b border-neutral-200">
         <a 
           href="/dashboard" 
@@ -519,13 +522,13 @@ export function Sidebar({ className, activeResearch }: SidebarProps) {
           <div className="flex items-center">
             <span className="text-xl font-semibold text-neutral-900">EmotioX</span>
             <span className="text-xs ml-1 text-neutral-500">(Inicio)</span>
-                        </div>
+          </div>
         </a>
-                      </div>
+      </div>
       
       <div className="flex-1 overflow-y-auto">
         <nav className="p-4">
-                      <ul className="space-y-1">
+          <ul className="space-y-1">
             {mainNavItems.map((item) => {
               const isActive = 
                 pathname === item.href || 
@@ -538,10 +541,10 @@ export function Sidebar({ className, activeResearch }: SidebarProps) {
                     <Link
                       href={item.href}
                       className={cn(
-                        "flex items-center py-2 px-3 rounded-md transition-colors",
+                        'flex items-center py-2 px-3 rounded-md transition-colors',
                         isActive
-                          ? "bg-blue-50 text-blue-600"
-                          : "text-neutral-700 hover:bg-neutral-100"
+                          ? 'bg-blue-50 text-blue-600'
+                          : 'text-neutral-700 hover:bg-neutral-100'
                       )}
                       onClick={handleNewResearchClick}
                     >
@@ -555,23 +558,23 @@ export function Sidebar({ className, activeResearch }: SidebarProps) {
               
               return (
                 <li key={item.id}>
-                            <Link
+                  <Link
                     href={item.href}
-                              className={cn(
-                      "flex items-center py-2 px-3 rounded-md transition-colors",
+                    className={cn(
+                      'flex items-center py-2 px-3 rounded-md transition-colors',
                       isActive
-                        ? "bg-blue-50 text-blue-600"
-                        : "text-neutral-700 hover:bg-neutral-100"
+                        ? 'bg-blue-50 text-blue-600'
+                        : 'text-neutral-700 hover:bg-neutral-100'
                     )}
                   >
                     {typeof item.label === 'function' 
                       ? item.getDynamicLabel!(hasDraft, currentDraft?.step, currentDraft?.lastUpdated)
                       : item.label}
-                            </Link>
-                          </li>
+                  </Link>
+                </li>
               );
             })}
-                      </ul>
+          </ul>
         </nav>
         
         {/* Mostrar solo la investigación más reciente */}
@@ -590,10 +593,10 @@ export function Sidebar({ className, activeResearch }: SidebarProps) {
                       : `/dashboard?research=${item.id}`
                     }
                     className={cn(
-                      "flex items-center py-2 px-3 rounded-md text-sm bg-blue-50 border border-blue-100 text-blue-700 hover:bg-blue-100 transition-colors pr-8",
+                      'flex items-center py-2 px-3 rounded-md text-sm bg-blue-50 border border-blue-100 text-blue-700 hover:bg-blue-100 transition-colors pr-8',
                       pathname?.includes(`research=${item.id}`)
-                        ? "bg-neutral-100 text-neutral-900 font-medium"
-                        : "text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50"
+                        ? 'bg-neutral-100 text-neutral-900 font-medium'
+                        : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
                     )}
                   >
                     <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
@@ -613,11 +616,11 @@ export function Sidebar({ className, activeResearch }: SidebarProps) {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
       
       {/* Modal de confirmación */}
@@ -630,5 +633,19 @@ export function Sidebar({ className, activeResearch }: SidebarProps) {
         />
       )}
     </div>
+  );
+}
+
+// Envolver el componente con el HOC withSearchParams
+const SidebarContentWithSuspense = withSearchParams(SidebarContent);
+
+// Componente público que exportamos
+export function Sidebar(props: SidebarProps) {
+  return (
+    <Suspense fallback={<div className="w-64 bg-white border-r border-neutral-200 flex flex-col">
+      <div className="p-4 text-center text-neutral-600">Cargando...</div>
+    </div>}>
+      <SidebarContentWithSuspense {...props} />
+    </Suspense>
   );
 } 

@@ -1,12 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+
 import { Button } from '@/components/ui/Button';
-import { Switch } from '@/components/ui/Switch';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
+import { Switch } from '@/components/ui/Switch';
 import { Textarea } from '@/components/ui/Textarea';
 import { cn } from '@/lib/utils';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 
 interface Question {
   id: string;
@@ -156,12 +157,12 @@ export function CognitiveTaskForm({ className, onSave }: CognitiveTaskFormProps)
       prevQuestions.map(q =>
         q.id === questionId && q.choices
           ? {
-              ...q,
-              choices: [
-                ...q.choices,
-                { id: String(q.choices.length + 1), text: '', isQualify: false, isDisqualify: false }
-              ]
-            }
+            ...q,
+            choices: [
+              ...q.choices,
+              { id: String(q.choices.length + 1), text: '', isQualify: false, isDisqualify: false }
+            ]
+          }
           : q
       )
     );
@@ -172,9 +173,9 @@ export function CognitiveTaskForm({ className, onSave }: CognitiveTaskFormProps)
       prevQuestions.map(q =>
         q.id === questionId && q.choices
           ? {
-              ...q,
-              choices: q.choices.filter(c => c.id !== choiceId)
-            }
+            ...q,
+            choices: q.choices.filter(c => c.id !== choiceId)
+          }
           : q
       )
     );
@@ -594,7 +595,7 @@ export function CognitiveTaskForm({ className, onSave }: CognitiveTaskFormProps)
   };
 
   return (
-    <div className={cn("max-w-3xl mx-auto", className)}>
+    <div className={cn('max-w-3xl mx-auto', className)}>
       <div>
         <div className="space-y-6">
           {/* Global Settings */}

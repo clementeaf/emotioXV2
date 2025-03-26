@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/Button';
+
 import { Input } from '@/components/ui/Input';
 import { cn } from '@/lib/utils';
 
@@ -60,7 +60,7 @@ export function ParticipantsForm({ className }: ParticipantsFormProps) {
   };
 
   return (
-    <div className={cn("max-w-3xl mx-auto", className)}>
+    <div className={cn('max-w-3xl mx-auto', className)}>
       {/* Form Content */}
       <div className="bg-white rounded-xl border border-neutral-200/70 shadow-[0_6px_16px_-4px_rgba(0,0,0,0.05)] overflow-hidden">
         <div className="px-8 py-8">

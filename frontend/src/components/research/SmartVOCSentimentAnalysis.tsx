@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/Button';
+
 import { cn } from '@/lib/utils';
 
 interface SmartVOCSentimentAnalysisProps {
@@ -203,7 +203,7 @@ export function SmartVOCSentimentAnalysis({ className }: SmartVOCSentimentAnalys
                       {theme.percentage}%
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <span className={cn("px-2 py-1 rounded-full text-xs font-medium", getSentimentColor(theme.sentiment))}>
+                      <span className={cn('px-2 py-1 rounded-full text-xs font-medium', getSentimentColor(theme.sentiment))}>
                         {theme.sentiment === 'positive' ? 'Positivo' : theme.sentiment === 'negative' ? 'Negativo' : 'Neutral'}
                       </span>
                     </td>
@@ -233,10 +233,10 @@ export function SmartVOCSentimentAnalysis({ className }: SmartVOCSentimentAnalys
                 }}
               >
                 <span className={cn(
-                  "inline-block px-3 py-1 rounded-full",
+                  'inline-block px-3 py-1 rounded-full',
                   keyword.sentiment === 'positive' ? 'bg-green-100 text-green-800' : 
-                  keyword.sentiment === 'negative' ? 'bg-red-100 text-red-800' : 
-                  'bg-neutral-100 text-neutral-800'
+                    keyword.sentiment === 'negative' ? 'bg-red-100 text-red-800' : 
+                      'bg-neutral-100 text-neutral-800'
                 )}>
                   {keyword.word}
                   <span className="ml-1 text-xs opacity-70">({keyword.count})</span>
@@ -250,7 +250,7 @@ export function SmartVOCSentimentAnalysis({ className }: SmartVOCSentimentAnalys
   };
   
   return (
-    <div className={cn("mt-6 mb-10", className)}>
+    <div className={cn('mt-6 mb-10', className)}>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-neutral-900">
           2.6.- Pregunta: Voice of Customer (VOC)
@@ -287,8 +287,8 @@ export function SmartVOCSentimentAnalysis({ className }: SmartVOCSentimentAnalys
               <div 
                 key={comment.id} 
                 className={cn(
-                  "p-4 flex items-start space-x-3 cursor-pointer hover:bg-neutral-50",
-                  selectedComment === comment.id && "bg-neutral-50"
+                  'p-4 flex items-start space-x-3 cursor-pointer hover:bg-neutral-50',
+                  selectedComment === comment.id && 'bg-neutral-50'
                 )}
                 onClick={() => setSelectedComment(comment.id)}
               >
@@ -303,7 +303,7 @@ export function SmartVOCSentimentAnalysis({ className }: SmartVOCSentimentAnalys
                 </div>
                 <div className="text-xs font-medium" style={{ color: comment.displayColor }}>
                   {comment.sentiment === 'positive' ? 'Positive' : 
-                   comment.sentiment === 'negative' ? 'Negative' : 'Neutral'}
+                    comment.sentiment === 'negative' ? 'Negative' : 'Neutral'}
                 </div>
               </div>
             ))}
@@ -316,10 +316,10 @@ export function SmartVOCSentimentAnalysis({ className }: SmartVOCSentimentAnalys
             <nav className="flex -mb-px">
               <button 
                 className={cn(
-                  "py-4 px-6 inline-flex items-center text-sm font-medium border-b-2 whitespace-nowrap",
+                  'py-4 px-6 inline-flex items-center text-sm font-medium border-b-2 whitespace-nowrap',
                   activeTab === 'sentiment' 
-                    ? "text-blue-600 border-blue-600" 
-                    : "text-neutral-500 border-transparent hover:text-neutral-700 hover:border-neutral-300"
+                    ? 'text-blue-600 border-blue-600' 
+                    : 'text-neutral-500 border-transparent hover:text-neutral-700 hover:border-neutral-300'
                 )}
                 onClick={() => setActiveTab('sentiment')}
               >
@@ -331,10 +331,10 @@ export function SmartVOCSentimentAnalysis({ className }: SmartVOCSentimentAnalys
               
               <button 
                 className={cn(
-                  "py-4 px-6 inline-flex items-center text-sm font-medium border-b-2 whitespace-nowrap",
+                  'py-4 px-6 inline-flex items-center text-sm font-medium border-b-2 whitespace-nowrap',
                   activeTab === 'themes' 
-                    ? "text-blue-600 border-blue-600" 
-                    : "text-neutral-500 border-transparent hover:text-neutral-700 hover:border-neutral-300"
+                    ? 'text-blue-600 border-blue-600' 
+                    : 'text-neutral-500 border-transparent hover:text-neutral-700 hover:border-neutral-300'
                 )}
                 onClick={() => setActiveTab('themes')}
               >
@@ -346,10 +346,10 @@ export function SmartVOCSentimentAnalysis({ className }: SmartVOCSentimentAnalys
               
               <button 
                 className={cn(
-                  "py-4 px-6 inline-flex items-center text-sm font-medium border-b-2 whitespace-nowrap",
+                  'py-4 px-6 inline-flex items-center text-sm font-medium border-b-2 whitespace-nowrap',
                   activeTab === 'keywords' 
-                    ? "text-blue-600 border-blue-600" 
-                    : "text-neutral-500 border-transparent hover:text-neutral-700 hover:border-neutral-300"
+                    ? 'text-blue-600 border-blue-600' 
+                    : 'text-neutral-500 border-transparent hover:text-neutral-700 hover:border-neutral-300'
                 )}
                 onClick={() => setActiveTab('keywords')}
               >

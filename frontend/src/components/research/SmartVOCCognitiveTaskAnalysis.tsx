@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 
@@ -179,7 +180,7 @@ export function SmartVOCCognitiveTaskAnalysis({ className }: SmartVOCCognitiveTa
                   cy="50" 
                   r="45" 
                   fill="none" 
-                  stroke={task.score >= 80 ? "#4CAF50" : task.score >= 60 ? "#2196F3" : "#F44336"} 
+                  stroke={task.score >= 80 ? '#4CAF50' : task.score >= 60 ? '#2196F3' : '#F44336'} 
                   strokeWidth="10" 
                   strokeDasharray={`${task.score * 2.83} ${283 - (task.score * 2.83)}`} 
                   strokeDashoffset="0" 
@@ -192,7 +193,7 @@ export function SmartVOCCognitiveTaskAnalysis({ className }: SmartVOCCognitiveTa
                   textAnchor="middle" 
                   fontSize="24" 
                   fontWeight="bold" 
-                  fill={task.score >= 80 ? "#4CAF50" : task.score >= 60 ? "#2196F3" : "#F44336"}
+                  fill={task.score >= 80 ? '#4CAF50' : task.score >= 60 ? '#2196F3' : '#F44336'}
                 >
                   {task.score}
                 </text>
@@ -229,10 +230,10 @@ export function SmartVOCCognitiveTaskAnalysis({ className }: SmartVOCCognitiveTa
                 <div className="w-full bg-neutral-200 rounded-full h-2.5">
                   <div 
                     className={cn(
-                      "h-2.5 rounded-full", 
-                      subtask.percentage >= 80 ? "bg-green-500" : 
-                      subtask.percentage >= 60 ? "bg-blue-500" : 
-                      "bg-amber-500"
+                      'h-2.5 rounded-full', 
+                      subtask.percentage >= 80 ? 'bg-green-500' : 
+                        subtask.percentage >= 60 ? 'bg-blue-500' : 
+                          'bg-amber-500'
                     )}
                     style={{ width: `${subtask.percentage}%` }}
                   ></div>
@@ -266,10 +267,10 @@ export function SmartVOCCognitiveTaskAnalysis({ className }: SmartVOCCognitiveTa
                         <div 
                           key={i}
                           className={cn(
-                            "absolute rounded-full w-1.5 h-1.5", 
-                            point.cluster === 0 ? "bg-blue-500" : 
-                            point.cluster === 1 ? "bg-purple-500" : 
-                            "bg-green-500"
+                            'absolute rounded-full w-1.5 h-1.5', 
+                            point.cluster === 0 ? 'bg-blue-500' : 
+                              point.cluster === 1 ? 'bg-purple-500' : 
+                                'bg-green-500'
                           )}
                           style={{
                             left: `${point.x}%`,
@@ -356,10 +357,10 @@ export function SmartVOCCognitiveTaskAnalysis({ className }: SmartVOCCognitiveTa
                   <div 
                     key={i}
                     className={cn(
-                      "absolute rounded-full", 
-                      point.cluster === 0 ? "bg-blue-500" : 
-                      point.cluster === 1 ? "bg-purple-500" : 
-                      "bg-pink-500"
+                      'absolute rounded-full', 
+                      point.cluster === 0 ? 'bg-blue-500' : 
+                        point.cluster === 1 ? 'bg-purple-500' : 
+                          'bg-pink-500'
                     )}
                     style={{
                       left: `${point.x}%`,
@@ -540,7 +541,7 @@ export function SmartVOCCognitiveTaskAnalysis({ className }: SmartVOCCognitiveTa
   };
   
   return (
-    <div className={cn("mt-6 mb-10", className)}>
+    <div className={cn('mt-6 mb-10', className)}>
       {/* Encabezado y filtros */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-neutral-900">

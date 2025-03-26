@@ -1,15 +1,18 @@
 'use client';
 
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
+import { toast } from 'react-hot-toast';
+
 import { Switch } from '@/components/ui/Switch';
 import { Textarea } from '@/components/ui/Textarea';
-import { cn } from '@/lib/utils';
-import { useAuth } from '@/providers/AuthProvider';
-import { toast } from 'react-hot-toast';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ThankYouScreenConfig, DEFAULT_THANK_YOU_SCREEN_CONFIG, DEFAULT_THANK_YOU_SCREEN_VALIDATION } from '../../types';
 import { alovaInstance } from '@/config/alova.config';
 import API_CONFIG from '@/config/api.config';
+import { cn } from '@/lib/utils';
+import { useAuth } from '@/providers/AuthProvider';
+
+import { ThankYouScreenConfig, DEFAULT_THANK_YOU_SCREEN_CONFIG, DEFAULT_THANK_YOU_SCREEN_VALIDATION } from '../../types';
+
 
 // Definir el tipo para la API
 const thankYouScreenAPI = {
@@ -52,7 +55,7 @@ export function ThankYouScreenForm({ className, researchId }: ThankYouScreenForm
     isEnabled: DEFAULT_THANK_YOU_SCREEN_CONFIG.isEnabled,
     title: DEFAULT_THANK_YOU_SCREEN_CONFIG.title,
     message: DEFAULT_THANK_YOU_SCREEN_CONFIG.message,
-    redirectUrl: DEFAULT_THANK_YOU_SCREEN_CONFIG.redirectUrl || ""
+    redirectUrl: DEFAULT_THANK_YOU_SCREEN_CONFIG.redirectUrl || ''
   });
   // Guardar el ID si ya existe un thank you screen
   const [thankYouScreenId, setThankYouScreenId] = useState<string | null>(null);
@@ -119,7 +122,7 @@ export function ThankYouScreenForm({ className, researchId }: ThankYouScreenForm
         isEnabled: thankYouScreenData.data.isEnabled,
         title: thankYouScreenData.data.title,
         message: thankYouScreenData.data.message,
-        redirectUrl: thankYouScreenData.data.redirectUrl || ""
+        redirectUrl: thankYouScreenData.data.redirectUrl || ''
       });
       console.log('Thank you screen data loaded successfully');
     } else {
@@ -130,7 +133,7 @@ export function ThankYouScreenForm({ className, researchId }: ThankYouScreenForm
         isEnabled: DEFAULT_THANK_YOU_SCREEN_CONFIG.isEnabled,
         title: DEFAULT_THANK_YOU_SCREEN_CONFIG.title,
         message: DEFAULT_THANK_YOU_SCREEN_CONFIG.message,
-        redirectUrl: DEFAULT_THANK_YOU_SCREEN_CONFIG.redirectUrl || ""
+        redirectUrl: DEFAULT_THANK_YOU_SCREEN_CONFIG.redirectUrl || ''
       });
       console.log('No thank you screen configuration found. Using defaults.');
     }
@@ -188,7 +191,7 @@ export function ThankYouScreenForm({ className, researchId }: ThankYouScreenForm
           response = await thankYouScreenAPI.update(thankYouScreenId, data).send();
         } else {
           // Si no tenemos ID, crear un nuevo registro
-          fullUrl = `/thank-you-screens`;
+          fullUrl = '/thank-you-screens';
           console.log('DEBUG: URL completa para creación:', fullUrl);
           console.log('DEBUG: Creando nuevo thank you screen');
           response = await thankYouScreenAPI.create(data).send();
@@ -275,7 +278,7 @@ export function ThankYouScreenForm({ className, researchId }: ThankYouScreenForm
   const isLoading = isLoadingData || isSaving;
 
   return (
-    <div className={cn("max-w-3xl mx-auto", className)}>
+    <div className={cn('max-w-3xl mx-auto', className)}>
       <div className="space-y-6">
         <div className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg">
           <div className="space-y-0.5">
@@ -301,8 +304,8 @@ export function ThankYouScreenForm({ className, researchId }: ThankYouScreenForm
               onChange={(e) => handleChange('title', e.target.value)}
               placeholder="Enter a title for your thank you screen..."
               className={cn(
-                "w-full px-3 py-2 rounded-lg border text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
-                validationErrors.title ? "border-red-500" : "border-neutral-200"
+                'w-full px-3 py-2 rounded-lg border text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500',
+                validationErrors.title ? 'border-red-500' : 'border-neutral-200'
               )}
               disabled={isLoading || !formData.isEnabled}
             />
@@ -321,8 +324,8 @@ export function ThankYouScreenForm({ className, researchId }: ThankYouScreenForm
               onChange={(e) => handleChange('message', e.target.value)}
               placeholder="Write a thank you message for your participants..."
               className={cn(
-                "min-h-[120px]",
-                validationErrors.message ? "border-red-500" : ""
+                'min-h-[120px]',
+                validationErrors.message ? 'border-red-500' : ''
               )}
               disabled={isLoading || !formData.isEnabled}
             />
@@ -342,8 +345,8 @@ export function ThankYouScreenForm({ className, researchId }: ThankYouScreenForm
               onChange={(e) => handleChange('redirectUrl', e.target.value)}
               placeholder="https://..."
               className={cn(
-                "w-full px-3 py-2 rounded-lg border text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
-                validationErrors.redirectUrl ? "border-red-500" : "border-neutral-200"
+                'w-full px-3 py-2 rounded-lg border text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500',
+                validationErrors.redirectUrl ? 'border-red-500' : 'border-neutral-200'
               )}
               disabled={isLoading || !formData.isEnabled}
             />

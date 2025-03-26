@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { useAuth } from '../hooks/useAuth';
+
 import { apiEndpoints } from '../config/api.config';
+import { useAuth } from '../hooks/useAuth';
 
 // Estado de la conexión
 export enum ConnectionStatus {
@@ -20,7 +21,7 @@ export const useWebSocketConnection = () => {
 
   // Establecer la conexión
   const connect = () => {
-    if (!token) return;
+    if (!token) {return;}
     
     try {
       // Cerrar la conexión existente si hay alguna

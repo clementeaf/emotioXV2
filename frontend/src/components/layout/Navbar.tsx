@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { useAuth } from '@/providers/AuthProvider';
-import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
+import { useState } from 'react';
+
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/providers/AuthProvider';
 
 interface User {
   id: string;
@@ -31,7 +31,7 @@ export function Navbar({ className, researchId, mode = 'dashboard' }: NavbarProp
   };
 
   return (
-    <header className={cn("h-16 bg-white border-b border-neutral-200", className)}>
+    <header className={cn('h-16 bg-white border-b border-neutral-200', className)}>
       <div className="h-full flex items-center justify-between px-6">
         <div className="flex items-center gap-4">
           {mode === 'research' && researchId && (
@@ -98,8 +98,8 @@ export function Navbar({ className, researchId, mode = 'dashboard' }: NavbarProp
             <span>{(user as User)?.name || 'Usuario'}</span>
             <svg
               className={cn(
-                "h-4 w-4 transition-transform",
-                isMenuOpen ? "rotate-180" : ""
+                'h-4 w-4 transition-transform',
+                isMenuOpen ? 'rotate-180' : ''
               )}
               fill="none"
               viewBox="0 0 24 24"

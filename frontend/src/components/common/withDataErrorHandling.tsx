@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect, ComponentType } from 'react';
+
+import { isDevelopmentMode, shouldUseSimulatedMode } from '@/lib/utils';
+
 import { DataErrorFallback } from './DataErrorFallback';
 import { SimulatedDataBanner } from './SimulatedDataBanner';
-import { isDevelopmentMode, shouldUseSimulatedMode } from '@/lib/utils';
 
 /**
  * Opciones para el HOC withDataErrorHandling
@@ -63,7 +65,7 @@ export function withDataErrorHandling<
     getMockData,
     localStorageKey = 'use_simulated_data',
     showSimulatedBanner = true,
-    simulatedBannerText = "Mostrando datos simulados",
+    simulatedBannerText = 'Mostrando datos simulados',
     bannerVariant = 'default',
     tryRealDataFirst = false
   } = options;

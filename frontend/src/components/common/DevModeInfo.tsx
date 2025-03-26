@@ -1,8 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { isDevelopmentMode, shouldUseSimulatedMode } from '@/lib/utils';
-import { Button } from '@/components/ui/Button';
+
 
 /**
  * Props para el componente DevModeInfo

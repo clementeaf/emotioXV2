@@ -22,7 +22,7 @@ interface SimulatedDataBannerProps {
  * Componente que muestra un banner para indicar que se están viendo datos simulados
  */
 export function SimulatedDataBanner({
-  message = "Estás viendo datos simulados",
+  message = 'Estás viendo datos simulados',
   onSwitchToReal,
   className,
   showSwitchOption = true,
@@ -33,36 +33,36 @@ export function SimulatedDataBanner({
   const containerClasses = cn(
     {
       // Variante por defecto - banner completo
-      "bg-amber-50 border border-amber-200 rounded-lg p-3": variant === 'default',
+      'bg-amber-50 border border-amber-200 rounded-lg p-3': variant === 'default',
       
       // Variante compacta - más pequeña
-      "bg-amber-50 border border-amber-200 rounded px-3 py-1.5 text-sm": variant === 'compact',
+      'bg-amber-50 border border-amber-200 rounded px-3 py-1.5 text-sm': variant === 'compact',
       
       // Variante sutil - menos llamativa
-      "bg-white border border-neutral-200 rounded-lg p-2 shadow-sm": variant === 'subtle',
+      'bg-white border border-neutral-200 rounded-lg p-2 shadow-sm': variant === 'subtle',
       
       // Variante flotante - para mostrar en esquina
-      "bg-amber-50 border border-amber-300 rounded-lg p-2 shadow-md fixed bottom-4 right-4 z-50 max-w-xs": variant === 'floating',
+      'bg-amber-50 border border-amber-300 rounded-lg p-2 shadow-md fixed bottom-4 right-4 z-50 max-w-xs': variant === 'floating',
     },
     className
   );
 
   const textClasses = cn(
-    "flex items-center gap-1.5",
+    'flex items-center gap-1.5',
     {
-      "text-amber-700": variant !== 'subtle',
-      "text-neutral-600": variant === 'subtle',
-      "text-sm": variant === 'default' || variant === 'floating',
-      "text-xs": variant === 'compact',
+      'text-amber-700': variant !== 'subtle',
+      'text-neutral-600': variant === 'subtle',
+      'text-sm': variant === 'default' || variant === 'floating',
+      'text-xs': variant === 'compact',
     }
   );
 
   const buttonClasses = cn(
-    "text-xs px-2 py-1 rounded hover:bg-opacity-80 transition-colors ml-auto whitespace-nowrap",
+    'text-xs px-2 py-1 rounded hover:bg-opacity-80 transition-colors ml-auto whitespace-nowrap',
     {
-      "bg-white border border-amber-200 text-amber-700 hover:bg-amber-100": 
+      'bg-white border border-amber-200 text-amber-700 hover:bg-amber-100': 
         variant === 'default' || variant === 'compact' || variant === 'floating',
-      "bg-neutral-100 border border-neutral-200 text-neutral-700 hover:bg-neutral-200": 
+      'bg-neutral-100 border border-neutral-200 text-neutral-700 hover:bg-neutral-200': 
         variant === 'subtle',
     }
   );

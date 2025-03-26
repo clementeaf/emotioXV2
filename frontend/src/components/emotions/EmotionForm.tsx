@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useApi } from '@/hooks/useApi';
+
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
+import { useApi } from '@/hooks/useApi';
 // Importemos estos tipos del archivo original, ya que parece que @emotiox/shared no está accesible
 // en este entorno. Definimos estos enums aquí directamente.
 
@@ -55,7 +55,7 @@ export function EmotionForm({ emotionId, onSuccess, onCancel }: EmotionFormProps
   }, [emotionId]);
 
   const loadEmotion = async () => {
-    if (!emotionId) return;
+    if (!emotionId) {return;}
     
     setLoading(true);
     try {

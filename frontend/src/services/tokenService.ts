@@ -22,7 +22,7 @@ const decodeToken = (token: string): any | null => {
   try {
     // Obtener la parte del payload (segunda parte del token)
     const base64Url = token.split('.')[1];
-    if (!base64Url) return null;
+    if (!base64Url) {return null;}
     
     // Decodificar el base64
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -49,7 +49,7 @@ const decodeToken = (token: string): any | null => {
 const isTokenExpiringSoon = (token: string): boolean => {
   try {
     const payload = decodeToken(token);
-    if (!payload || !payload.exp) return true;
+    if (!payload || !payload.exp) {return true;}
     
     // Convertir exp a milisegundos
     const expirationTime = payload.exp * 1000;

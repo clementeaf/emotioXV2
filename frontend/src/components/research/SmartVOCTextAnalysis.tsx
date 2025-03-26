@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 
@@ -152,7 +153,7 @@ export function SmartVOCTextAnalysis({ className }: SmartVOCTextAnalysisProps) {
                   {topics.slice(0, 6).map((topic, i) => (
                     <div key={i} className="flex items-center justify-between border-b pb-2">
                       <div>
-                        <span className={cn("text-sm font-medium", getSentimentColor(topic.sentiment))}>
+                        <span className={cn('text-sm font-medium', getSentimentColor(topic.sentiment))}>
                           {topic.name}
                         </span>
                       </div>
@@ -195,7 +196,7 @@ export function SmartVOCTextAnalysis({ className }: SmartVOCTextAnalysisProps) {
                           {topic.count}
                         </td>
                         <td className="px-3 py-4 whitespace-nowrap">
-                          <span className={cn("text-sm", getSentimentColor(topic.sentiment))}>
+                          <span className={cn('text-sm', getSentimentColor(topic.sentiment))}>
                             {topic.sentiment.charAt(0).toUpperCase() + topic.sentiment.slice(1)}
                           </span>
                         </td>
@@ -203,9 +204,9 @@ export function SmartVOCTextAnalysis({ className }: SmartVOCTextAnalysisProps) {
                           <div className="flex items-center">
                             <svg 
                               className={cn(
-                                "w-4 h-4", 
-                                topic.sentiment === 'positive' ? "text-green-500" : 
-                                topic.sentiment === 'negative' ? "text-red-500" : "text-gray-400"
+                                'w-4 h-4', 
+                                topic.sentiment === 'positive' ? 'text-green-500' : 
+                                  topic.sentiment === 'negative' ? 'text-red-500' : 'text-gray-400'
                               )} 
                               fill="none" 
                               stroke="currentColor" 
@@ -221,7 +222,7 @@ export function SmartVOCTextAnalysis({ className }: SmartVOCTextAnalysisProps) {
                             </svg>
                             <span className="ml-1 text-xs text-neutral-500">
                               {topic.sentiment === 'positive' ? '+12%' : 
-                               topic.sentiment === 'negative' ? '-8%' : '0%'}
+                                topic.sentiment === 'negative' ? '-8%' : '0%'}
                             </span>
                           </div>
                         </td>
@@ -272,7 +273,7 @@ export function SmartVOCTextAnalysis({ className }: SmartVOCTextAnalysisProps) {
                 {comments.map((comment) => (
                   <div key={comment.id} className="border-b border-neutral-200 pb-4">
                     <div className="flex justify-between mb-2">
-                      <div className={cn("text-sm font-medium", getSentimentColor(comment.sentiment))}>
+                      <div className={cn('text-sm font-medium', getSentimentColor(comment.sentiment))}>
                         {comment.sentiment.charAt(0).toUpperCase() + comment.sentiment.slice(1)} Comment
                       </div>
                       <div className="text-xs text-neutral-500">
@@ -310,7 +311,7 @@ export function SmartVOCTextAnalysis({ className }: SmartVOCTextAnalysisProps) {
   };
 
   return (
-    <div className={cn("mt-10", className)}>
+    <div className={cn('mt-10', className)}>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold text-neutral-900">
           Text Analysis for Open-ended Questions
@@ -318,28 +319,28 @@ export function SmartVOCTextAnalysis({ className }: SmartVOCTextAnalysisProps) {
         
         <div className="flex space-x-2">
           <Button
-            variant={timePeriod === '7days' ? "default" : "outline"}
+            variant={timePeriod === '7days' ? 'default' : 'outline'}
             className="text-xs h-8 px-3"
             onClick={() => setTimePeriod('7days')}
           >
             Last 7 days
           </Button>
           <Button
-            variant={timePeriod === '30days' ? "default" : "outline"}
+            variant={timePeriod === '30days' ? 'default' : 'outline'}
             className="text-xs h-8 px-3"
             onClick={() => setTimePeriod('30days')}
           >
             Last 30 days
           </Button>
           <Button
-            variant={timePeriod === '90days' ? "default" : "outline"}
+            variant={timePeriod === '90days' ? 'default' : 'outline'}
             className="text-xs h-8 px-3"
             onClick={() => setTimePeriod('90days')}
           >
             Last 90 days
           </Button>
           <Button
-            variant={timePeriod === 'year' ? "default" : "outline"}
+            variant={timePeriod === 'year' ? 'default' : 'outline'}
             className="text-xs h-8 px-3"
             onClick={() => setTimePeriod('year')}
           >
@@ -351,10 +352,10 @@ export function SmartVOCTextAnalysis({ className }: SmartVOCTextAnalysisProps) {
       <div className="bg-neutral-50 rounded-lg p-1 flex space-x-1 mb-4">
         <button
           className={cn(
-            "flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors",
+            'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors',
             activeTab === 'topics' 
-              ? "bg-white shadow-sm text-neutral-900" 
-              : "text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100"
+              ? 'bg-white shadow-sm text-neutral-900' 
+              : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100'
           )}
           onClick={() => setActiveTab('topics')}
         >
@@ -362,10 +363,10 @@ export function SmartVOCTextAnalysis({ className }: SmartVOCTextAnalysisProps) {
         </button>
         <button
           className={cn(
-            "flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors",
+            'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors',
             activeTab === 'wordcloud' 
-              ? "bg-white shadow-sm text-neutral-900" 
-              : "text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100"
+              ? 'bg-white shadow-sm text-neutral-900' 
+              : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100'
           )}
           onClick={() => setActiveTab('wordcloud')}
         >
@@ -373,10 +374,10 @@ export function SmartVOCTextAnalysis({ className }: SmartVOCTextAnalysisProps) {
         </button>
         <button
           className={cn(
-            "flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors",
+            'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors',
             activeTab === 'comments' 
-              ? "bg-white shadow-sm text-neutral-900" 
-              : "text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100"
+              ? 'bg-white shadow-sm text-neutral-900' 
+              : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100'
           )}
           onClick={() => setActiveTab('comments')}
         >

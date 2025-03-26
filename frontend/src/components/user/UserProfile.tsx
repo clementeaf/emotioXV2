@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useApi } from '@/hooks/useApi';
-import { useAuth } from '@/hooks/useAuth';
+
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { useApi } from '@/hooks/useApi';
+import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 
 interface UserProfile {
@@ -155,7 +156,7 @@ export function UserProfileComponent({ className }: UserProfileComponentProps) {
   }
 
   return (
-    <div className={cn("max-w-3xl mx-auto", className)}>
+    <div className={cn('max-w-3xl mx-auto', className)}>
       <div className="bg-white rounded-xl border border-neutral-200/70 shadow-[0_6px_16px_-4px_rgba(0,0,0,0.05)] overflow-hidden">
         <div className="px-8 py-8">
           <header className="mb-6">

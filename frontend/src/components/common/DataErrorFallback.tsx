@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { cn } from '@/lib/utils';
+
 import { Button } from '@/components/ui/Button';
+import { cn } from '@/lib/utils';
 import { isDevelopmentMode } from '@/lib/utils';
 
 /**
@@ -36,7 +37,7 @@ export function DataErrorFallback({
   mockComponent,
   onUseMockData,
   onRetry,
-  mockDataButtonText = "Usar datos simulados",
+  mockDataButtonText = 'Usar datos simulados',
   className,
   variant = 'default',
   mockDataLoaded = false
@@ -70,26 +71,26 @@ export function DataErrorFallback({
   }
 
   // Si no hay error, no mostrar nada
-  if (!error) return null;
+  if (!error) {return null;}
 
   const errorMessage = typeof error === 'string' ? error : error.message || 'Error al cargar los datos';
   
   // Determinar clases según la variante
   const containerClasses = cn(
-    "overflow-hidden border rounded-lg",
+    'overflow-hidden border rounded-lg',
     {
-      "bg-red-50 border-red-200 p-4": variant === 'default',
-      "bg-red-50 border-red-200 p-3": variant === 'compact',
-      "bg-white border-neutral-200 shadow-sm p-4": variant === 'subtle'
+      'bg-red-50 border-red-200 p-4': variant === 'default',
+      'bg-red-50 border-red-200 p-3': variant === 'compact',
+      'bg-white border-neutral-200 shadow-sm p-4': variant === 'subtle'
     },
     className
   );
   
   const titleClasses = cn(
-    "font-medium",
+    'font-medium',
     {
-      "text-red-700": variant !== 'subtle',
-      "text-neutral-800": variant === 'subtle'
+      'text-red-700': variant !== 'subtle',
+      'text-neutral-800': variant === 'subtle'
     }
   );
 
@@ -99,10 +100,10 @@ export function DataErrorFallback({
         <div className="flex justify-between items-center">
           <p className={titleClasses}>
             <svg className={cn(
-              "inline-block mr-1.5",
+              'inline-block mr-1.5',
               {
-                "w-5 h-5 text-red-500": variant !== 'subtle',
-                "w-5 h-5 text-neutral-400": variant === 'subtle'
+                'w-5 h-5 text-red-500': variant !== 'subtle',
+                'w-5 h-5 text-neutral-400': variant === 'subtle'
               }
             )} fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -113,10 +114,10 @@ export function DataErrorFallback({
             <button 
               onClick={() => setExpanded(!expanded)}
               className={cn(
-                "text-sm hover:underline",
+                'text-sm hover:underline',
                 {
-                  "text-red-700 hover:text-red-900": variant !== 'subtle',
-                  "text-neutral-500 hover:text-neutral-800": variant === 'subtle'
+                  'text-red-700 hover:text-red-900': variant !== 'subtle',
+                  'text-neutral-500 hover:text-neutral-800': variant === 'subtle'
                 }
               )}
             >
@@ -127,10 +128,10 @@ export function DataErrorFallback({
         
         {expanded && (
           <div className={cn(
-            "mt-3 text-sm space-y-2 p-3 rounded",
+            'mt-3 text-sm space-y-2 p-3 rounded',
             {
-              "bg-red-100 text-red-800": variant !== 'subtle',
-              "bg-neutral-50 text-neutral-700 border border-neutral-100": variant === 'subtle'
+              'bg-red-100 text-red-800': variant !== 'subtle',
+              'bg-neutral-50 text-neutral-700 border border-neutral-100': variant === 'subtle'
             }
           )}>
             <p className="font-medium">Mensaje de error:</p>
@@ -140,9 +141,9 @@ export function DataErrorFallback({
           </div>
         )}
         
-        <div className={cn("flex flex-wrap gap-2", {
-          "mt-4": variant !== 'compact',
-          "mt-2": variant === 'compact'
+        <div className={cn('flex flex-wrap gap-2', {
+          'mt-4': variant !== 'compact',
+          'mt-2': variant === 'compact'
         })}>
           {onRetry && (
             <Button

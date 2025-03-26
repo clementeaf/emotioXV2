@@ -1,9 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Switch } from '@/components/ui/Switch';
+
 import { Input } from '@/components/ui/Input';
+import { Switch } from '@/components/ui/Switch';
 import { cn } from '@/lib/utils';
+
 import { 
   EyeTrackingFormData, 
   DEFAULT_EYE_TRACKING_CONFIG,
@@ -130,15 +132,15 @@ export function EyeTrackingForm({ researchId, className, onSave }: EyeTrackingFo
   };
 
   return (
-    <div className={cn("max-w-5xl mx-auto", className)}>
+    <div className={cn('max-w-5xl mx-auto', className)}>
       {/* Tabs Navigation */}
       <div className="flex mb-6 bg-white rounded-lg border border-neutral-200 p-1">
         <button
           className={cn(
-            "flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors",
+            'flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors',
             activeTab === 'setup' 
-              ? "bg-blue-50 text-blue-600" 
-              : "text-neutral-600 hover:text-neutral-900"
+              ? 'bg-blue-50 text-blue-600' 
+              : 'text-neutral-600 hover:text-neutral-900'
           )}
           onClick={() => setActiveTab('setup')}
         >
@@ -146,10 +148,10 @@ export function EyeTrackingForm({ researchId, className, onSave }: EyeTrackingFo
         </button>
         <button
           className={cn(
-            "flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors",
+            'flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors',
             activeTab === 'stimuli' 
-              ? "bg-blue-50 text-blue-600" 
-              : "text-neutral-600 hover:text-neutral-900"
+              ? 'bg-blue-50 text-blue-600' 
+              : 'text-neutral-600 hover:text-neutral-900'
           )}
           onClick={() => setActiveTab('stimuli')}
         >
@@ -157,10 +159,10 @@ export function EyeTrackingForm({ researchId, className, onSave }: EyeTrackingFo
         </button>
         <button
           className={cn(
-            "flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors",
+            'flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors',
             activeTab === 'preview' 
-              ? "bg-blue-50 text-blue-600" 
-              : "text-neutral-600 hover:text-neutral-900"
+              ? 'bg-blue-50 text-blue-600' 
+              : 'text-neutral-600 hover:text-neutral-900'
           )}
           onClick={() => setActiveTab('preview')}
         >
@@ -168,10 +170,10 @@ export function EyeTrackingForm({ researchId, className, onSave }: EyeTrackingFo
         </button>
         <button
           className={cn(
-            "flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors",
+            'flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors',
             activeTab === 'advanced' 
-              ? "bg-blue-50 text-blue-600" 
-              : "text-neutral-600 hover:text-neutral-900"
+              ? 'bg-blue-50 text-blue-600' 
+              : 'text-neutral-600 hover:text-neutral-900'
           )}
           onClick={() => setActiveTab('advanced')}
         >

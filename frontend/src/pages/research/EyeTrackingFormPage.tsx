@@ -1,6 +1,9 @@
+'use client';
+
+import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
+
 import { EyeTrackingForm } from '../../components/research/EyeTrackingForm';
 import { eyeTrackingService } from '../../services/eyeTrackingService';
 import { 
@@ -12,8 +15,10 @@ import {
  * Página para gestionar el formulario de seguimiento ocular de una investigación
  */
 const EyeTrackingFormPage: React.FC = () => {
-  const { researchId } = useParams<{ researchId: string }>();
-  const navigate = useNavigate();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const researchId = searchParams?.get('researchId') || '';
+  
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState<EyeTrackingFormData | null>(null);
@@ -23,7 +28,7 @@ const EyeTrackingFormPage: React.FC = () => {
     const loadEyeTracking = async () => {
       if (!researchId) {
         toast.error('ID de investigación no proporcionado');
-        navigate('/dashboard');
+        router.push('/dashboard');
         return;
       }
 
@@ -44,14 +49,14 @@ const EyeTrackingFormPage: React.FC = () => {
     };
 
     loadEyeTracking();
-  }, [researchId, navigate]);
+  }, [researchId, router]);
 
   /**
    * Maneja el guardado del formulario
    * @param data Datos del formulario a guardar
    */
   const handleSave = async (data: EyeTrackingFormData) => {
-    if (!researchId) return;
+    if (!researchId) {return;}
 
     try {
       setSaving(true);
@@ -62,7 +67,7 @@ const EyeTrackingFormPage: React.FC = () => {
       toast.success('Configuración de seguimiento ocular guardada correctamente');
       
       // Navegar a la siguiente sección o volver al panel principal
-      navigate(`/research/${researchId}/config`);
+      router.push(`/dashboard?research=${researchId}`);
     } catch (error) {
       console.error('Error al guardar la configuración:', error);
       toast.error('Error al guardar la configuración');

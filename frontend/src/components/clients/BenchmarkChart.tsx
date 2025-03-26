@@ -16,7 +16,7 @@ interface BenchmarkChartProps {
 
 export function BenchmarkChart({ className, data = [] }: BenchmarkChartProps) {
   return (
-    <div className={cn("bg-white rounded-lg p-6 shadow-sm", className)}>
+    <div className={cn('bg-white rounded-lg p-6 shadow-sm', className)}>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-base font-medium text-neutral-900">

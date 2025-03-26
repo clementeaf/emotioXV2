@@ -1,25 +1,22 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { cn } from '@/lib/utils';
+import { useState, useEffect } from 'react';
+import React from 'react';
+
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Textarea } from '@/components/ui/Textarea';
-import { useAuth } from '@/providers/AuthProvider';
-import { useResearch } from '@/stores/useResearchStore';
 import API_CONFIG from '@/config/api.config';
 import { researchAPI } from '@/lib/api';
-import * as debugAPI from '@/lib/debug-api';
+import { cn } from '@/lib/utils';
+import { useAuth } from '@/providers/AuthProvider';
+import { useResearch } from '@/stores/useResearchStore';
+
 import { 
   ResearchType,
-  ResearchStatus,
-  ResearchBasicData,
-  CreateResearchResponse,
-  generateResearchId,
-  createMockResearch
+  ResearchBasicData
 } from '../../../../shared/interfaces/research.model';
-import React from 'react';
+
 
 interface Step {
   id: number;
@@ -84,7 +81,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
           technique: currentDraft.data.configuration?.technique || ''
         },
         currentStep: currentDraft.step === 'basic' ? 1 : 
-                    currentDraft.step === 'configuration' ? 2 : 3,
+          currentDraft.step === 'configuration' ? 2 : 3,
         errors: {}
       };
       
@@ -121,7 +118,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
   // Efecto para manejar el comportamiento del placeholder en el select
   useEffect(() => {
     const selectEl = enterpriseSelectRef.current;
-    if (!selectEl) return;
+    if (!selectEl) {return;}
     
     // Función para ocultar la primera opción cuando el select está abierto
     const handleSelectFocus = () => {
@@ -207,7 +204,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
           }
         },
         currentFormData.currentStep === 1 ? 'basic' : 
-        currentFormData.currentStep === 2 ? 'configuration' : 'review'
+          currentFormData.currentStep === 2 ? 'configuration' : 'review'
       );
     }, 0);
   };
@@ -217,7 +214,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
       // Crear una copia local y calcular el nuevo paso
       const newStep = formData.currentStep + 1;
       const draftStep = newStep === 1 ? 'basic' : 
-                        newStep === 2 ? 'configuration' : 'review';
+        newStep === 2 ? 'configuration' : 'review';
       
       // Actualizar el estado
       setFormData((prev) => ({
@@ -248,7 +245,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
     // Calcular el nuevo paso
     const newStep = Math.max(1, formData.currentStep - 1);
     const draftStep = newStep === 1 ? 'basic' : 
-                     newStep === 2 ? 'configuration' : 'review';
+      newStep === 2 ? 'configuration' : 'review';
     
     // Actualizar el estado
     setFormData((prev) => ({
@@ -300,13 +297,13 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
             try {
               // Intentar crear la investigación usando la API
               let researchId = '';
-              let researchName = formData.basic.name;
+              const researchName = formData.basic.name;
 
               // Preparar los datos para la creación según la estructura esperada por el backend
               const createData: ResearchBasicData = {
                 name: formData.basic.name,
                 enterprise: formData.basic.enterprise || '',
-                type: formData.basic.type || ResearchType.EYE_TRACKING,
+                type: formData.basic.type || ResearchType.BEHAVIOURAL,
                 technique: formData.basic.technique || 'aim-framework',
                 description: '',
                 targetParticipants: 100,
@@ -382,7 +379,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
                     // Intentar otras alternativas para extraer el ID
                     const dataObj = apiResponse.data;
                     researchId = typeof dataObj === 'string' ? dataObj : 
-                              dataObj._id || dataObj.id || '';
+                      dataObj._id || dataObj.id || '';
                   }
                   
                   if (researchId) {
@@ -439,7 +436,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
         const createData: ResearchBasicData = {
           name: formData.basic.name,
           enterprise: formData.basic.enterprise || '',
-          type: formData.basic.type || ResearchType.EYE_TRACKING,
+          type: formData.basic.type || ResearchType.BEHAVIOURAL,
           technique: formData.basic.technique || '',
           description: '',
           targetParticipants: 100,
@@ -499,7 +496,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
               // Intentar otras alternativas
               const dataObj = apiResponse.data;
               researchId = typeof dataObj === 'string' ? dataObj :
-                           dataObj._id || dataObj.id || '';
+                dataObj._id || dataObj.id || '';
             }
             
             if (researchId) {
@@ -567,7 +564,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
   };
 
   return (
-    <div className={cn("max-w-3xl mx-auto", className)}>
+    <div className={cn('max-w-3xl mx-auto', className)}>
       {/* Mostrar notificación si la investigación se creó */}
       {createdResearchId && (
         <div className="mb-4 p-6 bg-white border-2 border-green-500 text-neutral-800 rounded-lg shadow-lg">
@@ -658,21 +655,21 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
               {steps.map((step) => (
                 <div key={step.id} className="relative flex flex-col items-center">
                   <div className={cn(
-                    "relative z-10 flex h-12 w-12 items-center justify-center rounded-full border-2 bg-white transition-colors",
+                    'relative z-10 flex h-12 w-12 items-center justify-center rounded-full border-2 bg-white transition-colors',
                     formData.currentStep === step.id
-                      ? "border-blue-500 text-blue-500"
+                      ? 'border-blue-500 text-blue-500'
                       : formData.currentStep > step.id
-                      ? "border-blue-500 bg-blue-500 text-white"
-                      : "border-neutral-200 text-neutral-400"
+                        ? 'border-blue-500 bg-blue-500 text-white'
+                        : 'border-neutral-200 text-neutral-400'
                   )}>
                     <span className="text-sm font-medium">{step.id}</span>
                   </div>
                   <div className="relative z-10 mt-4 text-center">
                     <p className={cn(
-                      "text-sm font-medium",
+                      'text-sm font-medium',
                       formData.currentStep === step.id
-                        ? "text-neutral-900"
-                        : "text-neutral-500"
+                        ? 'text-neutral-900'
+                        : 'text-neutral-500'
                     )}>
                       {step.title}
                     </p>
@@ -721,9 +718,9 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
                           value={formData.basic.enterprise}
                           onChange={(e) => updateFormData('enterprise', e.target.value)}
                           className={cn(
-                            "w-full px-3 py-2 rounded-lg border bg-white text-neutral-900",
-                            !!formData.errors.enterprise ? "border-red-500" : "border-neutral-200",
-                            "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            'w-full px-3 py-2 rounded-lg border bg-white text-neutral-900',
+                            formData.errors.enterprise ? 'border-red-500' : 'border-neutral-200',
+                            'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
                           )}
                         >
                           <option value="">Select an enterprise</option>
@@ -752,10 +749,10 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
                     <div className="space-y-4">
                       {/* Solo Behavioural Research */}
                       <div className={cn(
-                        "p-4 border rounded-lg transition-colors", 
-                        formData.basic.type === ResearchType.EYE_TRACKING 
-                          ? "border-blue-500 bg-blue-50" 
-                          : "border-neutral-200"
+                        'p-4 border rounded-lg transition-colors', 
+                        formData.basic.type === ResearchType.BEHAVIOURAL 
+                          ? 'border-blue-500 bg-blue-50' 
+                          : 'border-neutral-200'
                       )}>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-4">
@@ -773,11 +770,11 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
                           </div>
                           <Button
                             type="button"
-                            variant={formData.basic.type === ResearchType.EYE_TRACKING ? "default" : "outline"}
-                            onClick={() => toggleResearchType(ResearchType.EYE_TRACKING)}
-                            className={formData.basic.type === ResearchType.EYE_TRACKING ? "bg-blue-500 hover:bg-blue-600" : ""}
+                            variant={formData.basic.type === ResearchType.BEHAVIOURAL ? 'default' : 'outline'}
+                            onClick={() => toggleResearchType(ResearchType.BEHAVIOURAL)}
+                            className={formData.basic.type === ResearchType.BEHAVIOURAL ? 'bg-blue-500 hover:bg-blue-600' : ''}
                           >
-                            {formData.basic.type === ResearchType.EYE_TRACKING ? "Selected" : "Choose"}
+                            {formData.basic.type === ResearchType.BEHAVIOURAL ? 'Selected' : 'Choose'}
                           </Button>
                         </div>
                       </div>
@@ -797,10 +794,10 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
                     <div className="space-y-4">
                       {/* Opción 1: Biometric, Cognitive and Predictive */}
                       <div className={cn(
-                        "p-4 border rounded-lg transition-colors", 
+                        'p-4 border rounded-lg transition-colors', 
                         formData.basic.technique === 'biometric' 
-                          ? "border-blue-500 bg-blue-50" 
-                          : "border-neutral-200"
+                          ? 'border-blue-500 bg-blue-50' 
+                          : 'border-neutral-200'
                       )}>
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
@@ -813,11 +810,11 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
                           <div className="ml-4">
                             <Button
                               type="button"
-                              variant={formData.basic.technique === 'biometric' ? "default" : "outline"}
+                              variant={formData.basic.technique === 'biometric' ? 'default' : 'outline'}
                               onClick={() => toggleResearchTechnique('biometric')}
-                              className={formData.basic.technique === 'biometric' ? "bg-blue-500 hover:bg-blue-600" : ""}
+                              className={formData.basic.technique === 'biometric' ? 'bg-blue-500 hover:bg-blue-600' : ''}
                             >
-                              {formData.basic.technique === 'biometric' ? "Selected" : "Choose"}
+                              {formData.basic.technique === 'biometric' ? 'Selected' : 'Choose'}
                             </Button>
                           </div>
                         </div>
@@ -825,10 +822,10 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
 
                       {/* Opción 2: AIM Framework Stage 3 */}
                       <div className={cn(
-                        "p-4 border rounded-lg transition-colors", 
+                        'p-4 border rounded-lg transition-colors', 
                         formData.basic.technique === 'aim-framework' 
-                          ? "border-blue-500 bg-blue-50" 
-                          : "border-neutral-200"
+                          ? 'border-blue-500 bg-blue-50' 
+                          : 'border-neutral-200'
                       )}>
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
@@ -840,11 +837,11 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
                           <div className="ml-4">
                             <Button
                               type="button"
-                              variant={formData.basic.technique === 'aim-framework' ? "default" : "outline"}
+                              variant={formData.basic.technique === 'aim-framework' ? 'default' : 'outline'}
                               onClick={() => toggleResearchTechnique('aim-framework')}
-                              className={formData.basic.technique === 'aim-framework' ? "bg-blue-500 hover:bg-blue-600" : ""}
+                              className={formData.basic.technique === 'aim-framework' ? 'bg-blue-500 hover:bg-blue-600' : ''}
                             >
-                              {formData.basic.technique === 'aim-framework' ? "Selected" : "Choose"}
+                              {formData.basic.technique === 'aim-framework' ? 'Selected' : 'Choose'}
                             </Button>
                           </div>
                         </div>
@@ -871,7 +868,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
                       type="button"
                       onClick={handleNext}
                       disabled={
-                        (formData.currentStep === 2 && formData.basic.type !== ResearchType.EYE_TRACKING) ||
+                        (formData.currentStep === 2 && formData.basic.type !== ResearchType.BEHAVIOURAL) ||
                         (formData.currentStep === 3 && !formData.basic.technique)
                       }
                     >
@@ -885,8 +882,8 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
                       disabled={!formData.basic.technique}
                     >
                       {formData.basic.technique === 'aim-framework' 
-                        ? "Setup AIM Framework" 
-                        : "Create Research"}
+                        ? 'Setup AIM Framework' 
+                        : 'Create Research'}
                     </Button>
                   )}
                 </div>
@@ -907,6 +904,8 @@ function getResearchTypeDescription(type: ResearchType): string {
       return 'Predict and analyze where users are likely to focus their attention using AI models.';
     case ResearchType.COGNITIVE_ANALYSIS:
       return 'Analyze cognitive processes and decision-making patterns through various tasks and measurements.';
+    case ResearchType.BEHAVIOURAL:
+      return 'Analyze behavioral patterns and responses to understand user interactions and preferences.';
     default:
       return '';
   }

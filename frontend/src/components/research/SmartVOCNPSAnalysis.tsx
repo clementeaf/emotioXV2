@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 
@@ -87,7 +88,7 @@ export function SmartVOCNPSAnalysis({ className }: SmartVOCNPSAnalysisProps) {
   };
   
   return (
-    <div className={cn("mt-6 mb-10", className)}>
+    <div className={cn('mt-6 mb-10', className)}>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-neutral-900">
           2.5.- Pregunta: Net Promoter Score (NPS)
@@ -306,8 +307,8 @@ export function SmartVOCNPSAnalysis({ className }: SmartVOCNPSAnalysisProps) {
         
         <div className="flex items-center mb-8">
           <span className={cn(
-            "text-lg font-semibold",
-            loyaltyEvolution.changePercentage > 0 ? "text-green-600" : "text-red-600"
+            'text-lg font-semibold',
+            loyaltyEvolution.changePercentage > 0 ? 'text-green-600' : 'text-red-600'
           )}>
             {loyaltyEvolution.changePercentage > 0 ? '+' : ''}{loyaltyEvolution.changePercentage}%
           </span>
@@ -319,8 +320,8 @@ export function SmartVOCNPSAnalysis({ className }: SmartVOCNPSAnalysisProps) {
             <div className="flex justify-between items-start mb-1">
               <span className="text-neutral-600 text-sm">Promotores</span>
               <div className={cn(
-                "flex items-center",
-                loyaltyEvolution.promotersTrend === 'up' ? "text-green-600" : "text-red-600"
+                'flex items-center',
+                loyaltyEvolution.promotersTrend === 'up' ? 'text-green-600' : 'text-red-600'
               )}>
                 <svg 
                   xmlns="http://www.w3.org/2000/svg" 
@@ -350,8 +351,8 @@ export function SmartVOCNPSAnalysis({ className }: SmartVOCNPSAnalysisProps) {
             <div className="flex justify-between items-start mb-1">
               <span className="text-neutral-600 text-sm">Detractores</span>
               <div className={cn(
-                "flex items-center",
-                loyaltyEvolution.detractorsTrend === 'down' ? "text-green-600" : "text-red-600"
+                'flex items-center',
+                loyaltyEvolution.detractorsTrend === 'down' ? 'text-green-600' : 'text-red-600'
               )}>
                 <svg 
                   xmlns="http://www.w3.org/2000/svg" 
@@ -381,8 +382,8 @@ export function SmartVOCNPSAnalysis({ className }: SmartVOCNPSAnalysisProps) {
             <div className="flex justify-between items-start mb-1">
               <span className="text-neutral-600 text-sm">Neutrales</span>
               <div className={cn(
-                "flex items-center",
-                loyaltyEvolution.neutralsTrend === 'down' ? "text-green-600" : "text-red-600"
+                'flex items-center',
+                loyaltyEvolution.neutralsTrend === 'down' ? 'text-green-600' : 'text-red-600'
               )}>
                 <svg 
                   xmlns="http://www.w3.org/2000/svg" 

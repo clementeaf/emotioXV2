@@ -1,11 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { useDataWithFallback } from '@/hooks/useDataWithFallback';
-import { SimulatedDataBanner } from './SimulatedDataBanner';
-import { DataErrorFallback } from './DataErrorFallback';
-import { Card } from '@/components/ui/Card';
+
 import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { useDataWithFallback } from '@/hooks/useDataWithFallback';
+
+import { DataErrorFallback } from './DataErrorFallback';
+import { SimulatedDataBanner } from './SimulatedDataBanner';
 
 // Tipo para los datos
 interface ExampleData {
@@ -141,9 +143,9 @@ export function DataDisplayExample({
               size="sm"
               variant="outline"
               onClick={isSimulatedData ? switchToRealData : switchToMockData}
-              className={isSimulatedData ? "border-amber-300 text-amber-700" : ""}
+              className={isSimulatedData ? 'border-amber-300 text-amber-700' : ''}
             >
-              {isSimulatedData ? "Usar datos reales" : "Usar datos simulados"}
+              {isSimulatedData ? 'Usar datos reales' : 'Usar datos simulados'}
             </Button>
           )}
           
@@ -155,7 +157,7 @@ export function DataDisplayExample({
               reloadData(false);
             }}
           >
-            {forceError ? "Desactivar error" : "Forzar error"}
+            {forceError ? 'Desactivar error' : 'Forzar error'}
           </Button>
           
           <Button

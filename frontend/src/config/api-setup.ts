@@ -1,4 +1,3 @@
-import { apiClient } from './api-client';
 import { authService } from '../services';
 
 /**

@@ -2,8 +2,11 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { cn } from '@/lib/utils';
+import { Suspense } from 'react';
+
 import { ResearchSidebarProps, ResearchSection } from '@/interfaces/research';
+import { cn } from '@/lib/utils';
+import { withSearchParams } from '@/components/common/SearchParamsWrapper';
 
 const sections: ResearchSection[] = [
   {
@@ -36,12 +39,13 @@ const sections: ResearchSection[] = [
   }
 ];
 
-export function ResearchSidebar({ researchId, activeStage, className }: ResearchSidebarProps) {
+// Componente interno que usa useSearchParams
+function ResearchSidebarContent({ researchId, activeStage, className }: ResearchSidebarProps) {
   const searchParams = useSearchParams();
-  const currentSection = searchParams.get('section') || 'build';
+  const currentSection = searchParams?.get('section') || 'build';
 
   return (
-    <div className={cn("w-64 bg-white border-r border-neutral-200 flex flex-col", className)}>
+    <div className={cn('w-64 bg-white border-r border-neutral-200 flex flex-col', className)}>
       <div className="flex-1 overflow-y-auto py-6">
         <nav className="space-y-6 px-3">
           {sections.map((section) => (
@@ -57,10 +61,10 @@ export function ResearchSidebar({ researchId, activeStage, className }: Research
                   key={stage.id}
                   href={`/research/${researchId}?section=${section.id}&stage=${stage.id}`}
                   className={cn(
-                    "flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors",
+                    'flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors',
                     currentSection === section.id && activeStage === stage.id
-                      ? "bg-neutral-100 text-neutral-900 font-medium"
-                      : "text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50"
+                      ? 'bg-neutral-100 text-neutral-900 font-medium'
+                      : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'
                   )}
                 >
                   <span className="flex-1">{stage.title}</span>
@@ -71,5 +75,19 @@ export function ResearchSidebar({ researchId, activeStage, className }: Research
         </nav>
       </div>
     </div>
+  );
+}
+
+// Usar el HOC para envolver el componente
+const ResearchSidebarContentWithSuspense = withSearchParams(ResearchSidebarContent);
+
+// Componente público que exportamos
+export function ResearchSidebar(props: ResearchSidebarProps) {
+  return (
+    <Suspense fallback={<div className="w-64 bg-white border-r border-neutral-200 flex flex-col">
+      <div className="p-4 text-center text-neutral-600">Cargando...</div>
+    </div>}>
+      <ResearchSidebarContentWithSuspense {...props} />
+    </Suspense>
   );
 } 

@@ -1,15 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { ErrorBoundary } from '../common/ErrorBoundary';
-import { Button } from '@/components/ui/Button';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
+
+import { Button } from '@/components/ui/Button';
 // Eliminamos la importación de researchAPI ya que no la utilizaremos
 // import { researchAPI } from '@/lib/api';
 import { ResearchProject, ResearchTableProps } from '@/interfaces/research';
-import { formatDate, isDevelopmentMode } from '@/lib/utils';
 import { mockResearchAPI, generateMockResearchProjects } from '@/lib/mock-data';
-import { cn } from '@/lib/utils';
+import { formatDate, isDevelopmentMode } from '@/lib/utils';
+
+import { ErrorBoundary } from '../common/ErrorBoundary';
 
 function ResearchTableContent() {
   const router = useRouter();
@@ -171,7 +172,7 @@ function ResearchTableContent() {
   };
 
   const confirmDeleteResearch = async () => {
-    if (!projectToDelete) return;
+    if (!projectToDelete) {return;}
     
     try {
       // Usar solo API simulada

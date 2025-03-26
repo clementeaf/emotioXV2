@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 
@@ -69,8 +70,8 @@ export function SmartVOCEmotionalAnalysis({ className }: SmartVOCEmotionalAnalys
   // Organizar emociones para el gráfico de barras
   const barChartEmotions = [...emotions].sort((a, b) => {
     // Primero agrupar por positivo/negativo
-    if (a.isPositive && !b.isPositive) return -1;
-    if (!a.isPositive && b.isPositive) return 1;
+    if (a.isPositive && !b.isPositive) {return -1;}
+    if (!a.isPositive && b.isPositive) {return 1;}
     
     // Luego ordenar por porcentaje
     return b.percentage - a.percentage;
@@ -83,7 +84,7 @@ export function SmartVOCEmotionalAnalysis({ className }: SmartVOCEmotionalAnalys
   const maxPercentage = getMaxPercentage();
   
   return (
-    <div className={cn("mt-6 mb-10", className)}>
+    <div className={cn('mt-6 mb-10', className)}>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-neutral-900">
           2.4.- Pregunta: Net Emotional Value (NEV)
@@ -210,7 +211,7 @@ export function SmartVOCEmotionalAnalysis({ className }: SmartVOCEmotionalAnalys
                   {barChartEmotions.map((emotion, i) => (
                     <div key={i} className="flex flex-col items-center" style={{ width: `${100 / barChartEmotions.length}%` }}>
                       <div 
-                        className={cn("w-5 rounded-t", emotion.color)} 
+                        className={cn('w-5 rounded-t', emotion.color)} 
                         style={{ height: `${(emotion.percentage / maxPercentage) * 100}%`, maxHeight: '95%' }}
                       ></div>
                       <div className="text-xs text-neutral-500 mt-2 rotate-90 origin-top-left h-6 -ml-6 w-20 overflow-hidden text-ellipsis whitespace-nowrap">
@@ -238,7 +239,7 @@ export function SmartVOCEmotionalAnalysis({ className }: SmartVOCEmotionalAnalys
                   <span className="text-sm">{cluster.name}</span>
                   <div className="flex items-center">
                     <span className={cn(
-                      "text-sm font-medium",
+                      'text-sm font-medium',
                       cluster.direction === 'up' ? 'text-green-600' : 'text-red-600'
                     )}>
                       {cluster.direction === 'up' && '+ '}
@@ -247,7 +248,7 @@ export function SmartVOCEmotionalAnalysis({ className }: SmartVOCEmotionalAnalys
                     </span>
                     <svg 
                       className={cn(
-                        "w-4 h-4 ml-1", 
+                        'w-4 h-4 ml-1', 
                         cluster.direction === 'up' ? 'text-green-600' : 'text-red-600'
                       )} 
                       fill="none" 
@@ -275,7 +276,7 @@ export function SmartVOCEmotionalAnalysis({ className }: SmartVOCEmotionalAnalys
                   <span className="text-sm">{cluster.name}</span>
                   <div className="flex items-center">
                     <span className={cn(
-                      "text-sm font-medium",
+                      'text-sm font-medium',
                       cluster.direction === 'up' ? 'text-green-600' : 'text-red-600'
                     )}>
                       {cluster.direction === 'up' && '+ '}
@@ -284,7 +285,7 @@ export function SmartVOCEmotionalAnalysis({ className }: SmartVOCEmotionalAnalys
                     </span>
                     <svg 
                       className={cn(
-                        "w-4 h-4 ml-1", 
+                        'w-4 h-4 ml-1', 
                         cluster.direction === 'up' ? 'text-green-600' : 'text-red-600'
                       )} 
                       fill="none" 
@@ -340,8 +341,8 @@ export function SmartVOCEmotionalAnalysis({ className }: SmartVOCEmotionalAnalys
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap">
                     <span className={cn(
-                      "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium",
-                      emotion.isPositive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                      'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium',
+                      emotion.isPositive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                     )}>
                       {emotion.isPositive ? 'Positiva' : 'Negativa'}
                     </span>

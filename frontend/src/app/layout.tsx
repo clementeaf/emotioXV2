@@ -1,12 +1,14 @@
 'use client';
 
 import { Inter } from 'next/font/google';
+
 import './globals.css';
+import { Toaster } from 'react-hot-toast';
+
+import { DevModeInfo } from '@/components/common/DevModeInfo';
 import { AuthProvider } from '@/providers/AuthProvider';
 import { QueryProvider } from '@/providers/QueryProvider';
 import { ResearchProvider } from '@/providers/ResearchProvider';
-import { Toaster } from 'react-hot-toast';
-import { DevModeInfo } from '@/components/common/DevModeInfo';
 
 const inter = Inter({ subsets: ['latin'] });
 

@@ -1,8 +1,8 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import { useRouter } from 'next/navigation';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 interface User {
   email: string;
@@ -55,7 +55,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Verificar expiración del token
   useEffect(() => {
-    if (!token) return;
+    if (!token) {return;}
 
     try {
       const decoded = jwtDecode<any>(token);

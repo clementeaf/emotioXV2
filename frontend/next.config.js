@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
+  // output: 'standalone', // Comentado temporalmente para solucionar problemas de recursos estáticos
   reactStrictMode: true,
   swcMinify: true,
   // Incluir la carpeta compartida en la transpilación

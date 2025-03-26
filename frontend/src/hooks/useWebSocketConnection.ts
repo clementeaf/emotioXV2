@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
+
 import { WebSocketEvent, WebSocketMessage } from '../../../shared/src/types/websocket.types';
 import { useAuth } from '../providers/AuthProvider';
 
@@ -11,7 +12,7 @@ export const useWebSocketConnection = () => {
   const tokenRefreshIntervalRef = useRef<NodeJS.Timeout>();
 
   const connect = useCallback(() => {
-    if (!token) return;
+    if (!token) {return;}
 
     const wsUrl = `wss://99ci9zzrei.execute-api.us-east-1.amazonaws.com/dev?token=${token}`;
     ws.current = new WebSocket(wsUrl);

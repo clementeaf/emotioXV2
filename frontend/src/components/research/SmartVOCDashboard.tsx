@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 
@@ -194,10 +195,10 @@ export function SmartVOCDashboard({ className }: SmartVOCDashboardProps) {
               <button
                 key={period}
                 className={cn(
-                  "px-3 py-1 text-xs rounded-full",
+                  'px-3 py-1 text-xs rounded-full',
                   timeFilter === period 
-                    ? "bg-blue-100 text-blue-700" 
-                    : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+                    ? 'bg-blue-100 text-blue-700' 
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
                 )}
                 onClick={() => setTimeFilter(period as any)}
               >
@@ -279,7 +280,7 @@ export function SmartVOCDashboard({ className }: SmartVOCDashboardProps) {
                   cy="50" 
                   r="45" 
                   fill="none" 
-                  stroke={metric.score >= 70 ? "#4CAF50" : metric.score >= 50 ? "#FF9800" : "#F44336"} 
+                  stroke={metric.score >= 70 ? '#4CAF50' : metric.score >= 50 ? '#FF9800' : '#F44336'} 
                   strokeWidth="10" 
                   strokeDasharray={`${metric.score * 2.83} ${283 - (metric.score * 2.83)}`} 
                   strokeDashoffset="0" 
@@ -292,7 +293,7 @@ export function SmartVOCDashboard({ className }: SmartVOCDashboardProps) {
                   textAnchor="middle" 
                   fontSize="24" 
                   fontWeight="bold" 
-                  fill={metric.score >= 70 ? "#4CAF50" : metric.score >= 50 ? "#FF9800" : "#F44336"}
+                  fill={metric.score >= 70 ? '#4CAF50' : metric.score >= 50 ? '#FF9800' : '#F44336'}
                 >
                   {metric.score}
                 </text>
@@ -360,8 +361,8 @@ export function SmartVOCDashboard({ className }: SmartVOCDashboardProps) {
                   <div className="w-full bg-neutral-200 rounded-full h-2">
                     <div 
                       className={cn(
-                        "h-2 rounded-full",
-                        attr.value >= attr.target ? "bg-green-500" : "bg-amber-500"
+                        'h-2 rounded-full',
+                        attr.value >= attr.target ? 'bg-green-500' : 'bg-amber-500'
                       )}
                       style={{ width: `${attr.value}%` }}
                     ></div>
@@ -379,7 +380,7 @@ export function SmartVOCDashboard({ className }: SmartVOCDashboardProps) {
   };
 
   return (
-    <div className={cn("mt-6 mb-10", className)}>
+    <div className={cn('mt-6 mb-10', className)}>
       {/* Filtros superiores */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-neutral-900">

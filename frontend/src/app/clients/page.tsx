@@ -1,13 +1,17 @@
 'use client';
 
-import { useState } from 'react';
-import { Sidebar } from '@/components/layout/Sidebar';
-import { Navbar } from '@/components/layout/Navbar';
-import { ClientSelector } from '@/components/clients/ClientSelector';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
+
 import { BenchmarkChart } from '@/components/clients/BenchmarkChart';
 import { BestPerformer } from '@/components/clients/BestPerformer';
+import { ClientSelector } from '@/components/clients/ClientSelector';
 import { ResearchList } from '@/components/clients/ResearchList';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
+import { Navbar } from '@/components/layout/Navbar';
+import { Sidebar } from '@/components/layout/Sidebar';
+import { SearchParamsWrapper } from '@/components/common/SearchParamsWrapper';
+import { useAuth } from '@/providers/AuthProvider';
 
 // Mock data para demostración
 const mockResearch = [
@@ -38,7 +42,16 @@ const mockBestPerformer = {
 };
 
 function ClientsContent() {
-  const [selectedClientId, setSelectedClientId] = useState<string>('');
+  const searchParams = useSearchParams();
+  const clientId = searchParams?.get('clientId');
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(clientId || null);
+  
+  // Actualizar el clientId seleccionado cuando cambia en la URL
+  useEffect(() => {
+    if (clientId) {
+      setSelectedClientId(clientId);
+    }
+  }, [clientId]);
 
   const handleClientChange = (clientId: string) => {
     setSelectedClientId(clientId);
@@ -94,9 +107,24 @@ function ClientsContent() {
 }
 
 export default function ClientsPage() {
+  const router = useRouter();
+  const { isAuthenticated, token } = useAuth();
+  
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.replace('/login');
+    }
+  }, [isAuthenticated, router]);
+  
+  if (!token) {
+    return null;
+  }
+  
   return (
     <ErrorBoundary>
-      <ClientsContent />
+      <SearchParamsWrapper>
+        <ClientsContent />
+      </SearchParamsWrapper>
     </ErrorBoundary>
   );
 } 

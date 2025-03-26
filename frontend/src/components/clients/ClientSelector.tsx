@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+
 import { cn } from '@/lib/utils';
 
 interface Client {
@@ -30,7 +31,7 @@ export function ClientSelector({ className, onClientChange }: ClientSelectorProp
   };
 
   return (
-    <div className={cn("flex items-center gap-4", className)}>
+    <div className={cn('flex items-center gap-4', className)}>
       <h2 className="text-base font-medium text-neutral-900">Change client</h2>
       <div className="relative">
         <select

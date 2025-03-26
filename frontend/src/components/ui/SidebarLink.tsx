@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+
 import { cn } from '@/lib/utils';
 
 interface SidebarLinkProps {
@@ -18,7 +19,7 @@ export function SidebarLink({
   className,
   variant = 'nav'
 }: SidebarLinkProps) {
-  const baseStyles = "flex items-center rounded-lg text-sm";
+  const baseStyles = 'flex items-center rounded-lg text-sm';
   
   const variants = {
     nav: cn(

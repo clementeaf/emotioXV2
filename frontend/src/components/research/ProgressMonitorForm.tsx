@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/Button';
+
 import { cn } from '@/lib/utils';
 
 interface ProgressMonitorFormProps {
@@ -65,11 +65,11 @@ export function ProgressMonitorForm({ className }: ProgressMonitorFormProps) {
   const conversionRates = {
     startToComplete: Math.round((stats.complete.count / totalResponses) * 100),
     startToDisqualify: Math.round((stats.disqualified.count / totalResponses) * 100),
-    averageCompletionTime: "12:45"
+    averageCompletionTime: '12:45'
   };
 
   return (
-    <div className={cn("max-w-3xl mx-auto", className)}>
+    <div className={cn('max-w-3xl mx-auto', className)}>
       {/* Form Content */}
       <div className="bg-white rounded-xl border border-neutral-200/70 shadow-[0_6px_16px_-4px_rgba(0,0,0,0.05)] overflow-hidden">
         <div className="px-8 py-8">

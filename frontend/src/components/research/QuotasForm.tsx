@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+
 import { Button } from '@/components/ui/Button';
-import { Switch } from '@/components/ui/Switch';
 import { Input } from '@/components/ui/Input';
+import { Switch } from '@/components/ui/Switch';
 import { cn } from '@/lib/utils';
 
 interface QuotasFormProps {
@@ -79,7 +80,7 @@ export function QuotasForm({ className }: QuotasFormProps) {
 
   const calculateTotalProgress = () => {
     const enabledQuotas = quotas.filter(q => q.enabled);
-    if (enabledQuotas.length === 0) return 0;
+    if (enabledQuotas.length === 0) {return 0;}
     
     return Math.floor(
       enabledQuotas.reduce((sum, quota) => sum + calculateQuotaProgress(quota), 0) / enabledQuotas.length
@@ -90,13 +91,13 @@ export function QuotasForm({ className }: QuotasFormProps) {
     setQuotas(quotas.map(quota => 
       quota.id === quotaId 
         ? {
-            ...quota, 
-            values: quota.values.map(value => 
-              value.id === valueId 
-                ? { ...value, target } 
-                : value
-            )
-          } 
+          ...quota, 
+          values: quota.values.map(value => 
+            value.id === valueId 
+              ? { ...value, target } 
+              : value
+          )
+        } 
         : quota
     ));
   };
@@ -108,7 +109,7 @@ export function QuotasForm({ className }: QuotasFormProps) {
   };
 
   return (
-    <div className={cn("max-w-3xl mx-auto", className)}>
+    <div className={cn('max-w-3xl mx-auto', className)}>
       {/* Form Content */}
       <div className="bg-white rounded-xl border border-neutral-200/70 shadow-[0_6px_16px_-4px_rgba(0,0,0,0.05)] overflow-hidden">
         <div className="px-8 py-8">
@@ -203,16 +204,16 @@ export function QuotasForm({ className }: QuotasFormProps) {
                     <div 
                       key={quota.id} 
                       className={cn(
-                        "border rounded-lg overflow-hidden",
-                        quota.enabled ? "border-neutral-200" : "border-neutral-200 bg-neutral-50"
+                        'border rounded-lg overflow-hidden',
+                        quota.enabled ? 'border-neutral-200' : 'border-neutral-200 bg-neutral-50'
                       )}
                     >
                       <div className="p-4">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center">
                             <h3 className={cn(
-                              "text-sm font-medium",
-                              quota.enabled ? "text-neutral-900" : "text-neutral-500"
+                              'text-sm font-medium',
+                              quota.enabled ? 'text-neutral-900' : 'text-neutral-500'
                             )}>
                               {quota.name}
                             </h3>

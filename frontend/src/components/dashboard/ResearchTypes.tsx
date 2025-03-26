@@ -1,7 +1,8 @@
 'use client';
 
-import { ErrorBoundary } from '../common/ErrorBoundary';
 import { ResearchType, ResearchTypesProps } from '@/interfaces/research';
+
+import { ErrorBoundary } from '../common/ErrorBoundary';
 
 const researchTypes: ResearchType[] = [
   { name: 'Eye Tracking', count: 24, color: 'bg-blue-500' },

@@ -1,9 +1,10 @@
 'use client';
 
 import { useMutation } from '@tanstack/react-query';
-import { authAPI } from '../lib/api';
-import type { User, APIResponse, AuthResponse } from '../lib/api';
 import { useRouter } from 'next/navigation';
+
+import { authAPI } from '../lib/api';
+import type { AuthResponse } from '../lib/api';
 
 export const useAuth = () => {
   const router = useRouter();
