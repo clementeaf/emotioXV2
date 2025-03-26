@@ -4,6 +4,7 @@ import { researchHandler } from './controllers/newResearch.controller';
 import { welcomeScreenHandler } from './controllers/welcomeScreen.controller';
 import { smartVocFormController } from './controllers/smartVocForm.controller';
 import { thankYouScreenHandler } from './controllers/thankYouScreen.controller';
+import { eyeTrackingHandler } from './controllers/eyeTracking.controller';
 
 /**
  * Punto de entrada principal para las funciones serverless
@@ -28,6 +29,7 @@ const routeMap: Record<string, (event: APIGatewayProxyEvent) => Promise<APIGatew
   'welcome-screens': welcomeScreenHandler,
   'smart-voc': smartVocFormController,
   'thank-you-screen': thankYouScreenHandler,
+  'eye-tracking': eyeTrackingHandler,
   // Aquí se añadirán otros controladores
   // 'emotions': emotionHandler,
 };
