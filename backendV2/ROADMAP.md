@@ -62,6 +62,34 @@ Este documento detalla las características, mejoras y tareas planificadas para 
 - [ ] Implementar entornos de desarrollo, pruebas y producción
 - [ ] Configurar monitoreo y logging centralizado
 
+## Gestión de Imágenes en CognitiveTaskForm con PresignedURL
+
+### Descripción
+Esta sección detalla el flujo optimizado para manejar imágenes en el formulario CognitiveTaskForm. El objetivo es implementar un sistema donde las imágenes nunca se envíen directamente al backend, sino que se suban previamente a Amazon S3 utilizando URLs prefirmadas (PresignedURL).
+
+### Implementación
+- [ ] Crear servicio en el backend para generar PresignedURL de S3 para subida de imágenes
+- [ ] Implementar endpoint para solicitar PresignedURLs para cada imagen que se necesite subir
+- [ ] Desarrollar en el frontend el mecanismo para subir imágenes a S3 usando las PresignedURLs
+- [ ] Modificar el `CognitiveTaskForm` para manejar temporalmente las imágenes cargadas antes de subirlas a S3
+- [ ] Implementar lógica para transformar referencias de imágenes locales a URLs de S3 antes del envío del formulario
+- [ ] Agregar proceso de validación para verificar que todas las imágenes se subieron correctamente a S3
+
+### Flujo de Datos
+1. Usuario selecciona imágenes en el formulario (persistidas inicialmente como Image en el frontend)
+2. Antes de enviar el formulario, para cada imagen:
+   - El frontend solicita una PresignedURL al backend
+   - El frontend sube la imagen directamente a S3 usando la PresignedURL
+   - El frontend obtiene y almacena la URL resultante y metadatos relevantes
+3. Al enviar el formulario, en lugar de incluir las imágenes, se envían las URLs de S3 y metadatos
+4. El backend recibe y procesa solo los datos del formulario y referencias a las imágenes (nunca las imágenes directamente)
+
+### Ventajas
+- Optimización del rendimiento del backend al no procesar imágenes
+- Reducción de la carga en las API REST
+- Mejor escalabilidad para manejar múltiples subidas de archivos simultáneas
+- Separación clara entre almacenamiento de datos y almacenamiento de archivos
+
 ## Fase 3: Características Avanzadas (Planificado)
 
 ### Backend
@@ -118,6 +146,7 @@ Este documento detalla las características, mejoras y tareas planificadas para 
 - Integrar frontend con endpoints de ThankYouScreen
 - Implementar modelo de respuestas para formularios VOC
 - Optimizar consultas a DynamoDB
+- Implementar sistema de manejo de imágenes para CognitiveTaskForm con PresignedURL
 
 ### Prioridad media
 - Configurar pipeline de CI/CD
