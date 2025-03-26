@@ -8,7 +8,7 @@ export const getCorsHeaders = (): { [key: string]: string } => {
   return {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Credentials': 'true',
-    'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Requested-With,Accept',
+    'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Requested-With,Accept,cache-control',
     'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS,PATCH',
     'Access-Control-Expose-Headers': 'Authorization,X-Api-Key',
     'Content-Type': 'application/json'
