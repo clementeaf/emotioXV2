@@ -33,6 +33,9 @@ Este documento detalla las características, mejoras y tareas planificadas para 
 - [x] Implementar modelo `ThankYouScreenModel` para pantallas de agradecimiento
 - [x] Desarrollar endpoints para gestión de pantallas de agradecimiento
 - [x] Integrar pantallas de agradecimiento con investigaciones
+- [x] Implementar modelo `EyeTrackingModel` para configuraciones de seguimiento ocular
+- [x] Desarrollar endpoints para gestión de configuraciones de eye tracking
+- [x] Integrar eye tracking con investigaciones
 - [ ] Implementar modelo de respuestas para formularios VOC
 - [ ] Integrar análisis de resultados con módulo de emociones
 
@@ -48,7 +51,9 @@ Este documento detalla las características, mejoras y tareas planificadas para 
 - [x] Implementar gestión de errores en el cliente
 - [x] Crear componentes para nuevas funcionalidades
 - [x] Actualizar `WelcomeScreenForm` para usar la nueva API
+- [x] Actualizar `EyeTrackingForm` para usar el nuevo modelo de datos
 - [ ] Integrar frontend con endpoints de ThankYouScreen
+- [ ] Integrar frontend con endpoints de Eye Tracking
 - [ ] Actualizar `ThankYouScreenForm` para usar la nueva API
 - [ ] Implementar visualización de resultados de SmartVOC
 
@@ -63,7 +68,7 @@ Este documento detalla las características, mejoras y tareas planificadas para 
 - [ ] Implementar sistema de notificaciones por email
 - [ ] Añadir autenticación social (Google, Facebook, etc.)
 - [ ] Implementar exportación de datos en diferentes formatos (CSV, JSON)
-- [ ] Añadir soporte para análisis de resultados de eye-tracking
+- [x] Añadir soporte para análisis de resultados de eye-tracking
 - [ ] Implementar sistema de permisos y roles más avanzado
 
 ### Optimización
@@ -103,10 +108,12 @@ Este documento detalla las características, mejoras y tareas planificadas para 
 - [x] Implementar modelo y endpoints para pantallas de bienvenida
 - [x] Implementar modelo y endpoints para formularios SmartVOC
 - [x] Implementar modelo y endpoints para pantallas de agradecimiento
+- [x] Implementar modelo y endpoints para configuración de eye tracking
 
 ## Tareas en curso y prioridades
 
 ### Prioridad alta
+- Integrar frontend con endpoints de Eye Tracking
 - Implementar pruebas unitarias y de integración
 - Integrar frontend con endpoints de ThankYouScreen
 - Implementar modelo de respuestas para formularios VOC
@@ -116,7 +123,7 @@ Este documento detalla las características, mejoras y tareas planificadas para 
 - Configurar pipeline de CI/CD
 - Implementar exportación de datos
 - Desarrollar dashboard con visualización
-- Crear documentación para nuevos módulos (SmartVOC, ThankYouScreen)
+- Crear documentación para nuevos módulos (SmartVOC, ThankYouScreen, Eye Tracking)
 
 ### Prioridad baja
 - Sistema de notificaciones por email
@@ -127,4 +134,4 @@ Este documento detalla las características, mejoras y tareas planificadas para 
 
 Este ROADMAP es un documento vivo y se actualizará periódicamente a medida que avanza el proyecto y cambian las prioridades.
 
-Última actualización: Marzo 2024 
+Última actualización: Junio 2024 
