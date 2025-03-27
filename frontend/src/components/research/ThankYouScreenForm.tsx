@@ -161,9 +161,19 @@ export function ThankYouScreenForm({ className, researchId }: ThankYouScreenForm
     mutationFn: async (data: any) => {
       console.log('DEBUG: Guardando thank you screen con datos:', data);
       try {
-        // Usamos el método createOrUpdate que maneja automáticamente si debe crear o actualizar
-        console.log('DEBUG: Usando createOrUpdate para Thank You Screen');
-        const response = await thankYouScreenAPI.createOrUpdate(data.researchId, data);
+        let response;
+        
+        // Si tenemos un ID, actualizar el registro existente
+        if (thankYouScreenId) {
+          console.log(`DEBUG: Actualizando thank you screen con ID ${thankYouScreenId}`);
+          response = await thankYouScreenAPI.update(thankYouScreenId, data).send();
+          console.log('Thank you screen actualizada correctamente');
+        } else {
+          // Si no tenemos ID, crear un nuevo registro
+          console.log('DEBUG: Creando nuevo thank you screen');
+          response = await thankYouScreenAPI.create(data).send();
+          console.log('Nueva thank you screen creada correctamente');
+        }
         
         console.log('DEBUG: Respuesta al guardar thank you screen:', response);
         

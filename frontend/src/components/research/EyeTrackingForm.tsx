@@ -168,18 +168,26 @@ export function EyeTrackingForm({ researchId, className, onSave }: EyeTrackingFo
 
     setIsSaving(true);
     try {
-      // Usamos el método createOrUpdate que maneja automáticamente si debe crear o actualizar
-      console.log('DEBUG: Usando createOrUpdate para Eye Tracking');
-      const response = await eyeTrackingAPI.createOrUpdate(researchId, formData);
+      let response;
       
-      console.log('Eye tracking guardado correctamente:', response);
+      // Si ya existe un ID, actualizar
+      if (eyeTrackingId) {
+        console.log('DEBUG: Actualizando Eye Tracking existente con ID:', eyeTrackingId);
+        response = await eyeTrackingAPI.update(eyeTrackingId, formData);
+        console.log('Eye tracking actualizado correctamente:', response);
+        toast.success('Configuración de seguimiento ocular actualizada');
+      } else {
+        // Si no, crear nuevo
+        console.log('DEBUG: Creando nuevo Eye Tracking');
+        response = await eyeTrackingAPI.create(formData);
+        console.log('Eye tracking creado correctamente:', response);
+        toast.success('Configuración de seguimiento ocular guardada');
+      }
       
       // Actualizar el ID si es nuevo
       if (response && response.data && response.data.id) {
         setEyeTrackingId(response.data.id);
       }
-      
-      toast.success('Configuración de seguimiento ocular guardada');
       
       // Llamar al callback si existe
       if (onSave) {

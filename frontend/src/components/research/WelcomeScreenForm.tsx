@@ -6,8 +6,9 @@ import { toast } from 'react-hot-toast';
 
 import { Switch } from '@/components/ui/Switch';
 import { Textarea } from '@/components/ui/Textarea';
-import { welcomeScreenAPI } from '@/config/alova.config';
+import API_CONFIG from '@/config/api.config';
 import { cn } from '@/lib/utils';
+import { welcomeScreenFixedAPI } from '@/lib/welcome-screen-api';
 import { useAuth } from '@/providers/AuthProvider';
 
 // Definir localmente los valores por defecto para evitar problemas de importación
@@ -56,21 +57,53 @@ export function WelcomeScreenForm({ className, researchId }: WelcomeScreenFormPr
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
 
   // Consultar datos de welcome screen existentes
-  const { isLoading: isLoadingData, data: welcomeScreenData } = useQuery({
+  const { isLoading: isLoadingData, data: welcomeScreenData, error: welcomeScreenError } = useQuery({
     queryKey: ['welcomeScreen', researchId] as const,
     queryFn: async () => {
       console.log('DEBUG: Ejecutando consulta para obtener welcome screen con researchId:', researchId);
       try {
-        const response = await welcomeScreenAPI.getByResearchId(researchId).send();
+        const response = await welcomeScreenFixedAPI.getByResearchId(researchId).send();
         console.log('DEBUG: Respuesta de consulta welcome screen:', response);
         return response as WelcomeScreenResponse;
-      } catch (error) {
+      } catch (error: any) {
         console.error('DEBUG: Error al consultar welcome screen:', error);
+        
+        // Verificar si es un error de autenticación
+        if (error.message && error.message.includes('401')) {
+          console.error('DEBUG: Error de autenticación detectado. Verificar token.');
+          toast.error('Error de autenticación. Por favor, inicia sesión nuevamente.');
+        }
+        
         throw error;
       }
     },
-    enabled: !!researchId && !!token
+    // No intentar la consulta si no hay token o researchId
+    enabled: !!researchId && !!token,
+    // Desactivar reintentos automáticos para errores de autenticación
+    retry: (failureCount, error: any) => {
+      // No reintentar si es un error de autenticación (401)
+      if (error.message && error.message.includes('401')) {
+        console.log('DEBUG: No reintentando consulta por error de autenticación');
+        return false;
+      }
+      // De lo contrario, reintentar hasta 2 veces
+      return failureCount < 2;
+    }
   });
+
+  // Mostrar mensaje de error de manera amigable
+  useEffect(() => {
+    if (welcomeScreenError) {
+      if (String(welcomeScreenError).includes('401')) {
+        toast.error('Tu sesión puede haber expirado. Por favor, actualiza la página o inicia sesión nuevamente.');
+      } else if (String(welcomeScreenError).includes('404')) {
+        // El 404 no es realmente un error, simplemente no existe una pantalla de bienvenida todavía
+        console.log('No se encontró una pantalla de bienvenida existente. Esto es normal para nuevas investigaciones.');
+      } else {
+        toast.error('Error al cargar datos: ' + welcomeScreenError);
+      }
+    }
+  }, [welcomeScreenError]);
 
   // Actualizar el formulario cuando se reciben datos
   useEffect(() => {
@@ -147,11 +180,38 @@ export function WelcomeScreenForm({ className, researchId }: WelcomeScreenFormPr
         // Si tenemos un ID, actualizar el registro existente
         if (welcomeScreenId) {
           console.log(`DEBUG: Actualizando welcome screen con ID ${welcomeScreenId}`);
-          response = await welcomeScreenAPI.update(welcomeScreenId, data).send();
+          console.log(`DEBUG: URL completa: ${API_CONFIG.baseURL}/welcome-screens/${welcomeScreenId}`);
+          
+          try {
+            // Primero verificar si el welcome screen existe
+            const checkResponse = await welcomeScreenFixedAPI.getById(welcomeScreenId).send();
+            console.log('DEBUG: Welcome screen existe, procediendo a actualizar', checkResponse);
+            
+            // Si existe, actualizarlo
+            response = await welcomeScreenFixedAPI.update(welcomeScreenId, data).send();
+          } catch (checkError: any) {
+            console.error('DEBUG: Error al verificar welcome screen existente:', checkError);
+            
+            // Si es un error de autenticación, manejarlo especialmente
+            if (checkError.message && checkError.message.includes('401')) {
+              console.error('DEBUG: Error de autenticación (401) al verificar welcome screen');
+              toast.error('Error de autenticación. Por favor, inicia sesión nuevamente.');
+              throw new Error('Error de autenticación: Sesión inválida o expirada');
+            }
+            
+            if (checkError.message && checkError.message.includes('404')) {
+              console.log('DEBUG: El welcome screen no existe, creando uno nuevo');
+              // Si no existe (404), crear uno nuevo
+              response = await welcomeScreenFixedAPI.create(data).send();
+            } else {
+              // Es otro tipo de error, relanzarlo
+              throw checkError;
+            }
+          }
         } else {
           // Si no tenemos ID, crear un nuevo registro
           console.log('DEBUG: Creando nuevo welcome screen');
-          response = await welcomeScreenAPI.create(data).send();
+          response = await welcomeScreenFixedAPI.create(data).send();
         }
         
         console.log('DEBUG: Respuesta al guardar welcome screen:', response);
@@ -160,14 +220,20 @@ export function WelcomeScreenForm({ className, researchId }: WelcomeScreenFormPr
         const typedResponse = response as WelcomeScreenResponse;
         
         // Si la respuesta incluye un ID y no teníamos uno, guardarlo
-        if (typedResponse && typedResponse.id && !welcomeScreenId) {
-          setWelcomeScreenId(typedResponse.id);
-          console.log('DEBUG: Nuevo welcome screen ID guardado:', typedResponse.id);
+        if (typedResponse && typedResponse.data && typedResponse.data.id) {
+          setWelcomeScreenId(typedResponse.data.id);
+          console.log('DEBUG: Nuevo welcome screen ID guardado:', typedResponse.data.id);
         }
         
         return typedResponse;
-      } catch (error) {
+      } catch (error: any) {
         console.error('DEBUG: Error al guardar welcome screen:', error);
+        
+        // Manejar específicamente errores de autenticación
+        if (error.message && error.message.includes('401')) {
+          toast.error('Error de autenticación. Tu sesión puede haber expirado. Por favor, inicia sesión nuevamente.');
+        }
+        
         throw error;
       }
     },
@@ -179,7 +245,10 @@ export function WelcomeScreenForm({ className, researchId }: WelcomeScreenFormPr
     },
     onError: (error: Error) => {
       console.error('Error saving welcome screen:', error);
-      toast.error(error.message || 'Error al guardar la pantalla de bienvenida');
+      // El mensaje de error ya se muestra en mutationFn para errores específicos
+      if (!error.message.includes('autenticación')) {
+        toast.error(error.message || 'Error al guardar la pantalla de bienvenida');
+      }
     }
   });
 

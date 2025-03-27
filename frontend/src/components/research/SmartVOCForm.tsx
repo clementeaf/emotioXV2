@@ -6,7 +6,7 @@ import { toast } from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { Switch } from '@/components/ui/Switch';
 import { cn } from '@/lib/utils';
-import { smartVocAPI } from '@/lib/api';
+import { smartVocFixedAPI } from '@/lib/smart-voc-api';
 
 interface Question {
   id: string;
@@ -115,22 +115,173 @@ export function SmartVOCForm({ className, researchId, onSave }: SmartVOCFormProp
   const [smartVocRequired, setSmartVocRequired] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [smartVocId, setSmartVocId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const fetchExistingData = async () => {
+    if (!researchId) {
+      console.error('[SmartVOCForm] ID de investigación no proporcionado');
+      return;
+    }
+
+    console.log(`[SmartVOCForm] Buscando configuración existente para investigación: ${researchId}`);
+    setIsLoading(true);
+    
+    try {
+      const response = await smartVocFixedAPI.getByResearchId(researchId).send();
+      
+      console.log('[SmartVOCForm] Respuesta de API:', response);
+      
+      if (!response || !response.data) {
+        console.log('[SmartVOCForm] No se encontró configuración existente - esto es normal para una nueva investigación');
+        setIsLoading(false);
+        return;
+      }
+      
+      const existingData = response.data;
+      setSmartVocId(existingData.id);
+      console.log('[SmartVOCForm] ID de Smart VOC encontrado:', existingData.id);
+      
+      const questionsConfig = {
+        CSAT: existingData.CSAT || false,
+        CES: existingData.CES || false,
+        CV: existingData.CV || false,
+        NEV: existingData.NEV || false,
+        NPS: existingData.NPS || false,
+        VOC: existingData.VOC || false,
+      };
+      
+      const enabledQuestions: Question[] = [];
+      
+      if (questionsConfig.CSAT) {
+        enabledQuestions.push({
+          id: 'csat',
+          type: 'CSAT',
+          title: 'Customer Satisfaction Score (CSAT)',
+          description: 'How would you rate your overall satisfaction level with [company]?',
+          required: true,
+          showConditionally: false,
+          config: {
+            type: 'stars',
+            companyName: ''
+          }
+        });
+      }
+      
+      if (questionsConfig.CES) {
+        enabledQuestions.push({
+          id: 'ces',
+          type: 'CES',
+          title: 'Customer Effort Score (CES)',
+          description: 'It was easy for me to handle my issue today.',
+          required: true,
+          showConditionally: false,
+          config: {
+            type: 'scale',
+            scaleRange: { start: 1, end: 7 }
+          }
+        });
+      }
+      
+      if (questionsConfig.CV) {
+        enabledQuestions.push({
+          id: 'cv',
+          type: 'CV',
+          title: 'Cognitive Value (CV)',
+          description: 'Example: This was the best app my eyes had see.',
+          required: true,
+          showConditionally: false,
+          config: {
+            type: 'scale',
+            scaleRange: { start: 1, end: 7 },
+            startLabel: '',
+            endLabel: ''
+          }
+        });
+      }
+      
+      if (questionsConfig.NEV) {
+        enabledQuestions.push({
+          id: 'nev',
+          type: 'NEV',
+          title: 'Net Emotional Value (NEV)',
+          description: 'How do you feel about the experience offered by the [company]?',
+          required: true,
+          showConditionally: false,
+          config: {
+            type: 'emojis',
+            companyName: ''
+          }
+        });
+      }
+      
+      if (questionsConfig.NPS) {
+        enabledQuestions.push({
+          id: 'nps',
+          type: 'NPS',
+          title: 'Net Promoter Score (NPS)',
+          description: 'On a scale from 0-10, how likely are you to recommend [company] to a friend or colleague?',
+          required: true,
+          showConditionally: false,
+          config: {
+            type: 'scale',
+            scaleRange: { start: 0, end: 10 },
+            companyName: ''
+          }
+        });
+      }
+      
+      if (questionsConfig.VOC) {
+        enabledQuestions.push({
+          id: 'voc',
+          type: 'VOC',
+          title: 'Voice of Customer (VOC)',
+          description: 'How can we improve the service?',
+          required: true,
+          showConditionally: false,
+          config: {
+            type: 'text'
+          }
+        });
+      }
+      
+      setQuestions(enabledQuestions);
+      
+      setRandomizeQuestions(existingData.randomize || false);
+      setSmartVocRequired(existingData.requireAnswers || false);
+      
+      toast.success('Configuración existente cargada correctamente');
+    } catch (error) {
+      console.log('[SmartVOCForm] Error al cargar datos:', error);
+      
+      if (error instanceof Error && error.message.includes('401')) {
+        console.error('[SmartVOCForm] Error de autenticación:', error);
+        toast.error('Tu sesión ha expirado. Por favor, vuelve a iniciar sesión.');
+        return;
+      }
+      
+      if (error instanceof Error && error.message.includes('404')) {
+        console.log('[SmartVOCForm] No se encontró configuración - creando nueva');
+      } else {
+        toast.error(`Error al cargar la configuración: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // No intentamos cargar datos existentes - esto evita errores 404
-    console.log('Inicializando formulario Smart VOC para researchId:', researchId);
-    // Para evitar errores recurrentes, no realizamos solicitudes al servidor en la carga
+    if (researchId) {
+      fetchExistingData();
+    }
   }, [researchId]);
 
   const updateQuestion = (id: string, updates: Partial<Question>) => {
     setQuestions(questions.map(q => {
       if (q.id === id) {
-        // Garantizar que config.companyName nunca sea undefined
         if (updates.config && 'companyName' in updates.config && updates.config.companyName === undefined) {
           updates.config.companyName = '';
         }
         
-        // Garantizar que config.startLabel y endLabel nunca sean undefined
         if (updates.config && ('startLabel' in updates.config || 'endLabel' in updates.config)) {
           if (updates.config.startLabel === undefined) updates.config.startLabel = '';
           if (updates.config.endLabel === undefined) updates.config.endLabel = '';
@@ -356,76 +507,65 @@ export function SmartVOCForm({ className, researchId, onSave }: SmartVOCFormProp
   };
 
   const handleSaveAndContinue = async () => {
-    // Validar researchId
-    if (!researchId || researchId.trim() === '') {
-      toast.error('ID de investigación no válido');
-      console.error('DEBUG: researchId no válido:', researchId);
+    if (!researchId) {
+      toast.error('ID de investigación no proporcionado');
+      console.error('[SmartVOCForm] Error: ID de investigación no proporcionado');
       return;
     }
 
-    const formData = {
-      researchId: researchId.trim(),
-      questions,
-      randomizeQuestions,
-      smartVocRequired
-    };
-
-    console.log('DEBUG: Preparando datos para guardar Smart VOC', {
-      researchId: formData.researchId,
-      questionsCount: formData.questions.length
-    });
+    if (questions.length === 0) {
+      toast.error('Debes seleccionar al menos una pregunta');
+      return;
+    }
 
     setIsSaving(true);
+    
     try {
-      // Intentamos crear el formulario
-      console.log('DEBUG: Intentando crear Smart VOC');
-      let response: any;
+      const formData: any = {
+        researchId,
+        randomize: randomizeQuestions,
+        requireAnswers: smartVocRequired,
+      };
       
-      try {
-        response = await smartVocAPI.create(formData);
-        console.log('Smart VOC creado correctamente:', response);
+      formData.CSAT = questions.some(q => q.type === 'CSAT');
+      formData.CES = questions.some(q => q.type === 'CES');
+      formData.CV = questions.some(q => q.type === 'CV');
+      formData.NEV = questions.some(q => q.type === 'NEV');
+      formData.NPS = questions.some(q => q.type === 'NPS');
+      formData.VOC = questions.some(q => q.type === 'VOC');
+      
+      console.log('[SmartVOCForm] Datos a guardar:', formData);
+      
+      let response;
+      
+      if (smartVocId) {
+        console.log(`[SmartVOCForm] Actualizando Smart VOC con ID: ${smartVocId}`);
+        response = await smartVocFixedAPI.update(smartVocId, formData).send();
+      } else {
+        console.log('[SmartVOCForm] Creando nuevo Smart VOC');
+        response = await smartVocFixedAPI.create(formData).send();
         
-        if (response && response.data && response.data.id) {
-          setSmartVocId(response.data.id);
+        if (response && response.id) {
+          setSmartVocId(response.id);
+          console.log(`[SmartVOCForm] Nuevo Smart VOC creado con ID: ${response.id}`);
         }
-        
-        toast.success('Configuración de Voice of Customer guardada');
-        
-        if (onSave) {
-          onSave(formData);
-        }
-      } catch (error) {
-        console.log('DEBUG: Error al crear Smart VOC:', error);
-        
-        // Extraer el mensaje de error
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        
-        // Comprobar si el error es "Ya existe un formulario"
-        if (typeof errorMessage === 'string' && errorMessage.includes('Ya existe un formulario SmartVOC')) {
-          console.log('DEBUG: El formulario ya existe, consideramos esto como un éxito');
-          
-          // El backend está en un estado inconsistente: dice que existe el formulario 
-          // pero luego no lo encuentra para actualizar. Simplemente consideramos que existe como éxito.
-          toast.success('La configuración de Voice of Customer ya existe');
-          
-          if (onSave) {
-            onSave(formData);
-          }
-          return;
-        }
-        
-        // Si no era un error de "ya existe", propagar el error
-        throw error;
+      }
+      
+      console.log('[SmartVOCForm] Respuesta de guardado:', response);
+      toast.success('Configuración de Smart VOC guardada correctamente');
+      
+      if (onSave) {
+        onSave(formData);
       }
     } catch (error) {
-      console.error('Error al guardar Smart VOC:', error);
+      console.error('[SmartVOCForm] Error al guardar:', error);
       
-      // Mostrar mensaje de error apropiado
-      if (error instanceof Error) {
-        toast.error(`Error: ${error.message}`);
-      } else {
-        toast.error('Error al guardar la configuración de Voice of Customer');
+      if (error instanceof Error && error.message.includes('401')) {
+        toast.error('Tu sesión ha expirado. Por favor, vuelve a iniciar sesión.');
+        return;
       }
+      
+      toast.error(`Error al guardar: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     } finally {
       setIsSaving(false);
     }

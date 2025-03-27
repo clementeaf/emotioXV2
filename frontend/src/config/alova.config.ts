@@ -143,8 +143,27 @@ export const welcomeScreenAPI = {
   create: (data: any) => 
     alovaInstance.Post(API_CONFIG.endpoints.welcomeScreen.CREATE, data),
   
-  update: (id: string, data: any) => 
-    alovaInstance.Put(API_CONFIG.endpoints.welcomeScreen.UPDATE.replace('{id}', id), data),
+  update: (id: string, data: any) => {
+    const url = API_CONFIG.endpoints.welcomeScreen.UPDATE.replace('{id}', id);
+    console.log(`Endpoint UPDATE welcomeScreen utilizado: ${url}`);
+    
+    // Crear un método PUT explícito
+    const method = alovaInstance.Put(url, data);
+    
+    // Forzar el tipo de método en la configuración
+    if (method.config) {
+      method.config.method = 'PUT';
+    }
+    
+    console.log('Configuración del método para welcomeScreen.update:', {
+      url: method.url,
+      type: method.type,
+      config: method.config,
+      urlWithBase: `${API_CONFIG.baseURL}${method.url}`
+    });
+    
+    return method;
+  },
   
   delete: (id: string) => 
     alovaInstance.Delete(API_CONFIG.endpoints.welcomeScreen.DELETE.replace('{id}', id)),
