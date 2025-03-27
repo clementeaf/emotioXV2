@@ -3,24 +3,20 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
-
 import { Switch } from '@/components/ui/Switch';
 import { Textarea } from '@/components/ui/Textarea';
-import { thankYouScreenAPI } from '@/lib/api';  // Importamos la nueva API
 import API_CONFIG from '@/config/api.config';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
+import { thankYouScreenFixedAPI } from '@/lib/thank-you-screen-api';
 
-import { ThankYouScreenConfig, DEFAULT_THANK_YOU_SCREEN_CONFIG, DEFAULT_THANK_YOU_SCREEN_VALIDATION } from '../../types';
-
-// Tipo para la respuesta de la API
-interface ThankYouScreenResponse {
-  data?: ThankYouScreenConfig;
-  id?: string;
-  error?: string;
-  success?: boolean;
-  notFound?: boolean;
-}
+import { 
+  ThankYouScreenConfig, 
+  ThankYouScreenFormData,
+  ThankYouScreenResponse,
+  DEFAULT_THANK_YOU_SCREEN_CONFIG, 
+  DEFAULT_THANK_YOU_SCREEN_VALIDATION 
+} from '../../types';
 
 interface ThankYouScreenFormProps {
   className?: string;
@@ -28,57 +24,76 @@ interface ThankYouScreenFormProps {
 }
 
 export function ThankYouScreenForm({ className, researchId }: ThankYouScreenFormProps) {
-  console.log('DEBUG: ThankYouScreenForm inicializado con researchId:', researchId);
-  console.log('DEBUG: Usando la baseURL dinámica:', API_CONFIG.baseURL);
+  console.log('[ThankYouScreenForm] Inicializado con researchId:', researchId);
+  console.log('[ThankYouScreenForm] Usando la baseURL:', API_CONFIG.baseURL);
+  
   const { token } = useAuth();
   const queryClient = useQueryClient();
-  const [formData, setFormData] = useState<ThankYouScreenConfig>({
+  const [formData, setFormData] = useState<ThankYouScreenFormData>({
     isEnabled: DEFAULT_THANK_YOU_SCREEN_CONFIG.isEnabled,
     title: DEFAULT_THANK_YOU_SCREEN_CONFIG.title,
     message: DEFAULT_THANK_YOU_SCREEN_CONFIG.message,
-    redirectUrl: DEFAULT_THANK_YOU_SCREEN_CONFIG.redirectUrl || ''
+    redirectUrl: DEFAULT_THANK_YOU_SCREEN_CONFIG.redirectUrl || '',
+    researchId,
   });
+  
   // Guardar el ID si ya existe un thank you screen
   const [thankYouScreenId, setThankYouScreenId] = useState<string | null>(null);
   // Estado para errores de validación
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
 
-  // Consultar datos de thank you screen existentes
-  const { isLoading: isLoadingData, data: thankYouScreenData } = useQuery({
-    queryKey: ['thankYouScreen', researchId] as const,
-    queryFn: async () => {
-      console.log('DEBUG: Ejecutando consulta para obtener thank you screen con researchId:', researchId);
-      try {
-        const response = await thankYouScreenAPI.getByResearchId(researchId);
-        console.log('DEBUG: Respuesta de consulta thank you screen:', response);
-        
-        // Si es una respuesta 404 (manejo silencioso), no es un error
-        if (response && typeof response === 'object' && 'notFound' in response && response.notFound) {
-          console.log('DEBUG: No se encontró thank you screen para esta investigación (404), usando valores por defecto');
-          return { data: null, success: false };
-        }
-        
-        return response as ThankYouScreenResponse;
-      } catch (error) {
-        // Solo mostramos errores en consola si no son 404
-        if (error instanceof Error && !error.message.includes('404')) {
-          console.error('DEBUG: Error al consultar thank you screen:', error);
-        } else if (error instanceof Error && error.message.includes('404')) {
-          console.log('DEBUG: No se encontró thank you screen para esta investigación, usando valores por defecto');
-        }
-        
-        // Si el error es 404, devolvemos un objeto vacío en lugar de lanzar error
-        // esto evita que React Query intente reintentar la solicitud
-        if (error instanceof Error && error.message.includes('404')) {
-          return { data: null, success: false };
-        }
-        throw error;
+  // Función para validar URL
+  const isValidUrl = (url: string): boolean => {
+    return DEFAULT_THANK_YOU_SCREEN_VALIDATION.redirectUrl.pattern.test(url);
+  };
+
+  // Función para obtener datos existentes usando la nueva API
+  const fetchExistingData = async () => {
+    console.log('[ThankYouScreenForm] Verificando si existe configuración previa para researchId:', researchId);
+    
+    try {
+      if (!researchId) {
+        console.error('[ThankYouScreenForm] Error: No hay researchId');
+        toast.error('No se pudo cargar la pantalla de agradecimiento: falta el ID de investigación');
+        return null;
       }
-    },
+
+      console.log('[ThankYouScreenForm] Buscando datos con researchId:', researchId);
+      
+      // Usar la nueva API mejorada
+      const response = await thankYouScreenFixedAPI.getByResearchId(researchId).send();
+      console.log('[ThankYouScreenForm] Respuesta recibida:', response);
+      
+      return response;
+    } catch (error) {
+      console.log('[ThankYouScreenForm] Error en fetchExistingData:', error);
+      
+      // Manejar específicamente errores de autenticación (401)
+      if (error instanceof Error && error.message.includes('401')) {
+        console.error('[ThankYouScreenForm] Error de autenticación:', error);
+        toast.error('Error de autenticación. Por favor, inicie sesión nuevamente.');
+        return null;
+      }
+      
+      // Para errores 404, simplemente log (no mostrar error al usuario)
+      if (error instanceof Error && error.message.includes('404')) {
+        console.log('[ThankYouScreenForm] No se encontró configuración previa - esto es normal para nuevas investigaciones');
+        return null;
+      }
+      
+      console.error('[ThankYouScreenForm] Error al cargar la pantalla de agradecimiento:', error);
+      toast.error('No se pudo cargar la pantalla de agradecimiento. Por favor, inténtelo de nuevo.');
+      return null;
+    }
+  };
+
+  // Consulta para obtener datos existentes
+  const { data: thankYouScreenData, isLoading: isLoadingData } = useQuery({
+    queryKey: ['thankYouScreen', researchId],
+    queryFn: fetchExistingData,
     enabled: !!researchId && !!token,
-    // Configurar máximo de reintentos y opciones específicas
     retry: (failureCount, error) => {
-      // No reintentar si el error es 404 (Not Found)
+      // No reintentar si el error es 404
       if (error instanceof Error && error.message.includes('404')) {
         return false;
       }
@@ -89,36 +104,25 @@ export function ThankYouScreenForm({ className, researchId }: ThankYouScreenForm
     staleTime: 60000 // Mantener los datos frescos durante 1 minuto
   });
 
-  // Actualizar el formulario cuando se reciben datos
+  // Efecto para actualizar el estado cuando se reciben datos
   useEffect(() => {
-    console.log('DEBUG: useEffect thankYouScreenData cambió:', thankYouScreenData);
-    if (thankYouScreenData?.data) {
-      console.log('DEBUG: Actualizando formulario con datos existentes:', thankYouScreenData.data);
-      // Si tenemos un ID en la respuesta, guardarlo
-      if (thankYouScreenData.id) {
-        setThankYouScreenId(thankYouScreenData.id);
-        console.log('DEBUG: Thank you screen ID guardado:', thankYouScreenData.id);
-      }
+    if (thankYouScreenData) {
+      console.log('[ThankYouScreenForm] Datos cargados correctamente:', thankYouScreenData);
       setFormData({
-        isEnabled: thankYouScreenData.data.isEnabled,
-        title: thankYouScreenData.data.title,
-        message: thankYouScreenData.data.message,
-        redirectUrl: thankYouScreenData.data.redirectUrl || ''
+        ...formData,
+        ...thankYouScreenData,
+        researchId,
       });
-      console.log('Thank you screen data loaded successfully');
+      setThankYouScreenId(thankYouScreenData.id || null);
     } else {
-      // Caso para cuando no hay datos o hay un error 404 manejado
-      console.log('DEBUG: No se encontraron datos de thank you screen, usando valores por defecto');
-      setThankYouScreenId(null);
+      console.log('[ThankYouScreenForm] No hay datos previos, usando configuración predeterminada');
       setFormData({
-        isEnabled: DEFAULT_THANK_YOU_SCREEN_CONFIG.isEnabled,
-        title: DEFAULT_THANK_YOU_SCREEN_CONFIG.title,
-        message: DEFAULT_THANK_YOU_SCREEN_CONFIG.message,
-        redirectUrl: DEFAULT_THANK_YOU_SCREEN_CONFIG.redirectUrl || ''
+        ...DEFAULT_THANK_YOU_SCREEN_CONFIG,
+        researchId,
       });
-      console.log('No thank you screen configuration found. Using defaults.');
+      setThankYouScreenId(null);
     }
-  }, [thankYouScreenData]);
+  }, [thankYouScreenData, researchId]);
 
   // Validar el formulario
   const validateForm = (): boolean => {
@@ -146,7 +150,7 @@ export function ThankYouScreenForm({ className, researchId }: ThankYouScreenForm
       
       // Validar URL (solo si se proporciona)
       if (formData.redirectUrl && formData.redirectUrl.trim() !== '') {
-        if (!DEFAULT_THANK_YOU_SCREEN_VALIDATION.redirectUrl.pattern.test(formData.redirectUrl)) {
+        if (!isValidUrl(formData.redirectUrl)) {
           errors.redirectUrl = 'La URL no tiene un formato válido';
         }
       }
@@ -156,53 +160,29 @@ export function ThankYouScreenForm({ className, researchId }: ThankYouScreenForm
     return Object.keys(errors).length === 0;
   };
 
-  // Mutación para guardar el formulario
-  const { mutate: saveThankYouScreen, isPending: isSaving } = useMutation({
-    mutationFn: async (data: any) => {
-      console.log('DEBUG: Guardando thank you screen con datos:', data);
-      try {
-        let response;
-        
-        // Si tenemos un ID, actualizar el registro existente
-        if (thankYouScreenId) {
-          console.log(`DEBUG: Actualizando thank you screen con ID ${thankYouScreenId}`);
-          response = await thankYouScreenAPI.update(thankYouScreenId, data).send();
-          console.log('Thank you screen actualizada correctamente');
-        } else {
-          // Si no tenemos ID, crear un nuevo registro
-          console.log('DEBUG: Creando nuevo thank you screen');
-          response = await thankYouScreenAPI.create(data).send();
-          console.log('Nueva thank you screen creada correctamente');
-        }
-        
-        console.log('DEBUG: Respuesta al guardar thank you screen:', response);
-        
-        // Convertir la respuesta a ThankYouScreenResponse
-        const typedResponse = response as ThankYouScreenResponse;
-        
-        // Si la respuesta incluye un ID, guardarlo
-        if (typedResponse && typedResponse.id) {
-          setThankYouScreenId(typedResponse.id);
-          console.log('DEBUG: Thank you screen ID guardado:', typedResponse.id);
-        }
-        
-        return typedResponse;
-      } catch (error) {
-        console.error('DEBUG: Error al guardar thank you screen:', error);
-        throw error;
+  // Función para guardar usando la nueva API
+  const saveThankYouScreen = async (data: ThankYouScreenFormData) => {
+    console.log('[ThankYouScreenForm] Guardando datos:', data);
+    
+    try {
+      if (thankYouScreenId) {
+        console.log(`[ThankYouScreenForm] Actualizando ThankYouScreen con ID ${thankYouScreenId}`);
+        // Usar la nueva API para actualizar
+        const response = await thankYouScreenFixedAPI.update(thankYouScreenId, data).send();
+        console.log('[ThankYouScreenForm] Respuesta de actualización:', response);
+        return response;
+      } else {
+        console.log('[ThankYouScreenForm] Creando nuevo ThankYouScreen');
+        // Usar la nueva API para crear
+        const response = await thankYouScreenFixedAPI.create(data).send();
+        console.log('[ThankYouScreenForm] Respuesta de creación:', response);
+        return response;
       }
-    },
-    onSuccess: (data) => {
-      console.log('DEBUG: Thank you screen guardada exitosamente', data);
-      toast.success('Pantalla de agradecimiento guardada exitosamente');
-      // Invalidar la consulta para recargar los datos
-      queryClient.invalidateQueries({ queryKey: ['thankYouScreen', researchId] });
-    },
-    onError: (error: Error) => {
-      console.error('DEBUG: Error al guardar thank you screen:', error);
-      toast.error(error.message || 'Error al guardar la pantalla de agradecimiento');
+    } catch (error) {
+      console.error('[ThankYouScreenForm] Error al guardar:', error);
+      throw error;
     }
-  });
+  };
 
   // Manejar cambios en el formulario
   const handleChange = (field: keyof ThankYouScreenConfig, value: any) => {
@@ -221,25 +201,69 @@ export function ThankYouScreenForm({ className, researchId }: ThankYouScreenForm
     }));
   };
 
-  // Guardar datos del formulario
-  const handleSave = () => {
-    if (!researchId) {
-      toast.error('Se requiere el ID de la investigación');
-      return;
+  // Mutación para guardar el formulario
+  const mutation = useMutation({
+    mutationFn: saveThankYouScreen,
+    onSuccess: (data: any) => {
+      console.log('[ThankYouScreenForm] ThankYouScreen guardada exitosamente', data);
+      toast.success('Pantalla de agradecimiento guardada exitosamente');
+      
+      // Actualizar el ID si es una nueva creación
+      if (data && data.id && !thankYouScreenId) {
+        setThankYouScreenId(data.id);
+      }
+      
+      // Invalidar la consulta para recargar los datos
+      queryClient.invalidateQueries({ queryKey: ['thankYouScreen', researchId] });
+    },
+    onError: (error: Error) => {
+      console.error('[ThankYouScreenForm] Error al guardar ThankYouScreen:', error);
+      toast.error(error.message || 'Error al guardar la pantalla de agradecimiento');
     }
+  });
 
-    // Validar el formulario antes de enviar
-    if (!validateForm()) {
+  // Guardar datos del formulario
+  const handleSave = async () => {
+    console.log('[ThankYouScreenForm] Iniciando guardado...');
+    
+    // Validar formulario
+    const errors: Record<string, string> = {};
+    
+    // Validar researchId
+    if (!formData.researchId) {
+      errors.researchId = 'El ID de investigación es obligatorio';
+      console.error('[ThankYouScreenForm] Error: falta el ID de investigación');
+    }
+    
+    // Validar campos obligatorios si está habilitado
+    if (formData.isEnabled) {
+      if (!formData.title) {
+        errors.title = 'El título es obligatorio';
+      }
+      if (!formData.message) {
+        errors.message = 'El mensaje es obligatorio';
+      }
+      
+      // Validar URL si está presente
+      if (formData.redirectUrl && !isValidUrl(formData.redirectUrl)) {
+        errors.redirectUrl = 'La URL de redirección no es válida';
+      }
+    }
+    
+    // Si hay errores, mostrarlos y detener
+    if (Object.keys(errors).length > 0) {
+      console.log('[ThankYouScreenForm] Errores de validación:', errors);
+      setValidationErrors(errors);
       toast.error('Por favor, corrija los errores en el formulario');
       return;
     }
-
-    const requestData = {
-      researchId,
-      ...formData
-    };
     
-    saveThankYouScreen(requestData);
+    // Limpiar errores previos
+    setValidationErrors({});
+    
+    // Intentar guardar
+    console.log('[ThankYouScreenForm] Datos a guardar:', { ...formData, researchId });
+    mutation.mutate({ ...formData, researchId });
   };
 
   // Vista previa del formulario
@@ -250,116 +274,119 @@ export function ThankYouScreenForm({ className, researchId }: ThankYouScreenForm
       return;
     }
     toast.success('Vista previa próximamente!');
-    // Aquí podríamos abrir un modal o una nueva ventana con la vista previa
   };
 
-  const isLoading = isLoadingData || isSaving;
+  const isLoadingForm = isLoadingData || mutation.isPending;
 
   return (
-    <div className={cn('max-w-3xl mx-auto', className)}>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg">
-          <div className="space-y-0.5">
-            <h2 className="text-sm font-medium text-neutral-900">Enable Thank You Screen</h2>
-            <p className="text-sm text-neutral-500">Show a thank you message to participants after completing the research.</p>
-          </div>
-          <Switch 
+    <div className={cn('space-y-4', className)}>
+      <div className="flex items-center justify-between">
+        <div className="space-y-0.5">
+          <h2 className="text-lg font-semibold">Pantalla de agradecimiento</h2>
+          <p className="text-sm text-neutral-500">
+            Muestra un mensaje de agradecimiento a los participantes al finalizar la investigación
+          </p>
+        </div>
+        <div className="flex items-center space-x-2">
+          <span className="text-sm text-neutral-500">
+            {formData.isEnabled ? 'Habilitado' : 'Deshabilitado'}
+          </span>
+          <Switch
             checked={formData.isEnabled}
             onCheckedChange={(checked: boolean) => handleChange('isEnabled', checked)}
-            disabled={isLoading}
+            disabled={isLoadingForm}
           />
         </div>
+      </div>
 
-        <div className="space-y-5">
+      {formData.isEnabled && (
+        <div className="space-y-4 p-4 bg-white rounded-lg border border-neutral-100">
           <div className="space-y-2">
-            <label htmlFor="title" className="block text-sm font-medium text-neutral-900">
-              Title
+            <label htmlFor="title" className="text-sm font-medium">
+              Título <span className="text-red-500">*</span>
             </label>
             <input
-              type="text"
               id="title"
               value={formData.title}
               onChange={(e) => handleChange('title', e.target.value)}
-              placeholder="Enter a title for your thank you screen..."
               className={cn(
-                'w-full px-3 py-2 rounded-lg border text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500',
+                "w-full px-3 py-2 text-sm rounded-md border focus:outline-none focus:ring-2 focus:ring-blue-500",
                 validationErrors.title ? 'border-red-500' : 'border-neutral-200'
               )}
-              disabled={isLoading || !formData.isEnabled}
+              disabled={isLoadingForm || !formData.isEnabled}
             />
             {validationErrors.title && (
-              <p className="text-red-500 text-xs mt-1">{validationErrors.title}</p>
+              <p className="text-xs text-red-500">{validationErrors.title}</p>
             )}
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="message" className="block text-sm font-medium text-neutral-900">
-              Message
+            <label htmlFor="message" className="text-sm font-medium">
+              Mensaje <span className="text-red-500">*</span>
             </label>
             <Textarea
               id="message"
               value={formData.message}
               onChange={(e) => handleChange('message', e.target.value)}
-              placeholder="Write a thank you message for your participants..."
+              rows={4}
               className={cn(
-                'min-h-[120px]',
+                "w-full px-3 py-2 text-sm rounded-md border focus:outline-none focus:ring-2 focus:ring-blue-500",
                 validationErrors.message ? 'border-red-500' : ''
               )}
-              disabled={isLoading || !formData.isEnabled}
+              disabled={isLoadingForm || !formData.isEnabled}
             />
             {validationErrors.message && (
-              <p className="text-red-500 text-xs mt-1">{validationErrors.message}</p>
+              <p className="text-xs text-red-500">{validationErrors.message}</p>
             )}
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="redirectUrl" className="block text-sm font-medium text-neutral-900">
-              Redirect URL (Optional)
+            <label htmlFor="redirectUrl" className="text-sm font-medium">
+              URL de redirección <span className="text-neutral-500">(opcional)</span>
             </label>
             <input
-              type="url"
               id="redirectUrl"
               value={formData.redirectUrl}
               onChange={(e) => handleChange('redirectUrl', e.target.value)}
-              placeholder="https://..."
+              placeholder="https://ejemplo.com"
               className={cn(
-                'w-full px-3 py-2 rounded-lg border text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500',
+                "w-full px-3 py-2 text-sm rounded-md border focus:outline-none focus:ring-2 focus:ring-blue-500",
                 validationErrors.redirectUrl ? 'border-red-500' : 'border-neutral-200'
               )}
-              disabled={isLoading || !formData.isEnabled}
+              disabled={isLoadingForm || !formData.isEnabled}
             />
             {validationErrors.redirectUrl && (
-              <p className="text-red-500 text-xs mt-1">{validationErrors.redirectUrl}</p>
+              <p className="text-xs text-red-500">{validationErrors.redirectUrl}</p>
             )}
-            <p className="text-xs text-neutral-500 mt-1">
-              Participants will be redirected to this URL after completing the research.
+            <p className="text-xs text-neutral-500">
+              Si se proporciona, los participantes serán redirigidos a esta URL después de mostrar la pantalla de agradecimiento
             </p>
           </div>
         </div>
-      </div>
+      )}
 
       <footer className="flex items-center justify-between px-8 py-4 mt-6 bg-neutral-50 rounded-lg border border-neutral-100">
         <p className="text-sm text-neutral-500">
-          {isLoading ? 'Guardando...' : thankYouScreenId 
+          {isLoadingForm ? 'Guardando...' : thankYouScreenId 
             ? 'Se actualizará la configuración existente' 
             : 'Se creará una nueva configuración'}
         </p>
-        <div className="flex items-center gap-3">
+        <div className="flex space-x-2">
           <button
             type="button"
             onClick={handlePreview}
-            disabled={isLoading || !formData.isEnabled}
+            disabled={isLoadingForm || !formData.isEnabled}
             className="px-4 py-2 text-sm font-medium text-neutral-700 bg-white border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors disabled:opacity-50"
           >
-            Preview
+            Vista previa
           </button>
           <button
             type="button"
             onClick={handleSave}
-            disabled={isLoading}
+            disabled={isLoadingForm}
             className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50"
           >
-            {isSaving ? 'Guardando...' : 'Guardar cambios'}
+            {isLoadingForm ? 'Guardando...' : 'Guardar cambios'}
           </button>
         </div>
       </footer>

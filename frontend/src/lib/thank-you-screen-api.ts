@@ -1,5 +1,5 @@
 /**
- * API específica para SmartVOC
+ * API específica para ThankYouScreen
  * Implementación actualizada con manejo mejorado de errores y URL
  */
 
@@ -22,19 +22,19 @@ const getToken = () => {
 };
 
 /**
- * Manejador de respuesta personalizado para SmartVOC
+ * Manejador de respuesta personalizado para ThankYouScreen
  * @param response Respuesta fetch
  * @returns Datos procesados o error
  */
-const handleSmartVOCResponse = async (response: Response) => {
-  console.log(`[SmartVOCAPI] Respuesta recibida: ${response.status} ${response.statusText}`);
+const handleThankYouScreenResponse = async (response: Response) => {
+  console.log(`[ThankYouScreenAPI] Respuesta recibida: ${response.status} ${response.statusText}`);
   
   // Ya no lanzamos error para 404 aquí, porque lo manejamos en getByResearchId
   // Intentar obtener el cuerpo como JSON
   try {
     const data = await response.json();
     if (!response.ok) {
-      console.error(`[SmartVOCAPI] Error ${response.status}: `, data);
+      console.error(`[ThankYouScreenAPI] Error ${response.status}: `, data);
       throw new Error(data.message || data.error || `Error ${response.status}: ${response.statusText}`);
     }
     return data;
@@ -56,7 +56,7 @@ const getAuthHeaders = () => {
     ? `${token.substring(0, 6)}...${token.substring(token.length - 4)}`
     : 'no hay token';
   
-  console.log(`[SmartVOCAPI] Usando token: ${tokenSummary}`);
+  console.log(`[ThankYouScreenAPI] Usando token: ${tokenSummary}`);
   
   return {
     'Content-Type': 'application/json',
@@ -65,23 +65,23 @@ const getAuthHeaders = () => {
 };
 
 /**
- * API mejorada para Smart VOC
+ * API mejorada para ThankYouScreen
  * Utiliza endpoints actualizados y manejo de errores mejorado
  */
-export const smartVocFixedAPI = {
+export const thankYouScreenFixedAPI = {
   /**
-   * Obtiene un Smart VOC por su ID
-   * @param id ID del Smart VOC
+   * Obtiene un ThankYouScreen por su ID
+   * @param id ID del ThankYouScreen
    * @returns Objeto con método send
    */
   getById: (id: string) => {
     if (!id) {
-      throw new Error('Se requiere un ID para obtener el Smart VOC');
+      throw new Error('Se requiere un ID para obtener el ThankYouScreen');
     }
     
-    const url = API_CONFIG.endpoints.smartVoc?.GET?.replace('{id}', id) || `/smart-voc/${id}`;
-    console.log(`[SmartVOCAPI] Obteniendo Smart VOC con ID ${id}, URL: ${url}`);
-    console.log(`[SmartVOCAPI] URL completa: ${API_CONFIG.baseURL}${url}`);
+    const url = API_CONFIG.endpoints.thankYouScreen?.GET?.replace('{id}', id) || `/thank-you-screen/${id}`;
+    console.log(`[ThankYouScreenAPI] Obteniendo ThankYouScreen con ID ${id}, URL: ${url}`);
+    console.log(`[ThankYouScreenAPI] URL completa: ${API_CONFIG.baseURL}${url}`);
     
     return {
       send: async () => {
@@ -91,13 +91,13 @@ export const smartVocFixedAPI = {
           headers
         });
         
-        return handleSmartVOCResponse(response);
+        return handleThankYouScreenResponse(response);
       }
     };
   },
   
   /**
-   * Obtiene el Smart VOC asociado a una investigación
+   * Obtiene el ThankYouScreen asociado a una investigación
    * @param researchId ID de la investigación
    * @returns Objeto con método send
    */
@@ -106,10 +106,11 @@ export const smartVocFixedAPI = {
       throw new Error('Se requiere un ID de investigación');
     }
     
-    // La ruta correcta según el controlador en el backend
-    const url = `/smart-voc/research/${researchId}/smart-voc`;
-    console.log(`[SmartVOCAPI] Obteniendo SmartVOC para investigación ${researchId}, URL: ${url}`);
-    console.log(`[SmartVOCAPI] URL completa: ${API_CONFIG.baseURL}${url}`);
+    // La ruta correcta según el controlador en el backend es:
+    // /research/:researchId/thank-you-screen
+    const url = `/thank-you-screen/research/${researchId}/thank-you-screen`;
+    console.log(`[ThankYouScreenAPI] Obteniendo ThankYouScreen para investigación ${researchId}, URL: ${url}`);
+    console.log(`[ThankYouScreenAPI] URL completa: ${API_CONFIG.baseURL}${url}`);
     
     return {
       send: async () => {
@@ -129,15 +130,15 @@ export const smartVocFixedAPI = {
               
               // Si es 404, manejamos sin lanzar error
               if (checkResponse.status === 404) {
-                console.log(`[SmartVOCAPI] Verificación previa: Recurso no encontrado (404) en ${url}`);
-                console.log('[SmartVOCAPI] No se encontró configuración de SmartVOC para esta investigación - esto es normal para nuevas investigaciones');
+                console.log(`[ThankYouScreenAPI] Verificación previa: Recurso no encontrado (404) en ${url}`);
+                console.log('[ThankYouScreenAPI] No se encontró configuración de ThankYouScreen para esta investigación - esto es normal para nuevas investigaciones');
                 return { notFound: true, data: null };
               }
               
               // Si no es 404, procedemos con la solicitud original
               return fetch(url, options);
             } catch (error) {
-              console.log('[SmartVOCAPI] Error en silentFetch:', error);
+              console.log('[ThankYouScreenAPI] Error en silentFetch:', error);
               throw error;
             }
           };
@@ -156,9 +157,9 @@ export const smartVocFixedAPI = {
           }
           
           // Para respuestas reales de fetch, usar el manejador normal
-          return handleSmartVOCResponse(response as Response);
+          return handleThankYouScreenResponse(response as Response);
         } catch (error) {
-          console.log('[SmartVOCAPI] Error al obtener SmartVOC por researchId:', error);
+          console.log('[ThankYouScreenAPI] Error al obtener ThankYouScreen por researchId:', error);
           throw error;
         }
       }
@@ -166,19 +167,19 @@ export const smartVocFixedAPI = {
   },
   
   /**
-   * Crea un nuevo Smart VOC
-   * @param data Datos del Smart VOC
+   * Crea un nuevo ThankYouScreen
+   * @param data Datos del ThankYouScreen
    * @returns Objeto con método send
    */
   create: (data: any) => {
     if (!data || !data.researchId) {
-      throw new Error('Se requieren datos y un ID de investigación para crear el Smart VOC');
+      throw new Error('Se requieren datos y un ID de investigación para crear el ThankYouScreen');
     }
     
-    const url = API_CONFIG.endpoints.smartVoc?.CREATE || '/smart-voc';
-    console.log(`[SmartVOCAPI] Creando Smart VOC para investigación ${data.researchId}, URL: ${url}`);
-    console.log(`[SmartVOCAPI] URL completa: ${API_CONFIG.baseURL}${url}`);
-    console.log('[SmartVOCAPI] Datos a enviar:', data);
+    const url = API_CONFIG.endpoints.thankYouScreen?.CREATE || '/thank-you-screen';
+    console.log(`[ThankYouScreenAPI] Creando ThankYouScreen para investigación ${data.researchId}, URL: ${url}`);
+    console.log(`[ThankYouScreenAPI] URL completa: ${API_CONFIG.baseURL}${url}`);
+    console.log('[ThankYouScreenAPI] Datos a enviar:', data);
     
     return {
       send: async () => {
@@ -192,30 +193,30 @@ export const smartVocFixedAPI = {
           })
         });
         
-        return handleSmartVOCResponse(response);
+        return handleThankYouScreenResponse(response);
       }
     };
   },
   
   /**
-   * Actualiza un Smart VOC existente
-   * @param id ID del Smart VOC
+   * Actualiza un ThankYouScreen existente
+   * @param id ID del ThankYouScreen
    * @param data Datos actualizados
    * @returns Objeto con método send
    */
   update: (id: string, data: any) => {
     if (!id) {
-      throw new Error('Se requiere un ID para actualizar el Smart VOC');
+      throw new Error('Se requiere un ID para actualizar el ThankYouScreen');
     }
     
     if (!data) {
-      throw new Error('Se requieren datos para actualizar el Smart VOC');
+      throw new Error('Se requieren datos para actualizar el ThankYouScreen');
     }
     
-    const url = (API_CONFIG.endpoints.smartVoc?.UPDATE || '/smart-voc/{id}').replace('{id}', id);
-    console.log(`[SmartVOCAPI] Actualizando Smart VOC con ID ${id}, URL: ${url}`);
-    console.log(`[SmartVOCAPI] URL completa: ${API_CONFIG.baseURL}${url}`);
-    console.log('[SmartVOCAPI] Datos a enviar:', data);
+    const url = (API_CONFIG.endpoints.thankYouScreen?.UPDATE || '/thank-you-screen/{id}').replace('{id}', id);
+    console.log(`[ThankYouScreenAPI] Actualizando ThankYouScreen con ID ${id}, URL: ${url}`);
+    console.log(`[ThankYouScreenAPI] URL completa: ${API_CONFIG.baseURL}${url}`);
+    console.log('[ThankYouScreenAPI] Datos a enviar:', data);
     
     return {
       send: async () => {
@@ -226,7 +227,34 @@ export const smartVocFixedAPI = {
           body: JSON.stringify(data)
         });
         
-        return handleSmartVOCResponse(response);
+        return handleThankYouScreenResponse(response);
+      }
+    };
+  },
+  
+  /**
+   * Elimina un ThankYouScreen existente
+   * @param id ID del ThankYouScreen
+   * @returns Objeto con método send
+   */
+  delete: (id: string) => {
+    if (!id) {
+      throw new Error('Se requiere un ID para eliminar el ThankYouScreen');
+    }
+    
+    const url = (API_CONFIG.endpoints.thankYouScreen?.DELETE || '/thank-you-screen/{id}').replace('{id}', id);
+    console.log(`[ThankYouScreenAPI] Eliminando ThankYouScreen con ID ${id}, URL: ${url}`);
+    console.log(`[ThankYouScreenAPI] URL completa: ${API_CONFIG.baseURL}${url}`);
+    
+    return {
+      send: async () => {
+        const headers = getAuthHeaders();
+        const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
+          method: 'DELETE',
+          headers
+        });
+        
+        return handleThankYouScreenResponse(response);
       }
     };
   }

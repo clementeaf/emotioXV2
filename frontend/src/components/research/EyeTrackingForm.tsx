@@ -6,7 +6,7 @@ import { toast } from 'react-hot-toast';
 import { Input } from '@/components/ui/Input';
 import { Switch } from '@/components/ui/Switch';
 import { cn } from '@/lib/utils';
-import { eyeTrackingAPI } from '@/lib/api';
+import { eyeTrackingFixedAPI } from '@/lib/eye-tracking-api';
 
 import { 
   EyeTrackingFormData, 
@@ -43,37 +43,70 @@ export function EyeTrackingForm({ researchId, className, onSave }: EyeTrackingFo
   // Cargar datos existentes al montar el componente
   useEffect(() => {
     const fetchExistingData = async () => {
-      if (researchId) {
-        try {
-          const response = await eyeTrackingAPI.getByResearchId(researchId);
-          if (response && response.data) {
-            console.log('DEBUG: Datos de eye tracking encontrados:', response.data);
-            if (response.data.id) {
-              setEyeTrackingId(response.data.id);
-            }
-            
-            // Asegurarse de que ningún campo necesario sea undefined
-            const safeData = {
-              ...DEFAULT_EYE_TRACKING_CONFIG,  // Base de valores por defecto
-              ...response.data,                // Datos recibidos
-              researchId: researchId           // Garantizar que researchId siempre está presente
-            };
-            
-            // Asegurar que las estructuras anidadas estén completas
-            if (!safeData.stimuli) safeData.stimuli = DEFAULT_EYE_TRACKING_CONFIG.stimuli;
-            if (!safeData.stimuli.items) safeData.stimuli.items = [];
-            if (!safeData.areasOfInterest) safeData.areasOfInterest = DEFAULT_EYE_TRACKING_CONFIG.areasOfInterest;
-            if (!safeData.areasOfInterest.areas) safeData.areasOfInterest.areas = [];
-            if (!safeData.config) safeData.config = DEFAULT_EYE_TRACKING_CONFIG.config;
-            
-            // Actualizar estado con datos seguros
-            setFormData(safeData);
-          }
-        } catch (error) {
-          // Ignorar errores 404, son esperados cuando no hay configuración previa
-          if (error instanceof Error && !error.message.includes('404')) {
-            console.error('Error al cargar datos de eye tracking:', error);
-          }
+      if (!researchId) {
+        console.error('[EyeTrackingForm] Error: ID de investigación no proporcionado');
+        return;
+      }
+      
+      console.log(`[EyeTrackingForm] Buscando configuración existente para investigación: ${researchId}`);
+      
+      try {
+        console.log('[EyeTrackingForm] Usando la API de EyeTracking mejorada');
+        const response = await eyeTrackingFixedAPI.getByResearchId(researchId).send();
+        
+        console.log('[EyeTrackingForm] Respuesta de API:', response);
+        
+        if (!response || !response.data) {
+          console.log('[EyeTrackingForm] No se encontró configuración existente - esto es normal para una nueva investigación');
+          return;
+        }
+        
+        // Mostrar toda la respuesta en el log para depuración
+        console.log('[EyeTrackingForm] Datos completos recibidos:', JSON.stringify(response.data, null, 2));
+        
+        // Extraer datos de la respuesta
+        const existingData = response.data;
+        
+        if (existingData.id) {
+          setEyeTrackingId(existingData.id);
+          console.log('[EyeTrackingForm] ID de Eye Tracking encontrado:', existingData.id);
+        }
+        
+        // Asegurarse de que ningún campo necesario sea undefined
+        const safeData = {
+          ...DEFAULT_EYE_TRACKING_CONFIG,  // Base de valores por defecto
+          ...existingData,                 // Datos recibidos
+          researchId: researchId           // Garantizar que researchId siempre está presente
+        };
+        
+        // Asegurar que las estructuras anidadas estén completas
+        if (!safeData.stimuli) safeData.stimuli = DEFAULT_EYE_TRACKING_CONFIG.stimuli;
+        if (!safeData.stimuli.items) safeData.stimuli.items = [];
+        if (!safeData.areasOfInterest) safeData.areasOfInterest = DEFAULT_EYE_TRACKING_CONFIG.areasOfInterest;
+        if (!safeData.areasOfInterest.areas) safeData.areasOfInterest.areas = [];
+        if (!safeData.config) safeData.config = DEFAULT_EYE_TRACKING_CONFIG.config;
+        
+        // Actualizar estado con datos seguros
+        setFormData(safeData);
+        
+        toast.success('Configuración de Eye Tracking cargada correctamente');
+      } catch (error) {
+        console.log('[EyeTrackingForm] Error al cargar datos:', error);
+        
+        // Detectar si es un error 401 (autenticación)
+        if (error instanceof Error && error.message.includes('401')) {
+          console.error('[EyeTrackingForm] Error de autenticación:', error);
+          toast.error('Tu sesión ha expirado. Por favor, vuelve a iniciar sesión.');
+          return;
+        }
+        
+        // Para errores 404, los tratamos como normales (simplemente no hay datos aún)
+        if (error instanceof Error && error.message.includes('404')) {
+          console.log('[EyeTrackingForm] No se encontró configuración - esto es normal para una nueva investigación');
+          // No mostrar error al usuario, esto es normal en el flujo
+        } else {
+          // Otros errores
+          toast.error(`Error al cargar la configuración: ${error instanceof Error ? error.message : 'Error desconocido'}`);
         }
       }
     };
@@ -159,43 +192,74 @@ export function EyeTrackingForm({ researchId, className, onSave }: EyeTrackingFo
     }));
   };
   
-  // Handle form submission
+  // Handle form submission - versión mejorada
   const handleSave = async () => {
     if (!researchId) {
       toast.error('Se requiere ID de investigación');
+      console.error('[EyeTrackingForm] Error: ID de investigación no proporcionado');
       return;
     }
 
     setIsSaving(true);
     try {
+      // Asegurar que researchId esté presente en los datos
+      const dataToSave = {
+        ...formData,
+        researchId: researchId.trim()
+      };
+      
+      console.log('[EyeTrackingForm] Datos a guardar:', JSON.stringify(dataToSave, null, 2));
+      
       let response;
       
       // Si ya existe un ID, actualizar
       if (eyeTrackingId) {
-        console.log('DEBUG: Actualizando Eye Tracking existente con ID:', eyeTrackingId);
-        response = await eyeTrackingAPI.update(eyeTrackingId, formData);
-        console.log('Eye tracking actualizado correctamente:', response);
-        toast.success('Configuración de seguimiento ocular actualizada');
+        console.log(`[EyeTrackingForm] Actualizando Eye Tracking existente con ID: ${eyeTrackingId}`);
+        try {
+          response = await eyeTrackingFixedAPI.update(eyeTrackingId, dataToSave).send();
+          console.log('[EyeTrackingForm] Respuesta de actualización:', JSON.stringify(response, null, 2));
+        } catch (updateError) {
+          console.error('[EyeTrackingForm] Error al actualizar:', updateError);
+          throw updateError;
+        }
       } else {
         // Si no, crear nuevo
-        console.log('DEBUG: Creando nuevo Eye Tracking');
-        response = await eyeTrackingAPI.create(formData);
-        console.log('Eye tracking creado correctamente:', response);
-        toast.success('Configuración de seguimiento ocular guardada');
+        console.log('[EyeTrackingForm] Creando nuevo Eye Tracking');
+        try {
+          response = await eyeTrackingFixedAPI.create(dataToSave).send();
+          console.log('[EyeTrackingForm] Respuesta de creación:', JSON.stringify(response, null, 2));
+          
+          // Actualizar el ID si es nuevo
+          if (response && response.id) {
+            setEyeTrackingId(response.id);
+            console.log(`[EyeTrackingForm] Nuevo Eye Tracking creado con ID: ${response.id}`);
+          } else {
+            console.warn('[EyeTrackingForm] Se creó el Eye Tracking pero no se recibió un ID en la respuesta');
+          }
+        } catch (createError) {
+          console.error('[EyeTrackingForm] Error al crear:', createError);
+          throw createError;
+        }
       }
       
-      // Actualizar el ID si es nuevo
-      if (response && response.data && response.data.id) {
-        setEyeTrackingId(response.data.id);
-      }
+      console.log('[EyeTrackingForm] Operación completada con éxito');
+      toast.success('Configuración de seguimiento ocular guardada correctamente');
       
       // Llamar al callback si existe
       if (onSave) {
         onSave(formData);
       }
     } catch (error) {
-      console.error('Error al guardar eye tracking:', error);
-      toast.error('Error al guardar la configuración de seguimiento ocular');
+      console.error('[EyeTrackingForm] Error al guardar:', error);
+      
+      // Manejar error de autenticación
+      if (error instanceof Error && error.message.includes('401')) {
+        toast.error('Tu sesión ha expirado. Por favor, vuelve a iniciar sesión.');
+        return;
+      }
+      
+      // Manejar otros errores
+      toast.error(`Error al guardar: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     } finally {
       setIsSaving(false);
     }

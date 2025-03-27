@@ -127,6 +127,7 @@ export function SmartVOCForm({ className, researchId, onSave }: SmartVOCFormProp
     setIsLoading(true);
     
     try {
+      console.log('[SmartVOCForm] Usando la API de SmartVOC mejorada');
       const response = await smartVocFixedAPI.getByResearchId(researchId).send();
       
       console.log('[SmartVOCForm] Respuesta de API:', response);
@@ -140,6 +141,8 @@ export function SmartVOCForm({ className, researchId, onSave }: SmartVOCFormProp
       const existingData = response.data;
       setSmartVocId(existingData.id);
       console.log('[SmartVOCForm] ID de Smart VOC encontrado:', existingData.id);
+      
+      console.log('[SmartVOCForm] Datos completos recibidos:', JSON.stringify(existingData, null, 2));
       
       const questionsConfig = {
         CSAT: existingData.CSAT || false,
@@ -534,24 +537,38 @@ export function SmartVOCForm({ className, researchId, onSave }: SmartVOCFormProp
       formData.NPS = questions.some(q => q.type === 'NPS');
       formData.VOC = questions.some(q => q.type === 'VOC');
       
-      console.log('[SmartVOCForm] Datos a guardar:', formData);
+      console.log('[SmartVOCForm] Datos a guardar:', JSON.stringify(formData, null, 2));
       
       let response;
       
       if (smartVocId) {
         console.log(`[SmartVOCForm] Actualizando Smart VOC con ID: ${smartVocId}`);
-        response = await smartVocFixedAPI.update(smartVocId, formData).send();
+        try {
+          response = await smartVocFixedAPI.update(smartVocId, formData).send();
+          console.log('[SmartVOCForm] Respuesta de actualización:', JSON.stringify(response, null, 2));
+        } catch (updateError) {
+          console.error('[SmartVOCForm] Error al actualizar:', updateError);
+          throw updateError;
+        }
       } else {
         console.log('[SmartVOCForm] Creando nuevo Smart VOC');
-        response = await smartVocFixedAPI.create(formData).send();
-        
-        if (response && response.id) {
-          setSmartVocId(response.id);
-          console.log(`[SmartVOCForm] Nuevo Smart VOC creado con ID: ${response.id}`);
+        try {
+          response = await smartVocFixedAPI.create(formData).send();
+          console.log('[SmartVOCForm] Respuesta de creación:', JSON.stringify(response, null, 2));
+          
+          if (response && response.id) {
+            setSmartVocId(response.id);
+            console.log(`[SmartVOCForm] Nuevo Smart VOC creado con ID: ${response.id}`);
+          } else {
+            console.warn('[SmartVOCForm] Se creó el Smart VOC pero no se recibió un ID en la respuesta');
+          }
+        } catch (createError) {
+          console.error('[SmartVOCForm] Error al crear:', createError);
+          throw createError;
         }
       }
       
-      console.log('[SmartVOCForm] Respuesta de guardado:', response);
+      console.log('[SmartVOCForm] Operación completada con éxito');
       toast.success('Configuración de Smart VOC guardada correctamente');
       
       if (onSave) {
