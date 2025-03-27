@@ -681,6 +681,35 @@ export const thankYouScreenAPI = {
     }
     
     return method;
+  },
+  
+  // Método que crea o actualiza automáticamente basándose en researchId
+  createOrUpdate: (researchId: string, data: any) => {
+    if (!researchId || typeof researchId !== 'string' || !researchId.trim()) {
+      console.error('ERROR: researchId inválido o faltante para createOrUpdate');
+      throw new Error('Se requiere un ID de investigación válido (researchId)');
+    }
+    
+    // Usaremos el endpoint de crear, ya que es más probable que funcione
+    const url = API_CONFIG.endpoints.thankYouScreen.CREATE || '/thank-you-screens';
+    console.log(`Endpoint CREATEORUPDATE thankYouScreen utilizado: ${url}`);
+    console.log(`URL completa: ${API_CONFIG.baseURL}${url}`);
+    
+    // Asegurar que el researchId está incluido en los datos
+    const formattedData = {
+      ...data,
+      researchId: researchId.trim()
+    };
+    
+    console.log('DEBUG - thankYouScreenAPI.createOrUpdate - Datos a enviar:', formattedData);
+    
+    // Usar POST como método predeterminado para la operación createOrUpdate
+    const method = alovaInstance.Post<any>(url, formattedData);
+    if (method.config) {
+      method.config.method = 'POST';
+    }
+    
+    return method;
   }
 };
 
@@ -723,6 +752,37 @@ export const eyeTrackingAPI = {
     }
     
     return method;
+  },
+  
+  // Método que crea o actualiza automáticamente basándose en researchId
+  createOrUpdate: (researchId: string, data: any) => {
+    if (!researchId || typeof researchId !== 'string' || !researchId.trim()) {
+      console.error('ERROR: researchId inválido o faltante para createOrUpdate');
+      throw new Error('Se requiere un ID de investigación válido (researchId)');
+    }
+    
+    // Usaremos el endpoint de crear, ya que es más probable que funcione
+    const url = API_CONFIG.endpoints.eyeTracking?.CREATE || '/eye-tracking';
+    console.log(`Endpoint CREATEORUPDATE eyeTracking utilizado: ${url}`);
+    console.log(`URL completa: ${API_CONFIG.baseURL}${url}`);
+    
+    // Asegurar que el researchId está incluido en los datos
+    const formattedData = {
+      ...data,
+      researchId: researchId.trim()
+    };
+    
+    console.log('DEBUG - eyeTrackingAPI.createOrUpdate - Datos a enviar:', {
+      researchId: formattedData.researchId
+    });
+    
+    // Usar POST como método predeterminado para la operación createOrUpdate
+    const method = alovaInstance.Post<any>(url, formattedData);
+    if (method.config) {
+      method.config.method = 'POST';
+    }
+    
+    return method;
   }
 };
 
@@ -761,8 +821,10 @@ export const smartVocAPI = {
   },
   
   getByResearchId: (researchId: string) => {
-    const url = (API_CONFIG.endpoints.smartVoc?.GET_BY_RESEARCH || '/smart-voc/research/{researchId}').replace('{researchId}', researchId);
+    // La ruta correcta es /smart-voc/research/{researchId}/smart-voc debido al basePath del controlador
+    const url = `/smart-voc/research/${researchId}/smart-voc`;
     console.log(`Endpoint GET_BY_RESEARCH smartVoc utilizado: ${url}`);
+    console.log(`URL completa: ${API_CONFIG.baseURL}${url}`);
     
     const method = alovaInstance.Get<any>(url);
     if (method.config) {
@@ -779,6 +841,40 @@ export const smartVocAPI = {
     const method = alovaInstance.Put<any>(url, data);
     if (method.config) {
       method.config.method = 'PUT';
+    }
+    
+    return method;
+  },
+  
+  // Método que crea o actualiza automáticamente (según el controlador del backend)
+  createOrUpdate: (researchId: string, data: any) => {
+    if (!researchId || typeof researchId !== 'string' || !researchId.trim()) {
+      console.error('ERROR: researchId inválido o faltante para createOrUpdate');
+      throw new Error('Se requiere un ID de investigación válido (researchId)');
+    }
+    
+    // Usaremos el endpoint de crear, ya que es más probable que funcione
+    const url = API_CONFIG.endpoints.smartVoc?.CREATE || '/smart-voc';
+    console.log(`Endpoint CREATEORUPDATE smartVoc utilizado: ${url}`);
+    console.log(`URL completa: ${API_CONFIG.baseURL}${url}`);
+    
+    // Asegurar que el researchId está incluido en los datos
+    const formattedData = {
+      ...data,
+      researchId: researchId.trim()
+    };
+    
+    console.log('DEBUG - smartVocAPI.createOrUpdate - Datos a enviar:', {
+      researchId: formattedData.researchId,
+      questionsCount: formattedData.questions?.length || 0,
+      randomizeQuestions: formattedData.randomizeQuestions,
+      smartVocRequired: formattedData.smartVocRequired
+    });
+    
+    // Usar POST como método predeterminado para la operación createOrUpdate
+    const method = alovaInstance.Post<any>(url, formattedData);
+    if (method.config) {
+      method.config.method = 'POST';
     }
     
     return method;

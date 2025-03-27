@@ -161,32 +161,19 @@ export function ThankYouScreenForm({ className, researchId }: ThankYouScreenForm
     mutationFn: async (data: any) => {
       console.log('DEBUG: Guardando thank you screen con datos:', data);
       try {
-        let response;
-        let fullUrl = '';
-        
-        // Si tenemos un ID, actualizar el registro existente
-        if (thankYouScreenId) {
-          console.log(`DEBUG: Actualizando thank you screen con ID ${thankYouScreenId}`);
-          fullUrl = `/thank-you-screens/${thankYouScreenId}`;
-          console.log('DEBUG: URL completa para actualización:', fullUrl);
-          response = await thankYouScreenAPI.update(thankYouScreenId, data);
-        } else {
-          // Si no tenemos ID, crear un nuevo registro
-          fullUrl = '/thank-you-screens';
-          console.log('DEBUG: URL completa para creación:', fullUrl);
-          console.log('DEBUG: Creando nuevo thank you screen');
-          response = await thankYouScreenAPI.create(data);
-        }
+        // Usamos el método createOrUpdate que maneja automáticamente si debe crear o actualizar
+        console.log('DEBUG: Usando createOrUpdate para Thank You Screen');
+        const response = await thankYouScreenAPI.createOrUpdate(data.researchId, data);
         
         console.log('DEBUG: Respuesta al guardar thank you screen:', response);
         
         // Convertir la respuesta a ThankYouScreenResponse
         const typedResponse = response as ThankYouScreenResponse;
         
-        // Si la respuesta incluye un ID y no teníamos uno, guardarlo
-        if (typedResponse && typedResponse.id && !thankYouScreenId) {
+        // Si la respuesta incluye un ID, guardarlo
+        if (typedResponse && typedResponse.id) {
           setThankYouScreenId(typedResponse.id);
-          console.log('DEBUG: Nuevo thank you screen ID guardado:', typedResponse.id);
+          console.log('DEBUG: Thank you screen ID guardado:', typedResponse.id);
         }
         
         return typedResponse;

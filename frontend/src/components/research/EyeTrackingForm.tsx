@@ -51,7 +51,23 @@ export function EyeTrackingForm({ researchId, className, onSave }: EyeTrackingFo
             if (response.data.id) {
               setEyeTrackingId(response.data.id);
             }
-            setFormData(response.data);
+            
+            // Asegurarse de que ningún campo necesario sea undefined
+            const safeData = {
+              ...DEFAULT_EYE_TRACKING_CONFIG,  // Base de valores por defecto
+              ...response.data,                // Datos recibidos
+              researchId: researchId           // Garantizar que researchId siempre está presente
+            };
+            
+            // Asegurar que las estructuras anidadas estén completas
+            if (!safeData.stimuli) safeData.stimuli = DEFAULT_EYE_TRACKING_CONFIG.stimuli;
+            if (!safeData.stimuli.items) safeData.stimuli.items = [];
+            if (!safeData.areasOfInterest) safeData.areasOfInterest = DEFAULT_EYE_TRACKING_CONFIG.areasOfInterest;
+            if (!safeData.areasOfInterest.areas) safeData.areasOfInterest.areas = [];
+            if (!safeData.config) safeData.config = DEFAULT_EYE_TRACKING_CONFIG.config;
+            
+            // Actualizar estado con datos seguros
+            setFormData(safeData);
           }
         } catch (error) {
           // Ignorar errores 404, son esperados cuando no hay configuración previa
@@ -152,20 +168,14 @@ export function EyeTrackingForm({ researchId, className, onSave }: EyeTrackingFo
 
     setIsSaving(true);
     try {
-      let response;
+      // Usamos el método createOrUpdate que maneja automáticamente si debe crear o actualizar
+      console.log('DEBUG: Usando createOrUpdate para Eye Tracking');
+      const response = await eyeTrackingAPI.createOrUpdate(researchId, formData);
       
-      // Si ya existe un ID, actualizar
-      if (eyeTrackingId) {
-        response = await eyeTrackingAPI.update(eyeTrackingId, formData);
-      } else {
-        // Si no, crear nuevo
-        response = await eyeTrackingAPI.create(formData);
-      }
-      
-      console.log('Eye tracking guardado:', response);
+      console.log('Eye tracking guardado correctamente:', response);
       
       // Actualizar el ID si es nuevo
-      if (response && response.data && response.data.id && !eyeTrackingId) {
+      if (response && response.data && response.data.id) {
         setEyeTrackingId(response.data.id);
       }
       

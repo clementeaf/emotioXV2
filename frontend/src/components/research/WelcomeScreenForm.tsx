@@ -82,16 +82,28 @@ export function WelcomeScreenForm({ className, researchId }: WelcomeScreenFormPr
         setWelcomeScreenId(welcomeScreenData.data.id);
         console.log('DEBUG: Welcome screen ID guardado:', welcomeScreenData.data.id);
       }
+      
+      // Garantizar que ningún valor sea undefined
       setFormData({
-        isEnabled: welcomeScreenData.data.isEnabled,
-        title: welcomeScreenData.data.title,
-        message: welcomeScreenData.data.message,
-        startButtonText: welcomeScreenData.data.startButtonText
+        isEnabled: welcomeScreenData.data.isEnabled ?? DEFAULT_CONFIG.isEnabled,
+        title: welcomeScreenData.data.title || DEFAULT_CONFIG.title,
+        message: welcomeScreenData.data.message || DEFAULT_CONFIG.message,
+        startButtonText: welcomeScreenData.data.startButtonText || DEFAULT_CONFIG.startButtonText
       });
+      
       console.log('Welcome screen data loaded successfully');
     } else if (welcomeScreenData) {
       console.log('DEBUG: No se encontraron datos de welcome screen, usando valores por defecto');
       setWelcomeScreenId(null);
+      
+      // Reiniciar a valores predeterminados
+      setFormData({
+        isEnabled: DEFAULT_CONFIG.isEnabled,
+        title: DEFAULT_CONFIG.title,
+        message: DEFAULT_CONFIG.message,
+        startButtonText: DEFAULT_CONFIG.startButtonText
+      });
+      
       console.log('No welcome screen configuration found. Using defaults.');
     }
   }, [welcomeScreenData]);
