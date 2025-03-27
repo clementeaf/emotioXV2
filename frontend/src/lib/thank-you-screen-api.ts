@@ -115,49 +115,67 @@ export const thankYouScreenFixedAPI = {
     return {
       send: async () => {
         try {
-          // Creamos una versión personalizada de fetch que no registra errores 404 en la consola
-          const silentFetch = async (url: string, options: RequestInit) => {
-            try {
-              const controller = new AbortController();
-              const { signal } = controller;
-              
-              // Primero intentamos una solicitud HEAD para verificar si el recurso existe
-              const checkResponse = await fetch(url, { 
-                method: 'HEAD', 
-                headers: options.headers,
-                signal 
-              });
-              
-              // Si es 404, manejamos sin lanzar error
-              if (checkResponse.status === 404) {
-                console.log(`[ThankYouScreenAPI] Verificación previa: Recurso no encontrado (404) en ${url}`);
-                console.log('[ThankYouScreenAPI] No se encontró configuración de ThankYouScreen para esta investigación - esto es normal para nuevas investigaciones');
-                return { notFound: true, data: null };
-              }
-              
-              // Si no es 404, procedemos con la solicitud original
-              return fetch(url, options);
-            } catch (error) {
-              console.log('[ThankYouScreenAPI] Error en silentFetch:', error);
-              throw error;
-            }
-          };
+          // ======== SOLUCIÓN ULTRA SILENCIOSA PARA EVITAR ERRORES 404 EN LA CONSOLA ========
           
-          const headers = getAuthHeaders();
+          // Generamos una clave única para este recurso
+          const cacheKey = `thank_you_screen_resource_${researchId}`;
           
-          // Usar nuestro fetch personalizado
-          const response = await silentFetch(`${API_CONFIG.baseURL}${url}`, {
-            method: 'GET',
-            headers
-          });
+          // Si ya intentamos acceder a este recurso antes y no existía, devolvemos directamente
+          // una respuesta simulada sin hacer ninguna solicitud HTTP
+          const isKnownNonExistent = localStorage.getItem(cacheKey) === 'nonexistent';
           
-          // Si ya detectamos un 404 en silentFetch y obtuvimos un objeto con notFound: true
-          if ('notFound' in response && response.notFound) {
-            return response;
+          if (isKnownNonExistent) {
+            console.log(`[ThankYouScreenAPI] Usando respuesta en caché para ${researchId} - sabemos que no existe`);
+            return { 
+              notFound: true, 
+              data: null,
+              ok: false,
+              status: 404,
+              statusText: 'Not Found',
+              json: () => Promise.resolve({ data: null }),
+              text: () => Promise.resolve('')
+            };
           }
           
-          // Para respuestas reales de fetch, usar el manejador normal
-          return handleThankYouScreenResponse(response as Response);
+          // Si no sabemos si existe, hacemos la solicitud GET directamente y manejamos el 404 si ocurre
+          const headers = getAuthHeaders();
+          
+          // Usamos el método fetch con catch para capturar errores 404
+          try {
+            const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
+              method: 'GET',
+              headers
+            });
+            
+            // Si la respuesta es exitosa, guardamos que el recurso existe y procesamos normalmente
+            if (response.ok) {
+              localStorage.removeItem(cacheKey); // Ya no es "nonexistent"
+              return handleThankYouScreenResponse(response);
+            }
+            
+            // Si es 404, guardamos que el recurso no existe para evitar solicitudes futuras
+            if (response.status === 404) {
+              console.log('[ThankYouScreenAPI] No se encontró configuración de ThankYouScreen para esta investigación - esto es normal para nuevas investigaciones');
+              localStorage.setItem(cacheKey, 'nonexistent');
+              
+              return { 
+                notFound: true, 
+                data: null,
+                ok: false,
+                status: 404,
+                statusText: 'Not Found',
+                json: () => Promise.resolve({ data: null }),
+                text: () => Promise.resolve('')
+              };
+            }
+            
+            // Para otros errores, procesamos normalmente
+            return handleThankYouScreenResponse(response);
+          } catch (fetchError) {
+            // En caso de error de red, asumimos que es un problema temporal
+            console.log('[ThankYouScreenAPI] Error de red:', fetchError);
+            throw fetchError;
+          }
         } catch (error) {
           console.log('[ThankYouScreenAPI] Error al obtener ThankYouScreen por researchId:', error);
           throw error;
@@ -183,17 +201,50 @@ export const thankYouScreenFixedAPI = {
     
     return {
       send: async () => {
-        const headers = getAuthHeaders();
-        const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            ...data,
-            researchId: data.researchId.trim()
-          })
-        });
-        
-        return handleThankYouScreenResponse(response);
+        try {
+          const headers = getAuthHeaders();
+          const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              ...data,
+              researchId: data.researchId.trim()
+            })
+          });
+          
+          // Verificar si la respuesta es exitosa
+          if (!response.ok) {
+            // Intentar obtener el mensaje de error
+            let errorMessage = '';
+            try {
+              const errorData = await response.json();
+              errorMessage = errorData.message || errorData.error || `Error ${response.status}: ${response.statusText}`;
+            } catch (e) {
+              errorMessage = `Error ${response.status}: ${response.statusText}`;
+            }
+            
+            // Clasificar y manejar los errores
+            if (response.status === 404) {
+              // URL inexistente - mostrar error
+              console.error(`[ThankYouScreenAPI] Error 404: URL no encontrada: ${url}`);
+              throw new Error(`La URL de la API no existe: ${errorMessage}`);
+            } else if (response.status === 400 || response.status === 422) {
+              // Datos incompatibles - mostrar error
+              console.error(`[ThankYouScreenAPI] Error de datos incompatibles: ${errorMessage}`);
+              throw new Error(`Datos incompatibles: ${errorMessage}`);
+            } else {
+              // Otros errores - registrar pero no mostrar detalles al usuario
+              console.error(`[ThankYouScreenAPI] Error al crear: ${errorMessage}`);
+              throw new Error('No se pudo crear la pantalla de agradecimiento. Por favor, inténtelo de nuevo.');
+            }
+          }
+          
+          // Procesar respuesta exitosa
+          return handleThankYouScreenResponse(response);
+        } catch (error) {
+          console.error('[ThankYouScreenAPI] Error en create:', error);
+          throw error;
+        }
       }
     };
   },
@@ -220,14 +271,47 @@ export const thankYouScreenFixedAPI = {
     
     return {
       send: async () => {
-        const headers = getAuthHeaders();
-        const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
-          method: 'PUT',
-          headers,
-          body: JSON.stringify(data)
-        });
-        
-        return handleThankYouScreenResponse(response);
+        try {
+          const headers = getAuthHeaders();
+          const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify(data)
+          });
+          
+          // Verificar si la respuesta es exitosa
+          if (!response.ok) {
+            // Intentar obtener el mensaje de error
+            let errorMessage = '';
+            try {
+              const errorData = await response.json();
+              errorMessage = errorData.message || errorData.error || `Error ${response.status}: ${response.statusText}`;
+            } catch (e) {
+              errorMessage = `Error ${response.status}: ${response.statusText}`;
+            }
+            
+            // Clasificar y manejar los errores
+            if (response.status === 404) {
+              // URL inexistente o recurso no encontrado - mostrar error
+              console.error(`[ThankYouScreenAPI] Error 404: Recurso no encontrado con ID ${id}`);
+              throw new Error(`No se encontró la pantalla de agradecimiento con ID ${id}: ${errorMessage}`);
+            } else if (response.status === 400 || response.status === 422) {
+              // Datos incompatibles - mostrar error
+              console.error(`[ThankYouScreenAPI] Error de datos incompatibles: ${errorMessage}`);
+              throw new Error(`Datos incompatibles: ${errorMessage}`);
+            } else {
+              // Otros errores - registrar pero no mostrar detalles al usuario
+              console.error(`[ThankYouScreenAPI] Error al actualizar: ${errorMessage}`);
+              throw new Error('No se pudo actualizar la pantalla de agradecimiento. Por favor, inténtelo de nuevo.');
+            }
+          }
+          
+          // Procesar respuesta exitosa
+          return handleThankYouScreenResponse(response);
+        } catch (error) {
+          console.error('[ThankYouScreenAPI] Error en update:', error);
+          throw error;
+        }
       }
     };
   },

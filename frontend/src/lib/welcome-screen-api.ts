@@ -29,12 +29,7 @@ const getToken = () => {
 const handleWelcomeScreenResponse = async (response: Response) => {
   console.log(`[WelcomeScreenAPI] Respuesta recibida: ${response.status} ${response.statusText}`);
   
-  // Si es 404, lanzar un error específico
-  if (response.status === 404) {
-    const text = await response.text();
-    console.error(`[WelcomeScreenAPI] Error 404: ${text}`);
-    throw new Error(`404 - Recurso no encontrado: ${text}`);
-  }
+  // Ya no lanzamos error para 404 aquí, porque lo manejamos en getByResearchId
   
   // Intentar obtener el cuerpo como JSON
   try {
@@ -117,13 +112,121 @@ export const welcomeScreenFixedAPI = {
     
     return {
       send: async () => {
-        const headers = getAuthHeaders();
-        const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
-          method: 'GET',
-          headers
-        });
-        
-        return handleWelcomeScreenResponse(response);
+        try {
+          // ======== SOLUCIÓN ULTRA SILENCIOSA PARA EVITAR ERRORES 404 EN LA CONSOLA ========
+          
+          // Generamos una clave única para este recurso
+          const cacheKey = `welcome_screen_resource_${researchId}`;
+          
+          // Si ya intentamos acceder a este recurso antes y no existía, devolvemos directamente
+          // una respuesta simulada sin hacer ninguna solicitud HTTP
+          const isKnownNonExistent = localStorage.getItem(cacheKey) === 'nonexistent';
+          
+          if (isKnownNonExistent) {
+            console.log(`[WelcomeScreenAPI] Usando respuesta en caché para ${researchId} - sabemos que no existe`);
+            return { 
+              notFound: true, 
+              data: null,
+              ok: false,
+              status: 404,
+              statusText: 'Not Found',
+              json: () => Promise.resolve({ data: null }),
+              text: () => Promise.resolve('')
+            };
+          }
+          
+          // Si no sabemos si existe, hacemos la solicitud GET directamente y manejamos el 404 si ocurre
+          const headers = getAuthHeaders();
+          
+          // Usamos Image() como un hack para evitar errores en la consola
+          // Las imágenes fallidas no muestran errores en la red en la consola de Chrome
+          if (false && typeof window !== 'undefined') {
+            try {
+              const dummyImage = new Image();
+              dummyImage.style.display = 'none';
+              const timestamp = Date.now();
+              
+              // Creamos una promesa que se resolverá cuando la imagen se cargue o falle
+              const checkPromise = new Promise((resolve) => {
+                dummyImage.onload = () => resolve(true);
+                dummyImage.onerror = () => resolve(false);
+                
+                // Establecemos un timeout para asegurarnos de que no se quede esperando para siempre
+                setTimeout(() => resolve(false), 3000);
+              });
+              
+              // Intentamos cargar la imagen (esto fallará con 404, pero no mostrará error en la consola)
+              document.body.appendChild(dummyImage);
+              dummyImage.src = `${API_CONFIG.baseURL}${url}?timestamp=${timestamp}`;
+              
+              // Esperamos a que la imagen se cargue o falle
+              const exists = await checkPromise;
+              
+              // Limpiamos
+              if (document.body.contains(dummyImage)) {
+                document.body.removeChild(dummyImage);
+              }
+              
+              // Si la imagen falló, entonces el recurso no existe
+              if (!exists) {
+                console.log('[WelcomeScreenAPI] No se encontró la pantalla de bienvenida en la verificación con imagen');
+                localStorage.setItem(cacheKey, 'nonexistent');
+                return { 
+                  notFound: true, 
+                  data: null,
+                  ok: false,
+                  status: 404,
+                  statusText: 'Not Found',
+                  json: () => Promise.resolve({ data: null }),
+                  text: () => Promise.resolve('')
+                };
+              }
+            } catch (e) {
+              console.log('[WelcomeScreenAPI] Error en la verificación con imagen:', e);
+              // Si hay un error, continuamos con el enfoque normal
+            }
+          }
+          
+          // Usamos el método fetch con catch para capturar errores 404
+          try {
+            const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
+              method: 'GET',
+              headers
+            });
+            
+            // Si la respuesta es exitosa, guardamos que el recurso existe y procesamos normalmente
+            if (response.ok) {
+              localStorage.removeItem(cacheKey); // Ya no es "nonexistent"
+              return handleWelcomeScreenResponse(response);
+            }
+            
+            // Si es 404, guardamos que el recurso no existe para evitar solicitudes futuras
+            if (response.status === 404) {
+              console.log('[WelcomeScreenAPI] No se encontró configuración de pantalla de bienvenida para esta investigación - esto es normal para nuevas investigaciones');
+              localStorage.setItem(cacheKey, 'nonexistent');
+              
+              return { 
+                notFound: true, 
+                data: null,
+                ok: false,
+                status: 404,
+                statusText: 'Not Found',
+                json: () => Promise.resolve({ data: null }),
+                text: () => Promise.resolve('')
+              };
+            }
+            
+            // Para otros errores, procesamos normalmente
+            return handleWelcomeScreenResponse(response);
+          } catch (fetchError) {
+            // En caso de error de red, asumimos que es un problema temporal
+            console.log('[WelcomeScreenAPI] Error de red:', fetchError);
+            throw fetchError;
+          }
+        } catch (error) {
+          console.log('[WelcomeScreenAPI] Error al obtener pantalla de bienvenida por researchId:', error);
+          throw error;
+        }
       }
     };
   },
@@ -141,18 +244,133 @@ export const welcomeScreenFixedAPI = {
     const url = API_CONFIG.endpoints.welcomeScreen.CREATE;
     console.log(`[WelcomeScreenAPI] Creando pantalla para investigación ${data.researchId}, URL: ${url}`);
     console.log(`[WelcomeScreenAPI] URL completa: ${API_CONFIG.baseURL}${url}`);
-    console.log('Datos a enviar:', data);
+    console.log('[WelcomeScreenAPI] Datos a enviar:', data);
     
     return {
       send: async () => {
-        const headers = getAuthHeaders();
-        const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(data)
-        });
-        
-        return handleWelcomeScreenResponse(response);
+        try {
+          const headers = getAuthHeaders();
+          
+          // Usamos nuestra implementación mejorada para POST también
+          const truelyQuietFetch = async (url: string, options: RequestInit) => {
+            const headers: Record<string, string> = {};
+            
+            // Convertir headers del RequestInit a Record<string, string>
+            if (options.headers) {
+              if (options.headers instanceof Headers) {
+                options.headers.forEach((value, key) => {
+                  headers[key] = value;
+                });
+              } else if (typeof options.headers === 'object') {
+                Object.keys(options.headers).forEach(key => {
+                  const value = (options.headers as Record<string, string>)[key];
+                  if (value) headers[key] = value;
+                });
+              }
+            }
+            
+            // Para PUT/POST, extraer el body
+            let body: string | null = null;
+            if (options.body && typeof options.body === 'string') {
+              body = options.body;
+            }
+            
+            try {
+              return new Promise<any>((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                
+                xhr.onreadystatechange = function() {
+                  if (xhr.readyState !== 4) return;
+                  
+                  if (xhr.status === 404) {
+                    // Para creación, 404 significa que el endpoint no existe - es un error real
+                    console.log(`[WelcomeScreenAPI] Endpoint no encontrado (404) al crear en ${url}`);
+                    console.log('[WelcomeScreenAPI] Esto puede indicar un problema con la URL de la API');
+                    
+                    let errorData;
+                    try {
+                      errorData = JSON.parse(xhr.responseText);
+                    } catch (e) {
+                      errorData = xhr.responseText;
+                    }
+                    
+                    // Notificar el problema pero de manera controlada
+                    reject({
+                      status: 404,
+                      statusText: 'Not Found',
+                      data: errorData,
+                      message: 'El endpoint para crear la pantalla de bienvenida no existe'
+                    });
+                  } else if (xhr.status >= 200 && xhr.status < 300) {
+                    // Respuesta exitosa
+                    let responseData;
+                    try {
+                      responseData = JSON.parse(xhr.responseText);
+                    } catch (e) {
+                      responseData = xhr.responseText;
+                    }
+                    resolve({ 
+                      ok: true,
+                      status: xhr.status,
+                      statusText: xhr.statusText,
+                      json: () => Promise.resolve(responseData),
+                      text: () => Promise.resolve(xhr.responseText)
+                    });
+                  } else {
+                    // Otros errores
+                    let errorData;
+                    try {
+                      errorData = JSON.parse(xhr.responseText);
+                    } catch (e) {
+                      errorData = xhr.responseText;
+                    }
+                    
+                    reject({
+                      status: xhr.status,
+                      statusText: xhr.statusText,
+                      data: errorData,
+                      message: `Error ${xhr.status}: ${xhr.statusText}`
+                    });
+                  }
+                };
+                
+                xhr.open(options.method || 'GET', url);
+                
+                // Añadir headers
+                Object.keys(headers).forEach(key => {
+                  xhr.setRequestHeader(key, headers[key]);
+                });
+                
+                // Enviar con body si existe
+                xhr.send(body);
+              });
+            } catch (error) {
+              console.log('[WelcomeScreenAPI] Error en truelyQuietFetch para creación:', error);
+              throw error;
+            }
+          };
+          
+          // Usar nuestra función personalizada
+          const response: any = await truelyQuietFetch(`${API_CONFIG.baseURL}${url}`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(data)
+          });
+          
+          return response;
+        } catch (error: any) {
+          // Personalizar mensajes de error para el usuario
+          if (error.status === 404) {
+            console.error('[WelcomeScreenAPI] Error 404 en creación:', error.message);
+            throw new Error('No se pudo encontrar el endpoint para crear la pantalla de bienvenida. Por favor, contacta al soporte técnico.');
+          } else if (error.status === 400) {
+            console.error('[WelcomeScreenAPI] Error 400 en creación:', error.data);
+            throw new Error('Datos incorrectos: ' + (error.data?.message || 'Revisa los datos enviados'));
+          } else {
+            console.error('[WelcomeScreenAPI] Error en create:', error);
+            throw new Error('No se pudo crear la pantalla de bienvenida. Por favor, inténtalo de nuevo más tarde.');
+          }
+        }
       }
     };
   },
@@ -175,18 +393,123 @@ export const welcomeScreenFixedAPI = {
     const url = API_CONFIG.endpoints.welcomeScreen.UPDATE.replace('{id}', id);
     console.log(`[WelcomeScreenAPI] Actualizando pantalla con ID ${id}, URL: ${url}`);
     console.log(`[WelcomeScreenAPI] URL completa: ${API_CONFIG.baseURL}${url}`);
-    console.log('Datos a enviar:', data);
+    console.log('[WelcomeScreenAPI] Datos a enviar:', data);
     
     return {
       send: async () => {
-        const headers = getAuthHeaders();
-        const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
-          method: 'PUT',
-          headers,
-          body: JSON.stringify(data)
-        });
-        
-        return handleWelcomeScreenResponse(response);
+        try {
+          const headers = getAuthHeaders();
+          
+          // Primero verificamos si el recurso existe para evitar errores 404 ruidosos
+          const truelyQuietFetch = async (url: string, options: RequestInit) => {
+            const headers: Record<string, string> = {};
+            
+            // Convertir headers del RequestInit a Record<string, string>
+            if (options.headers) {
+              if (options.headers instanceof Headers) {
+                options.headers.forEach((value, key) => {
+                  headers[key] = value;
+                });
+              } else if (typeof options.headers === 'object') {
+                Object.keys(options.headers).forEach(key => {
+                  const value = (options.headers as Record<string, string>)[key];
+                  if (value) headers[key] = value;
+                });
+              }
+            }
+            
+            // Para PUT/POST, extraer el body
+            let body: string | null = null;
+            if (options.body && typeof options.body === 'string') {
+              body = options.body;
+            }
+            
+            try {
+              return new Promise<any>((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                
+                xhr.onreadystatechange = function() {
+                  if (xhr.readyState !== 4) return;
+                  
+                  if (xhr.status === 404) {
+                    // Para el caso de actualización, un 404 es un error que debemos manejar de forma especial
+                    console.log(`[WelcomeScreenAPI] Recurso no encontrado (404) al actualizar en ${url}`);
+                    console.log('[WelcomeScreenAPI] Este error es esperado si el ID de pantalla de bienvenida ya no existe');
+                    // Retornamos un objeto específico para este caso
+                    resolve({ 
+                      notFoundError: true, 
+                      errorData: {
+                        message: "La pantalla de bienvenida que intentas actualizar no existe. Puede que haya sido eliminada."
+                      }
+                    });
+                  } else if (xhr.status >= 200 && xhr.status < 300) {
+                    // Respuesta exitosa
+                    let responseData;
+                    try {
+                      responseData = JSON.parse(xhr.responseText);
+                    } catch (e) {
+                      responseData = xhr.responseText;
+                    }
+                    resolve({ 
+                      ok: true,
+                      status: xhr.status,
+                      statusText: xhr.statusText,
+                      json: () => Promise.resolve(responseData),
+                      text: () => Promise.resolve(xhr.responseText)
+                    });
+                  } else {
+                    // Otros errores
+                    let errorData;
+                    try {
+                      errorData = JSON.parse(xhr.responseText);
+                    } catch (e) {
+                      errorData = xhr.responseText;
+                    }
+                    
+                    reject({
+                      status: xhr.status,
+                      statusText: xhr.statusText,
+                      data: errorData,
+                      message: `Error ${xhr.status}: ${xhr.statusText}`
+                    });
+                  }
+                };
+                
+                xhr.open(options.method || 'GET', url);
+                
+                // Añadir headers
+                Object.keys(headers).forEach(key => {
+                  xhr.setRequestHeader(key, headers[key]);
+                });
+                
+                // Enviar con body si existe
+                xhr.send(body);
+              });
+            } catch (error) {
+              console.log('[WelcomeScreenAPI] Error en truelyQuietFetch para actualización:', error);
+              throw error;
+            }
+          };
+          
+          // Usar nuestra función personalizada
+          const response: any = await truelyQuietFetch(`${API_CONFIG.baseURL}${url}`, {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify(data)
+          });
+          
+          // Manejar caso específico de recurso no encontrado
+          if (response && response.notFoundError) {
+            // Lanzar un error amigable para que el componente lo muestre adecuadamente
+            console.error('[WelcomeScreenAPI] Error 404 al actualizar:', response.errorData.message);
+            throw new Error(response.errorData.message);
+          }
+          
+          return response;
+        } catch (error) {
+          console.error('[WelcomeScreenAPI] Error en update:', error);
+          throw error;
+        }
       }
     };
   },
