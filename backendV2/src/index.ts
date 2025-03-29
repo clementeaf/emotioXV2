@@ -1,14 +1,17 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { getCorsHeaders } from './utils/controller.utils';
+
+// Importar todos los controladores
 import { authHandler } from './controllers/auth.controller';
-import { researchHandler } from './controllers/newResearch.controller';
 import { welcomeScreenHandler } from './controllers/welcomeScreen.controller';
-import { smartVocFormController } from './controllers/smartVocForm.controller';
 import { thankYouScreenHandler } from './controllers/thankYouScreen.controller';
+import { researchHandler } from './controllers/newResearch.controller';
+import { smartVocFormController } from './controllers/smartVocForm.controller';
 import { eyeTrackingHandler } from './controllers/eyeTracking.controller';
 
 /**
  * Punto de entrada principal para las funciones serverless
- * Orquesta todas las rutas y redirige a los controladores correspondientes
+ * Enruta las solicitudes a los controladores correspondientes
  */
 
 /**
@@ -17,21 +20,8 @@ import { eyeTrackingHandler } from './controllers/eyeTracking.controller';
 export const versionInfo = {
   name: 'emotioXV2-backend',
   version: '0.1.0',
-  environment: process.env.NODE_ENV || 'development'
-};
-
-/**
- * Mapeador de rutas principales a sus controladores correspondientes
- */
-const routeMap: Record<string, (event: APIGatewayProxyEvent) => Promise<APIGatewayProxyResult>> = {
-  'auth': authHandler,
-  'research': researchHandler,
-  'welcome-screens': welcomeScreenHandler,
-  'smart-voc': smartVocFormController,
-  'thank-you-screen': thankYouScreenHandler,
-  'eye-tracking': eyeTrackingHandler,
-  // Aquí se añadirán otros controladores
-  // 'emotions': emotionHandler,
+  environment: process.env.NODE_ENV || 'development',
+  status: 'Activo'
 };
 
 /**
@@ -48,50 +38,118 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
   try {
     // Comprobar si es una solicitud WebSocket
     if (event.requestContext && 'connectionId' in event.requestContext) {
-      return await handleWebSocketRequest(event);
+      return handleWebSocketRequest(event);
     }
 
-    // Manejar solicitudes HTTP
-    const path = event.path;
+    // Para solicitudes OPTIONS, responder con encabezados CORS
+    if (event.httpMethod === 'OPTIONS') {
+      return {
+        statusCode: 200,
+        headers: getCorsHeaders(),
+        body: ''
+      };
+    }
+
+    // Enrutar a los controladores apropiados basado en la ruta
+    const path = event.path.toLowerCase();
     
-    // Verificar health check
-    if (path === '/health' || path === '/ping') {
-      return createResponse(200, { status: 'OK', ...versionInfo });
+    // Variable para seguir el modo de depuración/desarrollo
+    const isDevelopmentMode = process.env.NODE_ENV === 'development' || process.env.IS_OFFLINE === 'true';
+
+    // Usar un bloque try-catch adicional para manejar errores específicos de enrutamiento
+    try {
+      if (path.startsWith('/auth')) {
+        console.log('Enrutando a authHandler:', path);
+        return authHandler(event);
+      } else if (path.startsWith('/welcome-screens') || path.includes('/welcome-screen')) {
+        console.log('Enrutando a welcomeScreenHandler:', path);
+        return welcomeScreenHandler(event);
+      } else if (path.startsWith('/thank-you-screens') || path.includes('/thank-you-screen')) {
+        console.log('Enrutando a thankYouScreenHandler:', path);
+        return thankYouScreenHandler(event);
+      } else if (path.includes('/smart-voc')) {
+        console.log('Enrutando a smartVocFormController:', path);
+        return smartVocFormController(event);
+      } else if (path.match(/\/research\/[^\/]+\/smart-voc/)) {
+        console.log('Enrutando a smartVocFormController (ruta research):', path);
+        return smartVocFormController(event);
+      } else if (path.startsWith('/research')) {
+        console.log('Enrutando a researchHandler:', path);
+        return researchHandler(event);
+      } else if (path.startsWith('/eye-tracking')) {
+        console.log('Enrutando a eyeTrackingHandler:', path);
+        return eyeTrackingHandler(event);
+      }
+    } catch (routingError: any) {
+      console.error('Error al enrutar solicitud:', routingError);
+      
+      // En modo desarrollo, devolver detalles del error
+      if (isDevelopmentMode) {
+        return {
+          statusCode: 500,
+          headers: getCorsHeaders(),
+          body: JSON.stringify({
+            message: 'Error al procesar la solicitud en el controlador',
+            error: routingError.message,
+            stack: routingError.stack
+          })
+        };
+      }
+      
+      // En producción, mostrar un mensaje genérico
+      return {
+        statusCode: 500,
+        headers: getCorsHeaders(),
+        body: JSON.stringify({
+          message: 'Error interno del servidor'
+        })
+      };
     }
     
-    // Verificar la ruta raíz
+    // Ruta raíz - información general de la API
     if (path === '/' || path === '') {
-      return createResponse(200, { 
-        message: 'API de emotioXV2', 
-        ...versionInfo,
-        endpoints: Object.keys(routeMap).map(route => `/${route}`)
-      });
+      return {
+        statusCode: 200,
+        headers: getCorsHeaders(),
+        body: JSON.stringify({
+          message: 'API de emotioXV2 Backend',
+          status: 'Activo',
+          info: versionInfo,
+          endpoints: [
+            '/auth - Autenticación y gestión de usuarios',
+            '/research - Gestión de investigaciones (GET, POST, PUT, DELETE)',
+            '/research/user - Investigaciones del usuario actual (GET)',
+            '/research/:id - Detalle de investigación (GET, PUT, DELETE)',
+            '/welcome-screens - Configuración de pantallas de bienvenida (GET, POST, PUT, DELETE)',
+            '/thank-you-screens - Configuración de pantallas de agradecimiento (GET, POST, PUT, DELETE)',
+            '/smart-voc - Formularios VOC inteligentes (GET, POST, PUT, DELETE)',
+            '/eye-tracking - Configuración y datos de eye tracking (GET, POST, PUT, DELETE)'
+          ]
+        })
+      };
     }
-    
-    // Determinar el controlador según la ruta principal
-    const segments = path.split('/').filter(Boolean);
-    const mainRoute = segments[0];
-    
-    console.log('Procesando ruta:', mainRoute);
-    
-    if (mainRoute && routeMap[mainRoute]) {
-      console.log(`Redirigiendo a controlador para ruta ${mainRoute}`);
-      return await routeMap[mainRoute](event);
-    }
-    
-    // Si no se encontró una ruta conocida
-    console.log('Ruta no encontrada:', path);
-    return createResponse(404, { 
-      message: 'Ruta no encontrada',
-      path: event.path,
-      availableRoutes: Object.keys(routeMap).map(route => `/${route}`)
-    });
+
+    // Si la ruta no coincide con ningún controlador
+    return {
+      statusCode: 404,
+      headers: getCorsHeaders(),
+      body: JSON.stringify({
+        message: 'Ruta no encontrada',
+        path: event.path,
+        method: event.httpMethod,
+        info: versionInfo
+      })
+    };
   } catch (error: any) {
     console.error('Error en handler principal:', error);
-    return createResponse(500, {
-      message: 'Error interno del servidor',
-      error: error.message
-    });
+    return {
+      statusCode: 500,
+      headers: getCorsHeaders(),
+      body: JSON.stringify({
+        message: 'Error interno del servidor',
+        error: error.message
+      })
+    };
   }
 };
 
@@ -100,47 +158,84 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
  */
 const handleWebSocketRequest = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
+    // Manejar solicitudes OPTIONS para WebSockets (preflight CORS)
+    if (event.httpMethod === 'OPTIONS') {
+      console.log('Solicitud WebSocket preflight CORS recibida');
+      return {
+        statusCode: 200,
+        headers: getCorsHeaders(),
+        body: ''
+      };
+    }
+
     // Extraer información relevante para WebSockets
     const connectionId = (event.requestContext as any).connectionId;
     const routeKey = (event.requestContext as any).routeKey;
     
     if (routeKey === '$connect') {
-      console.log(`Nueva conexión: ${connectionId}`);
-      return createResponse(200, { message: 'Conectado' });
+      console.log(`Nueva conexión WebSocket: ${connectionId}`);
+      // Aquí se podría almacenar la conexión en DynamoDB
+      return {
+        statusCode: 200,
+        headers: getCorsHeaders(),
+        body: JSON.stringify({ message: 'Conectado' })
+      };
     } else if (routeKey === '$disconnect') {
-      console.log(`Conexión cerrada: ${connectionId}`);
-      return createResponse(200, { message: 'Desconectado' });
+      console.log(`Conexión WebSocket cerrada: ${connectionId}`);
+      // Aquí se podría eliminar la conexión de DynamoDB
+      return {
+        statusCode: 200,
+        headers: getCorsHeaders(),
+        body: JSON.stringify({ message: 'Desconectado' })
+      };
     } else if (routeKey === '$default') {
-      // Aquí se procesarían los mensajes WebSocket
-      // Por ahora solo devolvemos un mensaje de confirmación
-      return createResponse(200, { message: 'Mensaje recibido' });
+      // Procesar mensajes WebSocket
+      console.log(`Mensaje WebSocket recibido de ${connectionId}:`, event.body);
+      
+      try {
+        // Intentar parsear el cuerpo del mensaje
+        if (event.body) {
+          const message = JSON.parse(event.body);
+          
+          // Aquí se puede implementar la lógica para manejar diferentes tipos de mensajes
+          // Ejemplo: if (message.action === 'sendNotification') { ... }
+          
+          return {
+            statusCode: 200,
+            headers: getCorsHeaders(),
+            body: JSON.stringify({ 
+              message: 'Mensaje recibido',
+              data: message
+            })
+          };
+        }
+      } catch (parseError) {
+        console.error('Error al parsear mensaje WebSocket:', parseError);
+      }
+      
+      return {
+        statusCode: 200,
+        headers: getCorsHeaders(),
+        body: JSON.stringify({ 
+          message: 'Mensaje recibido pero no pudo ser procesado'
+        })
+      };
     }
     
-    return createResponse(400, { message: 'Operación WebSocket no soportada' });
+    return {
+      statusCode: 400,
+      headers: getCorsHeaders(),
+      body: JSON.stringify({ message: 'Operación WebSocket no soportada' })
+    };
   } catch (error: any) {
     console.error('Error en manejo de WebSocket:', error);
-    return createResponse(500, { message: 'Error en operación WebSocket', error: error.message });
+    return {
+      statusCode: 500,
+      headers: getCorsHeaders(),
+      body: JSON.stringify({ 
+        message: 'Error en operación WebSocket', 
+        error: error.message 
+      })
+    };
   }
-};
-
-/**
- * Crea una respuesta HTTP estandarizada
- */
-const createResponse = (statusCode: number, body: any): APIGatewayProxyResult => {
-  return {
-    statusCode,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',  // Permitir todos los orígenes
-      'Access-Control-Allow-Credentials': true,
-      'Access-Control-Allow-Methods': 'GET, PUT, POST, DELETE, OPTIONS, PATCH, HEAD',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Amz-Date, X-Api-Key, X-Amz-Security-Token, X-Requested-With, X-Amz-Meta-*',
-      'Access-Control-Max-Age': '86400',   // Caché de preflight 24 horas
-      'Cache-Control': 'no-cache, no-store, must-revalidate'
-    },
-    body: JSON.stringify(body)
-  };
-};
-
-// Iniciar la aplicación
-console.log(`Iniciando ${versionInfo.name} v${versionInfo.version} en entorno ${versionInfo.environment}`); 
+}; 

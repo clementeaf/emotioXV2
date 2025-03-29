@@ -3,7 +3,6 @@ service: emotioxv2-backend
 frameworkVersion: '3'
 
 plugins:
-  - serverless-plugin-typescript
   - serverless-offline
   - serverless-dotenv-plugin
   - serverless-dynamodb-local
@@ -13,6 +12,19 @@ plugins:
 # Configuración del paquete
 package:
   individually: true
+  patterns:
+    - 'node_modules/**'
+    - '!node_modules/@types/**'
+    - '!node_modules/**/*.md'
+    - '!node_modules/**/*.ts'
+    - '!node_modules/**/*.map'
+    - '!.git/**'
+    - '!.serverless/**'
+    - '!test/**'
+    - '!src/**'
+    - 'dist/**'
+    - 'package.json'
+    - '.env'
 
 provider:
   name: aws
@@ -27,9 +39,10 @@ provider:
     USER_TABLE: ${self:service}-users-${self:provider.stage}
     DYNAMODB_TABLE: ${self:service}-table-${self:provider.stage}
     JWT_SECRET: ${env:JWT_SECRET, 'mi-clave-secreta-para-firmar-tokens'}
-    TOKEN_EXPIRATION: '604800' # 7 días en segundos (antes 86400 - 24 horas)
-    USE_MOCK_DB: 'false'  # FORZAR a false directamente, sin usar la variable custom
+    TOKEN_EXPIRATION: '604800'
+    USE_MOCK_DB: 'false'
     IS_OFFLINE: ${self:custom.isOffline, 'false'}
+    ALLOWED_ORIGIN: ${env:ALLOWED_ORIGIN, 'http://localhost:4700'}
     API_ENDPOINT: 
       Fn::Join:
         - ""
@@ -39,7 +52,7 @@ provider:
           - Ref: "AWS::Region"
           - ".amazonaws.com/${self:provider.stage}"
   
-  # Nueva sintaxis recomendada para IAM roles
+  # IAM roles
   iam:
     role:
       statements:
@@ -62,120 +75,125 @@ provider:
 
 functions:
   api:
-    handler: src/index.handler
+    handler: dist/backendV2/src/index.handler
     events:
-      # HTTP endpoint para tráfico regular
       - http:
           path: /{proxy+}
           method: ANY
-          cors: 
-            origin: 'http://localhost:4700,*'
+          cors:
+            origin: '*'
             headers:
               - Content-Type
               - X-Amz-Date
               - Authorization
               - X-Api-Key
               - X-Amz-Security-Token
+              - X-Amz-User-Agent
               - X-Requested-With
               - Accept
+              - Cache-Control
               - cache-control
+              - Pragma
               - pragma
             allowCredentials: true
-            maxAge: 86400
-      # Endpoint raíz
       - http:
           path: /
           method: ANY
-          cors: 
-            origin: 'http://localhost:4700,*'
+          cors:
+            origin: '*'
             headers:
               - Content-Type
               - X-Amz-Date
               - Authorization
               - X-Api-Key
               - X-Amz-Security-Token
+              - X-Amz-User-Agent
               - X-Requested-With
               - Accept
+              - Cache-Control
               - cache-control
+              - Pragma
               - pragma
             allowCredentials: true
-            maxAge: 86400
-      # Endpoint específico para eye-tracking
       - http:
           path: /eye-tracking
           method: ANY
-          cors: 
-            origin: 'http://localhost:4700,*'
+          cors:
+            origin: '*'
             headers:
               - Content-Type
               - X-Amz-Date
               - Authorization
               - X-Api-Key
               - X-Amz-Security-Token
+              - X-Amz-User-Agent
               - X-Requested-With
               - Accept
+              - Cache-Control
               - cache-control
+              - Pragma
               - pragma
             allowCredentials: true
-            maxAge: 86400
-      # Endpoint específico para eye-tracking con path param
       - http:
           path: /eye-tracking/{proxy+}
           method: ANY
-          cors: 
-            origin: 'http://localhost:4700,*'
+          cors:
+            origin: '*'
             headers:
               - Content-Type
               - X-Amz-Date
               - Authorization
               - X-Api-Key
               - X-Amz-Security-Token
+              - X-Amz-User-Agent
               - X-Requested-With
               - Accept
+              - Cache-Control
               - cache-control
+              - Pragma
               - pragma
             allowCredentials: true
-            maxAge: 86400
-      # Endpoint específico para smart-voc
       - http:
           path: /smart-voc
           method: ANY
-          cors: 
-            origin: 'http://localhost:4700,*'
+          cors:
+            origin: '*'
             headers:
               - Content-Type
               - X-Amz-Date
               - Authorization
               - X-Api-Key
               - X-Amz-Security-Token
+              - X-Amz-User-Agent
               - X-Requested-With
               - Accept
+              - Cache-Control
               - cache-control
+              - Pragma
               - pragma
             allowCredentials: true
-            maxAge: 86400
-      # Endpoint específico para smart-voc con path param
       - http:
           path: /smart-voc/{proxy+}
           method: ANY
-          cors: 
-            origin: 'http://localhost:4700,*'
+          cors:
+            origin: '*'
             headers:
               - Content-Type
               - X-Amz-Date
               - Authorization
               - X-Api-Key
               - X-Amz-Security-Token
+              - X-Amz-User-Agent
               - X-Requested-With
               - Accept
+              - Cache-Control
               - cache-control
+              - Pragma
               - pragma
             allowCredentials: true
-            maxAge: 86400
   
-  # WebSocket para comunicación en tiempo real
   websocket:
-    handler: src/index.handler
+    handler: dist/backendV2/src/index.handler
     events:
       - websocket:
           route: $connect
@@ -186,49 +204,6 @@ functions:
 
 resources:
   Resources:
-    # Configuración CORS para integración de API Gateway
-    GatewayResponseDefault4XX:
-      Type: 'AWS::ApiGateway::GatewayResponse'
-      Properties:
-        ResponseParameters:
-          gatewayresponse.header.Access-Control-Allow-Origin: "'http://localhost:4700,*'"
-          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Requested-With,Accept,cache-control,pragma'"
-          gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS,PATCH'"
-          gatewayresponse.header.Access-Control-Expose-Headers: "'Authorization,X-Api-Key,WWW-Authenticate'"
-          gatewayresponse.header.Access-Control-Allow-Credentials: "'true'"
-        ResponseType: DEFAULT_4XX
-        RestApiId:
-          Ref: 'ApiGatewayRestApi'
-
-    GatewayResponseDefault5XX:
-      Type: 'AWS::ApiGateway::GatewayResponse'
-      Properties:
-        ResponseParameters:
-          gatewayresponse.header.Access-Control-Allow-Origin: "'http://localhost:4700,*'"
-          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Requested-With,Accept,cache-control,pragma'"
-          gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS,PATCH'"
-          gatewayresponse.header.Access-Control-Expose-Headers: "'Authorization,X-Api-Key,WWW-Authenticate'"
-          gatewayresponse.header.Access-Control-Allow-Credentials: "'true'"
-        ResponseType: DEFAULT_5XX
-        RestApiId:
-          Ref: 'ApiGatewayRestApi'
-
-    # Respuesta específica para OPTIONS (preflight)
-    GatewayResponseOptions:
-      Type: 'AWS::ApiGateway::GatewayResponse'
-      Properties:
-        ResponseParameters:
-          gatewayresponse.header.Access-Control-Allow-Origin: "'http://localhost:4700,*'"
-          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Requested-With,Accept,cache-control,pragma'"
-          gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS,PATCH'"
-          gatewayresponse.header.Access-Control-Max-Age: "'86400'"
-          gatewayresponse.header.Access-Control-Expose-Headers: "'Authorization,X-Api-Key,WWW-Authenticate'"
-          gatewayresponse.header.Access-Control-Allow-Credentials: "'true'"
-        ResponseType: UNAUTHORIZED
-        RestApiId:
-          Ref: 'ApiGatewayRestApi'
-
-    # Tabla de usuarios en DynamoDB
     UsersTable:
       Type: AWS::DynamoDB::Table
       Properties:
@@ -252,7 +227,6 @@ resources:
         SSESpecification:
           SSEEnabled: true
     
-    # Tabla general para la aplicación (investigaciones y otros datos)
     DynamoDBTable:
       Type: AWS::DynamoDB::Table
       Properties:
@@ -287,88 +261,31 @@ resources:
               ProjectionType: ALL
         SSESpecification:
           SSEEnabled: true
-  
-  Outputs:
-    ApiEndpoint:
-      Description: "URL base de la API desplegada"
-      Value: 
-        Fn::Join:
-          - ""
-          - - "https://"
-            - Ref: "ApiGatewayRestApi"
-            - ".execute-api."
-            - Ref: "AWS::Region"
-            - ".amazonaws.com/${self:provider.stage}"
-    AuthApiUrl:
-      Description: "URL para las rutas de autenticación"
-      Value: 
-        Fn::Join:
-          - ""
-          - - "https://"
-            - Ref: "ApiGatewayRestApi"
-            - ".execute-api."
-            - Ref: "AWS::Region"
-            - ".amazonaws.com/${self:provider.stage}/auth"
-    ResearchApiUrl:
-      Description: "URL para las rutas de investigación"
-      Value: 
-        Fn::Join:
-          - ""
-          - - "https://"
-            - Ref: "ApiGatewayRestApi"
-            - ".execute-api."
-            - Ref: "AWS::Region"
-            - ".amazonaws.com/${self:provider.stage}/research"
-    WelcomeScreenApiUrl:
-      Description: "URL para las rutas de pantallas de bienvenida"
-      Value: 
-        Fn::Join:
-          - ""
-          - - "https://"
-            - Ref: "ApiGatewayRestApi"
-            - ".execute-api."
-            - Ref: "AWS::Region"
-            - ".amazonaws.com/${self:provider.stage}/welcome-screens"
-    SmartVocApiUrl:
-      Description: "URL para las rutas de formularios SmartVOC"
-      Value: 
-        Fn::Join:
-          - ""
-          - - "https://"
-            - Ref: "ApiGatewayRestApi"
-            - ".execute-api."
-            - Ref: "AWS::Region"
-            - ".amazonaws.com/${self:provider.stage}/smart-voc"
-    ThankYouScreenApiUrl:
-      Description: "URL para las rutas de pantallas de agradecimiento"
-      Value: 
-        Fn::Join:
-          - ""
-          - - "https://"
-            - Ref: "ApiGatewayRestApi"
-            - ".execute-api."
-            - Ref: "AWS::Region"
-            - ".amazonaws.com/${self:provider.stage}/thank-you-screen"
-    EyeTrackingApiUrl:
-      Description: "URL para las rutas de eye tracking"
-      Value: 
-        Fn::Join:
-          - ""
-          - - "https://"
-            - Ref: "ApiGatewayRestApi"
-            - ".execute-api."
-            - Ref: "AWS::Region"
-            - ".amazonaws.com/${self:provider.stage}/eye-tracking"
-    WebSocketEndpoint:
-      Description: "WebSocket API Endpoint"
-      Value: 
-        Fn::Join:
-          - ""
-          - - "wss://"
-            - Ref: "WebsocketsApi"
-            - ".execute-api."
-            - Ref: "AWS::Region"
-            - ".amazonaws.com/${self:provider.stage}"
+    
+    # Configuración CORS para API Gateway
+    GatewayResponseDefault4XX:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type, Authorization, X-Amz-Date, X-Api-Key, X-Amz-Security-Token, X-Requested-With, x-requested-with, Accept, Cache-Control, cache-control, Pragma, pragma, X-Amz-User-Agent'"
+          gatewayresponse.header.Access-Control-Allow-Methods: "'GET, POST, PUT, DELETE, OPTIONS, PATCH'"
+          gatewayresponse.header.Access-Control-Allow-Credentials: "'true'"
+        ResponseType: DEFAULT_4XX
+        RestApiId:
+          Ref: 'ApiGatewayRestApi'
+    
+    GatewayResponseDefault5XX:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type, Authorization, X-Amz-Date, X-Api-Key, X-Amz-Security-Token, X-Requested-With, x-requested-with, Accept, Cache-Control, cache-control, Pragma, pragma, X-Amz-User-Agent'"
+          gatewayresponse.header.Access-Control-Allow-Methods: "'GET, POST, PUT, DELETE, OPTIONS, PATCH'"
+          gatewayresponse.header.Access-Control-Allow-Credentials: "'true'"
+        ResponseType: DEFAULT_5XX
+        RestApiId:
+          Ref: 'ApiGatewayRestApi'
 
 custom:
   serverless-offline:
@@ -376,20 +293,11 @@ custom:
     lambdaPort: 3002
     websocketPort: 3001
   
-  # Configuración para serverless-plugin-typescript
-  serverlessPluginTypescript:
-    tsConfigFileLocation: './tsconfig.json'
-    typescript:
-      # A veces es necesario especificar esto explícitamente para evitar warnings
-      compiler: './node_modules/typescript/bin/tsc'
-  
-  # Configuración específica por entorno
   useMockDb:
     dev: 'false'
     test: 'false'
     prod: 'false'
   
-  # Configuración para DynamoDB Local
   dynamodb:
     start:
       port: 8000
@@ -400,17 +308,16 @@ custom:
     migration:
       dir: migrations
   
-  # Variable para indicar si estamos en modo offline
   isOffline: ${opt:offline, 'false'}
   
-  # Configuración para exportar outputs de CloudFormation
   exportOutputs:
     fileName: outputs.json
+    include:
+      - ServiceEndpoint
+      - WebsocketEndpoint
   
-  # Configuración para exportar endpoints
   exportEndpoints:
     fileName: endpoints.json
     include:
       - 'http'
       - 'httpApi'
-      

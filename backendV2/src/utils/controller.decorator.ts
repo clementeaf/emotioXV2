@@ -54,7 +54,20 @@ export function createController(
       
       // Para solicitudes OPTIONS (preflight CORS), responder inmediatamente
       if (method === 'OPTIONS') {
-        return createResponse(200, {});
+        console.log(`CONTROLLER [${options.basePath}] - Respondiendo a solicitud CORS preflight`);
+        return {
+          statusCode: 200,
+          headers: {
+            'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || '*',
+            'Access-Control-Allow-Credentials': 'true',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Amz-Date, X-Api-Key, X-Amz-Security-Token, X-Requested-With, Accept, Cache-Control, cache-control, Pragma, pragma, X-Amz-User-Agent',
+            'Access-Control-Max-Age': '600',
+            'Content-Type': 'application/json',
+            'Content-Length': '0'
+          },
+          body: ''
+        };
       }
       
       // Comprobar si es una ruta pública (sin autenticación)

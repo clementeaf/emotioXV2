@@ -1,5 +1,7 @@
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, UpdateCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
+import { uuidv4 } from '../utils/id-generator';
 import { DynamoDB } from 'aws-sdk';
-import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Enum para los tipos de investigación
@@ -59,7 +61,7 @@ export interface NewResearchDynamoItem {
  */
 export class NewResearchModel {
   private tableName: string;
-  private dynamoClient: DynamoDB.DocumentClient;
+  private dynamoClient: DynamoDBDocumentClient;
 
   constructor() {
     console.log('======== RESEARCH MODEL CONSTRUCTOR ========');
@@ -76,7 +78,7 @@ export class NewResearchModel {
     console.log('Configuración DynamoDB:', options);
     console.log('SIEMPRE usando DynamoDB en AWS Cloud - NO LOCAL');
     
-    this.dynamoClient = new DynamoDB.DocumentClient(options);
+    this.dynamoClient = DynamoDBDocumentClient.from(new DynamoDBClient(options));
     console.log('=======================================');
   }
 
@@ -116,14 +118,14 @@ export class NewResearchModel {
     console.log('Nombre de la tabla de DynamoDB:', this.tableName);
 
     // Guardar en DynamoDB
-    const params: DynamoDB.DocumentClient.PutItemInput = {
+    const params = new PutCommand({
       TableName: this.tableName,
       Item: item
-    };
+    });
 
     try {
       console.log('Intentando guardar en DynamoDB con params:', JSON.stringify(params));
-      await this.dynamoClient.put(params).promise();
+      await this.dynamoClient.send(params);
       console.log('Operación put completada exitosamente');
       
       // Devolver el objeto creado con su ID
@@ -151,16 +153,16 @@ export class NewResearchModel {
    * @returns La investigación encontrada o null
    */
   async getById(id: string): Promise<NewResearch | null> {
-    const params: DynamoDB.DocumentClient.GetItemInput = {
+    const params = new GetCommand({
       TableName: this.tableName,
       Key: {
         id,
         sk: `RESEARCH#${id}`
       }
-    };
+    });
 
     try {
-      const result = await this.dynamoClient.get(params).promise();
+      const result = await this.dynamoClient.send(params);
       
       if (!result.Item) {
         return null;
@@ -194,17 +196,17 @@ export class NewResearchModel {
    */
   async getByUserId(userId: string): Promise<NewResearch[]> {
     // Consulta por índice secundario (requerirá crear un GSI en DynamoDB)
-    const params: DynamoDB.DocumentClient.QueryInput = {
+    const params = new QueryCommand({
       TableName: this.tableName,
       IndexName: 'userId-index',
       KeyConditionExpression: 'userId = :userId',
       ExpressionAttributeValues: {
         ':userId': userId
       }
-    };
+    });
 
     try {
-      const result = await this.dynamoClient.query(params).promise();
+      const result = await this.dynamoClient.send(params);
       
       if (!result.Items || result.Items.length === 0) {
         return [];
@@ -305,7 +307,7 @@ export class NewResearchModel {
       }
       
       // Parámetros para la actualización
-      const params: DynamoDB.DocumentClient.UpdateItemInput = {
+      const commandParams: any = {
         TableName: this.tableName,
         Key: {
           id,
@@ -318,11 +320,13 @@ export class NewResearchModel {
       
       // Solo incluir ExpressionAttributeNames si hay atributos que necesitan alias
       if (Object.keys(expressionAttributeNames).length > 0) {
-        params.ExpressionAttributeNames = expressionAttributeNames;
+        commandParams.ExpressionAttributeNames = expressionAttributeNames;
       }
       
+      const params = new UpdateCommand(commandParams);
+      
       // Ejecutar actualización
-      const result = await this.dynamoClient.update(params).promise();
+      const result = await this.dynamoClient.send(params);
       
       // Convertir resultado a formato de interfaz
       const updated = result.Attributes as NewResearchDynamoItem;
@@ -372,16 +376,16 @@ export class NewResearchModel {
    * @returns Confirmación de la eliminación
    */
   async delete(id: string): Promise<void> {
-    const params: DynamoDB.DocumentClient.DeleteItemInput = {
+    const params = new DeleteCommand({
       TableName: this.tableName,
       Key: {
         id,
         sk: `RESEARCH#${id}`
       }
-    };
+    });
 
     try {
-      await this.dynamoClient.delete(params).promise();
+      await this.dynamoClient.send(params);
     } catch (error) {
       console.error('Error deleting research:', error);
       throw new Error('Failed to delete research');
@@ -397,16 +401,16 @@ export class NewResearchModel {
   async isOwner(researchId: string, userId: string): Promise<boolean> {
     try {
       // Consulta específica para verificar propiedad
-      const params: DynamoDB.DocumentClient.GetItemInput = {
+      const params = new GetCommand({
         TableName: this.tableName,
         Key: {
           id: researchId,
           sk: `RESEARCH#${researchId}`
         },
         ProjectionExpression: 'userId'
-      };
+      });
       
-      const result = await this.dynamoClient.get(params).promise();
+      const result = await this.dynamoClient.send(params);
       
       if (!result.Item) {
         return false;
@@ -419,7 +423,61 @@ export class NewResearchModel {
       return false;
     }
   }
+
+  /**
+   * Obtiene todas las investigaciones
+   * @returns Array con todas las investigaciones
+   */
+  async getAll(): Promise<NewResearch[]> {
+    try {
+      const db = getDB();
+      const params = {
+        TableName: process.env.DYNAMODB_TABLE || '',
+        IndexName: 'sk-index', // Asegúrate de que este índice exista en DynamoDB
+        KeyConditionExpression: 'sk = :sk',
+        ExpressionAttributeValues: {
+          ':sk': 'RESEARCH'
+        }
+      };
+
+      const result = await db.query(params).promise();
+      
+      if (!result.Items || result.Items.length === 0) {
+        return [];
+      }
+
+      return result.Items.map(item => ({
+        id: item.id,
+        name: item.name,
+        enterprise: item.enterprise,
+        type: item.type,
+        technique: item.technique,
+        userId: item.userId,
+        status: item.status,
+        stage: item.stage,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+        metadata: item.metadata
+      }));
+    } catch (error) {
+      console.error('Error en newResearchModel.getAll:', error);
+      throw error;
+    }
+  }
 }
+
+// Función helper para obtener la instancia de DynamoDB
+const getDB = (): DynamoDB.DocumentClient => {
+  const options: DynamoDB.DocumentClient.DocumentClientOptions & { region?: string; endpoint?: string } = {};
+  
+  // Para entornos de desarrollo local
+  if (process.env.IS_OFFLINE === 'true') {
+    options.region = 'localhost';
+    options.endpoint = 'http://localhost:8000';
+  }
+  
+  return new DynamoDB.DocumentClient(options);
+};
 
 // Exportar una instancia única del modelo
 export const newResearchModel = new NewResearchModel(); 

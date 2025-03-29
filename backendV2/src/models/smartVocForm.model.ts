@@ -1,10 +1,11 @@
-import { DynamoDB } from 'aws-sdk';
-import { v4 as uuidv4 } from 'uuid';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, UpdateCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
+import { uuidv4 } from '../utils/id-generator';
 import {
   SmartVOCFormData,
-  SmartVOCQuestion,
-  QuestionConfig
+  SmartVOCQuestion
 } from '../../../shared/interfaces/smart-voc.interface';
+import { DynamoDB } from 'aws-sdk';
 
 /**
  * Registro completo de un formulario SmartVOC en la base de datos
@@ -48,12 +49,25 @@ export interface SmartVOCFormDynamoItem {
   updatedAt: string;
 }
 
+// Función helper para obtener la instancia de DynamoDB
+const getDB = (): DynamoDB.DocumentClient => {
+  const options: DynamoDB.DocumentClient.DocumentClientOptions & { region?: string; endpoint?: string } = {};
+  
+  // Para entornos de desarrollo local
+  if (process.env.IS_OFFLINE === 'true') {
+    options.region = 'localhost';
+    options.endpoint = 'http://localhost:8000';
+  }
+  
+  return new DynamoDB.DocumentClient(options);
+};
+
 /**
  * Modelo para manejar las operaciones de formularios SmartVOC en DynamoDB
  */
 export class SmartVOCFormModel {
   private tableName: string;
-  private dynamoClient: DynamoDB.DocumentClient;
+  private dynamoClient: DynamoDBDocumentClient;
 
   constructor() {
     console.log('======== SMART VOC FORM MODEL CONSTRUCTOR ========');
@@ -69,7 +83,7 @@ export class SmartVOCFormModel {
     
     console.log('Configuración DynamoDB para Smart VOC forms:', options);
     
-    this.dynamoClient = new DynamoDB.DocumentClient(options);
+    this.dynamoClient = DynamoDBDocumentClient.from(new DynamoDBClient(options));
     console.log('=======================================');
   }
 
@@ -106,13 +120,13 @@ export class SmartVOCFormModel {
     };
 
     // Guardar en DynamoDB
-    const params: DynamoDB.DocumentClient.PutItemInput = {
+    const command = new PutCommand({
       TableName: this.tableName,
       Item: item
-    };
+    });
 
     try {
-      await this.dynamoClient.put(params).promise();
+      await this.dynamoClient.send(command);
       
       // Devolver el objeto creado con su ID
       return {
@@ -137,16 +151,16 @@ export class SmartVOCFormModel {
    * @returns El formulario si existe, null si no
    */
   async getById(formId: string): Promise<SmartVOCFormRecord | null> {
-    const params: DynamoDB.DocumentClient.GetItemInput = {
+    const command = new GetCommand({
       TableName: this.tableName,
       Key: {
         id: formId,
         sk: `SMART_VOC_FORM#${formId}`
       }
-    };
+    });
 
     try {
-      const result = await this.dynamoClient.get(params).promise();
+      const result = await this.dynamoClient.send(command);
       
       if (!result.Item) {
         return null;
@@ -176,7 +190,7 @@ export class SmartVOCFormModel {
    * @returns El formulario si existe, null si no
    */
   async getByResearchId(researchId: string): Promise<SmartVOCFormRecord | null> {
-    const params: DynamoDB.DocumentClient.QueryInput = {
+    const command = new QueryCommand({
       TableName: this.tableName,
       IndexName: 'researchId-index',
       KeyConditionExpression: 'researchId = :researchId',
@@ -185,10 +199,10 @@ export class SmartVOCFormModel {
         ':researchId': researchId,
         ':prefix': 'SMART_VOC_FORM#'
       }
-    };
+    });
 
     try {
-      const result = await this.dynamoClient.query(params).promise();
+      const result = await this.dynamoClient.send(command);
       
       if (!result.Items || result.Items.length === 0) {
         return null;
@@ -236,7 +250,7 @@ export class SmartVOCFormModel {
     const updatedMetadata = data.metadata ? { ...existingForm.metadata, ...data.metadata } : existingForm.metadata;
 
     // Parámetros para actualización
-    const updateParams: DynamoDB.DocumentClient.UpdateItemInput = {
+    const command = new UpdateCommand({
       TableName: this.tableName,
       Key: {
         id: formId,
@@ -256,10 +270,10 @@ export class SmartVOCFormModel {
         ':updatedAt': now
       },
       ReturnValues: 'ALL_NEW'
-    };
+    });
 
     try {
-      const result = await this.dynamoClient.update(updateParams).promise();
+      const result = await this.dynamoClient.send(command);
       const updated = result.Attributes as SmartVOCFormDynamoItem;
       
       return {
@@ -283,18 +297,56 @@ export class SmartVOCFormModel {
    * @param formId ID del formulario a eliminar
    */
   async delete(formId: string): Promise<void> {
-    const params: DynamoDB.DocumentClient.DeleteItemInput = {
+    const command = new DeleteCommand({
       TableName: this.tableName,
       Key: {
         id: formId,
         sk: `SMART_VOC_FORM#${formId}`
       }
-    };
+    });
 
     try {
-      await this.dynamoClient.delete(params).promise();
+      await this.dynamoClient.send(command);
     } catch (error) {
       console.error('Error al eliminar formulario SmartVOC:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene todos los formularios SmartVOC
+   * @returns Array con todos los formularios SmartVOC
+   */
+  async getAll(): Promise<SmartVOCFormRecord[]> {
+    try {
+      const db = getDB();
+      const params = {
+        TableName: process.env.DYNAMODB_TABLE || '',
+        IndexName: 'sk-index', // Asegúrate de que este índice exista en DynamoDB
+        KeyConditionExpression: 'sk = :sk',
+        ExpressionAttributeValues: {
+          ':sk': 'SMART_VOC_FORM'
+        }
+      };
+
+      const result = await db.query(params).promise();
+      
+      if (!result.Items || result.Items.length === 0) {
+        return [];
+      }
+
+      return result.Items.map(item => ({
+        id: item.id,
+        researchId: item.researchId,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+        questions: item.questions || [],
+        randomizeQuestions: item.randomizeQuestions || false,
+        smartVocRequired: item.smartVocRequired || false,
+        metadata: item.metadata || {}
+      }));
+    } catch (error) {
+      console.error('Error en SmartVOCFormModel.getAll:', error);
       throw error;
     }
   }

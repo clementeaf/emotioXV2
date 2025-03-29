@@ -4,7 +4,7 @@
  * Este archivo es generado automáticamente por el script export-endpoints.js
  * No modificar manualmente.
  * 
- * Generado: 2025-03-26T14:58:42.177Z
+ * Generado: 2025-03-28T19:22:41.392Z
  */
 
 export interface ApiEndpoint {

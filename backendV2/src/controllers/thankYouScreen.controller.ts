@@ -267,6 +267,50 @@ export class ThankYouScreenController {
   }
 
   /**
+   * Obtiene todas las pantallas de agradecimiento
+   * @param _event Evento de API Gateway (no utilizado directamente)
+   * @returns Respuesta HTTP con todas las pantallas de agradecimiento
+   */
+  async getAllThankYouScreens(_event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    try {
+      // Obtener todas las pantallas de agradecimiento
+      const thankYouScreens = await thankYouScreenService.getAll();
+      
+      return createResponse(200, {
+        data: thankYouScreens
+      });
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  /**
+   * Manejador para la ruta incorrecta /thank-you-screen/research/:researchId/thank-you-screen
+   * Redirige a la ruta correcta /research/:researchId/thank-you-screen
+   */
+  async handleLegacyThankYouScreenRoute(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    try {
+      console.log('Manejando ruta legacy thank-you-screen:', event.path);
+      // Extraer el ID de la investigación de la ruta
+      const matches = event.path.match(/\/thank-you-screen\/research\/([^\/]+)\/thank-you-screen/);
+      if (!matches || !matches[1]) {
+        return errorResponse('Formato de ruta incorrecto', 400);
+      }
+      
+      const researchId = matches[1];
+      console.log('ID de investigación extraído:', researchId);
+      
+      // Actualizar los parámetros del evento para que coincidan con la estructura esperada
+      event.pathParameters = { ...event.pathParameters, researchId };
+      
+      // Usar el método existente para obtener la pantalla
+      return this.getThankYouScreenByResearchId(event);
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  /**
    * Maneja errores y genera respuestas HTTP adecuadas
    * @param error Error capturado
    * @returns Respuesta HTTP de error
@@ -304,6 +348,19 @@ export class ThankYouScreenController {
  * Mapa de rutas para el controlador de pantallas de agradecimiento
  */
 const routes: RouteMap = {
+  '/thank-you-screens': {
+    'GET': (e) => new ThankYouScreenController().getAllThankYouScreens(e),
+    'POST': (e, id) => new ThankYouScreenController().createThankYouScreen(e, id)
+  },
+  '/thank-you-screens/:id': {
+    'GET': (e) => new ThankYouScreenController().getThankYouScreenById(e),
+    'PUT': (e, id) => new ThankYouScreenController().updateThankYouScreen(e, id),
+    'DELETE': (e, id) => new ThankYouScreenController().deleteThankYouScreen(e, id)
+  },
+  '/thank-you-screens/research/:researchId': {
+    'GET': (e) => new ThankYouScreenController().getThankYouScreenByResearchId(e),
+    'PUT': (e, id) => new ThankYouScreenController().updateThankYouScreenByResearchId(e, id)
+  },
   '/thank-you-screen': {
     'POST': (e, id) => new ThankYouScreenController().createThankYouScreen(e, id)
   },
@@ -319,6 +376,9 @@ const routes: RouteMap = {
   },
   '/public/research/:researchId/thank-you-screen': {
     'GET': (e) => new ThankYouScreenController().getParticipantThankYouScreen(e)
+  },
+  '/thank-you-screen/research/:researchId/thank-you-screen': {
+    'GET': (e) => new ThankYouScreenController().handleLegacyThankYouScreenRoute(e)
   }
 };
 
@@ -327,7 +387,7 @@ const routes: RouteMap = {
  * Definimos la ruta base y las rutas públicas que no requieren autenticación
  */
 const controllerOptions = {
-  basePath: '/thank-you-screen',
+  basePath: '/thank-you-screens',
   publicRoutes: [
     { path: '/public/research/:researchId/thank-you-screen', method: 'GET' }
   ]

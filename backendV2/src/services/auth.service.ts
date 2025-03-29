@@ -3,8 +3,9 @@
  * Maneja la autenticación, registro y gestión de usuarios
  */
 
-import { DynamoDB } from 'aws-sdk';
-import { v4 as uuidv4 } from 'uuid';
+import { DynamoDBClient, ReturnValue } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, GetCommand, QueryCommand, PutCommand, UpdateCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
+import { uuidv4 } from '../utils/id-generator';
 import * as jwt from 'jsonwebtoken';
 
 import { 
@@ -51,7 +52,8 @@ export interface IAuthService {
  * Implementación del servicio de autenticación
  */
 class AuthService implements IAuthService {
-  private dynamoDb: DynamoDB.DocumentClient;
+  private dynamoClient: DynamoDBClient;
+  private dynamoDb: DynamoDBDocumentClient;
   private tableName: string;
   private jwtSecret: string;
   private tokenExpiration: number; // En segundos
@@ -72,9 +74,11 @@ class AuthService implements IAuthService {
       USE_MOCK_DB: process.env.USE_MOCK_DB
     }));
     
-    this.dynamoDb = new DynamoDB.DocumentClient({
+    this.dynamoClient = new DynamoDBClient({
       region: process.env.APP_REGION || 'us-east-1'
     });
+    
+    this.dynamoDb = DynamoDBDocumentClient.from(this.dynamoClient);
     
     this.tableName = process.env.USER_TABLE || 'emotioXV2-users-dev';
     this.jwtSecret = process.env.JWT_SECRET || 'mi-clave-secreta-para-firmar-tokens';
@@ -146,7 +150,8 @@ class AuthService implements IAuthService {
     };
     
     try {
-      const result = await this.dynamoDb.get(params).promise();
+      const command = new GetCommand(params);
+      const result = await this.dynamoDb.send(command);
       if (!result.Item) {
         throw new Error(`Usuario con ID ${id} no encontrado`);
       }
@@ -188,7 +193,8 @@ class AuthService implements IAuthService {
     };
     
     try {
-      const result = await this.dynamoDb.query(params).promise();
+      const command = new QueryCommand(params);
+      const result = await this.dynamoDb.send(command);
       if (!result.Items || result.Items.length === 0) {
         throw new Error(`Usuario con email ${email} no encontrado`);
       }
@@ -249,7 +255,8 @@ class AuthService implements IAuthService {
           Item: newUser
         };
         
-        await this.dynamoDb.put(params).promise();
+        const command = new PutCommand(params);
+        await this.dynamoDb.send(command);
       }
       
       return this.sanitizeUser(newUser);
@@ -282,18 +289,36 @@ class AuthService implements IAuthService {
       if (this.useMock) {
         this.mockUsers.set(id, updatedUser);
       } else {
-        const updateExpression = this.buildUpdateExpression(data);
+        // Construir la expresión de actualización
+        let updateExpression = 'SET updatedAt = :updatedAt';
+        const expressionAttributeValues: Record<string, any> = {
+          ':updatedAt': updatedUser.updatedAt
+        };
+        
+        // Añadir los campos que se están actualizando
+        Object.entries(data).forEach(([key, value]) => {
+          if (key !== 'password' && key !== 'id') {
+            updateExpression += `, ${key} = :${key}`;
+            expressionAttributeValues[`:${key}`] = value;
+          }
+        });
+        
+        // Si se actualizó la contraseña, actualizar el hash
+        if (data.password) {
+          updateExpression += ', passwordHash = :passwordHash';
+          expressionAttributeValues[':passwordHash'] = updatedUser.passwordHash;
+        }
         
         const params = {
           TableName: this.tableName,
           Key: { id },
-          UpdateExpression: updateExpression.UpdateExpression,
-          ExpressionAttributeNames: updateExpression.ExpressionAttributeNames,
-          ExpressionAttributeValues: updateExpression.ExpressionAttributeValues,
-          ReturnValues: 'ALL_NEW'
+          UpdateExpression: updateExpression,
+          ExpressionAttributeValues: expressionAttributeValues,
+          ReturnValues: ReturnValue.ALL_NEW
         };
         
-        const result = await this.dynamoDb.update(params).promise();
+        const command = new UpdateCommand(params);
+        const result = await this.dynamoDb.send(command);
         return this.sanitizeUser(result.Attributes as User);
       }
       
@@ -320,7 +345,8 @@ class AuthService implements IAuthService {
           Key: { id }
         };
         
-        await this.dynamoDb.delete(params).promise();
+        const command = new DeleteCommand(params);
+        await this.dynamoDb.send(command);
       }
     } catch (error) {
       console.error('Error al eliminar usuario:', error);
@@ -617,46 +643,6 @@ class AuthService implements IAuthService {
     return sanitized;
   }
   
-  /**
-   * Construye la expresión de actualización para DynamoDB
-   */
-  private buildUpdateExpression(data: UpdateUserDto): any {
-    const expressionParts: string[] = [];
-    const expressionAttributeNames: Record<string, string> = {};
-    const expressionAttributeValues: Record<string, any> = {};
-    
-    // Añadir campo updatedAt
-    expressionParts.push('#updatedAt = :updatedAt');
-    expressionAttributeNames['#updatedAt'] = 'updatedAt';
-    expressionAttributeValues[':updatedAt'] = Date.now();
-    
-    // Procesar los campos de actualización
-    Object.entries(data).forEach(([key, value], index) => {
-      // Omitir campos especiales
-      if (['id', 'email', 'passwordHash', 'createdAt'].includes(key)) {
-        return;
-      }
-      
-      // Contraseña se maneja de forma especial
-      if (key === 'password') {
-        return;
-      }
-      
-      const attributeName = `#attr${index}`;
-      const attributeValue = `:val${index}`;
-      
-      expressionParts.push(`${attributeName} = ${attributeValue}`);
-      expressionAttributeNames[attributeName] = key;
-      expressionAttributeValues[attributeValue] = value;
-    });
-    
-    return {
-      UpdateExpression: `SET ${expressionParts.join(', ')}`,
-      ExpressionAttributeNames: expressionAttributeNames,
-      ExpressionAttributeValues: expressionAttributeValues
-    };
-  }
-
   /**
    * Registra un nuevo usuario
    */

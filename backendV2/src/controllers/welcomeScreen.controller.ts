@@ -227,6 +227,25 @@ export class WelcomeScreenController {
   }
 
   /**
+   * Obtiene todas las pantallas de bienvenida
+   * @param _event Evento de API Gateway (no utilizado directamente)
+   * @param _userId ID del usuario autenticado (no utilizado directamente)
+   * @returns Respuesta HTTP con todas las pantallas de bienvenida
+   */
+  async getAllWelcomeScreens(_event: APIGatewayProxyEvent, _userId: string): Promise<APIGatewayProxyResult> {
+    try {
+      // Obtener todas las pantallas de bienvenida
+      const welcomeScreens = await welcomeScreenService.getAll();
+      
+      return createResponse(200, {
+        data: welcomeScreens
+      });
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  /**
    * Maneja errores y genera respuestas HTTP adecuadas
    * @param error Error capturado
    * @returns Respuesta HTTP de error
@@ -266,6 +285,7 @@ const controller = new WelcomeScreenController();
 // Definir el mapa de rutas para WelcomeScreen
 const welcomeScreenRouteMap: RouteMap = {
   '/welcome-screens': {
+    'GET': controller.getAllWelcomeScreens.bind(controller),
     'POST': controller.createWelcomeScreen.bind(controller)
   },
   

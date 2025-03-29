@@ -123,11 +123,11 @@ const API_CONFIG = {
     
     // SmartVOC
     smartVoc: {
-      GET_BY_RESEARCH: '/smart-voc/research/{researchId}/smart-voc',
-      GET: '/smart-voc/{id}',
-      CREATE: '/smart-voc',
-      UPDATE: '/smart-voc/{id}',
-      DELETE: '/smart-voc/{id}',
+      GET_BY_RESEARCH: '/research/{researchId}/smart-voc',
+      GET: '/{id}',
+      CREATE: '/',
+      UPDATE: '/{id}',
+      DELETE: '/{id}',
     },
     
     // Eye Tracking
@@ -152,6 +152,14 @@ const API_CONFIG = {
 console.log('API_CONFIG:', {
   baseURL: API_CONFIG.baseURL,
   endpointExample: API_CONFIG.baseURL + API_CONFIG.endpoints.research.CREATE
+});
+
+// Añadir logs adicionales para depuración
+console.log('Smart VOC endpoints:', {
+  GET_BY_RESEARCH: API_CONFIG.baseURL + API_CONFIG.endpoints.smartVoc.GET_BY_RESEARCH.replace('{researchId}', 'ejemplo'),
+  CREATE: API_CONFIG.baseURL + API_CONFIG.endpoints.smartVoc.CREATE,
+  GET: API_CONFIG.baseURL + API_CONFIG.endpoints.smartVoc.GET.replace('{id}', 'ejemplo'),
+  UPDATE: API_CONFIG.baseURL + API_CONFIG.endpoints.smartVoc.UPDATE.replace('{id}', 'ejemplo'),
 });
 
 console.log('MODO API: Usando URL dinámica desde configuración:', API_CONFIG.baseURL);

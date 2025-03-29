@@ -332,9 +332,35 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
               console.log('Datos a enviar:', JSON.stringify(createData));
               
               try {
-                // Realizar la llamada usando researchAPI (que utiliza alova)
-                const apiResponse = await researchAPI.create(createData);
+                // Importar endpoints correctamente
+                const endpoints = require('@/config/endpoints.json');
                 
+                // Usar la URL configurada en endpoints.json
+                const apiUrl = endpoints.endpoints.research.createResearch;
+                
+                console.log('🚀 ENVIANDO SOLICITUD USANDO URL CONFIGURADA:', apiUrl);
+                console.log('TOKEN:', token ? token.substring(0, 10) + '...' : 'No token');
+                
+                const response = await fetch(apiUrl, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                  },
+                  body: JSON.stringify(createData),
+                  mode: 'cors',
+                  credentials: 'omit'
+                });
+                
+                console.log('Respuesta HTTP:', response.status, response.statusText);
+                
+                if (!response.ok) {
+                  const errorText = await response.text();
+                  console.error('Error del servidor:', errorText);
+                  throw new Error(`Error del servidor: ${response.status} ${response.statusText}`);
+                }
+                
+                const apiResponse = await response.json();
                 console.log('Respuesta completa de la API:', apiResponse);
                 
                 // Verificar si la respuesta tiene datos y formato esperado
@@ -446,9 +472,49 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
         
         console.log('Datos para crear investigación:', createData);
         
+        // Verificar el tipo de almacenamiento configurado
+        const storageType = localStorage.getItem('auth_storage_type') || 'local';
+      
+        // Obtener token del almacenamiento correspondiente
+        const token = storageType === 'local'
+          ? localStorage.getItem('token')
+          : sessionStorage.getItem('token');
+          
+        if (!token) {
+          console.error('No se encontró token de autenticación');
+          throw new Error('No hay un token de autenticación disponible. Debe iniciar sesión nuevamente.');
+        }
+        
         try {
-          // Realizar la llamada a la API usando alova
-          const apiResponse = await researchAPI.create(createData);
+          // Importar endpoints correctamente
+          const endpoints = require('@/config/endpoints.json');
+          
+          // Usar la URL configurada en endpoints.json
+          const apiUrl = endpoints.endpoints.research.createResearch;
+          
+          console.log('🚀 ENVIANDO SOLICITUD USANDO URL CONFIGURADA:', apiUrl);
+          console.log('TOKEN:', token ? token.substring(0, 10) + '...' : 'No token');
+          
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify(createData),
+            mode: 'cors',
+            credentials: 'omit'
+          });
+          
+          console.log('Respuesta HTTP:', response.status, response.statusText);
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Error del servidor:', errorText);
+            throw new Error(`Error del servidor: ${response.status} ${response.statusText}`);
+          }
+          
+          const apiResponse = await response.json();
           
           console.log('Respuesta de la API:', apiResponse);
           

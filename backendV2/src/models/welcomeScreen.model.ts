@@ -1,5 +1,7 @@
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, UpdateCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
+import { uuidv4 } from '../utils/id-generator';
 import { DynamoDB } from 'aws-sdk';
-import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Configuración de la pantalla de bienvenida
@@ -121,7 +123,8 @@ export interface WelcomeScreenDynamoItem {
  */
 export class WelcomeScreenModel {
   private tableName: string;
-  private dynamoClient: DynamoDB.DocumentClient;
+  private dynamoClient: DynamoDBClient;
+  private docClient: DynamoDBDocumentClient;
 
   constructor() {
     console.log('======== WELCOME SCREEN MODEL CONSTRUCTOR ========');
@@ -138,7 +141,8 @@ export class WelcomeScreenModel {
     console.log('Configuración DynamoDB para welcome screens:', options);
     console.log('SIEMPRE usando DynamoDB en AWS Cloud - NO LOCAL');
     
-    this.dynamoClient = new DynamoDB.DocumentClient(options);
+    this.dynamoClient = new DynamoDBClient(options);
+    this.docClient = DynamoDBDocumentClient.from(this.dynamoClient);
     console.log('=======================================');
   }
 
@@ -183,13 +187,13 @@ export class WelcomeScreenModel {
     };
 
     // Guardar en DynamoDB
-    const params: DynamoDB.DocumentClient.PutItemInput = {
+    const command = new PutCommand({
       TableName: this.tableName,
       Item: item
-    };
+    });
 
     try {
-      await this.dynamoClient.put(params).promise();
+      await this.docClient.send(command);
       
       // Devolver el objeto creado con su ID
       return {
@@ -215,16 +219,16 @@ export class WelcomeScreenModel {
    * @returns La pantalla de bienvenida encontrada o null
    */
   async getById(id: string): Promise<WelcomeScreenRecord | null> {
-    const params: DynamoDB.DocumentClient.GetItemInput = {
+    const command = new GetCommand({
       TableName: this.tableName,
       Key: {
         id,
         sk: `WELCOME_SCREEN#${id}`
       }
-    };
+    });
 
     try {
-      const result = await this.dynamoClient.get(params).promise();
+      const result = await this.docClient.send(command);
       
       if (!result.Item) {
         return null;
@@ -257,17 +261,17 @@ export class WelcomeScreenModel {
    */
   async getByResearchId(researchId: string): Promise<WelcomeScreenRecord | null> {
     // Consulta por índice secundario (requiere GSI en DynamoDB)
-    const params: DynamoDB.DocumentClient.QueryInput = {
+    const command = new QueryCommand({
       TableName: this.tableName,
       IndexName: 'researchId-index',
       KeyConditionExpression: 'researchId = :researchId',
       ExpressionAttributeValues: {
         ':researchId': researchId
       }
-    };
+    });
 
     try {
-      const result = await this.dynamoClient.query(params).promise();
+      const result = await this.docClient.send(command);
       
       if (!result.Items || result.Items.length === 0) {
         return null;
@@ -347,7 +351,7 @@ export class WelcomeScreenModel {
       }
       
       // Parámetros para la actualización
-      const params: DynamoDB.DocumentClient.UpdateItemInput = {
+      const command = new UpdateCommand({
         TableName: this.tableName,
         Key: {
           id,
@@ -356,10 +360,10 @@ export class WelcomeScreenModel {
         UpdateExpression: updateExpression,
         ExpressionAttributeValues: expressionAttributeValues,
         ReturnValues: 'ALL_NEW'
-      };
+      });
       
       // Ejecutar actualización
-      const result = await this.dynamoClient.update(params).promise();
+      const result = await this.docClient.send(command);
       
       // Convertir resultado a formato de interfaz
       const updated = result.Attributes as WelcomeScreenDynamoItem;
@@ -385,16 +389,16 @@ export class WelcomeScreenModel {
    * @param id ID de la pantalla de bienvenida
    */
   async delete(id: string): Promise<void> {
-    const params: DynamoDB.DocumentClient.DeleteItemInput = {
+    const command = new DeleteCommand({
       TableName: this.tableName,
       Key: {
         id,
         sk: `WELCOME_SCREEN#${id}`
       }
-    };
+    });
 
     try {
-      await this.dynamoClient.delete(params).promise();
+      await this.docClient.send(command);
     } catch (error) {
       console.error('Error al eliminar pantalla de bienvenida:', error);
       throw new Error('Error al eliminar la pantalla de bienvenida');
@@ -424,7 +428,58 @@ export class WelcomeScreenModel {
       throw new Error('Error al procesar la pantalla de bienvenida');
     }
   }
+
+  /**
+   * Obtiene todas las pantallas de bienvenida
+   * @returns Array con todas las pantallas de bienvenida
+   */
+  async getAll(): Promise<WelcomeScreenRecord[]> {
+    try {
+      const db = getDB();
+      const params = {
+        TableName: process.env.DYNAMODB_TABLE || '',
+        IndexName: 'sk-index', // Asegúrate de que este índice exista en DynamoDB
+        KeyConditionExpression: 'sk = :sk',
+        ExpressionAttributeValues: {
+          ':sk': 'WELCOME_SCREEN'
+        }
+      };
+
+      const result = await db.query(params).promise();
+      
+      if (!result.Items || result.Items.length === 0) {
+        return [];
+      }
+
+      return result.Items.map(item => ({
+        id: item.id,
+        researchId: item.researchId,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+        isEnabled: item.isEnabled,
+        title: item.title,
+        message: item.message,
+        startButtonText: item.startButtonText
+      }));
+    } catch (error) {
+      console.error('Error en welcomeScreenModel.getAll:', error);
+      throw error;
+    }
+  }
 }
 
 // Exportar una instancia única del modelo
-export const welcomeScreenModel = new WelcomeScreenModel(); 
+export const welcomeScreenModel = new WelcomeScreenModel();
+
+// Función helper para obtener la instancia de DynamoDB
+const getDB = (): DynamoDB.DocumentClient => {
+  const options: DynamoDB.DocumentClient.DocumentClientOptions & { region?: string; endpoint?: string } = {};
+  
+  // Para entornos de desarrollo local
+  if (process.env.IS_OFFLINE === 'true') {
+    options.region = 'localhost';
+    options.endpoint = 'http://localhost:8000';
+  }
+  
+  return new DynamoDB.DocumentClient(options);
+}; 

@@ -134,14 +134,41 @@ export const alovaInstance = createAlova({
 
 // Exportar métodos de API por dominio
 export const welcomeScreenAPI = {
-  getByResearchId: (researchId: string) => 
-    alovaInstance.Get(API_CONFIG.endpoints.welcomeScreen.GET_BY_RESEARCH.replace('{researchId}', researchId)),
+  getByResearchId: (researchId: string) => {
+    const method = alovaInstance.Get(API_CONFIG.endpoints.welcomeScreen.GET_BY_RESEARCH.replace('{researchId}', researchId));
+    
+    // Para solucionar problemas de CORS, eliminamos headers problemáticos
+    if (method.config?.headers) {
+      const { 'Cache-Control': _, 'Pragma': __, ...cleanHeaders } = method.config.headers as any;
+      method.config.headers = cleanHeaders;
+    }
+    
+    return method;
+  },
   
-  getById: (id: string) => 
-    alovaInstance.Get(API_CONFIG.endpoints.welcomeScreen.GET.replace('{id}', id)),
+  getById: (id: string) => {
+    const method = alovaInstance.Get(API_CONFIG.endpoints.welcomeScreen.GET.replace('{id}', id));
+    
+    // Para solucionar problemas de CORS, eliminamos headers problemáticos
+    if (method.config?.headers) {
+      const { 'Cache-Control': _, 'Pragma': __, ...cleanHeaders } = method.config.headers as any;
+      method.config.headers = cleanHeaders;
+    }
+    
+    return method;
+  },
   
-  create: (data: any) => 
-    alovaInstance.Post(API_CONFIG.endpoints.welcomeScreen.CREATE, data),
+  create: (data: any) => {
+    const method = alovaInstance.Post(API_CONFIG.endpoints.welcomeScreen.CREATE, data);
+    
+    // Para solucionar problemas de CORS, eliminamos headers problemáticos
+    if (method.config?.headers) {
+      const { 'Cache-Control': _, 'Pragma': __, ...cleanHeaders } = method.config.headers as any;
+      method.config.headers = cleanHeaders;
+    }
+    
+    return method;
+  },
   
   update: (id: string, data: any) => {
     const url = API_CONFIG.endpoints.welcomeScreen.UPDATE.replace('{id}', id);
@@ -153,6 +180,12 @@ export const welcomeScreenAPI = {
     // Forzar el tipo de método en la configuración
     if (method.config) {
       method.config.method = 'PUT';
+      
+      // Para solucionar problemas de CORS, eliminamos headers problemáticos
+      if (method.config.headers) {
+        const { 'Cache-Control': _, 'Pragma': __, ...cleanHeaders } = method.config.headers as any;
+        method.config.headers = cleanHeaders;
+      }
     }
     
     console.log('Configuración del método para welcomeScreen.update:', {
@@ -165,29 +198,101 @@ export const welcomeScreenAPI = {
     return method;
   },
   
-  delete: (id: string) => 
-    alovaInstance.Delete(API_CONFIG.endpoints.welcomeScreen.DELETE.replace('{id}', id)),
+  delete: (id: string) => {
+    const method = alovaInstance.Delete(API_CONFIG.endpoints.welcomeScreen.DELETE.replace('{id}', id));
+    
+    // Para solucionar problemas de CORS, eliminamos headers problemáticos
+    if (method.config?.headers) {
+      const { 'Cache-Control': _, 'Pragma': __, ...cleanHeaders } = method.config.headers as any;
+      method.config.headers = cleanHeaders;
+    }
+    
+    return method;
+  },
 };
 
 export const researchAPI = {
-  getAll: () => 
-    alovaInstance.Get(API_CONFIG.endpoints.research.LIST),
+  getAll: () => {
+    const method = alovaInstance.Get(API_CONFIG.endpoints.research.LIST);
+    
+    // Para solucionar problemas de CORS, eliminamos headers problemáticos
+    if (method.config?.headers) {
+      const { 'Cache-Control': _, 'Pragma': __, ...cleanHeaders } = method.config.headers as any;
+      method.config.headers = cleanHeaders;
+    }
+    
+    return method;
+  },
   
-  getById: (id: string) => 
-    alovaInstance.Get(API_CONFIG.endpoints.research.GET.replace('{id}', id)),
+  getById: (id: string) => {
+    const method = alovaInstance.Get(API_CONFIG.endpoints.research.GET.replace('{id}', id));
+    
+    // Para solucionar problemas de CORS, eliminamos headers problemáticos
+    if (method.config?.headers) {
+      const { 'Cache-Control': _, 'Pragma': __, ...cleanHeaders } = method.config.headers as any;
+      method.config.headers = cleanHeaders;
+    }
+    
+    return method;
+  },
   
-  create: (data: any) => 
-    alovaInstance.Post(API_CONFIG.endpoints.research.CREATE, data),
+  create: (data: any) => {
+    const method = alovaInstance.Post(API_CONFIG.endpoints.research.CREATE, data);
+    
+    // Para solucionar problemas de CORS, eliminamos headers problemáticos
+    if (method.config?.headers) {
+      const { 'Cache-Control': _, 'Pragma': __, ...cleanHeaders } = method.config.headers as any;
+      method.config.headers = cleanHeaders;
+    }
+    
+    return method;
+  },
   
-  update: (id: string, data: any) => 
-    alovaInstance.Put(API_CONFIG.endpoints.research.UPDATE.replace('{id}', id), data),
+  update: (id: string, data: any) => {
+    const method = alovaInstance.Put(API_CONFIG.endpoints.research.UPDATE.replace('{id}', id), data);
+    
+    // Para solucionar problemas de CORS, eliminamos headers problemáticos
+    if (method.config?.headers) {
+      const { 'Cache-Control': _, 'Pragma': __, ...cleanHeaders } = method.config.headers as any;
+      method.config.headers = cleanHeaders;
+    }
+    
+    return method;
+  },
   
-  delete: (id: string) => 
-    alovaInstance.Delete(API_CONFIG.endpoints.research.DELETE.replace('{id}', id)),
+  delete: (id: string) => {
+    const method = alovaInstance.Delete(API_CONFIG.endpoints.research.DELETE.replace('{id}', id));
+    
+    // Para solucionar problemas de CORS, eliminamos headers problemáticos
+    if (method.config?.headers) {
+      const { 'Cache-Control': _, 'Pragma': __, ...cleanHeaders } = method.config.headers as any;
+      method.config.headers = cleanHeaders;
+    }
+    
+    return method;
+  },
   
-  updateStatus: (id: string, status: string) => 
-    alovaInstance.Put(API_CONFIG.endpoints.research.UPDATE_STATUS.replace('{id}', id), { status }),
+  updateStatus: (id: string, status: string) => {
+    const method = alovaInstance.Put(API_CONFIG.endpoints.research.UPDATE_STATUS.replace('{id}', id), { status });
+    
+    // Para solucionar problemas de CORS, eliminamos headers problemáticos
+    if (method.config?.headers) {
+      const { 'Cache-Control': _, 'Pragma': __, ...cleanHeaders } = method.config.headers as any;
+      method.config.headers = cleanHeaders;
+    }
+    
+    return method;
+  },
   
-  updateStage: (id: string, stage: string) => 
-    alovaInstance.Put(API_CONFIG.endpoints.research.UPDATE_STAGE.replace('{id}', id), { stage }),
+  updateStage: (id: string, stage: string) => {
+    const method = alovaInstance.Put(API_CONFIG.endpoints.research.UPDATE_STAGE.replace('{id}', id), { stage });
+    
+    // Para solucionar problemas de CORS, eliminamos headers problemáticos
+    if (method.config?.headers) {
+      const { 'Cache-Control': _, 'Pragma': __, ...cleanHeaders } = method.config.headers as any;
+      method.config.headers = cleanHeaders;
+    }
+    
+    return method;
+  },
 }; 

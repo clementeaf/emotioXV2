@@ -1,5 +1,6 @@
-import { DynamoDB } from 'aws-sdk';
-import { v4 as uuidv4 } from 'uuid';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, UpdateCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
+import { uuidv4 } from '../utils/id-generator';
 
 /**
  * Configuración de la pantalla de agradecimiento
@@ -168,7 +169,7 @@ export interface ThankYouScreenDynamoItem {
  */
 export class ThankYouScreenModel {
   private tableName: string;
-  private dynamoClient: DynamoDB.DocumentClient;
+  private dynamoClient: DynamoDBDocumentClient;
 
   constructor() {
     console.log('======== THANK YOU SCREEN MODEL CONSTRUCTOR ========');
@@ -185,7 +186,7 @@ export class ThankYouScreenModel {
     console.log('Configuración DynamoDB para thank you screens:', options);
     console.log('SIEMPRE usando DynamoDB en AWS Cloud - NO LOCAL');
     
-    this.dynamoClient = new DynamoDB.DocumentClient(options);
+    this.dynamoClient = DynamoDBDocumentClient.from(new DynamoDBClient(options));
     console.log('=======================================');
   }
 
@@ -228,13 +229,13 @@ export class ThankYouScreenModel {
     };
 
     // Guardar en DynamoDB
-    const params: DynamoDB.DocumentClient.PutItemInput = {
+    const params = new PutCommand({
       TableName: this.tableName,
       Item: item
-    };
+    });
 
     try {
-      await this.dynamoClient.put(params).promise();
+      await this.dynamoClient.send(params);
       
       // Devolver el objeto creado con su ID
       return {
@@ -260,16 +261,16 @@ export class ThankYouScreenModel {
    * @returns La pantalla de agradecimiento encontrada o null
    */
   async getById(id: string): Promise<ThankYouScreenRecord | null> {
-    const params: DynamoDB.DocumentClient.GetItemInput = {
+    const params = new GetCommand({
       TableName: this.tableName,
       Key: {
         id,
         sk: `THANK_YOU_SCREEN#${id}`
       }
-    };
+    });
 
     try {
-      const result = await this.dynamoClient.get(params).promise();
+      const result = await this.dynamoClient.send(params);
       
       if (!result.Item) {
         return null;
@@ -301,19 +302,19 @@ export class ThankYouScreenModel {
    * @returns La pantalla de agradecimiento asociada o null
    */
   async getByResearchId(researchId: string): Promise<ThankYouScreenRecord | null> {
-    const params: DynamoDB.DocumentClient.QueryInput = {
+    const params = new QueryCommand({
       TableName: this.tableName,
-      IndexName: 'ResearchIdIndex',
+      IndexName: 'researchId-index',
       KeyConditionExpression: 'researchId = :researchId',
       FilterExpression: 'begins_with(sk, :prefix)',
       ExpressionAttributeValues: {
         ':researchId': researchId,
         ':prefix': 'THANK_YOU_SCREEN#'
       }
-    };
+    });
 
     try {
-      const result = await this.dynamoClient.query(params).promise();
+      const result = await this.dynamoClient.send(params);
       
       if (!result.Items || result.Items.length === 0) {
         return null;
@@ -403,7 +404,7 @@ export class ThankYouScreenModel {
     expressionAttributeNames['#metadata'] = 'metadata';
     expressionAttributeValues[':metadata'] = JSON.stringify(metadata);
 
-    const params: DynamoDB.DocumentClient.UpdateItemInput = {
+    const params = new UpdateCommand({
       TableName: this.tableName,
       Key: {
         id,
@@ -413,10 +414,10 @@ export class ThankYouScreenModel {
       ExpressionAttributeNames: expressionAttributeNames,
       ExpressionAttributeValues: expressionAttributeValues,
       ReturnValues: 'ALL_NEW'
-    };
+    });
 
     try {
-      const result = await this.dynamoClient.update(params).promise();
+      const result = await this.dynamoClient.send(params);
       const updatedItem = result.Attributes as ThankYouScreenDynamoItem;
       
       // Convertir de formato DynamoDB a la interfaz ThankYouScreenRecord
@@ -443,20 +444,60 @@ export class ThankYouScreenModel {
    * @returns true si se eliminó correctamente
    */
   async delete(id: string): Promise<boolean> {
-    const params: DynamoDB.DocumentClient.DeleteItemInput = {
+    const params = new DeleteCommand({
       TableName: this.tableName,
       Key: {
         id,
         sk: `THANK_YOU_SCREEN#${id}`
       }
-    };
+    });
 
     try {
-      await this.dynamoClient.delete(params).promise();
+      await this.dynamoClient.send(params);
       return true;
     } catch (error) {
       console.error('Error al eliminar pantalla de agradecimiento:', error);
       throw new Error('Error al eliminar la pantalla de agradecimiento');
+    }
+  }
+
+  /**
+   * Obtiene todas las pantallas de agradecimiento
+   * @returns Array con todas las pantallas de agradecimiento
+   */
+  async getAll(): Promise<ThankYouScreenRecord[]> {
+    try {
+      // Usar el cliente de AWS SDK v3 para consultar
+      const result = await this.dynamoClient.send(new QueryCommand({
+        TableName: this.tableName,
+        IndexName: 'researchId-index',
+        KeyConditionExpression: 'begins_with(sk, :sk)',
+        ExpressionAttributeValues: {
+          ':sk': 'THANK_YOU_SCREEN#'
+        }
+      }));
+      
+      if (!result.Items || result.Items.length === 0) {
+        return [];
+      }
+
+      return result.Items.map(item => {
+        const dynamoItem = item as ThankYouScreenDynamoItem;
+        return {
+          id: dynamoItem.id,
+          researchId: dynamoItem.researchId,
+          isEnabled: dynamoItem.isEnabled,
+          title: dynamoItem.title,
+          message: dynamoItem.message,
+          redirectUrl: dynamoItem.redirectUrl,
+          metadata: JSON.parse(dynamoItem.metadata),
+          createdAt: dynamoItem.createdAt,
+          updatedAt: dynamoItem.updatedAt
+        };
+      });
+    } catch (error) {
+      console.error('Error en thankYouScreenModel.getAll:', error);
+      return [];
     }
   }
 } 

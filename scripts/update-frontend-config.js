@@ -1,4 +1,4 @@
-const AWS = require('aws-sdk');
+const { CloudFormationClient, DescribeStacksCommand } = require('@aws-sdk/client-cloudformation');
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
@@ -14,30 +14,31 @@ const colors = {
   cyan: '\x1b[36m',
 };
 
-// Configuración de AWS
-AWS.config.update({
-  region: 'us-east-1',
-  credentials: new AWS.SharedIniFileCredentials({ profile: process.env.AWS_PROFILE || 'default' })
+// Creamos el cliente de CloudFormation usando AWS SDK v3
+const cloudformationClient = new CloudFormationClient({
+  region: process.env.AWS_REGION || 'us-east-1'
+  // No usamos credenciales explícitas para permitir que AWS use las credenciales del sistema
 });
 
-const cloudformation = new AWS.CloudFormation();
-
 async function getStackOutputs(env) {
-  const stackName = `emotiox-backend-${env}`;
+  const stackName = `emotioxv2-backend-${env}`;  // Actualizamos el nombre del stack para que coincida con lo que muestra serverless
 
   try {
     console.log(`${colors.cyan}Obteniendo información del stack ${stackName}...${colors.reset}`);
     
-    const { Stacks } = await cloudformation.describeStacks({
+    const command = new DescribeStacksCommand({
       StackName: stackName
-    }).promise();
+    });
+    
+    const response = await cloudformationClient.send(command);
+    const stacks = response.Stacks;
 
-    if (!Stacks || Stacks.length === 0) {
+    if (!stacks || stacks.length === 0) {
       throw new Error(`No se encontró el stack ${stackName}`);
     }
 
     const outputs = {};
-    Stacks[0].Outputs.forEach(output => {
+    stacks[0].Outputs.forEach(output => {
       outputs[output.OutputKey] = output.OutputValue;
     });
 
@@ -50,23 +51,49 @@ async function getStackOutputs(env) {
     try {
       console.log(`${colors.yellow}Intentando obtener información mediante serverless info...${colors.reset}`);
       
+      // Calculamos la ruta al backendV2 desde donde estamos
+      const backendPath = path.resolve(__dirname, '..', 'backendV2');
+      
+      console.log(`${colors.blue}Usando ruta del backend: ${backendPath}${colors.reset}`);
+      
       const serverlessOutput = execSync(
-        `cd backend && npx serverless info --stage ${env} --verbose${process.env.AWS_PROFILE ? ` --profile ${process.env.AWS_PROFILE}` : ''}`,
+        `cd "${backendPath}" && npx serverless info --stage ${env} --verbose${process.env.AWS_PROFILE ? ` --profile ${process.env.AWS_PROFILE}` : ''}`,
         { encoding: 'utf8' }
       );
       
+      console.log(`${colors.green}Información de serverless obtenida:${colors.reset}`);
+      console.log(serverlessOutput);
+      
       // Extraer las URLs de la salida de serverless info
-      const httpApiMatch = serverlessOutput.match(/HttpApiEndpoint: (https:\/\/[^\s]+)/);
-      const wsApiMatch = serverlessOutput.match(/WebSocketEndpoint: (wss:\/\/[^\s]+)/);
+      const endpoints = serverlessOutput.match(/endpoints:([\s\S]*?)functions:/);
+      let httpApiEndpoint = '';
+      let wsApiEndpoint = '';
       
-      const outputs = {};
-      
-      if (httpApiMatch && httpApiMatch[1]) {
-        outputs.HttpApiEndpoint = httpApiMatch[1];
+      if (endpoints && endpoints[1]) {
+        const endpointsText = endpoints[1];
+        
+        // Buscar la primera línea con ANY - https://
+        const httpMatch = endpointsText.match(/ANY - (https:\/\/[^\/]+)/);
+        if (httpMatch && httpMatch[1]) {
+          httpApiEndpoint = httpMatch[1];
+          console.log(`${colors.green}API HTTP encontrado: ${httpApiEndpoint}${colors.reset}`);
+        }
+        
+        // Buscar la línea con wss://
+        const wsMatch = endpointsText.match(/(wss:\/\/[^\s]+)/);
+        if (wsMatch && wsMatch[1]) {
+          wsApiEndpoint = wsMatch[1];
+          console.log(`${colors.green}WebSocket encontrado: ${wsApiEndpoint}${colors.reset}`);
+        }
       }
       
-      if (wsApiMatch && wsApiMatch[1]) {
-        outputs.WebSocketEndpoint = wsApiMatch[1];
+      const outputs = {};
+      if (httpApiEndpoint) {
+        outputs.HttpApiEndpoint = httpApiEndpoint;
+      }
+      
+      if (wsApiEndpoint) {
+        outputs.WebSocketEndpoint = wsApiEndpoint;
       }
       
       if (Object.keys(outputs).length > 0) {
@@ -100,12 +127,16 @@ async function updateFrontendConfig(env) {
     console.log(`${colors.blue}Configuración a aplicar:${colors.reset}`);
     console.log(frontendConfig);
 
+    // Ruta al directorio frontend
+    const frontendPath = path.resolve(__dirname, '..', 'frontend');
+    console.log(`${colors.blue}Usando ruta del frontend: ${frontendPath}${colors.reset}`);
+
     // Actualizar .env del frontend
     const envContent = Object.entries(frontendConfig)
       .map(([key, value]) => `NEXT_PUBLIC_${key}=${value}`)
       .join('\n');
 
-    const envFilePath = path.join(process.cwd(), 'frontend', '.env');
+    const envFilePath = path.join(frontendPath, '.env');
     fs.writeFileSync(envFilePath, envContent + '\n');
     console.log(`${colors.green}✓ Archivo .env actualizado: ${envFilePath}${colors.reset}`);
 
@@ -119,7 +150,7 @@ async function updateFrontendConfig(env) {
     };
 
     // Asegurar que existe el directorio
-    const configDir = path.join(process.cwd(), 'frontend', 'src', 'config');
+    const configDir = path.join(frontendPath, 'src', 'config');
     if (!fs.existsSync(configDir)) {
       fs.mkdirSync(configDir, { recursive: true });
     }
@@ -130,7 +161,7 @@ async function updateFrontendConfig(env) {
     console.log(`${colors.green}✓ Archivo de configuración actualizado: ${configFilePath}${colors.reset}`);
 
     // Actualizar archivo api.config.ts
-    updateApiConfig(frontendConfig);
+    updateApiConfig(frontendConfig, frontendPath);
 
     console.log(`${colors.green}✓ Configuración del frontend actualizada exitosamente${colors.reset}`);
 
@@ -140,8 +171,8 @@ async function updateFrontendConfig(env) {
   }
 }
 
-function updateApiConfig(config) {
-  const apiConfigPath = path.join(process.cwd(), 'frontend', 'src', 'config', 'api.config.ts');
+function updateApiConfig(config, frontendPath) {
+  const apiConfigPath = path.join(frontendPath, 'src', 'config', 'api.config.ts');
   
   // Verificar si el archivo existe
   if (!fs.existsSync(apiConfigPath)) {

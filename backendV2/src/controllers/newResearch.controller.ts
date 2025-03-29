@@ -250,6 +250,29 @@ export class NewResearchController {
   }
 
   /**
+   * Obtiene todas las investigaciones (acceso solo para administradores)
+   * @param _event Evento de API Gateway (no utilizado directamente)
+   * @param userId ID del usuario autenticado
+   * @returns Respuesta HTTP con todas las investigaciones
+   */
+  async getAllResearches(_event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
+    try {
+      if (!userId) {
+        return errorResponse('Usuario no autenticado', 401);
+      }
+
+      // Obtener todas las investigaciones
+      const researches = await newResearchService.getAllResearches();
+
+      return createResponse(200, {
+        data: researches
+      });
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  /**
    * Maneja un error y genera una respuesta HTTP apropiada
    * @param error Error capturado
    * @returns Respuesta HTTP con detalles del error
@@ -282,6 +305,7 @@ const controller = new NewResearchController();
 // Definir el mapa de rutas para Investigaciones
 const researchRouteMap: RouteMap = {
   '/research': {
+    'GET': controller.getAllResearches.bind(controller),
     'POST': controller.createResearch.bind(controller)
   },
   

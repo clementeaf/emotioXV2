@@ -228,8 +228,8 @@ export class EyeTrackingService {
    */
   async update(id: string, data: Partial<EyeTrackingFormData>, _userId: string): Promise<EyeTrackingRecord> {
     try {
-      // Obtener la configuración actual
-      const currentConfig = await this.getById(id);
+      // Verificar que existe
+      await this.getById(id);
       
       // Validar datos
       this.validateData(data);
@@ -324,7 +324,7 @@ export class EyeTrackingService {
   async delete(id: string, _userId: string): Promise<void> {
     try {
       // Verificar que existe
-      const eyeTracking = await this.getById(id);
+      await this.getById(id);
       
       // Eliminar
       const deleted = await eyeTrackingModel.delete(id);
@@ -344,6 +344,28 @@ export class EyeTrackingService {
       console.error('Error en EyeTrackingService.delete:', error);
       throw new ApiError(
         `${EyeTrackingError.DATABASE_ERROR}: Error al eliminar la configuración de eye tracking`,
+        500
+      );
+    }
+  }
+
+  /**
+   * Obtiene todas las configuraciones de eye tracking
+   * @returns Lista de todas las configuraciones de eye tracking
+   */
+  async getAll(): Promise<EyeTrackingRecord[]> {
+    try {
+      const eyeTrackingConfigs = await eyeTrackingModel.getAll();
+      return eyeTrackingConfigs;
+    } catch (error) {
+      // Si ya es un ApiError, relanzarlo
+      if (error instanceof ApiError) {
+        throw error;
+      }
+
+      console.error('Error en EyeTrackingService.getAll:', error);
+      throw new ApiError(
+        `${EyeTrackingError.DATABASE_ERROR}: Error al obtener todas las configuraciones de eye tracking`,
         500
       );
     }

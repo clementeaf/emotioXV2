@@ -353,6 +353,28 @@ export class ThankYouScreenService {
       );
     }
   }
+
+  /**
+   * Obtiene todas las pantallas de agradecimiento
+   * @returns Lista de todas las pantallas de agradecimiento
+   */
+  async getAll(): Promise<ThankYouScreenRecord[]> {
+    try {
+      const thankYouScreens = await thankYouScreenModel.getAll();
+      return thankYouScreens;
+    } catch (error) {
+      // Si ya es un ApiError, relanzarlo
+      if (error instanceof ApiError) {
+        throw error;
+      }
+
+      console.error('Error en ThankYouScreenService.getAll:', error);
+      throw new ApiError(
+        `${ThankYouScreenError.DATABASE_ERROR}: Error al obtener todas las pantallas de agradecimiento`,
+        500
+      );
+    }
+  }
 }
 
 // Exportar una instancia única del servicio

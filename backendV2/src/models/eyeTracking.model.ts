@@ -1,5 +1,6 @@
-import { DynamoDB } from 'aws-sdk';
-import { v4 as uuidv4 } from 'uuid';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
+import { uuidv4 } from '../utils/id-generator';
 
 /**
  * Tipos de dispositivos de seguimiento ocular
@@ -409,7 +410,7 @@ export interface EyeTrackingDynamoItem {
  */
 export class EyeTrackingModel {
   private tableName: string;
-  private dynamoClient: DynamoDB.DocumentClient;
+  private dynamoClient: DynamoDBDocumentClient;
 
   constructor() {
     console.log('======== EYE TRACKING MODEL CONSTRUCTOR ========');
@@ -426,7 +427,7 @@ export class EyeTrackingModel {
     console.log('Configuración DynamoDB para eye tracking:', options);
     console.log('SIEMPRE usando DynamoDB en AWS Cloud - NO LOCAL');
     
-    this.dynamoClient = new DynamoDB.DocumentClient(options);
+    this.dynamoClient = DynamoDBDocumentClient.from(new DynamoDBClient(options));
     console.log('=======================================');
   }
 
@@ -467,10 +468,10 @@ export class EyeTrackingModel {
     };
     
     // Guardar en DynamoDB
-    await this.dynamoClient.put({
+    await this.dynamoClient.send(new PutCommand({
       TableName: this.tableName,
       Item: dynamoItem
-    }).promise();
+    }));
     
     return newEyeTracking;
   }
@@ -483,13 +484,13 @@ export class EyeTrackingModel {
   async getById(id: string): Promise<EyeTrackingRecord | null> {
     try {
       // Buscar por ID en DynamoDB
-      const result = await this.dynamoClient.get({
+      const result = await this.dynamoClient.send(new GetCommand({
         TableName: this.tableName,
         Key: {
           id,
           sk: `EYETRACKING#${id}`
         }
-      }).promise();
+      }));
       
       // Si no se encontró el ítem, retornar null
       if (!result.Item) {
@@ -525,7 +526,7 @@ export class EyeTrackingModel {
   async getByResearchId(researchId: string): Promise<EyeTrackingRecord | null> {
     try {
       // Configurar los parámetros para buscar por GSI (researchId)
-      const params = {
+      const result = await this.dynamoClient.send(new QueryCommand({
         TableName: this.tableName,
         IndexName: 'researchId-index',
         KeyConditionExpression: 'researchId = :researchId AND begins_with(sk, :sk)',
@@ -533,10 +534,7 @@ export class EyeTrackingModel {
           ':researchId': researchId,
           ':sk': 'EYETRACKING#'
         }
-      };
-      
-      // Ejecutar la consulta
-      const result = await this.dynamoClient.query(params).promise();
+      }));
       
       // Si no hay resultados, retornar null
       if (!result.Items || result.Items.length === 0) {
@@ -610,10 +608,10 @@ export class EyeTrackingModel {
       };
       
       // Actualizar en DynamoDB
-      await this.dynamoClient.put({
+      await this.dynamoClient.send(new PutCommand({
         TableName: this.tableName,
         Item: dynamoItem
-      }).promise();
+      }));
       
       return updatedConfig;
     } catch (error) {
@@ -630,18 +628,59 @@ export class EyeTrackingModel {
   async delete(id: string): Promise<boolean> {
     try {
       // Eliminar de DynamoDB
-      await this.dynamoClient.delete({
+      await this.dynamoClient.send(new DeleteCommand({
         TableName: this.tableName,
         Key: {
           id,
           sk: `EYETRACKING#${id}`
         }
-      }).promise();
+      }));
       
       return true;
     } catch (error) {
       console.error('Error al eliminar configuración eye tracking:', error);
       return false;
+    }
+  }
+
+  /**
+   * Obtiene todas las configuraciones de eye tracking
+   * @returns Array con todas las configuraciones de eye tracking
+   */
+  async getAll(): Promise<EyeTrackingRecord[]> {
+    try {
+      // Usar el cliente de AWS SDK v3 para consultar
+      const result = await this.dynamoClient.send(new QueryCommand({
+        TableName: this.tableName,
+        IndexName: 'researchId-index',
+        KeyConditionExpression: 'begins_with(sk, :sk)',
+        ExpressionAttributeValues: {
+          ':sk': 'EYETRACKING#'
+        }
+      }));
+      
+      if (!result.Items || result.Items.length === 0) {
+        return [];
+      }
+
+      // Mapear los items de DynamoDB a nuestro modelo
+      return result.Items.map(item => {
+        const dynamoItem = item as EyeTrackingDynamoItem;
+        return {
+          id: dynamoItem.id,
+          researchId: dynamoItem.researchId,
+          config: JSON.parse(dynamoItem.config),
+          stimuli: JSON.parse(dynamoItem.stimuli),
+          areasOfInterest: JSON.parse(dynamoItem.areasOfInterest),
+          deviceFrame: dynamoItem.deviceFrame,
+          metadata: JSON.parse(dynamoItem.metadata),
+          createdAt: dynamoItem.createdAt,
+          updatedAt: dynamoItem.updatedAt
+        };
+      });
+    } catch (error) {
+      console.error('Error en EyeTrackingModel.getAll:', error);
+      return [];
     }
   }
 } 

@@ -2,7 +2,8 @@ import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
 /**
- * Utilidad para combinar nombres de clases de Tailwind CSS
+ * Combina múltiples clases de Tailwind de manera inteligente,
+ * resolviendo conflictos y optimizando la salida.
  */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -36,19 +37,37 @@ export function shouldUseSimulatedMode(): boolean {
  */
 
 /**
- * Formatea una fecha como string en formato corto localizado
- * @param dateString - String ISO de fecha o instancia de Date
- * @param locale - Código de localización (por defecto 'es')
- * @returns Fecha formateada según la localización
+ * Utilitario para formatear fechas
+ * @param date Fecha a formatear
+ * @returns Fecha formateada
  */
-export function formatDate(dateString: string | Date, locale: string = 'es'): string {
-  const date = dateString instanceof Date ? dateString : new Date(dateString);
-  
-  return new Intl.DateTimeFormat(locale, {
-    year: 'numeric',
-    month: 'short',
+export function formatDate(date: Date | string): string {
+  if (!date) return '';
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return d.toLocaleDateString('es-ES', { 
+    year: 'numeric', 
+    month: 'long', 
     day: 'numeric',
-  }).format(date);
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+/**
+ * Retrasa la ejecución por un número de milisegundos
+ * @param ms Milisegundos a esperar
+ * @returns Promise que se resuelve después del tiempo especificado
+ */
+export function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Genera un ID único
+ * @returns String con ID único
+ */
+export function generateId(): string {
+  return Math.random().toString(36).substring(2, 11);
 }
 
 /**

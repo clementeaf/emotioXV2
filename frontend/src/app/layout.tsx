@@ -1,6 +1,7 @@
 'use client';
 
 import { Inter } from 'next/font/google';
+import { useEffect, useState } from 'react';
 
 import './globals.css';
 import { Toaster } from 'react-hot-toast';
@@ -17,6 +18,18 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Estado para el entorno
+  const [isDevelopment, setIsDevelopment] = useState(false);
+  
+  // Inicializar verificación de entorno
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Verificar si estamos en desarrollo
+      const isDevEnv = process.env.NODE_ENV === 'development';
+      setIsDevelopment(isDevEnv);
+    }
+  }, []);
+
   return (
     <html lang="es">
       <body className={inter.className}>

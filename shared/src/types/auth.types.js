@@ -2,7 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.isUser = exports.authResponseSchema = exports.validateOTPSchema = exports.requestOTPSchema = void 0;
 const zod_1 = require("zod");
-// Zod schemas
 exports.requestOTPSchema = zod_1.z.object({
     email: zod_1.z.string().email('Invalid email format')
 });
@@ -18,7 +17,6 @@ exports.authResponseSchema = zod_1.z.object({
         email: zod_1.z.string().email()
     })
 });
-// Type guards
 const isUser = (value) => {
     return (typeof value === 'object' &&
         value !== null &&

@@ -298,6 +298,28 @@ export class WelcomeScreenService {
       );
     }
   }
+
+  /**
+   * Obtiene todas las pantallas de bienvenida
+   * @returns Lista de todas las pantallas de bienvenida
+   */
+  async getAll(): Promise<WelcomeScreenRecord[]> {
+    try {
+      const welcomeScreens = await welcomeScreenModel.getAll();
+      return welcomeScreens;
+    } catch (error) {
+      // Si ya es un ApiError, relanzarlo
+      if (error instanceof ApiError) {
+        throw error;
+      }
+
+      console.error('Error en WelcomeScreenService.getAll:', error);
+      throw new ApiError(
+        `${WelcomeScreenError.DATABASE_ERROR}: Error al obtener todas las pantallas de bienvenida`,
+        500
+      );
+    }
+  }
 }
 
 // Exportar una instancia única del servicio

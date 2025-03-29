@@ -228,6 +228,19 @@ export class NewResearchService {
       return false;
     }
   }
+
+  /**
+   * Obtiene todas las investigaciones
+   * @returns Lista de todas las investigaciones
+   */
+  async getAllResearches(): Promise<NewResearch[]> {
+    try {
+      return await newResearchModel.getAll();
+    } catch (error) {
+      console.error('Error al obtener todas las investigaciones:', error);
+      throw new ResearchError('Error al obtener todas las investigaciones', 500);
+    }
+  }
 }
 
 // Exportar instancia única

@@ -205,11 +205,17 @@ const alovaInstance = createAlova({
     method.config.headers = {
       'Content-Type': 'application/json',
       'Accept': 'application/json, text/plain, */*', // Aceptar más tipos de contenido
-      'Cache-Control': 'no-cache',
-      'Pragma': 'no-cache',
       'X-Requested-With': 'XMLHttpRequest', // Agregar para identificar solicitudes AJAX
       ...method.config.headers,
     };
+    
+    // Agregar headers de cache-control excepto para las rutas que tienen problemas CORS
+    if (!method.url.includes('/welcome-screens') && !method.url.includes('/research')) {
+      method.config.headers['Cache-Control'] = 'no-cache';
+      method.config.headers['Pragma'] = 'no-cache';
+    } else {
+      console.log('Omitiendo headers cache-control para rutas con problemas CORS:', method.url);
+    }
 
     // Verificar el tipo de almacenamiento para obtener el token correspondiente
     const storageType = localStorage.getItem('auth_storage_type') || 'local';

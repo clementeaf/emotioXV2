@@ -269,6 +269,50 @@ export class EyeTrackingController {
   }
 
   /**
+   * Obtiene todas las configuraciones de eye tracking
+   * @param event Evento de API Gateway
+   * @returns Respuesta HTTP con todas las configuraciones
+   */
+  async getAllEyeTracking(_event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    try {
+      // Obtener todas las configuraciones de eye tracking usando el servicio
+      const eyeTrackingConfigs = await eyeTrackingService.getAll();
+
+      return createResponse(200, {
+        data: eyeTrackingConfigs
+      });
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  /**
+   * Manejador para la ruta incorrecta /eye-tracking/research/:researchId/eye-tracking
+   * Redirige a la ruta correcta /research/:researchId/eye-tracking
+   */
+  async handleLegacyEyeTrackingRoute(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    try {
+      console.log('Manejando ruta legacy eye-tracking:', event.path);
+      // Extraer el ID de la investigación de la ruta
+      const matches = event.path.match(/\/eye-tracking\/research\/([^\/]+)\/eye-tracking/);
+      if (!matches || !matches[1]) {
+        return errorResponse('Formato de ruta incorrecto', 400);
+      }
+      
+      const researchId = matches[1];
+      console.log('ID de investigación extraído:', researchId);
+      
+      // Actualizar los parámetros del evento para que coincidan con la estructura esperada
+      event.pathParameters = { ...event.pathParameters, researchId };
+      
+      // Usar el método existente para obtener el eye tracking
+      return this.getEyeTrackingByResearchId(event);
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  /**
    * Maneja errores comunes y los convierte en respuestas HTTP apropiadas
    * @param error Error capturado
    * @returns Respuesta HTTP con información del error
@@ -326,12 +370,17 @@ export class EyeTrackingController {
  */
 const routes: RouteMap = {
   '/eye-tracking': {
+    'GET': new EyeTrackingController().getAllEyeTracking,
     'POST': new EyeTrackingController().createEyeTracking
   },
   '/eye-tracking/:id': {
     'GET': new EyeTrackingController().getEyeTrackingById,
     'PUT': new EyeTrackingController().updateEyeTracking,
     'DELETE': new EyeTrackingController().deleteEyeTracking
+  },
+  '/eye-tracking/research/:researchId': {
+    'GET': new EyeTrackingController().getEyeTrackingByResearchId,
+    'PUT': new EyeTrackingController().updateEyeTrackingByResearchId
   },
   '/research/:researchId/eye-tracking': {
     'GET': new EyeTrackingController().getEyeTrackingByResearchId,

@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { createResponse, errorResponse } from '../utils/controller.utils';
 import { createController, RouteMap } from '../utils/controller.decorator';
-import SmartVOCFormService from '../services/smartVocForm.service';
+import { SmartVOCFormService } from '../services/smartVocForm.service';
 import { SmartVOCFormData } from '../../../shared/interfaces/smart-voc.interface';
 
 /**
@@ -13,6 +13,9 @@ import { SmartVOCFormData } from '../../../shared/interfaces/smart-voc.interface
  * autenticado para todas las operaciones.
  */
 export class SmartVOCFormController {
+  // Instanciar el servicio una vez
+  private smartVOCService = new SmartVOCFormService();
+
   /**
    * Crea un nuevo formulario SmartVOC
    * @param event Evento de API Gateway
@@ -56,7 +59,7 @@ export class SmartVOCFormController {
 
       // Crear el formulario SmartVOC usando el servicio
       console.log('Llamando al servicio para crear formulario SmartVOC...');
-      const smartVocForm = await SmartVOCFormService.createSmartVOCForm(researchId, formData);
+      const smartVocForm = await this.smartVOCService.createSmartVOCForm(researchId, formData);
       console.log('Formulario SmartVOC creado exitosamente:', smartVocForm.id);
 
       return createResponse(201, {
@@ -83,7 +86,7 @@ export class SmartVOCFormController {
       }
 
       // Obtener el formulario SmartVOC usando el servicio
-      const smartVocForm = await SmartVOCFormService.getSmartVOCFormById(formId);
+      const smartVocForm = await this.smartVOCService.getSmartVOCFormById(formId);
       
       if (!smartVocForm) {
         return errorResponse('Formulario SmartVOC no encontrado', 404);
@@ -106,12 +109,19 @@ export class SmartVOCFormController {
     try {
       // Obtener el ID de la investigación desde los parámetros de ruta
       const researchId = event.pathParameters?.researchId;
+      
+      console.log('DEBUG - getSmartVOCFormByResearchId:', {
+        path: event.path,
+        pathParameters: event.pathParameters,
+        researchId
+      });
+      
       if (!researchId) {
         return errorResponse('Se requiere un ID de investigación', 400);
       }
 
       // Obtener el formulario SmartVOC usando el servicio
-      const smartVocForm = await SmartVOCFormService.getSmartVOCFormByResearchId(researchId);
+      const smartVocForm = await this.smartVOCService.getSmartVOCFormByResearchId(researchId);
       
       if (!smartVocForm) {
         return createResponse(200, {
@@ -154,7 +164,7 @@ export class SmartVOCFormController {
       }
 
       // Actualizar el formulario SmartVOC usando el servicio
-      const updatedForm = await SmartVOCFormService.updateSmartVOCForm(formId, formData);
+      const updatedForm = await this.smartVOCService.updateSmartVOCForm(formId, formData);
 
       return createResponse(200, {
         message: 'Formulario SmartVOC actualizado exitosamente',
@@ -191,7 +201,7 @@ export class SmartVOCFormController {
       }
 
       // Actualizar o crear el formulario SmartVOC usando el servicio
-      const smartVocForm = await SmartVOCFormService.createOrUpdateSmartVOCForm(researchId, formData);
+      const smartVocForm = await this.smartVOCService.createOrUpdateSmartVOCForm(researchId, formData);
 
       return createResponse(200, {
         message: 'Formulario SmartVOC actualizado exitosamente',
@@ -220,7 +230,7 @@ export class SmartVOCFormController {
       }
 
       // Eliminar el formulario SmartVOC usando el servicio
-      await SmartVOCFormService.deleteSmartVOCForm(formId);
+      await this.smartVOCService.deleteSmartVOCForm(formId);
 
       return createResponse(200, {
         message: 'Formulario SmartVOC eliminado exitosamente'
@@ -259,7 +269,7 @@ export class SmartVOCFormController {
       }
 
       // Clonar el formulario SmartVOC usando el servicio
-      const clonedForm = await SmartVOCFormService.cloneSmartVOCForm(
+      const clonedForm = await this.smartVOCService.cloneSmartVOCForm(
         cloneData.sourceFormId,
         cloneData.targetResearchId
       );
@@ -286,6 +296,25 @@ export class SmartVOCFormController {
     
     return errorResponse(message, statusCode);
   }
+
+  /**
+   * Obtiene todos los formularios SmartVOC
+   * @param _event Evento de API Gateway (no utilizado directamente)
+   * @param _userId ID del usuario autenticado (no utilizado directamente)
+   * @returns Respuesta HTTP con todos los formularios
+   */
+  async getAllSmartVOCForms(_event: APIGatewayProxyEvent, _userId: string): Promise<APIGatewayProxyResult> {
+    try {
+      // Obtener todos los formularios SmartVOC
+      const forms = await this.smartVOCService.getAllForms();
+      
+      return createResponse(200, {
+        data: forms
+      });
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
 }
 
 // Crear instancia del controlador
@@ -294,6 +323,7 @@ const controller = new SmartVOCFormController();
 // Definir mapa de rutas para el controlador
 const routes: RouteMap = {
   '/smart-voc': {
+    'GET': controller.getAllSmartVOCForms.bind(controller),
     'POST': controller.createSmartVOCForm.bind(controller)
   },
   '/smart-voc/:id': {
@@ -308,12 +338,15 @@ const routes: RouteMap = {
   },
   '/smart-voc/clone': {
     'POST': controller.cloneSmartVOCForm.bind(controller)
+  },
+  '/smart-voc/all': {
+    'GET': controller.getAllSmartVOCForms.bind(controller)
   }
 };
 
 // Crear y exportar el controlador con las rutas definidas
 export const smartVocFormController = createController(routes, {
-  basePath: '/smart-voc',
+  basePath: '',  // Cambiado de '/smart-voc' a '' para permitir rutas como /research/:researchId/smart-voc
   publicRoutes: [] // Todas las rutas requieren autenticación
 });
 

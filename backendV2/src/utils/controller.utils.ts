@@ -5,12 +5,15 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
  * @returns Objeto con los headers CORS configurados
  */
 export const getCorsHeaders = (): { [key: string]: string } => {
+  // Obtenemos la URL de origen (para desarrollo y producción)
+  const origin = process.env.ALLOWED_ORIGIN || '*';
+  
   return {
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Credentials': 'true',
-    'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Requested-With,Accept,cache-control,pragma',
-    'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS,PATCH',
-    'Access-Control-Expose-Headers': 'Authorization,X-Api-Key',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Amz-Date, X-Api-Key, X-Amz-Security-Token, X-Requested-With, x-requested-with, Accept, Cache-Control, cache-control, Pragma, pragma, X-Amz-User-Agent',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
+    'Access-Control-Expose-Headers': 'Authorization, X-Api-Key',
     'Content-Type': 'application/json'
   };
 };
@@ -22,9 +25,17 @@ export const getCorsHeaders = (): { [key: string]: string } => {
  * @returns Respuesta HTTP formateada
  */
 export const createResponse = (statusCode: number, body: any): APIGatewayProxyResult => {
+  const headers = {
+    'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || '*',
+    'Access-Control-Allow-Credentials': true,
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Amz-Date, X-Api-Key, X-Amz-Security-Token, X-Requested-With, x-requested-with, Accept, Cache-Control, cache-control, Pragma, pragma, X-Amz-User-Agent',
+    'Content-Type': 'application/json'
+  };
+
   return {
     statusCode,
-    headers: getCorsHeaders(),
+    headers,
     body: JSON.stringify(body)
   };
 };

@@ -199,6 +199,20 @@ export class SmartVOCFormService {
       throw new Error(`Error al clonar formulario SmartVOC: ${error.message}`);
     }
   }
+
+  /**
+   * Obtiene todos los formularios SmartVOC
+   * @returns Lista de todos los formularios SmartVOC
+   */
+  async getAllForms(): Promise<SmartVOCFormRecord[]> {
+    try {
+      const forms = await this.model.getAll();
+      return forms;
+    } catch (error: any) {
+      console.error('Error al obtener todos los formularios SmartVOC:', error);
+      throw new Error(`Error al obtener todos los formularios SmartVOC: ${error.message}`);
+    }
+  }
 }
 
 // Exportamos una instancia por defecto del servicio

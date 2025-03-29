@@ -2,7 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.isWebSocketMessage = exports.isWebSocketEvent = exports.errorMessageSchema = exports.tokenRefreshResponseSchema = exports.webSocketConfigSchema = exports.WebSocketEvent = void 0;
 const zod_1 = require("zod");
-// WebSocket Events
 var WebSocketEvent;
 (function (WebSocketEvent) {
     WebSocketEvent["PING"] = "PING";
@@ -11,17 +10,13 @@ var WebSocketEvent;
     WebSocketEvent["TOKEN_REFRESH"] = "TOKEN_REFRESH";
     WebSocketEvent["TOKEN_REFRESHED"] = "TOKEN_REFRESHED";
     WebSocketEvent["ERROR"] = "ERROR";
-    // Authentication events
     WebSocketEvent["TOKEN_UPDATE"] = "token.update";
-    // Connection events
     WebSocketEvent["CONNECT"] = "connect";
     WebSocketEvent["DISCONNECT"] = "disconnect";
-    // Emotion events
     WebSocketEvent["EMOTION_CREATED"] = "emotion.created";
     WebSocketEvent["EMOTION_UPDATED"] = "emotion.updated";
     WebSocketEvent["EMOTION_DELETED"] = "emotion.deleted";
-})(WebSocketEvent || (exports.WebSocketEvent = WebSocketEvent = {}));
-// Validation Schemas
+})(WebSocketEvent = exports.WebSocketEvent || (exports.WebSocketEvent = {}));
 exports.webSocketConfigSchema = zod_1.z.object({
     url: zod_1.z.string(),
     token: zod_1.z.string().optional(),
@@ -43,7 +38,6 @@ exports.errorMessageSchema = zod_1.z.object({
     code: zod_1.z.string(),
     message: zod_1.z.string()
 });
-// Type Guards
 const isWebSocketEvent = (value) => typeof value === 'string' && Object.values(WebSocketEvent).includes(value);
 exports.isWebSocketEvent = isWebSocketEvent;
 const isWebSocketMessage = (value) => typeof value === 'object' &&
