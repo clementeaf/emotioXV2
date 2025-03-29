@@ -8,6 +8,7 @@ import { thankYouScreenHandler } from './controllers/thankYouScreen.controller';
 import { researchHandler } from './controllers/newResearch.controller';
 import { smartVocFormController } from './controllers/smartVocForm.controller';
 import { eyeTrackingHandler } from './controllers/eyeTracking.controller';
+import { s3Handler } from './controllers/s3.controller';
 
 /**
  * Punto de entrada principal para las funciones serverless
@@ -79,6 +80,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       } else if (path.startsWith('/eye-tracking')) {
         console.log('Enrutando a eyeTrackingHandler:', path);
         return eyeTrackingHandler(event);
+      } else if (path.startsWith('/s3')) {
+        console.log('Enrutando a s3Handler:', path);
+        return s3Handler(event);
       }
     } catch (routingError: any) {
       console.error('Error al enrutar solicitud:', routingError);
@@ -123,7 +127,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             '/welcome-screens - Configuración de pantallas de bienvenida (GET, POST, PUT, DELETE)',
             '/thank-you-screens - Configuración de pantallas de agradecimiento (GET, POST, PUT, DELETE)',
             '/smart-voc - Formularios VOC inteligentes (GET, POST, PUT, DELETE)',
-            '/eye-tracking - Configuración y datos de eye tracking (GET, POST, PUT, DELETE)'
+            '/eye-tracking - Configuración y datos de eye tracking (GET, POST, PUT, DELETE)',
+            '/s3/upload - Generar URL prefirmada para subir archivos (POST)',
+            '/s3/download/:key - Generar URL prefirmada para descargar archivos (GET)',
+            '/s3/delete/:key - Generar URL prefirmada para eliminar archivos (DELETE)'
           ]
         })
       };
