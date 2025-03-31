@@ -126,6 +126,29 @@ export class ApiClient {
   }
   
   /**
+   * Asegura que el token esté establecido en las cabeceras
+   * Esta función se llamará antes de cada petición
+   */
+  private ensureAuthToken(): void {
+    // Solo ejecutar en el cliente, no en el servidor
+    if (typeof window === 'undefined') {
+      return;
+    }
+    
+    if (!this.defaultHeaders['Authorization']) {
+      const storageType = localStorage.getItem('auth_storage_type') || 'local';
+      const token = storageType === 'local'
+        ? localStorage.getItem('token')
+        : sessionStorage.getItem('token');
+        
+      if (token) {
+        console.log('🔑 [API-CLIENT] Estableciendo token faltante en cabeceras antes de petición');
+        this.setAuthToken(token);
+      }
+    }
+  }
+  
+  /**
    * Realiza una petición GET a un endpoint
    * @param category Categoría del endpoint
    * @param operation Operación dentro de la categoría
@@ -139,6 +162,7 @@ export class ApiClient {
     params?: Record<string, string>,
     queryParams?: Record<string, string>
   ): Promise<T> {
+    this.ensureAuthToken();
     const url = this.buildUrl(
       this.endpointManager.getEndpoint(category, operation, params),
       queryParams
@@ -166,6 +190,7 @@ export class ApiClient {
     data: D,
     params?: Record<string, string>
   ): Promise<T> {
+    this.ensureAuthToken();
     const url = this.endpointManager.getEndpoint(category, operation, params);
     
     const response = await fetch(url, {
@@ -191,6 +216,7 @@ export class ApiClient {
     data: D,
     params?: Record<string, string>
   ): Promise<T> {
+    this.ensureAuthToken();
     const url = this.endpointManager.getEndpoint(category, operation, params);
     
     const response = await fetch(url, {
@@ -214,6 +240,7 @@ export class ApiClient {
     operation: keyof typeof endpointsJson.endpoints[P],
     params?: Record<string, string>
   ): Promise<T> {
+    this.ensureAuthToken();
     const url = this.endpointManager.getEndpoint(category, operation, params);
     
     const response = await fetch(url, {

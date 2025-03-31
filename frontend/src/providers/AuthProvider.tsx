@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 import tokenService from '@/services/tokenService';
+import { apiClient } from '@/config/api-client';
 
 interface User {
   email: string;
@@ -41,62 +42,87 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Cargar token al iniciar
   useEffect(() => {
     const initializeAuth = async () => {
-      // Verificar el tipo de almacenamiento utilizado (localStorage o sessionStorage)
-      const storageType = localStorage.getItem('auth_storage_type') || 'local';
-      console.log('Tipo de almacenamiento detectado:', storageType);
-      
-      // Buscar token en el almacenamiento correspondiente
-      const storedToken = storageType === 'local' 
-        ? localStorage.getItem('token') 
-        : sessionStorage.getItem('token');
-        
-      if (storedToken) {
-        try {
-          console.log('Intentando inicializar con token almacenado:', storedToken.substring(0, 15) + '...');
-          const decoded = jwtDecode<User>(storedToken);
-          console.log('Token decodificado con éxito:', decoded);
-          
-          const expiryTime = (decoded as any).exp * 1000;
-          const now = Date.now();
-          console.log('Tiempo actual:', new Date(now).toLocaleString());
-          console.log('Fecha de expiración del token:', new Date(expiryTime).toLocaleString());
-          console.log('Tiempo restante:', Math.floor((expiryTime - now) / (1000 * 60 * 60)) + ' horas');
-          
-          if (expiryTime > now) {
-            console.log('Token válido encontrado, inicializando sesión');
-            setToken(storedToken);
-            setUser(decoded);
-            
-            // Iniciar la renovación automática del token
-            tokenService.startAutoRefresh();
-            
-            console.log('Sesión inicializada con token existente, expira:', new Date(expiryTime).toLocaleString());
-          } else {
-            throw new Error(`Token expirado: venció el ${new Date(expiryTime).toLocaleString()}`);
-          }
-        } catch (error) {
-          console.error('Error al inicializar la sesión:', error);
-          // Limpiar token del almacenamiento correspondiente
-          if (storageType === 'local') {
-            localStorage.removeItem('token');
-          } else {
-            sessionStorage.removeItem('token');
-          }
-          localStorage.removeItem('auth_storage_type');
-          setError('La sesión ha expirado. Por favor, inicia sesión nuevamente.');
-        }
+      // Verificar que estemos en el cliente
+      if (typeof window === 'undefined') {
+        console.log('Inicialización de autenticación saltada en el servidor');
+        setIsLoading(false);
+        return;
       }
-      setIsLoading(false);
+      
+      try {
+        // Verificar el tipo de almacenamiento utilizado (localStorage o sessionStorage)
+        const storageType = localStorage.getItem('auth_storage_type') || 'local';
+        console.log('Tipo de almacenamiento detectado:', storageType);
+        
+        // Buscar token en el almacenamiento correspondiente
+        const storedToken = storageType === 'local' 
+          ? localStorage.getItem('token') 
+          : sessionStorage.getItem('token');
+          
+        if (storedToken) {
+          try {
+            console.log('Intentando inicializar con token almacenado:', storedToken.substring(0, 15) + '...');
+            const decoded = jwtDecode<User>(storedToken);
+            console.log('Token decodificado con éxito:', decoded);
+            
+            const expiryTime = (decoded as any).exp * 1000;
+            const now = Date.now();
+            console.log('Tiempo actual:', new Date(now).toLocaleString());
+            console.log('Fecha de expiración del token:', new Date(expiryTime).toLocaleString());
+            console.log('Tiempo restante:', Math.floor((expiryTime - now) / (1000 * 60 * 60)) + ' horas');
+            
+            if (expiryTime > now) {
+              console.log('Token válido encontrado, inicializando sesión');
+              setToken(storedToken);
+              setUser(decoded);
+              
+              // Iniciar la renovación automática del token
+              tokenService.startAutoRefresh();
+              
+              console.log('Sesión inicializada con token existente, expira:', new Date(expiryTime).toLocaleString());
+            } else {
+              throw new Error(`Token expirado: venció el ${new Date(expiryTime).toLocaleString()}`);
+            }
+          } catch (error) {
+            console.error('Error al inicializar la sesión:', error);
+            // Limpiar token del almacenamiento correspondiente
+            if (storageType === 'local') {
+              localStorage.removeItem('token');
+            } else {
+              sessionStorage.removeItem('token');
+            }
+            localStorage.removeItem('auth_storage_type');
+            setError('La sesión ha expirado. Por favor, inicia sesión nuevamente.');
+          }
+        }
+      } catch (error) {
+        console.error('Error durante la inicialización de autenticación:', error);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     initializeAuth();
     
     // Limpiar al desmontar el componente
     return () => {
-      // Detener la renovación automática al desmontar
-      tokenService.stopAutoRefresh();
+      if (typeof window !== 'undefined') {
+        // Detener la renovación automática al desmontar
+        tokenService.stopAutoRefresh();
+      }
     };
   }, []);
+
+  // Efecto para actualizar apiClient cuando cambie el token
+  useEffect(() => {
+    if (token) {
+      console.log('🔑 [AUTH] Actualizando token en apiClient desde AuthProvider');
+      apiClient.setAuthToken(token);
+    } else {
+      console.log('🔑 [AUTH] Limpiando token en apiClient desde AuthProvider');
+      apiClient.clearAuthToken();
+    }
+  }, [token]);
 
   // Función para renovar manualmente el token
   const handleRefreshToken = async (): Promise<boolean> => {
