@@ -7,6 +7,7 @@ import { StimuliTab } from './tabs/StimuliTab';
 import { AdvancedTab } from './tabs/AdvancedTab';
 import { PreviewTab } from './tabs/PreviewTab';
 import { toast } from 'react-hot-toast';
+import { useErrorLog } from '@/components/utils/ErrorLogger';
 
 interface EyeTrackingFormProps {
   researchId: string;
@@ -57,6 +58,7 @@ export const EyeTrackingForm: React.FC<EyeTrackingFormProps> = ({ researchId }) 
   const [activeTab, setActiveTab] = useState<string>('setup');
   const [savingMessage, setSavingMessage] = useState<string>('');
   const [showDataModal, setShowDataModal] = useState<boolean>(false);
+  const logger = useErrorLog();
   
   const { 
     formData, 
@@ -69,7 +71,8 @@ export const EyeTrackingForm: React.FC<EyeTrackingFormProps> = ({ researchId }) 
     addAreaOfInterest,
     removeAreaOfInterest,
     handleSave,
-    setActiveTab: setFormActiveTab
+    setActiveTab: setFormActiveTab,
+    validateStimuliData
   } = useEyeTrackingForm({
     researchId
   });
@@ -107,16 +110,43 @@ export const EyeTrackingForm: React.FC<EyeTrackingFormProps> = ({ researchId }) 
 
   // Handler para el botón de guardar
   const handleSaveClick = () => {
+    logger.debug('EyeTrackingForm.handleSaveClick - Iniciando guardado...');
+    
+    // Validar explícitamente los datos de estímulos antes de guardar
+    if (formData.stimuli?.items?.length > 0) {
+      logger.debug('EyeTrackingForm.handleSaveClick - Validando estímulos antes de guardar...');
+      const isValid = validateStimuliData();
+      
+      if (!isValid) {
+        logger.error('EyeTrackingForm.handleSaveClick - Error en validación de estímulos');
+        toast.error('Hay problemas con los estímulos. Por favor, verifica que todas las imágenes se hayan subido correctamente.');
+        setActiveTab('stimuli'); // Cambiar a la pestaña de estímulos para que el usuario pueda corregir
+        return;
+      }
+      
+      logger.debug('EyeTrackingForm.handleSaveClick - Validación de estímulos exitosa');
+    }
+    
     // Verificar si hay imágenes temporales
     const temporaryImages = formData.stimuli?.items?.filter(
       s => (s.fileUrl && s.fileUrl.startsWith('blob:')) || (!s.s3Key && s.fileUrl)
     );
     
     if (temporaryImages && temporaryImages.length > 0) {
+      logger.debug('EyeTrackingForm.handleSaveClick - Se encontraron imágenes temporales:', {
+        count: temporaryImages.length,
+        items: temporaryImages.map(item => ({
+          id: item.id,
+          fileName: item.fileName
+        }))
+      });
       toast.success(`Se procesarán ${temporaryImages.length} imágenes antes de guardar`, {
         duration: 3000
       });
     }
+    
+    // Mostrar la estructura completa de datos que se enviará
+    logger.debug('EyeTrackingForm.handleSaveClick - Datos completos a guardar:', formData);
     
     // Mostrar modal con los datos que se enviarían
     setShowDataModal(true);

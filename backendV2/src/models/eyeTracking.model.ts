@@ -120,7 +120,7 @@ export interface EyeTrackingConfig {
 }
 
 /**
- * Ítem de estímulo para eye tracking
+ * Estímulo para eye tracking
  */
 export interface EyeTrackingStimulus {
   /**
@@ -136,12 +136,12 @@ export interface EyeTrackingStimulus {
   /**
    * Tipo de archivo (MIME)
    */
-  fileType: string;
+  fileType?: string;
   
   /**
    * Tamaño del archivo en bytes
    */
-  fileSize: number;
+  fileSize?: number;
   
   /**
    * URL del archivo
@@ -149,9 +149,24 @@ export interface EyeTrackingStimulus {
   fileUrl: string;
   
   /**
+   * Clave del archivo en S3
+   */
+  s3Key: string;
+  
+  /**
    * Orden de presentación
    */
   order: number;
+  
+  /**
+   * Indicador de error
+   */
+  error?: boolean;
+  
+  /**
+   * Mensaje de error
+   */
+  errorMessage?: string;
 }
 
 /**

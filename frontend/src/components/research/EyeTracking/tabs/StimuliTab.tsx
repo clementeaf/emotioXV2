@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import FileUploader from '@/components/FileUploader';
 import { EyeTrackingFormData, EyeTrackingStimulus } from 'shared/interfaces/eye-tracking.interface';
+import { useErrorLog } from '@/components/utils/ErrorLogger';
 
 interface StimuliTabProps {
   formData: EyeTrackingFormData;
@@ -16,17 +17,42 @@ export const StimuliTab: React.FC<StimuliTabProps> = ({
   handleFileUploaderComplete
 }) => {
   const [uploadResult, setUploadResult] = useState<{ fileUrl: string; key: string } | null>(null);
+  const logger = useErrorLog();
 
-  // Función personalizada para manejar el resultado de la carga
+  // Monitor changes in stimuli data
+  useEffect(() => {
+    if (formData.stimuli) {
+      logger.debug('StimuliTab - formData.stimuli cambió:', {
+        count: formData.stimuli.items?.length || 0,
+        items: formData.stimuli.items?.map(item => ({
+          id: item.id,
+          fileName: item.fileName,
+          hasUrl: !!item.fileUrl,
+          hasS3Key: !!item.s3Key
+        }))
+      });
+    }
+  }, [formData.stimuli, logger]);
+
+  // Handle file upload completion
   const handleUploadComplete = (fileData: { fileUrl: string; key: string }) => {
-    // Guardar el resultado para mostrarlo en el alert
-    setUploadResult(fileData);
+    logger.debug('StimuliTab - handleUploadComplete:', fileData);
     
-    // Mostrar un alert con los detalles
-    alert(`¡Archivo subido con éxito!\n\nURL: ${fileData.fileUrl}\n\nClave S3: ${fileData.key}`);
+    // Guardar el resultado de la última subida
+    setUploadResult({
+      fileUrl: fileData.fileUrl,
+      key: fileData.key
+    });
     
-    // Llamar a la función original
+    // Pasar el resultado al manejador principal
+    logger.debug('StimuliTab - Llamando a handleFileUploaderComplete con:', fileData);
     handleFileUploaderComplete(fileData);
+  };
+
+  // Manejar error en la subida
+  const handleUploadError = (error: any) => {
+    logger.error('StimuliTab - Error al cargar archivo:', error);
+    alert(`Error al subir el archivo: ${error.message || 'Error desconocido'}`);
   };
 
   return (
@@ -40,6 +66,12 @@ export const StimuliTab: React.FC<StimuliTabProps> = ({
                 Sube las imágenes que serán utilizadas como estímulos en el experimento de eye tracking.
               </p>
               
+              {/* Debug info */}
+              <div className="p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
+                <p className="font-medium text-yellow-800">Información de depuración:</p>
+                <p className="text-yellow-700">Número actual de estímulos: {formData.stimuli.items.length}</p>
+              </div>
+              
               <div className="mt-4 space-y-4">
                 <FileUploader 
                   researchId={researchId}
@@ -48,9 +80,7 @@ export const StimuliTab: React.FC<StimuliTabProps> = ({
                   multiple={true}
                   maxSize={10 * 1024 * 1024} // 10MB
                   onUploadComplete={handleUploadComplete}
-                  onUploadError={(error) => {
-                    console.error('[EyeTrackingForm] Error al cargar archivo:', error);
-                  }}
+                  onUploadError={handleUploadError}
                 />
 
                 {/* Uploaded files section */}
@@ -83,6 +113,11 @@ export const StimuliTab: React.FC<StimuliTabProps> = ({
                             <div className="text-xs text-neutral-500">
                               {Math.round((stimulus.fileSize || 0) / 1024)} KB
                             </div>
+                            {stimulus.s3Key && (
+                              <div className="text-xs text-green-600">
+                                ✓ Subido a S3
+                              </div>
+                            )}
                           </div>
                           <button
                             onClick={() => removeStimulus(stimulus.id)}

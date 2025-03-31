@@ -34,7 +34,14 @@ export class EyeTrackingService {
    * @throws ApiError si hay errores de validación
    */
   private validateData(data: Partial<EyeTrackingFormData>): boolean {
+    console.log('[DEBUG] EyeTrackingService.validateData - Datos recibidos:', JSON.stringify(data, null, 2));
+    
     const errors: Record<string, string> = {};
+    
+    // Verificar si researchId está presente
+    if (!data.researchId) {
+      errors.researchId = 'El ID de investigación es obligatorio';
+    }
 
     // Validar parámetros de configuración si están presentes
     if (data.config?.parameters) {
@@ -68,6 +75,8 @@ export class EyeTrackingService {
 
     // Validar configuración de estímulos si está presente
     if (data.stimuli) {
+      console.log('[DEBUG] EyeTrackingService.validateData - Validando stimuli:', JSON.stringify(data.stimuli, null, 2));
+      
       // Validar duración por estímulo
       if (data.stimuli.durationPerStimulus !== undefined) {
         if (data.stimuli.durationPerStimulus < EYE_TRACKING_VALIDATION.durationPerStimulus.min) {
@@ -79,6 +88,8 @@ export class EyeTrackingService {
 
       // Validar estímulos individuales
       if (data.stimuli.items && Array.isArray(data.stimuli.items)) {
+        console.log('[DEBUG] EyeTrackingService.validateData - Número de estímulos:', data.stimuli.items.length);
+        
         data.stimuli.items.forEach((item, index) => {
           if (!item.fileName || item.fileName.trim() === '') {
             errors[`items[${index}].fileName`] = 'El nombre del archivo no puede estar vacío';
@@ -86,18 +97,28 @@ export class EyeTrackingService {
           if (!item.fileUrl || item.fileUrl.trim() === '') {
             errors[`items[${index}].fileUrl`] = 'La URL del archivo no puede estar vacía';
           }
+          if (!item.s3Key || item.s3Key.trim() === '') {
+            errors[`items[${index}].s3Key`] = 'La clave S3 del archivo no puede estar vacía';
+          }
+          
+          // Verificar que fileUrl y s3Key sean coherentes
+          if (item.fileUrl && item.s3Key && !item.fileUrl.includes(item.s3Key)) {
+            errors[`items[${index}].consistency`] = 'La URL del archivo debe incluir su clave S3';
+          }
         });
       }
     }
 
     // Si hay errores, lanzar excepción
     if (Object.keys(errors).length > 0) {
+      console.error('[DEBUG] EyeTrackingService.validateData - Errores encontrados:', errors);
       throw new ApiError(
         `${EyeTrackingError.INVALID_DATA}: Los datos de eye tracking no son válidos. Errores: ${JSON.stringify(errors)}`,
         400
       );
     }
-
+    
+    console.log('[DEBUG] EyeTrackingService.validateData - Validación exitosa');
     return true;
   }
 
@@ -268,6 +289,9 @@ export class EyeTrackingService {
    */
   async updateByResearchId(researchId: string, data: EyeTrackingFormData, _userId: string): Promise<EyeTrackingRecord> {
     try {
+      console.log('[DEBUG] EyeTrackingService.updateByResearchId - Iniciando para researchId:', researchId);
+      console.log('[DEBUG] EyeTrackingService.updateByResearchId - Datos recibidos:', JSON.stringify(data, null, 2));
+      
       // Validar que existe researchId
       if (!researchId) {
         throw new ApiError(
@@ -279,26 +303,75 @@ export class EyeTrackingService {
       // Validar datos
       this.validateData(data);
       
+      // Verificar específicamente los estímulos
+      if (data.stimuli && Array.isArray(data.stimuli.items)) {
+        console.log('[DEBUG] EyeTrackingService.updateByResearchId - Verificando estímulos, cantidad:', data.stimuli.items.length);
+        
+        // Verificar cada estímulo
+        data.stimuli.items.forEach((item, index) => {
+          if (!item.s3Key) {
+            console.warn(`[DEBUG] EyeTrackingService.updateByResearchId - Estímulo ${index} sin s3Key:`, item);
+          }
+        });
+      } else {
+        console.warn('[DEBUG] EyeTrackingService.updateByResearchId - No hay estímulos en los datos recibidos');
+      }
+      
       // Buscar si ya existe una configuración para esta investigación
       const existingConfig = await eyeTrackingModel.getByResearchId(researchId);
       
       if (existingConfig) {
+        console.log('[DEBUG] EyeTrackingService.updateByResearchId - Encontrada configuración existente, ID:', existingConfig.id);
+        console.log('[DEBUG] EyeTrackingService.updateByResearchId - Estímulos en configuración existente:', 
+          existingConfig.stimuli.items?.length || 0);
+        
         // Si existe, actualizar
-        const updatedConfig = await eyeTrackingModel.update(existingConfig.id, {
+        const dataToUpdate = {
           ...data,
           researchId // Asegurarse de que el researchId no se cambie
-        });
+        };
+        
+        // Verificar continuidad de estímulos para debugging
+        if (existingConfig.stimuli && existingConfig.stimuli.items && 
+            dataToUpdate.stimuli && dataToUpdate.stimuli.items) {
+          const existingIds = existingConfig.stimuli.items.map(item => item.id);
+          const newIds = dataToUpdate.stimuli.items.map(item => item.id);
+          
+          console.log('[DEBUG] EyeTrackingService.updateByResearchId - IDs de estímulos existentes:', existingIds);
+          console.log('[DEBUG] EyeTrackingService.updateByResearchId - IDs de estímulos nuevos:', newIds);
+          
+          // Verificar estímulos que se mantienen
+          const retainedIds = existingIds.filter(id => newIds.includes(id));
+          console.log('[DEBUG] EyeTrackingService.updateByResearchId - Estímulos que se mantienen:', retainedIds.length);
+          
+          // Verificar estímulos nuevos
+          const addedIds = newIds.filter(id => !existingIds.includes(id));
+          console.log('[DEBUG] EyeTrackingService.updateByResearchId - Estímulos nuevos:', addedIds.length);
+          
+          // Verificar estímulos eliminados
+          const removedIds = existingIds.filter(id => !newIds.includes(id));
+          console.log('[DEBUG] EyeTrackingService.updateByResearchId - Estímulos eliminados:', removedIds.length);
+        }
+        
+        console.log('[DEBUG] EyeTrackingService.updateByResearchId - Actualizando configuración con ID:', existingConfig.id);
+        const updatedConfig = await eyeTrackingModel.update(existingConfig.id, dataToUpdate);
         
         if (!updatedConfig) {
+          console.error('[DEBUG] EyeTrackingService.updateByResearchId - Error al actualizar la configuración');
           throw new ApiError(
             `${EyeTrackingError.DATABASE_ERROR}: No se pudo actualizar la configuración de eye tracking`,
             500
           );
         }
         
+        console.log('[DEBUG] EyeTrackingService.updateByResearchId - Configuración actualizada exitosamente');
+        console.log('[DEBUG] EyeTrackingService.updateByResearchId - Estímulos en configuración actualizada:', 
+          updatedConfig.stimuli.items?.length || 0);
+        
         return updatedConfig;
       } else {
         // Si no existe, crear nueva
+        console.log('[DEBUG] EyeTrackingService.updateByResearchId - No existe configuración, creando nueva');
         return await this.create(data, researchId, _userId);
       }
     } catch (error) {
@@ -307,7 +380,7 @@ export class EyeTrackingService {
         throw error;
       }
 
-      console.error('Error en EyeTrackingService.updateByResearchId:', error);
+      console.error('[DEBUG] EyeTrackingService.updateByResearchId - Error:', error);
       throw new ApiError(
         `${EyeTrackingError.DATABASE_ERROR}: Error al actualizar la configuración de eye tracking para la investigación`,
         500

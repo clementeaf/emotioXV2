@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { useFileUpload } from '@/hooks';
+import { useErrorLog } from '@/components/utils/ErrorLogger';
 import { EyeTrackingFormData, EyeTrackingStimulus } from 'shared/interfaces/eye-tracking.interface';
 
 // Función para generar un ID único
@@ -27,6 +28,7 @@ export function useEyeTrackingFileUpload({
   setFormData
 }: UseEyeTrackingFileUploadProps): UseEyeTrackingFileUploadReturn {
   const [isUploading, setIsUploading] = useState(false);
+  const logger = useErrorLog();
   
   // Inicializar el hook de carga de archivos al nivel superior (correcto)
   const { uploadFile } = useFileUpload();
@@ -150,31 +152,67 @@ export function useEyeTrackingFileUpload({
     });
   }, [formData.stimuli.items.length, researchId, setFormData, uploadFile]);
   
-  // Función para manejar la carga completada desde el componente FileUploader
+  // Manejador para el componente FileUploader
   const handleFileUploaderComplete = useCallback((fileData: { fileUrl: string; key: string }) => {
-    // Añadir el archivo subido a los estímulos
-    setFormData((prevData: EyeTrackingFormData) => {
-      const newStimulus: EyeTrackingStimulus = {
-        id: generateId(),
-        fileName: fileData.key.split('/').pop() || 'archivo',
-        fileType: fileData.key.split('.').pop() || 'image',
-        fileSize: 0, // No tenemos este dato después de la subida
-        fileUrl: fileData.fileUrl,
-        s3Key: fileData.key,
-        order: prevData.stimuli.items.length + 1
-      };
-      
-      return {
-        ...prevData,
-        stimuli: {
-          ...prevData.stimuli,
-          items: [...prevData.stimuli.items, newStimulus]
-        }
-      };
+    logger.debug('handleFileUploaderComplete llamado con datos:', fileData);
+    
+    if (!fileData || !fileData.fileUrl || !fileData.key) {
+      logger.error('Datos de archivo incompletos recibidos en handleFileUploaderComplete');
+      return;
+    }
+    
+    // Extraer información del nombre del archivo
+    const fileName = fileData.key.split('/').pop() || 'archivo.jpg';
+    const fileType = fileName.split('.').pop()?.toLowerCase() || 'jpg';
+    
+    logger.debug('Información extraída del archivo:', { fileName, fileType });
+    logger.debug('Estado actual de stimuli.items:', {
+      count: formData.stimuli.items.length,
+      items: formData.stimuli.items.map(i => ({ id: i.id, name: i.fileName }))
     });
     
-    toast.success('Estímulo cargado correctamente');
-  }, [setFormData]);
+    // Crear un nuevo estímulo
+    const newStimulus: EyeTrackingStimulus = {
+      id: generateId(),
+      fileName: fileName,
+      fileUrl: fileData.fileUrl,
+      fileType: fileType,
+      s3Key: fileData.key,
+      fileSize: 0,
+      order: formData.stimuli.items.length + 1
+    };
+    
+    logger.debug('Nuevo estímulo a añadir:', newStimulus);
+    
+    // Actualizar el array de estímulos
+    const updatedItems = [...formData.stimuli.items, newStimulus];
+    logger.debug('Nuevo estado de stimuli.items:', {
+      count: updatedItems.length,
+      lastItem: newStimulus
+    });
+    
+    // Actualizar el estado del formulario
+    setFormData({
+      ...formData,
+      stimuli: {
+        ...formData.stimuli,
+        items: updatedItems
+      }
+    });
+    
+    logger.debug('Nuevo estado completo del formulario:', {
+      stimuliCount: updatedItems.length,
+      updatedFormData: {
+        ...formData,
+        stimuli: {
+          ...formData.stimuli,
+          items: updatedItems.map(i => ({ id: i.id, name: i.fileName }))
+        }
+      }
+    });
+    
+    return newStimulus;
+  }, [formData, setFormData, logger]);
   
   // Remove a stimulus
   const removeStimulus = useCallback((id: string) => {
