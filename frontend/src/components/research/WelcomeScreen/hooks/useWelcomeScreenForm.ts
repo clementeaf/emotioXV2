@@ -70,6 +70,16 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
           return { data: null, error: errorMessage, unauthorized: true };
         }
         
+        if (error?.statusCode === 403) {
+          errorMessage = 'No tiene permisos para acceder a esta investigación';
+          showModal({
+            title: 'Error de permisos',
+            message: 'No tiene permisos para acceder a esta investigación. Por favor, verifique que tiene acceso a este recurso o contacte al administrador.',
+            type: 'error'
+          });
+          return { data: null, error: errorMessage, forbidden: true };
+        }
+        
         if (error?.statusCode === 404) {
           console.log('[WelcomeScreen] No se encontró configuración previa (error 404) - esto es normal para nuevas pantallas');
           return { data: null, notFound: true };
@@ -141,6 +151,18 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
               setWelcomeScreenId(null); // Reiniciar el ID
               return await createNewRecord(data);
             }
+            
+            // Si el error es 403 (sin permisos), lo propagamos para mostrar mensaje claro
+            if (updateError?.statusCode === 403 || 
+                (updateError?.data?.error && updateError.data.error.includes('FORBIDDEN'))) {
+              console.error('[WelcomeScreen] Error de permisos (403) al actualizar:', updateError);
+              throw {
+                statusCode: 403,
+                message: 'No tiene permisos para modificar esta pantalla de bienvenida',
+                data: updateError?.data
+              };
+            }
+            
             // Si es otro tipo de error, lo propagamos
             throw updateError;
           }
@@ -183,6 +205,20 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
         showModal({
           title: 'Error de autenticación',
           message: 'Su sesión ha expirado o no está autenticado. Por favor, inicie sesión nuevamente.',
+          type: 'error'
+        });
+        
+        return;
+      }
+      
+      if (error?.statusCode === 403) {
+        errorMessage = 'No tiene permisos para esta operación';
+        errorDetails = 'No tiene los permisos necesarios para acceder a esta investigación';
+        
+        // Mostrar mensaje especial para error de permisos
+        showModal({
+          title: 'Error de permisos',
+          message: 'No tiene permisos para modificar esta pantalla de bienvenida. Por favor, verifique sus permisos o contacte al administrador.',
           type: 'error'
         });
         
