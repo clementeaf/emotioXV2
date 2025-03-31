@@ -1,15 +1,8 @@
-import { ErrorLogProvider, LogViewer } from '@/components/utils/ErrorLogger';
-import { Toaster } from '@/components/ui/use-toast';
 import { AppProps } from 'next/app';
+import '../styles/globals.css'; // Asegúrate de que esta ruta sea correcta
 
 function App({ Component, pageProps }: AppProps) {
-  return (
-    <ErrorLogProvider>
-      <Toaster />
-      <Component {...pageProps} />
-      <LogViewer />
-    </ErrorLogProvider>
-  );
+  return <Component {...pageProps} />;
 }
 
 export default App; 

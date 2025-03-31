@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import FileUploader from '@/components/FileUploader';
 import { EyeTrackingFormData, EyeTrackingStimulus } from 'shared/interfaces/eye-tracking.interface';
 import { useErrorLog } from '@/components/utils/ErrorLogger';
@@ -18,21 +18,21 @@ export const StimuliTab: React.FC<StimuliTabProps> = ({
 }) => {
   const [uploadResult, setUploadResult] = useState<{ fileUrl: string; key: string } | null>(null);
   const logger = useErrorLog();
-
-  // Monitor changes in stimuli data
+  
+  // Usar una ref para comparar cambios sin crear bucles de actualización
+  const prevStimuliCountRef = useRef<number>(0);
+  
+  // Usar useEffect para monitorear cambios de forma segura
   useEffect(() => {
-    if (formData.stimuli) {
-      logger.debug('StimuliTab - formData.stimuli cambió:', {
-        count: formData.stimuli.items?.length || 0,
-        items: formData.stimuli.items?.map(item => ({
-          id: item.id,
-          fileName: item.fileName,
-          hasUrl: !!item.fileUrl,
-          hasS3Key: !!item.s3Key
-        }))
+    // Solo registramos cuando hay un cambio real
+    if (formData.stimuli?.items?.length !== prevStimuliCountRef.current) {
+      logger.debug('StimuliTab - Cambio en número de estímulos:', {
+        prevCount: prevStimuliCountRef.current,
+        newCount: formData.stimuli?.items?.length || 0
       });
+      prevStimuliCountRef.current = formData.stimuli?.items?.length || 0;
     }
-  }, [formData.stimuli, logger]);
+  }, [formData.stimuli?.items?.length, logger]);
 
   // Handle file upload completion
   const handleUploadComplete = (fileData: { fileUrl: string; key: string }) => {

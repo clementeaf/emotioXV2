@@ -155,12 +155,13 @@ export function useEyeTrackingData({
               durationPerStimulus: existingData.stimuli?.durationPerStimulus || 5
             };
             
-            // Actualizar el estado del formulario con los datos cargados
-            setFormData({
-              ...formData,
+            // Actualizar el estado del formulario con los datos cargados usando la forma funcional
+            // para evitar dependencia de formData
+            setFormData(prevFormData => ({
+              ...prevFormData,
               config,
               stimuli
-            });
+            }));
             
             logger.info('Estado del formulario actualizado con datos existentes');
           }
@@ -185,7 +186,7 @@ export function useEyeTrackingData({
     };
 
     fetchExistingData();
-  }, [researchId, logger, formData]);
+  }, [researchId, logger]);
 
   // Helper function to update nested properties in formData
   const updateFormData = useCallback((path: string, value: any) => {
@@ -332,13 +333,13 @@ export function useEyeTrackingData({
         
         // También actualizar el estado local con las imágenes procesadas
         logger.debug('Actualizando estado local con las imágenes procesadas');
-        setFormData({
-          ...formData,
+        setFormData(prevFormData => ({
+          ...prevFormData,
           stimuli: {
-            ...formData.stimuli,
+            ...prevFormData.stimuli,
             items: processedStimuli as EyeTrackingStimulus[]
           }
-        });
+        }));
       }
       
       // Ahora sí guardar en el backend

@@ -10,6 +10,7 @@ import { DevModeInfo } from '@/components/common/DevModeInfo';
 import { AuthProvider } from '@/providers/AuthProvider';
 import { QueryProvider } from '@/providers/QueryProvider';
 import { ResearchProvider } from '@/providers/ResearchProvider';
+import { ErrorLogProvider, LogViewer } from '@/components/utils/ErrorLogger';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -36,9 +37,12 @@ export default function RootLayout({
         <QueryProvider>
           <AuthProvider>
             <ResearchProvider>
-              {children}
-              <Toaster position="top-right" />
-              <DevModeInfo variant="floating" />
+              <ErrorLogProvider>
+                {children}
+                <Toaster position="top-right" />
+                <DevModeInfo variant="floating" />
+                <LogViewer />
+              </ErrorLogProvider>
             </ResearchProvider>
           </AuthProvider>
         </QueryProvider>
