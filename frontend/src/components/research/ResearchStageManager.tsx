@@ -8,7 +8,7 @@ import { ResearchSidebar } from '@/components/layout/ResearchSidebar';
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
 
 import { CognitiveTaskForm } from './CognitiveTaskForm';
-import { EyeTrackingForm } from './EyeTrackingForm';
+import { EyeTrackingForm } from './EyeTracking/EyeTrackingForm';
 import { SmartVOCCognitiveTaskAnalysis } from './SmartVOCCognitiveTaskAnalysis';
 import { SmartVOCForm } from './SmartVOCForm';
 import { SmartVOCResults } from './SmartVOCResults';
@@ -111,7 +111,7 @@ function ResearchStageManagerContent({ researchId }: ResearchStageManagerProps) 
       case 'cognitive':
         return 'Diseña tareas de evaluación cognitiva para tu investigación.';
       case 'eye-tracking':
-        return 'Configura los ajustes de seguimiento ocular para tu estudio.';
+        return 'Personaliza el módulo de seguimiento ocular según tus necesidades.';
       case 'thank-you':
         return 'Configura el mensaje de finalización para los participantes.';
       case 'configuration':

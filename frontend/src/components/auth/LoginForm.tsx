@@ -223,8 +223,8 @@ export function LoginForm({ className }: LoginFormProps) {
       
       setStatus('authenticating');
       
-      // Usar la URL de login desde API_CONFIG
-      const loginUrl = API_CONFIG.endpoints.auth.LOGIN;
+      // Construir la URL completa con la base URL del API_CONFIG
+      const loginUrl = `${API_CONFIG.baseURL}${API_CONFIG.endpoints.auth.LOGIN}`;
       console.log('URL de login:', loginUrl);
       
       const response = await fetch(loginUrl, {

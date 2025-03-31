@@ -14,7 +14,7 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
 import { CognitiveTaskForm } from '@/components/research/CognitiveTaskForm';
 import { CreateResearchForm } from '@/components/research/CreateResearchForm';
-import { EyeTrackingForm } from '@/components/research/EyeTrackingForm';
+import { EyeTrackingForm } from '@/components/research/EyeTracking/EyeTrackingForm';
 import { ThankYouScreenForm } from '@/components/research/ThankYouScreenForm';
 import { WelcomeScreenForm } from '@/components/research/WelcomeScreenForm';
 import { useAuth } from '@/providers/AuthProvider';

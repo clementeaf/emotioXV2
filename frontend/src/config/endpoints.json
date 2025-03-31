@@ -40,6 +40,11 @@
       "getByResearch": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/thank-you-screens/research/{researchId}",
       "update": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/thank-you-screens/{id}",
       "delete": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/thank-you-screens/{id}"
+    },
+    "s3": {
+      "upload": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/s3/upload",
+      "download": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/s3/download/{key}",
+      "delete": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/s3/delete/{key}"
     }
   },
   "_original": {

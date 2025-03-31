@@ -44,6 +44,13 @@ interface EyeTrackingEndpoints {
   DELETE: string;
 }
 
+// Estructura para S3
+interface S3Endpoints {
+  UPLOAD: string;
+  DOWNLOAD: string;
+  DELETE: string;
+}
+
 // Modificamos la interfaz para incluir los endpoints añadidos
 interface Endpoints {
   auth: AuthEndpoints;
@@ -60,6 +67,7 @@ interface Endpoints {
   thankYouScreen: ThankYouScreenEndpoints;
   smartVoc: SmartVocEndpoints;
   eyeTracking: EyeTrackingEndpoints;
+  s3: S3Endpoints;
 }
 
 // Obtener la URL base desde el archivo endpoints.json generado dinámicamente
@@ -137,6 +145,13 @@ const API_CONFIG = {
       CREATE: '/eye-tracking',
       UPDATE: '/eye-tracking/{id}',
       DELETE: '/eye-tracking/{id}',
+    },
+    
+    // S3
+    s3: {
+      UPLOAD: '/s3/upload',
+      DOWNLOAD: '/s3/download/{key}',
+      DELETE: '/s3/delete/{key}',
     },
   },
   

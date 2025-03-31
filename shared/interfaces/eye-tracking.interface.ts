@@ -60,6 +60,9 @@ export interface EyeTrackingStimulus {
   fileSize: number;
   fileUrl: string;
   order: number;
+  s3Key?: string;  // Clave del objeto en S3
+  error?: boolean; // Indica si hubo un error al cargar
+  errorMessage?: string; // Mensaje de error durante la carga
 }
 
 // Area of Interest

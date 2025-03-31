@@ -66,6 +66,9 @@ class S3Service {
 
   constructor() {
     this.baseURL = API_CONFIG.baseURL;
+    
+    // Registrar información de inicialización
+    console.log('S3Service inicializado. Base URL:', this.baseURL);
   }
 
   /**
@@ -89,7 +92,13 @@ class S3Service {
   ): Promise<PresignedUrlResponse> {
     const fileType = determineFileType(file);
     
-    const response = await fetch(`${this.baseURL}/s3/upload`, {
+    // Usar el endpoint definido en api.config.ts
+    const uploadEndpoint = API_CONFIG.endpoints.s3.UPLOAD;
+    
+    console.log('S3Service.getUploadPresignedUrl - Solicitando URL para subida a:', 
+      this.baseURL + uploadEndpoint);
+      
+    const response = await fetch(`${this.baseURL}${uploadEndpoint}`, {
       method: 'POST',
       headers: this.getAuthHeaders(),
       body: JSON.stringify({
@@ -104,10 +113,13 @@ class S3Service {
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error('S3Service.getUploadPresignedUrl - Error en respuesta:', 
+        response.status, response.statusText, errorText);
       throw new Error(`Error al obtener URL de subida: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
     const data = await response.json();
+    console.log('S3Service.getUploadPresignedUrl - URL obtenida:', data.data);
     return data.data;
   }
 
@@ -118,17 +130,26 @@ class S3Service {
     // URL encode el key para la ruta
     const encodedKey = encodeURIComponent(key);
     
-    const response = await fetch(`${this.baseURL}/s3/download/${encodedKey}`, {
+    // Usar el endpoint definido en api.config.ts
+    const downloadEndpoint = API_CONFIG.endpoints.s3.DOWNLOAD.replace('{key}', encodedKey);
+    
+    console.log('S3Service.getDownloadUrl - Solicitando URL para descarga:', 
+      this.baseURL + downloadEndpoint);
+    
+    const response = await fetch(`${this.baseURL}${downloadEndpoint}`, {
       method: 'GET',
       headers: this.getAuthHeaders()
     });
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error('S3Service.getDownloadUrl - Error en respuesta:', 
+        response.status, response.statusText, errorText);
       throw new Error(`Error al obtener URL de descarga: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
     const data = await response.json();
+    console.log('S3Service.getDownloadUrl - URL obtenida:', data.data.downloadUrl);
     return data.data.downloadUrl;
   }
 
@@ -139,17 +160,26 @@ class S3Service {
     // URL encode el key para la ruta
     const encodedKey = encodeURIComponent(key);
     
-    const response = await fetch(`${this.baseURL}/s3/delete/${encodedKey}`, {
+    // Usar el endpoint definido en api.config.ts
+    const deleteEndpoint = API_CONFIG.endpoints.s3.DELETE.replace('{key}', encodedKey);
+    
+    console.log('S3Service.getDeleteUrl - Solicitando URL para eliminación:', 
+      this.baseURL + deleteEndpoint);
+    
+    const response = await fetch(`${this.baseURL}${deleteEndpoint}`, {
       method: 'DELETE',
       headers: this.getAuthHeaders()
     });
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error('S3Service.getDeleteUrl - Error en respuesta:', 
+        response.status, response.statusText, errorText);
       throw new Error(`Error al obtener URL de eliminación: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
     const data = await response.json();
+    console.log('S3Service.getDeleteUrl - URL obtenida:', data.data.deleteUrl);
     return data.data.deleteUrl;
   }
 
@@ -165,8 +195,12 @@ class S3Service {
     onError
   }: FileUploadParams): Promise<{ fileUrl: string; key: string }> {
     try {
+      console.log('S3Service.uploadFile - Iniciando subida para:', file.name, 'en carpeta:', folder);
+      
       // 1. Obtener URL prefirmada del backend
       const presignedData = await this.getUploadPresignedUrl(file, researchId, folder);
+      
+      console.log('S3Service.uploadFile - URL prefirmada obtenida:', presignedData.uploadUrl);
       
       // 2. Subir el archivo a S3 usando la URL prefirmada
       const xhr = new XMLHttpRequest();
@@ -190,6 +224,8 @@ class S3Service {
         
         xhr.onload = () => {
           if (xhr.status === 200 || xhr.status === 204) {
+            console.log('S3Service.uploadFile - Subida exitosa:', file.name);
+            
             const result = { 
               fileUrl: presignedData.fileUrl,
               key: presignedData.key
@@ -201,6 +237,7 @@ class S3Service {
             
             resolve(result);
           } else {
+            console.error('S3Service.uploadFile - Error en subida:', xhr.status, xhr.statusText);
             const error = new Error(`Error al subir archivo: ${xhr.status} ${xhr.statusText}`);
             if (onError) {
               onError(error);
@@ -210,6 +247,7 @@ class S3Service {
         };
         
         xhr.onerror = () => {
+          console.error('S3Service.uploadFile - Error de red en subida');
           const error = new Error('Error de red al subir archivo');
           if (onError) {
             onError(error);
@@ -218,6 +256,7 @@ class S3Service {
         };
         
         xhr.onabort = () => {
+          console.warn('S3Service.uploadFile - Subida cancelada');
           const error = new Error('Subida cancelada');
           if (onError) {
             onError(error);
@@ -231,6 +270,7 @@ class S3Service {
       
       return uploadPromise;
     } catch (error) {
+      console.error('S3Service.uploadFile - Error general:', error);
       if (onError && error instanceof Error) {
         onError(error);
       }

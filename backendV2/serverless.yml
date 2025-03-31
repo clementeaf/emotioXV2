@@ -43,6 +43,7 @@ provider:
     USE_MOCK_DB: 'false'
     IS_OFFLINE: ${self:custom.isOffline, 'false'}
     ALLOWED_ORIGIN: ${env:ALLOWED_ORIGIN, 'http://localhost:4700'}
+    S3_BUCKET_NAME: emotiox-v2-${self:provider.stage}-storage
     API_ENDPOINT: 
       Fn::Join:
         - ""
@@ -72,6 +73,17 @@ provider:
             - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USER_TABLE}/index/*"
             - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
             - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}/index/*"
+        # Permisos para S3
+        - Effect: Allow
+          Action:
+            - s3:PutObject
+            - s3:GetObject
+            - s3:DeleteObject
+            - s3:PutObjectAcl
+            - s3:ListBucket
+          Resource:
+            - "arn:aws:s3:::${self:provider.environment.S3_BUCKET_NAME}"
+            - "arn:aws:s3:::${self:provider.environment.S3_BUCKET_NAME}/*"
 
 functions:
   api:
@@ -175,6 +187,64 @@ functions:
       - http:
           path: /smart-voc/{proxy+}
           method: ANY
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+              - X-Requested-With
+              - Accept
+              - Cache-Control
+              - cache-control
+              - Pragma
+              - pragma
+            allowCredentials: true
+      # Rutas explícitas para el servicio S3
+      - http:
+          path: /s3/upload
+          method: POST
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+              - X-Requested-With
+              - Accept
+              - Cache-Control
+              - cache-control
+              - Pragma
+              - pragma
+            allowCredentials: true
+      - http:
+          path: /s3/download/{key}
+          method: GET
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+              - X-Requested-With
+              - Accept
+              - Cache-Control
+              - cache-control
+              - Pragma
+              - pragma
+            allowCredentials: true
+      - http:
+          path: /s3/delete/{key}
+          method: DELETE
           cors:
             origin: '*'
             headers:
