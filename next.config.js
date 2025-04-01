@@ -1,24 +1,48 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
+  // Configuración optimizada para Amplify
+  output: 'standalone', // Requerido para SSR en Amplify
   reactStrictMode: true,
   swcMinify: true,
-  // Desactivar todas las características avanzadas para debugging
+  // Desactivar verificaciones durante el build
   eslint: {
     ignoreDuringBuilds: true,
   },
   typescript: {
     ignoreBuildErrors: true,
   },
-  // Simplificar al máximo la configuración
+  // Configuración para imágenes y rutas
   images: {
     unoptimized: true,
   },
   trailingSlash: true,
-  // Deshabilitar toda experimentación
+  // Configuración experimental mínima
   experimental: {
-    // Solo incluir configuraciones esenciales
     scrollRestoration: true,
+    // Permitir importaciones desde fuera del directorio
+    externalDir: true
+  },
+  // Transpilación de paquetes externos
+  transpilePackages: ['../shared'],
+  // Habilitar soporte para Amplify
+  webpack: (config) => {
+    // Resolver correctamente los módulos compartidos
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+      path: false,
+    };
+    
+    return config;
+  },
+  // Configuración de rutas para Amplify
+  async rewrites() {
+    return [
+      {
+        source: '/research/:id*',
+        destination: '/research/[id]'
+      }
+    ];
   }
 }
 
