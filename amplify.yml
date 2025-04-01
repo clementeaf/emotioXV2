@@ -8,23 +8,16 @@ frontend:
   phases:
     preBuild:
       commands:
-        - echo "Configurando Node.js 20..."
-        - nvm install 20
-        - nvm use 20
-        - node -v
-        - echo "Building shared package..."
+        # Usando configuración estándar de Amplify
         - cd shared
         - npm install
         - npm run build
         - cd ../frontend
         - npm install
-        - echo "Frontend dependencies installed"
     build:
       commands:
-        - echo "Building frontend..."
         - cd ../frontend
         - npm run build
-        - echo "NEXT_PUBLIC_API_URL=https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev" >> .env.production
   artifacts:
     baseDirectory: frontend/.next
     files:
