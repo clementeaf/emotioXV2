@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 
-import { EyeTrackingForm } from '../../components/research/EyeTrackingForm';
+import { EyeTrackingForm } from '../../components/research/EyeTracking/EyeTrackingForm';
 import { eyeTrackingService } from '../../services/eyeTrackingService';
 import { 
   EyeTrackingFormData,

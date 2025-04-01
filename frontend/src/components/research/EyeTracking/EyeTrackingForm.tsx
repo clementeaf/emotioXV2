@@ -11,6 +11,8 @@ import { useErrorLog } from '@/components/utils/ErrorLogger';
 
 interface EyeTrackingFormProps {
   researchId: string;
+  className?: string;
+  onSave?: (data: any) => void;
 }
 
 // Componente Modal para mostrar los datos del formulario
@@ -54,7 +56,7 @@ const FormDataModal: React.FC<{
   );
 };
 
-export const EyeTrackingForm: React.FC<EyeTrackingFormProps> = ({ researchId }) => {
+export const EyeTrackingForm: React.FC<EyeTrackingFormProps> = ({ researchId, className, onSave }) => {
   const [activeTab, setActiveTab] = useState<string>('setup');
   const [savingMessage, setSavingMessage] = useState<string>('');
   const [showDataModal, setShowDataModal] = useState<boolean>(false);
@@ -156,11 +158,15 @@ export const EyeTrackingForm: React.FC<EyeTrackingFormProps> = ({ researchId }) 
   const handleProceedWithSave = async () => {
     setShowDataModal(false);
     // Ejecutar el guardado real
-    await handleSave();
+    const savedData = await handleSave();
+    // Notificar al componente padre si onSave está definido
+    if (onSave && savedData) {
+      onSave(savedData);
+    }
   };
 
   return (
-    <div className="py-6">
+    <div className={`py-6 ${className || ''}`}>
       {isUploading && (
         <div className="mb-4 p-3 bg-blue-50 text-blue-700 rounded-md flex items-center">
           <Spinner size="sm" className="mr-2" />

@@ -28,7 +28,7 @@ export interface UseEyeTrackingFormReturn {
   addAreaOfInterest: () => void;
   removeStimulus: (id: string) => void;
   removeAreaOfInterest: (id: string) => void;
-  handleSave: () => Promise<void>;
+  handleSave: () => Promise<EyeTrackingFormData | null>;
   handleFileUploaderComplete: (fileData: { fileUrl: string; key: string }) => void;
   validateStimuliData: () => boolean;
 }
@@ -351,11 +351,11 @@ export function useEyeTrackingForm({
   }, [logger]);
   
   // Función para guardar los datos
-  const handleSave = useCallback(async () => {
+  const handleSave = useCallback(async (): Promise<EyeTrackingFormData | null> => {
     if (!researchId) {
       logger.error('No hay ID de investigación disponible para guardar');
       toast.error('Error: No se puede guardar sin ID de investigación');
-      return;
+      return null;
     }
     
     setIsSaving(true);
@@ -372,7 +372,7 @@ export function useEyeTrackingForm({
       if (tempItems.length > 0) {
         toast.error('Hay imágenes sin procesar. Por favor espere a que se completen las cargas.');
         setIsSaving(false);
-        return;
+        return null;
       }
       
       // Enviar solicitud al backend
@@ -397,10 +397,14 @@ export function useEyeTrackingForm({
       if (onSave) {
         onSave(dataToSave);
       }
+      
+      // Devolver los datos guardados
+      return dataToSave;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       logger.error('Error al guardar configuración:', error);
       toast.error(`Error al guardar: ${errorMessage}`);
+      return null;
     } finally {
       setIsSaving(false);
     }
