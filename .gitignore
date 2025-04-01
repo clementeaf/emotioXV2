@@ -48,3 +48,11 @@ yarn-error.log*
 
 # configuración de Serverless en root (debe estar solo en backendV2)
 /serverless.yml
+
+# archivos zip de despliegue manual
+*.zip
+frontend.zip
+
+# configuración de IDE
+.vscode/
+.idea/
