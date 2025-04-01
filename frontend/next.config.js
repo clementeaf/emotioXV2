@@ -60,24 +60,34 @@ const nextConfig = {
   //   ];
   // },
   
-  // Configuración adicional para CORS
-  async headers() {
-    return [
-      {
-        // Aplicar estos headers a todas las rutas
-        source: '/:path*',
-        headers: [
-          { key: 'Access-Control-Allow-Credentials', value: 'true' },
-          { key: 'Access-Control-Allow-Origin', value: '*' },
-          { key: 'Access-Control-Allow-Methods', value: 'GET,OPTIONS,PATCH,DELETE,POST,PUT' },
-          { key: 'Access-Control-Allow-Headers', value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization, X-Amz-Date, X-Api-Key, X-Amz-Security-Token' },
-        ],
-      },
-    ];
-  },
+  // Headers no son compatibles con modo export
+  // async headers() {
+  //   return [
+  //     {
+  //       // Aplicar estos headers a todas las rutas
+  //       source: '/:path*',
+  //       headers: [
+  //         { key: 'Access-Control-Allow-Credentials', value: 'true' },
+  //         { key: 'Access-Control-Allow-Origin', value: '*' },
+  //         { key: 'Access-Control-Allow-Methods', value: 'GET,OPTIONS,PATCH,DELETE,POST,PUT' },
+  //         { key: 'Access-Control-Allow-Headers', value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization, X-Amz-Date, X-Api-Key, X-Amz-Security-Token' },
+  //       ],
+  //     },
+  //   ];
+  // },
+  
   // Configura manejo de imágenes para exportación estática
   images: {
     unoptimized: true,
+  },
+
+  // Configuración para rutas dinámicas en modo estático
+  trailingSlash: true,
+  
+  // Desactivar comprobación estricta de rutas dinámicas en modo export
+  // (esto es crítico para evitar errores en modo export)
+  experimental: {
+    scrollRestoration: true,
   },
 }
 
