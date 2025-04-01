@@ -1,6 +1,10 @@
-'use client';
+import dynamic from 'next/dynamic';
 
-import { ResearchStageManager } from '@/components/research/ResearchStageManager';
+// Cargar ResearchStageManager dinámicamente con el tipo correcto
+const ResearchStageManager = dynamic(
+  () => import('@/components/research/ResearchStageManager').then(mod => mod.ResearchStageManager),
+  { ssr: false }
+) as any; // Usamos any para evitar problemas de tipos en este contexto
 
 interface PageProps {
   params: {
