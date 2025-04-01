@@ -1,0 +1,29 @@
+version: 1
+backend:
+  phases:
+    build:
+      commands:
+        - echo "No backend to build"
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - echo "Building shared package..."
+        - cd shared
+        - npm install
+        - npm run build
+        - cd ../frontend
+        - npm install
+        - echo "Frontend dependencies installed"
+    build:
+      commands:
+        - echo "Building frontend..."
+        - npm run build
+  artifacts:
+    baseDirectory: frontend/.next
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - frontend/node_modules/**/*
+      - shared/node_modules/**/* 
