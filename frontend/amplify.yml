@@ -7,21 +7,14 @@ frontend:
     build:
       commands:
         - echo "NEXT_PUBLIC_API_URL=https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev" >> .env
+        - echo "Building a static export..."
         - npm run build
+        # Verificar que se generó la carpeta out
+        - ls -la out || echo "ERROR: out directory was not created"
   artifacts:
     baseDirectory: out
     files:
       - '**/*'
   cache:
     paths:
-      - node_modules/**/*
-      - .next/cache/**/*
-  customHeaders:
-    - pattern: '**/*'
-      headers:
-        - key: 'Cache-Control'
-          value: 'public, max-age=0, must-revalidate'
-  redirects:
-    - source: '</^[^.]+$|\\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json)$)([^.]+$)/>)'
-      target: '/index.html'
-      status: '200' 
+      - node_modules/**/* 
