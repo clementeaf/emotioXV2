@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Configuración optimizada para Amplify
+  output: 'standalone', // Modo de despliegue SSR
   reactStrictMode: true,
   swcMinify: true,
   // Desactivar verificaciones durante el build

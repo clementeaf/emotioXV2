@@ -19,6 +19,7 @@ frontend:
         - cd ../frontend
         - npm run build
   artifacts:
+    # Configuración para modo SSR
     baseDirectory: frontend/.next
     files:
       - '**/*'
