@@ -1,6 +1,5 @@
 'use client';
 
-import { Inter } from 'next/font/google';
 import { useEffect, useState } from 'react';
 
 import './globals.css';
@@ -15,8 +14,6 @@ import { apiClient } from '@/config/api-client';
 
 // Importar utilidades de debugging - solo se cargan en el cliente
 import '@/utils/debugging';
-
-const inter = Inter({ subsets: ['latin'] });
 
 export default function RootLayout({
   children,
@@ -64,7 +61,7 @@ export default function RootLayout({
 
   return (
     <html lang="es">
-      <body className={inter.className}>
+      <body className="font-sans">
         <QueryProvider>
           <AuthProvider>
             <ResearchProvider>
