@@ -188,8 +188,9 @@ export const smartVocAPI = {
       };
     }
     
-    const url = API_CONFIG.endpoints.smartVoc?.CREATE || '/';
-    const fullUrl = normalizeUrl(API_CONFIG.baseURL, `/smart-voc${url}`);
+    // La URL correcta según la implementación del backend es /research/:researchId/smart-voc
+    const fullUrl = normalizeUrl(API_CONFIG.baseURL, `/research/${data.researchId}/smart-voc`);
+    console.log(`[SmartVOCAPI] Creando SmartVOC para investigación: ${data.researchId}`, { url: fullUrl });
     
     return {
       send: async () => {
@@ -233,15 +234,16 @@ export const smartVocAPI = {
       };
     }
     
-    if (!data) {
-      console.warn('[SmartVOCAPI] Se requieren datos para actualizar');
+    if (!data || !data.researchId) {
+      console.warn('[SmartVOCAPI] Se requieren datos y un ID de investigación para actualizar');
       return {
-        send: async () => ({ error: true, message: 'Datos no proporcionados', data: null })
+        send: async () => ({ error: true, message: 'Datos o ID de investigación no proporcionados', data: null })
       };
     }
     
-    const url = (API_CONFIG.endpoints.smartVoc?.UPDATE || '/{id}').replace('{id}', id);
-    const fullUrl = normalizeUrl(API_CONFIG.baseURL, `/smart-voc${url}`);
+    // La URL correcta según la implementación del backend es /research/:researchId/smart-voc
+    const fullUrl = normalizeUrl(API_CONFIG.baseURL, `/research/${data.researchId}/smart-voc`);
+    console.log(`[SmartVOCAPI] Actualizando SmartVOC para investigación: ${data.researchId}`, { url: fullUrl });
     
     return {
       send: async () => {
