@@ -13,6 +13,21 @@ export const WelcomeScreenFooter: React.FC<WelcomeScreenFooterProps> = ({
   onSave,
   onPreview
 }) => {
+  // Determinando el texto adecuado para el botón de guardar
+  const getSaveButtonText = () => {
+    if (isSaving) {
+      return UI_TEXTS.BUTTONS.SAVING;
+    }
+    
+    // Si existe un ID, es un registro existente, por lo que usamos "Actualizar"
+    if (welcomeScreenId) {
+      return UI_TEXTS.BUTTONS.UPDATE;
+    }
+    
+    // Por defecto, si no hay ID, es un nuevo registro, por lo que usamos "Guardar"
+    return UI_TEXTS.BUTTONS.SAVE;
+  };
+  
   return (
     <div className="mt-8 pt-6 border-t flex justify-end space-x-4">
       <button
@@ -34,11 +49,7 @@ export const WelcomeScreenFooter: React.FC<WelcomeScreenFooterProps> = ({
           hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
           ${(isLoading || isSaving) ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
-        {isSaving 
-          ? UI_TEXTS.BUTTONS.SAVING 
-          : welcomeScreenId 
-            ? UI_TEXTS.BUTTONS.UPDATE 
-            : UI_TEXTS.BUTTONS.SAVE}
+        {getSaveButtonText()}
       </button>
     </div>
   );

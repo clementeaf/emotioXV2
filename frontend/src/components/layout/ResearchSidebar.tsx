@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState, useCallback } from 'react';
 
 import { ResearchSidebarProps, ResearchSection } from '@/interfaces/research';
 import { cn } from '@/lib/utils';
@@ -48,51 +48,90 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
   const currentSection = searchParams?.get('section') || 'welcome-screen';
   const [researchName, setResearchName] = useState<string>('Research Project');
   
+  // Función para eliminar datos de investigación obsoletos en localStorage
+  const cleanUpLocalStorage = useCallback((idToClean: string) => {
+    try {
+      // Intentar eliminar la entrada principal
+      localStorage.removeItem(`research_${idToClean}`);
+      
+      // Eliminar entradas asociadas para pantallas de bienvenida, smart-voc, etc.
+      localStorage.removeItem(`welcome-screen_nonexistent_${idToClean}`);
+      localStorage.removeItem(`thank-you-screen_nonexistent_${idToClean}`);
+      localStorage.removeItem(`eye-tracking_nonexistent_${idToClean}`);
+      localStorage.removeItem(`smart-voc_nonexistent_${idToClean}`);
+      
+      console.log(`Limpieza de localStorage completada para investigación: ${idToClean}`);
+    } catch (error) {
+      // Ignorar errores en la limpieza de localStorage
+    }
+  }, []);
+  
   // Obtener nombre de la investigación
   useEffect(() => {
     const fetchResearchName = async () => {
-      try {
-        if (researchId) {
-          try {
-            // Intentar obtener los datos desde la API
-            const response = await researchAPI.get(researchId);
-            // Se ajusta la estructuración para evitar errores de tipo
-            if (response?.data) {
-              // La respuesta puede tener diferentes estructuras, intentar extraer el nombre
-              const responseData = response.data as any;
-              if (responseData.data && responseData.data.name) {
-                setResearchName(responseData.data.name);
-              } else if (responseData.name) {
-                setResearchName(responseData.name);
-              }
-              return;
+      if (researchId) {
+        try {
+          // Intentar obtener los datos desde la API
+          const response = await researchAPI.get(researchId);
+          // Se ajusta la estructuración para evitar errores de tipo
+          if (response?.data) {
+            // La respuesta puede tener diferentes estructuras, intentar extraer el nombre
+            const responseData = response.data as any;
+            if (responseData.data && responseData.data.name) {
+              setResearchName(responseData.data.name);
+            } else if (responseData.name) {
+              setResearchName(responseData.name);
             }
-          } catch (apiError) {
+            return;
+          }
+        } catch (apiError: any) {
+          // Si es un error 404, no mostramos mensaje en consola, es un caso normal
+          // cuando una investigación ha sido eliminada
+          if (apiError?.response?.status === 404 || 
+              (apiError?.message && apiError.message.includes('404'))) {
+            // Para 404, limpiamos los datos en localStorage
+            cleanUpLocalStorage(researchId);
+            
+            // Redireccionar al dashboard después de un breve retraso
+            // para dar tiempo a que se complete la limpieza
+            setTimeout(() => {
+              router.push('/dashboard');
+            }, 100);
+          } else if (apiError?.response?.status !== 404 && 
+              !(apiError?.message && apiError.message.includes('404'))) {
+            // Solo mostramos en consola errores que no sean 404
             console.error('Error al obtener el nombre de la investigación desde la API:', apiError);
-            // Si la API falla, continuar con el fallback
           }
           
-          // Fallback: intentar obtener los datos desde localStorage
-          try {
-            const storedResearch = localStorage.getItem(`research_${researchId}`);
-            if (storedResearch) {
-              const researchData = JSON.parse(storedResearch);
-              if (researchData && researchData.name) {
-                console.log('Usando datos de localStorage como fallback para el nombre de la investigación');
-                setResearchName(researchData.name);
-              }
-            }
-          } catch (localStorageError) {
-            console.error('Error al obtener el nombre de la investigación desde localStorage:', localStorageError);
-          }
+          // Para cualquier error, intentamos usar el fallback
         }
-      } catch (error) {
-        console.error('Error al obtener el nombre de la investigación:', error);
+        
+        // Fallback: intentar obtener los datos desde localStorage
+        try {
+          const storedResearch = localStorage.getItem(`research_${researchId}`);
+          if (storedResearch) {
+            const researchData = JSON.parse(storedResearch);
+            if (researchData && researchData.name) {
+              setResearchName(researchData.name);
+            } else {
+              // Si encontramos datos pero no tienen nombre, consideramos que los datos
+              // están corruptos y redirigimos al dashboard
+              cleanUpLocalStorage(researchId);
+              router.push('/dashboard');
+            }
+          } else {
+            // Si no hay datos en localStorage ni en la API, redirigir al dashboard
+            router.push('/dashboard');
+          }
+        } catch (localStorageError) {
+          // Error al acceder a localStorage, no mostramos mensaje para no confundir
+          // Solo usamos el valor por defecto
+        }
       }
     };
     
     fetchResearchName();
-  }, [researchId]);
+  }, [researchId, cleanUpLocalStorage, router]);
   
   const handleBackToDashboard = () => {
     router.push('/dashboard');

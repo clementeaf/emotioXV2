@@ -42,21 +42,16 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
     queryFn: async () => {
       try {
         if (!isAuthenticated || !token) {
-          console.error('[WelcomeScreen] No hay token de autenticación disponible');
           return { data: null, error: 'No autenticado', unauthorized: true };
         }
 
-        console.log(`[WelcomeScreen] Consultando datos con researchId: ${researchId}`);
         const response = await apiClient.get<any, any>(
           'welcomeScreen',
           'getByResearch',
           { researchId }
         );
-        console.log('[WelcomeScreen] Respuesta recibida:', response);
         return response;
       } catch (error: any) {
-        console.error('[WelcomeScreen] Error al obtener datos:', error);
-        
         // Obtener mensaje de error detallado
         let errorMessage = ERROR_MESSAGES.FETCH_ERROR;
         
@@ -81,23 +76,37 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
         }
         
         if (error?.statusCode === 404) {
-          console.log('[WelcomeScreen] No se encontró configuración previa (error 404) - esto es normal para nuevas pantallas');
+          // Error 404 es normal cuando no hay configuración previa
+          // No mostramos error al usuario, simplemente retornamos notFound
           return { data: null, notFound: true };
         }
         
+        // Si es un error 500 o relacionado con AWS, mostramos un mensaje de error
+        if (error?.statusCode >= 500 || 
+            (error?.message && (
+              error.message.includes('AWS') || 
+              error.message.includes('timeout') || 
+              error.message.includes('network') ||
+              error.message.includes('internal server')
+            ))) {
+          
+          errorMessage = 'Error en el servicio de AWS. Por favor, intente más tarde.';
+          showModal({
+            title: ERROR_MESSAGES.FETCH_ERROR,
+            message: 'Ha ocurrido un error en el servicio de AWS. Esta situación no está relacionada con la aplicación. Por favor, intente más tarde.',
+            type: 'error'
+          });
+          return { data: null, error: errorMessage, awsError: true };
+        }
+        
+        // Para otros errores, no mostramos modal pero retornamos datos vacíos
         if (error?.data?.message) {
           errorMessage = error.data.message;
         } else if (error?.message) {
           errorMessage = error.message;
         }
         
-        showModal({
-          title: ERROR_MESSAGES.FETCH_ERROR,
-          message: errorMessage,
-          type: 'error'
-        });
-        
-        return { data: undefined, error: errorMessage } as WelcomeScreenResponse;
+        return { data: null, notFound: true, silentError: errorMessage };
       }
     },
     enabled: !!researchId && isAuthenticated,
@@ -106,9 +115,6 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
 
   // Función para crear un nuevo registro
   const createNewRecord = async (data: WelcomeScreenData) => {
-    console.log(`[WelcomeScreen] Creando nueva pantalla para investigación: ${researchId}`);
-    console.log('[WelcomeScreen] Datos a enviar:', {...data, researchId});
-    
     return await apiClient.post<any, any, any>(
       'welcomeScreen',
       'create',
@@ -124,7 +130,6 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
     mutationFn: async (data: WelcomeScreenData) => {
       try {
         if (!isAuthenticated || !token) {
-          console.error('[WelcomeScreen] No hay token de autenticación disponible para guardar');
           throw {
             statusCode: 401,
             message: 'No autorizado: Se requiere un token de autenticación'
@@ -133,9 +138,6 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
         
         // Si tenemos ID, intentamos actualizar, de lo contrario creamos
         if (welcomeScreenId) {
-          console.log(`[WelcomeScreen] Intentando actualizar pantalla con ID: ${welcomeScreenId}`);
-          console.log('[WelcomeScreen] Datos a enviar:', data);
-          
           try {
             return await apiClient.put(
               'welcomeScreen',
@@ -147,7 +149,6 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
             // Si el error es 404 (registro no encontrado), intentar crear uno nuevo
             if (updateError?.statusCode === 404 || 
                 (updateError?.data?.error && updateError.data.error.includes('WELCOME_SCREEN_NOT_FOUND'))) {
-              console.log('[WelcomeScreen] Registro no encontrado (404), intentando crear uno nuevo');
               setWelcomeScreenId(null); // Reiniciar el ID
               return await createNewRecord(data);
             }
@@ -155,7 +156,6 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
             // Si el error es 403 (sin permisos), lo propagamos para mostrar mensaje claro
             if (updateError?.statusCode === 403 || 
                 (updateError?.data?.error && updateError.data.error.includes('FORBIDDEN'))) {
-              console.error('[WelcomeScreen] Error de permisos (403) al actualizar:', updateError);
               throw {
                 statusCode: 403,
                 message: 'No tiene permisos para modificar esta pantalla de bienvenida',
@@ -163,21 +163,36 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
               };
             }
             
-            // Si es otro tipo de error, lo propagamos
-            throw updateError;
+            // Si es un error de AWS o del servidor, lo propagamos con un mensaje específico
+            if (updateError?.statusCode >= 500 || 
+                (updateError?.message && (
+                  updateError.message.includes('AWS') || 
+                  updateError.message.includes('timeout') || 
+                  updateError.message.includes('network') ||
+                  updateError.message.includes('internal server')
+                ))) {
+              throw {
+                statusCode: updateError.statusCode || 500,
+                message: 'Error en el servicio de AWS. Por favor, intente más tarde.',
+                isAwsError: true,
+                data: updateError?.data
+              };
+            }
+            
+            // Si es otro tipo de error, intentamos crear un nuevo registro
+            setWelcomeScreenId(null); // Reiniciar el ID
+            return await createNewRecord(data);
           }
         } else {
           // Creación normal sin ID previo
           return await createNewRecord(data);
         }
       } catch (error: any) {
-        console.error('[WelcomeScreen] Error en mutación:', error);
         // Propagar el error para que lo maneje onError
         throw error;
       }
     },
     onSuccess: (response) => {
-      console.log('[WelcomeScreen] Operación exitosa:', response);
       const responseData = response.data;
       
       // Actualizamos el ID si es una creación y existe ID
@@ -191,8 +206,6 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
       toast.success(SUCCESS_MESSAGES.SAVE_SUCCESS);
     },
     onError: (error: any) => {
-      console.error('[WelcomeScreen] Error completo:', error);
-      
       // Obtener mensaje detallado
       let errorMessage = ERROR_MESSAGES.SAVE_ERROR;
       let errorDetails = '';
@@ -225,36 +238,47 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
         return;
       }
       
-      if (error?.data?.message) {
-        errorMessage = error.data.message;
-      } else if (error?.message) {
-        errorMessage = error.message;
+      // Solo mostrar errores de AWS o del servidor
+      if (error?.isAwsError || error?.statusCode >= 500 || 
+          (error?.message && (
+            error.message.includes('AWS') || 
+            error.message.includes('timeout') || 
+            error.message.includes('network') ||
+            error.message.includes('internal server')
+          ))) {
+        
+        if (error?.data?.message) {
+          errorMessage = error.data.message;
+        } else if (error?.message) {
+          errorMessage = error.message;
+        }
+        
+        // Añadir detalles técnicos si están disponibles
+        if (error?.statusCode) {
+          errorDetails = `Código de error: ${error.statusCode}`;
+        }
+        
+        if (error?.data?.details) {
+          errorDetails += `\nDetalles: ${error.data.details}`;
+        }
+        
+        showModal({
+          title: ERROR_MESSAGES.SAVE_ERROR,
+          message: 'Ha ocurrido un error en el servicio de AWS. Esta situación no está relacionada con la aplicación. Por favor, intente más tarde.',
+          type: 'error'
+        });
+        
+        toast.error('Error de AWS. Intente más tarde.');
+        return;
       }
       
-      // Añadir detalles técnicos si están disponibles
-      if (error?.statusCode) {
-        errorDetails = `Código de error: ${error.statusCode}`;
-      }
-      
-      if (error?.data?.details) {
-        errorDetails += `\nDetalles: ${error.data.details}`;
-      }
-      
-      showModal({
-        title: ERROR_MESSAGES.SAVE_ERROR,
-        message: errorMessage + (errorDetails ? `\n\n${errorDetails}` : ''),
-        type: 'error'
-      });
-      
-      toast.error(errorMessage);
+      // Para otros errores, intentar silenciosamente sin mostrar mensajes al usuario
     }
   });
 
   // Efecto para cargar datos existentes cuando estén disponibles
   useEffect(() => {
     if (welcomeScreenData) {
-      console.log('[WelcomeScreen] Datos recibidos:', welcomeScreenData);
-      
       // Verificar si los datos tienen la estructura esperada
       const typedData = welcomeScreenData as any;
       
@@ -289,8 +313,8 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
         if (typedData.data.id) {
           setWelcomeScreenId(typedData.data.id);
         }
-      } else if (typedData.notFound) {
-        console.log('[WelcomeScreen] No se encontró configuración previa - usando valores por defecto');
+      } else if (typedData.notFound || typedData.silentError) {
+        // Si es notFound o un error silencioso, usar valores por defecto
         setFormData({...DEFAULT_WELCOME_SCREEN_CONFIG}); // Asegurarnos de usar valores por defecto
         setWelcomeScreenId(null); // Asegurarse de reiniciar el ID si no se encuentra
       }
@@ -352,7 +376,6 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
     }
     
     if (validateForm()) {
-      console.log('[WelcomeScreen] Iniciando guardado de datos:', formData);
       mutate(formData);
     } else {
       // Crear un mensaje con la lista de errores

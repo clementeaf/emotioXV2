@@ -114,10 +114,23 @@ const customFetchAdapter = () => {
         });
         
         if (!response.ok) {
+          // Comprobar si es un error 404 para una petición GET de investigación
+          const is404 = response.status === 404;
+          const isResearchGet = config.url.includes('/research/') && 
+                              (methodType === 'GET' || config.method === 'GET') &&
+                              !config.url.includes('/smart-voc') &&
+                              !config.url.includes('/eye-tracking') &&
+                              !config.url.includes('/welcome-screen') &&
+                              !config.url.includes('/thank-you-screen');
+          
           // Intentar obtener más detalles del error para depuración
           try {
             const errorText = await response.text();
-            console.error('Respuesta de error completa:', errorText);
+            
+            // Solo mostrar errores en consola si NO es un 404 de investigación
+            if (!(is404 && isResearchGet)) {
+              console.error('Respuesta de error completa:', errorText);
+            }
             
             let errorDetail = errorText;
             try {
@@ -128,7 +141,7 @@ const customFetchAdapter = () => {
               // Si no es JSON, usar el texto tal cual
             }
             
-            throw new Error(`Error en la solicitud: ${response.status} ${response.statusText} - ${errorDetail}`);
+            throw new Error(`Error en la solicitud: ${response.status} ${response.statusText}${errorDetail ? ' - ' + errorDetail : ''}`);
           } catch (textError) {
             if (textError instanceof Error && textError.message.includes('Error en la solicitud')) {
               throw textError;
@@ -140,28 +153,41 @@ const customFetchAdapter = () => {
         // Clonar la respuesta para no consumirla
         return response.clone();
       }).catch(error => {
-        // Mejorar los mensajes de error de red
-        if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-          console.error(`Error de red al intentar conectar con ${config.url}`, error);
-          const detailedError = new Error(`Error de conexión: No se pudo contactar con el servidor ${config.url}. Compruebe su conexión a internet y que el servidor esté disponible.`);
-          detailedError.name = 'NetworkError';
-          throw detailedError;
-        }
-        
-        // Registrar errores de CORS
-        if (error.name === 'TypeError' && (
-          error.message.includes('has been blocked by CORS policy') ||
-            error.message.includes('NetworkError when attempting to fetch resource'))
-        ) {
-          console.error(`Error de CORS al intentar conectar con ${config.url}`, error);
+        // Comprobar si es un error 404 para una petición GET de investigación
+        const is404Error = error.message && error.message.includes('404');
+        const isResearchGet = config.url.includes('/research/') && 
+                           (config.method === 'GET' || config.type === 'GET') &&
+                           !config.url.includes('/smart-voc') &&
+                           !config.url.includes('/eye-tracking') &&
+                           !config.url.includes('/welcome-screen') &&
+                           !config.url.includes('/thank-you-screen');
+            
+        // Solo mostrar errores en consola si NO es un 404 de investigación
+        if (!(is404Error && isResearchGet)) {
+          // Mejorar los mensajes de error de red
+          if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+            console.error(`Error de red al intentar conectar con ${config.url}`, error);
+            const detailedError = new Error(`Error de conexión: No se pudo contactar con el servidor ${config.url}. Compruebe su conexión a internet y que el servidor esté disponible.`);
+            detailedError.name = 'NetworkError';
+            throw detailedError;
+          }
           
-          const detailedError = new Error(`Error de permisos CORS: El servidor no permite solicitudes desde esta dirección (${window.location.origin}). Este es probablemente un problema de configuración del servidor o un firewall bloqueando las solicitudes cross-origin.`);
-          detailedError.name = 'CORSError';
-          throw detailedError;
+          // Registrar errores de CORS
+          if (error.name === 'TypeError' && (
+            error.message.includes('has been blocked by CORS policy') ||
+            error.message.includes('NetworkError when attempting to fetch resource'))
+          ) {
+            console.error(`Error de CORS al intentar conectar con ${config.url}`, error);
+            
+            const detailedError = new Error(`Error de permisos CORS: El servidor no permite solicitudes desde esta dirección (${window.location.origin}). Este es probablemente un problema de configuración del servidor o un firewall bloqueando las solicitudes cross-origin.`);
+            detailedError.name = 'CORSError';
+            throw detailedError;
+          }
+          
+          // Registrar errores de red o fetch
+          console.error(`API Fetch Error (${config.url}):`, error);
         }
         
-        // Registrar errores de red o fetch
-        console.error(`API Fetch Error (${config.url}):`, error);
         throw error;
       }),
       headers: () => fetchPromise.then(response => response.headers),
@@ -317,11 +343,23 @@ const alovaInstance = createAlova({
       }
     },
     onError: async (error: Error, method: Method) => {
-      console.error('Error en la solicitud (capturado por responded.onError):', {
-        name: error.name,
-        message: error.message,
-        stack: error.stack
-      });
+      // Verificar si es un error 404 en una petición GET de investigación
+      const is404Error = error.message.includes('404');
+      const isResearchGet = method.url.includes('/research/') && 
+                         method.type === 'GET' &&
+                         !method.url.includes('/smart-voc') &&
+                         !method.url.includes('/eye-tracking') &&
+                         !method.url.includes('/welcome-screen') &&
+                         !method.url.includes('/thank-you-screen');
+      
+      // Solo mostrar errores en consola si NO es un 404 de investigación
+      if (!(is404Error && isResearchGet)) {
+        console.error('Error en la solicitud (capturado por responded.onError):', {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        });
+      }
       
       // Verificar si es un error 401 (Unauthorized)
       if (error.message.includes('401') || 
@@ -425,39 +463,27 @@ export const userAPI = {
 // Endpoints de investigación
 export const researchAPI = {
   create: (data: ResearchBasicData) => {
-    console.log(`Endpoint CREATE utilizado: ${API_CONFIG.endpoints.research.CREATE}`);
-    console.log(`URL completa con Alova: ${API_CONFIG.baseURL}${API_CONFIG.endpoints.research.CREATE}`);
-    console.log('Data original:', data);
-    
     // Crear una copia de los datos para no modificar el original
     const processedData = {...data};
     
     // Forzar el tipo 'behavioural' si es necesario para compatibilidad con el backend
-    // Esto es un workaround temporal hasta que el frontend y backend usen los mismos tipos
-    console.log('Verificando el tipo para asegurar compatibilidad con el backend');
     try {
       const originalType = String(processedData.type);
       if (originalType.toLowerCase().includes('behaviour') || originalType.toLowerCase().includes('behavioral')) {
-        console.log(`Convertiendo tipo "${originalType}" a "behavioural" para compatibilidad`);
         // Asignar un valor que el backend acepte
         processedData.type = 'behavioural' as any;
       }
     } catch (e) {
-      console.error('Error al procesar el tipo:', e);
+      // Error silencioso
     }
-    
-    console.log('Datos procesados enviados a la API de creación:', processedData);
     
     return alovaInstance.Post<any>(
       API_CONFIG.endpoints.research.CREATE || '/research',
       processedData
     )
       .then(response => {
-        console.log('Respuesta original de la API CREATE:', response);
-      
         // Verificar si la respuesta tiene el formato correcto con message y data (formato AWS)
         if (response && response.message && response.data) {
-          console.log('Respuesta con formato AWS detectada (message + data)');
           // Asegurar que se mantenga la estructura original de AWS
           return {
             success: true,
@@ -469,7 +495,6 @@ export const researchAPI = {
       
         // Verificar si la respuesta tiene solo data
         if (response && response.data) {
-          console.log('Respuesta con data detectada');
           return {
             success: true,
             data: response.data,
@@ -479,16 +504,12 @@ export const researchAPI = {
       
         // Si la respuesta es el objeto directo (sin estructuras anidadas)
         if (response && typeof response === 'object' && !('data' in response) && !('message' in response)) {
-          console.log('Respuesta como objeto directo detectada');
           return {
             success: true,
             data: response,
             error: null
           };
         }
-      
-        // Si la respuesta es de otro tipo, es mejor registrarla para debug
-        console.warn('Formato de respuesta no reconocido:', response);
       
         // Si no tiene formato conocido pero parece válido, intentar devolverlo como está
         if (response) {
@@ -503,7 +524,6 @@ export const researchAPI = {
         throw new Error('No se pudieron extraer datos válidos de la respuesta');
       })
       .catch(error => {
-        console.error('Error en researchAPI.create:', error);
         return {
           success: false,
           data: null,
@@ -514,27 +534,14 @@ export const researchAPI = {
   
   get: (id: string) => {
     const url = (API_CONFIG.endpoints.research.GET || '/research/{id}').replace('{id}', id);
-    console.log(`Endpoint GET utilizado: ${url}`);
     
     // Crear un método GET explícito
     const method = alovaInstance.Get<APIResponse<Research>>(url);
-    
-    // Forzar el tipo de método en la configuración
-    if (method.config) {
-      method.config.methodType = 'GET';
-    }
-    
-    console.log('Configuración del método para research.get:', {
-      url: method.url,
-      type: method.type,
-      config: method.config
-    });
     
     return method;
   },
   
   list: () => {
-    console.log(`Endpoint LIST utilizado: ${API_CONFIG.endpoints.research.LIST}`);
     return alovaInstance.Get<APIResponse<Research[]>>(
       API_CONFIG.endpoints.research.LIST || '/research'
     );
@@ -542,66 +549,21 @@ export const researchAPI = {
   
   update: (id: string, data: Partial<ResearchBasicData>) => {
     const url = (API_CONFIG.endpoints.research.UPDATE || '/research/{id}').replace('{id}', id);
-    console.log(`Endpoint UPDATE utilizado: ${url}`);
     return alovaInstance.Put<APIResponse<Research>>(url, data);
   },
   
   delete: (id: string) => {
     const url = (API_CONFIG.endpoints.research.DELETE || '/research/{id}').replace('{id}', id);
-    console.log(`Endpoint DELETE utilizado: ${url}`);
-    
-    // Verificar si estamos en modo desarrollo para manejar errores de CORS o conectividad
-    const isDevMode = process.env.NODE_ENV === 'development' || 
-                      (typeof window !== 'undefined' && 
-                      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'));
-                      
-    if (isDevMode) {
-      console.log('Modo desarrollo detectado para delete. Se simulará éxito en caso de error.');
-      
-      // Crear un método personalizado que maneje el error en desarrollo
-      return {
-        then: (callback: any) => {
-          // Intentar primero la llamada real
-          const promise = alovaInstance.Delete<APIResponse<{ message: string }>>(url);
-          
-          // Si la llamada real falla en desarrollo, simular una respuesta exitosa
-          return promise.catch((error) => {
-            console.warn('Error al eliminar mediante API, simulando respuesta exitosa en modo desarrollo:', error);
-            
-            // Simular una respuesta exitosa
-            return {
-              data: {
-                success: true,
-                data: { 
-                  message: 'Eliminación simulada exitosa en modo desarrollo' 
-                },
-                message: 'Registro eliminado con éxito (simulado)'
-              },
-              error: null,
-              loading: false
-            };
-          }).then(callback);
-        },
-        catch: (callback: any) => {
-          // Esta función nunca debería ejecutarse en desarrollo dado que simulamos éxito
-          return alovaInstance.Delete<APIResponse<{ message: string }>>(url).catch(callback);
-        }
-      };
-    }
-    
-    // En producción, usar el comportamiento normal
-    return alovaInstance.Delete<APIResponse<{ message: string }>>(url);
+    return alovaInstance.Delete<APIResponse<boolean>>(url);
   },
-    
+  
   updateStatus: (id: string, status: string) => {
     const url = (API_CONFIG.endpoints.research.UPDATE_STATUS || '/research/{id}/status').replace('{id}', id);
-    console.log(`Endpoint UPDATE_STATUS utilizado: ${url}`);
     return alovaInstance.Put<APIResponse<Research>>(url, { status });
   },
   
   updateStage: (id: string, stage: string, progress: number) => {
     const url = (API_CONFIG.endpoints.research.UPDATE_STAGE || '/research/{id}/stage').replace('{id}', id);
-    console.log(`Endpoint UPDATE_STAGE utilizado: ${url}`);
     return alovaInstance.Put<APIResponse<Research>>(url, { stage, progress });
   },
 };
@@ -611,82 +573,31 @@ export const thankYouScreenAPI = {
   create: (data: any) => {
     const url = API_CONFIG.endpoints.thankYouScreen.CREATE || '/thank-you-screens';
     console.log(`Endpoint CREATE thankYouScreen utilizado: ${url}`);
-    
-    // Crear un método POST explícito
-    const method = alovaInstance.Post<any>(url, data);
-    
-    // Forzar el tipo de método en la configuración
-    if (method.config) {
-      method.config.method = 'POST';
-    }
-    
-    console.log('Configuración del método para thankYouScreen.create:', {
-      url: method.url,
-      type: method.type,
-      config: method.config
-    });
-    
-    return method;
+    return alovaInstance.Post<any>(url, data);
   },
   
   getByResearchId: (researchId: string) => {
     const url = (API_CONFIG.endpoints.thankYouScreen.GET_BY_RESEARCH || '/thank-you-screens/research/{researchId}').replace('{researchId}', researchId);
     console.log(`Endpoint GET_BY_RESEARCH thankYouScreen utilizado: ${url}`);
-    
-    // Crear un método GET explícito
-    const method = alovaInstance.Get<any>(url);
-    
-    // Forzar el tipo de método en la configuración
-    if (method.config) {
-      method.config.method = 'GET';
-    }
-    
-    return method;
+    return alovaInstance.Get<any>(url);
   },
   
   getById: (id: string) => {
     const url = (API_CONFIG.endpoints.thankYouScreen.GET || '/thank-you-screens/{id}').replace('{id}', id);
     console.log(`Endpoint GET thankYouScreen utilizado: ${url}`);
-    
-    // Crear un método GET explícito
-    const method = alovaInstance.Get<any>(url);
-    
-    // Forzar el tipo de método en la configuración
-    if (method.config) {
-      method.config.method = 'GET';
-    }
-    
-    return method;
+    return alovaInstance.Get<any>(url);
   },
   
   update: (id: string, data: any) => {
     const url = (API_CONFIG.endpoints.thankYouScreen.UPDATE || '/thank-you-screens/{id}').replace('{id}', id);
     console.log(`Endpoint UPDATE thankYouScreen utilizado: ${url}`);
-    
-    // Crear un método PUT explícito
-    const method = alovaInstance.Put<any>(url, data);
-    
-    // Forzar el tipo de método en la configuración
-    if (method.config) {
-      method.config.method = 'PUT';
-    }
-    
-    return method;
+    return alovaInstance.Put<any>(url, data);
   },
   
   delete: (id: string) => {
     const url = (API_CONFIG.endpoints.thankYouScreen.DELETE || '/thank-you-screens/{id}').replace('{id}', id);
     console.log(`Endpoint DELETE thankYouScreen utilizado: ${url}`);
-    
-    // Crear un método DELETE explícito
-    const method = alovaInstance.Delete<any>(url);
-    
-    // Forzar el tipo de método en la configuración
-    if (method.config) {
-      method.config.method = 'DELETE';
-    }
-    
-    return method;
+    return alovaInstance.Delete<any>(url);
   }
 };
 
@@ -695,40 +606,19 @@ export const eyeTrackingAPI = {
   create: (data: any) => {
     const url = API_CONFIG.endpoints.eyeTracking?.CREATE || '/eye-tracking';
     console.log(`Endpoint CREATE eyeTracking utilizado: ${url}`);
-    
-    // Crear un método POST explícito
-    const method = alovaInstance.Post<any>(url, data);
-    
-    // Forzar el tipo de método en la configuración
-    if (method.config) {
-      method.config.method = 'POST';
-    }
-    
-    return method;
+    return alovaInstance.Post<any>(url, data);
   },
   
   getByResearchId: (researchId: string) => {
     const url = (API_CONFIG.endpoints.eyeTracking?.GET_BY_RESEARCH || '/eye-tracking/research/{researchId}').replace('{researchId}', researchId);
     console.log(`Endpoint GET_BY_RESEARCH eyeTracking utilizado: ${url}`);
-    
-    const method = alovaInstance.Get<any>(url);
-    if (method.config) {
-      method.config.method = 'GET';
-    }
-    
-    return method;
+    return alovaInstance.Get<any>(url);
   },
   
   update: (id: string, data: any) => {
     const url = (API_CONFIG.endpoints.eyeTracking?.UPDATE || '/eye-tracking/{id}').replace('{id}', id);
     console.log(`Endpoint UPDATE eyeTracking utilizado: ${url}`);
-    
-    const method = alovaInstance.Put<any>(url, data);
-    if (method.config) {
-      method.config.method = 'PUT';
-    }
-    
-    return method;
+    return alovaInstance.Put<any>(url, data);
   }
 };
 
@@ -757,13 +647,11 @@ export const smartVocAPI = {
     });
     
     // Crear un método POST explícito con el cuerpo de la solicitud correctamente formateado
-    const method = alovaInstance.Post<any>(url, {
+    return alovaInstance.Post<any>(url, {
       ...data,
       // Asegurar que el researchId se envía correctamente
       researchId: data.researchId.trim()
     });
-    
-    return method;
   },
   
   getByResearchId: (researchId: string) => {
@@ -772,30 +660,32 @@ export const smartVocAPI = {
     console.log(`Endpoint GET_BY_RESEARCH smartVoc utilizado: ${url}`);
     console.log(`URL completa: ${API_CONFIG.baseURL}${url}`);
     
-    const method = alovaInstance.Get<any>(url);
-    if (method.config) {
-      method.config.method = 'GET';
-    }
-    
-    return method;
+    return alovaInstance.Get<any>(url);
   },
   
   update: (id: string, data: any) => {
     const url = (API_CONFIG.endpoints.smartVoc?.UPDATE || '/smart-voc/{id}').replace('{id}', id);
     console.log(`Endpoint UPDATE smartVoc utilizado: ${url}`);
     
-    const method = alovaInstance.Put<any>(url, data);
-    if (method.config) {
-      method.config.method = 'PUT';
-    }
-    
-    return method;
+    return alovaInstance.Put<any>(url, data);
   }
 };
 
 // Manejar errores de API
 export const handleAPIError = (error: unknown): string => {
-  console.error('Error en la solicitud (capturado por handleAPIError):', error);
+  // Verificar si es un error 404 relacionado con investigación
+  const is404Error = error instanceof Error && error.message.includes('404');
+  const isResearchError = error instanceof Error && 
+                         error.message.includes('/research/') &&
+                         !error.message.includes('/smart-voc') &&
+                         !error.message.includes('/eye-tracking') &&
+                         !error.message.includes('/welcome-screen') &&
+                         !error.message.includes('/thank-you-screen');
+  
+  // Solo registrar errores en consola si NO son 404 de investigación
+  if (!(is404Error && isResearchError)) {
+    console.error('Error en la solicitud (capturado por handleAPIError):', error);
+  }
   
   // Verificar si es un error de CORS
   if (error instanceof TypeError && error.message === 'Failed to fetch') {
