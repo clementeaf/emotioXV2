@@ -162,10 +162,10 @@ export function LoginForm({ className }: LoginFormProps) {
         
         // Crear payload simulado
         const payload = {
-          id: 'testuser',
-          sub: 'testuser',
-          name: 'Usuario Prueba',
-          email: 'test@example.com',
+          id: 'clemente',
+          sub: 'clemente',
+          name: 'Clemente Falcone',
+          email: 'clemente@gmail.com',
           role: 'user',
           iat: now,
           exp: now + expiresIn

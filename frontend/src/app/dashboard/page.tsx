@@ -19,6 +19,7 @@ import { ThankYouScreenForm } from '@/components/research/ThankYouScreenForm';
 import { WelcomeScreenForm } from '@/components/research/WelcomeScreenForm';
 import { useAuth } from '@/providers/AuthProvider';
 import { ResearchStageManager } from '@/components/research/ResearchStageManager';
+import { cleanAllObsoleteResearch } from '@/lib/cleanup/localStorageCleanup';
 
 interface User {
   id: string;
@@ -159,6 +160,23 @@ function DashboardContent() {
       setActiveResearch(undefined);
       setIsAimFramework(false);
     }
+    
+    // Limpiar investigaciones obsoletas del localStorage
+    // al cargar el dashboard
+    cleanAllObsoleteResearch().catch(error => {
+      console.error('Error al limpiar investigaciones obsoletas:', error);
+    });
+    
+    // También podemos configurar una limpieza periódica (cada 30 minutos)
+    const cleanupInterval = setInterval(() => {
+      cleanAllObsoleteResearch().catch(error => {
+        console.error('Error en limpieza periódica de investigaciones:', error);
+      });
+    }, 30 * 60 * 1000); // 30 minutos
+    
+    return () => {
+      clearInterval(cleanupInterval);
+    };
   }, [researchId, searchParams, router]);
 
   // Si estamos en AIM Framework

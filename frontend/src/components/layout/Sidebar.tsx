@@ -200,9 +200,52 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
       const storedList = localStorage.getItem('research_list');
       if (storedList) {
         const researchList = JSON.parse(storedList);
-        // Tomar solo la investigación más reciente
+        
+        // Si hay investigaciones en la lista, validar la más reciente
         if (researchList.length > 0) {
-          setRecentResearch([researchList[researchList.length - 1]]);
+          const mostRecent = researchList[researchList.length - 1];
+          
+          // Verificar si existe en el backend
+          const validateResearch = async () => {
+            try {
+              // Intentar obtener la investigación del backend
+              await researchAPI.get(mostRecent.id);
+              // Si llegamos aquí, la investigación existe
+              setRecentResearch([mostRecent]);
+            } catch (error: any) {
+              // Si es un error 404, la investigación ya no existe
+              if (error?.response?.status === 404 || 
+                  (error?.message && error.message.includes('404'))) {
+                console.log(`Investigación ${mostRecent.id} ya no existe en el backend, eliminando de recientes`);
+                
+                // Eliminar la investigación de localStorage
+                try {
+                  localStorage.removeItem(`research_${mostRecent.id}`);
+                  
+                  // Actualizar la lista de investigaciones recientes
+                  const updatedList = researchList.filter((r: any) => r.id !== mostRecent.id);
+                  localStorage.setItem('research_list', JSON.stringify(updatedList));
+                  
+                  // También limpiar otras entradas relacionadas
+                  localStorage.removeItem(`welcome-screen_nonexistent_${mostRecent.id}`);
+                  localStorage.removeItem(`thank-you-screen_nonexistent_${mostRecent.id}`);
+                  localStorage.removeItem(`eye-tracking_nonexistent_${mostRecent.id}`);
+                  localStorage.removeItem(`smart-voc_nonexistent_${mostRecent.id}`);
+                  
+                  setRecentResearch([]); // Lista vacía ya que la investigación no existe
+                } catch (localStorageError) {
+                  console.error('Error eliminando datos de localStorage:', localStorageError);
+                }
+              } else {
+                // Si es otro tipo de error (no 404), mantener la investigación en la lista
+                // asumiendo que es un error temporal de red
+                setRecentResearch([mostRecent]);
+              }
+            }
+          };
+          
+          // Ejecutar la validación
+          validateResearch();
         } else {
           setRecentResearch([]);
         }
@@ -210,7 +253,7 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
     } catch (error) {
       console.error('Error cargando investigación en curso:', error);
     }
-  }, [activeResearch]); // Actualizar cuando cambie la investigación activa
+  }, [activeResearch]);
   
   useEffect(() => {
     if (activeResearch?.id) {

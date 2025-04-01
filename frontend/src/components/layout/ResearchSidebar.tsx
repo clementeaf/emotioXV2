@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Suspense, useEffect, useState, useCallback } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 
 import { ResearchSidebarProps, ResearchSection } from '@/interfaces/research';
 import { cn } from '@/lib/utils';
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
 import { Button } from '@/components/ui/Button';
 import { researchAPI } from '@/lib/api';
+import { cleanResearchFromLocalStorage } from '@/lib/cleanup/localStorageCleanup';
 
 const sections: ResearchSection[] = [
   {
@@ -48,24 +49,6 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
   const currentSection = searchParams?.get('section') || 'welcome-screen';
   const [researchName, setResearchName] = useState<string>('Research Project');
   
-  // Función para eliminar datos de investigación obsoletos en localStorage
-  const cleanUpLocalStorage = useCallback((idToClean: string) => {
-    try {
-      // Intentar eliminar la entrada principal
-      localStorage.removeItem(`research_${idToClean}`);
-      
-      // Eliminar entradas asociadas para pantallas de bienvenida, smart-voc, etc.
-      localStorage.removeItem(`welcome-screen_nonexistent_${idToClean}`);
-      localStorage.removeItem(`thank-you-screen_nonexistent_${idToClean}`);
-      localStorage.removeItem(`eye-tracking_nonexistent_${idToClean}`);
-      localStorage.removeItem(`smart-voc_nonexistent_${idToClean}`);
-      
-      console.log(`Limpieza de localStorage completada para investigación: ${idToClean}`);
-    } catch (error) {
-      // Ignorar errores en la limpieza de localStorage
-    }
-  }, []);
-  
   // Obtener nombre de la investigación
   useEffect(() => {
     const fetchResearchName = async () => {
@@ -90,7 +73,7 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
           if (apiError?.response?.status === 404 || 
               (apiError?.message && apiError.message.includes('404'))) {
             // Para 404, limpiamos los datos en localStorage
-            cleanUpLocalStorage(researchId);
+            cleanResearchFromLocalStorage(researchId);
             
             // Redireccionar al dashboard después de un breve retraso
             // para dar tiempo a que se complete la limpieza
@@ -116,7 +99,7 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
             } else {
               // Si encontramos datos pero no tienen nombre, consideramos que los datos
               // están corruptos y redirigimos al dashboard
-              cleanUpLocalStorage(researchId);
+              cleanResearchFromLocalStorage(researchId);
               router.push('/dashboard');
             }
           } else {
@@ -131,7 +114,7 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
     };
     
     fetchResearchName();
-  }, [researchId, cleanUpLocalStorage, router]);
+  }, [researchId, router]);
   
   const handleBackToDashboard = () => {
     router.push('/dashboard');

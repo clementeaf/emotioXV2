@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { researchAPI } from '@/lib/api';
+import { cleanResearchFromLocalStorage } from '@/lib/cleanup/localStorageCleanup';
 
 /**
  * Hook personalizado que valida si un ID de investigación existe
@@ -17,22 +18,6 @@ export function useResearchIdValidation(researchId: string | null | undefined, r
     // No hacer nada si no hay ID
     if (!researchId) return;
     
-    // Función para limpiar localStorage
-    const cleanUpLocalStorage = (idToClean: string) => {
-      try {
-        // Intentar eliminar la entrada principal
-        localStorage.removeItem(`research_${idToClean}`);
-        
-        // Eliminar entradas asociadas
-        localStorage.removeItem(`welcome-screen_nonexistent_${idToClean}`);
-        localStorage.removeItem(`thank-you-screen_nonexistent_${idToClean}`);
-        localStorage.removeItem(`eye-tracking_nonexistent_${idToClean}`);
-        localStorage.removeItem(`smart-voc_nonexistent_${idToClean}`);
-      } catch (error) {
-        // Ignorar errores
-      }
-    };
-    
     // Función asíncrona para validar el ID
     const validateResearchId = async () => {
       try {
@@ -44,8 +29,8 @@ export function useResearchIdValidation(researchId: string | null | undefined, r
         if (error?.response?.status === 404 || 
             (error?.message && error.message.includes('404'))) {
           
-          // Limpiar localStorage
-          cleanUpLocalStorage(researchId);
+          // Limpiar localStorage usando la utilidad centralizada
+          cleanResearchFromLocalStorage(researchId);
           
           // Redireccionar
           router.push(redirectUrl);
