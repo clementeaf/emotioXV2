@@ -104,6 +104,7 @@ export interface ErrorModalProps {
 export interface UseWelcomeScreenFormResult {
   formData: WelcomeScreenData;
   welcomeScreenId: string | null;
+  realWelcomeScreenId: string | null;
   validationErrors: {[key: string]: string};
   isLoading: boolean;
   isSaving: boolean;

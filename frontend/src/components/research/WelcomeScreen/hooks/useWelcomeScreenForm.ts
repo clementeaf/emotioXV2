@@ -24,6 +24,7 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState<WelcomeScreenData>({ ...DEFAULT_WELCOME_SCREEN_CONFIG });
   const [welcomeScreenId, setWelcomeScreenId] = useState<string | null>(null);
+  const [realWelcomeScreenId, setRealWelcomeScreenId] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
   const [modalError, setModalError] = useState<ErrorModalData | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
@@ -50,7 +51,20 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
           'getByResearch',
           { researchId }
         );
-        return response;
+        
+        // Verificar si la respuesta realmente contiene datos válidos
+        if (response && response.data) {
+          console.log('Datos de welcomeScreen obtenidos:', response.data);
+          // Asegurarse de que existe un ID válido
+          if (!response.data.id || (typeof response.data.id === 'string' && response.data.id.trim() === '')) {
+            console.log('Los datos obtenidos no tienen un ID válido, tratando como notFound');
+            return { data: null, notFound: true };
+          }
+          return response;
+        } else {
+          console.log('No se encontraron datos de welcomeScreen');
+          return { data: null, notFound: true };
+        }
       } catch (error: any) {
         // Obtener mensaje de error detallado
         let errorMessage = ERROR_MESSAGES.FETCH_ERROR;
@@ -78,6 +92,7 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
         if (error?.statusCode === 404) {
           // Error 404 es normal cuando no hay configuración previa
           // No mostramos error al usuario, simplemente retornamos notFound
+          console.log('Error 404: No existe configuración para esta investigación');
           return { data: null, notFound: true };
         }
         
@@ -136,20 +151,25 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
           };
         }
         
-        // Si tenemos ID, intentamos actualizar, de lo contrario creamos
-        if (welcomeScreenId) {
+        // Usar ID real si existe, incluso si la UI muestra como nuevo
+        const idToUse = realWelcomeScreenId || welcomeScreenId;
+        
+        if (idToUse) {
+          console.log('Actualizando WelcomeScreen con ID:', idToUse);
           try {
             return await apiClient.put(
               'welcomeScreen',
               'update',
               data,
-              { id: welcomeScreenId }
+              { id: idToUse }
             );
           } catch (updateError: any) {
             // Si el error es 404 (registro no encontrado), intentar crear uno nuevo
             if (updateError?.statusCode === 404 || 
                 (updateError?.data?.error && updateError.data.error.includes('WELCOME_SCREEN_NOT_FOUND'))) {
-              setWelcomeScreenId(null); // Reiniciar el ID
+              console.log('WelcomeScreen no encontrada en update, creando nueva');
+              setWelcomeScreenId(null);
+              setRealWelcomeScreenId(null);
               return await createNewRecord(data);
             }
             
@@ -180,11 +200,16 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
             }
             
             // Si es otro tipo de error, intentamos crear un nuevo registro
-            setWelcomeScreenId(null); // Reiniciar el ID
+            console.log('Error desconocido al actualizar, intentando crear nuevo registro');
+            setWelcomeScreenId(null);
+            setRealWelcomeScreenId(null);
             return await createNewRecord(data);
           }
         } else {
           // Creación normal sin ID previo
+          console.log('Creando nueva WelcomeScreen (sin ID previo)');
+          setWelcomeScreenId(null);
+          setRealWelcomeScreenId(null);
           return await createNewRecord(data);
         }
       } catch (error: any) {
@@ -195,15 +220,32 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
     onSuccess: (response) => {
       const responseData = response.data;
       
+      // Verificar si es creación o actualización
+      const isNewRecord = !welcomeScreenId && !realWelcomeScreenId;
+      
       // Actualizamos el ID si es una creación y existe ID
       if (responseData && responseData.id) {
-        setWelcomeScreenId(responseData.id);
+        // Si era una configuración "vacía" que tratamos como nueva, pero realmente 
+        // estábamos actualizando, mantenemos el comportamiento de UI como nueva
+        if (!welcomeScreenId && realWelcomeScreenId) {
+          // Mantener welcomeScreenId como null para UI, pero actualizar el ID real
+          console.log('Se actualizó configuración tratada como nueva. Manteniendo UI como nueva pero guardando ID real:', responseData.id);
+          setRealWelcomeScreenId(responseData.id);
+        } else {
+          // Comportamiento normal: actualizar ambos IDs
+          setWelcomeScreenId(responseData.id);
+          setRealWelcomeScreenId(responseData.id);
+          console.log(`WelcomeScreen ${isNewRecord ? 'creada' : 'actualizada'} con ID:`, responseData.id);
+        }
       }
       
       // Invalidamos la query para recargar datos
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WELCOME_SCREEN, researchId] });
       
-      toast.success(SUCCESS_MESSAGES.SAVE_SUCCESS);
+      // Mostrar mensaje apropiado
+      toast.success(isNewRecord 
+        ? 'Configuración guardada correctamente' 
+        : 'Configuración actualizada correctamente');
     },
     onError: (error: any) => {
       // Obtener mensaje detallado
@@ -282,7 +324,13 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
       // Verificar si los datos tienen la estructura esperada
       const typedData = welcomeScreenData as any;
       
-      if (typedData.data) {
+      if (typedData.data && typedData.data.id) {
+        // Guardar el ID real para futuras actualizaciones
+        if (typedData.data.id && typeof typedData.data.id === 'string' && typedData.data.id.trim() !== '') {
+          setRealWelcomeScreenId(typedData.data.id);
+          console.log('ID real guardado:', typedData.data.id);
+        }
+
         // Asegurarnos de que todos los campos requeridos estén presentes
         const safeData = {
           ...DEFAULT_WELCOME_SCREEN_CONFIG, // Valores por defecto
@@ -308,13 +356,42 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
           }
         });
         
-        setFormData(safeData);
-        
-        if (typedData.data.id) {
-          setWelcomeScreenId(typedData.data.id);
+        // Verificamos si es una configuración "vacía" (deshabilitada y sin datos importantes)
+        const isEmptyConfig = 
+          safeData.isEnabled === false && 
+          (!safeData.title || safeData.title.trim() === '') &&
+          (!safeData.message || safeData.message.trim() === '');
+          
+        if (isEmptyConfig) {
+          console.log('Configuración vacía detectada. Tratando como nueva configuración');
+          
+          // Para la UI, tratamos como nueva config (cambia el texto del botón)
+          setWelcomeScreenId(null);
+          
+          // Creamos un nuevo objeto con valores por defecto pero manteniendo el ID real
+          const newFormData = {
+            ...DEFAULT_WELCOME_SCREEN_CONFIG,
+            id: typedData.data.id // Mantener ID real para la actualización
+          };
+          
+          console.log('Estableciendo nueva formData con defaults y isEnabled=true:', newFormData);
+          setFormData(newFormData);
+        } else {
+          console.log('Configuración normal con datos, estableciendo formData:', safeData);
+          setFormData(safeData);
+          
+          // Solo establecemos el ID si es una configuración real/significativa
+          if (typedData.data.id && typeof typedData.data.id === 'string' && typedData.data.id.trim() !== '') {
+            setWelcomeScreenId(typedData.data.id);
+            console.log('WelcomeScreen significativa encontrada con ID:', typedData.data.id);
+          } else {
+            setWelcomeScreenId(null);
+            console.log('WelcomeScreen sin ID válido, estableciendo a null');
+          }
         }
-      } else if (typedData.notFound || typedData.silentError) {
-        // Si es notFound o un error silencioso, usar valores por defecto
+      } else {
+        // Si no hay datos o no hay ID, usar valores por defecto
+        console.log('No se encontró configuración de WelcomeScreen, usando valores por defecto');
         setFormData({...DEFAULT_WELCOME_SCREEN_CONFIG}); // Asegurarnos de usar valores por defecto
         setWelcomeScreenId(null); // Asegurarse de reiniciar el ID si no se encuentra
       }
@@ -345,19 +422,47 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
   const validateForm = (): boolean => {
     const errors: { [key: string]: string } = {};
     
+    // Validación del campo isEnabled (siempre debe existir)
+    if (formData.isEnabled === undefined || formData.isEnabled === null) {
+      errors.isEnabled = 'El estado de habilitación es requerido';
+      console.log('Error de validación: isEnabled es undefined o null');
+    }
+    
     // Solo validamos título y mensaje si está habilitada la pantalla
     if (formData.isEnabled) {
-      if (!formData.title.trim()) {
+      // Validación de título
+      if (!formData.title) {
         errors.title = ERROR_MESSAGES.VALIDATION_ERRORS.TITLE_REQUIRED;
+        console.log('Error de validación: título vacío');
+      } else if (formData.title.trim() === '') {
+        errors.title = 'El título no puede estar vacío';
+        console.log('Error de validación: título solo con espacios');
       }
       
-      if (!formData.message.trim()) {
+      // Validación de mensaje
+      if (!formData.message) {
         errors.message = ERROR_MESSAGES.VALIDATION_ERRORS.MESSAGE_REQUIRED;
+        console.log('Error de validación: mensaje vacío');
+      } else if (formData.message.trim() === '') {
+        errors.message = 'El mensaje no puede estar vacío';
+        console.log('Error de validación: mensaje solo con espacios');
       }
       
-      if (!formData.startButtonText.trim()) {
+      // Validación de texto del botón
+      if (!formData.startButtonText) {
         errors.startButtonText = ERROR_MESSAGES.VALIDATION_ERRORS.BUTTON_TEXT_REQUIRED;
+        console.log('Error de validación: texto del botón vacío');
+      } else if (formData.startButtonText.trim() === '') {
+        errors.startButtonText = 'El texto del botón no puede estar vacío';
+        console.log('Error de validación: texto del botón solo con espacios');
       }
+    }
+    
+    // Imprimimos los errores encontrados para depuración
+    if (Object.keys(errors).length > 0) {
+      console.log('Errores de validación encontrados:', errors);
+    } else {
+      console.log('Formulario validado correctamente');
     }
     
     setValidationErrors(errors);
@@ -420,6 +525,7 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
   return {
     formData,
     welcomeScreenId,
+    realWelcomeScreenId,
     validationErrors,
     isLoading,
     isSaving,

@@ -14,7 +14,7 @@ import { UI_TEXTS } from './constants';
  * y utiliza un hook personalizado para la lógica del formulario
  */
 export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({ 
-  className = '', 
+  className,
   researchId 
 }) => {
   const {
@@ -34,6 +34,7 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
 
   // Manejar cambio en el toggle
   const handleToggleChange = (checked: boolean) => {
+    console.log('Toggle cambiado a:', checked);
     handleChange('isEnabled', checked);
   };
   
@@ -42,6 +43,19 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
     ...DEFAULT_WELCOME_SCREEN_CONFIG, // Valores por defecto
     ...formData // Datos reales (pueden tener campos null/undefined)
   };
+  
+  // Determinar si el botón debería mostrar "Guardar" o "Actualizar"
+  const isNewConfig = !welcomeScreenId;
+  const buttonText = isNewConfig 
+    ? UI_TEXTS.BUTTONS.SAVE  // "Guardar configuración"
+    : UI_TEXTS.BUTTONS.UPDATE; // "Actualizar configuración"
+  
+  console.log('Estado actual del formulario:', {
+    welcomeScreenId,
+    isEnabled: safeFormData.isEnabled,
+    isNewConfig,
+    buttonText
+  });
   
   // Mientras carga, mostrar un indicador de carga
   if (isLoading) {
@@ -75,6 +89,15 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
         title={UI_TEXTS.TITLE} 
         description={UI_TEXTS.DESCRIPTION}
       />
+
+      {/* Indicador de estado - Solo para debugging */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mb-4 p-2 bg-gray-100 text-xs rounded">
+          <p>Estado: {isNewConfig ? 'Nueva configuración' : 'Configuración existente'}</p>
+          <p>ID: {welcomeScreenId || 'No hay ID (nueva)'}</p>
+          <p>Habilitada: {safeFormData.isEnabled ? 'Sí' : 'No'}</p>
+        </div>
+      )}
       
       {/* Función principal de toggle */}
       <WelcomeScreenToggle 
@@ -91,15 +114,30 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
         disabled={isLoading || isSaving}
       />
       
-      {/* Pie de página con acciones */}
-      <WelcomeScreenFooter 
-        isSaving={isSaving}
-        isLoading={isLoading}
-        welcomeScreenId={welcomeScreenId}
-        isEnabled={safeFormData.isEnabled}
-        onSave={handleSave}
-        onPreview={handlePreview}
-      />
+      {/* Pie de página con acciones - Forzamos usar el texto de botón calculado aquí */}
+      <div className="mt-8 pt-6 border-t flex justify-end space-x-4">
+        <button
+          type="button"
+          onClick={handlePreview}
+          disabled={isLoading || isSaving || !safeFormData.isEnabled}
+          className={`px-4 py-2 text-sm font-medium rounded-md border border-blue-600 text-blue-600 
+            hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+            ${(isLoading || isSaving || !safeFormData.isEnabled) ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          {UI_TEXTS.BUTTONS.PREVIEW}
+        </button>
+        
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={isLoading || isSaving}
+          className={`px-4 py-2 text-sm font-medium rounded-md bg-blue-600 text-white 
+            hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+            ${(isLoading || isSaving) ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          {isSaving ? UI_TEXTS.BUTTONS.SAVING : (isNewConfig ? UI_TEXTS.BUTTONS.SAVE : UI_TEXTS.BUTTONS.UPDATE)}
+        </button>
+      </div>
 
       {/* Modal para mostrar errores y mensajes */}
       <ErrorModal 
