@@ -19,8 +19,8 @@ frontend:
         - cd ../frontend
         - npm run build
   artifacts:
-    # Configuración para modo SSR
-    baseDirectory: frontend/.next
+    # Configuración para static export
+    baseDirectory: frontend/out
     files:
       - '**/*'
   cache:
