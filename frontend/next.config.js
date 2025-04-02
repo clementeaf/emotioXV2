@@ -16,7 +16,7 @@ const nextConfig = {
     unoptimized: true,
   },
   trailingSlash: true,
-  // Evitar prerenderizar rutas dinámicas
+  // Configuración para App Router
   experimental: {
     scrollRestoration: true,
     // Permitir importaciones desde fuera del directorio
@@ -34,13 +34,6 @@ const nextConfig = {
     };
     
     return config;
-  },
-  // Configuración de rutas para evitar prerenderización
-  exportPathMap: async function () {
-    return {
-      '/': { page: '/' }
-      // No incluimos rutas dinámicas aquí para evitar errores
-    }
   }
 }
 
