@@ -33,8 +33,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     path: event.path,
     method: event.httpMethod,
     pathParams: event.pathParameters,
-    queryParams: event.queryStringParameters
+    queryParams: event.queryStringParameters,
+    origin: event.headers.origin || event.headers.Origin || '*'
   });
+
+  // Configurar el origen de la solicitud para CORS
+  process.env.REQUEST_ORIGIN = event.headers.origin || event.headers.Origin || '*';
 
   try {
     // Comprobar si es una solicitud WebSocket
