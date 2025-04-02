@@ -18,6 +18,16 @@ interface PageProps {
   };
 }
 
+// Requerido para la exportación estática con output: export
+export function generateStaticParams() {
+  // Proporcionamos IDs específicos para pre-renderizar
+  return [
+    { id: 'demo' },
+    { id: 'test' },
+    { id: 'example' }
+  ];
+}
+
 export default function ResearchPage({ params }: PageProps) {
   const [isClient, setIsClient] = useState(false);
   
