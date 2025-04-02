@@ -16,7 +16,7 @@ const nextConfig = {
     unoptimized: true,
   },
   trailingSlash: true,
-  // Configuración experimental mínima
+  // Evitar prerenderizar rutas dinámicas
   experimental: {
     scrollRestoration: true,
     // Permitir importaciones desde fuera del directorio
@@ -35,6 +35,13 @@ const nextConfig = {
     
     return config;
   },
+  // Configuración de rutas para evitar prerenderización
+  exportPathMap: async function () {
+    return {
+      '/': { page: '/' }
+      // No incluimos rutas dinámicas aquí para evitar errores
+    }
+  }
 }
 
 module.exports = nextConfig
