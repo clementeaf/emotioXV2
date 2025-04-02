@@ -34,6 +34,16 @@ const nextConfig = {
     };
     
     return config;
+  },
+  // Configuración de redirecciones
+  async redirects() {
+    return [
+      {
+        source: '/',
+        destination: '/login',
+        permanent: false,
+      },
+    ];
   }
 }
 

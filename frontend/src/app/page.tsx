@@ -1,19 +1,22 @@
-import Image from 'next/image';
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
+  const router = useRouter();
+  
+  useEffect(() => {
+    // Redireccionar automáticamente a la página de login
+    router.replace('/login');
+  }, [router]);
+
+  // Mostrar un mensaje de carga mientras se redirecciona
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      <h1 className="text-4xl font-bold mb-8">EmotioX - Versión de prueba</h1>
-      <p className="text-xl mb-4">
-        Esta es una versión simplificada para probar el despliegue en Amplify
-      </p>
-      <div className="flex flex-col gap-4 mt-8">
-        <a href="/login" className="text-blue-500 hover:underline">
-          Iniciar sesión
-        </a>
-        <a href="/register" className="text-blue-500 hover:underline">
-          Registrarse
-        </a>
+      <div className="flex flex-col items-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-blue-500 border-r-2 border-neutral-300 mb-4"></div>
+        <p className="text-lg">Redireccionando...</p>
       </div>
     </main>
   );
