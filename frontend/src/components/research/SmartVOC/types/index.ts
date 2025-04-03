@@ -60,7 +60,7 @@ export const DEFAULT_QUESTIONS: SmartVOCQuestion[] = [
     id: 'csat',
     type: 'CSAT',
     title: 'Customer Satisfaction Score (CSAT)',
-    description: 'How would you rate your overall satisfaction level with [company]?',
+    description: '¿Cómo calificaría su nivel general de satisfacción con [empresa]?',
     required: true,
     showConditionally: false,
     config: {
@@ -72,7 +72,7 @@ export const DEFAULT_QUESTIONS: SmartVOCQuestion[] = [
     id: 'ces',
     type: 'CES',
     title: 'Customer Effort Score (CES)',
-    description: 'It was easy for me to handle my issue today.',
+    description: 'Fue fácil para mí resolver mi problema hoy.',
     required: true,
     showConditionally: false,
     config: {
@@ -84,7 +84,7 @@ export const DEFAULT_QUESTIONS: SmartVOCQuestion[] = [
     id: 'cv',
     type: 'CV',
     title: 'Cognitive Value (CV)',
-    description: 'Example: This was the best app my eyes had see.',
+    description: 'Ejemplo: Esta fue la mejor aplicación que mis ojos han visto.',
     required: true,
     showConditionally: false,
     config: {
@@ -98,7 +98,7 @@ export const DEFAULT_QUESTIONS: SmartVOCQuestion[] = [
     id: 'nev',
     type: 'NEV',
     title: 'Net Emotional Value (NEV)',
-    description: 'How do you feel about the experience offered by the [company]?',
+    description: '¿Cómo se siente acerca de la experiencia ofrecida por [empresa]?',
     required: true,
     showConditionally: false,
     config: {
@@ -110,7 +110,7 @@ export const DEFAULT_QUESTIONS: SmartVOCQuestion[] = [
     id: 'nps',
     type: 'NPS',
     title: 'Net Promoter Score (NPS)',
-    description: 'On a scale from 0-10, how likely are you to recommend [company] to a friend or colleague?',
+    description: 'En una escala de 0-10, ¿qué tan probable es que recomiende [empresa] a un amigo o colega?',
     required: true,
     showConditionally: false,
     config: {
@@ -123,7 +123,7 @@ export const DEFAULT_QUESTIONS: SmartVOCQuestion[] = [
     id: 'voc',
     type: 'VOC',
     title: 'Voice of Customer (VOC)',
-    description: 'How can we improve the service?',
+    description: '¿Cómo podemos mejorar el servicio?',
     required: true,
     showConditionally: false,
     config: {
