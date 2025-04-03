@@ -9,6 +9,7 @@ import { researchHandler } from './controllers/newResearch.controller';
 import { smartVocFormController } from './controllers/smartVocForm.controller';
 import { eyeTrackingHandler } from './controllers/eyeTracking.controller';
 import { s3Handler } from './controllers/s3.controller';
+import { cognitiveTaskController } from './controllers/cognitiveTask.controller';
 
 /**
  * Punto de entrada principal para las funciones serverless
@@ -78,6 +79,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       } else if (path.match(/\/research\/[^\/]+\/smart-voc/)) {
         console.log('Enrutando a smartVocFormController (ruta research):', path);
         return smartVocFormController(event);
+      } else if (path.includes('/cognitive-task')) {
+        console.log('Enrutando a cognitiveTaskController:', path);
+        return cognitiveTaskController(event);
+      } else if (path.match(/\/research\/[^\/]+\/cognitive-task/)) {
+        console.log('Enrutando a cognitiveTaskController (ruta research):', path);
+        return cognitiveTaskController(event);
       } else if (path.startsWith('/research')) {
         console.log('Enrutando a researchHandler:', path);
         return researchHandler(event);
@@ -132,6 +139,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             '/thank-you-screens - Configuración de pantallas de agradecimiento (GET, POST, PUT, DELETE)',
             '/smart-voc - Formularios VOC inteligentes (GET, POST, PUT, DELETE)',
             '/eye-tracking - Configuración y datos de eye tracking (GET, POST, PUT, DELETE)',
+            '/cognitive-task - Formularios de tareas cognitivas (GET, POST, PUT, DELETE)',
             '/s3/upload - Generar URL prefirmada para subir archivos (POST)',
             '/s3/download/:key - Generar URL prefirmada para descargar archivos (GET)',
             '/s3/delete/:key - Generar URL prefirmada para eliminar archivos (DELETE)'

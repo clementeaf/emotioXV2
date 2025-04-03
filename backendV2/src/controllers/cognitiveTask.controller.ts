@@ -3,6 +3,7 @@ import { createResponse, errorResponse } from '../utils/controller.utils';
 import { createController, RouteMap } from '../utils/controller.decorator';
 import { CognitiveTaskService } from '../services/cognitiveTask.service';
 import { CognitiveTaskFormData } from '../../../shared/interfaces/cognitive-task.interface';
+import { ApiError } from '../utils/errors';
 
 /**
  * Controlador para manejar las peticiones relacionadas con formularios CognitiveTask
@@ -59,13 +60,6 @@ export class CognitiveTaskController {
 
       // Crear el formulario CognitiveTask usando el servicio
       console.log('Llamando al servicio para crear formulario CognitiveTask...');
-      
-      // Validar datos del formulario
-      try {
-        this.cognitiveTaskService.validateFormData(formData);
-      } catch (validationError: any) {
-        return errorResponse(`Error de validación: ${validationError.message}`, 400);
-      }
       
       const cognitiveTaskForm = await this.cognitiveTaskService.createCognitiveTaskForm(researchId, formData);
       console.log('Formulario CognitiveTask creado exitosamente:', cognitiveTaskForm.id);
@@ -344,12 +338,133 @@ export class CognitiveTaskController {
   }
 
   /**
+   * Genera una URL prefirmada para subir un archivo
+   * @param event Evento de API Gateway
+   * @returns Respuesta HTTP con la URL prefirmada y metadatos
+   */
+  async generateFileUploadUrl(event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
+    try {
+      // Verificar que hay un cuerpo en la petición
+      if (!event.body) {
+        return errorResponse('Se requieren datos para generar la URL de subida', 400);
+      }
+
+      if (!userId) {
+        return errorResponse('Usuario no autenticado', 401);
+      }
+
+      // Parsear el cuerpo de la petición
+      const fileParams = JSON.parse(event.body);
+      
+      // Validar parámetros necesarios
+      if (!fileParams.fileName || !fileParams.fileSize || !fileParams.fileType) {
+        return errorResponse('Se requiere fileName, fileSize y fileType para generar la URL de subida', 400);
+      }
+
+      // Obtener researchId
+      const researchId = fileParams.researchId || event.pathParameters?.researchId;
+      if (!researchId) {
+        return errorResponse('Se requiere un ID de investigación', 400);
+      }
+
+      // Generar URL de subida
+      const uploadUrlResponse = await this.cognitiveTaskService.getFileUploadUrl({
+        fileName: fileParams.fileName,
+        fileSize: fileParams.fileSize,
+        fileType: fileParams.fileType,
+        researchId: researchId
+      });
+
+      return createResponse(200, {
+        message: 'URL de subida generada exitosamente',
+        data: uploadUrlResponse
+      });
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  /**
+   * Genera una URL prefirmada para descargar un archivo
+   * @param event Evento de API Gateway
+   * @returns Respuesta HTTP con la URL prefirmada
+   */
+  async generateFileDownloadUrl(event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
+    try {
+      if (!userId) {
+        return errorResponse('Usuario no autenticado', 401);
+      }
+
+      // Obtener la clave S3 desde los parámetros de ruta
+      const s3Key = event.pathParameters?.key;
+      if (!s3Key) {
+        return errorResponse('Se requiere una clave S3 para descargar el archivo', 400);
+      }
+
+      // Obtener tiempo de expiración si se proporciona
+      let expiresIn = 3600; // 1 hora por defecto
+      if (event.queryStringParameters?.expiresIn) {
+        expiresIn = parseInt(event.queryStringParameters.expiresIn, 10);
+        if (isNaN(expiresIn) || expiresIn <= 0) {
+          return errorResponse('El parámetro expiresIn debe ser un número positivo', 400);
+        }
+      }
+
+      // Generar URL de descarga
+      const downloadUrl = await this.cognitiveTaskService.getFileDownloadUrl(s3Key);
+
+      return createResponse(200, {
+        message: 'URL de descarga generada exitosamente',
+        url: downloadUrl,
+        key: s3Key,
+        expiresIn: expiresIn
+      });
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  /**
+   * Genera una URL prefirmada para eliminar un archivo
+   * @param event Evento de API Gateway
+   * @returns Respuesta HTTP con la URL prefirmada
+   */
+  async generateFileDeleteUrl(event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
+    try {
+      if (!userId) {
+        return errorResponse('Usuario no autenticado', 401);
+      }
+
+      // Obtener la clave S3 desde los parámetros de ruta
+      const s3Key = event.pathParameters?.key;
+      if (!s3Key) {
+        return errorResponse('Se requiere una clave S3 para eliminar el archivo', 400);
+      }
+
+      // Generar URL de eliminación
+      const deleteUrl = await this.cognitiveTaskService.getFileDeleteUrl(s3Key);
+
+      return createResponse(200, {
+        message: 'URL de eliminación generada exitosamente',
+        url: deleteUrl,
+        key: s3Key
+      });
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  /**
    * Maneja errores comunes y devuelve una respuesta adecuada
    * @param error Error ocurrido
    * @returns Respuesta HTTP con el error
    */
   private handleError(error: any): APIGatewayProxyResult {
     console.error('Error en CognitiveTaskController:', error);
+    
+    if (error instanceof ApiError) {
+      return errorResponse(error.message, error.statusCode);
+    }
     
     const errorMessage = error.message || 'Error interno del servidor';
     const statusCode = error.statusCode || 500;
@@ -382,6 +497,18 @@ const routes: RouteMap = {
   },
   '/cognitive-task/batch-update': {
     'POST': controller.batchUpdateCognitiveTaskForms.bind(controller)
+  },
+  '/cognitive-task/file/upload': {
+    'POST': controller.generateFileUploadUrl.bind(controller)
+  },
+  '/research/:researchId/cognitive-task/file/upload': {
+    'POST': controller.generateFileUploadUrl.bind(controller)
+  },
+  '/cognitive-task/file/download/:key': {
+    'GET': controller.generateFileDownloadUrl.bind(controller)
+  },
+  '/cognitive-task/file/delete/:key': {
+    'DELETE': controller.generateFileDeleteUrl.bind(controller)
   }
 };
 
