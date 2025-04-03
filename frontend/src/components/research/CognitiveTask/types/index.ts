@@ -5,7 +5,7 @@
 
 import { 
   QuestionType,
-  Question,
+  Question as BaseQuestion,
   Choice,
   ScaleConfig,
   UploadedFile,
@@ -18,10 +18,14 @@ import {
   QUESTION_TEMPLATES
 } from 'shared/interfaces/cognitive-task.interface';
 
+// Extendemos la interfaz Question para incluir propiedades adicionales
+export interface Question extends BaseQuestion {
+  answerPlaceholder?: string;  // Placeholder para el campo de respuesta
+}
+
 // Re-exportamos los tipos importados para mantener compatibilidad
 export type { 
   QuestionType,
-  Question,
   Choice,
   ScaleConfig,
   UploadedFile,

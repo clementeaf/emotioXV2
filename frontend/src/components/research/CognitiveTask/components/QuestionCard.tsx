@@ -16,8 +16,14 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
   onAddChoice,
   onRemoveChoice,
   onFileUpload,
+  onMultipleFilesUpload,
+  onFileDelete,
   disabled,
-  validationErrors
+  validationErrors,
+  isUploading,
+  uploadProgress,
+  currentFileIndex,
+  totalFiles
 }) => {
   // Renderiza el contenido específico de la pregunta según su tipo
   const renderQuestionContent = () => {
@@ -64,8 +70,14 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
             question={question}
             onQuestionChange={(updates) => onQuestionChange(question.id, updates)}
             onFileUpload={(files) => onFileUpload?.(question.id, files)}
+            onMultipleFilesUpload={(files) => onMultipleFilesUpload?.(question.id, files)}
+            onFileDelete={(fileId) => onFileDelete?.(question.id, fileId)}
             validationErrors={validationErrors}
             disabled={disabled}
+            isUploading={isUploading}
+            uploadProgress={uploadProgress}
+            currentFileIndex={currentFileIndex}
+            totalFiles={totalFiles}
           />
         );
       
@@ -78,7 +90,17 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
     <div className="mb-6 p-4 bg-white rounded-lg border border-neutral-100 shadow-sm">
       <div className="mb-4 pb-4 border-b border-neutral-100">
         <div className="flex items-center justify-between">
-          <h3 className="text-md font-medium">Pregunta: {question.type}</h3>
+          <h3 className="text-md font-medium">
+            {question.type === 'short_text' && 'Texto Corto'}
+            {question.type === 'long_text' && 'Texto Largo'}
+            {question.type === 'single_choice' && 'Opción Única'}
+            {question.type === 'multiple_choice' && 'Opción Múltiple'}
+            {question.type === 'linear_scale' && 'Escala Lineal'}
+            {question.type === 'ranking' && 'Ranking'}
+            {question.type === 'navigation_flow' && 'Flujo de Navegación'}
+            {question.type === 'preference_test' && 'Prueba de Preferencia'}
+            <span className="ml-2 text-xs font-normal text-neutral-500">ID: {question.id}</span>
+          </h3>
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
               <span className="text-xs text-neutral-500">{UI_TEXTS.QUESTION_CARD.SHOW_CONDITIONALLY_LABEL}</span>

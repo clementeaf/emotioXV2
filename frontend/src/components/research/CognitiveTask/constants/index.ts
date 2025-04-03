@@ -133,6 +133,8 @@ export const QUESTION_TEMPLATES = {
   short_text: {
     type: 'short_text' as const,
     title: '',
+    description: '',
+    answerPlaceholder: 'Short text answer',
     required: true,
     showConditionally: false,
     deviceFrame: false,
@@ -140,6 +142,8 @@ export const QUESTION_TEMPLATES = {
   long_text: {
     type: 'long_text' as const,
     title: '',
+    description: '',
+    answerPlaceholder: 'Long text answer',
     required: true,
     showConditionally: false,
     deviceFrame: false,
