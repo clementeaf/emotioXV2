@@ -1,54 +1,42 @@
 /**
  * Definiciones de tipos para el componente CognitiveTask
+ * Importamos los tipos base desde la interfaz compartida
  */
 
-// Tipo para las opciones de preguntas de selección
-export interface Choice {
-  id: string;
-  text: string;
-  isQualify?: boolean;
-  isDisqualify?: boolean;
-}
+import { 
+  QuestionType,
+  Question,
+  Choice,
+  ScaleConfig,
+  UploadedFile,
+  HitZone,
+  CognitiveTaskFormData,
+  CognitiveTaskFormResponse,
+  CognitiveTaskModel,
+  DEFAULT_COGNITIVE_TASK,
+  QUESTION_TYPES_INFO,
+  QUESTION_TEMPLATES
+} from 'shared/interfaces/cognitive-task.interface';
 
-// Tipo para la configuración de escala lineal
-export interface ScaleConfig {
-  startValue: number;
-  endValue: number;
-}
+// Re-exportamos los tipos importados para mantener compatibilidad
+export type { 
+  QuestionType,
+  Question,
+  Choice,
+  ScaleConfig,
+  UploadedFile,
+  HitZone,
+  CognitiveTaskFormData,
+  CognitiveTaskFormResponse,
+  CognitiveTaskModel
+};
 
-// Tipo para archivos subidos
-export interface UploadedFile {
-  id: string;
-  name: string;
-  size: number;
-  type: string;
-  url: string;
-}
-
-// Tipos de preguntas soportados
-export type QuestionType = 
-  | 'short_text' 
-  | 'long_text' 
-  | 'single_choice' 
-  | 'multiple_choice' 
-  | 'linear_scale' 
-  | 'ranking' 
-  | 'navigation_flow' 
-  | 'preference_test';
-
-// Definición de una pregunta
-export interface Question {
-  id: string;
-  type: QuestionType;
-  title: string;
-  description?: string;
-  required: boolean;
-  showConditionally: boolean;
-  deviceFrame: boolean;
-  choices?: Choice[];
-  scaleConfig?: ScaleConfig;
-  files?: UploadedFile[];
-}
+// Re-exportamos las constantes
+export {
+  DEFAULT_COGNITIVE_TASK,
+  QUESTION_TYPES_INFO,
+  QUESTION_TEMPLATES
+};
 
 // Tipo para errores de validación
 export interface ValidationErrors {
@@ -67,13 +55,6 @@ export interface QuestionTypeInfo {
   id: QuestionType;
   label: string;
   description: string;
-}
-
-// Datos completos del formulario
-export interface CognitiveTaskFormData {
-  researchId?: string;
-  questions: Question[];
-  randomizeQuestions: boolean;
 }
 
 // Definiciones de props para componentes
@@ -192,12 +173,4 @@ export interface UseCognitiveTaskFormResult {
   handlePreview: () => void;
   validateForm: () => boolean;
   closeModal: () => void;
-}
-
-// Constantes por defecto
-
-// Plantilla por defecto para un nuevo cognitiveTask
-export const DEFAULT_COGNITIVE_TASK: CognitiveTaskFormData = {
-  questions: [],
-  randomizeQuestions: false
-}; 
+} 

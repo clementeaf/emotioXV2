@@ -3,12 +3,13 @@
 import React from 'react';
 import { CognitiveTaskForm as OriginalForm } from './CognitiveTaskFormOriginal';
 import { CognitiveTaskForm as ModularForm } from './CognitiveTask';
+import { CognitiveTaskFormData } from 'shared/interfaces/cognitive-task.interface';
 
-// Tipos comunes para ambas implementaciones
+// Props para el componente principal
 export interface CognitiveTaskFormProps {
   className?: string;
   researchId?: string;
-  onSave?: (data: any) => void;
+  onSave?: (data: CognitiveTaskFormData) => void;
 }
 
 // Configuración para usar la versión original o la versión modular del formulario
