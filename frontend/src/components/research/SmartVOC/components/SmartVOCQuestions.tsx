@@ -178,18 +178,31 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm font-medium text-neutral-900">NEV</span>
-              <select 
-                className="h-10 pl-3 pr-10 rounded-lg bg-neutral-50 border border-neutral-200 text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                value={question.config.type}
-                onChange={(e) => onUpdateQuestion(question.id, {
-                  config: { ...question.config, type: e.target.value as any }
-                })}
-                disabled={disabled}
-              >
-                <option value="emojis">Emojis</option>
-              </select>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-medium text-neutral-900">NEV</span>
+                <select 
+                  className="h-10 pl-3 pr-10 rounded-lg bg-neutral-50 border border-neutral-200 text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  value={question.config.type}
+                  onChange={(e) => onUpdateQuestion(question.id, {
+                    config: { ...question.config, type: e.target.value as any }
+                  })}
+                  disabled={disabled}
+                >
+                  <option value="emojis">Emojis básicos</option>
+                  <option value="emojis_detailed">Emojis detallados (20 estados)</option>
+                  <option value="emotional_scale">Escala emocional completa</option>
+                  <option value="quadrants">4 Estadios emocionales</option>
+                </select>
+              </div>
+              <div className="bg-amber-50 p-3 rounded-md space-y-2">
+                <p className="text-sm font-medium text-amber-800">Escala de valoración diferente</p>
+                <div className="flex flex-col gap-1 text-xs text-amber-700">
+                  <p>• 20 estados de ánimo diferentes</p>
+                  <p>• Categorizados en 2 grandes grupos: Emociones positivas y negativas</p>
+                  <p>• Estas emociones se clasifican en 4 estadios</p>
+                </div>
+              </div>
             </div>
           </div>
         );
@@ -301,6 +314,19 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
                   <p className="text-xs text-amber-600 mt-1">
                     Esta pregunta no se puede editar para mantener la consistencia de los indicadores.
                   </p>
+                )}
+                
+                {question.type === 'CV' && question.description.includes("Example:") && (
+                  <button
+                    type="button"
+                    className="mt-1 text-xs text-blue-600 hover:text-blue-800"
+                    onClick={() => onUpdateQuestion(question.id, { 
+                      description: 'Ejemplo: Esta fue la mejor aplicación que mis ojos han visto.' 
+                    })}
+                    disabled={disabled}
+                  >
+                    Traducir al español
+                  </button>
                 )}
               </div>
               
