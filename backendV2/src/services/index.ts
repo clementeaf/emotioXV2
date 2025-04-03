@@ -11,5 +11,6 @@ export * from './smartVocForm.service';
 export * from './thankYouScreen.service';
 export * from './eyeTracking.service';
 export * from './s3.service';
+export * from './cognitiveTask.service';
 
 // Otros servicios serán exportados aquí a medida que se creen 
