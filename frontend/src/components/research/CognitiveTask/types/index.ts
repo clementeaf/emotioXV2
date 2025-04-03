@@ -102,8 +102,14 @@ export interface QuestionCardProps {
   onAddChoice?: (questionId: string) => void;
   onRemoveChoice?: (questionId: string, choiceId: string) => void;
   onFileUpload?: (questionId: string, files: FileList) => void;
+  onMultipleFilesUpload?: (questionId: string, files: FileList) => void;
+  onFileDelete?: (questionId: string, fileId: string) => void;
   disabled: boolean;
   validationErrors: ValidationErrors;
+  isUploading?: boolean;
+  uploadProgress?: number;
+  currentFileIndex?: number;
+  totalFiles?: number;
 }
 
 // Props para el modal de agregar pregunta
@@ -142,8 +148,14 @@ export interface FileUploadQuestionProps {
   question: Question;
   onQuestionChange: (updates: Partial<Question>) => void;
   onFileUpload: (files: FileList) => void;
+  onMultipleFilesUpload?: (files: FileList) => void;
+  onFileDelete?: (fileId: string) => void;
   validationErrors: ValidationErrors;
   disabled: boolean;
+  isUploading?: boolean;
+  uploadProgress?: number;
+  currentFileIndex?: number;
+  totalFiles?: number;
 }
 
 // Resultado del hook useCognitiveTaskForm
@@ -156,6 +168,10 @@ export interface UseCognitiveTaskFormResult {
   modalError: ErrorModalData | null;
   modalVisible: boolean;
   isAddQuestionModalOpen: boolean;
+  isUploading: boolean;
+  uploadProgress: number;
+  currentFileIndex: number;
+  totalFiles: number;
   questionTypes: QuestionTypeInfo[];
   
   // Métodos de gestión
@@ -163,6 +179,8 @@ export interface UseCognitiveTaskFormResult {
   handleAddChoice: (questionId: string) => void;
   handleRemoveChoice: (questionId: string, choiceId: string) => void;
   handleFileUpload: (questionId: string, files: FileList) => void;
+  handleMultipleFilesUpload: (questionId: string, files: FileList) => void;
+  handleFileDelete: (questionId: string, fileId: string) => void;
   handleAddQuestion: (type: QuestionType) => void;
   handleRandomizeChange: (checked: boolean) => void;
   openAddQuestionModal: () => void;

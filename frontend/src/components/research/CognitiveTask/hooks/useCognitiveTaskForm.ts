@@ -9,7 +9,8 @@ import {
   ErrorModalData,
   QuestionType,
   DEFAULT_COGNITIVE_TASK,
-  UseCognitiveTaskFormResult
+  UseCognitiveTaskFormResult,
+  UploadedFile
 } from '../types';
 import { 
   QUERY_KEYS, 
@@ -19,7 +20,7 @@ import {
   QUESTION_TEMPLATES
 } from '../constants';
 import { useAuth } from '@/providers/AuthProvider';
-import { useFileUpload } from '@/hooks';
+import { s3Service } from '@/services';
 
 // TODO: Implementar un servicio real de API para tareas cognitivas
 // Este es un mock temporal
@@ -54,7 +55,12 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [isAddQuestionModalOpen, setIsAddQuestionModalOpen] = useState<boolean>(false);
   const { isAuthenticated, token } = useAuth();
-  const { uploadFile } = useFileUpload();
+  
+  // Estados para controlar carga de archivos
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [currentFileIndex, setCurrentFileIndex] = useState<number>(0);
+  const [totalFiles, setTotalFiles] = useState<number>(0);
 
   // Handlers para el modal
   const closeModal = useCallback(() => setModalVisible(false), []);
@@ -223,62 +229,180 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
     }));
   }, []);
 
-  // Función para manejar la carga de archivos
+  // Función para manejar la carga de archivos individuales
   const handleFileUpload = useCallback(async (questionId: string, files: FileList) => {
-    if (files.length === 0) return;
+    if (files.length === 0 || !researchId) return;
 
     try {
-      // Convertir FileList a Array
-      const fileArray = Array.from(files);
+      setIsUploading(true);
+      setUploadProgress(0);
+      setCurrentFileIndex(0);
+      setTotalFiles(1);
       
-      // Procesar cada archivo
-      for (const file of fileArray) {
-        try {
-          console.log(`[useCognitiveTaskForm] Subiendo archivo: ${file.name}`);
-          
-          // Usar el servicio de carga de archivos
-          const result = await uploadFile({
-            file,
-            onProgress: (progress) => {
-              console.log(`[useCognitiveTaskForm] Progreso de carga: ${progress}%`);
-            }
-          });
-          
-          if (result && result.fileUrl) {
-            // Agregar el archivo al estado
-            setFormData(prevData => ({
-              ...prevData,
-              questions: prevData.questions.map(q =>
-                q.id === questionId
-                  ? {
-                      ...q,
-                      files: [
-                        ...(q.files || []),
-                        {
-                          id: uuidv4(),
-                          name: file.name,
-                          size: file.size,
-                          type: file.type,
-                          url: result.fileUrl
-                        }
-                      ]
-                    }
-                  : q
-              )
-            }));
-            
-            console.log(`[useCognitiveTaskForm] Archivo subido: ${result.fileUrl}`);
-          }
-        } catch (err) {
-          console.error(`[useCognitiveTaskForm] Error al subir archivo ${file.name}:`, err);
-          toast.error(`Error al subir ${file.name}`);
+      // Convertir FileList a Array
+      const file = files[0];
+      
+      console.log(`[useCognitiveTaskForm] Subiendo archivo: ${file.name}`);
+      
+      // Usar el servicio de S3 para subir el archivo
+      const result = await s3Service.uploadFile({
+        file,
+        researchId,
+        folder: 'cognitive-task-files',
+        progressCallback: (progress) => {
+          setUploadProgress(progress);
+          console.log(`[useCognitiveTaskForm] Progreso de carga: ${progress}%`);
         }
+      });
+      
+      if (result) {
+        const uploadedFile: UploadedFile = {
+          id: crypto.randomUUID(),
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          url: result.fileUrl,
+          s3Key: result.key
+        };
+        
+        // Agregamos el archivo a la pregunta
+        setFormData(prevData => ({
+          ...prevData,
+          questions: prevData.questions.map(q =>
+            q.id === questionId
+              ? {
+                  ...q,
+                  files: q.files ? [...q.files, uploadedFile] : [uploadedFile]
+                }
+              : q
+          )
+        }));
+        
+        toast.success(`Archivo subido exitosamente: ${file.name}`);
       }
     } catch (error) {
-      console.error('[useCognitiveTaskForm] Error general al subir archivos:', error);
-      toast.error('Error al procesar los archivos');
+      console.error('[useCognitiveTaskForm] Error al subir archivo:', error);
+      toast.error('Error al subir archivo');
+      
+      showModal({
+        title: 'Error al subir archivo',
+        message: error instanceof Error ? error.message : 'Ocurrió un error inesperado',
+        type: 'error'
+      });
+    } finally {
+      setIsUploading(false);
     }
-  }, [uploadFile]);
+  }, [researchId, showModal]);
+
+  // Función para manejar la carga de múltiples archivos
+  const handleMultipleFilesUpload = useCallback(async (questionId: string, files: FileList) => {
+    if (files.length === 0 || !researchId) return;
+
+    try {
+      setIsUploading(true);
+      setUploadProgress(0);
+      setCurrentFileIndex(0);
+      setTotalFiles(files.length);
+      
+      // Convertir FileList a Array
+      const fileArray = Array.from(files);
+      const uploadedFiles: UploadedFile[] = [];
+      
+      // Procesar cada archivo en secuencia
+      for (let i = 0; i < fileArray.length; i++) {
+        const file = fileArray[i];
+        setCurrentFileIndex(i);
+        
+        console.log(`[useCognitiveTaskForm] Subiendo archivo ${i+1}/${fileArray.length}: ${file.name}`);
+        
+        // Usar el servicio de S3 para subir el archivo
+        const result = await s3Service.uploadFile({
+          file,
+          researchId,
+          folder: 'cognitive-task-files',
+          progressCallback: (progress) => {
+            setUploadProgress(progress);
+            console.log(`[useCognitiveTaskForm] Progreso de carga (${i+1}/${fileArray.length}): ${progress}%`);
+          }
+        });
+        
+        if (result) {
+          const uploadedFile: UploadedFile = {
+            id: crypto.randomUUID(),
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            url: result.fileUrl,
+            s3Key: result.key
+          };
+          
+          uploadedFiles.push(uploadedFile);
+        }
+      }
+      
+      // Una vez que todos los archivos se han cargado, actualizar la pregunta con los archivos
+      if (uploadedFiles.length > 0) {
+        setFormData(prevData => ({
+          ...prevData,
+          questions: prevData.questions.map(q =>
+            q.id === questionId
+              ? {
+                  ...q,
+                  files: q.files 
+                    ? [...q.files, ...uploadedFiles]
+                    : uploadedFiles
+                }
+              : q
+          )
+        }));
+        
+        toast.success(`${uploadedFiles.length} archivos subidos exitosamente`);
+      }
+    } catch (error) {
+      console.error('[useCognitiveTaskForm] Error al subir archivos múltiples:', error);
+      toast.error('Error al subir archivos');
+      
+      showModal({
+        title: 'Error al subir archivos',
+        message: error instanceof Error ? error.message : 'Ocurrió un error inesperado',
+        type: 'error'
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  }, [researchId, showModal]);
+
+  // Función para eliminar un archivo
+  const handleFileDelete = useCallback(async (questionId: string, fileId: string) => {
+    try {
+      // Buscar el archivo a eliminar para obtener su clave S3
+      const question = formData.questions.find(q => q.id === questionId);
+      const file = question?.files?.find(f => f.id === fileId);
+      
+      if (file && file.s3Key) {
+        // Eliminar el archivo de S3
+        await s3Service.deleteFile(file.s3Key);
+        
+        // Eliminar el archivo del estado local
+        setFormData(prevData => ({
+          ...prevData,
+          questions: prevData.questions.map(q =>
+            q.id === questionId && q.files
+              ? {
+                  ...q,
+                  files: q.files.filter(f => f.id !== fileId)
+                }
+              : q
+          )
+        }));
+        
+        toast.success('Archivo eliminado exitosamente');
+      }
+    } catch (error) {
+      console.error('[useCognitiveTaskForm] Error al eliminar archivo:', error);
+      toast.error('Error al eliminar archivo');
+    }
+  }, [formData.questions]);
 
   // Función para agregar una nueva pregunta
   const handleAddQuestion = useCallback((type: QuestionType) => {
@@ -445,6 +569,10 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
     modalError,
     modalVisible,
     isAddQuestionModalOpen,
+    isUploading,
+    uploadProgress,
+    currentFileIndex,
+    totalFiles,
     questionTypes: QUESTION_TYPES,
     
     // Métodos de gestión
@@ -452,6 +580,8 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
     handleAddChoice,
     handleRemoveChoice,
     handleFileUpload,
+    handleMultipleFilesUpload,
+    handleFileDelete,
     handleAddQuestion,
     handleRandomizeChange,
     openAddQuestionModal,
@@ -464,4 +594,6 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
     closeModal,
     initializeDefaultQuestions
   };
-}; 
+};
+
+export default useCognitiveTaskForm; 
