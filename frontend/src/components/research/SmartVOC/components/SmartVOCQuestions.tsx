@@ -108,12 +108,17 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
                 }}
                 disabled={disabled}
               >
+                <option value="1-5">Escala 1-5</option>
                 <option value="1-7">Escala 1-7</option>
+                <option value="1-10">Escala 1-10</option>
               </select>
+              <div className="bg-amber-50 p-2 rounded text-xs text-amber-700">
+                3 escalas principales de valoración en la región
+              </div>
             </div>
             <div className="space-y-3">
-              <div className="flex items-center gap-4">
-                <span className="text-sm text-neutral-500">{UI_TEXTS.QUESTIONS.START_LABEL_TEXT}</span>
+              <div className="flex gap-4">
+                <span className="text-sm text-neutral-500 w-32 text-right">{UI_TEXTS.QUESTIONS.START_LABEL_TEXT}</span>
                 <input 
                   type="text" 
                   value={question.config.startLabel || ''}
@@ -128,8 +133,8 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
                   disabled={disabled}
                 />
               </div>
-              <div className="flex items-center gap-4">
-                <span className="text-sm text-neutral-500">{UI_TEXTS.QUESTIONS.END_LABEL_TEXT}</span>
+              <div className="flex gap-4">
+                <span className="text-sm text-neutral-500 w-32 text-right">{UI_TEXTS.QUESTIONS.END_LABEL_TEXT}</span>
                 <input 
                   type="text"
                   value={question.config.endLabel || ''}
