@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { SmartVOCQuestionsProps, SmartVOCQuestion } from '../types';
+import { SmartVOCQuestionsProps, SmartVOCQuestion, QuestionType } from '../types';
 import { UI_TEXTS } from '../constants';
+import { AddQuestionModal } from './AddQuestionModal';
 
 /**
  * Componente para gestionar las preguntas de SmartVOC
@@ -13,6 +14,8 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
   onRemoveQuestion,
   disabled
 }) => {
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
   // Función para propagar el nombre de la empresa a todas las preguntas que lo utilizan
   const syncCompanyName = (companyName: string) => {
     // Actualizar todas las preguntas que usan companyName
@@ -25,6 +28,9 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
       }
     });
   };
+
+  // Obtener los tipos de preguntas ya existentes
+  const existingQuestionTypes = questions.map(q => q.type);
 
   // Renderiza la configuración específica para cada tipo de pregunta
   const renderQuestionConfig = (question: SmartVOCQuestion) => {
@@ -273,6 +279,12 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
     }
   };
 
+  // Manejar la adición de una nueva pregunta desde el modal
+  const handleAddQuestion = (question: SmartVOCQuestion) => {
+    onAddQuestion(question);
+    setIsAddModalOpen(false);
+  };
+
   return (
     <div className="space-y-6">
       <div className="bg-blue-50 p-4 rounded-md">
@@ -331,6 +343,19 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
               </div>
               
               <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                  {UI_TEXTS.QUESTIONS.INSTRUCTIONS_LABEL}
+                </label>
+                <textarea
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-md resize-y min-h-[80px]"
+                  value={question.instructions || ''}
+                  onChange={(e) => onUpdateQuestion(question.id, { instructions: e.target.value })}
+                  placeholder={UI_TEXTS.QUESTIONS.INSTRUCTIONS_PLACEHOLDER}
+                  disabled={disabled}
+                />
+              </div>
+              
+              <div>
                 {renderQuestionConfig(question)}
               </div>
             </div>
@@ -342,7 +367,7 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
         <Button 
           variant="outline" 
           className="w-full max-w-md"
-          onClick={onAddQuestion}
+          onClick={() => setIsAddModalOpen(true)}
           disabled={disabled}
         >
           <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -351,6 +376,13 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
           {UI_TEXTS.QUESTIONS.ADD_BUTTON}
         </Button>
       </div>
+      
+      <AddQuestionModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onAddQuestion={handleAddQuestion}
+        existingQuestionTypes={existingQuestionTypes}
+      />
     </div>
   );
 }; 

@@ -38,6 +38,8 @@ export const UI_TEXTS = {
     ADD_BUTTON: 'Añadir otra pregunta',
     REMOVE_BUTTON: 'Eliminar',
     QUESTION_TEXT_LABEL: 'Texto de la pregunta',
+    INSTRUCTIONS_LABEL: 'Instrucciones (opcional)',
+    INSTRUCTIONS_PLACEHOLDER: 'Añada instrucciones o información adicional para los participantes',
     COMPANY_NAME_LABEL: 'Nombre de la empresa o servicio',
     COMPANY_NAME_PLACEHOLDER: 'Introduzca el nombre de la empresa',
     START_LABEL_TEXT: 'Etiqueta inicial (opcional)',
@@ -61,5 +63,11 @@ export const UI_TEXTS = {
     INFO_TITLE: 'Información',
     SUCCESS_TITLE: 'Éxito',
     CLOSE_BUTTON: 'Cerrar'
+  },
+  ADD_QUESTION_MODAL: {
+    TITLE: 'Añadir nueva pregunta',
+    DESCRIPTION: 'Seleccione el tipo de pregunta que desea añadir',
+    CLOSE_BUTTON: 'Cancelar',
+    ADD_BUTTON: 'Añadir'
   }
 }; 

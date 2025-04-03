@@ -39,6 +39,7 @@ export interface SmartVOCQuestion {
   type: QuestionType;
   title: string;
   description: string;
+  instructions?: string;
   required: boolean;
   showConditionally: boolean;
   config: QuestionConfig;
@@ -61,6 +62,7 @@ export const DEFAULT_QUESTIONS: SmartVOCQuestion[] = [
     type: 'CSAT',
     title: 'Customer Satisfaction Score (CSAT)',
     description: '¿Cómo calificaría su nivel general de satisfacción con [empresa]?',
+    instructions: '',
     required: true,
     showConditionally: false,
     config: {
@@ -73,6 +75,7 @@ export const DEFAULT_QUESTIONS: SmartVOCQuestion[] = [
     type: 'CES',
     title: 'Customer Effort Score (CES)',
     description: 'Fue fácil para mí resolver mi problema hoy.',
+    instructions: '',
     required: true,
     showConditionally: false,
     config: {
@@ -85,6 +88,7 @@ export const DEFAULT_QUESTIONS: SmartVOCQuestion[] = [
     type: 'CV',
     title: 'Cognitive Value (CV)',
     description: 'Ejemplo: Esta fue la mejor aplicación que mis ojos han visto.',
+    instructions: '',
     required: true,
     showConditionally: false,
     config: {
@@ -99,6 +103,7 @@ export const DEFAULT_QUESTIONS: SmartVOCQuestion[] = [
     type: 'NEV',
     title: 'Net Emotional Value (NEV)',
     description: '¿Cómo se siente acerca de la experiencia ofrecida por [empresa]?',
+    instructions: '',
     required: true,
     showConditionally: false,
     config: {
@@ -111,6 +116,7 @@ export const DEFAULT_QUESTIONS: SmartVOCQuestion[] = [
     type: 'NPS',
     title: 'Net Promoter Score (NPS)',
     description: 'En una escala de 0-10, ¿qué tan probable es que recomiende [empresa] a un amigo o colega?',
+    instructions: '',
     required: true,
     showConditionally: false,
     config: {
@@ -124,6 +130,7 @@ export const DEFAULT_QUESTIONS: SmartVOCQuestion[] = [
     type: 'VOC',
     title: 'Voice of Customer (VOC)',
     description: '¿Cómo podemos mejorar el servicio?',
+    instructions: '',
     required: true,
     showConditionally: false,
     config: {
@@ -201,7 +208,7 @@ export interface SmartVOCSettingsProps {
 export interface SmartVOCQuestionsProps {
   questions: SmartVOCQuestion[];
   onUpdateQuestion: (id: string, updates: Partial<SmartVOCQuestion>) => void;
-  onAddQuestion: () => void;
+  onAddQuestion: (customQuestion?: SmartVOCQuestion) => void;
   onRemoveQuestion: (id: string) => void;
   disabled: boolean;
 }

@@ -168,7 +168,14 @@ export const useSmartVOCForm = (researchId: string): UseSmartVOCFormResult => {
   }, [smartVocData]);
 
   // Función para agregar una nueva pregunta
-  const addQuestion = () => {
+  const addQuestion = (customQuestion?: SmartVOCQuestion) => {
+    // Si se proporciona una pregunta personalizada, usarla
+    if (customQuestion) {
+      setQuestions(prev => [...prev, customQuestion]);
+      return;
+    }
+    
+    // Lógica original para seleccionar automáticamente una pregunta no utilizada
     const unusedQuestions = DEFAULT_QUESTIONS.filter(
       defaultQ => !questions.some(q => q.type === defaultQ.type)
     );
