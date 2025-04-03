@@ -20,25 +20,7 @@ import {
   QUESTION_TEMPLATES
 } from '../constants';
 import { useAuth } from '@/providers/AuthProvider';
-import { s3Service } from '@/services';
-
-// TODO: Implementar un servicio real de API para tareas cognitivas
-// Este es un mock temporal
-const mockCognitiveTaskAPI = {
-  getByResearchId: async (researchId: string) => {
-    console.log(`[MOCK] Fetching cognitive task for research: ${researchId}`);
-    // Simulamos que no existe el recurso
-    return { data: null, notFound: true };
-  },
-  create: async (data: CognitiveTaskFormData) => {
-    console.log(`[MOCK] Creating cognitive task:`, data);
-    return { ...data, id: uuidv4() };
-  },
-  update: async (id: string, data: CognitiveTaskFormData) => {
-    console.log(`[MOCK] Updating cognitive task ${id}:`, data);
-    return { ...data, id };
-  }
-};
+import { s3Service, cognitiveTaskService } from '@/services';
 
 /**
  * Hook personalizado para gestionar la lógica del formulario de tareas cognitivas
@@ -83,10 +65,10 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
         }
 
         console.log(`[useCognitiveTaskForm] Buscando configuración existente para investigación: ${researchId}`);
-        // Usar el mock por ahora, luego reemplazar con API real
-        const response = await mockCognitiveTaskAPI.getByResearchId(researchId);
+        // Usar el servicio real de API en lugar del mock
+        const response = await cognitiveTaskService.getByResearchId(researchId);
         console.log('[useCognitiveTaskForm] Respuesta de API:', response);
-        return response;
+        return { data: response };
       } catch (error: any) {
         console.error('[useCognitiveTaskForm] Error al obtener datos:', error);
         
@@ -115,13 +97,16 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
         
         console.log('[useCognitiveTaskForm] Datos a guardar:', JSON.stringify(data, null, 2));
         
-        // Usar el mock por ahora, luego reemplazar con API real
+        // Usar el servicio real de API en lugar del mock
         if (cognitiveTaskId) {
           console.log(`[useCognitiveTaskForm] Actualizando Cognitive Task con ID: ${cognitiveTaskId}`);
-          return await mockCognitiveTaskAPI.update(cognitiveTaskId, data);
+          return await cognitiveTaskService.update(cognitiveTaskId, data);
+        } else if (researchId) {
+          console.log(`[useCognitiveTaskForm] Creando/Actualizando Cognitive Task para la investigación: ${researchId}`);
+          return await cognitiveTaskService.updateByResearchId(researchId, data);
         } else {
           console.log('[useCognitiveTaskForm] Creando nuevo Cognitive Task');
-          return await mockCognitiveTaskAPI.create(data);
+          return await cognitiveTaskService.create(data);
         }
       } catch (error: any) {
         console.error('[useCognitiveTaskForm] Error al guardar:', error);
@@ -244,27 +229,17 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
       
       console.log(`[useCognitiveTaskForm] Subiendo archivo: ${file.name}`);
       
-      // Usar el servicio de S3 para subir el archivo
-      const result = await s3Service.uploadFile({
+      // Usar el servicio cognitiveTask para subir el archivo
+      const uploadedFile = await cognitiveTaskService.uploadFile(
         file,
         researchId,
-        folder: 'cognitive-task-files',
-        progressCallback: (progress) => {
+        (progress) => {
           setUploadProgress(progress);
           console.log(`[useCognitiveTaskForm] Progreso de carga: ${progress}%`);
         }
-      });
+      );
       
-      if (result) {
-        const uploadedFile: UploadedFile = {
-          id: crypto.randomUUID(),
-          name: file.name,
-          size: file.size,
-          type: file.type,
-          url: result.fileUrl,
-          s3Key: result.key
-        };
-        
+      if (uploadedFile) {
         // Agregamos el archivo a la pregunta
         setFormData(prevData => ({
           ...prevData,
@@ -306,39 +281,17 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
       
       // Convertir FileList a Array
       const fileArray = Array.from(files);
-      const uploadedFiles: UploadedFile[] = [];
       
-      // Procesar cada archivo en secuencia
-      for (let i = 0; i < fileArray.length; i++) {
-        const file = fileArray[i];
-        setCurrentFileIndex(i);
-        
-        console.log(`[useCognitiveTaskForm] Subiendo archivo ${i+1}/${fileArray.length}: ${file.name}`);
-        
-        // Usar el servicio de S3 para subir el archivo
-        const result = await s3Service.uploadFile({
-          file,
-          researchId,
-          folder: 'cognitive-task-files',
-          progressCallback: (progress) => {
-            setUploadProgress(progress);
-            console.log(`[useCognitiveTaskForm] Progreso de carga (${i+1}/${fileArray.length}): ${progress}%`);
-          }
-        });
-        
-        if (result) {
-          const uploadedFile: UploadedFile = {
-            id: crypto.randomUUID(),
-            name: file.name,
-            size: file.size,
-            type: file.type,
-            url: result.fileUrl,
-            s3Key: result.key
-          };
-          
-          uploadedFiles.push(uploadedFile);
+      // Usar el servicio cognitiveTask para subir múltiples archivos
+      const uploadedFiles = await cognitiveTaskService.uploadMultipleFiles(
+        fileArray,
+        researchId,
+        (progress, fileIndex) => {
+          setUploadProgress(progress);
+          setCurrentFileIndex(fileIndex);
+          console.log(`[useCognitiveTaskForm] Progreso de carga (${fileIndex+1}/${fileArray.length}): ${progress}%`);
         }
-      }
+      );
       
       // Una vez que todos los archivos se han cargado, actualizar la pregunta con los archivos
       if (uploadedFiles.length > 0) {
@@ -380,7 +333,7 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
       const file = question?.files?.find(f => f.id === fileId);
       
       if (file && file.s3Key) {
-        // Eliminar el archivo de S3
+        // Llamar al servicio para eliminar el archivo
         await s3Service.deleteFile(file.s3Key);
         
         // Eliminar el archivo del estado local

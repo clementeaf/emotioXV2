@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { CognitiveTaskFormProps } from './types';
+import { CognitiveTaskFormProps, Question, QuestionType } from './types';
 import { useCognitiveTaskForm } from './hooks/useCognitiveTaskForm';
 import { 
   AddQuestionModal, 
@@ -11,98 +11,102 @@ import {
 import { Button } from '@/components/ui/Button';
 import { UI_TEXTS, QUESTION_TYPES, ERROR_MESSAGES } from './constants';
 
-// Función para crear preguntas de ejemplo (similar a la versión original)
-const createDefaultQuestions = () => [
+// Función para crear preguntas de ejemplo con tipos correctos
+const createDefaultQuestions = (): Question[] => [
   {
     id: '3.1',
-    type: 'short_text',
-    text: '',
-    title: '',
+    type: 'short_text' as QuestionType,
+    title: 'Pregunta de texto corto de ejemplo',
+    description: 'Descripción opcional para esta pregunta',
     required: true,
     showConditionally: false,
     deviceFrame: false
   },
   {
     id: '3.2',
-    type: 'long_text',
-    text: '',
-    title: '',
+    type: 'long_text' as QuestionType,
+    title: 'Pregunta de texto largo de ejemplo',
+    description: 'Descripción opcional para esta pregunta',
     required: true,
     showConditionally: false,
     deviceFrame: false
   },
   {
     id: '3.3',
-    type: 'single_choice',
-    text: '',
-    title: '',
+    type: 'single_choice' as QuestionType,
+    title: 'Pregunta de selección única de ejemplo',
+    description: 'Descripción opcional para esta pregunta',
     required: true,
     showConditionally: false,
     choices: [
-      { id: '1', text: '' },
-      { id: '2', text: '' },
-      { id: '3', text: '' }
+      { id: '1', text: 'Opción 1' },
+      { id: '2', text: 'Opción 2' },
+      { id: '3', text: 'Opción 3' }
     ],
     deviceFrame: false
   },
   {
     id: '3.4',
-    type: 'multiple_choice',
-    text: '',
-    title: '',
+    type: 'multiple_choice' as QuestionType,
+    title: 'Pregunta de selección múltiple de ejemplo',
+    description: 'Descripción opcional para esta pregunta',
     required: true,
     showConditionally: false,
     choices: [
-      { id: '1', text: '' },
-      { id: '2', text: '' },
-      { id: '3', text: '' }
+      { id: '1', text: 'Opción 1' },
+      { id: '2', text: 'Opción 2' },
+      { id: '3', text: 'Opción 3' }
     ],
     deviceFrame: false
   },
   {
     id: '3.5',
-    type: 'linear_scale',
-    text: '',
-    title: '',
+    type: 'linear_scale' as QuestionType,
+    title: 'Pregunta de escala lineal de ejemplo',
+    description: 'Descripción opcional para esta pregunta',
     required: true,
     showConditionally: false,
-    minValue: 1,
-    maxValue: 5,
+    scaleConfig: {
+      startValue: 1,
+      endValue: 5,
+      startLabel: 'Poco',
+      endLabel: 'Mucho'
+    },
     deviceFrame: false
   },
   {
     id: '3.6',
-    type: 'ranking',
-    text: '',
-    title: '',
+    type: 'ranking' as QuestionType,
+    title: 'Pregunta de ranking de ejemplo',
+    description: 'Descripción opcional para esta pregunta',
     required: true,
     showConditionally: false,
     choices: [
-      { id: '1', text: '' },
-      { id: '2', text: '' },
-      { id: '3', text: '' }
+      { id: '1', text: 'Opción 1' },
+      { id: '2', text: 'Opción 2' },
+      { id: '3', text: 'Opción 3' }
     ],
     deviceFrame: false
   },
   {
     id: '3.7',
-    type: 'navigation_flow',
-    text: '',
-    title: '',
+    type: 'navigation_flow' as QuestionType,
+    title: 'Prueba de flujo de navegación de ejemplo',
+    description: 'Carga pantallas y define el flujo de navegación',
     required: true,
     showConditionally: false,
-    fileUrls: [],
-    deviceFrame: false
+    files: [],
+    deviceFrame: true
   },
   {
     id: '3.8',
-    type: 'preference_test',
-    text: '',
-    title: '',
+    type: 'preference_test' as QuestionType,
+    title: 'Prueba de preferencia de ejemplo',
+    description: 'Comparación de diseños para evaluar preferencias',
     required: true,
     showConditionally: false,
-    fileUrls: [],
-    deviceFrame: false
+    files: [],
+    deviceFrame: true
   }
 ];
 
@@ -129,6 +133,8 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
     handleAddChoice,
     handleRemoveChoice,
     handleFileUpload,
+    handleMultipleFilesUpload,
+    handleFileDelete,
     handleRandomizeChange,
     handleAddQuestion,
     openAddQuestionModal,
@@ -136,12 +142,18 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
     handleSave,
     handlePreview,
     closeModal,
+    initializeDefaultQuestions,
     // Constantes
     questionTypes
   } = useCognitiveTaskForm(researchId);
 
-  // No intentamos modificar formData directamente a través de setFormData
-  // Las preguntas predeterminadas deberían ser manejadas por el hook
+  // Agregar preguntas de ejemplo cuando se carga el componente por primera vez
+  useEffect(() => {
+    // Solo inicializar con preguntas por defecto si no hay preguntas y no está cargando
+    if (!isLoading && formData.questions.length === 0) {
+      initializeDefaultQuestions(createDefaultQuestions());
+    }
+  }, [isLoading, formData.questions.length, initializeDefaultQuestions]);
 
   // Callback para notificar al componente padre cuando se guardan los datos
   const handleSaveWithCallback = React.useCallback(async () => {
@@ -212,6 +224,8 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
                 onAddChoice={handleAddChoice}
                 onRemoveChoice={handleRemoveChoice}
                 onFileUpload={handleFileUpload}
+                onMultipleFilesUpload={handleMultipleFilesUpload}
+                onFileDelete={handleFileDelete}
                 disabled={isSaving}
                 validationErrors={validationErrors}
               />

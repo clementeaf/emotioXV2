@@ -191,4 +191,5 @@ export interface UseCognitiveTaskFormResult {
   handlePreview: () => void;
   validateForm: () => boolean;
   closeModal: () => void;
+  initializeDefaultQuestions: (defaultQuestions: Question[]) => void;
 } 
