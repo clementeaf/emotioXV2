@@ -282,10 +282,9 @@ export class CognitiveTaskController {
 
   /**
    * Obtiene todos los formularios CognitiveTask
-   * @param event Evento de API Gateway
    * @returns Respuesta HTTP con todos los formularios CognitiveTask
    */
-  async getAllCognitiveTaskForms(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  async getAllCognitiveTaskForms(): Promise<APIGatewayProxyResult> {
     try {
       // Obtener todos los formularios CognitiveTask usando el servicio
       const forms = await this.cognitiveTaskService.getAllForms();

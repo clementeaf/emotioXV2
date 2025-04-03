@@ -1,11 +1,17 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, UpdateCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
-import { uuidv4 } from '../utils/id-generator';
+import { 
+  DynamoDBDocumentClient, 
+  GetCommand, 
+  PutCommand, 
+  UpdateCommand, 
+  QueryCommand,
+  DeleteCommand
+} from '@aws-sdk/lib-dynamodb';
+import { v4 as uuidv4 } from 'uuid';
 import {
   CognitiveTaskFormData,
   Question
 } from '../../../shared/interfaces/cognitive-task.interface';
-import { DynamoDB } from 'aws-sdk';
 
 /**
  * Registro completo de un formulario CognitiveTask en la base de datos
@@ -47,19 +53,6 @@ export interface CognitiveTaskDynamoItem {
   createdAt: string;
   updatedAt: string;
 }
-
-// Función helper para obtener la instancia de DynamoDB
-const getDB = (): DynamoDB.DocumentClient => {
-  const options: DynamoDB.DocumentClient.DocumentClientOptions & { region?: string; endpoint?: string } = {};
-  
-  // Para entornos de desarrollo local
-  if (process.env.IS_OFFLINE === 'true') {
-    options.region = 'localhost';
-    options.endpoint = 'http://localhost:8000';
-  }
-  
-  return new DynamoDB.DocumentClient(options);
-};
 
 /**
  * Modelo para manejar las operaciones de formularios CognitiveTask en DynamoDB

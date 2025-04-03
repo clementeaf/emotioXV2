@@ -45,6 +45,14 @@
       "upload": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/s3/upload",
       "download": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/s3/download/{key}",
       "delete": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/s3/delete/{key}"
+    },
+    "cognitiveTask": {
+      "create": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/cognitive-task",
+      "get": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/cognitive-task/{id}",
+      "getByResearch": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/research/{researchId}/cognitive-task",
+      "update": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/cognitive-task/{id}",
+      "delete": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/cognitive-task/{id}",
+      "createOrUpdate": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/research/{researchId}/cognitive-task"
     }
   },
   "_original": {
