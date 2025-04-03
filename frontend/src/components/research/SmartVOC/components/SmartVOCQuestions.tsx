@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { SmartVOCQuestionsProps, SmartVOCQuestion } from '../types';
 import { UI_TEXTS } from '../constants';
@@ -13,6 +13,19 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
   onRemoveQuestion,
   disabled
 }) => {
+  // Función para propagar el nombre de la empresa a todas las preguntas que lo utilizan
+  const syncCompanyName = (companyName: string) => {
+    // Actualizar todas las preguntas que usan companyName
+    questions.forEach(question => {
+      if (['CSAT', 'NEV', 'NPS'].includes(question.type) && 
+          question.config.companyName !== companyName) {
+        onUpdateQuestion(question.id, {
+          config: { ...question.config, companyName }
+        });
+      }
+    });
+  };
+
   // Renderiza la configuración específica para cada tipo de pregunta
   const renderQuestionConfig = (question: SmartVOCQuestion) => {
     switch (question.type) {
@@ -35,16 +48,25 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
             </div>
             <div className="flex items-center gap-4">
               <span className="text-sm font-medium text-neutral-900">{UI_TEXTS.QUESTIONS.COMPANY_NAME_LABEL}</span>
-              <input 
-                type="text" 
-                value={question.config.companyName || ''}
-                onChange={(e) => onUpdateQuestion(question.id, {
-                  config: { ...question.config, companyName: e.target.value }
-                })}
-                className="flex-1 h-10 px-3 rounded-lg bg-neutral-50 border border-neutral-200 text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                placeholder={UI_TEXTS.QUESTIONS.COMPANY_NAME_PLACEHOLDER}
-                disabled={disabled}
-              />
+              <div className="flex-1 relative">
+                <input 
+                  type="text" 
+                  value={question.config.companyName || ''}
+                  onChange={(e) => {
+                    const newCompanyName = e.target.value;
+                    // Sincronizar con todas las preguntas que usan companyName
+                    syncCompanyName(newCompanyName);
+                  }}
+                  className="w-full h-10 px-3 rounded-lg bg-neutral-50 border border-neutral-200 text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  placeholder={UI_TEXTS.QUESTIONS.COMPANY_NAME_PLACEHOLDER}
+                  disabled={disabled}
+                />
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <div className="text-xs text-amber-600 bg-amber-50 px-1 py-0.5 rounded">
+                    Se reutiliza
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         );
@@ -131,16 +153,25 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
           <div className="space-y-4">
             <div className="flex items-center gap-4">
               <span className="text-sm font-medium text-neutral-900">{UI_TEXTS.QUESTIONS.COMPANY_NAME_LABEL}</span>
-              <input 
-                type="text" 
-                value={question.config.companyName || ''}
-                onChange={(e) => onUpdateQuestion(question.id, {
-                  config: { ...question.config, companyName: e.target.value }
-                })}
-                className="flex-1 h-10 px-3 rounded-lg bg-neutral-50 border border-neutral-200 text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                placeholder={UI_TEXTS.QUESTIONS.COMPANY_NAME_PLACEHOLDER}
-                disabled={disabled}
-              />
+              <div className="flex-1 relative">
+                <input 
+                  type="text" 
+                  value={question.config.companyName || ''}
+                  onChange={(e) => {
+                    const newCompanyName = e.target.value;
+                    // Sincronizar con todas las preguntas que usan companyName
+                    syncCompanyName(newCompanyName);
+                  }}
+                  className="w-full h-10 px-3 rounded-lg bg-neutral-50 border border-neutral-200 text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  placeholder={UI_TEXTS.QUESTIONS.COMPANY_NAME_PLACEHOLDER}
+                  disabled={disabled}
+                />
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <div className="text-xs text-amber-600 bg-amber-50 px-1 py-0.5 rounded">
+                    Se reutiliza
+                  </div>
+                </div>
+              </div>
             </div>
             <div className="flex items-center gap-4">
               <span className="text-sm font-medium text-neutral-900">NEV</span>
@@ -163,16 +194,25 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
           <div className="space-y-4">
             <div className="flex items-center gap-4">
               <span className="text-sm font-medium text-neutral-900">{UI_TEXTS.QUESTIONS.COMPANY_NAME_LABEL}</span>
-              <input 
-                type="text" 
-                value={question.config.companyName || ''}
-                onChange={(e) => onUpdateQuestion(question.id, {
-                  config: { ...question.config, companyName: e.target.value }
-                })}
-                className="flex-1 h-10 px-3 rounded-lg bg-neutral-50 border border-neutral-200 text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                placeholder={UI_TEXTS.QUESTIONS.COMPANY_NAME_PLACEHOLDER}
-                disabled={disabled}
-              />
+              <div className="flex-1 relative">
+                <input 
+                  type="text" 
+                  value={question.config.companyName || ''}
+                  onChange={(e) => {
+                    const newCompanyName = e.target.value;
+                    // Sincronizar con todas las preguntas que usan companyName
+                    syncCompanyName(newCompanyName);
+                  }}
+                  className="w-full h-10 px-3 rounded-lg bg-neutral-50 border border-neutral-200 text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  placeholder={UI_TEXTS.QUESTIONS.COMPANY_NAME_PLACEHOLDER}
+                  disabled={disabled}
+                />
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <div className="text-xs text-amber-600 bg-amber-50 px-1 py-0.5 rounded">
+                    Se reutiliza
+                  </div>
+                </div>
+              </div>
             </div>
             <div className="flex items-center gap-4">
               <span className="text-sm font-medium text-neutral-900">NPS</span>
