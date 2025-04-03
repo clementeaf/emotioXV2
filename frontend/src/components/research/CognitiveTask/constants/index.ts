@@ -45,6 +45,24 @@ export const UI_TEXTS = {
     ADD_QUESTION: 'Agregar pregunta',
     QUESTION_TITLE_PLACEHOLDER: 'Agregar pregunta',
   },
+  TEXT_QUESTION: {
+    QUESTION_TEXT_LABEL: 'Título de la pregunta',
+    QUESTION_TEXT_PLACEHOLDER: 'Introduce el título de la pregunta',
+    DESCRIPTION_LABEL: 'Descripción',
+    DESCRIPTION_PLACEHOLDER: 'Introduce una descripción opcional',
+    PLACEHOLDER_LABEL: 'Texto de marcador de posición',
+    PLACEHOLDER_INPUT: 'Ej: Escribe tu respuesta aquí',
+    PLACEHOLDER_TEXTAREA: 'Ej: Escribe tu respuesta detallada aquí',
+  },
+  CHOICE_QUESTION: {
+    QUESTION_TITLE_LABEL: 'Título de la pregunta',
+    QUESTION_TITLE_PLACEHOLDER: 'Introduce el título de la pregunta',
+    DESCRIPTION_LABEL: 'Descripción',
+    DESCRIPTION_PLACEHOLDER: 'Introduce una descripción opcional',
+    OPTIONS_LABEL: 'Opciones',
+    ADD_OPTION: 'Añadir opción',
+    OPTION_PLACEHOLDER: 'Opción'
+  },
   QUESTION_TYPES: {
     SHORT_TEXT: 'Texto Corto',
     LONG_TEXT: 'Texto Largo',

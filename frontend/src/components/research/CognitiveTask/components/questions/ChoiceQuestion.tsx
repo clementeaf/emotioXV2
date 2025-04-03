@@ -26,8 +26,8 @@ const TrashIcon = () => (
 
 // Textos predeterminados para evitar errores
 const DEFAULT_TEXTS = {
-  QUESTION_TEXT_LABEL: 'Texto de la pregunta',
-  QUESTION_TEXT_PLACEHOLDER: 'Introduce el texto de la pregunta',
+  QUESTION_TITLE_LABEL: 'Título de la pregunta',
+  QUESTION_TITLE_PLACEHOLDER: 'Introduce el título de la pregunta',
   DESCRIPTION_LABEL: 'Descripción',
   DESCRIPTION_PLACEHOLDER: 'Introduce una descripción opcional',
   OPTIONS_LABEL: 'Opciones',
@@ -35,19 +35,8 @@ const DEFAULT_TEXTS = {
   OPTION_PLACEHOLDER: 'Opción'
 };
 
-// Definición del tipo para errores de validación
-type ValidationError = {
-  id: string;
-  field: string;
-  message: string;
-};
-
 /**
  * Componente que maneja la configuración de preguntas de selección (opción única, múltiple y ranking)
- * 
- * Nota: Usamos 'as any' en varias partes para evitar errores de tipo mientras se completa
- * la definición de los tipos. En una implementación completa, estos tipos deberían
- * estar correctamente definidos en el archivo de tipos.
  */
 export const ChoiceQuestion: React.FC<ChoiceQuestionProps> = ({
   question,
@@ -57,36 +46,35 @@ export const ChoiceQuestion: React.FC<ChoiceQuestionProps> = ({
   validationErrors,
   disabled
 }) => {
-  // Buscar error de validación si existe
-  const error = Array.isArray(validationErrors) 
-    ? validationErrors.find(
-        (err: ValidationError) => err.id === question.id && err.field === 'text'
-      )
-    : undefined;
+  // Buscar errores para esta pregunta
+  const questionId = question.id;
+  const titleError = validationErrors[`question_${questionId}_title`];
+  const choicesError = validationErrors[`question_${questionId}_choices`];
 
   return (
     <div className="space-y-4">
       <div>
         <label className="block text-sm font-medium text-neutral-700 mb-1">
-          {(UI_TEXTS as any).CHOICE_QUESTION?.QUESTION_TEXT_LABEL || DEFAULT_TEXTS.QUESTION_TEXT_LABEL}
+          {UI_TEXTS.CHOICE_QUESTION?.QUESTION_TITLE_LABEL || DEFAULT_TEXTS.QUESTION_TITLE_LABEL}
         </label>
         <Input
-          value={(question as any).text || ''}
-          onChange={(e) => onQuestionChange({ text: e.target.value } as any)}
-          placeholder={(UI_TEXTS as any).CHOICE_QUESTION?.QUESTION_TEXT_PLACEHOLDER || DEFAULT_TEXTS.QUESTION_TEXT_PLACEHOLDER}
+          value={question.title || ''}
+          onChange={(e) => onQuestionChange({ title: e.target.value })}
+          placeholder={UI_TEXTS.CHOICE_QUESTION?.QUESTION_TITLE_PLACEHOLDER || DEFAULT_TEXTS.QUESTION_TITLE_PLACEHOLDER}
           disabled={disabled}
-          error={error?.message}
+          error={!!titleError}
+          helperText={titleError}
         />
       </div>
 
       <div>
         <label className="block text-sm font-medium text-neutral-700 mb-1">
-          {(UI_TEXTS as any).CHOICE_QUESTION?.DESCRIPTION_LABEL || DEFAULT_TEXTS.DESCRIPTION_LABEL}
+          {UI_TEXTS.CHOICE_QUESTION?.DESCRIPTION_LABEL || DEFAULT_TEXTS.DESCRIPTION_LABEL}
         </label>
         <Textarea
-          value={(question as any).description || ''}
-          onChange={(e) => onQuestionChange({ description: e.target.value } as any)}
-          placeholder={(UI_TEXTS as any).CHOICE_QUESTION?.DESCRIPTION_PLACEHOLDER || DEFAULT_TEXTS.DESCRIPTION_PLACEHOLDER}
+          value={question.description || ''}
+          onChange={(e) => onQuestionChange({ description: e.target.value })}
+          placeholder={UI_TEXTS.CHOICE_QUESTION?.DESCRIPTION_PLACEHOLDER || DEFAULT_TEXTS.DESCRIPTION_PLACEHOLDER}
           rows={3}
           disabled={disabled}
         />
@@ -95,7 +83,8 @@ export const ChoiceQuestion: React.FC<ChoiceQuestionProps> = ({
       <div>
         <div className="flex items-center justify-between mb-2">
           <label className="block text-sm font-medium text-neutral-700">
-            {(UI_TEXTS as any).CHOICE_QUESTION?.OPTIONS_LABEL || DEFAULT_TEXTS.OPTIONS_LABEL}
+            {UI_TEXTS.CHOICE_QUESTION?.OPTIONS_LABEL || DEFAULT_TEXTS.OPTIONS_LABEL}
+            {choicesError && <span className="ml-2 text-xs text-red-500">{choicesError}</span>}
           </label>
           <Button
             variant="outline"
@@ -103,33 +92,35 @@ export const ChoiceQuestion: React.FC<ChoiceQuestionProps> = ({
             onClick={onAddChoice}
             disabled={disabled}
           >
-            {(UI_TEXTS as any).CHOICE_QUESTION?.ADD_OPTION || DEFAULT_TEXTS.ADD_OPTION}
+            {UI_TEXTS.CHOICE_QUESTION?.ADD_OPTION || DEFAULT_TEXTS.ADD_OPTION}
           </Button>
         </div>
 
         <div className="space-y-2">
-          {(question as any).choices?.map((choice: any, index: number) => (
+          {question.choices?.map((choice, index) => (
             <div key={choice.id} className="flex items-center gap-2">
               <Input
                 value={choice.text || ''}
                 onChange={(e) => 
                   onQuestionChange({
-                    choices: (question as any).choices?.map((c: any) => 
+                    choices: question.choices?.map(c => 
                       c.id === choice.id 
                         ? { ...c, text: e.target.value } 
                         : c
                     )
-                  } as any)
+                  })
                 }
-                placeholder={`${(UI_TEXTS as any).CHOICE_QUESTION?.OPTION_PLACEHOLDER || DEFAULT_TEXTS.OPTION_PLACEHOLDER} ${index + 1}`}
+                placeholder={`${UI_TEXTS.CHOICE_QUESTION?.OPTION_PLACEHOLDER || DEFAULT_TEXTS.OPTION_PLACEHOLDER} ${index + 1}`}
                 disabled={disabled}
                 className="flex-1"
+                error={!!validationErrors[`question_${questionId}_choice_${index}`]}
+                helperText={validationErrors[`question_${questionId}_choice_${index}`]}
               />
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => onRemoveChoice(choice.id)}
-                disabled={disabled || ((question as any).choices?.length || 0) <= 1}
+                disabled={disabled || (question.choices?.length || 0) <= 1}
               >
                 <TrashIcon />
               </Button>
