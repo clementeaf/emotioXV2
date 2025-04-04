@@ -283,7 +283,8 @@ async function exportEndpoints() {
           Stage: deploymentInfo.stage,
           AuthApiUrl: `${deploymentInfo.apiEndpoint}/auth`,
           ResearchApiUrl: `${deploymentInfo.apiEndpoint}/research`,
-          WelcomeScreenApiUrl: `${deploymentInfo.apiEndpoint}/welcome-screens`
+          WelcomeScreenApiUrl: `${deploymentInfo.apiEndpoint}/welcome-screens`,
+          EyeTrackingRecruitApiUrl: `${deploymentInfo.apiEndpoint}/eye-tracking-recruit`
         };
         
         // Crear un objeto endpoints simple
@@ -315,7 +316,8 @@ async function exportEndpoints() {
               Stage: DEFAULT_STAGE,
               AuthApiUrl: `${apiEndpoint}/auth`,
               ResearchApiUrl: `${apiEndpoint}/research`,
-              WelcomeScreenApiUrl: `${apiEndpoint}/welcome-screens`
+              WelcomeScreenApiUrl: `${apiEndpoint}/welcome-screens`,
+              EyeTrackingRecruitApiUrl: `${apiEndpoint}/eye-tracking-recruit`
             };
             
             endpoints = {
@@ -336,7 +338,8 @@ async function exportEndpoints() {
             Stage: DEFAULT_STAGE,
             AuthApiUrl: "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/auth",
             ResearchApiUrl: "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/research",
-            WelcomeScreenApiUrl: "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/welcome-screens"
+            WelcomeScreenApiUrl: "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/welcome-screens",
+            EyeTrackingRecruitApiUrl: "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/eye-tracking-recruit"
           };
           
           endpoints = {
@@ -390,6 +393,33 @@ async function exportEndpoints() {
           getByResearch: `${apiBaseUrl}/thank-you-screens/research/{researchId}`,
           update: `${apiBaseUrl}/thank-you-screens/{id}`,
           delete: `${apiBaseUrl}/thank-you-screens/{id}`
+        },
+        eyeTrackingRecruit: {
+          // Configuraciones
+          getConfigByResearchId: `${apiBaseUrl}/eye-tracking-recruit/research/{researchId}/config`,
+          createConfig: `${apiBaseUrl}/eye-tracking-recruit/research/{researchId}/config`,
+          updateConfig: `${apiBaseUrl}/eye-tracking-recruit/config/{configId}`,
+          completeConfig: `${apiBaseUrl}/eye-tracking-recruit/config/{configId}/complete`,
+          deleteConfig: `${apiBaseUrl}/eye-tracking-recruit/config/{configId}`,
+          
+          // Participantes
+          createParticipant: `${apiBaseUrl}/eye-tracking-recruit/config/{configId}/participant`,
+          updateParticipantStatus: `${apiBaseUrl}/eye-tracking-recruit/participant/{participantId}/status`,
+          getParticipantsByConfigId: `${apiBaseUrl}/eye-tracking-recruit/config/{configId}/participants`,
+          getStatsByConfigId: `${apiBaseUrl}/eye-tracking-recruit/config/{configId}/stats`,
+          
+          // Enlaces de reclutamiento
+          generateRecruitmentLink: `${apiBaseUrl}/eye-tracking-recruit/config/{configId}/link`,
+          getActiveLinks: `${apiBaseUrl}/eye-tracking-recruit/config/{configId}/links`,
+          deactivateLink: `${apiBaseUrl}/eye-tracking-recruit/link/{token}/deactivate`,
+          validateRecruitmentLink: `${apiBaseUrl}/eye-tracking-recruit/link/{token}/validate`,
+          
+          // Resumen de investigación
+          getResearchSummary: `${apiBaseUrl}/eye-tracking-recruit/research/{researchId}/summary`,
+          
+          // Endpoints públicos
+          registerPublicParticipant: `${apiBaseUrl}/eye-tracking-recruit/public/participant/start`,
+          updatePublicParticipantStatus: `${apiBaseUrl}/eye-tracking-recruit/public/participant/{participantId}/status`
         }
       },
       "_original": {
@@ -417,6 +447,7 @@ async function exportEndpoints() {
       authApiUrl: outputs.AuthApiUrl || `${outputs.ServiceEndpoint}/auth`,
       researchApiUrl: outputs.ResearchApiUrl || `${outputs.ServiceEndpoint}/research`,
       welcomeScreenApiUrl: outputs.WelcomeScreenApiUrl || `${outputs.ServiceEndpoint}/welcome-screens`,
+      eyeTrackingRecruitApiUrl: outputs.EyeTrackingRecruitApiUrl || `${outputs.ServiceEndpoint}/eye-tracking-recruit`,
       webSocketEndpoint: outputs.WebSocketEndpoint || '',
       stage: outputs.Stage || DEFAULT_STAGE,
       region: outputs.Region || DEFAULT_REGION,
@@ -441,6 +472,25 @@ async function exportEndpoints() {
           getByResearch: '/research/{researchId}',
           update: '/{id}',
           delete: '/{id}'
+        },
+        // Añadir endpoints para eye-tracking-recruit
+        eyeTrackingRecruit: {
+          getConfigByResearchId: '/research/{researchId}/config',
+          createConfig: '/research/{researchId}/config',
+          updateConfig: '/config/{configId}',
+          completeConfig: '/config/{configId}/complete',
+          deleteConfig: '/config/{configId}',
+          createParticipant: '/config/{configId}/participant',
+          updateParticipantStatus: '/participant/{participantId}/status',
+          getParticipantsByConfigId: '/config/{configId}/participants',
+          getStatsByConfigId: '/config/{configId}/stats',
+          generateRecruitmentLink: '/config/{configId}/link',
+          getActiveLinks: '/config/{configId}/links',
+          deactivateLink: '/link/{token}/deactivate',
+          validateRecruitmentLink: '/link/{token}/validate',
+          getResearchSummary: '/research/{researchId}/summary',
+          registerPublicParticipant: '/public/participant/start',
+          updatePublicParticipantStatus: '/public/participant/{participantId}/status'
         }
       }
     };
@@ -475,6 +525,7 @@ export interface ApiEndpoint {
   authApiUrl: string;
   researchApiUrl: string;
   welcomeScreenApiUrl: string;
+  eyeTrackingRecruitApiUrl: string;
   webSocketEndpoint: string;
   stage: string;
   region: string;
@@ -498,6 +549,24 @@ export interface ApiEndpoint {
       getByResearch: string;
       update: string;
       delete: string;
+    };
+    eyeTrackingRecruit: {
+      getConfigByResearchId: string;
+      createConfig: string;
+      updateConfig: string;
+      completeConfig: string;
+      deleteConfig: string;
+      createParticipant: string;
+      updateParticipantStatus: string;
+      getParticipantsByConfigId: string;
+      getStatsByConfigId: string;
+      generateRecruitmentLink: string;
+      getActiveLinks: string;
+      deactivateLink: string;
+      validateRecruitmentLink: string;
+      getResearchSummary: string;
+      registerPublicParticipant: string;
+      updatePublicParticipantStatus: string;
     };
   };
 }

@@ -1,93 +1,49 @@
 import React from 'react';
-import { ErrorModalProps } from '../types';
-import { UI_TEXTS } from '../constants';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
+import { Button } from '@/components/ui/Button';
+import { ErrorModalData } from '../types';
+
+interface ErrorModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  error: ErrorModalData | null;
+}
 
 /**
  * Componente para mostrar errores y mensajes en un modal
  */
-export const ErrorModal: React.FC<ErrorModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  error 
-}) => {
-  // Si no debe mostrarse o no hay error, no renderizar nada
-  if (!isOpen || !error) {
-    return null;
-  }
+export const ErrorModal: React.FC<ErrorModalProps> = ({ isOpen, onClose, error }) => {
+  if (!error) return null;
 
-  // Determinar el título según el tipo
-  const getModalTitle = () => {
+  const getColorClass = () => {
     switch (error.type) {
       case 'error':
-        return UI_TEXTS.MODAL.ERROR_TITLE;
-      case 'info':
-        return UI_TEXTS.MODAL.INFO_TITLE;
+        return 'text-red-500';
+      case 'warning':
+        return 'text-amber-500';
       case 'success':
-        return UI_TEXTS.MODAL.SUCCESS_TITLE;
+        return 'text-green-500';
+      case 'info':
       default:
-        return error.title || UI_TEXTS.MODAL.ERROR_TITLE;
+        return 'text-blue-500';
     }
   };
-
-  // Determinar las clases de color según el tipo
-  const getColorClasses = () => {
-    switch (error.type) {
-      case 'error':
-        return {
-          header: 'bg-red-50 text-red-800',
-          button: 'bg-red-500 hover:bg-red-600 text-white',
-          icon: 'text-red-500'
-        };
-      case 'info':
-        return {
-          header: 'bg-blue-50 text-blue-800',
-          button: 'bg-blue-500 hover:bg-blue-600 text-white',
-          icon: 'text-blue-500'
-        };
-      case 'success':
-        return {
-          header: 'bg-green-50 text-green-800',
-          button: 'bg-green-500 hover:bg-green-600 text-white',
-          icon: 'text-green-500'
-        };
-      default:
-        return {
-          header: 'bg-red-50 text-red-800',
-          button: 'bg-red-500 hover:bg-red-600 text-white',
-          icon: 'text-red-500'
-        };
-    }
-  };
-
-  const colorClasses = getColorClasses();
-  const title = getModalTitle();
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-30">
-      <div className="bg-white rounded-lg shadow-lg max-w-md w-full overflow-hidden">
-        <div className={`p-4 flex justify-between items-center ${colorClasses.header}`}>
-          <h3 className="text-lg font-medium">{title}</h3>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className={getColorClass()}>
+            {error.title}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="py-4">
+          <p className="text-sm text-neutral-600">{error.message}</p>
         </div>
-        <div className="p-6">
-          <p className="text-gray-700 mb-6">{error.message}</p>
-          <div className="flex justify-end">
-            <button
-              onClick={onClose}
-              className={`px-4 py-2 text-sm font-medium rounded ${colorClasses.button}`}
-            >
-              {UI_TEXTS.MODAL.CLOSE_BUTTON}
-            </button>
-          </div>
+        <div className="mt-4 flex justify-end">
+          <Button onClick={onClose}>Cerrar</Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }; 

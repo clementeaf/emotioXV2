@@ -67,12 +67,7 @@ const researchStages = [
     isCompleted: false,
     isEnabled: true,
     subsections: [
-      { id: 'screener', label: 'Screener', isCompleted: false, isEnabled: true },
-      { id: 'welcome-screen', label: 'Welcome screen', isCompleted: false, isEnabled: true },
-      { id: 'implicit-association', label: 'Implicit Association', isCompleted: false, isEnabled: true },
-      { id: 'cognitive-task', label: 'Cognitive task', isCompleted: false, isEnabled: true },
-      { id: 'eye-tracking', label: 'Eye Tracking', isCompleted: false, isEnabled: true },
-      { id: 'thank-you', label: 'Thank you screen', isCompleted: false, isEnabled: true },
+      { id: 'eye-tracking', label: 'Eye Tracking', isCompleted: false, isEnabled: true }
     ],
   },
   {
@@ -176,13 +171,13 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
   const searchParams = useSearchParams();
   const { hasDraft, currentDraft } = useResearch();
   const isAimFramework = searchParams?.get('aim') === 'true';
-  
-  const section = searchParams?.get('section');
-  const stage = searchParams?.get('stage');
-  const researchId = searchParams?.get('research');
+  const currentSection = searchParams?.get('section') || '';
   
   // Agregar estado para investigaciones recientes
   const [recentResearch, setRecentResearch] = useState<Array<{id: string, name: string, technique: string}>>([]);
+  // Estados para controlar mensajes de carga y temporales
+  const [isLoadingResearch, setIsLoadingResearch] = useState<boolean>(true);
+  const [showNoResearchMessage, setShowNoResearchMessage] = useState<boolean>(false);
   
   // Estado para controlar el modal de confirmación de eliminación
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -196,6 +191,8 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
   
   // Cargar las investigaciones recientes
   useEffect(() => {
+    setIsLoadingResearch(true);
+    
     try {
       const storedList = localStorage.getItem('research_list');
       if (storedList) {
@@ -212,6 +209,7 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
               await researchAPI.get(mostRecent.id);
               // Si llegamos aquí, la investigación existe
               setRecentResearch([mostRecent]);
+              setIsLoadingResearch(false);
             } catch (error: any) {
               // Si es un error 404, la investigación ya no existe
               if (error?.response?.status === 404 || 
@@ -232,14 +230,22 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
                   localStorage.removeItem(`eye-tracking_nonexistent_${mostRecent.id}`);
                   localStorage.removeItem(`smart-voc_nonexistent_${mostRecent.id}`);
                   
-                  setRecentResearch([]); // Lista vacía ya que la investigación no existe
+                  // Mostrar mensaje de no hay investigaciones por 2 segundos
+                  setRecentResearch([]);
+                  setShowNoResearchMessage(true);
+                  setTimeout(() => {
+                    setShowNoResearchMessage(false);
+                  }, 2000);
+                  setIsLoadingResearch(false);
                 } catch (localStorageError) {
                   console.error('Error eliminando datos de localStorage:', localStorageError);
+                  setIsLoadingResearch(false);
                 }
               } else {
                 // Si es otro tipo de error (no 404), mantener la investigación en la lista
                 // asumiendo que es un error temporal de red
                 setRecentResearch([mostRecent]);
+                setIsLoadingResearch(false);
               }
             }
           };
@@ -247,11 +253,26 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
           // Ejecutar la validación
           validateResearch();
         } else {
+          // No hay investigaciones en la lista
           setRecentResearch([]);
+          setShowNoResearchMessage(true);
+          setTimeout(() => {
+            setShowNoResearchMessage(false);
+          }, 2000);
+          setIsLoadingResearch(false);
         }
+      } else {
+        // No hay lista de investigaciones
+        setRecentResearch([]);
+        setShowNoResearchMessage(true);
+        setTimeout(() => {
+          setShowNoResearchMessage(false);
+        }, 2000);
+        setIsLoadingResearch(false);
       }
     } catch (error) {
       console.error('Error cargando investigación en curso:', error);
+      setIsLoadingResearch(false);
     }
   }, [activeResearch]);
   
@@ -480,28 +501,15 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
             <ul className="space-y-1">
               <li>
                 <Link 
-                  href={`/dashboard?research=${activeResearch.id}&aim=true&section=screener`}
+                  href={`/dashboard?research=${activeResearch.id}&aim=true&section=eye-tracking-recruit`}
                   className={cn(
                     'flex items-center text-sm px-3 py-2 rounded-md transition-colors',
-                    searchParams.get('section') === 'screener' 
+                    searchParams.get('section') === 'eye-tracking-recruit' 
                       ? 'bg-blue-50 text-blue-600' 
                       : 'text-neutral-700 hover:bg-neutral-100'
                   )}
                 >
-                  Screener
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href={`/dashboard?research=${activeResearch.id}&aim=true&section=welcome-screen-participant`}
-                  className={cn(
-                    'flex items-center text-sm px-3 py-2 rounded-md transition-colors',
-                    searchParams.get('section') === 'welcome-screen-participant' 
-                      ? 'bg-blue-50 text-blue-600' 
-                      : 'text-neutral-700 hover:bg-neutral-100'
-                  )}
-                >
-                  Welcome screen
+                  Eye Tracking
                 </Link>
               </li>
             </ul>
@@ -621,12 +629,21 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
         </nav>
         
         {/* Mostrar solo la investigación más reciente */}
-        {recentResearch.length > 0 && (
-          <div className="p-4 border-t border-neutral-200">
-            <h3 className="font-semibold text-xs text-neutral-500 uppercase mb-3 flex items-center">
-              <span className="text-blue-600 mr-1">•</span>
-              Investigación en curso
-            </h3>
+        <div className="p-4 border-t border-neutral-200">
+          <h3 className="font-semibold text-xs text-neutral-500 uppercase mb-3 flex items-center">
+            <span className="text-blue-600 mr-1">•</span>
+            INVESTIGACIÓN EN CURSO
+          </h3>
+          
+          {isLoadingResearch ? (
+            <div className="py-2 px-3 text-sm text-neutral-500">
+              Buscando investigaciones en curso...
+            </div>
+          ) : showNoResearchMessage ? (
+            <div className="py-2 px-3 text-sm text-neutral-500">
+              No hay investigaciones en curso
+            </div>
+          ) : recentResearch.length > 0 ? (
             <ul className="space-y-1">
               {recentResearch.slice(0, 1).map((item) => (
                 <li key={item.id} className="relative">
@@ -662,8 +679,8 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
                 </li>
               ))}
             </ul>
-          </div>
-        )}
+          ) : null}
+        </div>
       </div>
       
       {/* Modal de confirmación */}

@@ -10,6 +10,7 @@ import { smartVocFormController } from './controllers/smartVocForm.controller';
 import { eyeTrackingHandler } from './controllers/eyeTracking.controller';
 import { s3Handler } from './controllers/s3.controller';
 import { cognitiveTaskController } from './controllers/cognitiveTask.controller';
+import { eyeTrackingRecruitHandler } from './controllers/eyeTrackingRecruit.controller';
 
 /**
  * Punto de entrada principal para las funciones serverless
@@ -91,6 +92,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       } else if (path.startsWith('/eye-tracking')) {
         console.log('Enrutando a eyeTrackingHandler:', path);
         return eyeTrackingHandler(event);
+      } else if (path.startsWith('/eye-tracking-recruit')) {
+        console.log('Enrutando a eyeTrackingRecruitHandler:', path);
+        return eyeTrackingRecruitHandler(event);
       } else if (path.startsWith('/s3')) {
         console.log('Enrutando a s3Handler:', path);
         return s3Handler(event);

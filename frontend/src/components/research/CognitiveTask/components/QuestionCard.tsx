@@ -1,6 +1,9 @@
 import React from 'react';
+import { Input } from '@/components/ui/Input';
 import { Switch } from '@/components/ui/Switch';
-import { QuestionCardProps } from '../types';
+import { Textarea } from '@/components/ui/Textarea';
+import { Button } from '@/components/ui/Button';
+import { Question, QuestionCardProps } from '../types';
 import { UI_TEXTS } from '../constants';
 import { TextQuestion } from './questions/TextQuestion';
 import { ChoiceQuestion } from './questions/ChoiceQuestion';
@@ -16,17 +19,18 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
   onAddChoice,
   onRemoveChoice,
   onFileUpload,
-  onMultipleFilesUpload,
   onFileDelete,
-  disabled,
-  validationErrors,
+  disabled = false,
+  validationErrors = {},
   isUploading,
-  uploadProgress,
-  currentFileIndex,
-  totalFiles
+  uploadProgress
 }) => {
-  // Renderiza el contenido específico de la pregunta según su tipo
-  const renderQuestionContent = () => {
+  const renderQuestionInput = () => {
+    const baseProps = {
+      disabled,
+      validationErrors
+    };
+
     switch (question.type) {
       case 'short_text':
       case 'long_text':
@@ -34,11 +38,10 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
           <TextQuestion
             question={question}
             onQuestionChange={(updates) => onQuestionChange(question.id, updates)}
-            validationErrors={validationErrors}
-            disabled={disabled}
+            {...baseProps}
           />
         );
-      
+
       case 'single_choice':
       case 'multiple_choice':
       case 'ranking':
@@ -46,97 +49,68 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
           <ChoiceQuestion
             question={question}
             onQuestionChange={(updates) => onQuestionChange(question.id, updates)}
-            onAddChoice={() => onAddChoice?.(question.id)}
-            onRemoveChoice={(choiceId) => onRemoveChoice?.(question.id, choiceId)}
-            validationErrors={validationErrors}
-            disabled={disabled}
+            onAddChoice={() => onAddChoice && onAddChoice(question.id)}
+            onRemoveChoice={(choiceId) => onRemoveChoice && onRemoveChoice(question.id, choiceId)}
+            {...baseProps}
           />
         );
-      
+
       case 'linear_scale':
         return (
           <ScaleQuestion
             question={question}
             onQuestionChange={(updates) => onQuestionChange(question.id, updates)}
-            validationErrors={validationErrors}
-            disabled={disabled}
+            {...baseProps}
           />
         );
-      
+
       case 'navigation_flow':
       case 'preference_test':
         return (
           <FileUploadQuestion
             question={question}
             onQuestionChange={(updates) => onQuestionChange(question.id, updates)}
-            onFileUpload={(files) => onFileUpload?.(question.id, files)}
-            onMultipleFilesUpload={(files) => onMultipleFilesUpload?.(question.id, files)}
-            onFileDelete={(fileId) => onFileDelete?.(question.id, fileId)}
-            validationErrors={validationErrors}
-            disabled={disabled}
+            onFileUpload={(files) => onFileUpload && onFileUpload(question.id, files)}
+            onFileDelete={(fileId) => onFileDelete && onFileDelete(question.id, fileId)}
             isUploading={isUploading}
             uploadProgress={uploadProgress}
-            currentFileIndex={currentFileIndex}
-            totalFiles={totalFiles}
+            {...baseProps}
           />
         );
-      
+
       default:
-        return <div>Tipo de pregunta no soportado</div>;
+        return <p className="text-red-500">Tipo de pregunta no soportado: {question.type}</p>;
+    }
+  };
+
+  const getQuestionTypeLabel = () => {
+    switch (question.type) {
+      case 'short_text': return 'Texto Corto';
+      case 'long_text': return 'Texto Largo';
+      case 'single_choice': return 'Opción Única';
+      case 'multiple_choice': return 'Opción Múltiple';
+      case 'linear_scale': return 'Escala Lineal';
+      case 'ranking': return 'Ranking';
+      case 'navigation_flow': return 'Flujo de Navegación';
+      case 'preference_test': return 'Prueba de Preferencia';
+      default: return 'Tipo Desconocido';
     }
   };
 
   return (
-    <div className="mb-6 p-4 bg-white rounded-lg border border-neutral-100 shadow-sm">
-      <div className="mb-4 pb-4 border-b border-neutral-100">
-        <div className="flex items-center justify-between">
-          <h3 className="text-md font-medium">
-            {question.type === 'short_text' && 'Texto Corto'}
-            {question.type === 'long_text' && 'Texto Largo'}
-            {question.type === 'single_choice' && 'Opción Única'}
-            {question.type === 'multiple_choice' && 'Opción Múltiple'}
-            {question.type === 'linear_scale' && 'Escala Lineal'}
-            {question.type === 'ranking' && 'Ranking'}
-            {question.type === 'navigation_flow' && 'Flujo de Navegación'}
-            {question.type === 'preference_test' && 'Prueba de Preferencia'}
-            <span className="ml-2 text-xs font-normal text-neutral-500">ID: {question.id}</span>
-          </h3>
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <span className="text-xs text-neutral-500">{UI_TEXTS.QUESTION_CARD.SHOW_CONDITIONALLY_LABEL}</span>
-              <Switch
-                checked={question.showConditionally}
-                onCheckedChange={(checked) => onQuestionChange(question.id, { showConditionally: checked })}
-                disabled={disabled}
-              />
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="text-xs text-neutral-500">{UI_TEXTS.QUESTION_CARD.REQUIRED_LABEL}</span>
-              <Switch
-                checked={question.required}
-                onCheckedChange={(checked) => onQuestionChange(question.id, { required: checked })}
-                disabled={disabled}
-              />
-            </div>
+    <div className="mb-6 p-6 bg-white rounded-lg shadow-sm border border-gray-100">
+      <div className="mb-4 pb-3 border-b border-gray-100 flex justify-between items-center">
+        <div className="flex items-center">
+          <span className="font-medium text-gray-800">{question.id}</span>
+          <span className="ml-2 text-sm text-gray-500">({getQuestionTypeLabel()})</span>
+        </div>
+        {question.required && (
+          <div className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+            Obligatorio
           </div>
-        </div>
+        )}
       </div>
-      
-      {/* Contenido específico según tipo de pregunta */}
-      {renderQuestionContent()}
-      
-      {/* Configuración del marco de dispositivo */}
-      <div className="mt-4 pt-4 border-t border-neutral-100 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-neutral-600">{UI_TEXTS.QUESTION_CARD.DEVICE_FRAME_LABEL}</span>
-          <Switch
-            checked={question.deviceFrame}
-            onCheckedChange={(checked) => onQuestionChange(question.id, { deviceFrame: checked })}
-            disabled={disabled}
-          />
-        </div>
-        <span className="text-xs text-neutral-500">{UI_TEXTS.QUESTION_CARD.NO_FRAME_LABEL}</span>
-      </div>
+      {renderQuestionInput()}
     </div>
   );
 }; 

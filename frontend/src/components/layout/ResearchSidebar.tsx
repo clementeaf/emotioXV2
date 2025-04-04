@@ -27,8 +27,7 @@ const sections: ResearchSection[] = [
     id: 'recruit',
     title: 'Recruit',
     stages: [
-      { id: 'configuration', title: 'Configuration' },
-      { id: 'participants', title: 'Participants' }
+      { id: 'eye-tracking-recruit', title: 'Eye Tracking' }
     ]
   },
   {

@@ -14,6 +14,7 @@ import { SmartVOCForm } from './SmartVOCForm';
 import { SmartVOCResults } from './SmartVOCResults';
 import { ThankYouScreenForm } from './ThankYouScreenForm';
 import { WelcomeScreenForm } from './WelcomeScreenForm';
+import { RecruitEyeTrackingForm } from './EyeTracking/Recruit/RecruitEyeTrackingForm';
 
 interface ResearchStageManagerProps {
   researchId: string;
@@ -35,6 +36,8 @@ function ResearchStageManagerContent({ researchId }: ResearchStageManagerProps) 
         return <CognitiveTaskForm researchId={researchId} />;
       case 'eye-tracking':
         return <EyeTrackingForm researchId={researchId} />;
+      case 'eye-tracking-recruit':
+        return <RecruitEyeTrackingForm researchId={researchId} />;
       case 'thank-you':
         return <ThankYouScreenForm researchId={researchId} />;
       case 'configuration':
@@ -85,6 +88,8 @@ function ResearchStageManagerContent({ researchId }: ResearchStageManagerProps) 
         return 'Configuración de tareas cognitivas';
       case 'eye-tracking':
         return 'Configuración de seguimiento ocular';
+      case 'eye-tracking-recruit':
+        return 'Configuración de reclutamiento ocular';
       case 'thank-you':
         return 'Configuración de pantalla de agradecimiento';
       case 'configuration':
@@ -112,6 +117,8 @@ function ResearchStageManagerContent({ researchId }: ResearchStageManagerProps) 
         return 'Diseña tareas de evaluación cognitiva para tu investigación.';
       case 'eye-tracking':
         return 'Personaliza el módulo de seguimiento ocular según tus necesidades.';
+      case 'eye-tracking-recruit':
+        return 'Configura el proceso de reclutamiento para el seguimiento ocular.';
       case 'thank-you':
         return 'Configura el mensaje de finalización para los participantes.';
       case 'configuration':

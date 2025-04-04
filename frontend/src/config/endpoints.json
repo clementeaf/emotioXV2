@@ -41,18 +41,23 @@
       "update": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/thank-you-screens/{id}",
       "delete": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/thank-you-screens/{id}"
     },
-    "s3": {
-      "upload": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/s3/upload",
-      "download": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/s3/download/{key}",
-      "delete": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/s3/delete/{key}"
-    },
-    "cognitiveTask": {
-      "create": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/cognitive-task",
-      "get": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/cognitive-task/{id}",
-      "getByResearch": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/research/{researchId}/cognitive-task",
-      "update": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/cognitive-task/{id}",
-      "delete": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/cognitive-task/{id}",
-      "createOrUpdate": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/research/{researchId}/cognitive-task"
+    "eyeTrackingRecruit": {
+      "getConfigByResearchId": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/eye-tracking-recruit/research/{researchId}/config",
+      "createConfig": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/eye-tracking-recruit/research/{researchId}/config",
+      "updateConfig": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/eye-tracking-recruit/config/{configId}",
+      "completeConfig": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/eye-tracking-recruit/config/{configId}/complete",
+      "deleteConfig": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/eye-tracking-recruit/config/{configId}",
+      "createParticipant": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/eye-tracking-recruit/config/{configId}/participant",
+      "updateParticipantStatus": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/eye-tracking-recruit/participant/{participantId}/status",
+      "getParticipantsByConfigId": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/eye-tracking-recruit/config/{configId}/participants",
+      "getStatsByConfigId": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/eye-tracking-recruit/config/{configId}/stats",
+      "generateRecruitmentLink": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/eye-tracking-recruit/config/{configId}/link",
+      "getActiveLinks": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/eye-tracking-recruit/config/{configId}/links",
+      "deactivateLink": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/eye-tracking-recruit/link/{token}/deactivate",
+      "validateRecruitmentLink": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/eye-tracking-recruit/link/{token}/validate",
+      "getResearchSummary": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/eye-tracking-recruit/research/{researchId}/summary",
+      "registerPublicParticipant": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/eye-tracking-recruit/public/participant/start",
+      "updatePublicParticipantStatus": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/eye-tracking-recruit/public/participant/{participantId}/status"
     }
   },
   "_original": {

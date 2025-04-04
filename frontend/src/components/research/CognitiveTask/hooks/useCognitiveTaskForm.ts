@@ -8,27 +8,219 @@ import {
   ValidationErrors,
   ErrorModalData,
   QuestionType,
-  DEFAULT_COGNITIVE_TASK,
-  UseCognitiveTaskFormResult,
-  UploadedFile
+  UseCognitiveTaskFormResult
 } from '../types';
 import { 
   QUERY_KEYS, 
   ERROR_MESSAGES, 
-  SUCCESS_MESSAGES,
-  QUESTION_TYPES,
-  QUESTION_TEMPLATES
+  SUCCESS_MESSAGES
 } from '../constants';
 import { useAuth } from '@/providers/AuthProvider';
 import { s3Service, cognitiveTaskService } from '@/services';
+
+// Definición local para reemplazar DEFAULT_COGNITIVE_TASK
+const DEFAULT_COGNITIVE_TASK: CognitiveTaskFormData = {
+  researchId: '',
+  questions: [],
+  randomizeQuestions: false
+};
+
+// Definiciones locales para QUESTION_TYPES y QUESTION_TEMPLATES
+const QUESTION_TYPES = [
+  { id: 'short_text' as QuestionType, label: 'Texto Corto', description: 'Respuesta corta de texto' },
+  { id: 'long_text' as QuestionType, label: 'Texto Largo', description: 'Respuesta larga de texto' },
+  { id: 'single_choice' as QuestionType, label: 'Opción Única', description: 'Selecciona una opción' },
+  { id: 'multiple_choice' as QuestionType, label: 'Opción Múltiple', description: 'Selecciona varias opciones' },
+  { id: 'linear_scale' as QuestionType, label: 'Escala Lineal', description: 'Escala numérica' },
+  { id: 'ranking' as QuestionType, label: 'Ranking', description: 'Ordenar opciones' },
+  { id: 'navigation_flow' as QuestionType, label: 'Flujo de Navegación', description: 'Prueba de navegación' },
+  { id: 'preference_test' as QuestionType, label: 'Prueba de Preferencia', description: 'Test A/B' }
+];
+
+// Plantillas para nuevas preguntas con valores por defecto para propiedades obligatorias
+const QUESTION_TEMPLATES: Record<QuestionType, Partial<Question>> = {
+  short_text: {
+    type: 'short_text',
+    title: 'Nueva Pregunta',
+    required: true,
+    showConditionally: false,
+    deviceFrame: false
+  },
+  long_text: {
+    type: 'long_text',
+    title: 'Nueva Pregunta',
+    required: true,
+    showConditionally: false,
+    deviceFrame: false
+  },
+  single_choice: {
+    type: 'single_choice',
+    title: 'Nueva Pregunta',
+    required: true,
+    showConditionally: false,
+    deviceFrame: false,
+    choices: [
+      { id: '1', text: 'Opción 1', isQualify: false, isDisqualify: false },
+      { id: '2', text: 'Opción 2', isQualify: false, isDisqualify: false },
+      { id: '3', text: 'Opción 3', isQualify: false, isDisqualify: false }
+    ]
+  },
+  multiple_choice: {
+    type: 'multiple_choice',
+    title: 'Nueva Pregunta',
+    required: true,
+    showConditionally: false,
+    deviceFrame: false,
+    choices: [
+      { id: '1', text: 'Opción 1', isQualify: false, isDisqualify: false },
+      { id: '2', text: 'Opción 2', isQualify: false, isDisqualify: false },
+      { id: '3', text: 'Opción 3', isQualify: false, isDisqualify: false }
+    ]
+  },
+  linear_scale: {
+    type: 'linear_scale',
+    title: 'Nueva Pregunta',
+    required: true,
+    showConditionally: false,
+    deviceFrame: false,
+    scaleConfig: {
+      startValue: 1,
+      endValue: 5
+    }
+  },
+  ranking: {
+    type: 'ranking',
+    title: 'Nueva Pregunta',
+    required: true,
+    showConditionally: false,
+    deviceFrame: false,
+    choices: [
+      { id: '1', text: 'Opción 1', isQualify: false, isDisqualify: false },
+      { id: '2', text: 'Opción 2', isQualify: false, isDisqualify: false },
+      { id: '3', text: 'Opción 3', isQualify: false, isDisqualify: false }
+    ]
+  },
+  navigation_flow: {
+    type: 'navigation_flow',
+    title: 'Nueva Pregunta',
+    required: true,
+    showConditionally: false,
+    deviceFrame: false,
+    files: []
+  },
+  preference_test: {
+    type: 'preference_test',
+    title: 'Nueva Pregunta',
+    required: true, 
+    showConditionally: false,
+    deviceFrame: false,
+    files: []
+  }
+};
+
+// Definición local de preguntas predeterminadas según las imágenes Figma
+const DEFAULT_QUESTIONS: Question[] = [
+  {
+    id: '3.1',
+    type: 'short_text',
+    title: '¿Cuál es tu primera impresión sobre la navegación del sitio?',
+    required: true,
+    showConditionally: false,
+    deviceFrame: false
+  },
+  {
+    id: '3.2',
+    type: 'long_text',
+    title: 'Describe detalladamente tu experiencia al intentar completar la tarea asignada.',
+    required: true,
+    showConditionally: false,
+    deviceFrame: false
+  },
+  {
+    id: '3.3',
+    type: 'single_choice',
+    title: '¿Qué aspecto de la interfaz te pareció más intuitivo?',
+    required: true,
+    showConditionally: false,
+    choices: [
+      { id: '1', text: 'La navegación principal', isQualify: false, isDisqualify: false },
+      { id: '2', text: 'Los botones de acción', isQualify: false, isDisqualify: false },
+      { id: '3', text: 'El formulario de búsqueda', isQualify: false, isDisqualify: false },
+      { id: '4', text: 'Las notificaciones', isQualify: false, isDisqualify: false }
+    ],
+    deviceFrame: false
+  },
+  {
+    id: '3.4',
+    type: 'multiple_choice',
+    title: 'Selecciona todos los elementos con los que interactuaste durante la prueba:',
+    required: true,
+    showConditionally: false,
+    choices: [
+      { id: '1', text: 'Menú principal', isQualify: false, isDisqualify: false },
+      { id: '2', text: 'Filtros de búsqueda', isQualify: false, isDisqualify: false },
+      { id: '3', text: 'Carrito de compras', isQualify: false, isDisqualify: false },
+      { id: '4', text: 'Sección de comentarios', isQualify: false, isDisqualify: false }
+    ],
+    deviceFrame: false
+  },
+  {
+    id: '3.5',
+    type: 'linear_scale',
+    title: '¿Qué tan fácil fue encontrar la información que buscabas?',
+    required: true,
+    showConditionally: false,
+    scaleConfig: {
+      startValue: 1,
+      endValue: 5,
+      startLabel: 'Muy difícil',
+      endLabel: 'Muy fácil'
+    },
+    deviceFrame: false
+  },
+  {
+    id: '3.6',
+    type: 'ranking',
+    title: 'Ordena las siguientes características según su importancia para ti:',
+    required: true,
+    showConditionally: false,
+    choices: [
+      { id: '1', text: 'Velocidad de carga', isQualify: false, isDisqualify: false },
+      { id: '2', text: 'Diseño visual', isQualify: false, isDisqualify: false },
+      { id: '3', text: 'Facilidad de uso', isQualify: false, isDisqualify: false },
+      { id: '4', text: 'Claridad de la información', isQualify: false, isDisqualify: false }
+    ],
+    deviceFrame: false
+  },
+  {
+    id: '3.7',
+    type: 'navigation_flow',
+    title: 'Observa la siguiente imagen del flujo de navegación y describe cualquier problema que encuentres:',
+    required: true,
+    showConditionally: false,
+    files: [],
+    deviceFrame: true
+  },
+  {
+    id: '3.8',
+    type: 'preference_test',
+    title: '¿Cuál de estos dos diseños prefieres y por qué?',
+    required: true,
+    showConditionally: false,
+    files: [],
+    deviceFrame: true
+  }
+];
 
 /**
  * Hook personalizado para gestionar la lógica del formulario de tareas cognitivas
  */
 export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormResult => {
   const queryClient = useQueryClient();
+  // Inicializar siempre con las preguntas predeterminadas
   const [formData, setFormData] = useState<CognitiveTaskFormData>({
     ...DEFAULT_COGNITIVE_TASK,
+    questions: [...DEFAULT_QUESTIONS],
     researchId: researchId || ''
   });
   const [cognitiveTaskId, setCognitiveTaskId] = useState<string | null>(null);
@@ -155,16 +347,28 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
         console.log('[useCognitiveTaskForm] ID de Cognitive Task encontrado:', existingData.id);
       }
       
-      // Actualizar formData con los valores existentes
-      setFormData({
-        ...DEFAULT_COGNITIVE_TASK,
-        ...existingData,
-        researchId: researchId || ''
-      });
+      // Verificar si hay preguntas en los datos existentes
+      if (existingData.questions && existingData.questions.length > 0) {
+        // Actualizar formData con los valores existentes
+        setFormData({
+          ...DEFAULT_COGNITIVE_TASK,
+          ...existingData,
+          researchId: researchId || ''
+        });
+      } else {
+        // Si no hay preguntas, usar las predeterminadas
+        setFormData({
+          ...DEFAULT_COGNITIVE_TASK,
+          ...existingData,
+          questions: [...DEFAULT_QUESTIONS],
+          researchId: researchId || ''
+        });
+      }
     } else {
       console.log('[useCognitiveTaskForm] No hay datos existentes, usando configuración por defecto');
       setFormData({
         ...DEFAULT_COGNITIVE_TASK,
+        questions: [...DEFAULT_QUESTIONS],
         researchId: researchId || ''
       });
       setCognitiveTaskId(null);
@@ -369,10 +573,15 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
       return;
     }
     
-    // Crear nueva pregunta basada en la plantilla
+    // Crear nueva pregunta basada en la plantilla, asegurando que todas las propiedades requeridas estén presentes
     const newQuestion: Question = {
-      ...template,
+      ...template,               // Primero aplicamos la plantilla
       id: newQuestionId,
+      type: type,
+      title: 'Nueva Pregunta',  
+      required: true,           
+      showConditionally: false, 
+      deviceFrame: false        // Aseguramos que deviceFrame siempre sea un boolean
     };
     
     // Agregar la nueva pregunta al estado

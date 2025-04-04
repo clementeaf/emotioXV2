@@ -13,4 +13,7 @@ export * from './eyeTracking.service';
 export * from './s3.service';
 export * from './cognitiveTask.service';
 
+// Exportar servicio de Eye Tracking Recruit
+export * from './eyeTrackingRecruit.service';
+
 // Otros servicios serán exportados aquí a medida que se creen 

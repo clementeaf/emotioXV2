@@ -1,49 +1,57 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
-import { AddQuestionModalProps, QuestionType } from '../types';
-import { UI_TEXTS } from '../constants';
+import { Question } from '../types';
 
-/**
- * Componente para mostrar un modal para agregar nuevas preguntas
- */
+interface QuestionType {
+  id: string;
+  label: string;
+  description: string;
+}
+
+interface AddQuestionModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onAddQuestion: (type: Question['type']) => void;
+}
+
+// Definición de tipos de preguntas disponibles
+const QUESTION_TYPES = [
+  { id: 'short_text', label: 'Short Text', description: 'Short text' },
+  { id: 'long_text', label: 'Long Text', description: 'Long text' },
+  { id: 'single_choice', label: 'Single Choice', description: 'Pick one option' },
+  { id: 'multiple_choice', label: 'Multiple Choice', description: 'Pick multiple options' },
+  { id: 'linear_scale', label: 'Linear Scale', description: 'For numerical scale' },
+  { id: 'ranking', label: 'Ranking', description: 'Rank options in order' },
+  { id: 'navigation_flow', label: 'Navigation Flow', description: 'Navigation flow test' },
+  { id: 'preference_test', label: 'Preference Test', description: 'A/B testing' }
+];
+
 export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
   isOpen,
   onClose,
-  onAddQuestion,
-  questionTypes
+  onAddQuestion
 }) => {
-  if (!isOpen) return null;
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{UI_TEXTS.ADD_QUESTION_MODAL.TITLE}</DialogTitle>
+          <DialogTitle>Añadir nueva pregunta</DialogTitle>
         </DialogHeader>
-        <div className="py-4">
-          <p className="text-sm text-neutral-500 mb-4">
-            {UI_TEXTS.ADD_QUESTION_MODAL.DESCRIPTION}
-          </p>
-          <div className="grid grid-cols-2 gap-4">
-            {questionTypes.map((type) => (
-              <div
-                key={type.id}
-                onClick={() => onAddQuestion(type.id)}
-                className="p-4 border rounded-lg hover:border-blue-500 hover:bg-blue-50 cursor-pointer transition-colors"
-              >
-                <h3 className="font-medium">{type.label}</h3>
-                <p className="text-sm text-neutral-500">{type.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-neutral-700 bg-white border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors"
-          >
-            {UI_TEXTS.ADD_QUESTION_MODAL.CLOSE_BUTTON}
-          </button>
+        <div className="grid grid-cols-2 gap-4 py-4">
+          {QUESTION_TYPES.map((type) => (
+            <button
+              key={type.id}
+              onClick={() => {
+                onAddQuestion(type.id as Question['type']);
+                onClose();
+              }}
+              className="flex flex-col items-start p-4 border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors"
+              type="button"
+            >
+              <h3 className="text-sm font-medium text-neutral-900">{type.label}</h3>
+              <p className="text-xs text-neutral-500 mt-1">{type.description}</p>
+            </button>
+          ))}
         </div>
       </DialogContent>
     </Dialog>

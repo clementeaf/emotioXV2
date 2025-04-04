@@ -20,6 +20,7 @@ export { default as smartVOCFormService } from './smartVOCFormService';
 
 // Servicios de eye tracking
 export { default as eyeTrackingService } from './eyeTrackingService';
+export { default as eyeTrackingRecruitService } from './eyeTrackingRecruitService';
 
 // Servicio de tareas cognitivas
 export { default as cognitiveTaskService } from './cognitiveTaskService';
@@ -34,4 +35,5 @@ export * from './smartVOCFormService';
 export * from './eyeTrackingService';
 export * from './welcomeScreenService';
 export * from './thankYouScreenService';
-export * from './cognitiveTaskService'; 
+export * from './cognitiveTaskService';
+export * from './eyeTrackingRecruitService'; 

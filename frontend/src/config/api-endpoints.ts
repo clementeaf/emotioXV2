@@ -4,7 +4,7 @@
  * Este archivo es generado automáticamente por el script export-endpoints.js
  * No modificar manualmente.
  * 
- * Generado: 2025-03-28T19:22:41.392Z
+ * Generado: 2025-04-04T00:05:41.624Z
  */
 
 export interface ApiEndpoint {
@@ -12,6 +12,7 @@ export interface ApiEndpoint {
   authApiUrl: string;
   researchApiUrl: string;
   welcomeScreenApiUrl: string;
+  eyeTrackingRecruitApiUrl: string;
   webSocketEndpoint: string;
   stage: string;
   region: string;
@@ -36,6 +37,24 @@ export interface ApiEndpoint {
       update: string;
       delete: string;
     };
+    eyeTrackingRecruit: {
+      getConfigByResearchId: string;
+      createConfig: string;
+      updateConfig: string;
+      completeConfig: string;
+      deleteConfig: string;
+      createParticipant: string;
+      updateParticipantStatus: string;
+      getParticipantsByConfigId: string;
+      getStatsByConfigId: string;
+      generateRecruitmentLink: string;
+      getActiveLinks: string;
+      deactivateLink: string;
+      validateRecruitmentLink: string;
+      getResearchSummary: string;
+      registerPublicParticipant: string;
+      updatePublicParticipantStatus: string;
+    };
   };
 }
 
@@ -44,6 +63,7 @@ const API_CONFIG: ApiEndpoint = {
   "authApiUrl": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/auth",
   "researchApiUrl": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/research",
   "welcomeScreenApiUrl": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/welcome-screens",
+  "eyeTrackingRecruitApiUrl": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/eye-tracking-recruit",
   "webSocketEndpoint": "",
   "stage": "dev",
   "region": "us-east-1",
@@ -67,6 +87,24 @@ const API_CONFIG: ApiEndpoint = {
       "getByResearch": "/research/{researchId}",
       "update": "/{id}",
       "delete": "/{id}"
+    },
+    "eyeTrackingRecruit": {
+      "getConfigByResearchId": "/research/{researchId}/config",
+      "createConfig": "/research/{researchId}/config",
+      "updateConfig": "/config/{configId}",
+      "completeConfig": "/config/{configId}/complete",
+      "deleteConfig": "/config/{configId}",
+      "createParticipant": "/config/{configId}/participant",
+      "updateParticipantStatus": "/participant/{participantId}/status",
+      "getParticipantsByConfigId": "/config/{configId}/participants",
+      "getStatsByConfigId": "/config/{configId}/stats",
+      "generateRecruitmentLink": "/config/{configId}/link",
+      "getActiveLinks": "/config/{configId}/links",
+      "deactivateLink": "/link/{token}/deactivate",
+      "validateRecruitmentLink": "/link/{token}/validate",
+      "getResearchSummary": "/research/{researchId}/summary",
+      "registerPublicParticipant": "/public/participant/start",
+      "updatePublicParticipantStatus": "/public/participant/{participantId}/status"
     }
   }
 };

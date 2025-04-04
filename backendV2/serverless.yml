@@ -242,6 +242,45 @@ functions:
               - Pragma
               - pragma
             allowCredentials: true
+      # Rutas para eye-tracking-recruit
+      - http:
+          path: /eye-tracking-recruit
+          method: ANY
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+              - X-Requested-With
+              - Accept
+              - Cache-Control
+              - cache-control
+              - Pragma
+              - pragma
+            allowCredentials: true
+      - http:
+          path: /eye-tracking-recruit/{proxy+}
+          method: ANY
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+              - X-Requested-With
+              - Accept
+              - Cache-Control
+              - cache-control
+              - Pragma
+              - pragma
+            allowCredentials: true
       # Rutas explícitas para el servicio S3
       - http:
           path: /s3/upload

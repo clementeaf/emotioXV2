@@ -1,5 +1,9 @@
 import React from 'react';
-import { CognitiveTaskHeaderProps } from '../types';
+
+interface CognitiveTaskHeaderProps {
+  title: string;
+  description: string;
+}
 
 /**
  * Componente para el encabezado de las tareas cognitivas
@@ -9,11 +13,9 @@ export const CognitiveTaskHeader: React.FC<CognitiveTaskHeaderProps> = ({
   description
 }) => {
   return (
-    <div className="space-y-0.5">
-      <h2 className="text-lg font-semibold">{title}</h2>
-      <p className="text-sm text-neutral-500">
-        {description}
-      </p>
+    <div className="mb-6">
+      <h1 className="text-2xl font-semibold text-neutral-900">{title}</h1>
+      <p className="text-sm text-neutral-500 mt-1">{description}</p>
     </div>
   );
 }; 

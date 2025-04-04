@@ -1,52 +1,48 @@
 import React from 'react';
-import { Button } from '@/components/ui/Button';
-import { CognitiveTaskFooterProps } from '../types';
-import { UI_TEXTS } from '../constants';
 
-/**
- * Componente para el pie de página con acciones del formulario
- */
+interface CognitiveTaskFooterProps {
+  completionTimeText: string;
+  previewButtonText: string;
+  saveButtonText: string;
+  onPreview: () => void;
+  onSave: () => void;
+  isSaving: boolean;
+  disabled: boolean;
+}
+
 export const CognitiveTaskFooter: React.FC<CognitiveTaskFooterProps> = ({
-  isSaving,
-  isLoading,
-  cognitiveTaskId,
+  completionTimeText,
+  previewButtonText,
+  saveButtonText,
+  onPreview,
   onSave,
-  onPreview
+  isSaving,
+  disabled
 }) => {
-  // Determinar el texto de estado
-  const getStatusText = () => {
-    if (isSaving || isLoading) {
-      return UI_TEXTS.FOOTER.SAVING_TEXT;
-    }
-    
-    return cognitiveTaskId 
-      ? UI_TEXTS.FOOTER.UPDATE_EXISTING_TEXT 
-      : UI_TEXTS.FOOTER.CREATE_NEW_TEXT;
-  };
-
   return (
     <footer className="flex items-center justify-between px-8 py-4 mt-6 bg-neutral-50 rounded-lg border border-neutral-100">
-      <p className="text-sm text-neutral-500">
-        {getStatusText()}
-      </p>
-      <div className="flex space-x-2">
-        <Button
+      <p className="text-sm text-neutral-500">{completionTimeText}</p>
+      <div className="flex items-center gap-3">
+        <button
           type="button"
+          className={`px-4 py-2 text-sm font-medium text-neutral-700 bg-white border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors ${
+            disabled ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
           onClick={onPreview}
-          disabled={isLoading || isSaving}
-          variant="outline"
-          className="px-4 py-2"
+          disabled={disabled}
         >
-          {UI_TEXTS.FOOTER.PREVIEW_BUTTON}
-        </Button>
-        <Button
+          {previewButtonText}
+        </button>
+        <button
           type="button"
+          className={`px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors ${
+            disabled ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
           onClick={onSave}
-          disabled={isLoading || isSaving}
-          className="px-4 py-2"
+          disabled={disabled || isSaving}
         >
-          {isSaving ? UI_TEXTS.FOOTER.SAVING_BUTTON : UI_TEXTS.FOOTER.SAVE_BUTTON}
-        </Button>
+          {saveButtonText}
+        </button>
       </div>
     </footer>
   );
