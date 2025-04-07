@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -11,7 +11,8 @@ import {
   DemographicQuestionKey,
   LinkConfigKey,
   ParameterOptionKey,
-  BacklinkKey
+  BacklinkKey,
+  EyeTrackingRecruitResponse
 } from '@/shared/interfaces/eyeTracking';
 import { eyeTrackingAPI } from '@/shared/api/eyeTracking';
 
@@ -43,6 +44,7 @@ interface UseEyeTrackingRecruitResult {
   previewLink: () => void;
 }
 
+// Configuraciones por defecto
 const DEFAULT_STATS: EyeTrackingRecruitStats = {
   complete: {
     count: 0,
@@ -99,6 +101,25 @@ const DEFAULT_CONFIG: Omit<EyeTrackingRecruitConfig, 'researchId'> = {
   }
 };
 
+// Interfaces para tipos de respuesta
+interface ConfigResponse {
+  success?: boolean;
+  error?: string;
+  data?: EyeTrackingRecruitConfig;
+}
+
+interface LinkResponse {
+  data?: {
+    link?: string;
+  };
+}
+
+interface QRResponse {
+  data?: {
+    qrImageUrl?: string;
+  };
+}
+
 export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps): UseEyeTrackingRecruitResult {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -108,7 +129,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   const [stats, setStats] = useState<EyeTrackingRecruitStats | null>(null);
   
   // Consulta para obtener la configuración
-  const { data: configData, isLoading } = useQuery({
+  const { data: configData, isLoading } = useQuery<ConfigResponse>({
     queryKey: ['eyeTracking', 'recruitConfig', researchId],
     queryFn: async () => {
       try {
@@ -116,7 +137,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
         
         // Usar el método de Alova
         const response = await eyeTrackingAPI.getEyeTrackingRecruitConfig(researchId).send();
-        return response;
+        return response as ConfigResponse;
       } catch (error) {
         console.error('Error al cargar la configuración inicial:', error);
         return { success: false, error: 'Error al cargar la configuración' };
@@ -127,18 +148,19 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   });
   
   // Consulta para obtener estadísticas
-  const { data: statsData } = useQuery({
+  const { data: statsData } = useQuery<EyeTrackingRecruitStats>({
     queryKey: ['eyeTracking', 'recruitStats', researchId],
     queryFn: async () => {
       try {
-        if (!researchId) return { ...DEFAULT_STATS };
+        if (!researchId) return DEFAULT_STATS;
         
         // Usar el método de Alova
         const response = await eyeTrackingAPI.getEyeTrackingRecruitStats(researchId).send();
-        return response.data || DEFAULT_STATS;
+        const typedResponse = response as any;
+        return typedResponse?.data || DEFAULT_STATS;
       } catch (error) {
         console.error('Error al cargar estadísticas:', error);
-        return { ...DEFAULT_STATS };
+        return DEFAULT_STATS;
       }
     },
     enabled: !!researchId,
@@ -159,7 +181,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   }, [configData, statsData]);
   
   // Mutación para guardar la configuración
-  const { mutate: saveConfig, isPending: saving } = useMutation({
+  const { mutate: saveConfig, isPending: saving } = useMutation<ConfigResponse, Error>({
     mutationFn: async () => {
       if (!researchId) throw new Error('ID de investigación no válido');
       
@@ -169,7 +191,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
         config: formData
       }).send();
       
-      return response;
+      return response as ConfigResponse;
     },
     onSuccess: (response) => {
       if (response.success) {
@@ -187,16 +209,16 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   });
   
   // Mutación para generar enlace de reclutamiento
-  const { mutate: mutateGenerateLink } = useMutation({
+  const { mutate: mutateGenerateLink } = useMutation<LinkResponse, Error>({
     mutationFn: async () => {
       if (!researchId) throw new Error('ID de investigación no válido');
       
       // Usar el método de Alova
       const response = await eyeTrackingAPI.generateRecruitmentLink(researchId).send();
-      return response;
+      return response as LinkResponse;
     },
     onSuccess: (response) => {
-      if (response && response.data && response.data.link) {
+      if (response?.data?.link) {
         navigator.clipboard.writeText(response.data.link);
         toast.success('Enlace generado y copiado al portapapeles');
       } else {
@@ -210,16 +232,16 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   });
   
   // Mutación para generar código QR
-  const { mutate: mutateGenerateQR } = useMutation({
+  const { mutate: mutateGenerateQR } = useMutation<QRResponse, Error>({
     mutationFn: async () => {
       if (!researchId) throw new Error('ID de investigación no válido');
       
       // Usar el método de Alova
       const response = await eyeTrackingAPI.generateQRCode(researchId).send();
-      return response;
+      return response as QRResponse;
     },
     onSuccess: (response) => {
-      if (response && response.data && response.data.qrImageUrl) {
+      if (response?.data?.qrImageUrl) {
         window.open(response.data.qrImageUrl, '_blank');
         toast.success('Código QR generado');
       } else {
@@ -232,8 +254,8 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     }
   });
   
-  // Métodos para manipular el formulario
-  const handleDemographicChange = (key: DemographicQuestionKey, value: boolean) => {
+  // Métodos para manipular el formulario (memoizados para mejor rendimiento)
+  const handleDemographicChange = useCallback((key: DemographicQuestionKey, value: boolean) => {
     setFormData(prev => ({
       ...prev,
       demographicQuestions: {
@@ -241,9 +263,9 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
         [key]: value
       }
     }));
-  };
+  }, []);
   
-  const handleLinkConfigChange = (key: LinkConfigKey, value: boolean) => {
+  const handleLinkConfigChange = useCallback((key: LinkConfigKey, value: boolean) => {
     setFormData(prev => ({
       ...prev,
       linkConfig: {
@@ -251,9 +273,9 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
         [key]: value
       }
     }));
-  };
+  }, []);
   
-  const handleBacklinkChange = (key: BacklinkKey, value: string) => {
+  const handleBacklinkChange = useCallback((key: BacklinkKey, value: string) => {
     setFormData(prev => ({
       ...prev,
       backlinks: {
@@ -261,9 +283,9 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
         [key]: value
       }
     }));
-  };
+  }, []);
   
-  const handleParamOptionChange = (key: ParameterOptionKey, value: boolean) => {
+  const handleParamOptionChange = useCallback((key: ParameterOptionKey, value: boolean) => {
     setFormData(prev => ({
       ...prev,
       parameterOptions: {
@@ -271,9 +293,9 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
         [key]: value
       }
     }));
-  };
+  }, []);
   
-  const setLimitParticipants = (value: boolean) => {
+  const setLimitParticipants = useCallback((value: boolean) => {
     setFormData(prev => ({
       ...prev,
       participantLimit: {
@@ -281,9 +303,9 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
         enabled: value
       }
     }));
-  };
+  }, []);
   
-  const setParticipantLimit = (value: number) => {
+  const setParticipantLimit = useCallback((value: number) => {
     setFormData(prev => ({
       ...prev,
       participantLimit: {
@@ -291,44 +313,44 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
         limit: value
       }
     }));
-  };
+  }, []);
   
-  const setResearchUrl = (value: string) => {
+  const setResearchUrl = useCallback((value: string) => {
     setFormData(prev => ({
       ...prev,
       researchUrl: value
     }));
-  };
+  }, []);
   
   // Acciones
-  const saveForm = async () => {
+  const saveForm = useCallback(async () => {
     if (!researchId) {
       toast.error('ID de investigación no válido');
       return;
     }
     
     saveConfig();
-  };
+  }, [researchId, saveConfig]);
   
-  const generateRecruitmentLink = async () => {
+  const generateRecruitmentLink = useCallback(async () => {
     if (!researchId) {
       toast.error('ID de investigación no válido');
       return;
     }
     
     mutateGenerateLink();
-  };
+  }, [researchId, mutateGenerateLink]);
   
-  const generateQRCode = async () => {
+  const generateQRCode = useCallback(async () => {
     if (!researchId) {
       toast.error('ID de investigación no válido');
       return;
     }
     
     mutateGenerateQR();
-  };
+  }, [researchId, mutateGenerateQR]);
   
-  const copyLinkToClipboard = () => {
+  const copyLinkToClipboard = useCallback(() => {
     if (formData.researchUrl) {
       try {
         navigator.clipboard.writeText(formData.researchUrl);
@@ -338,13 +360,13 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
         toast.error('No se pudo copiar el enlace');
       }
     }
-  };
+  }, [formData.researchUrl]);
   
-  const previewLink = () => {
+  const previewLink = useCallback(() => {
     if (formData.researchUrl) {
       window.open(formData.researchUrl, '_blank');
     }
-  };
+  }, [formData.researchUrl]);
   
   return {
     loading: isLoading,
