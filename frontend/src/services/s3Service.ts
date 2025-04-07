@@ -72,13 +72,14 @@ class S3Service {
   }
 
   /**
-   * Obtiene los headers de autenticación
+   * Obtiene los headers de autenticación con manejo optimizado del token
    */
   private getAuthHeaders(): Record<string, string> {
+    // Implementación original que funcionaba
     const token = tokenService.getToken();
     return {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      'Authorization': token ? `Bearer ${token}` : ''
     };
   }
 
@@ -115,7 +116,7 @@ class S3Service {
       const errorText = await response.text();
       console.error('S3Service.getUploadPresignedUrl - Error en respuesta:', 
         response.status, response.statusText, errorText);
-      throw new Error(`Error al obtener URL de subida: ${response.status} ${response.statusText} - ${errorText}`);
+      throw new Error(`Error al obtener URL de subida: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
@@ -145,7 +146,7 @@ class S3Service {
       const errorText = await response.text();
       console.error('S3Service.getDownloadUrl - Error en respuesta:', 
         response.status, response.statusText, errorText);
-      throw new Error(`Error al obtener URL de descarga: ${response.status} ${response.statusText} - ${errorText}`);
+      throw new Error(`Error al obtener URL de descarga: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
@@ -175,7 +176,7 @@ class S3Service {
       const errorText = await response.text();
       console.error('S3Service.getDeleteUrl - Error en respuesta:', 
         response.status, response.statusText, errorText);
-      throw new Error(`Error al obtener URL de eliminación: ${response.status} ${response.statusText} - ${errorText}`);
+      throw new Error(`Error al obtener URL de eliminación: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
