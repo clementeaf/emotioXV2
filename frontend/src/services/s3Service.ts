@@ -75,11 +75,28 @@ class S3Service {
    * Obtiene los headers de autenticación con manejo optimizado del token
    */
   private getAuthHeaders(): Record<string, string> {
-    // Implementación original que funcionaba
+    // Intentar obtener el token con verificaciones mejoradas 
     const token = tokenService.getToken();
+    
+    // Mostrar el token completo para que el usuario pueda verificarlo
+    console.log('===== DEBUG TOKEN COMPLETO =====');
+    console.log('Token enviado en headers:', token);
+    console.log('Longitud del token:', token ? token.length : 0);
+    
+    // IMPORTANTE: Probar EXACTAMENTE con el prefijo "Bearer " (notar el espacio) como debería ser
+    const authHeader = token ? `Bearer ${token}` : '';
+    console.log('Header Authorization completo:', authHeader);
+    
+    // Verificación adicional en caso que el token exista pero esté malformado
+    if (token && token.split('.').length !== 3) {
+      console.error('TOKEN MALFORMADO: No tiene el formato JWT estándar (xxx.yyy.zzz)');
+    }
+    
+    console.log('================================');
+    
     return {
       'Content-Type': 'application/json',
-      'Authorization': token ? `Bearer ${token}` : ''
+      'Authorization': authHeader
     };
   }
 
@@ -98,24 +115,42 @@ class S3Service {
     
     console.log('S3Service.getUploadPresignedUrl - Solicitando URL para subida a:', 
       this.baseURL + uploadEndpoint);
-      
+    
+    // Obtener headers para la petición
+    const headers = this.getAuthHeaders();
+    console.log('S3Service.getUploadPresignedUrl - Headers completos enviados:', headers);
+    
+    const requestBody = {
+      fileType,
+      fileName: file.name,
+      mimeType: file.type,
+      fileSize: file.size,
+      researchId,
+      folder: folder || 'general'
+    };
+    
+    console.log('S3Service.getUploadPresignedUrl - Cuerpo de la petición:', requestBody);
+    
     const response = await fetch(`${this.baseURL}${uploadEndpoint}`, {
       method: 'POST',
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify({
-        fileType,
-        fileName: file.name,
-        mimeType: file.type,
-        fileSize: file.size,
-        researchId,
-        folder: folder || 'general'
-      })
+      headers: headers,
+      body: JSON.stringify(requestBody)
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('S3Service.getUploadPresignedUrl - Error en respuesta:', 
-        response.status, response.statusText, errorText);
+      console.error('===== ERROR COMPLETO S3 =====');
+      console.error('URL solicitada:', this.baseURL + uploadEndpoint);
+      console.error('Código de estado:', response.status, response.statusText);
+      console.error('Contenido completo de la respuesta:', errorText);
+      
+      // Mostrar headers sin convertir a objeto para evitar problemas de iteración
+      console.error('Headers de la respuesta:');
+      response.headers.forEach((value, key) => {
+        console.error(`  ${key}: ${value}`);
+      });
+      
+      console.error('=============================');
       throw new Error(`Error al obtener URL de subida: ${response.status} ${response.statusText}`);
     }
 
@@ -197,6 +232,37 @@ class S3Service {
   }: FileUploadParams): Promise<{ fileUrl: string; key: string }> {
     try {
       console.log('S3Service.uploadFile - Iniciando subida para:', file.name, 'en carpeta:', folder);
+      
+      // VERIFICACIÓN CRÍTICA: Comprobar explícitamente si hay un token antes de continuar
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('============ ERROR CRÍTICO: NO HAY TOKEN =============');
+        console.error('No se encontró token en localStorage.');
+        console.error('El usuario debe iniciar sesión nuevamente.');
+        console.error('Keys disponibles en localStorage:', Object.keys(localStorage));
+        console.error('=======================================================');
+        
+        const error = new Error('No has iniciado sesión o tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+        if (onError) {
+          onError(error);
+        }
+        throw error;
+      }
+      
+      console.log('Token encontrado (longitud):', token.length);
+      console.log('Primeros 20 caracteres del token:', token.substring(0, 20) + '...');
+      
+      // ELIMINAMOS EL INTENTO DE REFRESCAR EL TOKEN PARA EVITAR 404
+      // Ya que la ruta /auth/refresh-token no existe en el backend
+      /*
+      try {
+        console.log('S3Service.uploadFile - Intentando refrescar el token antes de la operación');
+        const refreshResult = await tokenService.forceTokenRefresh();
+        console.log('S3Service.uploadFile - Refresco de token completado, resultado:', refreshResult);
+      } catch (refreshError) {
+        console.warn('S3Service.uploadFile - Error al refrescar token, continuando con token actual:', refreshError);
+      }
+      */
       
       // 1. Obtener URL prefirmada del backend
       const presignedData = await this.getUploadPresignedUrl(file, researchId, folder);

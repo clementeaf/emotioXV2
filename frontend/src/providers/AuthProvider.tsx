@@ -150,24 +150,60 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setIsLoading(true);
     setError(null);
     try {
-      console.log('Iniciando proceso de login con rememberMe:', rememberMe);
+      console.log('======== INICIO PROCESO LOGIN ========');
+      console.log('Token a almacenar (COMPLETO):', newToken);
+      console.log('Longitud del token:', newToken.length);
+      
       const decoded = jwtDecode<User>(newToken);
+      console.log('Token decodificado:', decoded);
       
       if (rememberMe) {
         // Si rememberMe es true, guardar en localStorage (persistente)
         localStorage.setItem('token', newToken);
         localStorage.setItem('auth_storage_type', 'local');
         console.log('Token almacenado en localStorage (sesión persistente)');
+        
+        // Verificar que se haya guardado correctamente
+        const storedToken = localStorage.getItem('token');
+        if (storedToken) {
+          if (storedToken === newToken) {
+            console.log('Verificación EXITOSA: Token guardado correctamente en localStorage');
+          } else {
+            console.error('ERROR CRÍTICO: Token guardado no coincide con el original');
+            console.log('Token original (longitud):', newToken.length);
+            console.log('Token guardado (longitud):', storedToken.length);
+          }
+        } else {
+          console.error('ERROR CRÍTICO: Token no guardado en localStorage');
+        }
       } else {
         // Si rememberMe es false, guardar en sessionStorage (no persistente)
         sessionStorage.setItem('token', newToken);
         localStorage.setItem('auth_storage_type', 'session');
         console.log('Token almacenado en sessionStorage (sesión temporal)');
+        
+        // Verificar que se haya guardado correctamente
+        const storedToken = sessionStorage.getItem('token');
+        if (storedToken) {
+          if (storedToken === newToken) {
+            console.log('Verificación EXITOSA: Token guardado correctamente en sessionStorage');
+          } else {
+            console.error('ERROR CRÍTICO: Token guardado no coincide con el original');
+          }
+        } else {
+          console.error('ERROR CRÍTICO: Token no guardado en sessionStorage');
+        }
       }
       
+      // Actualizar el estado
       setToken(newToken);
       setUser(decoded);
-      console.log('Login exitoso, token almacenado');
+      
+      // Asegurar que el token se actualice en el cliente API
+      apiClient.setAuthToken(newToken);
+      
+      console.log('Login exitoso, token almacenado y estado actualizado');
+      console.log('======== FIN PROCESO LOGIN ========');
       
       // Iniciar la renovación automática del token
       tokenService.startAutoRefresh();

@@ -93,11 +93,45 @@ const isTokenExpiringSoon = (token: string): boolean => {
 };
 
 /**
- * Obtiene el token actual del almacenamiento
+ * Obtiene el token actual del almacenamiento con verificaciones adicionales
  * @returns Token o null si no existe
  */
 const getToken = (): string | null => {
-  return localStorage.getItem('token');
+  try {
+    // Verificación principal: intentar obtener el token de localStorage
+    const token = localStorage.getItem('token');
+    
+    if (token) {
+      console.log('tokenService.getToken - TOKEN ENCONTRADO en localStorage (primeros caracteres):', 
+        token.substring(0, 20) + '...');
+      console.log('tokenService.getToken - Longitud del token:', token.length);
+      return token;
+    }
+    
+    // Si no se encuentra en localStorage, intentar obtener de sessionStorage como respaldo
+    const sessionToken = sessionStorage.getItem('token');
+    if (sessionToken) {
+      console.log('tokenService.getToken - TOKEN ENCONTRADO en sessionStorage (primeros caracteres):', 
+        sessionToken.substring(0, 20) + '...');
+      
+      // Guardar en localStorage para futuras solicitudes
+      localStorage.setItem('token', sessionToken);
+      console.log('tokenService.getToken - Token de sessionStorage copiado a localStorage');
+      
+      return sessionToken;
+    }
+    
+    // Verificar si hay información de almacenamiento en localStorage
+    const storageType = localStorage.getItem('auth_storage_type');
+    console.warn('tokenService.getToken - NO SE ENCONTRÓ TOKEN. Tipo de almacenamiento:', storageType);
+    console.warn('tokenService.getToken - Keys en localStorage:', Object.keys(localStorage));
+    console.warn('tokenService.getToken - Keys en sessionStorage:', Object.keys(sessionStorage));
+    
+    return null;
+  } catch (error) {
+    console.error('tokenService.getToken - Error crítico al obtener token:', error);
+    return null;
+  }
 };
 
 /**
@@ -166,6 +200,36 @@ const refreshTokenIfNeeded = async (): Promise<boolean> => {
 };
 
 /**
+ * Fuerza la renovación del token sin importar su estado actual
+ * @returns Promise con el resultado de la renovación
+ */
+const forceTokenRefresh = async (): Promise<boolean> => {
+  try {
+    const currentToken = getToken();
+    if (!currentToken) {
+      logService.warn('No hay token disponible para forzar renovación');
+      return false;
+    }
+    
+    logService.info('Forzando renovación de token...');
+    const response = await authAPI.refreshToken();
+    
+    if (response.data && response.data.token) {
+      // Guardar siempre el token renovado
+      logService.info('Token renovado forzosamente con éxito');
+      saveToken(response.data.token);
+      return true;
+    } else {
+      logService.warn('Respuesta de renovación forzada inválida:', response);
+      return false;
+    }
+  } catch (error) {
+    logService.error('Error al forzar renovación de token:', error);
+    return false;
+  }
+};
+
+/**
  * Inicia la renovación automática del token
  */
 const startAutoRefresh = (): void => {
@@ -206,6 +270,7 @@ const tokenService = {
   saveToken,
   removeToken,
   refreshTokenIfNeeded,
+  forceTokenRefresh,
   startAutoRefresh,
   stopAutoRefresh,
   isTokenExpiringSoon,

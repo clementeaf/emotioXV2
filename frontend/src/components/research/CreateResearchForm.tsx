@@ -369,6 +369,36 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
                   researchId = apiResponse.data.id;
                   console.log('Investigación creada con éxito en el servidor:', apiResponse.data);
                   
+                  // Guardar los datos de la investigación en localStorage para usarlos en el Sidebar
+                  const newResearch = {
+                    id: researchId,
+                    name: researchName,
+                    technique: createData.technique || '',
+                    createdAt: new Date().toISOString()
+                  };
+                  
+                  // Guardar los detalles completos de la investigación
+                  localStorage.setItem(`research_${researchId}`, JSON.stringify({
+                    id: researchId,
+                    name: researchName,
+                    enterprise: createData.enterprise,
+                    type: createData.type,
+                    technique: createData.technique,
+                    description: createData.description,
+                    createdAt: new Date().toISOString(),
+                    status: 'draft'
+                  }));
+                  
+                  // Actualizar la lista de investigaciones
+                  const existingList = localStorage.getItem('research_list');
+                  const researchList = existingList ? JSON.parse(existingList) : [];
+                  
+                  // Añadir la nueva investigación al principio de la lista
+                  researchList.push(newResearch);
+                  
+                  // Guardar la lista actualizada
+                  localStorage.setItem('research_list', JSON.stringify(researchList));
+                  
                   // Marcar que las investigaciones se han actualizado para que la tabla se refresque
                   localStorage.setItem('research_updated', 'true');
                   

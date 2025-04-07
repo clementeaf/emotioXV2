@@ -13,6 +13,7 @@ const generateId = (): string => {
 export interface UseEyeTrackingFormProps {
   researchId: string;
   onSave?: (data: EyeTrackingFormData) => void;
+  autoSync?: boolean;
 }
 
 export interface UseEyeTrackingFormReturn {
@@ -35,7 +36,8 @@ export interface UseEyeTrackingFormReturn {
 
 export function useEyeTrackingForm({ 
   researchId, 
-  onSave 
+  onSave,
+  autoSync = true
 }: UseEyeTrackingFormProps): UseEyeTrackingFormReturn {
   // Sistema de logs
   const logger = useErrorLog();
@@ -375,7 +377,21 @@ export function useEyeTrackingForm({
         return null;
       }
       
-      // Enviar solicitud al backend
+      // Si autoSync está desactivado, no enviamos al backend
+      if (!autoSync) {
+        logger.debug('autoSync desactivado: No se enviarán datos al backend automáticamente.');
+        toast.success('Datos listos para guardar (modo sin sincronización)');
+        
+        // Llamar al callback con los datos
+        if (onSave) {
+          onSave(dataToSave);
+        }
+        
+        // Devolver los datos sin enviar al backend
+        return dataToSave;
+      }
+      
+      // Enviar solicitud al backend solo si autoSync está activado
       let response;
       const api = eyeTrackingFixedAPI;
       
@@ -408,7 +424,7 @@ export function useEyeTrackingForm({
     } finally {
       setIsSaving(false);
     }
-  }, [researchId, eyeTrackingId, onSave, logger]);
+  }, [researchId, eyeTrackingId, onSave, logger, autoSync]);
   
   return {
     // Estado general del formulario

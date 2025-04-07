@@ -171,7 +171,7 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
   const searchParams = useSearchParams();
   const { hasDraft, currentDraft } = useResearch();
   const isAimFramework = searchParams?.get('aim') === 'true';
-  const currentSection = searchParams?.get('section') || '';
+  const searchParamsSection = searchParams ? searchParams.get('section') : null;
   
   // Agregar estado para investigaciones recientes
   const [recentResearch, setRecentResearch] = useState<Array<{id: string, name: string, technique: string}>>([]);
@@ -194,6 +194,15 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
     setIsLoadingResearch(true);
     
     try {
+      // Verificar si hay una señal de que se ha creado una nueva investigación
+      const researchUpdated = localStorage.getItem('research_updated') === 'true';
+      
+      // Si se detecta que se creó una nueva investigación, limpiar esa señal
+      if (researchUpdated) {
+        console.log('Se detectó la creación de una nueva investigación');
+        localStorage.removeItem('research_updated');
+      }
+      
       const storedList = localStorage.getItem('research_list');
       if (storedList) {
         const researchList = JSON.parse(storedList);
@@ -206,7 +215,10 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
           const validateResearch = async () => {
             try {
               // Intentar obtener la investigación del backend
-              await researchAPI.get(mostRecent.id);
+              const response = await researchAPI.get(mostRecent.id);
+              console.log('Investigación validada exitosamente con el backend:', mostRecent.id);
+              console.log('Respuesta del backend:', response);
+              
               // Si llegamos aquí, la investigación existe
               setRecentResearch([mostRecent]);
               setIsLoadingResearch(false);
@@ -244,6 +256,7 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
               } else {
                 // Si es otro tipo de error (no 404), mantener la investigación en la lista
                 // asumiendo que es un error temporal de red
+                console.log('Error no 404 al validar investigación, manteniendo en la lista:', error);
                 setRecentResearch([mostRecent]);
                 setIsLoadingResearch(false);
               }
@@ -428,7 +441,7 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
                   href={`/dashboard?research=${activeResearch.id}&aim=true&section=welcome-screen`}
                   className={cn(
                     'flex items-center text-sm px-3 py-2 rounded-md transition-colors',
-                    searchParams.get('section') === 'welcome-screen' 
+                    searchParamsSection === 'welcome-screen' 
                       ? 'bg-blue-50 text-blue-600' 
                       : 'text-neutral-700 hover:bg-neutral-100'
                   )}
@@ -442,7 +455,7 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
                   href={`/dashboard?research=${activeResearch.id}&aim=true&section=smart-voc`}
                   className={cn(
                     'flex items-center text-sm px-3 py-2 rounded-md transition-colors',
-                    searchParams.get('section') === 'smart-voc' 
+                    searchParamsSection === 'smart-voc' 
                       ? 'bg-blue-50 text-blue-600' 
                       : 'text-neutral-700 hover:bg-neutral-100'
                   )}
@@ -456,7 +469,7 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
                   href={`/dashboard?research=${activeResearch.id}&aim=true&section=cognitive-task`}
                   className={cn(
                     'flex items-center text-sm px-3 py-2 rounded-md transition-colors',
-                    searchParams.get('section') === 'cognitive-task' 
+                    searchParamsSection === 'cognitive-task' 
                       ? 'bg-blue-50 text-blue-600' 
                       : 'text-neutral-700 hover:bg-neutral-100'
                   )}
@@ -470,7 +483,7 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
                   href={`/dashboard?research=${activeResearch.id}&aim=true&section=eye-tracking`}
                   className={cn(
                     'flex items-center text-sm px-3 py-2 rounded-md transition-colors',
-                    searchParams.get('section') === 'eye-tracking' 
+                    searchParamsSection === 'eye-tracking' 
                       ? 'bg-blue-50 text-blue-600' 
                       : 'text-neutral-700 hover:bg-neutral-100'
                   )}
@@ -484,7 +497,7 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
                   href={`/dashboard?research=${activeResearch.id}&aim=true&section=thank-you`}
                   className={cn(
                     'flex items-center text-sm px-3 py-2 rounded-md transition-colors',
-                    searchParams.get('section') === 'thank-you' 
+                    searchParamsSection === 'thank-you' 
                       ? 'bg-blue-50 text-blue-600' 
                       : 'text-neutral-700 hover:bg-neutral-100'
                   )}
@@ -504,7 +517,7 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
                   href={`/dashboard?research=${activeResearch.id}&aim=true&section=eye-tracking-recruit`}
                   className={cn(
                     'flex items-center text-sm px-3 py-2 rounded-md transition-colors',
-                    searchParams.get('section') === 'eye-tracking-recruit' 
+                    searchParamsSection === 'eye-tracking-recruit' 
                       ? 'bg-blue-50 text-blue-600' 
                       : 'text-neutral-700 hover:bg-neutral-100'
                   )}
@@ -523,7 +536,7 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
                   href={`/dashboard?research=${activeResearch.id}&aim=true&section=smart-voc-results`}
                   className={cn(
                     'flex items-center text-sm px-3 py-2 rounded-md transition-colors',
-                    searchParams.get('section') === 'smart-voc-results' 
+                    searchParamsSection === 'smart-voc-results' 
                       ? 'bg-blue-50 text-blue-600' 
                       : 'text-neutral-700 hover:bg-neutral-100'
                   )}
@@ -536,7 +549,7 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
                   href={`/dashboard?research=${activeResearch.id}&aim=true&section=cognitive-task-results`}
                   className={cn(
                     'flex items-center text-sm px-3 py-2 rounded-md transition-colors',
-                    searchParams.get('section') === 'cognitive-task-results' 
+                    searchParamsSection === 'cognitive-task-results' 
                       ? 'bg-blue-50 text-blue-600' 
                       : 'text-neutral-700 hover:bg-neutral-100'
                   )}
@@ -581,9 +594,29 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
         <nav className="p-4">
           <ul className="space-y-1">
             {mainNavItems.map((item) => {
-              const isActive = 
-                pathname === item.href || 
-                (pathname.startsWith('/dashboard') && item.id === 'dashboard' && !isCreatingResearch);
+              // Lógica completamente reescrita para corregir el problema de selección
+              let isActive = false;
+              
+              if (item.id === 'dashboard') {
+                // Dashboard activo solo si estamos exactamente en /dashboard y no en otra subruta
+                isActive = pathname === '/dashboard';
+              } 
+              else if (item.id === 'new-research') {
+                // New Research activo si estamos en la ruta de nueva investigación
+                isActive = pathname === '/dashboard/research/new';
+              }
+              else if (item.id === 'research-history') {
+                // Research History activo si estamos en esa ruta específica
+                isActive = pathname === '/dashboard/research-history';
+              }
+              else if (item.id === 'research') {
+                // Research activo si estamos en esa ruta específica
+                isActive = pathname === '/dashboard/research';
+              }
+              else if (item.id === 'emotions') {
+                // Emotions activo si estamos en esa ruta específica
+                isActive = pathname === '/dashboard/emotions';
+              }
               
               // Personalizar el elemento "Nueva investigación" para usar nuestra función personalizada
               if (item.id === 'new-research') {

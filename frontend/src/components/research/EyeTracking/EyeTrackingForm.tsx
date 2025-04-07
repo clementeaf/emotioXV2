@@ -76,7 +76,8 @@ export const EyeTrackingForm: React.FC<EyeTrackingFormProps> = ({ researchId, cl
     setActiveTab: setFormActiveTab,
     validateStimuliData
   } = useEyeTrackingForm({
-    researchId
+    researchId,
+    autoSync: false
   });
 
   useEffect(() => {
@@ -150,7 +151,7 @@ export const EyeTrackingForm: React.FC<EyeTrackingFormProps> = ({ researchId, cl
     // Mostrar la estructura completa de datos que se enviará
     logger.debug('EyeTrackingForm.handleSaveClick - Datos completos a guardar:', formData);
     
-    // Mostrar modal con los datos que se enviarían
+    // Mostrar modal con los datos que se enviarían - aquí es explícito que es el usuario quien decide enviar
     setShowDataModal(true);
   };
 

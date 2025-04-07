@@ -105,7 +105,7 @@ const API_CONFIG = {
     auth: {
       LOGIN: '/auth/login',
       REGISTER: '/auth/register',
-      REFRESH_TOKEN: '/auth/refresh-token',
+      REFRESH_TOKEN: '/auth/refreshToken',
       LOGOUT: '/auth/logout',
       PROFILE: '/auth/profile',
     },
