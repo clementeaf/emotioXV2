@@ -6,7 +6,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
  */
 export const getCorsHeaders = (): { [key: string]: string } => {
   // Obtenemos la URL de origen (para desarrollo y producción)
-  const allowedOrigins = process.env.ALLOWED_ORIGIN || '*';
+  const allowedOrigins = process.env.ALLOWED_ORIGIN || 'http://localhost:4700,https://main.di4935nnx8tyk.amplifyapp.com';
   const requestOrigin = process.env.REQUEST_ORIGIN || '*';
   
   // Verificar si el origen de la solicitud está en la lista de orígenes permitidos
@@ -23,6 +23,8 @@ export const getCorsHeaders = (): { [key: string]: string } => {
       origin = originsArray[0];
     }
   }
+  
+  console.log(`CORS: Request Origin=${requestOrigin}, Selected Origin=${origin}`);
   
   return {
     'Access-Control-Allow-Origin': origin,

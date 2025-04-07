@@ -69,10 +69,18 @@ export const alovaInstance = createAlova({
         method.url = method.url.substring(4);
         console.warn('⚠️ Se corrigió una URL con prefijo /api');
       }
+      
+      // Prevenir URLs que ya contienen el dominio completo para evitar duplicación
+      if (method.url.includes('https://') || method.url.includes('http://')) {
+        // Si la URL ya incluye el dominio completo, no agregar baseURL
+        console.warn('⚠️ Se detectó una URL absoluta y se usará tal cual:', method.url);
+        method.baseURL = ''; // Eliminar baseURL para evitar duplicación
+      }
     }
     
     // Mostrar URL completa para depuración
-    console.log(`Alova: Preparando solicitud a URL: ${method.baseURL}${method.url}`);
+    const fullUrl = method.baseURL && method.url ? `${method.baseURL}${method.url}` : method.url;
+    console.log(`Alova: Preparando solicitud a URL: ${fullUrl}`);
     console.log('Headers enviados:', JSON.stringify(config.headers));
   },
   

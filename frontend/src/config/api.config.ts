@@ -44,6 +44,15 @@ interface EyeTrackingEndpoints {
   DELETE: string;
 }
 
+// Estructura para tareas cognitivas
+interface CognitiveTaskEndpoints {
+  CREATE: string;
+  GET: string;
+  GET_BY_RESEARCH: string;
+  UPDATE: string;
+  DELETE: string;
+}
+
 // Estructura para S3
 interface S3Endpoints {
   UPLOAD: string;
@@ -67,6 +76,7 @@ interface Endpoints {
   thankYouScreen: ThankYouScreenEndpoints;
   smartVoc: SmartVocEndpoints;
   eyeTracking: EyeTrackingEndpoints;
+  cognitiveTask: CognitiveTaskEndpoints;
   s3: S3Endpoints;
 }
 
@@ -145,6 +155,16 @@ const API_CONFIG = {
       CREATE: '/eye-tracking',
       UPDATE: '/eye-tracking/{id}',
       DELETE: '/eye-tracking/{id}',
+    },
+    
+    // Tareas Cognitivas
+    cognitiveTask: {
+      getByResearch: '/cognitive-task/research/{researchId}',
+      get: '/cognitive-task/{id}',
+      create: '/cognitive-task',
+      update: '/cognitive-task/{id}',
+      delete: '/cognitive-task/{id}',
+      createOrUpdate: '/cognitive-task/research/{researchId}'
     },
     
     // S3

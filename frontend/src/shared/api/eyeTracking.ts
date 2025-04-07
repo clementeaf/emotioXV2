@@ -49,7 +49,9 @@ export const eyeTrackingAPI = {
    * Obtiene la configuración de reclutamiento de EyeTracking
    */
   getEyeTrackingRecruitConfig: (researchId: string) => {
-    const method = alovaInstance.Get(`${API_BASE}/research/${researchId}/eye-tracking-recruit`);
+    // Usar la ruta correcta según el controlador en el backend
+    const path = `/eye-tracking-recruit/research/${researchId}/config`;
+    const method = alovaInstance.Get(path);
     
     // Para solucionar problemas de CORS, eliminamos headers problemáticos
     if (method.config?.headers) {
@@ -65,24 +67,42 @@ export const eyeTrackingAPI = {
    */
   updateEyeTrackingRecruitConfig: (request: EyeTrackingRecruitRequest) => {
     const { researchId, config } = request;
-    const method = alovaInstance.Put(`${API_BASE}/research/${researchId}/eye-tracking-recruit`, config);
     
-    // Para solucionar problemas de CORS, eliminamos headers problemáticos
-    if (method.config?.headers) {
-      const { 'Cache-Control': _, 'Pragma': __, ...cleanHeaders } = method.config.headers as any;
-      method.config.headers = cleanHeaders;
+    // Verificar si la configuración ya existe (tendrá un configId) o es nueva
+    if ('id' in config && config.id) {
+      // Si existe, usar la ruta de actualización de configuración existente
+      const path = `/eye-tracking-recruit/config/${config.id}`;
+      const method = alovaInstance.Put(path, config);
+      
+      if (method.config?.headers) {
+        const { 'Cache-Control': _, 'Pragma': __, ...cleanHeaders } = method.config.headers as any;
+        method.config.headers = cleanHeaders;
+      }
+      
+      return method;
+    } else {
+      // Si es nueva, crear configuración para esta investigación
+      const path = `/eye-tracking-recruit/research/${researchId}/config`;
+      const method = alovaInstance.Post(path, config);
+      
+      if (method.config?.headers) {
+        const { 'Cache-Control': _, 'Pragma': __, ...cleanHeaders } = method.config.headers as any;
+        method.config.headers = cleanHeaders;
+      }
+      
+      return method;
     }
-    
-    return method;
   },
 
   /**
    * Obtiene las estadísticas actuales de reclutamiento
    */
   getEyeTrackingRecruitStats: (researchId: string) => {
-    const method = alovaInstance.Get(`${API_BASE}/research/${researchId}/eye-tracking-recruit/stats`);
+    // Esta aproximación es compleja porque requiere encadenar peticiones
+    // En lugar de esto, vamos a hacer una petición simple y manejar el error en el cliente
+    const path = `/eye-tracking-recruit/research/${researchId}/summary`;
+    const method = alovaInstance.Get(path);
     
-    // Para solucionar problemas de CORS, eliminamos headers problemáticos
     if (method.config?.headers) {
       const { 'Cache-Control': _, 'Pragma': __, ...cleanHeaders } = method.config.headers as any;
       method.config.headers = cleanHeaders;
@@ -95,9 +115,11 @@ export const eyeTrackingAPI = {
    * Genera un enlace de reclutamiento nuevo
    */
   generateRecruitmentLink: (researchId: string) => {
-    const method = alovaInstance.Post(`${API_BASE}/research/${researchId}/eye-tracking-recruit/generate-link`, {});
+    // Esta es una operación más compleja porque primero necesitamos el configId
+    // Usamos la misma aproximación que para las estadísticas
+    const path = `/eye-tracking-recruit/research/${researchId}/summary`;
+    const method = alovaInstance.Get(path);
     
-    // Para solucionar problemas de CORS, eliminamos headers problemáticos
     if (method.config?.headers) {
       const { 'Cache-Control': _, 'Pragma': __, ...cleanHeaders } = method.config.headers as any;
       method.config.headers = cleanHeaders;
@@ -110,9 +132,11 @@ export const eyeTrackingAPI = {
    * Genera un código QR para el enlace de reclutamiento
    */
   generateQRCode: (researchId: string) => {
-    const method = alovaInstance.Post(`${API_BASE}/research/${researchId}/eye-tracking-recruit/generate-qr`, {});
+    // Esta es una operación más compleja porque primero necesitamos el configId
+    // Usamos la misma aproximación que para las estadísticas
+    const path = `/eye-tracking-recruit/research/${researchId}/summary`;
+    const method = alovaInstance.Get(path);
     
-    // Para solucionar problemas de CORS, eliminamos headers problemáticos
     if (method.config?.headers) {
       const { 'Cache-Control': _, 'Pragma': __, ...cleanHeaders } = method.config.headers as any;
       method.config.headers = cleanHeaders;

@@ -140,6 +140,20 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
         return response as ConfigResponse;
       } catch (error) {
         console.error('Error al cargar la configuración inicial:', error);
+        
+        // Si obtenemos un 404, no es un error real, simplemente no hay configuración
+        // Esto es normal para investigaciones nuevas
+        if (error?.response?.status === 404 || 
+            (error?.message && error.message.includes('404')) ||
+            (typeof error === 'object' && error && 'notFound' in error)) {
+          console.log('No se encontró configuración para esta investigación - esto es normal si es nueva');
+          return { 
+            success: true, 
+            data: null, 
+            message: 'No existe configuración previa' 
+          };
+        }
+        
         return { success: false, error: 'Error al cargar la configuración' };
       }
     },
@@ -156,10 +170,22 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
         
         // Usar el método de Alova
         const response = await eyeTrackingAPI.getEyeTrackingRecruitStats(researchId).send();
-        const typedResponse = response as any;
-        return typedResponse?.data || DEFAULT_STATS;
+        
+        // Si la respuesta tiene un formato estándar, extraer data
+        if (response && typeof response === 'object' && 'data' in response) {
+          return response.data || DEFAULT_STATS;
+        }
+        
+        // Si la respuesta es directamente los datos
+        return response as EyeTrackingRecruitStats || DEFAULT_STATS;
       } catch (error) {
         console.error('Error al cargar estadísticas:', error);
+        // Para errores 404, retornar estadísticas por defecto sin mostrar error
+        if (error?.response?.status === 404 || 
+            (error?.message && error.message.includes('404')) ||
+            (typeof error === 'object' && error && 'notFound' in error)) {
+          console.log('No se encontraron estadísticas - esto es normal para configuraciones nuevas');
+        }
         return DEFAULT_STATS;
       }
     },

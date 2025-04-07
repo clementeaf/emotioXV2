@@ -17,6 +17,17 @@ export interface EndpointsConfig {
 export type ApiCategory = keyof typeof endpointsJson.endpoints;
 
 /**
+ * Mapeo de alias para endpoints que pueden tener diferentes nombres
+ */
+const endpointAliases: Record<string, string> = {
+  'cognitiveTask.getByResearch': 'cognitiveTask.GET_BY_RESEARCH',
+  'cognitiveTask.get': 'cognitiveTask.GET',
+  'cognitiveTask.create': 'cognitiveTask.CREATE',
+  'cognitiveTask.update': 'cognitiveTask.UPDATE',
+  'cognitiveTask.delete': 'cognitiveTask.DELETE',
+};
+
+/**
  * Clase para manejar los endpoints de la API dinámicamente
  */
 export class ApiEndpointManager {
@@ -38,15 +49,54 @@ export class ApiEndpointManager {
     operation: keyof typeof endpointsJson.endpoints[T], 
     params?: Record<string, string>
   ): string {
+    // Verificar si existe un alias para este endpoint
+    const endpointKey = `${category}.${String(operation)}`;
+    const aliasKey = endpointAliases[endpointKey];
+    
+    // Si hay un alias, usar esos valores
+    let actualCategory = category;
+    let actualOperation = operation;
+    
+    if (aliasKey) {
+      console.log(`Usando alias para endpoint: ${endpointKey} -> ${aliasKey}`);
+      const [aliasCategory, aliasOp] = aliasKey.split('.');
+      actualCategory = aliasCategory as T;
+      actualOperation = aliasOp as any;
+    }
+    
     // Obtener la URL base y el path específico
     const baseUrl = this.config.apiUrl;
     
     // Acceder de forma segura a los endpoints de la categoría
-    const categoryEndpoints = this.config.endpoints[category as string] || {};
-    const path = categoryEndpoints[operation as string];
+    const categoryEndpoints = this.config.endpoints[actualCategory as string] || {};
+    let path = categoryEndpoints[actualOperation as string];
     
+    // Si no se encuentra el endpoint incluso con el alias, intentar crear la URL basada en las convenciones
     if (!path) {
-      throw new Error(`Endpoint no encontrado: ${category}.${String(operation)}`);
+      console.log(`Endpoint ${category}.${String(operation)} no encontrado en configuración, generando URL dinámica`);
+      
+      // Para tareas cognitivas, construir basados en la convención
+      if (String(category) === 'cognitiveTask') {
+        if (String(operation) === 'getByResearch') {
+          path = `/research/{researchId}/cognitive-task`;
+          console.log(`Construyendo URL dinámica para cognitiveTask.getByResearch: ${path}`);
+        } else if (String(operation) === 'get') {
+          path = `/cognitive-task/{id}`;
+        } else if (String(operation) === 'create') {
+          path = `/cognitive-task`;
+        } else if (String(operation) === 'update') {
+          path = `/cognitive-task/{id}`;
+        } else if (String(operation) === 'delete') {
+          path = `/cognitive-task/{id}`;
+        } else if (String(operation) === 'createOrUpdate') {
+          path = `/research/{researchId}/cognitive-task`;
+        }
+      }
+      
+      // Si aún no hay path, lanzar error
+      if (!path) {
+        throw new Error(`Endpoint no encontrado: ${category}.${String(operation)}`);
+      }
     }
     
     // Si hay parámetros, reemplazarlos en la URL
