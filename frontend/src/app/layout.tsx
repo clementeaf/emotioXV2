@@ -15,6 +15,13 @@ import { apiClient } from '@/config/api-client';
 // Importar utilidades de debugging - solo se cargan en el cliente
 import '@/utils/debugging';
 
+// Declaración para el window global
+declare global {
+  interface Window {
+    enableApiDebugger: () => void;
+  }
+}
+
 export default function RootLayout({
   children,
 }: {
@@ -23,32 +30,28 @@ export default function RootLayout({
   // Estado para el entorno
   const [isDevelopment, setIsDevelopment] = useState(false);
   
-  // Inicializar verificación de entorno
+  // Inicializar verificación de entorno y configuración inicial
   useEffect(() => {
     if (typeof window !== 'undefined') {
       // Verificar si estamos en desarrollo
       const isDevEnv = process.env.NODE_ENV === 'development';
       setIsDevelopment(isDevEnv);
       
-      // Activar automáticamente el debugger en desarrollo
+      // Activar automáticamente el debugger en desarrollo si existe la función
       if (isDevEnv && typeof window.enableApiDebugger === 'function') {
         console.log('🔍 [DEBUG] Activando debugger de API automáticamente en entorno de desarrollo');
         window.enableApiDebugger();
       }
       
-      // Asegurar que el token se establezca en apiClient al iniciar
+      // Inicializar autenticación en API cliente
       const initializeApiAuth = () => {
         try {
           const storageType = localStorage.getItem('auth_storage_type') || 'local';
-          const token = storageType === 'local'
-            ? localStorage.getItem('token')
-            : sessionStorage.getItem('token');
+          const storage = storageType === 'local' ? localStorage : sessionStorage;
+          const token = storage.getItem('token');
             
           if (token) {
-            console.log('🔑 [AUTH] Estableciendo token en apiClient al iniciar aplicación');
             apiClient.setAuthToken(token);
-          } else {
-            console.log('🔑 [AUTH] No se encontró token al iniciar la aplicación');
           }
         } catch (error) {
           console.error('🔑 [AUTH] Error al inicializar el token en apiClient:', error);
@@ -68,7 +71,7 @@ export default function RootLayout({
               <ErrorLogProvider>
                 {children}
                 <Toaster position="top-right" />
-                <DevModeInfo variant="floating" />
+                {isDevelopment && <DevModeInfo variant="floating" />}
                 <LogViewer />
               </ErrorLogProvider>
             </ResearchProvider>

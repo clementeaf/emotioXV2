@@ -1,8 +1,7 @@
 'use client';
 
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, memo, useCallback, Suspense } from 'react';
 
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
@@ -10,11 +9,11 @@ import { Navbar } from '@/components/layout/Navbar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { CreateResearchForm } from '@/components/research/CreateResearchForm';
 import { Button } from '@/components/ui/Button';
-import { useResearch } from '@/providers/ResearchProvider';
 import { ResearchConfirmation } from '@/components/research/ResearchConfirmation';
 import { ResearchStageManager } from '@/components/research/ResearchStageManager';
-import { useAuth } from '@/providers/AuthProvider';
+import { useProtectedRoute } from '@/hooks/useProtectedRoute';
 
+// Tipos para componentes modales
 interface ConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -22,7 +21,8 @@ interface ConfirmationModalProps {
   onNew: () => void;
 }
 
-function ConfirmationModal({ isOpen, onClose, onContinue, onNew }: ConfirmationModalProps) {
+// Componente modal de confirmación memoizado
+const ConfirmationModal = memo(({ isOpen, onClose, onContinue, onNew }: ConfirmationModalProps) => {
   if (!isOpen) {return null;}
 
   return (
@@ -83,16 +83,12 @@ function ConfirmationModal({ isOpen, onClose, onContinue, onNew }: ConfirmationM
       </div>
     </div>
   );
-}
+});
 
-interface DraftModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onContinue: () => void;
-  onNew: () => void;
-}
+ConfirmationModal.displayName = 'ConfirmationModal';
 
-function DraftContinuationModal({ isOpen, onClose, onContinue, onNew }: DraftModalProps) {
+// Componente modal de borrador memoizado
+const DraftContinuationModal = memo(({ isOpen, onClose, onContinue, onNew }: ConfirmationModalProps) => {
   if (!isOpen) {return null;}
 
   return (
@@ -153,109 +149,167 @@ function DraftContinuationModal({ isOpen, onClose, onContinue, onNew }: DraftMod
       </div>
     </div>
   );
+});
+
+DraftContinuationModal.displayName = 'DraftContinuationModal';
+
+// Interfaz para los datos de investigación exitosa
+interface SuccessData {
+  id: string;
+  name: string;
 }
+
+// Sección de creación de investigación
+const CreateSection = memo(({ onResearchCreated }: { onResearchCreated: (id: string, name: string) => void }) => (
+  <div className="flex-1 overflow-y-auto">
+    <div className="container mx-auto px-6 py-8">
+      <div className="mb-8">
+        <h1 className="text-2xl font-semibold text-neutral-900">
+          Nueva Investigación
+        </h1>
+        <p className="mt-2 text-sm text-neutral-600">
+          Configura los detalles de tu nueva investigación
+        </p>
+      </div>
+      
+      <div className="bg-white rounded-lg border border-neutral-200 p-6">
+        <CreateResearchForm onResearchCreated={onResearchCreated} />
+      </div>
+    </div>
+  </div>
+));
+
+CreateSection.displayName = 'CreateSection';
+
+// Sección de investigación exitosa
+const SuccessSection = memo(({ 
+  id, 
+  name, 
+  onClose 
+}: { 
+  id: string, 
+  name: string, 
+  onClose: () => void 
+}) => (
+  <div className="flex-1 overflow-y-auto">
+    <div className="container mx-auto px-6 py-8">
+      <div className="mb-8">
+        <h1 className="text-2xl font-semibold text-neutral-900">
+          Investigación Creada
+        </h1>
+        <p className="mt-2 text-sm text-neutral-600">
+          Tu investigación ha sido creada exitosamente
+        </p>
+      </div>
+      
+      <div className="bg-white rounded-lg border border-neutral-200 p-6">
+        <ResearchConfirmation 
+          researchId={id}
+          researchName={name}
+          onClose={onClose} 
+        />
+      </div>
+    </div>
+  </div>
+));
+
+SuccessSection.displayName = 'SuccessSection';
+
+// Sección de configuración de etapas
+const StagesSection = memo(({ id }: { id: string }) => (
+  <div className="flex-1 overflow-y-auto">
+    <div className="container mx-auto px-6 py-8">
+      <div className="mb-8">
+        <h1 className="text-2xl font-semibold text-neutral-900">
+          Configurar Etapas
+        </h1>
+        <p className="mt-2 text-sm text-neutral-600">
+          Configura las etapas de tu investigación
+        </p>
+      </div>
+      
+      <div className="bg-white rounded-lg border border-neutral-200 p-6">
+        <ResearchStageManager researchId={id} />
+      </div>
+    </div>
+  </div>
+));
+
+StagesSection.displayName = 'StagesSection';
+
+// Sección de error
+const ErrorSection = memo(({ onNavigateToStart }: { onNavigateToStart: () => void }) => (
+  <div className="flex-1 overflow-y-auto">
+    <div className="container mx-auto px-6 py-8">
+      <div className="p-6 bg-red-50 rounded-lg border border-red-200">
+        <h2 className="text-xl font-medium text-red-800 mb-2">Paso no válido</h2>
+        <p className="text-red-700">
+          El paso especificado no es válido. Por favor, regresa al 
+          <button 
+            onClick={onNavigateToStart}
+            className="ml-1 text-red-800 underline hover:text-red-900"
+          >
+            inicio del proceso
+          </button>.
+        </p>
+      </div>
+    </div>
+  </div>
+));
+
+ErrorSection.displayName = 'ErrorSection';
 
 // Componente que usa useSearchParams
 function NewResearchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const step = searchParams?.get('step') || 'create';
-  const [successData, setSuccessData] = useState<{id: string, name: string} | null>(null);
+  const [successData, setSuccessData] = useState<SuccessData | null>(null);
   
   // Función para manejar creación exitosa
-  const handleSuccess = (id: string, name: string) => {
+  const handleSuccess = useCallback((id: string, name: string) => {
     setSuccessData({ id, name });
     router.push(`/dashboard/research/new?step=success&id=${id}`);
-  };
+  }, [router]);
+  
+  // Función para navegar al inicio
+  const navigateToStart = useCallback(() => {
+    router.push('/dashboard/research/new');
+  }, [router]);
+  
+  // Función para ir al dashboard con la investigación seleccionada
+  const handleClose = useCallback(() => {
+    if (successData?.id) {
+      router.push(`/dashboard?research=${successData.id}`);
+    } else if (searchParams?.get('id')) {
+      router.push(`/dashboard?research=${searchParams.get('id')}`);
+    } else {
+      router.push('/dashboard');
+    }
+  }, [router, successData, searchParams]);
   
   // Determinar el contenido basado en el paso actual
-  const renderContent = () => {
-    if (step === 'create') {
-      return (
-        <div className="flex-1 overflow-y-auto">
-          <div className="container mx-auto px-6 py-8">
-            <div className="mb-8">
-              <h1 className="text-2xl font-semibold text-neutral-900">
-                Nueva Investigación
-              </h1>
-              <p className="mt-2 text-sm text-neutral-600">
-                Configura los detalles de tu nueva investigación
-              </p>
-            </div>
-            
-            <div className="bg-white rounded-lg border border-neutral-200 p-6">
-              <CreateResearchForm onResearchCreated={handleSuccess} />
-            </div>
-          </div>
-        </div>
-      );
-    } else if (step === 'success' && searchParams?.get('id')) {
-      const id = searchParams.get('id') || '';
-      return (
-        <div className="flex-1 overflow-y-auto">
-          <div className="container mx-auto px-6 py-8">
-            <div className="mb-8">
-              <h1 className="text-2xl font-semibold text-neutral-900">
-                Investigación Creada
-              </h1>
-              <p className="mt-2 text-sm text-neutral-600">
-                Tu investigación ha sido creada exitosamente
-              </p>
-            </div>
-            
-            <div className="bg-white rounded-lg border border-neutral-200 p-6">
-              <ResearchConfirmation 
-                researchId={id}
-                researchName={successData?.name || 'Nueva Investigación'}
-                onClose={() => router.push(`/dashboard?research=${id}`)} 
-              />
-            </div>
-          </div>
-        </div>
-      );
-    } else if (step === 'stages' && searchParams?.get('id')) {
-      const id = searchParams.get('id') || '';
-      return (
-        <div className="flex-1 overflow-y-auto">
-          <div className="container mx-auto px-6 py-8">
-            <div className="mb-8">
-              <h1 className="text-2xl font-semibold text-neutral-900">
-                Configurar Etapas
-              </h1>
-              <p className="mt-2 text-sm text-neutral-600">
-                Configura las etapas de tu investigación
-              </p>
-            </div>
-            
-            <div className="bg-white rounded-lg border border-neutral-200 p-6">
-              <ResearchStageManager researchId={id} />
-            </div>
-          </div>
-        </div>
-      );
-    } else {
-      return (
-        <div className="flex-1 overflow-y-auto">
-          <div className="container mx-auto px-6 py-8">
-            <div className="p-6 bg-red-50 rounded-lg border border-red-200">
-              <h2 className="text-xl font-medium text-red-800 mb-2">Paso no válido</h2>
-              <p className="text-red-700">
-                El paso especificado no es válido. Por favor, regresa al 
-                <button 
-                  onClick={() => router.push('/dashboard/research/new')}
-                  className="ml-1 text-red-800 underline hover:text-red-900"
-                >
-                  inicio del proceso
-                </button>.
-              </p>
-            </div>
-          </div>
-        </div>
-      );
-    }
-  };
+  if (step === 'create') {
+    return <CreateSection onResearchCreated={handleSuccess} />;
+  } 
   
-  return renderContent();
+  if (step === 'success' && searchParams?.get('id')) {
+    const id = searchParams.get('id') || '';
+    return (
+      <SuccessSection 
+        id={id} 
+        name={successData?.name || 'Nueva Investigación'} 
+        onClose={handleClose} 
+      />
+    );
+  } 
+  
+  if (step === 'stages' && searchParams?.get('id')) {
+    const id = searchParams.get('id') || '';
+    return <StagesSection id={id} />;
+  } 
+  
+  return <ErrorSection onNavigateToStart={navigateToStart} />;
 }
 
 // Usar el HOC para envolver el componente
@@ -263,13 +317,7 @@ const NewResearchContentWithSuspense = withSearchParams(NewResearchContent);
 
 export default function NewResearchPage() {
   const router = useRouter();
-  const { isAuthenticated, token } = useAuth();
-  
-  useEffect(() => {
-    if (!isAuthenticated) {
-      router.replace('/login');
-    }
-  }, [isAuthenticated, router]);
+  const { token } = useProtectedRoute();
   
   if (!token) {
     return null;
