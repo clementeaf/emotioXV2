@@ -12,9 +12,10 @@ import {
   LinkConfigKey,
   ParameterOptionKey,
   BacklinkKey,
-  EyeTrackingRecruitResponse
+  EyeTrackingRecruitRequest
 } from '@/shared/interfaces/eyeTracking';
 import { eyeTrackingAPI } from '@/shared/api/eyeTracking';
+import API_CONFIG from '@/config/api.config';
 
 interface UseEyeTrackingRecruitProps {
   researchId: string;
@@ -103,9 +104,10 @@ const DEFAULT_CONFIG: Omit<EyeTrackingRecruitConfig, 'researchId'> = {
 
 // Interfaces para tipos de respuesta
 interface ConfigResponse {
-  success?: boolean;
+  success: boolean;
+  data?: EyeTrackingRecruitConfig | null;
   error?: string;
-  data?: EyeTrackingRecruitConfig;
+  message?: string;
 }
 
 interface LinkResponse {
@@ -120,6 +122,31 @@ interface QRResponse {
   };
 }
 
+// Modificar la definición del tipo de error para incluir response y message
+type ApiError = Error & {
+  response?: {
+    status?: number;
+  };
+  message?: string;
+  notFound?: boolean;
+};
+
+// Añadir una función para detectar si el módulo backend está disponible
+const isEyeTrackingRecruitModuleAvailable = async (researchId: string): Promise<boolean> => {
+  try {
+    const response = await fetch(`${API_CONFIG.baseURL}/eye-tracking-recruit/research/${researchId}/config`, {
+      method: 'OPTIONS',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    return response.status !== 404;
+  } catch (error) {
+    console.log('Error verificando disponibilidad del módulo eye-tracking-recruit:', error);
+    return false;
+  }
+};
+
 export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps): UseEyeTrackingRecruitResult {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -127,6 +154,23 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   // Estados
   const [formData, setFormData] = useState<Omit<EyeTrackingRecruitConfig, 'researchId'>>(DEFAULT_CONFIG);
   const [stats, setStats] = useState<EyeTrackingRecruitStats | null>(null);
+  const [moduleAvailable, setModuleAvailable] = useState<boolean | null>(null);
+  
+  // Añadir este efecto al inicio de la función
+  useEffect(() => {
+    // Verificar si el módulo está disponible
+    const checkModuleAvailability = async () => {
+      if (!researchId) return;
+      const available = await isEyeTrackingRecruitModuleAvailable(researchId);
+      setModuleAvailable(available);
+      
+      if (!available) {
+        console.log('El módulo eye-tracking-recruit no está disponible en el backend. Usando datos simulados.');
+      }
+    };
+    
+    checkModuleAvailability();
+  }, [researchId]);
   
   // Consulta para obtener la configuración
   const { data: configData, isLoading } = useQuery<ConfigResponse>({
@@ -134,6 +178,16 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     queryFn: async () => {
       try {
         if (!researchId) return { success: false, error: 'ID de investigación no válido' };
+        
+        // Si el módulo no está disponible, devolver respuesta simulada
+        if (moduleAvailable === false) {
+          console.log('Usando datos de configuración simulados para eye-tracking-recruit');
+          return { 
+            success: true, 
+            data: null, 
+            message: 'Módulo en desarrollo - datos simulados' 
+          };
+        }
         
         // Usar el método de Alova
         const response = await eyeTrackingAPI.getEyeTrackingRecruitConfig(researchId).send();
@@ -143,9 +197,10 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
         
         // Si obtenemos un 404, no es un error real, simplemente no hay configuración
         // Esto es normal para investigaciones nuevas
-        if (error?.response?.status === 404 || 
-            (error?.message && error.message.includes('404')) ||
-            (typeof error === 'object' && error && 'notFound' in error)) {
+        const apiError = error as ApiError;
+        if (apiError?.response?.status === 404 || 
+            (apiError?.message && apiError.message.includes('404')) ||
+            (typeof apiError === 'object' && apiError && 'notFound' in apiError)) {
           console.log('No se encontró configuración para esta investigación - esto es normal si es nueva');
           return { 
             success: true, 
@@ -158,7 +213,10 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       }
     },
     enabled: !!researchId,
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
+    // Añadir tiempo de reintento extendido para módulo en desarrollo
+    retry: 1,
+    retryDelay: 1000
   });
   
   // Consulta para obtener estadísticas
@@ -168,12 +226,18 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       try {
         if (!researchId) return DEFAULT_STATS;
         
+        // Si el módulo no está disponible, devolver estadísticas simuladas
+        if (moduleAvailable === false) {
+          console.log('Usando estadísticas simuladas para eye-tracking-recruit');
+          return DEFAULT_STATS;
+        }
+        
         // Usar el método de Alova
         const response = await eyeTrackingAPI.getEyeTrackingRecruitStats(researchId).send();
         
         // Si la respuesta tiene un formato estándar, extraer data
         if (response && typeof response === 'object' && 'data' in response) {
-          return response.data || DEFAULT_STATS;
+          return response.data as EyeTrackingRecruitStats || DEFAULT_STATS;
         }
         
         // Si la respuesta es directamente los datos
@@ -181,16 +245,20 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       } catch (error) {
         console.error('Error al cargar estadísticas:', error);
         // Para errores 404, retornar estadísticas por defecto sin mostrar error
-        if (error?.response?.status === 404 || 
-            (error?.message && error.message.includes('404')) ||
-            (typeof error === 'object' && error && 'notFound' in error)) {
+        const apiError = error as ApiError;
+        if (apiError?.response?.status === 404 || 
+            (apiError?.message && apiError.message.includes('404')) ||
+            (typeof apiError === 'object' && apiError && 'notFound' in apiError)) {
           console.log('No se encontraron estadísticas - esto es normal para configuraciones nuevas');
         }
         return DEFAULT_STATS;
       }
     },
     enabled: !!researchId,
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
+    // Añadir tiempo de reintento extendido para módulo en desarrollo
+    retry: 1,
+    retryDelay: 1000
   });
   
   // Efecto para actualizar el estado cuando se cargan los datos
@@ -202,7 +270,8 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     }
     
     if (statsData) {
-      setStats(statsData);
+      // Usar una aserción de tipo para statsData
+      setStats(statsData as EyeTrackingRecruitStats);
     }
   }, [configData, statsData]);
   
@@ -351,12 +420,32 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   // Acciones
   const saveForm = useCallback(async () => {
     if (!researchId) {
-      toast.error('ID de investigación no válido');
+      throw new Error('ID de investigación no válido');
+    }
+    
+    // Si el módulo no está disponible, simular guardado exitoso
+    if (moduleAvailable === false) {
+      console.log('Simulando guardado de configuración de eye-tracking-recruit');
+      setTimeout(() => {
+        toast.success('Configuración guardada exitosamente (simulado)');
+      }, 1500);
       return;
     }
     
-    saveConfig();
-  }, [researchId, saveConfig]);
+    // Continuar con la implementación actual...
+    const request: EyeTrackingRecruitRequest = {
+      researchId,
+      config: formData
+    };
+    
+    try {
+      await eyeTrackingAPI.updateEyeTrackingRecruitConfig(request).send();
+      toast.success('Configuración guardada exitosamente');
+    } catch (error) {
+      console.error('Error guardando la configuración:', error);
+      toast.error('Error al guardar la configuración');
+    }
+  }, [researchId, formData, moduleAvailable]);
   
   const generateRecruitmentLink = useCallback(async () => {
     if (!researchId) {
