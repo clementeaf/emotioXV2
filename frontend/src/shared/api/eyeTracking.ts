@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { 
   EyeTrackingConfig,
   EyeTrackingRecruitConfig,
@@ -6,108 +5,119 @@ import {
   EyeTrackingRecruitResponse,
   EyeTrackingRecruitRequest
 } from '../interfaces/eyeTracking';
+import { alovaInstance } from '@/config/alova.config';
+import API_CONFIG from '@/config/api.config';
 
-const API_BASE = '/api/research';
-
-// Función utilitaria para manejar respuestas
-const handleResponse = <T>(response: any): T => {
-  return response.data;
-};
+// Preparar los endpoints para eyeTracking
+const API_BASE = API_CONFIG.baseURL || '';
 
 /**
- * API para configurar el módulo de EyeTracking
+ * API para configurar el módulo de EyeTracking usando AlovaJS
  */
 export const eyeTrackingAPI = {
   /**
    * Obtiene la configuración de EyeTracking para Build
    */
-  getEyeTrackingConfig: async (researchId: string): Promise<EyeTrackingConfig> => {
-    try {
-      const response = await axios.get(`${API_BASE}/${researchId}/eye-tracking`);
-      return handleResponse<EyeTrackingConfig>(response);
-    } catch (error) {
-      console.error('Error al obtener configuración de eye tracking:', error);
-      throw error;
+  getEyeTrackingConfig: (researchId: string) => {
+    const method = alovaInstance.Get(`${API_BASE}/research/${researchId}/eye-tracking`);
+    
+    // Para solucionar problemas de CORS, eliminamos headers problemáticos
+    if (method.config?.headers) {
+      const { 'Cache-Control': _, 'Pragma': __, ...cleanHeaders } = method.config.headers as any;
+      method.config.headers = cleanHeaders;
     }
+    
+    return method;
   },
 
   /**
    * Actualiza la configuración de EyeTracking para Build
    */
-  updateEyeTrackingConfig: async (researchId: string, config: EyeTrackingConfig): Promise<void> => {
-    try {
-      await axios.put(`${API_BASE}/${researchId}/eye-tracking`, config);
-    } catch (error) {
-      console.error('Error al actualizar configuración de eye tracking:', error);
-      throw error;
+  updateEyeTrackingConfig: (researchId: string, config: EyeTrackingConfig) => {
+    const method = alovaInstance.Put(`${API_BASE}/research/${researchId}/eye-tracking`, config);
+    
+    // Para solucionar problemas de CORS, eliminamos headers problemáticos
+    if (method.config?.headers) {
+      const { 'Cache-Control': _, 'Pragma': __, ...cleanHeaders } = method.config.headers as any;
+      method.config.headers = cleanHeaders;
     }
+    
+    return method;
   },
 
   /**
    * Obtiene la configuración de reclutamiento de EyeTracking
    */
-  getEyeTrackingRecruitConfig: async (researchId: string): Promise<EyeTrackingRecruitResponse> => {
-    try {
-      const response = await axios.get(`${API_BASE}/${researchId}/eye-tracking-recruit`);
-      return handleResponse<EyeTrackingRecruitResponse>(response);
-    } catch (error) {
-      console.error('Error al obtener configuración de reclutamiento eye tracking:', error);
-      throw error;
+  getEyeTrackingRecruitConfig: (researchId: string) => {
+    const method = alovaInstance.Get(`${API_BASE}/research/${researchId}/eye-tracking-recruit`);
+    
+    // Para solucionar problemas de CORS, eliminamos headers problemáticos
+    if (method.config?.headers) {
+      const { 'Cache-Control': _, 'Pragma': __, ...cleanHeaders } = method.config.headers as any;
+      method.config.headers = cleanHeaders;
     }
+    
+    return method;
   },
 
   /**
    * Actualiza la configuración de reclutamiento de EyeTracking
    */
-  updateEyeTrackingRecruitConfig: async (
-    request: EyeTrackingRecruitRequest
-  ): Promise<EyeTrackingRecruitResponse> => {
-    try {
-      const { researchId, config } = request;
-      const response = await axios.put(`${API_BASE}/${researchId}/eye-tracking-recruit`, config);
-      return handleResponse<EyeTrackingRecruitResponse>(response);
-    } catch (error) {
-      console.error('Error al actualizar configuración de reclutamiento eye tracking:', error);
-      throw error;
+  updateEyeTrackingRecruitConfig: (request: EyeTrackingRecruitRequest) => {
+    const { researchId, config } = request;
+    const method = alovaInstance.Put(`${API_BASE}/research/${researchId}/eye-tracking-recruit`, config);
+    
+    // Para solucionar problemas de CORS, eliminamos headers problemáticos
+    if (method.config?.headers) {
+      const { 'Cache-Control': _, 'Pragma': __, ...cleanHeaders } = method.config.headers as any;
+      method.config.headers = cleanHeaders;
     }
+    
+    return method;
   },
 
   /**
    * Obtiene las estadísticas actuales de reclutamiento
    */
-  getEyeTrackingRecruitStats: async (researchId: string): Promise<EyeTrackingRecruitStats> => {
-    try {
-      const response = await axios.get(`${API_BASE}/${researchId}/eye-tracking-recruit/stats`);
-      return handleResponse<EyeTrackingRecruitStats>(response);
-    } catch (error) {
-      console.error('Error al obtener estadísticas de reclutamiento eye tracking:', error);
-      throw error;
+  getEyeTrackingRecruitStats: (researchId: string) => {
+    const method = alovaInstance.Get(`${API_BASE}/research/${researchId}/eye-tracking-recruit/stats`);
+    
+    // Para solucionar problemas de CORS, eliminamos headers problemáticos
+    if (method.config?.headers) {
+      const { 'Cache-Control': _, 'Pragma': __, ...cleanHeaders } = method.config.headers as any;
+      method.config.headers = cleanHeaders;
     }
+    
+    return method;
   },
 
   /**
    * Genera un enlace de reclutamiento nuevo
    */
-  generateRecruitmentLink: async (researchId: string): Promise<string> => {
-    try {
-      const response = await axios.post(`${API_BASE}/${researchId}/eye-tracking-recruit/generate-link`);
-      return response.data.link;
-    } catch (error) {
-      console.error('Error al generar enlace de reclutamiento:', error);
-      throw error;
+  generateRecruitmentLink: (researchId: string) => {
+    const method = alovaInstance.Post(`${API_BASE}/research/${researchId}/eye-tracking-recruit/generate-link`, {});
+    
+    // Para solucionar problemas de CORS, eliminamos headers problemáticos
+    if (method.config?.headers) {
+      const { 'Cache-Control': _, 'Pragma': __, ...cleanHeaders } = method.config.headers as any;
+      method.config.headers = cleanHeaders;
     }
+    
+    return method;
   },
 
   /**
    * Genera un código QR para el enlace de reclutamiento
    */
-  generateQRCode: async (researchId: string): Promise<string> => {
-    try {
-      const response = await axios.post(`${API_BASE}/${researchId}/eye-tracking-recruit/generate-qr`);
-      return response.data.qrImageUrl;
-    } catch (error) {
-      console.error('Error al generar código QR:', error);
-      throw error;
+  generateQRCode: (researchId: string) => {
+    const method = alovaInstance.Post(`${API_BASE}/research/${researchId}/eye-tracking-recruit/generate-qr`, {});
+    
+    // Para solucionar problemas de CORS, eliminamos headers problemáticos
+    if (method.config?.headers) {
+      const { 'Cache-Control': _, 'Pragma': __, ...cleanHeaders } = method.config.headers as any;
+      method.config.headers = cleanHeaders;
     }
+    
+    return method;
   }
 }; 
