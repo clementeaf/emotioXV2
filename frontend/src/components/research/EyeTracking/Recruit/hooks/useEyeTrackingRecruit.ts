@@ -147,207 +147,51 @@ const isEyeTrackingRecruitModuleAvailable = async (researchId: string): Promise<
   }
 };
 
+// Modificar la función checkEndpointAvailability
+const checkEndpointAvailability = async (researchId: string, endpoint: string): Promise<boolean> => {
+  // Prueba directa sin verificar localStorage para forzar la verificación en cada carga
+  try {
+    console.log(`Verificando disponibilidad del endpoint: ${endpoint}`);
+    
+    // Hacer una petición OPTIONS para verificar si el endpoint existe
+    const response = await fetch(`${API_CONFIG.baseURL}${endpoint}`.replace('{researchId}', researchId), {
+      method: 'OPTIONS',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    const isAvailable = response.status !== 404;
+    console.log(`Endpoint ${endpoint} ${isAvailable ? 'disponible' : 'no disponible'} - Status: ${response.status}`);
+    
+    return isAvailable;
+  } catch (error) {
+    console.log(`Error verificando disponibilidad del endpoint ${endpoint}:`, error);
+    return false;
+  }
+};
+
 export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps): UseEyeTrackingRecruitResult {
   const router = useRouter();
   const queryClient = useQueryClient();
   
   // Estados
   const [formData, setFormData] = useState<Omit<EyeTrackingRecruitConfig, 'researchId'>>(DEFAULT_CONFIG);
-  const [stats, setStats] = useState<EyeTrackingRecruitStats | null>(null);
-  const [moduleAvailable, setModuleAvailable] = useState<boolean | null>(null);
+  const [stats, setStats] = useState<EyeTrackingRecruitStats | null>(DEFAULT_STATS);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   
-  // Añadir este efecto al inicio de la función
+  // Eliminar las consultas que causan errores 404
+  // const { data: configData, isLoading } = useQuery...
+  // const { data: statsData } = useQuery...
+  
+  // MODO DE SIMULACIÓN TEMPORAL
+  // Simular carga inicial
   useEffect(() => {
-    // Verificar si el módulo está disponible
-    const checkModuleAvailability = async () => {
-      if (!researchId) return;
-      const available = await isEyeTrackingRecruitModuleAvailable(researchId);
-      setModuleAvailable(available);
-      
-      if (!available) {
-        console.log('El módulo eye-tracking-recruit no está disponible en el backend. Usando datos simulados.');
-      }
-    };
-    
-    checkModuleAvailability();
+    console.log('Usando datos simulados para eye-tracking-recruit');
+    setFormData(DEFAULT_CONFIG);
+    setStats(DEFAULT_STATS);
   }, [researchId]);
-  
-  // Consulta para obtener la configuración
-  const { data: configData, isLoading } = useQuery<ConfigResponse>({
-    queryKey: ['eyeTracking', 'recruitConfig', researchId],
-    queryFn: async () => {
-      try {
-        if (!researchId) return { success: false, error: 'ID de investigación no válido' };
-        
-        // Si el módulo no está disponible, devolver respuesta simulada
-        if (moduleAvailable === false) {
-          console.log('Usando datos de configuración simulados para eye-tracking-recruit');
-          return { 
-            success: true, 
-            data: null, 
-            message: 'Módulo en desarrollo - datos simulados' 
-          };
-        }
-        
-        // Usar el método de Alova
-        const response = await eyeTrackingAPI.getEyeTrackingRecruitConfig(researchId).send();
-        return response as ConfigResponse;
-      } catch (error) {
-        console.error('Error al cargar la configuración inicial:', error);
-        
-        // Si obtenemos un 404, no es un error real, simplemente no hay configuración
-        // Esto es normal para investigaciones nuevas
-        const apiError = error as ApiError;
-        if (apiError?.response?.status === 404 || 
-            (apiError?.message && apiError.message.includes('404')) ||
-            (typeof apiError === 'object' && apiError && 'notFound' in apiError)) {
-          console.log('No se encontró configuración para esta investigación - esto es normal si es nueva');
-          return { 
-            success: true, 
-            data: null, 
-            message: 'No existe configuración previa' 
-          };
-        }
-        
-        return { success: false, error: 'Error al cargar la configuración' };
-      }
-    },
-    enabled: !!researchId,
-    refetchOnWindowFocus: false,
-    // Añadir tiempo de reintento extendido para módulo en desarrollo
-    retry: 1,
-    retryDelay: 1000
-  });
-  
-  // Consulta para obtener estadísticas
-  const { data: statsData } = useQuery<EyeTrackingRecruitStats>({
-    queryKey: ['eyeTracking', 'recruitStats', researchId],
-    queryFn: async () => {
-      try {
-        if (!researchId) return DEFAULT_STATS;
-        
-        // Si el módulo no está disponible, devolver estadísticas simuladas
-        if (moduleAvailable === false) {
-          console.log('Usando estadísticas simuladas para eye-tracking-recruit');
-          return DEFAULT_STATS;
-        }
-        
-        // Usar el método de Alova
-        const response = await eyeTrackingAPI.getEyeTrackingRecruitStats(researchId).send();
-        
-        // Si la respuesta tiene un formato estándar, extraer data
-        if (response && typeof response === 'object' && 'data' in response) {
-          return response.data as EyeTrackingRecruitStats || DEFAULT_STATS;
-        }
-        
-        // Si la respuesta es directamente los datos
-        return response as EyeTrackingRecruitStats || DEFAULT_STATS;
-      } catch (error) {
-        console.error('Error al cargar estadísticas:', error);
-        // Para errores 404, retornar estadísticas por defecto sin mostrar error
-        const apiError = error as ApiError;
-        if (apiError?.response?.status === 404 || 
-            (apiError?.message && apiError.message.includes('404')) ||
-            (typeof apiError === 'object' && apiError && 'notFound' in apiError)) {
-          console.log('No se encontraron estadísticas - esto es normal para configuraciones nuevas');
-        }
-        return DEFAULT_STATS;
-      }
-    },
-    enabled: !!researchId,
-    refetchOnWindowFocus: false,
-    // Añadir tiempo de reintento extendido para módulo en desarrollo
-    retry: 1,
-    retryDelay: 1000
-  });
-  
-  // Efecto para actualizar el estado cuando se cargan los datos
-  useEffect(() => {
-    if (configData?.success && configData.data) {
-      // Eliminar researchId del objeto de datos
-      const { researchId: _, ...configDataWithoutId } = configData.data;
-      setFormData(configDataWithoutId);
-    }
-    
-    if (statsData) {
-      // Usar una aserción de tipo para statsData
-      setStats(statsData as EyeTrackingRecruitStats);
-    }
-  }, [configData, statsData]);
-  
-  // Mutación para guardar la configuración
-  const { mutate: saveConfig, isPending: saving } = useMutation<ConfigResponse, Error>({
-    mutationFn: async () => {
-      if (!researchId) throw new Error('ID de investigación no válido');
-      
-      // Usar el método de Alova
-      const response = await eyeTrackingAPI.updateEyeTrackingRecruitConfig({
-        researchId,
-        config: formData
-      }).send();
-      
-      return response as ConfigResponse;
-    },
-    onSuccess: (response) => {
-      if (response.success) {
-        toast.success('Configuración guardada correctamente');
-        queryClient.invalidateQueries({ queryKey: ['eyeTracking', 'recruitConfig', researchId] });
-        queryClient.invalidateQueries({ queryKey: ['eyeTracking', 'recruitStats', researchId] });
-      } else {
-        toast.error(`Error al guardar: ${response.error || 'Error desconocido'}`);
-      }
-    },
-    onError: (error) => {
-      console.error('Error al guardar el formulario:', error);
-      toast.error('No se pudo guardar la configuración');
-    }
-  });
-  
-  // Mutación para generar enlace de reclutamiento
-  const { mutate: mutateGenerateLink } = useMutation<LinkResponse, Error>({
-    mutationFn: async () => {
-      if (!researchId) throw new Error('ID de investigación no válido');
-      
-      // Usar el método de Alova
-      const response = await eyeTrackingAPI.generateRecruitmentLink(researchId).send();
-      return response as LinkResponse;
-    },
-    onSuccess: (response) => {
-      if (response?.data?.link) {
-        navigator.clipboard.writeText(response.data.link);
-        toast.success('Enlace generado y copiado al portapapeles');
-      } else {
-        toast.error('No se pudo generar el enlace');
-      }
-    },
-    onError: (error) => {
-      console.error('Error al generar enlace:', error);
-      toast.error('No se pudo generar el enlace');
-    }
-  });
-  
-  // Mutación para generar código QR
-  const { mutate: mutateGenerateQR } = useMutation<QRResponse, Error>({
-    mutationFn: async () => {
-      if (!researchId) throw new Error('ID de investigación no válido');
-      
-      // Usar el método de Alova
-      const response = await eyeTrackingAPI.generateQRCode(researchId).send();
-      return response as QRResponse;
-    },
-    onSuccess: (response) => {
-      if (response?.data?.qrImageUrl) {
-        window.open(response.data.qrImageUrl, '_blank');
-        toast.success('Código QR generado');
-      } else {
-        toast.error('No se pudo generar el código QR');
-      }
-    },
-    onError: (error) => {
-      console.error('Error al generar QR:', error);
-      toast.error('No se pudo generar el código QR');
-    }
-  });
   
   // Métodos para manipular el formulario (memoizados para mejor rendimiento)
   const handleDemographicChange = useCallback((key: DemographicQuestionKey, value: boolean) => {
@@ -417,53 +261,43 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     }));
   }, []);
   
-  // Acciones
+  // Acciones simuladas
   const saveForm = useCallback(async () => {
-    if (!researchId) {
-      throw new Error('ID de investigación no válido');
-    }
+    setSaving(true);
+    console.log('Simulando guardado de configuración eye-tracking-recruit');
     
-    // Si el módulo no está disponible, simular guardado exitoso
-    if (moduleAvailable === false) {
-      console.log('Simulando guardado de configuración de eye-tracking-recruit');
-      setTimeout(() => {
-        toast.success('Configuración guardada exitosamente (simulado)');
-      }, 1500);
-      return;
-    }
+    // Simular delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // Continuar con la implementación actual...
-    const request: EyeTrackingRecruitRequest = {
-      researchId,
-      config: formData
-    };
-    
-    try {
-      await eyeTrackingAPI.updateEyeTrackingRecruitConfig(request).send();
-      toast.success('Configuración guardada exitosamente');
-    } catch (error) {
-      console.error('Error guardando la configuración:', error);
-      toast.error('Error al guardar la configuración');
-    }
-  }, [researchId, formData, moduleAvailable]);
+    setSaving(false);
+    toast.success('Configuración guardada exitosamente (simulado)');
+  }, [formData]);
   
   const generateRecruitmentLink = useCallback(async () => {
-    if (!researchId) {
-      toast.error('ID de investigación no válido');
-      return;
-    }
+    console.log('Simulando generación de enlace de reclutamiento');
     
-    mutateGenerateLink();
-  }, [researchId, mutateGenerateLink]);
+    // Simular delay
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    const simulatedLink = `https://example.com/recruit?id=${researchId}&t=${Date.now()}`;
+    
+    try {
+      await navigator.clipboard.writeText(simulatedLink);
+      toast.success('Enlace simulado copiado al portapapeles');
+    } catch (e) {
+      console.error('Error al copiar:', e);
+      toast.error('No se pudo copiar el enlace');
+    }
+  }, [researchId]);
   
   const generateQRCode = useCallback(async () => {
-    if (!researchId) {
-      toast.error('ID de investigación no válido');
-      return;
-    }
+    console.log('Simulando generación de código QR');
     
-    mutateGenerateQR();
-  }, [researchId, mutateGenerateQR]);
+    // Simular delay
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    toast.success('Código QR generado correctamente (simulado)');
+  }, [researchId]);
   
   const copyLinkToClipboard = useCallback(() => {
     if (formData.researchUrl) {
@@ -484,7 +318,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   }, [formData.researchUrl]);
   
   return {
-    loading: isLoading,
+    loading,
     saving,
     formData,
     stats,

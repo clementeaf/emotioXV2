@@ -44,6 +44,9 @@ provider:
     IS_OFFLINE: ${self:custom.isOffline, 'false'}
     ALLOWED_ORIGIN: ${env:ALLOWED_ORIGIN, 'http://localhost:4700,https://main.di4935nnx8tyk.amplifyapp.com'}
     S3_BUCKET_NAME: emotiox-v2-${self:provider.stage}-storage
+    EYETRACKING_RECRUIT_CONFIG_TABLE: ${self:service}-eye-tracking-recruit-config-${self:provider.stage}
+    EYETRACKING_RECRUIT_PARTICIPANT_TABLE: ${self:service}-eye-tracking-recruit-participant-${self:provider.stage}
+    RECRUITMENT_LINK_TABLE: ${self:service}-recruitment-link-${self:provider.stage}
     API_ENDPOINT: 
       Fn::Join:
         - ""
@@ -73,6 +76,12 @@ provider:
             - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USER_TABLE}/index/*"
             - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
             - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}/index/*"
+            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.EYETRACKING_RECRUIT_CONFIG_TABLE}"
+            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.EYETRACKING_RECRUIT_CONFIG_TABLE}/index/*"
+            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.EYETRACKING_RECRUIT_PARTICIPANT_TABLE}"
+            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.EYETRACKING_RECRUIT_PARTICIPANT_TABLE}/index/*"
+            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.RECRUITMENT_LINK_TABLE}"
+            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.RECRUITMENT_LINK_TABLE}/index/*"
         # Permisos para S3
         - Effect: Allow
           Action:
@@ -404,6 +413,120 @@ resources:
           - IndexName: researchId-index
             KeySchema:
               - AttributeName: researchId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+        SSESpecification:
+          SSEEnabled: true
+    
+    # Nuevas tablas para EyeTracking Recruit
+    EyeTrackingRecruitConfigTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.EYETRACKING_RECRUIT_CONFIG_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: PK
+            AttributeType: S
+          - AttributeName: SK
+            AttributeType: S
+          - AttributeName: GSI1PK
+            AttributeType: S
+          - AttributeName: GSI1SK
+            AttributeType: S
+        KeySchema:
+          - AttributeName: PK
+            KeyType: HASH
+          - AttributeName: SK
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: GSI1
+            KeySchema:
+              - AttributeName: GSI1PK
+                KeyType: HASH
+              - AttributeName: GSI1SK
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+        SSESpecification:
+          SSEEnabled: true
+    
+    EyeTrackingRecruitParticipantTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.EYETRACKING_RECRUIT_PARTICIPANT_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: PK
+            AttributeType: S
+          - AttributeName: SK
+            AttributeType: S
+          - AttributeName: GSI1PK
+            AttributeType: S
+          - AttributeName: GSI1SK
+            AttributeType: S
+          - AttributeName: GSI2PK
+            AttributeType: S
+          - AttributeName: GSI2SK
+            AttributeType: S
+        KeySchema:
+          - AttributeName: PK
+            KeyType: HASH
+          - AttributeName: SK
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: GSI1
+            KeySchema:
+              - AttributeName: GSI1PK
+                KeyType: HASH
+              - AttributeName: GSI1SK
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+          - IndexName: GSI2
+            KeySchema:
+              - AttributeName: GSI2PK
+                KeyType: HASH
+              - AttributeName: GSI2SK
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+        SSESpecification:
+          SSEEnabled: true
+    
+    RecruitmentLinkTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.RECRUITMENT_LINK_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: PK
+            AttributeType: S
+          - AttributeName: SK
+            AttributeType: S
+          - AttributeName: GSI1PK
+            AttributeType: S
+          - AttributeName: GSI1SK
+            AttributeType: S
+          - AttributeName: token
+            AttributeType: S
+        KeySchema:
+          - AttributeName: PK
+            KeyType: HASH
+          - AttributeName: SK
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: GSI1
+            KeySchema:
+              - AttributeName: GSI1PK
+                KeyType: HASH
+              - AttributeName: GSI1SK
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+          - IndexName: TokenIndex
+            KeySchema:
+              - AttributeName: token
                 KeyType: HASH
             Projection:
               ProjectionType: ALL

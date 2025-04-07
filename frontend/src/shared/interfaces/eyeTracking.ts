@@ -14,6 +14,9 @@ export interface EyeTrackingConfig {
 
 // Interfaces para EyeTracking en la sección Recruit
 export interface EyeTrackingRecruitConfig {
+  // Identificador único
+  id?: string;
+  
   // Información básica
   researchId: string;
   
@@ -84,11 +87,47 @@ export interface EyeTrackingRecruitStats {
   };
 }
 
+// Interfaz para los enlaces generados
+export interface RecruitmentLink {
+  id: string;
+  token: string;
+  url: string;
+  qrCode?: string;
+  type: string;
+  isActive: boolean;
+  createdAt: string;
+  expiresAt?: string;
+  accessCount: number;
+  conversionCount: number;
+}
+
 // Interfaces para respuestas de la API
 export interface EyeTrackingRecruitResponse {
   success: boolean;
   data?: EyeTrackingRecruitConfig;
   stats?: EyeTrackingRecruitStats;
+  error?: string;
+}
+
+// Interfaz para respuesta de enlace
+export interface LinkResponse {
+  success: boolean;
+  data?: {
+    link: string;
+    token?: string;
+    qrCode?: string;
+  };
+  error?: string;
+}
+
+// Interfaz para respuesta de código QR
+export interface QRResponse {
+  success: boolean;
+  data?: {
+    qrCode?: string;
+    url?: string;
+    qrImageUrl?: string;
+  };
   error?: string;
 }
 
