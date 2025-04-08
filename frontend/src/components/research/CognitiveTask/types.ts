@@ -11,6 +11,10 @@ export interface FileInfo {
   size: number;
   type: string;
   url: string;
+  s3Key?: string;
+  isLoading?: boolean;
+  progress?: number;
+  error?: boolean;
 }
 
 export interface ScaleConfig {

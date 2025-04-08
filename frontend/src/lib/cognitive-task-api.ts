@@ -281,104 +281,117 @@ export const cognitiveTaskAPI = {
       };
     }
     
-    if (!data) {
-      console.warn('[CognitiveTaskAPI] Se requieren datos para crear o actualizar');
-      return {
-        send: async () => ({ error: true, message: 'Datos no proporcionados', data: null })
-      };
-    }
-    
-    // URL para operaciones con research ID
-    const fullUrl = normalizeUrl(API_CONFIG.baseURL, `/research/${researchId}/cognitive-task`);
+    console.log(`[CognitiveTaskAPI] Intentando crear o actualizar tarea cognitiva para investigación: ${researchId}`);
     
     return {
       send: async () => {
         try {
+          // LOGS DETALLADOS - Análisis de datos antes de enviar
+          console.log('==================== DIAGNÓSTICO DE COGNITIVE TASK DATA ====================');
+          console.log(`[CognitiveTaskAPI] Datos originales a enviar:`, JSON.stringify(data, null, 2));
+          
+          // Contar imágenes en cada pregunta de preference_test
+          console.log('\n[CognitiveTaskAPI] ANÁLISIS DE PREFERENCE TESTS:');
+          const preferenceTests = data.questions.filter((q: any) => q.type === 'preference_test');
+          
+          preferenceTests.forEach((question: any, index: number) => {
+            console.log(`\n--- Preference Test #${index + 1} (ID: ${question.id}) ---`);
+            console.log(`Título: "${question.title}"`);
+            
+            if (!question.files || !Array.isArray(question.files)) {
+              console.log('⚠️ NO TIENE ARRAY DE ARCHIVOS');
+            } else {
+              console.log(`Total archivos en array: ${question.files.length}`);
+              
+              // Mostrar detalles de cada archivo
+              question.files.forEach((file: any, fileIndex: number) => {
+                console.log(`\n  Archivo ${fileIndex + 1}:`);
+                console.log(`  - ID: ${file.id}`);
+                console.log(`  - Nombre: ${file.name}`);
+                console.log(`  - Tamaño: ${file.size}`);
+                console.log(`  - Tipo: ${file.type}`);
+                console.log(`  - URL: ${file.url?.substring(0, 50)}...`);
+                console.log(`  - S3Key: ${file.s3Key}`);
+                console.log(`  - URL es blob?: ${file.url?.startsWith('blob:') ? 'SÍ ⚠️' : 'NO ✓'}`);
+                
+                // Verificar si hay propiedades extras que podrían interferir
+                const extraProps = Object.keys(file).filter(k => 
+                  !['id', 'name', 'size', 'type', 'url', 's3Key'].includes(k)
+                );
+                if (extraProps.length > 0) {
+                  console.log(`  - Propiedades extra: ${extraProps.join(', ')} ⚠️`);
+                  extraProps.forEach(prop => {
+                    console.log(`    - ${prop}: ${JSON.stringify(file[prop])}`);
+                  });
+                }
+              });
+              
+              // Verificar si hay duplicados de s3Key
+              const s3Keys = question.files.map((f: any) => f.s3Key);
+              const uniqueS3Keys = Array.from(new Set(s3Keys));
+              if (s3Keys.length !== uniqueS3Keys.length) {
+                console.log(`\n  ⚠️ ALERTA: Hay S3Keys duplicadas en los archivos`);
+                console.log(`  - Total s3Keys: ${s3Keys.length}`);
+                console.log(`  - S3Keys únicas: ${uniqueS3Keys.length}`);
+                console.log(`  - S3Keys: ${JSON.stringify(s3Keys)}`);
+              }
+            }
+          });
+          
+          console.log('\n[CognitiveTaskAPI] FIN DE ANÁLISIS');
+          console.log('==========================================================================');
+          
+          // Continuar con el flujo normal
           const headers = getAuthHeaders();
           
-          // Primero verificamos si existe una tarea cognitiva para esta investigación
-          console.log(`[CognitiveTaskAPI] Verificando existencia de tarea cognitiva para investigación: ${researchId}`);
-          const checkResponse = await fetch(fullUrl, { 
+          // Primero verificamos si existe la tarea cognitiva para esta investigación
+          const checkUrl = normalizeUrl(API_CONFIG.baseURL, `/research/${researchId}/cognitive-task`);
+          const checkResponse = await fetch(checkUrl, { 
             method: 'GET', 
             headers 
           });
           
           const checkResult = await handleCognitiveTaskResponse(checkResponse);
+          console.log(`[CognitiveTaskAPI] Resultado de verificación:`, checkResult);
           
-          // Preparar datos para backend - limpieza adicional
+          // Preparar URL y método según si existe o no
+          let url = checkUrl;
+          let method = 'PUT'; // Por defecto asumimos actualización
+          
+          // Si no existe o hay error 404, usamos POST para crear
+          if (checkResult.notFound || (checkResult.error && checkResult.status === 404)) {
+            console.log(`[CognitiveTaskAPI] No se encontró tarea cognitiva existente. Creando nueva.`);
+            method = 'POST';
+          } else {
+            console.log(`[CognitiveTaskAPI] Tarea cognitiva existente encontrada. Actualizando.`);
+            
+            // Si tenemos un ID, podemos añadirlo a los datos
+            if (checkResult.id) {
+              data.id = checkResult.id;
+            }
+          }
+          
+          // Preparar datos completos para el backend
           const cleanData = {
             ...data,
             researchId
           };
           
-          // Verificar preguntas y archivos
-          if (cleanData.questions) {
-            cleanData.questions = cleanData.questions.map((q: any) => {
-              // Crear objeto limpio para cada pregunta
-              const cleanQuestion: any = {
-                id: q.id,
-                type: q.type,
-                title: q.title,
-                required: Boolean(q.required),
-                showConditionally: Boolean(q.showConditionally),
-                deviceFrame: Boolean(q.deviceFrame)
-              };
-              
-              // Agregar propiedades específicas según el tipo
-              if (q.description) cleanQuestion.description = q.description;
-              
-              if (q.choices && ['single_choice', 'multiple_choice', 'ranking'].includes(q.type)) {
-                cleanQuestion.choices = q.choices;
-              }
-              
-              if (q.scaleConfig && q.type === 'linear_scale') {
-                cleanQuestion.scaleConfig = q.scaleConfig;
-              }
-              
-              if (q.files && ['navigation_flow', 'preference_test'].includes(q.type)) {
-                // Limpiar archivos para incluir solo propiedades necesarias
-                cleanQuestion.files = q.files
-                  .filter((f: any) => f && f.s3Key && f.url && !f.url.startsWith('blob:'))
-                  .map((f: any) => ({
-                    id: f.id,
-                    name: f.name,
-                    size: f.size,
-                    type: f.type,
-                    url: f.url,
-                    s3Key: f.s3Key
-                  }));
-              }
-              
-              return cleanQuestion;
-            });
-          }
+          console.log(`[CognitiveTaskAPI] Enviando ${method} a ${url} con datos:`, JSON.stringify(cleanData, null, 2));
           
-          console.log('[CognitiveTaskAPI] Datos limpios para enviar:', cleanData);
-          
-          // Determinar si debemos usar POST o PUT
-          let method = 'POST';
-          
-          if (checkResult && !checkResult.notFound && !checkResult.error && checkResult.data) {
-            // Si encontramos datos existentes, usamos PUT para actualizar
-            method = 'PUT';
-            console.log(`[CognitiveTaskAPI] Se encontró tarea cognitiva existente, usando ${method} para actualizar`);
-          } else {
-            // Si no hay datos o hubo un error 404, usamos POST para crear nuevo
-            console.log(`[CognitiveTaskAPI] No se encontró tarea cognitiva existente, usando ${method} para crear nuevo`);
-          }
-          
-          // Ahora realizamos la operación de crear o actualizar
-          const response = await fetch(fullUrl, {
+          // Realizar la petición HTTP
+          const response = await fetch(url, {
             method,
             headers,
             body: JSON.stringify(cleanData)
           });
           
           const result = await handleCognitiveTaskResponse(response);
-          console.log(`[CognitiveTaskAPI] Resultado de ${method} para tarea cognitiva:`, result);
+          console.log(`[CognitiveTaskAPI] Resultado de ${method}:`, result);
+          
           return result;
         } catch (error) {
-          console.warn('[CognitiveTaskAPI] Error de red controlado en createOrUpdateByResearchId:', error);
+          console.error('[CognitiveTaskAPI] Error de red controlado:', error);
           return { 
             error: true, 
             network: true, 

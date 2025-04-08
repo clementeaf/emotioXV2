@@ -1,15 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { v4 as uuidv4 } from 'uuid';
 import { 
-  CognitiveTaskFormData,
   Question,
-  ValidationErrors,
-  ErrorModalData,
-  QuestionType,
-  UseCognitiveTaskFormResult
-} from '../types';
+  UploadedFile,
+  QUESTION_TEMPLATES
+} from 'shared/interfaces/cognitive-task.interface';
 import { 
   QUERY_KEYS, 
   ERROR_MESSAGES, 
@@ -19,31 +16,109 @@ import { useAuth } from '@/providers/AuthProvider';
 import { s3Service } from '@/services';
 import { cognitiveTaskFixedAPI } from '@/lib/cognitive-task-api';
 
-// Definir los tipos que faltan localmente si no están en ../types
-// CognitiveTaskFormData
+// Tipos que faltan o que provocan conflictos
+type ValidationErrors = Record<string, string>;
+
+// Definición de QuestionType para evitar conflictos de importación
+type QuestionType = 'short_text' | 'long_text' | 'single_choice' | 'multiple_choice' | 'linear_scale' | 'ranking' | 'navigation_flow' | 'preference_test';
+
+// Definición local de ErrorModalData
+interface ErrorModalData {
+  title: string;
+  message: string;
+  type: 'error' | 'warning' | 'info' | 'success';
+}
+
+// Definir CognitiveTaskFormData localmente
 interface CognitiveTaskFormData {
   researchId: string;
   questions: Question[];
   randomizeQuestions: boolean;
+  metadata?: {
+    createdAt?: string;
+    updatedAt?: string;
+    lastModifiedBy?: string;
+    version?: string;
+  };
   [key: string]: any;
 }
 
-// ValidationErrors
-interface ValidationErrors {
-  [key: string]: string;
+// Extender UploadedFile para incluir propiedades adicionales usadas en UI
+interface ExtendedUploadedFile extends UploadedFile {
+  isLoading?: boolean;
+  progress?: number;
+  error?: boolean;
+  url: string;
 }
 
-// QuestionType
-type QuestionType = 'short_text' | 'long_text' | 'single_choice' | 'multiple_choice' | 'linear_scale' | 'ranking' | 'navigation_flow' | 'preference_test';
-
-// Definición local para reemplazar DEFAULT_COGNITIVE_TASK
+// DEFAULT_COGNITIVE_TASK local
 const DEFAULT_COGNITIVE_TASK: CognitiveTaskFormData = {
   researchId: '',
   questions: [],
   randomizeQuestions: false
 };
 
-// Definiciones locales para QUESTION_TYPES y QUESTION_TEMPLATES
+// Añadir PREVIEW_COMING_SOON si no existe en SUCCESS_MESSAGES
+const SUCCESS_MESSAGES_EXTENDED = {
+  ...SUCCESS_MESSAGES,
+  PREVIEW_COMING_SOON: 'La vista previa estará disponible próximamente'
+};
+
+// Crear constantes para los mensajes de error directamente
+const VALIDATION_ERROR_MESSAGES = {
+  TITLE_REQUIRED: 'El título de la pregunta es obligatorio',
+  CHOICES_REQUIRED: 'Debe agregar al menos una opción',
+  CHOICE_TEXT_REQUIRED: 'El texto de la opción es obligatorio',
+  SCALE_START_REQUIRED: 'El valor inicial de la escala es obligatorio',
+  SCALE_END_REQUIRED: 'El valor final de la escala es obligatorio',
+  SCALE_INVALID_RANGE: 'El valor inicial debe ser menor que el valor final',
+  FILES_REQUIRED: 'Debe subir al menos un archivo',
+  PREFERENCE_TEST_FILES_REQUIRED: 'Las pruebas de preferencia requieren exactamente 2 imágenes',
+  RESEARCH_ID_REQUIRED: 'El ID de investigación es obligatorio',
+  QUESTIONS_REQUIRED: 'Debe agregar al menos una pregunta'
+};
+
+// Interfaz para el resultado del hook
+interface UseCognitiveTaskFormResult {
+  formData: CognitiveTaskFormData;
+  cognitiveTaskId: string | null;
+  validationErrors: ValidationErrors | null;
+  isLoading: boolean;
+  isSaving: boolean;
+  modalError: ErrorModalData | null;
+  modalVisible: boolean;
+  isAddQuestionModalOpen: boolean;
+  isUploading: boolean;
+  uploadProgress: number;
+  currentFileIndex: number;
+  totalFiles: number;
+  questionTypes: { id: QuestionType; label: string; description: string }[];
+  
+  // Métodos de gestión
+  handleQuestionChange: (questionId: string, updates: Partial<Question>) => void;
+  handleAddChoice: (questionId: string) => void;
+  handleRemoveChoice: (questionId: string, choiceId: string) => void;
+  handleFileUpload: (questionId: string, files: FileList) => void;
+  handleMultipleFilesUpload: (questionId: string, files: FileList) => void;
+  handleFileDelete: (questionId: string, fileId: string) => void;
+  handleAddQuestion: (type: QuestionType) => void;
+  handleRandomizeChange: (checked: boolean) => void;
+  openAddQuestionModal: () => void;
+  closeAddQuestionModal: () => void;
+  
+  // Métodos de acción
+  handleSave: () => void;
+  handlePreview: () => void;
+  validateForm: () => boolean;
+  closeModal: () => void;
+  initializeDefaultQuestions: (defaultQuestions: Question[]) => void;
+  
+  // Propiedades del modal JSON
+  showJsonPreview: boolean;
+  closeJsonModal: () => void;
+}
+
+// Definiciones locales para QUESTION_TYPES
 const QUESTION_TYPES = [
   { id: 'short_text' as QuestionType, label: 'Texto Corto', description: 'Respuesta corta de texto' },
   { id: 'long_text' as QuestionType, label: 'Texto Largo', description: 'Respuesta larga de texto' },
@@ -55,92 +130,11 @@ const QUESTION_TYPES = [
   { id: 'preference_test' as QuestionType, label: 'Prueba de Preferencia', description: 'Test A/B' }
 ];
 
-// Plantillas para nuevas preguntas con valores por defecto para propiedades obligatorias
-const QUESTION_TEMPLATES: Record<QuestionType, Partial<Question>> = {
-  short_text: {
-    type: 'short_text',
-    title: 'Nueva Pregunta',
-    required: true,
-    showConditionally: false,
-    deviceFrame: false
-  },
-  long_text: {
-    type: 'long_text',
-    title: 'Nueva Pregunta',
-    required: true,
-    showConditionally: false,
-    deviceFrame: false
-  },
-  single_choice: {
-    type: 'single_choice',
-    title: 'Nueva Pregunta',
-    required: true,
-    showConditionally: false,
-    deviceFrame: false,
-    choices: [
-      { id: '1', text: 'Opción 1', isQualify: false, isDisqualify: false },
-      { id: '2', text: 'Opción 2', isQualify: false, isDisqualify: false },
-      { id: '3', text: 'Opción 3', isQualify: false, isDisqualify: false }
-    ]
-  },
-  multiple_choice: {
-    type: 'multiple_choice',
-    title: 'Nueva Pregunta',
-    required: true,
-    showConditionally: false,
-    deviceFrame: false,
-    choices: [
-      { id: '1', text: 'Opción 1', isQualify: false, isDisqualify: false },
-      { id: '2', text: 'Opción 2', isQualify: false, isDisqualify: false },
-      { id: '3', text: 'Opción 3', isQualify: false, isDisqualify: false }
-    ]
-  },
-  linear_scale: {
-    type: 'linear_scale',
-    title: 'Nueva Pregunta',
-    required: true,
-    showConditionally: false,
-    deviceFrame: false,
-    scaleConfig: {
-      startValue: 1,
-      endValue: 5
-    }
-  },
-  ranking: {
-    type: 'ranking',
-    title: 'Nueva Pregunta',
-    required: true,
-    showConditionally: false,
-    deviceFrame: false,
-    choices: [
-      { id: '1', text: 'Opción 1', isQualify: false, isDisqualify: false },
-      { id: '2', text: 'Opción 2', isQualify: false, isDisqualify: false },
-      { id: '3', text: 'Opción 3', isQualify: false, isDisqualify: false }
-    ]
-  },
-  navigation_flow: {
-    type: 'navigation_flow',
-    title: 'Nueva Pregunta',
-    required: true,
-    showConditionally: false,
-    deviceFrame: false,
-    files: []
-  },
-  preference_test: {
-    type: 'preference_test',
-    title: 'Nueva Pregunta',
-    required: true, 
-    showConditionally: false,
-    deviceFrame: false,
-    files: []
-  }
-};
-
 // Definición local de preguntas predeterminadas según las imágenes Figma
 const DEFAULT_QUESTIONS: Question[] = [
   {
     id: '3.1',
-    type: 'short_text',
+    type: 'short_text' as QuestionType,
     title: '¿Cuál es tu primera impresión sobre la navegación del sitio?',
     required: true,
     showConditionally: false,
@@ -148,7 +142,7 @@ const DEFAULT_QUESTIONS: Question[] = [
   },
   {
     id: '3.2',
-    type: 'long_text',
+    type: 'long_text' as QuestionType,
     title: 'Describe detalladamente tu experiencia al intentar completar la tarea asignada.',
     required: true,
     showConditionally: false,
@@ -156,7 +150,7 @@ const DEFAULT_QUESTIONS: Question[] = [
   },
   {
     id: '3.3',
-    type: 'single_choice',
+    type: 'single_choice' as QuestionType,
     title: '¿Qué aspecto de la interfaz te pareció más intuitivo?',
     required: true,
     showConditionally: false,
@@ -170,7 +164,7 @@ const DEFAULT_QUESTIONS: Question[] = [
   },
   {
     id: '3.4',
-    type: 'multiple_choice',
+    type: 'multiple_choice' as QuestionType,
     title: 'Selecciona todos los elementos con los que interactuaste durante la prueba:',
     required: true,
     showConditionally: false,
@@ -184,7 +178,7 @@ const DEFAULT_QUESTIONS: Question[] = [
   },
   {
     id: '3.5',
-    type: 'linear_scale',
+    type: 'linear_scale' as QuestionType,
     title: '¿Qué tan fácil fue encontrar la información que buscabas?',
     required: true,
     showConditionally: false,
@@ -198,7 +192,7 @@ const DEFAULT_QUESTIONS: Question[] = [
   },
   {
     id: '3.6',
-    type: 'ranking',
+    type: 'ranking' as QuestionType,
     title: 'Ordena las siguientes características según su importancia para ti:',
     required: true,
     showConditionally: false,
@@ -212,7 +206,7 @@ const DEFAULT_QUESTIONS: Question[] = [
   },
   {
     id: '3.7',
-    type: 'navigation_flow',
+    type: 'navigation_flow' as QuestionType,
     title: 'Observa la siguiente imagen del flujo de navegación y describe cualquier problema que encuentres:',
     required: true,
     showConditionally: false,
@@ -221,7 +215,7 @@ const DEFAULT_QUESTIONS: Question[] = [
   },
   {
     id: '3.8',
-    type: 'preference_test',
+    type: 'preference_test' as QuestionType,
     title: '¿Cuál de estos dos diseños prefieres y por qué?',
     required: true,
     showConditionally: false,
@@ -230,17 +224,13 @@ const DEFAULT_QUESTIONS: Question[] = [
   }
 ];
 
-// Corregir la definición de CognitiveTaskFormProps para incluir onSave
-interface CognitiveTaskFormProps {
-  className?: string;
-  researchId?: string;
-  onSave?: (data: any) => void;
-}
-
 /**
  * Hook personalizado para gestionar la lógica del formulario de tareas cognitivas
  */
-export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormResult => {
+export const useCognitiveTaskForm = (
+  researchId?: string, 
+  onSave?: (data: any) => void
+): UseCognitiveTaskFormResult => {
   const queryClient = useQueryClient();
   // Inicializar siempre con las preguntas predeterminadas
   const [formData, setFormData] = useState<CognitiveTaskFormData>({
@@ -309,29 +299,145 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
     refetchOnWindowFocus: false
   });
 
-  // Función para guardar archivos en localStorage
+  // Mejorar la función saveFilesToLocalStorage para almacenar todos los datos necesarios
   const saveFilesToLocalStorage = useCallback((questions: Question[]) => {
     if (!researchId) return;
     
     try {
       // Generar un objeto con archivos organizados por pregunta
-      const filesMap: Record<string, any[]> = {};
+      const filesMap: Record<string, ExtendedUploadedFile[]> = {};
       
       questions.forEach(question => {
         if (question.files && question.files.length > 0) {
-          filesMap[question.id] = question.files;
+          // Solo guardar archivos que han sido completamente cargados y tienen s3Key
+          const validFiles = question.files
+            .filter(file => 
+              file && 
+              file.s3Key && 
+              typeof file.s3Key === 'string' && 
+              file.s3Key.trim() !== '' && 
+              !file.url.startsWith('blob:')
+            )
+            .map(file => ({
+              ...file,
+              isLoading: false, // Asegurar que se almacena como completamente cargado
+              progress: 100     // Asegurar que el progreso está completo
+            }));
+          
+          if (validFiles.length > 0) {
+            filesMap[question.id] = validFiles;
+          }
         }
       });
       
-      // Almacenar en localStorage
-      const storageKey = `cognitive_task_temp_files_${researchId}`;
-      localStorage.setItem(storageKey, JSON.stringify(filesMap));
-      
-      console.log('[useCognitiveTaskForm] Archivos guardados temporalmente en localStorage');
+      // Almacenar en localStorage solo si hay archivos válidos
+      if (Object.keys(filesMap).length > 0) {
+        const storageKey = `cognitive_task_temp_files_${researchId}`;
+        localStorage.setItem(storageKey, JSON.stringify(filesMap));
+        
+        console.log('[useCognitiveTaskForm] Archivos guardados temporalmente en localStorage:', filesMap);
+      }
     } catch (error) {
       console.error('[useCognitiveTaskForm] Error al guardar archivos en localStorage:', error);
     }
   }, [researchId]);
+
+  // Crear una función específica para cargar archivos de localStorage - es más explícito
+  const loadFilesFromLocalStorage = useCallback(() => {
+    if (!researchId) return;
+    
+    try {
+      // Recuperar archivos guardados temporalmente
+      const storageKey = `cognitive_task_temp_files_${researchId}`;
+      const savedFilesJson = localStorage.getItem(storageKey);
+      
+      if (!savedFilesJson) {
+        console.log('[useCognitiveTaskForm] No hay archivos temporales guardados en localStorage para este researchId');
+        return;
+      }
+      
+      const savedFiles = JSON.parse(savedFilesJson);
+      console.log('[useCognitiveTaskForm] Recuperando archivos temporales de localStorage:', savedFiles);
+      
+      // Actualizar el estado con los archivos recuperados
+      setFormData(prevData => {
+        // Crear una copia para manipular
+        const updatedQuestions = [...prevData.questions];
+        
+        // Procesar cada pregunta
+        for (let i = 0; i < updatedQuestions.length; i++) {
+          const question = updatedQuestions[i];
+          const questionFiles = savedFiles[question.id];
+          
+          if (questionFiles && questionFiles.length > 0) {
+            console.log(`[useCognitiveTaskForm] Encontrados ${questionFiles.length} archivos guardados para pregunta ${question.id}`);
+            
+            // Si es una prueba de preferencia, limitamos a exactamente 2 archivos válidos como máximo
+            if (question.type === 'preference_test') {
+              const validSavedFiles = questionFiles
+                .filter((f: any) => f && f.s3Key && typeof f.s3Key === 'string' && f.s3Key.trim() !== '')
+                .slice(0, 2); // Solo tomamos los primeros 2 archivos válidos
+                
+              if (validSavedFiles.length > 0) {
+                // Para preference_test, reemplazamos completamente los archivos en lugar de añadir
+                updatedQuestions[i] = {
+                  ...question,
+                  files: validSavedFiles.map((file: any) => ({
+                    ...file,
+                    isLoading: false,
+                    progress: 100,
+                    error: false
+                  }))
+                };
+                
+                console.log(`[useCognitiveTaskForm] Reemplazados archivos para prueba de preferencia. Ahora tiene ${validSavedFiles.length} archivos válidos.`);
+              }
+            } else {
+              // Para otros tipos, filtrar archivos duplicados
+              const existingFileIds = new Set(question.files?.map((f: ExtendedUploadedFile) => f.id) || []);
+              const newFiles = questionFiles
+                .filter((f: any) => !existingFileIds.has(f.id) && f.s3Key && typeof f.s3Key === 'string');
+              
+              if (newFiles.length > 0) {
+                console.log(`[useCognitiveTaskForm] Añadiendo ${newFiles.length} nuevos archivos a pregunta ${question.id}`);
+                
+                // Asegurar que los archivos tienen las propiedades correctas
+                const processedNewFiles = newFiles.map((file: any) => ({
+                  ...file,
+                  isLoading: false,
+                  progress: 100,
+                  error: false
+                }));
+                
+                // Actualizar pregunta con los archivos
+                updatedQuestions[i] = {
+                  ...question,
+                  files: [...(question.files || []), ...processedNewFiles]
+                };
+              }
+            }
+          }
+        }
+        
+        return {
+          ...prevData,
+          questions: updatedQuestions
+        };
+      });
+      
+    } catch (error) {
+      console.error('[useCognitiveTaskForm] Error al recuperar archivos de localStorage:', error);
+    }
+  }, [researchId]);
+
+  // Modificar el useEffect que carga archivos para usar la nueva función
+  useEffect(() => {
+    // Solo cargar si estamos en un formulario existente con un researchId
+    if (researchId) {
+      // Usar la función dedicada para cargar archivos
+      loadFilesFromLocalStorage();
+    }
+  }, [researchId, loadFilesFromLocalStorage]); // Dependencia en loadFilesFromLocalStorage
 
   // Mutación para guardar datos
   const { mutate, isPending: isSaving } = useMutation({
@@ -340,17 +446,32 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
         throw new Error('No autenticado: Se requiere un token de autenticación');
       }
 
+      if (!researchId) {
+        throw new Error('ID de investigación no proporcionado');
+      }
+
       try {
         console.log('[useCognitiveTaskForm] Guardando datos:', data);
         
-        // Usar la nueva API que decide internamente entre crear o actualizar
-        return await cognitiveTaskFixedAPI.createOrUpdateByResearchId(
-          researchId || '', // Aseguramos que researchId no sea undefined
+        // Usar explícitamente la nueva API
+        const result = await cognitiveTaskFixedAPI.createOrUpdateByResearchId(
+          researchId,
           data
         ).send();
+        
+        // Verificar si hay un error en la respuesta
+        if (result.error) {
+          console.error('[useCognitiveTaskForm] Error en respuesta API:', result);
+          throw new Error(result.message || 'Error al guardar la tarea cognitiva');
+        }
+        
+        return result;
       } catch (error: any) {
         console.error('[useCognitiveTaskForm] Error al guardar:', error);
-        throw error;
+        // Formatear el error para mejor información
+        const errorMessage = error.message || 'Error desconocido al guardar';
+        const errorDetails = error.data ? JSON.stringify(error.data) : '';
+        throw new Error(`${errorMessage}${errorDetails ? ` - Detalles: ${errorDetails}` : ''}`);
       }
     },
     onSuccess: (data) => {
@@ -358,6 +479,13 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
       
       if (data && data.id) {
         setCognitiveTaskId(data.id);
+      }
+      
+      // Limpiar localStorage después de guardar exitosamente
+      if (researchId) {
+        const storageKey = `cognitive_task_temp_files_${researchId}`;
+        localStorage.removeItem(storageKey);
+        console.log('[useCognitiveTaskForm] Limpiando archivos temporales después de guardar exitoso');
       }
       
       // Invalidar la consulta para recargar datos
@@ -476,50 +604,6 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
     }));
   }, []);
 
-  // Cargar datos desde localStorage si existen
-  useEffect(() => {
-    if (researchId) {
-      // Intentar recuperar archivos guardados temporalmente
-      const storageKey = `cognitive_task_temp_files_${researchId}`;
-      const savedFilesJson = localStorage.getItem(storageKey);
-      
-      if (savedFilesJson) {
-        try {
-          const savedFiles = JSON.parse(savedFilesJson);
-          console.log('[useCognitiveTaskForm] Recuperando archivos temporales de localStorage:', savedFiles);
-          
-          // Actualizar el estado con los archivos recuperados
-          setFormData(prevData => {
-            const updatedQuestions = prevData.questions.map(question => {
-              // Buscar archivos para esta pregunta en particular
-              const questionFiles = savedFiles[question.id] || [];
-              
-              if (questionFiles.length > 0) {
-                // Combinar archivos existentes con los recuperados, evitando duplicados
-                const existingFileIds = question.files?.map(f => f.id) || [];
-                const newFiles = questionFiles.filter(f => !existingFileIds.includes(f.id));
-                
-                return {
-                  ...question,
-                  files: [...(question.files || []), ...newFiles]
-                };
-              }
-              
-              return question;
-            });
-            
-            return {
-              ...prevData,
-              questions: updatedQuestions
-            };
-          });
-        } catch (error) {
-          console.error('[useCognitiveTaskForm] Error al recuperar archivos de localStorage:', error);
-        }
-      }
-    }
-  }, [researchId]);
-
   // Función para manejar la carga de archivos individuales
   const handleFileUpload = useCallback(async (questionId: string, files: FileList) => {
     if (files.length === 0 || !researchId) return;
@@ -538,7 +622,7 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
       
       // Crear un objeto temporal de archivo para feedback visual inmediato
       const tempFileId = uuidv4();
-      const tempFile = {
+      const tempFile: ExtendedUploadedFile = {
         id: tempFileId,
         name: file.name,
         size: file.size,
@@ -577,7 +661,7 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
               q.id === questionId
                 ? {
                     ...q,
-                    files: q.files?.map(f => 
+                    files: q.files?.map((f: ExtendedUploadedFile) => 
                       f.id === tempFileId 
                         ? { ...f, progress, isLoading: progress < 100 }
                         : f
@@ -594,6 +678,7 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
       if (uploadedFile) {
         // Reemplazar el archivo temporal con el archivo real
         setFormData(prevData => {
+          // Crear objeto de formulario actualizado con el archivo completado
           const updatedFormData = {
             ...prevData,
             questions: prevData.questions.map(q =>
@@ -601,20 +686,43 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
                 ? {
                     ...q,
                     files: q.files 
-                      ? q.files.map(f => f.id === tempFileId ? { ...uploadedFile, isLoading: false, progress: 100 } : f)
-                      : [uploadedFile]
+                      ? q.files.map(f => f.id === tempFileId ? { 
+                          ...uploadedFile, 
+                          isLoading: false, 
+                          progress: 100 
+                        } : f)
+                      : [{ ...uploadedFile, isLoading: false, progress: 100 }]
                   }
                 : q
             )
           };
           
-          // Guardar en localStorage para persistencia temporal
+          // Guardar inmediatamente en localStorage - IMPORTANTE
           saveFilesToLocalStorage(updatedFormData.questions);
           
           return updatedFormData;
         });
         
         toast.success(`Archivo subido exitosamente: ${file.name}`);
+        
+        // Validar inmediatamente después de la carga para preference_test
+        const question = formData.questions.find(q => q.id === questionId);
+        if (question && question.type === 'preference_test') {
+          setTimeout(() => {
+            const validFiles = formData.questions
+              .find(q => q.id === questionId)?.files
+              ?.filter(f => f && f.s3Key && !f.url.startsWith('blob:')) || [];
+            
+            // Mostrar un mensaje informativo si tenemos exactamente 2 archivos válidos
+            if (validFiles.length === 2) {
+              toast.success('Prueba de preferencia completa: tienes exactamente 2 imágenes');
+            } else if (validFiles.length > 2) {
+              toast.error(`Tienes ${validFiles.length} imágenes. Las pruebas de preferencia requieren exactamente 2.`);
+            } else {
+              toast.success(`Necesitas ${2 - validFiles.length} imagen(es) más para completar la prueba de preferencia`);
+            }
+          }, 500); // Pequeño retraso para asegurar que el estado se ha actualizado
+        }
       }
     } catch (error) {
       console.error('[useCognitiveTaskForm] Error al subir archivo:', error);
@@ -627,7 +735,7 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
           q.id === questionId
             ? {
                 ...q,
-                files: q.files?.filter(f => !f.isLoading)
+                files: q.files?.filter((f: ExtendedUploadedFile) => !f.isLoading)
               }
             : q
         )
@@ -641,7 +749,7 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
     } finally {
       setIsUploading(false);
     }
-  }, [researchId, showModal, saveFilesToLocalStorage]);
+  }, [researchId, showModal, saveFilesToLocalStorage, formData.questions]);
 
   // Función para manejar la carga de múltiples archivos
   const handleMultipleFilesUpload = useCallback(async (questionId: string, files: FileList) => {
@@ -706,7 +814,7 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
               q.id === questionId
                 ? {
                     ...q,
-                    files: q.files?.map(f => 
+                    files: q.files?.map((f: ExtendedUploadedFile) => 
                       f.id === tempFileId 
                         ? { ...f, progress, isLoading: progress < 100 }
                         : f
@@ -763,7 +871,7 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
           q.id === questionId
             ? {
                 ...q,
-                files: q.files?.filter(f => !f.isLoading)
+                files: q.files?.filter((f: ExtendedUploadedFile) => !f.isLoading)
               }
             : q
         )
@@ -782,41 +890,111 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
   // Función para eliminar un archivo
   const handleFileDelete = useCallback(async (questionId: string, fileId: string) => {
     try {
-      // Buscar el archivo a eliminar para obtener su clave S3
+      console.log(`[useCognitiveTaskForm] Eliminando archivo con ID: ${fileId} de la pregunta: ${questionId}`);
+      
+      // Buscar la pregunta y el archivo a eliminar
       const question = formData.questions.find(q => q.id === questionId);
       const file = question?.files?.find(f => f.id === fileId);
       
-      if (file && file.s3Key) {
-        // Llamar al servicio para eliminar el archivo
-        await s3Service.deleteFile(file.s3Key);
+      if (!file) {
+        console.error(`[useCognitiveTaskForm] No se encontró el archivo a eliminar (ID: ${fileId})`);
+        toast.error('No se pudo eliminar el archivo: no encontrado');
+        return;
+      }
+      
+      // Revisar si es un archivo temporal o uno ya subido a S3
+      const isTemporaryFile = file.url?.startsWith('blob:') || !file.s3Key;
+      
+      // Eliminación en S3 (solo si tiene s3Key)
+      if (!isTemporaryFile && file.s3Key) {
+        try {
+          console.log(`[useCognitiveTaskForm] Eliminando archivo de S3 con clave: ${file.s3Key}`);
+          await s3Service.deleteFile(file.s3Key);
+          console.log(`[useCognitiveTaskForm] Archivo eliminado exitosamente de S3`);
+        } catch (error) {
+          console.error(`[useCognitiveTaskForm] Error al eliminar archivo de S3:`, error);
+          // Continuar con la eliminación local incluso si falla en S3
+          toast.error('El archivo se eliminó localmente, pero hubo un problema al eliminarlo del servidor');
+        }
+      } else {
+        console.log(`[useCognitiveTaskForm] Eliminando archivo temporal local (no subido a S3)`);
+      }
+      
+      // Revocamos el URL blob para liberar memoria si es un archivo temporal
+      if (isTemporaryFile && file.url?.startsWith('blob:')) {
+        try {
+          URL.revokeObjectURL(file.url);
+          console.log(`[useCognitiveTaskForm] URL del archivo temporal revocado`);
+        } catch (e) {
+          console.warn(`[useCognitiveTaskForm] Error al revocar URL de objeto:`, e);
+        }
+      }
+      
+      // Eliminar el archivo del estado local
+      setFormData(prevData => {
+        // Crear formulario actualizado sin el archivo eliminado
+        const updatedFormData = {
+          ...prevData,
+          questions: prevData.questions.map(q =>
+            q.id === questionId && q.files
+              ? {
+                  ...q,
+                  files: q.files.filter(f => f.id !== fileId)
+                }
+              : q
+          )
+        };
         
-        // Eliminar el archivo del estado local
-        setFormData(prevData => {
-          const updatedFormData = {
-            ...prevData,
-            questions: prevData.questions.map(q =>
-              q.id === questionId && q.files
-                ? {
-                    ...q,
-                    files: q.files.filter(f => f.id !== fileId)
-                  }
-                : q
-            )
-          };
-          
-          // Actualizar localStorage sin el archivo eliminado
-          saveFilesToLocalStorage(updatedFormData.questions);
-          
-          return updatedFormData;
-        });
+        // Actualizar localStorage sin el archivo eliminado
+        saveFilesToLocalStorage(updatedFormData.questions);
         
+        return updatedFormData;
+      });
+      
+      // Verificar si es una pregunta de tipo preference_test para mostrar mensajes informativos
+      if (question?.type === 'preference_test') {
+        // Calcular cuántos archivos válidos quedarán después de eliminar este
+        const remainingValidFiles = (question.files || [])
+          .filter(f => f.id !== fileId && f.s3Key && !f.url?.startsWith('blob:'))
+          .length;
+        
+        if (remainingValidFiles === 1) {
+          toast.success('Necesitas 1 imagen más para completar la prueba de preferencia');
+        } else if (remainingValidFiles === 0) {
+          toast.success('Necesitas 2 imágenes para completar la prueba de preferencia');
+        }
+      } else {
+        // Mensaje genérico para otros tipos de preguntas
         toast.success('Archivo eliminado exitosamente');
       }
+      
     } catch (error) {
       console.error('[useCognitiveTaskForm] Error al eliminar archivo:', error);
-      toast.error('Error al eliminar archivo');
+      toast.error('Error al eliminar archivo: ' + (error instanceof Error ? error.message : 'error desconocido'));
     }
-  }, [formData.questions]);
+  }, [formData.questions, saveFilesToLocalStorage]);
+
+  // Agregar un observador de debug para ver eventos de clic en botones de eliminar
+  useEffect(() => {
+    // Solo agregamos en desarrollo
+    if (process.env.NODE_ENV === 'development') {
+      const handleDeleteButtonClick = (e: MouseEvent) => {
+        // Buscar si el elemento clickeado es un botón de eliminar o está dentro de uno
+        let target = e.target as HTMLElement | null;
+        while (target) {
+          if (target.classList?.contains('delete-file-button') || 
+              target.getAttribute('data-role') === 'delete-file') {
+            console.log('[DEBUG] Botón de eliminar archivos clickeado:', target);
+            break;
+          }
+          target = target.parentElement;
+        }
+      };
+      
+      document.addEventListener('click', handleDeleteButtonClick);
+      return () => document.removeEventListener('click', handleDeleteButtonClick);
+    }
+  }, []);
 
   // Limpiar localStorage cuando se completa el guardado
   useEffect(() => {
@@ -884,16 +1062,16 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
 
   // Función para validar el formulario
   const validateForm = useCallback(() => {
-    const errors: Record<string, string> = {};
+    const errors: ValidationErrors = {};
     
     // Validar researchId
     if (!researchId) {
-      errors.researchId = 'El ID de investigación es obligatorio';
+      errors.researchId = VALIDATION_ERROR_MESSAGES.RESEARCH_ID_REQUIRED;
     }
     
     // Validar que haya al menos una pregunta
     if (!formData.questions || formData.questions.length === 0) {
-      errors.questions = 'Debe agregar al menos una pregunta';
+      errors.questions = VALIDATION_ERROR_MESSAGES.QUESTIONS_REQUIRED;
     }
 
     // Log de debugging
@@ -909,24 +1087,24 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
         type: question.type,
         title: question.title,
         required: question.required,
-        hasFiles: question.files?.length > 0,
-        hasChoices: question.choices?.length > 0
+        hasFiles: (question.files?.length || 0) > 0,
+        hasChoices: (question.choices?.length || 0) > 0
       });
       
       // Validar título
       if (!question.title?.trim()) {
-        errors[`question_${index}_title`] = 'El título de la pregunta es obligatorio';
+        errors[`question_${index}_title`] = VALIDATION_ERROR_MESSAGES.TITLE_REQUIRED;
       }
       
       // Validar opciones para preguntas de elección
       if (['single_choice', 'multiple_choice', 'ranking'].includes(question.type)) {
         if (!question.choices || question.choices.length === 0) {
-          errors[`question_${index}_choices`] = 'Debe agregar al menos una opción';
+          errors[`question_${index}_choices`] = VALIDATION_ERROR_MESSAGES.CHOICES_REQUIRED;
         } else {
           // Validar que cada opción tenga texto
           question.choices.forEach((choice, choiceIndex) => {
             if (!choice.text?.trim()) {
-              errors[`question_${index}_choice_${choiceIndex}`] = 'El texto de la opción es obligatorio';
+              errors[`question_${index}_choice_${choiceIndex}`] = VALIDATION_ERROR_MESSAGES.CHOICE_TEXT_REQUIRED;
             }
           });
         }
@@ -938,22 +1116,94 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
         
         // Validar valores inicial y final
         if (startValue === undefined || startValue === null) {
-          errors[`question_${index}_scale_start`] = 'El valor inicial de la escala es obligatorio';
+          errors[`question_${index}_scale_start`] = VALIDATION_ERROR_MESSAGES.SCALE_START_REQUIRED;
         }
         
         if (endValue === undefined || endValue === null) {
-          errors[`question_${index}_scale_end`] = 'El valor final de la escala es obligatorio';
+          errors[`question_${index}_scale_end`] = VALIDATION_ERROR_MESSAGES.SCALE_END_REQUIRED;
         }
         
         if (startValue !== undefined && endValue !== undefined && startValue >= endValue) {
-          errors[`question_${index}_scale`] = 'El valor inicial debe ser menor que el valor final';
+          errors[`question_${index}_scale`] = VALIDATION_ERROR_MESSAGES.SCALE_INVALID_RANGE;
         }
       }
       
       // Validar preguntas que requieren archivos
-      if (['navigation_flow', 'preference_test'].includes(question.type)) {
-        if (!question.files || question.files.length === 0) {
-          errors[`question_${index}_files`] = 'Debe subir al menos un archivo';
+      if (question.type === 'navigation_flow') {
+        if (!question.files || !Array.isArray(question.files) || question.files.length === 0) {
+          errors[`question_${question.id}_files`] = `Pregunta ${question.id}: Debe subir al menos una imagen para el flujo de navegación`;
+          return;
+        }
+
+        // Verificar que todos los archivos tienen s3Key válido
+        const hasInvalidFiles = question.files.some(
+          file => !file.s3Key || typeof file.s3Key !== 'string' || file.s3Key.trim() === '' ||
+          (file as ExtendedUploadedFile).url?.startsWith('blob:') || 
+          (file as ExtendedUploadedFile).isLoading || 
+          (file as ExtendedUploadedFile).error
+        );
+
+        if (hasInvalidFiles) {
+          errors[`question_${question.id}_files`] = `Pregunta ${question.id}: Algunas imágenes aún se están cargando o tienen errores. Por favor, espere a que se completen las cargas o elimine los archivos con error`;
+          return;
+        }
+      }
+      
+      // En la sección de validación para las preguntas de tipo preference_test
+      if (question.type === 'preference_test') {
+        // Para preference_test, validar que hay archivos y que son válidos
+        const allFiles = question.files || [];
+        
+        // Filtrar archivos que tienen s3Key válida y eliminar duplicados
+        const uniqueValidFiles: Array<ExtendedUploadedFile> = [];
+        const processedIDs = new Set<string>();
+        
+        for (const file of allFiles) {
+          // Criterio 1: No agregar archivos ya procesados (por ID)
+          if (file && file.id && !processedIDs.has(file.id)) {
+            // Criterio 2: Solo agregar archivos completamente procesados
+            if (
+              file && 
+              file.s3Key && 
+              typeof file.s3Key === 'string' && 
+              file.s3Key.trim() !== '' && 
+              !(file as ExtendedUploadedFile).url.startsWith('blob:') &&
+              !(file as ExtendedUploadedFile).isLoading &&
+              !(file as ExtendedUploadedFile).error &&
+              !processedIDs.has(file.id)
+            ) {
+              uniqueValidFiles.push(file);
+              processedIDs.add(file.id);
+            }
+          }
+        }
+        
+        // Si encontramos duplicados o archivos inválidos, actualizar los archivos de la pregunta
+        if (uniqueValidFiles.length !== allFiles.length) {
+          const updatedQuestions = [...formData.questions];
+          const questionIndex = updatedQuestions.findIndex(q => q.id === question.id);
+          if (questionIndex !== -1) {
+            updatedQuestions[questionIndex].files = uniqueValidFiles;
+            setFormData(prev => ({
+              ...prev,
+              questions: updatedQuestions
+            }));
+          }
+        }
+        
+        // Validar número de archivos - ERROR solo si no hay ninguna imagen válida
+        if (uniqueValidFiles.length < 1) {
+          errors[`question_${question.id}_files`] = `Pregunta ${question.id}: Debe subir al menos una imagen para la prueba de preferencia`;
+          return;
+        }
+
+        // En lugar de error, mostrar advertencias para casos no ideales
+        if (uniqueValidFiles.length === 1) {
+          console.warn(`[validateForm] Advertencia: La prueba de preferencia ${question.id} tiene solo 1 imagen válida. Se recomienda tener 2 imágenes.`);
+          toast.success(`Pregunta ${question.id}: La prueba de preferencia se guardará con solo 1 imagen.`);
+        } else if (uniqueValidFiles.length > 2) {
+          console.warn(`[validateForm] Advertencia: La prueba de preferencia ${question.id} tiene ${uniqueValidFiles.length} imágenes válidas (se usarán solo las 2 primeras).`);
+          toast.success(`Pregunta ${question.id}: La prueba de preferencia solo necesita 2 imágenes. Se usarán las 2 primeras.`);
         }
       }
     });
@@ -992,57 +1242,157 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
       return;
     }
 
-    // Procesar datos para enviar y asegurarse de que no hay propiedades inválidas
-    const dataToSave = {
-      ...formData,
+    // Construir el objeto que coincida exactamente con CognitiveTaskFormData de shared/interfaces
+    const dataToSave: CognitiveTaskFormData = {
+      researchId: researchId || '',
+      questions: formData.questions.map(question => {
+        // Crear objeto limpio para cada pregunta según la interfaz Question
+        const cleanQuestion: Question = {
+          id: question.id,
+          type: question.type,
+          title: question.title || '',
+          required: Boolean(question.required),
+          showConditionally: Boolean(question.showConditionally),
+          deviceFrame: Boolean(question.deviceFrame)
+        };
+        
+        // Agregar descripción solo si existe
+        if (question.description) {
+          cleanQuestion.description = question.description;
+        }
+        
+        // Agregar choices solo para tipos específicos y si existen
+        if (['single_choice', 'multiple_choice', 'ranking'].includes(question.type) && question.choices) {
+          cleanQuestion.choices = question.choices.map(choice => ({
+            id: choice.id,
+            text: choice.text || '',
+            isQualify: Boolean(choice.isQualify),
+            isDisqualify: Boolean(choice.isDisqualify)
+          }));
+        }
+        
+        // Agregar scaleConfig solo para linear_scale y si existe
+        if (question.type === 'linear_scale' && question.scaleConfig) {
+          cleanQuestion.scaleConfig = {
+            startValue: Number(question.scaleConfig.startValue),
+            endValue: Number(question.scaleConfig.endValue),
+            startLabel: question.scaleConfig.startLabel || '',
+            endLabel: question.scaleConfig.endLabel || ''
+          };
+        }
+        
+        // Agregar archivos solo para tipos específicos y si existen
+        if (['navigation_flow', 'preference_test'].includes(question.type) && question.files) {
+          // Filtrar archivos que tienen s3Key válida y eliminar duplicados
+          const uniqueValidFiles: Array<{
+            id: string;
+            name: string;
+            size: number;
+            type: string;
+            url: string;
+            s3Key: string;
+          }> = [];
+          const processedS3Keys = new Set();
+          
+          for (const file of question.files) {
+            if (
+              file && 
+              file.s3Key && 
+              typeof file.s3Key === 'string' && 
+              file.s3Key.trim() !== '' && 
+              !(file as ExtendedUploadedFile).url.startsWith('blob:') &&
+              !(file as ExtendedUploadedFile).isLoading &&
+              !(file as ExtendedUploadedFile).error &&
+              !processedS3Keys.has(file.s3Key)
+            ) {
+              uniqueValidFiles.push({
+                id: file.id,
+                name: file.name,
+                size: Number(file.size),
+                type: file.type,
+                url: file.url,
+                s3Key: file.s3Key
+              });
+              
+              // Marcar este s3Key como procesado
+              processedS3Keys.add(file.s3Key);
+            }
+          }
+          
+          // Log detallado de archivos
+          console.log(`[useCognitiveTaskForm] Procesando archivos para pregunta ${question.id} (${question.type}):`);
+          console.log('- Total archivos:', question.files.length);
+          console.log('- Archivos únicos válidos:', uniqueValidFiles.length);
+          console.log('- S3Keys procesadas:', Array.from(processedS3Keys));
+          
+          question.files.forEach((f: ExtendedUploadedFile, i) => {
+            console.log(`  Archivo ${i+1}:`, { 
+              id: f.id, 
+              name: f.name, 
+              hasS3Key: !!f.s3Key, 
+              s3Key: f.s3Key,
+              url: f.url?.substring(0, 50) + '...',
+              isBlob: f.url?.startsWith('blob:'),
+              isLoading: f.isLoading,
+              hasError: f.error,
+              isDuplicate: f.s3Key && processedS3Keys.has(f.s3Key) && !uniqueValidFiles.some(vf => vf.id === f.id)
+            });
+          });
+          
+          // Asignar archivos validados
+          cleanQuestion.files = uniqueValidFiles;
+          
+          // Advertencia si no hay archivos válidos para tipos que los requieren
+          if (uniqueValidFiles.length === 0) {
+            console.warn(`[useCognitiveTaskForm] Advertencia: No hay archivos válidos para la pregunta ${question.id} (${question.type})`);
+            // No añadir files vacío al objeto si no hay archivos válidos
+            delete cleanQuestion.files;
+          }
+          
+          // Advertencia específica para preference_test
+          if (question.type === 'preference_test') {
+            // Log de diagnóstico
+            console.log(`[useCognitiveTaskForm] Validando prueba de preferencia ${question.id} con ${uniqueValidFiles.length} imágenes válidas`);
+            
+            // Si hay menos de 1 imagen, mostrar advertencia pero continuar
+            if (uniqueValidFiles.length < 1) {
+              console.warn(`[useCognitiveTaskForm] Advertencia: La prueba de preferencia ${question.id} no tiene imágenes válidas`);
+            } 
+            // Si hay solo 1 imagen, mostrar advertencia pero continuar
+            else if (uniqueValidFiles.length === 1) {
+              console.warn(`[useCognitiveTaskForm] Advertencia: La prueba de preferencia ${question.id} debería tener 2 imágenes, pero solo tiene 1`);
+              toast.success('La prueba de preferencia se guardará con solo 1 imagen. Recuerda añadir la segunda imagen más tarde.');
+            } 
+            // Si hay más de 2, limitamos a 2
+            else if (uniqueValidFiles.length > 2) {
+              console.warn(`[useCognitiveTaskForm] Advertencia: La prueba de preferencia ${question.id} tiene ${uniqueValidFiles.length} imágenes. Se limitará a las 2 primeras.`);
+              cleanQuestion.files = uniqueValidFiles.slice(0, 2);
+            }
+          }
+        }
+        
+        return cleanQuestion;
+      }),
+      randomizeQuestions: Boolean(formData.randomizeQuestions),
       metadata: {
-        version: '1.0.0',
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        lastModifiedBy: 'user-interface'
       }
     };
     
-    // Preparar los datos antes de enviar:
-    // 1. Eliminar propiedades temporales en los archivos que no deben ir al backend
-    const cleanedData = {
-      ...dataToSave,
-      questions: dataToSave.questions.map(question => {
-        // Crear una copia de la pregunta
-        const cleanQuestion = { ...question };
-        
-        // Limpiar archivos si existen
-        if (cleanQuestion.files && cleanQuestion.files.length > 0) {
-          cleanQuestion.files = cleanQuestion.files.map(file => {
-            // Solo mantener propiedades necesarias para el backend
-            return {
-              id: file.id,
-              name: file.name,
-              size: file.size,
-              type: file.type,
-              url: file.url,
-              s3Key: file.s3Key
-            };
-          });
-        }
-        
-        // Retornar pregunta limpia
-        return cleanQuestion;
-      })
-    };
-    
-    console.log('Datos limpiados para enviar:', cleanedData);
+    console.log('[useCognitiveTaskForm] Datos filtrados según interfaz compartida:', dataToSave);
     
     // Verificar si hay errores de validación
     const isValid = validateForm();
     
     // Mostrar modal con JSON en lugar de guardar directamente
-    // Incluso si hay errores de validación, mostramos el modal JSON
-    showJsonModal(cleanedData, 'save');
+    showJsonModal(dataToSave, 'save');
     
     // Solo mostramos la alerta de validación pero permitimos ver el JSON
     if (!isValid) {
-      toast.error('Hay errores de validación, pero puedes ver el JSON que se enviaría');
+      toast.error('Hay errores de validación en el formulario. Verifique los campos marcados.');
     }
-  }, [isAuthenticated, showModal, validateForm, formData, showJsonModal]);
+  }, [isAuthenticated, showModal, validateForm, formData, showJsonModal, researchId, toast]);
 
   // Función para continuar con la acción después de mostrar el JSON
   const continueWithAction = useCallback(() => {
@@ -1051,51 +1401,89 @@ export const useCognitiveTaskForm = (researchId?: string): UseCognitiveTaskFormR
     if (pendingAction === 'save') {
       // Ejecutar la mutación para guardar
       try {
+        // Parsear el JSON que se mostró en el modal
         const dataToSaveObj = JSON.parse(jsonToSend);
         
-        // Validaciones adicionales antes de enviar
-        const dataPrepared = {
-          ...dataToSaveObj,
-          // Asegurarnos de que researchId esté presente
-          researchId: researchId || dataToSaveObj.researchId,
-          // Limpiar preguntas con archivos para asegurar que tienen s3Key
-          questions: dataToSaveObj.questions.map(question => {
-            // Si la pregunta tiene archivos, debemos asegurarnos de que tienen s3Key
-            if (['navigation_flow', 'preference_test'].includes(question.type) && 
-                question.files && question.files.length > 0) {
-              
-              // Filtrar solo archivos válidos con s3Key
-              const validFiles = question.files.filter(file => 
-                file && file.s3Key && file.url && !file.url.startsWith('blob:')
-              );
-              
-              return {
-                ...question,
-                files: validFiles
-              };
+        // Verificaciones adicionales antes de enviar
+        const hasInvalidQuestions = dataToSaveObj.questions.some((q: any) => {
+          // Para tipos que requieren archivos, verificar que estén correctamente formados
+          if (['navigation_flow', 'preference_test'].includes(q.type)) {
+            // Si no tiene la propiedad files o está vacía
+            if (!q.files || !Array.isArray(q.files) || q.files.length === 0) {
+              console.error(`[useCognitiveTaskForm] Error: La pregunta ${q.id} (${q.type}) no tiene archivos`);
+              return true;
             }
             
-            return question;
-          })
-        };
+            // Verificar que todos los archivos tengan s3Key válida
+            const validFiles = q.files.filter((f: any) => f && f.s3Key && typeof f.s3Key === 'string');
+            
+            if (validFiles.length !== q.files.length) {
+              console.error(`[useCognitiveTaskForm] Error: La pregunta ${q.id} (${q.type}) tiene archivos sin s3Key válida`);
+              return true;
+            }
+            
+            // Verificación específica para preference_test
+            if (q.type === 'preference_test') {
+              if (validFiles.length < 1) {
+                // Error solo si no hay imágenes
+                console.error(`[useCognitiveTaskForm] Error: La prueba de preferencia requiere al menos 1 imagen, pero no tiene ninguna`);
+                return true;
+              } else if (validFiles.length === 1) {
+                // Advertencia si solo hay 1 imagen, pero permitimos continuar
+                console.warn(`[useCognitiveTaskForm] Advertencia: La prueba de preferencia debería tener 2 imágenes, pero solo tiene 1. Se permitirá guardar de todas formas.`);
+                toast.success('La prueba de preferencia se guardará con solo 1 imagen. Recuerda añadir la segunda imagen más tarde.');
+              } else if (validFiles.length > 2) {
+                // Si hay más de 2, las limitamos automáticamente y continuamos
+                console.warn(`[useCognitiveTaskForm] Advertencia: La prueba de preferencia tiene ${validFiles.length} imágenes. Se limitará a las 2 primeras.`);
+                q.files = validFiles.slice(0, 2);
+              }
+            }
+            
+            if (q.type === 'navigation_flow' && validFiles.length === 0) {
+              console.error(`[useCognitiveTaskForm] Error: El flujo de navegación requiere al menos 1 imagen`);
+              return true;
+            }
+          }
+          return false;
+        });
         
-        console.log('[useCognitiveTaskForm] Enviando datos validados al backend:', dataPrepared);
-        mutate(dataPrepared);
+        if (hasInvalidQuestions) {
+          toast.error('Hay problemas con los archivos. Verifica que todas las imágenes estén completamente cargadas.');
+          showModal({
+            title: 'Error en archivos',
+            message: 'Algunas imágenes no están correctamente procesadas. Asegúrate de que todas las imágenes estén completamente cargadas antes de guardar.',
+            type: 'error'
+          });
+          return;
+        }
+        
+        // Log detallado antes de enviar
+        console.log('[useCognitiveTaskForm] Guardando con nueva API - Datos finales:', dataToSaveObj);
+        
+        // Usar la API correcta para el guardado
+        mutate(dataToSaveObj);
       } catch (error) {
         console.error('[useCognitiveTaskForm] Error al procesar JSON:', error);
         toast.error('Error al procesar los datos del formulario');
+        
+        // Mostrar error detallado
+        showModal({
+          title: 'Error de procesamiento',
+          message: error instanceof Error ? error.message : 'Ocurrió un error inesperado al procesar los datos',
+          type: 'error'
+        });
       }
     } else if (pendingAction === 'preview') {
       // Mostrar mensaje de previsualización
       showModal({
         title: 'Información',
-        message: SUCCESS_MESSAGES.PREVIEW_COMING_SOON,
+        message: SUCCESS_MESSAGES_EXTENDED.PREVIEW_COMING_SOON,
         type: 'info'
       });
       
-      toast.success(SUCCESS_MESSAGES.PREVIEW_COMING_SOON);
+      toast.success(SUCCESS_MESSAGES_EXTENDED.PREVIEW_COMING_SOON);
     }
-  }, [jsonToSend, pendingAction, mutate, showModal, closeJsonModal, researchId]);
+  }, [jsonToSend, pendingAction, mutate, showModal, closeJsonModal]);
 
   // Previsualizar formulario (modificado para mostrar JSON primero)
   const handlePreview = useCallback(() => {
