@@ -260,4 +260,6 @@ export interface UseSmartVOCFormResult {
   handlePreview: () => void;
   validateForm: () => boolean;
   closeModal: () => void;
+  showJsonPreview: boolean;
+  closeJsonModal: () => void;
 } 

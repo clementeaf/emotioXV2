@@ -196,4 +196,8 @@ export interface UseCognitiveTaskFormResult {
   validateForm: () => boolean;
   closeModal: () => void;
   initializeDefaultQuestions: (defaultQuestions: Question[]) => void;
+  
+  // Nuevas propiedades para el modal JSON
+  showJsonPreview: boolean;
+  closeJsonModal: () => void;
 } 

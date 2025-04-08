@@ -1,9 +1,15 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { EyeTrackingFormData, EyeTrackingConfig, DEFAULT_EYE_TRACKING_CONFIG, EyeTrackingStimulus } from 'shared/interfaces/eye-tracking.interface';
 import { eyeTrackingFixedAPI } from '@/lib/eye-tracking-api';
 import { useFileUpload } from '@/hooks';
 import { useErrorLog } from '@/components/utils/ErrorLogger';
 import { toast } from 'react-hot-toast';
+
+// Interfaz extendida que incluye propiedades de UI para la experiencia de carga
+interface EyeTrackingStimulusWithUI extends EyeTrackingStimulus {
+  isLoading?: boolean;
+  progress?: number;
+}
 
 // Función para generar un ID único
 const generateId = (): string => {
@@ -85,7 +91,7 @@ export function useEyeTrackingForm({
     updateFormData(`config.${key}`, value);
   }, [updateFormData]);
   
-  // Función para manejar cargas de archivos
+  // La función handleFileUpload con modificaciones
   const handleFileUpload = useCallback((files: FileList) => {
     if (!researchId) {
       toast.error('Se requiere ID de investigación para cargar archivos');
@@ -101,29 +107,98 @@ export function useEyeTrackingForm({
     let errorCount = 0;
     
     // Procesamiento temporal para mostrar vistas previas inmediatas
-    const tempStimuli: EyeTrackingStimulus[] = fileArray.map((file, index) => ({
-      id: generateId(),
-      fileName: file.name,
-      fileType: file.type,
-      fileSize: file.size,
-      fileUrl: URL.createObjectURL(file), // URL temporal para vista previa
-      order: formDataRef.current.stimuli.items.length + index + 1
-    }));
+    const tempStimuli: EyeTrackingStimulusWithUI[] = fileArray.map((file, index) => {
+      const id = generateId();
+      
+      // Crear un estímulo básico primero (cumpliendo con la interfaz original)
+      const baseStimulus: EyeTrackingStimulus = {
+        id,
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+        fileUrl: URL.createObjectURL(file), // URL temporal para vista previa
+        order: formDataRef.current.stimuli.items.length + index + 1
+      };
+      
+      // Luego extenderlo con propiedades de UI
+      const tempStimulus: EyeTrackingStimulusWithUI = {
+        ...baseStimulus,
+        isLoading: true,
+        progress: 0
+      };
+      
+      return tempStimulus;
+    });
     
     // Actualizar estado con URLs temporales para mostrar vista previa inmediata
-    setFormData((prevData) => ({
-      ...prevData,
-      stimuli: {
-        ...prevData.stimuli,
-        items: [...prevData.stimuli.items, ...tempStimuli]
-      }
-    }));
+    setFormData((prevData) => {
+      // Realizamos un casting para que TypeScript no se queje
+      // En runtime, esto es seguro porque solo agregamos propiedades extra
+      const updatedItems = [...prevData.stimuli.items, ...tempStimuli] as EyeTrackingStimulus[];
+      
+      const updatedData = {
+        ...prevData,
+        stimuli: {
+          ...prevData.stimuli,
+          items: updatedItems
+        }
+      };
+      
+      // Guardar en localStorage para persistencia temporal
+      saveToLocalStorage(updatedData);
+      
+      return updatedData;
+    });
     
     // Procesar carga real a S3 en segundo plano
     const uploadPromises = fileArray.map(async (file, index) => {
       const stimulus = tempStimuli[index];
       
       try {
+        // Simulamos progreso con actualizaciones manuales
+        const updateProgress = (progress: number) => {
+          // Actualizar el progreso del estímulo
+          setFormData((prevData) => {
+            const items = prevData.stimuli.items;
+            const itemIndex = items.findIndex(item => item.id === stimulus.id);
+            
+            if (itemIndex !== -1) {
+              // Hacemos copia de los elementos
+              const updatedItems = [...items];
+              
+              // Obtenemos el ítem y lo convertimos al tipo extendido
+              const currentItem = { ...updatedItems[itemIndex] } as EyeTrackingStimulusWithUI;
+              
+              // Actualizamos propiedades de UI en nuestra copia local
+              currentItem.progress = progress;
+              currentItem.isLoading = progress < 100;
+              
+              // Asignamos la copia actualizada de vuelta al array
+              updatedItems[itemIndex] = currentItem as EyeTrackingStimulus;
+              
+              const updatedData = {
+                ...prevData,
+                stimuli: {
+                  ...prevData.stimuli,
+                  items: updatedItems
+                }
+              };
+              
+              // No guardamos en localStorage en cada actualización de progreso para evitar sobrecarga
+              if (progress === 100) {
+                saveToLocalStorage(updatedData);
+              }
+              
+              return updatedData;
+            }
+            
+            return prevData;
+          });
+        };
+        
+        // Simular progreso inmediato al 10%
+        updateProgress(10);
+        
         // Usar la función uploadFile del hook
         const result = await uploadFile(file, researchId, 'eye-tracking-stimuli');
         
@@ -133,20 +208,32 @@ export function useEyeTrackingForm({
           const itemIndex = updatedItems.findIndex(item => item.id === stimulus.id);
           
           if (itemIndex !== -1) {
-            updatedItems[itemIndex] = {
+            // Creamos un objeto con las propiedades requeridas por la interfaz
+            const updatedStimulus: EyeTrackingStimulus = {
               ...updatedItems[itemIndex],
               fileUrl: result.fileUrl,
               s3Key: result.key
             };
+            
+            // Lo asignamos al array
+            updatedItems[itemIndex] = updatedStimulus;
+            
+            // Simulamos progreso completado
+            updateProgress(100);
           }
           
-          return {
+          const updatedData = {
             ...prevData,
             stimuli: {
               ...prevData.stimuli,
               items: updatedItems
             }
           };
+          
+          // Guardar en localStorage para persistencia temporal
+          saveToLocalStorage(updatedData);
+          
+          return updatedData;
         });
         
         processedFiles++;
@@ -172,20 +259,29 @@ export function useEyeTrackingForm({
           const itemIndex = updatedItems.findIndex(item => item.id === stimulus.id);
           
           if (itemIndex !== -1) {
-            updatedItems[itemIndex] = {
+            // Creamos un objeto actualizado con las propiedades de error
+            const updatedStimulus: EyeTrackingStimulus = {
               ...updatedItems[itemIndex],
               error: true,
               errorMessage: error instanceof Error ? error.message : 'Error desconocido'
             };
+            
+            // Lo asignamos al array
+            updatedItems[itemIndex] = updatedStimulus;
           }
           
-          return {
+          const updatedData = {
             ...prevData,
             stimuli: {
               ...prevData.stimuli,
               items: updatedItems
             }
           };
+          
+          // Guardar en localStorage para persistencia temporal
+          saveToLocalStorage(updatedData);
+          
+          return updatedData;
         });
         
         if (processedFiles + errorCount === totalFiles) {
@@ -204,18 +300,124 @@ export function useEyeTrackingForm({
     });
   }, [researchId, uploadFile, logger]);
   
+  // Función para guardar datos en localStorage
+  const saveToLocalStorage = useCallback((data: EyeTrackingFormData) => {
+    try {
+      if (!researchId) return;
+      
+      // Generamos un objeto simplificado para localStorage
+      const stimuli = data.stimuli.items.map(item => ({
+        id: item.id,
+        fileName: item.fileName,
+        fileType: item.fileType,
+        fileSize: item.fileSize,
+        fileUrl: item.fileUrl,
+        s3Key: item.s3Key,
+        order: item.order,
+        error: item.error,
+        errorMessage: item.errorMessage
+      }));
+      
+      // Guardar solo los estímulos en localStorage
+      const storageKey = `eye_tracking_temp_stimuli_${researchId}`;
+      localStorage.setItem(storageKey, JSON.stringify(stimuli));
+      
+      logger.debug('[EyeTrackingForm] Guardados estímulos temporalmente en localStorage', {
+        count: stimuli.length
+      });
+    } catch (error) {
+      logger.error('[EyeTrackingForm] Error al guardar en localStorage:', error);
+    }
+  }, [researchId, logger]);
+  
+  // Cargar estímulos desde localStorage al inicializar
+  useEffect(() => {
+    if (!researchId) return;
+    
+    try {
+      const storageKey = `eye_tracking_temp_stimuli_${researchId}`;
+      const savedItemsJson = localStorage.getItem(storageKey);
+      
+      if (savedItemsJson) {
+        const savedItems = JSON.parse(savedItemsJson);
+        logger.debug('[EyeTrackingForm] Recuperando estímulos de localStorage', {
+          count: savedItems.length
+        });
+        
+        if (savedItems.length > 0) {
+          // Solo actualizamos si no hay estímulos ya cargados y tenemos guardados
+          setFormData(prevData => {
+            // Si ya hay estímulos cargados, no sobrescribimos
+            if (prevData.stimuli.items.length > 0) {
+              logger.debug('[EyeTrackingForm] Ya hay estímulos cargados, no se recuperan de localStorage');
+              return prevData;
+            }
+            
+            // Filtrar solo estímulos válidos (con URL o S3Key)
+            const validItems = savedItems.filter((item: any) => 
+              item.fileUrl || item.s3Key
+            );
+            
+            if (validItems.length === 0) {
+              logger.debug('[EyeTrackingForm] No hay estímulos válidos en localStorage');
+              return prevData;
+            }
+            
+            logger.debug('[EyeTrackingForm] Restaurando estímulos válidos desde localStorage', {
+              count: validItems.length
+            });
+            
+            return {
+              ...prevData,
+              stimuli: {
+                ...prevData.stimuli,
+                items: validItems
+              }
+            };
+          });
+        }
+      }
+    } catch (error) {
+      logger.error('[EyeTrackingForm] Error al recuperar de localStorage:', error);
+    }
+  }, [researchId, logger]);
+  
+  // Limpiar localStorage después de guardar exitosamente
+  useEffect(() => {
+    // Limpiar cuando se completa el guardado
+    if (!isSaving && eyeTrackingId && researchId) {
+      const storageKey = `eye_tracking_temp_stimuli_${researchId}`;
+      localStorage.removeItem(storageKey);
+      logger.debug('[EyeTrackingForm] Limpiando estímulos temporales de localStorage después de guardar');
+    }
+  }, [isSaving, eyeTrackingId, researchId, logger]);
+  
   // Manejador para el componente FileUploader
   const handleFileUploaderComplete = useCallback((fileData: { fileUrl: string; key: string }) => {
     logger.debug('handleFileUploaderComplete llamado con datos:', fileData);
     
     if (!fileData || !fileData.fileUrl || !fileData.key) {
       logger.error('Datos de archivo incompletos recibidos en handleFileUploaderComplete');
-      return;
+      return null;
     }
     
     // Extraer información del nombre del archivo
     const fileName = fileData.key.split('/').pop() || 'archivo.jpg';
     const fileType = fileName.split('.').pop()?.toLowerCase() || 'jpg';
+    
+    // Verificar si este archivo ya existe para evitar duplicados
+    // Utilizamos una referencia al estado actual para evitar dependencias cíclicas
+    const fileExists = formDataRef.current.stimuli.items.some(
+      item => item.s3Key === fileData.key
+    );
+    
+    if (fileExists) {
+      logger.debug('handleFileUploaderComplete: Archivo ya existe, ignorando:', {
+        key: fileData.key,
+        fileName
+      });
+      return null; // No hacemos nada si ya existe
+    }
     
     // Crear un nuevo estímulo
     const newStimulus: EyeTrackingStimulus = {
@@ -228,14 +430,35 @@ export function useEyeTrackingForm({
       order: formDataRef.current.stimuli.items.length + 1
     };
     
+    // Mostrar información de depuración para diagnóstico
+    logger.debug('handleFileUploaderComplete: Creando nuevo estímulo:', {
+      id: newStimulus.id,
+      fileName: newStimulus.fileName,
+      order: newStimulus.order,
+      s3Key: newStimulus.s3Key
+    });
+    
     // Actualizar el array de estímulos de forma segura
-    setFormData(prevData => ({
-      ...prevData,
-      stimuli: {
-        ...prevData.stimuli,
-        items: [...prevData.stimuli.items, newStimulus]
-      }
-    }));
+    setFormData(prevData => {
+      const updatedData = {
+        ...prevData,
+        stimuli: {
+          ...prevData.stimuli,
+          items: [...prevData.stimuli.items, newStimulus]
+        }
+      };
+      
+      // Mostrar el nuevo estado después de la actualización
+      logger.debug('handleFileUploaderComplete: Estado actualizado:', {
+        newCount: updatedData.stimuli.items.length,
+        lastItem: updatedData.stimuli.items[updatedData.stimuli.items.length - 1]
+      });
+      
+      return updatedData;
+    });
+    
+    // Mostrar confirmación al usuario
+    toast.success(`Estímulo añadido: ${fileName}`);
     
     return newStimulus;
   }, [logger]);

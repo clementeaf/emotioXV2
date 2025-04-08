@@ -1,4 +1,4 @@
-import React, { useState, useRef, ChangeEvent } from 'react';
+import React, { useState, useRef, ChangeEvent, useEffect } from 'react';
 import { useFileUpload } from '../../hooks/useFileUpload';
 import './FileUploader.css';
 
@@ -11,6 +11,10 @@ interface FileUploaderProps {
   onUploadComplete?: (fileData: { fileUrl: string; key: string }) => void;
   onUploadError?: (error: Error) => void;
 }
+
+// Clave para localStorage por investigación y carpeta
+const getStorageKey = (researchId: string, folder: string) => 
+  `fileuploader_selection_${researchId}_${folder}`;
 
 const FileUploader: React.FC<FileUploaderProps> = ({
   researchId,
@@ -35,10 +39,121 @@ const FileUploader: React.FC<FileUploaderProps> = ({
     uploadFile,
     resetState
   } = useFileUpload();
+  
+  // Persistir archivos seleccionados en localStorage
+  const persistSelectedFilesInfo = (files: File[]) => {
+    try {
+      // Solo podemos guardar información básica, no el archivo en sí
+      const fileInfos = files.map(file => ({
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        lastModified: file.lastModified
+      }));
+      
+      // Guardar en localStorage para recuperar la UI si el usuario navega fuera
+      const storageKey = getStorageKey(researchId, folder);
+      localStorage.setItem(storageKey, JSON.stringify({
+        timestamp: new Date().toISOString(),
+        files: fileInfos
+      }));
+      
+      console.log('FileUploader: Archivos seleccionados guardados en localStorage', {
+        count: files.length,
+        storageKey
+      });
+    } catch (error) {
+      console.error('FileUploader: Error al persistir archivos seleccionados', error);
+    }
+  };
+  
+  // Cargar estado persistido al montar el componente
+  useEffect(() => {
+    try {
+      const storageKey = getStorageKey(researchId, folder);
+      const savedData = localStorage.getItem(storageKey);
+      
+      if (savedData) {
+        const parsed = JSON.parse(savedData);
+        console.log('FileUploader: Información de archivos recuperada de localStorage', {
+          storageKey,
+          filesCount: parsed.files?.length || 0
+        });
+        
+        // No podemos recuperar los File objects, pero podemos mostrar la UI
+        // para indicar al usuario que tenía archivos seleccionados
+        if (parsed.files?.length > 0) {
+          // Solo actualizamos la UI si no hay archivos seleccionados ya
+          if (selectedFiles.length === 0) {
+            setSelectedFiles([]);
+            // Agregar un mensaje indicando que debe reseleccionar los archivos
+            setErrors(['Se encontraron selecciones previas. Por favor, selecciona los archivos nuevamente.']);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('FileUploader: Error al recuperar estado persistido', error);
+    }
+  }, [researchId, folder, selectedFiles.length]);
+  
+  // Creamos la referencia en el nivel superior del componente
+  const processedRef = useRef(false);
+  
+  // Este efecto maneja específicamente la recuperación de archivos completados
+  useEffect(() => {
+    if (!researchId || !folder || !onUploadComplete) return;
+    
+    // Ya no creamos la referencia aquí, usamos la creada en el nivel superior
+    if (processedRef.current) return;
+    
+    const completedStorageKey = `fileuploader_completed_${researchId}_${folder}`;
+    const processCompletedData = () => {
+      if (processedRef.current) return;
+      
+      try {
+        const completedData = localStorage.getItem(completedStorageKey);
+        if (completedData) {
+          const parsedData = JSON.parse(completedData);
+          if (parsedData.fileUrl && parsedData.key) {
+            // Marcamos como procesado antes de cualquier operación para evitar repetición
+            processedRef.current = true;
+            
+            // Eliminamos del localStorage primero
+            localStorage.removeItem(completedStorageKey);
+            
+            console.log('FileUploader: Procesando datos completados desde localStorage', {
+              key: completedStorageKey,
+              data: parsedData
+            });
+            
+            // Notificamos con pequeño retraso para dar tiempo al componente de estabilizarse
+            setTimeout(() => {
+              onUploadComplete(parsedData);
+            }, 50);
+          }
+        }
+      } catch (error) {
+        console.error('Error al procesar datos completados:', error);
+        localStorage.removeItem(completedStorageKey);
+      }
+    };
+    
+    // Ejecutamos la función después de un breve retraso para permitir que el componente 
+    // termine su renderizado inicial
+    const timer = setTimeout(processCompletedData, 100);
+    
+    // Limpieza
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [researchId, folder, onUploadComplete]);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      validateAndSetFiles(Array.from(e.target.files));
+      const files = Array.from(e.target.files);
+      validateAndSetFiles(files);
+      // Persistir selección para recuperarla si el usuario navega fuera
+      persistSelectedFilesInfo(files);
     }
   };
 
@@ -93,7 +208,10 @@ const FileUploader: React.FC<FileUploaderProps> = ({
     setDragging(false);
     
     if (e.dataTransfer.files) {
-      validateAndSetFiles(Array.from(e.dataTransfer.files));
+      const files = Array.from(e.dataTransfer.files);
+      validateAndSetFiles(files);
+      // Persistir selección para recuperarla si el usuario navega fuera
+      persistSelectedFilesInfo(files);
     }
   };
 
@@ -109,14 +227,36 @@ const FileUploader: React.FC<FileUploaderProps> = ({
       
       const result = await uploadFile(fileToUpload, researchId, folder);
       
+      // Guardar el resultado en localStorage para garantizar que se procese
+      // incluso si el usuario navega fuera antes de que se complete el callback
+      const completedStorageKey = `fileuploader_completed_${researchId}_${folder}`;
+      localStorage.setItem(completedStorageKey, JSON.stringify(result));
+      console.log('FileUploader: Guardado resultado en localStorage', {
+        completedStorageKey,
+        result
+      });
+      
       if (onUploadComplete) {
         onUploadComplete(result);
+        // Eliminar después de procesar exitosamente
+        localStorage.removeItem(completedStorageKey);
       }
       
-      // Limpiar selección después de subir
+      // Limpiar selección después de subir exitosamente
       setSelectedFiles([]);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
+      }
+      
+      // Limpiar localStorage para este researchId y folder
+      try {
+        const storageKey = getStorageKey(researchId, folder);
+        localStorage.removeItem(storageKey);
+        console.log('FileUploader: Se limpió localStorage después de subida exitosa', {
+          storageKey
+        });
+      } catch (error) {
+        console.error('FileUploader: Error al limpiar localStorage', error);
       }
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Error desconocido al subir');

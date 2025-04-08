@@ -35,6 +35,11 @@ export const useSmartVOCForm = (researchId: string): UseSmartVOCFormResult => {
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const { isAuthenticated, token } = useAuth();
 
+  // Estados para el nuevo modal de confirmación JSON
+  const [showJsonPreview, setShowJsonPreview] = useState<boolean>(false);
+  const [jsonToSend, setJsonToSend] = useState<string>('');
+  const [pendingAction, setPendingAction] = useState<'save' | 'preview' | null>(null);
+
   // Handlers para el modal
   const closeModal = () => setModalVisible(false);
   const showModal = (errorData: ErrorModalData) => {
@@ -224,7 +229,56 @@ export const useSmartVOCForm = (researchId: string): UseSmartVOCFormResult => {
     return Object.keys(errors).length === 0;
   };
 
-  // Guardar formulario
+  // Función para mostrar el modal con JSON
+  const showJsonModal = (json: any, action: 'save' | 'preview') => {
+    setJsonToSend(JSON.stringify(json, null, 2));
+    setPendingAction(action);
+    setShowJsonPreview(true);
+  };
+
+  // Función para cerrar el modal JSON
+  const closeJsonModal = () => {
+    setShowJsonPreview(false);
+    setPendingAction(null);
+  };
+
+  // Función para continuar con la acción después de mostrar el JSON
+  const continueWithAction = () => {
+    closeJsonModal();
+    
+    if (pendingAction === 'save') {
+      // Ejecutar la mutación para guardar
+      try {
+        const dataToSaveObj = JSON.parse(jsonToSend);
+        
+        // Asegurarnos de que el objeto tiene la estructura correcta
+        console.log('[SmartVOCForm] Enviando datos al backend:', dataToSaveObj);
+        
+        // Si estamos usando la interfaz de la API que requiere questions, aseguramos que existe
+        if (!dataToSaveObj.questions || !Array.isArray(dataToSaveObj.questions)) {
+          console.error('[SmartVOCForm] Error: El objeto no tiene un array de preguntas válido');
+          toast.error('Error en el formato de datos a enviar');
+          return;
+        }
+        
+        mutate(dataToSaveObj);
+      } catch (error) {
+        console.error('[SmartVOCForm] Error al procesar JSON:', error);
+        toast.error('Error al procesar los datos del formulario');
+      }
+    } else if (pendingAction === 'preview') {
+      // Mostrar mensaje de previsualización
+      showModal({
+        title: 'Información',
+        message: SUCCESS_MESSAGES.PREVIEW_COMING_SOON,
+        type: 'info'
+      });
+      
+      toast.success(SUCCESS_MESSAGES.PREVIEW_COMING_SOON);
+    }
+  };
+
+  // Guardar formulario (modificado para mostrar JSON primero)
   const handleSave = () => {
     if (!isAuthenticated) {
       showModal({
@@ -237,19 +291,23 @@ export const useSmartVOCForm = (researchId: string): UseSmartVOCFormResult => {
     
     if (validateForm()) {
       // Preparar datos para guardar
-      const dataToSave: SmartVOCFormData = {
+      // En lugar de solo indicadores booleanos, incluimos la configuración completa de las preguntas
+      const dataToSave = {
         ...formData,
         researchId,
-        // Convertir las preguntas a formato de API
-        CSAT: questions.some(q => q.type === 'CSAT'),
-        CES: questions.some(q => q.type === 'CES'),
-        CV: questions.some(q => q.type === 'CV'),
-        NEV: questions.some(q => q.type === 'NEV'),
-        NPS: questions.some(q => q.type === 'NPS'),
-        VOC: questions.some(q => q.type === 'VOC')
+        // Añadimos el array completo de preguntas activas
+        questions: questions,
+        // Convertimos randomize y requireAnswers a los nombres de propiedades que espera la API
+        randomizeQuestions: formData.randomize,
+        smartVocRequired: formData.requireAnswers,
+        // Añadimos metadata con timestamp para tracking
+        metadata: {
+          updatedAt: new Date().toISOString()
+        }
       };
       
-      mutate(dataToSave);
+      // Mostrar modal con JSON en lugar de guardar directamente
+      showJsonModal(dataToSave, 'save');
     } else {
       // Crear un mensaje con la lista de errores
       const errorMessageText = 'Errores: ' + Object.values(validationErrors).join(', ');
@@ -264,7 +322,7 @@ export const useSmartVOCForm = (researchId: string): UseSmartVOCFormResult => {
     }
   };
 
-  // Previsualizar formulario
+  // Previsualizar formulario (modificado para mostrar JSON primero)
   const handlePreview = () => {
     if (!validateForm()) {
       // Crear un mensaje con la lista de errores
@@ -280,15 +338,90 @@ export const useSmartVOCForm = (researchId: string): UseSmartVOCFormResult => {
       return;
     }
     
-    // Aquí se implementaría la lógica de previsualización
-    showModal({
-      title: 'Información',
-      message: SUCCESS_MESSAGES.PREVIEW_COMING_SOON,
-      type: 'info'
-    });
+    // Preparar datos para la previsualización incluyendo configuración completa
+    const dataToPreview = {
+      ...formData,
+      researchId,
+      // Añadimos el array completo de preguntas activas
+      questions: questions,
+      // Convertimos randomize y requireAnswers a los nombres de propiedades que espera la API
+      randomizeQuestions: formData.randomize,
+      smartVocRequired: formData.requireAnswers,
+      // Añadimos metadata con timestamp para tracking
+      metadata: {
+        updatedAt: new Date().toISOString()
+      }
+    };
     
-    toast.success(SUCCESS_MESSAGES.PREVIEW_COMING_SOON);
+    // Mostrar modal con JSON
+    showJsonModal(dataToPreview, 'preview');
   };
+
+  // Crear el elemento modal de JSON para mostrar el código
+  useEffect(() => {
+    // Solo crear el modal si se va a mostrar
+    if (showJsonPreview && jsonToSend) {
+      // Crear HTML para el modal
+      const modalHtml = `
+        <div id="jsonPreviewModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999;">
+          <div style="background: white; border-radius: 8px; max-width: 90%; width: 800px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 4px 20px rgba(0,0,0,0.2); overflow: hidden;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid #e5e7eb;">
+              <h2 style="margin: 0; font-size: 18px; font-weight: 600;">JSON a enviar</h2>
+              <button id="closeJsonModal" style="background: none; border: none; cursor: pointer; font-size: 20px; color: #6b7280;">&times;</button>
+            </div>
+            <div style="padding: 24px; overflow-y: auto; flex-grow: 1;">
+              <p style="margin: 0 0 16px; color: #6b7280; font-size: 14px;">
+                Este es el JSON que se enviará al servidor. Revise los datos antes de continuar.
+              </p>
+              <pre style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; overflow: auto; max-height: 400px; font-family: monospace; font-size: 14px; white-space: pre-wrap; word-break: break-word;">${jsonToSend.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+            </div>
+            <div style="padding: 16px 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px;">
+              <button id="cancelJsonAction" style="background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; border-radius: 6px; padding: 8px 16px; font-weight: 500; cursor: pointer;">Cancelar</button>
+              <button id="continueJsonAction" style="background: #3f51b5; color: white; border: none; border-radius: 6px; padding: 8px 16px; font-weight: 500; cursor: pointer;">
+                ${pendingAction === 'save' ? 'Guardar' : 'Previsualizar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      // Crear elemento en el DOM
+      const modalContainer = document.createElement('div');
+      modalContainer.innerHTML = modalHtml;
+      document.body.appendChild(modalContainer);
+      
+      // Configurar eventos
+      document.getElementById('closeJsonModal')?.addEventListener('click', () => {
+        document.body.removeChild(modalContainer);
+        closeJsonModal();
+      });
+      
+      document.getElementById('cancelJsonAction')?.addEventListener('click', () => {
+        document.body.removeChild(modalContainer);
+        closeJsonModal();
+      });
+      
+      document.getElementById('continueJsonAction')?.addEventListener('click', () => {
+        document.body.removeChild(modalContainer);
+        continueWithAction();
+      });
+      
+      // También permitir cerrar haciendo clic fuera del modal
+      modalContainer.addEventListener('click', (e) => {
+        if (e.target === modalContainer.firstChild) {
+          document.body.removeChild(modalContainer);
+          closeJsonModal();
+        }
+      });
+      
+      // Limpiar al desmontar
+      return () => {
+        if (document.body.contains(modalContainer)) {
+          document.body.removeChild(modalContainer);
+        }
+      };
+    }
+  }, [showJsonPreview, jsonToSend, pendingAction]);
 
   return {
     questions,
@@ -306,6 +439,8 @@ export const useSmartVOCForm = (researchId: string): UseSmartVOCFormResult => {
     handleSave,
     handlePreview,
     validateForm,
-    closeModal
+    closeModal,
+    showJsonPreview,
+    closeJsonModal
   };
 }; 

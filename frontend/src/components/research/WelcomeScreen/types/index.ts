@@ -115,4 +115,6 @@ export interface UseWelcomeScreenFormResult {
   handlePreview: () => void;
   validateForm: () => boolean;
   closeModal: () => void;
+  showJsonPreview: boolean;
+  closeJsonModal: () => void;
 } 

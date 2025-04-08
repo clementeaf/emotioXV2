@@ -11,29 +11,41 @@ import { DemographicQuestionKey, LinkConfigKey, ParameterOptionKey, BacklinkKey 
 // Componente Checkbox interno
 type CheckedState = boolean;
 
-interface CheckboxProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  checked?: CheckedState;
-  onCheckedChange?: (checked: CheckedState) => void;
+interface CheckboxProps {
   id?: string;
+  checked?: boolean;
+  onCheckedChange?: (checked: boolean) => void;
+  className?: string;
 }
 
 const Checkbox = React.forwardRef<HTMLButtonElement, CheckboxProps>(
   ({ className, checked, onCheckedChange, id, ...props }, ref) => {
+    // Asegurarse de que checked tenga un valor predeterminado
+    const isChecked = checked || false;
+    
+    // Función de manejador de clic mejorada
+    const handleClick = () => {
+      console.log('Checkbox clicked, current state:', isChecked);
+      if (onCheckedChange) {
+        onCheckedChange(!isChecked);
+      }
+    };
+    
     return (
       <button
         ref={ref}
         role="checkbox"
-        aria-checked={checked}
+        aria-checked={isChecked}
         id={id}
-        data-state={checked ? "checked" : "unchecked"}
-        onClick={() => onCheckedChange?.(!checked)}
+        data-state={isChecked ? "checked" : "unchecked"}
+        onClick={handleClick}
         className={cn(
           "peer h-4 w-4 shrink-0 rounded-sm border border-primary ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground",
           className
         )}
         {...props}
       >
-        {checked && (
+        {isChecked && (
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
@@ -65,6 +77,10 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
     saving,
     formData,
     stats,
+    demographicQuestionsEnabled,
+    setDemographicQuestionsEnabled,
+    linkConfigEnabled,
+    setLinkConfigEnabled,
     handleDemographicChange,
     handleLinkConfigChange,
     handleBacklinkChange,
@@ -96,20 +112,21 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
               Nueva investigación de comportamiento
             </h1>
             <div className="flex gap-3">
-              <Button
-                variant="outline"
+              <button
+                type="button"
                 onClick={() => {}}
-                className="flex items-center gap-2"
+                className="px-4 py-2 rounded-lg border border-neutral-200 bg-white shadow-sm hover:bg-neutral-100 text-sm font-medium"
               >
                 Cancelar
-              </Button>
-              <Button
+              </button>
+              <button
+                type="button"
                 onClick={saveForm}
                 disabled={saving}
-                className="flex items-center gap-2"
+                className="px-4 py-2 rounded-lg bg-neutral-900 text-white shadow hover:bg-neutral-800 text-sm font-medium disabled:opacity-50"
               >
                 {saving ? 'Guardando...' : 'Guardar configuración'}
-              </Button>
+              </button>
             </div>
           </header>
 
@@ -122,87 +139,121 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                 <div className="space-y-4 mb-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
-                      <Switch
-                        checked={true}
-                        onCheckedChange={() => {}}
-                        className="mr-3"
+                      <input
+                        type="checkbox"
+                        checked={demographicQuestionsEnabled}
+                        onChange={(e) => {
+                          console.log('Demográficas cambiado:', e.target.checked);
+                          setDemographicQuestionsEnabled(e.target.checked);
+                        }}
+                        className="w-5 h-5 mr-3 cursor-pointer"
                       />
                       <span className="text-sm font-medium">Preguntas demográficas</span>
                     </div>
                     <span className="text-sm text-neutral-400">Por favor seleccione</span>
                   </div>
                   
-                  <div className="pl-10 space-y-3">
+                  <div className={`pl-10 space-y-3 ${!demographicQuestionsEnabled ? 'opacity-60' : ''}`}>
                     <div className="flex items-center gap-2">
-                      <Checkbox 
+                      <input
+                        type="checkbox"
                         id="age"
                         checked={formData.demographicQuestions.age}
-                        onCheckedChange={(checked: boolean) => handleDemographicChange('age' as DemographicQuestionKey, checked)}
+                        onChange={(e) => {
+                          console.log('Edad cambiado:', e.target.checked);
+                          handleDemographicChange('age' as DemographicQuestionKey, e.target.checked);
+                        }}
+                        disabled={!demographicQuestionsEnabled}
+                        className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                       />
-                      <label htmlFor="age" className="text-sm">Edad</label>
+                      <label htmlFor="age" className={`text-sm ${demographicQuestionsEnabled ? 'cursor-pointer' : 'cursor-not-allowed'}`}>Edad</label>
                     </div>
                     
                     <div className="flex items-center gap-2">
-                      <Checkbox 
+                      <input
+                        type="checkbox"
                         id="country"
                         checked={formData.demographicQuestions.country}
-                        onCheckedChange={(checked: boolean) => handleDemographicChange('country' as DemographicQuestionKey, checked)}
+                        onChange={(e) => {
+                          console.log('País cambiado:', e.target.checked);
+                          handleDemographicChange('country' as DemographicQuestionKey, e.target.checked);
+                        }}
+                        disabled={!demographicQuestionsEnabled}
+                        className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                       />
-                      <label htmlFor="country" className="text-sm">País</label>
+                      <label htmlFor="country" className={`text-sm ${demographicQuestionsEnabled ? 'cursor-pointer' : 'cursor-not-allowed'}`}>País</label>
                     </div>
                     
                     <div className="flex items-center gap-2">
-                      <Checkbox 
+                      <input
+                        type="checkbox"
                         id="gender"
                         checked={formData.demographicQuestions.gender}
-                        onCheckedChange={(checked: boolean) => handleDemographicChange('gender' as DemographicQuestionKey, checked)}
+                        onChange={(e) => handleDemographicChange('gender' as DemographicQuestionKey, e.target.checked)}
+                        disabled={!demographicQuestionsEnabled}
+                        className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                       />
-                      <label htmlFor="gender" className="text-sm">Género</label>
+                      <label htmlFor="gender" className={`text-sm ${demographicQuestionsEnabled ? 'cursor-pointer' : 'cursor-not-allowed'}`}>Género</label>
                     </div>
                     
                     <div className="flex items-center gap-2">
-                      <Checkbox 
+                      <input
+                        type="checkbox"
                         id="educationLevel"
                         checked={formData.demographicQuestions.educationLevel}
-                        onCheckedChange={(checked: boolean) => handleDemographicChange('educationLevel' as DemographicQuestionKey, checked)}
+                        onChange={(e) => handleDemographicChange('educationLevel' as DemographicQuestionKey, e.target.checked)}
+                        disabled={!demographicQuestionsEnabled}
+                        className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                       />
-                      <label htmlFor="educationLevel" className="text-sm">Nivel educativo</label>
+                      <label htmlFor="educationLevel" className={`text-sm ${demographicQuestionsEnabled ? 'cursor-pointer' : 'cursor-not-allowed'}`}>Nivel educativo</label>
                     </div>
                     
                     <div className="flex items-center gap-2">
-                      <Checkbox 
+                      <input
+                        type="checkbox"
                         id="householdIncome"
                         checked={formData.demographicQuestions.householdIncome}
-                        onCheckedChange={(checked: boolean) => handleDemographicChange('householdIncome' as DemographicQuestionKey, checked)}
+                        onChange={(e) => handleDemographicChange('householdIncome' as DemographicQuestionKey, e.target.checked)}
+                        disabled={!demographicQuestionsEnabled}
+                        className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                       />
-                      <label htmlFor="householdIncome" className="text-sm">Ingresos familiares anuales</label>
+                      <label htmlFor="householdIncome" className={`text-sm ${demographicQuestionsEnabled ? 'cursor-pointer' : 'cursor-not-allowed'}`}>Ingresos familiares anuales</label>
                     </div>
                     
                     <div className="flex items-center gap-2">
-                      <Checkbox 
+                      <input
+                        type="checkbox"
                         id="employmentStatus"
                         checked={formData.demographicQuestions.employmentStatus}
-                        onCheckedChange={(checked: boolean) => handleDemographicChange('employmentStatus' as DemographicQuestionKey, checked)}
+                        onChange={(e) => handleDemographicChange('employmentStatus' as DemographicQuestionKey, e.target.checked)}
+                        disabled={!demographicQuestionsEnabled}
+                        className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                       />
-                      <label htmlFor="employmentStatus" className="text-sm">Situación laboral</label>
+                      <label htmlFor="employmentStatus" className={`text-sm ${demographicQuestionsEnabled ? 'cursor-pointer' : 'cursor-not-allowed'}`}>Situación laboral</label>
                     </div>
                     
                     <div className="flex items-center gap-2">
-                      <Checkbox 
+                      <input
+                        type="checkbox"
                         id="dailyHoursOnline"
                         checked={formData.demographicQuestions.dailyHoursOnline}
-                        onCheckedChange={(checked: boolean) => handleDemographicChange('dailyHoursOnline' as DemographicQuestionKey, checked)}
+                        onChange={(e) => handleDemographicChange('dailyHoursOnline' as DemographicQuestionKey, e.target.checked)}
+                        disabled={!demographicQuestionsEnabled}
+                        className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                       />
-                      <label htmlFor="dailyHoursOnline" className="text-sm">Horas diarias en línea</label>
+                      <label htmlFor="dailyHoursOnline" className={`text-sm ${demographicQuestionsEnabled ? 'cursor-pointer' : 'cursor-not-allowed'}`}>Horas diarias en línea</label>
                     </div>
                     
                     <div className="flex items-center gap-2">
-                      <Checkbox 
+                      <input
+                        type="checkbox"
                         id="technicalProficiency"
                         checked={formData.demographicQuestions.technicalProficiency}
-                        onCheckedChange={(checked: boolean) => handleDemographicChange('technicalProficiency' as DemographicQuestionKey, checked)}
+                        onChange={(e) => handleDemographicChange('technicalProficiency' as DemographicQuestionKey, e.target.checked)}
+                        disabled={!demographicQuestionsEnabled}
+                        className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                       />
-                      <label htmlFor="technicalProficiency" className="text-sm">Competencia técnica</label>
+                      <label htmlFor="technicalProficiency" className={`text-sm ${demographicQuestionsEnabled ? 'cursor-pointer' : 'cursor-not-allowed'}`}>Competencia técnica</label>
                     </div>
                   </div>
                 </div>
@@ -210,42 +261,58 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                 <div className="space-y-4 mb-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
-                      <Switch
-                        checked={true}
-                        onCheckedChange={() => {}}
-                        className="mr-3"
+                      <input
+                        type="checkbox"
+                        checked={linkConfigEnabled}
+                        onChange={(e) => {
+                          console.log('Configuración enlace cambiado:', e.target.checked);
+                          setLinkConfigEnabled(e.target.checked);
+                        }}
+                        className="w-5 h-5 mr-3 cursor-pointer"
                       />
                       <span className="text-sm font-medium">Configuración del enlace</span>
                     </div>
                     <span className="text-sm text-neutral-400">Por favor seleccione</span>
                   </div>
                   
-                  <div className="pl-10 space-y-3">
+                  <div className={`pl-10 space-y-3 ${!linkConfigEnabled ? 'opacity-60' : ''}`}>
                     <div className="flex items-center gap-2">
-                      <Checkbox 
+                      <input
+                        type="checkbox"
                         id="allowMobileDevices"
                         checked={formData.linkConfig.allowMobileDevices}
-                        onCheckedChange={(checked: boolean) => handleLinkConfigChange('allowMobileDevices' as LinkConfigKey, checked)}
+                        onChange={(e) => {
+                          console.log('Dispositivos móviles clicado:', e.target.checked);
+                          handleLinkConfigChange('allowMobileDevices' as LinkConfigKey, e.target.checked);
+                        }}
+                        disabled={!linkConfigEnabled}
+                        className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                       />
-                      <label htmlFor="allowMobileDevices" className="text-sm">Permitir que los participantes realicen la encuesta en dispositivos móviles</label>
+                      <label htmlFor="allowMobileDevices" className={`text-sm ${linkConfigEnabled ? 'cursor-pointer' : 'cursor-not-allowed'}`}>Permitir que los participantes realicen la encuesta en dispositivos móviles</label>
                     </div>
                     
                     <div className="flex items-center gap-2">
-                      <Checkbox 
+                      <input
+                        type="checkbox"
                         id="trackLocation"
                         checked={formData.linkConfig.trackLocation}
-                        onCheckedChange={(checked: boolean) => handleLinkConfigChange('trackLocation' as LinkConfigKey, checked)}
+                        onChange={(e) => handleLinkConfigChange('trackLocation' as LinkConfigKey, e.target.checked)}
+                        disabled={!linkConfigEnabled}
+                        className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                       />
-                      <label htmlFor="trackLocation" className="text-sm">Rastrear la ubicación de los participantes</label>
+                      <label htmlFor="trackLocation" className={`text-sm ${linkConfigEnabled ? 'cursor-pointer' : 'cursor-not-allowed'}`}>Rastrear la ubicación de los participantes</label>
                     </div>
                     
                     <div className="flex items-center gap-2">
-                      <Checkbox 
+                      <input
+                        type="checkbox"
                         id="multipleAttempts"
                         checked={formData.linkConfig.multipleAttempts}
-                        onCheckedChange={(checked: boolean) => handleLinkConfigChange('multipleAttempts' as LinkConfigKey, checked)}
+                        onChange={(e) => handleLinkConfigChange('multipleAttempts' as LinkConfigKey, e.target.checked)}
+                        disabled={!linkConfigEnabled}
+                        className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                       />
-                      <label htmlFor="multipleAttempts" className="text-sm">Se puede realizar varias veces dentro de una misma sesión</label>
+                      <label htmlFor="multipleAttempts" className={`text-sm ${linkConfigEnabled ? 'cursor-pointer' : 'cursor-not-allowed'}`}>Se puede realizar varias veces dentro de una misma sesión</label>
                     </div>
                   </div>
                 </div>
@@ -253,30 +320,33 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
-                      <Switch
+                      <input
+                        type="checkbox"
                         checked={formData.participantLimit.enabled}
-                        onCheckedChange={setLimitParticipants}
-                        className="mr-3"
+                        onChange={(e) => {
+                          console.log('Límite cambiado:', e.target.checked);
+                          setLimitParticipants(e.target.checked);
+                        }}
+                        className="w-5 h-5 mr-3 cursor-pointer"
                       />
                       <span className="text-sm font-medium">Limitar número de participantes</span>
                     </div>
                     <span className="text-sm text-neutral-400">Por favor seleccione</span>
                   </div>
                   
-                  {formData.participantLimit.enabled && (
-                    <div className="pl-10">
-                      <p className="text-sm mb-3">Dejar de aceptar respuestas después de este número de participantes.</p>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          value={formData.participantLimit.limit}
-                          onChange={(e) => setParticipantLimit(parseInt(e.target.value) || 0)}
-                          className="w-20"
-                        />
-                        <span className="text-sm">Recibirás {formData.participantLimit.limit} respuestas más.</span>
-                      </div>
+                  <div className={`pl-10 ${!formData.participantLimit.enabled ? 'opacity-60' : ''}`}>
+                    <p className="text-sm mb-3">Dejar de aceptar respuestas después de este número de participantes.</p>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        value={formData.participantLimit.limit}
+                        onChange={(e) => setParticipantLimit(parseInt(e.target.value) || 0)}
+                        disabled={!formData.participantLimit.enabled}
+                        className="w-20 px-3 py-2 border border-neutral-300 rounded-md disabled:bg-neutral-100 disabled:cursor-not-allowed"
+                      />
+                      <span className="text-sm">Recibirás {formData.participantLimit.limit} respuestas más.</span>
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -291,6 +361,17 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                     <h3 className="text-sm font-medium mb-3">A. Enlaces de retorno</h3>
                     <p className="text-sm text-neutral-500 mb-4">Utilice parámetros uid para transmitir los ID de los participantes a su sistema</p>
                     
+                    <div className="bg-blue-50 p-3 rounded-md mb-4 text-sm text-blue-700 border border-blue-200">
+                      <p><strong>¿Qué son los enlaces de retorno?</strong></p>
+                      <p className="mt-1">Son URLs a las que se redirigirá a los participantes después de completar, ser descalificados o exceder la cuota de la investigación. Por ejemplo, podrían ser redirigidos a:</p>
+                      <ul className="list-disc pl-5 mt-1">
+                        <li>Su sitio web principal</li>
+                        <li>Una página de agradecimiento</li>
+                        <li>Un panel de encuestas externo</li>
+                      </ul>
+                      <p className="mt-1">El sistema añadirá automáticamente un parámetro <code className="bg-blue-100 px-1 py-0.5 rounded">?uid=PARTICIPANT_ID</code> al final de cada URL para que pueda identificar al participante en su sistema.</p>
+                    </div>
+                    
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm mb-2">Enlace para entrevistas completadas</label>
@@ -298,10 +379,11 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           <span className="inline-flex items-center px-3 bg-neutral-100 border border-r-0 border-neutral-300 rounded-l-md text-sm text-neutral-600">
                             https://
                           </span>
-                          <Input
+                          <input
+                            type="text"
                             value={formData.backlinks.complete}
                             onChange={(e) => handleBacklinkChange('complete' as BacklinkKey, e.target.value)}
-                            className="rounded-l-none"
+                            className="w-full px-3 py-2 border border-neutral-300 rounded-r-md"
                           />
                         </div>
                       </div>
@@ -312,10 +394,11 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           <span className="inline-flex items-center px-3 bg-neutral-100 border border-r-0 border-neutral-300 rounded-l-md text-sm text-neutral-600">
                             https://
                           </span>
-                          <Input
+                          <input
+                            type="text"
                             value={formData.backlinks.disqualified}
                             onChange={(e) => handleBacklinkChange('disqualified' as BacklinkKey, e.target.value)}
-                            className="rounded-l-none"
+                            className="w-full px-3 py-2 border border-neutral-300 rounded-r-md"
                           />
                         </div>
                       </div>
@@ -326,10 +409,11 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           <span className="inline-flex items-center px-3 bg-neutral-100 border border-r-0 border-neutral-300 rounded-l-md text-sm text-neutral-600">
                             https://
                           </span>
-                          <Input
+                          <input
+                            type="text"
                             value={formData.backlinks.overquota}
                             onChange={(e) => handleBacklinkChange('overquota' as BacklinkKey, e.target.value)}
-                            className="rounded-l-none"
+                            className="w-full px-3 py-2 border border-neutral-300 rounded-r-md"
                           />
                         </div>
                       </div>
@@ -340,18 +424,31 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                     <h3 className="text-sm font-medium mb-3">B. Enlace de investigación para compartir</h3>
                     <p className="text-sm text-neutral-500 mb-4">El sistema de invitación externo debe sustituir el parámetro [ID del participante] por el ID individual del participante.</p>
                     
+                    <div className="bg-green-50 p-3 rounded-md mb-4 text-sm text-green-700 border border-green-200">
+                      <p><strong>¿Cómo funciona este enlace?</strong></p>
+                      <p className="mt-1">Esta es la URL que se debe compartir con participantes potenciales para invitarlos al estudio. Funciona así:</p>
+                      <ul className="list-disc pl-5 mt-1">
+                        <li>La URL contiene un marcador <code className="bg-green-100 px-1 py-0.5 rounded">{"participant_id"}</code> que debe ser reemplazado</li>
+                        <li>Si usa un panel externo, ellos reemplazarán este marcador con el ID único de cada participante</li>
+                        <li>Si comparte manualmente, puede reemplazarlo con cualquier identificador (ej. correo o nombre)</li>
+                      </ul>
+                      <p className="mt-1">Ejemplo: <code className="bg-green-100 px-1 py-0.5 rounded">www.useremotion.com/sysgd-jye746?respondent=123</code> donde "123" es el ID único del participante.</p>
+                    </div>
+                    
                     <div>
                       <label className="block text-sm mb-2">URL de la investigación</label>
                       <div className="flex">
                         <span className="inline-flex items-center px-3 bg-neutral-100 border border-r-0 border-neutral-300 rounded-l-md text-sm text-neutral-600">
                           https://
                         </span>
-                        <Input
+                        <input
+                          type="text"
                           value={formData.researchUrl}
                           onChange={(e) => setResearchUrl(e.target.value)}
-                          className="rounded-l-none rounded-r-none"
+                          className="w-full px-3 py-2 border border-neutral-300 rounded-none"
                         />
                         <button 
+                          type="button"
                           className="px-2 py-2 bg-neutral-100 border border-l-0 border-neutral-300 rounded-r-md text-neutral-600"
                           onClick={copyLinkToClipboard}
                         >
@@ -364,10 +461,10 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                     </div>
                     
                     <div className="flex mt-4 gap-4">
-                      <Button
-                        variant="outline"
+                      <button
+                        type="button"
                         onClick={previewLink}
-                        className="flex items-center gap-2"
+                        className="px-4 py-2 rounded-lg border border-neutral-200 bg-white shadow-sm hover:bg-neutral-100 text-sm font-medium flex items-center gap-2"
                       >
                         <span>Vista previa del enlace</span>
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -375,11 +472,12 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           <polyline points="15 3 21 3 21 9"></polyline>
                           <line x1="10" y1="14" x2="21" y2="3"></line>
                         </svg>
-                      </Button>
+                      </button>
                       
-                      <Button
+                      <button
+                        type="button"
                         onClick={generateQRCode}
-                        className="flex items-center gap-2"
+                        className="px-4 py-2 rounded-lg bg-neutral-900 text-white shadow hover:bg-neutral-800 text-sm font-medium flex items-center gap-2"
                       >
                         <span>Generar QR</span>
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -389,7 +487,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           <rect x="7" y="14" width="3" height="3"></rect>
                           <rect x="14" y="14" width="3" height="3"></rect>
                         </svg>
-                      </Button>
+                      </button>
                     </div>
                   </div>
                   
@@ -399,53 +497,58 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                     
                     <div className="flex flex-wrap gap-2">
                       <div className="flex items-center gap-1 bg-blue-50 px-3 py-1 rounded-full">
-                        <Checkbox 
+                        <input
+                          type="checkbox"
                           id="parameters"
                           checked={formData.parameterOptions.parameters}
-                          onCheckedChange={(checked: boolean) => handleParamOptionChange('parameters' as ParameterOptionKey, checked)}
-                          className="h-4 w-4"
+                          onChange={(e) => handleParamOptionChange('parameters' as ParameterOptionKey, e.target.checked)}
+                          className="w-4 h-4 cursor-pointer"
                         />
-                        <label htmlFor="parameters" className="text-xs text-blue-600">Parámetros</label>
+                        <label htmlFor="parameters" className="text-xs text-blue-600 cursor-pointer">Parámetros</label>
                       </div>
                       
                       <div className="flex items-center gap-1 bg-blue-50 px-3 py-1 rounded-full">
-                        <Checkbox 
+                        <input
+                          type="checkbox"
                           id="separated"
                           checked={formData.parameterOptions.separated}
-                          onCheckedChange={(checked: boolean) => handleParamOptionChange('separated' as ParameterOptionKey, checked)}
-                          className="h-4 w-4"
+                          onChange={(e) => handleParamOptionChange('separated' as ParameterOptionKey, e.target.checked)}
+                          className="w-4 h-4 cursor-pointer"
                         />
-                        <label htmlFor="separated" className="text-xs text-blue-600">Separados</label>
+                        <label htmlFor="separated" className="text-xs text-blue-600 cursor-pointer">Separados</label>
                       </div>
                       
                       <div className="flex items-center gap-1 bg-blue-50 px-3 py-1 rounded-full">
-                        <Checkbox 
+                        <input
+                          type="checkbox"
                           id="with"
                           checked={formData.parameterOptions.with}
-                          onCheckedChange={(checked: boolean) => handleParamOptionChange('with' as ParameterOptionKey, checked)}
-                          className="h-4 w-4"
+                          onChange={(e) => handleParamOptionChange('with' as ParameterOptionKey, e.target.checked)}
+                          className="w-4 h-4 cursor-pointer"
                         />
-                        <label htmlFor="with" className="text-xs text-blue-600">Con</label>
+                        <label htmlFor="with" className="text-xs text-blue-600 cursor-pointer">Con</label>
                       </div>
                       
                       <div className="flex items-center gap-1 bg-blue-50 px-3 py-1 rounded-full">
-                        <Checkbox 
+                        <input
+                          type="checkbox"
                           id="comma"
                           checked={formData.parameterOptions.comma}
-                          onCheckedChange={(checked: boolean) => handleParamOptionChange('comma' as ParameterOptionKey, checked)}
-                          className="h-4 w-4"
+                          onChange={(e) => handleParamOptionChange('comma' as ParameterOptionKey, e.target.checked)}
+                          className="w-4 h-4 cursor-pointer"
                         />
-                        <label htmlFor="comma" className="text-xs text-blue-600">Coma</label>
+                        <label htmlFor="comma" className="text-xs text-blue-600 cursor-pointer">Coma</label>
                       </div>
                       
                       <div className="flex items-center gap-1 bg-blue-50 px-3 py-1 rounded-full">
-                        <Checkbox 
+                        <input
+                          type="checkbox"
                           id="keys"
                           checked={formData.parameterOptions.keys}
-                          onCheckedChange={(checked: boolean) => handleParamOptionChange('keys' as ParameterOptionKey, checked)}
-                          className="h-4 w-4"
+                          onChange={(e) => handleParamOptionChange('keys' as ParameterOptionKey, e.target.checked)}
+                          className="w-4 h-4 cursor-pointer"
                         />
-                        <label htmlFor="keys" className="text-xs text-blue-600">Claves</label>
+                        <label htmlFor="keys" className="text-xs text-blue-600 cursor-pointer">Claves</label>
                       </div>
                     </div>
                   </div>

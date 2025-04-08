@@ -17,6 +17,10 @@ export const API_ENDPOINTS = {
 export const ERROR_MESSAGES = {
   FETCH_ERROR: 'Error al cargar datos de la pantalla de bienvenida',
   SAVE_ERROR: 'Error al guardar la pantalla de bienvenida',
+  AUTH_ERROR: 'Error de autenticación',
+  AUTH_REQUIRED: 'No está autenticado. Por favor, inicie sesión para guardar la pantalla de bienvenida.',
+  FORM_ERRORS_TITLE: 'Hay errores en el formulario',
+  FORM_ERRORS_MESSAGE: 'Por favor corrija los errores antes de continuar',
   VALIDATION_ERRORS: {
     TITLE_REQUIRED: 'El título es obligatorio',
     MESSAGE_REQUIRED: 'El mensaje es obligatorio',

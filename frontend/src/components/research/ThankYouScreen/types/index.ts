@@ -83,6 +83,8 @@ export interface UseThankYouScreenFormResult {
   handlePreview: () => void;
   validateForm: () => boolean;
   closeModal: () => void;
+  showJsonPreview: boolean;
+  closeJsonModal: () => void;
 }
 
 // Exportamos tipos y constantes para acceso más fácil

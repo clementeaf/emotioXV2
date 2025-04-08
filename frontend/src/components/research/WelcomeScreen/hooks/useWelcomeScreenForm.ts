@@ -29,6 +29,9 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
   const [modalError, setModalError] = useState<ErrorModalData | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const { isAuthenticated, token } = useAuth();
+  const [showJsonPreview, setShowJsonPreview] = useState<boolean>(false);
+  const [jsonToSend, setJsonToSend] = useState<string>('');
+  const [pendingAction, setPendingAction] = useState<'save' | 'preview' | null>(null);
 
   // Handlers para el modal
   const closeModal = () => setModalVisible(false);
@@ -469,58 +472,168 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
     return Object.keys(errors).length === 0;
   };
 
-  // Guardar formulario
-  const handleSave = () => {
-    if (!isAuthenticated) {
-      showModal({
-        title: 'Error de autenticación',
-        message: 'No está autenticado. Por favor, inicie sesión para guardar la pantalla de bienvenida.',
-        type: 'error'
-      });
-      return;
-    }
+  // Función para mostrar el modal con JSON
+  const showJsonModal = (json: any, action: 'save' | 'preview') => {
+    setJsonToSend(JSON.stringify(json, null, 2));
+    setPendingAction(action);
+    setShowJsonPreview(true);
+  };
+
+  // Función para cerrar el modal JSON
+  const closeJsonModal = () => {
+    setShowJsonPreview(false);
+    setPendingAction(null);
+  };
+
+  // Función para continuar con la acción después de mostrar el JSON
+  const continueWithAction = () => {
+    closeJsonModal();
     
-    if (validateForm()) {
-      mutate(formData);
-    } else {
-      // Crear un mensaje con la lista de errores
-      const errorMessageText = 'Errores: ' + Object.values(validationErrors).join(', ');
-      
+    if (pendingAction === 'save') {
+      // Ejecutar la mutación para guardar
+      try {
+        const dataToSaveObj = JSON.parse(jsonToSend);
+        console.log('[WelcomeScreenForm] Enviando datos al backend:', dataToSaveObj);
+        mutate(dataToSaveObj);
+      } catch (error) {
+        console.error('[WelcomeScreenForm] Error al procesar JSON:', error);
+        toast.error('Error al procesar los datos del formulario');
+      }
+    } else if (pendingAction === 'preview') {
+      // Mostrar mensaje de previsualización
       showModal({
-        title: ERROR_MESSAGES.SAVE_ERROR,
-        message: errorMessageText,
-        type: 'error'
+        title: 'Información',
+        message: SUCCESS_MESSAGES.PREVIEW_COMING_SOON,
+        type: 'info'
       });
       
-      toast.error('Por favor corrija los errores antes de guardar');
+      toast.success(SUCCESS_MESSAGES.PREVIEW_COMING_SOON);
     }
   };
 
-  // Previsualizar pantalla de bienvenida
-  const handlePreview = () => {
-    if (!validateForm()) {
-      // Crear un mensaje con la lista de errores
-      const errorMessageText = 'Errores: ' + Object.values(validationErrors).join(', ');
-      
+  // Guardar formulario (modificado para mostrar JSON primero)
+  const handleSave = () => {
+    if (!isAuthenticated) {
       showModal({
-        title: ERROR_MESSAGES.SAVE_ERROR,
-        message: errorMessageText,
+        title: ERROR_MESSAGES.AUTH_ERROR,
+        message: ERROR_MESSAGES.AUTH_REQUIRED,
         type: 'error'
       });
-      
-      toast.error('Por favor corrija los errores antes de previsualizar');
       return;
     }
-    
-    // Aquí se implementaría la lógica de previsualización
-    showModal({
-      title: 'Información',
-      message: SUCCESS_MESSAGES.PREVIEW_COMING_SOON,
-      type: 'info'
-    });
-    
-    toast.success(SUCCESS_MESSAGES.PREVIEW_COMING_SOON);
+
+    if (validateForm()) {
+      // Preparar datos para enviar
+      const dataToSave = {
+        ...formData,
+        researchId,
+        metadata: {
+          version: '1.0.0',
+          updatedAt: new Date().toISOString()
+        }
+      };
+
+      // Mostrar modal con JSON en lugar de guardar directamente
+      showJsonModal(dataToSave, 'save');
+    } else {
+      showModal({
+        title: ERROR_MESSAGES.FORM_ERRORS_TITLE,
+        message: ERROR_MESSAGES.FORM_ERRORS_MESSAGE,
+        type: 'error'
+      });
+    }
   };
+
+  // Previsualizar formulario (modificado para mostrar JSON primero)
+  const handlePreview = () => {
+    if (!validateForm()) {
+      showModal({
+        title: ERROR_MESSAGES.FORM_ERRORS_TITLE,
+        message: ERROR_MESSAGES.FORM_ERRORS_MESSAGE,
+        type: 'error'
+      });
+      return;
+    }
+
+    // Preparar datos para previsualizar
+    const dataToPreview = {
+      ...formData,
+      researchId,
+      metadata: {
+        version: '1.0.0',
+        updatedAt: new Date().toISOString()
+      }
+    };
+
+    // Mostrar modal con JSON
+    showJsonModal(dataToPreview, 'preview');
+  };
+
+  // Crear el elemento modal de JSON para mostrar el código
+  useEffect(() => {
+    // Solo crear el modal si se va a mostrar
+    if (showJsonPreview && jsonToSend) {
+      // Crear HTML para el modal
+      const modalHtml = `
+        <div id="jsonPreviewModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999;">
+          <div style="background: white; border-radius: 8px; max-width: 90%; width: 800px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 4px 20px rgba(0,0,0,0.2); overflow: hidden;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid #e5e7eb;">
+              <h2 style="margin: 0; font-size: 18px; font-weight: 600;">JSON a enviar</h2>
+              <button id="closeJsonModal" style="background: none; border: none; cursor: pointer; font-size: 20px; color: #6b7280;">&times;</button>
+            </div>
+            <div style="padding: 24px; overflow-y: auto; flex-grow: 1;">
+              <p style="margin: 0 0 16px; color: #6b7280; font-size: 14px;">
+                Este es el JSON que se enviará al servidor. Revise los datos antes de continuar.
+              </p>
+              <pre style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; overflow: auto; max-height: 400px; font-family: monospace; font-size: 14px; white-space: pre-wrap; word-break: break-word;">${jsonToSend.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+            </div>
+            <div style="padding: 16px 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px;">
+              <button id="cancelJsonAction" style="background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; border-radius: 6px; padding: 8px 16px; font-weight: 500; cursor: pointer;">Cancelar</button>
+              <button id="continueJsonAction" style="background: #3f51b5; color: white; border: none; border-radius: 6px; padding: 8px 16px; font-weight: 500; cursor: pointer;">
+                ${pendingAction === 'save' ? 'Guardar' : 'Previsualizar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      // Crear elemento en el DOM
+      const modalContainer = document.createElement('div');
+      modalContainer.innerHTML = modalHtml;
+      document.body.appendChild(modalContainer);
+      
+      // Configurar eventos
+      document.getElementById('closeJsonModal')?.addEventListener('click', () => {
+        document.body.removeChild(modalContainer);
+        closeJsonModal();
+      });
+      
+      document.getElementById('cancelJsonAction')?.addEventListener('click', () => {
+        document.body.removeChild(modalContainer);
+        closeJsonModal();
+      });
+      
+      document.getElementById('continueJsonAction')?.addEventListener('click', () => {
+        document.body.removeChild(modalContainer);
+        continueWithAction();
+      });
+      
+      // También permitir cerrar haciendo clic fuera del modal
+      modalContainer.addEventListener('click', (e) => {
+        if (e.target === modalContainer.firstChild) {
+          document.body.removeChild(modalContainer);
+          closeJsonModal();
+        }
+      });
+      
+      // Limpiar al desmontar
+      return () => {
+        if (document.body.contains(modalContainer)) {
+          document.body.removeChild(modalContainer);
+        }
+      };
+    }
+  }, [showJsonPreview, jsonToSend, pendingAction]);
 
   return {
     formData,
@@ -535,6 +648,8 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
     handleSave,
     handlePreview,
     validateForm,
-    closeModal
+    closeModal,
+    showJsonPreview,
+    closeJsonModal
   };
 }; 
