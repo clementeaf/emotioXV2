@@ -1,15 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Switch } from '@/components/ui/Switch';
 import { cn } from '@/lib/utils';
 import { useEyeTrackingRecruit } from './hooks/useEyeTrackingRecruit';
 import { DemographicQuestionKey, LinkConfigKey, ParameterOptionKey, BacklinkKey } from '@/shared/interfaces/eyeTracking';
 
-// Componente Checkbox interno
-type CheckedState = boolean;
 
 interface CheckboxProps {
   id?: string;

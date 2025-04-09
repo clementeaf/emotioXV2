@@ -3,6 +3,7 @@
  * Importamos los tipos base desde la interfaz compartida
  */
 
+import React from 'react';
 import { 
   QuestionType,
   Question as BaseQuestion,
@@ -200,4 +201,21 @@ export interface UseCognitiveTaskFormResult {
   // Nuevas propiedades para el modal JSON
   showJsonPreview: boolean;
   closeJsonModal: () => void;
+}
+
+export interface CognitiveTaskFieldsProps {
+  questions: Question[];
+  randomizeQuestions: boolean;
+  onQuestionChange: (questionId: string, updates: Partial<Question>) => void;
+  onAddChoice: (questionId: string) => void;
+  onRemoveChoice: (questionId: string, choiceId: string) => void;
+  onFileUpload: (questionId: string, files: FileList) => void;
+  onRemoveFile: (questionId: string, fileId: string) => void;
+  setRandomizeQuestions: (checked: boolean) => void;
+  onAddQuestion: (type: QuestionType) => void;
+  disabled: boolean;
+  isUploading?: boolean;
+  uploadProgress?: number;
+  FileItemComponent?: React.ComponentType<any>;
+  FileUploaderComponent?: React.ComponentType<any>;
 } 

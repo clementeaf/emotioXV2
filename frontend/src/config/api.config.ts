@@ -42,6 +42,9 @@ interface EyeTrackingEndpoints {
   GET_BY_RESEARCH: string;
   UPDATE: string;
   DELETE: string;
+  RECRUIT_GET: string;
+  RECRUIT_UPDATE: string;
+  RECRUIT_CREATE: string;
 }
 
 // Estructura para tareas cognitivas
@@ -155,6 +158,9 @@ const API_CONFIG = {
       CREATE: '/eye-tracking',
       UPDATE: '/eye-tracking/{id}',
       DELETE: '/eye-tracking/{id}',
+      RECRUIT_GET: '/eye-tracking/recruit/{recruitId}',
+      RECRUIT_UPDATE: '/eye-tracking/recruit/{recruitId}',
+      RECRUIT_CREATE: '/eye-tracking/recruit',
     },
     
     // Tareas Cognitivas

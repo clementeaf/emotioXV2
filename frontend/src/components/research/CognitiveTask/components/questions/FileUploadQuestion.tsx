@@ -40,10 +40,10 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
           placeholder="Añadir pregunta"
           value={question.title}
           onChange={(e) => onQuestionChange({ title: e.target.value })}
-          className="flex-1"
+          className="w-[300px] mr-4"
           disabled={disabled}
         />
-        <div className="flex items-center gap-4 ml-4">
+        <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <span className="text-sm text-neutral-600">Mostrar condicionalmente</span>
             <Switch

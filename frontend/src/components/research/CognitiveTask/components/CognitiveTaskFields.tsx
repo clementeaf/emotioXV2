@@ -1,12 +1,30 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Switch } from '@/components/ui/Switch';
-import { CognitiveTaskFieldsProps } from '../types';
+import { CognitiveTaskFieldsProps, Question, QuestionType } from '../types';
 import { QuestionCard } from './QuestionCard';
 import { AddQuestionModal } from './AddQuestionModal';
 import { UI_TEXTS } from '../constants';
 
-export const CognitiveTaskFields: React.FC<CognitiveTaskFieldsProps> = ({
+// Definición de props explícita para evitar problemas de tipos
+type Props = {
+  questions: Question[];
+  randomizeQuestions: boolean;
+  onQuestionChange: (questionId: string, updates: Partial<Question>) => void;
+  onAddChoice: (questionId: string) => void;
+  onRemoveChoice: (questionId: string, choiceId: string) => void;
+  onFileUpload: (questionId: string, files: FileList) => void;
+  onRemoveFile: (questionId: string, fileId: string) => void;
+  setRandomizeQuestions: (checked: boolean) => void;
+  onAddQuestion: (type: QuestionType) => void;
+  disabled?: boolean;
+  isUploading?: boolean;
+  uploadProgress?: number;
+  FileItemComponent?: React.ComponentType<any>;
+  FileUploaderComponent?: React.ComponentType<any>;
+};
+
+export const CognitiveTaskFields: React.FC<Props> = ({
   questions,
   randomizeQuestions,
   onQuestionChange,
@@ -16,7 +34,11 @@ export const CognitiveTaskFields: React.FC<CognitiveTaskFieldsProps> = ({
   onRemoveFile,
   setRandomizeQuestions,
   onAddQuestion,
-  disabled = false
+  disabled = false,
+  isUploading,
+  uploadProgress,
+  FileItemComponent,
+  FileUploaderComponent
 }) => {
   const [isAddQuestionModalOpen, setIsAddQuestionModalOpen] = useState(false);
 
@@ -79,35 +101,21 @@ export const CognitiveTaskFields: React.FC<CognitiveTaskFieldsProps> = ({
                 onRemoveChoice={onRemoveChoice}
                 onFileUpload={onFileUpload}
                 onRemoveFile={onRemoveFile}
+                disabled={disabled}
+                validationErrors={{}}
+                isUploading={isUploading}
+                uploadProgress={uploadProgress}
               />
             ))
           )}
         </div>
-
-        {questions.length > 0 && (
-          <div className="flex justify-center pt-2">
-            <Button 
-              variant="outline" 
-              className="w-full max-w-md"
-              onClick={() => setIsAddQuestionModalOpen(true)}
-              type="button"
-              disabled={disabled}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-              Añadir Nueva Pregunta
-            </Button>
-          </div>
-        )}
       </div>
 
-      {/* Modal para añadir preguntas */}
-      <AddQuestionModal
+      <AddQuestionModal 
         isOpen={isAddQuestionModalOpen}
         onClose={() => setIsAddQuestionModalOpen(false)}
         onAddQuestion={onAddQuestion}
+        questionTypes={[]}
       />
     </div>
   );

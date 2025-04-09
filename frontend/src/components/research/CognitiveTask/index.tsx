@@ -107,8 +107,6 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
         setRandomizeQuestions={setRandomizeQuestions}
         onAddQuestion={handleAddQuestion}
         disabled={isLoading || isSaving}
-        FileItemComponent={FileItem}
-        FileUploaderComponent={FileUploader}
         isUploading={isUploading}
         uploadProgress={uploadProgress}
       />
