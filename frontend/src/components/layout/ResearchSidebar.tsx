@@ -19,7 +19,6 @@ const sections: ResearchSection[] = [
       { id: 'welcome-screen', title: 'Welcome Screen' },
       { id: 'smart-voc', title: 'Smart VOC' },
       { id: 'cognitive', title: 'Cognitive Tasks' },
-      { id: 'eye-tracking', title: 'Eye Tracking' },
       { id: 'thank-you', title: 'Thank You Screen' }
     ]
   },

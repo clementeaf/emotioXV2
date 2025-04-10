@@ -63,10 +63,12 @@ export interface CognitiveTaskFieldsProps {
   onAddChoice: (questionId: string) => void;
   onRemoveChoice: (questionId: string, choiceId: string) => void;
   onFileUpload: (questionId: string, files: FileList) => void;
-  onRemoveFile: (questionId: string, fileId: string) => void;
+  onFileDelete: (questionId: string, fileId: string) => void;
   setRandomizeQuestions: (value: boolean) => void;
   onAddQuestion: (type: Question['type']) => void;
   disabled?: boolean;
+  isUploading?: boolean;
+  uploadProgress?: number;
 }
 
 export interface QuestionCardProps {
@@ -75,7 +77,11 @@ export interface QuestionCardProps {
   onAddChoice: (questionId: string) => void;
   onRemoveChoice: (questionId: string, choiceId: string) => void;
   onFileUpload: (questionId: string, files: FileList) => void;
-  onRemoveFile: (questionId: string, fileId: string) => void;
+  onFileDelete: (questionId: string, fileId: string) => void;
+  disabled?: boolean;
+  validationErrors?: { [key: string]: string } | null;
+  isUploading?: boolean;
+  uploadProgress?: number;
 }
 
 export interface CognitiveTaskHeaderProps {

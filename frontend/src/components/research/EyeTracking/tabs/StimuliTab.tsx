@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import FileUploader from '@/components/FileUploader';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import FileUploader from '@/components/FileUploader/FileUploader';
 import { EyeTrackingFormData, EyeTrackingStimulus } from 'shared/interfaces/eye-tracking.interface';
 import { useErrorLog } from '@/components/utils/ErrorLogger';
 
@@ -16,8 +16,10 @@ export const StimuliTab: React.FC<StimuliTabProps> = ({
   removeStimulus,
   handleFileUploaderComplete
 }) => {
-  const [uploadResult, setUploadResult] = useState<{ fileUrl: string; key: string } | null>(null);
+  // Mover useErrorLog al inicio del componente
   const logger = useErrorLog();
+  
+  const [uploadResult, setUploadResult] = useState<{ fileUrl: string; key: string } | null>(null);
   
   // Usar una ref para comparar cambios sin crear bucles de actualización
   const prevStimuliCountRef = useRef<number>(0);
@@ -25,98 +27,42 @@ export const StimuliTab: React.FC<StimuliTabProps> = ({
   // Añadir esta referencia al inicio del componente, después de las otras constantes
   const recoveredItemsRef = useRef<boolean>(false);
   
-  // Usar useEffect para monitorear cambios de forma segura
-  useEffect(() => {
-    // Solo registramos cuando hay un cambio real
-    if (formData.stimuli?.items?.length !== prevStimuliCountRef.current) {
-      logger.debug('StimuliTab - Cambio en número de estímulos:', {
-        prevCount: prevStimuliCountRef.current,
-        newCount: formData.stimuli?.items?.length || 0
-      });
-      prevStimuliCountRef.current = formData.stimuli?.items?.length || 0;
-    }
-  }, [formData.stimuli?.items?.length, logger]);
-
-  // Reemplazar completamente el useEffect que recupera archivos de localStorage
-  useEffect(() => {
-    // Si ya recuperamos items anteriormente, no hacemos nada
-    if (recoveredItemsRef.current) return;
-    
-    try {
-      if (!researchId) return;
-      
-      // Debemos comprobar la clave de localStorage para archivos ya subidos
-      const stimuliTabStorageKey = `eye_tracking_fileuploader_${researchId}`;
-      
-      // Primero intentamos con la clave del StimuliTab (archivos ya subidos a S3)
-      const savedItemsJson = localStorage.getItem(stimuliTabStorageKey);
-      
-      logger.debug('StimuliTab - Verificando localStorage (una sola vez): ', {
-        stimuliTabStorageKey,
-        hasStimuli: !!savedItemsJson
-      });
-      
-      if (savedItemsJson) {
-        const savedItems = JSON.parse(savedItemsJson);
-        logger.debug('StimuliTab - Archivos pendientes encontrados:', {
-          count: savedItems.length
-        });
-        
-        if (savedItems.length > 0) {
-          // Para cada ítem guardado, verificar si ya existe en los estímulos actuales
-          const itemsToRecover: Array<{fileUrl: string; key: string; fileName?: string; fileType?: string}> = [];
-          
-          for (const item of savedItems) {
-            // Verificar si este ítem ya está en los estímulos actuales
-            const alreadyExists = formData.stimuli.items.some(
-              stimulus => stimulus.s3Key === item.key
-            );
-            
-            if (!alreadyExists) {
-              // Acumulamos los items a recuperar en vez de llamar al callback inmediatamente
-              itemsToRecover.push(item);
-            }
-          }
-          
-          // Si tenemos items para recuperar, los procesamos uno por uno con un retraso
-          if (itemsToRecover.length > 0) {
-            logger.debug('StimuliTab - Recuperando items pendientes:', {
-              count: itemsToRecover.length
-            });
-            
-            // Procesar con retraso para evitar bucles infinitos
-            setTimeout(() => {
-              itemsToRecover.forEach((item, index) => {
-                // Procesar cada item con un pequeño retraso incremental
-                setTimeout(() => {
-                  handleFileUploaderComplete({
-                    fileUrl: item.fileUrl,
-                    key: item.key
-                  });
-                }, index * 100); // 100ms de retraso entre items
-              });
-            }, 500); // 500ms de retraso inicial
-          }
-        }
-        
-        // Limpiar datos de localStorage para evitar reprocesamiento
-        localStorage.removeItem(stimuliTabStorageKey);
-        logger.debug('StimuliTab - Limpiada clave de localStorage', {
-          key: stimuliTabStorageKey
-        });
-      }
-    } catch (error) {
-      logger.error('StimuliTab - Error al recuperar archivos pendientes:', error);
-    } finally {
-      // Marcar como recuperado en todos los casos para evitar bucles
-      recoveredItemsRef.current = true;
-    }
-  // Este efecto solo depende de researchId y handleFileUploaderComplete - NO incluimos formData
-  }, [researchId, logger, handleFileUploaderComplete]);
+  // Referencia para el formData para evitar dependencia en el useEffect
+  const formDataRef = useRef(formData);
   
-  // Handle file upload completion - Mejorado para garantizar la persistencia
-  const handleUploadComplete = (fileData: { fileUrl: string; key: string }) => {
-    logger.debug('StimuliTab - handleUploadComplete recibido:', fileData);
+  // Referencia para el researchId para evitar dependencia en el useEffect
+  const researchIdRef = useRef(researchId);
+  
+  // Referencia para trackear la última limpieza de localStorage
+  const lastCleanupRef = useRef(false);
+  
+  // Actualizar las referencias cuando cambian las props
+  useEffect(() => {
+    formDataRef.current = formData;
+    researchIdRef.current = researchId;
+  }, [formData, researchId]);
+  
+  // Memoizar el conteo actual de estímulos para evitar cálculos repetitivos
+  const stimuliCount = useMemo(() => {
+    return formData.stimuli?.items?.length || 0;
+  }, [formData.stimuli?.items?.length]);
+  
+  // Estabilizar la función de eliminación con useCallback
+  const handleRemoveStimulus = useCallback((id: string) => {
+    // Usar setTimeout para asegurar que no se ejecuta durante el renderizado
+    setTimeout(() => {
+      removeStimulus(id);
+    }, 0);
+  }, [removeStimulus]);
+  
+  // Estabilizar las funciones usando useCallback
+  const handleUploadComplete = useCallback((fileData: { fileUrl: string; key: string }) => {
+    const safeLog = () => {
+      logger.debug('StimuliTab - handleUploadComplete recibido:', fileData);
+    };
+    
+    // Usar setTimeout para evitar llamadas a logger durante el renderizado
+    setTimeout(safeLog, 0);
     
     // Guardar el resultado de la última subida
     setUploadResult({
@@ -127,7 +73,7 @@ export const StimuliTab: React.FC<StimuliTabProps> = ({
     // Persistir en localStorage para recuperar si se navega a otra vista - MEJORADO
     try {
       // Usar clave más específica
-      const storageKey = `eye_tracking_fileuploader_${researchId}`;
+      const storageKey = `eye_tracking_fileuploader_${researchIdRef.current}`;
       
       // Extraer información del nombre del archivo desde la clave
       const fileName = fileData.key.split('/').pop() || 'archivo.jpg';
@@ -145,46 +91,148 @@ export const StimuliTab: React.FC<StimuliTabProps> = ({
       // Guardar directamente, sin combinar con datos existentes para evitar duplicados
       localStorage.setItem(storageKey, JSON.stringify([newItem]));
       
-      logger.debug('StimuliTab - Guardado en localStorage:', {
-        storageKey,
-        item: newItem
-      });
-    } catch (error) {
-      logger.error('StimuliTab - Error al guardar en localStorage:', error);
-    }
-    
-    // Pasar el resultado al manejador principal
-    logger.debug('StimuliTab - Llamando a handleFileUploaderComplete con:', fileData);
-    handleFileUploaderComplete(fileData);
-  };
-
-  // Manejar error en la subida
-  const handleUploadError = (error: any) => {
-    logger.error('StimuliTab - Error al cargar archivo:', error);
-    alert(`Error al subir el archivo: ${error.message || 'Error desconocido'}`);
-  };
-
-  // Limpiar localStorage solo cuando se guarda completamente el formulario
-  // Esto requiere agregar una prop a StimuliTabProps y pasarla desde el componente padre
-  useEffect(() => {
-    // Verificar si formData ya tiene al menos un ítem y ese ítem tiene s3Key
-    // Esto indica que se completó una carga correctamente
-    const hasCompletedUploads = formData.stimuli.items.some(item => item.s3Key);
-    
-    if (hasCompletedUploads && formData.stimuli.items.length > 0) {
-      // Limpiamos localStorage solo si se confirma que tenemos ítems guardados correctamente
-      try {
-        const storageKey = `eye_tracking_fileuploader_${researchId}`;
-        localStorage.removeItem(storageKey);
-        logger.debug('StimuliTab - Archivos guardados correctamente, limpiando localStorage', {
-          itemCount: formData.stimuli.items.length
+      setTimeout(() => {
+        logger.debug('StimuliTab - Guardado en localStorage:', {
+          storageKey,
+          item: newItem
         });
-      } catch (error) {
-        logger.error('StimuliTab - Error al limpiar localStorage:', error);
-      }
+      }, 0);
+    } catch (error) {
+      setTimeout(() => {
+        logger.error('StimuliTab - Error al guardar en localStorage:', error);
+      }, 0);
     }
-  }, [formData.stimuli.items, researchId, logger]);
+    
+    // Pasar el resultado al manejador principal - usar setTimeout para mayor seguridad
+    setTimeout(() => {
+      logger.debug('StimuliTab - Llamando a handleFileUploaderComplete con:', fileData);
+      handleFileUploaderComplete(fileData);
+    }, 0);
+  }, [logger, handleFileUploaderComplete]);
 
+  // Manejar error en la subida con useCallback
+  const handleUploadError = useCallback((error: any) => {
+    setTimeout(() => {
+      logger.error('StimuliTab - Error al cargar archivo:', error);
+      alert(`Error al subir el archivo: ${error.message || 'Error desconocido'}`);
+    }, 0);
+  }, [logger]);
+  
+  // Combinar todos los efectos relacionados con formData y monitoreo en un solo efecto
+  // con un mínimo de dependencias para evitar bucles
+  useEffect(() => {
+    // Para evitar ejecutar lógica en cada renderizado, usamos un setTimeout
+    const timerId = setTimeout(() => {
+      const currentFormData = formDataRef.current;
+      const currentCount = currentFormData.stimuli?.items?.length || 0;
+      
+      // PARTE 1: Monitorear cambios en la cantidad de estímulos
+      if (currentCount !== prevStimuliCountRef.current) {
+        logger.debug('StimuliTab - Cambio en número de estímulos:', {
+          prevCount: prevStimuliCountRef.current,
+          newCount: currentCount
+        });
+        prevStimuliCountRef.current = currentCount;
+        
+        // PARTE 2: Verificar si hay subidas completas y limpiar localStorage si es necesario
+        if (currentCount > 0 && !lastCleanupRef.current) {
+          const hasCompletedUploads = currentFormData.stimuli.items.some(item => item.s3Key);
+          
+          if (hasCompletedUploads) {
+            try {
+              const storageKey = `eye_tracking_fileuploader_${researchIdRef.current}`;
+              localStorage.removeItem(storageKey);
+              lastCleanupRef.current = true;
+              
+              logger.debug('StimuliTab - Archivos guardados correctamente, limpiando localStorage', {
+                itemCount: currentCount
+              });
+            } catch (error) {
+              logger.error('StimuliTab - Error al limpiar localStorage:', error);
+            }
+          }
+        }
+      }
+      
+      // PARTE 3: Recuperar archivos de localStorage (solo una vez)
+      if (!recoveredItemsRef.current) {
+        recoveredItemsRef.current = true;
+        
+        try {
+          const currentResearchId = researchIdRef.current;
+          if (!currentResearchId) return;
+          
+          // Debemos comprobar la clave de localStorage para archivos ya subidos
+          const stimuliTabStorageKey = `eye_tracking_fileuploader_${currentResearchId}`;
+          
+          // Primero intentamos con la clave del StimuliTab (archivos ya subidos a S3)
+          const savedItemsJson = localStorage.getItem(stimuliTabStorageKey);
+          
+          logger.debug('StimuliTab - Verificando localStorage (una sola vez): ', {
+            stimuliTabStorageKey,
+            hasStimuli: !!savedItemsJson
+          });
+          
+          if (savedItemsJson) {
+            const savedItems = JSON.parse(savedItemsJson);
+            logger.debug('StimuliTab - Archivos pendientes encontrados:', {
+              count: savedItems.length
+            });
+            
+            if (savedItems.length > 0) {
+              // Para cada ítem guardado, verificar si ya existe en los estímulos actuales
+              const itemsToRecover: Array<{fileUrl: string; key: string; fileName?: string; fileType?: string}> = [];
+              
+              for (const item of savedItems) {
+                // Verificar si este ítem ya está en los estímulos actuales
+                // Usar formDataRef.current en lugar de formData directamente
+                const alreadyExists = currentFormData.stimuli.items.some(
+                  stimulus => stimulus.s3Key === item.key
+                );
+                
+                if (!alreadyExists) {
+                  // Acumulamos los items a recuperar en vez de llamar al callback inmediatamente
+                  itemsToRecover.push(item);
+                }
+              }
+              
+              // Si tenemos items para recuperar, los procesamos uno por uno con un retraso
+              if (itemsToRecover.length > 0) {
+                logger.debug('StimuliTab - Recuperando items pendientes:', {
+                  count: itemsToRecover.length
+                });
+                
+                // Procesar con retraso para evitar bucles infinitos
+                setTimeout(() => {
+                  itemsToRecover.forEach((item, index) => {
+                    // Procesar cada item con un pequeño retraso incremental
+                    setTimeout(() => {
+                      handleFileUploaderComplete({
+                        fileUrl: item.fileUrl,
+                        key: item.key
+                      });
+                    }, index * 100); // 100ms de retraso entre items
+                  });
+                }, 500); // 500ms de retraso inicial
+              }
+            }
+            
+            // Limpiar datos de localStorage para evitar reprocesamiento
+            localStorage.removeItem(stimuliTabStorageKey);
+            logger.debug('StimuliTab - Limpiada clave de localStorage', {
+              key: stimuliTabStorageKey
+            });
+          }
+        } catch (error) {
+          logger.error('StimuliTab - Error al recuperar archivos pendientes:', error);
+        }
+      }
+    }, 0); // Usar un timeout de 0ms para asegurar que se ejecuta después del renderizado
+    
+    return () => clearTimeout(timerId);
+  }, [logger, handleFileUploaderComplete, stimuliCount]); // Dependencias mínimas y estables
+
+  // Renderizar componente de manera segura sin callbacks directos
   return (
     <>
       <div className="space-y-6">
@@ -199,7 +247,7 @@ export const StimuliTab: React.FC<StimuliTabProps> = ({
               {/* Debug info */}
               <div className="p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
                 <p className="font-medium text-yellow-800">Información de depuración:</p>
-                <p className="text-yellow-700">Número actual de estímulos: {formData.stimuli.items.length}</p>
+                <p className="text-yellow-700">Número actual de estímulos: {stimuliCount}</p>
               </div>
               
               <div className="mt-4 space-y-4">
@@ -270,13 +318,13 @@ export const StimuliTab: React.FC<StimuliTabProps> = ({
                             )}
                           </div>
                           <button
-                            onClick={() => removeStimulus(stimulus.id)}
-                            className="p-1 text-red-500 hover:text-red-700"
+                            type="button"
+                            onClick={() => handleRemoveStimulus(stimulus.id)}
+                            className="text-red-500 hover:text-red-700 focus:outline-none"
                             title="Eliminar estímulo"
-                            disabled={stimulus.isLoading}
                           >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
                           </button>
                         </div>
@@ -295,7 +343,7 @@ export const StimuliTab: React.FC<StimuliTabProps> = ({
                       </div>
                     ))}
                     
-                    {formData.stimuli.items.length === 0 && (
+                    {stimuliCount === 0 && (
                       <div className="col-span-3 p-4 bg-neutral-50 rounded-lg text-center text-neutral-500">
                         No hay estímulos subidos aún. Usa el cargador para subir imágenes.
                       </div>

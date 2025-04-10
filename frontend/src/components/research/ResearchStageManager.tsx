@@ -8,7 +8,7 @@ import { ResearchSidebar } from '@/components/layout/ResearchSidebar';
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
 
 import { CognitiveTaskForm } from './CognitiveTaskForm';
-import { EyeTrackingForm } from './EyeTracking/EyeTrackingForm';
+// import { EyeTrackingForm } from './EyeTracking/EyeTrackingForm';
 import { SmartVOCCognitiveTaskAnalysis } from './SmartVOCCognitiveTaskAnalysis';
 import { SmartVOCForm } from './SmartVOCForm';
 import { SmartVOCResults } from './SmartVOCResults';
@@ -35,7 +35,7 @@ function ResearchStageManagerContent({ researchId }: ResearchStageManagerProps) 
       case 'cognitive':
         return <CognitiveTaskForm researchId={researchId} />;
       case 'eye-tracking':
-        return <EyeTrackingForm researchId={researchId} />;
+        return <DisabledEyeTrackingForm researchId={researchId} />;
       case 'eye-tracking-recruit':
         return <RecruitEyeTrackingForm researchId={researchId} />;
       case 'thank-you':
@@ -172,4 +172,21 @@ export function ResearchStageManager(props: ResearchStageManagerProps) {
       <ResearchStageManagerContentWithParams {...props} />
     </Suspense>
   );
-} 
+}
+
+// En su lugar, agregar un componente provisional
+const DisabledEyeTrackingForm = ({ researchId }: { researchId: string }) => (
+  <div className="p-6 bg-white rounded-lg border border-neutral-200">
+    <div className="text-center py-8">
+      <h3 className="text-lg font-medium text-red-600 mb-3">Componente temporalmente deshabilitado</h3>
+      <p className="text-neutral-600 mb-4">
+        El componente EyeTrackingForm ha sido retirado temporalmente del proceso de compilación.
+      </p>
+      <div className="inline-block bg-yellow-100 border border-yellow-200 rounded-lg p-4 text-left">
+        <p className="text-sm text-yellow-800">
+          <strong>Nota técnica:</strong> Este componente ha sido desactivado debido a problemas con las actualizaciones de estado durante el renderizado.
+        </p>
+      </div>
+    </div>
+  </div>
+); 

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef, useLayoutEffect } from 'react';
 import { toast } from 'react-hot-toast';
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
@@ -40,6 +40,30 @@ export const ErrorLogProvider: React.FC<ErrorLogProviderProps> = ({ children }) 
   const [logs, setLogs] = useState<LogMessage[]>([]);
   const [selectedLog, setSelectedLog] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // Usar una referencia para evitar problemas de actualización
+  const logsRef = useRef<LogMessage[]>([]);
+  const isRenderingRef = useRef(true);
+  const pendingLogsRef = useRef<LogMessage[]>([]);
+  
+  // Actualizar la referencia cuando cambia el estado
+  useLayoutEffect(() => {
+    logsRef.current = logs;
+    
+    // Procesar mensajes de log pendientes después del renderizado
+    isRenderingRef.current = false;
+    
+    // Si hay logs pendientes, procesarlos ahora
+    if (pendingLogsRef.current.length > 0) {
+      setLogs(prevLogs => [...pendingLogsRef.current, ...prevLogs]);
+      pendingLogsRef.current = [];
+    }
+    
+    // Marcar como renderizando en la siguiente actualización
+    return () => {
+      isRenderingRef.current = true;
+    };
+  }, [logs]);
 
   const addLog = useCallback((level: LogLevel, message: string, details?: any) => {
     const newLog: LogMessage = {
@@ -50,13 +74,26 @@ export const ErrorLogProvider: React.FC<ErrorLogProviderProps> = ({ children }) 
       timestamp: new Date()
     };
 
-    setLogs(prevLogs => [newLog, ...prevLogs]);
-
-    // También mostrar notificación toast para errores y advertencias
-    if (level === 'error') {
-      toast.error(message);
-    } else if (level === 'warn') {
-      toast(message, { icon: '⚠️' });
+    // Si estamos en medio de un renderizado, encolar el log para procesarlo después
+    if (isRenderingRef.current) {
+      pendingLogsRef.current.push(newLog);
+      
+      // Mostrar notificaciones incluso durante el renderizado
+      if (level === 'error') {
+        setTimeout(() => toast.error(message), 0);
+      } else if (level === 'warn') {
+        setTimeout(() => toast(message, { icon: '⚠️' }), 0);
+      }
+    } else {
+      // Actualización segura fuera del ciclo de renderizado
+      setLogs(prevLogs => [newLog, ...prevLogs]);
+      
+      // También mostrar notificación toast para errores y advertencias
+      if (level === 'error') {
+        toast.error(message);
+      } else if (level === 'warn') {
+        toast(message, { icon: '⚠️' });
+      }
     }
 
     return newLog.id;
@@ -79,34 +116,58 @@ export const ErrorLogProvider: React.FC<ErrorLogProviderProps> = ({ children }) 
   }, [addLog]);
 
   const clearLogs = useCallback(() => {
-    setLogs([]);
+    if (isRenderingRef.current) {
+      // Posponer la limpieza hasta después del renderizado
+      setTimeout(() => setLogs([]), 0);
+    } else {
+      setLogs([]);
+    }
   }, []);
 
   const showLogModal = useCallback((id?: string) => {
-    if (id) {
-      setSelectedLog(id);
+    if (isRenderingRef.current) {
+      // Posponer hasta después del renderizado
+      setTimeout(() => {
+        if (id) {
+          setSelectedLog(id);
+        }
+        setIsModalOpen(true);
+      }, 0);
+    } else {
+      if (id) {
+        setSelectedLog(id);
+      }
+      setIsModalOpen(true);
     }
-    setIsModalOpen(true);
   }, []);
 
   const hideLogModal = useCallback(() => {
-    setIsModalOpen(false);
-    setSelectedLog(null);
+    if (isRenderingRef.current) {
+      // Posponer hasta después del renderizado
+      setTimeout(() => {
+        setIsModalOpen(false);
+        setSelectedLog(null);
+      }, 0);
+    } else {
+      setIsModalOpen(false);
+      setSelectedLog(null);
+    }
   }, []);
 
+  // Valores memoizados para evitar recreaciones
+  const contextValue = React.useMemo(() => ({
+    logs,
+    debug,
+    info,
+    warn,
+    error,
+    clearLogs,
+    showLogModal,
+    hideLogModal
+  }), [logs, debug, info, warn, error, clearLogs, showLogModal, hideLogModal]);
+
   return (
-    <ErrorLogContext.Provider
-      value={{
-        logs,
-        debug,
-        info,
-        warn,
-        error,
-        clearLogs,
-        showLogModal,
-        hideLogModal
-      }}
-    >
+    <ErrorLogContext.Provider value={contextValue}>
       {children}
       {isModalOpen && <LogDetailsModal logId={selectedLog} onClose={hideLogModal} logs={logs} />}
     </ErrorLogContext.Provider>

@@ -13,7 +13,7 @@ import { UI_TEXTS } from './constants';
 import { cn } from '@/lib/utils';
 import { CognitiveTaskFields } from './components/CognitiveTaskFields';
 import { FileUploader } from './components/FileUploader';
-import { Progress } from '@/components/ui/progress';
+import { ProgressBar } from './components/ProgressBar';
 import { Loader2 } from 'lucide-react';
 
 /**
@@ -99,7 +99,7 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
         onAddChoice={handleAddChoice}
         onRemoveChoice={handleRemoveChoice}
         onFileUpload={handleFileUpload}
-        onRemoveFile={handleRemoveFile}
+        onFileDelete={handleRemoveFile}
         setRandomizeQuestions={setRandomizeQuestions}
         onAddQuestion={handleAddQuestion}
         disabled={isLoading || isSaving}
@@ -150,7 +150,7 @@ const FileProgressIndicator = ({ progress, isLoading }: { progress: number; isLo
         <Loader2 className="h-4 w-4 animate-spin text-primary" />
         <span className="text-sm text-gray-600">Cargando... {progress}%</span>
       </div>
-      <Progress value={progress} className="h-2 w-full" />
+      <ProgressBar value={progress} className="h-2 w-full" />
     </div>
   );
 };

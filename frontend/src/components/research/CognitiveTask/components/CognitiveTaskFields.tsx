@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Switch } from '@/components/ui/Switch';
-import { CognitiveTaskFieldsProps, Question, QuestionType } from '../types';
+import { Question } from '../types';
 import { QuestionCard } from './QuestionCard';
 import { AddQuestionModal } from './AddQuestionModal';
 import { UI_TEXTS } from '../constants';
@@ -14,9 +14,9 @@ type Props = {
   onAddChoice: (questionId: string) => void;
   onRemoveChoice: (questionId: string, choiceId: string) => void;
   onFileUpload: (questionId: string, files: FileList) => void;
-  onRemoveFile: (questionId: string, fileId: string) => void;
+  onFileDelete: (questionId: string, fileId: string) => void;
   setRandomizeQuestions: (checked: boolean) => void;
-  onAddQuestion: (type: QuestionType) => void;
+  onAddQuestion: (type: Question['type']) => void;
   disabled?: boolean;
   isUploading?: boolean;
   uploadProgress?: number;
@@ -31,7 +31,7 @@ export const CognitiveTaskFields: React.FC<Props> = ({
   onAddChoice,
   onRemoveChoice,
   onFileUpload,
-  onRemoveFile,
+  onFileDelete,
   setRandomizeQuestions,
   onAddQuestion,
   disabled = false,
@@ -41,6 +41,18 @@ export const CognitiveTaskFields: React.FC<Props> = ({
   FileUploaderComponent
 }) => {
   const [isAddQuestionModalOpen, setIsAddQuestionModalOpen] = useState(false);
+
+  // Definir los tipos de preguntas disponibles
+  const questionTypes = [
+    {id: 'short_text' as Question['type'], label: 'Texto'},
+    {id: 'long_text' as Question['type'], label: 'Párrafo'},
+    {id: 'single_choice' as Question['type'], label: 'Opción Única'},
+    {id: 'multiple_choice' as Question['type'], label: 'Opción Múltiple'},
+    {id: 'linear_scale' as Question['type'], label: 'Escala'},
+    {id: 'ranking' as Question['type'], label: 'Ranking'},
+    {id: 'navigation_flow' as Question['type'], label: 'Navegación'},
+    {id: 'preference_test' as Question['type'], label: 'Preferencia'}
+  ];
 
   return (
     <div className="space-y-6">
@@ -100,7 +112,7 @@ export const CognitiveTaskFields: React.FC<Props> = ({
                 onAddChoice={onAddChoice}
                 onRemoveChoice={onRemoveChoice}
                 onFileUpload={onFileUpload}
-                onRemoveFile={onRemoveFile}
+                onFileDelete={onFileDelete}
                 disabled={disabled}
                 validationErrors={{}}
                 isUploading={isUploading}
@@ -115,7 +127,6 @@ export const CognitiveTaskFields: React.FC<Props> = ({
         isOpen={isAddQuestionModalOpen}
         onClose={() => setIsAddQuestionModalOpen(false)}
         onAddQuestion={onAddQuestion}
-        questionTypes={[]}
       />
     </div>
   );

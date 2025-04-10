@@ -4,12 +4,30 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 
-import { EyeTrackingForm } from '../../components/research/EyeTracking/EyeTrackingForm';
+// Comentar la importación original
+// import { EyeTrackingForm } from '../../components/research/EyeTracking/EyeTrackingForm';
 import { eyeTrackingService } from '../../services/eyeTrackingService';
 import { 
   EyeTrackingFormData,
   DEFAULT_EYE_TRACKING_CONFIG
 } from '../../types';
+
+// Componente temporal para reemplazar EyeTrackingForm
+const DisabledEyeTrackingForm = ({ researchId }: { researchId: string; onSave?: any; className?: string }) => (
+  <div className={`p-6 bg-white rounded-lg border border-neutral-200`}>
+    <div className="text-center py-8">
+      <h3 className="text-lg font-medium text-red-600 mb-3">Componente temporalmente deshabilitado</h3>
+      <p className="text-neutral-600 mb-4">
+        El componente EyeTrackingForm ha sido retirado temporalmente del proceso de compilación.
+      </p>
+      <div className="inline-block bg-yellow-100 border border-yellow-200 rounded-lg p-4 text-left">
+        <p className="text-sm text-yellow-800">
+          <strong>Nota técnica:</strong> Este componente ha sido desactivado debido a problemas con las actualizaciones de estado durante el renderizado.
+        </p>
+      </div>
+    </div>
+  </div>
+);
 
 /**
  * Página para gestionar el formulario de seguimiento ocular de una investigación
@@ -96,11 +114,7 @@ const EyeTrackingFormPage: React.FC = () => {
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-6">Configuración de Seguimiento Ocular</h1>
       
-      <EyeTrackingForm 
-        researchId={researchId}
-        onSave={handleSave}
-        className="my-4"
-      />
+      <DisabledEyeTrackingForm researchId={researchId} />
     </div>
   );
 };

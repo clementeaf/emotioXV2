@@ -21,143 +21,166 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
   hasValidationErrors = false
 }) => {
   const [showRawJson, setShowRawJson] = useState(false);
+  const [parseError, setParseError] = useState<string | null>(null);
+  const [parsedData, setParsedData] = useState<any>({ questions: [] });
+  const [questionsHtml, setQuestionsHtml] = useState('');
+  
   // Referencia a los botones de navegación
   const navButtonsRef = useRef<HTMLDivElement>(null);
   
-  // Parseamos el JSON para extraer los datos
-  let parsedData: any = {};
-  let questionsHtml = '';
-  
-  try {
-    parsedData = JSON.parse(jsonData);
+  // Mover la lógica de parseo JSON a un useEffect para evitar actualizar estado durante el renderizado
+  useEffect(() => {
+    let newParsedData: any = { questions: [] };
+    let newQuestionsHtml = '';
     
-    // Función para determinar si una pregunta ha sido modificada
-    const isQuestionModified = (question: any) => {
-      // Considera una pregunta como modificada si tiene alguna propiedad
-      // distinta a los valores predeterminados o si tiene archivos o elecciones
-      return (
-        question.title !== `Pregunta ${question.id}` ||
-        question.description !== '' ||
-        (question.choices && question.choices.length > 0) ||
-        (question.files && question.files.length > 0)
-      );
-    };
-    
-    // Función para determinar si una pregunta se enviará
-    // (requiere archivos para ciertos tipos de preguntas)
-    const willQuestionBeSent = (question: any) => {
-      const requiresFiles = ['navigation_flow', 'preference_test'].includes(question.type);
-      
-      if (requiresFiles) {
-        return question.files && question.files.length > 0;
+    try {
+      // Verificar que jsonData no sea vacío o inválido antes de intentar parsearlo
+      if (!jsonData || jsonData.trim() === '') {
+        // En lugar de lanzar un error, simplemente establecemos un mensaje de error
+        setParseError('Los datos JSON están vacíos');
+        setParsedData({ questions: [] });
+        setQuestionsHtml('');
+        return; // Salimos temprano de la función
       }
       
-      return true;
-    };
-    
-    // Genera el HTML para cada pregunta
-    if (parsedData.questions) {
-      questionsHtml = parsedData.questions
-        .map((question: any, index: number) => {
-          const isModified = isQuestionModified(question);
-          const willSend = willQuestionBeSent(question);
-          
-          // Determina el estilo de la tarjeta
-          let cardClass = 'question-card';
-          if (!isModified) cardClass += ' red-card';
-          else if (!willSend) cardClass += ' yellow-card';
-          else cardClass += ' blue-card';
-          
-          // Función para renderizar las opciones en preguntas de selección
-          const renderChoices = (choices: any[]) => {
-            if (!choices || choices.length === 0) return '<p class="empty-notice">Sin opciones</p>';
+      newParsedData = JSON.parse(jsonData);
+      
+      // Función para determinar si una pregunta ha sido modificada
+      const isQuestionModified = (question: any) => {
+        // Considera una pregunta como modificada si tiene alguna propiedad
+        // distinta a los valores predeterminados o si tiene archivos o elecciones
+        return (
+          question.title !== `Pregunta ${question.id}` ||
+          question.description !== '' ||
+          (question.choices && question.choices.length > 0) ||
+          (question.files && question.files.length > 0)
+        );
+      };
+      
+      // Función para determinar si una pregunta se enviará
+      // (requiere archivos para ciertos tipos de preguntas)
+      const willQuestionBeSent = (question: any) => {
+        const requiresFiles = ['navigation_flow', 'preference_test'].includes(question.type);
+        
+        if (requiresFiles) {
+          return question.files && question.files.length > 0;
+        }
+        
+        return true;
+      };
+      
+      // Genera el HTML para cada pregunta
+      if (newParsedData.questions && Array.isArray(newParsedData.questions)) {
+        newQuestionsHtml = newParsedData.questions
+          .map((question: any, index: number) => {
+            const isModified = isQuestionModified(question);
+            const willSend = willQuestionBeSent(question);
             
-            return `
-              <div class="choices-list">
-                ${choices.map((choice, i) => `
-                  <div class="choice-item">
-                    <span class="choice-number">${i + 1}.</span>
-                    <span class="choice-text">${choice.text || 'Sin texto'}</span>
-                  </div>
-                `).join('')}
-              </div>
-            `;
-          };
-          
-          // Función para mostrar archivos
-          const renderFiles = (files: any[]) => {
-            if (!files || files.length === 0) return '<p class="empty-notice">Sin archivos</p>';
+            // Determina el estilo de la tarjeta
+            let cardClass = 'question-card';
+            if (!isModified) cardClass += ' red-card';
+            else if (!willSend) cardClass += ' yellow-card';
+            else cardClass += ' blue-card';
             
-            return `
-              <div class="files-list">
-                ${files.map(file => `
-                  <div class="file-item">
-                    <div class="file-icon">📎</div>
-                    <div class="file-info">
-                      <div class="file-name">${file.name || 'Archivo sin nombre'}</div>
-                      <div class="file-url">${file.url || 'Sin URL'}</div>
+            // Función para renderizar las opciones en preguntas de selección
+            const renderChoices = (choices: any[]) => {
+              if (!choices || choices.length === 0) return '<p class="empty-notice">Sin opciones</p>';
+              
+              return `
+                <div class="choices-list">
+                  ${choices.map((choice, i) => `
+                    <div class="choice-item">
+                      <span class="choice-number">${i + 1}.</span>
+                      <span class="choice-text">${choice.text || 'Sin texto'}</span>
                     </div>
-                  </div>
-                `).join('')}
-              </div>
-            `;
-          };
-          
-          // Función para obtener la etiqueta del tipo de pregunta
-          const getQuestionTypeLabel = (type: string) => {
-            const typeMap: Record<string, string> = {
-              'short_text': 'Texto corto',
-              'long_text': 'Texto largo',
-              'single_choice': 'Opción única',
-              'multiple_choice': 'Opción múltiple',
-              'linear_scale': 'Escala lineal',
-              'ranking': 'Clasificación',
-              'navigation_flow': 'Flujo de navegación',
-              'preference_test': 'Prueba de preferencia'
+                  `).join('')}
+                </div>
+              `;
             };
             
-            return typeMap[type] || type;
-          };
-          
-          return `
-            <div class="${cardClass}" id="question-${question.id}">
-              <div class="question-header" data-id="${question.id}">
-                <h3>Pregunta ${index + 1}: ${question.title}</h3>
-                <span class="question-type">${getQuestionTypeLabel(question.type)}</span>
-              </div>
+            // Función para mostrar archivos
+            const renderFiles = (files: any[]) => {
+              if (!files || files.length === 0) return '<p class="empty-notice">Sin archivos</p>';
               
-              <div class="question-body">
-                <div class="detail-row">
-                  <strong>Descripción:</strong> 
-                  <span>${question.description || '<span class="empty-value">Sin descripción</span>'}</span>
+              return `
+                <div class="files-list">
+                  ${files.map(file => `
+                    <div class="file-item">
+                      <div class="file-icon">📎</div>
+                      <div class="file-info">
+                        <div class="file-name">${file.name || 'Archivo sin nombre'}</div>
+                        <div class="file-url">${file.url || 'Sin URL'}</div>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              `;
+            };
+            
+            // Función para obtener la etiqueta del tipo de pregunta
+            const getQuestionTypeLabel = (type: string) => {
+              const typeMap: Record<string, string> = {
+                'short_text': 'Texto corto',
+                'long_text': 'Texto largo',
+                'single_choice': 'Opción única',
+                'multiple_choice': 'Opción múltiple',
+                'linear_scale': 'Escala lineal',
+                'ranking': 'Clasificación',
+                'navigation_flow': 'Flujo de navegación',
+                'preference_test': 'Prueba de preferencia'
+              };
+              
+              return typeMap[type] || type;
+            };
+            
+            return `
+              <div class="${cardClass}" id="question-${question.id}">
+                <div class="question-header" data-id="${question.id}">
+                  <h3>Pregunta ${index + 1}: ${question.title}</h3>
+                  <span class="question-type">${getQuestionTypeLabel(question.type)}</span>
                 </div>
                 
-                <div class="detail-row">
-                  <strong>Obligatoria:</strong> 
-                  <span>${question.required ? 'Sí' : 'No'}</span>
+                <div class="question-body">
+                  <div class="detail-row">
+                    <strong>Descripción:</strong> 
+                    <span>${question.description || '<span class="empty-value">Sin descripción</span>'}</span>
+                  </div>
+                  
+                  <div class="detail-row">
+                    <strong>Obligatoria:</strong> 
+                    <span>${question.required ? 'Sí' : 'No'}</span>
+                  </div>
+                  
+                  ${['single_choice', 'multiple_choice'].includes(question.type) ? `
+                    <div class="detail-section">
+                      <strong>Opciones:</strong>
+                      ${renderChoices(question.choices)}
+                    </div>
+                  ` : ''}
+                  
+                  ${['navigation_flow', 'preference_test'].includes(question.type) ? `
+                    <div class="detail-section">
+                      <strong>Archivos:</strong>
+                      ${renderFiles(question.files)}
+                    </div>
+                  ` : ''}
                 </div>
-                
-                ${['single_choice', 'multiple_choice'].includes(question.type) ? `
-                  <div class="detail-section">
-                    <strong>Opciones:</strong>
-                    ${renderChoices(question.choices)}
-                  </div>
-                ` : ''}
-                
-                ${['navigation_flow', 'preference_test'].includes(question.type) ? `
-                  <div class="detail-section">
-                    <strong>Archivos:</strong>
-                    ${renderFiles(question.files)}
-                  </div>
-                ` : ''}
               </div>
-            </div>
-          `;
-        }).join('');
+            `;
+          }).join('');
+      }
+      
+      // Actualizar estados
+      setParseError(null);
+      setParsedData(newParsedData);
+      setQuestionsHtml(newQuestionsHtml);
+    } catch (error) {
+      console.error('Error parsing JSON:', error);
+      setParseError(error instanceof Error ? error.message : 'Error al procesar los datos JSON');
+      setParsedData({ questions: [] });
+      setQuestionsHtml('');
     }
-  } catch (error) {
-    console.error('Error parsing JSON:', error);
-  }
+  }, [jsonData]); // Solo se ejecuta cuando cambia jsonData
   
   // Hooks para agregar funcionalidad de scroll a los botones de navegación
   useEffect(() => {
@@ -504,6 +527,18 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
         </div>
         
         <div className="p-6 overflow-auto flex-grow">
+          {parseError && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
+              <div className="font-semibold">⚠️ Error al procesar el JSON</div>
+              <p className="text-sm mt-1">{parseError}</p>
+              {parseError === 'Los datos JSON están vacíos' && (
+                <p className="text-sm mt-2">
+                  No se han proporcionado datos para previsualizar. Por favor, complete el formulario antes de intentar previsualizar.
+                </p>
+              )}
+            </div>
+          )}
+        
           {hasValidationErrors && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
               <div className="font-semibold">⚠️ Advertencia: El formulario tiene errores de validación</div>
@@ -514,55 +549,74 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
           {!showRawJson ? (
             // Vista previa visual
             <div className="space-y-6">
-              <div className="flex flex-wrap items-center gap-4 mb-4">
-                <div className="text-sm flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                  <span>Pregunta modificada</span>
-                </div>
-                <div className="text-sm flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                  <span>Pregunta sin modificar</span>
-                </div>
-                <div className="text-sm flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                  <span>Pregunta que no se enviará (sin archivos)</span>
-                </div>
-              </div>
+              {!parseError && (
+                <>
+                  <div className="flex flex-wrap items-center gap-4 mb-4">
+                    <div className="text-sm flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                      <span>Pregunta modificada</span>
+                    </div>
+                    <div className="text-sm flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                      <span>Pregunta sin modificar</span>
+                    </div>
+                    <div className="text-sm flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                      <span>Pregunta que no se enviará (sin archivos)</span>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 mb-6">
+                    <h3 className="text-base font-medium text-blue-800 mb-2">📋 Configuración general</h3>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="text-gray-600">Aleatorizar preguntas:</div>
+                      <div className="font-medium">{parsedData.randomizeQuestions ? '✅ Sí' : '❌ No'}</div>
+                      <div className="text-gray-600">Total de preguntas:</div>
+                      <div className="font-medium">{parsedData.questions?.length || 0}</div>
+                    </div>
+                  </div>
+                  
+                  {/* Navegación de preguntas */}
+                  {parsedData.questions && parsedData.questions.length > 0 && (
+                    <div className="bg-gray-50 p-3 rounded border mb-4">
+                      <div className="font-medium mb-2">Ir a pregunta:</div>
+                      <div className="flex flex-wrap gap-2" ref={navButtonsRef}>
+                        {parsedData.questions?.map((q: any, index: number) => (
+                          <button 
+                            key={q.id}
+                            className="nav-button py-1 px-2 text-sm border rounded hover:bg-gray-100"
+                            data-question={q.id}
+                          >
+                            {index + 1}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Lista de preguntas */}
+                  {questionsHtml ? (
+                    <div className="space-y-4" dangerouslySetInnerHTML={{ __html: questionsHtml }} />
+                  ) : (
+                    <div className="bg-gray-100 p-6 rounded-lg text-center text-gray-500">
+                      No hay preguntas para mostrar o los datos no están disponibles
+                    </div>
+                  )}
+                </>
+              )}
               
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 mb-6">
-                <h3 className="text-base font-medium text-blue-800 mb-2">📋 Configuración general</h3>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="text-gray-600">Aleatorizar preguntas:</div>
-                  <div className="font-medium">{parsedData.randomizeQuestions ? '✅ Sí' : '❌ No'}</div>
-                  <div className="text-gray-600">Total de preguntas:</div>
-                  <div className="font-medium">{parsedData.questions?.length || 0}</div>
+              {parseError && (
+                <div className="bg-gray-100 p-6 rounded-lg text-center">
+                  <p className="text-gray-600 mb-2">No se puede mostrar la vista previa debido a un error en los datos.</p>
+                  <p className="text-sm text-gray-500">Intente ver los datos JSON para más información o completar el formulario.</p>
                 </div>
-              </div>
-              
-              {/* Navegación de preguntas */}
-              <div className="bg-gray-50 p-3 rounded border mb-4">
-                <div className="font-medium mb-2">Ir a pregunta:</div>
-                <div className="flex flex-wrap gap-2" ref={navButtonsRef}>
-                  {parsedData.questions?.map((q: any, index: number) => (
-                    <button 
-                      key={q.id}
-                      className="nav-button py-1 px-2 text-sm border rounded hover:bg-gray-100"
-                      data-question={q.id}
-                    >
-                      {index + 1}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Lista de preguntas */}
-              <div className="space-y-4" dangerouslySetInnerHTML={{ __html: questionsHtml }} />
+              )}
             </div>
           ) : (
             // Vista JSON
             <div>
               <pre className="bg-gray-50 p-4 rounded border overflow-auto text-sm whitespace-pre-wrap">
-                {jsonData}
+                {jsonData || 'No hay datos JSON disponibles'}
               </pre>
             </div>
           )}
@@ -589,13 +643,13 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
             <button
               onClick={handleContinue}
               className={`px-4 py-2 rounded text-white ${
-                hasValidationErrors 
+                hasValidationErrors || parseError
                   ? 'bg-gray-400 cursor-not-allowed' 
                   : pendingAction === 'preview'
                     ? 'bg-blue-600 hover:bg-blue-700'
                     : 'bg-green-600 hover:bg-green-700'
               }`}
-              disabled={hasValidationErrors}
+              disabled={hasValidationErrors || !!parseError}
             >
               {pendingAction === 'preview' 
                 ? 'Continuar con la previsualización' 
