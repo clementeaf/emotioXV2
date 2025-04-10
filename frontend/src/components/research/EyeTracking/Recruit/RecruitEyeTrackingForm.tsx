@@ -446,6 +446,8 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           type="button"
                           className="px-2 py-2 bg-neutral-100 border border-l-0 border-neutral-300 rounded-r-md text-neutral-600"
                           onClick={copyLinkToClipboard}
+                          title="Copiar enlace"
+                          aria-label="Copiar enlace al portapapeles"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -460,6 +462,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                         type="button"
                         onClick={previewLink}
                         className="px-4 py-2 rounded-lg border border-neutral-200 bg-white shadow-sm hover:bg-neutral-100 text-sm font-medium flex items-center gap-2"
+                        aria-label="Vista previa del enlace"
                       >
                         <span>Vista previa del enlace</span>
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -473,6 +476,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                         type="button"
                         onClick={generateQRCode}
                         className="px-4 py-2 rounded-lg bg-neutral-900 text-white shadow hover:bg-neutral-800 text-sm font-medium flex items-center gap-2"
+                        aria-label="Generar código QR"
                       >
                         <span>Generar QR</span>
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
