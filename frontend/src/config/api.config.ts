@@ -45,6 +45,9 @@ interface EyeTrackingEndpoints {
   RECRUIT_GET: string;
   RECRUIT_UPDATE: string;
   RECRUIT_CREATE: string;
+  RECRUIT_GET_ALT: string;
+  RECRUIT_UPDATE_ALT: string;
+  RECRUIT_CREATE_ALT: string;
 }
 
 // Estructura para tareas cognitivas
@@ -161,6 +164,9 @@ const API_CONFIG = {
       RECRUIT_GET: '/eye-tracking/recruit/{recruitId}',
       RECRUIT_UPDATE: '/eye-tracking/recruit/{recruitId}',
       RECRUIT_CREATE: '/eye-tracking/recruit',
+      RECRUIT_GET_ALT: '/eye-tracking-recruit/config/{recruitId}',
+      RECRUIT_UPDATE_ALT: '/eye-tracking-recruit/config/{recruitId}',
+      RECRUIT_CREATE_ALT: '/eye-tracking-recruit/research/{researchId}/config',
     },
     
     // Tareas Cognitivas

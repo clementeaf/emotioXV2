@@ -188,11 +188,24 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   const [showQRModal, setShowQRModal] = useState<boolean>(false);
   const [showLinkPreview, setShowLinkPreview] = useState<boolean>(false);
   
-  // Función para mostrar el modal con JSON
+  // Función para mostrar el modal de confirmación con JSON
   const showJsonModal = (json: any, action: 'save') => {
-    setJsonToSend(JSON.stringify(json, null, 2));
-    setPendingAction(action);
+    // Asegurarse de que los datos tienen el formato correcto antes de mostrar el modal
+    // IMPORTANTE: Estas modificaciones son solo para visualización, el formateo real 
+    // para el backend se hace en saveRecruitConfig en eye-tracking-api.ts
+    const dataToSend = {
+      ...json,
+      researchId, // Asegurar que el ID de investigación está presente
+      // Formatear los datos para que se muestren correctamente en el modal
+      // Nota: En la API se realiza una transformación similar
+      // Ver: src/lib/eye-tracking-api.ts -> saveRecruitConfig
+    };
+    
+    // Convertir a JSON para mostrar en el modal
+    const jsonStr = JSON.stringify(dataToSend, null, 2);
+    setJsonToSend(jsonStr);
     setShowJsonPreview(true);
+    setPendingAction(action);
   };
   
   // Función para cerrar el modal JSON
@@ -224,20 +237,46 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
         
         // Usar la API para guardar
         eyeTrackingFixedAPI.saveRecruitConfig(dataToSaveObj)
-          .then(() => {
+          .then((response) => {
+            console.log('[EyeTrackingRecruit] Respuesta del servidor:', response);
             toast.success('Configuración guardada correctamente');
             setSaving(false);
             // Invalidar las consultas para recargar datos
             queryClient.invalidateQueries({ queryKey: ['eyeTrackingRecruit', researchId] });
           })
           .catch((error: any) => {
-            console.error('Error al guardar configuración:', error);
-            toast.error('Error al guardar la configuración');
+            console.error('[EyeTrackingRecruit] Error al guardar configuración:', error);
+            
+            // Proporcionar un mensaje de error más específico basado en el tipo de error
+            let errorMessage = 'Error al guardar la configuración';
+            
+            if (error.statusCode === 404) {
+              errorMessage = `Error 404: API no encontrada. La URL del servicio no existe. Revise la configuración de la API en el backend. ${error.message || ''}`;
+            } else if (error.statusCode === 400) {
+              errorMessage = `Error 400: Datos de configuración inválidos. Detalles: ${error.message || 'Verifique los campos del formulario.'}`;
+            } else if (error.statusCode === 401 || error.statusCode === 403) {
+              errorMessage = `Error ${error.statusCode}: No tiene permisos para realizar esta acción. Intente iniciar sesión nuevamente.`;
+            } else if (error.message) {
+              // Si hay un mensaje específico en el error, usarlo
+              errorMessage = `Error: ${error.message}`;
+            }
+            
+            // Mostrar error en la UI
+            toast.error(errorMessage);
+            
+            // También en consola para diagnostico
+            console.error(`[EyeTrackingRecruit] Detalle del error: ${JSON.stringify({
+              statusCode: error.statusCode,
+              message: error.message,
+              data: error.data
+            }, null, 2)}`);
+            
             setSaving(false);
           });
       } catch (error) {
         console.error('[EyeTrackingRecruit] Error al procesar JSON:', error);
         toast.error('Error al procesar los datos del formulario');
+        setSaving(false);
       }
     }
   };
@@ -388,100 +427,100 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       
       // Crear HTML para el modal
       const modalHtml = `
-        <div id="jsonPreviewModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999;">
-          <div style="background: white; border-radius: 8px; max-width: 90%; width: 900px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 4px 20px rgba(0,0,0,0.2); overflow: hidden;">
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid #e5e7eb;">
-              <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Confirmar configuración</h2>
-              <button id="closeJsonModal" style="background: none; border: none; cursor: pointer; font-size: 20px; color: #6b7280;">&times;</button>
+        <div id="jsonPreviewModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(3px);">
+          <div style="background: white; border-radius: 12px; max-width: 90%; width: 850px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 8px 32px rgba(0,0,0,0.2); overflow: hidden;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 24px 28px; border-bottom: 1px solid #eaeaea;">
+              <h2 style="margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.2px; color: #111111;">Confirmar configuración</h2>
+              <button id="closeJsonModal" style="background: none; border: none; cursor: pointer; font-size: 24px; color: #555555; transition: color 0.2s; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 6px;">&times;</button>
             </div>
-            <div style="padding: 24px; overflow-y: auto; flex-grow: 1;">
-              <p style="margin: 0 0 16px; color: #6b7280; font-size: 14px;">
+            <div style="padding: 28px; overflow-y: auto; flex-grow: 1; background: #fcfcfc;">
+              <p style="margin: 0 0 24px; color: #555555; font-size: 15px; line-height: 1.5;">
                 Por favor revise la siguiente configuración antes de guardar
               </p>
               
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-bottom: 28px;">
                 <!-- Columna izquierda -->
                 <div>
                   <!-- Sección de preguntas demográficas -->
-                  <div style="margin-bottom: 20px; border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden;">
-                    <div style="background: #f9fafb; padding: 12px 16px; border-bottom: 1px solid #e5e7eb;">
-                      <h3 style="margin: 0; font-size: 16px; font-weight: 500;">Preguntas demográficas</h3>
+                  <div style="margin-bottom: 24px; border: 1px solid #eaeaea; border-radius: 12px; overflow: hidden; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                    <div style="background: #f5f5f5; padding: 16px 20px; border-bottom: 1px solid #eaeaea;">
+                      <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #111111;">Preguntas demográficas</h3>
                     </div>
-                    <div style="padding: 16px;">
+                    <div style="padding: 20px;">
                       <ul style="margin: 0; padding: 0; list-style: none;">
-                        <li style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
-                          <span>Edad</span>
-                          <span style="font-weight: 500; color: ${formDataObj.demographicQuestions.age ? '#047857' : '#dc2626'};">${formDataObj.demographicQuestions.age ? 'Habilitado' : 'Deshabilitado'}</span>
+                        <li style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0;">
+                          <span style="color: #333333; font-size: 14px;">Edad</span>
+                          <span style="font-weight: 500; font-size: 14px; color: ${formDataObj.demographicQuestions.age ? '#2e7d32' : '#c62828'};">${formDataObj.demographicQuestions.age ? 'Habilitado' : 'Deshabilitado'}</span>
                         </li>
-                        <li style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
-                          <span>País</span>
-                          <span style="font-weight: 500; color: ${formDataObj.demographicQuestions.country ? '#047857' : '#dc2626'};">${formDataObj.demographicQuestions.country ? 'Habilitado' : 'Deshabilitado'}</span>
+                        <li style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0;">
+                          <span style="color: #333333; font-size: 14px;">País</span>
+                          <span style="font-weight: 500; font-size: 14px; color: ${formDataObj.demographicQuestions.country ? '#2e7d32' : '#c62828'};">${formDataObj.demographicQuestions.country ? 'Habilitado' : 'Deshabilitado'}</span>
                         </li>
-                        <li style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
-                          <span>Género</span>
-                          <span style="font-weight: 500; color: ${formDataObj.demographicQuestions.gender ? '#047857' : '#dc2626'};">${formDataObj.demographicQuestions.gender ? 'Habilitado' : 'Deshabilitado'}</span>
+                        <li style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0;">
+                          <span style="color: #333333; font-size: 14px;">Género</span>
+                          <span style="font-weight: 500; font-size: 14px; color: ${formDataObj.demographicQuestions.gender ? '#2e7d32' : '#c62828'};">${formDataObj.demographicQuestions.gender ? 'Habilitado' : 'Deshabilitado'}</span>
                         </li>
-                        <li style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
-                          <span>Nivel educativo</span>
-                          <span style="font-weight: 500; color: ${formDataObj.demographicQuestions.educationLevel ? '#047857' : '#dc2626'};">${formDataObj.demographicQuestions.educationLevel ? 'Habilitado' : 'Deshabilitado'}</span>
+                        <li style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0;">
+                          <span style="color: #333333; font-size: 14px;">Nivel educativo</span>
+                          <span style="font-weight: 500; font-size: 14px; color: ${formDataObj.demographicQuestions.educationLevel ? '#2e7d32' : '#c62828'};">${formDataObj.demographicQuestions.educationLevel ? 'Habilitado' : 'Deshabilitado'}</span>
                         </li>
-                        <li style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
-                          <span>Ingresos familiares</span>
-                          <span style="font-weight: 500; color: ${formDataObj.demographicQuestions.householdIncome ? '#047857' : '#dc2626'};">${formDataObj.demographicQuestions.householdIncome ? 'Habilitado' : 'Deshabilitado'}</span>
+                        <li style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0;">
+                          <span style="color: #333333; font-size: 14px;">Ingresos familiares</span>
+                          <span style="font-weight: 500; font-size: 14px; color: ${formDataObj.demographicQuestions.householdIncome ? '#2e7d32' : '#c62828'};">${formDataObj.demographicQuestions.householdIncome ? 'Habilitado' : 'Deshabilitado'}</span>
                         </li>
-                        <li style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
-                          <span>Situación laboral</span>
-                          <span style="font-weight: 500; color: ${formDataObj.demographicQuestions.employmentStatus ? '#047857' : '#dc2626'};">${formDataObj.demographicQuestions.employmentStatus ? 'Habilitado' : 'Deshabilitado'}</span>
+                        <li style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0;">
+                          <span style="color: #333333; font-size: 14px;">Situación laboral</span>
+                          <span style="font-weight: 500; font-size: 14px; color: ${formDataObj.demographicQuestions.employmentStatus ? '#2e7d32' : '#c62828'};">${formDataObj.demographicQuestions.employmentStatus ? 'Habilitado' : 'Deshabilitado'}</span>
                         </li>
-                        <li style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
-                          <span>Horas diarias online</span>
-                          <span style="font-weight: 500; color: ${formDataObj.demographicQuestions.dailyHoursOnline ? '#047857' : '#dc2626'};">${formDataObj.demographicQuestions.dailyHoursOnline ? 'Habilitado' : 'Deshabilitado'}</span>
+                        <li style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0;">
+                          <span style="color: #333333; font-size: 14px;">Horas diarias online</span>
+                          <span style="font-weight: 500; font-size: 14px; color: ${formDataObj.demographicQuestions.dailyHoursOnline ? '#2e7d32' : '#c62828'};">${formDataObj.demographicQuestions.dailyHoursOnline ? 'Habilitado' : 'Deshabilitado'}</span>
                         </li>
-                        <li style="display: flex; justify-content: space-between; padding: 8px 0;">
-                          <span>Competencia técnica</span>
-                          <span style="font-weight: 500; color: ${formDataObj.demographicQuestions.technicalProficiency ? '#047857' : '#dc2626'};">${formDataObj.demographicQuestions.technicalProficiency ? 'Habilitado' : 'Deshabilitado'}</span>
+                        <li style="display: flex; justify-content: space-between; padding: 10px 0;">
+                          <span style="color: #333333; font-size: 14px;">Competencia técnica</span>
+                          <span style="font-weight: 500; font-size: 14px; color: ${formDataObj.demographicQuestions.technicalProficiency ? '#2e7d32' : '#c62828'};">${formDataObj.demographicQuestions.technicalProficiency ? 'Habilitado' : 'Deshabilitado'}</span>
                         </li>
                       </ul>
                     </div>
                   </div>
                   
                   <!-- Sección de configuración de enlace -->
-                  <div style="margin-bottom: 20px; border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden;">
-                    <div style="background: #f9fafb; padding: 12px 16px; border-bottom: 1px solid #e5e7eb;">
-                      <h3 style="margin: 0; font-size: 16px; font-weight: 500;">Configuración del enlace</h3>
+                  <div style="margin-bottom: 24px; border: 1px solid #eaeaea; border-radius: 12px; overflow: hidden; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                    <div style="background: #f5f5f5; padding: 16px 20px; border-bottom: 1px solid #eaeaea;">
+                      <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #111111;">Configuración del enlace</h3>
                     </div>
-                    <div style="padding: 16px;">
+                    <div style="padding: 20px;">
                       <ul style="margin: 0; padding: 0; list-style: none;">
-                        <li style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
-                          <span>Permitir dispositivos móviles</span>
-                          <span style="font-weight: 500; color: ${formDataObj.linkConfig.allowMobileDevices ? '#047857' : '#dc2626'};">${formDataObj.linkConfig.allowMobileDevices ? 'Sí' : 'No'}</span>
+                        <li style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0;">
+                          <span style="color: #333333; font-size: 14px;">Permitir dispositivos móviles</span>
+                          <span style="font-weight: 500; font-size: 14px; color: ${formDataObj.linkConfig.allowMobileDevices ? '#2e7d32' : '#c62828'};">${formDataObj.linkConfig.allowMobileDevices ? 'Sí' : 'No'}</span>
                         </li>
-                        <li style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
-                          <span>Rastrear ubicación</span>
-                          <span style="font-weight: 500; color: ${formDataObj.linkConfig.trackLocation ? '#047857' : '#dc2626'};">${formDataObj.linkConfig.trackLocation ? 'Sí' : 'No'}</span>
+                        <li style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0;">
+                          <span style="color: #333333; font-size: 14px;">Rastrear ubicación</span>
+                          <span style="font-weight: 500; font-size: 14px; color: ${formDataObj.linkConfig.trackLocation ? '#2e7d32' : '#c62828'};">${formDataObj.linkConfig.trackLocation ? 'Sí' : 'No'}</span>
                         </li>
-                        <li style="display: flex; justify-content: space-between; padding: 8px 0;">
-                          <span>Intentos múltiples</span>
-                          <span style="font-weight: 500; color: ${formDataObj.linkConfig.multipleAttempts ? '#047857' : '#dc2626'};">${formDataObj.linkConfig.multipleAttempts ? 'Sí' : 'No'}</span>
+                        <li style="display: flex; justify-content: space-between; padding: 10px 0;">
+                          <span style="color: #333333; font-size: 14px;">Intentos múltiples</span>
+                          <span style="font-weight: 500; font-size: 14px; color: ${formDataObj.linkConfig.multipleAttempts ? '#2e7d32' : '#c62828'};">${formDataObj.linkConfig.multipleAttempts ? 'Sí' : 'No'}</span>
                         </li>
                       </ul>
                     </div>
                   </div>
                   
                   <!-- Sección de límite de participantes -->
-                  <div style="border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden;">
-                    <div style="background: #f9fafb; padding: 12px 16px; border-bottom: 1px solid #e5e7eb;">
-                      <h3 style="margin: 0; font-size: 16px; font-weight: 500;">Límite de participantes</h3>
+                  <div style="border: 1px solid #eaeaea; border-radius: 12px; overflow: hidden; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                    <div style="background: #f5f5f5; padding: 16px 20px; border-bottom: 1px solid #eaeaea;">
+                      <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #111111;">Límite de participantes</h3>
                     </div>
-                    <div style="padding: 16px;">
-                      <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
-                        <span>Limitar participantes</span>
-                        <span style="font-weight: 500; color: ${formDataObj.linkConfig.limitParticipants ? '#047857' : '#6b7280'};">${formDataObj.linkConfig.limitParticipants ? 'Sí' : 'No'}</span>
+                    <div style="padding: 20px;">
+                      <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0;">
+                        <span style="color: #333333; font-size: 14px;">Limitar participantes</span>
+                        <span style="font-weight: 500; font-size: 14px; color: ${formDataObj.linkConfig.limitParticipants ? '#2e7d32' : '#777777'};">${formDataObj.linkConfig.limitParticipants ? 'Sí' : 'No'}</span>
                       </div>
                       ${formDataObj.linkConfig.limitParticipants ? `
-                      <div style="display: flex; justify-content: space-between; padding: 8px 0;">
-                        <span>Límite máximo</span>
-                        <span style="font-weight: 500; color: #1f2937;">${formDataObj.linkConfig.participantLimit} participantes</span>
+                      <div style="display: flex; justify-content: space-between; padding: 10px 0;">
+                        <span style="color: #333333; font-size: 14px;">Límite máximo</span>
+                        <span style="font-weight: 500; font-size: 14px; color: #111111;">${formDataObj.linkConfig.participantLimit} participantes</span>
                       </div>
                       ` : ''}
                     </div>
@@ -491,76 +530,76 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
                 <!-- Columna derecha -->
                 <div>
                   <!-- Sección de enlaces de retorno -->
-                  <div style="margin-bottom: 20px; border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden;">
-                    <div style="background: #f9fafb; padding: 12px 16px; border-bottom: 1px solid #e5e7eb;">
-                      <h3 style="margin: 0; font-size: 16px; font-weight: 500;">Enlaces de retorno</h3>
+                  <div style="margin-bottom: 24px; border: 1px solid #eaeaea; border-radius: 12px; overflow: hidden; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                    <div style="background: #f5f5f5; padding: 16px 20px; border-bottom: 1px solid #eaeaea;">
+                      <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #111111;">Enlaces de retorno</h3>
                     </div>
-                    <div style="padding: 16px;">
+                    <div style="padding: 20px;">
                       <ul style="margin: 0; padding: 0; list-style: none;">
-                        <li style="padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
-                          <div style="margin-bottom: 4px; font-weight: 500; color: #1f2937;">Completo</div>
-                          <div style="font-family: monospace; font-size: 13px; word-break: break-all; color: #4b5563; background: #f9fafb; padding: 6px; border-radius: 4px;">${formDataObj.backlinks.complete}</div>
+                        <li style="padding: 10px 0; border-bottom: 1px solid #f0f0f0;">
+                          <div style="margin-bottom: 6px; font-weight: 500; color: #333333; font-size: 14px;">Completo</div>
+                          <div style="font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace; font-size: 13px; word-break: break-all; color: #444444; background: #f8f8f8; padding: 8px; border-radius: 6px; border: 1px solid #eaeaea;">${formDataObj.backlinks.complete}</div>
                         </li>
-                        <li style="padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
-                          <div style="margin-bottom: 4px; font-weight: 500; color: #1f2937;">Descalificado</div>
-                          <div style="font-family: monospace; font-size: 13px; word-break: break-all; color: #4b5563; background: #f9fafb; padding: 6px; border-radius: 4px;">${formDataObj.backlinks.disqualified}</div>
+                        <li style="padding: 10px 0; border-bottom: 1px solid #f0f0f0;">
+                          <div style="margin-bottom: 6px; font-weight: 500; color: #333333; font-size: 14px;">Descalificado</div>
+                          <div style="font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace; font-size: 13px; word-break: break-all; color: #444444; background: #f8f8f8; padding: 8px; border-radius: 6px; border: 1px solid #eaeaea;">${formDataObj.backlinks.disqualified}</div>
                         </li>
-                        <li style="padding: 8px 0;">
-                          <div style="margin-bottom: 4px; font-weight: 500; color: #1f2937;">Cuota excedida</div>
-                          <div style="font-family: monospace; font-size: 13px; word-break: break-all; color: #4b5563; background: #f9fafb; padding: 6px; border-radius: 4px;">${formDataObj.backlinks.overquota}</div>
+                        <li style="padding: 10px 0;">
+                          <div style="margin-bottom: 6px; font-weight: 500; color: #333333; font-size: 14px;">Cuota excedida</div>
+                          <div style="font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace; font-size: 13px; word-break: break-all; color: #444444; background: #f8f8f8; padding: 8px; border-radius: 6px; border: 1px solid #eaeaea;">${formDataObj.backlinks.overquota}</div>
                         </li>
                       </ul>
                     </div>
                   </div>
                   
                   <!-- Sección de URL de la investigación -->
-                  <div style="margin-bottom: 20px; border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden;">
-                    <div style="background: #f9fafb; padding: 12px 16px; border-bottom: 1px solid #e5e7eb;">
-                      <h3 style="margin: 0; font-size: 16px; font-weight: 500;">URL de la investigación</h3>
+                  <div style="margin-bottom: 24px; border: 1px solid #eaeaea; border-radius: 12px; overflow: hidden; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                    <div style="background: #f5f5f5; padding: 16px 20px; border-bottom: 1px solid #eaeaea;">
+                      <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #111111;">URL de la investigación</h3>
                     </div>
-                    <div style="padding: 16px;">
-                      <div style="font-family: monospace; font-size: 13px; word-break: break-all; color: #4b5563; background: #f9fafb; padding: 10px; border-radius: 4px;">
+                    <div style="padding: 20px;">
+                      <div style="font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace; font-size: 13px; word-break: break-all; color: #444444; background: #f8f8f8; padding: 12px; border-radius: 6px; border: 1px solid #eaeaea;">
                         https://${formDataObj.researchUrl}
                       </div>
-                      <div style="margin-top: 12px; padding: 10px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 4px; color: #0369a1; font-size: 13px;">
-                        <div style="display: flex; align-items: start; gap: 8px;">
-                          <svg style="flex-shrink: 0; margin-top: 2px;" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <div style="margin-top: 16px; padding: 14px; background: #f0f4f9; border: 1px solid #e0e8f0; border-radius: 6px; color: #333333; font-size: 13px;">
+                        <div style="display: flex; align-items: start; gap: 10px;">
+                          <svg style="flex-shrink: 0; margin-top: 2px;" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#555555" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="12" cy="12" r="10"></circle>
                             <line x1="12" y1="16" x2="12" y2="12"></line>
                             <line x1="12" y1="8" x2="12.01" y2="8"></line>
                           </svg>
-                          <div>El enlace generado para compartir será: <span style="font-weight: 500;">https://useremotion.com/link/${formDataObj.researchId}?respondent={participant_id}</span></div>
+                          <div>El enlace generado para compartir será: <span style="font-weight: 500; color: #111111;">https://useremotion.com/link/${formDataObj.researchId}?respondent={participant_id}</span></div>
                         </div>
                       </div>
                     </div>
                   </div>
                   
                   <!-- Sección de opciones de parámetros -->
-                  <div style="border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden;">
-                    <div style="background: #f9fafb; padding: 12px 16px; border-bottom: 1px solid #e5e7eb;">
-                      <h3 style="margin: 0; font-size: 16px; font-weight: 500;">Opciones de parámetros</h3>
+                  <div style="border: 1px solid #eaeaea; border-radius: 12px; overflow: hidden; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                    <div style="background: #f5f5f5; padding: 16px 20px; border-bottom: 1px solid #eaeaea;">
+                      <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #111111;">Opciones de parámetros</h3>
                     </div>
-                    <div style="padding: 16px;">
+                    <div style="padding: 20px;">
                       <ul style="margin: 0; padding: 0; list-style: none;">
-                        <li style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
-                          <span>Guardar parámetros</span>
-                          <span style="font-weight: 500; color: ${formDataObj.parameterOptions.parameters ? '#047857' : '#dc2626'};">${formDataObj.parameterOptions.parameters ? 'Sí' : 'No'}</span>
+                        <li style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0;">
+                          <span style="color: #333333; font-size: 14px;">Guardar parámetros</span>
+                          <span style="font-weight: 500; font-size: 14px; color: ${formDataObj.parameterOptions.parameters ? '#2e7d32' : '#c62828'};">${formDataObj.parameterOptions.parameters ? 'Sí' : 'No'}</span>
                         </li>
-                        <li style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
-                          <span>Separados por comas</span>
-                          <span style="font-weight: 500; color: ${formDataObj.parameterOptions.separated ? '#047857' : '#dc2626'};">${formDataObj.parameterOptions.separated ? 'Sí' : 'No'}</span>
+                        <li style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0;">
+                          <span style="color: #333333; font-size: 14px;">Separados por comas</span>
+                          <span style="font-weight: 500; font-size: 14px; color: ${formDataObj.parameterOptions.separated ? '#2e7d32' : '#c62828'};">${formDataObj.parameterOptions.separated ? 'Sí' : 'No'}</span>
                         </li>
-                        <li style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
-                          <span>Incluir valores</span>
-                          <span style="font-weight: 500; color: ${formDataObj.parameterOptions.with ? '#047857' : '#dc2626'};">${formDataObj.parameterOptions.with ? 'Sí' : 'No'}</span>
+                        <li style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0;">
+                          <span style="color: #333333; font-size: 14px;">Incluir valores</span>
+                          <span style="font-weight: 500; font-size: 14px; color: ${formDataObj.parameterOptions.with ? '#2e7d32' : '#c62828'};">${formDataObj.parameterOptions.with ? 'Sí' : 'No'}</span>
                         </li>
-                        <li style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
-                          <span>Usar comas</span>
-                          <span style="font-weight: 500; color: ${formDataObj.parameterOptions.comma ? '#047857' : '#dc2626'};">${formDataObj.parameterOptions.comma ? 'Sí' : 'No'}</span>
+                        <li style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0;">
+                          <span style="color: #333333; font-size: 14px;">Usar comas</span>
+                          <span style="font-weight: 500; font-size: 14px; color: ${formDataObj.parameterOptions.comma ? '#2e7d32' : '#c62828'};">${formDataObj.parameterOptions.comma ? 'Sí' : 'No'}</span>
                         </li>
-                        <li style="display: flex; justify-content: space-between; padding: 8px 0;">
-                          <span>Incluir claves</span>
-                          <span style="font-weight: 500; color: ${formDataObj.parameterOptions.keys ? '#047857' : '#dc2626'};">${formDataObj.parameterOptions.keys ? 'Sí' : 'No'}</span>
+                        <li style="display: flex; justify-content: space-between; padding: 10px 0;">
+                          <span style="color: #333333; font-size: 14px;">Incluir claves</span>
+                          <span style="font-weight: 500; font-size: 14px; color: ${formDataObj.parameterOptions.keys ? '#2e7d32' : '#c62828'};">${formDataObj.parameterOptions.keys ? 'Sí' : 'No'}</span>
                         </li>
                       </ul>
                     </div>
@@ -568,28 +607,28 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
                 </div>
               </div>
               
-              <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 16px; color: #166534; font-size: 14px; margin-top: 16px;">
+              <div style="background: #f5f7f5; border: 1px solid #e5eae5; border-radius: 12px; padding: 20px; color: #333333; font-size: 14px; margin-top: 24px;">
                 <div style="display: flex; align-items: start; gap: 12px;">
-                  <svg style="flex-shrink: 0; margin-top: 2px;" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <svg style="flex-shrink: 0; margin-top: 2px;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                     <polyline points="22 4 12 14.01 9 11.01"></polyline>
                   </svg>
                   <div>
-                    <p style="margin: 0 0 8px; font-weight: 500; font-size: 15px;">Resumen de la configuración</p>
-                    <ul style="margin: 0; padding-left: 16px;">
-                      <li style="margin-bottom: 4px;">Se han seleccionado ${Object.values(formDataObj.demographicQuestions).filter(Boolean).length} de 8 preguntas demográficas.</li>
-                      <li style="margin-bottom: 4px;">Los participantes ${formDataObj.linkConfig.allowMobileDevices ? 'podrán' : 'no podrán'} usar dispositivos móviles.</li>
-                      <li style="margin-bottom: 4px;">Se ${formDataObj.linkConfig.trackLocation ? 'rastreará' : 'no rastreará'} la ubicación de los participantes.</li>
-                      ${formDataObj.linkConfig.limitParticipants ? `<li>Se limitará a un máximo de ${formDataObj.linkConfig.participantLimit} participantes.</li>` : '<li>No hay límite en el número de participantes.</li>'}
+                    <p style="margin: 0 0 10px; font-weight: 500; font-size: 15px; color: #333333;">Resumen de la configuración</p>
+                    <ul style="margin: 0; padding-left: 4px; list-style-position: inside;">
+                      <li style="margin-bottom: 6px; color: #444444;">Se han seleccionado ${Object.values(formDataObj.demographicQuestions).filter(Boolean).length} de 8 preguntas demográficas.</li>
+                      <li style="margin-bottom: 6px; color: #444444;">Los participantes ${formDataObj.linkConfig.allowMobileDevices ? 'podrán' : 'no podrán'} usar dispositivos móviles.</li>
+                      <li style="margin-bottom: 6px; color: #444444;">Se ${formDataObj.linkConfig.trackLocation ? 'rastreará' : 'no rastreará'} la ubicación de los participantes.</li>
+                      ${formDataObj.linkConfig.limitParticipants ? `<li style="color: #444444;">Se limitará a un máximo de ${formDataObj.linkConfig.participantLimit} participantes.</li>` : '<li style="color: #444444;">No hay límite en el número de participantes.</li>'}
                     </ul>
                   </div>
                 </div>
               </div>
               
             </div>
-            <div style="padding: 16px 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px;">
-              <button id="cancelJsonAction" style="background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; border-radius: 6px; padding: 8px 16px; font-weight: 500; cursor: pointer;">Cancelar</button>
-              <button id="continueJsonAction" style="background: #3f51b5; color: white; border: none; border-radius: 6px; padding: 8px 16px; font-weight: 500; cursor: pointer;">
+            <div style="padding: 20px 28px; border-top: 1px solid #eaeaea; display: flex; justify-content: flex-end; gap: 16px; background: white;">
+              <button id="cancelJsonAction" style="background: #f5f5f5; color: #333333; border: 1px solid #e0e0e0; border-radius: 8px; padding: 10px 20px; font-weight: 500; cursor: pointer; font-size: 14px; transition: all 0.2s;">Cancelar</button>
+              <button id="continueJsonAction" style="background: #212121; color: white; border: none; border-radius: 8px; padding: 10px 20px; font-weight: 500; cursor: pointer; font-size: 14px; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                 Guardar configuración
               </button>
             </div>
@@ -601,6 +640,39 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       const modalContainer = document.createElement('div');
       modalContainer.innerHTML = modalHtml;
       document.body.appendChild(modalContainer);
+      
+      // Añadir hover effects
+      const closeButton = document.getElementById('closeJsonModal');
+      if (closeButton) {
+        closeButton.addEventListener('mouseover', () => {
+          closeButton.style.backgroundColor = '#f1f1f1';
+          closeButton.style.color = '#333333';
+        });
+        closeButton.addEventListener('mouseout', () => {
+          closeButton.style.backgroundColor = 'transparent';
+          closeButton.style.color = '#555555';
+        });
+      }
+      
+      const cancelButton = document.getElementById('cancelJsonAction');
+      if (cancelButton) {
+        cancelButton.addEventListener('mouseover', () => {
+          cancelButton.style.backgroundColor = '#e9e9e9';
+        });
+        cancelButton.addEventListener('mouseout', () => {
+          cancelButton.style.backgroundColor = '#f5f5f5';
+        });
+      }
+      
+      const continueButton = document.getElementById('continueJsonAction');
+      if (continueButton) {
+        continueButton.addEventListener('mouseover', () => {
+          continueButton.style.backgroundColor = '#000000';
+        });
+        continueButton.addEventListener('mouseout', () => {
+          continueButton.style.backgroundColor = '#212121';
+        });
+      }
       
       // Configurar eventos
       document.getElementById('closeJsonModal')?.addEventListener('click', () => {

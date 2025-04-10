@@ -301,43 +301,79 @@ export const eyeTrackingFixedAPI = {
     
     console.log('[EyeTrackingAPI] Guardando configuración de reclutamiento:', data);
     
-    // Determinar si es creación o actualización
-    const method = data.id ? 'PUT' : 'POST';
-    const url = data.id 
-      ? (API_CONFIG.endpoints.eyeTracking?.RECRUIT_UPDATE || '/eye-tracking/recruit/{id}').replace('{id}', data.id)
-      : (API_CONFIG.endpoints.eyeTracking?.RECRUIT_CREATE || '/eye-tracking/recruit');
-    
     try {
+      // SOLUCIÓN ALTERNATIVA: Volvemos a la ruta original de eye-tracking que sabemos que funciona
+      // Ya que parece que la ruta eye-tracking-recruit no está disponible en el API desplegado
+      
+      const method = 'POST';
+      // Usar la ruta /eye-tracking directamente
+      const url = `/eye-tracking`;
+      
+      console.log(`[EyeTrackingAPI] Cambiando a ruta: ${API_CONFIG.baseURL}${url}`);
+      
+      // Formatear los datos para incluir la información de ruteo
+      const formattedData = {
+        ...data,
+        // Para indicar que es una operación de recruit
+        operation: 'recruit', 
+        action: 'createConfig',
+        researchId: data.researchId,
+        demographicQuestions: data.demographicQuestions,
+        linkConfig: {
+          allowMobileDevices: data.linkConfig.allowMobileDevices || false,
+          trackLocation: data.linkConfig.trackLocation || false,
+          multipleAttempts: data.linkConfig.multipleAttempts || false,
+          limitParticipants: data.linkConfig.limitParticipants || false,
+        },
+        participantLimit: {
+          enabled: data.linkConfig.limitParticipants || false,
+          limit: data.linkConfig.participantLimit || 50
+        },
+        backlinks: data.backlinks,
+        researchUrl: data.researchUrl,
+        parameterOptions: data.parameterOptions
+      };
+      
+      console.log('[EyeTrackingAPI] Método: ', method);
+      console.log('[EyeTrackingAPI] Datos formateados:', formattedData);
+      
       const headers = getAuthHeaders();
       const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
         method,
         headers,
-        body: JSON.stringify(data)
+        body: JSON.stringify(formattedData)
       });
+      
+      // Capturar el texto de respuesta para análisis, incluso si hay error
+      const responseText = await response.text();
+      console.log(`[EyeTrackingAPI] Respuesta (${response.status}): `, responseText);
+      
+      // Intentar parsear como JSON
+      let responseData;
+      try {
+        responseData = JSON.parse(responseText);
+      } catch (e) {
+        console.log('[EyeTrackingAPI] Respuesta no es JSON válido');
+        responseData = { message: responseText };
+      }
       
       if (!response.ok) {
         console.log(`[EyeTrackingAPI] Error en respuesta: ${response.status} ${response.statusText}`);
-        const errorText = await response.text();
         
-        let error;
-        try {
-          error = JSON.parse(errorText);
-        } catch (e) {
-          error = { message: errorText };
-        }
-        
-        throw { 
+        const error = { 
           statusCode: response.status,
-          message: error.message || 'Error desconocido al guardar configuración de reclutamiento',
-          data: error
+          message: responseData.message || 'Error desconocido al guardar configuración de reclutamiento',
+          data: responseData
         };
+        
+        throw error;
       }
       
-      const responseData = await response.json();
-      console.log('[EyeTrackingAPI] Configuración guardada:', responseData);
+      // Si llegamos aquí, la petición fue exitosa
+      console.log('[EyeTrackingAPI] Configuración guardada correctamente:', responseData);
       return responseData;
-    } catch (error) {
-      console.log('[EyeTrackingAPI] Error al guardar:', error);
+    } catch (error: any) {
+      console.error('[EyeTrackingAPI] Error al guardar:', error);
       throw error;
     }
   },
@@ -352,8 +388,11 @@ export const eyeTrackingFixedAPI = {
       throw new Error('Se requiere un ID de investigación para obtener la configuración de reclutamiento');
     }
     
-    const url = (API_CONFIG.endpoints.eyeTracking?.RECRUIT_GET || '/eye-tracking/recruit/research/{researchId}')
+    // Usar la URL con formato correcto (con guión)
+    const url = (API_CONFIG.endpoints.eyeTracking?.RECRUIT_GET_ALT || '/eye-tracking-recruit/research/{researchId}/config')
       .replace('{researchId}', researchId);
+    
+    console.log('[EyeTrackingAPI] Obteniendo configuración usando URL:', `${API_CONFIG.baseURL}${url}`);
     
     try {
       const headers = getAuthHeaders();
@@ -369,6 +408,8 @@ export const eyeTrackingFixedAPI = {
         }
         
         const errorText = await response.text();
+        console.log(`[EyeTrackingAPI] Error texto: ${errorText}`);
+        
         let error;
         try {
           error = JSON.parse(errorText);
