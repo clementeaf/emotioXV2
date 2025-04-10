@@ -3,9 +3,12 @@
 import React from 'react';
 import { CognitiveTaskFormProps } from './types';
 import { useCognitiveTaskForm } from './hooks/useCognitiveTaskForm';
-import { CognitiveTaskHeader } from './components/CognitiveTaskHeader';
-import { CognitiveTaskFooter } from './components/CognitiveTaskFooter';
-import { ErrorModal } from './components/ErrorModal';
+import { 
+  CognitiveTaskHeader,
+  CognitiveTaskFooter,
+  ErrorModal,
+  JsonPreviewModal 
+} from './components';
 import { UI_TEXTS } from './constants';
 import { cn } from '@/lib/utils';
 import { CognitiveTaskFields } from './components/CognitiveTaskFields';
@@ -39,29 +42,22 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
     handleAddQuestion,
     handleRandomizeChange: setRandomizeQuestions,
     handleSave: saveForm,
+    handlePreview,
     validateForm,
     closeModal,
     // Estados para carga de archivos
     isUploading,
     uploadProgress,
     currentFileIndex,
-    totalFiles
-  } = useCognitiveTaskForm(researchId);
+    totalFiles,
+    // Propiedades para el modal JSON
+    showJsonPreview,
+    closeJsonModal,
+    jsonToSend,
+    pendingAction,
+    continueWithAction
+  } = useCognitiveTaskForm(researchId, onSave);
   
-  // Manejo de la acción de guardar
-  const handleSave = () => {
-    // No llamamos a saveForm() directamente, sino al método handleSave del hook
-    // que se encargará de mostrar el modal JSON antes de guardar
-    saveForm();
-    
-    // La función onSave del prop debe llamarse después de que el usuario
-    // confirme en el modal, no aquí directamente
-    if (onSave) {
-      // Este callback lo moveremos al hook
-      onSave(formData);
-    }
-  };
-
   // Mientras carga, mostrar un indicador de carga
   if (isLoading) {
     return (
@@ -116,8 +112,8 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
         completionTimeText="Tiempo estimado de finalización: 5-7 minutos"
         previewButtonText="Vista Previa"
         saveButtonText={isSaving ? "Guardando..." : "Guardar y Continuar"}
-        onPreview={() => {}}
-        onSave={handleSave}
+        onPreview={handlePreview}
+        onSave={saveForm}
         isSaving={isSaving}
         disabled={isLoading || isSaving}
       />
@@ -127,6 +123,16 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
         isOpen={modalVisible}
         onClose={closeModal}
         error={modalError}
+      />
+      
+      {/* Modal para la vista previa del JSON */}
+      <JsonPreviewModal
+        isOpen={showJsonPreview}
+        onClose={closeJsonModal}
+        onContinue={continueWithAction}
+        jsonData={jsonToSend}
+        pendingAction={pendingAction}
+        hasValidationErrors={!!validationErrors && Object.keys(validationErrors).length > 0}
       />
     </div>
   );

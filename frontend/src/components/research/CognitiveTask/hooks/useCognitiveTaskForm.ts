@@ -116,6 +116,9 @@ interface UseCognitiveTaskFormResult {
   // Propiedades del modal JSON
   showJsonPreview: boolean;
   closeJsonModal: () => void;
+  jsonToSend: string;
+  pendingAction: 'save' | 'preview' | null;
+  continueWithAction: () => void;
 }
 
 // Definiciones locales para QUESTION_TYPES
@@ -1141,45 +1144,50 @@ export const useCognitiveTaskForm = (
   }, [formData, researchId]);
 
   // Función para mostrar el modal con JSON
-  const showJsonModal = useCallback((json: any, action: 'save' | 'preview') => {
-    try {
-      // Validar que el JSON sea válido
-      const stringifiedJson = JSON.stringify(json, null, 2);
-      JSON.parse(stringifiedJson); // Verificar que sea un JSON válido
-      
-      if (Object.keys(validationErrors).length > 0) {
-        showModal({
-          title: 'Errores de validación',
-          message: 'Por favor, corrija los errores de validación antes de continuar.',
-          type: 'error'
-        });
-        return;
-      }
-      
-      setJsonToSend(stringifiedJson);
-      setPendingAction(action);
-      setShowJsonPreview(true);
-      
-      console.log(`[useCognitiveTaskForm] Mostrando modal JSON para acción: ${action}`);
-      console.log('[useCognitiveTaskForm] JSON válido:', stringifiedJson);
-    } catch (error) {
-      console.error('[useCognitiveTaskForm] Error al procesar JSON:', error);
-      showModal({
-        title: 'Error al procesar datos',
-        message: 'Los datos no tienen un formato JSON válido. Por favor, revise la estructura de los datos.',
-        type: 'error'
-      });
-    }
-  }, [showModal, validationErrors]);
+  const showJsonModal = (data: any, action: 'save' | 'preview') => {
+    setJsonToSend(JSON.stringify(data, null, 2));
+    setPendingAction(action);
+    setShowJsonPreview(true);
+  };
 
-  // Función para cerrar el modal JSON
-  const closeJsonModal = useCallback(() => {
+  // Cerrar el modal JSON
+  const closeJsonModal = () => {
     setShowJsonPreview(false);
     setPendingAction(null);
-    setJsonToSend('');
+  };
+
+  // Continuar con la acción después de mostrar JSON
+  const continueWithAction = () => {
+    closeJsonModal();
     
-    console.log('[useCognitiveTaskForm] Modal JSON cerrado');
-  }, []);
+    if (pendingAction === 'save') {
+      try {
+        // Asegurarse de que el objeto tiene la estructura correcta
+        const dataToSave = JSON.parse(jsonToSend);
+        
+        // Validar el objeto antes de guardarlo
+        if (!dataToSave.questions || !Array.isArray(dataToSave.questions)) {
+          console.error('Error: El objeto no tiene un array de preguntas válido');
+          toast.error('Datos incorrectos. No se encontró información de preguntas.');
+          return;
+        }
+        
+        // Si todo está bien, llamar a la mutación para guardar
+        mutate(dataToSave);
+        
+        // Notificar al padre (si existe el callback)
+        if (onSave) {
+          onSave(dataToSave);
+        }
+      } catch (error) {
+        console.error('Error al procesar JSON:', error);
+        toast.error('Error al procesar los datos del formulario');
+      }
+    } else if (pendingAction === 'preview') {
+      // La vista previa ahora se maneja en el componente JsonPreviewModal
+      console.log('Acción de vista previa completada');
+    }
+  };
 
   // Función para renderizar el contenido específico de una pregunta en la vista previa
   const renderQuestionContent = (question: any) => {
@@ -1452,42 +1460,7 @@ export const useCognitiveTaskForm = (
     }
   }, [isAuthenticated, showModal, validateForm, formData, showJsonModal, researchId, validationErrors, toast]);
 
-  // Función para continuar con la acción después de mostrar el JSON
-  const continueWithAction = useCallback(() => {
-    closeJsonModal();
-    
-    if (pendingAction === 'save') {
-      // Ejecutar la mutación para guardar
-      try {
-        // Parsear el JSON que se mostró en el modal
-        const dataToSaveObj = JSON.parse(jsonToSend);
-        
-        // Usar la API correcta para el guardado
-        mutate(dataToSaveObj);
-      } catch (error) {
-        console.error('[useCognitiveTaskForm] Error al procesar JSON:', error);
-        toast.error('Error al procesar los datos del formulario');
-        
-        // Mostrar error detallado
-        showModal({
-          title: 'Error de procesamiento',
-          message: error instanceof Error ? error.message : 'Ocurrió un error inesperado al procesar los datos',
-          type: 'error'
-        });
-      }
-    } else if (pendingAction === 'preview') {
-      // Mostrar mensaje de previsualización
-      showModal({
-        title: 'Información',
-        message: SUCCESS_MESSAGES_EXTENDED.PREVIEW_COMING_SOON,
-        type: 'info'
-      });
-      
-      toast.success(SUCCESS_MESSAGES_EXTENDED.PREVIEW_COMING_SOON);
-    }
-  }, [jsonToSend, pendingAction, mutate, showModal, closeJsonModal]);
-
-  // Modificar la función de previsualización para incluir todas las preguntas
+  // Función para renderizar el contenido específico de una pregunta en la vista previa
   const handlePreview = useCallback(() => {
     if (!validateForm()) {
       // Notificar errores de validación
@@ -1523,649 +1496,6 @@ export const useCognitiveTaskForm = (
     }));
   }, []);
 
-  // Crear el elemento modal de JSON para mostrar el código
-  useEffect(() => {
-    // Solo crear el modal si se va a mostrar
-    if (showJsonPreview && jsonToSend) {
-      // Verificar si hay errores de validación
-      const hasErrors = Object.keys(validationErrors).length > 0;
-      
-      // Verificar si hay errores de validación nuevamente
-      // en lugar de confiar en validationErrors que podría estar desactualizado
-      const currentErrors: Record<string, string> = {};
-      
-      // Validaciones básicas para determinar si el formulario tiene errores
-      // Esto es una versión simplificada de validateForm() para el modal
-      const data = JSON.parse(jsonToSend);
-      
-      // Solo verificamos si hay preguntas y si tienen títulos para simplificar
-      const hasQuestions = data.questions && data.questions.length > 0;
-      const hasInvalidQuestions = hasQuestions && data.questions.some(
-        (q: any) => !q.title || q.title.trim() === ''
-      );
-      
-      // Determinar si tiene errores críticos que impidan el envío
-      const hasValidationErrors = hasErrors || !hasQuestions || hasInvalidQuestions;
-      
-      // Función para determinar si una pregunta ha sido modificada desde su estado predeterminado
-      const isQuestionModified = (question: any) => {
-        // Buscar la pregunta correspondiente en DEFAULT_QUESTIONS
-        const defaultQuestion = DEFAULT_QUESTIONS.find(q => q.id === question.id);
-        
-        // Si no existe en las predeterminadas, es nueva (modificada)
-        if (!defaultQuestion) return true;
-        
-        // Comprobar si el título ha cambiado
-        if (defaultQuestion.title !== question.title) return true;
-        
-        // Comprobar si tiene archivos (las preguntas predeterminadas no tienen)
-        if (question.files && question.files.length > 0) return true;
-        
-        // Comprobar si las opciones han cambiado (para preguntas de elección)
-        if (question.choices && defaultQuestion.choices) {
-          // Si el número de opciones es diferente, está modificada
-          if (question.choices.length !== defaultQuestion.choices.length) return true;
-          
-          // Verificar cada opción
-          for (let i = 0; i < question.choices.length; i++) {
-            if (question.choices[i].text !== defaultQuestion.choices[i].text) return true;
-          }
-        }
-        
-        // Para escala lineal, comprobar la configuración de la escala
-        if (question.type === 'linear_scale' && question.scaleConfig && defaultQuestion.scaleConfig) {
-          if (
-            question.scaleConfig.startValue !== defaultQuestion.scaleConfig.startValue ||
-            question.scaleConfig.endValue !== defaultQuestion.scaleConfig.endValue ||
-            question.scaleConfig.startLabel !== defaultQuestion.scaleConfig.startLabel ||
-            question.scaleConfig.endLabel !== defaultQuestion.scaleConfig.endLabel
-          ) {
-            return true;
-          }
-        }
-        
-        // Si no se detectó ningún cambio, no está modificada
-        return false;
-      };
-      
-      // Función para renderizar una pregunta en formato HTML
-      const renderQuestion = (question: any) => {
-        const isModified = isQuestionModified(question);
-        const colorClass = isModified ? 'blue' : 'red';
-        
-        // Determinar si la pregunta requiere archivos
-        const requiresFiles = ['navigation_flow', 'preference_test'].includes(question.type);
-        const hasFiles = question.files && question.files.length > 0;
-        
-        // Función para renderizar los booleanos de forma atractiva
-        const renderBoolean = (value: boolean) => {
-          return `<span class="boolean-value ${value ? 'boolean-true' : 'boolean-false'}">${value ? '✓ Sí' : '✗ No'}</span>`;
-        };
-        
-        // Función para renderizar el tipo de pregunta
-        const getQuestionTypeLabel = (type: string) => {
-          const typeMap: Record<string, string> = {
-            'short_text': 'Texto Corto',
-            'long_text': 'Texto Largo',
-            'single_choice': 'Opción Única',
-            'multiple_choice': 'Opción Múltiple',
-            'linear_scale': 'Escala Lineal',
-            'ranking': 'Ranking',
-            'navigation_flow': 'Flujo de Navegación',
-            'preference_test': 'Prueba de Preferencia'
-          };
-          return typeMap[type] || type;
-        };
-        
-        // Renderizar el contenido específico según el tipo de pregunta
-        let questionContent = '';
-        
-        // Para preguntas de elección
-        if (['single_choice', 'multiple_choice', 'ranking'].includes(question.type) && question.choices) {
-          questionContent += `<div class="question-choices">
-            <h4>Opciones:</h4>
-            <ul>
-              ${question.choices.map((choice: any, index: number) => `
-                <li>
-                  <strong>${index + 1}.</strong> ${choice.text}
-                  ${choice.isQualify ? ' <span class="tag qualify">Califica</span>' : ''}
-                  ${choice.isDisqualify ? ' <span class="tag disqualify">Descalifica</span>' : ''}
-                </li>
-              `).join('')}
-            </ul>
-          </div>`;
-        }
-        
-        // Para escala lineal
-        if (question.type === 'linear_scale' && question.scaleConfig) {
-          questionContent += `<div class="question-scale">
-            <h4>Configuración de escala:</h4>
-            <div class="scale-visualization">
-              <div class="scale-start">${question.scaleConfig.startLabel || ''} (${question.scaleConfig.startValue})</div>
-              <div class="scale-line">
-                ${Array.from({ length: question.scaleConfig.endValue - question.scaleConfig.startValue + 1 }, (_, i) => 
-                  `<div class="scale-point">${question.scaleConfig.startValue + i}</div>`
-                ).join('')}
-              </div>
-              <div class="scale-end">${question.scaleConfig.endLabel || ''} (${question.scaleConfig.endValue})</div>
-            </div>
-          </div>`;
-        }
-        
-        // Para preguntas con archivos
-        if (['navigation_flow', 'preference_test'].includes(question.type) && question.files && question.files.length > 0) {
-          // Comprobar si es preference_test y tiene menos de 2 imágenes
-          let warningMessage = '';
-          if (question.type === 'preference_test' && question.files.length < 2) {
-            warningMessage = `
-              <div class="incomplete-preference">
-                ⚠️ Advertencia: Esta prueba de preferencia tiene ${question.files.length} imagen(es). 
-                Idealmente debería tener 2 imágenes para comparar.
-              </div>
-            `;
-          }
-
-          questionContent += `<div class="question-files">
-            <h4>Archivos (${question.files.length}):</h4>
-            <div class="files-grid">
-              ${question.files.map((file: any) => `
-                <div class="file-card">
-                  <div class="file-image-container">
-                    ${file.url ? `<img src="${file.url}" alt="${file.name}" class="file-image" />` : ''}
-                  </div>
-                  <div class="file-info">
-                    <div class="file-name">${file.name}</div>
-                    <div class="file-meta">${(file.size / 1024).toFixed(2)} KB</div>
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-            ${warningMessage}
-          </div>`;
-        } else if (requiresFiles && !hasFiles) {
-          // Mostrar mensaje si la pregunta requiere archivos pero no tiene ninguno
-          questionContent += `<div class="file-missing-warning">
-            <p>⚠️ Esta pregunta requiere archivos, pero no se ha subido ninguno.</p>
-            <p>La pregunta será omitida al guardar si es obligatoria.</p>
-          </div>`;
-        }
-        
-        // HTML para la pregunta completa
-        return `
-          <div class="question-card question-${colorClass}">
-            <div class="question-header">
-              <div class="question-id" data-id="${question.id}">ID: ${question.id}</div>
-              <div class="question-type">
-                Tipo: ${getQuestionTypeLabel(question.type)}
-                ${requiresFiles ? `<span class="requires-files-tag">${hasFiles ? '✓' : '⚠️'} Requiere imágenes</span>` : ''}
-              </div>
-            </div>
-            <div class="question-body">
-              <h3 class="question-title">${question.title}</h3>
-              ${questionContent}
-            </div>
-            <div class="question-footer">
-              <div class="question-properties">
-                <div class="property">
-                  <span class="property-label">Requerido:</span> 
-                  ${renderBoolean(question.required)}
-                </div>
-                <div class="property">
-                  <span class="property-label">Mostrar condicionalmente:</span> 
-                  ${renderBoolean(question.showConditionally)}
-                </div>
-                <div class="property">
-                  <span class="property-label">Marco de dispositivo:</span> 
-                  ${renderBoolean(question.deviceFrame)}
-                </div>
-              </div>
-            </div>
-          </div>
-        `;
-      };
-      
-      // Generar HTML para todas las preguntas
-      const questionsHtml = data.questions.map(renderQuestion).join('');
-      
-      // CSS para el modal de vista previa - añadir estilos para navegación
-      const modalStyles = `
-        <style>
-          .questions-preview {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            padding-top: 15px;
-          }
-          .question-card {
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            overflow: hidden;
-            background: white;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            scroll-margin-top: 100px; /* Para el scroll automático */
-          }
-          .question-blue {
-            border-left: 4px solid #3f51b5;
-          }
-          .question-red {
-            border-left: 4px solid #f44336;
-          }
-          .question-header {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 15px;
-            background: #f5f5f5;
-            border-bottom: 1px solid #e0e0e0;
-          }
-          .question-id {
-            font-weight: bold;
-            color: #757575;
-          }
-          .question-type {
-            color: #616161;
-            font-style: italic;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 5px;
-          }
-          .requires-files-tag {
-            font-size: 11px;
-            padding: 2px 6px;
-            border-radius: 10px;
-            background: #f9f9f9;
-            border: 1px solid #e0e0e0;
-            color: #616161;
-            font-style: normal;
-            white-space: nowrap;
-          }
-          .question-body {
-            padding: 15px;
-          }
-          .question-title {
-            margin: 0 0 15px 0;
-            font-size: 18px;
-            color: #212121;
-          }
-          .question-footer {
-            padding: 10px 15px;
-            background: #fafafa;
-            border-top: 1px solid #e0e0e0;
-          }
-          .question-properties {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-          }
-          .property {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-          }
-          .property-label {
-            font-weight: 500;
-            color: #616161;
-          }
-          .boolean-value {
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: bold;
-          }
-          .boolean-true {
-            background: #e8f5e9;
-            color: #2e7d32;
-          }
-          .boolean-false {
-            background: #ffebee;
-            color: #c62828;
-          }
-          .question-choices ul {
-            padding-left: 20px;
-            margin: 10px 0;
-          }
-          .question-choices li {
-            margin-bottom: 8px;
-          }
-          .tag {
-            font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 10px;
-            font-weight: bold;
-          }
-          .qualify {
-            background: #e3f2fd;
-            color: #1565c0;
-          }
-          .disqualify {
-            background: #ffebee;
-            color: #c62828;
-          }
-          .files-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-top: 10px;
-          }
-          .file-card {
-            width: 200px;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            overflow: hidden;
-            background: white;
-          }
-          .file-image-container {
-            height: 150px;
-            overflow: hidden;
-            background: #f5f5f5;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          }
-          .file-image {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-          }
-          .file-info {
-            padding: 10px;
-          }
-          .file-name {
-            font-weight: 500;
-            font-size: 14px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-          }
-          .file-meta {
-            margin-top: 4px;
-            font-size: 12px;
-            color: #757575;
-          }
-          .scale-visualization {
-            margin: 15px 0;
-          }
-          .scale-line {
-            display: flex;
-            justify-content: space-between;
-            margin: 10px 0;
-            position: relative;
-            height: 30px;
-            background: #f5f5f5;
-            border-radius: 15px;
-          }
-          .scale-point {
-            position: relative;
-            padding: 5px 8px;
-            background: #e0e0e0;
-            border-radius: 50%;
-            text-align: center;
-            font-weight: bold;
-          }
-          .scale-start, .scale-end {
-            font-size: 14px;
-            color: #616161;
-          }
-          .color-legend {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 15px;
-          }
-          .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-          }
-          .color-box {
-            width: 16px;
-            height: 16px;
-            border-radius: 3px;
-          }
-          .blue-box {
-            background: #3f51b5;
-          }
-          .red-box {
-            background: #f44336;
-          }
-          .yellow-box {
-            background: #ffc107;
-          }
-          /* Estilos específicos para preference_test */
-          .preference-test-container {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-          }
-          .preference-test-label {
-            font-weight: 500;
-            color: #616161;
-          }
-          /* Imagen resaltada cuando está seleccionada */
-          .file-card.selected {
-            border: 2px solid #3f51b5;
-            box-shadow: 0 0 5px rgba(63, 81, 181, 0.5);
-          }
-          /* Estilo para cuando hay menos de 2 imágenes en preference_test */
-          .incomplete-preference {
-            background-color: #fff8e1;
-            border: 1px solid #ffd54f;
-            border-radius: 4px;
-            padding: 8px 12px;
-            margin-top: 10px;
-            color: #ef6c00;
-            font-size: 13px;
-          }
-          /* Estilo para advertencia de archivos faltantes */
-          .file-missing-warning {
-            background-color: #ffebee;
-            border: 1px solid #ef9a9a;
-            border-radius: 4px;
-            padding: 10px 15px;
-            margin-top: 10px;
-            color: #c62828;
-          }
-          .file-missing-warning p {
-            margin: 5px 0;
-          }
-          /* Estilos para la navegación de preguntas */
-          .question-navigation {
-            background: #f5f7fa;
-            padding: 12px 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            border: 1px solid #e0e0e0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-          }
-          .question-nav-buttons {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin-top: 8px;
-          }
-          .nav-button {
-            background: #ffffff;
-            border: 1px solid #d1d5db;
-            border-radius: 4px;
-            padding: 5px 10px;
-            font-size: 12px;
-            color: #374151;
-            cursor: pointer;
-            transition: all 0.2s;
-          }
-          .nav-button:hover {
-            background: #f3f4f6;
-          }
-          .nav-button.active {
-            background: #3f51b5;
-            color: white;
-            border-color: #3f51b5;
-          }
-        </style>
-      `;
-      
-      // Crear HTML para el modal
-      const modalHtml = `
-        <div id="jsonPreviewModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999;">
-          <div style="background: white; border-radius: 8px; max-width: 95%; width: 900px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 4px 20px rgba(0,0,0,0.2); overflow: hidden;">
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid #e5e7eb;">
-              <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Vista previa del formulario</h2>
-              <button id="closeJsonModal" style="background: none; border: none; cursor: pointer; font-size: 20px; color: #6b7280;">&times;</button>
-            </div>
-            
-            <div style="padding: 24px; overflow-y: auto; flex-grow: 1; max-height: calc(90vh - 150px);">
-              ${hasValidationErrors ? `
-                <div style="background-color: #fff5f5; color: #e53e3e; padding: 12px; border: 1px solid #e53e3e; border-radius: 6px; margin-bottom: 16px;">
-                  <p style="margin: 0; font-weight: 500;">⚠️ Advertencia: El formulario tiene errores de validación</p>
-                  <p style="margin: 6px 0 0; font-size: 14px;">Este formulario contiene errores que deben corregirse antes de continuar.</p>
-                </div>
-              ` : ''}
-              
-              <div class="color-legend">
-                <div class="legend-item">
-                  <div class="color-box blue-box"></div>
-                  <span>Pregunta modificada</span>
-                </div>
-                <div class="legend-item">
-                  <div class="color-box red-box"></div>
-                  <span>Pregunta sin modificar</span>
-                </div>
-                <div class="legend-item">
-                  <div class="color-box yellow-box"></div>
-                  <span>Pregunta que no se enviará (sin archivos)</span>
-                </div>
-              </div>
-              
-              <p style="margin: 0 0 16px; color: #6b7280; font-size: 14px;">
-                Esta es una vista previa del formulario que se enviará. Revise los datos antes de continuar.
-              </p>
-              
-              <!-- Índice de navegación para las preguntas -->
-              <div class="question-navigation">
-                <strong>Ir a pregunta:</strong>
-                <div class="question-nav-buttons">
-                  ${data.questions.map((q: any, index: number) => `
-                    <button class="nav-button" data-question="${q.id}">
-                      ${q.id}
-                    </button>
-                  `).join('')}
-                </div>
-              </div>
-              
-              <div class="questions-preview">
-                ${questionsHtml}
-              </div>
-              
-              <div style="margin-top: 20px;">
-                <button id="showRawJson" style="background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; border-radius: 6px; padding: 8px 16px; font-weight: 500; cursor: pointer;">Ver JSON</button>
-                <div id="jsonContent" style="display: none; margin-top: 15px;">
-                  <pre style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; overflow: auto; max-height: 300px; font-family: monospace; font-size: 14px; white-space: pre-wrap; word-break: break-word;">${jsonToSend.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
-                </div>
-              </div>
-            </div>
-            
-            <div style="padding: 16px 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px;">
-              <button id="cancelJsonAction" style="background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; border-radius: 6px; padding: 8px 16px; font-weight: 500; cursor: pointer;">Cerrar</button>
-              ${!hasValidationErrors ? `
-                <button id="continueJsonAction" style="background: #3f51b5; color: white; border: none; border-radius: 6px; padding: 8px 16px; font-weight: 500; cursor: pointer;">
-                  ${pendingAction === 'save' ? 'Guardar' : 'Previsualizar'}
-                </button>
-              ` : ''}
-            </div>
-          </div>
-        </div>
-        ${modalStyles}
-      `;
-      
-      // Crear elemento en el DOM
-      const modalContainer = document.createElement('div');
-      modalContainer.innerHTML = modalHtml;
-      document.body.appendChild(modalContainer);
-      
-      // Configurar eventos
-      document.getElementById('closeJsonModal')?.addEventListener('click', () => {
-        document.body.removeChild(modalContainer);
-        closeJsonModal();
-      });
-      
-      document.getElementById('cancelJsonAction')?.addEventListener('click', () => {
-        document.body.removeChild(modalContainer);
-        closeJsonModal();
-      });
-      
-      // Configurar los botones de navegación
-      const navButtons = document.querySelectorAll('.nav-button');
-      navButtons.forEach(button => {
-        button.addEventListener('click', (e) => {
-          const questionId = (e.currentTarget as HTMLElement).getAttribute('data-question');
-          if (questionId) {
-            // Buscar la pregunta correspondiente
-            const questionElement = document.querySelector(`.question-card:has([data-id="${questionId}"])`);
-            
-            // Si no funciona el selector :has en algunos navegadores, usar esta alternativa
-            const allQuestions = document.querySelectorAll('.question-card');
-            let targetQuestion = null;
-            allQuestions.forEach(q => {
-              if (q.querySelector(`[data-id="${questionId}"]`)) {
-                targetQuestion = q;
-              }
-            });
-            
-            // Scroll a la pregunta
-            const elementToScroll = questionElement || targetQuestion;
-            if (elementToScroll) {
-              elementToScroll.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              
-              // Actualizar el botón activo
-              navButtons.forEach(btn => btn.classList.remove('active'));
-              (e.currentTarget as HTMLElement).classList.add('active');
-            }
-          }
-        });
-      });
-      
-      // Toggle para mostrar/ocultar el JSON crudo
-      document.getElementById('showRawJson')?.addEventListener('click', () => {
-        const jsonContent = document.getElementById('jsonContent');
-        const button = document.getElementById('showRawJson');
-        if (jsonContent && button) {
-          if (jsonContent.style.display === 'none') {
-            jsonContent.style.display = 'block';
-            button.textContent = 'Ocultar JSON';
-          } else {
-            jsonContent.style.display = 'none';
-            button.textContent = 'Ver JSON';
-          }
-        }
-      });
-      
-      // Solo agregar el evento al botón "continuar" si no hay errores de validación
-      if (!hasValidationErrors) {
-        document.getElementById('continueJsonAction')?.addEventListener('click', () => {
-          document.body.removeChild(modalContainer);
-          continueWithAction();
-        });
-      }
-      
-      // También permitir cerrar haciendo clic fuera del modal
-      modalContainer.addEventListener('click', (e) => {
-        if (e.target === modalContainer.firstChild) {
-          document.body.removeChild(modalContainer);
-          closeJsonModal();
-        }
-      });
-      
-      // Limpiar al desmontar
-      return () => {
-        if (document.body.contains(modalContainer)) {
-          document.body.removeChild(modalContainer);
-        }
-      };
-    }
-  }, [showJsonPreview, jsonToSend, pendingAction, continueWithAction, closeJsonModal, validationErrors]);
-
   return {
     formData,
     cognitiveTaskId,
@@ -2200,9 +1530,12 @@ export const useCognitiveTaskForm = (
     closeModal,
     initializeDefaultQuestions,
     
-    // Nuevas propiedades para el modal JSON
+    // Propiedades para el modal JSON
     showJsonPreview,
-    closeJsonModal
+    closeJsonModal,
+    jsonToSend,
+    pendingAction,
+    continueWithAction
   };
 };
 
