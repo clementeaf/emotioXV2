@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/providers/AuthProvider';
 import { 
   EyeTrackingRecruitConfig, 
@@ -11,9 +11,11 @@ import {
   DemographicQuestionKey,
   LinkConfigKey,
   ParameterOptionKey,
-  BacklinkKey
+  BacklinkKey,
+  EyeTrackingRecruitRequest
 } from '@/shared/interfaces/eyeTracking';
-import { eyeTrackingFixedAPI } from '@/lib/eye-tracking-api';
+import API_CONFIG from '@/config/api.config';
+import { eyeTrackingFixedAPI } from "@/lib/eye-tracking-api";
 
 // Interfaces
 interface UseEyeTrackingRecruitProps {
@@ -38,10 +40,8 @@ interface EyeTrackingRecruitFormData {
     allowMobileDevices: boolean;
     trackLocation: boolean;
     multipleAttempts: boolean;
-  };
-  participantLimit: {
-    enabled: boolean;
-    limit: number;
+    limitParticipants: boolean;
+    participantLimit: number;
   };
   backlinks: {
     complete: string;
@@ -136,7 +136,9 @@ const DEFAULT_CONFIG: Omit<EyeTrackingRecruitConfig, 'researchId'> = {
   linkConfig: {
     allowMobileDevices: false,
     trackLocation: true,
-    multipleAttempts: false
+    multipleAttempts: false,
+    limitParticipants: true,
+    participantLimit: 50
   },
   participantLimit: {
     enabled: true,
@@ -225,8 +227,8 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
           .then(() => {
             toast.success('Configuración guardada correctamente');
             setSaving(false);
-            // Invalida las consultas para recargar datos
-            queryClient.invalidateQueries({ queryKey: ['eyeTrackingRecruitConfig', researchId] });
+            // Invalidar las consultas para recargar datos
+            queryClient.invalidateQueries({ queryKey: ['eyeTrackingRecruit', researchId] });
           })
           .catch((error: any) => {
             console.error('Error al guardar configuración:', error);
@@ -292,9 +294,9 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   const setLimitParticipants = useCallback((value: boolean) => {
     setFormData(prevData => ({
       ...prevData,
-      participantLimit: {
-        ...prevData.participantLimit,
-        enabled: value
+      linkConfig: {
+        ...prevData.linkConfig,
+        limitParticipants: value
       }
     }));
   }, []);
@@ -302,9 +304,9 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   const setParticipantLimit = useCallback((value: number) => {
     setFormData(prevData => ({
       ...prevData,
-      participantLimit: {
-        ...prevData.participantLimit,
-        limit: value
+      linkConfig: {
+        ...prevData.linkConfig,
+        participantLimit: value
       }
     }));
   }, []);
@@ -329,7 +331,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     }
     
     // Validaciones adicionales
-    if (formData.participantLimit.enabled && formData.participantLimit.limit <= 0) {
+    if (formData.linkConfig.limitParticipants && formData.linkConfig.participantLimit <= 0) {
       toast.error('El límite de participantes debe ser mayor a 0');
       return;
     }
@@ -381,24 +383,214 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   useEffect(() => {
     // Solo crear el modal si se va a mostrar
     if (showJsonPreview && jsonToSend) {
+      // Traducir los nombres de las propiedades para mostrar texto amigable
+      const formDataObj = JSON.parse(jsonToSend);
+      
       // Crear HTML para el modal
       const modalHtml = `
         <div id="jsonPreviewModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999;">
-          <div style="background: white; border-radius: 8px; max-width: 90%; width: 800px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 4px 20px rgba(0,0,0,0.2); overflow: hidden;">
+          <div style="background: white; border-radius: 8px; max-width: 90%; width: 900px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 4px 20px rgba(0,0,0,0.2); overflow: hidden;">
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid #e5e7eb;">
-              <h2 style="margin: 0; font-size: 18px; font-weight: 600;">JSON a enviar</h2>
+              <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Confirmar configuración</h2>
               <button id="closeJsonModal" style="background: none; border: none; cursor: pointer; font-size: 20px; color: #6b7280;">&times;</button>
             </div>
             <div style="padding: 24px; overflow-y: auto; flex-grow: 1;">
               <p style="margin: 0 0 16px; color: #6b7280; font-size: 14px;">
-                Este es el JSON que se enviará al servidor. Revise los datos antes de continuar.
+                Por favor revise la siguiente configuración antes de guardar
               </p>
-              <pre style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; overflow: auto; max-height: 400px; font-family: monospace; font-size: 14px; white-space: pre-wrap; word-break: break-word;">${jsonToSend.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+              
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+                <!-- Columna izquierda -->
+                <div>
+                  <!-- Sección de preguntas demográficas -->
+                  <div style="margin-bottom: 20px; border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden;">
+                    <div style="background: #f9fafb; padding: 12px 16px; border-bottom: 1px solid #e5e7eb;">
+                      <h3 style="margin: 0; font-size: 16px; font-weight: 500;">Preguntas demográficas</h3>
+                    </div>
+                    <div style="padding: 16px;">
+                      <ul style="margin: 0; padding: 0; list-style: none;">
+                        <li style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
+                          <span>Edad</span>
+                          <span style="font-weight: 500; color: ${formDataObj.demographicQuestions.age ? '#047857' : '#dc2626'};">${formDataObj.demographicQuestions.age ? 'Habilitado' : 'Deshabilitado'}</span>
+                        </li>
+                        <li style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
+                          <span>País</span>
+                          <span style="font-weight: 500; color: ${formDataObj.demographicQuestions.country ? '#047857' : '#dc2626'};">${formDataObj.demographicQuestions.country ? 'Habilitado' : 'Deshabilitado'}</span>
+                        </li>
+                        <li style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
+                          <span>Género</span>
+                          <span style="font-weight: 500; color: ${formDataObj.demographicQuestions.gender ? '#047857' : '#dc2626'};">${formDataObj.demographicQuestions.gender ? 'Habilitado' : 'Deshabilitado'}</span>
+                        </li>
+                        <li style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
+                          <span>Nivel educativo</span>
+                          <span style="font-weight: 500; color: ${formDataObj.demographicQuestions.educationLevel ? '#047857' : '#dc2626'};">${formDataObj.demographicQuestions.educationLevel ? 'Habilitado' : 'Deshabilitado'}</span>
+                        </li>
+                        <li style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
+                          <span>Ingresos familiares</span>
+                          <span style="font-weight: 500; color: ${formDataObj.demographicQuestions.householdIncome ? '#047857' : '#dc2626'};">${formDataObj.demographicQuestions.householdIncome ? 'Habilitado' : 'Deshabilitado'}</span>
+                        </li>
+                        <li style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
+                          <span>Situación laboral</span>
+                          <span style="font-weight: 500; color: ${formDataObj.demographicQuestions.employmentStatus ? '#047857' : '#dc2626'};">${formDataObj.demographicQuestions.employmentStatus ? 'Habilitado' : 'Deshabilitado'}</span>
+                        </li>
+                        <li style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
+                          <span>Horas diarias online</span>
+                          <span style="font-weight: 500; color: ${formDataObj.demographicQuestions.dailyHoursOnline ? '#047857' : '#dc2626'};">${formDataObj.demographicQuestions.dailyHoursOnline ? 'Habilitado' : 'Deshabilitado'}</span>
+                        </li>
+                        <li style="display: flex; justify-content: space-between; padding: 8px 0;">
+                          <span>Competencia técnica</span>
+                          <span style="font-weight: 500; color: ${formDataObj.demographicQuestions.technicalProficiency ? '#047857' : '#dc2626'};">${formDataObj.demographicQuestions.technicalProficiency ? 'Habilitado' : 'Deshabilitado'}</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                  
+                  <!-- Sección de configuración de enlace -->
+                  <div style="margin-bottom: 20px; border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden;">
+                    <div style="background: #f9fafb; padding: 12px 16px; border-bottom: 1px solid #e5e7eb;">
+                      <h3 style="margin: 0; font-size: 16px; font-weight: 500;">Configuración del enlace</h3>
+                    </div>
+                    <div style="padding: 16px;">
+                      <ul style="margin: 0; padding: 0; list-style: none;">
+                        <li style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
+                          <span>Permitir dispositivos móviles</span>
+                          <span style="font-weight: 500; color: ${formDataObj.linkConfig.allowMobileDevices ? '#047857' : '#dc2626'};">${formDataObj.linkConfig.allowMobileDevices ? 'Sí' : 'No'}</span>
+                        </li>
+                        <li style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
+                          <span>Rastrear ubicación</span>
+                          <span style="font-weight: 500; color: ${formDataObj.linkConfig.trackLocation ? '#047857' : '#dc2626'};">${formDataObj.linkConfig.trackLocation ? 'Sí' : 'No'}</span>
+                        </li>
+                        <li style="display: flex; justify-content: space-between; padding: 8px 0;">
+                          <span>Intentos múltiples</span>
+                          <span style="font-weight: 500; color: ${formDataObj.linkConfig.multipleAttempts ? '#047857' : '#dc2626'};">${formDataObj.linkConfig.multipleAttempts ? 'Sí' : 'No'}</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                  
+                  <!-- Sección de límite de participantes -->
+                  <div style="border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden;">
+                    <div style="background: #f9fafb; padding: 12px 16px; border-bottom: 1px solid #e5e7eb;">
+                      <h3 style="margin: 0; font-size: 16px; font-weight: 500;">Límite de participantes</h3>
+                    </div>
+                    <div style="padding: 16px;">
+                      <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
+                        <span>Limitar participantes</span>
+                        <span style="font-weight: 500; color: ${formDataObj.linkConfig.limitParticipants ? '#047857' : '#6b7280'};">${formDataObj.linkConfig.limitParticipants ? 'Sí' : 'No'}</span>
+                      </div>
+                      ${formDataObj.linkConfig.limitParticipants ? `
+                      <div style="display: flex; justify-content: space-between; padding: 8px 0;">
+                        <span>Límite máximo</span>
+                        <span style="font-weight: 500; color: #1f2937;">${formDataObj.linkConfig.participantLimit} participantes</span>
+                      </div>
+                      ` : ''}
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Columna derecha -->
+                <div>
+                  <!-- Sección de enlaces de retorno -->
+                  <div style="margin-bottom: 20px; border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden;">
+                    <div style="background: #f9fafb; padding: 12px 16px; border-bottom: 1px solid #e5e7eb;">
+                      <h3 style="margin: 0; font-size: 16px; font-weight: 500;">Enlaces de retorno</h3>
+                    </div>
+                    <div style="padding: 16px;">
+                      <ul style="margin: 0; padding: 0; list-style: none;">
+                        <li style="padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
+                          <div style="margin-bottom: 4px; font-weight: 500; color: #1f2937;">Completo</div>
+                          <div style="font-family: monospace; font-size: 13px; word-break: break-all; color: #4b5563; background: #f9fafb; padding: 6px; border-radius: 4px;">${formDataObj.backlinks.complete}</div>
+                        </li>
+                        <li style="padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
+                          <div style="margin-bottom: 4px; font-weight: 500; color: #1f2937;">Descalificado</div>
+                          <div style="font-family: monospace; font-size: 13px; word-break: break-all; color: #4b5563; background: #f9fafb; padding: 6px; border-radius: 4px;">${formDataObj.backlinks.disqualified}</div>
+                        </li>
+                        <li style="padding: 8px 0;">
+                          <div style="margin-bottom: 4px; font-weight: 500; color: #1f2937;">Cuota excedida</div>
+                          <div style="font-family: monospace; font-size: 13px; word-break: break-all; color: #4b5563; background: #f9fafb; padding: 6px; border-radius: 4px;">${formDataObj.backlinks.overquota}</div>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                  
+                  <!-- Sección de URL de la investigación -->
+                  <div style="margin-bottom: 20px; border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden;">
+                    <div style="background: #f9fafb; padding: 12px 16px; border-bottom: 1px solid #e5e7eb;">
+                      <h3 style="margin: 0; font-size: 16px; font-weight: 500;">URL de la investigación</h3>
+                    </div>
+                    <div style="padding: 16px;">
+                      <div style="font-family: monospace; font-size: 13px; word-break: break-all; color: #4b5563; background: #f9fafb; padding: 10px; border-radius: 4px;">
+                        https://${formDataObj.researchUrl}
+                      </div>
+                      <div style="margin-top: 12px; padding: 10px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 4px; color: #0369a1; font-size: 13px;">
+                        <div style="display: flex; align-items: start; gap: 8px;">
+                          <svg style="flex-shrink: 0; margin-top: 2px;" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                          </svg>
+                          <div>El enlace generado para compartir será: <span style="font-weight: 500;">https://useremotion.com/link/${formDataObj.researchId}?respondent={participant_id}</span></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Sección de opciones de parámetros -->
+                  <div style="border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden;">
+                    <div style="background: #f9fafb; padding: 12px 16px; border-bottom: 1px solid #e5e7eb;">
+                      <h3 style="margin: 0; font-size: 16px; font-weight: 500;">Opciones de parámetros</h3>
+                    </div>
+                    <div style="padding: 16px;">
+                      <ul style="margin: 0; padding: 0; list-style: none;">
+                        <li style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
+                          <span>Guardar parámetros</span>
+                          <span style="font-weight: 500; color: ${formDataObj.parameterOptions.parameters ? '#047857' : '#dc2626'};">${formDataObj.parameterOptions.parameters ? 'Sí' : 'No'}</span>
+                        </li>
+                        <li style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
+                          <span>Separados por comas</span>
+                          <span style="font-weight: 500; color: ${formDataObj.parameterOptions.separated ? '#047857' : '#dc2626'};">${formDataObj.parameterOptions.separated ? 'Sí' : 'No'}</span>
+                        </li>
+                        <li style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
+                          <span>Incluir valores</span>
+                          <span style="font-weight: 500; color: ${formDataObj.parameterOptions.with ? '#047857' : '#dc2626'};">${formDataObj.parameterOptions.with ? 'Sí' : 'No'}</span>
+                        </li>
+                        <li style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
+                          <span>Usar comas</span>
+                          <span style="font-weight: 500; color: ${formDataObj.parameterOptions.comma ? '#047857' : '#dc2626'};">${formDataObj.parameterOptions.comma ? 'Sí' : 'No'}</span>
+                        </li>
+                        <li style="display: flex; justify-content: space-between; padding: 8px 0;">
+                          <span>Incluir claves</span>
+                          <span style="font-weight: 500; color: ${formDataObj.parameterOptions.keys ? '#047857' : '#dc2626'};">${formDataObj.parameterOptions.keys ? 'Sí' : 'No'}</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 16px; color: #166534; font-size: 14px; margin-top: 16px;">
+                <div style="display: flex; align-items: start; gap: 12px;">
+                  <svg style="flex-shrink: 0; margin-top: 2px;" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                  </svg>
+                  <div>
+                    <p style="margin: 0 0 8px; font-weight: 500; font-size: 15px;">Resumen de la configuración</p>
+                    <ul style="margin: 0; padding-left: 16px;">
+                      <li style="margin-bottom: 4px;">Se han seleccionado ${Object.values(formDataObj.demographicQuestions).filter(Boolean).length} de 8 preguntas demográficas.</li>
+                      <li style="margin-bottom: 4px;">Los participantes ${formDataObj.linkConfig.allowMobileDevices ? 'podrán' : 'no podrán'} usar dispositivos móviles.</li>
+                      <li style="margin-bottom: 4px;">Se ${formDataObj.linkConfig.trackLocation ? 'rastreará' : 'no rastreará'} la ubicación de los participantes.</li>
+                      ${formDataObj.linkConfig.limitParticipants ? `<li>Se limitará a un máximo de ${formDataObj.linkConfig.participantLimit} participantes.</li>` : '<li>No hay límite en el número de participantes.</li>'}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              
             </div>
             <div style="padding: 16px 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px;">
               <button id="cancelJsonAction" style="background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; border-radius: 6px; padding: 8px 16px; font-weight: 500; cursor: pointer;">Cancelar</button>
               <button id="continueJsonAction" style="background: #3f51b5; color: white; border: none; border-radius: 6px; padding: 8px 16px; font-weight: 500; cursor: pointer;">
-                Guardar
+                Guardar configuración
               </button>
             </div>
           </div>
@@ -441,7 +633,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
         }
       };
     }
-  }, [showJsonPreview, jsonToSend, pendingAction]);
+  }, [showJsonPreview, jsonToSend, pendingAction, researchId]);
   
   // Efecto para crear el modal QR
   useEffect(() => {
@@ -590,7 +782,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
                   ${demographicQuestionsEnabled ? `<li>Preguntas demográficas habilitadas</li>` : ''}
                   ${formData.linkConfig.trackLocation ? `<li>Rastreo de ubicación activado</li>` : ''}
                   ${formData.linkConfig.allowMobileDevices ? `<li>Acceso desde dispositivos móviles permitido</li>` : ''}
-                  ${formData.participantLimit.enabled ? `<li>Límite de ${formData.participantLimit.limit} participantes configurado</li>` : ''}
+                  ${formData.linkConfig.limitParticipants ? `<li>Límite de ${formData.linkConfig.participantLimit} participantes configurado</li>` : ''}
                 </ul>
               </div>
             </div>

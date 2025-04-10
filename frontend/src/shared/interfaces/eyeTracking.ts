@@ -37,6 +37,8 @@ export interface EyeTrackingRecruitConfig {
     allowMobileDevices: boolean;
     trackLocation: boolean;
     multipleAttempts: boolean;
+    limitParticipants: boolean;
+    participantLimit: number;
   };
   
   // Límite de participantes
@@ -151,7 +153,9 @@ export type DemographicQuestionKey =
 export type LinkConfigKey = 
   | 'allowMobileDevices' 
   | 'trackLocation' 
-  | 'multipleAttempts';
+  | 'multipleAttempts'
+  | 'limitParticipants'
+  | 'participantLimit';
 
 export type ParameterOptionKey = 
   | 'parameters' 
