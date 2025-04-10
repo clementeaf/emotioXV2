@@ -262,4 +262,7 @@ export interface UseSmartVOCFormResult {
   closeModal: () => void;
   showJsonPreview: boolean;
   closeJsonModal: () => void;
+  jsonToSend: string;
+  pendingAction: 'save' | 'preview' | null;
+  continueWithAction: () => void;
 } 

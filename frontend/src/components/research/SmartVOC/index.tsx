@@ -6,7 +6,8 @@ import {
   SmartVOCSettings,
   SmartVOCQuestions,
   SmartVOCFooter,
-  ErrorModal
+  ErrorModal,
+  JsonPreviewModal
 } from './components';
 import { UI_TEXTS } from './constants';
 
@@ -35,7 +36,12 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
     handleSettingChange,
     handleSave,
     handlePreview,
-    closeModal
+    closeModal,
+    showJsonPreview,
+    closeJsonModal,
+    jsonToSend,
+    pendingAction,
+    continueWithAction
   } = useSmartVOCForm(researchId);
 
   // Callbacks para cambios en los ajustes
@@ -134,6 +140,15 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
         isOpen={modalVisible}
         onClose={closeModal}
         error={modalError}
+      />
+
+      {/* Modal para la vista previa del JSON */}
+      <JsonPreviewModal
+        isOpen={showJsonPreview}
+        onClose={closeJsonModal}
+        onContinue={continueWithAction}
+        jsonData={jsonToSend}
+        pendingAction={pendingAction}
       />
     </div>
   );
