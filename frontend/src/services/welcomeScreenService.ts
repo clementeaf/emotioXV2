@@ -6,12 +6,16 @@ import { apiClient } from '../config/api-client';
 export interface WelcomeScreenData {
   title: string;
   subtitle?: string;
-  description?: string;
-  buttonText?: string;
+  message: string;
+  startButtonText: string;
   logoUrl?: string;
   backgroundImageUrl?: string;
   backgroundColor?: string;
   textColor?: string;
+  isEnabled?: boolean;
+  theme?: string;
+  disclaimer?: string;
+  customCss?: string;
   researchId: string;
 }
 
@@ -78,6 +82,12 @@ export const welcomeScreenService = {
    */
   async update(id: string, data: Partial<WelcomeScreenData>): Promise<WelcomeScreenRecord> {
     try {
+      // Verificar que el ID sea válido
+      if (!id || typeof id !== 'string' || id.trim() === '') {
+        throw new Error('ID inválido para actualizar la pantalla de bienvenida');
+      }
+      
+      console.log(`[DEBUG] Actualizando pantalla con ID: ${id}`);
       return await apiClient.put<WelcomeScreenRecord, Partial<WelcomeScreenData>, 'welcomeScreen'>('welcomeScreen', 'update', data, { id });
     } catch (error) {
       console.error(`Error al actualizar pantalla de bienvenida ${id}:`, error);
@@ -104,22 +114,51 @@ export const welcomeScreenService = {
    * @param data Datos de la pantalla
    * @returns Pantalla creada o actualizada
    */
-  async createOrUpdateForResearch(researchId: string, data: Omit<WelcomeScreenData, 'researchId'>): Promise<WelcomeScreenRecord> {
+  async createOrUpdateForResearch(
+    researchId: string,
+    data: Partial<WelcomeScreenData>
+  ): Promise<WelcomeScreenRecord> {
     try {
-      // Primero intentamos obtener la pantalla existente
+      console.log(`[DEBUG] Creando/actualizando pantalla para investigación: ${researchId}`);
+      console.log(`[DEBUG] Datos a guardar:`, data);
+      
+      // Primero verificamos si ya existe una pantalla para esta investigación
       try {
         const existingScreen = await this.getByResearchId(researchId);
-        // Si existe, la actualizamos
-        return await this.update(existingScreen.id, data);
-      } catch {
+        console.log(`[DEBUG] Pantalla existente encontrada:`, existingScreen);
+        
+        // Solo actualizar si tenemos un ID válido
+        if (existingScreen && existingScreen.id && 
+            typeof existingScreen.id === 'string' && 
+            existingScreen.id.trim() !== '') {
+          console.log(`[DEBUG] Actualizando pantalla existente con ID: ${existingScreen.id}`);
+          const updateData = { ...data };
+          return await this.update(existingScreen.id, updateData);
+        } else {
+          console.log(`[DEBUG] La pantalla existente no tiene un ID válido, creando nueva`);
+          const createData = {
+            title: '',
+            message: '',
+            startButtonText: '',
+            ...data,
+            researchId
+          } as WelcomeScreenData;
+          return await this.create(createData);
+        }
+      } catch (error) {
         // Si no existe, creamos una nueva
-        return await this.create({
+        console.log(`[DEBUG] No se encontró pantalla existente, creando nueva`);
+        const createData = {
+          title: '',
+          message: '',
+          startButtonText: '',
           ...data,
           researchId
-        });
+        } as WelcomeScreenData;
+        return await this.create(createData);
       }
     } catch (error) {
-      console.error(`Error al crear/actualizar pantalla de bienvenida para investigación ${researchId}:`, error);
+      console.error(`Error al crear/actualizar pantalla para investigación ${researchId}:`, error);
       throw error;
     }
   }

@@ -1,26 +1,85 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { 
-  WelcomeScreenData, 
-  WelcomeScreenResponse, 
-  DEFAULT_WELCOME_SCREEN_CONFIG,
-  UseWelcomeScreenFormResult,
-  ErrorModalData
-} from '../types';
 import { apiClient } from '../../../../config/api-client';
-import { 
-  QUERY_KEYS, 
-  API_ENDPOINTS, 
-  ERROR_MESSAGES, 
-  SUCCESS_MESSAGES 
-} from '../constants';
-import { useAuth } from '@/providers/AuthProvider';
+import { useAuth } from '../../../../providers/AuthProvider';
+import { WelcomeScreenRecord, welcomeScreenService } from '../../../../services/welcomeScreenService';
+
+// Definiciones de tipo necesarias (simuladas si las originales no están disponibles)
+interface WelcomeScreenData {
+  id?: string;
+  researchId?: string;
+  isEnabled: boolean;
+  title: string;
+  message: string;
+  startButtonText: string;
+  [key: string]: any; // Para permitir propiedades adicionales
+}
+
+interface WelcomeScreenResponse {
+  data?: WelcomeScreenData;
+  error?: string;
+  notFound?: boolean;
+  unauthorized?: boolean;
+}
+
+interface ErrorModalData {
+  title: string;
+  message: string | React.ReactNode;
+  type: 'error' | 'info' | 'success';
+}
+
+interface UseWelcomeScreenFormResult {
+  formData: WelcomeScreenData;
+  welcomeScreenId: string | null;
+  realWelcomeScreenId: string | null;
+  validationErrors: { [key: string]: string };
+  isLoading: boolean;
+  isSaving: boolean;
+  modalError: ErrorModalData | null;
+  modalVisible: boolean;
+  handleChange: (field: keyof WelcomeScreenData, value: any) => void;
+  handleSave: () => void;
+  handlePreview: () => void;
+  validateForm: () => boolean;
+  closeModal: () => void;
+  showJsonPreview: boolean;
+  closeJsonModal: () => void;
+  jsonToSend: string;
+  pendingAction: 'save' | 'preview' | null;
+  continueWithAction: () => void;
+}
+
+// Constantes simuladas
+const DEFAULT_WELCOME_SCREEN_CONFIG: WelcomeScreenData = {
+  isEnabled: true,
+  title: '',
+  message: '',
+  startButtonText: ''
+};
+
+const QUERY_KEYS = {
+  WELCOME_SCREEN: 'welcomeScreen'
+};
+
+const ERROR_MESSAGES = {
+  VALIDATION_ERRORS: {
+    TITLE_REQUIRED: 'El título es obligatorio',
+    MESSAGE_REQUIRED: 'El mensaje es obligatorio',
+    BUTTON_TEXT_REQUIRED: 'El texto del botón es obligatorio'
+  }
+};
+
+// Definición de tipo para función onSuccess
+type SuccessCallback = (data: any) => void;
 
 /**
  * Hook personalizado para gestionar la lógica del formulario de pantalla de bienvenida
  */
-export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormResult => {
+export const useWelcomeScreenForm = (
+  researchId: string, 
+  onSuccess?: SuccessCallback
+): UseWelcomeScreenFormResult => {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState<WelcomeScreenData>({ ...DEFAULT_WELCOME_SCREEN_CONFIG });
   const [welcomeScreenId, setWelcomeScreenId] = useState<string | null>(null);
@@ -32,13 +91,244 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
   const [showJsonPreview, setShowJsonPreview] = useState<boolean>(false);
   const [jsonToSend, setJsonToSend] = useState<string>('');
   const [pendingAction, setPendingAction] = useState<'save' | 'preview' | null>(null);
+  const [showPreviewModal, setShowPreviewModal] = useState<boolean>(false);
 
   // Handlers para el modal
-  const closeModal = () => setModalVisible(false);
-  const showModal = (errorData: ErrorModalData) => {
+  const closeModal = useCallback(() => setModalVisible(false), []);
+  const showModal = useCallback((errorData: ErrorModalData) => {
     setModalError(errorData);
     setModalVisible(true);
-  };
+  }, []);
+
+  // Función para cerrar el modal JSON
+  const closeJsonModal = useCallback(() => {
+    setShowJsonPreview(false);
+    setPendingAction(null);
+    setJsonToSend('');
+    
+    console.log('[useWelcomeScreenForm] Modal JSON cerrado');
+  }, []);
+
+  // Mutaciones para crear y actualizar (movidas antes de su uso)
+  const createMutation = useMutation({
+    mutationFn: async (data: WelcomeScreenData) => {
+      try {
+        // Asegurar que data tiene el researchId correcto
+        const dataWithResearchId = {
+          ...data,
+          researchId: data.researchId || researchId
+        };
+        
+        // Eliminar cualquier ID que pueda haber en los datos
+        // ya que el backend asignará uno nuevo
+        delete dataWithResearchId.id;
+        
+        console.log('Datos para crear nueva pantalla:', JSON.stringify(dataWithResearchId, null, 2));
+        
+        // Utilizar el servicio directamente
+        return await welcomeScreenService.create(dataWithResearchId);
+      } catch (createError: any) {
+        console.error('Error al crear welcomeScreen:', createError);
+        console.error('Detalles del error:', JSON.stringify(createError, null, 2));
+        
+        throw {
+          statusCode: createError.response?.status || 500,
+          message: createError.message || 'Error al crear la pantalla de bienvenida'
+        };
+      }
+    },
+    onSuccess: (data) => {
+      console.log('WelcomeScreen creada exitosamente:', data);
+      toast.success('Pantalla de bienvenida creada con éxito');
+      
+      // Invalidar la consulta para recargar los datos
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WELCOME_SCREEN, researchId] });
+      
+      if (onSuccess) {
+        onSuccess(data);
+      }
+    },
+    onError: (error: any) => {
+      console.error('Error al crear WelcomeScreen:', error);
+      
+      const errorMessage = error.message || 'Error al crear. Por favor, inténtelo de nuevo.';
+      toast.error(errorMessage);
+      
+      showModal({
+        title: 'Error al crear',
+        message: errorMessage,
+        type: 'error'
+      });
+    }
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async (data: WelcomeScreenData) => {
+      try {
+        // Asegurar que researchId está presente
+        if (!data.researchId) {
+          data.researchId = researchId;
+        }
+        
+        // Imprimir información para debugging
+        console.log('[DEBUG] Método utilizado: welcomeScreenService.createOrUpdateForResearch');
+        console.log('[DEBUG] Research ID:', data.researchId);
+        console.log('[DEBUG] Datos enviados:', JSON.stringify(data, null, 2));
+        
+        // Utilizar createOrUpdateForResearch directamente
+        // Esta función maneja internamente tanto la creación como la actualización
+        const result = await welcomeScreenService.createOrUpdateForResearch(data.researchId, data);
+        console.log('[DEBUG] Resultado exitoso:', result);
+        return result;
+      } catch (updateError: any) {
+        console.error('[ERROR] Error al actualizar welcomeScreen:', updateError);
+        console.error('[ERROR] Detalles del error:', JSON.stringify(updateError, null, 2));
+        
+        throw {
+          statusCode: updateError.response?.status || 500,
+          message: updateError.message || 'Error al actualizar la pantalla de bienvenida'
+        };
+      }
+    },
+    onSuccess: (data) => {
+      console.log('WelcomeScreen actualizada exitosamente:', data);
+      toast.success('Pantalla de bienvenida actualizada con éxito');
+      
+      // Invalidar la consulta para recargar los datos
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WELCOME_SCREEN, researchId] });
+      
+      if (onSuccess) {
+        onSuccess(data);
+      }
+    },
+    onError: (error: any) => {
+      console.error('Error al actualizar WelcomeScreen:', error);
+      
+      const errorMessage = error.message || 'Error al actualizar. Por favor, inténtelo de nuevo.';
+      toast.error(errorMessage);
+      
+      showModal({
+        title: 'Error al actualizar',
+        message: errorMessage,
+        type: 'error'
+      });
+    }
+  });
+
+  // Función para mostrar el modal con JSON
+  const showJsonModal = useCallback((json: any, action: 'save' | 'preview') => {
+    try {
+      // Validar que el JSON sea válido
+      const stringifiedJson = JSON.stringify(json, null, 2);
+      JSON.parse(stringifiedJson); // Verificar que sea un JSON válido
+      
+      if (Object.keys(validationErrors).length > 0) {
+        showModal({
+          title: 'Errores de validación',
+          message: 'Por favor, corrija los errores de validación antes de continuar.',
+          type: 'error'
+        });
+        return;
+      }
+      
+      setJsonToSend(stringifiedJson);
+      setPendingAction(action);
+      setShowJsonPreview(true);
+      
+      console.log(`[useWelcomeScreenForm] Mostrando modal JSON para acción: ${action}`);
+      console.log('[useWelcomeScreenForm] JSON válido:', stringifiedJson);
+    } catch (error) {
+      console.error('[useWelcomeScreenForm] Error al procesar JSON:', error);
+      showModal({
+        title: 'Error al procesar datos',
+        message: 'Los datos no tienen un formato JSON válido. Por favor, revise la estructura de los datos.',
+        type: 'error'
+      });
+    }
+  }, [showModal, validationErrors]);
+
+  // Función para continuar con la acción después de mostrar el JSON
+  const continueWithAction = useCallback(() => {
+    closeJsonModal();
+    
+    if (pendingAction === 'save') {
+      // Ejecutar la mutación para guardar
+      try {
+        // Parsear el JSON que se mostró en el modal
+        const dataToSaveObj = JSON.parse(jsonToSend);
+        
+        // Verificar campos requeridos
+        if (!dataToSaveObj.title && dataToSaveObj.isEnabled) {
+          throw new Error('El título es obligatorio cuando la pantalla está habilitada');
+        }
+        
+        if (!dataToSaveObj.message && dataToSaveObj.isEnabled) {
+          throw new Error('El mensaje es obligatorio cuando la pantalla está habilitada');
+        }
+        
+        if (!dataToSaveObj.startButtonText && dataToSaveObj.isEnabled) {
+          throw new Error('El texto del botón es obligatorio cuando la pantalla está habilitada');
+        }
+        
+        // Asegurar que la estructura de datos es correcta
+        const cleanData = {
+          title: dataToSaveObj.title || '',
+          message: dataToSaveObj.message || '',
+          startButtonText: dataToSaveObj.startButtonText || '',
+          isEnabled: dataToSaveObj.isEnabled === undefined ? true : dataToSaveObj.isEnabled,
+          researchId: dataToSaveObj.researchId || researchId,
+          // Otros campos opcionales
+          ...(dataToSaveObj.subtitle && { subtitle: dataToSaveObj.subtitle }),
+          ...(dataToSaveObj.logoUrl && { logoUrl: dataToSaveObj.logoUrl }),
+          ...(dataToSaveObj.backgroundImageUrl && { backgroundImageUrl: dataToSaveObj.backgroundImageUrl }),
+          ...(dataToSaveObj.backgroundColor && { backgroundColor: dataToSaveObj.backgroundColor }),
+          ...(dataToSaveObj.textColor && { textColor: dataToSaveObj.textColor }),
+          ...(dataToSaveObj.theme && { theme: dataToSaveObj.theme }),
+          ...(dataToSaveObj.disclaimer && { disclaimer: dataToSaveObj.disclaimer }),
+          ...(dataToSaveObj.customCss && { customCss: dataToSaveObj.customCss })
+        };
+        
+        console.log('[DEBUG-SAVE] Datos limpios para guardar:', JSON.stringify(cleanData, null, 2));
+        console.log('[DEBUG-SAVE] ID real de la pantalla para actualización:', realWelcomeScreenId);
+        console.log('[DEBUG-SAVE] ID de la pantalla para UI:', welcomeScreenId);
+        
+        // Actualización lógica de guardado
+        if (realWelcomeScreenId) {
+          // Si ya existe un ID real, actualizar usando ese ID
+          console.log(`[DEBUG-SAVE] Actualización: Actualizando configuración existente ID real: ${realWelcomeScreenId}`);
+          console.log('[DEBUG-SAVE] Invocando updateMutation.mutate con los datos limpios');
+          
+          // Asegurar que el ID está correctamente establecido
+          const updateData = {
+            ...cleanData,
+            id: realWelcomeScreenId // Usar explícitamente el ID real
+          };
+          
+          console.log('[DEBUG-SAVE] Datos finales para actualización:', JSON.stringify(updateData, null, 2));
+          updateMutation.mutate(updateData);
+        } else {
+          // Si no existe un ID real, crear uno nuevo
+          console.log('[DEBUG-SAVE] Creación: Creando nueva configuración');
+          console.log('[DEBUG-SAVE] Invocando createMutation.mutate con los datos limpios');
+          createMutation.mutate(cleanData);
+        }
+      } catch (error) {
+        console.error('[ERROR-SAVE] Error al procesar JSON:', error);
+        toast.error('Error al procesar los datos del formulario');
+        
+        // Mostrar error detallado
+        showModal({
+          title: 'Error de procesamiento',
+          message: error instanceof Error ? error.message : 'Ocurrió un error inesperado al procesar los datos',
+          type: 'error'
+        });
+      }
+    } else if (pendingAction === 'preview') {
+      // Para la acción de preview, el componente JsonPreviewModal se encarga de mostrar la vista previa
+      // en una nueva ventana, así que aquí solo necesitamos cerrar el modal
+      console.log('[useWelcomeScreenForm] Cerrando modal después de previsualizar');
+    }
+  }, [jsonToSend, pendingAction, updateMutation, createMutation, showModal, closeJsonModal, researchId, realWelcomeScreenId]);
 
   // Consulta para obtener datos existentes
   const { data: welcomeScreenData, isLoading } = useQuery({
@@ -69,295 +359,68 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
           return { data: null, notFound: true };
         }
       } catch (error: any) {
-        // Obtener mensaje de error detallado
-        let errorMessage = ERROR_MESSAGES.FETCH_ERROR;
+        console.error('Error al obtener welcomeScreen:', error);
         
-        if (error?.statusCode === 401) {
-          errorMessage = 'No autorizado: Se requiere un token de autenticación para acceder a este recurso';
-          showModal({
-            title: 'Error de autenticación',
-            message: 'Su sesión ha expirado o no está autenticado. Por favor, inicie sesión nuevamente.',
-            type: 'error'
-          });
-          return { data: null, error: errorMessage, unauthorized: true };
-        }
-        
-        if (error?.statusCode === 403) {
-          errorMessage = 'No tiene permisos para acceder a esta investigación';
-          showModal({
-            title: 'Error de permisos',
-            message: 'No tiene permisos para acceder a esta investigación. Por favor, verifique que tiene acceso a este recurso o contacte al administrador.',
-            type: 'error'
-          });
-          return { data: null, error: errorMessage, forbidden: true };
-        }
-        
-        if (error?.statusCode === 404) {
-          // Error 404 es normal cuando no hay configuración previa
-          // No mostramos error al usuario, simplemente retornamos notFound
-          console.log('Error 404: No existe configuración para esta investigación');
+        // Clasificar el error
+        if (error.response?.status === 404) {
+          console.log('No se encontró welcomeScreen (404)');
           return { data: null, notFound: true };
         }
         
-        // Si es un error 500 o relacionado con AWS, mostramos un mensaje de error
-        if (error?.statusCode >= 500 || 
-            (error?.message && (
-              error.message.includes('AWS') || 
-              error.message.includes('timeout') || 
-              error.message.includes('network') ||
-              error.message.includes('internal server')
-            ))) {
-          
-          errorMessage = 'Error en el servicio de AWS. Por favor, intente más tarde.';
-          showModal({
-            title: ERROR_MESSAGES.FETCH_ERROR,
-            message: 'Ha ocurrido un error en el servicio de AWS. Esta situación no está relacionada con la aplicación. Por favor, intente más tarde.',
-            type: 'error'
-          });
-          return { data: null, error: errorMessage, awsError: true };
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          console.log('Error de autenticación en welcomeScreen');
+          return { data: null, error: 'Error de autenticación', unauthorized: true };
         }
         
-        // Para otros errores, no mostramos modal pero retornamos datos vacíos
-        if (error?.data?.message) {
-          errorMessage = error.data.message;
-        } else if (error?.message) {
-          errorMessage = error.message;
-        }
-        
-        return { data: null, notFound: true, silentError: errorMessage };
+        console.log('Error genérico en welcomeScreen:', error.message || 'Error desconocido');
+        return { 
+          data: null, 
+          error: error.message || 'Error al obtener datos de la pantalla de bienvenida'
+        };
       }
     },
     enabled: !!researchId && isAuthenticated,
-    refetchOnWindowFocus: false
+    retry: 1
   });
 
-  // Función para crear un nuevo registro
-  const createNewRecord = async (data: WelcomeScreenData) => {
-    return await apiClient.post<any, any, any>(
-      'welcomeScreen',
-      'create',
-      {
-        ...data,
-        researchId
-      }
-    );
-  };
+  // Calculamos si estamos guardando actualmente (eliminada la redeclaración)
+  const isSaving = createMutation.isPending || updateMutation.isPending;
 
-  // Mutación para guardar datos
-  const { mutate, isPending: isSaving } = useMutation({
-    mutationFn: async (data: WelcomeScreenData) => {
-      try {
-        if (!isAuthenticated || !token) {
-          throw {
-            statusCode: 401,
-            message: 'No autorizado: Se requiere un token de autenticación'
-          };
-        }
-        
-        // Usar ID real si existe, incluso si la UI muestra como nuevo
-        const idToUse = realWelcomeScreenId || welcomeScreenId;
-        
-        if (idToUse) {
-          console.log('Actualizando WelcomeScreen con ID:', idToUse);
-          try {
-            return await apiClient.put(
-              'welcomeScreen',
-              'update',
-              data,
-              { id: idToUse }
-            );
-          } catch (updateError: any) {
-            // Si el error es 404 (registro no encontrado), intentar crear uno nuevo
-            if (updateError?.statusCode === 404 || 
-                (updateError?.data?.error && updateError.data.error.includes('WELCOME_SCREEN_NOT_FOUND'))) {
-              console.log('WelcomeScreen no encontrada en update, creando nueva');
-              setWelcomeScreenId(null);
-              setRealWelcomeScreenId(null);
-              return await createNewRecord(data);
-            }
-            
-            // Si el error es 403 (sin permisos), lo propagamos para mostrar mensaje claro
-            if (updateError?.statusCode === 403 || 
-                (updateError?.data?.error && updateError.data.error.includes('FORBIDDEN'))) {
-              throw {
-                statusCode: 403,
-                message: 'No tiene permisos para modificar esta pantalla de bienvenida',
-                data: updateError?.data
-              };
-            }
-            
-            // Si es un error de AWS o del servidor, lo propagamos con un mensaje específico
-            if (updateError?.statusCode >= 500 || 
-                (updateError?.message && (
-                  updateError.message.includes('AWS') || 
-                  updateError.message.includes('timeout') || 
-                  updateError.message.includes('network') ||
-                  updateError.message.includes('internal server')
-                ))) {
-              throw {
-                statusCode: updateError.statusCode || 500,
-                message: 'Error en el servicio de AWS. Por favor, intente más tarde.',
-                isAwsError: true,
-                data: updateError?.data
-              };
-            }
-            
-            // Si es otro tipo de error, intentamos crear un nuevo registro
-            console.log('Error desconocido al actualizar, intentando crear nuevo registro');
-            setWelcomeScreenId(null);
-            setRealWelcomeScreenId(null);
-            return await createNewRecord(data);
-          }
-        } else {
-          // Creación normal sin ID previo
-          console.log('Creando nueva WelcomeScreen (sin ID previo)');
-          setWelcomeScreenId(null);
-          setRealWelcomeScreenId(null);
-          return await createNewRecord(data);
-        }
-      } catch (error: any) {
-        // Propagar el error para que lo maneje onError
-        throw error;
-      }
-    },
-    onSuccess: (response) => {
-      const responseData = response.data;
-      
-      // Verificar si es creación o actualización
-      const isNewRecord = !welcomeScreenId && !realWelcomeScreenId;
-      
-      // Actualizamos el ID si es una creación y existe ID
-      if (responseData && responseData.id) {
-        // Si era una configuración "vacía" que tratamos como nueva, pero realmente 
-        // estábamos actualizando, mantenemos el comportamiento de UI como nueva
-        if (!welcomeScreenId && realWelcomeScreenId) {
-          // Mantener welcomeScreenId como null para UI, pero actualizar el ID real
-          console.log('Se actualizó configuración tratada como nueva. Manteniendo UI como nueva pero guardando ID real:', responseData.id);
-          setRealWelcomeScreenId(responseData.id);
-        } else {
-          // Comportamiento normal: actualizar ambos IDs
-          setWelcomeScreenId(responseData.id);
-          setRealWelcomeScreenId(responseData.id);
-          console.log(`WelcomeScreen ${isNewRecord ? 'creada' : 'actualizada'} con ID:`, responseData.id);
-        }
-      }
-      
-      // Invalidamos la query para recargar datos
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WELCOME_SCREEN, researchId] });
-      
-      // Mostrar mensaje apropiado
-      toast.success(isNewRecord 
-        ? 'Configuración guardada correctamente' 
-        : 'Configuración actualizada correctamente');
-    },
-    onError: (error: any) => {
-      // Obtener mensaje detallado
-      let errorMessage = ERROR_MESSAGES.SAVE_ERROR;
-      let errorDetails = '';
-      
-      if (error?.statusCode === 401) {
-        errorMessage = 'Su sesión ha expirado o no está autenticado';
-        errorDetails = 'Se requiere un token de autorización para acceder a este recurso';
-        
-        // Mostrar mensaje especial para error de autenticación
-        showModal({
-          title: 'Error de autenticación',
-          message: 'Su sesión ha expirado o no está autenticado. Por favor, inicie sesión nuevamente.',
-          type: 'error'
-        });
-        
-        return;
-      }
-      
-      if (error?.statusCode === 403) {
-        errorMessage = 'No tiene permisos para esta operación';
-        errorDetails = 'No tiene los permisos necesarios para acceder a esta investigación';
-        
-        // Mostrar mensaje especial para error de permisos
-        showModal({
-          title: 'Error de permisos',
-          message: 'No tiene permisos para modificar esta pantalla de bienvenida. Por favor, verifique sus permisos o contacte al administrador.',
-          type: 'error'
-        });
-        
-        return;
-      }
-      
-      // Solo mostrar errores de AWS o del servidor
-      if (error?.isAwsError || error?.statusCode >= 500 || 
-          (error?.message && (
-            error.message.includes('AWS') || 
-            error.message.includes('timeout') || 
-            error.message.includes('network') ||
-            error.message.includes('internal server')
-          ))) {
-        
-        if (error?.data?.message) {
-          errorMessage = error.data.message;
-        } else if (error?.message) {
-          errorMessage = error.message;
-        }
-        
-        // Añadir detalles técnicos si están disponibles
-        if (error?.statusCode) {
-          errorDetails = `Código de error: ${error.statusCode}`;
-        }
-        
-        if (error?.data?.details) {
-          errorDetails += `\nDetalles: ${error.data.details}`;
-        }
-        
-        showModal({
-          title: ERROR_MESSAGES.SAVE_ERROR,
-          message: 'Ha ocurrido un error en el servicio de AWS. Esta situación no está relacionada con la aplicación. Por favor, intente más tarde.',
-          type: 'error'
-        });
-        
-        toast.error('Error de AWS. Intente más tarde.');
-        return;
-      }
-      
-      // Para otros errores, intentar silenciosamente sin mostrar mensajes al usuario
-    }
-  });
-
-  // Efecto para cargar datos existentes cuando estén disponibles
+  // Inicializar datos del formulario desde la respuesta de la API
   useEffect(() => {
     if (welcomeScreenData) {
-      // Verificar si los datos tienen la estructura esperada
-      const typedData = welcomeScreenData as any;
+      console.log('Procesando datos de WelcomeScreen recibidos:', welcomeScreenData);
       
-      if (typedData.data && typedData.data.id) {
-        // Guardar el ID real para futuras actualizaciones
-        if (typedData.data.id && typeof typedData.data.id === 'string' && typedData.data.id.trim() !== '') {
+      // Si hay un error o no se encontró, usamos valores por defecto
+      if (welcomeScreenData.error || welcomeScreenData.notFound) {
+        console.log('Error o no encontrado:', welcomeScreenData.error || 'notFound');
+        setFormData({ ...DEFAULT_WELCOME_SCREEN_CONFIG });
+        setWelcomeScreenId(null);
+        setRealWelcomeScreenId(null);
+      }
+      // Si hay datos válidos
+      else if (welcomeScreenData.data) {
+        console.log('Datos válidos encontrados para WelcomeScreen');
+        
+        // Tipado seguro para los datos
+        const typedData = welcomeScreenData as WelcomeScreenResponse;
+        
+        // Guardar el ID real para uso posterior
+        if (typedData.data && typedData.data.id) {
           setRealWelcomeScreenId(typedData.data.id);
           console.log('ID real guardado:', typedData.data.id);
         }
-
-        // Asegurarnos de que todos los campos requeridos estén presentes
-        const safeData = {
-          ...DEFAULT_WELCOME_SCREEN_CONFIG, // Valores por defecto
-          ...typedData.data as WelcomeScreenData // Datos reales
-        };
         
-        // Asegurar que ningún valor sea null o undefined
-        Object.keys(safeData).forEach(key => {
-          const typedKey = key as keyof WelcomeScreenData;
-          // Verificamos si la propiedad existe en DEFAULT_WELCOME_SCREEN_CONFIG antes de usarla
-          if (safeData[typedKey] === null || safeData[typedKey] === undefined) {
-            if (typedKey === 'isEnabled') {
-              safeData[typedKey] = DEFAULT_WELCOME_SCREEN_CONFIG.isEnabled;
-            } else if (
-              // Solo accedemos a propiedades que sabemos que existen
-              typedKey in DEFAULT_WELCOME_SCREEN_CONFIG && 
-              typeof DEFAULT_WELCOME_SCREEN_CONFIG[typedKey as keyof typeof DEFAULT_WELCOME_SCREEN_CONFIG] === 'string'
-            ) {
-              // Asegurarnos de que el valor es siempre un string
-              const defaultValue = DEFAULT_WELCOME_SCREEN_CONFIG[typedKey as keyof typeof DEFAULT_WELCOME_SCREEN_CONFIG];
-              safeData[typedKey] = typeof defaultValue === 'string' ? defaultValue : '';
-            }
-          }
-        });
+        // Crear un objeto seguro con valores por defecto para null/undefined
+        const safeData: WelcomeScreenData = {
+          ...DEFAULT_WELCOME_SCREEN_CONFIG,
+          id: typedData.data?.id,
+          researchId: researchId,
+          isEnabled: typedData.data?.isEnabled !== undefined ? typedData.data.isEnabled : DEFAULT_WELCOME_SCREEN_CONFIG.isEnabled,
+          title: typedData.data?.title || '',
+          message: typedData.data?.message || '',
+          startButtonText: typedData.data?.startButtonText || ''
+        };
         
         // Verificamos si es una configuración "vacía" (deshabilitada y sin datos importantes)
         const isEmptyConfig = 
@@ -374,7 +437,7 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
           // Creamos un nuevo objeto con valores por defecto pero manteniendo el ID real
           const newFormData = {
             ...DEFAULT_WELCOME_SCREEN_CONFIG,
-            id: typedData.data.id // Mantener ID real para la actualización
+            id: typedData.data?.id // Mantener ID real para la actualización
           };
           
           console.log('Estableciendo nueva formData con defaults y isEnabled=true:', newFormData);
@@ -384,7 +447,7 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
           setFormData(safeData);
           
           // Solo establecemos el ID si es una configuración real/significativa
-          if (typedData.data.id && typeof typedData.data.id === 'string' && typedData.data.id.trim() !== '') {
+          if (typedData.data && typedData.data.id && typeof typedData.data.id === 'string' && typedData.data.id.trim() !== '') {
             setWelcomeScreenId(typedData.data.id);
             console.log('WelcomeScreen significativa encontrada con ID:', typedData.data.id);
           } else {
@@ -399,10 +462,10 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
         setWelcomeScreenId(null); // Asegurarse de reiniciar el ID si no se encuentra
       }
     }
-  }, [welcomeScreenData]);
+  }, [welcomeScreenData, researchId]);
 
   // Gestionar cambios en los campos del formulario
-  const handleChange = (field: keyof WelcomeScreenData, value: any) => {
+  const handleChange = useCallback((field: keyof WelcomeScreenData, value: any) => {
     // Asegurarnos de no establecer valores undefined
     const safeValue = value === undefined ? '' : value;
     
@@ -419,10 +482,10 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
         return updated;
       });
     }
-  };
+  }, [validationErrors]);
 
   // Validar formulario
-  const validateForm = (): boolean => {
+  const validateForm = useCallback((): boolean => {
     const errors: { [key: string]: string } = {};
     
     // Validación del campo isEnabled (siempre debe existir)
@@ -470,170 +533,69 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
     
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
-  };
+  }, [formData]);
 
-  // Función para mostrar el modal con JSON
-  const showJsonModal = (json: any, action: 'save' | 'preview') => {
-    setJsonToSend(JSON.stringify(json, null, 2));
-    setPendingAction(action);
-    setShowJsonPreview(true);
-  };
-
-  // Función para cerrar el modal JSON
-  const closeJsonModal = () => {
-    setShowJsonPreview(false);
-    setPendingAction(null);
-  };
-
-  // Función para continuar con la acción después de mostrar el JSON
-  const continueWithAction = () => {
-    closeJsonModal();
-    
-    if (pendingAction === 'save') {
-      // Ejecutar la mutación para guardar
-      try {
-        const dataToSaveObj = JSON.parse(jsonToSend);
-        console.log('[WelcomeScreenForm] Enviando datos al backend:', dataToSaveObj);
-        mutate(dataToSaveObj);
-      } catch (error) {
-        console.error('[WelcomeScreenForm] Error al procesar JSON:', error);
-        toast.error('Error al procesar los datos del formulario');
-      }
-    } else if (pendingAction === 'preview') {
-      // Mostrar mensaje de previsualización
-      showModal({
-        title: 'Información',
-        message: SUCCESS_MESSAGES.PREVIEW_COMING_SOON,
-        type: 'info'
-      });
-      
-      toast.success(SUCCESS_MESSAGES.PREVIEW_COMING_SOON);
-    }
-  };
-
-  // Guardar formulario (modificado para mostrar JSON primero)
-  const handleSave = () => {
-    if (!isAuthenticated) {
-      showModal({
-        title: ERROR_MESSAGES.AUTH_ERROR,
-        message: ERROR_MESSAGES.AUTH_REQUIRED,
-        type: 'error'
-      });
-      return;
-    }
-
-    if (validateForm()) {
-      // Preparar datos para enviar
-      const dataToSave = {
-        ...formData,
-        researchId,
-        metadata: {
-          version: '1.0.0',
-          updatedAt: new Date().toISOString()
-        }
-      };
-
-      // Mostrar modal con JSON en lugar de guardar directamente
-      showJsonModal(dataToSave, 'save');
-    } else {
-      showModal({
-        title: ERROR_MESSAGES.FORM_ERRORS_TITLE,
-        message: ERROR_MESSAGES.FORM_ERRORS_MESSAGE,
-        type: 'error'
-      });
-    }
-  };
-
-  // Previsualizar formulario (modificado para mostrar JSON primero)
-  const handlePreview = () => {
+  // Manejar guardado del formulario
+  const handleSave = useCallback(() => {
     if (!validateForm()) {
-      showModal({
-        title: ERROR_MESSAGES.FORM_ERRORS_TITLE,
-        message: ERROR_MESSAGES.FORM_ERRORS_MESSAGE,
-        type: 'error'
-      });
+      // Mostrar mensaje de error
+      toast.error('Por favor, corrija los errores antes de guardar');
       return;
     }
 
-    // Preparar datos para previsualizar
-    const dataToPreview = {
+    // Crear objeto con los datos a enviar
+    const dataToSave = {
       ...formData,
-      researchId,
       metadata: {
         version: '1.0.0',
         updatedAt: new Date().toISOString()
       }
     };
 
-    // Mostrar modal con JSON
-    showJsonModal(dataToPreview, 'preview');
-  };
+    // Mostrar modal con JSON para confirmar antes de guardar
+    showJsonModal(dataToSave, 'save');
 
-  // Crear el elemento modal de JSON para mostrar el código
-  useEffect(() => {
-    // Solo crear el modal si se va a mostrar
-    if (showJsonPreview && jsonToSend) {
-      // Crear HTML para el modal
-      const modalHtml = `
-        <div id="jsonPreviewModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999;">
-          <div style="background: white; border-radius: 8px; max-width: 90%; width: 800px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 4px 20px rgba(0,0,0,0.2); overflow: hidden;">
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid #e5e7eb;">
-              <h2 style="margin: 0; font-size: 18px; font-weight: 600;">JSON a enviar</h2>
-              <button id="closeJsonModal" style="background: none; border: none; cursor: pointer; font-size: 20px; color: #6b7280;">&times;</button>
-            </div>
-            <div style="padding: 24px; overflow-y: auto; flex-grow: 1;">
-              <p style="margin: 0 0 16px; color: #6b7280; font-size: 14px;">
-                Este es el JSON que se enviará al servidor. Revise los datos antes de continuar.
-              </p>
-              <pre style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; overflow: auto; max-height: 400px; font-family: monospace; font-size: 14px; white-space: pre-wrap; word-break: break-word;">${jsonToSend.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
-            </div>
-            <div style="padding: 16px 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px;">
-              <button id="cancelJsonAction" style="background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; border-radius: 6px; padding: 8px 16px; font-weight: 500; cursor: pointer;">Cancelar</button>
-              <button id="continueJsonAction" style="background: #3f51b5; color: white; border: none; border-radius: 6px; padding: 8px 16px; font-weight: 500; cursor: pointer;">
-                ${pendingAction === 'save' ? 'Guardar' : 'Previsualizar'}
-              </button>
-            </div>
-          </div>
-        </div>
-      `;
-      
-      // Crear elemento en el DOM
-      const modalContainer = document.createElement('div');
-      modalContainer.innerHTML = modalHtml;
-      document.body.appendChild(modalContainer);
-      
-      // Configurar eventos
-      document.getElementById('closeJsonModal')?.addEventListener('click', () => {
-        document.body.removeChild(modalContainer);
-        closeJsonModal();
-      });
-      
-      document.getElementById('cancelJsonAction')?.addEventListener('click', () => {
-        document.body.removeChild(modalContainer);
-        closeJsonModal();
-      });
-      
-      document.getElementById('continueJsonAction')?.addEventListener('click', () => {
-        document.body.removeChild(modalContainer);
-        continueWithAction();
-      });
-      
-      // También permitir cerrar haciendo clic fuera del modal
-      modalContainer.addEventListener('click', (e) => {
-        if (e.target === modalContainer.firstChild) {
-          document.body.removeChild(modalContainer);
-          closeJsonModal();
-        }
-      });
-      
-      // Limpiar al desmontar
-      return () => {
-        if (document.body.contains(modalContainer)) {
-          document.body.removeChild(modalContainer);
-        }
-      };
+  }, [formData, validateForm, showJsonModal]);
+
+  // Manejar previsualización del formulario
+  const handlePreview = useCallback(() => {
+    if (!validateForm()) {
+      // Mostrar mensaje de error
+      toast.error('Por favor, corrija los errores antes de previsualizar');
+      return;
     }
-  }, [showJsonPreview, jsonToSend, pendingAction]);
+
+    // Crear objeto con los datos para previsualizar
+    const dataToPreview = {
+      ...formData,
+      metadata: {
+        version: '1.0.0',
+        updatedAt: new Date().toISOString()
+      }
+    };
+
+    // Mostrar modal con JSON directamente (sin pasar por "showJsonModal")
+    // para que funcione igual que en CognitiveTasks
+    try {
+      const stringifiedJson = JSON.stringify(dataToPreview, null, 2);
+      setJsonToSend(stringifiedJson);
+      setPendingAction('preview');
+      setShowJsonPreview(true);
+      
+      console.log('[useWelcomeScreenForm] Mostrando modal JSON para vista previa');
+      console.log('[useWelcomeScreenForm] JSON para vista previa:', stringifiedJson);
+    } catch (error) {
+      console.error('[useWelcomeScreenForm] Error al procesar JSON para vista previa:', error);
+      toast.error('Error al procesar los datos para vista previa');
+    }
+  }, [formData, validateForm]);
+
+  // Efecto para crear el modal JSON
+  useEffect(() => {
+    // Este efecto ya no es necesario porque usamos el componente JsonPreviewModal
+    // que ya incluye toda la funcionalidad necesaria
+    return () => {};
+  }, [showJsonPreview, jsonToSend, pendingAction, continueWithAction, closeJsonModal, validationErrors]);
 
   return {
     formData,
@@ -650,6 +612,9 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
     validateForm,
     closeModal,
     showJsonPreview,
-    closeJsonModal
+    closeJsonModal,
+    jsonToSend,
+    pendingAction,
+    continueWithAction
   };
 }; 

@@ -6,6 +6,7 @@ import { WelcomeScreenToggle } from './components/WelcomeScreenToggle';
 import { WelcomeScreenFields } from './components/WelcomeScreenFields';
 import { WelcomeScreenFooter } from './components/WelcomeScreenFooter';
 import { ErrorModal } from './components/ErrorModal';
+import { JsonPreviewModal } from './components/JsonPreviewModal';
 import { UI_TEXTS } from './constants';
 
 /**
@@ -29,7 +30,12 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
     handleSave,
     handlePreview,
     validateForm,
-    closeModal
+    closeModal,
+    showJsonPreview,
+    closeJsonModal,
+    jsonToSend,
+    pendingAction,
+    continueWithAction
   } = useWelcomeScreenForm(researchId);
 
   // Manejar cambio en el toggle
@@ -144,6 +150,15 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
         isOpen={modalVisible}
         onClose={closeModal}
         error={modalError}
+      />
+
+      {/* Modal para la vista previa del JSON */}
+      <JsonPreviewModal
+        isOpen={showJsonPreview}
+        onClose={closeJsonModal}
+        onContinue={continueWithAction}
+        jsonData={jsonToSend}
+        pendingAction={pendingAction}
       />
     </div>
   );
