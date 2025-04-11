@@ -127,11 +127,6 @@ export function EmotionalStates({
             <div className="absolute left-8 right-0 bottom-0 flex items-end gap-1 h-[256px]">
               {emotionalStates.map((state) => (
                 <div key={state.name} className="flex-1 flex flex-col items-center group h-full">
-                  {/* Porcentaje arriba de la barra */}
-                  <div className="text-xs mb-1 absolute -top-6">
-                    {state.value}%
-                  </div>
-                  
                   {/* La barra en sí */}
                   <div className="relative w-full flex justify-center h-full">
                     <div 
@@ -143,6 +138,17 @@ export function EmotionalStates({
                         height: `${Math.max(state.value * 8, 3)}%`,
                       }}
                     />
+                    
+                    {/* Porcentaje en el extremo superior de la barra */}
+                    <div 
+                      className="absolute text-xs font-medium"
+                      style={{ 
+                        bottom: `${Math.max(state.value * 8, 3)}%`, 
+                        transform: 'translateY(-100%)' 
+                      }}
+                    >
+                      {state.value}%
+                    </div>
                   </div>
                   
                   {/* Nombre debajo de la barra */}
