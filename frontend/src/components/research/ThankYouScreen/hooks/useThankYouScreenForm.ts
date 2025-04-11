@@ -371,12 +371,11 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
             // Actualizar mensaje de toast a éxito
             toast.success(thankYouScreenId ? 'Pantalla de agradecimiento actualizada exitosamente' : 'Pantalla de agradecimiento creada exitosamente', { 
               id: loadingToastId,
-              duration: 5000,
+              duration: 4000,
               style: {
-                background: '#F0FDF4',
-                color: '#166534',
-                padding: '16px',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                background: '#10b981',
+                color: '#fff',
+                fontWeight: 'bold'
               },
               icon: '✅'
              });
