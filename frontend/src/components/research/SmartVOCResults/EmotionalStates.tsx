@@ -97,9 +97,9 @@ export function EmotionalStates({
           <h3 className="text-2xl font-semibold mb-2">Emotional states</h3>
           <p className="text-4xl font-bold mb-12">{positivePercentage.toFixed(2)}% Positive</p>
           
-          <div className="relative h-[320px] mt-8">
+          <div className="relative h-[320px] mt-8 pb-10">
             {/* Fondo cuadriculado */}
-            <div className="absolute inset-0">
+            <div className="absolute inset-0 bottom-10">
               {[10, 5, 0].map((value, i) => (
                 <div 
                   key={value} 
@@ -115,12 +115,12 @@ export function EmotionalStates({
             </div>
 
             {/* Valores del eje Y */}
-            <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-base text-gray-500">
-              {[10, 5, 0].map((value) => (
+            <div className="absolute left-0 h-[calc(100%-40px)]">
+              {[10, 5, 0].map((value, i) => (
                 <div 
                   key={value} 
-                  className="h-8 -mt-4"
-                  style={{ position: 'absolute', top: `${value === 10 ? 0 : value === 5 ? 50 : 100}%` }}
+                  className="absolute text-sm text-gray-500"
+                  style={{ top: `${i * 50}%`, transform: 'translateY(-50%)' }}
                 >
                   {value}
                 </div>
@@ -128,36 +128,50 @@ export function EmotionalStates({
             </div>
 
             {/* Contenedor de barras */}
-            <div className="absolute left-8 right-0 bottom-0 flex items-end gap-1 h-[256px]">
+            <div className="absolute left-10 right-0 bottom-10 top-0 flex">
               {emotionalStates.map((state) => (
-                <div key={state.name} className="flex-1 flex flex-col items-center group h-full">
-                  {/* La barra en sí */}
-                  <div className="relative w-full flex justify-center h-full">
-                    <div 
-                      className={cn(
-                        "absolute bottom-0 w-[4.8px]",
-                        state.isPositive ? "bg-[#4ADE80]" : "bg-[#F87171]"
-                      )}
-                      style={{ 
-                        height: `${(state.value / 10) * 100}%`,
-                      }}
-                    />
-                    
-                    {/* Porcentaje en el extremo superior de la barra */}
-                    <div 
-                      className="absolute text-xs font-medium"
-                      style={{ 
-                        bottom: `${(state.value / 10) * 100}%`, 
-                        transform: 'translateY(-100%)' 
-                      }}
-                    >
-                      {state.value}%
-                    </div>
+                <div key={state.name} className="flex-1 relative flex flex-col items-center">
+                  {/* Porcentaje arriba de la barra */}
+                  <div 
+                    className="absolute text-xs font-medium" 
+                    style={{ 
+                      bottom: `${state.value * 10}%`, 
+                      transform: 'translateY(-100%)' 
+                    }}
+                  >
+                    {state.value}%
                   </div>
                   
-                  {/* Nombre debajo de la barra */}
-                  <div className="absolute bottom-[-24px] transform rotate-[-45deg] origin-top-left">
-                    <span className="text-xs whitespace-nowrap text-gray-600 block">
+                  {/* La barra en sí */}
+                  <div 
+                    className={cn(
+                      "absolute bottom-0 w-4",
+                      state.isPositive ? "bg-[#4ADE80]" : "bg-[#F87171]"
+                    )}
+                    style={{ 
+                      height: `${state.value * 10}%`,
+                      left: '50%',
+                      transform: 'translateX(-50%)'
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+            
+            {/* Nombres debajo del gráfico */}
+            <div className="absolute left-10 right-0 bottom-[-5px] h-[100px] flex">
+              {emotionalStates.map((state) => (
+                <div key={`label-${state.name}`} className="flex-1 flex justify-center">
+                  <div className="h-full flex flex-col items-center relative">
+                    <span 
+                      className="text-xs text-gray-600 absolute bottom-0 whitespace-nowrap"
+                      style={{ 
+                        writingMode: "vertical-lr",
+                        transform: "rotate(180deg)",
+                        textOrientation: "mixed",
+                        lineHeight: "1"
+                      }}
+                    >
                       {state.name}
                     </span>
                   </div>
