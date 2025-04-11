@@ -11,7 +11,7 @@ import { CognitiveTaskForm } from './CognitiveTask';
 // import { EyeTrackingForm } from './EyeTracking/EyeTrackingForm';
 import { SmartVOCCognitiveTaskAnalysis } from './SmartVOCCognitiveTaskAnalysis';
 import { SmartVOCForm } from './SmartVOC';
-import { SmartVOCResults } from './SmartVOCResults';
+import { SmartVOCResults } from './SmartVOCResults/index';
 import { ThankYouScreenForm } from './ThankYouScreen';
 import { WelcomeScreenForm } from './WelcomeScreen';
 import { RecruitEyeTrackingForm } from './EyeTracking/Recruit/RecruitEyeTrackingForm';
