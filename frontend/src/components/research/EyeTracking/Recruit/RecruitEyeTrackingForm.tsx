@@ -274,16 +274,16 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                     <div className="flex items-center gap-2">
                       <input
                         type="checkbox"
-                        id="allowMobileDevices"
-                        checked={formData.linkConfig.allowMobileDevices}
+                        id="allowMobile"
+                        checked={formData.linkConfig.allowMobile}
                         onChange={(e) => {
                           console.log('Dispositivos móviles clicado:', e.target.checked);
-                          handleLinkConfigChange('allowMobileDevices' as LinkConfigKey, e.target.checked);
+                          handleLinkConfigChange('allowMobile' as LinkConfigKey, e.target.checked);
                         }}
                         disabled={!linkConfigEnabled}
                         className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                       />
-                      <label htmlFor="allowMobileDevices" className={`text-sm ${linkConfigEnabled ? 'cursor-pointer' : 'cursor-not-allowed'}`}>Permitir que los participantes realicen la encuesta en dispositivos móviles</label>
+                      <label htmlFor="allowMobile" className={`text-sm ${linkConfigEnabled ? 'cursor-pointer' : 'cursor-not-allowed'}`}>Permitir que los participantes realicen la encuesta en dispositivos móviles</label>
                     </div>
                     
                     <div className="flex items-center gap-2">
@@ -301,13 +301,13 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                     <div className="flex items-center gap-2">
                       <input
                         type="checkbox"
-                        id="multipleAttempts"
-                        checked={formData.linkConfig.multipleAttempts}
-                        onChange={(e) => handleLinkConfigChange('multipleAttempts' as LinkConfigKey, e.target.checked)}
+                        id="allowMultipleAttempts"
+                        checked={formData.linkConfig.allowMultipleAttempts}
+                        onChange={(e) => handleLinkConfigChange('allowMultipleAttempts' as LinkConfigKey, e.target.checked)}
                         disabled={!linkConfigEnabled}
                         className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                       />
-                      <label htmlFor="multipleAttempts" className={`text-sm ${linkConfigEnabled ? 'cursor-pointer' : 'cursor-not-allowed'}`}>Se puede realizar varias veces dentro de una misma sesión</label>
+                      <label htmlFor="allowMultipleAttempts" className={`text-sm ${linkConfigEnabled ? 'cursor-pointer' : 'cursor-not-allowed'}`}>Se puede realizar varias veces dentro de una misma sesión</label>
                     </div>
                   </div>
                 </div>
@@ -334,12 +334,12 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                     <div className="flex items-center gap-2">
                       <input
                         type="number"
-                        value={formData.participantLimit.limit}
+                        value={formData.participantLimit.value}
                         onChange={(e) => setParticipantLimit(parseInt(e.target.value) || 0)}
                         disabled={!formData.participantLimit.enabled}
                         className="w-20 px-3 py-2 border border-neutral-300 rounded-md disabled:bg-neutral-100 disabled:cursor-not-allowed"
                       />
-                      <span className="text-sm">Recibirás {formData.participantLimit.limit} respuestas más.</span>
+                      <span className="text-sm">Recibirás {formData.participantLimit.value} respuestas más.</span>
                     </div>
                   </div>
                 </div>
@@ -498,56 +498,45 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                       <div className="flex items-center gap-1 bg-blue-50 px-3 py-1 rounded-full">
                         <input
                           type="checkbox"
-                          id="parameters"
-                          checked={formData.parameterOptions.parameters}
-                          onChange={(e) => handleParamOptionChange('parameters' as ParameterOptionKey, e.target.checked)}
+                          id="saveDeviceInfo"
+                          checked={formData.parameterOptions.saveDeviceInfo}
+                          onChange={(e) => handleParamOptionChange('saveDeviceInfo' as ParameterOptionKey, e.target.checked)}
                           className="w-4 h-4 cursor-pointer"
                         />
-                        <label htmlFor="parameters" className="text-xs text-blue-600 cursor-pointer">Parámetros</label>
+                        <label htmlFor="saveDeviceInfo" className="text-xs text-blue-600 cursor-pointer">Guardar información del dispositivo</label>
                       </div>
                       
                       <div className="flex items-center gap-1 bg-blue-50 px-3 py-1 rounded-full">
                         <input
                           type="checkbox"
-                          id="separated"
-                          checked={formData.parameterOptions.separated}
-                          onChange={(e) => handleParamOptionChange('separated' as ParameterOptionKey, e.target.checked)}
+                          id="saveLocationInfo"
+                          checked={formData.parameterOptions.saveLocationInfo}
+                          onChange={(e) => handleParamOptionChange('saveLocationInfo' as ParameterOptionKey, e.target.checked)}
                           className="w-4 h-4 cursor-pointer"
                         />
-                        <label htmlFor="separated" className="text-xs text-blue-600 cursor-pointer">Separados</label>
+                        <label htmlFor="saveLocationInfo" className="text-xs text-blue-600 cursor-pointer">Guardar información de ubicación</label>
                       </div>
                       
                       <div className="flex items-center gap-1 bg-blue-50 px-3 py-1 rounded-full">
                         <input
                           type="checkbox"
-                          id="with"
-                          checked={formData.parameterOptions.with}
-                          onChange={(e) => handleParamOptionChange('with' as ParameterOptionKey, e.target.checked)}
+                          id="saveResponseTimes"
+                          checked={formData.parameterOptions.saveResponseTimes}
+                          onChange={(e) => handleParamOptionChange('saveResponseTimes' as ParameterOptionKey, e.target.checked)}
                           className="w-4 h-4 cursor-pointer"
                         />
-                        <label htmlFor="with" className="text-xs text-blue-600 cursor-pointer">Con</label>
+                        <label htmlFor="saveResponseTimes" className="text-xs text-blue-600 cursor-pointer">Guardar tiempos de respuesta</label>
                       </div>
                       
                       <div className="flex items-center gap-1 bg-blue-50 px-3 py-1 rounded-full">
                         <input
                           type="checkbox"
-                          id="comma"
-                          checked={formData.parameterOptions.comma}
-                          onChange={(e) => handleParamOptionChange('comma' as ParameterOptionKey, e.target.checked)}
+                          id="saveUserJourney"
+                          checked={formData.parameterOptions.saveUserJourney}
+                          onChange={(e) => handleParamOptionChange('saveUserJourney' as ParameterOptionKey, e.target.checked)}
                           className="w-4 h-4 cursor-pointer"
                         />
-                        <label htmlFor="comma" className="text-xs text-blue-600 cursor-pointer">Coma</label>
-                      </div>
-                      
-                      <div className="flex items-center gap-1 bg-blue-50 px-3 py-1 rounded-full">
-                        <input
-                          type="checkbox"
-                          id="keys"
-                          checked={formData.parameterOptions.keys}
-                          onChange={(e) => handleParamOptionChange('keys' as ParameterOptionKey, e.target.checked)}
-                          className="w-4 h-4 cursor-pointer"
-                        />
-                        <label htmlFor="keys" className="text-xs text-blue-600 cursor-pointer">Claves</label>
+                        <label htmlFor="saveUserJourney" className="text-xs text-blue-600 cursor-pointer">Guardar recorrido del usuario</label>
                       </div>
                     </div>
                   </div>

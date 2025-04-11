@@ -34,17 +34,15 @@ export interface EyeTrackingRecruitConfig {
   
   // Configuración del enlace
   linkConfig: {
-    allowMobileDevices: boolean;
+    allowMobile: boolean;
     trackLocation: boolean;
-    multipleAttempts: boolean;
-    limitParticipants: boolean;
-    participantLimit: number;
+    allowMultipleAttempts: boolean;
   };
   
   // Límite de participantes
   participantLimit: {
     enabled: boolean;
-    limit: number;
+    value: number;
   };
   
   // Enlaces de retorno
@@ -59,11 +57,10 @@ export interface EyeTrackingRecruitConfig {
   
   // Parámetros a guardar
   parameterOptions: {
-    parameters: boolean;
-    separated: boolean;
-    with: boolean;
-    comma: boolean;
-    keys: boolean;
+    saveDeviceInfo: boolean;
+    saveLocationInfo: boolean;
+    saveResponseTimes: boolean;
+    saveUserJourney: boolean;
   };
 }
 
@@ -151,18 +148,15 @@ export type DemographicQuestionKey =
   | 'technicalProficiency';
 
 export type LinkConfigKey = 
-  | 'allowMobileDevices' 
+  | 'allowMobile' 
   | 'trackLocation' 
-  | 'multipleAttempts'
-  | 'limitParticipants'
-  | 'participantLimit';
+  | 'allowMultipleAttempts';
 
 export type ParameterOptionKey = 
-  | 'parameters' 
-  | 'separated' 
-  | 'with' 
-  | 'comma' 
-  | 'keys';
+  | 'saveDeviceInfo' 
+  | 'saveLocationInfo' 
+  | 'saveResponseTimes' 
+  | 'saveUserJourney';
 
 export type BacklinkKey = 
   | 'complete' 
