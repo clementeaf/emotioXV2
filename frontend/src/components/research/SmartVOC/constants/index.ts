@@ -56,13 +56,27 @@ export const UI_TEXTS = {
     PREVIEW: 'Vista previa',
     SAVE: 'Guardar configuración',
     UPDATE: 'Actualizar configuración',
-    SAVING: 'Guardando...'
+    SAVING: 'Guardando...',
+    SAVED: 'Guardado',
+    CANCEL: 'Cancelar',
+    CONFIRM_SAVE: 'Confirmar y guardar'
   },
   MODAL: {
     ERROR_TITLE: 'Error',
     INFO_TITLE: 'Información',
     SUCCESS_TITLE: 'Éxito',
-    CLOSE_BUTTON: 'Cerrar'
+    CLOSE_BUTTON: 'Cerrar',
+    SAVE_CONFIRM_TITLE: 'Confirmar configuración',
+    SAVE_CONFIRM_MESSAGE: '¿Estás seguro de que deseas guardar esta configuración de SmartVOC?',
+    CONFIG_STATUS: 'Estado de la configuración',
+    SETTINGS_SECTION: 'Configuración general',
+    QUESTIONS_SECTION: 'Preguntas',
+    RANDOMIZE_ENABLED: 'Aleatorización de preguntas habilitada',
+    RANDOMIZE_DISABLED: 'Aleatorización de preguntas deshabilitada',
+    REQUIRED_ENABLED: 'Respuestas obligatorias habilitadas',
+    REQUIRED_DISABLED: 'Respuestas obligatorias deshabilitadas',
+    QUESTION_COUNT: 'preguntas configuradas',
+    NO_QUESTIONS: 'No hay preguntas configuradas'
   },
   ADD_QUESTION_MODAL: {
     TITLE: 'Añadir nueva pregunta',

@@ -119,6 +119,12 @@ interface UseCognitiveTaskFormResult {
   jsonToSend: string;
   pendingAction: 'save' | 'preview' | null;
   continueWithAction: () => void;
+  
+  // Propiedades para el modal de confirmación
+  showConfirmModal: boolean;
+  confirmAndSave: () => void;
+  cancelSave: () => void;
+  dataToSaveInConfirm: CognitiveTaskFormData | null;
 }
 
 // Definiciones locales para QUESTION_TYPES
@@ -235,30 +241,32 @@ export const useCognitiveTaskForm = (
   onSave?: (data: any) => void
 ): UseCognitiveTaskFormResult => {
   const queryClient = useQueryClient();
-  // Inicializar siempre con las preguntas predeterminadas
-  const [formData, setFormData] = useState<CognitiveTaskFormData>({
-    ...DEFAULT_COGNITIVE_TASK,
-    questions: [...DEFAULT_QUESTIONS],
-    researchId: researchId || ''
-  });
+  const [formData, setFormData] = useState<CognitiveTaskFormData>(DEFAULT_COGNITIVE_TASK);
   const [cognitiveTaskId, setCognitiveTaskId] = useState<string | null>(null);
-  // Inicializar validationErrors como un objeto vacío
-  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors | null>(null);
   const [modalError, setModalError] = useState<ErrorModalData | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [isAddQuestionModalOpen, setIsAddQuestionModalOpen] = useState<boolean>(false);
   const { isAuthenticated, token } = useAuth();
   
-  // Estados para controlar carga de archivos
+  // Estados para la gestión de archivos y carga
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [currentFileIndex, setCurrentFileIndex] = useState<number>(0);
   const [totalFiles, setTotalFiles] = useState<number>(0);
 
-  // Añadir después de los estados para el modal
+  // Estados para el JSON modal
   const [showJsonPreview, setShowJsonPreview] = useState<boolean>(false);
   const [jsonToSend, setJsonToSend] = useState<string>('');
   const [pendingAction, setPendingAction] = useState<'save' | 'preview' | null>(null);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+
+  // Referencias para cacheo de archivos
+  const tempFilesRef = useRef<Record<string, Record<string, ExtendedUploadedFile>>>({});
+
+  // Define variables for confirmation modal
+  const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
+  const [dataToSaveInConfirm, setDataToSaveInConfirm] = useState<CognitiveTaskFormData | null>(null);
 
   // Handlers para el modal
   const closeModal = useCallback(() => setModalVisible(false), []);
@@ -444,7 +452,7 @@ export const useCognitiveTaskForm = (
   }, [researchId, loadFilesFromLocalStorage]); // Dependencia en loadFilesFromLocalStorage
 
   // Mutación para guardar datos
-  const { mutate, isPending: isSaving } = useMutation({
+  const { mutate, isPending: isMutating } = useMutation({
     mutationFn: async (data: CognitiveTaskFormData) => {
       if (!isAuthenticated) {
         throw new Error('No autenticado: Se requiere un token de autenticación');
@@ -495,9 +503,6 @@ export const useCognitiveTaskForm = (
       // Invalidar la consulta para recargar datos
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.COGNITIVE_TASK, researchId] });
       
-      // Mostrar mensaje de éxito
-      toast.success('Tarea cognitiva guardada correctamente');
-      
       // Cerrar el modal JSON si está abierto
       closeJsonModal();
       
@@ -520,8 +525,6 @@ export const useCognitiveTaskForm = (
         message: errorMsg,
         type: 'error'
       });
-      
-      toast.error(errorMsg);
     }
   });
 
@@ -1189,151 +1192,81 @@ export const useCognitiveTaskForm = (
     }
   };
 
-  // Función para renderizar el contenido específico de una pregunta en la vista previa
-  const renderQuestionContent = (question: any) => {
-    const isFileQuestion = ['navigation_flow', 'preference_test'].includes(question.type);
-    const hasFiles = question.files && Array.isArray(question.files) && question.files.length > 0;
-    const hasValidFiles = isFileQuestion && hasFiles && question.files.some((file: any) => file && file.s3Key);
-    
-    let content = '';
-    
-    // Según el tipo de pregunta, renderizar distinto contenido
-    switch (question.type) {
-      case 'short_text':
-      case 'long_text':
-        content = `<div class="text-input-preview" style="margin-top: 10px; color: #6b7280; font-style: italic;">[Campo de texto para respuesta]</div>`;
-        break;
-        
-      case 'single_choice':
-      case 'multiple_choice':
-      case 'ranking':
-        if (question.choices && question.choices.length > 0) {
-          content = `
-            <div class="choices-preview" style="margin-top: 10px;">
-              <ul style="margin: 8px 0; padding-left: 20px;">
-                ${question.choices.map((choice: any) => `
-                  <li style="margin-bottom: 5px;">
-                    ${choice.text || '(Opción sin texto)'}
-                  </li>
-                `).join('')}
-              </ul>
-            </div>
-          `;
-        } else {
-          content = `<div style="margin-top: 10px; color: #6b7280; font-style: italic;">No hay opciones definidas</div>`;
-        }
-        break;
-        
-      case 'linear_scale':
-        if (question.scaleConfig) {
-          const { startValue, endValue, startLabel, endLabel } = question.scaleConfig;
-          content = `
-            <div class="scale-preview" style="margin-top: 12px;">
-              <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                <div>${startLabel || ''} (${startValue})</div>
-                <div>${endLabel || ''} (${endValue})</div>
-              </div>
-              <div style="height: 8px; background: #e5e7eb; border-radius: 4px; position: relative;">
-                ${Array.from({ length: endValue - startValue + 1 }, (_, i) => `
-                  <div style="position: absolute; left: ${(i / (endValue - startValue)) * 100}%; transform: translateX(-50%); top: -8px; width: 20px; height: 20px; background: #white; border: 1px solid #d1d5db; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px;">
-                    ${startValue + i}
-                  </div>
-                `).join('')}
-              </div>
-            </div>
-          `;
-        } else {
-          content = `<div style="margin-top: 10px; color: #6b7280; font-style: italic;">Escala no configurada</div>`;
-        }
-        break;
-        
-      case 'navigation_flow':
-      case 'preference_test':
-        if (hasValidFiles) {
-          content = `
-            <div class="file-preview" style="margin-top: 10px;">
-              <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-                ${question.files.map((file: any) => file && file.s3Key ? `
-                  <div style="border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden; width: 120px;">
-                    <div style="height: 80px; background: #f9fafb; display: flex; align-items: center; justify-content: center;">
-                      <span style="color: #6b7280; font-size: 12px;">[Vista previa de imagen]</span>
-                    </div>
-                    <div style="padding: 6px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                      ${file.name || 'Archivo'}
-                    </div>
-                  </div>
-                ` : '').join('')}
-              </div>
-            </div>
-          `;
-        } else {
-          content = `
-            <div style="margin-top: 10px; padding: 8px 12px; background-color: #fffbeb; color: #d97706; border: 1px solid #fbbf24; border-radius: 4px; font-size: 14px;">
-              ⚠️ No hay archivos subidos para esta pregunta
-            </div>
-          `;
-        }
-        break;
-        
-      default:
-        content = `<div style="margin-top: 10px; color: #6b7280; font-style: italic;">Vista previa no disponible</div>`;
-    }
-    
-    return content;
-  };
-
-  // Función para determinar si la pregunta es una de las predeterminadas sin modificar
-  const isDefaultQuestion = (question: any) => {
-    // Buscar la pregunta correspondiente en DEFAULT_QUESTIONS
-    const defaultQuestion = DEFAULT_QUESTIONS.find(q => q.id === question.id);
-    
-    // Si no existe en las predeterminadas, es nueva (modificada)
-    if (!defaultQuestion) return false;
-    
-    // Comprobar si el título ha cambiado
-    if (defaultQuestion.title !== question.title) return false;
-    
-    // Comprobar si las opciones han cambiado (para preguntas de elección)
-    if (question.choices && defaultQuestion.choices) {
-      // Si el número de opciones es diferente, está modificada
-      if (question.choices.length !== defaultQuestion.choices.length) return false;
+  // Función para previsualizar el formulario
+  const handlePreview = useCallback(() => {
+    if (!validateForm()) {
+      // Crear un mensaje con la lista de errores
+      const errorMessageText = 'Errores: ' + Object.values(validationErrors || {}).join(', ');
       
-      // Verificar cada opción
-      for (let i = 0; i < question.choices.length; i++) {
-        if (question.choices[i].text !== defaultQuestion.choices[i].text) return false;
-      }
+      showModal({
+        title: 'Error de previsualización',
+        message: errorMessageText,
+        type: 'error'
+      });
+      
+      toast.error('Por favor corrija los errores antes de previsualizar', {
+        duration: 5000,
+        style: {
+          background: '#FEF2F2',
+          color: '#991B1B',
+          padding: '16px',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+        },
+        icon: '⚠️'
+      });
+      return;
     }
     
-    // Para escala lineal, comprobar la configuración de la escala
-    if (question.type === 'linear_scale' && question.scaleConfig && defaultQuestion.scaleConfig) {
-      if (
-        question.scaleConfig.startValue !== defaultQuestion.scaleConfig.startValue ||
-        question.scaleConfig.endValue !== defaultQuestion.scaleConfig.endValue ||
-        question.scaleConfig.startLabel !== defaultQuestion.scaleConfig.startLabel ||
-        question.scaleConfig.endLabel !== defaultQuestion.scaleConfig.endLabel
-      ) {
-        return false;
-      }
+    try {
+      // Mostrar mensaje de funcionalidad en desarrollo
+      toast.success(SUCCESS_MESSAGES_EXTENDED.PREVIEW_COMING_SOON, {
+        duration: 5000,
+        style: {
+          background: '#F0F9FF',
+          color: '#0C4A6E',
+          padding: '16px',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+        },
+        icon: 'ℹ️'
+      });
+      
+      // Preparar datos para preview
+      const dataToPreview = {
+        ...formData,
+        metadata: {
+          updatedAt: new Date().toISOString()
+        }
+      };
+      
+      // Mostrar modal con JSON
+      showJsonModal(dataToPreview, 'preview');
+    } catch (error) {
+      console.error('[useCognitiveTaskForm] Error al preparar vista previa:', error);
+      toast.error('Error al generar la vista previa', {
+        duration: 5000,
+        style: {
+          background: '#FEF2F2',
+          color: '#991B1B',
+          padding: '16px',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+        },
+        icon: '❌'
+      });
     }
-    
-    // Si no se detectó ningún cambio, es una pregunta predeterminada sin modificar
-    return true;
-  };
+  }, [validateForm, validationErrors, formData, showModal, showJsonModal]);
 
-  // Función auxiliar para obtener la etiqueta del tipo de pregunta
-  const getQuestionTypeLabel = (type: string) => {
-    const typeMap: Record<string, string> = {
-      'short_text': 'Texto Corto',
-      'long_text': 'Texto Largo',
-      'single_choice': 'Opción Única',
-      'multiple_choice': 'Opción Múltiple',
-      'linear_scale': 'Escala Lineal',
-      'ranking': 'Ranking',
-      'navigation_flow': 'Flujo de Navegación',
-      'preference_test': 'Prueba de Preferencia'
-    };
-    return typeMap[type] || type;
-  };
+  // Función para inicializar preguntas predeterminadas
+  const initializeDefaultQuestions = useCallback((defaultQuestions: Question[]) => {
+    setFormData(prevData => ({
+      ...prevData,
+      questions: defaultQuestions.map(q => ({
+        ...q,
+        id: q.id || uuidv4()
+      }))
+    }));
+    
+    console.log('[useCognitiveTaskForm] Inicializadas preguntas predeterminadas:', defaultQuestions.length);
+  }, []);
 
   // Función para guardar formulario (modificado para mostrar JSON primero)
   const handleSave = useCallback(() => {
@@ -1346,155 +1279,284 @@ export const useCognitiveTaskForm = (
       return;
     }
 
-    // Construir el objeto que coincida exactamente con CognitiveTaskFormData de shared/interfaces
-    const dataToSave: CognitiveTaskFormData = {
-      researchId: researchId || '',
-      questions: formData.questions
-        // Filtrar preguntas que son required=true pero no tienen archivos
-        .filter(question => {
-          if (['navigation_flow', 'preference_test'].includes(question.type) && question.required) {
-            // Solo mantener si tiene archivos válidos
-            const hasValidFiles = question.files && 
-                                 Array.isArray(question.files) && 
-                                 question.files.length > 0 && 
-                                 question.files.some(file => file && file.s3Key && typeof file.s3Key === 'string');
-            
-            if (!hasValidFiles) {
-              console.log(`[useCognitiveTaskForm] Omitiendo pregunta obligatoria ${question.id} sin archivos`);
-              toast.success(`Se ha omitido la pregunta "${question.title}" porque requiere archivos`);
-              return false;
-            }
-          }
-          return true;
-        })
-        .map(question => {
-        // Crear objeto limpio para cada pregunta según la interfaz Question
-        const cleanQuestion: Question = {
-          id: question.id,
-          type: question.type,
-          title: question.title || '',
-          required: Boolean(question.required),
-          showConditionally: Boolean(question.showConditionally),
-          deviceFrame: Boolean(question.deviceFrame)
-        };
-        
-        // Agregar descripción solo si existe
-        if (question.description) {
-          cleanQuestion.description = question.description;
-        }
-        
-        // Agregar choices solo para tipos específicos y si existen
-        if (['single_choice', 'multiple_choice', 'ranking'].includes(question.type) && question.choices) {
-          cleanQuestion.choices = question.choices.map(choice => ({
-            id: choice.id,
-            text: choice.text || '',
-            isQualify: Boolean(choice.isQualify),
-            isDisqualify: Boolean(choice.isDisqualify)
-          }));
-        }
-        
-        // Agregar scaleConfig solo para linear_scale y si existe
-        if (question.type === 'linear_scale' && question.scaleConfig) {
-          cleanQuestion.scaleConfig = {
-            startValue: Number(question.scaleConfig.startValue),
-            endValue: Number(question.scaleConfig.endValue),
-            startLabel: question.scaleConfig.startLabel || '',
-            endLabel: question.scaleConfig.endLabel || ''
-          };
-        }
-        
-        // Para tipos que usan archivos, simplemente incluimos los que tengan s3Key 
-        // sin aplicar reglas estrictas
-        if (['navigation_flow', 'preference_test'].includes(question.type) && question.files) {
-          // Simplemente incluir todos los archivos que tengan s3Key
-          const validFiles = question.files
-            .filter(file => file && file.s3Key && typeof file.s3Key === 'string')
-            .map(file => ({
-              id: file.id,
-              name: file.name,
-              size: Number(file.size),
-              type: file.type,
-              url: file.url,
-              s3Key: file.s3Key
-            }));
-          
-          // Asignar archivos validados (pero sin restricciones estrictas)
-          if (validFiles.length > 0) {
-            cleanQuestion.files = validFiles;
-          } else {
-            // Si no hay archivos válidos, usamos un array vacío
-            cleanQuestion.files = [];
-          }
-        }
-        
-        return cleanQuestion;
-      }),
-      randomizeQuestions: Boolean(formData.randomizeQuestions),
-      metadata: {
-        updatedAt: new Date().toISOString(),
-        lastModifiedBy: 'user-interface'
-      }
-    };
-    
-    console.log('[useCognitiveTaskForm] Datos filtrados según interfaz compartida:', dataToSave);
-    
-    // Verificar si hay errores de validación
-    const hasErrors = Object.keys(validationErrors).length > 0;
-
-    if (hasErrors) {
-      toast.error('Hay errores de validación en el formulario');
-      showModal({
-        title: 'Errores de validación',
-        message: Object.values(validationErrors).join('\n'),
-        type: 'error'
-      });
-      return false;
-    }
-    
-    // Mostrar modal con JSON en lugar de guardar directamente
-    showJsonModal(dataToSave, 'save');
-    
-    // Solo mostramos la alerta de validación pero permitimos ver el JSON
-    if (!validateForm()) {
+    // Verificar si hay errores de validación primero
+    const isValid = validateForm();
+    if (!isValid) {
       toast.error('Hay errores de validación en el formulario. Verifique los campos marcados.');
-    }
-  }, [isAuthenticated, showModal, validateForm, formData, showJsonModal, researchId, validationErrors, toast]);
-
-  // Función para renderizar el contenido específico de una pregunta en la vista previa
-  const handlePreview = useCallback(() => {
-    if (!validateForm()) {
-      // Notificar errores de validación
-      showModal({
-        title: 'Error de validación',
-        message: 'Por favor corrija los errores antes de previsualizar',
-        type: 'error'
-      });
-      
-      toast.error('Por favor corrija los errores antes de previsualizar');
       return;
     }
-    
-    // Preparar datos para previsualizar incluyendo TODAS las preguntas
-    // (sin filtrar las de tipo 'navigation_flow' o 'preference_test' sin archivos)
-    const dataToPreview = {
-      ...formData,
-      metadata: {
-        version: '1.0.0',
-        updatedAt: new Date().toISOString()
-      }
-    };
-    
-    // Mostrar modal con JSON
-    showJsonModal(dataToPreview, 'preview');
-  }, [validateForm, showModal, formData, showJsonModal]);
 
-  // Función para inicializar las preguntas por defecto
-  const initializeDefaultQuestions = useCallback((defaultQuestions: Question[]) => {
-    setFormData(prev => ({
-      ...prev,
-      questions: defaultQuestions
-    }));
-  }, []);
+    try {
+      // Construir el objeto que coincida exactamente con CognitiveTaskFormData de shared/interfaces
+      const dataToSave: CognitiveTaskFormData = {
+        researchId: researchId || '',
+        questions: formData.questions
+          // Filtrar preguntas que son required=true pero no tienen archivos
+          .filter(question => {
+            if (['navigation_flow', 'preference_test'].includes(question.type) && question.required) {
+              // Solo mantener si tiene archivos válidos
+              const hasValidFiles = question.files && 
+                                   Array.isArray(question.files) && 
+                                   question.files.length > 0 && 
+                                   question.files.some(file => file && file.s3Key && typeof file.s3Key === 'string');
+              
+              if (!hasValidFiles) {
+                console.log(`[useCognitiveTaskForm] Omitiendo pregunta obligatoria ${question.id} sin archivos`);
+                toast.error(`La pregunta "${question.title}" requiere archivos pero no tiene ninguno.`);
+                return false;
+              }
+            }
+            return true;
+          })
+          .map(question => {
+          // Crear objeto limpio para cada pregunta según la interfaz Question
+          const cleanQuestion: Question = {
+            id: question.id,
+            type: question.type,
+            title: question.title || '',
+            required: Boolean(question.required),
+            showConditionally: Boolean(question.showConditionally),
+            deviceFrame: Boolean(question.deviceFrame)
+          };
+          
+          // Agregar descripción solo si existe
+          if (question.description) {
+            cleanQuestion.description = question.description;
+          }
+          
+          // Agregar choices solo para tipos específicos y si existen
+          if (['single_choice', 'multiple_choice', 'ranking'].includes(question.type) && question.choices) {
+            cleanQuestion.choices = question.choices.map(choice => ({
+              id: choice.id,
+              text: choice.text || '',
+              isQualify: Boolean(choice.isQualify),
+              isDisqualify: Boolean(choice.isDisqualify)
+            }));
+          }
+          
+          // Agregar scaleConfig solo para linear_scale y si existe
+          if (question.type === 'linear_scale' && question.scaleConfig) {
+            cleanQuestion.scaleConfig = {
+              startValue: Number(question.scaleConfig.startValue),
+              endValue: Number(question.scaleConfig.endValue),
+              startLabel: question.scaleConfig.startLabel || '',
+              endLabel: question.scaleConfig.endLabel || ''
+            };
+          }
+          
+          // Para tipos que usan archivos, simplemente incluimos los que tengan s3Key 
+          // sin aplicar reglas estrictas
+          if (['navigation_flow', 'preference_test'].includes(question.type) && question.files) {
+            // Simplemente incluir todos los archivos que tengan s3Key
+            const validFiles = question.files
+              .filter(file => file && file.s3Key && typeof file.s3Key === 'string')
+              .map(file => ({
+                id: file.id,
+                name: file.name,
+                size: Number(file.size),
+                type: file.type,
+                url: file.url,
+                s3Key: file.s3Key
+              }));
+            
+            // Asignar archivos validados (pero sin restricciones estrictas)
+            if (validFiles.length > 0) {
+              cleanQuestion.files = validFiles;
+            } else {
+              // Si no hay archivos válidos, usamos un array vacío
+              cleanQuestion.files = [];
+            }
+          }
+          
+          return cleanQuestion;
+        }),
+        randomizeQuestions: Boolean(formData.randomizeQuestions),
+        metadata: {
+          updatedAt: new Date().toISOString(),
+          lastModifiedBy: 'user-interface'
+        }
+      };
+      
+      console.log('[useCognitiveTaskForm] Datos filtrados según interfaz compartida:', dataToSave);
+      
+      // Crear modal de confirmación utilizando DOM nativo
+      const confirmModalContainer = document.createElement('div');
+      confirmModalContainer.innerHTML = `
+        <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-auto p-6 relative">
+            <button id="closeConfirmModal" style="background: none; border: none; cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; color: #6b7280; border-radius: 50%; transition: all 0.2s; position: absolute; right: 16px; top: 16px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+            
+            <div class="mb-5">
+              <h3 class="text-lg font-bold text-gray-900 mb-2">Confirmar Acción</h3>
+              <p class="text-gray-600">¿Estás seguro que deseas guardar esta tarea cognitiva?</p>
+            </div>
+            
+            <div class="text-left mb-6">
+              <p class="text-sm font-medium text-gray-700 mb-2">Resumen del formulario:</p>
+              <ul class="pl-5 space-y-1 text-sm text-gray-600 list-disc">
+                <li><span class="font-medium">Número de preguntas:</span> ${dataToSave.questions.length}</li>
+                <li><span class="font-medium">Aleatorizar preguntas:</span> ${dataToSave.randomizeQuestions ? 'Sí' : 'No'}</li>
+                <li>
+                  <span class="font-medium">Tipos de preguntas:</span>
+                  <ul class="pl-4 mt-1 space-y-1 list-circle text-xs">
+                    ${
+                      Array.from(new Set(dataToSave.questions.map(q => q.type)))
+                        .map(type => {
+                          const count = dataToSave.questions.filter(q => q.type === type).length;
+                          const typeLabel = QUESTION_TYPES.find(t => t.id === type)?.label || type;
+                          return `<li>${typeLabel} (${count})</li>`;
+                        })
+                        .join('')
+                    }
+                  </ul>
+                </li>
+              </ul>
+            </div>
+            
+            <div class="flex gap-3 justify-end">
+              <button id="cancelSaveButton" class="px-4 py-2 border rounded-md text-gray-600 bg-white hover:bg-gray-50 transition-colors duration-200">
+                Cancelar
+              </button>
+              <button id="confirmSaveButton" class="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-200">
+                Guardar
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Añadir estilos al modal
+      const style = document.createElement('style');
+      style.innerHTML = `
+        #closeConfirmModal:hover {
+          background-color: rgba(0, 0, 0, 0.05);
+        }
+        
+        .list-circle {
+          list-style-type: circle;
+        }
+      `;
+      confirmModalContainer.appendChild(style);
+
+      // Añadir el modal al DOM
+      document.body.appendChild(confirmModalContainer);
+
+      // Evento para cerrar el modal
+      document.getElementById('closeConfirmModal')?.addEventListener('click', () => {
+        document.body.removeChild(confirmModalContainer);
+      });
+
+      // Evento para cancelar
+      document.getElementById('cancelSaveButton')?.addEventListener('click', () => {
+        document.body.removeChild(confirmModalContainer);
+      });
+
+      // Evento para confirmar y guardar
+      document.getElementById('confirmSaveButton')?.addEventListener('click', () => {
+        document.body.removeChild(confirmModalContainer);
+        
+        // Mostrar indicador de carga y mensaje de guardando
+        const loadingToastId = toast.loading('Guardando tarea cognitiva...', {
+          duration: Infinity, // Que no desaparezca automáticamente
+          style: {
+            background: '#F0F9FF',
+            color: '#0C4A6E',
+            padding: '16px',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+          },
+          icon: '⏳'
+        });
+        setIsSaving(true);
+        
+        // Ejecutar la mutación
+        mutate(dataToSave, {
+          onSuccess: (data) => {
+            if (data && data.id) {
+              setCognitiveTaskId(data.id);
+            }
+            
+            // Limpiar localStorage después de guardar exitosamente
+            if (researchId) {
+              const storageKey = `cognitive_task_temp_files_${researchId}`;
+              localStorage.removeItem(storageKey);
+              console.log('[useCognitiveTaskForm] Limpiando archivos temporales después de guardar exitoso');
+            }
+            
+            // Actualizar mensaje de toast a éxito
+            toast.success(cognitiveTaskId ? 'Tarea cognitiva actualizada exitosamente' : 'Tarea cognitiva creada exitosamente', { 
+              id: loadingToastId,
+              duration: 5000,
+              style: {
+                background: '#F0FDF4',
+                color: '#166534',
+                padding: '16px',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+              },
+              icon: '✅'
+            });
+            
+            // Invalidar la consulta para recargar datos
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.COGNITIVE_TASK, researchId] });
+            
+            // Ejecutar callback si existe
+            if (typeof onSave === 'function') {
+              onSave(data);
+            }
+            
+            // Restablecer estado de guardado
+            setIsSaving(false);
+          },
+          onError: (error: any) => {
+            console.error('[useCognitiveTaskForm] Error en mutación:', error);
+            
+            let errorMsg = 'Error al guardar la tarea cognitiva';
+            if (error.message) {
+              errorMsg += `: ${error.message}`;
+            }
+            
+            // Actualizar mensaje de toast a error
+            toast.error(errorMsg, { 
+              id: loadingToastId,
+              duration: 5000,
+              style: {
+                background: '#FEF2F2',
+                color: '#991B1B',
+                padding: '16px',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+              },
+              icon: '❌'
+            });
+            
+            // Mostrar modal de error
+            showModal({
+              title: 'Error de guardado',
+              message: errorMsg,
+              type: 'error'
+            });
+            
+            // Restablecer estado de guardado
+            setIsSaving(false);
+          }
+        });
+      });
+
+      // Cerrar modal al hacer clic fuera de él
+      confirmModalContainer.addEventListener('click', (e) => {
+        if (e.target === confirmModalContainer.firstChild) {
+          document.body.removeChild(confirmModalContainer);
+        }
+      });
+    } catch (error) {
+      console.error('[useCognitiveTaskForm] Error al preparar guardado:', error);
+      toast.error('Error al preparar la tarea cognitiva para guardar');
+      setIsSaving(false);
+    }
+  }, [isAuthenticated, showModal, validateForm, formData, researchId, cognitiveTaskId, mutate, setCognitiveTaskId, queryClient, onSave]);
 
   return {
     formData,
@@ -1535,7 +1597,13 @@ export const useCognitiveTaskForm = (
     closeJsonModal,
     jsonToSend,
     pendingAction,
-    continueWithAction
+    continueWithAction,
+    
+    // Propiedades para el modal de confirmación
+    showConfirmModal: false,
+    confirmAndSave: () => {}, // Función vacía para mantener la interfaz compatible
+    cancelSave: () => {}, // Función vacía para mantener la interfaz compatible
+    dataToSaveInConfirm: null
   };
 };
 

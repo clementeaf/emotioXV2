@@ -139,9 +139,15 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
           disabled={isLoading || isSaving}
           className={`px-4 py-2 text-sm font-medium rounded-md bg-blue-600 text-white 
             hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-            ${(isLoading || isSaving) ? 'opacity-50 cursor-not-allowed' : ''}`}
+            ${(isLoading || isSaving) ? 'opacity-50 cursor-not-allowed' : ''}
+            flex items-center justify-center min-w-[160px]`}
         >
-          {isSaving ? UI_TEXTS.BUTTONS.SAVING : (isNewConfig ? UI_TEXTS.BUTTONS.SAVE : UI_TEXTS.BUTTONS.UPDATE)}
+          {isSaving ? (
+            <div className="flex items-center gap-2">
+              <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+              <span>{UI_TEXTS.BUTTONS.SAVING}</span>
+            </div>
+          ) : (isNewConfig ? UI_TEXTS.BUTTONS.SAVE : UI_TEXTS.BUTTONS.UPDATE)}
         </button>
       </div>
 

@@ -49,9 +49,14 @@ export const SmartVOCFooter: React.FC<SmartVOCFooterProps> = ({
           type="button"
           onClick={onSave}
           disabled={isLoading || isSaving}
-          className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50"
+          className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 flex items-center justify-center min-w-[160px]"
         >
-          {getSaveButtonText()}
+          {isSaving ? (
+            <div className="flex items-center gap-2">
+              <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+              <span>{UI_TEXTS.BUTTONS.SAVING}</span>
+            </div>
+          ) : getSaveButtonText()}
         </button>
       </div>
     </div>

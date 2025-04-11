@@ -39,6 +39,7 @@ export const useSmartVOCForm = (researchId: string): UseSmartVOCFormResult => {
   const [showJsonPreview, setShowJsonPreview] = useState<boolean>(false);
   const [jsonToSend, setJsonToSend] = useState<string>('');
   const [pendingAction, setPendingAction] = useState<'save' | 'preview' | null>(null);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
 
   // Handlers para el modal
   const closeModal = () => setModalVisible(false);
@@ -78,7 +79,7 @@ export const useSmartVOCForm = (researchId: string): UseSmartVOCFormResult => {
   });
 
   // Mutación para guardar datos
-  const { mutate, isPending: isSaving } = useMutation({
+  const { mutate } = useMutation({
     mutationFn: async (data: SmartVOCFormData) => {
       try {
         if (!isAuthenticated || !token) {
@@ -111,7 +112,18 @@ export const useSmartVOCForm = (researchId: string): UseSmartVOCFormResult => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SMART_VOC, researchId] });
       
       // Mostrar mensaje de éxito
-      toast.success(SUCCESS_MESSAGES.SAVE_SUCCESS);
+      toast.success(SUCCESS_MESSAGES.SAVE_SUCCESS, {
+        duration: 4000,
+        style: {
+          background: '#10b981',
+          color: '#fff',
+          fontWeight: 'bold'
+        },
+        icon: '✅'
+      });
+      
+      // Asegurarse de que el estado isSaving se restablezca
+      setTimeout(() => setIsSaving(false), 300);
     },
     onError: (error: any) => {
       console.error('[SmartVOCForm] Error en mutación:', error);
@@ -123,7 +135,22 @@ export const useSmartVOCForm = (researchId: string): UseSmartVOCFormResult => {
         type: 'error'
       });
       
-      toast.error(ERROR_MESSAGES.SAVE_ERROR);
+      toast.error(ERROR_MESSAGES.SAVE_ERROR, {
+        duration: 5000,
+        style: {
+          background: '#ef4444',
+          color: '#fff',
+          fontWeight: 'bold'
+        },
+        icon: '❌'
+      });
+      
+      // Asegurarse de que el estado isSaving se restablezca
+      setTimeout(() => setIsSaving(false), 300);
+    },
+    onSettled: () => {
+      // Garantizar que siempre se restablezca el estado de guardado
+      setTimeout(() => setIsSaving(false), 300);
     }
   });
 
@@ -213,18 +240,18 @@ export const useSmartVOCForm = (researchId: string): UseSmartVOCFormResult => {
 
   // Validar formulario
   const validateForm = (): boolean => {
+    // Limpiar errores previos
+    setValidationErrors({});
+    
+    // Array para almacenar errores
     const errors: ValidationErrors = {};
     
-    if (!researchId) {
-      errors.researchId = ERROR_MESSAGES.VALIDATION_ERRORS.RESEARCH_ID_REQUIRED;
-      console.log('[SmartVOCForm] Error de validación: ID de investigación requerido');
-    }
-    
+    // Validar que hay al menos una pregunta seleccionada
     if (questions.length === 0) {
       errors.questions = ERROR_MESSAGES.VALIDATION_ERRORS.NO_QUESTIONS;
-      console.log('[SmartVOCForm] Error de validación: No hay preguntas seleccionadas');
     }
     
+    // Actualizar errores y retornar resultado
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -240,85 +267,218 @@ export const useSmartVOCForm = (researchId: string): UseSmartVOCFormResult => {
   const closeJsonModal = () => {
     setShowJsonPreview(false);
     setPendingAction(null);
+    setJsonToSend('');
   };
 
-  // Función para continuar con la acción después de mostrar el JSON
+  // Función para continuar con la acción pendiente
   const continueWithAction = () => {
     closeJsonModal();
     
-    if (pendingAction === 'save') {
-      // Ejecutar la mutación para guardar
+    if (pendingAction === 'preview') {
+      // Para la previsualización, podríamos abrir una ventana con los datos o implementar otra lógica
       try {
-        const dataToSaveObj = JSON.parse(jsonToSend);
+        // Aquí podríamos implementar la lógica para mostrar una vista previa
+        toast.success('Vista previa iniciada', {
+          icon: '👁️',
+          style: {
+            background: '#3b82f6',
+            color: '#fff'
+          }
+        });
         
-        // Asegurarnos de que el objeto tiene la estructura correcta
-        console.log('[SmartVOCForm] Enviando datos al backend:', dataToSaveObj);
-        
-        // Si estamos usando la interfaz de la API que requiere questions, aseguramos que existe
-        if (!dataToSaveObj.questions || !Array.isArray(dataToSaveObj.questions)) {
-          console.error('[SmartVOCForm] Error: El objeto no tiene un array de preguntas válido');
-          toast.error('Error en el formato de datos a enviar');
-          return;
-        }
-        
-        mutate(dataToSaveObj);
+        // Por ahora, solo mostramos un mensaje
+        showModal({
+          title: 'Vista previa',
+          message: 'La funcionalidad de vista previa estará disponible próximamente',
+          type: 'info'
+        });
       } catch (error) {
-        console.error('[SmartVOCForm] Error al procesar JSON:', error);
-        toast.error('Error al procesar los datos del formulario');
+        console.error('[SmartVOCForm] Error al generar vista previa:', error);
+        toast.error('Error al generar vista previa');
       }
-    } else if (pendingAction === 'preview') {
-      // Mostrar mensaje de previsualización
-      showModal({
-        title: 'Información',
-        message: SUCCESS_MESSAGES.PREVIEW_COMING_SOON,
-        type: 'info'
-      });
-      
-      toast.success(SUCCESS_MESSAGES.PREVIEW_COMING_SOON);
     }
   };
 
-  // Guardar formulario (modificado para mostrar JSON primero)
+  // Función para guardar la configuración
   const handleSave = () => {
-    if (!isAuthenticated) {
-      showModal({
-        title: 'Error de autenticación',
-        message: 'No está autenticado. Por favor, inicie sesión para guardar la configuración.',
-        type: 'error'
+    try {
+      // Si no está autenticado, mostrar error
+      if (!isAuthenticated) {
+        toast.error('Debe iniciar sesión para guardar configuración');
+        return;
+      }
+      
+      // Validar formulario primero
+      if (!validateForm()) {
+        toast.error('Por favor, corrija los errores en el formulario');
+        return;
+      }
+      
+      // Preparamos los datos para el backend asegurándonos de incluir los valores correctos para las preguntas
+      const questionsConfig: Record<string, boolean> = {};
+      const standardTypes = ['CSAT', 'CES', 'CV', 'NEV', 'NPS', 'VOC'];
+      
+      // Establecer todos los tipos estándar como false primero
+      standardTypes.forEach(type => {
+        questionsConfig[type] = false;
       });
-      return;
-    }
-    
-    if (validateForm()) {
-      // Preparar datos para guardar
-      // En lugar de solo indicadores booleanos, incluimos la configuración completa de las preguntas
+      
+      // Luego activar solo los que están en las preguntas seleccionadas
+      questions.forEach(q => {
+        if (standardTypes.includes(q.type)) {
+          questionsConfig[q.type] = true;
+        }
+      });
+      
+      // Crear objeto final para enviar
       const dataToSave = {
         ...formData,
-        researchId,
-        // Añadimos el array completo de preguntas activas
-        questions: questions,
-        // Convertimos randomize y requireAnswers a los nombres de propiedades que espera la API
-        randomizeQuestions: formData.randomize,
-        smartVocRequired: formData.requireAnswers,
-        // Añadimos metadata con timestamp para tracking
-        metadata: {
-          updatedAt: new Date().toISOString()
-        }
+        ...questionsConfig,
+        researchId
       };
       
-      // Mostrar modal con JSON en lugar de guardar directamente
-      showJsonModal(dataToSave, 'save');
-    } else {
-      // Crear un mensaje con la lista de errores
-      const errorMessageText = 'Errores: ' + Object.values(validationErrors).join(', ');
+      // Mostrar modal de confirmación
+      const confirmModalContainer = document.createElement('div');
+      confirmModalContainer.innerHTML = `
+        <div style="position: fixed; inset: 0; background-color: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+          <div style="background: white; border-radius: 12px; max-width: 90%; width: 550px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 8px 30px rgba(0,0,0,0.12); overflow: hidden; animation: fadeIn 0.2s ease-out;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid #f1f1f1;">
+              <h2 style="margin: 0; font-size: 24px; font-weight: 600; color: #111827;">Confirmar configuración</h2>
+              <button id="closeConfirmModal" style="background: none; border: none; cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; color: #6b7280; border-radius: 50%; transition: background-color 0.2s; font-size: 24px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            <div style="padding: 24px; overflow-y: auto; max-height: 60vh;">
+              <p style="margin: 0 0 24px; color: #4b5563; font-size: 16px;">¿Estás seguro de que deseas guardar la siguiente configuración de SmartVOC?</p>
+              
+              <div style="margin-bottom: 24px;">
+                <h3 style="font-size: 18px; margin: 0 0 12px; color: #111827; font-weight: 600;">Configuración general</h3>
+                <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px;">
+                  <div style="padding: 8px 0; color: #4b5563; display: flex; align-items: center;">
+                    ${formData.randomize ? 
+                      `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4d7c0f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M8 12l2 2 6-6"></path>
+                      </svg>
+                      <span>Aleatorización de preguntas habilitada</span>` 
+                      : 
+                      `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#b91c1c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="15" y1="9" x2="9" y2="15"></line>
+                        <line x1="9" y1="9" x2="15" y2="15"></line>
+                      </svg>
+                      <span>Aleatorización de preguntas deshabilitada</span>`
+                    }
+                  </div>
+                  <div style="padding: 8px 0; color: #4b5563; display: flex; align-items: center;">
+                    ${formData.requireAnswers ? 
+                      `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4d7c0f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M8 12l2 2 6-6"></path>
+                      </svg>
+                      <span>Respuestas obligatorias habilitadas</span>` 
+                      : 
+                      `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#b91c1c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="15" y1="9" x2="9" y2="15"></line>
+                        <line x1="9" y1="9" x2="15" y2="15"></line>
+                      </svg>
+                      <span>Respuestas obligatorias deshabilitadas</span>`
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <div style="margin-bottom: 24px;">
+                <h3 style="font-size: 18px; margin: 0 0 12px; color: #111827; font-weight: 600;">Preguntas</h3>
+                <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px;">
+                  ${questions.length > 0 ?
+                    `<div style="padding: 8px 0; color: #4b5563; display: flex; align-items: center;">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4d7c0f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M8 12l2 2 6-6"></path>
+                      </svg>
+                      <span>${questions.length} preguntas configuradas</span>
+                    </div>
+                    <div style="margin-top: 8px;">
+                      <ul style="margin: 0; padding-left: 28px; color: #6b7280;">
+                        ${questions.map(q => `<li style="margin-bottom: 4px;">${q.type} - ${q.title || 'Sin título'}</li>`).join('')}
+                      </ul>
+                    </div>`
+                    :
+                    `<div style="padding: 8px 0; color: #b91c1c; display: flex; align-items: center;">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="15" y1="9" x2="9" y2="15"></line>
+                        <line x1="9" y1="9" x2="15" y2="15"></line>
+                      </svg>
+                      <span>No hay preguntas configuradas</span>
+                    </div>`
+                  }
+                </div>
+              </div>
+            </div>
+            <div style="padding: 20px 24px; border-top: 1px solid #f1f1f1; display: flex; justify-content: flex-end; gap: 12px;">
+              <button id="cancelConfirmation" style="background: #f9fafb; color: #4b5563; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 20px; font-weight: 500; cursor: pointer; font-size: 16px; transition: all 0.2s;">
+                Cancelar
+              </button>
+              <button id="confirmSave" style="background: #4f46e5; color: white; border: none; border-radius: 8px; padding: 10px 20px; font-weight: 500; cursor: pointer; font-size: 16px; transition: all 0.2s; box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);">
+                Confirmar y guardar
+              </button>
+            </div>
+          </div>
+        </div>
+        <style>
+          @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
+          }
+          #closeConfirmModal:hover {
+            background-color: #f3f4f6;
+          }
+          #cancelConfirmation:hover {
+            background-color: #f3f4f6;
+            border-color: #d1d5db;
+          }
+          #confirmSave:hover {
+            background-color: #4338ca;
+            box-shadow: 0 4px 6px rgba(79, 70, 229, 0.25);
+          }
+        </style>
+      `;
       
-      showModal({
-        title: ERROR_MESSAGES.SAVE_ERROR,
-        message: errorMessageText,
-        type: 'error'
+      document.body.appendChild(confirmModalContainer);
+      
+      // Configurar eventos
+      document.getElementById('closeConfirmModal')?.addEventListener('click', () => {
+        document.body.removeChild(confirmModalContainer);
       });
       
-      toast.error('Por favor corrija los errores antes de guardar');
+      document.getElementById('cancelConfirmation')?.addEventListener('click', () => {
+        document.body.removeChild(confirmModalContainer);
+      });
+      
+      document.getElementById('confirmSave')?.addEventListener('click', () => {
+        document.body.removeChild(confirmModalContainer);
+        setIsSaving(true);
+        
+        // Ejecutar la mutación
+        mutate(dataToSave);
+      });
+      
+      // También permitir cerrar haciendo clic fuera del modal
+      confirmModalContainer.addEventListener('click', (e) => {
+        if (e.target === confirmModalContainer.firstChild) {
+          document.body.removeChild(confirmModalContainer);
+        }
+      });
+    } catch (error) {
+      console.error('[SmartVOCForm] Error al preparar guardado:', error);
+      toast.error('Error al preparar la configuración para guardar');
+      setIsSaving(false);
     }
   };
 

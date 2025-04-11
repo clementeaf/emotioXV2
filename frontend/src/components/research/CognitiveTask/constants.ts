@@ -34,10 +34,29 @@ export const UI_TEXTS = {
     SAVE: 'Guardar y Continuar',
     UPDATE: 'Actualizar y Continuar',
     SAVING: 'Guardando...',
-    PREVIEW: 'Vista Previa'
+    SAVED: 'Guardado',
+    PREVIEW: 'Vista Previa',
+    CANCEL: 'Cancelar',
+    CONFIRM_SAVE: 'Confirmar y guardar'
   },
   FOOTER: {
     COMPLETION_TIME: 'Tiempo estimado de finalización: 5-7 minutos'
+  },
+  MODAL: {
+    ERROR_TITLE: 'Error',
+    INFO_TITLE: 'Información',
+    SUCCESS_TITLE: 'Éxito',
+    CLOSE_BUTTON: 'Cerrar',
+    SAVE_CONFIRM_TITLE: 'Confirmar configuración',
+    SAVE_CONFIRM_MESSAGE: '¿Estás seguro de que deseas guardar esta configuración de tareas cognitivas?',
+    CONFIG_STATUS: 'Estado de la configuración',
+    SETTINGS_SECTION: 'Configuración general',
+    QUESTIONS_SECTION: 'Preguntas',
+    RANDOMIZE_ENABLED: 'Aleatorización de preguntas habilitada',
+    RANDOMIZE_DISABLED: 'Aleatorización de preguntas deshabilitada',
+    QUESTION_COUNT: 'preguntas configuradas',
+    NO_QUESTIONS: 'No hay preguntas configuradas',
+    QUESTION_TYPE: 'Tipo de pregunta'
   }
 };
 
@@ -53,5 +72,6 @@ export const ERROR_MESSAGES = {
 
 export const SUCCESS_MESSAGES = {
   CREATED: 'Configuración de tareas cognitivas guardada correctamente',
-  UPDATED: 'Configuración de tareas cognitivas actualizada correctamente'
+  UPDATED: 'Configuración de tareas cognitivas actualizada correctamente',
+  PREVIEW_COMING_SOON: 'La vista previa estará disponible próximamente'
 }; 

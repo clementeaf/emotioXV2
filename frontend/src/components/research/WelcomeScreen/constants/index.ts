@@ -54,12 +54,27 @@ export const UI_TEXTS = {
     PREVIEW: 'Vista previa',
     SAVE: 'Guardar configuración',
     UPDATE: 'Actualizar configuración',
-    SAVING: 'Guardando...'
+    SAVING: 'Guardando...',
+    SAVED: 'Guardado',
+    CANCEL: 'Cancelar',
+    CONFIRM_SAVE: 'Confirmar y guardar'
   },
   MODAL: {
     ERROR_TITLE: 'Error',
     INFO_TITLE: 'Información',
     SUCCESS_TITLE: 'Éxito',
-    CLOSE_BUTTON: 'Cerrar'
+    CLOSE_BUTTON: 'Cerrar',
+    SAVE_CONFIRM_TITLE: 'Confirmar configuración',
+    SAVE_CONFIRM_MESSAGE: '¿Estás seguro de que deseas guardar la siguiente pantalla de bienvenida?',
+    SCREEN_STATUS: 'Estado de la pantalla',
+    CONTENT: 'Contenido',
+    SCREEN_ENABLED: 'Pantalla de bienvenida habilitada',
+    SCREEN_DISABLED: 'Pantalla de bienvenida deshabilitada',
+    TITLE_SECTION: 'Título',
+    MESSAGE_SECTION: 'Mensaje',
+    BUTTON_TEXT_SECTION: 'Texto del botón de inicio',
+    NO_TITLE: 'Sin título',
+    NO_MESSAGE: 'Sin mensaje',
+    NO_BUTTON_TEXT: 'Sin texto'
   }
 }; 
