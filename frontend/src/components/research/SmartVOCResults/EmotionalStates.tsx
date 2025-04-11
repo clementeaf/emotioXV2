@@ -145,7 +145,7 @@ export function EmotionalStates({
                   {/* La barra en sí */}
                   <div 
                     className={cn(
-                      "absolute bottom-0 w-4",
+                      "absolute bottom-0 w-4 rounded-t-full",
                       state.isPositive ? "bg-[#4ADE80]" : "bg-[#F87171]"
                     )}
                     style={{ 
