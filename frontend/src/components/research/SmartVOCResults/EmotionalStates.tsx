@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/utils";
 import { ArrowUpIcon, ArrowDownIcon } from "lucide-react";
-import { Target, Filter } from "lucide-react";
+import { Target } from "lucide-react";
 
 interface EmotionalState {
   name: string;
@@ -145,7 +145,7 @@ export function EmotionalStates({
                   {/* La barra en sí */}
                   <div 
                     className={cn(
-                      "absolute bottom-0 w-4 rounded-t-full",
+                      "absolute bottom-0 w-4 rounded-full",
                       state.isPositive ? "bg-[#4ADE80]" : "bg-[#F87171]"
                     )}
                     style={{ 
