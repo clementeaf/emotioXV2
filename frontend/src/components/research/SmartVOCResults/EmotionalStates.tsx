@@ -39,7 +39,7 @@ export function EmotionalStates({
   const negativePercentage = 100 - positivePercentage;
 
   return (
-    <Card className={cn("p-6", className)}>
+    <Card className={cn("p-6 pb-14", className)}>
       {/* Encabezado de la pregunta */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex-1">
@@ -94,10 +94,10 @@ export function EmotionalStates({
       <div className="flex gap-8">
         {/* Gráfico de estados emocionales */}
         <div className="flex-1">
-          <h3 className="text-2xl font-semibold mb-2">Emotional states</h3>
-          <p className="text-4xl font-bold mb-12">{positivePercentage.toFixed(2)}% Positive</p>
+          <h3 className="text-xl font-light text-gray-500 mb-2">Emotional states</h3>
+          <p className="text-2xl font-bold mb-12">{positivePercentage.toFixed(2)}% Positive</p>
           
-          <div className="relative h-[320px] mt-8 pb-10">
+          <div className="relative h-[360px] mt-8 pb-10">
             {/* Fondo cuadriculado */}
             <div className="absolute inset-0 bottom-10">
               {[10, 5, 0].map((value, i) => (
@@ -159,7 +159,7 @@ export function EmotionalStates({
             </div>
             
             {/* Nombres debajo del gráfico */}
-            <div className="absolute left-10 right-0 bottom-[-5px] h-[100px] flex">
+            <div className="absolute left-10 right-0 bottom-[-32px] h-[100px] flex">
               {emotionalStates.map((state) => (
                 <div key={`label-${state.name}`} className="flex-1 flex justify-center">
                   <div className="h-full flex flex-col items-center relative">
