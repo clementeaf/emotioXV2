@@ -342,7 +342,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
         return;
       }
 
-      // Preparar datos para mostrar en el modal
+      // Preparar datos para enviar
       const configToSave: CreateEyeTrackingRecruitRequest = {
         researchId,
         demographicQuestions: formData.demographicQuestions,
@@ -360,11 +360,96 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
         parameterOptions: formData.parameterOptions
       };
 
-      // Mostrar modal con JSON
-      showModal({
-        title: 'Confirmar datos',
-        message: '¿Está seguro de que desea guardar estos datos?',
-        type: 'info'
+      // Mostrar modal de confirmación con los datos
+      const confirmModalContainer = document.createElement('div');
+      confirmModalContainer.innerHTML = `
+        <div style="position: fixed; inset: 0; background-color: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999;">
+          <div style="background: white; border-radius: 8px; max-width: 90%; width: 600px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 4px 20px rgba(0,0,0,0.2); overflow: hidden;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid #e5e7eb;">
+              <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Confirmar configuración</h2>
+              <button id="closeConfirmModal" style="background: none; border: none; cursor: pointer; font-size: 24px; color: #6b7280;">&times;</button>
+            </div>
+            <div style="padding: 24px; overflow-y: auto; max-height: 60vh;">
+              <p style="margin: 0 0 16px; color: #4b5563;">¿Estás seguro de que deseas guardar la siguiente configuración?</p>
+              
+              <div style="margin-bottom: 16px;">
+                <h3 style="font-size: 16px; margin: 0 0 8px; color: #111827;">Preguntas demográficas</h3>
+                <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px;">
+                  ${demographicQuestionsEnabled ? 
+                    Object.entries(formData.demographicQuestions)
+                      .filter(([_, value]) => value.enabled)
+                      .map(([key, _]) => `<div style="padding: 4px 0; color: #4b5563;">✓ ${key}</div>`)
+                      .join('') || '<div style="color: #6b7280;">No se han seleccionado preguntas demográficas</div>' 
+                    : '<div style="color: #ef4444;">Preguntas demográficas desactivadas</div>'
+                  }
+                </div>
+              </div>
+
+              <div style="margin-bottom: 16px;">
+                <h3 style="font-size: 16px; margin: 0 0 8px; color: #111827;">Configuración del enlace</h3>
+                <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px;">
+                  ${linkConfigEnabled ?
+                    Object.entries(formData.linkConfig)
+                      .filter(([_, value]) => value)
+                      .map(([key, _]) => `<div style="padding: 4px 0; color: #4b5563;">✓ ${key}</div>`)
+                      .join('') || '<div style="color: #6b7280;">No se ha configurado ninguna opción</div>'
+                    : '<div style="color: #ef4444;">Configuración del enlace desactivada</div>'
+                  }
+                </div>
+              </div>
+
+              <div style="margin-bottom: 16px;">
+                <h3 style="font-size: 16px; margin: 0 0 8px; color: #111827;">URL de la investigación</h3>
+                <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; color: #4b5563;">
+                  ${formData.researchUrl || 'No se ha especificado URL'}
+                </div>
+              </div>
+
+              <div style="margin-bottom: 16px;">
+                <h3 style="font-size: 16px; margin: 0 0 8px; color: #111827;">Parámetros a guardar</h3>
+                <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px;">
+                  ${Object.entries(formData.parameterOptions)
+                    .filter(([_, value]) => value)
+                    .map(([key, _]) => `<div style="padding: 4px 0; color: #4b5563;">✓ ${key}</div>`)
+                    .join('') || '<div style="color: #6b7280;">No se han seleccionado parámetros</div>'
+                  }
+                </div>
+              </div>
+            </div>
+            <div style="padding: 16px 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px;">
+              <button id="cancelConfirmation" style="background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; border-radius: 6px; padding: 8px 16px; font-weight: 500; cursor: pointer;">
+                Cancelar
+              </button>
+              <button id="confirmSave" style="background: #3f51b5; color: white; border: none; border-radius: 6px; padding: 8px 16px; font-weight: 500; cursor: pointer;">
+                Confirmar y guardar
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(confirmModalContainer);
+      
+      // Configurar eventos
+      document.getElementById('closeConfirmModal')?.addEventListener('click', () => {
+        document.body.removeChild(confirmModalContainer);
+      });
+      
+      document.getElementById('cancelConfirmation')?.addEventListener('click', () => {
+        document.body.removeChild(confirmModalContainer);
+      });
+      
+      document.getElementById('confirmSave')?.addEventListener('click', () => {
+        document.body.removeChild(confirmModalContainer);
+        setSaving(true);
+        mutate(configToSave);
+      });
+
+      // También permitir cerrar haciendo clic fuera del modal
+      confirmModalContainer.addEventListener('click', (e) => {
+        if (e.target === confirmModalContainer.firstChild) {
+          document.body.removeChild(confirmModalContainer);
+        }
       });
     } catch (error) {
       console.error('[useEyeTrackingRecruit] Error al preparar datos:', error);
@@ -374,7 +459,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
         type: 'error'
       });
     }
-  }, [formData, researchId, isAuthenticated, showModal]);
+  }, [formData, researchId, isAuthenticated, showModal, mutate, demographicQuestionsEnabled, linkConfigEnabled]);
   
   // Cargar datos (simulado por ahora)
   useEffect(() => {
