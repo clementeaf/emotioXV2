@@ -264,14 +264,191 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
         toast.error('Error al procesar los datos del formulario');
       }
     } else if (pendingAction === 'preview') {
-      // Mostrar mensaje de previsualización
-      showModal({
-        title: 'Información',
-        message: SUCCESS_MESSAGES.PREVIEW_COMING_SOON,
-        type: 'info'
-      });
-      
-      toast.success(SUCCESS_MESSAGES.PREVIEW_COMING_SOON);
+      // Abrir una nueva ventana con la previsualización real
+      try {
+        const dataToPreview = JSON.parse(jsonToSend);
+        const previewWindow = window.open('', '_blank');
+        
+        if (previewWindow) {
+          // Crear el HTML para la previsualización
+          const previewHtml = `
+            <!DOCTYPE html>
+            <html lang="es">
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Vista previa - Pantalla de Agradecimiento</title>
+              <style>
+                body {
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', sans-serif;
+                  margin: 0;
+                  padding: 0;
+                  background-color: #f5f5f5;
+                  color: #333;
+                  display: flex;
+                  flex-direction: column;
+                  min-height: 100vh;
+                }
+                
+                .preview-badge {
+                  position: fixed;
+                  top: 12px;
+                  right: 12px;
+                  background-color: rgba(0, 0, 0, 0.7);
+                  color: white;
+                  padding: 8px 12px;
+                  border-radius: 4px;
+                  font-size: 12px;
+                  z-index: 100;
+                }
+                
+                .header {
+                  background-color: #4f46e5;
+                  color: white;
+                  padding: 10px 20px;
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                }
+                
+                .header h1 {
+                  font-size: 16px;
+                  margin: 0;
+                  font-weight: 500;
+                }
+                
+                .content {
+                  flex: 1;
+                  display: flex;
+                  flex-direction: column;
+                  justify-content: center;
+                  align-items: center;
+                  padding: 40px 20px;
+                  text-align: center;
+                  background-color: ${dataToPreview.backgroundColor || '#ffffff'};
+                }
+                
+                .thank-you-container {
+                  max-width: 800px;
+                  width: 100%;
+                  padding: 40px 20px;
+                  border-radius: 8px;
+                  background-color: ${dataToPreview.backgroundColor || '#ffffff'};
+                  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 10px 15px rgba(0, 0, 0, 0.03);
+                }
+                
+                .thank-you-title {
+                  font-size: 32px;
+                  font-weight: 700;
+                  margin-bottom: 24px;
+                  color: ${dataToPreview.textColor || '#111827'};
+                }
+                
+                .thank-you-message {
+                  font-size: 18px;
+                  line-height: 1.6;
+                  color: ${dataToPreview.textColor || '#4b5563'};
+                  margin-bottom: 32px;
+                  white-space: pre-line;
+                }
+                
+                .logo {
+                  max-height: 80px;
+                  margin-bottom: 24px;
+                }
+                
+                .redirect-info {
+                  margin-top: 40px;
+                  padding-top: 20px;
+                  border-top: 1px solid rgba(0, 0, 0, 0.1);
+                  font-size: 14px;
+                  color: #6b7280;
+                }
+                
+                .redirect-url {
+                  font-family: monospace;
+                  color: #3b82f6;
+                  margin-top: 8px;
+                  padding: 8px 12px;
+                  background-color: #f8fafc;
+                  border-radius: 4px;
+                  border: 1px solid #e2e8f0;
+                  display: inline-block;
+                  word-break: break-all;
+                }
+                
+                .footer {
+                  padding: 10px 20px;
+                  font-size: 12px;
+                  color: #9ca3af;
+                  text-align: center;
+                  background-color: #f9fafb;
+                  border-top: 1px solid #e5e7eb;
+                }
+              </style>
+            </head>
+            <body>
+              <div class="preview-badge">Vista previa</div>
+              
+              <header class="header">
+                <h1>Vista previa de la pantalla de agradecimiento</h1>
+                <button onclick="window.close()" style="background: none; border: none; color: white; cursor: pointer;">Cerrar</button>
+              </header>
+              
+              <main class="content">
+                <div class="thank-you-container">
+                  ${dataToPreview.logoUrl ? `<img src="${dataToPreview.logoUrl}" alt="Logo" class="logo">` : ''}
+                  
+                  <h1 class="thank-you-title">${dataToPreview.title || 'Título no configurado'}</h1>
+                  
+                  <div class="thank-you-message">
+                    ${dataToPreview.message || 'Mensaje no configurado'}
+                  </div>
+                  
+                  ${dataToPreview.redirectUrl ? `
+                  <div class="redirect-info">
+                    <p>Al finalizar, el participante será redirigido a:</p>
+                    <div class="redirect-url">${dataToPreview.redirectUrl}</div>
+                  </div>
+                  ` : ''}
+                </div>
+              </main>
+              
+              <footer class="footer">
+                <p>Esta es una vista previa y puede no representar exactamente cómo se verá la pantalla real.</p>
+              </footer>
+            </body>
+            </html>
+          `;
+          
+          // Escribir el HTML en la nueva ventana y cerrarla para finalizar la carga
+          previewWindow.document.write(previewHtml);
+          previewWindow.document.close();
+          
+          // Notificar al usuario que se ha abierto la previsualización
+          toast.success('Se ha abierto la previsualización en una nueva ventana');
+        } else {
+          // Si no se pudo abrir la ventana (bloqueador de pop-ups, etc.)
+          showModal({
+            title: 'No se pudo abrir la previsualización',
+            message: 'Parece que su navegador ha bloqueado la ventana emergente. Por favor, permita las ventanas emergentes para este sitio e inténtelo de nuevo.',
+            type: 'error'
+          });
+          
+          toast.error('No se pudo abrir la ventana de previsualización');
+        }
+      } catch (error) {
+        console.error('[ThankYouScreenForm] Error al generar la previsualización:', error);
+        
+        showModal({
+          title: ERROR_MESSAGES.PREVIEW_ERROR,
+          message: 'Error al generar la previsualización. Por favor, inténtelo de nuevo.',
+          type: 'error'
+        });
+        
+        toast.error('Error al generar la previsualización');
+      }
     }
   };
 
@@ -347,23 +524,109 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
   useEffect(() => {
     // Solo crear el modal si se va a mostrar
     if (showJsonPreview && jsonToSend) {
+      const formDataObj = JSON.parse(jsonToSend);
+      
       // Crear HTML para el modal
       const modalHtml = `
         <div id="jsonPreviewModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999;">
-          <div style="background: white; border-radius: 8px; max-width: 90%; width: 800px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 4px 20px rgba(0,0,0,0.2); overflow: hidden;">
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid #e5e7eb;">
-              <h2 style="margin: 0; font-size: 18px; font-weight: 600;">JSON a enviar</h2>
-              <button id="closeJsonModal" style="background: none; border: none; cursor: pointer; font-size: 20px; color: #6b7280;">&times;</button>
+          <div style="background: white; border-radius: 12px; max-width: 90%; width: 650px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 4px 20px rgba(0,0,0,0.2); overflow: hidden;">
+            <!-- Cabecera del modal -->
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid #e5e7eb; background-color: #f8fafc;">
+              <h2 style="margin: 0; font-size: 18px; font-weight: 600; color: #334155;">Vista previa de la configuración</h2>
+              <button id="closeJsonModal" style="background: transparent; border: none; cursor: pointer; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #555555; transition: all 0.2s; font-size: 24px;">&times;</button>
             </div>
+            
             <div style="padding: 24px; overflow-y: auto; flex-grow: 1;">
-              <p style="margin: 0 0 16px; color: #6b7280; font-size: 14px;">
-                Este es el JSON que se enviará al servidor. Revise los datos antes de continuar.
+              <p style="margin: 0 0 20px; color: #6b7280; font-size: 14px;">
+                Revise la configuración de la pantalla de agradecimiento antes de ${pendingAction === 'save' ? 'guardar' : 'previsualizar'}.
               </p>
-              <pre style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; overflow: auto; max-height: 400px; font-family: monospace; font-size: 14px; white-space: pre-wrap; word-break: break-word;">${jsonToSend.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+              
+              <!-- Sección de previsualización -->
+              <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-bottom: 24px;">
+                <!-- Barra de título de la previsualización -->
+                <div style="background: #f1f5f9; padding: 10px 16px; border-bottom: 1px solid #e2e8f0;">
+                  <h3 style="margin: 0; font-size: 14px; font-weight: 500; color: #64748b;">Vista previa de pantalla</h3>
+                </div>
+                
+                <!-- Contenido principal -->
+                <div style="padding: 20px; background: #ffffff;">
+                  <!-- Simulación de pantalla de agradecimiento -->
+                  <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 30px; background-color: ${formDataObj.backgroundColor || '#f9fafb'}; text-align: center; max-width: 500px; margin: 0 auto;">
+                    ${formDataObj.logoUrl ? `<img src="${formDataObj.logoUrl}" alt="Logo" style="max-height: 60px; margin-bottom: 20px;">` : ''}
+                    <h2 style="font-size: 24px; font-weight: 700; color: ${formDataObj.textColor || '#111827'}; margin-bottom: 16px;">
+                      ${formDataObj.title || 'Título no configurado'}
+                    </h2>
+                    <p style="font-size: 16px; line-height: 1.5; color: ${formDataObj.textColor || '#4b5563'}; margin-bottom: 24px; white-space: pre-line;">
+                      ${formDataObj.message || 'Mensaje no configurado'}
+                    </p>
+                    ${formDataObj.redirectUrl ? `
+                    <p style="font-size: 14px; color: #6b7280; margin-top: 24px;">
+                      Al finalizar, se redirigirá a: <span style="font-family: monospace; color: #3b82f6;">${formDataObj.redirectUrl}</span>
+                    </p>
+                    ` : ''}
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Detalles de la configuración -->
+              <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-bottom: 24px;">
+                <div style="background: #f1f5f9; padding: 10px 16px; border-bottom: 1px solid #e2e8f0;">
+                  <h3 style="margin: 0; font-size: 14px; font-weight: 500; color: #64748b;">Detalles de la configuración</h3>
+                </div>
+                <div style="padding: 16px;">
+                  <div style="display: grid; grid-template-columns: 140px 1fr; gap: 10px; align-items: center;">
+                    <div style="font-size: 14px; color: #64748b;">Estado:</div>
+                    <div style="font-size: 14px; color: #334155;">
+                      <span style="display: inline-flex; align-items: center; font-weight: 500;">
+                        <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; background-color: ${formDataObj.isEnabled ? '#22c55e' : '#ef4444'};"></span>
+                        ${formDataObj.isEnabled ? 'Habilitada' : 'Deshabilitada'}
+                      </span>
+                    </div>
+                    
+                    <div style="font-size: 14px; color: #64748b;">Título:</div>
+                    <div style="font-size: 14px; color: #334155; font-weight: 500;">${formDataObj.title || '[No configurado]'}</div>
+                    
+                    <div style="font-size: 14px; color: #64748b;">Redirección:</div>
+                    <div style="font-size: 14px; color: #334155;">
+                      ${formDataObj.redirectUrl 
+                        ? `<span style="word-break: break-all; font-family: monospace; font-size: 12px; background: #f8fafc; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0;">${formDataObj.redirectUrl}</span>` 
+                        : '<span style="color: #94a3b8; font-style: italic;">Sin redirección</span>'}
+                    </div>
+                    
+                    <div style="font-size: 14px; color: #64748b;">ID:</div>
+                    <div style="font-size: 14px; color: #64748b; font-family: monospace; font-size: 12px;">
+                      ${formDataObj.id || '[Nueva configuración]'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Mensaje de confirmación -->
+              <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 16px;">
+                <div style="display: flex; gap: 12px; align-items: start;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  <div>
+                    <p style="margin: 0 0 8px; color: #0369a1; font-size: 14px; font-weight: 500;">Información</p>
+                    <p style="margin: 0; color: #0c4a6e; font-size: 13px;">
+                      ${pendingAction === 'save' 
+                        ? 'Al hacer clic en "Guardar", estos ajustes se aplicarán a la pantalla de agradecimiento de su investigación.' 
+                        : 'Al hacer clic en "Previsualizar", podrá ver cómo se mostrará la pantalla a los participantes.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div style="padding: 16px 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px;">
-              <button id="cancelJsonAction" style="background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; border-radius: 6px; padding: 8px 16px; font-weight: 500; cursor: pointer;">Cancelar</button>
-              <button id="continueJsonAction" style="background: #3f51b5; color: white; border: none; border-radius: 6px; padding: 8px 16px; font-weight: 500; cursor: pointer;">
+            
+            <!-- Acciones del modal -->
+            <div style="padding: 16px 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px; background: #f8fafc;">
+              <button id="cancelJsonAction" style="background: white; color: #475569; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px 16px; font-weight: 500; cursor: pointer; font-size: 14px; transition: all 0.2s;">
+                Cancelar
+              </button>
+              <button id="continueJsonAction" style="background: #3f51b5; color: white; border: none; border-radius: 6px; padding: 10px 16px; font-weight: 500; cursor: pointer; font-size: 14px; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
                 ${pendingAction === 'save' ? 'Guardar' : 'Previsualizar'}
               </button>
             </div>
@@ -376,27 +639,69 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
       modalContainer.innerHTML = modalHtml;
       document.body.appendChild(modalContainer);
       
+      // Añadir hover effects
+      const closeButton = document.getElementById('closeJsonModal');
+      if (closeButton) {
+        closeButton.addEventListener('mouseover', () => {
+          closeButton.style.backgroundColor = '#f1f5f9';
+          closeButton.style.color = '#0f172a';
+        });
+        closeButton.addEventListener('mouseout', () => {
+          closeButton.style.backgroundColor = 'transparent';
+          closeButton.style.color = '#555555';
+        });
+      }
+      
+      const cancelButton = document.getElementById('cancelJsonAction');
+      if (cancelButton) {
+        cancelButton.addEventListener('mouseover', () => {
+          cancelButton.style.backgroundColor = '#f1f5f9';
+        });
+        cancelButton.addEventListener('mouseout', () => {
+          cancelButton.style.backgroundColor = 'white';
+        });
+      }
+      
+      const continueButton = document.getElementById('continueJsonAction');
+      if (continueButton) {
+        continueButton.addEventListener('mouseover', () => {
+          continueButton.style.backgroundColor = '#303f9f';
+        });
+        continueButton.addEventListener('mouseout', () => {
+          continueButton.style.backgroundColor = '#3f51b5';
+        });
+      }
+      
+      // Función para manejar la acción de continuar
+      const handleContinueAction = () => {
+        if (document.body.contains(modalContainer)) {
+          document.body.removeChild(modalContainer);
+        }
+        // Asegurarse de que continueWithAction se ejecute después de eliminar el modal
+        setTimeout(() => {
+          continueWithAction();
+        }, 10);
+      };
+      
+      // Función para manejar la acción de cancelar
+      const handleCancelAction = () => {
+        if (document.body.contains(modalContainer)) {
+          document.body.removeChild(modalContainer);
+        }
+        closeJsonModal();
+      };
+      
       // Configurar eventos
-      document.getElementById('closeJsonModal')?.addEventListener('click', () => {
-        document.body.removeChild(modalContainer);
-        closeJsonModal();
-      });
+      document.getElementById('closeJsonModal')?.addEventListener('click', handleCancelAction);
       
-      document.getElementById('cancelJsonAction')?.addEventListener('click', () => {
-        document.body.removeChild(modalContainer);
-        closeJsonModal();
-      });
+      document.getElementById('cancelJsonAction')?.addEventListener('click', handleCancelAction);
       
-      document.getElementById('continueJsonAction')?.addEventListener('click', () => {
-        document.body.removeChild(modalContainer);
-        continueWithAction();
-      });
+      document.getElementById('continueJsonAction')?.addEventListener('click', handleContinueAction);
       
       // También permitir cerrar haciendo clic fuera del modal
       modalContainer.addEventListener('click', (e) => {
         if (e.target === modalContainer.firstChild) {
-          document.body.removeChild(modalContainer);
-          closeJsonModal();
+          handleCancelAction();
         }
       });
       

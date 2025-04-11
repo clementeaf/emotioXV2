@@ -34,7 +34,7 @@ export interface EyeTrackingRecruitConfig {
   
   // Configuración del enlace
   linkConfig: {
-    allowMobile: boolean;
+    allowMobileDevices: boolean;
     trackLocation: boolean;
     allowMultipleAttempts: boolean;
   };
@@ -148,8 +148,8 @@ export type DemographicQuestionKey =
   | 'technicalProficiency';
 
 export type LinkConfigKey = 
-  | 'allowMobile' 
-  | 'trackLocation' 
+  | 'allowMobileDevices'
+  | 'trackLocation'
   | 'allowMultipleAttempts';
 
 export type ParameterOptionKey = 

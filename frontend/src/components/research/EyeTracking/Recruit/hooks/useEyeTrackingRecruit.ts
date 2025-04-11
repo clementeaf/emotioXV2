@@ -6,18 +6,28 @@ import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/providers/AuthProvider';
 import { 
-  EyeTrackingRecruitConfig, 
-  EyeTrackingRecruitStats, 
-  DemographicQuestionKey,
-  LinkConfigKey,
-  ParameterOptionKey,
-  BacklinkKey,
-  EyeTrackingRecruitRequest
-} from '@/shared/interfaces/eyeTracking';
+  EyeTrackingRecruitConfig,
+  EyeTrackingRecruitStats,
+  DemographicQuestionKeys,
+  LinkConfigKeys,
+  ParameterOptionKeys,
+  CreateEyeTrackingRecruitRequest,
+  LinkConfig,
+  ParticipantLimit,
+  Backlinks,
+  ParameterOptions,
+  DemographicQuestions
+} from 'shared/interfaces/eyeTrackingRecruit.interface';
 import API_CONFIG from '@/config/api.config';
 import { eyeTrackingFixedAPI } from "@/lib/eye-tracking-api";
 
 // Interfaces
+interface ErrorModalData {
+  title: string;
+  message: string | React.ReactNode;
+  type: 'error' | 'info' | 'success';
+}
+
 interface UseEyeTrackingRecruitProps {
   researchId: string;
 }
@@ -27,14 +37,46 @@ interface EyeTrackingRecruitFormData {
   id?: string;
   researchId: string;
   demographicQuestions: {
-    age: boolean;
-    country: boolean;
-    gender: boolean;
-    educationLevel: boolean;
-    householdIncome: boolean;
-    employmentStatus: boolean;
-    dailyHoursOnline: boolean;
-    technicalProficiency: boolean;
+    age: {
+      enabled: boolean;
+      required: boolean;
+      options?: string[];
+    };
+    country: {
+      enabled: boolean;
+      required: boolean;
+      options?: string[];
+    };
+    gender: {
+      enabled: boolean;
+      required: boolean;
+      options?: string[];
+    };
+    educationLevel: {
+      enabled: boolean;
+      required: boolean;
+      options?: string[];
+    };
+    householdIncome: {
+      enabled: boolean;
+      required: boolean;
+      options?: string[];
+    };
+    employmentStatus: {
+      enabled: boolean;
+      required: boolean;
+      options?: string[];
+    };
+    dailyHoursOnline: {
+      enabled: boolean;
+      required: boolean;
+      options?: string[];
+    };
+    technicalProficiency: {
+      enabled: boolean;
+      required: boolean;
+      options?: string[];
+    };
   };
   linkConfig: {
     allowMobile: boolean;
@@ -73,10 +115,11 @@ interface UseEyeTrackingRecruitResult {
   setLinkConfigEnabled: (value: boolean) => void;
   
   // Métodos para manipular el formulario
-  handleDemographicChange: (key: DemographicQuestionKey, value: boolean) => void;
-  handleLinkConfigChange: (key: LinkConfigKey, value: any) => void;
-  handleBacklinkChange: (key: BacklinkKey, value: any) => void;
-  handleParamOptionChange: (key: ParameterOptionKey, value: boolean) => void;
+  handleDemographicChange: (key: DemographicQuestionKeys, value: boolean) => void;
+  handleDemographicRequired: (key: DemographicQuestionKeys, required: boolean) => void;
+  handleLinkConfigChange: (key: LinkConfigKeys, value: any) => void;
+  handleBacklinkChange: (key: string, value: any) => void;
+  handleParamOptionChange: (key: ParameterOptionKeys, value: boolean) => void;
   setLimitParticipants: (value: boolean) => void;
   setParticipantLimit: (value: number) => void;
   setResearchUrl: (value: string) => void;
@@ -88,10 +131,17 @@ interface UseEyeTrackingRecruitResult {
   copyLinkToClipboard: () => void;
   previewLink: () => void;
   
-  // Estados para el modal JSON
+  // Estados para los modales
+  modalError: ErrorModalData | null;
+  modalVisible: boolean;
   showJsonPreview: boolean;
   jsonToSend: string;
+  pendingAction: 'save' | 'preview' | null;
+  
+  // Métodos para los modales
+  closeModal: () => void;
   closeJsonModal: () => void;
+  continueWithAction: () => void;
   
   // Nuevos estados para QR y Preview
   qrCodeData: string | null;
@@ -105,55 +155,82 @@ interface UseEyeTrackingRecruitResult {
 const DEFAULT_STATS: EyeTrackingRecruitStats = {
   complete: {
     count: 0,
-    percentage: 0,
-    label: 'Complete',
-    description: 'IDs have been successful'
+    percentage: 0
   },
   disqualified: {
     count: 0,
-    percentage: 0,
-    label: 'Disqualified',
-    description: 'IDs have been redirected'
+    percentage: 0
   },
   overquota: {
     count: 0,
-    percentage: 0,
-    label: 'Overquota',
-    description: 'IDs have been redirected'
+    percentage: 0
   }
 };
 
-const DEFAULT_CONFIG: Omit<EyeTrackingRecruitConfig, 'researchId'> = {
+const DEFAULT_CONFIG: EyeTrackingRecruitFormData = {
+  researchId: '',
   demographicQuestions: {
-    age: false,
-    country: true,
-    gender: false,
-    educationLevel: true,
-    householdIncome: false,
-    employmentStatus: true,
-    dailyHoursOnline: false,
-    technicalProficiency: false
+    age: {
+      enabled: false,
+      required: false,
+      options: ['18-24', '25-34', '35-44', '45-54', '55-64', '65+']
+    },
+    country: {
+      enabled: false,
+      required: false,
+      options: ['ES', 'MX', 'AR', 'CO', 'CL', 'PE']
+    },
+    gender: {
+      enabled: false,
+      required: false,
+      options: ['M', 'F', 'O', 'P']
+    },
+    educationLevel: {
+      enabled: false,
+      required: false,
+      options: ['1', '2', '3', '4', '5', '6', '7']
+    },
+    householdIncome: {
+      enabled: false,
+      required: false,
+      options: ['1', '2', '3', '4', '5']
+    },
+    employmentStatus: {
+      enabled: false,
+      required: false,
+      options: ['employed', 'unemployed', 'student', 'retired']
+    },
+    dailyHoursOnline: {
+      enabled: false,
+      required: false,
+      options: ['0-2', '2-4', '4-6', '6-8', '8+']
+    },
+    technicalProficiency: {
+      enabled: false,
+      required: false,
+      options: ['beginner', 'intermediate', 'advanced', 'expert']
+    }
   },
   linkConfig: {
     allowMobile: false,
-    trackLocation: true,
+    trackLocation: false,
     allowMultipleAttempts: false
   },
   participantLimit: {
-    enabled: true,
+    enabled: false,
     value: 50
   },
   backlinks: {
-    complete: 'www.useremotion.com/',
-    disqualified: 'www.useremotion.com/',
-    overquota: 'www.useremotion.com/'
+    complete: '',
+    disqualified: '',
+    overquota: ''
   },
-  researchUrl: 'www.useremotion.com/sysgd-jye7467responding={participant_id}',
+  researchUrl: '',
   parameterOptions: {
-    saveDeviceInfo: true,
-    saveLocationInfo: true,
-    saveResponseTimes: true,
-    saveUserJourney: true
+    saveDeviceInfo: false,
+    saveLocationInfo: false,
+    saveResponseTimes: false,
+    saveUserJourney: false
   }
 };
 
@@ -172,309 +249,215 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
-  // Estados adicionales para los switches principales
+  // Estados para los switches principales
   const [demographicQuestionsEnabled, setDemographicQuestionsEnabled] = useState(true);
   const [linkConfigEnabled, setLinkConfigEnabled] = useState(true);
   
-  // Estados para el modal JSON
+  // Estados para los modales
+  const [modalError, setModalError] = useState<ErrorModalData | null>(null);
+  const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [showJsonPreview, setShowJsonPreview] = useState<boolean>(false);
   const [jsonToSend, setJsonToSend] = useState<string>('');
-  const [pendingAction, setPendingAction] = useState<'save' | null>(null);
+  const [pendingAction, setPendingAction] = useState<'save' | 'preview' | null>(null);
   
   // Nuevos estados para QR y Preview
   const [qrCodeData, setQrCodeData] = useState<string | null>(null);
   const [showQRModal, setShowQRModal] = useState<boolean>(false);
   const [showLinkPreview, setShowLinkPreview] = useState<boolean>(false);
   
-  // Función para mostrar el modal de confirmación con JSON
-  const showJsonModal = useCallback(() => {
-    if (!showJsonPreview || !jsonToSend) return;
-
-    const formDataObj = JSON.parse(jsonToSend);
-    
-    // Contar preguntas demográficas habilitadas
-    const enabledDemographicQuestions = Object.entries(formDataObj.demographicQuestions)
-      .filter(([key, value]) => value === true)
-      .map(([key]) => {
-        const labels: Record<string, string> = {
-          age: 'Edad',
-          country: 'País',
-          gender: 'Género',
-          educationLevel: 'Nivel de educación',
-          householdIncome: 'Ingresos familiares',
-          employmentStatus: 'Estado laboral',
-          dailyHoursOnline: 'Horas online',
-          technicalProficiency: 'Habilidades técnicas'
-        };
-        return labels[key as string] || key;
-      });
-    
-    // Contar configuraciones de enlaces habilitadas
-    const enabledLinkConfig = Object.entries(formDataObj.linkConfig)
-      .filter(([key, value]) => value === true)
-      .map(([key]) => {
-        const labels: Record<string, string> = {
-          allowMobile: 'Permitir dispositivos móviles',
-          trackLocation: 'Rastrear ubicación',
-          allowMultipleAttempts: 'Permitir múltiples intentos'
-        };
-        return labels[key as string] || key;
-      });
-    
-    // Construir la opción de límite de participantes
-    let participantLimitText = 'Sin límite de participantes';
-    if (formDataObj.participantLimit?.enabled) {
-      participantLimitText = `Límite: ${formDataObj.participantLimit.value} participantes`;
-    }
-    
-    // Crear el HTML para el modal
-    const modalHtml = `
-      <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999;">
-        <div style="background: white; border-radius: 12px; max-width: 90%; width: 550px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 4px 20px rgba(0,0,0,0.2); overflow: hidden;">
-          <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid #e5e7eb;">
-            <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Confirmar configuración</h2>
-            <button id="closeJsonModal" style="background: transparent; border: none; cursor: pointer; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #555555; transition: all 0.2s; font-size: 24px;">&times;</button>
-          </div>
-          
-          <div style="padding: 24px; overflow-y: auto; flex-grow: 1;">
-            <p style="margin: 0 0 20px; color: #6b7280; font-size: 14px;">
-              Revise la configuración antes de guardar. Esta es la información que se enviará al servidor.
-            </p>
-            
-            <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-              <h3 style="margin: 0 0 16px; font-size: 16px; color: #0369a1; font-weight: 600;">Enlaces de retorno</h3>
-              <div style="display: flex; flex-direction: column; gap: 8px;">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                  <span style="min-width: 140px; color: #0c4a6e; font-size: 14px;">Completados:</span>
-                  <span style="font-family: monospace; font-size: 13px; color: #0c4a6e; word-break: break-all;">${formDataObj.backlinks.complete || 'No definido'}</span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 10px;">
-                  <span style="min-width: 140px; color: #0c4a6e; font-size: 14px;">Descalificados:</span>
-                  <span style="font-family: monospace; font-size: 13px; color: #0c4a6e; word-break: break-all;">${formDataObj.backlinks.disqualified || 'No definido'}</span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 10px;">
-                  <span style="min-width: 140px; color: #0c4a6e; font-size: 14px;">Cuota excedida:</span>
-                  <span style="font-family: monospace; font-size: 13px; color: #0c4a6e; word-break: break-all;">${formDataObj.backlinks.overquota || 'No definido'}</span>
-                </div>
-              </div>
-            </div>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
-              <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 12px; padding: 20px;">
-                <h3 style="margin: 0 0 16px; font-size: 16px; color: #495057; font-weight: 600;">Preguntas demográficas</h3>
-                ${enabledDemographicQuestions.length > 0 
-                  ? `<ul style="margin: 0; padding-left: 20px; color: #495057;">
-                      ${enabledDemographicQuestions.map(q => `<li style="margin-bottom: 6px;">${q}</li>`).join('')}
-                    </ul>`
-                  : `<p style="margin: 0; color: #6c757d; font-size: 14px;">No hay preguntas demográficas habilitadas</p>`
-                }
-              </div>
-              
-              <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 12px; padding: 20px;">
-                <h3 style="margin: 0 0 16px; font-size: 16px; color: #495057; font-weight: 600;">Configuración de enlace</h3>
-                ${enabledLinkConfig.length > 0 
-                  ? `<ul style="margin: 0; padding-left: 20px; color: #495057;">
-                      ${enabledLinkConfig.map(c => `<li style="margin-bottom: 6px;">${c}</li>`).join('')}
-                    </ul>`
-                  : `<p style="margin: 0; color: #6c757d; font-size: 14px;">No hay configuraciones de enlace habilitadas</p>`
-                }
-                <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #dee2e6;">
-                  <p style="margin: 0; color: #495057; font-weight: 500;">${participantLimitText}</p>
-                </div>
-              </div>
-            </div>
-            
-            <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-              <h3 style="margin: 0 0 16px; font-size: 16px; color: #065f46; font-weight: 600;">URL de investigación</h3>
-              <p style="margin: 0; font-family: monospace; font-size: 13px; color: #065f46; word-break: break-all;">
-                ${formDataObj.researchUrl || 'No definida'}
-              </p>
-            </div>
-            
-            <div style="background: #f5f7f5; border: 1px solid #e5eae5; border-radius: 12px; padding: 20px; color: #333333; font-size: 14px; margin-top: 24px;">
-              <div style="display: flex; align-items: start; gap: 12px;">
-                <svg style="flex-shrink: 0; margin-top: 2px;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                </svg>
-                <div>
-                  <p style="margin: 0 0 10px; font-weight: 500; font-size: 15px; color: #333333;">Resumen de la configuración</p>
-                  <ul style="margin: 0; padding-left: 4px; list-style-position: inside;">
-                    <li style="margin-bottom: 6px; color: #444444;">Se han seleccionado ${enabledDemographicQuestions.length} de 8 preguntas demográficas.</li>
-                    <li style="margin-bottom: 6px; color: #444444;">Los participantes ${formDataObj.linkConfig.allowMobile ? 'podrán' : 'no podrán'} usar dispositivos móviles.</li>
-                    <li style="margin-bottom: 6px; color: #444444;">Se ${formDataObj.linkConfig.trackLocation ? 'rastreará' : 'no rastreará'} la ubicación de los participantes.</li>
-                    ${formDataObj.participantLimit?.enabled ? `<li style="color: #444444;">Se limitará a un máximo de ${formDataObj.participantLimit.value} participantes.</li>` : '<li style="color: #444444;">No hay límite en el número de participantes.</li>'}
-                  </ul>
-                </div>
-              </div>
-            </div>
-            
-          </div>
-          <div style="padding: 20px 28px; border-top: 1px solid #eaeaea; display: flex; justify-content: flex-end; gap: 16px; background: white;">
-            <button id="cancelJsonAction" style="background: #f5f5f5; color: #333333; border: 1px solid #e0e0e0; border-radius: 8px; padding: 10px 20px; font-weight: 500; cursor: pointer; font-size: 14px; transition: all 0.2s;">Cancelar</button>
-            <button id="continueJsonAction" style="background: #212121; color: white; border: none; border-radius: 8px; padding: 10px 20px; font-weight: 500; cursor: pointer; font-size: 14px; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-              Guardar configuración
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-    
-    // Crear elemento en el DOM
-    const modalContainer = document.createElement('div');
-    modalContainer.innerHTML = modalHtml;
-    document.body.appendChild(modalContainer);
-    
-    // Añadir hover effects
-    const closeButton = document.getElementById('closeJsonModal');
-    if (closeButton) {
-      closeButton.addEventListener('mouseover', () => {
-        closeButton.style.backgroundColor = '#f1f1f1';
-        closeButton.style.color = '#333333';
-      });
-      closeButton.addEventListener('mouseout', () => {
-        closeButton.style.backgroundColor = 'transparent';
-        closeButton.style.color = '#555555';
-      });
-    }
-    
-    const cancelButton = document.getElementById('cancelJsonAction');
-    if (cancelButton) {
-      cancelButton.addEventListener('mouseover', () => {
-        cancelButton.style.backgroundColor = '#e9e9e9';
-      });
-      cancelButton.addEventListener('mouseout', () => {
-        cancelButton.style.backgroundColor = '#f5f5f5';
-      });
-    }
-    
-    const continueButton = document.getElementById('continueJsonAction');
-    if (continueButton) {
-      continueButton.addEventListener('mouseover', () => {
-        continueButton.style.backgroundColor = '#000000';
-      });
-      continueButton.addEventListener('mouseout', () => {
-        continueButton.style.backgroundColor = '#212121';
-      });
-    }
-    
-    // Función para manejar la acción de continuar - definida aquí para evitar problemas de scope
-    const handleContinueAction = () => {
-      if (document.body.contains(modalContainer)) {
-        document.body.removeChild(modalContainer);
-      }
-      // Asegurarse de que continueWithAction se ejecute después de eliminar el modal
-      setTimeout(() => {
-        continueWithAction();
-      }, 10);
-    };
-    
-    // Función para manejar la acción de cancelar
-    const handleCancelAction = () => {
-      if (document.body.contains(modalContainer)) {
-        document.body.removeChild(modalContainer);
-      }
-      closeJsonModal();
-    };
-    
-    // Configurar eventos
-    document.getElementById('closeJsonModal')?.addEventListener('click', handleCancelAction);
-    
-    document.getElementById('cancelJsonAction')?.addEventListener('click', handleCancelAction);
-    
-    document.getElementById('continueJsonAction')?.addEventListener('click', handleContinueAction);
-    
-    // También permitir cerrar haciendo clic fuera del modal
-    modalContainer.addEventListener('click', (e) => {
-      if (e.target === modalContainer.firstChild) {
-        handleCancelAction();
-      }
-    });
-    
-    // Limpiar al desmontar
-    return () => {
-      if (document.body.contains(modalContainer)) {
-        document.body.removeChild(modalContainer);
-      }
-    };
-  }, [showJsonPreview, jsonToSend, pendingAction, researchId]);
+  // Handlers para el modal de error
+  const closeModal = useCallback(() => setModalVisible(false), []);
+  const showModal = useCallback((errorData: ErrorModalData) => {
+    setModalError(errorData);
+    setModalVisible(true);
+  }, []);
   
   // Función para cerrar el modal JSON
-  const closeJsonModal = () => {
+  const closeJsonModal = useCallback(() => {
     setShowJsonPreview(false);
     setPendingAction(null);
-  };
+    setJsonToSend('');
+    console.log('[useEyeTrackingRecruit] Modal JSON cerrado');
+  }, []);
   
   // Función para cerrar el modal QR
-  const closeQRModal = () => {
+  const closeQRModal = useCallback(() => {
     setShowQRModal(false);
-  };
+  }, []);
   
   // Función para cerrar la vista previa del enlace
-  const closeLinkPreview = () => {
+  const closeLinkPreview = useCallback(() => {
     setShowLinkPreview(false);
-  };
+  }, []);
+  
+  // Función para mostrar el modal con JSON
+  const showJsonModal = useCallback((json: any, action: 'save' | 'preview') => {
+    try {
+      const stringifiedJson = JSON.stringify(json, null, 2);
+      JSON.parse(stringifiedJson); // Verificar que sea un JSON válido
+      
+      setJsonToSend(stringifiedJson);
+      setPendingAction(action);
+      setShowJsonPreview(true);
+      
+      console.log(`[useEyeTrackingRecruit] Mostrando modal JSON para acción: ${action}`);
+      console.log('[useEyeTrackingRecruit] JSON válido:', stringifiedJson);
+    } catch (error) {
+      console.error('[useEyeTrackingRecruit] Error al procesar JSON:', error);
+      showModal({
+        title: 'Error al procesar datos',
+        message: 'Los datos no tienen un formato JSON válido. Por favor, revise la estructura de los datos.',
+        type: 'error'
+      });
+    }
+  }, [showModal]);
+  
+  // Mutación para guardar datos
+  const { mutate } = useMutation({
+    mutationFn: async (data: CreateEyeTrackingRecruitRequest) => {
+      try {
+        if (!isAuthenticated) {
+          throw new Error('No autenticado: Se requiere un token de autenticación');
+        }
+        
+        console.log('[useEyeTrackingRecruit] Enviando datos al backend:', data);
+        return await eyeTrackingFixedAPI.saveRecruitConfig(data);
+      } catch (error: any) {
+        console.error('[useEyeTrackingRecruit] Error al guardar:', error);
+        throw error;
+      }
+    },
+    onSuccess: (response) => {
+      console.log('[useEyeTrackingRecruit] Guardado exitoso:', response);
+      toast.success('Configuración guardada correctamente');
+      
+      // Invalidar queries para recargar datos
+      queryClient.invalidateQueries({ queryKey: ['eyeTrackingRecruit', researchId] });
+    },
+    onError: (error: any) => {
+      console.error('[useEyeTrackingRecruit] Error en mutación:', error);
+      
+      let errorMessage = 'Error al guardar la configuración';
+      if (error.statusCode === 404) {
+        errorMessage = 'Error 404: API no encontrada';
+      } else if (error.statusCode === 400) {
+        errorMessage = `Error 400: Datos inválidos - ${error.message || ''}`;
+      } else if (error.statusCode === 401 || error.statusCode === 403) {
+        errorMessage = 'Error de autenticación: Inicie sesión nuevamente';
+      } else if (error.message) {
+        errorMessage = `Error: ${error.message}`;
+      }
+      
+      showModal({
+        title: 'Error al guardar',
+        message: errorMessage,
+        type: 'error'
+      });
+      
+      toast.error(errorMessage);
+    }
+  });
+
+  // Función para guardar el formulario
+  const saveForm = useCallback(() => {
+    try {
+      if (!isAuthenticated) {
+        toast.error('Debe iniciar sesión para guardar configuración');
+        return;
+      }
+
+      if (!researchId) {
+        toast.error('ID de investigación inválido');
+        return;
+      }
+
+      // Validaciones
+      if (formData.participantLimit.enabled && formData.participantLimit.value <= 0) {
+        toast.error('El límite de participantes debe ser mayor a 0');
+        return;
+      }
+
+      if (!formData.researchUrl.trim()) {
+        toast.error('La URL de investigación no puede estar vacía');
+        return;
+      }
+
+      // Preparar datos para mostrar en el modal
+      const configToSave: CreateEyeTrackingRecruitRequest = {
+        researchId,
+        demographicQuestions: formData.demographicQuestions,
+        linkConfig: {
+          allowMobile: formData.linkConfig.allowMobile,
+          trackLocation: formData.linkConfig.trackLocation,
+          allowMultipleAttempts: formData.linkConfig.allowMultipleAttempts
+        },
+        participantLimit: {
+          enabled: formData.participantLimit.enabled,
+          value: formData.participantLimit.value
+        },
+        backlinks: formData.backlinks,
+        researchUrl: formData.researchUrl,
+        parameterOptions: formData.parameterOptions
+      };
+
+      // Mostrar modal con JSON
+      showJsonModal(configToSave, 'save');
+    } catch (error) {
+      console.error('[useEyeTrackingRecruit] Error al preparar datos:', error);
+      showModal({
+        title: 'Error al preparar datos',
+        message: 'Ocurrió un error al preparar los datos para guardar.',
+        type: 'error'
+      });
+    }
+  }, [formData, researchId, isAuthenticated, showJsonModal, showModal]);
+  
+  // Función para previsualizar el enlace
+  const previewLink = useCallback(() => {
+    try {
+      const dataToPreview = {
+        ...formData,
+        researchId
+      };
+      
+      // Mostrar modal de confirmación con JSON
+      showJsonModal(dataToPreview, 'preview');
+    } catch (error) {
+      console.error('[useEyeTrackingRecruit] Error al preparar datos para previsualizar:', error);
+      showModal({
+        title: 'Error al previsualizar',
+        message: 'Ocurrió un error al preparar los datos para la previsualización.',
+        type: 'error'
+      });
+    }
+  }, [formData, researchId, showModal]);
   
   // Función para continuar con la acción después de mostrar el JSON
-  const continueWithAction = () => {
-    console.log('[EyeTrackingRecruit] Ejecutando acción:', pendingAction);
-    
-    if (pendingAction === 'save') {
-      // Ejecutar la acción para guardar
-      try {
-        const dataToSaveObj = JSON.parse(jsonToSend);
-        console.log('[EyeTrackingRecruit] Enviando datos al backend:', dataToSaveObj);
+  const continueWithAction = useCallback(() => {
+    if (!pendingAction) return;
+
+    try {
+      const data = JSON.parse(jsonToSend);
+      console.log('[useEyeTrackingRecruit] Ejecutando acción:', pendingAction);
+
+      if (pendingAction === 'save') {
         setSaving(true);
-        
-        // Usar la API para guardar
-        eyeTrackingFixedAPI.saveRecruitConfig(dataToSaveObj)
-          .then((response) => {
-            console.log('[EyeTrackingRecruit] Respuesta del servidor:', response);
-            toast.success('Configuración guardada correctamente');
-            setSaving(false);
-            // Invalidar las consultas para recargar datos
-            queryClient.invalidateQueries({ queryKey: ['eyeTrackingRecruit', researchId] });
-          })
-          .catch((error: any) => {
-            console.error('[EyeTrackingRecruit] Error al guardar configuración:', error);
-            
-            // Proporcionar un mensaje de error más específico basado en el tipo de error
-            let errorMessage = 'Error al guardar la configuración';
-            
-            if (error.statusCode === 404) {
-              errorMessage = `Error 404: API no encontrada. La URL del servicio no existe. Revise la configuración de la API en el backend. ${error.message || ''}`;
-            } else if (error.statusCode === 400) {
-              errorMessage = `Error 400: Datos de configuración inválidos. Detalles: ${error.message || 'Verifique los campos del formulario.'}`;
-            } else if (error.statusCode === 401 || error.statusCode === 403) {
-              errorMessage = `Error ${error.statusCode}: No tiene permisos para realizar esta acción. Intente iniciar sesión nuevamente.`;
-            } else if (error.message) {
-              // Si hay un mensaje específico en el error, usarlo
-              errorMessage = `Error: ${error.message}`;
-            }
-            
-            // Mostrar error en la UI
-            toast.error(errorMessage);
-            
-            // También en consola para diagnostico
-            console.error(`[EyeTrackingRecruit] Detalle del error: ${JSON.stringify({
-              statusCode: error.statusCode,
-              message: error.message,
-              data: error.data
-            }, null, 2)}`);
-            
-            setSaving(false);
-          });
-      } catch (error) {
-        console.error('[EyeTrackingRecruit] Error al procesar JSON:', error);
-        toast.error('Error al procesar los datos del formulario');
-        setSaving(false);
+        mutate(data);
+      } else if (pendingAction === 'preview') {
+        setShowLinkPreview(true);
       }
+    } catch (error) {
+      console.error('[useEyeTrackingRecruit] Error al procesar JSON:', error);
+      showModal({
+        title: 'Error al procesar datos',
+        message: 'Los datos no tienen un formato JSON válido.',
+        type: 'error'
+      });
+    } finally {
+      closeJsonModal();
+      setSaving(false);
     }
-    
-    // Limpiar el estado del modal
-    setShowJsonPreview(false);
-    setPendingAction(null);
-  };
+  }, [pendingAction, jsonToSend, showModal, closeJsonModal, mutate]);
   
   // Cargar datos (simulado por ahora)
   useEffect(() => {
@@ -485,17 +468,35 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   }, []);
   
   // Métodos para manipular el formulario
-  const handleDemographicChange = useCallback((key: DemographicQuestionKey, value: boolean) => {
+  const handleDemographicChange = useCallback((key: DemographicQuestionKeys, value: boolean) => {
     setFormData(prevData => ({
       ...prevData,
       demographicQuestions: {
         ...prevData.demographicQuestions,
-        [key]: value
+        [key]: {
+          ...prevData.demographicQuestions[key],
+          enabled: value,
+          required: value // Por defecto, si está habilitado, es requerido
+        }
       }
     }));
   }, []);
   
-  const handleLinkConfigChange = useCallback((key: LinkConfigKey, value: any) => {
+  // Nuevo método para manejar el cambio de required en preguntas demográficas
+  const handleDemographicRequired = useCallback((key: DemographicQuestionKeys, required: boolean) => {
+    setFormData(prevData => ({
+      ...prevData,
+      demographicQuestions: {
+        ...prevData.demographicQuestions,
+        [key]: {
+          ...prevData.demographicQuestions[key],
+          required
+        }
+      }
+    }));
+  }, []);
+  
+  const handleLinkConfigChange = useCallback((key: LinkConfigKeys, value: any) => {
     setFormData(prevData => ({
       ...prevData,
       linkConfig: {
@@ -505,7 +506,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     }));
   }, []);
   
-  const handleBacklinkChange = useCallback((key: BacklinkKey, value: string) => {
+  const handleBacklinkChange = useCallback((key: string, value: string) => {
     setFormData(prevData => ({
       ...prevData,
       backlinks: {
@@ -515,7 +516,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     }));
   }, []);
   
-  const handleParamOptionChange = useCallback((key: ParameterOptionKey, value: boolean) => {
+  const handleParamOptionChange = useCallback((key: ParameterOptionKeys, value: boolean) => {
     setFormData(prevData => ({
       ...prevData,
       parameterOptions: {
@@ -553,55 +554,6 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   }, []);
   
   // Acciones
-  const saveForm = useCallback(() => {
-    if (!isAuthenticated) {
-      toast.error('Debe iniciar sesión para guardar configuración');
-      return;
-    }
-    
-    if (!researchId) {
-      toast.error('ID de investigación inválido');
-      return;
-    }
-    
-    // Validaciones adicionales
-    if (formData.participantLimit.enabled && formData.participantLimit.value <= 0) {
-      toast.error('El límite de participantes debe ser mayor a 0');
-      return;
-    }
-    
-    // Validar URL de investigación
-    if (!formData.researchUrl.trim()) {
-      toast.error('La URL de investigación no puede estar vacía');
-      return;
-    }
-
-    // Preparar los datos para enviar al backend
-    try {
-      // Convertir los datos del formulario a formato apropiado para el backend
-      const configToSave: EyeTrackingRecruitRequest = {
-        researchId,
-        config: {
-          demographicQuestions: formData.demographicQuestions,
-          linkConfig: formData.linkConfig,
-          participantLimit: formData.participantLimit,
-          backlinks: formData.backlinks,
-          researchUrl: formData.researchUrl,
-          parameterOptions: formData.parameterOptions
-        }
-      };
-      
-      // Guardar en estado para mostrar en el modal
-      setJsonToSend(JSON.stringify(configToSave, null, 2));
-      setShowJsonPreview(true);
-      setPendingAction('save');
-      
-    } catch (error) {
-      console.error('Error al preparar los datos:', error);
-      toast.error('Error al preparar los datos del formulario');
-    }
-  }, [formData, researchId, isAuthenticated]);
-  
   const generateRecruitmentLink = useCallback(() => {
     return `https://useremotion.com/link/${researchId}?respondent={participant_id}`;
   }, [researchId]);
@@ -625,11 +577,6 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     navigator.clipboard.writeText(link);
     toast.success('Enlace copiado al portapapeles');
   }, [generateRecruitmentLink]);
-  
-  const previewLink = useCallback(() => {
-    // Generamos una vista previa interactiva del enlace
-    setShowLinkPreview(true);
-  }, []);
   
   // Efecto para crear el modal QR
   useEffect(() => {
@@ -777,8 +724,35 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
                     <div style="margin-bottom: 28px; padding: 16px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px;">
                       <h3 style="margin: 0 0 12px; font-size: 16px; color: #0369a1;">Información importante</h3>
                       <p style="margin: 0 0 8px; font-size: 14px; color: #0c4a6e;">Esta investigación tiene como objetivo entender cómo los usuarios interactúan con interfaces digitales.</p>
-                      <p style="margin: 0; font-size: 14px; color: #0c4a6e;">El estudio tomará aproximadamente <strong>10-15 minutos</strong> en completarse.</p>
+                      <p style="margin: 0 0 8px; font-size: 14px; color: #0c4a6e;">El estudio tomará aproximadamente <strong>10-15 minutos</strong> en completarse.</p>
+                      ${formData.researchUrl ? `
+                      <p style="margin: 8px 0 0; font-size: 14px; color: #0c4a6e;">
+                        <strong>URL del estudio:</strong> <a href="${formData.researchUrl}" target="_blank" style="color: #2563eb; text-decoration: none;">${formData.researchUrl}</a>
+                      </p>
+                      ` : ''}
                     </div>
+
+                    <!-- Enlaces de retorno si están configurados -->
+                    ${Object.entries(formData.backlinks).some(([_, value]) => value) ? `
+                    <div style="margin-bottom: 28px; padding: 16px; background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px;">
+                      <h3 style="margin: 0 0 12px; font-size: 16px; color: #92400e;">Enlaces de retorno</h3>
+                      ${formData.backlinks.complete ? `
+                      <p style="margin: 0 0 8px; font-size: 14px; color: #92400e;">
+                        <strong>Al completar:</strong> <a href="${formData.backlinks.complete}" target="_blank" style="color: #2563eb; text-decoration: none;">${formData.backlinks.complete}</a>
+                      </p>
+                      ` : ''}
+                      ${formData.backlinks.disqualified ? `
+                      <p style="margin: 0 0 8px; font-size: 14px; color: #92400e;">
+                        <strong>Si es descalificado:</strong> <a href="${formData.backlinks.disqualified}" target="_blank" style="color: #2563eb; text-decoration: none;">${formData.backlinks.disqualified}</a>
+                      </p>
+                      ` : ''}
+                      ${formData.backlinks.overquota ? `
+                      <p style="margin: 0; font-size: 14px; color: #92400e;">
+                        <strong>Si se excede la cuota:</strong> <a href="${formData.backlinks.overquota}" target="_blank" style="color: #2563eb; text-decoration: none;">${formData.backlinks.overquota}</a>
+                      </p>
+                      ` : ''}
+                    </div>
+                    ` : ''}
                     
                     <!-- Formulario demográfico si está habilitado -->
                     ${demographicQuestionsEnabled ? `
@@ -787,100 +761,101 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
                       <p style="margin: 0 0 16px; font-size: 14px; color: #64748b;">Por favor, proporcione la siguiente información para ayudarnos a clasificar sus respuestas.</p>
                       
                       <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px;">
-                        ${formData.demographicQuestions.country ? `
+                        ${Object.entries(formData.demographicQuestions).map(([key, value]) => value.enabled ? `
                         <div style="margin-bottom: 16px;">
-                          <label style="display: block; font-size: 14px; color: #334155; font-weight: 500; margin-bottom: 4px;">País <span style="color: #ef4444;">*</span></label>
+                          <label style="display: block; font-size: 14px; color: #334155; font-weight: 500; margin-bottom: 4px;">
+                            ${key === 'age' ? 'Edad' :
+                              key === 'country' ? 'País' :
+                              key === 'gender' ? 'Género' :
+                              key === 'educationLevel' ? 'Nivel educativo' :
+                              key === 'householdIncome' ? 'Ingresos del hogar' :
+                              key === 'employmentStatus' ? 'Situación laboral' :
+                              key === 'dailyHoursOnline' ? 'Horas diarias en línea' :
+                              key === 'technicalProficiency' ? 'Nivel técnico' :
+                              key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1')}
+                            ${value.required ? '<span style="color: #ef4444;">*</span>' : ''}
+                          </label>
                           <select style="width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; background: white; font-size: 14px;">
-                            <option value="">Seleccione su país</option>
-                            <option value="ES">España</option>
-                            <option value="MX">México</option>
-                            <option value="AR">Argentina</option>
-                            <option value="CO">Colombia</option>
-                            <option value="CL">Chile</option>
-                            <option value="PE">Perú</option>
+                            <option value="">Seleccione una opción</option>
+                            ${value.options?.map(opt => `<option value="${opt}">${getOptionLabel(key, opt)}</option>`).join('')}
                           </select>
+                          ${!value.required ? '<p style="margin: 4px 0 0; font-size: 12px; color: #6b7280;">Opcional</p>' : ''}
                         </div>
-                        ` : ''}
-                        
-                        ${formData.demographicQuestions.age ? `
-                        <div style="margin-bottom: 16px;">
-                          <label style="display: block; font-size: 14px; color: #334155; font-weight: 500; margin-bottom: 4px;">Edad <span style="color: #ef4444;">*</span></label>
-                          <select style="width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; background: white; font-size: 14px;">
-                            <option value="">Seleccione su rango de edad</option>
-                            <option value="18-24">18-24 años</option>
-                            <option value="25-34">25-34 años</option>
-                            <option value="35-44">35-44 años</option>
-                            <option value="45-54">45-54 años</option>
-                            <option value="55-64">55-64 años</option>
-                            <option value="65+">65 años o más</option>
-                          </select>
-                        </div>
-                        ` : ''}
-                        
-                        ${formData.demographicQuestions.gender ? `
-                        <div style="margin-bottom: 16px;">
-                          <label style="display: block; font-size: 14px; color: #334155; font-weight: 500; margin-bottom: 4px;">Género <span style="color: #ef4444;">*</span></label>
-                          <select style="width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; background: white; font-size: 14px;">
-                            <option value="">Seleccione su género</option>
-                            <option value="M">Hombre</option>
-                            <option value="F">Mujer</option>
-                            <option value="O">Otro</option>
-                            <option value="P">Prefiero no decirlo</option>
-                          </select>
-                        </div>
-                        ` : ''}
-                        
-                        ${formData.demographicQuestions.educationLevel ? `
-                        <div style="margin-bottom: 16px;">
-                          <label style="display: block; font-size: 14px; color: #334155; font-weight: 500; margin-bottom: 4px;">Nivel educativo <span style="color: #ef4444;">*</span></label>
-                          <select style="width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; background: white; font-size: 14px;">
-                            <option value="">Seleccione su nivel educativo</option>
-                            <option value="1">Educación primaria</option>
-                            <option value="2">Educación secundaria</option>
-                            <option value="3">Bachillerato</option>
-                            <option value="4">Formación profesional</option>
-                            <option value="5">Grado universitario</option>
-                            <option value="6">Máster/Postgrado</option>
-                            <option value="7">Doctorado</option>
-                          </select>
-                        </div>
-                        ` : ''}
+                        ` : '').join('')}
                       </div>
                     </div>
                     ` : ''}
                     
-                    <!-- Información del dispositivo si está habilitado -->
-                    ${formData.parameterOptions.saveDeviceInfo ? `
+                    <!-- Configuración del enlace -->
+                    ${linkConfigEnabled ? `
                     <div style="margin-bottom: 32px;">
-                      <h3 style="margin: 0 0 16px; font-size: 16px; color: #334155;">Información del dispositivo</h3>
-                      <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 16px;">
-                        <div style="display: flex; gap: 12px; align-items: start;">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#b91c1c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <line x1="12" y1="8" x2="12" y2="12"></line>
-                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                          </svg>
-                          <div>
-                            <p style="margin: 0 0 8px; font-size: 14px; color: #b91c1c; font-weight: 500;">Se recogerá información de tu dispositivo</p>
-                            <p style="margin: 0; font-size: 13px; color: #ef4444;">Esta investigación recopilará datos sobre tu navegador y dispositivo para mejorar la experiencia.</p>
-                          </div>
+                      <h3 style="margin: 0 0 16px; font-size: 18px; color: #334155;">Configuración del estudio</h3>
+                      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px;">
+                        ${formData.linkConfig.allowMobile ? `
+                        <div style="margin-bottom: 12px; padding: 8px 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px;">
+                          <p style="margin: 0; font-size: 14px; color: #166534;">✓ Este estudio es compatible con dispositivos móviles</p>
                         </div>
+                        ` : `
+                        <div style="margin-bottom: 12px; padding: 8px 12px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px;">
+                          <p style="margin: 0; font-size: 14px; color: #991b1b;">✕ Este estudio no es compatible con dispositivos móviles</p>
+                        </div>
+                        `}
+                        
+                        ${formData.linkConfig.trackLocation ? `
+                        <div style="margin-bottom: 12px; padding: 8px 12px; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 6px;">
+                          <p style="margin: 0; font-size: 14px; color: #9a3412;">ℹ️ Se solicitará acceso a tu ubicación</p>
+                        </div>
+                        ` : ''}
+                        
+                        ${formData.linkConfig.allowMultipleAttempts ? `
+                        <div style="padding: 8px 12px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px;">
+                          <p style="margin: 0; font-size: 14px; color: #0369a1;">ℹ️ Puedes participar múltiples veces en este estudio</p>
+                        </div>
+                        ` : ''}
                       </div>
                     </div>
                     ` : ''}
-                    
+
+                    <!-- Parámetros adicionales -->
+                    <div style="margin-bottom: 32px;">
+                      <h3 style="margin: 0 0 16px; font-size: 18px; color: #334155;">Información adicional</h3>
+                      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px;">
+                        ${formData.participantLimit.enabled ? `
+                        <div style="margin-bottom: 12px; padding: 8px 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px;">
+                          <p style="margin: 0; font-size: 14px; color: #166534;">
+                            ℹ️ Este estudio está limitado a ${formData.participantLimit.value} participantes
+                          </p>
+                        </div>
+                        ` : ''}
+
+                        ${Object.entries(formData.parameterOptions).map(([key, value]) => value ? `
+                        <div style="margin-bottom: 12px; padding: 8px 12px; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 6px;">
+                          <p style="margin: 0; font-size: 14px; color: #9a3412;">
+                            ℹ️ ${key === 'saveDeviceInfo' ? 'Se recopilará información de tu dispositivo' :
+                                key === 'saveLocationInfo' ? 'Se guardará información de tu ubicación' :
+                                key === 'saveResponseTimes' ? 'Se registrarán tus tiempos de respuesta' :
+                                'Se registrará tu recorrido durante el estudio'}
+                          </p>
+                        </div>
+                        ` : '').join('')}
+                      </div>
+                    </div>
+
                     <!-- Botones de acción -->
                     <div style="text-align: center; margin-top: 36px;">
                       <button id="previewContinueButton" style="background: #3b82f6; color: white; border: none; padding: 12px 32px; border-radius: 8px; font-weight: 500; cursor: pointer; font-size: 16px; transition: all 0.2s;">
                         Continuar
                       </button>
-                      <p style="margin: 8px 0 0; font-size: 13px; color: #94a3b8;">Al continuar, aceptas los términos y condiciones de este estudio.</p>
+                      <p style="margin: 8px 0 0; font-size: 13px; color: #94a3b8;">
+                        Al continuar, aceptas los términos y condiciones de este estudio${formData.parameterOptions.saveDeviceInfo || formData.parameterOptions.saveLocationInfo ? 
+                        ' y la recopilación de datos mencionada anteriormente' : ''}.
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
               
-              <!-- Información adicional -->
+              <!-- Resumen de configuración -->
               <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; color: #166534; margin-top: 20px;">
                 <div style="display: flex; gap: 12px; align-items: start;">
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -888,15 +863,42 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
                     <polyline points="22 4 12 14.01 9 11.01"></polyline>
                   </svg>
                   <div>
-                    <p style="margin: 0 0 8px; font-size: 15px; font-weight: 500;">Características activas en esta vista previa:</p>
+                    <p style="margin: 0 0 8px; font-size: 15px; font-weight: 500;">Resumen de configuración:</p>
                     <ul style="margin: 0; padding-left: 20px; font-size: 14px;">
-                      ${demographicQuestionsEnabled ? `<li>Recopilación de datos demográficos habilitada</li>` : ''}
-                      ${formData.linkConfig.trackLocation ? `<li>Rastreo de ubicación activado</li>` : ''}
-                      ${formData.linkConfig.allowMobile ? `<li>Acceso desde dispositivos móviles permitido</li>` : ''}
-                      ${formData.participantLimit.enabled ? `<li>Límite de ${formData.participantLimit.value} participantes configurado</li>` : ''}
-                      ${formData.parameterOptions.saveDeviceInfo ? `<li>Recopilación de información del dispositivo activada</li>` : ''}
-                      ${formData.parameterOptions.saveResponseTimes ? `<li>Registro de tiempos de respuesta activado</li>` : ''}
-                      ${formData.parameterOptions.saveUserJourney ? `<li>Seguimiento del recorrido del usuario activado</li>` : ''}
+                      <li style="margin-bottom: 8px;">Preguntas demográficas:
+                        <ul style="margin-top: 4px;">
+                          ${Object.entries(formData.demographicQuestions)
+                            .filter(([_, value]) => value.enabled)
+                            .map(([key, value]) => `
+                              <li>${key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1')} 
+                                ${value.required ? '(Requerido)' : '(Opcional)'}</li>
+                            `).join('')}
+                        </ul>
+                      </li>
+                      <li style="margin-bottom: 8px;">Configuración del enlace:
+                        <ul style="margin-top: 4px;">
+                          <li>Dispositivos móviles: ${formData.linkConfig.allowMobile ? 'Permitidos' : 'No permitidos'}</li>
+                          <li>Rastreo de ubicación: ${formData.linkConfig.trackLocation ? 'Activado' : 'Desactivado'}</li>
+                          <li>Múltiples intentos: ${formData.linkConfig.allowMultipleAttempts ? 'Permitidos' : 'No permitidos'}</li>
+                        </ul>
+                      </li>
+                      ${formData.participantLimit.enabled ? `
+                      <li style="margin-bottom: 8px;">Límite de participantes: ${formData.participantLimit.value}</li>
+                      ` : ''}
+                      <li>Recopilación de datos:
+                        <ul style="margin-top: 4px;">
+                          ${Object.entries(formData.parameterOptions)
+                            .filter(([_, value]) => value)
+                            .map(([key, _]) => `
+                              <li>${
+                                key === 'saveDeviceInfo' ? 'Información del dispositivo' :
+                                key === 'saveLocationInfo' ? 'Información de ubicación' :
+                                key === 'saveResponseTimes' ? 'Tiempos de respuesta' :
+                                'Recorrido del usuario'
+                              }</li>
+                            `).join('')}
+                        </ul>
+                      </li>
                     </ul>
                   </div>
                 </div>
@@ -954,8 +956,72 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     }
   }, [showLinkPreview, formData, demographicQuestionsEnabled, generateRecruitmentLink]);
   
+  const getOptionLabel = (key: string, value: string) => {
+    const labels: { [key: string]: { [key: string]: string } } = {
+      age: {
+        '18-24': '18-24 años',
+        '25-34': '25-34 años',
+        '35-44': '35-44 años',
+        '45-54': '45-54 años',
+        '55-64': '55-64 años',
+        '65+': '65 años o más'
+      },
+      country: {
+        'ES': 'España',
+        'MX': 'México',
+        'AR': 'Argentina',
+        'CO': 'Colombia',
+        'CL': 'Chile',
+        'PE': 'Perú'
+      },
+      gender: {
+        'M': 'Masculino',
+        'F': 'Femenino',
+        'O': 'Otro',
+        'P': 'Prefiero no decirlo'
+      },
+      educationLevel: {
+        '1': 'Educación primaria',
+        '2': 'Educación secundaria',
+        '3': 'Bachillerato',
+        '4': 'Formación profesional',
+        '5': 'Grado universitario',
+        '6': 'Máster/Postgrado',
+        '7': 'Doctorado'
+      },
+      householdIncome: {
+        '1': 'Menos de 20.000€',
+        '2': '20.000€ - 40.000€',
+        '3': '40.000€ - 60.000€',
+        '4': '60.000€ - 80.000€',
+        '5': 'Más de 80.000€'
+      },
+      employmentStatus: {
+        'employed': 'Empleado',
+        'unemployed': 'Desempleado',
+        'student': 'Estudiante',
+        'retired': 'Jubilado'
+      },
+      dailyHoursOnline: {
+        '0-2': '0-2 horas',
+        '2-4': '2-4 horas',
+        '4-6': '4-6 horas',
+        '6-8': '6-8 horas',
+        '8+': 'Más de 8 horas'
+      },
+      technicalProficiency: {
+        'beginner': 'Principiante',
+        'intermediate': 'Intermedio',
+        'advanced': 'Avanzado',
+        'expert': 'Experto'
+      }
+    };
+
+    return labels[key]?.[value] || value;
+  };
+  
   return {
-    // Estados
+    // Estados del formulario
     loading,
     saving,
     formData,
@@ -967,8 +1033,28 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     linkConfigEnabled,
     setLinkConfigEnabled,
     
-    // Métodos
+    // Estados para los modales
+    modalError,
+    modalVisible,
+    showJsonPreview,
+    jsonToSend,
+    pendingAction,
+    
+    // Métodos para los modales
+    closeModal,
+    closeJsonModal,
+    continueWithAction,
+    
+    // Nuevos estados para QR y Preview
+    qrCodeData,
+    showQRModal,
+    closeQRModal,
+    showLinkPreview,
+    closeLinkPreview,
+    
+    // Métodos del formulario
     handleDemographicChange,
+    handleDemographicRequired,
     handleLinkConfigChange,
     handleBacklinkChange,
     handleParamOptionChange,
@@ -981,18 +1067,6 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     generateRecruitmentLink,
     generateQRCode,
     copyLinkToClipboard,
-    previewLink,
-    
-    // Estados del modal JSON
-    showJsonPreview,
-    jsonToSend,
-    closeJsonModal,
-    
-    // Estados para QR y Preview
-    qrCodeData,
-    showQRModal,
-    closeQRModal,
-    showLinkPreview,
-    closeLinkPreview
+    previewLink
   };
 } 

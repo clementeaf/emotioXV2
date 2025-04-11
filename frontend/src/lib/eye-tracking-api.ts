@@ -302,32 +302,25 @@ export const eyeTrackingFixedAPI = {
     console.log('[EyeTrackingAPI] Guardando configuración de reclutamiento:', data);
     
     try {
-      // SOLUCIÓN ALTERNATIVA: Volvemos a la ruta original de eye-tracking que sabemos que funciona
-      // Ya que parece que la ruta eye-tracking-recruit no está disponible en el API desplegado
-      
       const method = 'POST';
-      // Usar la ruta /eye-tracking directamente
       const url = `/eye-tracking`;
       
       console.log(`[EyeTrackingAPI] Cambiando a ruta: ${API_CONFIG.baseURL}${url}`);
       
-      // Formatear los datos para incluir la información de ruteo
       const formattedData = {
         ...data,
-        // Para indicar que es una operación de recruit
-        operation: 'recruit', 
+        operation: 'recruit',
         action: 'createConfig',
         researchId: data.researchId,
         demographicQuestions: data.demographicQuestions,
         linkConfig: {
           allowMobileDevices: data.linkConfig.allowMobileDevices || false,
           trackLocation: data.linkConfig.trackLocation || false,
-          multipleAttempts: data.linkConfig.multipleAttempts || false,
-          limitParticipants: data.linkConfig.limitParticipants || false,
+          allowMultipleAttempts: data.linkConfig.allowMultipleAttempts || false
         },
         participantLimit: {
-          enabled: data.linkConfig.limitParticipants || false,
-          limit: data.linkConfig.participantLimit || 50
+          enabled: data.participantLimit.enabled || false,
+          value: data.participantLimit.value || 50
         },
         backlinks: data.backlinks,
         researchUrl: data.researchUrl,
