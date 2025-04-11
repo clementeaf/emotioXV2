@@ -159,12 +159,12 @@ export function EmotionalStates({
             </div>
             
             {/* Nombres debajo del gráfico */}
-            <div className="absolute left-10 right-0 bottom-[-32px] h-[100px] flex">
+            <div className="absolute left-10 right-0 bottom-[-48px] h-[80px] flex">
               {emotionalStates.map((state) => (
                 <div key={`label-${state.name}`} className="flex-1 flex justify-center">
                   <div className="h-full flex flex-col items-center relative">
                     <span 
-                      className="text-xs text-gray-600 absolute bottom-0 whitespace-nowrap"
+                      className="text-xs text-gray-600 absolute top-0 whitespace-nowrap"
                       style={{ 
                         writingMode: "vertical-lr",
                         transform: "rotate(180deg)",
