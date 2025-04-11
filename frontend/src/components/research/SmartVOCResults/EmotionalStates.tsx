@@ -100,13 +100,13 @@ export function EmotionalStates({
           <div className="relative h-[320px] mt-8">
             {/* Fondo cuadriculado */}
             <div className="absolute inset-0">
-              {[10, 8, 6, 4, 2, 0].map((value, i) => (
+              {[10, 5, 0].map((value, i) => (
                 <div 
                   key={value} 
                   className="border-t border-gray-200" 
                   style={{ 
                     position: 'absolute', 
-                    top: `${(i * 20)}%`, 
+                    top: `${i * 50}%`, 
                     left: '2rem', 
                     right: 0 
                   }} 
@@ -116,8 +116,12 @@ export function EmotionalStates({
 
             {/* Valores del eje Y */}
             <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-base text-gray-500">
-              {[10, 8, 6, 4, 2, 0].map((value) => (
-                <div key={value} className="h-8 -mt-4">
+              {[10, 5, 0].map((value) => (
+                <div 
+                  key={value} 
+                  className="h-8 -mt-4"
+                  style={{ position: 'absolute', top: `${value === 10 ? 0 : value === 5 ? 50 : 100}%` }}
+                >
                   {value}
                 </div>
               ))}
@@ -135,7 +139,7 @@ export function EmotionalStates({
                         state.isPositive ? "bg-[#4ADE80]" : "bg-[#F87171]"
                       )}
                       style={{ 
-                        height: `${Math.max(state.value * 8, 3)}%`,
+                        height: `${(state.value / 10) * 100}%`,
                       }}
                     />
                     
@@ -143,7 +147,7 @@ export function EmotionalStates({
                     <div 
                       className="absolute text-xs font-medium"
                       style={{ 
-                        bottom: `${Math.max(state.value * 8, 3)}%`, 
+                        bottom: `${(state.value / 10) * 100}%`, 
                         transform: 'translateY(-100%)' 
                       }}
                     >
