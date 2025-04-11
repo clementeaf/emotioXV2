@@ -118,8 +118,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
       // Invalidamos la query para recargar datos
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.THANK_YOU_SCREEN, researchId] });
       
-      // Mostrar mensaje de éxito
-      toast.success(SUCCESS_MESSAGES.SAVE_SUCCESS);
+      // Eliminamos el toast de éxito ya que se maneja en handleSave con el loadingToastId
     },
     onError: (error: any) => {
       console.error('[useThankYouScreenForm] Error en mutación:', error);
@@ -471,164 +470,164 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
       };
       
       // Abrir una nueva ventana con la previsualización real
-      const previewWindow = window.open('', '_blank');
-      
-      if (previewWindow) {
+        const previewWindow = window.open('', '_blank');
+        
+        if (previewWindow) {
         // Crear el HTML para la previsualización (código existente)
-        const previewHtml = `
-          <!DOCTYPE html>
-          <html lang="es">
-          <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Vista previa - Pantalla de Agradecimiento</title>
-            <style>
-              body {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', sans-serif;
-                margin: 0;
-                padding: 0;
-                background-color: #f5f5f5;
-                color: #333;
-                display: flex;
-                flex-direction: column;
-                min-height: 100vh;
-              }
-              
-              .preview-badge {
-                position: fixed;
-                top: 12px;
-                right: 12px;
-                background-color: rgba(0, 0, 0, 0.7);
-                color: white;
-                padding: 8px 12px;
-                border-radius: 4px;
-                font-size: 12px;
-                z-index: 100;
-              }
-              
-              .header {
-                background-color: #4f46e5;
-                color: white;
-                padding: 10px 20px;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-              }
-              
-              .header h1 {
-                font-size: 16px;
-                margin: 0;
-                font-weight: 500;
-              }
-              
-              .content {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-                padding: 40px 20px;
-                text-align: center;
+          const previewHtml = `
+            <!DOCTYPE html>
+            <html lang="es">
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Vista previa - Pantalla de Agradecimiento</title>
+              <style>
+                body {
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', sans-serif;
+                  margin: 0;
+                  padding: 0;
+                  background-color: #f5f5f5;
+                  color: #333;
+                  display: flex;
+                  flex-direction: column;
+                  min-height: 100vh;
+                }
+                
+                .preview-badge {
+                  position: fixed;
+                  top: 12px;
+                  right: 12px;
+                  background-color: rgba(0, 0, 0, 0.7);
+                  color: white;
+                  padding: 8px 12px;
+                  border-radius: 4px;
+                  font-size: 12px;
+                  z-index: 100;
+                }
+                
+                .header {
+                  background-color: #4f46e5;
+                  color: white;
+                  padding: 10px 20px;
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                }
+                
+                .header h1 {
+                  font-size: 16px;
+                  margin: 0;
+                  font-weight: 500;
+                }
+                
+                .content {
+                  flex: 1;
+                  display: flex;
+                  flex-direction: column;
+                  justify-content: center;
+                  align-items: center;
+                  padding: 40px 20px;
+                  text-align: center;
                 background-color: #ffffff;
-              }
-              
-              .thank-you-container {
-                max-width: 800px;
-                width: 100%;
-                padding: 40px 20px;
-                border-radius: 8px;
+                }
+                
+                .thank-you-container {
+                  max-width: 800px;
+                  width: 100%;
+                  padding: 40px 20px;
+                  border-radius: 8px;
                 background-color: #ffffff;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 10px 15px rgba(0, 0, 0, 0.03);
-              }
-              
-              .thank-you-title {
-                font-size: 32px;
-                font-weight: 700;
-                margin-bottom: 24px;
+                  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 10px 15px rgba(0, 0, 0, 0.03);
+                }
+                
+                .thank-you-title {
+                  font-size: 32px;
+                  font-weight: 700;
+                  margin-bottom: 24px;
                 color: #111827;
-              }
-              
-              .thank-you-message {
-                font-size: 18px;
-                line-height: 1.6;
+                }
+                
+                .thank-you-message {
+                  font-size: 18px;
+                  line-height: 1.6;
                 color: #4b5563;
-                margin-bottom: 32px;
-                white-space: pre-line;
-              }
-              
-              .logo {
-                max-height: 80px;
-                margin-bottom: 24px;
-              }
-              
-              .redirect-info {
-                margin-top: 40px;
-                padding-top: 20px;
-                border-top: 1px solid rgba(0, 0, 0, 0.1);
-                font-size: 14px;
-                color: #6b7280;
-              }
-              
-              .redirect-url {
-                font-family: monospace;
-                color: #3b82f6;
-                margin-top: 8px;
-                padding: 8px 12px;
-                background-color: #f8fafc;
-                border-radius: 4px;
-                border: 1px solid #e2e8f0;
-                display: inline-block;
-                word-break: break-all;
-              }
-              
-              .footer {
-                padding: 10px 20px;
-                font-size: 12px;
-                color: #9ca3af;
-                text-align: center;
-                background-color: #f9fafb;
-                border-top: 1px solid #e5e7eb;
-              }
-            </style>
-          </head>
-          <body>
-            <div class="preview-badge">Vista previa</div>
-            
-            <header class="header">
-              <h1>Vista previa de la pantalla de agradecimiento</h1>
-              <button onclick="window.close()" style="background: none; border: none; color: white; cursor: pointer;">Cerrar</button>
-            </header>
-            
-            <main class="content">
-              <div class="thank-you-container">
-                <h1 class="thank-you-title">${dataToPreview.title || 'Título no configurado'}</h1>
+                  margin-bottom: 32px;
+                  white-space: pre-line;
+                }
                 
-                <div class="thank-you-message">
-                  ${dataToPreview.message || 'Mensaje no configurado'}
-                </div>
+                .logo {
+                  max-height: 80px;
+                  margin-bottom: 24px;
+                }
                 
-                ${dataToPreview.redirectUrl ? `
-                <div class="redirect-info">
-                  <p>Al finalizar, el participante será redirigido a:</p>
-                  <div class="redirect-url">${dataToPreview.redirectUrl}</div>
+                .redirect-info {
+                  margin-top: 40px;
+                  padding-top: 20px;
+                  border-top: 1px solid rgba(0, 0, 0, 0.1);
+                  font-size: 14px;
+                  color: #6b7280;
+                }
+                
+                .redirect-url {
+                  font-family: monospace;
+                  color: #3b82f6;
+                  margin-top: 8px;
+                  padding: 8px 12px;
+                  background-color: #f8fafc;
+                  border-radius: 4px;
+                  border: 1px solid #e2e8f0;
+                  display: inline-block;
+                  word-break: break-all;
+                }
+                
+                .footer {
+                  padding: 10px 20px;
+                  font-size: 12px;
+                  color: #9ca3af;
+                  text-align: center;
+                  background-color: #f9fafb;
+                  border-top: 1px solid #e5e7eb;
+                }
+              </style>
+            </head>
+            <body>
+              <div class="preview-badge">Vista previa</div>
+              
+              <header class="header">
+                <h1>Vista previa de la pantalla de agradecimiento</h1>
+                <button onclick="window.close()" style="background: none; border: none; color: white; cursor: pointer;">Cerrar</button>
+              </header>
+              
+              <main class="content">
+                <div class="thank-you-container">
+                  <h1 class="thank-you-title">${dataToPreview.title || 'Título no configurado'}</h1>
+                  
+                  <div class="thank-you-message">
+                    ${dataToPreview.message || 'Mensaje no configurado'}
+                  </div>
+                  
+                  ${dataToPreview.redirectUrl ? `
+                  <div class="redirect-info">
+                    <p>Al finalizar, el participante será redirigido a:</p>
+                    <div class="redirect-url">${dataToPreview.redirectUrl}</div>
+                  </div>
+                  ` : ''}
                 </div>
-                ` : ''}
-              </div>
-            </main>
-            
-            <footer class="footer">
-              <p>Esta es una vista previa y puede no representar exactamente cómo se verá la pantalla real.</p>
-            </footer>
-          </body>
-          </html>
-        `;
-        
-        // Escribir el HTML en la nueva ventana y cerrarla para finalizar la carga
-        previewWindow.document.write(previewHtml);
-        previewWindow.document.close();
-        
-        // Notificar al usuario que se ha abierto la previsualización
+              </main>
+              
+              <footer class="footer">
+                <p>Esta es una vista previa y puede no representar exactamente cómo se verá la pantalla real.</p>
+              </footer>
+            </body>
+            </html>
+          `;
+          
+          // Escribir el HTML en la nueva ventana y cerrarla para finalizar la carga
+          previewWindow.document.write(previewHtml);
+          previewWindow.document.close();
+          
+          // Notificar al usuario que se ha abierto la previsualización
         toast.success('Se ha abierto la previsualización en una nueva ventana', {
           duration: 5000,
           style: {
@@ -639,14 +638,14 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
           },
           icon: '🔍'
         });
-      } else {
-        // Si no se pudo abrir la ventana (bloqueador de pop-ups, etc.)
-        showModal({
-          title: 'No se pudo abrir la previsualización',
-          message: 'Parece que su navegador ha bloqueado la ventana emergente. Por favor, permita las ventanas emergentes para este sitio e inténtelo de nuevo.',
-          type: 'error'
-        });
-        
+        } else {
+          // Si no se pudo abrir la ventana (bloqueador de pop-ups, etc.)
+          showModal({
+            title: 'No se pudo abrir la previsualización',
+            message: 'Parece que su navegador ha bloqueado la ventana emergente. Por favor, permita las ventanas emergentes para este sitio e inténtelo de nuevo.',
+            type: 'error'
+          });
+          
         toast.error('No se pudo abrir la ventana de previsualización', {
           duration: 5000,
           style: {
@@ -657,15 +656,15 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
           },
           icon: '❌'
         });
-      }
-    } catch (error) {
-      console.error('[ThankYouScreenForm] Error al generar la previsualización:', error);
+        }
+      } catch (error) {
+        console.error('[ThankYouScreenForm] Error al generar la previsualización:', error);
         
-      showModal({
-        title: ERROR_MESSAGES.PREVIEW_ERROR,
-        message: 'Error al generar la previsualización. Por favor, inténtelo de nuevo.',
-        type: 'error'
-      });
+        showModal({
+          title: ERROR_MESSAGES.PREVIEW_ERROR,
+          message: 'Error al generar la previsualización. Por favor, inténtelo de nuevo.',
+          type: 'error'
+        });
         
       toast.error('Error al generar la vista previa', {
         duration: 5000,

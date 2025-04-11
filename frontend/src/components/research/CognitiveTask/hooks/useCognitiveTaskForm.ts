@@ -1287,98 +1287,98 @@ export const useCognitiveTaskForm = (
     }
 
     try {
-      // Construir el objeto que coincida exactamente con CognitiveTaskFormData de shared/interfaces
-      const dataToSave: CognitiveTaskFormData = {
-        researchId: researchId || '',
-        questions: formData.questions
-          // Filtrar preguntas que son required=true pero no tienen archivos
-          .filter(question => {
-            if (['navigation_flow', 'preference_test'].includes(question.type) && question.required) {
-              // Solo mantener si tiene archivos válidos
-              const hasValidFiles = question.files && 
-                                   Array.isArray(question.files) && 
-                                   question.files.length > 0 && 
-                                   question.files.some(file => file && file.s3Key && typeof file.s3Key === 'string');
-              
-              if (!hasValidFiles) {
-                console.log(`[useCognitiveTaskForm] Omitiendo pregunta obligatoria ${question.id} sin archivos`);
-                toast.error(`La pregunta "${question.title}" requiere archivos pero no tiene ninguno.`);
-                return false;
-              }
-            }
-            return true;
-          })
-          .map(question => {
-          // Crear objeto limpio para cada pregunta según la interfaz Question
-          const cleanQuestion: Question = {
-            id: question.id,
-            type: question.type,
-            title: question.title || '',
-            required: Boolean(question.required),
-            showConditionally: Boolean(question.showConditionally),
-            deviceFrame: Boolean(question.deviceFrame)
-          };
-          
-          // Agregar descripción solo si existe
-          if (question.description) {
-            cleanQuestion.description = question.description;
-          }
-          
-          // Agregar choices solo para tipos específicos y si existen
-          if (['single_choice', 'multiple_choice', 'ranking'].includes(question.type) && question.choices) {
-            cleanQuestion.choices = question.choices.map(choice => ({
-              id: choice.id,
-              text: choice.text || '',
-              isQualify: Boolean(choice.isQualify),
-              isDisqualify: Boolean(choice.isDisqualify)
-            }));
-          }
-          
-          // Agregar scaleConfig solo para linear_scale y si existe
-          if (question.type === 'linear_scale' && question.scaleConfig) {
-            cleanQuestion.scaleConfig = {
-              startValue: Number(question.scaleConfig.startValue),
-              endValue: Number(question.scaleConfig.endValue),
-              startLabel: question.scaleConfig.startLabel || '',
-              endLabel: question.scaleConfig.endLabel || ''
-            };
-          }
-          
-          // Para tipos que usan archivos, simplemente incluimos los que tengan s3Key 
-          // sin aplicar reglas estrictas
-          if (['navigation_flow', 'preference_test'].includes(question.type) && question.files) {
-            // Simplemente incluir todos los archivos que tengan s3Key
-            const validFiles = question.files
-              .filter(file => file && file.s3Key && typeof file.s3Key === 'string')
-              .map(file => ({
-                id: file.id,
-                name: file.name,
-                size: Number(file.size),
-                type: file.type,
-                url: file.url,
-                s3Key: file.s3Key
-              }));
+    // Construir el objeto que coincida exactamente con CognitiveTaskFormData de shared/interfaces
+    const dataToSave: CognitiveTaskFormData = {
+      researchId: researchId || '',
+      questions: formData.questions
+        // Filtrar preguntas que son required=true pero no tienen archivos
+        .filter(question => {
+          if (['navigation_flow', 'preference_test'].includes(question.type) && question.required) {
+            // Solo mantener si tiene archivos válidos
+            const hasValidFiles = question.files && 
+                                 Array.isArray(question.files) && 
+                                 question.files.length > 0 && 
+                                 question.files.some(file => file && file.s3Key && typeof file.s3Key === 'string');
             
-            // Asignar archivos validados (pero sin restricciones estrictas)
-            if (validFiles.length > 0) {
-              cleanQuestion.files = validFiles;
-            } else {
-              // Si no hay archivos válidos, usamos un array vacío
-              cleanQuestion.files = [];
+            if (!hasValidFiles) {
+              console.log(`[useCognitiveTaskForm] Omitiendo pregunta obligatoria ${question.id} sin archivos`);
+                toast.error(`La pregunta "${question.title}" requiere archivos pero no tiene ninguno.`);
+              return false;
             }
           }
-          
-          return cleanQuestion;
-        }),
-        randomizeQuestions: Boolean(formData.randomizeQuestions),
-        metadata: {
-          updatedAt: new Date().toISOString(),
-          lastModifiedBy: 'user-interface'
+          return true;
+        })
+        .map(question => {
+        // Crear objeto limpio para cada pregunta según la interfaz Question
+        const cleanQuestion: Question = {
+          id: question.id,
+          type: question.type,
+          title: question.title || '',
+          required: Boolean(question.required),
+          showConditionally: Boolean(question.showConditionally),
+          deviceFrame: Boolean(question.deviceFrame)
+        };
+        
+        // Agregar descripción solo si existe
+        if (question.description) {
+          cleanQuestion.description = question.description;
         }
-      };
-      
-      console.log('[useCognitiveTaskForm] Datos filtrados según interfaz compartida:', dataToSave);
-      
+        
+        // Agregar choices solo para tipos específicos y si existen
+        if (['single_choice', 'multiple_choice', 'ranking'].includes(question.type) && question.choices) {
+          cleanQuestion.choices = question.choices.map(choice => ({
+            id: choice.id,
+            text: choice.text || '',
+            isQualify: Boolean(choice.isQualify),
+            isDisqualify: Boolean(choice.isDisqualify)
+          }));
+        }
+        
+        // Agregar scaleConfig solo para linear_scale y si existe
+        if (question.type === 'linear_scale' && question.scaleConfig) {
+          cleanQuestion.scaleConfig = {
+            startValue: Number(question.scaleConfig.startValue),
+            endValue: Number(question.scaleConfig.endValue),
+            startLabel: question.scaleConfig.startLabel || '',
+            endLabel: question.scaleConfig.endLabel || ''
+          };
+        }
+        
+        // Para tipos que usan archivos, simplemente incluimos los que tengan s3Key 
+        // sin aplicar reglas estrictas
+        if (['navigation_flow', 'preference_test'].includes(question.type) && question.files) {
+          // Simplemente incluir todos los archivos que tengan s3Key
+          const validFiles = question.files
+            .filter(file => file && file.s3Key && typeof file.s3Key === 'string')
+            .map(file => ({
+              id: file.id,
+              name: file.name,
+              size: Number(file.size),
+              type: file.type,
+              url: file.url,
+              s3Key: file.s3Key
+            }));
+          
+          // Asignar archivos validados (pero sin restricciones estrictas)
+          if (validFiles.length > 0) {
+            cleanQuestion.files = validFiles;
+          } else {
+            // Si no hay archivos válidos, usamos un array vacío
+            cleanQuestion.files = [];
+          }
+        }
+        
+        return cleanQuestion;
+      }),
+      randomizeQuestions: Boolean(formData.randomizeQuestions),
+      metadata: {
+        updatedAt: new Date().toISOString(),
+        lastModifiedBy: 'user-interface'
+      }
+    };
+    
+    console.log('[useCognitiveTaskForm] Datos filtrados según interfaz compartida:', dataToSave);
+    
       // Crear modal de confirmación utilizando DOM nativo
       const confirmModalContainer = document.createElement('div');
       confirmModalContainer.innerHTML = `
@@ -1471,22 +1471,22 @@ export const useCognitiveTaskForm = (
           },
           icon: '⏳'
         });
-        setIsSaving(true);
+    setIsSaving(true);
         
         // Ejecutar la mutación
         mutate(dataToSave, {
-          onSuccess: (data) => {
-            if (data && data.id) {
-              setCognitiveTaskId(data.id);
-            }
-            
-            // Limpiar localStorage después de guardar exitosamente
-            if (researchId) {
-              const storageKey = `cognitive_task_temp_files_${researchId}`;
-              localStorage.removeItem(storageKey);
-              console.log('[useCognitiveTaskForm] Limpiando archivos temporales después de guardar exitoso');
-            }
-            
+      onSuccess: (data) => {
+        if (data && data.id) {
+          setCognitiveTaskId(data.id);
+        }
+        
+        // Limpiar localStorage después de guardar exitosamente
+        if (researchId) {
+          const storageKey = `cognitive_task_temp_files_${researchId}`;
+          localStorage.removeItem(storageKey);
+          console.log('[useCognitiveTaskForm] Limpiando archivos temporales después de guardar exitoso');
+        }
+        
             // Actualizar mensaje de toast a éxito
             toast.success(cognitiveTaskId ? 'Tarea cognitiva actualizada exitosamente' : 'Tarea cognitiva creada exitosamente', { 
               id: loadingToastId,
@@ -1499,26 +1499,26 @@ export const useCognitiveTaskForm = (
               },
               icon: '✅'
             });
-            
-            // Invalidar la consulta para recargar datos
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.COGNITIVE_TASK, researchId] });
-            
-            // Ejecutar callback si existe
-            if (typeof onSave === 'function') {
-              onSave(data);
-            }
-            
-            // Restablecer estado de guardado
-            setIsSaving(false);
-          },
-          onError: (error: any) => {
-            console.error('[useCognitiveTaskForm] Error en mutación:', error);
-            
-            let errorMsg = 'Error al guardar la tarea cognitiva';
-            if (error.message) {
-              errorMsg += `: ${error.message}`;
-            }
-            
+        
+        // Invalidar la consulta para recargar datos
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.COGNITIVE_TASK, researchId] });
+        
+        // Ejecutar callback si existe
+        if (typeof onSave === 'function') {
+          onSave(data);
+        }
+        
+        // Restablecer estado de guardado
+        setIsSaving(false);
+      },
+      onError: (error: any) => {
+        console.error('[useCognitiveTaskForm] Error en mutación:', error);
+        
+        let errorMsg = 'Error al guardar la tarea cognitiva';
+        if (error.message) {
+          errorMsg += `: ${error.message}`;
+        }
+        
             // Actualizar mensaje de toast a error
             toast.error(errorMsg, { 
               id: loadingToastId,
@@ -1533,16 +1533,16 @@ export const useCognitiveTaskForm = (
             });
             
             // Mostrar modal de error
-            showModal({
-              title: 'Error de guardado',
-              message: errorMsg,
-              type: 'error'
-            });
-            
-            // Restablecer estado de guardado
-            setIsSaving(false);
-          }
+        showModal({
+          title: 'Error de guardado',
+          message: errorMsg,
+          type: 'error'
         });
+        
+        // Restablecer estado de guardado
+        setIsSaving(false);
+      }
+    });
       });
 
       // Cerrar modal al hacer clic fuera de él
