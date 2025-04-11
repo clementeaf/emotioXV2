@@ -289,10 +289,21 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     },
     onSuccess: (response) => {
       console.log('[useEyeTrackingRecruit] Guardado exitoso:', response);
-      toast.success('Configuración guardada correctamente');
+      toast.success('Configuración guardada correctamente', {
+        duration: 4000,
+        style: {
+          background: '#10b981',
+          color: '#fff',
+          fontWeight: 'bold'
+        },
+        icon: '✅'
+      });
       
       // Invalidar queries para recargar datos
       queryClient.invalidateQueries({ queryKey: ['eyeTrackingRecruit', researchId] });
+      
+      // Restablecer el estado de guardado
+      setTimeout(() => setSaving(false), 300);
     },
     onError: (error: any) => {
       console.error('[useEyeTrackingRecruit] Error en mutación:', error);
@@ -315,6 +326,13 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       });
       
       toast.error(errorMessage);
+      
+      // Restablecer el estado de guardado
+      setSaving(false);
+    },
+    onSettled: () => {
+      // Asegurar que siempre se restablezca el estado de guardado, independientemente del resultado
+      setSaving(false);
     }
   });
 
@@ -363,69 +381,114 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       // Mostrar modal de confirmación con los datos
       const confirmModalContainer = document.createElement('div');
       confirmModalContainer.innerHTML = `
-        <div style="position: fixed; inset: 0; background-color: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999;">
-          <div style="background: white; border-radius: 8px; max-width: 90%; width: 600px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 4px 20px rgba(0,0,0,0.2); overflow: hidden;">
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid #e5e7eb;">
-              <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Confirmar configuración</h2>
-              <button id="closeConfirmModal" style="background: none; border: none; cursor: pointer; font-size: 24px; color: #6b7280;">&times;</button>
+        <div style="position: fixed; inset: 0; background-color: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+          <div style="background: white; border-radius: 12px; max-width: 90%; width: 650px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 8px 30px rgba(0,0,0,0.12); overflow: hidden; animation: fadeIn 0.2s ease-out;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid #f1f1f1;">
+              <h2 style="margin: 0; font-size: 24px; font-weight: 600; color: #111827;">Confirmar configuración</h2>
+              <button id="closeConfirmModal" style="background: none; border: none; cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; color: #6b7280; border-radius: 50%; transition: background-color 0.2s; font-size: 24px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
             </div>
             <div style="padding: 24px; overflow-y: auto; max-height: 60vh;">
-              <p style="margin: 0 0 16px; color: #4b5563;">¿Estás seguro de que deseas guardar la siguiente configuración?</p>
+              <p style="margin: 0 0 24px; color: #4b5563; font-size: 16px;">¿Estás seguro de que deseas guardar la siguiente configuración?</p>
               
-              <div style="margin-bottom: 16px;">
-                <h3 style="font-size: 16px; margin: 0 0 8px; color: #111827;">Preguntas demográficas</h3>
-                <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px;">
+              <div style="margin-bottom: 24px;">
+                <h3 style="font-size: 18px; margin: 0 0 12px; color: #111827; font-weight: 600;">Preguntas demográficas</h3>
+                <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px;">
                   ${demographicQuestionsEnabled ? 
-                    Object.entries(formData.demographicQuestions)
+                    (Object.entries(formData.demographicQuestions)
                       .filter(([_, value]) => value.enabled)
-                      .map(([key, _]) => `<div style="padding: 4px 0; color: #4b5563;">✓ ${key}</div>`)
-                      .join('') || '<div style="color: #6b7280;">No se han seleccionado preguntas demográficas</div>' 
-                    : '<div style="color: #ef4444;">Preguntas demográficas desactivadas</div>'
+                      .map(([key, _]) => `
+                        <div style="padding: 8px 0; color: #4b5563; display: flex; align-items: center;">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4d7c0f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M8 12l2 2 6-6"></path>
+                          </svg>
+                          ${key}
+                        </div>
+                      `).join('') || '<div style="color: #6b7280; padding: 8px 0;">No se han seleccionado preguntas demográficas</div>'
+                    ) : '<div style="color: #ef4444; padding: 8px 0; display: flex; align-items: center;"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>Preguntas demográficas desactivadas</div>'
                   }
                 </div>
               </div>
 
-              <div style="margin-bottom: 16px;">
-                <h3 style="font-size: 16px; margin: 0 0 8px; color: #111827;">Configuración del enlace</h3>
-                <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px;">
+              <div style="margin-bottom: 24px;">
+                <h3 style="font-size: 18px; margin: 0 0 12px; color: #111827; font-weight: 600;">Configuración del enlace</h3>
+                <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px;">
                   ${linkConfigEnabled ?
-                    Object.entries(formData.linkConfig)
+                    (Object.entries(formData.linkConfig)
                       .filter(([_, value]) => value)
-                      .map(([key, _]) => `<div style="padding: 4px 0; color: #4b5563;">✓ ${key}</div>`)
-                      .join('') || '<div style="color: #6b7280;">No se ha configurado ninguna opción</div>'
-                    : '<div style="color: #ef4444;">Configuración del enlace desactivada</div>'
+                      .map(([key, _]) => `
+                        <div style="padding: 8px 0; color: #4b5563; display: flex; align-items: center;">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4d7c0f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M8 12l2 2 6-6"></path>
+                          </svg>
+                          ${key}
+                        </div>
+                      `).join('') || '<div style="color: #6b7280; padding: 8px 0;">No se ha configurado ninguna opción</div>'
+                    ) : '<div style="color: #ef4444; padding: 8px 0; display: flex; align-items: center;"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>Configuración del enlace desactivada</div>'
                   }
                 </div>
               </div>
 
-              <div style="margin-bottom: 16px;">
-                <h3 style="font-size: 16px; margin: 0 0 8px; color: #111827;">URL de la investigación</h3>
-                <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; color: #4b5563;">
+              <div style="margin-bottom: 24px;">
+                <h3 style="font-size: 18px; margin: 0 0 12px; color: #111827; font-weight: 600;">URL de la investigación</h3>
+                <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; color: #4b5563;">
                   ${formData.researchUrl || 'No se ha especificado URL'}
                 </div>
               </div>
 
-              <div style="margin-bottom: 16px;">
-                <h3 style="font-size: 16px; margin: 0 0 8px; color: #111827;">Parámetros a guardar</h3>
-                <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px;">
-                  ${Object.entries(formData.parameterOptions)
-                    .filter(([_, value]) => value)
-                    .map(([key, _]) => `<div style="padding: 4px 0; color: #4b5563;">✓ ${key}</div>`)
-                    .join('') || '<div style="color: #6b7280;">No se han seleccionado parámetros</div>'
-                  }
+              ${Object.values(formData.parameterOptions).some(value => value) ? `
+                <div style="margin-bottom: 24px;">
+                  <h3 style="font-size: 18px; margin: 0 0 12px; color: #111827; font-weight: 600;">Parámetros a guardar</h3>
+                  <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px;">
+                    ${Object.entries(formData.parameterOptions)
+                      .filter(([_, value]) => value)
+                      .map(([key, _]) => `
+                        <div style="padding: 8px 0; color: #4b5563; display: flex; align-items: center;">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4d7c0f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M8 12l2 2 6-6"></path>
+                          </svg>
+                          ${key}
+                        </div>
+                      `).join('')
+                    }
+                  </div>
                 </div>
-              </div>
+              ` : ''}
             </div>
-            <div style="padding: 16px 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px;">
-              <button id="cancelConfirmation" style="background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; border-radius: 6px; padding: 8px 16px; font-weight: 500; cursor: pointer;">
+            <div style="padding: 20px 24px; border-top: 1px solid #f1f1f1; display: flex; justify-content: flex-end; gap: 12px;">
+              <button id="cancelConfirmation" style="background: #f9fafb; color: #4b5563; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 20px; font-weight: 500; cursor: pointer; font-size: 16px; transition: all 0.2s;">
                 Cancelar
               </button>
-              <button id="confirmSave" style="background: #3f51b5; color: white; border: none; border-radius: 6px; padding: 8px 16px; font-weight: 500; cursor: pointer;">
+              <button id="confirmSave" style="background: #4f46e5; color: white; border: none; border-radius: 8px; padding: 10px 20px; font-weight: 500; cursor: pointer; font-size: 16px; transition: all 0.2s; box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);">
                 Confirmar y guardar
               </button>
             </div>
           </div>
         </div>
+        <style>
+          @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
+          }
+          #closeConfirmModal:hover {
+            background-color: #f3f4f6;
+          }
+          #cancelConfirmation:hover {
+            background-color: #f3f4f6;
+            border-color: #d1d5db;
+          }
+          #confirmSave:hover {
+            background-color: #4338ca;
+            box-shadow: 0 4px 6px rgba(79, 70, 229, 0.25);
+          }
+        </style>
       `;
       
       document.body.appendChild(confirmModalContainer);
@@ -442,7 +505,18 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       document.getElementById('confirmSave')?.addEventListener('click', () => {
         document.body.removeChild(confirmModalContainer);
         setSaving(true);
-        mutate(configToSave);
+        
+        // Llamar a la mutación y manejar manualmente el resultado
+        mutate(configToSave, {
+          onSuccess: () => {
+            // Asegurarse de que el estado "saving" se restablezca
+            setTimeout(() => setSaving(false), 300);
+          },
+          onError: () => {
+            // Asegurarse de que el estado "saving" se restablezca
+            setTimeout(() => setSaving(false), 300);
+          }
+        });
       });
 
       // También permitir cerrar haciendo clic fuera del modal
@@ -458,6 +532,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
         message: 'Ocurrió un error al preparar los datos para guardar.',
         type: 'error'
       });
+      setSaving(false);
     }
   }, [formData, researchId, isAuthenticated, showModal, mutate, demographicQuestionsEnabled, linkConfigEnabled]);
   

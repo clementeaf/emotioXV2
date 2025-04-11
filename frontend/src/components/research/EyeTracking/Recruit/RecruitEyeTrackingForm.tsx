@@ -119,7 +119,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                   type="button"
                   onClick={saveForm}
                   disabled={saving}
-                  className="px-4 py-2 rounded-lg bg-neutral-900 text-white shadow hover:bg-neutral-800 text-sm font-medium disabled:opacity-50"
+                  className="px-4 py-2 rounded-lg bg-neutral-900 text-white shadow hover:bg-neutral-800 text-sm font-medium disabled:opacity-50 flex items-center justify-center min-w-[160px]"
                 >
                   {saving ? (
                     <div className="flex items-center gap-2">
