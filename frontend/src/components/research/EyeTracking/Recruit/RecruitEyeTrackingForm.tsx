@@ -1,10 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useEyeTrackingRecruit } from './hooks/useEyeTrackingRecruit';
-import { DemographicQuestionKey, LinkConfigKey, ParameterOptionKey, BacklinkKey } from '@/shared/interfaces/eyeTracking';
-import { JsonPreviewModal } from './components/JsonPreviewModal';
+import { DemographicQuestionKeys, LinkConfigKeys, ParameterOptionKeys, BacklinkKeys, DemographicQuestions } from '@/shared/interfaces/eyeTrackingRecruit.interface';
+import { ParticipantView } from './components/ParticipantView';
 
 
 interface CheckboxProps {
@@ -87,13 +87,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
     saveForm,
     generateRecruitmentLink,
     generateQRCode,
-    copyLinkToClipboard,
-    previewLink,
-    showJsonPreview,
-    jsonToSend,
-    pendingAction,
-    closeJsonModal,
-    continueWithAction
+    copyLinkToClipboard
   } = useEyeTrackingRecruit({ researchId });
 
   if (loading) {
@@ -138,7 +132,6 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
             </header>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Left column */}
               <div>
                 <div className="mb-8">
                   <h2 className="text-base font-medium mb-4">Enlace de reclutamiento</h2>
@@ -165,10 +158,10 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                         <input
                           type="checkbox"
                           id="age"
-                          checked={formData.demographicQuestions.age}
+                          checked={formData.demographicQuestions.age.enabled}
                           onChange={(e) => {
                             console.log('Edad cambiado:', e.target.checked);
-                            handleDemographicChange('age' as DemographicQuestionKey, e.target.checked);
+                            handleDemographicChange('age' as DemographicQuestionKeys, e.target.checked);
                           }}
                           disabled={!demographicQuestionsEnabled}
                           className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
@@ -180,10 +173,10 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                         <input
                           type="checkbox"
                           id="country"
-                          checked={formData.demographicQuestions.country}
+                          checked={formData.demographicQuestions.country.enabled}
                           onChange={(e) => {
                             console.log('País cambiado:', e.target.checked);
-                            handleDemographicChange('country' as DemographicQuestionKey, e.target.checked);
+                            handleDemographicChange('country' as DemographicQuestionKeys, e.target.checked);
                           }}
                           disabled={!demographicQuestionsEnabled}
                           className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
@@ -195,8 +188,8 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                         <input
                           type="checkbox"
                           id="gender"
-                          checked={formData.demographicQuestions.gender}
-                          onChange={(e) => handleDemographicChange('gender' as DemographicQuestionKey, e.target.checked)}
+                          checked={formData.demographicQuestions.gender.enabled}
+                          onChange={(e) => handleDemographicChange('gender' as DemographicQuestionKeys, e.target.checked)}
                           disabled={!demographicQuestionsEnabled}
                           className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                         />
@@ -207,8 +200,8 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                         <input
                           type="checkbox"
                           id="educationLevel"
-                          checked={formData.demographicQuestions.educationLevel}
-                          onChange={(e) => handleDemographicChange('educationLevel' as DemographicQuestionKey, e.target.checked)}
+                          checked={formData.demographicQuestions.educationLevel.enabled}
+                          onChange={(e) => handleDemographicChange('educationLevel' as DemographicQuestionKeys, e.target.checked)}
                           disabled={!demographicQuestionsEnabled}
                           className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                         />
@@ -219,8 +212,8 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                         <input
                           type="checkbox"
                           id="householdIncome"
-                          checked={formData.demographicQuestions.householdIncome}
-                          onChange={(e) => handleDemographicChange('householdIncome' as DemographicQuestionKey, e.target.checked)}
+                          checked={formData.demographicQuestions.householdIncome.enabled}
+                          onChange={(e) => handleDemographicChange('householdIncome' as DemographicQuestionKeys, e.target.checked)}
                           disabled={!demographicQuestionsEnabled}
                           className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                         />
@@ -231,8 +224,8 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                         <input
                           type="checkbox"
                           id="employmentStatus"
-                          checked={formData.demographicQuestions.employmentStatus}
-                          onChange={(e) => handleDemographicChange('employmentStatus' as DemographicQuestionKey, e.target.checked)}
+                          checked={formData.demographicQuestions.employmentStatus.enabled}
+                          onChange={(e) => handleDemographicChange('employmentStatus' as DemographicQuestionKeys, e.target.checked)}
                           disabled={!demographicQuestionsEnabled}
                           className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                         />
@@ -243,8 +236,8 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                         <input
                           type="checkbox"
                           id="dailyHoursOnline"
-                          checked={formData.demographicQuestions.dailyHoursOnline}
-                          onChange={(e) => handleDemographicChange('dailyHoursOnline' as DemographicQuestionKey, e.target.checked)}
+                          checked={formData.demographicQuestions.dailyHoursOnline.enabled}
+                          onChange={(e) => handleDemographicChange('dailyHoursOnline' as DemographicQuestionKeys, e.target.checked)}
                           disabled={!demographicQuestionsEnabled}
                           className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                         />
@@ -255,8 +248,8 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                         <input
                           type="checkbox"
                           id="technicalProficiency"
-                          checked={formData.demographicQuestions.technicalProficiency}
-                          onChange={(e) => handleDemographicChange('technicalProficiency' as DemographicQuestionKey, e.target.checked)}
+                          checked={formData.demographicQuestions.technicalProficiency.enabled}
+                          onChange={(e) => handleDemographicChange('technicalProficiency' as DemographicQuestionKeys, e.target.checked)}
                           disabled={!demographicQuestionsEnabled}
                           className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                         />
@@ -290,7 +283,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           checked={formData.linkConfig.allowMobile}
                           onChange={(e) => {
                             console.log('Dispositivos móviles clicado:', e.target.checked);
-                            handleLinkConfigChange('allowMobile' as LinkConfigKey, e.target.checked);
+                            handleLinkConfigChange('allowMobile' as LinkConfigKeys, e.target.checked);
                           }}
                           disabled={!linkConfigEnabled}
                           className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
@@ -303,7 +296,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           type="checkbox"
                           id="trackLocation"
                           checked={formData.linkConfig.trackLocation}
-                          onChange={(e) => handleLinkConfigChange('trackLocation' as LinkConfigKey, e.target.checked)}
+                          onChange={(e) => handleLinkConfigChange('trackLocation' as LinkConfigKeys, e.target.checked)}
                           disabled={!linkConfigEnabled}
                           className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                         />
@@ -315,7 +308,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           type="checkbox"
                           id="allowMultipleAttempts"
                           checked={formData.linkConfig.allowMultipleAttempts}
-                          onChange={(e) => handleLinkConfigChange('allowMultipleAttempts' as LinkConfigKey, e.target.checked)}
+                          onChange={(e) => handleLinkConfigChange('allowMultipleAttempts' as LinkConfigKeys, e.target.checked)}
                           disabled={!linkConfigEnabled}
                           className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                         />
@@ -389,7 +382,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                             <input
                               type="text"
                               value={formData.backlinks.complete}
-                              onChange={(e) => handleBacklinkChange('complete' as BacklinkKey, e.target.value)}
+                              onChange={(e) => handleBacklinkChange('complete' as BacklinkKeys, e.target.value)}
                               className="w-full px-3 py-2 border border-neutral-300 rounded-r-md"
                             />
                           </div>
@@ -404,7 +397,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                             <input
                               type="text"
                               value={formData.backlinks.disqualified}
-                              onChange={(e) => handleBacklinkChange('disqualified' as BacklinkKey, e.target.value)}
+                              onChange={(e) => handleBacklinkChange('disqualified' as BacklinkKeys, e.target.value)}
                               className="w-full px-3 py-2 border border-neutral-300 rounded-r-md"
                             />
                           </div>
@@ -419,7 +412,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                             <input
                               type="text"
                               value={formData.backlinks.overquota}
-                              onChange={(e) => handleBacklinkChange('overquota' as BacklinkKey, e.target.value)}
+                              onChange={(e) => handleBacklinkChange('overquota' as BacklinkKeys, e.target.value)}
                               className="w-full px-3 py-2 border border-neutral-300 rounded-r-md"
                             />
                           </div>
@@ -472,20 +465,6 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                       <div className="flex mt-4 gap-4">
                         <button
                           type="button"
-                          onClick={previewLink}
-                          className="px-4 py-2 rounded-lg border border-neutral-200 bg-white shadow-sm hover:bg-neutral-100 text-sm font-medium flex items-center gap-2"
-                          aria-label="Vista previa del enlace"
-                        >
-                          <span>Vista previa del enlace</span>
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                            <polyline points="15 3 21 3 21 9"></polyline>
-                            <line x1="10" y1="14" x2="21" y2="3"></line>
-                          </svg>
-                        </button>
-                        
-                        <button
-                          type="button"
                           onClick={generateQRCode}
                           className="px-4 py-2 rounded-lg bg-neutral-900 text-white shadow hover:bg-neutral-800 text-sm font-medium flex items-center gap-2"
                           aria-label="Generar código QR"
@@ -512,7 +491,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                             type="checkbox"
                             id="saveDeviceInfo"
                             checked={formData.parameterOptions.saveDeviceInfo}
-                            onChange={(e) => handleParamOptionChange('saveDeviceInfo' as ParameterOptionKey, e.target.checked)}
+                            onChange={(e) => handleParamOptionChange('saveDeviceInfo' as ParameterOptionKeys, e.target.checked)}
                             className="w-4 h-4 cursor-pointer"
                           />
                           <label htmlFor="saveDeviceInfo" className="text-xs text-blue-600 cursor-pointer">Guardar información del dispositivo</label>
@@ -523,7 +502,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                             type="checkbox"
                             id="saveLocationInfo"
                             checked={formData.parameterOptions.saveLocationInfo}
-                            onChange={(e) => handleParamOptionChange('saveLocationInfo' as ParameterOptionKey, e.target.checked)}
+                            onChange={(e) => handleParamOptionChange('saveLocationInfo' as ParameterOptionKeys, e.target.checked)}
                             className="w-4 h-4 cursor-pointer"
                           />
                           <label htmlFor="saveLocationInfo" className="text-xs text-blue-600 cursor-pointer">Guardar información de ubicación</label>
@@ -534,7 +513,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                             type="checkbox"
                             id="saveResponseTimes"
                             checked={formData.parameterOptions.saveResponseTimes}
-                            onChange={(e) => handleParamOptionChange('saveResponseTimes' as ParameterOptionKey, e.target.checked)}
+                            onChange={(e) => handleParamOptionChange('saveResponseTimes' as ParameterOptionKeys, e.target.checked)}
                             className="w-4 h-4 cursor-pointer"
                           />
                           <label htmlFor="saveResponseTimes" className="text-xs text-blue-600 cursor-pointer">Guardar tiempos de respuesta</label>
@@ -545,7 +524,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                             type="checkbox"
                             id="saveUserJourney"
                             checked={formData.parameterOptions.saveUserJourney}
-                            onChange={(e) => handleParamOptionChange('saveUserJourney' as ParameterOptionKey, e.target.checked)}
+                            onChange={(e) => handleParamOptionChange('saveUserJourney' as ParameterOptionKeys, e.target.checked)}
                             className="w-4 h-4 cursor-pointer"
                           />
                           <label htmlFor="saveUserJourney" className="text-xs text-blue-600 cursor-pointer">Guardar recorrido del usuario</label>
@@ -556,59 +535,9 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                 </div>
               </div>
             </div>
-            
-            {/* Statistics row */}
-            <div className="grid grid-cols-3 gap-4 mt-8">
-              {stats && Object.entries(stats).map(([key, data]) => (
-                <div 
-                  key={key} 
-                  className={cn(
-                    "rounded-lg overflow-hidden",
-                    key === 'complete' ? 'bg-blue-500' : 
-                    key === 'disqualified' ? 'bg-amber-500' : 'bg-red-500'
-                  )}
-                >
-                  <div className="p-4 text-white">
-                    <h3 className="font-medium">Entrevistas</h3>
-                    <h2 className="text-2xl font-bold mt-1">{data.label}</h2>
-                    <div className="mt-2 flex items-center justify-between">
-                      <span>{data.count} {data.description}</span>
-                      <div className="relative w-16 h-16">
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-2xl font-bold">{data.percentage}%</span>
-                        </div>
-                        <svg className="w-full h-full" viewBox="0 0 36 36">
-                          <circle cx="18" cy="18" r="16" fill="none" className="stroke-current opacity-25" strokeWidth="3"></circle>
-                          <circle 
-                            cx="18" 
-                            cy="18" 
-                            r="16" 
-                            fill="none" 
-                            className="stroke-current" 
-                            strokeWidth="3" 
-                            strokeDasharray="100" 
-                            strokeDashoffset={100 - data.percentage}
-                            transform="rotate(-90 18 18)"
-                          ></circle>
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       </div>
-
-      {/* Modal para la vista previa del JSON */}
-      <JsonPreviewModal
-        isOpen={showJsonPreview}
-        onClose={closeJsonModal}
-        onContinue={continueWithAction}
-        jsonData={jsonToSend}
-        pendingAction={pendingAction}
-      />
     </>
   );
 } 

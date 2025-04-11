@@ -20,6 +20,8 @@ import {
 } from 'shared/interfaces/eyeTrackingRecruit.interface';
 import API_CONFIG from '@/config/api.config';
 import { eyeTrackingFixedAPI } from "@/lib/eye-tracking-api";
+import ReactDOM from 'react-dom/client';
+import React from 'react';
 
 // Interfaces
 interface ErrorModalData {
@@ -129,26 +131,18 @@ interface UseEyeTrackingRecruitResult {
   generateRecruitmentLink: () => string;
   generateQRCode: () => void;
   copyLinkToClipboard: () => void;
-  previewLink: () => void;
   
   // Estados para los modales
   modalError: ErrorModalData | null;
   modalVisible: boolean;
-  showJsonPreview: boolean;
-  jsonToSend: string;
-  pendingAction: 'save' | 'preview' | null;
   
   // Métodos para los modales
   closeModal: () => void;
-  closeJsonModal: () => void;
-  continueWithAction: () => void;
   
-  // Nuevos estados para QR y Preview
+  // Nuevos estados para QR
   qrCodeData: string | null;
   showQRModal: boolean;
   closeQRModal: () => void;
-  showLinkPreview: boolean;
-  closeLinkPreview: () => void;
 }
 
 // Configuraciones por defecto
@@ -250,67 +244,33 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   const [saving, setSaving] = useState(false);
   
   // Estados para los switches principales
-  const [demographicQuestionsEnabled, setDemographicQuestionsEnabled] = useState(true);
-  const [linkConfigEnabled, setLinkConfigEnabled] = useState(true);
+  const [demographicQuestionsEnabled, setDemographicQuestionsEnabledState] = useState(true);
+  const [linkConfigEnabled, setLinkConfigEnabledState] = useState(true);
   
   // Estados para los modales
   const [modalError, setModalError] = useState<ErrorModalData | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
-  const [showJsonPreview, setShowJsonPreview] = useState<boolean>(false);
-  const [jsonToSend, setJsonToSend] = useState<string>('');
-  const [pendingAction, setPendingAction] = useState<'save' | 'preview' | null>(null);
   
-  // Nuevos estados para QR y Preview
+  // Nuevos estados para QR
   const [qrCodeData, setQrCodeData] = useState<string | null>(null);
   const [showQRModal, setShowQRModal] = useState<boolean>(false);
-  const [showLinkPreview, setShowLinkPreview] = useState<boolean>(false);
   
   // Handlers para el modal de error
-  const closeModal = useCallback(() => setModalVisible(false), []);
-  const showModal = useCallback((errorData: ErrorModalData) => {
-    setModalError(errorData);
-    setModalVisible(true);
-  }, []);
-  
-  // Función para cerrar el modal JSON
-  const closeJsonModal = useCallback(() => {
-    setShowJsonPreview(false);
-    setPendingAction(null);
-    setJsonToSend('');
-    console.log('[useEyeTrackingRecruit] Modal JSON cerrado');
+  const closeModal = useCallback(() => {
+    setModalVisible(false);
+    setModalError(null);
   }, []);
   
   // Función para cerrar el modal QR
   const closeQRModal = useCallback(() => {
     setShowQRModal(false);
   }, []);
-  
-  // Función para cerrar la vista previa del enlace
-  const closeLinkPreview = useCallback(() => {
-    setShowLinkPreview(false);
+
+  // Función para mostrar un modal
+  const showModal = useCallback((data: ErrorModalData) => {
+    setModalError(data);
+    setModalVisible(true);
   }, []);
-  
-  // Función para mostrar el modal con JSON
-  const showJsonModal = useCallback((json: any, action: 'save' | 'preview') => {
-    try {
-      const stringifiedJson = JSON.stringify(json, null, 2);
-      JSON.parse(stringifiedJson); // Verificar que sea un JSON válido
-      
-      setJsonToSend(stringifiedJson);
-      setPendingAction(action);
-      setShowJsonPreview(true);
-      
-      console.log(`[useEyeTrackingRecruit] Mostrando modal JSON para acción: ${action}`);
-      console.log('[useEyeTrackingRecruit] JSON válido:', stringifiedJson);
-    } catch (error) {
-      console.error('[useEyeTrackingRecruit] Error al procesar JSON:', error);
-      showModal({
-        title: 'Error al procesar datos',
-        message: 'Los datos no tienen un formato JSON válido. Por favor, revise la estructura de los datos.',
-        type: 'error'
-      });
-    }
-  }, [showModal]);
   
   // Mutación para guardar datos
   const { mutate } = useMutation({
@@ -401,7 +361,11 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       };
 
       // Mostrar modal con JSON
-      showJsonModal(configToSave, 'save');
+      showModal({
+        title: 'Confirmar datos',
+        message: '¿Está seguro de que desea guardar estos datos?',
+        type: 'info'
+      });
     } catch (error) {
       console.error('[useEyeTrackingRecruit] Error al preparar datos:', error);
       showModal({
@@ -410,54 +374,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
         type: 'error'
       });
     }
-  }, [formData, researchId, isAuthenticated, showJsonModal, showModal]);
-  
-  // Función para previsualizar el enlace
-  const previewLink = useCallback(() => {
-    try {
-      const dataToPreview = {
-        ...formData,
-        researchId
-      };
-      
-      // Mostrar modal de confirmación con JSON
-      showJsonModal(dataToPreview, 'preview');
-    } catch (error) {
-      console.error('[useEyeTrackingRecruit] Error al preparar datos para previsualizar:', error);
-      showModal({
-        title: 'Error al previsualizar',
-        message: 'Ocurrió un error al preparar los datos para la previsualización.',
-        type: 'error'
-      });
-    }
-  }, [formData, researchId, showModal]);
-  
-  // Función para continuar con la acción después de mostrar el JSON
-  const continueWithAction = useCallback(() => {
-    if (!pendingAction) return;
-
-    try {
-      const data = JSON.parse(jsonToSend);
-      console.log('[useEyeTrackingRecruit] Ejecutando acción:', pendingAction);
-
-      if (pendingAction === 'save') {
-        setSaving(true);
-        mutate(data);
-      } else if (pendingAction === 'preview') {
-        setShowLinkPreview(true);
-      }
-    } catch (error) {
-      console.error('[useEyeTrackingRecruit] Error al procesar JSON:', error);
-      showModal({
-        title: 'Error al procesar datos',
-        message: 'Los datos no tienen un formato JSON válido.',
-        type: 'error'
-      });
-    } finally {
-      closeJsonModal();
-      setSaving(false);
-    }
-  }, [pendingAction, jsonToSend, showModal, closeJsonModal, mutate]);
+  }, [formData, researchId, isAuthenticated, showModal]);
   
   // Cargar datos (simulado por ahora)
   useEffect(() => {
@@ -466,6 +383,39 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       setLoading(false);
     }, 1000);
   }, []);
+  
+  // Actualizar el efecto de demographicQuestionsEnabled
+  useEffect(() => {
+    if (!demographicQuestionsEnabled) {
+      setFormData(prev => ({
+        ...prev,
+        demographicQuestions: {
+          age: { ...prev.demographicQuestions.age, enabled: false },
+          country: { ...prev.demographicQuestions.country, enabled: false },
+          gender: { ...prev.demographicQuestions.gender, enabled: false },
+          educationLevel: { ...prev.demographicQuestions.educationLevel, enabled: false },
+          householdIncome: { ...prev.demographicQuestions.householdIncome, enabled: false },
+          employmentStatus: { ...prev.demographicQuestions.employmentStatus, enabled: false },
+          dailyHoursOnline: { ...prev.demographicQuestions.dailyHoursOnline, enabled: false },
+          technicalProficiency: { ...prev.demographicQuestions.technicalProficiency, enabled: false }
+        }
+      }));
+    }
+  }, [demographicQuestionsEnabled]);
+  
+  // Actualizar el efecto de linkConfigEnabled
+  useEffect(() => {
+    if (!linkConfigEnabled) {
+      setFormData(prev => ({
+        ...prev,
+        linkConfig: {
+          allowMobile: false,
+          trackLocation: false,
+          allowMultipleAttempts: false
+        }
+      }));
+    }
+  }, [linkConfigEnabled]);
   
   // Métodos para manipular el formulario
   const handleDemographicChange = useCallback((key: DemographicQuestionKeys, value: boolean) => {
@@ -654,371 +604,42 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     }
   }, [showQRModal, qrCodeData]);
   
-  // Efecto para crear el modal de previsualización del enlace
-  useEffect(() => {
-    if (showLinkPreview) {
-      const link = generateRecruitmentLink();
-      // Crear HTML para el modal de previsualización
-      const previewModalHtml = `
-        <div id="linkPreviewModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999;">
-          <div style="background: white; border-radius: 8px; max-width: 90%; width: 800px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 4px 20px rgba(0,0,0,0.2); overflow: hidden;">
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid #e5e7eb;">
-              <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Vista previa del enlace</h2>
-              <button id="closeLinkPreviewModal" style="background: none; border: none; cursor: pointer; font-size: 20px; color: #6b7280;">&times;</button>
-            </div>
-            <div style="padding: 24px; overflow-y: auto; flex-grow: 1;">
-              <p style="margin: 0 0 16px; color: #6b7280; font-size: 14px;">
-                Esta es una vista previa de cómo se verá el enlace de reclutamiento para los participantes.
-              </p>
-              
-              <!-- Simulación de navegador web -->
-              <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-bottom: 24px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-                <!-- Barra del navegador -->
-                <div style="background: #f8fafc; padding: 8px 16px; display: flex; align-items: center; border-bottom: 1px solid #e2e8f0;">
-                  <div style="flex-shrink: 0; display: flex; gap: 6px; margin-right: 16px;">
-                    <span style="width: 12px; height: 12px; border-radius: 50%; background: #ef4444;"></span>
-                    <span style="width: 12px; height: 12px; border-radius: 50%; background: #f59e0b;"></span>
-                    <span style="width: 12px; height: 12px; border-radius: 50%; background: #10b981;"></span>
-                  </div>
-                  <!-- Barra de URL -->
-                  <div style="flex-grow: 1; display: flex; align-items: center; background: white; border: 1px solid #e2e8f0; border-radius: 4px; padding: 4px 12px;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
-                      <circle cx="12" cy="12" r="10"></circle>
-                      <line x1="2" y1="12" x2="22" y2="12"></line>
-                      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-                    </svg>
-                    <div style="font-family: monospace; font-size: 12px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                      ${link}
-                    </div>
-                  </div>
-                </div>
-                
-                <!-- Contenido de la página -->
-                <div style="padding: 24px; background: white; height: 480px; overflow-y: auto;">
-                  <div style="max-width: 600px; margin: 0 auto; font-family: system-ui, -apple-system, sans-serif;">
-                    <!-- Logotipo del sitio -->
-                    <div style="text-align: center; margin-bottom: 24px;">
-                      <div style="display: inline-flex; align-items: center; gap: 10px; margin-bottom: 16px;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                          <circle cx="12" cy="12" r="3"></circle>
-                        </svg>
-                        <span style="font-size: 20px; font-weight: 600; color: #2563eb;">UserEmotion</span>
-                      </div>
-                      <div style="font-size: 24px; font-weight: 600; color: #1e293b; margin-bottom: 8px;">Bienvenido/a a nuestra investigación de comportamiento</div>
-                      <p style="color: #64748b; margin: 0;">Gracias por participar en nuestro estudio de Eye Tracking</p>
-                    </div>
-                    
-                    <!-- Progreso -->
-                    <div style="margin-bottom: 24px;">
-                      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                        <span style="font-size: 14px; color: #64748b;">Progreso</span>
-                        <span style="font-size: 14px; font-weight: 500; color: #334155;">Paso 1 de 3</span>
-                      </div>
-                      <div style="height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden;">
-                        <div style="height: 100%; width: 33%; background: #3b82f6;"></div>
-                      </div>
-                    </div>
-                    
-                    <!-- Información de la investigación -->
-                    <div style="margin-bottom: 28px; padding: 16px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px;">
-                      <h3 style="margin: 0 0 12px; font-size: 16px; color: #0369a1;">Información importante</h3>
-                      <p style="margin: 0 0 8px; font-size: 14px; color: #0c4a6e;">Esta investigación tiene como objetivo entender cómo los usuarios interactúan con interfaces digitales.</p>
-                      <p style="margin: 0 0 8px; font-size: 14px; color: #0c4a6e;">El estudio tomará aproximadamente <strong>10-15 minutos</strong> en completarse.</p>
-                      ${formData.researchUrl ? `
-                      <p style="margin: 8px 0 0; font-size: 14px; color: #0c4a6e;">
-                        <strong>URL del estudio:</strong> <a href="${formData.researchUrl}" target="_blank" style="color: #2563eb; text-decoration: none;">${formData.researchUrl}</a>
-                      </p>
-                      ` : ''}
-                    </div>
-
-                    <!-- Enlaces de retorno si están configurados -->
-                    ${Object.entries(formData.backlinks).some(([_, value]) => value) ? `
-                    <div style="margin-bottom: 28px; padding: 16px; background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px;">
-                      <h3 style="margin: 0 0 12px; font-size: 16px; color: #92400e;">Enlaces de retorno</h3>
-                      ${formData.backlinks.complete ? `
-                      <p style="margin: 0 0 8px; font-size: 14px; color: #92400e;">
-                        <strong>Al completar:</strong> <a href="${formData.backlinks.complete}" target="_blank" style="color: #2563eb; text-decoration: none;">${formData.backlinks.complete}</a>
-                      </p>
-                      ` : ''}
-                      ${formData.backlinks.disqualified ? `
-                      <p style="margin: 0 0 8px; font-size: 14px; color: #92400e;">
-                        <strong>Si es descalificado:</strong> <a href="${formData.backlinks.disqualified}" target="_blank" style="color: #2563eb; text-decoration: none;">${formData.backlinks.disqualified}</a>
-                      </p>
-                      ` : ''}
-                      ${formData.backlinks.overquota ? `
-                      <p style="margin: 0; font-size: 14px; color: #92400e;">
-                        <strong>Si se excede la cuota:</strong> <a href="${formData.backlinks.overquota}" target="_blank" style="color: #2563eb; text-decoration: none;">${formData.backlinks.overquota}</a>
-                      </p>
-                      ` : ''}
-                    </div>
-                    ` : ''}
-                    
-                    <!-- Formulario demográfico si está habilitado -->
-                    ${demographicQuestionsEnabled ? `
-                    <div style="margin-bottom: 32px;">
-                      <h3 style="margin: 0 0 16px; font-size: 18px; color: #334155;">Información demográfica</h3>
-                      <p style="margin: 0 0 16px; font-size: 14px; color: #64748b;">Por favor, proporcione la siguiente información para ayudarnos a clasificar sus respuestas.</p>
-                      
-                      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px;">
-                        ${Object.entries(formData.demographicQuestions).map(([key, value]) => value.enabled ? `
-                        <div style="margin-bottom: 16px;">
-                          <label style="display: block; font-size: 14px; color: #334155; font-weight: 500; margin-bottom: 4px;">
-                            ${key === 'age' ? 'Edad' :
-                              key === 'country' ? 'País' :
-                              key === 'gender' ? 'Género' :
-                              key === 'educationLevel' ? 'Nivel educativo' :
-                              key === 'householdIncome' ? 'Ingresos del hogar' :
-                              key === 'employmentStatus' ? 'Situación laboral' :
-                              key === 'dailyHoursOnline' ? 'Horas diarias en línea' :
-                              key === 'technicalProficiency' ? 'Nivel técnico' :
-                              key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1')}
-                            ${value.required ? '<span style="color: #ef4444;">*</span>' : ''}
-                          </label>
-                          <select style="width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; background: white; font-size: 14px;">
-                            <option value="">Seleccione una opción</option>
-                            ${value.options?.map(opt => `<option value="${opt}">${getOptionLabel(key, opt)}</option>`).join('')}
-                          </select>
-                          ${!value.required ? '<p style="margin: 4px 0 0; font-size: 12px; color: #6b7280;">Opcional</p>' : ''}
-                        </div>
-                        ` : '').join('')}
-                      </div>
-                    </div>
-                    ` : ''}
-                    
-                    <!-- Configuración del enlace -->
-                    ${linkConfigEnabled ? `
-                    <div style="margin-bottom: 32px;">
-                      <h3 style="margin: 0 0 16px; font-size: 18px; color: #334155;">Configuración del estudio</h3>
-                      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px;">
-                        ${formData.linkConfig.allowMobile ? `
-                        <div style="margin-bottom: 12px; padding: 8px 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px;">
-                          <p style="margin: 0; font-size: 14px; color: #166534;">✓ Este estudio es compatible con dispositivos móviles</p>
-                        </div>
-                        ` : `
-                        <div style="margin-bottom: 12px; padding: 8px 12px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px;">
-                          <p style="margin: 0; font-size: 14px; color: #991b1b;">✕ Este estudio no es compatible con dispositivos móviles</p>
-                        </div>
-                        `}
-                        
-                        ${formData.linkConfig.trackLocation ? `
-                        <div style="margin-bottom: 12px; padding: 8px 12px; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 6px;">
-                          <p style="margin: 0; font-size: 14px; color: #9a3412;">ℹ️ Se solicitará acceso a tu ubicación</p>
-                        </div>
-                        ` : ''}
-                        
-                        ${formData.linkConfig.allowMultipleAttempts ? `
-                        <div style="padding: 8px 12px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px;">
-                          <p style="margin: 0; font-size: 14px; color: #0369a1;">ℹ️ Puedes participar múltiples veces en este estudio</p>
-                        </div>
-                        ` : ''}
-                      </div>
-                    </div>
-                    ` : ''}
-
-                    <!-- Parámetros adicionales -->
-                    <div style="margin-bottom: 32px;">
-                      <h3 style="margin: 0 0 16px; font-size: 18px; color: #334155;">Información adicional</h3>
-                      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px;">
-                        ${formData.participantLimit.enabled ? `
-                        <div style="margin-bottom: 12px; padding: 8px 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px;">
-                          <p style="margin: 0; font-size: 14px; color: #166534;">
-                            ℹ️ Este estudio está limitado a ${formData.participantLimit.value} participantes
-                          </p>
-                        </div>
-                        ` : ''}
-
-                        ${Object.entries(formData.parameterOptions).map(([key, value]) => value ? `
-                        <div style="margin-bottom: 12px; padding: 8px 12px; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 6px;">
-                          <p style="margin: 0; font-size: 14px; color: #9a3412;">
-                            ℹ️ ${key === 'saveDeviceInfo' ? 'Se recopilará información de tu dispositivo' :
-                                key === 'saveLocationInfo' ? 'Se guardará información de tu ubicación' :
-                                key === 'saveResponseTimes' ? 'Se registrarán tus tiempos de respuesta' :
-                                'Se registrará tu recorrido durante el estudio'}
-                          </p>
-                        </div>
-                        ` : '').join('')}
-                      </div>
-                    </div>
-
-                    <!-- Botones de acción -->
-                    <div style="text-align: center; margin-top: 36px;">
-                      <button id="previewContinueButton" style="background: #3b82f6; color: white; border: none; padding: 12px 32px; border-radius: 8px; font-weight: 500; cursor: pointer; font-size: 16px; transition: all 0.2s;">
-                        Continuar
-                      </button>
-                      <p style="margin: 8px 0 0; font-size: 13px; color: #94a3b8;">
-                        Al continuar, aceptas los términos y condiciones de este estudio${formData.parameterOptions.saveDeviceInfo || formData.parameterOptions.saveLocationInfo ? 
-                        ' y la recopilación de datos mencionada anteriormente' : ''}.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Resumen de configuración -->
-              <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; color: #166534; margin-top: 20px;">
-                <div style="display: flex; gap: 12px; align-items: start;">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                  </svg>
-                  <div>
-                    <p style="margin: 0 0 8px; font-size: 15px; font-weight: 500;">Resumen de configuración:</p>
-                    <ul style="margin: 0; padding-left: 20px; font-size: 14px;">
-                      <li style="margin-bottom: 8px;">Preguntas demográficas:
-                        <ul style="margin-top: 4px;">
-                          ${Object.entries(formData.demographicQuestions)
-                            .filter(([_, value]) => value.enabled)
-                            .map(([key, value]) => `
-                              <li>${key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1')} 
-                                ${value.required ? '(Requerido)' : '(Opcional)'}</li>
-                            `).join('')}
-                        </ul>
-                      </li>
-                      <li style="margin-bottom: 8px;">Configuración del enlace:
-                        <ul style="margin-top: 4px;">
-                          <li>Dispositivos móviles: ${formData.linkConfig.allowMobile ? 'Permitidos' : 'No permitidos'}</li>
-                          <li>Rastreo de ubicación: ${formData.linkConfig.trackLocation ? 'Activado' : 'Desactivado'}</li>
-                          <li>Múltiples intentos: ${formData.linkConfig.allowMultipleAttempts ? 'Permitidos' : 'No permitidos'}</li>
-                        </ul>
-                      </li>
-                      ${formData.participantLimit.enabled ? `
-                      <li style="margin-bottom: 8px;">Límite de participantes: ${formData.participantLimit.value}</li>
-                      ` : ''}
-                      <li>Recopilación de datos:
-                        <ul style="margin-top: 4px;">
-                          ${Object.entries(formData.parameterOptions)
-                            .filter(([_, value]) => value)
-                            .map(([key, _]) => `
-                              <li>${
-                                key === 'saveDeviceInfo' ? 'Información del dispositivo' :
-                                key === 'saveLocationInfo' ? 'Información de ubicación' :
-                                key === 'saveResponseTimes' ? 'Tiempos de respuesta' :
-                                'Recorrido del usuario'
-                              }</li>
-                            `).join('')}
-                        </ul>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div style="padding: 16px 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px;">
-              <button id="openInNewTab" style="background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; border-radius: 6px; padding: 8px 16px; font-weight: 500; cursor: pointer; font-size: 14px;">Abrir en nueva pestaña</button>
-              <button id="closeLinkPreviewAction" style="background: #3f51b5; color: white; border: none; border-radius: 6px; padding: 8px 16px; font-weight: 500; cursor: pointer; font-size: 14px;">
-                Cerrar
-              </button>
-            </div>
-          </div>
-        </div>
-      `;
-      
-      // Crear elemento en el DOM
-      const previewModalContainer = document.createElement('div');
-      previewModalContainer.innerHTML = previewModalHtml;
-      document.body.appendChild(previewModalContainer);
-      
-      // Configurar eventos
-      document.getElementById('closeLinkPreviewModal')?.addEventListener('click', () => {
-        document.body.removeChild(previewModalContainer);
-        closeLinkPreview();
-      });
-      
-      document.getElementById('openInNewTab')?.addEventListener('click', () => {
-        window.open(link, '_blank');
-      });
-      
-      document.getElementById('closeLinkPreviewAction')?.addEventListener('click', () => {
-        document.body.removeChild(previewModalContainer);
-        closeLinkPreview();
-      });
-      
-      // Añadir interactividad al botón de continuar
-      document.getElementById('previewContinueButton')?.addEventListener('click', () => {
-        toast.success('En una versión real, esto avanzaría al siguiente paso del estudio');
-      });
-      
-      // También permitir cerrar haciendo clic fuera del modal
-      previewModalContainer.addEventListener('click', (e) => {
-        if (e.target === previewModalContainer.firstChild) {
-          document.body.removeChild(previewModalContainer);
-          closeLinkPreview();
+  // Actualizar el handler de demographicQuestionsEnabled
+  const setDemographicQuestionsEnabled = useCallback((enabled: boolean) => {
+    if (!enabled) {
+      // Desactivar todas las preguntas demográficas
+      setFormData(prev => ({
+        ...prev,
+        demographicQuestions: {
+          age: { ...prev.demographicQuestions.age, enabled: false },
+          country: { ...prev.demographicQuestions.country, enabled: false },
+          gender: { ...prev.demographicQuestions.gender, enabled: false },
+          educationLevel: { ...prev.demographicQuestions.educationLevel, enabled: false },
+          householdIncome: { ...prev.demographicQuestions.householdIncome, enabled: false },
+          employmentStatus: { ...prev.demographicQuestions.employmentStatus, enabled: false },
+          dailyHoursOnline: { ...prev.demographicQuestions.dailyHoursOnline, enabled: false },
+          technicalProficiency: { ...prev.demographicQuestions.technicalProficiency, enabled: false }
         }
-      });
-      
-      // Limpiar al desmontar
-      return () => {
-        if (document.body.contains(previewModalContainer)) {
-          document.body.removeChild(previewModalContainer);
-        }
-      };
+      }));
     }
-  }, [showLinkPreview, formData, demographicQuestionsEnabled, generateRecruitmentLink]);
+    setDemographicQuestionsEnabledState(enabled);
+  }, []);
   
-  const getOptionLabel = (key: string, value: string) => {
-    const labels: { [key: string]: { [key: string]: string } } = {
-      age: {
-        '18-24': '18-24 años',
-        '25-34': '25-34 años',
-        '35-44': '35-44 años',
-        '45-54': '45-54 años',
-        '55-64': '55-64 años',
-        '65+': '65 años o más'
-      },
-      country: {
-        'ES': 'España',
-        'MX': 'México',
-        'AR': 'Argentina',
-        'CO': 'Colombia',
-        'CL': 'Chile',
-        'PE': 'Perú'
-      },
-      gender: {
-        'M': 'Masculino',
-        'F': 'Femenino',
-        'O': 'Otro',
-        'P': 'Prefiero no decirlo'
-      },
-      educationLevel: {
-        '1': 'Educación primaria',
-        '2': 'Educación secundaria',
-        '3': 'Bachillerato',
-        '4': 'Formación profesional',
-        '5': 'Grado universitario',
-        '6': 'Máster/Postgrado',
-        '7': 'Doctorado'
-      },
-      householdIncome: {
-        '1': 'Menos de 20.000€',
-        '2': '20.000€ - 40.000€',
-        '3': '40.000€ - 60.000€',
-        '4': '60.000€ - 80.000€',
-        '5': 'Más de 80.000€'
-      },
-      employmentStatus: {
-        'employed': 'Empleado',
-        'unemployed': 'Desempleado',
-        'student': 'Estudiante',
-        'retired': 'Jubilado'
-      },
-      dailyHoursOnline: {
-        '0-2': '0-2 horas',
-        '2-4': '2-4 horas',
-        '4-6': '4-6 horas',
-        '6-8': '6-8 horas',
-        '8+': 'Más de 8 horas'
-      },
-      technicalProficiency: {
-        'beginner': 'Principiante',
-        'intermediate': 'Intermedio',
-        'advanced': 'Avanzado',
-        'expert': 'Experto'
-      }
-    };
-
-    return labels[key]?.[value] || value;
-  };
+  // Actualizar el handler de linkConfigEnabled
+  const setLinkConfigEnabled = useCallback((enabled: boolean) => {
+    if (!enabled) {
+      // Desactivar todas las opciones de configuración del enlace
+      setFormData(prev => ({
+        ...prev,
+        linkConfig: {
+          allowMobile: false,
+          trackLocation: false,
+          allowMultipleAttempts: false
+        }
+      }));
+    }
+    setLinkConfigEnabledState(enabled);
+  }, []);
   
   return {
     // Estados del formulario
@@ -1036,21 +657,14 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     // Estados para los modales
     modalError,
     modalVisible,
-    showJsonPreview,
-    jsonToSend,
-    pendingAction,
     
     // Métodos para los modales
     closeModal,
-    closeJsonModal,
-    continueWithAction,
     
-    // Nuevos estados para QR y Preview
+    // Nuevos estados para QR
     qrCodeData,
     showQRModal,
     closeQRModal,
-    showLinkPreview,
-    closeLinkPreview,
     
     // Métodos del formulario
     handleDemographicChange,
@@ -1066,7 +680,6 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     saveForm,
     generateRecruitmentLink,
     generateQRCode,
-    copyLinkToClipboard,
-    previewLink
+    copyLinkToClipboard
   };
 } 
