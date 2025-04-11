@@ -33,9 +33,8 @@ const sections: ResearchSection[] = [
     id: 'results',
     title: 'Results',
     stages: [
-      { id: 'overview', title: 'Overview' },
-      { id: 'analytics', title: 'Analytics' },
-      { id: 'export', title: 'Export' }
+      { id: 'smart-voc-results', title: 'SmartVOC' },
+      { id: 'cognitive-task-results', title: 'Cognitive Task' }
     ]
   }
 ];

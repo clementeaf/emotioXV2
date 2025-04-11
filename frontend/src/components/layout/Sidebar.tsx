@@ -541,7 +541,7 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
                       : 'text-neutral-700 hover:bg-neutral-100'
                   )}
                 >
-                  Smart VOC
+                  SmartVOC
                 </Link>
               </li>
               <li>

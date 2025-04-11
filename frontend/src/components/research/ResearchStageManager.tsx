@@ -1,19 +1,19 @@
 'use client';
 
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useState, Suspense } from 'react';
 
 import { Navbar } from '@/components/layout/Navbar';
 import { ResearchSidebar } from '@/components/layout/ResearchSidebar';
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
 
-import { CognitiveTaskForm } from './CognitiveTaskForm';
+import { CognitiveTaskForm } from './CognitiveTask';
 // import { EyeTrackingForm } from './EyeTracking/EyeTrackingForm';
 import { SmartVOCCognitiveTaskAnalysis } from './SmartVOCCognitiveTaskAnalysis';
-import { SmartVOCForm } from './SmartVOCForm';
+import { SmartVOCForm } from './SmartVOC';
 import { SmartVOCResults } from './SmartVOCResults';
-import { ThankYouScreenForm } from './ThankYouScreenForm';
-import { WelcomeScreenForm } from './WelcomeScreenForm';
+import { ThankYouScreenForm } from './ThankYouScreen';
+import { WelcomeScreenForm } from './WelcomeScreen';
 import { RecruitEyeTrackingForm } from './EyeTracking/Recruit/RecruitEyeTrackingForm';
 
 interface ResearchStageManagerProps {
@@ -40,6 +40,10 @@ function ResearchStageManagerContent({ researchId }: ResearchStageManagerProps) 
         return <RecruitEyeTrackingForm researchId={researchId} />;
       case 'thank-you':
         return <ThankYouScreenForm researchId={researchId} />;
+      case 'smart-voc-results':
+        return <SmartVOCResults />;
+      case 'cognitive-task-results':
+        return <SmartVOCCognitiveTaskAnalysis />;
       case 'configuration':
         return <div className="p-6 bg-white rounded-lg border border-neutral-200">
           <h2 className="text-lg font-medium mb-4">Configuración del Reclutamiento</h2>
@@ -51,24 +55,6 @@ function ResearchStageManagerContent({ researchId }: ResearchStageManagerProps) 
           <h2 className="text-lg font-medium mb-4">Gestión de Participantes</h2>
           <p className="text-neutral-600 mb-4">Visualiza y gestiona a los participantes de tu estudio.</p>
           {/* Contenido de participantes */}
-        </div>;
-      case 'overview':
-        return <div className="p-6 bg-white rounded-lg border border-neutral-200">
-          <h2 className="text-lg font-medium mb-4">Resumen de Resultados</h2>
-          <p className="text-neutral-600 mb-4">Vista general de los resultados de tu investigación.</p>
-          {/* Contenido de resumen */}
-        </div>;
-      case 'analytics':
-        return <div className="p-6 bg-white rounded-lg border border-neutral-200">
-          <h2 className="text-lg font-medium mb-4">Análisis de Datos</h2>
-          <p className="text-neutral-600 mb-4">Analiza en profundidad los datos recopilados.</p>
-          {/* Contenido de análisis */}
-        </div>;
-      case 'export':
-        return <div className="p-6 bg-white rounded-lg border border-neutral-200">
-          <h2 className="text-lg font-medium mb-4">Exportar Resultados</h2>
-          <p className="text-neutral-600 mb-4">Exporta los resultados de tu investigación en diferentes formatos.</p>
-          {/* Contenido de exportación */}
         </div>;
       default:
         return <div className="p-6 bg-white rounded-lg border border-neutral-200">
@@ -96,12 +82,10 @@ function ResearchStageManagerContent({ researchId }: ResearchStageManagerProps) 
         return 'Configuración del Reclutamiento';
       case 'participants':
         return 'Gestión de Participantes';
-      case 'overview':
-        return 'Resumen de Resultados';
-      case 'analytics':
-        return 'Análisis de Datos';
-      case 'export':
-        return 'Exportar Resultados';
+      case 'smart-voc-results':
+        return 'Resultados de SmartVOC';
+      case 'cognitive-task-results':
+        return 'Resultados de Tareas Cognitivas';
       default:
         return 'Configuración de investigación';
     }
@@ -125,12 +109,10 @@ function ResearchStageManagerContent({ researchId }: ResearchStageManagerProps) 
         return 'Configura los parámetros para el reclutamiento de participantes.';
       case 'participants':
         return 'Visualiza y gestiona a los participantes de tu estudio.';
-      case 'overview':
-        return 'Vista general de los resultados de tu investigación.';
-      case 'analytics':
-        return 'Analiza en profundidad los datos recopilados.';
-      case 'export':
-        return 'Exporta los resultados de tu investigación en diferentes formatos.';
+      case 'smart-voc-results':
+        return 'Visualiza los resultados obtenidos de las preguntas SmartVOC.';
+      case 'cognitive-task-results':
+        return 'Analiza los resultados de las tareas cognitivas realizadas.';
       default:
         return 'Configura los ajustes de tu investigación.';
     }
