@@ -11,6 +11,7 @@ import { eyeTrackingHandler } from './controllers/eyeTracking.controller';
 import { s3Handler } from './controllers/s3.controller';
 import { cognitiveTaskController } from './controllers/cognitiveTask.controller';
 import { eyeTrackingRecruitHandler } from './controllers/eyeTrackingRecruit.controller';
+import { participantHandler } from './controllers/participant.controller';
 
 /**
  * Punto de entrada principal para las funciones serverless
@@ -98,6 +99,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       } else if (path.startsWith('/s3')) {
         console.log('Enrutando a s3Handler:', path);
         return s3Handler(event);
+      } else if (path.startsWith('/participants')) {
+        console.log('Enrutando a participantHandler:', path);
+        return participantHandler(event);
       }
     } catch (routingError: any) {
       console.error('Error al enrutar solicitud:', routingError);
@@ -146,7 +150,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             '/cognitive-task - Formularios de tareas cognitivas (GET, POST, PUT, DELETE)',
             '/s3/upload - Generar URL prefirmada para subir archivos (POST)',
             '/s3/download/:key - Generar URL prefirmada para descargar archivos (GET)',
-            '/s3/delete/:key - Generar URL prefirmada para eliminar archivos (DELETE)'
+            '/s3/delete/:key - Generar URL prefirmada para eliminar archivos (DELETE)',
+            '/participants - Gestión de participantes (GET, POST, DELETE)'
           ]
         })
       };

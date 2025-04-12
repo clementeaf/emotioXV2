@@ -1,90 +1,149 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { createController, RouteMap } from '../utils/controller.decorator';
-import { createResponse, errorResponse } from '../utils/controller.utils';
-import { authService } from '../services/auth.service';
+import { participantService } from '../services/participant.service';
+import { createResponse, errorResponse, getCorsHeaders } from '../utils/controller.utils';
 import { z } from 'zod';
-import { uuidv4 } from '../utils/id-generator';
 
-// Esquema de validación para el registro de participante
-const ParticipantRegistrationSchema = z.object({
+// Schema de validación para participantes
+const ParticipantSchema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
-  email: z.string().email('Email inválido'),
-  researchId: z.string().uuid('ID de investigación inválido')
+  email: z.string().email('Email inválido')
 });
 
+/**
+ * Controlador para el manejo de participantes
+ */
 export class ParticipantController {
   /**
-   * Registra un nuevo participante y genera un token temporal
+   * Crea un nuevo participante
    */
-  async registerParticipant(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  async create(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
     try {
       if (!event.body) {
-        return errorResponse('Se requieren datos para el registro', 400);
+        return errorResponse('Se requieren datos para crear el participante', 400);
       }
 
       const data = JSON.parse(event.body);
+      const validatedData = ParticipantSchema.parse(data);
 
-      // Validar datos de entrada
-      const validation = ParticipantRegistrationSchema.safeParse(data);
-      if (!validation.success) {
-        return errorResponse('Datos de registro inválidos', 400, validation.error.errors);
+      const existingParticipant = await participantService.findByEmail(validatedData.email);
+      if (existingParticipant) {
+        return errorResponse('Ya existe un participante con este email', 409);
       }
 
-      // Generar un ID único para el participante
-      const participantId = uuidv4();
-
-      // Crear payload para el token
-      const tokenPayload = {
-        id: participantId,
-        email: data.email,
-        name: data.name,
-        role: 'participant',
-        researchId: data.researchId
-      };
-
-      // Generar token con duración de 24 horas
-      const { token } = await authService.generateToken({
-        id: participantId,
-        email: data.email,
-        name: data.name,
-        role: 'participant',
-        isActive: true,
-        isVerified: false,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-        passwordHash: '', // No necesitamos contraseña para participantes
-        preferences: {
-          language: 'es',
-          notifications: false,
-          theme: 'light'
-        }
+      const newParticipant = await participantService.create({
+        ...validatedData,
+        createdAt: new Date(),
+        updatedAt: new Date()
       });
 
-      return createResponse(201, {
-        token,
-        participantId
+      return createResponse(201, newParticipant);
+    } catch (error: any) {
+      console.error('Error al crear participante:', error);
+      return errorResponse(error.message || 'Error al crear participante', 400);
+    }
+  }
+
+  /**
+   * Obtiene un participante por ID
+   */
+  async getById(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    try {
+      const id = event.pathParameters?.id;
+      
+      if (!id) {
+        return errorResponse('ID de participante no proporcionado', 400);
+      }
+
+      const participant = await participantService.findById(id);
+      
+      if (!participant) {
+        return errorResponse('Participante no encontrado', 404);
+      }
+
+      return createResponse(200, participant);
+    } catch (error: any) {
+      console.error('Error al obtener participante:', error);
+      return errorResponse('Error al obtener participante', 500);
+    }
+  }
+
+  /**
+   * Obtiene todos los participantes
+   */
+  async getAll(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    try {
+      const participants = await participantService.findAll();
+      return createResponse(200, participants);
+    } catch (error: any) {
+      console.error('Error al obtener participantes:', error);
+      return errorResponse('Error al obtener participantes', 500);
+    }
+  }
+
+  /**
+   * Elimina un participante
+   */
+  async delete(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    try {
+      const id = event.pathParameters?.id;
+      
+      if (!id) {
+        return errorResponse('ID de participante no proporcionado', 400);
+      }
+
+      const participant = await participantService.findById(id);
+      
+      if (!participant) {
+        return errorResponse('Participante no encontrado', 404);
+      }
+
+      await participantService.delete(id);
+
+      return createResponse(200, {
+        message: 'Participante eliminado exitosamente',
+        participant
       });
-    } catch (error) {
-      console.error('Error al registrar participante:', error);
-      return errorResponse('Error al registrar participante', 500);
+    } catch (error: any) {
+      console.error('Error al eliminar participante:', error);
+      return errorResponse('Error al eliminar participante', 500);
     }
   }
 }
 
-// Instanciar el controlador
+// Instancia del controlador
 const controller = new ParticipantController();
 
-// Definir el mapa de rutas
-const participantRouteMap: RouteMap = {
-  '/public/participant/register': {
-    'POST': controller.registerParticipant.bind(controller)
-  }
-};
+/**
+ * Handler principal para las rutas de participantes
+ */
+export const participantHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+  try {
+    // Manejar preflight CORS
+    if (event.httpMethod === 'OPTIONS') {
+      return {
+        statusCode: 200,
+        headers: getCorsHeaders(),
+        body: ''
+      };
+    }
 
-// Exportar el handler
-export const participantHandler = createController(participantRouteMap, {
-  basePath: '/participant',
-  publicRoutes: [
-    { path: '/public/participant/register', method: 'POST' }
-  ]
-}); 
+    const path = event.path.toLowerCase();
+    const method = event.httpMethod;
+
+    // Enrutar según el método y path
+    if (method === 'POST' && path === '/participants') {
+      return controller.create(event);
+    } else if (method === 'GET' && path === '/participants') {
+      return controller.getAll(event);
+    } else if (method === 'GET' && path.match(/^\/participants\/[\w-]+$/)) {
+      return controller.getById(event);
+    } else if (method === 'DELETE' && path.match(/^\/participants\/[\w-]+$/)) {
+      return controller.delete(event);
+    }
+
+    return errorResponse('Método no permitido', 405);
+  } catch (error: any) {
+    console.error('Error en participantHandler:', error);
+    return errorResponse('Error interno del servidor', 500);
+  }
+}; 
