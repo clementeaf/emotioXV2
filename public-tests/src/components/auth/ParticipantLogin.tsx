@@ -44,18 +44,18 @@ export const ParticipantLogin = ({ onLogin }: ParticipantLoginProps) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-neutral-50">
-      <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
-        <div className="flex items-center justify-center mb-8">
-          <span className="bg-yellow-400 text-black rounded-full w-10 h-10 flex items-center justify-center text-xl">
+    <div className=" w-screen h-screen flex items-center justify-center bg-neutral-50">
+      <div className="bg-white p-8 rounded-xl shadow-lg w-[400px]">
+        <div className="flex flex-col items-center mb-8">
+          <span className="bg-yellow-400 text-black rounded-full w-12 h-12 flex items-center justify-center text-2xl mb-4">
             😀
           </span>
-          <span className="ml-3 text-2xl font-semibold text-neutral-900">
+          <span className="text-2xl font-semibold text-neutral-900">
             EmotioX
           </span>
         </div>
 
-        <h2 className="text-2xl font-bold text-center text-neutral-900 mb-6">
+        <h2 className="text-2xl font-bold text-center text-neutral-900 mb-8">
           Bienvenido a la Investigación
         </h2>
 
@@ -72,7 +72,7 @@ export const ParticipantLogin = ({ onLogin }: ParticipantLoginProps) => {
               type="text"
               value={participant.name}
               onChange={(e) => setParticipant({ ...participant, name: e.target.value })}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-neutral-900 ${
+              className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-neutral-900 ${
                 errors.name ? 'border-red-500' : 'border-neutral-300'
               }`}
               placeholder="Tu nombre completo"
@@ -94,7 +94,7 @@ export const ParticipantLogin = ({ onLogin }: ParticipantLoginProps) => {
               type="email"
               value={participant.email}
               onChange={(e) => setParticipant({ ...participant, email: e.target.value })}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-neutral-900 ${
+              className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-neutral-900 ${
                 errors.email ? 'border-red-500' : 'border-neutral-300'
               }`}
               placeholder="tu@email.com"
