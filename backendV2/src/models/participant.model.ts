@@ -58,4 +58,12 @@ export const ParticipantTableDefinition = {
     ReadCapacityUnits: 5,
     WriteCapacityUnits: 5
   }
-}; 
+};
+
+export interface Participant {
+  id: string;
+  name: string;
+  email: string;
+  createdAt: Date;
+  updatedAt: Date;
+} 

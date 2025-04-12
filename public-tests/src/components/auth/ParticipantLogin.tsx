@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Participant } from '../../../../shared/interfaces/participant';
+import { registerParticipant } from '../../services/auth.service';
 
 interface ParticipantLoginProps {
   onLogin: (participant: Participant) => void;
@@ -13,13 +14,17 @@ export const ParticipantLogin = ({ onLogin }: ParticipantLoginProps) => {
 
   const [errors, setErrors] = useState({
     name: '',
-    email: ''
+    email: '',
+    submit: ''
   });
+
+  const [isLoading, setIsLoading] = useState(false);
 
   const validateForm = (): boolean => {
     const newErrors = {
       name: '',
-      email: ''
+      email: '',
+      submit: ''
     };
 
     if (!participant.name.trim()) {
@@ -36,15 +41,37 @@ export const ParticipantLogin = ({ onLogin }: ParticipantLoginProps) => {
     return !newErrors.name && !newErrors.email;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
-      onLogin(participant);
+      setIsLoading(true);
+      try {
+        const response = await registerParticipant(participant);
+        
+        if (response.error) {
+          setErrors(prev => ({ 
+            ...prev, 
+            submit: response.error || 'Error desconocido' 
+          }));
+          return;
+        }
+
+        if (response.data) {
+          onLogin(response.data);
+        }
+      } catch (error) {
+        setErrors(prev => ({ 
+          ...prev, 
+          submit: 'Error al registrar participante. Por favor, intenta nuevamente.' 
+        }));
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
   return (
-    <div className=" w-screen h-screen flex items-center justify-center bg-neutral-50">
+    <div className="w-screen h-screen flex items-center justify-center bg-neutral-50">
       <div className="bg-white p-8 rounded-xl shadow-lg w-[400px]">
         <div className="flex flex-col items-center mb-8">
           <span className="bg-yellow-400 text-black rounded-full w-12 h-12 flex items-center justify-center text-2xl mb-4">
@@ -60,6 +87,12 @@ export const ParticipantLogin = ({ onLogin }: ParticipantLoginProps) => {
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {errors.submit && (
+            <p className="text-sm text-red-500 text-center bg-red-50 p-2 rounded">
+              {errors.submit}
+            </p>
+          )}
+          
           <div>
             <label 
               htmlFor="name" 
@@ -76,6 +109,7 @@ export const ParticipantLogin = ({ onLogin }: ParticipantLoginProps) => {
                 errors.name ? 'border-red-500' : 'border-neutral-300'
               }`}
               placeholder="Tu nombre completo"
+              disabled={isLoading}
             />
             {errors.name && (
               <p className="mt-1 text-sm text-red-500">{errors.name}</p>
@@ -98,6 +132,7 @@ export const ParticipantLogin = ({ onLogin }: ParticipantLoginProps) => {
                 errors.email ? 'border-red-500' : 'border-neutral-300'
               }`}
               placeholder="tu@email.com"
+              disabled={isLoading}
             />
             {errors.email && (
               <p className="mt-1 text-sm text-red-500">{errors.email}</p>
@@ -106,9 +141,10 @@ export const ParticipantLogin = ({ onLogin }: ParticipantLoginProps) => {
 
           <button
             type="submit"
-            className="w-full bg-[#121829] hover:bg-[#1e293e] text-white font-medium py-3 px-4 rounded-lg transition-colors shadow-sm"
+            className="w-full bg-[#121829] hover:bg-[#1e293e] text-white font-medium py-3 px-4 rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isLoading}
           >
-            Continuar
+            {isLoading ? 'Registrando...' : 'Continuar'}
           </button>
         </form>
 
