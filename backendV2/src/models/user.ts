@@ -29,7 +29,7 @@ export const UserSchema = z.object({
   })).optional(),
   
   // Roles y permisos
-  role: z.enum(['admin', 'researcher', 'user']).default('user'),
+  role: z.enum(['admin', 'researcher', 'user', 'participant']).default('user'),
   permissions: z.array(z.string()).optional(),
   
   // Estado de la cuenta
@@ -137,7 +137,8 @@ export const JwtPayloadSchema = z.object({
   id: z.string(),
   email: z.string().email(),
   name: z.string(),
-  role: z.enum(['admin', 'researcher', 'user']),
+  role: z.enum(['admin', 'researcher', 'user', 'participant']),
+  researchId: z.string().optional(), // ID de la investigación para participantes
   iat: z.number().optional(),
   exp: z.number().optional(),
   sub: z.string().optional()

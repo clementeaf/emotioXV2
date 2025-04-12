@@ -47,6 +47,7 @@ provider:
     EYETRACKING_RECRUIT_CONFIG_TABLE: ${self:service}-eye-tracking-recruit-config-${self:provider.stage}
     EYETRACKING_RECRUIT_PARTICIPANT_TABLE: ${self:service}-eye-tracking-recruit-participant-${self:provider.stage}
     RECRUITMENT_LINK_TABLE: ${self:service}-recruitment-link-${self:provider.stage}
+    PARTICIPANT_TABLE: ${self:custom.participantTableName}
     API_ENDPOINT: 
       Fn::Join:
         - ""
@@ -558,6 +559,32 @@ resources:
         RestApiId:
           Ref: 'ApiGatewayRestApi'
 
+    ParticipantsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.participantTableName}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: email
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: EmailIndex
+            KeySchema:
+              - AttributeName: email
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+            ProvisionedThroughput:
+              ReadCapacityUnits: 5
+              WriteCapacityUnits: 5
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+
 custom:
   serverless-offline:
     httpPort: 3000
@@ -592,3 +619,5 @@ custom:
     include:
       - 'http'
       - 'httpApi'
+
+  participantTableName: ${self:service}-participants-${self:provider.stage}
