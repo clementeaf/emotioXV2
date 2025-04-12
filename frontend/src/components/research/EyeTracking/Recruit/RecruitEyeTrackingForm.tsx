@@ -5,6 +5,8 @@ import { cn } from '@/lib/utils';
 import { useEyeTrackingRecruit } from './hooks/useEyeTrackingRecruit';
 import { DemographicQuestionKeys, LinkConfigKeys, ParameterOptionKeys, BacklinkKeys, DemographicQuestions } from '@/shared/interfaces/eyeTrackingRecruit.interface';
 import { ParticipantView } from './components/ParticipantView';
+import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
+import { Spinner } from '@/components/ui/Spinner';
 
 
 interface CheckboxProps {
@@ -91,11 +93,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
   } = useEyeTrackingRecruit({ researchId });
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-blue-500 border-r-2 border-neutral-300"></div>
-      </div>
-    );
+    return <LoadingSkeleton variant="form" rows={8} title={true} className="max-w-4xl mx-auto" />;
   }
 
   return (
@@ -123,7 +121,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                 >
                   {saving ? (
                     <div className="flex items-center gap-2">
-                      <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                      <Spinner size="sm" className="text-white" />
                       <span>Guardando...</span>
                     </div>
                   ) : 'Guardar configuración'}

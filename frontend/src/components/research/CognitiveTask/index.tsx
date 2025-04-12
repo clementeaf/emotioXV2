@@ -15,6 +15,8 @@ import { CognitiveTaskFields } from './components/CognitiveTaskFields';
 import { FileUploader } from './components/FileUploader';
 import { ProgressBar } from './components/ProgressBar';
 import { Loader2 } from 'lucide-react';
+import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
+import { Spinner } from '@/components/ui/Spinner';
 
 /**
  * Componente principal del formulario de tareas cognitivas
@@ -58,29 +60,9 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
     continueWithAction
   } = useCognitiveTaskForm(researchId, onSave);
   
-  // Mientras carga, mostrar un indicador de carga
+  // Mientras carga, mostrar un esqueleto de carga
   if (isLoading) {
-    return (
-      <div className={`bg-white p-6 rounded-lg shadow-sm ${className} flex flex-col items-center justify-center`}>
-        <div className="animate-pulse flex flex-col items-center space-y-4 w-full">
-          <div className="h-6 bg-gray-200 rounded w-1/2"></div>
-          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-          <div className="h-10 bg-gray-200 rounded w-full mt-4"></div>
-          {/* Skeleton para preguntas */}
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="space-y-2 w-full border border-gray-200 rounded-lg p-4">
-              <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-              <div className="h-10 bg-gray-200 rounded w-full"></div>
-              <div className="h-20 bg-gray-200 rounded w-full"></div>
-            </div>
-          ))}
-          <div className="flex justify-end space-x-2 w-full">
-            <div className="h-10 bg-gray-200 rounded w-24"></div>
-            <div className="h-10 bg-blue-200 rounded w-32"></div>
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingSkeleton variant="form" rows={6} />;
   }
   
   return (
@@ -166,7 +148,7 @@ const FileItem = ({ file, onDelete }: { file: any; onDelete: () => void }) => {
           {file.type?.startsWith('image/') && file.url && (
             <div className="relative w-12 h-12 overflow-hidden rounded border bg-gray-100 flex items-center justify-center">
               {file.isLoading ? (
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <Spinner size="sm" />
               ) : (
                 <img src={file.url} alt={file.name} className="object-contain w-full h-full" />
               )}

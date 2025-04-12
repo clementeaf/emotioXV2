@@ -9,12 +9,13 @@ import { withSearchParams } from '@/components/common/SearchParamsWrapper';
 
 import { CognitiveTaskForm } from './CognitiveTask';
 // import { EyeTrackingForm } from './EyeTracking/EyeTrackingForm';
-import { SmartVOCCognitiveTaskAnalysis } from './SmartVOCCognitiveTaskAnalysis';
+import { CognitiveTaskResults } from './CognitiveTaskResults';
 import { SmartVOCForm } from './SmartVOC';
 import { SmartVOCResults } from './SmartVOCResults/index';
 import { ThankYouScreenForm } from './ThankYouScreen';
 import { WelcomeScreenForm } from './WelcomeScreen';
 import { RecruitEyeTrackingForm } from './EyeTracking/Recruit/RecruitEyeTrackingForm';
+import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 
 interface ResearchStageManagerProps {
   researchId: string;
@@ -43,7 +44,7 @@ function ResearchStageManagerContent({ researchId }: ResearchStageManagerProps) 
       case 'smart-voc-results':
         return <SmartVOCResults />;
       case 'cognitive-task-results':
-        return <SmartVOCCognitiveTaskAnalysis />;
+        return <CognitiveTaskResults />;
       case 'configuration':
         return <div className="p-6 bg-white rounded-lg border border-neutral-200">
           <h2 className="text-lg font-medium mb-4">Configuración del Reclutamiento</h2>
@@ -143,16 +144,69 @@ const ResearchStageManagerContentWithParams = withSearchParams(ResearchStageMana
 // Componente público que exportamos
 export function ResearchStageManager(props: ResearchStageManagerProps) {
   return (
-    <Suspense fallback={
-      <div className="flex h-screen items-center justify-center bg-neutral-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-blue-500 border-r-2 border-neutral-300 mx-auto mb-4"></div>
-          <p className="text-neutral-600">Cargando investigación...</p>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<LoadingState />}>
       <ResearchStageManagerContentWithParams {...props} />
     </Suspense>
+  );
+}
+
+// Componente de carga reutilizable
+export function LoadingState() {
+  return (
+    <div className="flex h-screen overflow-hidden">
+      {/* Barra lateral simulada */}
+      <div className="fixed left-0 top-0 h-full w-64 border-r border-neutral-200 bg-white z-10">
+        <div className="p-6">
+          <div className="h-8 bg-neutral-200 rounded w-3/4 mb-8"></div>
+          
+          <div className="space-y-6">
+            <div>
+              <div className="h-4 bg-neutral-200 rounded w-1/3 mb-3"></div>
+              <div className="space-y-2">
+                <div className="h-8 bg-neutral-200 rounded-md"></div>
+                <div className="h-8 bg-neutral-200 rounded-md"></div>
+                <div className="h-8 bg-neutral-200 rounded-md"></div>
+              </div>
+            </div>
+            
+            <div>
+              <div className="h-4 bg-neutral-200 rounded w-1/3 mb-3"></div>
+              <div className="space-y-2">
+                <div className="h-8 bg-neutral-200 rounded-md"></div>
+                <div className="h-8 bg-neutral-200 rounded-md"></div>
+              </div>
+            </div>
+            
+            <div>
+              <div className="h-4 bg-neutral-200 rounded w-1/3 mb-3"></div>
+              <div className="space-y-2">
+                <div className="h-8 bg-neutral-200 rounded-md"></div>
+                <div className="h-8 bg-neutral-200 rounded-md"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Contenido principal */}
+      <div className="flex-1 flex flex-col ml-64">
+        {/* Navbar simulado */}
+        <div className="h-16 border-b border-neutral-200 bg-white flex items-center px-6">
+          <div className="h-5 bg-neutral-200 rounded w-1/4"></div>
+          <div className="ml-auto flex gap-4">
+            <div className="h-9 w-9 bg-neutral-200 rounded-full"></div>
+            <div className="h-9 w-9 bg-neutral-200 rounded-full"></div>
+          </div>
+        </div>
+        
+        {/* Contenido principal */}
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-6">
+            <LoadingSkeleton variant="full" />
+          </div>
+        </main>
+      </div>
+    </div>
   );
 }
 
