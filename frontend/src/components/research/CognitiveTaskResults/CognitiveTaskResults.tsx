@@ -4,7 +4,7 @@ import React from 'react';
 import { cognitiveTaskQuestion, cognitiveTaskQuestion2 } from './mockData';
 import { singleChoiceQuestionData, multipleChoiceQuestionData, linearScaleQuestionData } from './mockChoiceData';
 import { rankingQuestionData } from './mockRankingData';
-import { CognitiveTaskHeader, QuestionContainer } from './components';
+import { CognitiveTaskHeader, QuestionContainer, NavigationTestResults } from './components';
 
 export const CognitiveTaskResults: React.FC = () => {
   const handleFilter = () => {
@@ -98,6 +98,14 @@ export const CognitiveTaskResults: React.FC = () => {
         viewType="ranking"
         rankingData={rankingQuestionData}
         onFilter={handleFilter}
+      />
+      
+      {/* Navigation Test - 3.7 */}
+      <NavigationTestResults 
+        questionId="3.7.-Navigation Test"
+        questionType="Navigation Test"
+        conditionalityDisabled={true}
+        required={true}
       />
     </div>
   );

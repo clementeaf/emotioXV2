@@ -17,4 +17,5 @@ export { MainContent } from './MainContent';
 export { QuestionContainer, type QuestionViewType } from './QuestionContainer';
 export { AnalysisImage } from './AnalysisImage';
 export { ChoiceResults, type ChoiceOption, type ChoiceQuestionData } from './ChoiceResults';
-export { RankingResults, type RankingOption, type RankingDistribution, type RankingQuestionData } from './RankingResults'; 
+export { RankingResults, type RankingOption, type RankingDistribution, type RankingQuestionData } from './RankingResults';
+export { NavigationTestResults } from './NavigationTestResults'; 
