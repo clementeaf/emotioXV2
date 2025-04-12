@@ -15,4 +15,5 @@ export { ThemesPanel } from './ThemesPanel';
 export { KeywordsPanel } from './KeywordsPanel';
 export { MainContent } from './MainContent';
 export { QuestionContainer } from './QuestionContainer';
-export { AnalysisImage } from './AnalysisImage'; 
+export { AnalysisImage } from './AnalysisImage';
+export { ChoiceResults, type ChoiceOption, type ChoiceQuestionData } from './ChoiceResults'; 
