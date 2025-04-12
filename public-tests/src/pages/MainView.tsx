@@ -10,6 +10,8 @@ import {
   ThankYouView
 } from '../components/smartVoc';
 import { CognitiveTaskView } from '../components/cognitiveTask';
+import { ParticipantLogin } from '../components/auth/ParticipantLogin';
+import { Participant } from '../../../shared/interfaces/participant';
 
 // Componente para la pantalla de bienvenida inicial actualizada (pantalla completa)
 const WelcomeScreen = ({ onStart }: { onStart: () => void }) => {
@@ -100,14 +102,20 @@ const ScreenerView = () => {
 };
 
 // Tipos de pantallas disponibles
-type ScreenType = 'welcome' | 'csat' | 'difficulty-scale' | 'agreement-scale' | 'emotion-selection' | 'feedback' | 'screener' | 'implicit' | 'cognitive' | 'eye-tracking' | 'thank-you';
+type ScreenType = 'login' | 'welcome' | 'csat' | 'difficulty-scale' | 'agreement-scale' | 'emotion-selection' | 'feedback' | 'screener' | 'implicit' | 'cognitive' | 'eye-tracking' | 'thank-you';
 
 const MainView = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false); // Menú cerrado por defecto
-  const [currentScreen, setCurrentScreen] = useState<ScreenType>('welcome');
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [currentScreen, setCurrentScreen] = useState<ScreenType>('login');
+  const [participant, setParticipant] = useState<Participant | null>(null);
   
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+
+  const handleParticipantLogin = (participantData: Participant) => {
+    setParticipant(participantData);
+    setCurrentScreen('welcome');
+  };
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -185,7 +193,15 @@ const MainView = () => {
 
   // Renderiza el contenido basado en la pantalla seleccionada
   const renderContent = () => {
+    // Si no hay participante y no estamos en la pantalla de login, redirigir a login
+    if (!participant && currentScreen !== 'login') {
+      setCurrentScreen('login');
+      return <ParticipantLogin onLogin={handleParticipantLogin} />;
+    }
+
     switch (currentScreen) {
+      case 'login':
+        return <ParticipantLogin onLogin={handleParticipantLogin} />;
       case 'welcome':
         return <WelcomeScreen onStart={handleStartClick} />;
       case 'csat':
@@ -209,58 +225,59 @@ const MainView = () => {
       case 'thank-you':
         return <ThankYouView onContinue={handleThankYouContinue} />;
       default:
-        return <WelcomeScreen onStart={handleStartClick} />;
+        return <ParticipantLogin onLogin={handleParticipantLogin} />;
     }
   };
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-neutral-50">
-      {/* Banner - posición fija con ancho completo */}
-      <div className="fixed top-0 left-0 w-full bg-[#121829] z-50 shadow-md">
-        <div className="flex w-full max-w-screen-xl mx-auto">
-          <div className="w-full py-4 px-6 flex items-center justify-between relative">
-            <div className="flex items-center">
-              <span className="bg-yellow-400 text-black rounded-full w-6 h-6 flex items-center justify-center mr-2 shadow-sm">😀</span>
-              <span className="font-medium text-white text-lg">EmotioX</span>
-            </div>
-            <div className="flex-1 text-center text-white text-sm mx-4">
-              This is a preview. Your response will not be saved.
-            </div>
-            <div className="relative">
-              <button 
-                ref={buttonRef}
-                className="bg-[#1e293e] hover:bg-[#29344f] text-white px-4 py-2 rounded-lg flex items-center text-sm mr-4 transition-colors shadow-sm"
-                onClick={toggleMenu}
-              >
-                Jump to section <ChevronRight size={16} className="ml-2" />
-              </button>
-
-              {/* Menú desplegable - ahora alineado con el margen izquierdo del botón */}
-              {isMenuOpen && (
-                <div 
-                  ref={menuRef}
-                  className="absolute left-0 top-[53px] w-[180px] bg-white border border-neutral-100 shadow-xl rounded-xl overflow-hidden z-10"
+      {/* Banner - solo mostrar si hay participante */}
+      {participant && (
+        <div className="fixed top-0 left-0 w-full bg-[#121829] z-50 shadow-md">
+          <div className="flex w-full max-w-screen-xl mx-auto">
+            <div className="w-full py-4 px-6 flex items-center justify-between relative">
+              <div className="flex items-center">
+                <span className="bg-yellow-400 text-black rounded-full w-6 h-6 flex items-center justify-center mr-2 shadow-sm">😀</span>
+                <span className="font-medium text-white text-lg">EmotioX</span>
+              </div>
+              <div className="flex-1 text-center text-white text-sm mx-4">
+                This is a preview. Your response will not be saved.
+              </div>
+              <div className="relative">
+                <button 
+                  ref={buttonRef}
+                  className="bg-[#1e293e] hover:bg-[#29344f] text-white px-4 py-2 rounded-lg flex items-center text-sm mr-4 transition-colors shadow-sm"
+                  onClick={toggleMenu}
                 >
-                  <ul>
-                    {menuOptions.map((option) => (
-                      <li 
-                        key={option.id}
-                        className="px-5 py-3 hover:bg-neutral-100 cursor-pointer text-sm font-medium"
-                        onClick={() => handleMenuSelect(option.id as ScreenType)}
-                      >
-                        {option.label}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+                  Jump to section <ChevronRight size={16} className="ml-2" />
+                </button>
+
+                {isMenuOpen && (
+                  <div 
+                    ref={menuRef}
+                    className="absolute left-0 top-[53px] w-[180px] bg-white border border-neutral-100 shadow-xl rounded-xl overflow-hidden z-10"
+                  >
+                    <ul>
+                      {menuOptions.map((option) => (
+                        <li 
+                          key={option.id}
+                          className="px-5 py-3 hover:bg-neutral-100 cursor-pointer text-sm font-medium"
+                          onClick={() => handleMenuSelect(option.id as ScreenType)}
+                        >
+                          {option.label}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Contenedor principal - ahora dinámico basado en currentScreen */}
-      <div className="flex w-full h-full mt-[64px]">
+      {/* Contenedor principal - ajustar margen superior basado en si hay participante */}
+      <div className={`flex w-full h-full ${participant ? 'mt-[64px]' : ''}`}>
         {renderContent()}
       </div>
     </div>
