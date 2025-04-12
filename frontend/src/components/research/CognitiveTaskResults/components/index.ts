@@ -13,4 +13,5 @@ export { AnalysisTabs, type AnalysisTabType } from './AnalysisTabs';
 export { SentimentAnalysisPanel } from './SentimentAnalysisPanel';
 export { ThemesPanel } from './ThemesPanel';
 export { KeywordsPanel } from './KeywordsPanel';
-export { MainContent } from './MainContent'; 
+export { MainContent } from './MainContent';
+export { CognitiveTaskContainer } from './CognitiveTaskContainer'; 
