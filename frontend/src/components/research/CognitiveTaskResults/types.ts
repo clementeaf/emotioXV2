@@ -30,7 +30,7 @@ export interface CognitiveTaskQuestion {
   id: string;
   questionNumber: string;
   questionText: string;
-  questionType: 'short_text' | 'multiple_choice' | 'rating';
+  questionType: 'short_text' | 'multiple_choice' | 'rating' | 'long_text';
   required: boolean;
   conditionalityDisabled?: boolean;
   sentimentResults?: SentimentResult[];

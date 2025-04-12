@@ -1,37 +1,37 @@
 'use client';
 
 import React from 'react';
-import { CognitiveTaskHeader, QuestionInfo, MainContent } from './';
+import { QuestionInfo, MainContent } from './';
 import { CognitiveTaskQuestion } from '../types';
+import { AnalysisTabType } from './AnalysisTabs';
 
-interface CognitiveTaskContainerProps {
-  title: string;
+interface QuestionContainerProps {
   questionId: string;
   questionType: string;
   conditionalityDisabled: boolean;
   required: boolean;
   hasNewData: boolean;
   data: CognitiveTaskQuestion;
+  initialActiveTab?: AnalysisTabType;
+  themeImageSrc?: string;
   onFilter?: () => void;
   onUpdate?: () => void;
 }
 
-export function CognitiveTaskContainer({
-  title,
+export function QuestionContainer({
   questionId,
   questionType,
   conditionalityDisabled,
   required,
   hasNewData,
   data,
+  initialActiveTab,
+  themeImageSrc,
   onFilter,
   onUpdate
-}: CognitiveTaskContainerProps) {
+}: QuestionContainerProps) {
   return (
-    <div className="w-full bg-white rounded-lg border border-neutral-200">
-      {/* Encabezado con título */}
-      <CognitiveTaskHeader title={title} />
-
+    <div className="w-full bg-white rounded-lg border border-neutral-200 mb-6">
       {/* Sección de pregunta y estado */}
       <QuestionInfo
         questionId={questionId}
@@ -44,7 +44,11 @@ export function CognitiveTaskContainer({
       />
 
       {/* Contenido principal */}
-      <MainContent data={data} />
+      <MainContent 
+        data={data}
+        initialActiveTab={initialActiveTab}
+        themeImageSrc={themeImageSrc}
+      />
     </div>
   );
 } 

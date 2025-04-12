@@ -6,10 +6,16 @@ import { CognitiveTaskQuestion } from '../types';
 
 interface MainContentProps {
   data: CognitiveTaskQuestion;
+  initialActiveTab?: AnalysisTabType;
+  themeImageSrc?: string;
 }
 
-export function MainContent({ data }: MainContentProps) {
-  const [activeTab, setActiveTab] = useState<AnalysisTabType>('sentiment');
+export function MainContent({ 
+  data, 
+  initialActiveTab = 'sentiment',
+  themeImageSrc
+}: MainContentProps) {
+  const [activeTab, setActiveTab] = useState<AnalysisTabType>(initialActiveTab);
   const [selectedItems, setSelectedItems] = useState<string[]>(['5']); // Iniciar con "Camera lens" seleccionado
 
   const toggleItemSelection = (id: string) => {
@@ -56,7 +62,10 @@ export function MainContent({ data }: MainContentProps) {
         )}
 
         {activeTab === 'themes' && (
-          <ThemesPanel themes={data.themes} />
+          <ThemesPanel 
+            themes={data.themes} 
+            imageSrc={themeImageSrc}
+          />
         )}
 
         {activeTab === 'keywords' && (

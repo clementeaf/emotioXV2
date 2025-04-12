@@ -41,6 +41,51 @@ export const cognitiveTaskQuestion: CognitiveTaskQuestion = {
   }
 };
 
+// Datos de ejemplo para la pregunta 3.2 (Long Text question)
+export const cognitiveTaskQuestion2: CognitiveTaskQuestion = {
+  id: '3.2',
+  questionNumber: '3.2',
+  questionText: 'Question',
+  questionType: 'long_text',
+  required: true,
+  conditionalityDisabled: true,
+  newData: true,
+  sentimentResults: [
+    { id: '1', text: 'Comment', sentiment: 'neutral', type: 'comment' },
+    { id: '2', text: 'Camera lens working memory in...', sentiment: 'positive' },
+    { id: '3', text: 'Laptop, Camera lens memory in...', sentiment: 'positive' },
+    { id: '4', text: 'Mobile', sentiment: 'positive' },
+    { id: '5', text: 'Camera lens', sentiment: 'positive', selected: true },
+    { id: '6', text: 'Computer accessories', sentiment: 'positive' },
+    { id: '7', text: 'TV, Camera lens working memory in...', sentiment: 'positive' },
+    { id: '8', text: 'Mobile, lens working memory in...', sentiment: 'positive' },
+    { id: '9', text: 'Laptop', sentiment: 'green' },
+    { id: '10', text: 'Camera lens working memory in...', sentiment: 'green' },
+    { id: '11', text: 'Camera lens working memory in...', sentiment: 'green' },
+  ],
+  themes: [
+    { id: 't1', name: 'Memory', count: 12 },
+    { id: 't2', name: 'Learning', count: 8 },
+    { id: 't3', name: 'Education', count: 7 },
+    { id: 't4', name: 'Cognitive Analysis', count: 10 },
+    { id: 't5', name: 'Neural Networks', count: 5 }
+  ],
+  keywords: [
+    { id: 'k1', name: 'Working memory', count: 15 },
+    { id: 'k2', name: 'Cognitive', count: 10 },
+    { id: 'k3', name: 'Development', count: 8 },
+    { id: 'k4', name: 'Learning patterns', count: 12 },
+    { id: 'k5', name: 'Education', count: 9 }
+  ],
+  sentimentAnalysis: {
+    text: 'Then I explore the nature of cognitive developmental improvements in working memory, the role of working memory in learning, and some potential implications of working memory and its development for the education of children and adults.\n\nThe use of working memory is quite ubiquitous in human thought, but the best way to improve education using what we know about working memory is still controversial. I hope to provide some directions for research and educational practice.',
+    actionables: [
+      'Using what we know about working memory is still controversial.',
+      'I hope to provide some directions for research and educational practice.'
+    ]
+  }
+};
+
 // Datos de resumen para las tarjetas principales
 export const summaryData: CognitiveSummary = {
   averagePerformance: {

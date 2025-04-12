@@ -14,4 +14,5 @@ export { SentimentAnalysisPanel } from './SentimentAnalysisPanel';
 export { ThemesPanel } from './ThemesPanel';
 export { KeywordsPanel } from './KeywordsPanel';
 export { MainContent } from './MainContent';
-export { CognitiveTaskContainer } from './CognitiveTaskContainer'; 
+export { QuestionContainer } from './QuestionContainer';
+export { AnalysisImage } from './AnalysisImage'; 
