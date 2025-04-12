@@ -141,31 +141,6 @@ export const mockData: MockData = {
         }
       ]
     },
-    {
-      questionNumber: "2.4",
-      title: "Net Emotional Value (NEV)",
-      type: "Linear Scale question",
-      conditionality: "Conditionality disabled",
-      required: true,
-      question: "How do you feel about the experience offered by the [company]?\nPlease select up to 3 options from these 20 emotional moods",
-      responses: {
-        count: 28635,
-        timeAgo: "26s"
-      },
-      score: 56,
-      distribution: [
-        {
-          label: "Positive Emotions",
-          percentage: 78,
-          color: "green"
-        },
-        {
-          label: "Negative Emotions",
-          percentage: 22,
-          color: "red"
-        }
-      ]
-    }
   ],
   emotionalStates: {
     states: [

@@ -22,15 +22,6 @@ interface NPSQuestionProps {
     detractors: number;
     npsRatio: number;
   }>;
-  loyaltyEvolution: {
-    promoters: number;
-    promotersTrend: "up" | "down";
-    detractors: number;
-    detractorsTrend: "up" | "down";
-    neutrals: number;
-    neutralsTrend: "up" | "down";
-    changePercentage: number;
-  };
 }
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -55,15 +46,22 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-export function NPSQuestion({ monthlyData, loyaltyEvolution }: NPSQuestionProps) {
+export function NPSQuestion({ monthlyData }: NPSQuestionProps) {
   return (
     <Card className="p-6 space-y-6">
       <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <h3 className="text-lg font-medium">2.5.- Question: Net Promoter Score (NPS)</h3>
-          <Badge variant="secondary" className="bg-green-100 text-green-700">Linear Scale question</Badge>
-          <Badge variant="secondary" className="bg-blue-100 text-blue-700">Conditionality disabled</Badge>
-          <Badge variant="secondary" className="bg-red-100 text-red-700">Required</Badge>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg font-medium">2.5.- Question: Net Promoter Score (NPS)</h3>
+            <Badge variant="secondary" className="bg-green-100 text-green-700">Linear Scale question</Badge>
+            <Badge variant="secondary" className="bg-blue-100 text-blue-700">Conditionality disabled</Badge>
+            <Badge variant="secondary" className="bg-red-100 text-red-700">Required</Badge>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">Responses</span>
+            <span className="text-2xl font-semibold">28,635</span>
+            <span className="text-sm text-gray-500">26s</span>
+          </div>
         </div>
 
         <div className="space-y-6">
@@ -99,12 +97,7 @@ export function NPSQuestion({ monthlyData, loyaltyEvolution }: NPSQuestionProps)
           <p className="text-sm text-gray-500">On a scale from 0-10, how likely are you to recommend [company] to a friend or colleague?</p>
         </div>
 
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">Responses</span>
-            <span className="text-2xl font-semibold">28,635</span>
-            <span className="text-sm text-gray-500">26s</span>
-          </div>
+        <div className="flex justify-end">
           <div className="w-24 h-24">
             <CircularProgress value={63} size={96} strokeWidth={8} />
           </div>
