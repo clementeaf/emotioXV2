@@ -3,6 +3,7 @@
 import React from 'react';
 import { cognitiveTaskQuestion, cognitiveTaskQuestion2 } from './mockData';
 import { singleChoiceQuestionData, multipleChoiceQuestionData, linearScaleQuestionData } from './mockChoiceData';
+import { rankingQuestionData } from './mockRankingData';
 import { CognitiveTaskHeader, QuestionContainer } from './components';
 
 export const CognitiveTaskResults: React.FC = () => {
@@ -85,6 +86,17 @@ export const CognitiveTaskResults: React.FC = () => {
         viewType="choice"
         choiceData={linearScaleQuestionData}
         choiceImageSrc={questionImageUrl}
+        onFilter={handleFilter}
+      />
+
+      {/* Pregunta 3.6 - Ranking */}
+      <QuestionContainer 
+        questionId="3.6.-Question"
+        questionType="Ranking question"
+        conditionalityDisabled={true}
+        required={true}
+        viewType="ranking"
+        rankingData={rankingQuestionData}
         onFilter={handleFilter}
       />
     </div>

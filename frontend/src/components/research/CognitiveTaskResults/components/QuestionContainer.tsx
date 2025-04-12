@@ -1,13 +1,14 @@
 'use client';
 
 import React from 'react';
-import { QuestionInfo, MainContent, ChoiceResults } from './';
+import { QuestionInfo, MainContent, ChoiceResults, RankingResults } from './';
 import { CognitiveTaskQuestion } from '../types';
 import { AnalysisTabType } from './AnalysisTabs';
 import { ChoiceQuestionData } from './ChoiceResults';
+import { RankingQuestionData } from './RankingResults';
 
 // Tipo de visualización para la pregunta
-export type QuestionViewType = 'sentiment' | 'choice';
+export type QuestionViewType = 'sentiment' | 'choice' | 'ranking';
 
 interface QuestionContainerProps {
   questionId: string;
@@ -19,6 +20,7 @@ interface QuestionContainerProps {
   // Datos específicos según el tipo de visualización
   sentimentData?: CognitiveTaskQuestion;
   choiceData?: ChoiceQuestionData;
+  rankingData?: RankingQuestionData;
   // Props específicos para la visualización de sentimiento
   initialActiveTab?: AnalysisTabType;
   themeImageSrc?: string;
@@ -38,6 +40,7 @@ export function QuestionContainer({
   viewType,
   sentimentData,
   choiceData,
+  rankingData,
   initialActiveTab,
   themeImageSrc,
   choiceImageSrc,
@@ -70,6 +73,12 @@ export function QuestionContainer({
         <ChoiceResults 
           data={choiceData}
           imageSrc={choiceImageSrc}
+        />
+      )}
+
+      {viewType === 'ranking' && rankingData && (
+        <RankingResults
+          data={rankingData}
         />
       )}
     </div>
