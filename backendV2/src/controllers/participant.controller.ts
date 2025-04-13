@@ -32,8 +32,8 @@ export class ParticipantController {
 
       const newParticipant = await participantService.create({
         ...validatedData,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       });
 
       return createResponse(201, newParticipant);
@@ -70,7 +70,7 @@ export class ParticipantController {
   /**
    * Obtiene todos los participantes
    */
-  async getAll(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  async getAll(_event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
     try {
       const participants = await participantService.findAll();
       return createResponse(200, participants);
