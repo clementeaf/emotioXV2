@@ -260,13 +260,13 @@ function ResearchTableContent() {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-        <div className="px-6 py-4 flex items-center justify-between border-b border-neutral-100">
+    <div className="space-y-4 h-[340px]">
+      <div className="bg-white rounded-lg shadow-sm">
+        <div className="flex items-center justify-between border-b border-neutral-100">
           <div>
             <h2 className="text-lg font-medium text-neutral-900">Research Projects</h2>
             {lastUpdated > 0 && (
-              <p className="text-sm text-neutral-500 mt-1">
+              <p className="text-sm text-neutral-500 mt-3">
                 Última actualización: {new Date(lastUpdated).toLocaleTimeString()}
               </p>
             )}
@@ -290,11 +290,9 @@ function ResearchTableContent() {
           </div>
         </div>
         
-        {/* Eliminamos los mensajes de error relacionados con la API real */}
-        
         {/* Mensaje permanente indicando que se usan datos simulados */}
-        <div className="px-6 py-3 bg-blue-50 border-b border-blue-100">
-          <p className="text-sm text-blue-700 flex items-center">
+        <div className="px-3 py-3">
+          <p className="text-xs text-blue-700 flex items-center">
             <svg className="w-5 h-5 mr-1.5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -302,7 +300,7 @@ function ResearchTableContent() {
           </p>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-hidden h-[230px]">
           {isLoading ? (
             <div className="p-8 flex justify-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -312,7 +310,7 @@ function ResearchTableContent() {
               <p className="text-neutral-500">No hay investigaciones disponibles.</p>
             </div>
           ) : (
-            <table className="w-full">
+            <table className="w-full overflow-y-auto">
               <thead>
                 <tr className="border-b border-neutral-100 bg-neutral-50">
                   <th className="whitespace-nowrap px-6 py-3 text-left text-sm font-medium text-neutral-600">Nombre</th>

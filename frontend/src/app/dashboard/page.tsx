@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useState, useEffect, memo, Suspense } from 'react';
 
@@ -77,15 +76,6 @@ const DashboardMainContent = memo(() => (
   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
     {/* Investigaciones recientes */}
     <div className="lg:col-span-2 bg-white rounded-lg border border-neutral-200 p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-lg font-medium">Investigaciones Recientes</h2>
-        <Link 
-          href="/dashboard/research/new" 
-          className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          Nueva Investigación
-        </Link>
-      </div>
       <ResearchTable />
     </div>
 
@@ -103,9 +93,6 @@ DashboardMainContent.displayName = 'DashboardMainContent';
 const DashboardHeader = memo(() => (
   <div className="mb-8">
     <h1 className="text-2xl font-semibold text-neutral-900">Dashboard</h1>
-    <p className="mt-2 text-sm text-neutral-600">
-      Bienvenido a EmotioX, tu plataforma de investigación de emociones
-    </p>
   </div>
 ));
 
@@ -266,7 +253,7 @@ const DashboardContent = memo(() => {
 
   // Si no estamos en AIM Framework o no hay research activa
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div className="flex-1 overflow-y-auto mt-4">
       <div className="container mx-auto px-6 py-8">
         <DashboardHeader />
         <DashboardStats />

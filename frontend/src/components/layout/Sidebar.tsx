@@ -82,12 +82,6 @@ const researchStages = [
   },
 ];
 
-const researchTypes = [
-  { id: 'eye-tracking', label: 'Eye Tracking', href: '/research-types/eye-tracking', count: 24 },
-  { id: 'attention-prediction', label: 'Attention Prediction', href: '/research-types/attention-prediction', count: 16 },
-  { id: 'cognitive-analysis', label: 'Cognitive Analysis', href: '/research-types/cognitive-analysis', count: 12 },
-];
-
 const getTimeAgo = (date: Date) => {
   const now = new Date();
   const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
@@ -350,15 +344,6 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
     router.push('/dashboard');
   };
   
-  const handleDeleteResearch = (e: React.MouseEvent, id: string, name: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    // En lugar de usar window.confirm, mostrar nuestro modal personalizado
-    setResearchToDelete({ id, name });
-    setShowDeleteModal(true);
-  };
-  
   const confirmDeleteResearch = async () => {
     if (!researchToDelete) {return;}
     
@@ -403,11 +388,11 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
   // Si tenemos una investigación activa de tipo AIM Framework
   if (activeResearch && isAimFrameworkResearch) {
     return (
-      <div className={cn('w-56 bg-white border-r border-neutral-200 shadow-lg flex flex-col h-screen', className)}>
-        <div className="p-4 border-b border-neutral-200">
+      <div className={cn('w-56 bg-white shadow-lg flex flex-col mt-16 ml-4 mb-4 rounded-2xl', className)}>
+        <div className="px-4 pt-8">
           <a 
             href="/dashboard" 
-            className="flex items-center mb-4"
+            className="flex items-center"
             onClick={handleLogoClick}
           >
             <div className="flex items-center">
@@ -415,21 +400,6 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
               <span className="text-xs ml-1 text-neutral-500">(Inicio)</span>
             </div>
           </a>
-          <div className="relative">
-            <div className="font-medium text-sm text-neutral-700 pr-7">{activeResearch.name}</div>
-            <div className="text-xs text-neutral-500 mt-1">AIM Framework</div>
-            
-            {/* Botón X para terminar la investigación */}
-            <button
-              onClick={(e) => handleDeleteResearch(e, activeResearch.id, activeResearch.name)}
-              className="absolute right-0 top-0 w-6 h-6 flex items-center justify-center rounded-full text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-              title="Terminar investigación"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
         </div>
         
         <nav className="flex-1 p-4 overflow-y-auto">
@@ -576,8 +546,8 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
 
   // Sidebar estándar para el resto de vistas
   return (
-    <div className={cn('w-56 bg-white border-r border-neutral-200 shadow-lg flex flex-col h-screen', className)}>
-      <div className="p-4 border-b border-neutral-200">
+    <div className={cn('w-56 h-[460px] bg-white shadow-lg flex flex-col mt-8 ml-4 mb-4 rounded-2xl', className)}>
+      <div className="px-4 pt-4 pb-3 border-b border-neutral-200">
         <a 
           href="/dashboard" 
           className="flex items-center"
@@ -662,8 +632,8 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
         </nav>
         
         {/* Mostrar solo la investigación más reciente */}
-        <div className="p-4 border-t border-neutral-200">
-          <h3 className="font-semibold text-xs text-neutral-500 uppercase mb-3 flex items-center">
+        <div className="w-full">
+          <h3 className="p-4 w-full font-semibold text-xs text-neutral-500 uppercase mb-3 flex items-center border-t border-neutral-200 pt-3">
             <span className="text-blue-600 mr-1">•</span>
             INVESTIGACIÓN EN CURSO
           </h3>
@@ -686,7 +656,7 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
                       : `/dashboard?research=${item.id}`
                     }
                     className={cn(
-                      'flex items-center py-2 px-3 rounded-md text-sm bg-blue-50 border border-blue-100 text-blue-700 hover:bg-blue-100 transition-colors pr-8',
+                      'flex items-center py-2 px-3 rounded-lg text-sm bg-blue-50 border border-blue-100 text-blue-700 hover:bg-blue-100 transition-colors pr-8',
                       pathname?.includes(`research=${item.id}`)
                         ? 'bg-neutral-100 text-neutral-900 font-medium'
                         : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
@@ -698,17 +668,6 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
                       <span className="ml-auto text-xs text-blue-500 bg-blue-100 px-2 py-0.5 rounded-full">AIM</span>
                     )}
                   </Link>
-                  
-                  {/* Botón para eliminar la investigación en curso */}
-                  <button
-                    onClick={(e) => handleDeleteResearch(e, item.id, item.name)}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                    title="Terminar investigación"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
                 </li>
               ))}
             </ul>
