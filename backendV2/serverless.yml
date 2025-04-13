@@ -42,7 +42,7 @@ provider:
     TOKEN_EXPIRATION: '604800'
     USE_MOCK_DB: 'false'
     IS_OFFLINE: ${self:custom.isOffline, 'false'}
-    ALLOWED_ORIGIN: ${env:ALLOWED_ORIGIN, 'http://localhost:4700,https://main.di4935nnx8tyk.amplifyapp.com'}
+    ALLOWED_ORIGIN: ${env:ALLOWED_ORIGIN, 'http://localhost:4700,http://localhost:5173,https://main.di4935nnx8tyk.amplifyapp.com'}
     S3_BUCKET_NAME: emotiox-v2-${self:provider.stage}-storage
     EYETRACKING_RECRUIT_CONFIG_TABLE: ${self:service}-eye-tracking-recruit-config-${self:provider.stage}
     EYETRACKING_RECRUIT_PARTICIPANT_TABLE: ${self:service}-eye-tracking-recruit-participant-${self:provider.stage}
@@ -378,6 +378,8 @@ functions:
               - cache-control
               - Pragma
               - pragma
+              - Origin
+              - origin
             allowCredentials: true
       - http:
           path: /participants/{proxy+}
@@ -397,6 +399,8 @@ functions:
               - cache-control
               - Pragma
               - pragma
+              - Origin
+              - origin
             allowCredentials: true
   
   websocket:

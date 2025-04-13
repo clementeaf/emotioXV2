@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { Participant } from '../../../../shared/interfaces/participant';
-import { registerParticipant } from '../../services/auth.service';
+import { config } from '../../config/env';
 
 interface ParticipantLoginProps {
   onLogin: (participant: Participant) => void;
 }
 
 export const ParticipantLogin = ({ onLogin }: ParticipantLoginProps) => {
-  const [participant, setParticipant] = useState<Participant>({
+  const [participant, setParticipant] = useState<Omit<Participant, 'id' | 'createdAt' | 'updatedAt'>>({
     name: '',
     email: ''
   });
@@ -29,6 +29,8 @@ export const ParticipantLogin = ({ onLogin }: ParticipantLoginProps) => {
 
     if (!participant.name.trim()) {
       newErrors.name = 'El nombre es requerido';
+    } else if (participant.name.length < 2) {
+      newErrors.name = 'El nombre debe tener al menos 2 caracteres';
     }
 
     if (!participant.email.trim()) {
@@ -46,23 +48,29 @@ export const ParticipantLogin = ({ onLogin }: ParticipantLoginProps) => {
     if (validateForm()) {
       setIsLoading(true);
       try {
-        const response = await registerParticipant(participant);
-        
-        if (response.error) {
-          setErrors(prev => ({ 
-            ...prev, 
-            submit: response.error || 'Error desconocido' 
-          }));
-          return;
+        const response = await fetch(`${config.apiUrl}/participants`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(participant)
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || 'Error al registrar participante');
         }
 
-        if (response.data) {
-          onLogin(response.data);
+        if (result.data) {
+          onLogin(result.data);
+        } else {
+          throw new Error('No se recibieron los datos del participante');
         }
-      } catch (error) {
+      } catch (error: any) {
         setErrors(prev => ({ 
           ...prev, 
-          submit: 'Error al registrar participante. Por favor, intenta nuevamente.' 
+          submit: error.message || 'Error al registrar participante. Por favor, intenta nuevamente.' 
         }));
       } finally {
         setIsLoading(false);

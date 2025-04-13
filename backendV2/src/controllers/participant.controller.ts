@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { participantService } from '../services/participant.service';
-import { createResponse, errorResponse, getCorsHeaders } from '../utils/controller.utils';
+import { getCorsHeaders } from '../middlewares/cors';
 import { z } from 'zod';
 
 // Schema de validación para participantes
@@ -19,7 +19,14 @@ export class ParticipantController {
   async create(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
     try {
       if (!event.body) {
-        return errorResponse('Se requieren datos para crear el participante', 400);
+        return {
+          statusCode: 400,
+          headers: getCorsHeaders(event),
+          body: JSON.stringify({
+            error: 'Se requieren datos para crear el participante',
+            status: 400
+          })
+        };
       }
 
       const data = JSON.parse(event.body);
@@ -27,7 +34,14 @@ export class ParticipantController {
 
       const existingParticipant = await participantService.findByEmail(validatedData.email);
       if (existingParticipant) {
-        return errorResponse('Ya existe un participante con este email', 409);
+        return {
+          statusCode: 409,
+          headers: getCorsHeaders(event),
+          body: JSON.stringify({
+            error: 'Ya existe un participante con este email',
+            status: 409
+          })
+        };
       }
 
       const newParticipant = await participantService.create({
@@ -36,10 +50,24 @@ export class ParticipantController {
         updatedAt: new Date().toISOString()
       });
 
-      return createResponse(201, newParticipant);
+      return {
+        statusCode: 201,
+        headers: getCorsHeaders(event),
+        body: JSON.stringify({
+          data: newParticipant,
+          status: 201
+        })
+      };
     } catch (error: any) {
       console.error('Error al crear participante:', error);
-      return errorResponse(error.message || 'Error al crear participante', 400);
+      return {
+        statusCode: 400,
+        headers: getCorsHeaders(event),
+        body: JSON.stringify({
+          error: error.message || 'Error al crear participante',
+          status: 400
+        })
+      };
     }
   }
 
@@ -51,19 +79,47 @@ export class ParticipantController {
       const id = event.pathParameters?.id;
       
       if (!id) {
-        return errorResponse('ID de participante no proporcionado', 400);
+        return {
+          statusCode: 400,
+          headers: getCorsHeaders(event),
+          body: JSON.stringify({
+            error: 'ID de participante no proporcionado',
+            status: 400
+          })
+        };
       }
 
       const participant = await participantService.findById(id);
       
       if (!participant) {
-        return errorResponse('Participante no encontrado', 404);
+        return {
+          statusCode: 404,
+          headers: getCorsHeaders(event),
+          body: JSON.stringify({
+            error: 'Participante no encontrado',
+            status: 404
+          })
+        };
       }
 
-      return createResponse(200, participant);
+      return {
+        statusCode: 200,
+        headers: getCorsHeaders(event),
+        body: JSON.stringify({
+          data: participant,
+          status: 200
+        })
+      };
     } catch (error: any) {
       console.error('Error al obtener participante:', error);
-      return errorResponse('Error al obtener participante', 500);
+      return {
+        statusCode: 500,
+        headers: getCorsHeaders(event),
+        body: JSON.stringify({
+          error: 'Error al obtener participante',
+          status: 500
+        })
+      };
     }
   }
 
@@ -73,10 +129,24 @@ export class ParticipantController {
   async getAll(_event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
     try {
       const participants = await participantService.findAll();
-      return createResponse(200, participants);
+      return {
+        statusCode: 200,
+        headers: getCorsHeaders(_event),
+        body: JSON.stringify({
+          data: participants,
+          status: 200
+        })
+      };
     } catch (error: any) {
       console.error('Error al obtener participantes:', error);
-      return errorResponse('Error al obtener participantes', 500);
+      return {
+        statusCode: 500,
+        headers: getCorsHeaders(_event),
+        body: JSON.stringify({
+          error: 'Error al obtener participantes',
+          status: 500
+        })
+      };
     }
   }
 
@@ -88,24 +158,50 @@ export class ParticipantController {
       const id = event.pathParameters?.id;
       
       if (!id) {
-        return errorResponse('ID de participante no proporcionado', 400);
+        return {
+          statusCode: 400,
+          headers: getCorsHeaders(event),
+          body: JSON.stringify({
+            error: 'ID de participante no proporcionado',
+            status: 400
+          })
+        };
       }
 
       const participant = await participantService.findById(id);
       
       if (!participant) {
-        return errorResponse('Participante no encontrado', 404);
+        return {
+          statusCode: 404,
+          headers: getCorsHeaders(event),
+          body: JSON.stringify({
+            error: 'Participante no encontrado',
+            status: 404
+          })
+        };
       }
 
       await participantService.delete(id);
 
-      return createResponse(200, {
-        message: 'Participante eliminado exitosamente',
-        participant
-      });
+      return {
+        statusCode: 200,
+        headers: getCorsHeaders(event),
+        body: JSON.stringify({
+          data: participant,
+          message: 'Participante eliminado exitosamente',
+          status: 200
+        })
+      };
     } catch (error: any) {
       console.error('Error al eliminar participante:', error);
-      return errorResponse('Error al eliminar participante', 500);
+      return {
+        statusCode: 500,
+        headers: getCorsHeaders(event),
+        body: JSON.stringify({
+          error: 'Error al eliminar participante',
+          status: 500
+        })
+      };
     }
   }
 }
@@ -122,7 +218,7 @@ export const participantHandler = async (event: APIGatewayProxyEvent): Promise<A
     if (event.httpMethod === 'OPTIONS') {
       return {
         statusCode: 200,
-        headers: getCorsHeaders(),
+        headers: getCorsHeaders(event),
         body: ''
       };
     }
@@ -141,9 +237,23 @@ export const participantHandler = async (event: APIGatewayProxyEvent): Promise<A
       return controller.delete(event);
     }
 
-    return errorResponse('Método no permitido', 405);
+    return {
+      statusCode: 405,
+      headers: getCorsHeaders(event),
+      body: JSON.stringify({
+        error: 'Método no permitido',
+        status: 405
+      })
+    };
   } catch (error: any) {
     console.error('Error en participantHandler:', error);
-    return errorResponse('Error interno del servidor', 500);
+    return {
+      statusCode: 500,
+      headers: getCorsHeaders(event),
+      body: JSON.stringify({
+        error: 'Error interno del servidor',
+        status: 500
+      })
+    };
   }
 }; 
