@@ -111,24 +111,23 @@ export const ThankYouScreenForm: React.FC<ThankYouScreenFormProps> = ({
         </div>
       )}
       
-      {/* Contenido del formulario (solo si está habilitado) */}
-      {formData.isEnabled && (
-        <ThankYouScreenContent 
-          title={formData.title}
-          message={formData.message}
-          redirectUrl={formData.redirectUrl || ''}
-          onTitleChange={handleTitleChange}
-          onMessageChange={handleMessageChange}
-          onRedirectUrlChange={handleRedirectUrlChange}
-          validationErrors={validationErrors}
-          disabled={isLoading || isSaving}
-        />
-      )}
+      {/* Contenido del formulario */}
+      <ThankYouScreenContent 
+        title={formData.title}
+        message={formData.message}
+        redirectUrl={formData.redirectUrl ?? ''}
+        onTitleChange={handleTitleChange}
+        onMessageChange={handleMessageChange}
+        onRedirectUrlChange={handleRedirectUrlChange}
+        validationErrors={validationErrors}
+        disabled={isLoading || isSaving || !formData.isEnabled}
+      />
       
       {/* Pie de página con acciones */}
       <ThankYouScreenFooter 
         isSaving={isSaving}
         isLoading={isLoading}
+        isEnabled={formData.isEnabled}
         thankYouScreenId={thankYouScreenId}
         onSave={handleSaveAndNotify}
         onPreview={handlePreview}

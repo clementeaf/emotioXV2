@@ -15,11 +15,7 @@ const TABLE_NAME = "emotioxv2-backend-table-dev";
 
 // Patrones de SK a eliminar
 const PATTERNS_TO_DELETE = [
-  "RESEARCH#",
-  "WELCOME_SCREEN#",
-  "THANK_YOU_SCREEN#",
-  "EYETRACKING#",
-  "SMART_VOC#"
+  "THANK_YOU_SCREEN#"
 ];
 
 async function scanTable() {

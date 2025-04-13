@@ -182,16 +182,10 @@ export class ThankYouScreenService {
       const thankYouScreen = await thankYouScreenModel.getByResearchId(researchId);
       
       if (!thankYouScreen) {
-        // Si no existe, crear una por defecto
-        const defaultData: ThankYouScreenFormData = {
-          isEnabled: DEFAULT_THANK_YOU_SCREEN_CONFIG.isEnabled,
-          title: DEFAULT_THANK_YOU_SCREEN_CONFIG.title,
-          message: DEFAULT_THANK_YOU_SCREEN_CONFIG.message,
-          redirectUrl: DEFAULT_THANK_YOU_SCREEN_CONFIG.redirectUrl
-        };
-        
-        // Crear pantalla por defecto y retornarla
-        return await thankYouScreenModel.create(defaultData, researchId);
+        throw new ApiError(
+          `${ThankYouScreenError.NOT_FOUND}: No se encontró una pantalla de agradecimiento para esta investigación`,
+          404
+        );
       }
 
       return thankYouScreen;
@@ -203,7 +197,7 @@ export class ThankYouScreenService {
 
       console.error('Error en ThankYouScreenService.getByResearchId:', error);
       throw new ApiError(
-        `${ThankYouScreenError.DATABASE_ERROR}: Error al obtener la pantalla de agradecimiento para la investigación`,
+        `${ThankYouScreenError.DATABASE_ERROR}: Error al obtener la pantalla de agradecimiento`,
         500
       );
     }

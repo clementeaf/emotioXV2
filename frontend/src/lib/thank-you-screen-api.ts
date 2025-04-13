@@ -106,8 +106,6 @@ export const thankYouScreenFixedAPI = {
       throw new Error('Se requiere un ID de investigación');
     }
     
-    // La ruta correcta según el controlador en el backend es:
-    // /research/:researchId/thank-you-screen
     const url = `/thank-you-screen/research/${researchId}/thank-you-screen`;
     console.log(`[ThankYouScreenAPI] Obteniendo ThankYouScreen para investigación ${researchId}, URL: ${url}`);
     console.log(`[ThankYouScreenAPI] URL completa: ${API_CONFIG.baseURL}${url}`);
@@ -115,67 +113,24 @@ export const thankYouScreenFixedAPI = {
     return {
       send: async () => {
         try {
-          // ======== SOLUCIÓN ULTRA SILENCIOSA PARA EVITAR ERRORES 404 EN LA CONSOLA ========
+          const headers = getAuthHeaders();
+          const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
+            method: 'GET',
+            headers
+          });
           
-          // Generamos una clave única para este recurso
-          const cacheKey = `thank_you_screen_resource_${researchId}`;
-          
-          // Si ya intentamos acceder a este recurso antes y no existía, devolvemos directamente
-          // una respuesta simulada sin hacer ninguna solicitud HTTP
-          const isKnownNonExistent = localStorage.getItem(cacheKey) === 'nonexistent';
-          
-          if (isKnownNonExistent) {
-            console.log(`[ThankYouScreenAPI] Usando respuesta en caché para ${researchId} - sabemos que no existe`);
+          if (response.status === 404) {
+            console.log('[ThankYouScreenAPI] No se encontró configuración de ThankYouScreen para esta investigación');
             return { 
               notFound: true, 
               data: null,
               ok: false,
               status: 404,
-              statusText: 'Not Found',
-              json: () => Promise.resolve({ data: null }),
-              text: () => Promise.resolve('')
+              statusText: 'Not Found'
             };
           }
           
-          // Si no sabemos si existe, hacemos la solicitud GET directamente y manejamos el 404 si ocurre
-          const headers = getAuthHeaders();
-          
-          // Usamos el método fetch con catch para capturar errores 404
-          try {
-            const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
-              method: 'GET',
-              headers
-            });
-            
-            // Si la respuesta es exitosa, guardamos que el recurso existe y procesamos normalmente
-            if (response.ok) {
-              localStorage.removeItem(cacheKey); // Ya no es "nonexistent"
-              return handleThankYouScreenResponse(response);
-            }
-            
-            // Si es 404, guardamos que el recurso no existe para evitar solicitudes futuras
-            if (response.status === 404) {
-              console.log('[ThankYouScreenAPI] No se encontró configuración de ThankYouScreen para esta investigación - esto es normal para nuevas investigaciones');
-              localStorage.setItem(cacheKey, 'nonexistent');
-              
-              return { 
-                notFound: true, 
-                data: null,
-                ok: false,
-                status: 404,
-                statusText: 'Not Found',
-                json: () => Promise.resolve({ data: null }),
-                text: () => Promise.resolve('')
-              };
-            }
-            
-            // Para otros errores, procesamos normalmente
-            return handleThankYouScreenResponse(response);
-          } catch (fetchError) {
-            // En caso de error de red, asumimos que es un problema temporal
-            console.log('[ThankYouScreenAPI] Error de red:', fetchError);
-            throw fetchError;
-          }
+          return handleThankYouScreenResponse(response);
         } catch (error) {
           console.log('[ThankYouScreenAPI] Error al obtener ThankYouScreen por researchId:', error);
           throw error;

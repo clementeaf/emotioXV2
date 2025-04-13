@@ -172,34 +172,137 @@ export const useWelcomeScreenForm = (
         return;
       }
 
-      setIsSaving(true);
-      console.log('💾 Guardando welcomeScreen...');
-      console.log('Estado actual:', existingScreen ? 'Actualizando existente' : 'Creando nuevo');
+      // Preparar datos para enviar
+      const dataToSave = {
+        ...formData,
+        researchId,
+        metadata: {
+          version: '1.0.0',
+          updatedAt: new Date().toISOString()
+        }
+      };
 
-      let savedData;
-      if (existingScreen) {
-        console.log('📝 PUT - Actualizando welcomeScreen existente');
-        savedData = await welcomeScreenService.update(researchId, formData);
-        toast.success('WelcomeScreen actualizado correctamente');
-      } else {
-        console.log('✨ POST - Creando nuevo welcomeScreen');
-        savedData = await welcomeScreenService.create(formData);
-        toast.success('WelcomeScreen creado correctamente');
-      }
+      // Crear modal de confirmación con DOM nativo
+      const confirmModalContainer = document.createElement('div');
+      confirmModalContainer.innerHTML = `
+        <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-auto p-6 relative">
+            <button id="closeConfirmModal" style="background: none; border: none; cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; color: #6b7280; border-radius: 50%; transition: all 0.2s; position: absolute; right: 16px; top: 16px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+            
+            <div class="mb-5">
+              <h3 class="text-lg font-bold text-gray-900 mb-2">Confirmar Acción</h3>
+              <p class="text-gray-600">¿Estás seguro que deseas guardar esta pantalla de bienvenida?</p>
+            </div>
+            
+            <div class="text-left mb-6">
+              <p class="text-sm font-medium text-gray-700 mb-2">Resumen de la configuración:</p>
+              <ul class="pl-5 space-y-1 text-sm text-gray-600 list-disc">
+                <li><span class="font-medium">Título:</span> ${dataToSave.title}</li>
+                <li><span class="font-medium">Estado:</span> ${dataToSave.isEnabled ? 'Habilitada' : 'Deshabilitada'}</li>
+                <li><span class="font-medium">Mensaje:</span> ${dataToSave.message}</li>
+                <li><span class="font-medium">Texto del botón:</span> ${dataToSave.startButtonText}</li>
+              </ul>
+            </div>
+            
+            <div class="flex gap-3 justify-end">
+              <button id="cancelSaveButton" class="px-4 py-2 border rounded-md text-gray-600 bg-white hover:bg-gray-50 transition-colors duration-200">
+                Cancelar
+              </button>
+              <button id="confirmSaveButton" class="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-200">
+                ${existingScreen ? 'Actualizar' : 'Guardar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
 
-      setExistingScreen(adaptRecordToFormData(savedData));
-      setFormData(adaptRecordToFormData(savedData));
-      
-    } catch (error: any) {
-      console.error('❌ Error al guardar:', error);
-      toast.error(error.message || 'Error al guardar los cambios');
-      setModalError({
-        title: 'Error al guardar',
-        message: error.message || 'Ocurrió un error al guardar los cambios',
-        type: 'error'
+      // Añadir estilos al modal
+      const style = document.createElement('style');
+      style.innerHTML = `
+        #closeConfirmModal:hover {
+          background-color: rgba(0, 0, 0, 0.05);
+        }
+      `;
+      confirmModalContainer.appendChild(style);
+
+      // Añadir el modal al DOM
+      document.body.appendChild(confirmModalContainer);
+
+      // Evento para cerrar el modal
+      document.getElementById('closeConfirmModal')?.addEventListener('click', () => {
+        document.body.removeChild(confirmModalContainer);
       });
-    } finally {
-      setIsSaving(false);
+
+      // Evento para cancelar
+      document.getElementById('cancelSaveButton')?.addEventListener('click', () => {
+        document.body.removeChild(confirmModalContainer);
+      });
+
+      // Evento para confirmar y guardar
+      document.getElementById('confirmSaveButton')?.addEventListener('click', async () => {
+        document.body.removeChild(confirmModalContainer);
+        
+        // Mostrar indicador de carga
+        const loadingToastId = toast.loading('Guardando pantalla de bienvenida...', {
+          duration: Infinity,
+          style: {
+            background: '#F0F9FF',
+            color: '#0C4A6E',
+            padding: '16px',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+          },
+          icon: '⏳'
+        });
+
+        try {
+          setIsSaving(true);
+          console.log('💾 Guardando welcomeScreen...');
+          console.log('Estado actual:', existingScreen ? 'Actualizando existente' : 'Creando nuevo');
+
+          let savedData;
+          if (existingScreen) {
+            console.log('📝 PUT - Actualizando welcomeScreen existente');
+            savedData = await welcomeScreenService.update(researchId, formData);
+            toast.success('WelcomeScreen actualizado correctamente', { id: loadingToastId });
+          } else {
+            console.log('✨ POST - Creando nuevo welcomeScreen');
+            savedData = await welcomeScreenService.create(formData);
+            toast.success('WelcomeScreen creado correctamente', { id: loadingToastId });
+          }
+
+          setExistingScreen(adaptRecordToFormData(savedData));
+          setFormData(adaptRecordToFormData(savedData));
+          
+        } catch (error: unknown) {
+          console.error('❌ Error al guardar:', error);
+          const errorMessage = error instanceof Error ? error.message : 'Error al guardar los cambios';
+          toast.error(errorMessage, { id: loadingToastId });
+          setModalError({
+            title: 'Error al guardar',
+            message: errorMessage,
+            type: 'error'
+          });
+        } finally {
+          setIsSaving(false);
+        }
+      });
+      
+      // Cerrar modal al hacer clic fuera
+      confirmModalContainer.addEventListener('click', (e) => {
+        if (e.target === confirmModalContainer.firstChild) {
+          document.body.removeChild(confirmModalContainer);
+        }
+      });
+
+    } catch (error: unknown) {
+      console.error('Error al preparar guardado:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error al preparar la pantalla de bienvenida para guardar';
+      toast.error(errorMessage);
     }
   }, [researchId, formData, existingScreen, validateForm]);
 

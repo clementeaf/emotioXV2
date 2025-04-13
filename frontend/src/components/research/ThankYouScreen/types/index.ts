@@ -38,6 +38,7 @@ export interface ThankYouScreenHeaderProps {
 export interface ThankYouScreenFooterProps {
   isSaving: boolean;
   isLoading: boolean;
+  isEnabled: boolean;
   thankYouScreenId: string | null;
   onSave: () => void;
   onPreview: () => void;

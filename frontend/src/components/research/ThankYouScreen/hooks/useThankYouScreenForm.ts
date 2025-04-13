@@ -6,7 +6,6 @@ import {
   ThankYouScreenConfig,
   ValidationErrors,
   ErrorModalData,
-  DEFAULT_THANK_YOU_SCREEN_CONFIG,
   DEFAULT_THANK_YOU_SCREEN_VALIDATION,
   UseThankYouScreenFormResult
 } from '../types';
@@ -24,8 +23,14 @@ import { useAuth } from '@/providers/AuthProvider';
 export const useThankYouScreenForm = (researchId: string): UseThankYouScreenFormResult => {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState<ThankYouScreenFormData>({
-    ...DEFAULT_THANK_YOU_SCREEN_CONFIG,
-    researchId
+    isEnabled: false,
+    title: '',
+    message: '',
+    redirectUrl: '',
+    researchId,
+    metadata: {
+      version: '1.0.0'
+    }
   });
   const [thankYouScreenId, setThankYouScreenId] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
@@ -61,7 +66,6 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
   useEffect(() => {
     if (existingScreen?.data) {
       setFormData({
-        ...DEFAULT_THANK_YOU_SCREEN_CONFIG,
         ...existingScreen.data,
         researchId
       });

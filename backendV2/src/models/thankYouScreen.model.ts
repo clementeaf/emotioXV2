@@ -5,10 +5,9 @@ import {
   ThankYouScreenConfig,
   ThankYouScreenModel as SharedThankYouScreenModel,
   ThankYouScreenFormData,
-  ThankYouScreenResponse,
   DEFAULT_THANK_YOU_SCREEN_CONFIG,
   DEFAULT_THANK_YOU_SCREEN_VALIDATION
-} from 'shared/interfaces/thank-you-screen.interface';
+} from '../../../shared/interfaces/thank-you-screen.interface';
 
 /**
  * Interfaz para el modelo DynamoDB de una pantalla de agradecimiento
@@ -36,8 +35,7 @@ export interface ThankYouScreenDynamoItem {
 export type {
   ThankYouScreenConfig,
   SharedThankYouScreenModel as ThankYouScreenRecord,
-  ThankYouScreenFormData,
-  ThankYouScreenResponse
+  ThankYouScreenFormData
 };
 
 // Re-exportamos las constantes compartidas
@@ -78,19 +76,19 @@ export class ThankYouScreenModel {
    * @param researchId ID de la investigación asociada
    * @returns La configuración creada con su ID generado
    */
-  async create(data: ThankYouScreenFormData, researchId: string): Promise<ThankYouScreenRecord> {
+  async create(data: ThankYouScreenFormData, researchId: string): Promise<SharedThankYouScreenModel> {
     // Generar ID único para la pantalla de agradecimiento
     const screenId = uuidv4();
     
     // Fecha actual para created/updated
     const now = new Date().toISOString();
     
-    // Combinar con valores por defecto
+    // Usar los datos tal como vienen, sin valores predeterminados
     const config: ThankYouScreenConfig = {
-      isEnabled: data.isEnabled ?? DEFAULT_THANK_YOU_SCREEN_CONFIG.isEnabled,
-      title: data.title || DEFAULT_THANK_YOU_SCREEN_CONFIG.title,
-      message: data.message || DEFAULT_THANK_YOU_SCREEN_CONFIG.message,
-      redirectUrl: data.redirectUrl || DEFAULT_THANK_YOU_SCREEN_CONFIG.redirectUrl,
+      isEnabled: data.isEnabled,
+      title: data.title,
+      message: data.message,
+      redirectUrl: data.redirectUrl || '',
       metadata: {
         version: '1.0.0'
       }
@@ -126,7 +124,7 @@ export class ThankYouScreenModel {
         isEnabled: config.isEnabled,
         title: config.title,
         message: config.message,
-        redirectUrl: config.redirectUrl || '',
+        redirectUrl: config.redirectUrl,
         metadata: config.metadata,
         createdAt: now,
         updatedAt: now
@@ -139,10 +137,10 @@ export class ThankYouScreenModel {
 
   /**
    * Obtiene una pantalla de agradecimiento por su ID
-   * @param id ID de la pantalla de agradecimiento
-   * @returns La pantalla de agradecimiento encontrada o null
+   * @param id ID de la pantalla
+   * @returns La pantalla de agradecimiento encontrada o null si no existe
    */
-  async getById(id: string): Promise<ThankYouScreenRecord | null> {
+  async getById(id: string): Promise<SharedThankYouScreenModel | null> {
     const params = new GetCommand({
       TableName: this.tableName,
       Key: {
@@ -179,11 +177,11 @@ export class ThankYouScreenModel {
   }
 
   /**
-   * Obtiene la pantalla de agradecimiento de una investigación específica
+   * Obtiene la pantalla de agradecimiento de una investigación
    * @param researchId ID de la investigación
-   * @returns La pantalla de agradecimiento asociada o null
+   * @returns La pantalla de agradecimiento encontrada o null si no existe
    */
-  async getByResearchId(researchId: string): Promise<ThankYouScreenRecord | null> {
+  async getByResearchId(researchId: string): Promise<SharedThankYouScreenModel | null> {
     const params = new QueryCommand({
       TableName: this.tableName,
       IndexName: 'researchId-index',
@@ -224,11 +222,11 @@ export class ThankYouScreenModel {
 
   /**
    * Actualiza una pantalla de agradecimiento existente
-   * @param id ID de la pantalla de agradecimiento
-   * @param data Datos actualizados
-   * @returns La pantalla de agradecimiento actualizada
+   * @param id ID de la pantalla
+   * @param data Datos a actualizar
+   * @returns La pantalla de agradecimiento actualizada o null si no existe
    */
-  async update(id: string, data: Partial<ThankYouScreenConfig>): Promise<ThankYouScreenRecord | null> {
+  async update(id: string, data: Partial<ThankYouScreenConfig>): Promise<SharedThankYouScreenModel | null> {
     // Primero verificamos que la pantalla exista
     const existingScreen = await this.getById(id);
     
@@ -266,7 +264,7 @@ export class ThankYouScreenModel {
     if (data.redirectUrl !== undefined) {
       updateExpression.push('#redirectUrl = :redirectUrl');
       expressionAttributeNames['#redirectUrl'] = 'redirectUrl';
-      expressionAttributeValues[':redirectUrl'] = data.redirectUrl || '';
+      expressionAttributeValues[':redirectUrl'] = data.redirectUrl ?? '';
     }
 
     // Siempre actualizamos la fecha de última modificación
@@ -347,7 +345,7 @@ export class ThankYouScreenModel {
    * Obtiene todas las pantallas de agradecimiento
    * @returns Array con todas las pantallas de agradecimiento
    */
-  async getAll(): Promise<ThankYouScreenRecord[]> {
+  async getAll(): Promise<SharedThankYouScreenModel[]> {
     try {
       // Usar el cliente de AWS SDK v3 para consultar
       const result = await this.dynamoClient.send(new QueryCommand({

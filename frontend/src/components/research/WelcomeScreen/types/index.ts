@@ -113,10 +113,9 @@ export interface JsonPreviewModalProps {
  * Props para el componente de modal de error
  */
 export interface ErrorModalProps {
-  title: string;
-  message: string;
-  type: 'error' | 'warning' | 'info' | 'success';
+  isOpen: boolean;
   onClose: () => void;
+  error: ErrorModalData | null;
 }
 
 /**

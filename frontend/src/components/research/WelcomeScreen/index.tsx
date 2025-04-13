@@ -78,10 +78,9 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
 
       {modalError && (
         <ErrorModal
-          title={modalError.title}
-          message={modalError.message}
-          type={modalError.type}
+          isOpen={true}
           onClose={closeErrorModal}
+          error={modalError}
         />
       )}
 
