@@ -11,7 +11,8 @@ export const WelcomeScreenFooter: React.FC<WelcomeScreenFooterProps> = ({
   welcomeScreenId,
   isEnabled,
   onSave,
-  onPreview
+  onPreview,
+  buttonText
 }) => {
   // Determinando el texto adecuado para el botón de guardar
   const getSaveButtonText = () => {
@@ -45,11 +46,23 @@ export const WelcomeScreenFooter: React.FC<WelcomeScreenFooterProps> = ({
         type="button"
         onClick={onSave}
         disabled={isLoading || isSaving}
-        className={`px-4 py-2 text-sm font-medium rounded-md bg-blue-600 text-white 
-          hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-          ${(isLoading || isSaving) ? 'opacity-50 cursor-not-allowed' : ''}`}
+        className={`
+          px-6 py-2 text-sm font-medium rounded-md
+          bg-blue-600 text-white
+          hover:bg-blue-700 
+          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+          disabled:opacity-50 disabled:cursor-not-allowed
+          flex items-center justify-center min-w-[120px]
+        `}
       >
-        {getSaveButtonText()}
+        {isSaving ? (
+          <div className="flex items-center gap-2">
+            <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+            <span>{buttonText || getSaveButtonText()}</span>
+          </div>
+        ) : (
+          buttonText || getSaveButtonText()
+        )}
       </button>
     </div>
   );

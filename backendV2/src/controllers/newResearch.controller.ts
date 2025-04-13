@@ -1,8 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { NewResearch } from '../models/newResearch.model';
 import { newResearchService, ResearchError } from '../services/newResearch.service';
-import { welcomeScreenService } from '../services/welcomeScreen.service';
-import { DEFAULT_WELCOME_SCREEN_CONFIG } from '../models/welcomeScreen.model';
 import { 
   createResponse, 
   errorResponse
@@ -53,22 +51,8 @@ export class NewResearchController {
 
       // Verificar que la investigación se creó correctamente y tiene un ID
       if (newResearch && newResearch.id) {
-        try {
-          console.log('Intentando crear pantalla de bienvenida predeterminada...');
-          // Crear automáticamente una pantalla de bienvenida, pero desactivada por defecto
-          // El usuario podrá activarla mediante el switch en el frontend si lo desea
-          await welcomeScreenService.create({
-            isEnabled: false, // Por defecto desactivada
-            title: DEFAULT_WELCOME_SCREEN_CONFIG.title,
-            message: DEFAULT_WELCOME_SCREEN_CONFIG.message,
-            startButtonText: DEFAULT_WELCOME_SCREEN_CONFIG.startButtonText
-          }, newResearch.id, userId);
-          
-          console.log(`Pantalla de bienvenida creada (desactivada) para la investigación ${newResearch.id}`);
-        } catch (welcomeScreenError) {
-          // Si hay un error al crear la pantalla de bienvenida, lo registramos pero no interrumpimos el flujo
-          console.error('Error al crear la pantalla de bienvenida predeterminada:', welcomeScreenError);
-        }
+        // La pantalla de bienvenida se creará solo cuando el usuario la configure explícitamente
+        console.log(`Nueva investigación creada con ID: ${newResearch.id}`);
       }
 
       return createResponse(201, {

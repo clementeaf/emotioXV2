@@ -17,10 +17,18 @@ export const DEFAULT_WELCOME_SCREEN_CONFIG = {
  */
 export interface WelcomeScreenData {
   id?: string;
+  researchId: string;
   isEnabled: boolean;
   title: string;
   message: string;
   startButtonText: string;
+  metadata?: {
+    version?: string;
+    lastUpdated?: string;
+    lastModifiedBy?: string;
+  };
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 /**
@@ -63,8 +71,8 @@ export interface WelcomeScreenHeaderProps {
  */
 export interface WelcomeScreenToggleProps {
   isEnabled: boolean;
-  onChange: (checked: boolean) => void;
-  disabled: boolean;
+  onChange: (enabled: boolean) => void;
+  disabled?: boolean;
 }
 
 /**
@@ -74,28 +82,26 @@ export interface WelcomeScreenFieldsProps {
   formData: WelcomeScreenData;
   onChange: (field: keyof WelcomeScreenData, value: any) => void;
   validationErrors: {[key: string]: string};
-  disabled: boolean;
+  disabled?: boolean;
 }
 
 /**
  * Props para el pie de página
  */
 export interface WelcomeScreenFooterProps {
-  isSaving: boolean;
-  isLoading: boolean;
-  welcomeScreenId: string | null;
-  isEnabled: boolean;
   onSave: () => void;
-  onPreview: () => void;
+  isSaving: boolean;
+  buttonText: string;
 }
 
 /**
  * Props para el componente de modal
  */
 export interface ErrorModalProps {
-  isOpen: boolean;
+  title: string;
+  message: string | React.ReactNode;
+  type: 'error' | 'info' | 'success';
   onClose: () => void;
-  error: ErrorModalData | null;
 }
 
 /**

@@ -153,6 +153,12 @@ export class WelcomeScreenModel {
    * @returns La configuración creada con su ID generado
    */
   async create(data: WelcomeScreenFormData, researchId: string): Promise<WelcomeScreenRecord> {
+    // Primero verificamos si ya existe una pantalla de bienvenida para este researchId
+    const existingScreen = await this.getByResearchId(researchId);
+    if (existingScreen) {
+      throw new Error('Ya existe una pantalla de bienvenida para esta investigación');
+    }
+
     // Generar ID único para la pantalla de bienvenida
     const screenId = uuidv4();
     
@@ -265,8 +271,10 @@ export class WelcomeScreenModel {
       TableName: this.tableName,
       IndexName: 'researchId-index',
       KeyConditionExpression: 'researchId = :researchId',
+      FilterExpression: 'begins_with(sk, :prefix)',
       ExpressionAttributeValues: {
-        ':researchId': researchId
+        ':researchId': researchId,
+        ':prefix': 'WELCOME_SCREEN#'
       }
     });
 
@@ -305,78 +313,65 @@ export class WelcomeScreenModel {
    * @returns La pantalla de bienvenida actualizada
    */
   async update(id: string, data: Partial<WelcomeScreenFormData>): Promise<WelcomeScreenRecord> {
-    try {
-      // Verificar que la pantalla existe
-      const existing = await this.getById(id);
-      if (!existing) {
-        throw new Error('Pantalla de bienvenida no encontrada');
-      }
+    // Obtener la pantalla existente
+    const existingScreen = await this.getById(id);
+    if (!existingScreen) {
+      throw new Error('No se encontró la pantalla de bienvenida para actualizar');
+    }
 
-      // Fecha actual para updated
-      const now = new Date().toISOString();
-      
-      // Preparar expresiones para actualización
-      let updateExpression = 'set updatedAt = :updatedAt';
-      const expressionAttributeValues: Record<string, any> = {
-        ':updatedAt': now
-      };
-      
-      // Actualizar metadata
-      const updatedMetadata = {
-        ...existing.metadata,
+    const now = new Date().toISOString();
+    const currentVersion = existingScreen.metadata?.version || '1.0';
+
+    // Combinar datos existentes con actualizaciones
+    const updatedConfig: WelcomeScreenConfig = {
+      isEnabled: data.isEnabled ?? existingScreen.isEnabled,
+      title: data.title || existingScreen.title,
+      message: data.message || existingScreen.message,
+      startButtonText: data.startButtonText || existingScreen.startButtonText,
+      metadata: {
+        ...(existingScreen.metadata || {}),
         lastUpdated: new Date(),
-      };
-      updateExpression += ', metadata = :metadata';
-      expressionAttributeValues[':metadata'] = JSON.stringify(updatedMetadata);
-      
-      // Añadir solo los campos que vienen en data
-      if (data.isEnabled !== undefined) {
-        updateExpression += ', isEnabled = :isEnabled';
-        expressionAttributeValues[':isEnabled'] = data.isEnabled;
+        version: (parseFloat(currentVersion) + 0.1).toFixed(1)
       }
-      
-      if (data.title !== undefined) {
-        updateExpression += ', title = :title';
-        expressionAttributeValues[':title'] = data.title;
-      }
-      
-      if (data.message !== undefined) {
-        updateExpression += ', message = :message';
-        expressionAttributeValues[':message'] = data.message;
-      }
-      
-      if (data.startButtonText !== undefined) {
-        updateExpression += ', startButtonText = :startButtonText';
-        expressionAttributeValues[':startButtonText'] = data.startButtonText;
-      }
-      
-      // Parámetros para la actualización
-      const command = new UpdateCommand({
-        TableName: this.tableName,
-        Key: {
-          id,
-          sk: `WELCOME_SCREEN#${id}`
-        },
-        UpdateExpression: updateExpression,
-        ExpressionAttributeValues: expressionAttributeValues,
-        ReturnValues: 'ALL_NEW'
-      });
-      
-      // Ejecutar actualización
+    };
+
+    // Preparar el objeto para actualización en DynamoDB
+    const updateExpression = 'SET isEnabled = :isEnabled, title = :title, message = :message, ' +
+      'startButtonText = :startButtonText, metadata = :metadata, updatedAt = :updatedAt';
+
+    const command = new UpdateCommand({
+      TableName: this.tableName,
+      Key: {
+        id: id,
+        sk: `WELCOME_SCREEN#${id}`
+      },
+      UpdateExpression: updateExpression,
+      ExpressionAttributeValues: {
+        ':isEnabled': updatedConfig.isEnabled,
+        ':title': updatedConfig.title,
+        ':message': updatedConfig.message,
+        ':startButtonText': updatedConfig.startButtonText,
+        ':metadata': JSON.stringify(updatedConfig.metadata),
+        ':updatedAt': now
+      },
+      ReturnValues: 'ALL_NEW'
+    });
+
+    try {
       const result = await this.docClient.send(command);
-      
-      // Convertir resultado a formato de interfaz
-      const updated = result.Attributes as WelcomeScreenDynamoItem;
+      const updatedItem = result.Attributes as WelcomeScreenDynamoItem;
+
+      // Devolver el objeto actualizado
       return {
-        id: updated.id,
-        researchId: updated.researchId,
-        isEnabled: updated.isEnabled,
-        title: updated.title,
-        message: updated.message,
-        startButtonText: updated.startButtonText,
-        metadata: JSON.parse(updated.metadata),
-        createdAt: new Date(updated.createdAt),
-        updatedAt: new Date(updated.updatedAt)
+        id: updatedItem.id,
+        researchId: updatedItem.researchId,
+        isEnabled: updatedItem.isEnabled,
+        title: updatedItem.title,
+        message: updatedItem.message,
+        startButtonText: updatedItem.startButtonText,
+        metadata: JSON.parse(updatedItem.metadata),
+        createdAt: new Date(updatedItem.createdAt),
+        updatedAt: new Date(updatedItem.updatedAt)
       };
     } catch (error) {
       console.error('Error al actualizar pantalla de bienvenida:', error);

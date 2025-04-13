@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { ChevronRight } from 'lucide-react';
-import fondoImage from '../assets/fondo.png';
 import { 
   CSATView, 
   DifficultyScaleView,
@@ -12,53 +11,7 @@ import {
 import { CognitiveTaskView } from '../components/cognitiveTask';
 import { ParticipantLogin } from '../components/auth/ParticipantLogin';
 import { Participant } from '../../../shared/interfaces/participant';
-
-// Componente para la pantalla de bienvenida inicial actualizada (pantalla completa)
-const WelcomeScreen = ({ onStart }: { onStart: () => void }) => {
-  return (
-    <div className="flex w-full h-full">
-      {/* Lado izquierdo - Pantalla de bienvenida */}
-      <div className="w-1/2 bg-white flex flex-col justify-center p-12">
-        <h1 className="text-3xl font-bold text-neutral-900 mb-4">Hello! You has been invited</h1>
-        
-        <p className="text-neutral-600 mb-8 leading-relaxed">
-          You have been invited to participate in a survey to improve the future experience of our customers, 
-          so we need your help to make this the best experience possible.
-        </p>
-        
-        <button
-          className="bg-[#121829] hover:bg-[#1e293e] text-white font-medium py-3 px-10 rounded-lg w-fit transition-colors shadow-sm"
-          onClick={onStart}
-        >
-          Start
-        </button>
-      </div>
-
-      {/* Lado derecho - Vista previa con imagen de fondo */}
-      <div className="w-1/2 relative">
-        {/* Imagen de fondo */}
-        <div className="absolute inset-0">
-          <img 
-            src={fondoImage} 
-            alt="Elegant background" 
-            className="w-full h-full object-cover"
-          />
-          {/* Overlay sutil para mejorar la visibilidad */}
-          <div className="absolute inset-0 bg-black opacity-20"></div>
-        </div>
-
-        {/* Footer derecho */}
-        <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-neutral-200 py-1.5 px-6 text-xs text-neutral-500 flex justify-end backdrop-blur-sm bg-white/90">
-          <div className="flex gap-6">
-            <a href="#" className="text-neutral-700 hover:text-neutral-900 transition-colors">Terms & Conditions</a>
-            <a href="#" className="text-neutral-700 hover:text-neutral-900 transition-colors">Privacy Policy</a>
-            <a href="#" className="text-neutral-700 hover:text-neutral-900 transition-colors">CA Privacy Notice</a>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+import { WelcomeScreen } from '../components/research/WelcomeScreen/WelcomeScreen';
 
 // Componente para la pantalla de Screener (ejemplo)
 const ScreenerView = () => {
@@ -108,6 +61,7 @@ const MainView = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentScreen, setCurrentScreen] = useState<ScreenType>('login');
   const [participant, setParticipant] = useState<Participant | null>(null);
+  const [researchId, setResearchId] = useState<string>("1"); // ID por defecto para la investigación
   
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -203,7 +157,16 @@ const MainView = () => {
       case 'login':
         return <ParticipantLogin onLogin={handleParticipantLogin} />;
       case 'welcome':
-        return <WelcomeScreen onStart={handleStartClick} />;
+        return (
+          <WelcomeScreen 
+            onStart={handleStartClick}
+            researchId={researchId}
+            onError={(error) => {
+              console.error('Error en WelcomeScreen:', error);
+              // Aquí podrías manejar el error, por ejemplo mostrando una notificación
+            }}
+          />
+        );
       case 'csat':
         return <CSATView onNext={handleCSATNext} />;
       case 'difficulty-scale':
@@ -230,23 +193,23 @@ const MainView = () => {
   };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-neutral-50">
+    <div className="flex h-screen w-screen overflow-hidden bg-white">
       {/* Banner - solo mostrar si hay participante */}
       {participant && (
-        <div className="fixed top-0 left-0 w-full bg-[#121829] z-50 shadow-md">
+        <div className="fixed top-0 left-0 w-full bg-white border-b z-50">
           <div className="flex w-full max-w-screen-xl mx-auto">
             <div className="w-full py-4 px-6 flex items-center justify-between relative">
               <div className="flex items-center">
-                <span className="bg-yellow-400 text-black rounded-full w-6 h-6 flex items-center justify-center mr-2 shadow-sm">😀</span>
-                <span className="font-medium text-white text-lg">EmotioX</span>
+                <img src="/emotio-logo.png" alt="EmotioX" className="h-6 w-6 mr-2" />
+                <span className="font-medium text-neutral-900 text-lg">EmotioX</span>
               </div>
-              <div className="flex-1 text-center text-white text-sm mx-4">
+              <div className="flex-1 text-center text-neutral-600 text-sm mx-4">
                 This is a preview. Your response will not be saved.
               </div>
               <div className="relative">
                 <button 
                   ref={buttonRef}
-                  className="bg-[#1e293e] hover:bg-[#29344f] text-white px-4 py-2 rounded-lg flex items-center text-sm mr-4 transition-colors shadow-sm"
+                  className="bg-neutral-100 hover:bg-neutral-200 text-neutral-900 px-4 py-2 rounded-lg flex items-center text-sm mr-4 transition-colors"
                   onClick={toggleMenu}
                 >
                   Jump to section <ChevronRight size={16} className="ml-2" />
@@ -255,13 +218,13 @@ const MainView = () => {
                 {isMenuOpen && (
                   <div 
                     ref={menuRef}
-                    className="absolute left-0 top-[53px] w-[180px] bg-white border border-neutral-100 shadow-xl rounded-xl overflow-hidden z-10"
+                    className="absolute right-0 top-[53px] w-[180px] bg-white border border-neutral-100 shadow-xl rounded-xl overflow-hidden z-10"
                   >
                     <ul>
                       {menuOptions.map((option) => (
                         <li 
                           key={option.id}
-                          className="px-5 py-3 hover:bg-neutral-100 cursor-pointer text-sm font-medium"
+                          className="px-5 py-3 hover:bg-neutral-50 cursor-pointer text-sm font-medium text-neutral-900"
                           onClick={() => handleMenuSelect(option.id as ScreenType)}
                         >
                           {option.label}

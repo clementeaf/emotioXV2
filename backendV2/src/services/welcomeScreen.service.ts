@@ -152,7 +152,7 @@ export class WelcomeScreenService {
    * @param researchId ID de la investigación
    * @returns La pantalla de bienvenida encontrada
    */
-  async getByResearchId(researchId: string): Promise<WelcomeScreenRecord> {
+  async getByResearchId(researchId: string): Promise<WelcomeScreenRecord | null> {
     try {
       // Validar que existe researchId
       if (!researchId) {
@@ -165,16 +165,8 @@ export class WelcomeScreenService {
       const welcomeScreen = await welcomeScreenModel.getByResearchId(researchId);
       
       if (!welcomeScreen) {
-        // Si no existe, crear una por defecto
-        const defaultData: WelcomeScreenFormData = {
-          isEnabled: DEFAULT_WELCOME_SCREEN_CONFIG.isEnabled,
-          title: DEFAULT_WELCOME_SCREEN_CONFIG.title,
-          message: DEFAULT_WELCOME_SCREEN_CONFIG.message,
-          startButtonText: DEFAULT_WELCOME_SCREEN_CONFIG.startButtonText
-        };
-        
-        // Crear pantalla por defecto y retornarla
-        return await welcomeScreenModel.create(defaultData, researchId);
+        // Si no existe, retornamos null
+        return null;
       }
 
       return welcomeScreen;
