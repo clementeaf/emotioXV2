@@ -1,9 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { useAuth } from '../../../../providers/AuthProvider';
 import { welcomeScreenService } from '../../../../services/welcomeScreen.service';
-import { WelcomeScreenData, ErrorModalData } from '../types';
+import { 
+  WelcomeScreenData, 
+  ErrorModalData,
+  UseWelcomeScreenFormResult
+} from '../types';
 
 // Definiciones de tipo necesarias
 interface WelcomeScreenResponse {
@@ -13,41 +16,12 @@ interface WelcomeScreenResponse {
   unauthorized?: boolean;
 }
 
-interface UseWelcomeScreenFormResult {
-  formData: WelcomeScreenData;
-  welcomeScreenId: string | null;
-  realWelcomeScreenId: string | null;
-  validationErrors: { [key: string]: string };
-  isLoading: boolean;
-  isSaving: boolean;
-  modalError: ErrorModalData | null;
-  modalVisible: boolean;
-  handleChange: (field: keyof WelcomeScreenData, value: any) => void;
-  handleSave: () => void;
-  handlePreview: () => void;
-  validateForm: () => boolean;
-  closeModal: () => void;
-  showJsonPreview: boolean;
-  closeJsonModal: () => void;
-  jsonToSend: string;
-  pendingAction: 'save' | 'preview' | null;
-  generateHtmlPreview: () => void;
-  isExisting: boolean;
-  closeErrorModal: () => void;
-  continueWithAction: () => void;
-}
-
-// Constantes simuladas
-const DEFAULT_WELCOME_SCREEN_CONFIG: WelcomeScreenData = {
+// Constantes
+const DEFAULT_WELCOME_SCREEN_CONFIG: Partial<WelcomeScreenData> = {
   isEnabled: true,
   title: '',
   message: '',
-  startButtonText: '',
-  researchId: ''
-};
-
-const QUERY_KEYS = {
-  WELCOME_SCREEN: 'welcomeScreen'
+  startButtonText: 'Start Research'
 };
 
 const ERROR_MESSAGES = {
@@ -61,6 +35,38 @@ const ERROR_MESSAGES = {
 // Definición de tipo para función onSuccess
 type SuccessCallback = (data: any) => void;
 
+// Función auxiliar para convertir datos del backend al formato del estado local
+const adaptRecordToFormData = (record: any): WelcomeScreenData => {
+  if (!record) {
+    return {
+      isEnabled: true,
+      title: '',
+      message: '',
+      startButtonText: 'Start Research',
+      researchId: ''
+    };
+  }
+  
+  return {
+    id: record.id,
+    researchId: record.researchId,
+    isEnabled: record.isEnabled,
+    title: record.title,
+    message: record.message,
+    startButtonText: record.startButtonText,
+    createdAt: record.createdAt,
+    updatedAt: record.updatedAt,
+    // Convertir metadata si existe
+    metadata: record.metadata ? {
+      version: record.metadata.version,
+      lastUpdated: record.metadata.lastUpdated instanceof Date 
+        ? record.metadata.lastUpdated.toISOString() 
+        : record.metadata.lastUpdated,
+      lastModifiedBy: record.metadata.lastModifiedBy
+    } : undefined
+  };
+};
+
 /**
  * Hook personalizado para gestionar la lógica del formulario de pantalla de bienvenida
  */
@@ -68,13 +74,13 @@ export const useWelcomeScreenForm = (
   researchId: string, 
   onSuccess?: SuccessCallback
 ): UseWelcomeScreenFormResult => {
-  const queryClient = useQueryClient();
-  const [formData, setFormData] = useState<WelcomeScreenData>({ 
-    ...DEFAULT_WELCOME_SCREEN_CONFIG,
-    researchId 
+  const [formData, setFormData] = useState<WelcomeScreenData>({
+    isEnabled: DEFAULT_WELCOME_SCREEN_CONFIG.isEnabled || true,
+    title: DEFAULT_WELCOME_SCREEN_CONFIG.title || '',
+    message: DEFAULT_WELCOME_SCREEN_CONFIG.message || '',
+    startButtonText: DEFAULT_WELCOME_SCREEN_CONFIG.startButtonText || 'Start Research',
+    researchId
   });
-  const [welcomeScreenId, setWelcomeScreenId] = useState<string | null>(null);
-  const [realWelcomeScreenId, setRealWelcomeScreenId] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
   const [modalError, setModalError] = useState<ErrorModalData | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
@@ -87,10 +93,6 @@ export const useWelcomeScreenForm = (
 
   // Handlers para el modal
   const closeModal = useCallback(() => setModalVisible(false), []);
-  const showModal = useCallback((errorData: ErrorModalData) => {
-    setModalError(errorData);
-    setModalVisible(true);
-  }, []);
 
   // Función para cerrar el modal JSON
   const closeJsonModal = useCallback(() => {
@@ -123,12 +125,18 @@ export const useWelcomeScreenForm = (
     if (!isLoadingData) {
       if (welcomeScreenData) {
         console.log('✅ WelcomeScreen encontrado, inicializando formulario con datos existentes');
-        setExistingScreen(welcomeScreenData);
-        setFormData(welcomeScreenData);
+        setExistingScreen(adaptRecordToFormData(welcomeScreenData));
+        setFormData(adaptRecordToFormData(welcomeScreenData));
       } else {
         console.log('ℹ️ No se encontró WelcomeScreen, usando configuración por defecto');
         setExistingScreen(null);
-        setFormData({ ...DEFAULT_WELCOME_SCREEN_CONFIG, researchId });
+        setFormData({ 
+          isEnabled: DEFAULT_WELCOME_SCREEN_CONFIG.isEnabled || true,
+          title: DEFAULT_WELCOME_SCREEN_CONFIG.title || '',
+          message: DEFAULT_WELCOME_SCREEN_CONFIG.message || '',
+          startButtonText: DEFAULT_WELCOME_SCREEN_CONFIG.startButtonText || 'Start Research',
+          researchId 
+        });
       }
       setIsLoading(false);
     }
@@ -179,8 +187,8 @@ export const useWelcomeScreenForm = (
         toast.success('WelcomeScreen creado correctamente');
       }
 
-      setExistingScreen(savedData);
-      setFormData(savedData);
+      setExistingScreen(adaptRecordToFormData(savedData));
+      setFormData(adaptRecordToFormData(savedData));
       
     } catch (error: any) {
       console.error('❌ Error al guardar:', error);
@@ -198,54 +206,60 @@ export const useWelcomeScreenForm = (
   // Manejar previsualización del formulario
   const handlePreview = useCallback(() => {
     if (!validateForm()) {
-      // Mostrar mensaje de error
-      toast.error('Por favor, corrija los errores antes de previsualizar');
+      toast.error('Por favor, corrija los errores en el formulario');
       return;
     }
 
-    // Crear objeto con los datos para previsualizar
-    const dataToPreview = {
-      ...formData,
-      metadata: {
-        version: '1.0.0',
-        updatedAt: new Date().toISOString()
-      }
-    };
-
-    // Mostrar modal con JSON directamente (sin pasar por "showJsonModal")
-    // para que funcione igual que en CognitiveTasks
-    try {
-      const stringifiedJson = JSON.stringify(dataToPreview, null, 2);
-      setJsonToSend(stringifiedJson);
-      setPendingAction('preview');
-      setShowJsonPreview(true);
-      
-      console.log('[useWelcomeScreenForm] Mostrando modal JSON para vista previa');
-      console.log('[useWelcomeScreenForm] JSON para vista previa:', stringifiedJson);
-    } catch (error) {
-      console.error('[useWelcomeScreenForm] Error al procesar JSON para vista previa:', error);
-      toast.error('Error al procesar los datos para vista previa');
-    }
+    setJsonToSend(JSON.stringify(formData, null, 2));
+    setShowJsonPreview(true);
+    setPendingAction('preview');
   }, [formData, validateForm]);
 
-  // Efecto para crear el modal JSON
-  useEffect(() => {
-    // Este efecto ya no es necesario porque usamos el componente JsonPreviewModal
-    // que ya incluye toda la funcionalidad necesaria
-    return () => {};
-  }, [showJsonPreview, jsonToSend, pendingAction, closeJsonModal, validationErrors]);
-
-  // Función para la vista previa HTML
+  // Función para generar HTML preview
   const generateHtmlPreview = useCallback(() => {
-    try {
-      // Aquí se generaría el HTML real de la vista previa
-      // Por simplicidad, solo mostraremos un mensaje
-      window.open(`/preview/welcome-screen?id=${welcomeScreenId || ''}`, '_blank');
-    } catch (error) {
-      console.error('Error al generar vista previa HTML:', error);
-      toast.error('Error al generar vista previa');
-    }
-  }, [welcomeScreenId]);
+    const html = `
+      <html>
+        <head>
+          <title>Vista previa: ${formData.title}</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              max-width: 800px;
+              margin: 0 auto;
+              padding: 20px;
+              text-align: center;
+            }
+            h1 {
+              margin-bottom: 20px;
+            }
+            p {
+              margin-bottom: 30px;
+              line-height: 1.6;
+            }
+            button {
+              background-color: #4285f4;
+              color: white;
+              border: none;
+              padding: 10px 20px;
+              border-radius: 4px;
+              font-size: 16px;
+              cursor: pointer;
+            }
+          </style>
+        </head>
+        <body>
+          <h1>${formData.title}</h1>
+          <p>${formData.message}</p>
+          <button>${formData.startButtonText}</button>
+        </body>
+      </html>
+    `;
+
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+    URL.revokeObjectURL(url);
+  }, [formData]);
 
   // Verificar si existe un welcomeScreen para este researchId
   const checkExistingWelcomeScreen = useCallback(async () => {
@@ -257,8 +271,8 @@ export const useWelcomeScreenForm = (
       
       if (existing) {
         console.log('✅ WelcomeScreen encontrado:', existing);
-        setExistingScreen(existing);
-        setFormData(existing);
+        setExistingScreen(adaptRecordToFormData(existing));
+        setFormData(adaptRecordToFormData(existing));
       } else {
         console.log('ℹ️ No se encontró WelcomeScreen existente');
         setExistingScreen(null);
@@ -281,13 +295,19 @@ export const useWelcomeScreenForm = (
   };
 
   const continueWithAction = () => {
-    // Implementa la lógica para continuar con la acción
+    if (pendingAction === 'save') {
+      handleSave();
+    } else if (pendingAction === 'preview') {
+      generateHtmlPreview();
+    }
+    setShowJsonPreview(false);
+    setPendingAction(null);
   };
 
   return {
     formData,
-    welcomeScreenId,
-    realWelcomeScreenId,
+    welcomeScreenId: null,
+    realWelcomeScreenId: null,
     validationErrors,
     isLoading: isLoading || isLoadingData,
     isSaving,

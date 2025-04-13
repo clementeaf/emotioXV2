@@ -659,7 +659,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
   };
 
   return (
-    <div className={cn('max-w-3xl mx-auto h-[500px]', className)}>
+    <div className={cn('max-w-3xl mx-auto h-[520px]', className)}>
       {/* Mostrar notificación si la investigación se creó */}
       {createdResearchId && (
         <div className="mb-4 p-6 bg-white border-2 border-green-500 text-neutral-800 rounded-lg shadow-lg">
@@ -879,7 +879,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
               )}
 
               {formData.currentStep === 3 && (
-                <div className="space-y-6 h-[320px]">
+                <div className="space-y-6 h-[310px]">
                   <div>
                     <h2 className="text-xl font-medium mb-2">Techniques for Behavioural Research</h2>
                     <p className="text-neutral-500 text-sm mb-6">
@@ -947,7 +947,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
               )}
 
               {/* Form Actions */}
-              <div className="flex justify-between">
+              <div className="flex justify-between mt-4">
                 {formData.currentStep > 1 && (
                   <Button
                     type="button"

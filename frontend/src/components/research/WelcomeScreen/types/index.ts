@@ -42,12 +42,12 @@ export interface WelcomeScreenResponse {
 }
 
 /**
- * Tipo para datos de error modal
+ * Datos para el modal de error
  */
 export interface ErrorModalData {
   title: string;
-  message: string | React.ReactNode;
-  type: 'error' | 'info' | 'success';
+  message: string;
+  type: 'error' | 'warning' | 'info' | 'success';
 }
 
 /**
@@ -80,31 +80,42 @@ export interface WelcomeScreenToggleProps {
  */
 export interface WelcomeScreenFieldsProps {
   formData: WelcomeScreenData;
-  onChange: (field: keyof WelcomeScreenData, value: any) => void;
+  onChange: (field: keyof WelcomeScreenData, value: string) => void;
   validationErrors: {[key: string]: string};
   disabled?: boolean;
 }
 
 /**
- * Props para el pie de página
+ * Props para el pie del formulario
  */
 export interface WelcomeScreenFooterProps {
-  isSaving: boolean;
-  isLoading: boolean;
-  welcomeScreenId?: string;
-  isEnabled: boolean;
   onSave: () => void;
   onPreview: () => void;
-  buttonText?: string;
+  isSaving: boolean;
+  isLoading: boolean;
+  isEnabled: boolean;
+  buttonText: string;
+  welcomeScreenId?: string | null;
 }
 
 /**
- * Props para el componente de modal
+ * Props para el modal de JSON
+ */
+export interface JsonPreviewModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onContinue: () => void;
+  jsonData: string;
+  pendingAction: 'save' | 'preview' | null;
+}
+
+/**
+ * Props para el componente de modal de error
  */
 export interface ErrorModalProps {
   title: string;
-  message: string | React.ReactNode;
-  type: 'error' | 'info' | 'success';
+  message: string;
+  type: 'error' | 'warning' | 'info' | 'success';
   onClose: () => void;
 }
 
@@ -127,4 +138,10 @@ export interface UseWelcomeScreenFormResult {
   closeModal: () => void;
   showJsonPreview: boolean;
   closeJsonModal: () => void;
+  jsonToSend: string;
+  pendingAction: 'save' | 'preview' | null;
+  generateHtmlPreview: () => void;
+  isExisting: boolean;
+  closeErrorModal: () => void;
+  continueWithAction: () => void;
 } 

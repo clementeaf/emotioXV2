@@ -1,12 +1,19 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { welcomeScreenService, WelcomeScreenError } from '../services/welcomeScreen.service';
-import { WelcomeScreenFormData } from '../models/welcomeScreen.model';
+import { WelcomeScreenFormData as SharedWelcomeScreenFormData } from '../../../shared/interfaces/welcome-screen.interface';
 import { ApiError } from '../utils/errors';
 import { 
   createResponse, 
   errorResponse
 } from '../utils/controller.utils';
 import { createController, RouteMap } from '../utils/controller.decorator';
+
+/**
+ * Extendemos la interfaz compartida para agregar el campo researchId que se usa en el controlador
+ */
+interface WelcomeScreenFormData extends SharedWelcomeScreenFormData {
+  researchId?: string;
+}
 
 /**
  * Controlador para manejar las peticiones relacionadas con pantallas de bienvenida

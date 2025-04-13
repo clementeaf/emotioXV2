@@ -1,26 +1,14 @@
 import { config } from '../config/env';
-
-interface WelcomeScreenData {
-  id?: string;
-  researchId: string;
-  isEnabled: boolean;
-  title: string;
-  message: string;
-  startButtonText: string;
-  metadata?: {
-    version?: string;
-    lastUpdated?: string;
-    lastModifiedBy?: string;
-  };
-  createdAt?: string;
-  updatedAt?: string;
-}
+import { 
+  WelcomeScreenRecord, 
+  WelcomeScreenFormData 
+} from '../../../shared/interfaces/welcome-screen.interface';
 
 class WelcomeScreenService {
   private baseUrl = `${config.apiUrl}/welcome-screens`;
 
   // Obtener welcomeScreen por researchId
-  async getByResearchId(researchId: string): Promise<WelcomeScreenData | null> {
+  async getByResearchId(researchId: string): Promise<WelcomeScreenRecord | null> {
     try {
       const token = localStorage.getItem('token');
       if (!token) throw new Error('No hay token de autenticación');
@@ -49,7 +37,7 @@ class WelcomeScreenService {
   }
 
   // Crear nuevo welcomeScreen
-  async create(data: WelcomeScreenData): Promise<WelcomeScreenData> {
+  async create(data: WelcomeScreenFormData & { researchId: string }): Promise<WelcomeScreenRecord> {
     try {
       const token = localStorage.getItem('token');
       if (!token) throw new Error('No hay token de autenticación');
@@ -77,7 +65,7 @@ class WelcomeScreenService {
   }
 
   // Actualizar welcomeScreen existente
-  async update(researchId: string, data: Partial<WelcomeScreenData>): Promise<WelcomeScreenData> {
+  async update(researchId: string, data: Partial<WelcomeScreenFormData> & { id?: string }): Promise<WelcomeScreenRecord> {
     try {
       const token = localStorage.getItem('token');
       if (!token) throw new Error('No hay token de autenticación');

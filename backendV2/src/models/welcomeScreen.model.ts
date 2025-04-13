@@ -2,99 +2,12 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, UpdateCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import { uuidv4 } from '../utils/id-generator';
 import { DynamoDB } from 'aws-sdk';
-
-/**
- * Configuración de la pantalla de bienvenida
- */
-export interface WelcomeScreenConfig {
-  /**
-   * Si la pantalla de bienvenida está habilitada
-   */
-  isEnabled: boolean;
-
-  /**
-   * Título a mostrar en la pantalla de bienvenida
-   */
-  title: string;
-
-  /**
-   * Mensaje principal/descripción para mostrar a los participantes
-   */
-  message: string;
-
-  /**
-   * Texto a mostrar en el botón de inicio
-   */
-  startButtonText: string;
-
-  /**
-   * Metadatos opcionales
-   */
-  metadata?: {
-    /**
-     * Última vez que se actualizó la configuración
-     */
-    lastUpdated?: Date;
-
-    /**
-     * Versión de la configuración
-     */
-    version?: string;
-
-    /**
-     * Usuario que modificó por última vez la configuración
-     */
-    lastModifiedBy?: string;
-  };
-}
-
-/**
- * Configuración predeterminada de la pantalla de bienvenida
- */
-export const DEFAULT_WELCOME_SCREEN_CONFIG: WelcomeScreenConfig = {
-  isEnabled: false,
-  title: '',
-  message: '',
-  startButtonText: 'Iniciar Investigación',
-  metadata: {
-    version: '1.0.0'
-  }
-};
-
-/**
- * Datos del formulario de pantalla de bienvenida
- */
-export interface WelcomeScreenFormData extends Omit<WelcomeScreenConfig, 'metadata'> {
-  /**
-   * ID de la investigación asociada (opcional en el formulario, requerido para crear)
-   */
-  researchId?: string;
-}
-
-/**
- * Registro de pantalla de bienvenida
- */
-export interface WelcomeScreenRecord extends WelcomeScreenConfig {
-  /**
-   * ID de la investigación a la que pertenece esta pantalla
-   */
-  researchId: string;
-
-  /**
-   * Identificador único para la configuración de la pantalla
-   */
-  id: string;
-
-  /**
-   * Timestamp de creación del registro
-   */
-  createdAt: Date;
-
-  /**
-   * Timestamp de última actualización del registro
-   */
-  updatedAt: Date;
-}
+import { 
+  WelcomeScreenConfig, 
+  WelcomeScreenRecord, 
+  WelcomeScreenFormData,
+  DEFAULT_WELCOME_SCREEN_CONFIG 
+} from '../../../shared/interfaces/welcome-screen.interface';
 
 /**
  * Interfaz para el modelo DynamoDB de una pantalla de bienvenida

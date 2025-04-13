@@ -647,27 +647,41 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
               No hay investigaciones en curso
             </div>
           ) : recentResearch.length > 0 ? (
-            <ul className="space-y-1">
+            <ul>
               {recentResearch.slice(0, 1).map((item) => (
-                <li key={item.id} className="relative">
-                  <Link
-                    href={item.technique === 'aim-framework' 
-                      ? `/dashboard?research=${item.id}&aim=true&section=welcome-screen`
-                      : `/dashboard?research=${item.id}`
-                    }
-                    className={cn(
-                      'flex items-center py-2 px-3 rounded-lg text-sm bg-blue-50 border border-blue-100 text-blue-700 hover:bg-blue-100 transition-colors pr-8',
-                      pathname?.includes(`research=${item.id}`)
-                        ? 'bg-neutral-100 text-neutral-900 font-medium'
-                        : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
-                    )}
-                  >
-                    <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                    <span className="truncate">{item.name}</span>
-                    {item.technique === 'aim-framework' && (
-                      <span className="ml-auto text-xs text-blue-500 bg-blue-100 px-2 py-0.5 rounded-full">AIM</span>
-                    )}
-                  </Link>
+                <li key={item.id} className="flex items-center justify-start ml-5">
+                  <div className="flex items-center">
+                    <Link
+                      href={item.technique === 'aim-framework' 
+                        ? `/dashboard?research=${item.id}&aim=true&section=welcome-screen`
+                        : `/dashboard?research=${item.id}`
+                      }
+                      className={cn(
+                        'flex-1 flex items-center py-2 px-2 rounded-lg text-sm bg-blue-50 border border-blue-100 text-blue-700 hover:bg-blue-100 transition-colors max-w-[150px]',
+                        pathname?.includes(`research=${item.id}`)
+                          ? 'bg-neutral-100 text-neutral-900 font-medium'
+                          : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
+                      )}
+                    >
+                      <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                      <span className="truncate">{item.name}</span>
+                      {item.technique === 'aim-framework' && (
+                        <span className="ml-auto text-xs text-blue-500 bg-blue-100 px-2 py-0.5 rounded-full">AIM</span>
+                      )}
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setResearchToDelete(item);
+                        setShowDeleteModal(true);
+                      }}
+                      className="ml-2 p-1 text-neutral-400 hover:text-red-500 transition-colors"
+                      title="Eliminar investigación"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>

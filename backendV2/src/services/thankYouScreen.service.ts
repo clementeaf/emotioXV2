@@ -1,10 +1,11 @@
 import { 
-  ThankYouScreenModel, 
+  ThankYouScreenConfig,
   ThankYouScreenFormData, 
-  ThankYouScreenRecord, 
+  ThankYouScreenModel as SharedThankYouScreenModel,
   DEFAULT_THANK_YOU_SCREEN_CONFIG,
-  THANK_YOU_SCREEN_VALIDATION
-} from '../models/thankYouScreen.model';
+  DEFAULT_THANK_YOU_SCREEN_VALIDATION
+} from '../../../shared/interfaces/thank-you-screen.interface';
+import { ThankYouScreenModel } from '../models/thankYouScreen.model';
 import { ApiError } from '../utils/errors';
 
 // Instancia del modelo
@@ -20,6 +21,13 @@ export enum ThankYouScreenError {
   PERMISSION_DENIED = 'PERMISSION_DENIED',
   DATABASE_ERROR = 'DATABASE_ERROR'
 }
+
+// Re-exportamos los tipos compartidos para mantener compatibilidad
+export type {
+  ThankYouScreenConfig,
+  SharedThankYouScreenModel as ThankYouScreenRecord,
+  ThankYouScreenFormData
+};
 
 /**
  * Servicio para gestionar pantallas de agradecimiento
@@ -38,10 +46,10 @@ export class ThankYouScreenService {
     if (data.title !== undefined) {
       if (data.title.trim() === '') {
         errors.title = 'El título no puede estar vacío';
-      } else if (data.title.length < THANK_YOU_SCREEN_VALIDATION.title.minLength) {
-        errors.title = `El título debe tener al menos ${THANK_YOU_SCREEN_VALIDATION.title.minLength} caracteres`;
-      } else if (data.title.length > THANK_YOU_SCREEN_VALIDATION.title.maxLength) {
-        errors.title = `El título no puede exceder los ${THANK_YOU_SCREEN_VALIDATION.title.maxLength} caracteres`;
+      } else if (data.title.length < DEFAULT_THANK_YOU_SCREEN_VALIDATION.title.minLength) {
+        errors.title = `El título debe tener al menos ${DEFAULT_THANK_YOU_SCREEN_VALIDATION.title.minLength} caracteres`;
+      } else if (data.title.length > DEFAULT_THANK_YOU_SCREEN_VALIDATION.title.maxLength) {
+        errors.title = `El título no puede exceder los ${DEFAULT_THANK_YOU_SCREEN_VALIDATION.title.maxLength} caracteres`;
       }
     }
 
@@ -49,22 +57,22 @@ export class ThankYouScreenService {
     if (data.message !== undefined) {
       if (data.message.trim() === '') {
         errors.message = 'El mensaje no puede estar vacío';
-      } else if (data.message.length < THANK_YOU_SCREEN_VALIDATION.message.minLength) {
-        errors.message = `El mensaje debe tener al menos ${THANK_YOU_SCREEN_VALIDATION.message.minLength} caracteres`;
-      } else if (data.message.length > THANK_YOU_SCREEN_VALIDATION.message.maxLength) {
-        errors.message = `El mensaje no puede exceder los ${THANK_YOU_SCREEN_VALIDATION.message.maxLength} caracteres`;
+      } else if (data.message.length < DEFAULT_THANK_YOU_SCREEN_VALIDATION.message.minLength) {
+        errors.message = `El mensaje debe tener al menos ${DEFAULT_THANK_YOU_SCREEN_VALIDATION.message.minLength} caracteres`;
+      } else if (data.message.length > DEFAULT_THANK_YOU_SCREEN_VALIDATION.message.maxLength) {
+        errors.message = `El mensaje no puede exceder los ${DEFAULT_THANK_YOU_SCREEN_VALIDATION.message.maxLength} caracteres`;
       }
     }
 
     // Validar URL de redirección si está presente
     if (data.redirectUrl && data.redirectUrl.trim() !== '') {
-      if (THANK_YOU_SCREEN_VALIDATION.redirectUrl.pattern && 
-          !THANK_YOU_SCREEN_VALIDATION.redirectUrl.pattern.test(data.redirectUrl)) {
+      if (DEFAULT_THANK_YOU_SCREEN_VALIDATION.redirectUrl.pattern && 
+          !DEFAULT_THANK_YOU_SCREEN_VALIDATION.redirectUrl.pattern.test(data.redirectUrl)) {
         errors.redirectUrl = 'La URL de redirección no tiene un formato válido';
-      } else if (data.redirectUrl.length < THANK_YOU_SCREEN_VALIDATION.redirectUrl.minLength) {
-        errors.redirectUrl = `La URL debe tener al menos ${THANK_YOU_SCREEN_VALIDATION.redirectUrl.minLength} caracteres`;
-      } else if (data.redirectUrl.length > THANK_YOU_SCREEN_VALIDATION.redirectUrl.maxLength) {
-        errors.redirectUrl = `La URL no puede exceder los ${THANK_YOU_SCREEN_VALIDATION.redirectUrl.maxLength} caracteres`;
+      } else if (data.redirectUrl.length < DEFAULT_THANK_YOU_SCREEN_VALIDATION.redirectUrl.minLength) {
+        errors.redirectUrl = `La URL debe tener al menos ${DEFAULT_THANK_YOU_SCREEN_VALIDATION.redirectUrl.minLength} caracteres`;
+      } else if (data.redirectUrl.length > DEFAULT_THANK_YOU_SCREEN_VALIDATION.redirectUrl.maxLength) {
+        errors.redirectUrl = `La URL no puede exceder los ${DEFAULT_THANK_YOU_SCREEN_VALIDATION.redirectUrl.maxLength} caracteres`;
       }
     }
 
@@ -86,7 +94,7 @@ export class ThankYouScreenService {
    * @param _userId ID del usuario que realiza la operación
    * @returns La pantalla de agradecimiento creada
    */
-  async create(data: ThankYouScreenFormData, researchId: string, _userId: string): Promise<ThankYouScreenRecord> {
+  async create(data: ThankYouScreenFormData, researchId: string, _userId: string): Promise<SharedThankYouScreenModel> {
     try {
       // Validar que existe researchId
       if (!researchId) {
@@ -130,7 +138,7 @@ export class ThankYouScreenService {
    * @param id ID de la pantalla
    * @returns La pantalla de agradecimiento encontrada
    */
-  async getById(id: string): Promise<ThankYouScreenRecord> {
+  async getById(id: string): Promise<SharedThankYouScreenModel> {
     try {
       const thankYouScreen = await thankYouScreenModel.getById(id);
       
@@ -161,7 +169,7 @@ export class ThankYouScreenService {
    * @param researchId ID de la investigación
    * @returns La pantalla de agradecimiento encontrada
    */
-  async getByResearchId(researchId: string): Promise<ThankYouScreenRecord> {
+  async getByResearchId(researchId: string): Promise<SharedThankYouScreenModel> {
     try {
       // Validar que existe researchId
       if (!researchId) {
@@ -208,7 +216,7 @@ export class ThankYouScreenService {
    * @param _userId ID del usuario que realiza la operación
    * @returns La pantalla de agradecimiento actualizada
    */
-  async update(id: string, data: Partial<ThankYouScreenFormData>, _userId: string): Promise<ThankYouScreenRecord> {
+  async update(id: string, data: Partial<ThankYouScreenFormData>, _userId: string): Promise<SharedThankYouScreenModel> {
     try {
       // Validar datos
       this.validateData(data);
@@ -252,9 +260,9 @@ export class ThankYouScreenService {
    * @param researchId ID de la investigación
    * @param data Datos a actualizar
    * @param _userId ID del usuario que realiza la operación
-   * @returns La pantalla de agradecimiento actualizada o creada
+   * @returns La pantalla de agradecimiento actualizada
    */
-  async updateByResearchId(researchId: string, data: ThankYouScreenFormData, _userId: string): Promise<ThankYouScreenRecord> {
+  async updateByResearchId(researchId: string, data: ThankYouScreenFormData, _userId: string): Promise<SharedThankYouScreenModel> {
     try {
       // Validar que existe researchId
       if (!researchId) {
@@ -355,10 +363,10 @@ export class ThankYouScreenService {
   }
 
   /**
-   * Obtiene todas las pantallas de agradecimiento
-   * @returns Lista de todas las pantallas de agradecimiento
+   * Obtener todas las pantallas de agradecimiento
+   * @returns Array con todas las pantallas de agradecimiento
    */
-  async getAll(): Promise<ThankYouScreenRecord[]> {
+  async getAll(): Promise<SharedThankYouScreenModel[]> {
     try {
       const thankYouScreens = await thankYouScreenModel.getAll();
       return thankYouScreens;

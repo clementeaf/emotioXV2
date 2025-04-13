@@ -1,9 +1,11 @@
 import { 
-  welcomeScreenModel, 
+  welcomeScreenModel
+} from '../models/welcomeScreen.model';
+import { 
   WelcomeScreenFormData, 
   WelcomeScreenRecord, 
-  DEFAULT_WELCOME_SCREEN_CONFIG
-} from '../models/welcomeScreen.model';
+  DEFAULT_WELCOME_SCREEN_CONFIG 
+} from '../../../shared/interfaces/welcome-screen.interface';
 import { ApiError } from '../utils/errors';
 
 /**

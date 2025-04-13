@@ -1,146 +1,14 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, UpdateCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import { uuidv4 } from '../utils/id-generator';
-
-/**
- * Configuración de la pantalla de agradecimiento
- */
-export interface ThankYouScreenConfig {
-  /**
-   * Si la pantalla de agradecimiento está habilitada
-   */
-  isEnabled: boolean;
-
-  /**
-   * Título a mostrar en la pantalla de agradecimiento
-   */
-  title: string;
-
-  /**
-   * Mensaje principal/descripción para mostrar a los participantes
-   */
-  message: string;
-
-  /**
-   * URL opcional para redireccionar después de mostrar la pantalla
-   */
-  redirectUrl?: string;
-
-  /**
-   * Metadatos opcionales
-   */
-  metadata?: {
-    /**
-     * Versión de la configuración
-     */
-    version: string;
-    
-    /**
-     * Campos adicionales
-     */
-    [key: string]: any;
-  };
-}
-
-/**
- * Configuración predeterminada de la pantalla de agradecimiento
- */
-export const DEFAULT_THANK_YOU_SCREEN_CONFIG: ThankYouScreenConfig = {
-  isEnabled: true,
-  title: 'Thank You for Participating',
-  message: 'We appreciate your time and valuable feedback. Your responses have been recorded successfully.',
-  redirectUrl: '',
-  metadata: {
-    version: '1.0.0'
-  }
-};
-
-/**
- * Validación para campos de la pantalla de agradecimiento
- */
-export const THANK_YOU_SCREEN_VALIDATION = {
-  title: {
-    minLength: 3,
-    maxLength: 100,
-    required: true
-  },
-  message: {
-    minLength: 10,
-    maxLength: 1000,
-    required: true
-  },
-  redirectUrl: {
-    minLength: 5,
-    maxLength: 2048,
-    required: false,
-    pattern: /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([\/\w .-]*)*\/?$/i
-  }
-};
-
-/**
- * Datos del formulario de pantalla de agradecimiento
- */
-export interface ThankYouScreenFormData extends Omit<ThankYouScreenConfig, 'metadata'> {
-  /**
-   * ID de la investigación asociada (opcional en el formulario, requerido para crear)
-   */
-  researchId?: string;
-}
-
-/**
- * Registro de pantalla de agradecimiento
- */
-export interface ThankYouScreenRecord extends ThankYouScreenConfig {
-  /**
-   * ID de la investigación a la que pertenece esta pantalla
-   */
-  researchId: string;
-
-  /**
-   * Identificador único para la configuración de la pantalla
-   */
-  id: string;
-
-  /**
-   * Timestamp de creación del registro
-   */
-  createdAt: string;
-
-  /**
-   * Timestamp de última actualización del registro
-   */
-  updatedAt: string;
-}
-
-/**
- * Respuesta al manipular pantallas de agradecimiento
- */
-export interface ThankYouScreenResponse {
-  /**
-   * Identificador único de la pantalla guardada
-   */
-  id?: string;
-  
-  /**
-   * Datos de la pantalla de agradecimiento
-   */
-  data?: ThankYouScreenConfig;
-  
-  /**
-   * Indicador de éxito
-   */
-  success?: boolean;
-  
-  /**
-   * Mensaje de error si corresponde
-   */
-  error?: string;
-  
-  /**
-   * Indicador de que el recurso solicitado no se encontró
-   */
-  notFound?: boolean;
-}
+import {
+  ThankYouScreenConfig,
+  ThankYouScreenModel as SharedThankYouScreenModel,
+  ThankYouScreenFormData,
+  ThankYouScreenResponse,
+  DEFAULT_THANK_YOU_SCREEN_CONFIG,
+  DEFAULT_THANK_YOU_SCREEN_VALIDATION
+} from 'shared/interfaces/thank-you-screen.interface';
 
 /**
  * Interfaz para el modelo DynamoDB de una pantalla de agradecimiento
@@ -163,6 +31,20 @@ export interface ThankYouScreenDynamoItem {
   createdAt: string;
   updatedAt: string;
 }
+
+// Re-exportamos los tipos compartidos
+export type {
+  ThankYouScreenConfig,
+  SharedThankYouScreenModel as ThankYouScreenRecord,
+  ThankYouScreenFormData,
+  ThankYouScreenResponse
+};
+
+// Re-exportamos las constantes compartidas
+export {
+  DEFAULT_THANK_YOU_SCREEN_CONFIG,
+  DEFAULT_THANK_YOU_SCREEN_VALIDATION
+};
 
 /**
  * Modelo para manejar las operaciones de pantallas de agradecimiento en DynamoDB
