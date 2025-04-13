@@ -2,12 +2,21 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { participantService } from '../services/participant.service';
 import { getCorsHeaders } from '../middlewares/cors';
 import { z } from 'zod';
+import * as jwt from 'jsonwebtoken';
 
 // Schema de validación para participantes
 const ParticipantSchema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
   email: z.string().email('Email inválido')
 });
+
+// Schema de validación para login
+const LoginSchema = z.object({
+  name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
+  email: z.string().email('Email inválido')
+});
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 /**
  * Controlador para el manejo de participantes
@@ -204,6 +213,72 @@ export class ParticipantController {
       };
     }
   }
+
+  /**
+   * Login de participante
+   */
+  async login(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    try {
+      if (!event.body) {
+        return {
+          statusCode: 400,
+          headers: getCorsHeaders(event),
+          body: JSON.stringify({
+            error: 'Se requieren datos para el login',
+            status: 400
+          })
+        };
+      }
+
+      const data = JSON.parse(event.body);
+      const validatedData = LoginSchema.parse(data);
+
+      // Buscamos o creamos el participante
+      let participant = await participantService.findByEmail(validatedData.email);
+      
+      if (!participant) {
+        // Si no existe, lo creamos
+        participant = await participantService.create({
+          ...validatedData,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        });
+      }
+
+      // Generar token JWT
+      const token = jwt.sign(
+        { 
+          id: participant.id,
+          email: participant.email,
+          name: participant.name
+        },
+        JWT_SECRET,
+        { expiresIn: '24h' }
+      );
+
+      return {
+        statusCode: 200,
+        headers: getCorsHeaders(event),
+        body: JSON.stringify({
+          data: {
+            token,
+            participant
+          },
+          status: 200
+        })
+      };
+    } catch (error: any) {
+      console.error('Error en login de participante:', error);
+      return {
+        statusCode: 400,
+        headers: getCorsHeaders(event),
+        body: JSON.stringify({
+          error: error.message || 'Error en login de participante',
+          status: 400
+        })
+      };
+    }
+  }
 }
 
 // Instancia del controlador
@@ -235,6 +310,8 @@ export const participantHandler = async (event: APIGatewayProxyEvent): Promise<A
       return controller.getById(event);
     } else if (method === 'DELETE' && path.match(/^\/participants\/[\w-]+$/)) {
       return controller.delete(event);
+    } else if (path === '/participants/login' && method === 'POST') {
+      return controller.login(event);
     }
 
     return {

@@ -48,7 +48,8 @@ export const ParticipantLogin = ({ onLogin }: ParticipantLoginProps) => {
     if (validateForm()) {
       setIsLoading(true);
       try {
-        const response = await fetch(`${config.apiUrl}/participants`, {
+        // Hacemos login directamente con el email y nombre
+        const loginResponse = await fetch(`${config.apiUrl}/participants/login`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -56,21 +57,24 @@ export const ParticipantLogin = ({ onLogin }: ParticipantLoginProps) => {
           body: JSON.stringify(participant)
         });
 
-        const result = await response.json();
+        const loginResult = await loginResponse.json();
 
-        if (!response.ok) {
-          throw new Error(result.error || 'Error al registrar participante');
+        if (!loginResponse.ok) {
+          throw new Error(loginResult.error || 'Error al iniciar sesión');
         }
 
-        if (result.data) {
-          onLogin(result.data);
+        if (loginResult.data?.token) {
+          // Guardamos el token en localStorage
+          localStorage.setItem('participantToken', loginResult.data.token);
+          // Llamamos a onLogin con los datos del participante
+          onLogin(loginResult.data.participant);
         } else {
-          throw new Error('No se recibieron los datos del participante');
+          throw new Error('No se recibió el token de autenticación');
         }
       } catch (error: any) {
         setErrors(prev => ({ 
           ...prev, 
-          submit: error.message || 'Error al registrar participante. Por favor, intenta nuevamente.' 
+          submit: error.message || 'Error al iniciar sesión. Por favor, intenta nuevamente.' 
         }));
       } finally {
         setIsLoading(false);
@@ -152,7 +156,7 @@ export const ParticipantLogin = ({ onLogin }: ParticipantLoginProps) => {
             className="w-full bg-[#121829] hover:bg-[#1e293e] text-white font-medium py-3 px-4 rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isLoading}
           >
-            {isLoading ? 'Registrando...' : 'Continuar'}
+            {isLoading ? 'Iniciando sesión...' : 'Continuar'}
           </button>
         </form>
 
