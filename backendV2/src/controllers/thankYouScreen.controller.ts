@@ -1,12 +1,19 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { thankYouScreenService, ThankYouScreenError } from '../services/thankYouScreen.service';
-import { ThankYouScreenFormData } from '../models/thankYouScreen.model';
+import { ThankYouScreenFormData as SharedThankYouScreenFormData } from '../../../shared/interfaces/thank-you-screen.interface';
 import { ApiError } from '../utils/errors';
 import { 
   createResponse, 
   errorResponse
 } from '../utils/controller.utils';
 import { createController, RouteMap } from '../utils/controller.decorator';
+
+/**
+ * Extendemos la interfaz compartida para agregar el campo researchId que se usa en el controlador
+ */
+interface ThankYouScreenFormData extends SharedThankYouScreenFormData {
+  researchId?: string;
+}
 
 /**
  * Controlador para manejar las peticiones relacionadas con pantallas de agradecimiento
