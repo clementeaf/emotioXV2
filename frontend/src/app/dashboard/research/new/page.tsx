@@ -163,13 +163,10 @@ interface SuccessData {
 const CreateSection = memo(({ onResearchCreated }: { onResearchCreated: (id: string, name: string) => void }) => (
   <div className="flex-1 overflow-y-auto">
     <div className="container mx-auto px-6 py-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-neutral-900">
+      <div className="mb-4">
+        <h1 className="text-2xl mt-2 font-semibold text-neutral-900">
           Nueva Investigación
         </h1>
-        <p className="mt-2 text-sm text-neutral-600">
-          Configura los detalles de tu nueva investigación
-        </p>
       </div>
       
       <div className="bg-white rounded-lg border border-neutral-200 p-6">

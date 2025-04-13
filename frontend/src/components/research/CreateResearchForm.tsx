@@ -94,7 +94,6 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
   const [createdResearchId, setCreatedResearchId] = useState<string | null>(null);
   const [showSummary, setShowSummary] = useState(false);
   const [countdown, setCountdown] = useState(3);
-  const redirectLinkRef = React.useRef<HTMLAnchorElement>(null);
   const enterpriseSelectRef = React.useRef<HTMLSelectElement>(null);
 
   // Efecto para crear un borrador si no existe
@@ -660,7 +659,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
   };
 
   return (
-    <div className={cn('max-w-3xl mx-auto', className)}>
+    <div className={cn('max-w-3xl mx-auto h-[500px]', className)}>
       {/* Mostrar notificación si la investigación se creó */}
       {createdResearchId && (
         <div className="mb-4 p-6 bg-white border-2 border-green-500 text-neutral-800 rounded-lg shadow-lg">
@@ -745,13 +744,13 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
       {!createdResearchId && !showSummary && (
         <>
           {/* Progress Steps */}
-          <div className="mb-12">
+          <div className="mb-2">
             <div className="flex items-center justify-between relative">
               <div className="absolute left-0 top-1/2 w-full h-[2px] bg-neutral-100" />
               {steps.map((step) => (
                 <div key={step.id} className="relative flex flex-col items-center">
                   <div className={cn(
-                    'relative z-10 flex h-12 w-12 items-center justify-center rounded-full border-2 bg-white transition-colors',
+                    'relative z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 bg-white transition-colors',
                     formData.currentStep === step.id
                       ? 'border-blue-500 text-blue-500'
                       : formData.currentStep > step.id
@@ -769,7 +768,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
                     )}>
                       {step.title}
                     </p>
-                    <p className="mt-1 text-xs text-neutral-400 max-w-[140px]">
+                    <p className="mt-1 text-xs text-neutral-400 max-w-[200px]">
                       {step.description}
                     </p>
                   </div>
@@ -779,12 +778,12 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
           </div>
 
           {/* Form Content */}
-          <div className="bg-white rounded-xl border border-neutral-200/70 shadow-[0_6px_16px_-4px_rgba(0,0,0,0.05)] overflow-hidden">
+          <div className="h-[400px] rounded-xl overflow-hidden">
             <div className="px-8 py-8">
               {formData.currentStep === 1 && (
                 <div className="space-y-6">
                   <div>
-                    <h2 className="text-xl font-medium mb-2">Name the Research</h2>
+                    <h2 className="text-lg font-medium">Name the Research</h2>
                     <p className="text-neutral-500 text-sm mb-6">Please, name the research project and assign it to an existing client or create a new one</p>
                     
                     <div className="space-y-4">
@@ -880,7 +879,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
               )}
 
               {formData.currentStep === 3 && (
-                <div className="space-y-6">
+                <div className="space-y-6 h-[320px]">
                   <div>
                     <h2 className="text-xl font-medium mb-2">Techniques for Behavioural Research</h2>
                     <p className="text-neutral-500 text-sm mb-6">
@@ -948,7 +947,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
               )}
 
               {/* Form Actions */}
-              <div className="mt-8 flex justify-between">
+              <div className="flex justify-between">
                 {formData.currentStep > 1 && (
                   <Button
                     type="button"
