@@ -92,43 +92,15 @@ function ResearchStageManagerContent({ researchId }: ResearchStageManagerProps) 
     }
   };
 
-  const getStageDescription = () => {
-    switch (currentSection) {
-      case 'welcome-screen':
-        return 'Configura el mensaje de bienvenida que verán los participantes.';
-      case 'smart-voc':
-        return 'Configura tus preguntas de Voice of Customer.';
-      case 'cognitive':
-        return 'Diseña tareas de evaluación cognitiva para tu investigación.';
-      case 'eye-tracking':
-        return 'Personaliza el módulo de seguimiento ocular según tus necesidades.';
-      case 'eye-tracking-recruit':
-        return 'Configura el proceso de reclutamiento para el seguimiento ocular.';
-      case 'thank-you':
-        return 'Configura el mensaje de finalización para los participantes.';
-      case 'configuration':
-        return 'Configura los parámetros para el reclutamiento de participantes.';
-      case 'participants':
-        return 'Visualiza y gestiona a los participantes de tu estudio.';
-      case 'smart-voc-results':
-        return 'Visualiza los resultados obtenidos de las preguntas SmartVOC.';
-      case 'cognitive-task-results':
-        return 'Analiza los resultados de las tareas cognitivas realizadas.';
-      default:
-        return 'Configura los ajustes de tu investigación.';
-    }
-  };
-
   return (
-    <div className="flex h-screen bg-neutral-50">
+    <div className="flex h-screen">
       <ResearchSidebar researchId={researchId} activeStage={currentSection} className="fixed left-0 top-0 h-full z-10" />
-      <div className="flex-1 flex flex-col ml-64">
+      <div className="flex-1 flex flex-col ml-56">
         <Navbar mode="research" researchId={researchId} />
         <main className="flex-1 overflow-y-auto">
           <div className="p-6">
             <div className="mb-6">
               <h1 className="text-2xl font-semibold text-neutral-900 mb-2">{getStageTitle()}</h1>
-              <p className="text-neutral-600">{getStageDescription()}</p>
             </div>
             {renderStageContent()}
           </div>

@@ -33,6 +33,8 @@ interface UseWelcomeScreenFormResult {
   pendingAction: 'save' | 'preview' | null;
   generateHtmlPreview: () => void;
   isExisting: boolean;
+  closeErrorModal: () => void;
+  continueWithAction: () => void;
 }
 
 // Constantes simuladas
@@ -274,6 +276,14 @@ export const useWelcomeScreenForm = (
     checkExistingWelcomeScreen();
   }, [checkExistingWelcomeScreen]);
 
+  const closeErrorModal = () => {
+    setModalError(null);
+  };
+
+  const continueWithAction = () => {
+    // Implementa la lógica para continuar con la acción
+  };
+
   return {
     formData,
     welcomeScreenId,
@@ -293,6 +303,8 @@ export const useWelcomeScreenForm = (
     jsonToSend,
     pendingAction,
     generateHtmlPreview,
-    isExisting: !!existingScreen
+    isExisting: !!existingScreen,
+    closeErrorModal,
+    continueWithAction,
   };
 }; 

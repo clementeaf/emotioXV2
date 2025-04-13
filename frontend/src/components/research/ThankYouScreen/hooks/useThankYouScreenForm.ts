@@ -45,123 +45,61 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
     return DEFAULT_THANK_YOU_SCREEN_VALIDATION.redirectUrl.pattern.test(url);
   };
 
-  // Consulta para obtener datos existentes
-  const { data: thankYouScreenData, isLoading } = useQuery({
+  // Consulta para verificar si existe una pantalla de agradecimiento
+  const { data: existingScreen, isLoading } = useQuery({
     queryKey: [QUERY_KEYS.THANK_YOU_SCREEN, researchId],
     queryFn: async () => {
-      try {
-        if (!isAuthenticated || !token) {
-          return { data: null, error: true, message: 'No autenticado' };
-        }
-
-        console.log(`[useThankYouScreenForm] Buscando configuración existente para investigación: ${researchId}`);
-        const response = await thankYouScreenFixedAPI.getByResearchId(researchId).send();
-        console.log('[useThankYouScreenForm] Respuesta de API:', response);
-        return response;
-      } catch (error: any) {
-        console.error('[useThankYouScreenForm] Error al obtener datos:', error);
-        let errorMessage = ERROR_MESSAGES.FETCH_ERROR;
-        
-        // Si es error 404, es normal (no hay configuración previa)
-        if (error?.statusCode === 404 || error?.message?.includes('404')) {
-          console.log('[useThankYouScreenForm] No se encontró configuración existente - esto es normal para una nueva investigación');
-          return { data: null, notFound: true };
-        }
-        
-        return { data: null, error: true, message: errorMessage };
+      if (!isAuthenticated || !token) {
+        throw new Error('No autenticado');
       }
+      return await thankYouScreenFixedAPI.getByResearchId(researchId).send();
     },
-    enabled: !!researchId && isAuthenticated,
-    retry: (failureCount, error: any) => {
-      // No reintentar si el error es 404
-      if (error?.message?.includes('404')) {
-        return false;
-      }
-      // Para otros errores, permitir hasta 2 reintentos
-      return failureCount < 2;
-    },
-    retryDelay: 1000, // Esperar 1 segundo entre reintentos
-    staleTime: 60000, // Mantener los datos frescos durante 1 minuto
-    refetchOnWindowFocus: false
+    enabled: !!researchId && isAuthenticated
   });
 
-  // Mutación para guardar datos
+  // Efecto para cargar datos existentes
+  useEffect(() => {
+    if (existingScreen?.data) {
+      setFormData({
+        ...DEFAULT_THANK_YOU_SCREEN_CONFIG,
+        ...existingScreen.data,
+        researchId
+      });
+      setThankYouScreenId(existingScreen.data.id);
+    }
+  }, [existingScreen, researchId]);
+
+  // Mutación para guardar
   const { mutate, isPending: isSaving } = useMutation({
     mutationFn: async (data: ThankYouScreenFormData) => {
-      try {
-        if (!isAuthenticated || !token) {
-          throw new Error('No autenticado: Se requiere un token de autenticación');
-        }
-        
-        console.log('[useThankYouScreenForm] Datos a guardar:', JSON.stringify(data, null, 2));
-        
-        if (thankYouScreenId) {
-          console.log(`[useThankYouScreenForm] Actualizando Pantalla de Agradecimiento con ID: ${thankYouScreenId}`);
-          return await thankYouScreenFixedAPI.update(thankYouScreenId, data).send();
-        } else {
-          console.log('[useThankYouScreenForm] Creando nueva Pantalla de Agradecimiento');
-          return await thankYouScreenFixedAPI.create(data).send();
-        }
-      } catch (error: any) {
-        console.error('[useThankYouScreenForm] Error al guardar:', error);
-        throw error;
+      if (!isAuthenticated || !token) {
+        throw new Error('No autenticado');
+      }
+
+      // Si existe un ID, actualizamos, si no, creamos
+      if (thankYouScreenId) {
+        return await thankYouScreenFixedAPI.update(thankYouScreenId, data).send();
+      } else {
+        return await thankYouScreenFixedAPI.create(data).send();
       }
     },
     onSuccess: (response) => {
-      console.log('[useThankYouScreenForm] Respuesta de guardado:', response);
-      
-      if (response && response.id) {
+      if (response?.id) {
         setThankYouScreenId(response.id);
-        console.log('[useThankYouScreenForm] ID establecido:', response.id);
       }
-      
-      // Invalidamos la query para recargar datos
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.THANK_YOU_SCREEN, researchId] });
-      
-      // Eliminamos el toast de éxito ya que se maneja en handleSave con el loadingToastId
+      toast.success(thankYouScreenId ? 'Pantalla actualizada' : 'Pantalla creada');
     },
     onError: (error: any) => {
-      console.error('[useThankYouScreenForm] Error en mutación:', error);
-      
-      // Mostrar mensaje de error con el modal - mantenemos este modal para manejo de errores
-      showModal({
-        title: ERROR_MESSAGES.SAVE_ERROR,
+      console.error('[ThankYouScreenForm] Error:', error);
+      toast.error(error.message || 'Error al guardar');
+      setModalError({
+        title: 'Error al guardar',
         message: error.message || 'Ocurrió un error al guardar la configuración',
         type: 'error'
       });
-      
-      // Mostrar error en toast
-      toast.error(ERROR_MESSAGES.SAVE_ERROR);
     }
   });
-
-  // Efecto para cargar datos existentes cuando estén disponibles
-  useEffect(() => {
-    if (thankYouScreenData && thankYouScreenData.data) {
-      const existingData = thankYouScreenData.data;
-      console.log('[useThankYouScreenForm] Datos recibidos:', existingData);
-      
-      // Actualizar ID
-      if (existingData.id) {
-        setThankYouScreenId(existingData.id);
-        console.log('[useThankYouScreenForm] ID de Thank You Screen encontrado:', existingData.id);
-      }
-      
-      // Actualizar formData con los valores existentes
-      setFormData({
-        ...DEFAULT_THANK_YOU_SCREEN_CONFIG,
-        ...existingData,
-        researchId
-      });
-    } else {
-      console.log('[useThankYouScreenForm] No hay datos existentes, usando configuración por defecto');
-      setFormData({
-        ...DEFAULT_THANK_YOU_SCREEN_CONFIG,
-        researchId
-      });
-      setThankYouScreenId(null);
-    }
-  }, [thankYouScreenData, researchId]);
 
   // Función para manejar cambios en los campos del formulario
   const handleChange = (field: keyof ThankYouScreenConfig, value: any) => {
@@ -690,6 +628,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
     handleSave,
     handlePreview,
     validateForm,
-    closeModal
+    closeModal,
+    isExisting: !!thankYouScreenId
   };
 }; 

@@ -43,12 +43,13 @@ export const getCorsHeaders = (): { [key: string]: string } => {
  * @returns Respuesta HTTP formateada
  */
 export const createResponse = (statusCode: number, body: any): APIGatewayProxyResult => {
-  // Reutilizar los mismos headers CORS generados por getCorsHeaders
-  const headers = getCorsHeaders();
-
   return {
     statusCode,
-    headers,
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Credentials': true,
+    },
     body: JSON.stringify(body)
   };
 };
@@ -59,8 +60,8 @@ export const createResponse = (statusCode: number, body: any): APIGatewayProxyRe
  * @param statusCode Código de estado HTTP
  * @returns Respuesta HTTP de error formateada
  */
-export const errorResponse = (message: string, statusCode: number): APIGatewayProxyResult => {
-  return createResponse(statusCode, { error: message });
+export const errorResponse = (message: string, statusCode: number = 500): APIGatewayProxyResult => {
+  return createResponse(statusCode, { message });
 };
 
 /**

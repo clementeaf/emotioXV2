@@ -13,7 +13,7 @@ interface ResearchLayoutProps {
 export function ResearchLayout({ 
   children, 
   researchId,
-  activeStage,
+  activeStage = 'welcome-screen',
   className 
 }: ResearchLayoutProps) {
   // Validar que el ID de investigación existe, 

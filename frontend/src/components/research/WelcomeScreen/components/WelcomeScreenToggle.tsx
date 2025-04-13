@@ -14,7 +14,6 @@ export const WelcomeScreenToggle: React.FC<WelcomeScreenToggleProps> = ({
   return (
     <div className="flex items-center justify-between mb-6 p-4 border rounded-lg bg-gray-50">
       <div>
-        <h3 className="font-medium">{UI_TEXTS.TITLE}</h3>
         <p className="text-sm text-gray-500">
           {isEnabled 
             ? UI_TEXTS.TOGGLE.ENABLED 

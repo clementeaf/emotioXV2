@@ -109,7 +109,7 @@ export interface ResearchStore {
  */
 export interface ResearchSidebarProps {
   researchId: string;
-  activeStage: string;
+  activeStage?: string;
   className?: string;
 }
 

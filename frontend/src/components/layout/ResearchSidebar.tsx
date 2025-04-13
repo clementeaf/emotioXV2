@@ -118,16 +118,16 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
   };
 
   return (
-    <div className={cn('w-64 bg-white border-r border-neutral-200 flex flex-col h-full shadow-sm', className)}>
+    <div className={cn('absolute left-4 top-20 w-58 p-2 rounded-2xl flex flex-col h-min-[510px]', className)} style={{ boxShadow: '0px 0px 10px 0px rgba(0, 0, 0, 0.1)' }}>
       {/* Header del sidebar */}
-      <div className="p-4 border-b border-neutral-200">
+      <div className="p-2">
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-lg font-semibold text-neutral-900 truncate" title={researchName}>
             {researchName}
           </h2>
         </div>
         <Button 
-          variant="outline" 
+          variant="ghost" 
           size="sm" 
           onClick={handleBackToDashboard} 
           className="w-full text-neutral-700 flex items-center justify-center gap-2"
@@ -176,12 +176,12 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
 const ResearchSidebarContentWithSuspense = withSearchParams(ResearchSidebarContent);
 
 // Componente público que exportamos
-export function ResearchSidebar(props: ResearchSidebarProps) {
+export function ResearchSidebar({ researchId, activeStage }: ResearchSidebarProps) {
   return (
-    <Suspense fallback={<div className="w-64 bg-white border-r border-neutral-200 flex flex-col">
+    <Suspense fallback={<div className="w-60 flex flex-col">
       <div className="p-4 text-center text-neutral-600">Cargando...</div>
     </div>}>
-      <ResearchSidebarContentWithSuspense {...props} />
+      <ResearchSidebarContentWithSuspense researchId={researchId} activeStage={activeStage} />
     </Suspense>
   );
 } 

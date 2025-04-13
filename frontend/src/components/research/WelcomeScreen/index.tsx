@@ -7,7 +7,6 @@ import { WelcomeScreenFields } from './components/WelcomeScreenFields';
 import { WelcomeScreenFooter } from './components/WelcomeScreenFooter';
 import { ErrorModal } from './components/ErrorModal';
 import { JsonPreviewModal } from './components/JsonPreviewModal';
-import { UI_TEXTS } from './constants';
 
 /**
  * Componente principal del formulario de pantalla de bienvenida
@@ -27,12 +26,14 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
     isExisting,
     handleChange,
     handleSave,
+    handlePreview,
     validateForm,
     showJsonPreview,
     closeJsonModal,
     jsonToSend,
     pendingAction,
-    continueWithAction
+    continueWithAction,
+    closeErrorModal
   } = useWelcomeScreenForm(researchId);
 
   if (isLoading) {
@@ -69,6 +70,9 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
       <WelcomeScreenFooter 
         onSave={handleSave}
         isSaving={isSaving}
+        isLoading={isLoading}
+        isEnabled={formData.isEnabled}
+        onPreview={handlePreview}
         buttonText={isExisting ? "Actualizar" : "Guardar"}
       />
 
@@ -77,7 +81,7 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
           title={modalError.title}
           message={modalError.message}
           type={modalError.type}
-          onClose={() => handleChange('modalError', null)}
+          onClose={closeErrorModal}
         />
       )}
 

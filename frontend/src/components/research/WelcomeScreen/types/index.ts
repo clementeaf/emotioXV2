@@ -89,9 +89,13 @@ export interface WelcomeScreenFieldsProps {
  * Props para el pie de página
  */
 export interface WelcomeScreenFooterProps {
-  onSave: () => void;
   isSaving: boolean;
-  buttonText: string;
+  isLoading: boolean;
+  welcomeScreenId?: string;
+  isEnabled: boolean;
+  onSave: () => void;
+  onPreview: () => void;
+  buttonText?: string;
 }
 
 /**

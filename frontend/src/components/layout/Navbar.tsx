@@ -12,6 +12,8 @@ interface User {
 
 interface NavbarProps {
   className?: string;
+  researchId: string;
+  mode: 'research' | 'default';
 }
 
 export function Navbar({ className }: NavbarProps) {

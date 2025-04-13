@@ -83,6 +83,7 @@ export interface UseThankYouScreenFormResult {
   handlePreview: () => void;
   validateForm: () => boolean;
   closeModal: () => void;
+  isExisting: boolean;
 }
 
 // Exportamos tipos y constantes para acceso más fácil

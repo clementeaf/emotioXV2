@@ -30,7 +30,7 @@ export const WelcomeScreenFooter: React.FC<WelcomeScreenFooterProps> = ({
   };
   
   return (
-    <div className="mt-8 pt-6 border-t flex justify-end space-x-4">
+    <div className="mt-4 pt-6 flex justify-end space-x-4">
       <button
         type="button"
         onClick={onPreview}
