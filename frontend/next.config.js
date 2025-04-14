@@ -34,17 +34,8 @@ const nextConfig = {
     };
     
     return config;
-  },
-  // Configuración de redirecciones
-  async redirects() {
-    return [
-      {
-        source: '/',
-        destination: '/login',
-        permanent: false,
-      },
-    ];
   }
+  // Nota: Las redirecciones se manejan a nivel de componente para compatibilidad con exportación estática
 }
 
 module.exports = nextConfig

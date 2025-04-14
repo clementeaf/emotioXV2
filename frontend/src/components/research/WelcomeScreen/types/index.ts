@@ -95,8 +95,7 @@ export interface WelcomeScreenFooterProps {
   isSaving: boolean;
   isLoading: boolean;
   isEnabled: boolean;
-  buttonText: string;
-  isExisting?: boolean;
+  isExisting: boolean;
 }
 
 /**

@@ -52,12 +52,19 @@ export const UI_TEXTS = {
   },
   BUTTONS: {
     PREVIEW: 'Vista previa',
-    SAVE: 'Guardar configuración',
-    UPDATE: 'Actualizar configuración',
+    SAVE: 'Guardar',
+    UPDATE: 'Actualizar',
     SAVING: 'Guardando...',
     SAVED: 'Guardado',
     CANCEL: 'Cancelar',
-    CONFIRM_SAVE: 'Confirmar y guardar'
+    CONFIRM_SAVE: 'Confirmar'
+  },
+  FOOTER: {
+    SAVING_TEXT: 'Guardando cambios...',
+    UPDATE_EXISTING_TEXT: 'Editando pantalla de bienvenida existente',
+    CREATE_NEW_TEXT: 'Creando nueva pantalla de bienvenida',
+    SAVING_BUTTON: 'Guardando...',
+    PREVIEW_BUTTON: 'Vista previa'
   },
   MODAL: {
     ERROR_TITLE: 'Error',
