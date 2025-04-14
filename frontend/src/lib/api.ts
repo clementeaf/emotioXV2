@@ -367,6 +367,12 @@ const alovaInstance = createAlova({
           error.message.includes('Token expirado') ||
           error.message.includes('No autorizado')) {
         
+        // Evitar bucle infinito: no intentar renovar si el error viene de /auth/refreshToken
+        if (method.url.includes('/auth/refreshToken')) {
+          console.log('Error en renovación de token, no se reintentará para evitar bucle');
+          throw error;
+        }
+        
         console.log('Detectado error de autorización, intentando renovar token...');
         
         try {
@@ -391,24 +397,12 @@ const alovaInstance = createAlova({
               console.log('Reintentando solicitud con nuevo token...');
               
               // Reenviar la solicitud original con el nuevo token
-              // Nota: Aquí simplemente lanzamos un error personalizado para que la UI muestre
-              // un mensaje al usuario indicando que debe recargar o reintentar la operación
               throw new Error('TOKEN_REFRESHED');
             }
-          } else {
-            console.log('No se pudo renovar el token, manteniendo el error original');
-            throw error;
           }
         } catch (refreshError) {
-          console.error('Error al intentar renovar el token:', refreshError);
-          
-          // Si el error es nuestro mensaje específico de TOKEN_REFRESHED, propagarlo
-          if (refreshError instanceof Error && refreshError.message === 'TOKEN_REFRESHED') {
-            throw refreshError;
-          }
-          
-          // Si no se pudo renovar, mantener el error original
-          throw error;
+          console.error('Error al intentar renovar token:', refreshError);
+          throw error; // Mantener el error original
         }
       }
       
@@ -429,10 +423,16 @@ export const authAPI = {
     alovaInstance.Post<APIResponse>(
       API_CONFIG.endpoints.auth?.LOGOUT || '/auth/logout'
     ),
-  refreshToken: () =>
-    alovaInstance.Post<APIResponse<{token: string, renewed: boolean, expiresAt: number}>>(
-      API_CONFIG.endpoints.auth?.REFRESH_TOKEN || `${API_CONFIG.baseURL}/auth/refreshToken`
-    ),
+  refreshToken: () => {
+    const currentToken = tokenService.getToken();
+    if (!currentToken) {
+      throw new Error('No hay token disponible para renovar');
+    }
+    return alovaInstance.Post<APIResponse<{token: string, renewed: boolean, expiresAt: number, user: any}>>(
+      API_CONFIG.endpoints.auth?.REFRESH_TOKEN || `${API_CONFIG.baseURL}/auth/refreshToken`,
+      { token: currentToken }
+    );
+  },
 };
 
 // Endpoints de usuarios

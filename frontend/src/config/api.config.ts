@@ -95,7 +95,7 @@ const getBaseURL = () => {
   }
   
   // Fallback por si no existe endpoints.json
-  const fallbackUrl = 'https://flp9r167s8.execute-api.us-east-1.amazonaws.com';
+  const fallbackUrl = 'https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev';
   console.log('Usando URL base fallback:', fallbackUrl);
   return fallbackUrl;
 };
@@ -147,11 +147,11 @@ const API_CONFIG = {
     
     // SmartVOC
     smartVoc: {
-      GET_BY_RESEARCH: '/research/{researchId}/smart-voc',
-      GET: '/{id}',
-      CREATE: '/',
-      UPDATE: '/{id}',
-      DELETE: '/{id}',
+      GET_BY_RESEARCH: '/smart-voc/research/{researchId}/smart-voc',
+      GET: '/smart-voc/{id}',
+      CREATE: '/smart-voc',
+      UPDATE: '/smart-voc/{id}',
+      DELETE: '/smart-voc/{id}',
     },
     
     // Eye Tracking

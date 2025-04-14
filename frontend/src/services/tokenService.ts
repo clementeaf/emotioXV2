@@ -102,23 +102,26 @@ const getToken = (): string | null => {
     const token = localStorage.getItem('token');
     
     if (token) {
-      console.log('tokenService.getToken - TOKEN ENCONTRADO en localStorage (primeros caracteres):', 
-        token.substring(0, 20) + '...');
-      console.log('tokenService.getToken - Longitud del token:', token.length);
-      return token;
+      // Asegurarnos de que el token no tenga el prefijo Bearer
+      const cleanToken = token.startsWith('Bearer ') ? token.substring(7) : token;
+      console.log('tokenService.getToken - TOKEN ENCONTRADO (primeros caracteres):', 
+        cleanToken.substring(0, 20) + '...');
+      return cleanToken;
     }
     
     // Si no se encuentra en localStorage, intentar obtener de sessionStorage como respaldo
     const sessionToken = sessionStorage.getItem('token');
     if (sessionToken) {
+      // Asegurarnos de que el token no tenga el prefijo Bearer
+      const cleanToken = sessionToken.startsWith('Bearer ') ? sessionToken.substring(7) : sessionToken;
       console.log('tokenService.getToken - TOKEN ENCONTRADO en sessionStorage (primeros caracteres):', 
-        sessionToken.substring(0, 20) + '...');
+        cleanToken.substring(0, 20) + '...');
       
       // Guardar en localStorage para futuras solicitudes
-      localStorage.setItem('token', sessionToken);
+      localStorage.setItem('token', cleanToken);
       console.log('tokenService.getToken - Token de sessionStorage copiado a localStorage');
       
-      return sessionToken;
+      return cleanToken;
     }
     
     // Verificar si hay información de almacenamiento en localStorage
@@ -139,7 +142,9 @@ const getToken = (): string | null => {
  * @param token Token JWT
  */
 const saveToken = (token: string): void => {
-  localStorage.setItem('token', token);
+  // Asegurarnos de que el token no tenga el prefijo Bearer
+  const cleanToken = token.startsWith('Bearer ') ? token.substring(7) : token;
+  localStorage.setItem('token', cleanToken);
   logService.info('Token actualizado en localStorage');
 };
 

@@ -60,15 +60,30 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       }
     } else if (path === '/auth/refreshToken' && method === 'POST') {
       try {
+        // Intentar obtener el token del body
         const requestBody = JSON.parse(event.body || '{}');
-        const token = requestBody.token || requestBody.refreshToken;
+        
+        // Intentar obtener el token del header de autorización si no está en el body
+        const authHeader = event.headers.Authorization || event.headers.authorization;
+        let token = requestBody.token || requestBody.refreshToken;
+        
+        // Si no hay token en el body, intentar obtenerlo del header
+        if (!token && authHeader) {
+          token = authHeader.replace('Bearer ', '');
+        }
 
         if (!token) {
+          console.error('No se encontró token en el body ni en los headers:', {
+            body: event.body,
+            headers: event.headers
+          });
           return createResponse(400, {
             success: false,
             message: 'No se proporcionó el token'
           });
         }
+
+        console.log('Token recibido:', token.substring(0, 20) + '...');
 
         // Renovar el token usando el servicio existente
         const result = await authService.renovateTokenIfNeeded(token);
