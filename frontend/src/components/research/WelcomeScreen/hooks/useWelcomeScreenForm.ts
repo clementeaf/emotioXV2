@@ -74,13 +74,7 @@ export const useWelcomeScreenForm = (
   researchId: string, 
   onSuccess?: SuccessCallback
 ): UseWelcomeScreenFormResult => {
-  const [formData, setFormData] = useState<WelcomeScreenData>({
-    isEnabled: true,
-    title: '',
-    message: '',
-    startButtonText: '',
-    researchId
-  });
+  const [formData, setFormData] = useState<WelcomeScreenData | null>(null);
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
   const [modalError, setModalError] = useState<ErrorModalData | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
@@ -95,18 +89,21 @@ export const useWelcomeScreenForm = (
   const { data: welcomeScreenData, isLoading: isLoadingData } = useQuery({
     queryKey: ['welcomeScreen', researchId],
     queryFn: async () => {
-      console.log('🔍 Verificando welcomeScreen existente para researchId:', researchId);
       try {
         const data = await welcomeScreenService.getByResearchId(researchId);
-        console.log('📦 Datos obtenidos:', data);
-        // Asegurarnos de que tenemos datos válidos con ID
+        
+        // Solo retornar datos si realmente existen y tienen un ID
         if (data && data.id) {
           return data;
         }
+        
+        // Si no hay datos, retornar null
         return null;
-      } catch (error) {
-        console.error('❌ Error al verificar welcomeScreen:', error);
-        return null;
+      } catch (error: any) {
+        if (error.response?.status === 404) {
+          return null;
+        }
+        throw error;
       }
     },
     retry: false
@@ -116,20 +113,12 @@ export const useWelcomeScreenForm = (
   useEffect(() => {
     if (!isLoadingData) {
       if (welcomeScreenData && welcomeScreenData.id) {
-        console.log('✅ WelcomeScreen encontrado, inicializando formulario con datos existentes');
         const adaptedData = adaptRecordToFormData(welcomeScreenData);
         setExistingScreen(adaptedData);
         setFormData(adaptedData);
       } else {
-        console.log('ℹ️ No se encontró WelcomeScreen, usando configuración por defecto');
         setExistingScreen(null);
-        setFormData({ 
-          isEnabled: DEFAULT_WELCOME_SCREEN_CONFIG.isEnabled || true,
-          title: '',
-          message: '',
-          startButtonText: '',
-          researchId 
-        });
+        setFormData(null);
       }
       setIsLoading(false);
     }
@@ -139,7 +128,7 @@ export const useWelcomeScreenForm = (
   const validateForm = useCallback(() => {
     const errors: {[key: string]: string} = {};
     
-    if (formData.isEnabled) {
+    if (formData?.isEnabled) {
       if (!formData.title?.trim()) errors.title = 'El título es obligatorio';
       if (!formData.message?.trim()) errors.message = 'El mensaje es obligatorio';
       if (!formData.startButtonText?.trim()) errors.startButtonText = 'El texto del botón es obligatorio';
@@ -151,14 +140,19 @@ export const useWelcomeScreenForm = (
 
   // Manejar cambios en el formulario
   const handleChange = useCallback((field: keyof WelcomeScreenData, value: any) => {
-    setFormData(prev => ({
+    setFormData(prev => prev ? {
       ...prev,
       [field]: value ?? ''
-    }));
+    } : null);
   }, []);
 
   // Guardar cambios
   const handleSave = useCallback(async () => {
+    if (!formData) {
+      toast.error('No hay datos para guardar');
+      return;
+    }
+
     try {
       if (!validateForm()) {
         toast.error('Por favor, corrija los errores en el formulario');
@@ -333,6 +327,11 @@ export const useWelcomeScreenForm = (
 
   // Manejar previsualización del formulario
   const handlePreview = useCallback(() => {
+    if (!formData) {
+      toast.error('No hay datos para previsualizar');
+      return;
+    }
+
     if (!validateForm()) {
       toast.error('Por favor, corrija los errores en el formulario');
       return;
@@ -462,12 +461,12 @@ export const useWelcomeScreenForm = (
             
             <main class="content">
               <div class="welcome-container">
-                <h1 class="welcome-title">${formData.title || 'Título no configurado'}</h1>
+                <h1 class="welcome-title">${formData?.title || 'Título no configurado'}</h1>
                 <div class="welcome-message">
-                  ${formData.message || 'Mensaje no configurado'}
+                  ${formData?.message || 'Mensaje no configurado'}
                 </div>
                 <button class="start-button">
-                  ${formData.startButtonText || 'Comenzar'}
+                  ${formData?.startButtonText || 'Comenzar'}
                 </button>
               </div>
             </main>
@@ -527,7 +526,7 @@ export const useWelcomeScreenForm = (
     const html = `
       <html>
         <head>
-          <title>Vista previa: ${formData.title}</title>
+          <title>Vista previa: ${formData?.title}</title>
           <style>
             body {
               font-family: Arial, sans-serif;
@@ -555,9 +554,9 @@ export const useWelcomeScreenForm = (
           </style>
         </head>
         <body>
-          <h1>${formData.title}</h1>
-          <p>${formData.message}</p>
-          <button>${formData.startButtonText}</button>
+          <h1>${formData?.title}</h1>
+          <p>${formData?.message}</p>
+          <button>${formData?.startButtonText}</button>
         </body>
       </html>
     `;
@@ -572,21 +571,22 @@ export const useWelcomeScreenForm = (
   const checkExistingWelcomeScreen = useCallback(async () => {
     try {
       setIsLoading(true);
-      console.log('🔍 Verificando welcomeScreen existente para researchId:', researchId);
-      
       const existing = await welcomeScreenService.getByResearchId(researchId);
       
-      if (existing) {
-        console.log('✅ WelcomeScreen encontrado:', existing);
+      if (existing && existing.id) {
         setExistingScreen(adaptRecordToFormData(existing));
         setFormData(adaptRecordToFormData(existing));
       } else {
-        console.log('ℹ️ No se encontró WelcomeScreen existente');
         setExistingScreen(null);
+        setFormData(null);
       }
-    } catch (error) {
-      console.error('❌ Error al verificar welcomeScreen:', error);
-      toast.error('Error al cargar datos existentes');
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        setExistingScreen(null);
+        setFormData(null);
+      } else {
+        throw error;
+      }
     } finally {
       setIsLoading(false);
     }

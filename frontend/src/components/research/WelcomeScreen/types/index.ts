@@ -127,14 +127,14 @@ export type ValidationErrors = {
  * Resultado del hook useWelcomeScreenForm
  */
 export interface UseWelcomeScreenFormResult {
-  formData: WelcomeScreenData;
+  formData: WelcomeScreenData | null;
   validationErrors: ValidationErrors;
   isLoading: boolean;
   isSaving: boolean;
   modalError: ErrorModalData | null;
   modalVisible: boolean;
   handleChange: (field: keyof WelcomeScreenData, value: any) => void;
-  handleSave: () => void;
+  handleSave: () => Promise<void>;
   handlePreview: () => void;
   validateForm: () => boolean;
   closeModal: () => void;

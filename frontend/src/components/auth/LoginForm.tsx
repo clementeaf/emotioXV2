@@ -153,34 +153,36 @@ export function LoginForm({ className }: LoginFormProps) {
       try {
         setStatus('authenticating');
         
-        // Simulación de token de desarrollo (ya no usamos el endpoint de debug que eliminamos)
-        console.log('Creando token de desarrollo simulado localmente');
+        console.log('Iniciando login automático usando API real');
         
-        // Token de desarrollo simulado manualmente (expira en 24 horas)
-        const now = Math.floor(Date.now() / 1000);
-        const expiresIn = 86400; // 24 horas en segundos
+        const loginUrl = `${API_CONFIG.baseURL}${API_CONFIG.endpoints.auth.LOGIN}`;
+        const response = await fetch(loginUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            email: 'clemente@gmail.com',
+            password: 'clemente',
+            rememberMe: state.rememberMe
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Error en la autenticación');
+        }
+
+        const data = await response.json();
         
-        // Crear payload simulado
-        const payload = {
-          id: 'clemente',
-          sub: 'clemente',
-          name: 'Clemente Falcone',
-          email: 'clemente@gmail.com',
-          role: 'user',
-          iat: now,
-          exp: now + expiresIn
-        };
+        if (!data.auth?.token) {
+          throw new Error('Token no recibido del servidor');
+        }
+
+        console.log('Login automático exitoso');
         
-        // Crear un token simulado (esto no es seguro, solo para desarrollo)
-        // En producción, el token viene del servidor
-        const base64Payload = btoa(JSON.stringify(payload));
-        const fakeSignature = 'TEST_SIGNATURE_FOR_DEV_ONLY';
-        const mockToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${base64Payload}.${fakeSignature}`;
-        
-        console.log('Token de desarrollo simulado creado correctamente');
-        
-        // Iniciar sesión con el token simulado
-        await login(mockToken, state.rememberMe);
+        // Iniciar sesión con el token real
+        await login(data.auth.token, state.rememberMe);
         setStatus('success');
         
         // Redirigir al dashboard
@@ -223,7 +225,14 @@ export function LoginForm({ className }: LoginFormProps) {
       
       setStatus('authenticating');
       
-      // Construir la URL completa con la base URL del API_CONFIG
+      // Si estamos en modo desarrollo y se solicita login automático, usar el token simulado
+      if (isDevMode && state.email === 'clemente@gmail.com' && state.password === 'clemente') {
+        console.log('Usando login automático en modo desarrollo');
+        await handleDevModeLogin();
+        return;
+      }
+      
+      // En cualquier otro caso, usar el login real
       const loginUrl = `${API_CONFIG.baseURL}${API_CONFIG.endpoints.auth.LOGIN}`;
       console.log('URL de login:', loginUrl);
       
@@ -259,6 +268,7 @@ export function LoginForm({ className }: LoginFormProps) {
       if (data.auth && data.auth.token) {
         setStatus('success');
         await login(data.auth.token, state.rememberMe);
+        router.push('/dashboard');
       } else {
         setStatus('error');
         setFormError('La respuesta del servidor no contiene un token válido');

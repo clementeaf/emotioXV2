@@ -1,6 +1,8 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { authService } from './services/auth.service';
 import { v4 as uuidv4 } from 'uuid';
+import { WelcomeScreenController } from './controllers/welcomeScreen.controller';
+import { validateTokenAndSetupAuth } from './utils/controller.utils';
 
 // Helper para crear respuestas HTTP con formato consistente
 const createResponse = (statusCode: number, body: any): APIGatewayProxyResult => {
@@ -138,7 +140,46 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         message: 'Método no permitido para esta ruta'
       });
     } else if (path === '/auth/login') {
-      // ... código existente para login ...
+      if (method === 'POST') {
+        try {
+          if (!event.body) {
+            return createResponse(400, {
+              success: false,
+              message: 'Se requieren credenciales para iniciar sesión'
+            });
+          }
+
+          const credentials = JSON.parse(event.body);
+          
+          // Validar que se proporcionaron las credenciales necesarias
+          if (!credentials.email || !credentials.password) {
+            return createResponse(400, {
+              success: false,
+              message: 'Se requiere email y contraseña'
+            });
+          }
+
+          // Intentar hacer login
+          const authResult = await authService.login(credentials);
+          
+          return createResponse(200, {
+            success: true,
+            message: 'Login exitoso',
+            auth: authResult
+          });
+        } catch (error) {
+          console.error('Error en login:', error);
+          return createResponse(401, {
+            success: false,
+            message: error instanceof Error ? error.message : 'Credenciales inválidas'
+          });
+        }
+      }
+      
+      return createResponse(405, {
+        success: false,
+        message: 'Método no permitido para esta ruta'
+      });
     } else if (path === '/auth/register') {
       // ... código existente para register ...
     } else if (path === '/auth/refreshToken' && method === 'POST') {
@@ -229,64 +270,43 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         });
       }
     } else if (path.startsWith('/welcome-screens')) {
-      // Respuestas para las rutas de welcome-screens
+      // Extraer el token y validar el usuario
+      const token = event.headers.Authorization?.split(' ')[1];
+      if (!token) {
+        return createResponse(401, { message: 'No autorizado' });
+      }
+
+      const authResult = await validateTokenAndSetupAuth(event, path);
+      if ('statusCode' in authResult) {
+        return authResult;
+      }
+
+      const userId = authResult.userId;
+      
+      // Instanciar el controlador
+      const welcomeScreenController = new WelcomeScreenController();
+
+      // Manejar las rutas de welcome-screens
       if (method === 'GET') {
-        // Manejar GET /welcome-screens o GET /welcome-screens/:id
         const parts = path.split('/');
         const id = parts.length > 2 ? parts[2] : null;
         
         if (id) {
           // GET para un ID específico
-          return createResponse(200, {
-            data: {
-              id,
-              title: 'Pantalla de Bienvenida de ejemplo',
-              message: 'Bienvenido a la investigación',
-              isEnabled: true,
-              metadata: {
-                createdAt: new Date().toISOString()
-              }
-            }
-          });
+          return await welcomeScreenController.getWelcomeScreenById(event);
         } else {
           // GET para listar todos
-          return createResponse(200, {
-            data: [
-              {
-                id: 'welcome-1',
-                title: 'Pantalla de Bienvenida 1',
-                isEnabled: true
-              },
-              {
-                id: 'welcome-2',
-                title: 'Pantalla de Bienvenida 2',
-                isEnabled: false
-              }
-            ]
-          });
+          return await welcomeScreenController.getAllWelcomeScreens(event, userId);
         }
       } else if (method === 'POST') {
         // Crear nueva pantalla de bienvenida
-        return createResponse(201, {
-          message: 'Pantalla de bienvenida creada',
-          data: {
-            id: `welcome-${Date.now()}`,
-            ...JSON.parse(event.body || '{}')
-          }
-        });
+        return await welcomeScreenController.createWelcomeScreen(event, userId);
       } else if (method === 'PUT') {
         // Actualizar pantalla existente
-        return createResponse(200, {
-          message: 'Pantalla de bienvenida actualizada',
-          data: {
-            ...JSON.parse(event.body || '{}')
-          }
-        });
+        return await welcomeScreenController.updateWelcomeScreen(event, userId);
       } else if (method === 'DELETE') {
         // Eliminar pantalla
-        return createResponse(200, {
-          message: 'Pantalla de bienvenida eliminada'
-        });
+        return await welcomeScreenController.deleteWelcomeScreen(event, userId);
       }
       
       // Método no soportado para esta ruta
