@@ -1,3 +1,6 @@
+import { SmartVOCFormData as BaseSmartVOCFormData, SmartVOCQuestion as BaseSmartVOCQuestion } from 'shared/interfaces/smart-voc.interface';
+import { ReactNode } from 'react';
+
 /**
  * Tipos relacionados con el formulario SmartVOC
  */
@@ -32,17 +35,10 @@ export interface QuestionConfig {
 }
 
 /**
- * Estructura de una pregunta SmartVOC
+ * Extendemos la interfaz base de SmartVOCQuestion
  */
-export interface SmartVOCQuestion {
-  id: string;
-  type: QuestionType;
-  title: string;
-  description: string;
+export interface SmartVOCQuestion extends BaseSmartVOCQuestion {
   instructions?: string;
-  required: boolean;
-  showConditionally: boolean;
-  config: QuestionConfig;
 }
 
 /**
@@ -140,19 +136,19 @@ export const DEFAULT_QUESTIONS: SmartVOCQuestion[] = [
 ];
 
 /**
- * Datos del formulario SmartVOC
+ * Extendemos la interfaz base de SmartVOCFormData
  */
-export interface SmartVOCFormData {
+export interface SmartVOCFormData extends BaseSmartVOCFormData {
   id?: string;
   researchId?: string;
   randomize: boolean;
   requireAnswers: boolean;
-  CSAT?: boolean;
-  CES?: boolean;
-  CV?: boolean;
-  NEV?: boolean;
-  NPS?: boolean;
-  VOC?: boolean;
+  questions: SmartVOCQuestion[];
+  metadata?: {
+    createdAt: string;
+    updatedAt?: string;
+    estimatedCompletionTime: string;
+  };
 }
 
 /**
@@ -170,7 +166,7 @@ export interface SmartVOCResponse {
  */
 export interface ErrorModalData {
   title: string;
-  message: string | React.ReactNode;
+  message: string | ReactNode;
   type: 'error' | 'info' | 'success';
 }
 
@@ -180,7 +176,7 @@ export interface ErrorModalData {
 export interface SmartVOCFormProps {
   className?: string;
   researchId: string;
-  onSave?: (data: any) => void;
+  onSave?: (data: SmartVOCFormData) => void;
 }
 
 /**
@@ -208,7 +204,7 @@ export interface SmartVOCSettingsProps {
 export interface SmartVOCQuestionsProps {
   questions: SmartVOCQuestion[];
   onUpdateQuestion: (id: string, updates: Partial<SmartVOCQuestion>) => void;
-  onAddQuestion: (customQuestion?: SmartVOCQuestion) => void;
+  onAddQuestion: () => void;
   onRemoveQuestion: (id: string) => void;
   disabled: boolean;
 }
@@ -265,4 +261,15 @@ export interface UseSmartVOCFormResult {
   jsonToSend: string;
   pendingAction: 'save' | 'preview' | null;
   continueWithAction: () => void;
+}
+
+/**
+ * Props para el modal de vista previa JSON
+ */
+export interface JsonPreviewModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onContinue: () => void;
+  jsonData: string;
+  pendingAction: 'save' | 'preview' | null;
 } 

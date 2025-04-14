@@ -3,7 +3,16 @@
  * Manejar solicitudes de manera similar a las otras APIs que funcionan bien
  */
 
+import { SmartVOCFormData } from 'shared/interfaces/smart-voc.interface';
 import API_CONFIG from '@/config/api.config';
+import { ApiClient } from '@/lib/api-client';
+
+interface ApiResponse<T> {
+  data?: T & { id?: string };
+  error?: boolean;
+  message?: string;
+  notFound?: boolean;
+}
 
 // Preparar los encabezados con el token de autenticación
 const getAuthHeaders = (): Record<string, string> => {
@@ -88,266 +97,76 @@ const normalizeUrl = (base: string, path: string): string => {
   return `${cleanBase}${cleanPath}`;
 };
 
-// API Cliente - usando el enfoque de las APIs que funcionan correctamente
-export const smartVocAPI = {
-  /**
-   * Obtiene un Smart VOC por ID
-   * @param id ID del SmartVOC
-   */
-  getById: (id: string) => {
-    if (!id) {
-      console.warn('[SmartVOCAPI] Se requiere un ID para obtener el Smart VOC');
-      return {
-        send: async () => ({ error: true, message: 'ID no proporcionado', data: null })
-      };
-    }
-    
-    const url = API_CONFIG.endpoints.smartVoc?.GET?.replace('{id}', id) || `/${id}`;
-    const fullUrl = normalizeUrl(API_CONFIG.baseURL, `/smart-voc${url}`);
-    
-    return {
-      send: async () => {
-        try {
-          const headers = getAuthHeaders();
-          
-          const response = await fetch(fullUrl, { 
-            method: 'GET', 
-            headers 
-          });
-          
-          return handleSmartVOCResponse(response);
-        } catch (error) {
-          // Capturar cualquier error de red sin mostrarlo como error
-          console.warn('[SmartVOCAPI] Error de red controlado');
-          return { 
-            error: true, 
-            network: true, 
-            message: 'Error de conexión', 
-            data: null 
-          };
-        }
-      }
-    };
-  },
-  
-  /**
-   * Obtiene el Smart VOC asociado a una investigación
-   * @param researchId ID de la investigación
-   */
-  getByResearchId: (researchId: string) => {
-    if (!researchId) {
-      console.warn('[SmartVOCAPI] Se requiere un ID de investigación');
-      return {
-        send: async () => ({ error: true, message: 'ID de investigación no proporcionado', data: null })
-      };
-    }
-    
-    // La URL correcta según la implementación del backend es /research/:researchId/smart-voc
-    // Con nuestra solución adicional en index.ts, ahora esta ruta debería funcionar
-    const fullUrl = normalizeUrl(API_CONFIG.baseURL, `/research/${researchId}/smart-voc`);
-    console.log(`[SmartVOCAPI] Solicitando SmartVOC para investigación: ${researchId}`, { url: fullUrl });
-    
-    return {
-      send: async () => {
-        try {
-          const headers = getAuthHeaders();
-          
-          const response = await fetch(fullUrl, { 
-            method: 'GET', 
-            headers 
-          });
-          
-          return handleSmartVOCResponse(response);
-        } catch (error) {
-          // Capturar cualquier error de red sin mostrarlo como error
-          console.warn('[SmartVOCAPI] Error de red controlado:', error);
-          return { 
-            error: true, 
-            network: true, 
-            message: 'Error de conexión', 
-            data: null 
-          };
-        }
-      }
-    };
-  },
-  
-  /**
-   * Crea un nuevo Smart VOC
-   * @param data Datos del Smart VOC
-   */
-  create: (data: any) => {
-    if (!data || !data.researchId) {
-      console.warn('[SmartVOCAPI] Se requieren datos y un ID de investigación');
-      return {
-        send: async () => ({ 
-          error: true, 
-          message: 'Datos o ID de investigación no proporcionados', 
-          data: null 
-        })
-      };
-    }
-    
-    // La URL correcta según la implementación del backend es /research/:researchId/smart-voc
-    const fullUrl = normalizeUrl(API_CONFIG.baseURL, `/research/${data.researchId}/smart-voc`);
-    console.log(`[SmartVOCAPI] Creando SmartVOC para investigación: ${data.researchId}`, { url: fullUrl });
-    
-    return {
-      send: async () => {
-        try {
-          const headers = getAuthHeaders();
-          
-          const response = await fetch(fullUrl, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({
-              ...data,
-              researchId: data.researchId.trim()
-            })
-          });
-          
-          return handleSmartVOCResponse(response);
-        } catch (error) {
-          // Capturar cualquier error de red sin mostrarlo como error
-          console.warn('[SmartVOCAPI] Error de red controlado');
-          return { 
-            error: true, 
-            network: true, 
-            message: 'Error de conexión', 
-            data: null 
-          };
-        }
-      }
-    };
-  },
-  
-  /**
-   * Actualiza un Smart VOC existente
-   * @param id ID del Smart VOC
-   * @param data Datos actualizados
-   */
-  update: (id: string, data: any) => {
-    if (!id) {
-      console.warn('[SmartVOCAPI] Se requiere un ID para actualizar');
-      return {
-        send: async () => ({ error: true, message: 'ID no proporcionado', data: null })
-      };
-    }
-    
-    if (!data || !data.researchId) {
-      console.warn('[SmartVOCAPI] Se requieren datos y un ID de investigación para actualizar');
-      return {
-        send: async () => ({ error: true, message: 'Datos o ID de investigación no proporcionados', data: null })
-      };
-    }
-    
-    // La URL correcta según la implementación del backend es /research/:researchId/smart-voc
-    const fullUrl = normalizeUrl(API_CONFIG.baseURL, `/research/${data.researchId}/smart-voc`);
-    console.log(`[SmartVOCAPI] Actualizando SmartVOC para investigación: ${data.researchId}`, { url: fullUrl });
-    
-    return {
-      send: async () => {
-        try {
-          const headers = getAuthHeaders();
-          
-          const response = await fetch(fullUrl, {
-            method: 'PUT',
-            headers,
-            body: JSON.stringify(data)
-          });
-          
-          return handleSmartVOCResponse(response);
-        } catch (error) {
-          // Capturar cualquier error de red sin mostrarlo como error
-          console.warn('[SmartVOCAPI] Error de red controlado');
-          return { 
-            error: true, 
-            network: true, 
-            message: 'Error de conexión', 
-            data: null 
-          };
-        }
-      }
-    };
-  },
-  
-  /**
-   * Crea o actualiza automáticamente un Smart VOC para una investigación
-   * @param researchId ID de la investigación
-   * @param data Datos del formulario SmartVOC
-   * @returns Resultado de la operación
-   */
-  createOrUpdateByResearchId: (researchId: string, data: any) => {
-    if (!researchId) {
-      console.warn('[SmartVOCAPI] Se requiere un ID de investigación');
-      return {
-        send: async () => ({ error: true, message: 'ID de investigación no proporcionado', data: null })
-      };
-    }
-    
-    if (!data) {
-      console.warn('[SmartVOCAPI] Se requieren datos para crear o actualizar');
-      return {
-        send: async () => ({ error: true, message: 'Datos no proporcionados', data: null })
-      };
-    }
-    
-    // URL para operaciones con research ID
-    const fullUrl = normalizeUrl(API_CONFIG.baseURL, `/research/${researchId}/smart-voc`);
-    
-    return {
-      send: async () => {
-        try {
-          const headers = getAuthHeaders();
-          
-          // Primero verificamos si existe un formulario para esta investigación
-          console.log(`[SmartVOCAPI] Verificando existencia de SmartVOC para investigación: ${researchId}`);
-          const checkResponse = await fetch(fullUrl, { 
-            method: 'GET', 
-            headers 
-          });
-          
-          const checkResult = await handleSmartVOCResponse(checkResponse);
-          
-          // Determinar si debemos usar POST o PUT
-          let method = 'POST';
-          
-          if (checkResult && !checkResult.notFound && !checkResult.error && checkResult.data) {
-            // Si encontramos datos existentes, usamos PUT para actualizar
-            method = 'PUT';
-            console.log(`[SmartVOCAPI] Se encontró formulario existente, usando ${method} para actualizar`);
-          } else {
-            // Si no hay datos o hubo un error 404, usamos POST para crear nuevo
-            console.log(`[SmartVOCAPI] No se encontró formulario existente, usando ${method} para crear nuevo`);
-          }
-          
-          // Ahora realizamos la operación de crear o actualizar
-          const response = await fetch(fullUrl, {
-            method,
-            headers,
-            body: JSON.stringify({
-              ...data,
-              researchId
-            })
-          });
-          
-          const result = await handleSmartVOCResponse(response);
-          console.log(`[SmartVOCAPI] Resultado de ${method} para SmartVOC:`, result);
-          return result;
-        } catch (error) {
-          // Capturar cualquier error de red sin mostrarlo como error
-          console.warn('[SmartVOCAPI] Error de red controlado en createOrUpdateByResearchId:', error);
-          return { 
-            error: true, 
-            network: true, 
-            message: 'Error de conexión', 
-            data: null 
-          };
-        }
-      }
-    };
+export class SmartVOCFixedAPI extends ApiClient {
+  constructor() {
+    super(`${API_CONFIG.baseURL}/smart-voc`);
   }
-};
 
-// Mantener retrocompatibilidad con el nombre antiguo
-export const smartVocFixedAPI = smartVocAPI;
+  async create(data: SmartVOCFormData): Promise<ApiResponse<SmartVOCFormData>> {
+    try {
+      const response = await super.post<ApiResponse<SmartVOCFormData>>('', data);
+      return response;
+    } catch (error) {
+      return {
+        error: true,
+        message: 'Error al crear SmartVOC'
+      };
+    }
+  }
+
+  async update(id: string, data: Partial<SmartVOCFormData>): Promise<ApiResponse<SmartVOCFormData>> {
+    try {
+      const response = await super.put<ApiResponse<SmartVOCFormData>>(`/${id}`, data);
+      return response;
+    } catch (error) {
+      return {
+        error: true,
+        message: 'Error al actualizar SmartVOC'
+      };
+    }
+  }
+
+  async getById(id: string): Promise<ApiResponse<SmartVOCFormData>> {
+    try {
+      const response = await super.get<ApiResponse<SmartVOCFormData>>(`/${id}`);
+      return response;
+    } catch (error) {
+      return {
+        error: true,
+        message: 'Error al obtener SmartVOC'
+      };
+    }
+  }
+
+  async getByResearchId(researchId: string): Promise<ApiResponse<SmartVOCFormData>> {
+    try {
+      const response = await super.get<ApiResponse<SmartVOCFormData>>(`/research/${researchId}`);
+      return response;
+    } catch (error) {
+      if ((error as any)?.status === 404) {
+        return {
+          notFound: true,
+          error: false
+        };
+      }
+      return {
+        error: true,
+        message: 'Error al obtener SmartVOC'
+      };
+    }
+  }
+
+  async deleteSmartVOC(id: string): Promise<ApiResponse<void>> {
+    try {
+      await super.delete<void>(`/${id}`);
+      return { error: false };
+    } catch (error) {
+      return {
+        error: true,
+        message: 'Error al eliminar SmartVOC'
+      };
+    }
+  }
+}
+
+export const smartVocFixedAPI = new SmartVOCFixedAPI();

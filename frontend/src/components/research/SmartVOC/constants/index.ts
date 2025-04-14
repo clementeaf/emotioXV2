@@ -2,37 +2,37 @@
  * Constantes para el SmartVOC
  */
 
+import { SmartVOCQuestion } from 'shared/interfaces/smart-voc.interface';
+
 // Claves para React Query
 export const QUERY_KEYS = {
-  SMART_VOC: 'smartVOC'
+  SMART_VOC: 'smartVoc'
 };
 
 // Mensajes de error
 export const ERROR_MESSAGES = {
-  FETCH_ERROR: 'Error al cargar los datos de SmartVOC',
-  SAVE_ERROR: 'Error al guardar los datos de SmartVOC',
-  PREVIEW_ERROR: 'Error al generar la vista previa',
+  FETCH_ERROR: 'Error al cargar la configuración',
+  SAVE_ERROR: 'Error al guardar la configuración',
+  PREVIEW_ERROR: 'Error al generar vista previa',
   VALIDATION_ERRORS: {
-    NO_QUESTIONS: 'Debes seleccionar al menos una pregunta',
-    RESEARCH_ID_REQUIRED: 'El ID de investigación es requerido'
+    NO_QUESTIONS: 'Debe incluir al menos una pregunta'
   }
 };
 
 // Mensajes de éxito
 export const SUCCESS_MESSAGES = {
-  SAVE_SUCCESS: 'Configuración de SmartVOC guardada correctamente',
-  PREVIEW_COMING_SOON: 'La vista previa estará disponible próximamente'
+  CREATE_SUCCESS: 'SmartVOC creado exitosamente',
+  UPDATE_SUCCESS: 'SmartVOC actualizado exitosamente',
+  SAVE_SUCCESS: 'SmartVOC guardado exitosamente'
 };
 
 // Textos de la interfaz
 export const UI_TEXTS = {
-  TITLE: 'Smart VOC',
-  DESCRIPTION: 'Configure las preguntas de Voice of Customer para recopilar feedback valioso de los participantes',
+  TITLE: 'Configuración de SmartVOC',
+  DESCRIPTION: 'Configure las preguntas y opciones para la recolección de feedback de los usuarios.',
   SETTINGS: {
-    RANDOMIZE_TITLE: 'Aleatorizar preguntas',
-    RANDOMIZE_DESCRIPTION: 'Mostrar las preguntas en orden aleatorio a los participantes',
-    REQUIRED_TITLE: 'Requerir respuestas',
-    REQUIRED_DESCRIPTION: 'Hacer que las respuestas sean obligatorias para los participantes'
+    ENABLED_LABEL: 'SmartVOC habilitado',
+    DISABLED_LABEL: 'SmartVOC deshabilitado'
   },
   QUESTIONS: {
     ADD_BUTTON: 'Añadir otra pregunta',
@@ -53,13 +53,11 @@ export const UI_TEXTS = {
     EXISTING_CONFIGURATION: 'Se actualizará la configuración existente'
   },
   BUTTONS: {
-    PREVIEW: 'Vista previa',
     SAVE: 'Guardar configuración',
     UPDATE: 'Actualizar configuración',
-    SAVING: 'Guardando...',
-    SAVED: 'Guardado',
+    PREVIEW: 'Vista previa',
     CANCEL: 'Cancelar',
-    CONFIRM_SAVE: 'Confirmar y guardar'
+    CONFIRM: 'Confirmar'
   },
   MODAL: {
     ERROR_TITLE: 'Error',
@@ -84,4 +82,32 @@ export const UI_TEXTS = {
     CLOSE_BUTTON: 'Cancelar',
     ADD_BUTTON: 'Añadir'
   }
-}; 
+};
+
+// Preguntas predeterminadas
+export const DEFAULT_QUESTIONS: SmartVOCQuestion[] = [
+  {
+    id: 'csat',
+    type: 'CSAT',
+    title: 'Customer Satisfaction Score (CSAT)',
+    description: '¿Cómo calificaría su nivel general de satisfacción?',
+    required: true,
+    showConditionally: false,
+    config: {
+      type: 'stars',
+      companyName: ''
+    }
+  },
+  {
+    id: 'ces',
+    type: 'CES',
+    title: 'Customer Effort Score (CES)',
+    description: 'Fue fácil para mí resolver mi problema hoy.',
+    required: true,
+    showConditionally: false,
+    config: {
+      type: 'scale',
+      scaleRange: { start: 1, end: 7 }
+    }
+  }
+]; 
