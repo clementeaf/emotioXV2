@@ -343,70 +343,36 @@ const alovaInstance = createAlova({
       }
     },
     onError: async (error: Error, method: Method) => {
-      // Verificar si es un error 404 en una petición GET de investigación
-      const is404Error = error.message.includes('404');
-      const isResearchGet = method.url.includes('/research/') && 
-                         method.type === 'GET' &&
-                         !method.url.includes('/smart-voc') &&
-                         !method.url.includes('/eye-tracking') &&
-                         !method.url.includes('/welcome-screen') &&
-                         !method.url.includes('/thank-you-screen');
-      
-      // Solo mostrar errores en consola si NO es un 404 de investigación
-      if (!(is404Error && isResearchGet)) {
-        console.error('Error en la solicitud (capturado por responded.onError):', {
-          name: error.name,
-          message: error.message,
-          stack: error.stack
-        });
+      // Si el error es por token inválido o ausente, no mostrar en consola
+      if (error.message === 'NO_TOKEN_AVAILABLE' || error.message === 'INVALID_TOKEN_FORMAT') {
+        return;
       }
-      
+
+      // Si es error en refreshToken, manejar silenciosamente
+      if (method.url.includes('/auth/refreshToken')) {
+        tokenService.stopAutoRefresh();
+        return;
+      }
+
       // Verificar si es un error 401 (Unauthorized)
-      if (error.message.includes('401') || 
-          error.message.includes('Token inválido') || 
-          error.message.includes('Token expirado') ||
-          error.message.includes('No autorizado')) {
-        
-        // Evitar bucle infinito: no intentar renovar si el error viene de /auth/refreshToken
-        if (method.url.includes('/auth/refreshToken')) {
-          console.log('Error en renovación de token, no se reintentará para evitar bucle');
-          throw error;
-        }
-        
-        console.log('Detectado error de autorización, intentando renovar token...');
-        
-        try {
-          // Intentar renovar el token
-          const renewed = await tokenService.refreshTokenIfNeeded();
-          
-          if (renewed) {
-            console.log('Token renovado exitosamente, reintentando solicitud original...');
-            
-            // Obtener el nuevo token
-            const newToken = tokenService.getToken();
-            
-            if (newToken) {
-              // Actualizar el header de autorización en la solicitud original
-              const authToken = newToken.startsWith('Bearer ') ? newToken : `Bearer ${newToken}`;
-              
-              method.config.headers = {
-                ...method.config.headers,
-                Authorization: authToken,
-              };
-              
-              console.log('Reintentando solicitud con nuevo token...');
-              
-              // Reenviar la solicitud original con el nuevo token
+      if (error.message.includes('401')) {
+        // Si estamos en una ruta que requiere autenticación pero no es refreshToken
+        if (!method.url.includes('/auth/refreshToken')) {
+          try {
+            const renewed = await tokenService.refreshTokenIfNeeded();
+            if (renewed) {
               throw new Error('TOKEN_REFRESHED');
             }
+          } catch (refreshError) {
+            // Si falla la renovación, limpiar todo silenciosamente
+            tokenService.removeToken();
+            localStorage.removeItem('auth_storage_type');
+            return;
           }
-        } catch (refreshError) {
-          console.error('Error al intentar renovar token:', refreshError);
-          throw error; // Mantener el error original
         }
       }
-      
-      // Para otros tipos de errores, simplemente propagarlos
+
+      // Para otros tipos de errores, mantener el comportamiento actual
       throw error;
     },
   },
@@ -426,12 +392,30 @@ export const authAPI = {
   refreshToken: () => {
     const currentToken = tokenService.getToken();
     if (!currentToken) {
-      throw new Error('No hay token disponible para renovar');
+      console.warn('No hay token disponible para renovar - refreshToken');
+      return Promise.reject(new Error('NO_TOKEN_AVAILABLE'));
     }
+
+    // Validar formato del token antes de enviarlo
+    const cleanToken = currentToken.replace('Bearer ', '').trim();
+    if (!cleanToken || cleanToken.split('.').length !== 3) {
+      console.warn('Token con formato inválido detectado - refreshToken');
+      tokenService.removeToken(); // Limpiar token inválido
+      return Promise.reject(new Error('INVALID_TOKEN_FORMAT'));
+    }
+
     return alovaInstance.Post<APIResponse<{token: string, renewed: boolean, expiresAt: number, user: any}>>(
       API_CONFIG.endpoints.auth?.REFRESH_TOKEN || `${API_CONFIG.baseURL}/auth/refreshToken`,
-      { token: currentToken }
-    );
+      { token: cleanToken }
+    ).catch(error => {
+      // Si hay error 401, limpiar el token y storage
+      if (error.message.includes('401')) {
+        console.warn('Error 401 en refreshToken - limpiando token');
+        tokenService.removeToken();
+        localStorage.removeItem('auth_storage_type');
+      }
+      throw error;
+    });
   },
 };
 

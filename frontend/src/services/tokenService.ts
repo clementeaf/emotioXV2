@@ -102,26 +102,26 @@ const getToken = (): string | null => {
     const token = localStorage.getItem('token');
     
     if (token) {
-      // Asegurarnos de que el token no tenga el prefijo Bearer
-      const cleanToken = token.startsWith('Bearer ') ? token.substring(7) : token;
+      // Asegurarnos de que el token tenga el prefijo Bearer
+      const formattedToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
       console.log('tokenService.getToken - TOKEN ENCONTRADO (primeros caracteres):', 
-        cleanToken.substring(0, 20) + '...');
-      return cleanToken;
+        formattedToken.substring(0, 27) + '...');
+      return formattedToken;
     }
     
     // Si no se encuentra en localStorage, intentar obtener de sessionStorage como respaldo
     const sessionToken = sessionStorage.getItem('token');
     if (sessionToken) {
-      // Asegurarnos de que el token no tenga el prefijo Bearer
-      const cleanToken = sessionToken.startsWith('Bearer ') ? sessionToken.substring(7) : sessionToken;
+      // Asegurarnos de que el token tenga el prefijo Bearer
+      const formattedToken = sessionToken.startsWith('Bearer ') ? sessionToken : `Bearer ${sessionToken}`;
       console.log('tokenService.getToken - TOKEN ENCONTRADO en sessionStorage (primeros caracteres):', 
-        cleanToken.substring(0, 20) + '...');
+        formattedToken.substring(0, 27) + '...');
       
       // Guardar en localStorage para futuras solicitudes
-      localStorage.setItem('token', cleanToken);
+      localStorage.setItem('token', formattedToken);
       console.log('tokenService.getToken - Token de sessionStorage copiado a localStorage');
       
-      return cleanToken;
+      return formattedToken;
     }
     
     // Verificar si hay información de almacenamiento en localStorage
@@ -142,9 +142,9 @@ const getToken = (): string | null => {
  * @param token Token JWT
  */
 const saveToken = (token: string): void => {
-  // Asegurarnos de que el token no tenga el prefijo Bearer
-  const cleanToken = token.startsWith('Bearer ') ? token.substring(7) : token;
-  localStorage.setItem('token', cleanToken);
+  // Asegurarnos de que el token tenga el prefijo Bearer
+  const formattedToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+  localStorage.setItem('token', formattedToken);
   logService.info('Token actualizado en localStorage');
 };
 
@@ -170,36 +170,63 @@ const refreshTokenIfNeeded = async (): Promise<boolean> => {
   try {
     const currentToken = getToken();
     if (!currentToken) {
-      // Cambio: usar info en lugar de warn para un mensaje más discreto
-      logService.info('Token ausente - no es necesario renovar');
       return false;
     }
-    
-    // Si el token no está próximo a expirar, no es necesario renovarlo
-    if (!isTokenExpiringSoon(currentToken)) {
-      logService.info('Token vigente, no es necesario renovarlo');
+
+    // Validar formato del token
+    const cleanToken = currentToken.replace('Bearer ', '').trim();
+    if (!cleanToken || cleanToken.split('.').length !== 3) {
+      removeToken();
       return false;
     }
-    
-    logService.info('Token próximo a expirar, solicitando renovación...');
-    const response = await authAPI.refreshToken();
-    
-    if (response.data && response.data.token) {
-      // Si el token fue renovado, guardarlo
-      if (response.data.renewed) {
-        logService.info('Token renovado exitosamente');
-        saveToken(response.data.token);
-        return true;
-      } else {
-        logService.info('El servidor indica que no es necesario renovar el token');
-        return false;
+
+    // Decodificar y verificar expiración
+    const payload = decodeToken(cleanToken);
+    if (!payload || !payload.exp) {
+      removeToken();
+      return false;
+    }
+
+    const expirationTime = payload.exp * 1000;
+    const currentTime = Date.now();
+    const timeToExpire = expirationTime - currentTime;
+
+    // Si el token ya expiró, limpiarlo y retornar
+    if (timeToExpire <= 0) {
+      removeToken();
+      return false;
+    }
+
+    // Si el token aún tiene más de 2 horas de validez, no renovar
+    if (timeToExpire > TOKEN_REFRESH_THRESHOLD) {
+      return false;
+    }
+
+    try {
+      const response = await authAPI.refreshToken();
+      if (!response?.data?.token) {
+        throw new Error('No se recibió token en la respuesta');
       }
-    } else {
-      logService.warn('Respuesta de renovación inválida:', response);
+
+      const newToken = response.data.token;
+      if (!newToken.includes('.') || newToken.split('.').length !== 3) {
+        throw new Error('Token recibido tiene formato inválido');
+      }
+
+      saveToken(newToken);
+      return true;
+    } catch (error) {
+      if (error instanceof Error && 
+         (error.message.includes('401') || 
+          error.message === 'NO_TOKEN_AVAILABLE' || 
+          error.message === 'INVALID_TOKEN_FORMAT')) {
+        removeToken();
+        stopAutoRefresh();
+      }
       return false;
     }
   } catch (error) {
-    logService.error('Error al renovar token:', error);
+    removeToken();
     return false;
   }
 };
@@ -238,24 +265,32 @@ const forceTokenRefresh = async (): Promise<boolean> => {
  * Inicia la renovación automática del token
  */
 const startAutoRefresh = (): void => {
-  // Detener el temporizador anterior si existe
-  if (refreshTimer) {
-    clearInterval(refreshTimer);
+  // Detener cualquier temporizador existente
+  stopAutoRefresh();
+  
+  // Verificar si hay un token válido antes de iniciar
+  const currentToken = getToken();
+  if (!currentToken) {
+    return;
   }
-  
-  // Intentar renovar el token inmediatamente al iniciar
-  refreshTokenIfNeeded().then(renewed => {
-    logService.info('Resultado de renovación inicial:', renewed ? 'Renovado' : 'No fue necesario');
+
+  // Intentar renovar inmediatamente solo si es necesario
+  refreshTokenIfNeeded().catch(() => {
+    // Si falla la renovación inicial, detener el auto-refresh
+    stopAutoRefresh();
   });
-  
-  // Configurar temporizador para renovación periódica
-  refreshTimer = setInterval(() => {
-    refreshTokenIfNeeded().then(renewed => {
-      logService.info('Resultado de renovación periódica:', renewed ? 'Renovado' : 'No fue necesario');
-    });
+
+  // Configurar nuevo temporizador
+  refreshTimer = setInterval(async () => {
+    try {
+      const success = await refreshTokenIfNeeded();
+      if (!success) {
+        stopAutoRefresh();
+      }
+    } catch {
+      stopAutoRefresh();
+    }
   }, TOKEN_REFRESH_INTERVAL);
-  
-  logService.info('Renovación automática de token iniciada');
 };
 
 /**

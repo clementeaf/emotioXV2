@@ -15,15 +15,28 @@ const TABLE_NAME = "emotioxv2-backend-table-dev";
 
 // Patrones de SK a eliminar
 const PATTERNS_TO_DELETE = [
-  "THANK_YOU_SCREEN#"
+  "THANK_YOU_SCREEN#",
+  "WELCOME_SCREEN#",
+  "SMART_VOC#",
+  "EYE_TRACKING#",
+  "RESEARCH#",
 ];
+
+// Usuario a preservar
+const PRESERVE_USER = {
+  email: "clemente@gmail.com",
+  name: "clemente"
+};
 
 async function scanTable() {
   console.log(`Escaneando tabla ${TABLE_NAME} para identificar registros a eliminar...`);
   
   const params = {
     TableName: TABLE_NAME,
-    ProjectionExpression: "id, sk"
+    ProjectionExpression: "id, sk, email, #n",
+    ExpressionAttributeNames: {
+      "#n": "name"
+    }
   };
   
   let totalItems = 0;
@@ -43,7 +56,12 @@ async function scanTable() {
       const filteredItems = data.Items.filter(item => {
         if (!item.sk) return false;
         
-        // Verificar si el SK coincide con alguno de los patrones a eliminar
+        // Si es un usuario, verificar si NO es el usuario a preservar
+        if (item.sk.startsWith('USER#')) {
+          return !(item.email === PRESERVE_USER.email && item.name === PRESERVE_USER.name);
+        }
+        
+        // Para otros tipos de registros, eliminar si coincide con los patrones
         return PATTERNS_TO_DELETE.some(pattern => item.sk.includes(pattern));
       });
       
@@ -56,6 +74,7 @@ async function scanTable() {
     
     console.log(`Total de elementos en la tabla: ${totalItems}`);
     console.log(`Total de elementos a eliminar: ${itemsToDelete.length}`);
+    console.log(`Se preservará el usuario: ${PRESERVE_USER.email}`);
     
     return itemsToDelete;
     
