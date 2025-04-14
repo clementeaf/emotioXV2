@@ -56,6 +56,7 @@ export interface ErrorModalData {
 export interface WelcomeScreenFormProps {
   className?: string;
   researchId: string;
+  onSave?: () => void;
 }
 
 /**
@@ -95,7 +96,7 @@ export interface WelcomeScreenFooterProps {
   isLoading: boolean;
   isEnabled: boolean;
   buttonText: string;
-  welcomeScreenId?: string | null;
+  isExisting?: boolean;
 }
 
 /**
@@ -118,14 +119,17 @@ export interface ErrorModalProps {
   error: ErrorModalData | null;
 }
 
+// Tipos de validación
+export type ValidationErrors = {
+  [key: string]: string;
+};
+
 /**
  * Resultado del hook useWelcomeScreenForm
  */
 export interface UseWelcomeScreenFormResult {
   formData: WelcomeScreenData;
-  welcomeScreenId: string | null;
-  realWelcomeScreenId: string | null;
-  validationErrors: {[key: string]: string};
+  validationErrors: ValidationErrors;
   isLoading: boolean;
   isSaving: boolean;
   modalError: ErrorModalData | null;
@@ -135,12 +139,7 @@ export interface UseWelcomeScreenFormResult {
   handlePreview: () => void;
   validateForm: () => boolean;
   closeModal: () => void;
-  showJsonPreview: boolean;
-  closeJsonModal: () => void;
-  jsonToSend: string;
-  pendingAction: 'save' | 'preview' | null;
-  generateHtmlPreview: () => void;
   isExisting: boolean;
   closeErrorModal: () => void;
-  continueWithAction: () => void;
+  existingScreen: WelcomeScreenData | null;
 } 

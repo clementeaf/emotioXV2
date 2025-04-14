@@ -21,10 +21,18 @@ export const ThankYouScreenFooter: React.FC<ThankYouScreenFooterProps> = ({
     if (isSaving || isLoading) {
       return UI_TEXTS.FOOTER.SAVING_TEXT;
     }
-    
-    return thankYouScreenId 
-      ? UI_TEXTS.FOOTER.UPDATE_EXISTING_TEXT 
+
+    return thankYouScreenId
+      ? UI_TEXTS.FOOTER.UPDATE_EXISTING_TEXT
       : UI_TEXTS.FOOTER.CREATE_NEW_TEXT;
+  };
+
+  // Determinar el texto del botón de guardar
+  const getSaveButtonText = () => {
+    if (isSaving) {
+      return UI_TEXTS.FOOTER.SAVING_BUTTON;
+    }
+    return thankYouScreenId ? "Actualizar" : "Guardar cambios";
   };
 
   return (
@@ -47,7 +55,7 @@ export const ThankYouScreenFooter: React.FC<ThankYouScreenFooterProps> = ({
           disabled={isLoading || isSaving || !isEnabled}
           className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50"
         >
-          {isSaving ? UI_TEXTS.FOOTER.SAVING_BUTTON : UI_TEXTS.FOOTER.SAVE_BUTTON}
+          {getSaveButtonText()}
         </button>
       </div>
     </footer>

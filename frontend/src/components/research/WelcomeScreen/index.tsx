@@ -1,96 +1,116 @@
 import React from 'react';
 import { WelcomeScreenFormProps } from './types';
 import { useWelcomeScreenForm } from './hooks/useWelcomeScreenForm';
-import { WelcomeScreenHeader } from './components/WelcomeScreenHeader';
-import { WelcomeScreenToggle } from './components/WelcomeScreenToggle';
-import { WelcomeScreenFields } from './components/WelcomeScreenFields';
-import { WelcomeScreenFooter } from './components/WelcomeScreenFooter';
-import { ErrorModal } from './components/ErrorModal';
-import { JsonPreviewModal } from './components/JsonPreviewModal';
+import {
+  WelcomeScreenHeader,
+  WelcomeScreenSettings,
+  WelcomeScreenContent,
+  WelcomeScreenFooter,
+  WelcomeScreenSkeleton,
+  ErrorModal
+} from './components';
+import { UI_TEXTS } from './constants';
+import { cn } from '@/lib/utils';
 
 /**
- * Componente principal del formulario de pantalla de bienvenida
- * Esta versión refactorizada separa las responsabilidades en subcomponentes
- * y utiliza un hook personalizado para la lógica del formulario
+ * Componente principal para el formulario de configuración de la pantalla de bienvenida
  */
 export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({ 
-  className = '',
-  researchId 
+  className,
+  researchId,
+  onSave
 }) => {
   const {
     formData,
+    validationErrors,
     isLoading,
     isSaving,
-    validationErrors,
     modalError,
-    isExisting,
+    modalVisible,
     handleChange,
     handleSave,
     handlePreview,
     validateForm,
-    showJsonPreview,
-    closeJsonModal,
-    jsonToSend,
-    pendingAction,
-    continueWithAction,
-    closeErrorModal
-  } = useWelcomeScreenForm(researchId);
+    closeModal,
+    isExisting,
+    closeErrorModal,
+    existingScreen
+  } = useWelcomeScreenForm(researchId, onSave);
+
+  // Callbacks específicos para cada campo
+  const handleTitleChange = (value: string) => {
+    handleChange('title', value);
+  };
+
+  const handleMessageChange = (value: string) => {
+    handleChange('message', value);
+  };
+
+  const handleStartButtonTextChange = (value: string) => {
+    handleChange('startButtonText', value);
+  };
+
+  const handleEnabledChange = (checked: boolean) => {
+    handleChange('isEnabled', checked);
+  };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-gray-500">Cargando...</div>
-      </div>
-    );
+    return <WelcomeScreenSkeleton />;
   }
 
   return (
-    <div className={`bg-white p-6 rounded-lg shadow-sm ${className}`}>
-      <WelcomeScreenHeader 
-        title={isExisting ? "Editar Pantalla de Bienvenida" : "Nueva Pantalla de Bienvenida"}
-        description={isExisting 
-          ? "Modifica la configuración de la pantalla de bienvenida existente" 
-          : "Configura una nueva pantalla de bienvenida para tu investigación"
-        }
-      />
-
-      <WelcomeScreenToggle 
-        isEnabled={formData.isEnabled}
-        onChange={(enabled) => handleChange('isEnabled', enabled)}
-        disabled={isSaving}
-      />
-
-      <WelcomeScreenFields 
-        formData={formData}
-        onChange={handleChange}
+    <div className={cn('space-y-4', className)}>
+      {/* Encabezado */}
+      <div className="flex items-center justify-between">
+        <WelcomeScreenHeader 
+          title={UI_TEXTS.TITLE} 
+          description={UI_TEXTS.DESCRIPTION}
+        />
+        
+        {/* Ajuste de habilitación/deshabilitación */}
+        <WelcomeScreenSettings 
+          isEnabled={formData.isEnabled}
+        />
+      </div>
+      
+      {/* Indicador de estado - Solo para debugging */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mb-4 p-2 bg-gray-100 text-xs rounded">
+          <p>Estado: {isExisting ? 'Configuración existente' : 'Nueva configuración'}</p>
+          <p>ID: {existingScreen?.id || 'No hay ID (nueva)'}</p>
+          <p>Habilitado: {formData.isEnabled ? 'Sí' : 'No'}</p>
+          <p>Research ID: {researchId}</p>
+        </div>
+      )}
+      
+      {/* Contenido del formulario */}
+      <WelcomeScreenContent 
+        title={formData.title}
+        message={formData.message}
+        startButtonText={formData.startButtonText}
+        onTitleChange={handleTitleChange}
+        onMessageChange={handleMessageChange}
+        onStartButtonTextChange={handleStartButtonTextChange}
         validationErrors={validationErrors}
-        disabled={isSaving}
+        disabled={isLoading || isSaving || !formData.isEnabled}
       />
-
+      
+      {/* Pie de página con acciones */}
       <WelcomeScreenFooter 
-        onSave={handleSave}
         isSaving={isSaving}
         isLoading={isLoading}
         isEnabled={formData.isEnabled}
+        isExisting={isExisting}
+        onSave={handleSave}
         onPreview={handlePreview}
-        buttonText={isExisting ? "Actualizar" : "Guardar"}
+        buttonText={isExisting ? UI_TEXTS.BUTTONS.UPDATE : UI_TEXTS.BUTTONS.SAVE}
       />
-
-      {modalError && (
-        <ErrorModal
-          isOpen={true}
-          onClose={closeErrorModal}
-          error={modalError}
-        />
-      )}
-
-      {/* Modal para la vista previa del JSON */}
-      <JsonPreviewModal
-        isOpen={showJsonPreview}
-        onClose={closeJsonModal}
-        onContinue={continueWithAction}
-        jsonData={jsonToSend}
-        pendingAction={pendingAction}
+      
+      {/* Modal para mostrar errores y mensajes */}
+      <ErrorModal 
+        isOpen={modalVisible}
+        onClose={closeModal}
+        error={modalError}
       />
     </div>
   );

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { 
+import {
   ThankYouScreenFormData,
   ThankYouScreenConfig,
   ValidationErrors,
@@ -10,10 +10,9 @@ import {
   UseThankYouScreenFormResult
 } from '../types';
 import { thankYouScreenFixedAPI } from '@/lib/thank-you-screen-api';
-import { 
-  QUERY_KEYS, 
-  ERROR_MESSAGES, 
-  SUCCESS_MESSAGES 
+import {
+  QUERY_KEYS,
+  ERROR_MESSAGES,
 } from '../constants';
 import { useAuth } from '@/providers/AuthProvider';
 
@@ -110,12 +109,12 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
     // Limpiar error de validación al cambiar el campo
     if (validationErrors[field]) {
       setValidationErrors(prev => {
-        const newErrors = {...prev};
+        const newErrors = { ...prev };
         delete newErrors[field];
         return newErrors;
       });
     }
-    
+
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -125,12 +124,12 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
   // Validar formulario
   const validateForm = (): boolean => {
     const errors: ValidationErrors = {};
-    
+
     if (!researchId) {
       errors.researchId = ERROR_MESSAGES.VALIDATION_ERRORS.RESEARCH_ID_REQUIRED;
       console.log('[useThankYouScreenForm] Error de validación: ID de investigación requerido');
     }
-    
+
     // Solo validar título y mensaje si la pantalla está habilitada
     if (formData.isEnabled) {
       // Validar título
@@ -138,31 +137,31 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
         errors.title = ERROR_MESSAGES.VALIDATION_ERRORS.TITLE_REQUIRED;
       } else if (formData.title.length < DEFAULT_THANK_YOU_SCREEN_VALIDATION.title.minLength) {
         errors.title = ERROR_MESSAGES.VALIDATION_ERRORS.TITLE_TOO_SHORT.replace(
-          '{min}', 
+          '{min}',
           DEFAULT_THANK_YOU_SCREEN_VALIDATION.title.minLength.toString()
         );
       } else if (formData.title.length > DEFAULT_THANK_YOU_SCREEN_VALIDATION.title.maxLength) {
         errors.title = ERROR_MESSAGES.VALIDATION_ERRORS.TITLE_TOO_LONG.replace(
-          '{max}', 
+          '{max}',
           DEFAULT_THANK_YOU_SCREEN_VALIDATION.title.maxLength.toString()
         );
       }
-      
+
       // Validar mensaje
       if (!formData.message.trim()) {
         errors.message = ERROR_MESSAGES.VALIDATION_ERRORS.MESSAGE_REQUIRED;
       } else if (formData.message.length < DEFAULT_THANK_YOU_SCREEN_VALIDATION.message.minLength) {
         errors.message = ERROR_MESSAGES.VALIDATION_ERRORS.MESSAGE_TOO_SHORT.replace(
-          '{min}', 
+          '{min}',
           DEFAULT_THANK_YOU_SCREEN_VALIDATION.message.minLength.toString()
         );
       } else if (formData.message.length > DEFAULT_THANK_YOU_SCREEN_VALIDATION.message.maxLength) {
         errors.message = ERROR_MESSAGES.VALIDATION_ERRORS.MESSAGE_TOO_LONG.replace(
-          '{max}', 
+          '{max}',
           DEFAULT_THANK_YOU_SCREEN_VALIDATION.message.maxLength.toString()
         );
       }
-      
+
       // Validar URL de redirección (solo si se proporciona)
       if (formData.redirectUrl && formData.redirectUrl.trim() !== '') {
         if (!isValidUrl(formData.redirectUrl)) {
@@ -170,7 +169,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
         }
       }
     }
-    
+
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -185,17 +184,17 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
       });
       return;
     }
-    
+
     if (!validateForm()) {
       // Crear un mensaje con la lista de errores
       const errorMessageText = 'Errores: ' + Object.values(validationErrors).join(', ');
-      
+
       showModal({
         title: ERROR_MESSAGES.SAVE_ERROR,
         message: errorMessageText,
         type: 'error'
       });
-      
+
       toast.error('Por favor corrija los errores antes de guardar', {
         duration: 5000,
         style: {
@@ -242,10 +241,10 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
               <ul class="pl-5 space-y-1 text-sm text-gray-600 list-disc">
                 <li><span class="font-medium">Título:</span> ${dataToSave.title}</li>
                 <li><span class="font-medium">Estado:</span> ${dataToSave.isEnabled ? 'Habilitada' : 'Deshabilitada'}</li>
-                ${dataToSave.redirectUrl ? 
-                  `<li><span class="font-medium">URL de redirección:</span> ${dataToSave.redirectUrl}</li>` : 
-                  '<li><span class="font-medium">URL de redirección:</span> <span class="italic">No configurada</span></li>'
-                }
+                ${dataToSave.redirectUrl ?
+          `<li><span class="font-medium">URL de redirección:</span> ${dataToSave.redirectUrl}</li>` :
+          '<li><span class="font-medium">URL de redirección:</span> <span class="italic">No configurada</span></li>'
+        }
               </ul>
             </div>
             
@@ -286,7 +285,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
       // Evento para confirmar y guardar
       document.getElementById('confirmSaveButton')?.addEventListener('click', () => {
         document.body.removeChild(confirmModalContainer);
-        
+
         // Mostrar indicador de carga y mensaje de guardando
         const loadingToastId = toast.loading('Guardando pantalla de agradecimiento...', {
           duration: Infinity, // Que no desaparezca automáticamente
@@ -298,7 +297,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
           },
           icon: '⏳'
         });
-        
+
         // Ejecutar la mutación para guardar
         mutate(dataToSave, {
           onSuccess: (response) => {
@@ -306,32 +305,39 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
             if (response && response.id) {
               setThankYouScreenId(response.id);
             }
-            
+
             // Invalidar consulta para recargar datos
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.THANK_YOU_SCREEN, researchId] });
-            
+
             // Actualizar mensaje de toast a éxito
-            toast.success(thankYouScreenId ? 'Pantalla de agradecimiento actualizada exitosamente' : 'Pantalla de agradecimiento creada exitosamente', { 
+            const toastId = toast.success(thankYouScreenId ? 'Pantalla de agradecimiento actualizada exitosamente' : 'Pantalla de agradecimiento creada exitosamente', {
               id: loadingToastId,
-              duration: 4000,
+              duration: 3000,
               style: {
                 background: '#10b981',
                 color: '#fff',
                 fontWeight: 'bold'
               },
               icon: '✅'
-             });
+            });
+
+            // Hacer el toast clickeable
+            const toastElement = document.getElementById(toastId);
+            if (toastElement) {
+              toastElement.style.cursor = 'pointer';
+              toastElement.onclick = () => toast.dismiss(toastId);
+            }
           },
           onError: (error: any) => {
             console.error('[ThankYouScreenForm] Error en mutación:', error);
-            
+
             let errorMsg = 'Error al guardar la pantalla de agradecimiento';
             if (error.message) {
               errorMsg += `: ${error.message}`;
             }
-            
+
             // Actualizar mensaje de toast a error
-            toast.error(errorMsg, { 
+            toast.error(errorMsg, {
               id: loadingToastId,
               duration: 5000,
               style: {
@@ -342,7 +348,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
               },
               icon: '❌'
             });
-           
+
             // Mostrar modal de error
             showModal({
               title: ERROR_MESSAGES.SAVE_ERROR,
@@ -352,7 +358,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
           }
         });
       });
-      
+
       // Cerrar modal al hacer clic fuera de él
       confirmModalContainer.addEventListener('click', (e) => {
         if (e.target === confirmModalContainer.firstChild) {
@@ -379,13 +385,13 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
     if (!validateForm()) {
       // Crear un mensaje con la lista de errores
       const errorMessageText = 'Errores: ' + Object.values(validationErrors).join(', ');
-      
+
       showModal({
         title: ERROR_MESSAGES.PREVIEW_ERROR,
         message: errorMessageText,
         type: 'error'
       });
-      
+
       toast.error('Por favor corrija los errores antes de previsualizar', {
         duration: 5000,
         style: {
@@ -398,7 +404,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
       });
       return;
     }
-    
+
     try {
       // Preparar datos para previsualizar
       const dataToPreview = {
@@ -409,13 +415,13 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
           updatedAt: new Date().toISOString()
         }
       };
-      
+
       // Abrir una nueva ventana con la previsualización real
-        const previewWindow = window.open('', '_blank');
-        
-        if (previewWindow) {
+      const previewWindow = window.open('', '_blank');
+
+      if (previewWindow) {
         // Crear el HTML para la previsualización (código existente)
-          const previewHtml = `
+        const previewHtml = `
             <!DOCTYPE html>
             <html lang="es">
             <head>
@@ -563,12 +569,12 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
             </body>
             </html>
           `;
-          
-          // Escribir el HTML en la nueva ventana y cerrarla para finalizar la carga
-          previewWindow.document.write(previewHtml);
-          previewWindow.document.close();
-          
-          // Notificar al usuario que se ha abierto la previsualización
+
+        // Escribir el HTML en la nueva ventana y cerrarla para finalizar la carga
+        previewWindow.document.write(previewHtml);
+        previewWindow.document.close();
+
+        // Notificar al usuario que se ha abierto la previsualización
         toast.success('Se ha abierto la previsualización en una nueva ventana', {
           duration: 5000,
           style: {
@@ -579,14 +585,14 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
           },
           icon: '🔍'
         });
-        } else {
-          // Si no se pudo abrir la ventana (bloqueador de pop-ups, etc.)
-          showModal({
-            title: 'No se pudo abrir la previsualización',
-            message: 'Parece que su navegador ha bloqueado la ventana emergente. Por favor, permita las ventanas emergentes para este sitio e inténtelo de nuevo.',
-            type: 'error'
-          });
-          
+      } else {
+        // Si no se pudo abrir la ventana (bloqueador de pop-ups, etc.)
+        showModal({
+          title: 'No se pudo abrir la previsualización',
+          message: 'Parece que su navegador ha bloqueado la ventana emergente. Por favor, permita las ventanas emergentes para este sitio e inténtelo de nuevo.',
+          type: 'error'
+        });
+
         toast.error('No se pudo abrir la ventana de previsualización', {
           duration: 5000,
           style: {
@@ -597,16 +603,16 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
           },
           icon: '❌'
         });
-        }
-      } catch (error) {
-        console.error('[ThankYouScreenForm] Error al generar la previsualización:', error);
-        
-        showModal({
-          title: ERROR_MESSAGES.PREVIEW_ERROR,
-          message: 'Error al generar la previsualización. Por favor, inténtelo de nuevo.',
-          type: 'error'
-        });
-        
+      }
+    } catch (error) {
+      console.error('[ThankYouScreenForm] Error al generar la previsualización:', error);
+
+      showModal({
+        title: ERROR_MESSAGES.PREVIEW_ERROR,
+        message: 'Error al generar la previsualización. Por favor, inténtelo de nuevo.',
+        type: 'error'
+      });
+
       toast.error('Error al generar la vista previa', {
         duration: 5000,
         style: {

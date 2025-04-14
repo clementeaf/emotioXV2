@@ -84,24 +84,12 @@ export const useWelcomeScreenForm = (
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
   const [modalError, setModalError] = useState<ErrorModalData | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
-  const [showJsonPreview, setShowJsonPreview] = useState<boolean>(false);
-  const [jsonToSend, setJsonToSend] = useState<string>('');
-  const [pendingAction, setPendingAction] = useState<'save' | 'preview' | null>(null);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [existingScreen, setExistingScreen] = useState<WelcomeScreenData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Handlers para el modal
   const closeModal = useCallback(() => setModalVisible(false), []);
-
-  // Función para cerrar el modal JSON
-  const closeJsonModal = useCallback(() => {
-    setShowJsonPreview(false);
-    setPendingAction(null);
-    setJsonToSend('');
-    
-    console.log('[useWelcomeScreenForm] Modal JSON cerrado');
-  }, []);
 
   // Verificar existencia de welcomeScreen
   const { data: welcomeScreenData, isLoading: isLoadingData } = useQuery({
@@ -111,7 +99,11 @@ export const useWelcomeScreenForm = (
       try {
         const data = await welcomeScreenService.getByResearchId(researchId);
         console.log('📦 Datos obtenidos:', data);
-        return data;
+        // Asegurarnos de que tenemos datos válidos con ID
+        if (data && data.id) {
+          return data;
+        }
+        return null;
       } catch (error) {
         console.error('❌ Error al verificar welcomeScreen:', error);
         return null;
@@ -123,10 +115,11 @@ export const useWelcomeScreenForm = (
   // Inicializar/actualizar datos cuando se obtiene respuesta
   useEffect(() => {
     if (!isLoadingData) {
-      if (welcomeScreenData) {
+      if (welcomeScreenData && welcomeScreenData.id) {
         console.log('✅ WelcomeScreen encontrado, inicializando formulario con datos existentes');
-        setExistingScreen(adaptRecordToFormData(welcomeScreenData));
-        setFormData(adaptRecordToFormData(welcomeScreenData));
+        const adaptedData = adaptRecordToFormData(welcomeScreenData);
+        setExistingScreen(adaptedData);
+        setFormData(adaptedData);
       } else {
         console.log('ℹ️ No se encontró WelcomeScreen, usando configuración por defecto');
         setExistingScreen(null);
@@ -268,11 +261,43 @@ export const useWelcomeScreenForm = (
           if (existingScreen) {
             console.log('📝 PUT - Actualizando welcomeScreen existente');
             savedData = await welcomeScreenService.update(researchId, formData);
-            toast.success('WelcomeScreen actualizado correctamente', { id: loadingToastId });
+            const toastId = toast.success('WelcomeScreen actualizado correctamente', { 
+              id: loadingToastId,
+              duration: 3000,
+              style: {
+                background: '#10b981',
+                color: '#fff',
+                fontWeight: 'bold'
+              },
+              icon: '✅'
+            });
+            
+            // Hacer el toast clickeable
+            const toastElement = document.getElementById(toastId);
+            if (toastElement) {
+              toastElement.style.cursor = 'pointer';
+              toastElement.onclick = () => toast.dismiss(toastId);
+            }
           } else {
             console.log('✨ POST - Creando nuevo welcomeScreen');
             savedData = await welcomeScreenService.create(formData);
-            toast.success('WelcomeScreen creado correctamente', { id: loadingToastId });
+            const toastId = toast.success('WelcomeScreen creado correctamente', { 
+              id: loadingToastId,
+              duration: 3000,
+              style: {
+                background: '#10b981',
+                color: '#fff',
+                fontWeight: 'bold'
+              },
+              icon: '✅'
+            });
+            
+            // Hacer el toast clickeable
+            const toastElement = document.getElementById(toastId);
+            if (toastElement) {
+              toastElement.style.cursor = 'pointer';
+              toastElement.onclick = () => toast.dismiss(toastId);
+            }
           }
 
           setExistingScreen(adaptRecordToFormData(savedData));
@@ -313,9 +338,188 @@ export const useWelcomeScreenForm = (
       return;
     }
 
-    setJsonToSend(JSON.stringify(formData, null, 2));
-    setShowJsonPreview(true);
-    setPendingAction('preview');
+    try {
+      // Crear una nueva ventana para la vista previa
+      const previewWindow = window.open('', '_blank');
+      
+      if (previewWindow) {
+        const previewHtml = `
+          <!DOCTYPE html>
+          <html lang="es">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Vista previa - Pantalla de Bienvenida</title>
+            <style>
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', sans-serif;
+                margin: 0;
+                padding: 0;
+                background-color: #f5f5f5;
+                color: #333;
+                display: flex;
+                flex-direction: column;
+                min-height: 100vh;
+              }
+              
+              .preview-badge {
+                position: fixed;
+                top: 12px;
+                right: 12px;
+                background-color: rgba(0, 0, 0, 0.7);
+                color: white;
+                padding: 8px 12px;
+                border-radius: 4px;
+                font-size: 12px;
+                z-index: 100;
+              }
+              
+              .header {
+                background-color: #4f46e5;
+                color: white;
+                padding: 10px 20px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+              }
+              
+              .header h1 {
+                font-size: 16px;
+                margin: 0;
+                font-weight: 500;
+              }
+              
+              .content {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                padding: 40px 20px;
+                text-align: center;
+                background-color: #ffffff;
+              }
+              
+              .welcome-container {
+                max-width: 800px;
+                width: 100%;
+                padding: 40px 20px;
+                border-radius: 8px;
+                background-color: #ffffff;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 10px 15px rgba(0, 0, 0, 0.03);
+              }
+              
+              .welcome-title {
+                font-size: 32px;
+                font-weight: 700;
+                margin-bottom: 24px;
+                color: #111827;
+              }
+              
+              .welcome-message {
+                font-size: 18px;
+                line-height: 1.6;
+                color: #4b5563;
+                margin-bottom: 32px;
+                white-space: pre-line;
+              }
+              
+              .start-button {
+                display: inline-block;
+                padding: 12px 24px;
+                font-size: 16px;
+                font-weight: 500;
+                color: #ffffff;
+                background-color: #4f46e5;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+                transition: background-color 0.2s;
+              }
+              
+              .start-button:hover {
+                background-color: #4338ca;
+              }
+              
+              .footer {
+                padding: 10px 20px;
+                font-size: 12px;
+                color: #9ca3af;
+                text-align: center;
+                background-color: #f9fafb;
+                border-top: 1px solid #e5e7eb;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="preview-badge">Vista previa</div>
+            
+            <header class="header">
+              <h1>Vista previa de la pantalla de bienvenida</h1>
+              <button onclick="window.close()" style="background: none; border: none; color: white; cursor: pointer;">Cerrar</button>
+            </header>
+            
+            <main class="content">
+              <div class="welcome-container">
+                <h1 class="welcome-title">${formData.title || 'Título no configurado'}</h1>
+                <div class="welcome-message">
+                  ${formData.message || 'Mensaje no configurado'}
+                </div>
+                <button class="start-button">
+                  ${formData.startButtonText || 'Comenzar'}
+                </button>
+              </div>
+            </main>
+            
+            <footer class="footer">
+              <p>Esta es una vista previa y puede no representar exactamente cómo se verá la pantalla real.</p>
+            </footer>
+          </body>
+          </html>
+        `;
+        
+        // Escribir el HTML en la nueva ventana
+        previewWindow.document.write(previewHtml);
+        previewWindow.document.close();
+        
+        // Notificar al usuario que se ha abierto la previsualización
+        toast.success('Se ha abierto la previsualización en una nueva ventana', {
+          duration: 5000,
+          style: {
+            background: '#F0F9FF',
+            color: '#0C4A6E',
+            padding: '16px',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+          },
+          icon: '🔍'
+        });
+      } else {
+        // Si no se pudo abrir la ventana (bloqueador de pop-ups, etc.)
+        toast.error('No se pudo abrir la ventana de previsualización. Por favor, permita las ventanas emergentes para este sitio.', {
+          duration: 5000,
+          style: {
+            background: '#FEF2F2',
+            color: '#991B1B',
+            padding: '16px',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+          },
+          icon: '❌'
+        });
+      }
+    } catch (error) {
+      console.error('[WelcomeScreenForm] Error al generar la previsualización:', error);
+      toast.error('Error al generar la vista previa', {
+        duration: 5000,
+        style: {
+          background: '#FEF2F2',
+          color: '#991B1B',
+          padding: '16px',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+        },
+        icon: '❌'
+      });
+    }
   }, [formData, validateForm]);
 
   // Función para generar HTML preview
@@ -397,20 +601,8 @@ export const useWelcomeScreenForm = (
     setModalError(null);
   };
 
-  const continueWithAction = () => {
-    if (pendingAction === 'save') {
-      handleSave();
-    } else if (pendingAction === 'preview') {
-      generateHtmlPreview();
-    }
-    setShowJsonPreview(false);
-    setPendingAction(null);
-  };
-
   return {
     formData,
-    welcomeScreenId: null,
-    realWelcomeScreenId: null,
     validationErrors,
     isLoading: isLoading || isLoadingData,
     isSaving,
@@ -421,13 +613,8 @@ export const useWelcomeScreenForm = (
     handlePreview,
     validateForm,
     closeModal,
-    showJsonPreview,
-    closeJsonModal,
-    jsonToSend,
-    pendingAction,
-    generateHtmlPreview,
-    isExisting: !!existingScreen,
+    isExisting: !!welcomeScreenData?.id,
     closeErrorModal,
-    continueWithAction,
+    existingScreen
   };
 }; 
