@@ -117,17 +117,51 @@ class AuthService implements IAuthService {
         console.log('Usuario de prueba no encontrado, se creará uno nuevo');
       }
       
-      // Crear usuario de prueba
-      await this.registerUser({
+      // Generar el hash de la contraseña
+      const salt = "EmotioX-salt-fixed-839254";
+      const passwordHash = `${salt}:${testPassword}`;
+      
+      console.log('Creando usuario de prueba con hash:', passwordHash);
+      
+      // Crear usuario de prueba directamente
+      const testUser: User = {
+        id: uuidv4(),
         email: testEmail,
-        password: testPassword,
         name: 'Clemente',
-        role: 'researcher'
+        passwordHash,
+        role: 'researcher',
+        isActive: true,
+        isVerified: true,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        lastLogin: null as unknown as number,
+        loginCount: 0,
+        preferences: {
+          language: 'es',
+          notifications: true,
+          theme: 'light'
+        }
+      };
+
+      // Guardar en DynamoDB directamente
+      const params = {
+        TableName: this.tableName,
+        Item: testUser
+      };
+
+      console.log('Guardando usuario de prueba en DynamoDB:', {
+        id: testUser.id,
+        email: testUser.email,
+        passwordHash: testUser.passwordHash
       });
+
+      const command = new PutCommand(params);
+      await this.dynamoDb.send(command);
       
       console.log('Usuario de prueba creado exitosamente');
     } catch (error) {
       console.error('Error al crear usuario de prueba:', error);
+      throw error;
     }
   }
   

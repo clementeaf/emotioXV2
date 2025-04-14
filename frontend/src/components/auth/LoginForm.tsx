@@ -155,7 +155,10 @@ export function LoginForm({ className }: LoginFormProps) {
         
         console.log('Iniciando login automático usando API real');
         
-        const loginUrl = `${API_CONFIG.baseURL}${API_CONFIG.endpoints.auth.LOGIN}`;
+        // Usar la ruta proxy
+        const loginUrl = `${API_CONFIG.baseURL}/auth/login`;
+        console.log('URL de login:', loginUrl);
+        
         const response = await fetch(loginUrl, {
           method: 'POST',
           headers: {
@@ -170,12 +173,19 @@ export function LoginForm({ className }: LoginFormProps) {
         });
 
         if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error('Error en la respuesta:', {
+            status: response.status,
+            statusText: response.statusText,
+            data: errorData
+          });
           throw new Error('Error en la autenticación');
         }
 
         const data = await response.json();
         
         if (!data.auth?.token) {
+          console.error('Respuesta sin token:', data);
           throw new Error('Token no recibido del servidor');
         }
 
