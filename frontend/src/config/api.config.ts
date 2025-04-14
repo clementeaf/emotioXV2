@@ -118,11 +118,11 @@ const API_CONFIG = {
     
     // Gestión de investigaciones
     research: {
-      LIST: '/research',
-      GET: '/research/{id}',
-      CREATE: '/research',
-      UPDATE: '/research/{id}',
-      DELETE: '/research/{id}',
+      createResearch: '/research',
+      getResearch: '/research/{id}',
+      getAllResearch: '/research',
+      updateResearch: '/research/{id}',
+      deleteResearch: '/research/{id}',
       UPDATE_STATUS: '/research/{id}/status',
       UPDATE_STAGE: '/research/{id}/stage',
     },

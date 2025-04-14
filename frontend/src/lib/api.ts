@@ -204,178 +204,44 @@ const alovaInstance = createAlova({
   baseURL: API_CONFIG.baseURL,
   statesHook: ReactHook,
   requestAdapter: customFetchAdapter(),
-  timeout: 15000, // Aumentar timeout a 15 segundos para dar más margen
+  timeout: 15000, // 15 segundos de timeout
   beforeRequest(method: Method) {
-    // Imprimir la URL antes de enviar la solicitud para depuración
-    console.log(`Preparando solicitud a: ${method.url}`);
-    console.log(`Método explícito: ${method.type}`);
-    
-    // CONFIGURACIÓN CORS: Asegurar que las peticiones directas a AWS funcionan
-    if (method.url.includes('execute-api.us-east-1.amazonaws.com')) {
-      method.config.credentials = 'omit'; // Cambiar a 'omit' para compatibilidad con origen '*'
-      method.config.mode = 'cors'; // Asegurar que el modo es 'cors'
-      console.log('Configurada petición para NO incluir credenciales en CORS (compatible con wildcard origin)');
-    }
-    
-    // Asegurarse de que el método se está pasando correctamente
-    if (!method.config.method) {
-      method.config.method = method.type;
-      console.log(`Asignando método explícitamente: ${method.config.method}`);
-    }
-    
-    // Asegurar que el metodType también está definido (para nuestro adaptador personalizado)
-    method.config.methodType = method.type;
-    console.log(`Asignando methodType explícitamente: ${method.config.methodType}`);
-    
-    // Configuración por defecto
+    // Configuración de headers
     method.config.headers = {
       'Content-Type': 'application/json',
-      'Accept': 'application/json, text/plain, */*', // Aceptar más tipos de contenido
-      'X-Requested-With': 'XMLHttpRequest', // Agregar para identificar solicitudes AJAX
+      'Accept': 'application/json',
       ...method.config.headers,
     };
-    
-    // Agregar headers de cache-control excepto para las rutas que tienen problemas CORS
-    if (!method.url.includes('/welcome-screens') && !method.url.includes('/research')) {
-      method.config.headers['Cache-Control'] = 'no-cache';
-      method.config.headers['Pragma'] = 'no-cache';
-    } else {
-      console.log('Omitiendo headers cache-control para rutas con problemas CORS:', method.url);
+
+    // Obtener el token de autenticación
+    const token = localStorage.getItem('token');
+    if (token) {
+      method.config.headers.Authorization = `Bearer ${token}`;
     }
 
-    // Verificar el tipo de almacenamiento para obtener el token correspondiente
-    const storageType = localStorage.getItem('auth_storage_type') || 'local';
-    console.log('Tipo de almacenamiento detectado:', storageType);
-    
-    // Obtener token según el tipo de almacenamiento
-    const token = storageType === 'local' 
-      ? localStorage.getItem('token') 
-      : sessionStorage.getItem('token');
-      
-    if (token) {
-      // Asegurarse de que el token se envía con el prefijo Bearer y espacio
-      const authToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
-      
-      // Log del token (truncado por seguridad)
-      const tokenDisplay = authToken.substring(0, 15) + '...';
-      console.log('Token de autenticación:', tokenDisplay);
-      
-      method.config.headers = {
-        ...method.config.headers,
-        Authorization: authToken,
-      };
-    } else {
-      console.warn('No se encontró token de autenticación');
-    }
-    
-    // Verificar y mostrar los headers para depuración
-    console.log('Headers de la solicitud:', {
-      ...method.config.headers,
-      Authorization: method.config.headers.Authorization ? 
-        method.config.headers.Authorization.substring(0, 15) + '...' : 
-        'No definido'
-    });
+    // Configuración específica para AWS API Gateway
+    method.config.mode = 'cors';
+    method.config.credentials = 'omit';
   },
   responded: {
-    onSuccess: async (response: any) => {
+    onSuccess: async (response: Response) => {
       try {
-        // Obtener una copia de la respuesta para no consumirla
-        const responseCopy = response.clone();
-        
-        // Obtener metadatos de la respuesta
-        const contentType = response.headers.get('content-type') || '';
-        
-        // Obtener el contenido para depuración
-        const responseText = await response.text();
-        console.log('Respuesta exitosa (texto bruto):', responseText);
-        console.log('Content-Type de la respuesta:', contentType);
-        
-        // Si la respuesta está vacía, devolver un objeto vacío
-        if (!responseText || responseText.trim() === '') {
-          console.warn('La respuesta del servidor está vacía');
-          return { success: true, data: {} };
-        }
-        
-        // Intentar parsear según el tipo de contenido
-        if (contentType.includes('application/json')) {
-          try {
-            const data = JSON.parse(responseText);
-            console.log('Datos JSON parseados:', data);
-            
-            // Normalizar la respuesta a un formato consistente
-            if (data.success === undefined) {
-              return {
-                success: true,
-                data: data
-              };
-            }
-            
-            return data;
-          } catch (parseError) {
-            console.error('Error al parsear respuesta JSON a pesar de Content-Type:', parseError);
-            console.log('Texto de respuesta que no se pudo parsear:', responseText);
-          }
-        } else {
-          // Para respuestas no-JSON, intentamos parsear de todas formas
-          try {
-            const data = JSON.parse(responseText);
-            console.log('Respuesta parseada como JSON a pesar del Content-Type:', data);
-            return data;
-          } catch (parseError) {
-            console.log('Respuesta no es JSON, se procesará como texto plano');
-          }
-        }
-        
-        // Si llegamos aquí, no pudimos parsear como JSON
+        const data = await response.json();
         return {
           success: true,
-          data: { 
-            _rawContent: responseText,
-            _contentType: contentType,
-            _status: responseCopy.status,
-            _statusText: responseCopy.statusText
-          },
-          message: 'Respuesta no JSON procesada como texto'
+          data: data.data || data,
+          message: data.message
         };
       } catch (error) {
-        console.error('Error al procesar la respuesta del servidor:', error);
-        throw new Error(`Error al procesar la respuesta del servidor: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+        console.error('Error al procesar la respuesta:', error);
+        throw error;
       }
     },
-    onError: async (error: Error, method: Method) => {
-      // Si el error es por token inválido o ausente, no mostrar en consola
-      if (error.message === 'NO_TOKEN_AVAILABLE' || error.message === 'INVALID_TOKEN_FORMAT') {
-        return;
-      }
-
-      // Si es error en refreshToken, manejar silenciosamente
-      if (method.url.includes('/auth/refreshToken')) {
-        tokenService.stopAutoRefresh();
-        return;
-      }
-
-      // Verificar si es un error 401 (Unauthorized)
-      if (error.message.includes('401')) {
-        // Si estamos en una ruta que requiere autenticación pero no es refreshToken
-        if (!method.url.includes('/auth/refreshToken')) {
-          try {
-            const renewed = await tokenService.refreshTokenIfNeeded();
-            if (renewed) {
-              throw new Error('TOKEN_REFRESHED');
-            }
-          } catch (refreshError) {
-            // Si falla la renovación, limpiar todo silenciosamente
-            tokenService.removeToken();
-            localStorage.removeItem('auth_storage_type');
-            return;
-          }
-        }
-      }
-
-      // Para otros tipos de errores, mantener el comportamiento actual
+    onError: async (error: Error) => {
+      console.error('Error en la petición:', error);
       throw error;
-    },
-  },
+    }
+  }
 });
 
 // Endpoints de autenticación
@@ -460,31 +326,31 @@ export const researchAPI = {
       console.error('Error al procesar el tipo:', e);
     }
     
-    // Usar alova para la petición real
+    // Usar la ruta correcta del endpoint
     return alovaInstance.Post<APIResponse<Research>>(
-      API_CONFIG.endpoints.research.CREATE || '/research',
+      API_CONFIG.endpoints.research.createResearch || '/research',
       processedData
     );
   },
   
   get: (id: string) => {
-    const url = (API_CONFIG.endpoints.research.GET || '/research/{id}').replace('{id}', id);
+    const url = (API_CONFIG.endpoints.research.getResearch || '/research/{id}').replace('{id}', id);
     return alovaInstance.Get<APIResponse<Research>>(url);
   },
   
   list: () => {
     return alovaInstance.Get<APIResponse<Research[]>>(
-      API_CONFIG.endpoints.research.LIST || '/research'
+      API_CONFIG.endpoints.research.getAllResearch || '/research'
     );
   },
   
   update: (id: string, data: Partial<ResearchBasicData>) => {
-    const url = (API_CONFIG.endpoints.research.UPDATE || '/research/{id}').replace('{id}', id);
+    const url = (API_CONFIG.endpoints.research.updateResearch || '/research/{id}').replace('{id}', id);
     return alovaInstance.Put<APIResponse<Research>>(url, data);
   },
   
   delete: (id: string) => {
-    const url = (API_CONFIG.endpoints.research.DELETE || '/research/{id}').replace('{id}', id);
+    const url = (API_CONFIG.endpoints.research.deleteResearch || '/research/{id}').replace('{id}', id);
     return alovaInstance.Delete<APIResponse<boolean>>(url);
   },
   
