@@ -36,8 +36,8 @@ export const SUCCESS_MESSAGES = {
 
 // Textos de la interfaz
 export const UI_TEXTS = {
-  TITLE: 'Pantalla de bienvenida',
-  DESCRIPTION: 'Configure la pantalla de bienvenida que verán los participantes al comenzar la investigación',
+  TITLE: '',
+  DESCRIPTION: '',
   TOGGLE: {
     ENABLED: 'La pantalla de bienvenida está habilitada y se mostrará al iniciar la investigación',
     DISABLED: 'La pantalla de bienvenida está deshabilitada y no se mostrará'

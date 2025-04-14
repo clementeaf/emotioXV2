@@ -70,6 +70,8 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
         {/* Ajuste de habilitación/deshabilitación */}
         <WelcomeScreenSettings 
           isEnabled={formData.isEnabled}
+          onChange={handleEnabledChange}
+          disabled={isLoading || isSaving}
         />
       </div>
       
@@ -103,7 +105,6 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
         isExisting={isExisting}
         onSave={handleSave}
         onPreview={handlePreview}
-        buttonText={isExisting ? UI_TEXTS.BUTTONS.UPDATE : UI_TEXTS.BUTTONS.SAVE}
       />
       
       {/* Modal para mostrar errores y mensajes */}
