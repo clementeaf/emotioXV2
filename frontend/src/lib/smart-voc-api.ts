@@ -3,7 +3,7 @@
  * Manejar solicitudes de manera similar a las otras APIs que funcionan bien
  */
 
-import { SmartVOCFormData } from 'shared/interfaces/smart-voc.interface';
+import { SmartVOCFormData, SmartVOCFormResponse } from 'shared/interfaces/smart-voc.interface';
 import API_CONFIG from '@/config/api.config';
 import { ApiClient } from '@/lib/api-client';
 
@@ -102,70 +102,24 @@ export class SmartVOCFixedAPI extends ApiClient {
     super(`${API_CONFIG.baseURL}/smart-voc`);
   }
 
-  async create(data: SmartVOCFormData): Promise<ApiResponse<SmartVOCFormData>> {
-    try {
-      const response = await super.post<ApiResponse<SmartVOCFormData>>('', data);
-      return response;
-    } catch (error) {
-      return {
-        error: true,
-        message: 'Error al crear SmartVOC'
-      };
-    }
+  async create(data: SmartVOCFormData): Promise<ApiResponse<SmartVOCFormResponse>> {
+    return this.post<ApiResponse<SmartVOCFormResponse>>('/', data);
   }
 
-  async update(id: string, data: Partial<SmartVOCFormData>): Promise<ApiResponse<SmartVOCFormData>> {
-    try {
-      const response = await super.put<ApiResponse<SmartVOCFormData>>(`/${id}`, data);
-      return response;
-    } catch (error) {
-      return {
-        error: true,
-        message: 'Error al actualizar SmartVOC'
-      };
-    }
+  async update(id: string, data: SmartVOCFormData): Promise<ApiResponse<SmartVOCFormResponse>> {
+    return this.put<ApiResponse<SmartVOCFormResponse>>(`/${id}`, data);
   }
 
-  async getById(id: string): Promise<ApiResponse<SmartVOCFormData>> {
-    try {
-      const response = await super.get<ApiResponse<SmartVOCFormData>>(`/${id}`);
-      return response;
-    } catch (error) {
-      return {
-        error: true,
-        message: 'Error al obtener SmartVOC'
-      };
-    }
+  async getById(id: string): Promise<ApiResponse<SmartVOCFormResponse>> {
+    return this.get<ApiResponse<SmartVOCFormResponse>>(`/${id}`);
   }
 
-  async getByResearchId(researchId: string): Promise<ApiResponse<SmartVOCFormData>> {
-    try {
-      const response = await super.get<ApiResponse<SmartVOCFormData>>(`/research/${researchId}`);
-      return response;
-    } catch (error) {
-      if ((error as any)?.status === 404) {
-        return {
-          notFound: true,
-          error: false
-        };
-      }
-      return {
-        error: true,
-        message: 'Error al obtener SmartVOC'
-      };
-    }
+  async getByResearchId(researchId: string): Promise<ApiResponse<SmartVOCFormResponse>> {
+    return this.get<ApiResponse<SmartVOCFormResponse>>(`/research/${researchId}`);
   }
 
-  async deleteSmartVOC(id: string): Promise<ApiResponse<void>> {
-    try {
-      await super.delete<void>(`/${id}`);
-      return { error: false };
-    } catch (error) {
-      return {
-        error: true,
-        message: 'Error al eliminar SmartVOC'
-      };
-    }
+  async deleteSmartVOC(id: string): Promise<ApiResponse<SmartVOCFormResponse>> {
+    return this.delete<ApiResponse<SmartVOCFormResponse>>(`/${id}`);
   }
 }
 

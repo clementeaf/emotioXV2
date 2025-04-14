@@ -32,7 +32,11 @@ export const UI_TEXTS = {
   DESCRIPTION: 'Configure las preguntas y opciones para la recolección de feedback de los usuarios.',
   SETTINGS: {
     ENABLED_LABEL: 'SmartVOC habilitado',
-    DISABLED_LABEL: 'SmartVOC deshabilitado'
+    DISABLED_LABEL: 'SmartVOC deshabilitado',
+    RANDOMIZE_TITLE: 'Aleatorizar preguntas',
+    RANDOMIZE_DESCRIPTION: 'Las preguntas se mostrarán en orden aleatorio a los usuarios',
+    REQUIRED_TITLE: 'Requerir respuestas',
+    REQUIRED_DESCRIPTION: 'Los usuarios deben responder todas las preguntas para continuar'
   },
   QUESTIONS: {
     ADD_BUTTON: 'Añadir otra pregunta',

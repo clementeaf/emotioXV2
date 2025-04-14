@@ -287,81 +287,73 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className="bg-blue-50 p-4 rounded-md">
-        <p className="text-sm text-blue-800">
-          Configure sus preguntas de VOC para recopilar feedback valioso de los clientes.
-        </p>
-      </div>
-      
-      <div className="space-y-6">
-        {questions.map((question, index) => (
-          <div 
-            key={question.id}
-            className="bg-white rounded-lg border border-neutral-200 p-5 space-y-4"
-          >
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="text-sm font-medium text-neutral-900">Pregunta {index + 1}: {question.type}</h3>
-              <button 
-                className="text-sm text-red-600 hover:text-red-700"
-                onClick={() => onRemoveQuestion(question.id)}
-                disabled={disabled}
-              >
-                {UI_TEXTS.QUESTIONS.REMOVE_BUTTON}
-              </button>
+      {questions.map((question, index) => (
+        <div 
+          key={question.id}
+          className="bg-white rounded-lg border border-neutral-200 p-5 space-y-4"
+        >
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-sm font-medium text-neutral-900">Pregunta {index + 1}: {question.type}</h3>
+            <button 
+              className="text-sm text-red-600 hover:text-red-700"
+              onClick={() => onRemoveQuestion(question.id)}
+              disabled={disabled}
+            >
+              {UI_TEXTS.QUESTIONS.REMOVE_BUTTON}
+            </button>
+          </div>
+          
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">
+                {UI_TEXTS.QUESTIONS.QUESTION_TEXT_LABEL}
+              </label>
+              <input 
+                type="text" 
+                className="w-full px-3 py-2 border border-neutral-300 rounded-md"
+                value={question.description}
+                onChange={(e) => onUpdateQuestion(question.id, { description: e.target.value })}
+                disabled={disabled || ['CSAT', 'CES', 'NPS', 'NEV'].includes(question.type)}
+              />
+              {['CSAT', 'CES', 'NPS', 'NEV'].includes(question.type) && (
+                <p className="text-xs text-amber-600 mt-1">
+                  Esta pregunta no se puede editar para mantener la consistencia de los indicadores.
+                </p>
+              )}
+              
+              {question.type === 'CV' && question.description.includes("Example:") && (
+                <button
+                  type="button"
+                  className="mt-1 text-xs text-blue-600 hover:text-blue-800"
+                  onClick={() => onUpdateQuestion(question.id, { 
+                    description: 'Ejemplo: Esta fue la mejor aplicación que mis ojos han visto.' 
+                  })}
+                  disabled={disabled}
+                >
+                  Traducir al español
+                </button>
+              )}
             </div>
             
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">
-                  {UI_TEXTS.QUESTIONS.QUESTION_TEXT_LABEL}
-                </label>
-                <input 
-                  type="text" 
-                  className="w-full px-3 py-2 border border-neutral-300 rounded-md"
-                  value={question.description}
-                  onChange={(e) => onUpdateQuestion(question.id, { description: e.target.value })}
-                  disabled={disabled || ['CSAT', 'CES', 'NPS', 'NEV'].includes(question.type)}
-                />
-                {['CSAT', 'CES', 'NPS', 'NEV'].includes(question.type) && (
-                  <p className="text-xs text-amber-600 mt-1">
-                    Esta pregunta no se puede editar para mantener la consistencia de los indicadores.
-                  </p>
-                )}
-                
-                {question.type === 'CV' && question.description.includes("Example:") && (
-                  <button
-                    type="button"
-                    className="mt-1 text-xs text-blue-600 hover:text-blue-800"
-                    onClick={() => onUpdateQuestion(question.id, { 
-                      description: 'Ejemplo: Esta fue la mejor aplicación que mis ojos han visto.' 
-                    })}
-                    disabled={disabled}
-                  >
-                    Traducir al español
-                  </button>
-                )}
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">
-                  {UI_TEXTS.QUESTIONS.INSTRUCTIONS_LABEL}
-                </label>
-                <textarea
-                  className="w-full px-3 py-2 border border-neutral-300 rounded-md resize-y min-h-[80px]"
-                  value={question.instructions || ''}
-                  onChange={(e) => onUpdateQuestion(question.id, { instructions: e.target.value })}
-                  placeholder={UI_TEXTS.QUESTIONS.INSTRUCTIONS_PLACEHOLDER}
-                  disabled={disabled}
-                />
-              </div>
-              
-              <div>
-                {renderQuestionConfig(question)}
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">
+                {UI_TEXTS.QUESTIONS.INSTRUCTIONS_LABEL}
+              </label>
+              <textarea
+                className="w-full px-3 py-2 border border-neutral-300 rounded-md resize-y min-h-[80px]"
+                value={question.instructions || ''}
+                onChange={(e) => onUpdateQuestion(question.id, { instructions: e.target.value })}
+                placeholder={UI_TEXTS.QUESTIONS.INSTRUCTIONS_PLACEHOLDER}
+                disabled={disabled}
+              />
+            </div>
+            
+            <div>
+              {renderQuestionConfig(question)}
             </div>
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
 
       <div className="flex justify-center mt-4">
         <Button 

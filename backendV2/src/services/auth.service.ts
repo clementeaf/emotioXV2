@@ -40,7 +40,7 @@ export interface IAuthService {
   login(credentials: LoginCredentialsDto): Promise<AuthResponse>;
   logout(userId: string, token: string): Promise<void>;
   validateToken(token: string): Promise<JwtPayload>;
-  renovateTokenIfNeeded(token: string): Promise<{ token: string, renewed: boolean, expiresAt: number }>;
+  renovateTokenIfNeeded(token: string): Promise<{ token: string, renewed: boolean, expiresAt: number, user: User }>;
   
   // Utilidades
   hashPassword(password: string): Promise<string>;
@@ -514,7 +514,7 @@ class AuthService implements IAuthService {
    * @param token Token JWT actual
    * @returns Objeto con el token (nuevo o existente) y si fue renovado
    */
-  async renovateTokenIfNeeded(token: string): Promise<{ token: string, renewed: boolean, expiresAt: number }> {
+  async renovateTokenIfNeeded(token: string): Promise<{ token: string, renewed: boolean, expiresAt: number, user: User }> {
     try {
       // Limpiar token si es necesario
       let cleanToken = token;
@@ -529,6 +529,9 @@ class AuthService implements IAuthService {
         throw new Error('Token con formato inválido');
       }
       
+      // Obtener el usuario para incluirlo en la respuesta
+      const user = await this.getUserById(decoded.id);
+      
       // Verificar si el token está cerca de expirar (menos de 1 hora)
       const now = Math.floor(Date.now() / 1000);
       const timeToExpire = decoded.exp - now;
@@ -538,16 +541,14 @@ class AuthService implements IAuthService {
       if (timeToExpire <= renewThreshold) {
         console.log(`Token próximo a expirar (${timeToExpire}s restantes). Renovando...`);
         
-        // Obtener el usuario para generar un nuevo token
-        const user = await this.getUserById(decoded.id);
-        
         // Generar un nuevo token
         const { token: newToken, expiresAt } = await this.generateToken(user);
         
         return {
           token: newToken,
           renewed: true,
-          expiresAt
+          expiresAt,
+          user: this.sanitizeUser(user)
         };
       }
       
@@ -555,16 +556,12 @@ class AuthService implements IAuthService {
       return {
         token: cleanToken,
         renewed: false,
-        expiresAt: decoded.exp * 1000 // Convertir a milisegundos
+        expiresAt: decoded.exp * 1000, // Convertir a milisegundos
+        user: this.sanitizeUser(user)
       };
     } catch (error) {
       console.error('Error al intentar renovar token:', error);
-      // Si hay algún error, devolver el token original sin renovar
-      return {
-        token,
-        renewed: false,
-        expiresAt: 0
-      };
+      throw new Error('Error al renovar token: ' + (error instanceof Error ? error.message : 'Error desconocido'));
     }
   }
   

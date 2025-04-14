@@ -167,7 +167,7 @@ export interface SmartVOCFormData {
   /**
    * ID of the research this form belongs to
    */
-  researchId?: string;
+  researchId: string;
   
   /**
    * Array of questions in the form
@@ -210,9 +210,9 @@ export interface SmartVOCFormData {
  */
 export interface SmartVOCFormResponse {
   /**
-   * Unique identifier of the saved form
+   * Unique identifier of the saved form (optional for error responses)
    */
-  id: string;
+  id?: string;
   
   /**
    * Success status
@@ -228,12 +228,18 @@ export interface SmartVOCFormResponse {
    * Form data that was saved
    */
   data?: SmartVOCFormData;
+
+  /**
+   * Flag indicating if the resource was not found
+   */
+  notFound?: boolean;
 }
 
 /**
  * Default values for new Smart VOC form
  */
 export const DEFAULT_SMART_VOC_FORM: SmartVOCFormData = {
+  researchId: '',
   questions: [
     {
       id: 'csat',

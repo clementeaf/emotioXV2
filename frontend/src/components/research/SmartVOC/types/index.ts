@@ -140,9 +140,9 @@ export const DEFAULT_QUESTIONS: SmartVOCQuestion[] = [
  */
 export interface SmartVOCFormData extends BaseSmartVOCFormData {
   id?: string;
-  researchId?: string;
-  randomize: boolean;
-  requireAnswers: boolean;
+  researchId: string;
+  randomizeQuestions: boolean;
+  smartVocRequired: boolean;
   questions: SmartVOCQuestion[];
   metadata?: {
     createdAt: string;
@@ -155,10 +155,30 @@ export interface SmartVOCFormData extends BaseSmartVOCFormData {
  * Respuesta de la API para operaciones de SmartVOC
  */
 export interface SmartVOCResponse {
-  data?: SmartVOCFormData;
-  error?: boolean;
-  message?: string;
+  /**
+   * Identificador único del formulario guardado
+   */
   id?: string;
+  
+  /**
+   * Datos del formulario
+   */
+  data: SmartVOCFormData;
+  
+  /**
+   * Indicador de éxito
+   */
+  success: boolean;
+  
+  /**
+   * Mensaje de error si aplica
+   */
+  error?: string;
+  
+  /**
+   * Indica si el recurso no fue encontrado
+   */
+  notFound?: boolean;
 }
 
 /**

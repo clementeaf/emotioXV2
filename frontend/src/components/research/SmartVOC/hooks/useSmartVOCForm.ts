@@ -5,7 +5,7 @@ import {
   SmartVOCFormData,
   SmartVOCQuestion
 } from 'shared/interfaces/smart-voc.interface';
-import { ErrorModalData, ValidationErrors } from '../types';
+import { ErrorModalData, ValidationErrors, DEFAULT_QUESTIONS } from '../types';
 import { smartVocFixedAPI } from '@/lib/smart-voc-api';
 import { 
   QUERY_KEYS, 
@@ -13,34 +13,6 @@ import {
   SUCCESS_MESSAGES
 } from '../constants';
 import { useAuth } from '@/providers/AuthProvider';
-
-// Preguntas predeterminadas
-const DEFAULT_QUESTIONS: SmartVOCQuestion[] = [
-  {
-    id: 'csat',
-    type: 'CSAT',
-    title: 'Customer Satisfaction Score (CSAT)',
-    description: '¿Cómo calificaría su nivel general de satisfacción?',
-    required: true,
-    showConditionally: false,
-    config: {
-      type: 'stars',
-      companyName: ''
-    }
-  },
-  {
-    id: 'ces',
-    type: 'CES',
-    title: 'Customer Effort Score (CES)',
-    description: 'Fue fácil para mí resolver mi problema hoy.',
-    required: true,
-    showConditionally: false,
-    config: {
-      type: 'scale',
-      scaleRange: { start: 1, end: 7 }
-    }
-  }
-];
 
 /**
  * Hook personalizado para gestionar la lógica del formulario SmartVOC
@@ -95,7 +67,7 @@ export const useSmartVOCForm = (researchId: string) => {
         
         if (error?.statusCode === 404) {
           console.log('[SmartVOCForm] No se encontró configuración existente - esto es normal para una nueva investigación');
-          return { data: null, notFound: true };
+          return { notFound: true };
         }
         
         throw error;
@@ -164,13 +136,13 @@ export const useSmartVOCForm = (researchId: string) => {
 
   // Efecto para cargar datos existentes
   useEffect(() => {
-    if (smartVocData?.data) {
-      const existingData = smartVocData.data;
+    if (smartVocData?.data?.data) {
+      const existingData = smartVocData.data.data;
       
-      if (existingData.id) {
-        setSmartVocId(existingData.id);
+      if (smartVocData.data.id) {
+        setSmartVocId(smartVocData.data.id);
       }
-      
+
       setFormData({
         ...existingData,
         researchId,
