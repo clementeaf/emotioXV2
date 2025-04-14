@@ -92,4 +92,35 @@ export async function cleanAllObsoleteResearch(): Promise<void> {
   } catch (error) {
     console.error('Error durante la limpieza de investigaciones obsoletas:', error);
   }
+}
+
+/**
+ * Limpia TODAS las investigaciones del localStorage, incluyendo la lista y datos relacionados
+ */
+export function cleanAllResearchFromLocalStorage(): void {
+  try {
+    // Obtener la lista de investigaciones
+    const storedList = localStorage.getItem('research_list');
+    if (storedList) {
+      const researchList = JSON.parse(storedList);
+      
+      // Limpiar cada investigación
+      researchList.forEach((research: any) => {
+        cleanResearchFromLocalStorage(research.id);
+      });
+      
+      // Limpiar la lista principal
+      localStorage.removeItem('research_list');
+    }
+    
+    // Limpiar otros datos relacionados con investigaciones
+    localStorage.removeItem('research_updated');
+    localStorage.removeItem('cached_research_data');
+    localStorage.removeItem('cached_research_timestamp');
+    localStorage.removeItem('last_path');
+    
+    console.log('Limpieza completa de investigaciones en localStorage completada');
+  } catch (error) {
+    console.error('Error durante la limpieza completa de localStorage:', error);
+  }
 } 

@@ -12,7 +12,7 @@ import { withSearchParams } from '@/components/common/SearchParamsWrapper';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
 import { ResearchStageManager } from '@/components/research/ResearchStageManager';
-import { cleanAllObsoleteResearch } from '@/lib/cleanup/localStorageCleanup';
+import { cleanAllResearchFromLocalStorage } from '@/lib/cleanup/localStorageCleanup';
 
 // Interfaces para tipar los datos
 interface ResearchData {
@@ -220,29 +220,13 @@ const DashboardContent = memo(() => {
         });
       }
     } else {
-      // Importante: si no hay researchId en la URL, limpiar activeResearch
-      // Esto asegura que al navegar a /dashboard sin parámetros, se limpie el contexto
       console.log('DEBUG: No hay investigación activa en la URL, limpiando estado');
       setActiveResearch(undefined);
       setIsAimFramework(false);
+      
+      // Limpiar TODAS las investigaciones del localStorage
+      cleanAllResearchFromLocalStorage();
     }
-    
-    // Limpiar investigaciones obsoletas del localStorage
-    // al cargar el dashboard
-    cleanAllObsoleteResearch().catch(error => {
-      console.error('Error al limpiar investigaciones obsoletas:', error);
-    });
-    
-    // También podemos configurar una limpieza periódica (cada 30 minutos)
-    const cleanupInterval = setInterval(() => {
-      cleanAllObsoleteResearch().catch(error => {
-        console.error('Error en limpieza periódica de investigaciones:', error);
-      });
-    }, 30 * 60 * 1000); // 30 minutos
-    
-    return () => {
-      clearInterval(cleanupInterval);
-    };
   }, [researchId, searchParams, router]);
 
   // Si estamos en AIM Framework

@@ -21,7 +21,7 @@ const DEFAULT_WELCOME_SCREEN_CONFIG: Partial<WelcomeScreenData> = {
   isEnabled: true,
   title: '',
   message: '',
-  startButtonText: 'Start Research'
+  startButtonText: ''
 };
 
 const ERROR_MESSAGES = {
@@ -42,7 +42,7 @@ const adaptRecordToFormData = (record: any): WelcomeScreenData => {
       isEnabled: true,
       title: '',
       message: '',
-      startButtonText: 'Start Research',
+      startButtonText: '',
       researchId: ''
     };
   }
@@ -75,10 +75,10 @@ export const useWelcomeScreenForm = (
   onSuccess?: SuccessCallback
 ): UseWelcomeScreenFormResult => {
   const [formData, setFormData] = useState<WelcomeScreenData>({
-    isEnabled: DEFAULT_WELCOME_SCREEN_CONFIG.isEnabled || true,
-    title: DEFAULT_WELCOME_SCREEN_CONFIG.title || '',
-    message: DEFAULT_WELCOME_SCREEN_CONFIG.message || '',
-    startButtonText: DEFAULT_WELCOME_SCREEN_CONFIG.startButtonText || 'Start Research',
+    isEnabled: true,
+    title: '',
+    message: '',
+    startButtonText: '',
     researchId
   });
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
@@ -125,9 +125,9 @@ export const useWelcomeScreenForm = (
         setExistingScreen(null);
         setFormData({ 
           isEnabled: DEFAULT_WELCOME_SCREEN_CONFIG.isEnabled || true,
-          title: DEFAULT_WELCOME_SCREEN_CONFIG.title || '',
-          message: DEFAULT_WELCOME_SCREEN_CONFIG.message || '',
-          startButtonText: DEFAULT_WELCOME_SCREEN_CONFIG.startButtonText || 'Start Research',
+          title: '',
+          message: '',
+          startButtonText: '',
           researchId 
         });
       }

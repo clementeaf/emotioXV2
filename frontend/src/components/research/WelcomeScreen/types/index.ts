@@ -9,7 +9,7 @@ export const DEFAULT_WELCOME_SCREEN_CONFIG = {
   isEnabled: true,
   title: '',
   message: '',
-  startButtonText: 'Start Research'
+  startButtonText: ''
 };
 
 /**
