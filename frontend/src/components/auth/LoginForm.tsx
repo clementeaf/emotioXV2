@@ -184,7 +184,7 @@ export function LoginForm({ className }: LoginFormProps) {
 
         const data = await response.json();
         
-        if (!data.auth?.token) {
+        if (!data.auth?.auth?.token) {
           console.error('Respuesta sin token:', data);
           throw new Error('Token no recibido del servidor');
         }
@@ -192,7 +192,7 @@ export function LoginForm({ className }: LoginFormProps) {
         console.log('Login automático exitoso');
         
         // Iniciar sesión con el token real
-        await login(data.auth.token, state.rememberMe);
+        await login(data.auth.auth.token, state.rememberMe);
         setStatus('success');
         
         // Redirigir al dashboard

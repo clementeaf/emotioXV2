@@ -454,75 +454,22 @@ export const researchAPI = {
     try {
       const originalType = String(processedData.type);
       if (originalType.toLowerCase().includes('behaviour') || originalType.toLowerCase().includes('behavioral')) {
-        // Asignar un valor que el backend acepte
         processedData.type = 'behavioural' as any;
       }
     } catch (e) {
-      // Error silencioso
+      console.error('Error al procesar el tipo:', e);
     }
     
-    return alovaInstance.Post<any>(
+    // Usar alova para la petición real
+    return alovaInstance.Post<APIResponse<Research>>(
       API_CONFIG.endpoints.research.CREATE || '/research',
       processedData
-    )
-      .then(response => {
-        // Verificar si la respuesta tiene el formato correcto con message y data (formato AWS)
-        if (response && response.message && response.data) {
-          // Asegurar que se mantenga la estructura original de AWS
-          return {
-            success: true,
-            data: response.data, // Aquí está el objeto con id
-            message: response.message,
-            error: null
-          };
-        }
-      
-        // Verificar si la respuesta tiene solo data
-        if (response && response.data) {
-          return {
-            success: true,
-            data: response.data,
-            error: null
-          };
-        }
-      
-        // Si la respuesta es el objeto directo (sin estructuras anidadas)
-        if (response && typeof response === 'object' && !('data' in response) && !('message' in response)) {
-          return {
-            success: true,
-            data: response,
-            error: null
-          };
-        }
-      
-        // Si no tiene formato conocido pero parece válido, intentar devolverlo como está
-        if (response) {
-          return {
-            success: true,
-            data: response,
-            error: null
-          };
-        }
-      
-        // Si no se encontraron datos válidos
-        throw new Error('No se pudieron extraer datos válidos de la respuesta');
-      })
-      .catch(error => {
-        return {
-          success: false,
-          data: null,
-          error: error instanceof Error ? error.message : String(error)
-        };
-      });
+    );
   },
   
   get: (id: string) => {
     const url = (API_CONFIG.endpoints.research.GET || '/research/{id}').replace('{id}', id);
-    
-    // Crear un método GET explícito
-    const method = alovaInstance.Get<APIResponse<Research>>(url);
-    
-    return method;
+    return alovaInstance.Get<APIResponse<Research>>(url);
   },
   
   list: () => {

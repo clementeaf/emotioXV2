@@ -118,7 +118,11 @@ export const useWelcomeScreenForm = (
         setFormData(adaptedData);
       } else {
         setExistingScreen(null);
-        setFormData(null);
+        // Inicializar con la configuración por defecto
+        setFormData({
+          ...DEFAULT_WELCOME_SCREEN_CONFIG,
+          researchId
+        } as WelcomeScreenData);
       }
       setIsLoading(false);
     }
