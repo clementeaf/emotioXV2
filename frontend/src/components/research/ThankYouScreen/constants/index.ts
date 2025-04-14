@@ -33,8 +33,8 @@ export const SUCCESS_MESSAGES = {
 
 // Textos para la interfaz de usuario
 export const UI_TEXTS = {
-  TITLE: 'Pantalla de agradecimiento',
-  DESCRIPTION: 'Muestra un mensaje de agradecimiento a los participantes al finalizar la investigación',
+  TITLE: '',
+  DESCRIPTION: '',
   SETTINGS: {
     ENABLED_LABEL: 'Habilitado',
     DISABLED_LABEL: 'Deshabilitado'

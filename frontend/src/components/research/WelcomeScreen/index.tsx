@@ -2,14 +2,12 @@ import React from 'react';
 import { WelcomeScreenFormProps } from './types';
 import { useWelcomeScreenForm } from './hooks/useWelcomeScreenForm';
 import {
-  WelcomeScreenHeader,
   WelcomeScreenSettings,
   WelcomeScreenContent,
   WelcomeScreenFooter,
   WelcomeScreenSkeleton,
   ErrorModal
 } from './components';
-import { UI_TEXTS } from './constants';
 import { cn } from '@/lib/utils';
 
 /**
@@ -60,20 +58,12 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
 
   return (
     <div className={cn('space-y-4', className)}>
-      {/* Encabezado */}
-      <div className="flex items-center justify-between">
-        <WelcomeScreenHeader 
-          title={UI_TEXTS.TITLE} 
-          description={UI_TEXTS.DESCRIPTION}
-        />
-        
-        {/* Ajuste de habilitación/deshabilitación */}
-        <WelcomeScreenSettings 
-          isEnabled={formData.isEnabled}
-          onChange={handleEnabledChange}
-          disabled={isLoading || isSaving}
-        />
-      </div>
+      {/* Toggle de habilitación */}
+      <WelcomeScreenSettings 
+        isEnabled={formData.isEnabled}
+        onChange={handleEnabledChange}
+        disabled={isLoading || isSaving}
+      />
       
       {/* Indicador de estado - Solo para debugging */}
       {process.env.NODE_ENV === 'development' && (

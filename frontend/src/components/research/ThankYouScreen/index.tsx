@@ -86,20 +86,12 @@ export const ThankYouScreenForm: React.FC<ThankYouScreenFormProps> = ({
   
   return (
     <div className={cn('space-y-4', className)}>
-      {/* Encabezado */}
-      <div className="flex items-center justify-between">
-        <ThankYouScreenHeader 
-          title={UI_TEXTS.TITLE} 
-          description={UI_TEXTS.DESCRIPTION}
-        />
-        
-        {/* Ajuste de habilitación/deshabilitación */}
-        <ThankYouScreenSettings 
-          isEnabled={formData.isEnabled}
-          onEnabledChange={handleEnabledChange}
-          disabled={isLoading || isSaving}
-        />
-      </div>
+      {/* Toggle de habilitación */}
+      <ThankYouScreenSettings 
+        isEnabled={formData.isEnabled}
+        onEnabledChange={handleEnabledChange}
+        disabled={isLoading || isSaving}
+      />
       
       {/* Indicador de estado - Solo para debugging */}
       {process.env.NODE_ENV === 'development' && (
