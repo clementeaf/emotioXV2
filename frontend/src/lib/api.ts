@@ -283,6 +283,11 @@ export const authAPI = {
       throw error;
     });
   },
+  
+  getProfile: () => 
+    alovaInstance.Get<APIResponse<User>>(
+      API_CONFIG.endpoints.auth?.PROFILE || '/auth/profile'
+    ),
 };
 
 // Endpoints de usuarios
@@ -496,6 +501,39 @@ export const handleAPIError = (error: unknown): string => {
   }
   
   return 'Error desconocido al procesar la solicitud';
+};
+
+// API para pantallas de bienvenida
+export const welcomeScreenAPI = {
+  create: (data: any) => {
+    const url = API_CONFIG.endpoints.welcomeScreen.CREATE || '/welcome-screens';
+    console.log(`Endpoint CREATE welcomeScreen utilizado: ${url}`);
+    return alovaInstance.Post<any>(url, data);
+  },
+  
+  getByResearchId: (researchId: string) => {
+    const url = (API_CONFIG.endpoints.welcomeScreen.GET_BY_RESEARCH || '/welcome-screens/research/{researchId}').replace('{researchId}', researchId);
+    console.log(`Endpoint GET_BY_RESEARCH welcomeScreen utilizado: ${url}`);
+    return alovaInstance.Get<any>(url);
+  },
+  
+  getById: (id: string) => {
+    const url = (API_CONFIG.endpoints.welcomeScreen.GET || '/welcome-screens/{id}').replace('{id}', id);
+    console.log(`Endpoint GET welcomeScreen utilizado: ${url}`);
+    return alovaInstance.Get<any>(url);
+  },
+  
+  update: (id: string, data: any) => {
+    const url = (API_CONFIG.endpoints.welcomeScreen.UPDATE || '/welcome-screens/{id}').replace('{id}', id);
+    console.log(`Endpoint UPDATE welcomeScreen utilizado: ${url}`);
+    return alovaInstance.Put<any>(url, data);
+  },
+  
+  delete: (id: string) => {
+    const url = (API_CONFIG.endpoints.welcomeScreen.DELETE || '/welcome-screens/{id}').replace('{id}', id);
+    console.log(`Endpoint DELETE welcomeScreen utilizado: ${url}`);
+    return alovaInstance.Delete<any>(url);
+  }
 };
 
 export default alovaInstance; 

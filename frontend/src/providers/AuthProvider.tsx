@@ -1,300 +1,190 @@
 'use client';
 
-import { jwtDecode } from 'jwt-decode';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { authAPI } from '@/lib/api';
 
-import tokenService from '@/services/tokenService';
-import { apiClient } from '@/config/api-client';
-
+// Interfaz para los datos del usuario
 interface User {
+  id: string;
   email: string;
   name?: string;
-  sub?: string;
 }
 
+// Interfaz para el contexto de autenticación
 interface AuthContextType {
-  token: string | null;
   user: User | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  error: string | null;
-  login: (token: string, rememberMe?: boolean) => Promise<void>;
+  token: string | null;
+  authLoading: boolean;
+  authError: string | null;
+  login: (token: string, rememberMe: boolean) => Promise<void>;
   logout: () => Promise<void>;
-  updateToken: (newToken: string) => void;
   clearError: () => void;
-  refreshToken: () => Promise<boolean>;
 }
 
+// Crear el contexto
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-interface AuthProviderProps {
-  children: ReactNode;
-}
+// Hook personalizado para facilitar el acceso al contexto
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth debe usarse dentro de un AuthProvider');
+  }
+  return context;
+};
 
-export function AuthProvider({ children }: AuthProviderProps) {
-  const [token, setToken] = useState<string | null>(null);
+// Proveedor de autenticación
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [authLoading, setAuthLoading] = useState<boolean>(true);
+  const [authError, setAuthError] = useState<string | null>(null);
+
   const router = useRouter();
 
-  // Cargar token al iniciar
-  useEffect(() => {
-    const initializeAuth = async () => {
-      // Verificar que estemos en el cliente
-      if (typeof window === 'undefined') {
-        console.log('Inicialización de autenticación saltada en el servidor');
-        setIsLoading(false);
+  // Cargar usuario y token al iniciar
+  const loadUserData = useCallback(async () => {
+    try {
+      setAuthLoading(true);
+      
+      // Obtener token del localStorage
+      const storedToken = localStorage.getItem('token');
+      if (!storedToken) {
+        setAuthLoading(false);
         return;
       }
       
+      setToken(storedToken);
+      
+      // Verificar el token con la API y obtener datos del usuario
       try {
-        // Verificar el tipo de almacenamiento utilizado (localStorage o sessionStorage)
-        const storageType = localStorage.getItem('auth_storage_type') || 'local';
-        console.log('Tipo de almacenamiento detectado:', storageType);
-        
-        // Buscar token en el almacenamiento correspondiente
-        const storedToken = storageType === 'local' 
-          ? localStorage.getItem('token') 
-          : sessionStorage.getItem('token');
+        const response = await authAPI.refreshToken();
+        if (response.data.token && response.data.renewed) {
+          // Actualizar token si fue renovado
+          localStorage.setItem('token', response.data.token);
+          setToken(response.data.token);
           
-        if (storedToken) {
+          // Establecer datos del usuario
+          if (response.data.user) {
+            setUser(response.data.user);
+          }
+        } else {
+          // Si no se pudo renovar, pero se considera válido mantener la sesión
+          // Intentar obtener los datos del usuario directamente
           try {
-            console.log('Intentando inicializar con token almacenado:', storedToken.substring(0, 15) + '...');
-            const decoded = jwtDecode<User>(storedToken);
-            console.log('Token decodificado con éxito:', decoded);
-            
-            const expiryTime = (decoded as any).exp * 1000;
-            const now = Date.now();
-            console.log('Tiempo actual:', new Date(now).toLocaleString());
-            console.log('Fecha de expiración del token:', new Date(expiryTime).toLocaleString());
-            console.log('Tiempo restante:', Math.floor((expiryTime - now) / (1000 * 60 * 60)) + ' horas');
-            
-            if (expiryTime > now) {
-              console.log('Token válido encontrado, inicializando sesión');
-              setToken(storedToken);
-              setUser(decoded);
-              
-              // Iniciar la renovación automática del token
-              tokenService.startAutoRefresh();
-              
-              console.log('Sesión inicializada con token existente, expira:', new Date(expiryTime).toLocaleString());
-            } else {
-              throw new Error(`Token expirado: venció el ${new Date(expiryTime).toLocaleString()}`);
+            const userResponse = await authAPI.getProfile();
+            if (userResponse.data) {
+              setUser(userResponse.data);
             }
-          } catch (error) {
-            console.error('Error al inicializar la sesión:', error);
-            // Limpiar token del almacenamiento correspondiente
-            if (storageType === 'local') {
-              localStorage.removeItem('token');
-            } else {
-              sessionStorage.removeItem('token');
-            }
-            localStorage.removeItem('auth_storage_type');
-            setError('La sesión ha expirado. Por favor, inicia sesión nuevamente.');
+          } catch (profileError) {
+            console.error('Error al obtener perfil:', profileError);
+            // Si hay error al obtener el perfil, cerrar sesión
+            await logout();
           }
         }
-      } catch (error) {
-        console.error('Error durante la inicialización de autenticación:', error);
-      } finally {
-        setIsLoading(false);
+      } catch (validationError) {
+        console.error('Error al validar token:', validationError);
+        // Token inválido, cerrar sesión
+        await logout();
       }
-    };
-
-    initializeAuth();
-    
-    // Limpiar al desmontar el componente
-    return () => {
-      if (typeof window !== 'undefined') {
-        // Detener la renovación automática al desmontar
-        tokenService.stopAutoRefresh();
-      }
-    };
+    } catch (error) {
+      console.error('Error al cargar datos del usuario:', error);
+      setAuthError('Error al cargar datos del usuario');
+    } finally {
+      setAuthLoading(false);
+    }
   }, []);
 
-  // Efecto para actualizar apiClient cuando cambie el token
+  // Cargar datos al montar el componente
   useEffect(() => {
-    if (token) {
-      console.log('🔑 [AUTH] Actualizando token en apiClient desde AuthProvider');
-      apiClient.setAuthToken(token);
-    } else {
-      console.log('🔑 [AUTH] Limpiando token en apiClient desde AuthProvider');
-      apiClient.clearAuthToken();
-    }
-  }, [token]);
+    loadUserData();
+  }, [loadUserData]);
 
-  // Función para renovar manualmente el token
-  const handleRefreshToken = async (): Promise<boolean> => {
+  // Iniciar sesión con token
+  const login = useCallback(async (newToken: string, rememberMe: boolean) => {
     try {
-      const renewed = await tokenService.refreshTokenIfNeeded();
+      setAuthLoading(true);
+      setAuthError(null);
       
-      if (renewed) {
-        // Si se renovó el token, actualizar el estado
-        const newToken = tokenService.getToken();
-        if (newToken) {
-          const decoded = jwtDecode<User>(newToken);
-          setToken(newToken);
-          setUser(decoded);
-        }
-      }
+      // Guardar token en localStorage o sessionStorage según rememberMe
+      localStorage.setItem('token', newToken);
+      localStorage.setItem('auth_storage_type', rememberMe ? 'local' : 'session');
       
-      return renewed;
-    } catch (error) {
-      console.error('Error al renovar token manualmente:', error);
-      return false;
-    }
-  };
-
-  const handleLogin = async (newToken: string, rememberMe: boolean = true) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      console.log('======== INICIO PROCESO LOGIN ========');
-      console.log('Token a almacenar (COMPLETO):', newToken);
-      console.log('Longitud del token:', newToken.length);
-      
-      const decoded = jwtDecode<User>(newToken);
-      console.log('Token decodificado:', decoded);
-      
-      if (rememberMe) {
-        // Si rememberMe es true, guardar en localStorage (persistente)
-        localStorage.setItem('token', newToken);
-        localStorage.setItem('auth_storage_type', 'local');
-        console.log('Token almacenado en localStorage (sesión persistente)');
-        
-        // Verificar que se haya guardado correctamente
-        const storedToken = localStorage.getItem('token');
-        if (storedToken) {
-          if (storedToken === newToken) {
-            console.log('Verificación EXITOSA: Token guardado correctamente en localStorage');
-          } else {
-            console.error('ERROR CRÍTICO: Token guardado no coincide con el original');
-            console.log('Token original (longitud):', newToken.length);
-            console.log('Token guardado (longitud):', storedToken.length);
-          }
-        } else {
-          console.error('ERROR CRÍTICO: Token no guardado en localStorage');
-        }
-      } else {
-        // Si rememberMe es false, guardar en sessionStorage (no persistente)
-        sessionStorage.setItem('token', newToken);
-        localStorage.setItem('auth_storage_type', 'session');
-        console.log('Token almacenado en sessionStorage (sesión temporal)');
-        
-        // Verificar que se haya guardado correctamente
-        const storedToken = sessionStorage.getItem('token');
-        if (storedToken) {
-          if (storedToken === newToken) {
-            console.log('Verificación EXITOSA: Token guardado correctamente en sessionStorage');
-          } else {
-            console.error('ERROR CRÍTICO: Token guardado no coincide con el original');
-          }
-        } else {
-          console.error('ERROR CRÍTICO: Token no guardado en sessionStorage');
-        }
-      }
-      
-      // Actualizar el estado
+      // Establecer token en el estado
       setToken(newToken);
-      setUser(decoded);
       
-      // Asegurar que el token se actualice en el cliente API
-      apiClient.setAuthToken(newToken);
-      
-      console.log('Login exitoso, token almacenado y estado actualizado');
-      console.log('======== FIN PROCESO LOGIN ========');
-      
-      // Iniciar la renovación automática del token
-      tokenService.startAutoRefresh();
-      
-      // Redirigir al dashboard
-      router.replace('/dashboard');
+      // Obtener datos del usuario
+      try {
+        const userResponse = await authAPI.getProfile();
+        if (userResponse.data) {
+          setUser(userResponse.data);
+        }
+      } catch (profileError) {
+        console.error('Error al obtener perfil después del login:', profileError);
+        // Si hay error al obtener el perfil, establecer datos básicos del token (si es posible)
+        // En un token JWT podríamos extraer datos básicos, pero por seguridad, no lo implementamos aquí
+      }
     } catch (error) {
       console.error('Error al iniciar sesión:', error);
-      setError('Error al iniciar sesión. Por favor, intenta nuevamente.');
+      setAuthError('Error al iniciar sesión');
       throw error;
     } finally {
-      setIsLoading(false);
+      setAuthLoading(false);
     }
-  };
+  }, []);
 
-  const handleLogout = async () => {
-    setIsLoading(true);
+  // Cerrar sesión
+  const logout = useCallback(async () => {
     try {
-      console.log('Iniciando proceso de logout...');
-      // Detener la renovación automática del token
-      tokenService.stopAutoRefresh();
+      setAuthLoading(true);
       
-      // No es necesario hacer logout en el servidor
-      // Simplemente limpiar los datos locales
-    } catch (error) {
-      console.error('Error durante el proceso de logout:', error);
-      setError('Error al cerrar sesión. Los datos locales han sido limpiados.');
-    } finally {
-      // Limpiar token de ambos almacenamientos para mayor seguridad
-      localStorage.removeItem('token');
-      sessionStorage.removeItem('token');
-      localStorage.removeItem('auth_storage_type');
-      
-      setToken(null);
-      setUser(null);
-      setIsLoading(false);
-      console.log('Logout completado, redirigiendo a login');
-      router.replace('/login');
-    }
-  };
-
-  const handleUpdateToken = (newToken: string) => {
-    try {
-      const decoded = jwtDecode<User>(newToken);
-      
-      // Obtener el tipo de almacenamiento actual
-      const storageType = localStorage.getItem('auth_storage_type') || 'local';
-      
-      // Guardar el token en el almacenamiento correspondiente
-      if (storageType === 'local') {
-        localStorage.setItem('token', newToken);
-      } else {
-        sessionStorage.setItem('token', newToken);
+      // Intentar hacer logout en el servidor
+      try {
+        await authAPI.logout();
+      } catch (logoutError) {
+        console.warn('Error al hacer logout en el servidor:', logoutError);
+        // Continuar con el logout local incluso si falla en el servidor
       }
       
-      setToken(newToken);
-      setUser(decoded);
-      setError(null);
+      // Eliminar token del almacenamiento
+      localStorage.removeItem('token');
+      localStorage.removeItem('auth_storage_type');
       
-      console.log('Token actualizado:', new Date().toLocaleString());
-      console.log('Nuevo token expira:', new Date((decoded as any).exp * 1000).toLocaleString());
+      // Limpiar estado
+      setUser(null);
+      setToken(null);
+      
+      // Redirigir a login
+      router.push('/login');
     } catch (error) {
-      console.error('Error al actualizar el token:', error);
-      setError('Error al actualizar la sesión');
+      console.error('Error al cerrar sesión:', error);
+      setAuthError('Error al cerrar sesión');
+      throw error;
+    } finally {
+      setAuthLoading(false);
     }
-  };
+  }, [router]);
 
-  const clearError = () => setError(null);
+  // Limpiar errores
+  const clearError = useCallback(() => {
+    setAuthError(null);
+  }, []);
 
-  const value = {
-    token,
+  // Valor del contexto
+  const contextValue: AuthContextType = {
     user,
-    isAuthenticated: !!token,
-    isLoading,
-    error,
-    login: handleLogin,
-    logout: handleLogout,
-    updateToken: handleUpdateToken,
-    clearError,
-    refreshToken: handleRefreshToken,
+    token,
+    authLoading,
+    authError,
+    login,
+    logout,
+    clearError
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth debe ser usado dentro de un AuthProvider');
-  }
-  return context;
-}
-
-export default AuthProvider; 
+  return (
+    <AuthContext.Provider value={contextValue}>
+      {children}
+    </AuthContext.Provider>
+  );
+}; 

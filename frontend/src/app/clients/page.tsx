@@ -12,9 +12,9 @@ import { Navbar } from '@/components/layout/Navbar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { SearchParamsWrapper } from '@/components/common/SearchParamsWrapper';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
-
-// Extraer datos mock a un archivo separado
-import { mockResearch, mockBestPerformer } from '@/data/clientsMockData';
+import { useQuery } from '@tanstack/react-query';
+import { researchAPI } from '@/lib/api';
+import { ClientResearch } from '@/interfaces/research';
 
 // Componente para la sección de ayuda
 const HelpSection = () => (
@@ -45,15 +45,79 @@ const ClientsContent = () => {
 
   const handleClientChange = (clientId: string) => {
     setSelectedClientId(clientId);
-    // Aquí se cargarían los datos del cliente seleccionado
   };
 
-  // Memorizar datos que podrían ser calculados o filtrados basados en selectedClientId
-  const filteredResearch = useMemo(() => {
-    // Aquí podríamos filtrar la investigación según el cliente seleccionado
-    // Por ahora, simplemente devolvemos todos los datos
-    return mockResearch;
-  }, [selectedClientId]);
+  // Adaptador para convertir datos de Research a ClientResearch
+  const adaptResearchData = (data: any[]): ClientResearch[] => {
+    return data.map(item => ({
+      id: item.id,
+      name: item.name || item.basic?.name || 'Untitled Research',
+      status: mapStatus(item.status),
+      progress: item.progress || 0,
+      date: item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Unknown',
+      researcher: 'Team Member' // Valor por defecto ya que no tenemos esta info en la API
+    }));
+  };
+
+  // Mapear estados de investigación al formato requerido por ClientResearch
+  const mapStatus = (status: string): 'pending' | 'in_progress' | 'completed' => {
+    switch (status) {
+      case 'draft':
+        return 'pending';
+      case 'in-progress':
+        return 'in_progress';
+      case 'completed':
+        return 'completed';
+      default:
+        return 'pending';
+    }
+  };
+
+  // Obtener datos de investigación desde la API
+  const { data: apiResearchData, isLoading: isLoadingResearch } = useQuery({
+    queryKey: ['research', selectedClientId],
+    queryFn: async () => {
+      try {
+        const response = await researchAPI.list();
+        // Filtrar por cliente si hay un clientId seleccionado
+        const research = response.data || [];
+        return selectedClientId 
+          ? research.filter(item => item.enterprise === selectedClientId || 
+                                    item.basic?.enterprise === selectedClientId)
+          : research;
+      } catch (error) {
+        console.error('Error al cargar investigaciones:', error);
+        return [];
+      }
+    },
+    enabled: true // Siempre cargar los datos
+  });
+
+  // Adaptar datos al formato ClientResearch
+  const researchData = useMemo(() => {
+    return adaptResearchData(apiResearchData || []);
+  }, [apiResearchData]);
+
+  // Calcular la mejor investigación basada en puntuación
+  const bestResearch = useMemo(() => {
+    if (!apiResearchData || apiResearchData.length === 0) return null;
+    
+    // Ordenar por progreso como aproximación de puntuación
+    const sorted = [...apiResearchData].sort((a, b) => 
+      (b.progress || 0) - (a.progress || 0)
+    );
+    
+    const best = sorted[0];
+    if (!best) return null;
+    
+    return {
+      id: best.id,
+      title: best.name || best.basic?.name || 'Untitled Research',
+      imageUrl: '',
+      score: best.progress || 0,
+      researchId: best.id
+    };
+  }, [apiResearchData]);
 
   return (
     <div className="flex h-screen bg-neutral-50">
@@ -63,7 +127,7 @@ const ClientsContent = () => {
       {/* Contenido principal con scroll interno si es necesario */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Navbar fijo */}
-        <Navbar />
+        <Navbar className="" />
         
         {/* Contenedor principal con scroll */}
         <div className="flex-1 overflow-auto">
@@ -73,20 +137,29 @@ const ClientsContent = () => {
               <ClientSelector onClientChange={handleClientChange} />
             </div>
 
-            {/* Grid principal */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Gráfico de benchmark y lista de investigación */}
-              <div className="lg:col-span-2 space-y-6">
-                <BenchmarkChart />
-                <ResearchList data={filteredResearch} />
+            {/* Estado de carga */}
+            {isLoadingResearch && (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
               </div>
+            )}
 
-              {/* Sidebar derecho */}
-              <div className="space-y-6">
-                <HelpSection />
-                <BestPerformer data={mockBestPerformer} />
+            {/* Grid principal */}
+            {!isLoadingResearch && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Gráfico de benchmark y lista de investigación */}
+                <div className="lg:col-span-2 space-y-6">
+                  <BenchmarkChart />
+                  <ResearchList data={researchData} />
+                </div>
+
+                {/* Sidebar derecho */}
+                <div className="space-y-6">
+                  <HelpSection />
+                  {bestResearch && <BestPerformer data={bestResearch} />}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

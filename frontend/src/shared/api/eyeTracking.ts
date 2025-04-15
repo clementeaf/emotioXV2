@@ -5,7 +5,7 @@ import {
   EyeTrackingRecruitResponse,
   EyeTrackingRecruitRequest
 } from '../interfaces/eyeTracking';
-import { alovaInstance } from '@/config/alova.config';
+import alovaInstance from '@/lib/api';
 import API_CONFIG from '@/config/api.config';
 
 // Preparar los endpoints para eyeTracking

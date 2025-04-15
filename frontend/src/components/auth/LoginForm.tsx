@@ -146,68 +146,6 @@ export function LoginForm({ className }: LoginFormProps) {
     });
   };
 
-  const handleDevModeLogin = async () => {
-    // Solo permitir en entorno de desarrollo local
-    if (typeof window !== 'undefined' && 
-        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-      try {
-        setStatus('authenticating');
-        
-        console.log('Iniciando login automático usando API real');
-        
-        // Usar la ruta proxy
-        const loginUrl = `${API_CONFIG.baseURL}/auth/login`;
-        console.log('URL de login:', loginUrl);
-        
-        const response = await fetch(loginUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({
-            email: 'clemente@gmail.com',
-            password: 'clemente',
-            rememberMe: state.rememberMe
-          })
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          console.error('Error en la respuesta:', {
-            status: response.status,
-            statusText: response.statusText,
-            data: errorData
-          });
-          throw new Error('Error en la autenticación');
-        }
-
-        const data = await response.json();
-        
-        if (!data.auth?.auth?.token) {
-          console.error('Respuesta sin token:', data);
-          throw new Error('Token no recibido del servidor');
-        }
-
-        console.log('Login automático exitoso');
-        
-        // Iniciar sesión con el token real
-        await login(data.auth.auth.token, state.rememberMe);
-        setStatus('success');
-        
-        // Redirigir al dashboard
-        router.push('/dashboard');
-      } catch (error) {
-        console.error('Error en inicio de sesión automático:', error);
-        setFormError('Error en inicio de sesión automático');
-        setStatus('error');
-      }
-    } else {
-      console.error('El inicio de sesión automático solo está disponible en desarrollo local');
-      setFormError('El inicio de sesión automático solo está disponible en desarrollo local');
-    }
-  };
-
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setFormError(null);
@@ -235,14 +173,7 @@ export function LoginForm({ className }: LoginFormProps) {
       
       setStatus('authenticating');
       
-      // Si estamos en modo desarrollo y se solicita login automático, usar el token simulado
-      if (isDevMode && state.email === 'clemente@gmail.com' && state.password === 'clemente') {
-        console.log('Usando login automático en modo desarrollo');
-        await handleDevModeLogin();
-        return;
-      }
-      
-      // En cualquier otro caso, usar el login real
+      // Usar siempre el login real con la API
       const loginUrl = `${API_CONFIG.baseURL}${API_CONFIG.endpoints.auth.LOGIN}`;
       console.log('URL de login:', loginUrl);
       
@@ -334,44 +265,6 @@ export function LoginForm({ className }: LoginFormProps) {
                 </svg>
                 <p className="text-green-700 text-center text-sm">
                   ¡Inicio de sesión exitoso! Redirigiendo...
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Modo desarrollo - Acceso rápido */}
-          {isDevMode && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-              <div className="flex flex-col items-center">
-                <p className="text-amber-700 text-center text-sm mb-2">
-                  <span className="font-semibold">Modo Desarrollo</span> - Acceso rápido con usuario de prueba
-                </p>
-                <div className="flex space-x-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={handleUseTestUser}
-                    className="border-amber-300 text-amber-700 hover:bg-amber-100"
-                  >
-                    <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    Usar usuario de prueba
-                  </Button>
-                  <Button 
-                    variant="default" 
-                    size="sm"
-                    onClick={handleDevModeLogin}
-                    className="bg-amber-600 hover:bg-amber-700 text-white"
-                  >
-                    <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                    </svg>
-                    Login automático
-                  </Button>
-                </div>
-                <p className="text-amber-600 text-xs mt-2">
-                  Email: clemente@gmail.com | Contraseña: clemente
                 </p>
               </div>
             </div>
@@ -491,6 +384,20 @@ export function LoginForm({ className }: LoginFormProps) {
               </p>
             </div>
           </form>
+
+          {isDevMode && (
+            <div className="mt-6 pt-6 border-t border-neutral-200">
+              <Button 
+                className="w-full" 
+                variant="secondary"
+                disabled={isLoading}
+                onClick={handleUseTestUser}
+                type="button">
+                Usar test@emotio.com
+              </Button>
+            </div>
+          )}
+
         </div>
       </div>
     </div>
