@@ -2,7 +2,7 @@
 
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useState, useEffect, memo, Suspense } from 'react';
-
+import { useAuth } from '@/providers/AuthProvider';
 import { ResearchTable } from '@/components/dashboard/ResearchTable';
 import { ResearchTypes } from '@/components/dashboard/ResearchTypes';
 import { StatsCard } from '@/components/dashboard/StatsCard';
@@ -10,7 +10,6 @@ import { Navbar } from '@/components/layout/Navbar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
-import { useProtectedRoute } from '@/hooks/useProtectedRoute';
 import { ResearchStageManager } from '@/components/research/ResearchStageManager';
 import { cleanAllResearchFromLocalStorage } from '@/lib/cleanup/localStorageCleanup';
 
@@ -71,15 +70,11 @@ const DashboardStats = memo(() => (
 
 DashboardStats.displayName = 'DashboardStats';
 
-// Componente de contenido principal del dashboard
 const DashboardMainContent = memo(() => (
   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    {/* Investigaciones recientes */}
     <div className="lg:col-span-2 bg-white rounded-lg border border-neutral-200 p-6">
       <ResearchTable />
     </div>
-
-    {/* Tipos de investigación */}
     <div className="bg-white rounded-lg border border-neutral-200 p-6">
       <h2 className="text-lg font-medium mb-6">Tipos de Investigación</h2>
       <ResearchTypes />
@@ -89,7 +84,6 @@ const DashboardMainContent = memo(() => (
 
 DashboardMainContent.displayName = 'DashboardMainContent';
 
-// Componente para el header del dashboard
 const DashboardHeader = memo(() => (
   <div className="mb-8">
     <h1 className="text-2xl font-semibold text-neutral-900">Dashboard</h1>
@@ -98,9 +92,6 @@ const DashboardHeader = memo(() => (
 
 DashboardHeader.displayName = 'DashboardHeader';
 
-/**
- * Componente que usa useSearchParams, debe estar envuelto en Suspense
- */
 const DashboardContent = memo(() => {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -109,36 +100,27 @@ const DashboardContent = memo(() => {
   const section = searchParams?.get('section') || null;
   const [isAimFramework, setIsAimFramework] = useState(searchParams?.get('aim') === 'true');
   const [activeResearch, setActiveResearch] = useState<ActiveResearch | undefined>(undefined);
-  
-  // Cargar datos de la investigación desde localStorage si existe un ID en la URL
+
   useEffect(() => {
     if (researchId) {
-      console.log('DEBUG: URL contiene ID de investigación:', researchId);
       try {
         const storedResearch = localStorage.getItem(`research_${researchId}`);
-        console.log('DEBUG: Datos de localStorage para investigación:', storedResearch);
         let researchData: ResearchData;
         
-        // Verificar si la URL contiene el parámetro aim=true
         const hasAimParam = searchParams?.get('aim') === 'true';
         
         if (storedResearch) {
           researchData = JSON.parse(storedResearch);
-          console.log('DEBUG: Datos de investigación parseados:', researchData);
           setActiveResearch({ 
             id: researchData.id, 
             name: researchData.name 
           });
           
-          // Si la URL tiene aim=true pero la investigación en localStorage no es de tipo aim-framework,
-          // actualizar el localStorage con esta información
           if (hasAimParam && researchData.technique !== 'aim-framework') {
-            console.log('DEBUG: Actualizando técnica de investigación a aim-framework');
             researchData.technique = 'aim-framework';
             localStorage.setItem(`research_${researchId}`, JSON.stringify(researchData));
           }
           
-          // En lugar de mantener una lista y añadir/reordenar, simplemente crear una lista con un solo elemento
           const newResearchList = [{
             id: researchData.id,
             name: researchData.name,
@@ -146,48 +128,29 @@ const DashboardContent = memo(() => {
             createdAt: researchData.createdAt || new Date().toISOString()
           }];
           
-          // Guardar la lista reemplazando completamente la anterior
           localStorage.setItem('research_list', JSON.stringify(newResearchList));
-          console.log('Lista de investigaciones actualizada con solo la investigación actual:', researchData.name);
           
-          // Verificar si la técnica es aim-framework
           const isAimFramework = researchData.technique === 'aim-framework';
-          console.log('DEBUG: ¿Es investigación AIM Framework?', isAimFramework);
-          
-          // Verificar si es AIM Framework y si no hay una sección especificada o si no tiene el parámetro aim=true
-          const section = searchParams?.get('section');
-          console.log('DEBUG: Parámetros URL - section:', section, 'aim=true:', hasAimParam);
           
           if (isAimFramework) {
             if (!hasAimParam || !section) {
-              // Añadir el parámetro aim=true y redirigir a welcome-screen si no hay sección
-              console.log('DEBUG: Redirigiendo a vista AIM Framework');
               const redirectUrl = `/dashboard?research=${researchId}&aim=true${!section ? '&section=welcome-screen' : ''}`;
-              console.log('DEBUG: URL de redirección:', redirectUrl);
               router.replace(redirectUrl);
             }
           }
           
           setIsAimFramework(isAimFramework);
         } else {
-          // Si no existe en localStorage, crear un nuevo registro con los datos mínimos
-          console.log('DEBUG: No se encontraron datos en localStorage, creando nuevo registro');
-          
-          // Crear datos básicos para la investigación
           const newResearchData: ResearchData = {
             id: researchId,
             name: 'Research Project',
-            // Si la URL contiene aim=true, establecer la técnica como aim-framework
             technique: hasAimParam ? 'aim-framework' : '',
             createdAt: new Date().toISOString(),
             status: 'draft'
           };
           
-          // Guardar en localStorage
           localStorage.setItem(`research_${researchId}`, JSON.stringify(newResearchData));
-          console.log('DEBUG: Guardado nuevo registro de investigación en localStorage:', newResearchData);
           
-          // Actualizar también la lista de investigaciones
           const newResearchList = [{
             id: newResearchData.id,
             name: newResearchData.name,
@@ -196,7 +159,6 @@ const DashboardContent = memo(() => {
           }];
           
           localStorage.setItem('research_list', JSON.stringify(newResearchList));
-          console.log('DEBUG: Actualizada lista de investigaciones con la nueva investigación');
           
           setActiveResearch({ 
             id: researchId, 
@@ -205,37 +167,29 @@ const DashboardContent = memo(() => {
           
           setIsAimFramework(hasAimParam);
           
-          // Si la URL tiene aim=true pero no tiene una sección, redirigir a welcome-screen
           if (hasAimParam && !searchParams?.get('section')) {
             const redirectUrl = `/dashboard?research=${researchId}&aim=true&section=welcome-screen`;
-            console.log('DEBUG: Redirigiendo a vista AIM Framework después de crear el registro:', redirectUrl);
             router.replace(redirectUrl);
           }
         }
       } catch (error) {
-        console.error('DEBUG: Error cargando investigación:', error);
+        console.error('Error loading research:', error);
         setActiveResearch({ 
           id: researchId, 
           name: 'Research Project' 
         });
       }
     } else {
-      console.log('DEBUG: No hay investigación activa en la URL, limpiando estado');
       setActiveResearch(undefined);
       setIsAimFramework(false);
-      
-      // Limpiar TODAS las investigaciones del localStorage
       cleanAllResearchFromLocalStorage();
     }
   }, [researchId, searchParams, router]);
 
-  // Si estamos en AIM Framework
   if (activeResearch && isAimFramework) {
-    console.log('DEBUG: Renderizando vista AIM Framework. activeResearch:', activeResearch, 'isAimFramework:', isAimFramework, 'section:', section);
     return <ResearchStageManager researchId={activeResearch.id} />;
   }
 
-  // Si no estamos en AIM Framework o no hay research activa
   return (
     <div className="flex-1 overflow-y-auto mt-4">
       <div className="container mx-auto px-6 py-8">
@@ -249,18 +203,13 @@ const DashboardContent = memo(() => {
 
 DashboardContent.displayName = 'DashboardContent';
 
-// Usar el HOC para envolver el componente
 const DashboardContentWithSuspense = withSearchParams(DashboardContent);
 
-/**
- * Componente interno que usa useSearchParams para la lógica del layout
- */
 const DashboardLayout = memo(() => {
   const searchParams = useSearchParams();
   const researchId = searchParams?.get('research');
   const isAimFramework = searchParams?.get('aim') === 'true';
   
-  // Si estamos en modo AIM Framework, retornar solo el contenido del dashboard sin el sidebar general
   if (researchId && isAimFramework) {
     return (
       <div className="flex min-h-screen bg-neutral-50">
@@ -275,7 +224,6 @@ const DashboardLayout = memo(() => {
     );
   }
   
-  // Modo normal con sidebar
   return (
     <div className="flex min-h-screen bg-neutral-50">
       <Sidebar />
@@ -295,19 +243,23 @@ const DashboardLayout = memo(() => {
 
 DashboardLayout.displayName = 'DashboardLayout';
 
-// Usar el HOC para envolver el componente que usa useSearchParams
 const DashboardLayoutWithParams = withSearchParams(DashboardLayout);
 
-/**
- * Componente principal del Dashboard
- */
 export default function DashboardPage() {
-  const { token } = useProtectedRoute();
-  
-  if (!token) {
+  const { user, authLoading } = useAuth();
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
     return null;
   }
-  
+
   return (
     <Suspense fallback={<div className="p-4 text-center">Cargando...</div>}>
       <DashboardLayoutWithParams />

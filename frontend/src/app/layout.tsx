@@ -1,11 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-
-import './globals.css';
+import { Inter } from 'next/font/google';
 import { Toaster } from 'react-hot-toast';
 
-import { DevModeInfo } from '@/components/common/DevModeInfo';
+import './globals.css';
 import { AuthProvider } from '@/providers/AuthProvider';
 import { QueryProvider } from '@/providers/QueryProvider';
 import { ResearchProvider } from '@/providers/ResearchProvider';
@@ -21,6 +20,8 @@ declare global {
     enableApiDebugger: () => void;
   }
 }
+
+const inter = Inter({ subsets: ['latin'] });
 
 export default function RootLayout({
   children,
@@ -64,19 +65,18 @@ export default function RootLayout({
 
   return (
     <html lang="es">
-      <body className="font-sans">
-        <QueryProvider>
-          <AuthProvider>
+      <body className={inter.className}>
+        <AuthProvider>
+          <QueryProvider>
             <ResearchProvider>
               <ErrorLogProvider>
                 {children}
                 <Toaster position="top-right" />
-                {isDevelopment && <DevModeInfo variant="floating" />}
                 <LogViewer />
               </ErrorLogProvider>
             </ResearchProvider>
-          </AuthProvider>
-        </QueryProvider>
+          </QueryProvider>
+        </AuthProvider>
       </body>
     </html>
   );

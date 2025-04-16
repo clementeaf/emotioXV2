@@ -2,11 +2,10 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState, FormEvent, useEffect } from 'react';
+import { useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import API_CONFIG from '@/config/api-endpoints';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
 
@@ -41,8 +40,8 @@ export function LoginForm({ className }: LoginFormProps) {
   const [formError, setFormError] = useState<string | null>(null);
   
   const [state, setState] = useState<LoginFormState>({
-    email: '',
-    password: '',
+    email: 'clemente@gmail.com',
+    password: 'clemente',
     rememberMe: true
   });
   
@@ -109,76 +108,47 @@ export function LoginForm({ className }: LoginFormProps) {
     }
   };
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setFormError(null);
     setStatus('validating');
-
-    // Validar todos los campos antes de enviar
-    const emailValidation = validateEmail(state.email);
-    const passwordValidation = validatePassword(state.password);
-
-    setValidation({
-      email: emailValidation,
-      password: passwordValidation
-    });
-
-    if (!emailValidation.isValid || !passwordValidation.isValid) {
-      setStatus('error');
-      setFormError('Por favor, corrige los errores antes de continuar');
-      return;
-    }
-
+    setFormError(null);
+    
     try {
-      setStatus('connecting');
-      console.log('Intentando login con:', { email: state.email, rememberMe: state.rememberMe });
-      
-      setStatus('authenticating');
-      
-      const loginUrl = `${API_CONFIG.apiBaseUrl}/auth${API_CONFIG.endpoints.auth.login}`;
-      console.log('URL de login:', loginUrl);
-      
-      const response = await fetch(loginUrl, {
+      console.log('Iniciando proceso de login...');
+      const response = await fetch('https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
         },
-        body: JSON.stringify({
-          email: state.email,
-          password: state.password,
-          rememberMe: state.rememberMe
-        })
+        body: JSON.stringify({ 
+          email: state.email, 
+          password: state.password 
+        }),
       });
 
-      if (!response.ok) {
-        let errorData;
-        try {
-          errorData = await response.json();
-        } catch (e) {
-          errorData = { message: `Error HTTP ${response.status}: ${response.statusText}` };
-        }
-        
-        setStatus('error');
-        setFormError(errorData.message || 'Error al iniciar sesión: Credenciales inválidas');
-        return;
-      }
-      
       const data = await response.json();
-      console.log('Respuesta del servidor:', data);
-
-      if (data.auth?.token) {
-        setStatus('success');
-        await login(data.auth.token, state.rememberMe);
-        router.push('/dashboard');
-      } else {
-        setStatus('error');
-        setFormError('La respuesta del servidor no contiene un token válido');
+      console.log('Respuesta del servidor:', { ok: response.ok, status: response.status });
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Error al iniciar sesión');
       }
-    } catch (error: any) {
-      console.error('Error durante el login:', error);
+
+      const token = data.auth?.token || data.token;
+      if (token) {
+        console.log('Token recibido, procediendo con login...');
+        await login(token, state.rememberMe);
+        setStatus('success');
+        console.log('Login exitoso');
+        // Forzar recarga de la página para actualizar el estado
+        window.location.href = '/dashboard';
+      } else {
+        console.error('Respuesta sin token:', data);
+        throw new Error('Token no recibido en el formato esperado');
+      }
+    } catch (err) {
+      console.error('Error durante el proceso de login:', err);
       setStatus('error');
-      setFormError('Error al conectar con el servidor. Por favor, intenta nuevamente.');
+      setFormError(err instanceof Error ? err.message : 'Error al iniciar sesión');
     }
   };
 
@@ -187,152 +157,110 @@ export function LoginForm({ className }: LoginFormProps) {
   const statusMessage = getStatusMessage(status);
 
   return (
-    <div className={cn('max-w-xl mx-auto', className)}>
-      <div className="bg-white rounded-xl border border-neutral-200/70 shadow-[0_6px_16px_-4px_rgba(0,0,0,0.05)] overflow-hidden">
-        <div className="px-8 py-8">
-          <header className="mb-6">
-            <h1 className="text-lg font-semibold text-neutral-900 text-center">
-              Iniciar Sesión
-            </h1>
-            <p className="mt-1 text-sm text-neutral-500 text-center">
-              Ingresa tus credenciales para acceder a tu cuenta
-            </p>
-          </header>
-
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 animate-fade-in">
-              <p className="text-red-700 text-center text-sm">
-                {error}
-              </p>
-            </div>
-          )}
-
-          {statusMessage && !error && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 animate-fade-in">
-              <div className="flex items-center justify-center gap-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                <p className="text-blue-700 text-center text-sm">
-                  {statusMessage}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {status === 'success' && !error && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 animate-fade-in">
-              <div className="flex items-center justify-center gap-2">
-                <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <p className="text-green-700 text-center text-sm">
-                  ¡Inicio de sesión exitoso! Redirigiendo...
-                </p>
-              </div>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-5">
-              <div className="space-y-2">
-                <Input
-                  type="email"
-                  label="Correo electrónico"
-                  value={state.email}
-                  onChange={e => handleInputChange('email', e.target.value)}
-                  placeholder="tu@email.com"
-                  required
-                  error={!validation.email.isValid}
-                  disabled={isLoading}
-                  autoComplete="username email"
-                  helperText={validation.email.message || undefined}
-                />
-              </div>
-              <div className="space-y-2">
-                <div className="relative">
-                  <Input
-                    type={showPassword ? 'text' : 'password'}
-                    label="Contraseña"
-                    value={state.password}
-                    onChange={e => handleInputChange('password', e.target.value)}
-                    placeholder="••••••••"
-                    required
-                    error={!validation.password.isValid}
-                    disabled={isLoading}
-                    autoComplete="current-password"
-                    helperText={validation.password.message || undefined}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className={cn(
-                      'absolute right-3 top-9 text-neutral-500 hover:text-neutral-700',
-                      isLoading && 'pointer-events-none opacity-50'
-                    )}
-                  >
-                    {showPassword ? (
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                    ) : (
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                      </svg>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 text-blue-600 border-neutral-300 rounded focus:ring-blue-500"
-                  disabled={isLoading}
-                  checked={state.rememberMe}
-                  onChange={e => handleInputChange('rememberMe', e.target.checked)}
-                />
-                <span className="ml-2 text-sm text-neutral-600">Recordarme</span>
-              </label>
-
-              <Link
-                href="/forgot-password"
-                className={cn(
-                  'text-sm text-blue-600 hover:text-blue-700',
-                  isLoading && 'pointer-events-none opacity-50'
-                )}
-              >
-                ¿Olvidaste tu contraseña?
-              </Link>
-            </div>
-
-            <div className="text-center">
-              <p className="text-sm text-neutral-600">
-                ¿No tienes una cuenta?{' '}
-                <Link 
-                  href="/register" 
-                  className={cn(
-                    'text-blue-600 hover:text-blue-700 font-medium',
-                    isLoading && 'pointer-events-none opacity-50'
-                  )}
-                >
-                  Regístrate aquí
-                </Link>
-              </p>
-            </div>
-
-            <Button 
-              className="w-full" 
-              variant="default"
-              disabled={isLoading}
-              type="submit">
-              {isLoading ? 'Iniciando sesión...' : 'Iniciar sesión'}
-            </Button>
-          </form>
-
-        </div>
+    <div className="bg-white rounded-lg shadow-sm p-8">
+      <div className="text-center mb-6">
+        <h1 className="text-2xl font-semibold text-neutral-900">Iniciar Sesión</h1>
+        <p className="text-neutral-600 mt-2">Ingresa tus credenciales para acceder a tu cuenta</p>
       </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 animate-fade-in">
+          <p className="text-red-700 text-center text-sm">
+            {error}
+          </p>
+        </div>
+      )}
+
+      {status === 'success' && !error && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 animate-fade-in">
+          <div className="flex items-center justify-center gap-2">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
+            <p className="text-green-700 text-center text-sm">
+              ¡Inicio de sesión exitoso! Redirigiendo...
+            </p>
+          </div>
+        </div>
+      )}
+
+      {statusMessage && !error && status !== 'success' && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 animate-fade-in">
+          <div className="flex items-center justify-center gap-2">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+            <p className="text-blue-700 text-center text-sm">
+              {statusMessage}
+            </p>
+          </div>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="email" className="block text-sm font-medium text-neutral-700 mb-1">
+            Correo electrónico
+          </label>
+          <input
+            id="email"
+            type="email"
+            value={state.email}
+            onChange={(e) => handleInputChange('email', e.target.value)}
+            className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            required
+          />
+        </div>
+
+        <div>
+          <label htmlFor="password" className="block text-sm font-medium text-neutral-700 mb-1">
+            Contraseña
+          </label>
+          <input
+            id="password"
+            type="password"
+            value={state.password}
+            onChange={(e) => handleInputChange('password', e.target.value)}
+            className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            required
+          />
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <input
+              id="remember"
+              type="checkbox"
+              checked={state.rememberMe}
+              onChange={(e) => handleInputChange('rememberMe', e.target.checked)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-neutral-300 rounded"
+            />
+            <label htmlFor="remember" className="ml-2 block text-sm text-neutral-700">
+              Recordarme
+            </label>
+          </div>
+          <a href="#" className="text-sm text-blue-600 hover:text-blue-500">
+            ¿Olvidaste tu contraseña?
+          </a>
+        </div>
+
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isLoading ? (
+            <div className="flex items-center">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+            </div>
+          ) : (
+            'Iniciar sesión'
+          )}
+        </button>
+
+        <div className="text-center mt-4">
+          <span className="text-sm text-neutral-600">¿No tienes una cuenta? </span>
+          <a href="#" className="text-sm text-blue-600 hover:text-blue-500">
+            Regístrate aquí
+          </a>
+        </div>
+      </form>
     </div>
   );
 } 
