@@ -54,9 +54,35 @@ export const UserSchema = z.object({
 });
 
 /**
- * Tipo para el modelo de usuario
+ * Tipo para el modelo de usuario interno del backend
  */
-export type User = z.infer<typeof UserSchema>;
+export interface InternalUser {
+  id: string;
+  email: string;
+  name: string;
+  passwordHash: string;
+  role: 'admin' | 'researcher' | 'user' | 'participant';
+  isActive: boolean;
+  isVerified: boolean;
+  tokens?: Array<{
+    token: string;
+    expiresAt: number;
+    device?: string;
+    ip?: string;
+  }>;
+  permissions?: string[];
+  preferences?: {
+    language: string;
+    notifications: boolean;
+    theme: string;
+  };
+  lastLogin?: number;
+  loginCount: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type User = InternalUser;
 
 /**
  * Esquema para crear un nuevo usuario
@@ -108,27 +134,6 @@ export const LoginCredentialsSchema = z.object({
  * Tipo para credenciales de inicio de sesión
  */
 export type LoginCredentialsDto = z.infer<typeof LoginCredentialsSchema>;
-
-/**
- * Esquema para respuesta de autenticación
- */
-export const AuthResponseSchema = z.object({
-  user: UserSchema.omit({
-    password: true,
-    passwordHash: true,
-    tokens: true,
-    verificationCode: true
-  }),
-  auth: z.object({
-    token: z.string(),
-    expiresAt: z.number()
-  })
-});
-
-/**
- * Tipo para respuesta de autenticación
- */
-export type AuthResponse = z.infer<typeof AuthResponseSchema>;
 
 /**
  * Esquema para carga útil del token JWT

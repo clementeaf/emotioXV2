@@ -9,13 +9,13 @@ import { uuidv4 } from '../utils/id-generator';
 import * as jwt from 'jsonwebtoken';
 
 import { 
-  User, 
+  User,
   CreateUserDto, 
   UpdateUserDto, 
   LoginCredentialsDto,
-  AuthResponse,
   JwtPayload
 } from '../models/user';
+import { AuthResponse } from '../../../shared/src/types/auth.types';
 
 // Agregar definición de RegisterUserDto
 interface RegisterUserDto {
@@ -392,44 +392,36 @@ class AuthService implements IAuthService {
    * Inicia sesión de usuario
    */
   async login(credentials: LoginCredentialsDto): Promise<AuthResponse> {
-    try {
-      console.log('Procesando solicitud de login para:', credentials.email);
-      
-      // Obtener usuario por email
-      const user = await this.getUserByEmail(credentials.email);
-      
-      // Verificar estado de la cuenta
-      if (!user.isActive) {
-        throw new Error('Cuenta desactivada. Contacte al administrador.');
-      }
-      
-      // Verificar contraseña
-      const isValidPassword = await this.verifyPassword(credentials.password, user.passwordHash);
-      
-      if (!isValidPassword) {
-        console.log('Contraseña incorrecta para:', credentials.email);
-        throw new Error('Credenciales inválidas');
-      }
-      
-      // Generar token y datos de respuesta
-      const { token, expiresAt } = await this.generateToken(user);
-      
-      console.log('Login exitoso para:', credentials.email);
-      console.log('Token generado (primeros 20 caracteres):', token.substring(0, 20) + '...');
-      console.log('Token expira en:', new Date(expiresAt).toLocaleString());
-      
-      // Devolver respuesta de autenticación
-      return {
-        user: this.sanitizeUser(user),
-        auth: {
-          token,
-          expiresAt
-        }
-      };
-    } catch (error: any) {
-      console.error('Error en proceso de login:', error);
-      throw error;
+    console.log(`Procesando login para email: ${credentials.email}`);
+    
+    // Obtener usuario por email
+    const user = await this.getUserByEmail(credentials.email);
+    
+    // Verificar que la cuenta esté activa
+    if (!user.isActive) {
+      throw new Error('La cuenta no está activa');
     }
+    
+    // Verificar contraseña
+    const isValid = await this.verifyPassword(credentials.password, user.passwordHash);
+    if (!isValid) {
+      throw new Error('Credenciales inválidas');
+    }
+    
+    // Generar token
+    const { token, expiresAt } = await this.generateToken(user);
+    console.log(`Login exitoso. Token expira en: ${new Date(expiresAt)}`);
+    
+    // Retornar respuesta en formato esperado por el frontend
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name
+      },
+      token,
+      refreshToken: token // Por ahora usamos el mismo token
+    };
   }
   
   /**

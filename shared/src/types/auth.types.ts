@@ -4,6 +4,7 @@ import { User } from './user.types';
 // Interfaces
 export interface AuthResponse {
   token: string;
+  refreshToken: string;
   user: User;
 }
 
@@ -28,6 +29,7 @@ export const validateOTPSchema = z.object({
 
 export const authResponseSchema = z.object({
   token: z.string(),
+  refreshToken: z.string(),
   user: z.object({
     id: z.string(),
     name: z.string(),

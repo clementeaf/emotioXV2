@@ -6,7 +6,7 @@ import { useState, FormEvent, useEffect } from 'react';
 
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import API_CONFIG from '@/config/api.config';
+import API_CONFIG from '@/config/api-endpoints';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
 
@@ -35,43 +35,22 @@ type LoginStatus = 'idle' | 'validating' | 'connecting' | 'authenticating' | 'su
 
 export function LoginForm({ className }: LoginFormProps) {
   const router = useRouter();
-  const { login, isLoading: authLoading, error: authError, clearError, isAuthenticated } = useAuth();
-  const [formError, setFormError] = useState<string | null>(null);
+  const { login, authLoading, authError } = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<LoginStatus>('idle');
+  const [formError, setFormError] = useState<string | null>(null);
+  
   const [state, setState] = useState<LoginFormState>({
     email: '',
     password: '',
-    rememberMe: false
+    rememberMe: true
   });
+  
   const [validation, setValidation] = useState<ValidationState>({
     email: { isValid: true, message: null },
     password: { isValid: true, message: null }
   });
-  const [showPassword, setShowPassword] = useState(false);
-  const [isDevMode, setIsDevMode] = useState(false);
 
-  // Verificar si estamos en modo desarrollo (localhost)
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const hostname = window.location.hostname;
-      setIsDevMode(hostname === 'localhost' || hostname === '127.0.0.1');
-    }
-  }, []);
-
-  // Redirigir si ya está autenticado
-  useEffect(() => {
-    if (isAuthenticated) {
-      router.replace('/dashboard');
-    }
-  }, [isAuthenticated, router]);
-
-  // Limpiar errores al montar el componente
-  useEffect(() => {
-    clearError();
-    setFormError(null);
-  }, [clearError]);
-
-  // Validar email en tiempo real
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email) {
@@ -83,7 +62,6 @@ export function LoginForm({ className }: LoginFormProps) {
     return { isValid: true, message: null };
   };
 
-  // Validar contraseña en tiempo real
   const validatePassword = (password: string) => {
     if (!password) {
       return { isValid: false, message: 'La contraseña es obligatoria' };
@@ -115,7 +93,6 @@ export function LoginForm({ className }: LoginFormProps) {
     if (status === 'error') {
       setStatus('idle');
       setFormError(null);
-      clearError();
     }
 
     // Validar en tiempo real
@@ -132,24 +109,9 @@ export function LoginForm({ className }: LoginFormProps) {
     }
   };
 
-  // Función para usar el usuario de prueba
-  const handleUseTestUser = () => {
-    setState({
-      email: 'clemente@gmail.com',
-      password: 'clemente', // Contraseña de prueba
-      rememberMe: true
-    });
-    
-    setValidation({
-      email: { isValid: true, message: null },
-      password: { isValid: true, message: null }
-    });
-  };
-
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setFormError(null);
-    clearError();
     setStatus('validating');
 
     // Validar todos los campos antes de enviar
@@ -173,8 +135,7 @@ export function LoginForm({ className }: LoginFormProps) {
       
       setStatus('authenticating');
       
-      // Usar siempre el login real con la API
-      const loginUrl = `${API_CONFIG.baseURL}${API_CONFIG.endpoints.auth.LOGIN}`;
+      const loginUrl = `${API_CONFIG.apiBaseUrl}/auth${API_CONFIG.endpoints.auth.login}`;
       console.log('URL de login:', loginUrl);
       
       const response = await fetch(loginUrl, {
@@ -206,7 +167,7 @@ export function LoginForm({ className }: LoginFormProps) {
       const data = await response.json();
       console.log('Respuesta del servidor:', data);
 
-      if (data.auth && data.auth.token) {
+      if (data.auth?.token) {
         setStatus('success');
         await login(data.auth.token, state.rememberMe);
         router.push('/dashboard');
@@ -346,29 +307,6 @@ export function LoginForm({ className }: LoginFormProps) {
               </Link>
             </div>
 
-            <Button
-              type="submit"
-              fullWidth
-              loading={isLoading}
-              disabled={isLoading || !validation.email.isValid || !validation.password.isValid}
-              className="relative"
-            >
-              <span className={cn(
-                'transition-opacity duration-200',
-                isLoading ? 'opacity-0' : 'opacity-100'
-              )}>
-                Iniciar sesión
-              </span>
-              {isLoading && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="flex items-center gap-2">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                    <span className="text-sm">{statusMessage || 'Cargando...'}</span>
-                  </div>
-                </div>
-              )}
-            </Button>
-
             <div className="text-center">
               <p className="text-sm text-neutral-600">
                 ¿No tienes una cuenta?{' '}
@@ -383,20 +321,15 @@ export function LoginForm({ className }: LoginFormProps) {
                 </Link>
               </p>
             </div>
-          </form>
 
-          {isDevMode && (
-            <div className="mt-6 pt-6 border-t border-neutral-200">
-              <Button 
-                className="w-full" 
-                variant="secondary"
-                disabled={isLoading}
-                onClick={handleUseTestUser}
-                type="button">
-                Usar test@emotio.com
-              </Button>
-            </div>
-          )}
+            <Button 
+              className="w-full" 
+              variant="default"
+              disabled={isLoading}
+              type="submit">
+              {isLoading ? 'Iniciando sesión...' : 'Iniciar sesión'}
+            </Button>
+          </form>
 
         </div>
       </div>

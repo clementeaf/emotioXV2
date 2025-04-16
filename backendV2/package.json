@@ -9,7 +9,7 @@
     "build": "tsc",
     "test": "jest",
     "lint": "eslint . --ext .ts",
-    "deploy": "serverless deploy"
+    "deploy": "rm -rf dist && npm run build && serverless deploy"
   },
   "dependencies": {
     "@aws-sdk/client-apigatewaymanagementapi": "^3.190.0",

@@ -181,7 +181,46 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         message: 'Método no permitido para esta ruta'
       });
     } else if (path === '/auth/register') {
-      // ... código existente para register ...
+      if (method === 'POST') {
+        try {
+          if (!event.body) {
+            return createResponse(400, {
+              success: false,
+              message: 'Se requieren datos para el registro'
+            });
+          }
+
+          const userData = JSON.parse(event.body);
+          
+          // Validar que se proporcionaron los datos necesarios
+          if (!userData.email || !userData.password || !userData.name) {
+            return createResponse(400, {
+              success: false,
+              message: 'Se requiere email, contraseña y nombre'
+            });
+          }
+
+          // Intentar registrar el usuario
+          const user = await authService.registerUser(userData);
+          
+          return createResponse(201, {
+            success: true,
+            message: 'Usuario registrado exitosamente',
+            user
+          });
+        } catch (error) {
+          console.error('Error en registro:', error);
+          return createResponse(400, {
+            success: false,
+            message: error instanceof Error ? error.message : 'Error al registrar usuario'
+          });
+        }
+      }
+      
+      return createResponse(405, {
+        success: false,
+        message: 'Método no permitido para esta ruta'
+      });
     } else if (path === '/auth/refreshToken' && method === 'POST') {
       try {
         // Intentar obtener el token del body
