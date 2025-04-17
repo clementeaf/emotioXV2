@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { LoadingScreen } from '@/components/ui/LoadingScreen';
 
 interface User {
   id: string;
@@ -33,6 +34,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [token, setToken] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState<boolean>(true);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   // Función simple para guardar en storage
   const saveToStorage = (rememberMe: boolean, data: { token: string; user: User }) => {
@@ -55,6 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = useCallback(async (newToken: string, rememberMe: boolean) => {
     console.log('Iniciando login con token:', newToken.substring(0, 10) + '...');
     try {
+      setIsTransitioning(true);
       // Decodificar el token
       const tokenParts = newToken.split('.');
       if (tokenParts.length !== 3) throw new Error('Token inválido');
@@ -77,10 +80,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setAuthError(null);
       
       console.log('Login completado exitosamente');
+      window.location.href = '/dashboard';
     } catch (error) {
       console.error('Error en login:', error);
       clearStorage();
       setAuthError('Error al procesar el login');
+      setIsTransitioning(false);
       throw error;
     }
   }, []);
@@ -88,6 +93,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = useCallback(async () => {
     console.log('Iniciando logout');
     try {
+      setIsTransitioning(true);
       // Limpiar almacenamiento
       clearStorage();
       // Limpiar estado
@@ -103,6 +109,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       clearStorage();
       setUser(null);
       setToken(null);
+      setIsTransitioning(false);
     }
   }, []);
 
@@ -145,6 +152,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       logout,
       clearError
     }}>
+      {isTransitioning && <LoadingScreen />}
       {children}
     </AuthContext.Provider>
   );
