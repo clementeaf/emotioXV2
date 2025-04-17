@@ -33,9 +33,7 @@ interface LoginFormProps {
 type LoginStatus = 'idle' | 'validating' | 'connecting' | 'authenticating' | 'success' | 'error';
 
 export function LoginForm({ className }: LoginFormProps) {
-  const router = useRouter();
   const { login, authLoading, authError } = useAuth();
-  const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<LoginStatus>('idle');
   const [formError, setFormError] = useState<string | null>(null);
   

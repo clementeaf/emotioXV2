@@ -1,7 +1,6 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 
 interface User {
   id: string;
@@ -88,11 +87,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = useCallback(async () => {
     console.log('Iniciando logout');
-    clearStorage();
-    setUser(null);
-    setToken(null);
-    setAuthError(null);
-    console.log('Logout completado');
+    try {
+      // Limpiar almacenamiento
+      clearStorage();
+      // Limpiar estado
+      setUser(null);
+      setToken(null);
+      setAuthError(null);
+      console.log('Logout completado');
+      // Redirigir a la página de login
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Error durante el logout:', error);
+      // Asegurar la limpieza incluso si hay error
+      clearStorage();
+      setUser(null);
+      setToken(null);
+    }
   }, []);
 
   // Cargar estado inicial
