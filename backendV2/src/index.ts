@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { WelcomeScreenController } from './controllers/welcomeScreen.controller';
 import { validateTokenAndSetupAuth } from './utils/controller.utils';
 import cognitiveTaskController from './controllers/cognitiveTask.controller';
+import { s3Handler } from './controllers/s3.controller';
 
 // Helper para crear respuestas HTTP con formato consistente
 const createResponse = (statusCode: number, body: any): APIGatewayProxyResult => {
@@ -596,6 +597,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       return createResponse(405, {
         message: 'Método no permitido para esta ruta'
       });
+    } else if (path.startsWith('/s3')) {
+      // Manejar rutas de S3
+      console.log('S3 request:', { path, method, body: event.body });
+      return await s3Handler(event);
     } else {
       // Ruta no encontrada - documentación de la API
       return createResponse(404, {
@@ -609,7 +614,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
           '/smart-voc - Configuración de formularios SmartVOC (GET, POST, PUT, DELETE)',
           '/eye-tracking - Configuración y datos de eye tracking (GET, POST, PUT, DELETE)',
           '/cognitive-task - Formularios de tareas cognitivas (GET, POST, PUT, DELETE)',
-          '/research - Gestión de investigaciones (GET, POST, PUT, DELETE)'
+          '/research - Gestión de investigaciones (GET, POST, PUT, DELETE)',
+          '/s3 - Operaciones con archivos (upload, download, delete)'
         ]
       });
     }
