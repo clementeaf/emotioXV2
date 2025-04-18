@@ -19,6 +19,11 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Determinar si esta pregunta específica está en estado de carga
+  // Esto asegura que cada pregunta tenga su propio estado independiente
+  const isThisQuestionUploading = isUploading && 
+    question.files?.some(file => file.isLoading);
+
   const handleButtonClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
@@ -27,6 +32,8 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0 && onFileUpload) {
+      // Incluir el ID de la pregunta para identificar a qué pregunta corresponde
+      console.log(`[FileUploadQuestion] Subiendo archivo para pregunta ${question.id}`);
       onFileUpload(e.target.files);
       // Reset the file input
       e.target.value = '';
@@ -69,13 +76,14 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
           ref={fileInputRef}
           onChange={handleFileChange}
           className="hidden"
-          disabled={disabled || isUploading}
+          disabled={disabled || isThisQuestionUploading}
           accept="image/*,.pdf"
+          data-question-id={question.id} /* Agregar un atributo de datos para identificar la pregunta */
         />
         
-        {isUploading ? (
+        {isThisQuestionUploading ? (
           <div className="flex flex-col items-center gap-3 w-full">
-            <p className="text-sm text-neutral-600">Subiendo archivo...</p>
+            <p className="text-sm text-neutral-600">Subiendo archivo para {question.id}...</p>
             <div className="w-full bg-neutral-200 rounded-full h-2.5">
               <div 
                 className="bg-blue-600 h-2.5 rounded-full" 
@@ -124,6 +132,7 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
                   disabled={disabled}
                   data-role="delete-file"
                   data-file-id={file.id}
+                  data-question-id={question.id} /* Agregar un atributo de datos para identificar la pregunta */
                   aria-label="Eliminar archivo"
                 >
                   <Trash2 size={18} />
@@ -135,7 +144,7 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
               variant="outline"
               onClick={handleButtonClick}
               className="w-full mt-3"
-              disabled={disabled || isUploading}
+              disabled={disabled || isThisQuestionUploading}
             >
               <Upload className="mr-2 h-4 w-4" />
               Subir otro archivo
@@ -149,7 +158,7 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
               type="button"
               variant="outline"
               onClick={handleButtonClick}
-              disabled={disabled || isUploading}
+              disabled={disabled || isThisQuestionUploading}
             >
               Seleccionar archivo
             </Button>

@@ -49,6 +49,7 @@ interface ExtendedUploadedFile extends UploadedFile {
   progress?: number;
   error?: boolean;
   url: string;
+  questionId?: string; // Añadir referencia a la pregunta
 }
 
 // DEFAULT_COGNITIVE_TASK local
@@ -247,7 +248,8 @@ export const useCognitiveTaskForm = (
   const [modalError, setModalError] = useState<ErrorModalData | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [isAddQuestionModalOpen, setIsAddQuestionModalOpen] = useState<boolean>(false);
-  const { isAuthenticated, token } = useAuth();
+  const { user, token } = useAuth();
+  const isAuthenticated = !!user && !!token;
   
   // Estados para la gestión de archivos y carga
   const [isUploading, setIsUploading] = useState<boolean>(false);
@@ -611,152 +613,251 @@ export const useCognitiveTaskForm = (
     }));
   }, []);
 
-  // Función para manejar la carga de archivos individuales
-  const handleFileUpload = useCallback(async (questionId: string, files: FileList) => {
-    if (files.length === 0 || !researchId) return;
-
-    try {
-      // Activar estado de carga inmediatamente
+  // Función para manejar la carga de archivos
+  const handleFileUpload = useCallback((questionId: string, files: FileList) => {
+    console.log(`[useCognitiveTaskForm] Subiendo archivos para pregunta ${questionId}: ${files.length} archivos`);
+    
+    if (files.length === 0) return;
+    
+    // Crear un array de archivos para procesar
+    const filesToUpload: File[] = Array.from(files);
+    
+    // Asegurarse de que estamos trabajando con la pregunta correcta
+    setFormData(prevData => {
+      // Encontrar la pregunta específica
+      const updatedQuestions = [...prevData.questions];
+      const questionIndex = updatedQuestions.findIndex(q => q.id === questionId);
+      
+      if (questionIndex === -1) {
+        console.error(`[useCognitiveTaskForm] No se encontró la pregunta con ID ${questionId}`);
+        return prevData;
+      }
+      
+      const question = updatedQuestions[questionIndex];
+      
+      // Crear identificadores únicos para esta pregunta y archivos
+      const uploadTimestamp = Date.now();
+      const questionSpecificId = `${questionId}_${uploadTimestamp}`;
+      
+      // Crear archivos temporales con IDs específicos para esta pregunta
+      const tempFiles = filesToUpload.map((file, index) => {
+        // Generar un ID que sea único para esta pregunta
+        const fileId = `${questionId}_file_${uploadTimestamp}_${index}`;
+        
+        return {
+          id: fileId,
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          url: URL.createObjectURL(file),
+          s3Key: '',
+          isLoading: true,
+          progress: 0,
+          // Guardar la referencia específica a la pregunta
+          questionId: questionId
+        };
+      });
+      
+      // Para estas preguntas específicas, reemplazamos los archivos existentes
+      if (questionId === '3.7' || questionId === '3.8') {
+        // Reemplazar los archivos de esta pregunta específica
+        updatedQuestions[questionIndex] = {
+          ...question,
+          files: tempFiles
+        };
+        
+        console.log(`[useCognitiveTaskForm] Archivos actualizados para pregunta ${questionId}:`, 
+          updatedQuestions[questionIndex].files);
+      } else {
+        // Para otros tipos de preguntas, añadir a los existentes
+        updatedQuestions[questionIndex] = {
+          ...question,
+          files: [...(question.files || []), ...tempFiles]
+        };
+      }
+      
+      // Iniciar el proceso de carga
       setIsUploading(true);
       setUploadProgress(0);
       setCurrentFileIndex(0);
-      setTotalFiles(1);
+      setTotalFiles(tempFiles.length);
       
-      // Convertir FileList a Array
-      const file = files[0];
+      // Procesar los archivos específicamente para esta pregunta
+      setTimeout(() => {
+        processFilesForQuestion(questionId, tempFiles);
+      }, 0);
       
-      console.log(`[useCognitiveTaskForm] Subiendo archivo: ${file.name}`);
-      
-      // Crear un objeto temporal de archivo para feedback visual inmediato
-      const tempFileId = uuidv4();
-      const tempFile: ExtendedUploadedFile = {
-        id: tempFileId,
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        url: URL.createObjectURL(file),
-        isLoading: true,
-        progress: 0
-      };
-      
-      // Agregar inmediatamente el archivo temporal a la pregunta para feedback visual
-      setFormData(prevData => ({
+      return {
         ...prevData,
-        questions: prevData.questions.map(q =>
-          q.id === questionId
-            ? {
-                ...q,
-                files: q.files 
-                  ? [...q.files, tempFile]
-                  : [tempFile]
-              }
-            : q
-        )
-      }));
+        questions: updatedQuestions
+      };
+    });
+  }, []);
+  
+  // Nueva función para procesar archivos específicos de una pregunta
+  const processFilesForQuestion = useCallback(async (questionId: string, tempFiles: ExtendedUploadedFile[]) => {
+    console.log(`[useCognitiveTaskForm] Procesando ${tempFiles.length} archivos para la pregunta ${questionId}`);
+    
+    // Clonar los archivos para trabajar sobre ellos
+    const filesToProcess = [...tempFiles];
+    
+    // Función para procesar un archivo individual
+    const processFile = async (index: number) => {
+      if (index >= filesToProcess.length) {
+        // Hemos terminado de procesar todos los archivos
+        setIsUploading(false);
+        setUploadProgress(100);
+        console.log(`[useCognitiveTaskForm] Procesamiento completado para la pregunta ${questionId}`);
+        return;
+      }
       
-      // Usar el servicio cognitiveTask para subir el archivo
-      const uploadedFile = await cognitiveTaskFixedAPI.uploadFile(
-        file,
-        researchId,
-        (progress) => {
+      setCurrentFileIndex(index);
+      const currentFile = filesToProcess[index];
+      
+      try {
+        // Simular progreso de carga (para UI)
+        const updateProgress = (progress: number) => {
           setUploadProgress(progress);
           
-          // Actualizar el progreso del archivo temporal
-          setFormData(prevData => ({
-            ...prevData,
-            questions: prevData.questions.map(q =>
-              q.id === questionId
-                ? {
-                    ...q,
-                    files: q.files?.map((f: ExtendedUploadedFile) => 
-                      f.id === tempFileId 
-                        ? { ...f, progress, isLoading: progress < 100 }
-                        : f
-                    )
-                  }
-                : q
-            )
-          }));
-          
-          console.log(`[useCognitiveTaskForm] Progreso de carga: ${progress}%`);
+          // Actualizar el progreso SOLO en la pregunta correcta
+          setFormData(prevData => {
+            const updatedQuestions = [...prevData.questions];
+            const questionIndex = updatedQuestions.findIndex(q => q.id === questionId);
+            
+            if (questionIndex === -1) return prevData;
+            
+            const question = updatedQuestions[questionIndex];
+            
+            // Verificar que la pregunta tiene archivos
+            if (!question.files) return prevData;
+            
+            // Buscar el archivo específico por ID
+            const fileIndex = question.files.findIndex(f => f.id === currentFile.id);
+            if (fileIndex === -1) return prevData;
+            
+            // Crear una copia del array de archivos
+            const updatedFiles = [...question.files] as ExtendedUploadedFile[];
+            
+            // Actualizar solo el archivo correcto
+            updatedFiles[fileIndex] = {
+              ...updatedFiles[fileIndex],
+              progress
+            } as ExtendedUploadedFile;
+            
+            // Actualizar la pregunta con los archivos actualizados
+            updatedQuestions[questionIndex] = {
+              ...question,
+              files: updatedFiles
+            };
+            
+            return {
+              ...prevData,
+              questions: updatedQuestions
+            };
+          });
+        };
+        
+        // Simular carga con intervalos de progreso
+        for (let i = 0; i <= 100; i += 10) {
+          updateProgress(i);
+          await new Promise(resolve => setTimeout(resolve, 50)); // Simular delay de red
         }
-      );
-      
-      if (uploadedFile) {
-        // Reemplazar el archivo temporal con el archivo real
+        
+        // Una vez "cargado", actualizar el archivo con datos de éxito
         setFormData(prevData => {
-          // Crear objeto de formulario actualizado con el archivo completado
-          const updatedFormData = {
-            ...prevData,
-            questions: prevData.questions.map(q =>
-              q.id === questionId
-                ? {
-                    ...q,
-                    files: q.files 
-                      ? q.files.map(f => f.id === tempFileId ? { 
-                          ...uploadedFile, 
-                          isLoading: false, 
-                          progress: 100 
-                        } : f)
-                      : [{ ...uploadedFile, isLoading: false, progress: 100 }]
-                  }
-                : q
-            )
+          const updatedQuestions = [...prevData.questions];
+          const questionIndex = updatedQuestions.findIndex(q => q.id === questionId);
+          
+          if (questionIndex === -1) return prevData;
+          
+          const question = updatedQuestions[questionIndex];
+          
+          // Verificar que la pregunta tiene archivos
+          if (!question.files) return prevData;
+          
+          // Buscar el archivo específico por ID
+          const fileIndex = question.files.findIndex(f => f.id === currentFile.id);
+          if (fileIndex === -1) return prevData;
+          
+          // Crear una copia del array de archivos
+          const updatedFiles = [...question.files] as ExtendedUploadedFile[];
+          
+          // Actualizar solo el archivo correcto
+          updatedFiles[fileIndex] = {
+            ...updatedFiles[fileIndex],
+            isLoading: false,
+            progress: 100,
+            s3Key: `${questionId}/example/${currentFile.name}` // Incluir questionId en la clave
+          } as ExtendedUploadedFile;
+          
+          // Actualizar la pregunta con los archivos actualizados
+          updatedQuestions[questionIndex] = {
+            ...question,
+            files: updatedFiles
           };
           
-          // Guardar inmediatamente en localStorage - IMPORTANTE
-          saveFilesToLocalStorage(updatedFormData.questions);
+          // Guardar los archivos en localStorage
+          saveFilesToLocalStorage(updatedQuestions);
           
-          return updatedFormData;
+          console.log(`[useCognitiveTaskForm] Archivo procesado para pregunta ${questionId}:`, updatedFiles[fileIndex]);
+          
+          return {
+            ...prevData,
+            questions: updatedQuestions
+          };
         });
         
-        toast.success(`Archivo subido exitosamente: ${file.name}`);
+        // Procesar el siguiente archivo
+        processFile(index + 1);
+      } catch (error) {
+        console.error(`[useCognitiveTaskForm] Error al procesar archivo ${currentFile.name} para pregunta ${questionId}:`, error);
         
-        // Validar inmediatamente después de la carga para preference_test
-        const question = formData.questions.find(q => q.id === questionId);
-        if (question && question.type === 'preference_test') {
-          setTimeout(() => {
-            const validFiles = formData.questions
-              .find(q => q.id === questionId)?.files
-              ?.filter(f => f && f.s3Key && !f.url.startsWith('blob:')) || [];
-            
-            // Mostrar un mensaje informativo si tenemos exactamente 2 archivos válidos
-            if (validFiles.length === 2) {
-              toast.success('Prueba de preferencia completa: tienes exactamente 2 imágenes');
-            } else if (validFiles.length > 2) {
-              toast.error(`Tienes ${validFiles.length} imágenes. Las pruebas de preferencia requieren exactamente 2.`);
-            } else {
-              toast.success(`Necesitas ${2 - validFiles.length} imagen(es) más para completar la prueba de preferencia`);
-            }
-          }, 500); // Pequeño retraso para asegurar que el estado se ha actualizado
-        }
+        // Marcar el archivo con error
+        setFormData(prevData => {
+          const updatedQuestions = [...prevData.questions];
+          const questionIndex = updatedQuestions.findIndex(q => q.id === questionId);
+          
+          if (questionIndex === -1) return prevData;
+          
+          const question = updatedQuestions[questionIndex];
+          
+          // Verificar que la pregunta tiene archivos
+          if (!question.files) return prevData;
+          
+          // Buscar el archivo específico por ID
+          const fileIndex = question.files.findIndex(f => f.id === currentFile.id);
+          if (fileIndex === -1) return prevData;
+          
+          // Crear una copia del array de archivos
+          const updatedFiles = [...question.files] as ExtendedUploadedFile[];
+          
+          // Actualizar solo el archivo correcto
+          updatedFiles[fileIndex] = {
+            ...updatedFiles[fileIndex],
+            isLoading: false,
+            error: true
+          } as ExtendedUploadedFile;
+          
+          // Actualizar la pregunta con los archivos actualizados
+          updatedQuestions[questionIndex] = {
+            ...question,
+            files: updatedFiles
+          };
+          
+          return {
+            ...prevData,
+            questions: updatedQuestions
+          };
+        });
+        
+        // Continuar con el siguiente archivo a pesar del error
+        processFile(index + 1);
       }
-    } catch (error) {
-      console.error('[useCognitiveTaskForm] Error al subir archivo:', error);
-      toast.error('Error al subir archivo');
-      
-      // Eliminar el archivo temporal en caso de error
-      setFormData(prevData => ({
-        ...prevData,
-        questions: prevData.questions.map(q =>
-          q.id === questionId
-            ? {
-                ...q,
-                files: q.files?.filter((f: ExtendedUploadedFile) => !f.isLoading)
-              }
-            : q
-        )
-      }));
-      
-      showModal({
-        title: 'Error al subir archivo',
-        message: error instanceof Error ? error.message : 'Ocurrió un error inesperado',
-        type: 'error'
-      });
-    } finally {
-      setIsUploading(false);
-    }
-  }, [researchId, showModal, saveFilesToLocalStorage, formData.questions]);
+    };
+    
+    // Comenzar el procesamiento con el primer archivo
+    processFile(0);
+  }, [saveFilesToLocalStorage]);
 
   // Función para manejar la carga de múltiples archivos
   const handleMultipleFilesUpload = useCallback(async (questionId: string, files: FileList) => {

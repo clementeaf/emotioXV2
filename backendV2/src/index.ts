@@ -3,6 +3,7 @@ import { authService } from './services/auth.service';
 import { v4 as uuidv4 } from 'uuid';
 import { WelcomeScreenController } from './controllers/welcomeScreen.controller';
 import { validateTokenAndSetupAuth } from './utils/controller.utils';
+import cognitiveTaskController from './controllers/cognitiveTask.controller';
 
 // Helper para crear respuestas HTTP con formato consistente
 const createResponse = (statusCode: number, body: any): APIGatewayProxyResult => {
@@ -42,7 +43,25 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
   try {
     // Rutas específicas
-    if (path === '/research' || path.startsWith('/research/')) {
+    if (path.match(/^\/research\/([^\/]+)\/cognitive-task(?:\/.*)?$/)) {
+      // Ruta específica para cognitive-task con research ID
+      console.log('[index] Solicitud específica a cognitive-task con research ID:', { path, method });
+      
+      // Extraer el researchId de la ruta
+      const researchIdMatch = path.match(/^\/research\/([^\/]+)\/cognitive-task/);
+      const researchId = researchIdMatch ? researchIdMatch[1] : null;
+      
+      if (researchId) {
+        if (!event.pathParameters) {
+          event.pathParameters = {};
+        }
+        event.pathParameters.researchId = researchId;
+        console.log('[index] Extrayendo researchId para cognitive-task:', { path, researchId });
+      }
+      
+      // Usar el controlador de cognitive-task
+      return await cognitiveTaskController(event);
+    } else if (path === '/research' || path.startsWith('/research/')) {
       // Manejo de rutas de research
       if (path === '/research') {
         if (method === 'POST') {
@@ -310,12 +329,14 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       }
     } else if (path.startsWith('/welcome-screen')) {
       // Extraer researchId de la ruta si existe
+      // Formato esperado: /welcome-screen/research/{researchId}
       const match = path.match(/^\/welcome-screen\/research\/([^\/]+)$/);
       if (match) {
         if (!event.pathParameters) {
           event.pathParameters = {};
         }
         event.pathParameters.researchId = match[1];
+        console.log('[index] Extrayendo researchId de la ruta:', { path, researchId: match[1] });
       }
 
       // Validar el token y obtener el userId
@@ -342,6 +363,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         success: false,
         message: 'Método no permitido para esta ruta'
       });
+    } else if (path.startsWith('/cognitive-task')) {
+      // Usar el controlador dedicado para cognitive-task
+      console.log('[index] Solicitud a cognitive-task:', { path, method });
+      return await cognitiveTaskController(event);
     } else if (path.startsWith('/thank-you-screens')) {
       // Similar a welcome-screens
       if (method === 'GET') {
