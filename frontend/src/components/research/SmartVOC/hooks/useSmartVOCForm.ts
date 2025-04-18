@@ -34,7 +34,32 @@ export const useSmartVOCForm = (researchId: string) => {
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [modalError, setModalError] = useState<ErrorModalData | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
-  const { isAuthenticated, token } = useAuth();
+  const { user, token, authLoading } = useAuth();
+  const isAuthenticated = !!user && !!token;
+
+  // Añadimos logs de depuración para la autenticación
+  useEffect(() => {
+    console.log('[SmartVOCForm] Estado de autenticación:', { 
+      isAuthenticated, 
+      tokenExists: !!token,
+      userExists: !!user,
+      tokenLength: token ? token.length : 0,
+      researchId,
+      authLoading
+    });
+
+    // Verificamos el token en localStorage
+    if (typeof window !== 'undefined') {
+      const localToken = localStorage.getItem('token');
+      const sessionToken = sessionStorage.getItem('token');
+      
+      console.log('[SmartVOCForm] Tokens almacenados:', {
+        localStorageToken: localToken ? `${localToken.substring(0, 15)}...` : null,
+        sessionStorageToken: sessionToken ? `${sessionToken.substring(0, 15)}...` : null,
+        contextToken: token ? `${token.substring(0, 15)}...` : null
+      });
+    }
+  }, [isAuthenticated, token, user, researchId, authLoading]);
 
   // Estados para el modal de confirmación JSON
   const [showJsonPreview, setShowJsonPreview] = useState<boolean>(false);
@@ -55,7 +80,27 @@ export const useSmartVOCForm = (researchId: string) => {
     queryFn: async () => {
       try {
         if (!isAuthenticated || !token) {
+          console.error('[SmartVOCForm] No hay autenticación para realizar la consulta', {
+            isAuthenticated,
+            hasToken: !!token,
+            tokenFirstChars: token ? token.substring(0, 10) : 'no-token'
+          });
           throw new Error('No autenticado');
+        }
+
+        // Intenta recuperar el token de localStorage como último recurso
+        let currentToken = token;
+        if (!currentToken && typeof window !== 'undefined') {
+          const localStorageToken = localStorage.getItem('token');
+          if (localStorageToken) {
+            currentToken = localStorageToken;
+            console.log('[SmartVOCForm] Recuperado token de localStorage como último recurso');
+          }
+        }
+
+        if (!currentToken) {
+          console.error('[SmartVOCForm] No se pudo recuperar un token válido');
+          throw new Error('No se pudo recuperar un token válido');
         }
 
         console.log(`[SmartVOCForm] Buscando configuración existente para investigación: ${researchId}`);
@@ -73,7 +118,7 @@ export const useSmartVOCForm = (researchId: string) => {
         throw error;
       }
     },
-    enabled: !!researchId && isAuthenticated,
+    enabled: !!researchId && isAuthenticated && !authLoading,
     refetchOnWindowFocus: false
   });
 

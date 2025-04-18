@@ -147,7 +147,7 @@ const API_CONFIG = {
     
     // SmartVOC
     smartVoc: {
-      GET_BY_RESEARCH: '/smart-voc/research/{researchId}/smart-voc',
+      GET_BY_RESEARCH: '/smart-voc/research/{researchId}',
       GET: '/smart-voc/{id}',
       CREATE: '/smart-voc',
       UPDATE: '/smart-voc/{id}',

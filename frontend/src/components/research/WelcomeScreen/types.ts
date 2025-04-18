@@ -36,4 +36,5 @@ export interface UseWelcomeScreenFormResult {
   handleChange: (field: keyof WelcomeScreenData, value: any) => void;
   handleSubmit: () => Promise<void>;
   closeModal: () => void;
+  handlePreview: () => void;
 } 

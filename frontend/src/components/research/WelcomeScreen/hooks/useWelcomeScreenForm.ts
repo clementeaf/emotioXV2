@@ -149,6 +149,108 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
     }
   };
 
+  const handlePreview = () => {
+    if (!validateForm()) {
+      setModalError({
+        title: 'Error',
+        message: 'Por favor, complete todos los campos requeridos antes de previsualizar',
+        type: 'error'
+      });
+      setModalVisible(true);
+      return;
+    }
+
+    // Crear una nueva ventana para la vista previa
+    const previewWindow = window.open('', '_blank');
+    if (previewWindow) {
+      const previewHtml = `
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Vista previa - ${formData.title}</title>
+          <style>
+            body {
+              font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+              margin: 0;
+              padding: 0;
+              min-height: 100vh;
+              background-color: #f5f5f5;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+            }
+            .welcome-container {
+              max-width: 800px;
+              width: 90%;
+              margin: 40px auto;
+              padding: 40px;
+              background: white;
+              border-radius: 8px;
+              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+              text-align: center;
+            }
+            h1 {
+              font-size: 28px;
+              color: #333;
+              margin-bottom: 20px;
+            }
+            .message {
+              font-size: 16px;
+              line-height: 1.6;
+              color: #555;
+              margin-bottom: 30px;
+            }
+            .start-button {
+              background-color: #3f51b5;
+              color: white;
+              border: none;
+              padding: 12px 28px;
+              font-size: 16px;
+              border-radius: 4px;
+              cursor: pointer;
+              transition: background-color 0.2s;
+            }
+            .start-button:hover {
+              background-color: #303f9f;
+            }
+            .preview-badge {
+              position: fixed;
+              top: 10px;
+              right: 10px;
+              background: rgba(0,0,0,0.7);
+              color: white;
+              padding: 5px 10px;
+              font-size: 12px;
+              border-radius: 4px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="preview-badge">Vista previa</div>
+          <div class="welcome-container">
+            <h1>${formData.title}</h1>
+            <div class="message">${formData.message}</div>
+            <button class="start-button">${formData.startButtonText}</button>
+          </div>
+        </body>
+        </html>
+      `;
+      
+      previewWindow.document.write(previewHtml);
+      previewWindow.document.close();
+    } else {
+      setModalError({
+        title: 'Error',
+        message: 'No se pudo abrir la ventana de vista previa. Por favor, permita las ventanas emergentes para este sitio.',
+        type: 'error'
+      });
+      setModalVisible(true);
+    }
+  };
+
   const closeModal = () => {
     setModalVisible(false);
     setModalError(null);
@@ -165,6 +267,7 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
     modalVisible,
     handleChange,
     handleSubmit,
+    handlePreview,
     closeModal
   };
 };

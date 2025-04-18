@@ -103,22 +103,28 @@ export class SmartVOCFixedAPI extends ApiClient {
   }
 
   async create(data: SmartVOCFormData): Promise<ApiResponse<SmartVOCFormResponse>> {
+    console.log('[SmartVOCAPI] Creando smart-voc:', data);
     return this.post<ApiResponse<SmartVOCFormResponse>>('/', data);
   }
 
   async update(id: string, data: SmartVOCFormData): Promise<ApiResponse<SmartVOCFormResponse>> {
+    console.log(`[SmartVOCAPI] Actualizando smart-voc ${id}:`, data);
     return this.put<ApiResponse<SmartVOCFormResponse>>(`/${id}`, data);
   }
 
   async getById(id: string): Promise<ApiResponse<SmartVOCFormResponse>> {
+    console.log(`[SmartVOCAPI] Obteniendo smart-voc por ID: ${id}`);
     return this.get<ApiResponse<SmartVOCFormResponse>>(`/${id}`);
   }
 
   async getByResearchId(researchId: string): Promise<ApiResponse<SmartVOCFormResponse>> {
+    console.log(`[SmartVOCAPI] Obteniendo smart-voc por researchId: ${researchId}`);
+    // Ruta corregida conforme a la prueba realizada
     return this.get<ApiResponse<SmartVOCFormResponse>>(`/research/${researchId}`);
   }
 
   async deleteSmartVOC(id: string): Promise<ApiResponse<SmartVOCFormResponse>> {
+    console.log(`[SmartVOCAPI] Eliminando smart-voc: ${id}`);
     return this.delete<ApiResponse<SmartVOCFormResponse>>(`/${id}`);
   }
 }
