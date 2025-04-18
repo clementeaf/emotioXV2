@@ -26,7 +26,7 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
     modalError,
     modalVisible,
     handleChange,
-    handleSave,
+    handleSubmit,
     handlePreview,
     validateForm,
     closeModal,
@@ -34,23 +34,6 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
     closeErrorModal,
     existingScreen
   } = useWelcomeScreenForm(researchId, onSave);
-
-  // Callbacks específicos para cada campo
-  const handleTitleChange = (value: string) => {
-    handleChange('title', value);
-  };
-
-  const handleMessageChange = (value: string) => {
-    handleChange('message', value);
-  };
-
-  const handleStartButtonTextChange = (value: string) => {
-    handleChange('startButtonText', value);
-  };
-
-  const handleEnabledChange = (checked: boolean) => {
-    handleChange('isEnabled', checked);
-  };
 
   if (isLoading) {
     return <WelcomeScreenSkeleton />;
@@ -61,7 +44,7 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
       {/* Toggle de habilitación */}
       <WelcomeScreenSettings 
         isEnabled={formData.isEnabled}
-        onChange={handleEnabledChange}
+        onChange={(checked) => handleChange('isEnabled', checked)}
         disabled={isLoading || isSaving}
       />
       
@@ -80,9 +63,9 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
         title={formData.title}
         message={formData.message}
         startButtonText={formData.startButtonText}
-        onTitleChange={handleTitleChange}
-        onMessageChange={handleMessageChange}
-        onStartButtonTextChange={handleStartButtonTextChange}
+        onTitleChange={(value) => handleChange('title', value)}
+        onMessageChange={(value) => handleChange('message', value)}
+        onStartButtonTextChange={(value) => handleChange('startButtonText', value)}
         validationErrors={validationErrors}
         disabled={isLoading || isSaving || !formData.isEnabled}
       />
@@ -93,7 +76,7 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
         isLoading={isLoading}
         isEnabled={formData.isEnabled}
         isExisting={isExisting}
-        onSave={handleSave}
+        onSave={handleSubmit}
         onPreview={handlePreview}
       />
       

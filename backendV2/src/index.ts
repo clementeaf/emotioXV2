@@ -308,48 +308,38 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
           error: error instanceof Error ? error.message : 'Error desconocido'
         });
       }
-    } else if (path.startsWith('/welcome-screens')) {
-      // Extraer el token y validar el usuario
-      const token = event.headers.Authorization?.split(' ')[1];
-      if (!token) {
-        return createResponse(401, { message: 'No autorizado' });
+    } else if (path.startsWith('/welcome-screen')) {
+      // Extraer researchId de la ruta si existe
+      const match = path.match(/^\/welcome-screen\/research\/([^\/]+)$/);
+      if (match) {
+        if (!event.pathParameters) {
+          event.pathParameters = {};
+        }
+        event.pathParameters.researchId = match[1];
       }
 
+      // Validar el token y obtener el userId
       const authResult = await validateTokenAndSetupAuth(event, path);
       if ('statusCode' in authResult) {
         return authResult;
       }
 
-      const userId = authResult.userId;
-      
       // Instanciar el controlador
       const welcomeScreenController = new WelcomeScreenController();
 
-      // Manejar las rutas de welcome-screens
+      // Manejar los diferentes métodos HTTP
       if (method === 'GET') {
-        const parts = path.split('/');
-        const id = parts.length > 2 ? parts[2] : null;
-        
-        if (id) {
-          // GET para un ID específico
-          return await welcomeScreenController.getWelcomeScreenById(event);
-        } else {
-          // GET para listar todos
-          return await welcomeScreenController.getAllWelcomeScreens(event, userId);
-        }
+        return await welcomeScreenController.getWelcomeScreenByResearchId(event);
       } else if (method === 'POST') {
-        // Crear nueva pantalla de bienvenida
-        return await welcomeScreenController.createWelcomeScreen(event, userId);
+        return await welcomeScreenController.createWelcomeScreen(event, authResult.userId);
       } else if (method === 'PUT') {
-        // Actualizar pantalla existente
-        return await welcomeScreenController.updateWelcomeScreen(event, userId);
+        return await welcomeScreenController.updateWelcomeScreenByResearchId(event, authResult.userId);
       } else if (method === 'DELETE') {
-        // Eliminar pantalla
-        return await welcomeScreenController.deleteWelcomeScreen(event, userId);
+        return await welcomeScreenController.deleteWelcomeScreen(event, authResult.userId);
       }
-      
-      // Método no soportado para esta ruta
+
       return createResponse(405, {
+        success: false,
         message: 'Método no permitido para esta ruta'
       });
     } else if (path.startsWith('/thank-you-screens')) {

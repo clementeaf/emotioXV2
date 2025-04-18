@@ -22,13 +22,22 @@ export interface WelcomeScreenData {
   title: string;
   message: string;
   startButtonText: string;
+  createdAt?: string;
+  updatedAt?: string;
+  subtitle?: string;
+  logoUrl?: string;
+  backgroundImageUrl?: string;
+  backgroundColor?: string;
+  textColor?: string;
+  theme?: string;
+  disclaimer?: string;
+  customCss?: string;
   metadata?: {
     version?: string;
     lastUpdated?: string;
     lastModifiedBy?: string;
   };
-  createdAt?: string;
-  updatedAt?: string;
+  [key: string]: any;
 }
 
 /**
@@ -127,18 +136,20 @@ export type ValidationErrors = {
  * Resultado del hook useWelcomeScreenForm
  */
 export interface UseWelcomeScreenFormResult {
-  formData: WelcomeScreenData | null;
+  formData: WelcomeScreenData;
   validationErrors: ValidationErrors;
+  modalError: ErrorModalData | null;
+  handleChange: (field: keyof WelcomeScreenData, value: any) => void;
+  handleSubmit: () => Promise<void>;
+  resetForm: () => void;
   isLoading: boolean;
   isSaving: boolean;
-  modalError: ErrorModalData | null;
   modalVisible: boolean;
-  handleChange: (field: keyof WelcomeScreenData, value: any) => void;
-  handleSave: () => Promise<void>;
   handlePreview: () => void;
   validateForm: () => boolean;
   closeModal: () => void;
   isExisting: boolean;
   closeErrorModal: () => void;
   existingScreen: WelcomeScreenData | null;
+  handleCancel: () => void;
 } 

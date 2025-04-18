@@ -314,7 +314,18 @@ const NewResearchContentWithSuspense = withSearchParams(NewResearchContent);
 
 export default function NewResearchPage() {
   const router = useRouter();
-  const { token } = useProtectedRoute();
+  const { token, isChecking } = useProtectedRoute();
+  
+  if (isChecking) {
+    return (
+      <div className="flex min-h-screen bg-neutral-50 items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-neutral-600">Verificando acceso...</p>
+        </div>
+      </div>
+    );
+  }
   
   if (!token) {
     return null;

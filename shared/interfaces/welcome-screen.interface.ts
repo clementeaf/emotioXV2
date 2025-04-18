@@ -126,7 +126,13 @@ export interface WelcomeScreenRecord extends WelcomeScreenConfig {
 /**
  * Type for Welcome Screen form submission
  */
-export type WelcomeScreenFormData = Omit<WelcomeScreenConfig, 'metadata'>;
+export type WelcomeScreenFormData = Omit<WelcomeScreenConfig, 'metadata'> & {
+  metadata?: {
+    version: string;
+    lastUpdated: Date;
+    lastModifiedBy: string;
+  };
+};
 
 /**
  * Interface for Welcome Screen update operations

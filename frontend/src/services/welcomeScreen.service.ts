@@ -1,93 +1,109 @@
-import { config } from '../config/env';
 import { 
-  WelcomeScreenRecord, 
-  WelcomeScreenFormData 
+  WelcomeScreenFormData,
+  WelcomeScreenRecord 
 } from '../../../shared/interfaces/welcome-screen.interface';
+import config from '../config/api.config';
 
-class WelcomeScreenService {
-  private baseUrl = `${config.apiUrl}/welcome-screens`;
+/**
+ * Servicio para manejar las operaciones relacionadas con pantallas de bienvenida
+ */
+export class WelcomeScreenService {
+  private baseUrl: string;
 
-  // Obtener welcomeScreen por researchId
+  constructor() {
+    this.baseUrl = config.baseURL;
+  }
+
+  /**
+   * Obtiene la pantalla de bienvenida por ID de investigación
+   */
   async getByResearchId(researchId: string): Promise<WelcomeScreenRecord | null> {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) throw new Error('No hay token de autenticación');
-
-      const response = await fetch(`${this.baseUrl}/research/${researchId}`, {
+      console.log('[WelcomeScreenService] Obteniendo welcome screen para researchId:', researchId);
+      const url = `${this.baseUrl}/welcome-screen/research/${researchId}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
 
-      if (response.status === 404) {
-        return null;
-      }
-
       if (!response.ok) {
-        throw new Error(`Error al obtener welcomeScreen: ${response.statusText}`);
+        throw new Error(`Error al obtener welcome screen: ${response.statusText}`);
       }
 
       const data = await response.json();
+      console.log('[WelcomeScreenService] Welcome screen obtenido:', data);
+      
       return data.data;
     } catch (error) {
-      console.error('Error en getByResearchId:', error);
-      throw error;
+      console.error('[WelcomeScreenService] Error en getByResearchId:', error);
+      return null;
     }
   }
 
-  // Crear nuevo welcomeScreen
-  async create(data: WelcomeScreenFormData & { researchId: string }): Promise<WelcomeScreenRecord> {
+  /**
+   * Crea o actualiza una pantalla de bienvenida
+   */
+  async save(data: WelcomeScreenFormData & { researchId: string }): Promise<WelcomeScreenRecord> {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) throw new Error('No hay token de autenticación');
+      console.log('[WelcomeScreenService] Guardando welcome screen:', data);
+      
+      const url = `${this.baseUrl}/welcome-screen/research/${data.researchId}`;
+      const method = 'PUT';
 
-      const response = await fetch(this.baseUrl, {
-        method: 'POST',
+      console.log('[WelcomeScreenService] Enviando petición:', { url, method, data });
+      
+      const response = await fetch(url, {
+        method,
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify(data)
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Error al crear welcomeScreen');
+        console.error('[WelcomeScreenService] Error en respuesta:', errorData);
+        throw new Error(errorData.message || `Error al guardar welcome screen: ${response.statusText}`);
       }
 
       const result = await response.json();
+      console.log('[WelcomeScreenService] Welcome screen guardado:', result);
+      
       return result.data;
     } catch (error) {
-      console.error('Error en create:', error);
+      console.error('[WelcomeScreenService] Error en save:', error);
       throw error;
     }
   }
 
-  // Actualizar welcomeScreen existente
-  async update(researchId: string, data: Partial<WelcomeScreenFormData> & { id?: string }): Promise<WelcomeScreenRecord> {
+  /**
+   * Elimina una pantalla de bienvenida
+   */
+  async delete(researchId: string): Promise<void> {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) throw new Error('No hay token de autenticación');
-
-      const response = await fetch(`${this.baseUrl}/${data.id}`, {
-        method: 'PUT',
+      console.log('[WelcomeScreenService] Eliminando welcome screen para researchId:', researchId);
+      const url = `${this.baseUrl}/welcome-screen/research/${researchId}`;
+      
+      const response = await fetch(url, {
+        method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Error al actualizar welcomeScreen');
+        throw new Error(`Error al eliminar welcome screen: ${response.statusText}`);
       }
 
-      const result = await response.json();
-      return result.data;
+      console.log('[WelcomeScreenService] Welcome screen eliminado correctamente');
     } catch (error) {
-      console.error('Error en update:', error);
+      console.error('[WelcomeScreenService] Error en delete:', error);
       throw error;
     }
   }

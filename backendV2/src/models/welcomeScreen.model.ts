@@ -1,6 +1,5 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, UpdateCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
-import { uuidv4 } from '../utils/id-generator';
+import { DynamoDBDocumentClient, PutCommand, GetCommand, UpdateCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import { DynamoDB } from 'aws-sdk';
 import { 
   WelcomeScreenConfig, 
@@ -13,12 +12,10 @@ import {
  * Interfaz para el modelo DynamoDB de una pantalla de bienvenida
  */
 export interface WelcomeScreenDynamoItem {
-  // Clave primaria
+  // Clave primaria (researchId)
   id: string;
-  // Clave de ordenación
+  // Clave de ordenación (WELCOME_SCREEN)
   sk: string;
-  // Research ID relacionado
-  researchId: string;
   // Propiedades de la pantalla de bienvenida
   isEnabled: boolean;
   title: string;
@@ -72,9 +69,6 @@ export class WelcomeScreenModel {
       throw new Error('Ya existe una pantalla de bienvenida para esta investigación');
     }
 
-    // Generar ID único para la pantalla de bienvenida
-    const screenId = uuidv4();
-    
     // Fecha actual para created/updated
     const now = new Date().toISOString();
     
@@ -91,11 +85,10 @@ export class WelcomeScreenModel {
       }
     };
 
-    // Convertir a formato para DynamoDB
+    // Convertir a formato para DynamoDB usando researchId como clave primaria
     const item: WelcomeScreenDynamoItem = {
-      id: screenId,
-      sk: `WELCOME_SCREEN#${screenId}`,
-      researchId,
+      id: researchId,
+      sk: 'WELCOME_SCREEN',
       isEnabled: config.isEnabled,
       title: config.title,
       message: config.message,
@@ -114,9 +107,9 @@ export class WelcomeScreenModel {
     try {
       await this.docClient.send(command);
       
-      // Devolver el objeto creado con su ID
+      // Devolver el objeto creado
       return {
-        id: screenId,
+        id: researchId,
         researchId,
         isEnabled: config.isEnabled,
         title: config.title,
@@ -158,7 +151,7 @@ export class WelcomeScreenModel {
       // Convertir de formato DynamoDB a la interfaz WelcomeScreenRecord
       return {
         id: item.id,
-        researchId: item.researchId,
+        researchId: item.id,
         isEnabled: item.isEnabled,
         title: item.title,
         message: item.message,
@@ -179,32 +172,27 @@ export class WelcomeScreenModel {
    * @returns La pantalla de bienvenida asociada o null
    */
   async getByResearchId(researchId: string): Promise<WelcomeScreenRecord | null> {
-    // Consulta por índice secundario (requiere GSI en DynamoDB)
-    const command = new QueryCommand({
+    const command = new GetCommand({
       TableName: this.tableName,
-      IndexName: 'researchId-index',
-      KeyConditionExpression: 'researchId = :researchId',
-      FilterExpression: 'begins_with(sk, :prefix)',
-      ExpressionAttributeValues: {
-        ':researchId': researchId,
-        ':prefix': 'WELCOME_SCREEN#'
+      Key: {
+        id: researchId,
+        sk: 'WELCOME_SCREEN'
       }
     });
 
     try {
       const result = await this.docClient.send(command);
       
-      if (!result.Items || result.Items.length === 0) {
+      if (!result.Item) {
         return null;
       }
 
-      // Solo nos interesa el primer resultado (debería ser único por investigación)
-      const item = result.Items[0] as WelcomeScreenDynamoItem;
+      const item = result.Item as WelcomeScreenDynamoItem;
       
       // Convertir de formato DynamoDB a la interfaz WelcomeScreenRecord
       return {
         id: item.id,
-        researchId: item.researchId,
+        researchId: item.id,
         isEnabled: item.isEnabled,
         title: item.title,
         message: item.message,
@@ -214,59 +202,57 @@ export class WelcomeScreenModel {
         updatedAt: new Date(item.updatedAt)
       };
     } catch (error) {
-      console.error('Error al obtener pantalla de bienvenida por ResearchId:', error);
+      console.error('Error al obtener pantalla de bienvenida por researchId:', error);
       throw new Error('Error al obtener la pantalla de bienvenida');
     }
   }
 
   /**
    * Actualiza una pantalla de bienvenida existente
-   * @param id ID de la pantalla de bienvenida
+   * @param researchId ID de la investigación
    * @param data Datos a actualizar
    * @returns La pantalla de bienvenida actualizada
    */
-  async update(id: string, data: Partial<WelcomeScreenFormData>): Promise<WelcomeScreenRecord> {
-    // Obtener la pantalla existente
-    const existingScreen = await this.getById(id);
+  async update(researchId: string, data: Partial<WelcomeScreenFormData>): Promise<WelcomeScreenRecord> {
+    // Verificar que existe
+    const existingScreen = await this.getByResearchId(researchId);
     if (!existingScreen) {
-      throw new Error('No se encontró la pantalla de bienvenida para actualizar');
+      throw new Error('No existe una pantalla de bienvenida para esta investigación');
     }
 
     const now = new Date().toISOString();
-    const currentVersion = existingScreen.metadata?.version || '1.0';
 
-    // Combinar datos existentes con actualizaciones
-    const updatedConfig: WelcomeScreenConfig = {
-      isEnabled: data.isEnabled ?? existingScreen.isEnabled,
-      title: data.title || existingScreen.title,
-      message: data.message || existingScreen.message,
-      startButtonText: data.startButtonText || existingScreen.startButtonText,
-      metadata: {
-        ...(existingScreen.metadata || {}),
-        lastUpdated: new Date(),
-        version: (parseFloat(currentVersion) + 0.1).toFixed(1)
-      }
+    // Preparar expresiones de actualización
+    let updateExpression = 'SET updatedAt = :updatedAt';
+    const expressionAttributeValues: any = {
+      ':updatedAt': now
     };
 
-    // Preparar el objeto para actualización en DynamoDB
-    const updateExpression = 'SET isEnabled = :isEnabled, title = :title, message = :message, ' +
-      'startButtonText = :startButtonText, metadata = :metadata, updatedAt = :updatedAt';
+    if (data.isEnabled !== undefined) {
+      updateExpression += ', isEnabled = :isEnabled';
+      expressionAttributeValues[':isEnabled'] = data.isEnabled;
+    }
+    if (data.title !== undefined) {
+      updateExpression += ', title = :title';
+      expressionAttributeValues[':title'] = data.title;
+    }
+    if (data.message !== undefined) {
+      updateExpression += ', message = :message';
+      expressionAttributeValues[':message'] = data.message;
+    }
+    if (data.startButtonText !== undefined) {
+      updateExpression += ', startButtonText = :startButtonText';
+      expressionAttributeValues[':startButtonText'] = data.startButtonText;
+    }
 
     const command = new UpdateCommand({
       TableName: this.tableName,
       Key: {
-        id: id,
-        sk: `WELCOME_SCREEN#${id}`
+        id: researchId,
+        sk: 'WELCOME_SCREEN'
       },
       UpdateExpression: updateExpression,
-      ExpressionAttributeValues: {
-        ':isEnabled': updatedConfig.isEnabled,
-        ':title': updatedConfig.title,
-        ':message': updatedConfig.message,
-        ':startButtonText': updatedConfig.startButtonText,
-        ':metadata': JSON.stringify(updatedConfig.metadata),
-        ':updatedAt': now
-      },
+      ExpressionAttributeValues: expressionAttributeValues,
       ReturnValues: 'ALL_NEW'
     });
 
@@ -274,10 +260,9 @@ export class WelcomeScreenModel {
       const result = await this.docClient.send(command);
       const updatedItem = result.Attributes as WelcomeScreenDynamoItem;
 
-      // Devolver el objeto actualizado
       return {
         id: updatedItem.id,
-        researchId: updatedItem.researchId,
+        researchId: updatedItem.id,
         isEnabled: updatedItem.isEnabled,
         title: updatedItem.title,
         message: updatedItem.message,
@@ -326,7 +311,7 @@ export class WelcomeScreenModel {
       
       if (existing) {
         // Actualizar la existente
-        return await this.update(existing.id, data);
+        return await this.update(researchId, data);
       } else {
         // Crear una nueva
         return await this.create(data, researchId);
@@ -361,7 +346,7 @@ export class WelcomeScreenModel {
 
       return result.Items.map(item => ({
         id: item.id,
-        researchId: item.researchId,
+        researchId: item.id,
         createdAt: item.createdAt,
         updatedAt: item.updatedAt,
         isEnabled: item.isEnabled,

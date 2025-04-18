@@ -114,19 +114,33 @@ export class WelcomeScreenController {
    */
   async getWelcomeScreenByResearchId(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
     try {
+      console.log('[WelcomeScreenController] Iniciando getWelcomeScreenByResearchId');
+      
       // Obtener el ID de la investigación desde los parámetros de ruta
       const researchId = event.pathParameters?.researchId;
       if (!researchId) {
+        console.error('[WelcomeScreenController] No se proporcionó ID de investigación');
         return errorResponse('Se requiere un ID de investigación', 400);
       }
 
+      console.log('[WelcomeScreenController] Buscando welcome screen para researchId:', researchId);
+      
       // Obtener la pantalla de bienvenida usando el servicio
       const welcomeScreen = await welcomeScreenService.getByResearchId(researchId);
 
+      if (!welcomeScreen) {
+        console.log('[WelcomeScreenController] No se encontró welcome screen');
+        return createResponse(200, {
+          data: null
+        });
+      }
+
+      console.log('[WelcomeScreenController] Welcome screen encontrado:', welcomeScreen);
       return createResponse(200, {
         data: welcomeScreen
       });
     } catch (error) {
+      console.error('[WelcomeScreenController] Error en getWelcomeScreenByResearchId:', error);
       return this.handleError(error);
     }
   }
@@ -175,32 +189,48 @@ export class WelcomeScreenController {
    */
   async updateWelcomeScreenByResearchId(event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
     try {
+      console.log('[WelcomeScreenController] Iniciando updateWelcomeScreenByResearchId');
+      
       // Verificar que hay un cuerpo en la petición
       if (!event.body) {
+        console.error('[WelcomeScreenController] No hay cuerpo en la petición');
         return errorResponse('Se requieren datos para actualizar la pantalla de bienvenida', 400);
       }
 
       if (!userId) {
+        console.error('[WelcomeScreenController] No se proporcionó ID de usuario');
         return errorResponse('Usuario no autenticado', 401);
       }
 
       // Parsear el cuerpo de la petición
-      const screenData: WelcomeScreenFormData = JSON.parse(event.body);
+      let screenData: WelcomeScreenFormData;
+      try {
+        screenData = JSON.parse(event.body);
+      } catch (e) {
+        console.error('[WelcomeScreenController] Error al parsear JSON:', e);
+        return errorResponse('Error al procesar los datos de la petición', 400);
+      }
 
       // Obtener el ID de la investigación desde los parámetros de ruta
       const researchId = event.pathParameters?.researchId;
       if (!researchId) {
+        console.error('[WelcomeScreenController] No se proporcionó ID de investigación');
         return errorResponse('Se requiere un ID de investigación', 400);
       }
+
+      console.log('[WelcomeScreenController] Actualizando welcome screen para researchId:', researchId);
+      console.log('[WelcomeScreenController] Datos recibidos:', screenData);
 
       // Actualizar o crear la pantalla de bienvenida usando el servicio
       const welcomeScreen = await welcomeScreenService.updateByResearchId(researchId, screenData, userId);
 
+      console.log('[WelcomeScreenController] Welcome screen actualizado:', welcomeScreen);
       return createResponse(200, {
-        message: 'Pantalla de bienvenida actualizada exitosamente',
+        message: 'Pantalla de bienvenida actualizada correctamente',
         data: welcomeScreen
       });
     } catch (error) {
+      console.error('[WelcomeScreenController] Error en updateWelcomeScreenByResearchId:', error);
       return this.handleError(error);
     }
   }
@@ -291,25 +321,11 @@ const controller = new WelcomeScreenController();
 
 // Definir el mapa de rutas para WelcomeScreen
 const welcomeScreenRouteMap: RouteMap = {
-  '/welcome-screens': {
-    'GET': controller.getAllWelcomeScreens.bind(controller),
-    'POST': controller.createWelcomeScreen.bind(controller)
-  },
-  
-  '/welcome-screens/:id': {
-    'GET': controller.getWelcomeScreenById.bind(controller),
-    'PUT': controller.updateWelcomeScreen.bind(controller),
-    'DELETE': controller.deleteWelcomeScreen.bind(controller)
-  },
-  
-  '/welcome-screens/research/:researchId': {
-    'GET': controller.getWelcomeScreenByResearchId.bind(controller)
-  },
-  
-  '/research/:researchId/welcome-screen': {
+  '/welcome-screen': {
     'GET': controller.getWelcomeScreenByResearchId.bind(controller),
-    'POST': controller.updateWelcomeScreenByResearchId.bind(controller),
-    'PUT': controller.updateWelcomeScreenByResearchId.bind(controller)
+    'POST': controller.createWelcomeScreen.bind(controller),
+    'PUT': controller.updateWelcomeScreenByResearchId.bind(controller),
+    'DELETE': controller.deleteWelcomeScreen.bind(controller)
   }
 };
 
@@ -319,14 +335,12 @@ const welcomeScreenRouteMap: RouteMap = {
  * Utiliza el decorador de controlador para manejar la autenticación y CORS automáticamente.
  * 
  * Rutas soportadas:
- * - POST /welcome-screens : Crea una nueva pantalla de bienvenida
- * - GET /welcome-screens/:id : Obtiene una pantalla por su ID
- * - PUT /welcome-screens/:id : Actualiza una pantalla existente
- * - DELETE /welcome-screens/:id : Elimina una pantalla
- * - GET /welcome-screens/research/:researchId : Obtiene la pantalla asociada a una investigación
- * - GET, POST, PUT /research/:researchId/welcome-screen : Obtiene o actualiza la pantalla de una investigación
+ * - GET /welcome-screen : Obtiene el welcome screen de la investigación actual
+ * - POST /welcome-screen : Crea un nuevo welcome screen
+ * - PUT /welcome-screen : Actualiza el welcome screen existente
+ * - DELETE /welcome-screen : Elimina el welcome screen
  */
 export const welcomeScreenHandler = createController(welcomeScreenRouteMap, {
-  basePath: '/welcome-screens',
+  basePath: '/welcome-screen',
   // No hay rutas públicas, todas requieren autenticación
 }); 

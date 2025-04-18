@@ -3,7 +3,6 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
-import { Navbar } from '@/components/layout/Navbar';
 import { ResearchSidebar } from '@/components/layout/ResearchSidebar';
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
 
@@ -94,9 +93,10 @@ function ResearchStageManagerContent({ researchId }: ResearchStageManagerProps) 
 
   return (
     <div className="flex h-screen">
-      <ResearchSidebar researchId={researchId} activeStage={currentSection} className="fixed left-0 top-0 h-full z-10" />
-      <div className="flex-1 flex flex-col ml-56">
-        <Navbar mode="research" researchId={researchId} />
+      <div className="w-72">
+        <ResearchSidebar researchId={researchId} activeStage={currentSection} />
+      </div>
+      <div className="flex-1 flex flex-col">
         <main className="flex-1 overflow-y-auto">
           <div className="p-6">
             <div className="mb-6">
@@ -125,10 +125,10 @@ export function ResearchStageManager(props: ResearchStageManagerProps) {
 // Componente de carga reutilizable
 export function LoadingState() {
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen">
       {/* Barra lateral simulada */}
-      <div className="fixed left-0 top-0 h-full w-64 border-r border-neutral-200 bg-white z-10">
-        <div className="p-6">
+      <div className="w-72">
+        <div className="bg-white rounded-lg shadow-sm mx-4 mt-4 p-6">
           <div className="h-8 bg-neutral-200 rounded w-3/4 mb-8"></div>
           
           <div className="space-y-6">
@@ -148,34 +148,14 @@ export function LoadingState() {
                 <div className="h-8 bg-neutral-200 rounded-md"></div>
               </div>
             </div>
-            
-            <div>
-              <div className="h-4 bg-neutral-200 rounded w-1/3 mb-3"></div>
-              <div className="space-y-2">
-                <div className="h-8 bg-neutral-200 rounded-md"></div>
-                <div className="h-8 bg-neutral-200 rounded-md"></div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
       
       {/* Contenido principal */}
-      <div className="flex-1 flex flex-col ml-64">
-        {/* Navbar simulado */}
-        <div className="h-16 border-b border-neutral-200 bg-white flex items-center px-6">
-          <div className="h-5 bg-neutral-200 rounded w-1/4"></div>
-          <div className="ml-auto flex gap-4">
-            <div className="h-9 w-9 bg-neutral-200 rounded-full"></div>
-            <div className="h-9 w-9 bg-neutral-200 rounded-full"></div>
-          </div>
-        </div>
-        
-        {/* Contenido principal */}
-        <main className="flex-1 overflow-y-auto">
-          <div className="p-6">
-            <LoadingSkeleton variant="full" />
-          </div>
+      <div className="flex-1">
+        <main className="p-6">
+          <LoadingSkeleton variant="full" />
         </main>
       </div>
     </div>

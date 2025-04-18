@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/Button';
 import { ErrorBoundary } from '../common/ErrorBoundary';
+import Link from 'next/link';
 
 interface Research {
   id: string;
@@ -13,6 +14,7 @@ interface Research {
   status: string;
   createdAt: string;
   progress?: number;
+  technique: string;
 }
 
 interface ResearchTableProps {
@@ -32,7 +34,34 @@ function ResearchTableContent() {
     try {
       setIsLoading(true);
       setError(null);
-      
+
+      // Primero intentar obtener la investigación actual
+      const currentResponse = await fetch('https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/research/current', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (currentResponse.ok) {
+        const currentData = await currentResponse.json();
+        if (currentData?.data) {
+          setResearch([{
+            id: currentData.data.id,
+            name: currentData.data.title || currentData.data.name,
+            status: currentData.data.status || 'in-progress',
+            createdAt: currentData.data.createdAt,
+            progress: currentData.data.progress,
+            technique: currentData.data.metadata?.type || ''
+          }]);
+          setLastUpdate(new Date().toLocaleString());
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // Si no hay investigación actual, obtener todas las investigaciones
       const response = await fetch('https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/research/all', {
         method: 'GET',
         headers: {
@@ -67,7 +96,11 @@ function ResearchTableContent() {
   };
 
   const handleViewResearch = (item: Research) => {
-    router.push(`/dashboard/research/${item.id}`);
+    if (item.technique === 'eye-tracking' || item.technique === 'aim-framework') {
+      router.push(`/dashboard?research=${item.id}&section=welcome-screen`);
+    } else {
+      router.push(`/dashboard?research=${item.id}`);
+    }
   };
 
   const handleDeleteResearch = (e: React.MouseEvent, item: Research) => {
@@ -123,34 +156,32 @@ function ResearchTableContent() {
   };
 
   return (
-    <div className="bg-white rounded-lg border border-neutral-200 overflow-hidden">
-      <div className="p-6 border-b border-neutral-200">
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-xl font-semibold text-neutral-900">Research Projects</h2>
-            <p className="text-sm text-neutral-500 mt-1">
-              Última actualización: {lastUpdate}
-            </p>
-          </div>
-          <button
-            onClick={handleRefresh}
-            className="p-2 hover:bg-neutral-100 rounded-full transition-colors"
-            title="Actualizar"
-          >
-            <svg className="w-5 h-5 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-          </button>
+    <div className="bg-white rounded-lg overflow-hidden">
+      <div className="flex justify-between items-center p-6 border-b border-neutral-200">
+        <div className="flex flex-col">
+          <h2 className="text-xl font-semibold text-neutral-900">Research Projects</h2>
+          <p className="text-sm text-neutral-500 mt-1">
+            Última actualización: {lastUpdate}
+          </p>
         </div>
-
-        {error && (
-          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-600">{error}</p>
-          </div>
-        )}
+        <button
+          onClick={handleRefresh}
+          className="p-2 hover:bg-neutral-100 rounded-full transition-colors"
+          title="Actualizar"
+        >
+          <svg className="w-5 h-5 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+        </button>
       </div>
 
-      <div className="overflow-x-auto">
+      {error && (
+        <div className="m-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-sm text-red-600">{error}</p>
+        </div>
+      )}
+
+      <div className="min-w-full">
         {isLoading ? (
           <div className="p-8 flex justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -160,51 +191,55 @@ function ResearchTableContent() {
             <p className="text-neutral-500">No hay investigaciones disponibles.</p>
           </div>
         ) : (
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-neutral-100 bg-neutral-50">
-                <th className="whitespace-nowrap px-6 py-3 text-left text-sm font-medium text-neutral-600">Nombre</th>
-                <th className="whitespace-nowrap px-6 py-3 text-left text-sm font-medium text-neutral-600">Estado</th>
-                <th className="whitespace-nowrap px-6 py-3 text-left text-sm font-medium text-neutral-600">Fecha</th>
-                <th className="whitespace-nowrap px-6 py-3 text-left text-sm font-medium text-neutral-600">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {research.map((item) => (
-                <tr key={item.id} className="border-b border-neutral-100 hover:bg-neutral-50">
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-neutral-900">
-                    {item.name}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    {getStatusBadge(item.status)}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-neutral-500">
-                    {format(new Date(item.createdAt), "d 'de' MMMM, yyyy", { locale: es })}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm">
-                    <div className="flex space-x-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => handleViewResearch(item)}
-                      >
-                        Ver
-                      </Button>
-                      <button 
-                        className="w-8 h-8 flex items-center justify-center rounded-md border border-neutral-200 text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors"
-                        onClick={(e) => handleDeleteResearch(e, item)}
-                        title="Eliminar investigación"
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </div>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-neutral-200">
+              <thead>
+                <tr className="bg-neutral-50">
+                  <th scope="col" className="px-6 py-3 text-left text-sm font-medium text-neutral-600">Nombre</th>
+                  <th scope="col" className="px-6 py-3 text-left text-sm font-medium text-neutral-600">Estado</th>
+                  <th scope="col" className="px-6 py-3 text-left text-sm font-medium text-neutral-600">Fecha</th>
+                  <th scope="col" className="px-6 py-3 text-left text-sm font-medium text-neutral-600">Acciones</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="bg-white divide-y divide-neutral-200">
+                {research.map((item) => (
+                  <tr key={item.id} className="hover:bg-neutral-50">
+                    <td className="px-6 py-4 text-sm text-neutral-900 max-w-xs truncate">
+                      {item.name}
+                    </td>
+                    <td className="px-6 py-4">
+                      {getStatusBadge(item.status)}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-neutral-500 whitespace-nowrap">
+                      {format(new Date(item.createdAt), "d 'de' MMMM, yyyy", { locale: es })}
+                    </td>
+                    <td className="px-6 py-4 text-sm whitespace-nowrap">
+                      <div className="flex space-x-2">
+                        <Link
+                          href={item.technique === 'eye-tracking' || item.technique === 'aim-framework'
+                            ? `/dashboard?research=${item.id}&section=welcome-screen`
+                            : `/dashboard?research=${item.id}`
+                          }
+                          className="inline-flex items-center px-3 py-1.5 border border-neutral-200 text-sm font-medium rounded-md text-neutral-700 bg-white hover:bg-neutral-50 transition-colors"
+                        >
+                          Ver
+                        </Link>
+                        <button
+                          className="w-8 h-8 flex items-center justify-center rounded-md border border-neutral-200 text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors"
+                          onClick={(e) => handleDeleteResearch(e, item)}
+                          title="Eliminar investigación"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 

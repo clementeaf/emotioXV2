@@ -186,7 +186,7 @@ const DashboardContent = memo(() => {
     }
   }, [researchId, searchParams, router]);
 
-  if (activeResearch && isAimFramework) {
+  if (activeResearch && (isAimFramework || section)) {
     return <ResearchStageManager researchId={activeResearch.id} />;
   }
 
@@ -208,18 +208,17 @@ const DashboardContentWithSuspense = withSearchParams(DashboardContent);
 const DashboardLayout = memo(() => {
   const searchParams = useSearchParams();
   const researchId = searchParams?.get('research');
+  const section = searchParams?.get('section');
   const isAimFramework = searchParams?.get('aim') === 'true';
   
-  if (researchId && isAimFramework) {
+  if (researchId && (isAimFramework || section)) {
     return (
-      <div className="flex min-h-screen bg-neutral-50">
-        <div className="flex-1">
-          <ErrorBoundary>
-            <Suspense fallback={<div className="p-4 text-center">Cargando...</div>}>
-              <DashboardContentWithSuspense />
-            </Suspense>
-          </ErrorBoundary>
-        </div>
+      <div className="min-h-screen bg-neutral-50">
+        <ErrorBoundary>
+          <Suspense fallback={<div className="p-4 text-center">Cargando...</div>}>
+            <DashboardContentWithSuspense />
+          </Suspense>
+        </ErrorBoundary>
       </div>
     );
   }
@@ -229,13 +228,11 @@ const DashboardLayout = memo(() => {
       <Sidebar />
       <div className="flex-1 flex flex-col">
         <Navbar />
-        <div className="flex-1">
-          <ErrorBoundary>
-            <Suspense fallback={<div className="p-4 text-center">Cargando...</div>}>
-              <DashboardContentWithSuspense />
-            </Suspense>
-          </ErrorBoundary>
-        </div>
+        <ErrorBoundary>
+          <Suspense fallback={<div className="p-4 text-center">Cargando...</div>}>
+            <DashboardContentWithSuspense />
+          </Suspense>
+        </ErrorBoundary>
       </div>
     </div>
   );

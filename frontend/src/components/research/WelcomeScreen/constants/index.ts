@@ -57,7 +57,7 @@ export const UI_TEXTS = {
     SAVING: 'Guardando...',
     SAVED: 'Guardado',
     CANCEL: 'Cancelar',
-    CONFIRM_SAVE: 'Confirmar'
+    CONFIRM_SAVE: 'Guardar cambios'
   },
   FOOTER: {
     SAVING_TEXT: 'Guardando cambios...',
@@ -71,17 +71,17 @@ export const UI_TEXTS = {
     INFO_TITLE: 'Información',
     SUCCESS_TITLE: 'Éxito',
     CLOSE_BUTTON: 'Cerrar',
-    SAVE_CONFIRM_TITLE: 'Confirmar configuración',
-    SAVE_CONFIRM_MESSAGE: '¿Estás seguro de que deseas guardar la siguiente pantalla de bienvenida?',
+    SAVE_CONFIRM_TITLE: 'Confirmar cambios',
+    SAVE_CONFIRM_MESSAGE: 'Por favor revisa los cambios antes de guardar:',
     SCREEN_STATUS: 'Estado de la pantalla',
     CONTENT: 'Contenido',
-    SCREEN_ENABLED: 'Pantalla de bienvenida habilitada',
-    SCREEN_DISABLED: 'Pantalla de bienvenida deshabilitada',
+    SCREEN_ENABLED: 'La pantalla de bienvenida está activada',
+    SCREEN_DISABLED: 'La pantalla de bienvenida está desactivada',
     TITLE_SECTION: 'Título',
     MESSAGE_SECTION: 'Mensaje',
-    BUTTON_TEXT_SECTION: 'Texto del botón de inicio',
+    BUTTON_TEXT_SECTION: 'Texto del botón',
     NO_TITLE: 'Sin título',
     NO_MESSAGE: 'Sin mensaje',
-    NO_BUTTON_TEXT: 'Sin texto'
+    NO_BUTTON_TEXT: 'Sin texto para el botón'
   }
 }; 

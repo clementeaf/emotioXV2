@@ -142,6 +142,9 @@ export interface Research {
   /** ID único de la investigación */
   id: string;
   
+  /** Nombre de la investigación */
+  name: string;
+  
   /** Datos básicos de la investigación */
   basic: ResearchBasicData;
   

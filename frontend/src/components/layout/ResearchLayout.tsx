@@ -21,12 +21,14 @@ export function ResearchLayout({
   useResearchIdValidation(researchId);
   
   return (
-    <div className="flex h-full">
-      <ResearchSidebar 
-        researchId={researchId} 
-        activeStage={activeStage} 
-      />
-      <main className={cn("flex-1 overflow-auto bg-neutral-50", className)}>
+    <div className="flex h-full w-full">
+      <div className="w-72">
+        <ResearchSidebar 
+          researchId={researchId} 
+          activeStage={activeStage} 
+        />
+      </div>
+      <main className={cn("flex-1 overflow-auto bg-neutral-50 p-8", className)}>
         {children}
       </main>
     </div>

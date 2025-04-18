@@ -164,13 +164,15 @@ export class WelcomeScreenService {
         );
       }
 
+      console.log('[WelcomeScreenService] Buscando welcome screen para researchId:', researchId);
       const welcomeScreen = await welcomeScreenModel.getByResearchId(researchId);
       
       if (!welcomeScreen) {
-        // Si no existe, retornamos null
+        console.log('[WelcomeScreenService] No se encontró welcome screen para researchId:', researchId);
         return null;
       }
 
+      console.log('[WelcomeScreenService] Welcome screen encontrado:', welcomeScreen);
       return welcomeScreen;
     } catch (error) {
       // Si ya es un ApiError, relanzarlo
@@ -178,7 +180,7 @@ export class WelcomeScreenService {
         throw error;
       }
 
-      console.error('Error en WelcomeScreenService.getByResearchId:', error);
+      console.error('[WelcomeScreenService] Error en getByResearchId:', error);
       throw new ApiError(
         `${WelcomeScreenError.DATABASE_ERROR}: Error al obtener la pantalla de bienvenida para la investigación`,
         500
@@ -231,7 +233,7 @@ export class WelcomeScreenService {
    * @param _userId ID del usuario que realiza la operación
    * @returns La pantalla de bienvenida actualizada o creada
    */
-  async updateByResearchId(researchId: string, data: WelcomeScreenFormData, _userId: string): Promise<WelcomeScreenRecord> {
+  async updateByResearchId(researchId: string, data: WelcomeScreenFormData, userId: string): Promise<WelcomeScreenRecord> {
     try {
       // Validar que existe researchId
       if (!researchId) {
@@ -244,18 +246,48 @@ export class WelcomeScreenService {
       // Validar datos
       this.validateData(data);
 
-      // Usar método conveniente del modelo
-      const welcomeScreen = await welcomeScreenModel.createOrUpdate(researchId, data);
-      return welcomeScreen;
+      console.log('[WelcomeScreenService] Actualizando welcome screen para researchId:', researchId);
+      console.log('[WelcomeScreenService] Datos a actualizar:', data);
+
+      // Intentar obtener la pantalla existente
+      const existingScreen = await welcomeScreenModel.getByResearchId(researchId);
+
+      if (existingScreen) {
+        // Si existe, actualizar
+        console.log('[WelcomeScreenService] Actualizando welcome screen existente');
+        const updatedScreen = await welcomeScreenModel.update(researchId, {
+          ...data,
+          metadata: {
+            version: (existingScreen.metadata?.version || '1.0'),
+            lastUpdated: new Date(),
+            lastModifiedBy: userId
+          }
+        });
+        console.log('[WelcomeScreenService] Welcome screen actualizado:', updatedScreen);
+        return updatedScreen;
+      } else {
+        // Si no existe, crear nuevo
+        console.log('[WelcomeScreenService] Creando nuevo welcome screen');
+        const newScreen = await welcomeScreenModel.create({
+          ...data,
+          metadata: {
+            version: '1.0',
+            lastUpdated: new Date(),
+            lastModifiedBy: userId
+          }
+        }, researchId);
+        console.log('[WelcomeScreenService] Nuevo welcome screen creado:', newScreen);
+        return newScreen;
+      }
     } catch (error) {
       // Si ya es un ApiError, relanzarlo
       if (error instanceof ApiError) {
         throw error;
       }
 
-      console.error('Error en WelcomeScreenService.updateByResearchId:', error);
+      console.error('[WelcomeScreenService] Error en updateByResearchId:', error);
       throw new ApiError(
-        `${WelcomeScreenError.DATABASE_ERROR}: Error al actualizar la pantalla de bienvenida para la investigación`,
+        `${WelcomeScreenError.DATABASE_ERROR}: Error al actualizar la pantalla de bienvenida`,
         500
       );
     }

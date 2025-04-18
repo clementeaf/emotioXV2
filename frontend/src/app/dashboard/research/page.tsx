@@ -49,14 +49,10 @@ export default function ResearchPage() {
   }
   
   return (
-    <div className="flex min-h-screen bg-neutral-50">
-      <Sidebar />
-      <div className="flex-1 flex flex-col">
-        <Navbar />
-        <ErrorBoundary>
-          <ResearchPageContent />
-        </ErrorBoundary>
-      </div>
+    <div className="flex-1 flex flex-col">
+      <ErrorBoundary>
+        <ResearchPageContent />
+      </ErrorBoundary>
     </div>
   );
 } 

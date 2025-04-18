@@ -7,7 +7,6 @@ import { toast } from 'react-hot-toast';
 
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import API_CONFIG from '@/config/api.config';
 import { researchAPI } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
@@ -297,7 +296,23 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
 
         // Guardar el ID de la investigación creada
         const researchId = response.data.id;
-        const researchName = response.data.name;
+        const researchName = response.data.name || formData.basic.name; // Usar el nombre del formulario si no viene en la respuesta
+
+        // Actualizar el localStorage con la nueva investigación
+        const currentResearchList = JSON.parse(localStorage.getItem('research_list') || '[]');
+        const newResearch = {
+          id: researchId,
+          name: researchName,
+          technique: formData.basic.technique,
+          type: formData.basic.type,
+          enterprise: formData.basic.enterprise,
+          createdAt: new Date().toISOString()
+        };
+        
+        localStorage.setItem('research_list', JSON.stringify([...currentResearchList, newResearch]));
+        
+        // También guardar los detalles específicos de la investigación
+        localStorage.setItem(`research_${researchId}`, JSON.stringify(newResearch));
 
         setCreatedResearchId(researchId);
         setShowSummary(true);
@@ -317,7 +332,12 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
 
           if (count === 0) {
             clearInterval(countdownInterval);
-            router.push(`/research/${researchId}/welcome`);
+            // Redirigir basado en la técnica seleccionada
+            if (formData.basic.technique === 'aim-framework') {
+              router.push(`/dashboard?research=${researchId}&aim=true&section=welcome-screen`);
+            } else {
+              router.push(`/dashboard?research=${researchId}`);
+            }
           }
         }, 1000);
       } else {
@@ -576,58 +596,23 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
                     </p>
 
                     <div className="space-y-4">
-                      {/* Opción 1: Biometric, Cognitive and Predictive */}
-                      <div className={cn(
-                        'p-4 border rounded-lg transition-colors', 
-                        formData.basic.technique === 'biometric' 
-                          ? 'border-blue-500 bg-blue-50' 
-                          : 'border-neutral-200'
-                      )}>
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <div className="text-md font-medium mb-2">Biometric, Cognitive and Predictive</div>
-                            <p className="text-sm text-neutral-600">
-                              Evaluating one or more section with biometrics, implicit association and 
-                              cognitive task. Also, you can have image and video predictions
-                            </p>
-                          </div>
-                          <div className="ml-4">
-                            <Button
-                              type="button"
-                              variant={formData.basic.technique === 'biometric' ? 'default' : 'outline'}
-                              onClick={() => toggleResearchTechnique('biometric')}
-                              className={formData.basic.technique === 'biometric' ? 'bg-blue-500 hover:bg-blue-600' : ''}
-                            >
-                              {formData.basic.technique === 'biometric' ? 'Selected' : 'Choose'}
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-
                       {/* Opción 2: AIM Framework Stage 3 */}
-                      <div className={cn(
-                        'p-4 border rounded-lg transition-colors', 
-                        formData.basic.technique === 'aim-framework' 
-                          ? 'border-blue-500 bg-blue-50' 
-                          : 'border-neutral-200'
-                      )}>
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <div className="text-md font-medium mb-2">AIM Framework Stage 3</div>
-                            <p className="text-sm text-neutral-600">
-                              Start with VOC Smart or build an upgrade by your own
-                            </p>
-                          </div>
-                          <div className="ml-4">
-                            <Button
-                              type="button"
-                              variant={formData.basic.technique === 'aim-framework' ? 'default' : 'outline'}
-                              onClick={() => toggleResearchTechnique('aim-framework')}
-                              className={formData.basic.technique === 'aim-framework' ? 'bg-blue-500 hover:bg-blue-600' : ''}
-                            >
-                              {formData.basic.technique === 'aim-framework' ? 'Selected' : 'Choose'}
-                            </Button>
-                          </div>
+                      <div className="flex items-center justify-between border border-neutral-200 rounded-lg p-4">
+                        <div className="flex-1">
+                          <div className="text-md font-medium mb-2">AIM Framework Stage 3</div>
+                          <p className="text-sm text-neutral-600">
+                            Start with VOC Smart or build an upgrade by your own
+                          </p>
+                        </div>
+                        <div className="ml-4">
+                          <Button
+                            type="button"
+                            variant={formData.basic.technique === 'aim-framework' ? 'default' : 'outline'}
+                            onClick={() => toggleResearchTechnique('aim-framework')}
+                            className={formData.basic.technique === 'aim-framework' ? 'bg-blue-500 hover:bg-blue-600' : ''}
+                          >
+                            {formData.basic.technique === 'aim-framework' ? 'Selected' : 'Choose'}
+                          </Button>
                         </div>
                       </div>
                     </div>

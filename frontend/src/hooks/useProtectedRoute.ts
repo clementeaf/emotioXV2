@@ -1,22 +1,36 @@
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/providers/AuthProvider';
+
+interface ProtectedRouteResult {
+  token: string | null;
+  isChecking: boolean;
+}
 
 /**
  * Hook personalizado para proteger rutas que requieren autenticación.
  * Redirige al usuario a la página de login si no está autenticado.
  * 
- * @returns {Object} Objeto con el token y estado de autenticación
+ * @returns {ProtectedRouteResult} Objeto con el token y estado de verificación
  */
-export const useProtectedRoute = () => {
+export const useProtectedRoute = (): ProtectedRouteResult => {
   const router = useRouter();
-  const { isAuthenticated, token } = useAuth();
+  const { token } = useAuth();
+  const [isChecking, setIsChecking] = useState(true);
   
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.replace('/login');
-    }
-  }, [isAuthenticated, router]);
+    const checkAuth = async () => {
+      try {
+        if (!token) {
+          router.replace('/login');
+        }
+      } finally {
+        setIsChecking(false);
+      }
+    };
+    
+    checkAuth();
+  }, [token, router]);
   
-  return { isAuthenticated, token };
+  return { token, isChecking };
 }; 
