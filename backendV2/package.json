@@ -4,12 +4,17 @@
   "description": "Backend para la aplicación EmotioXV2",
   "main": "dist/index.js",
   "scripts": {
-    "start": "ts-node src/index.ts",
-    "dev": "ts-node-dev --respawn src/index.ts",
+    "dev": "nodemon -e ts --watch 'src' -x 'ts-node src/server.local.ts' --inspect=0.0.0.0:9229",
     "build": "tsc",
+    "start": "node dist/server.local.js",
+    "deploy": "cd .. && sls deploy",
+    "deploy:dev": "cd .. && sls deploy --stage dev",
+    "deploy:prod": "cd .. && sls deploy --stage prod",
     "test": "jest",
-    "lint": "eslint . --ext .ts",
-    "deploy": "rm -rf dist && npm run build && serverless deploy"
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:diagnostic-image": "ts-node src/test-utils/diagnostic-image-test.ts",
+    "lint": "eslint . --ext .ts"
   },
   "dependencies": {
     "@aws-sdk/client-apigatewaymanagementapi": "^3.190.0",

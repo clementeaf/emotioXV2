@@ -94,6 +94,30 @@ export class CognitiveTaskModel {
     
     // Combinar con valores por defecto si es necesario
     const questions = data.questions || [];
+    
+    // Log para diagnóstico de imágenes
+    const questionsWithFiles = questions.filter(q => 
+      ['navigation_flow', 'preference_test'].includes(q.type) && q.files && q.files.length > 0
+    );
+    
+    if (questionsWithFiles.length > 0) {
+      console.log('[DIAGNOSTICO-IMAGEN:MODEL:CREATE] Preguntas con archivos antes de guardar:', 
+        JSON.stringify(questionsWithFiles.map(q => ({
+          id: q.id, 
+          type: q.type, 
+          files: q.files?.map(f => ({id: f.id, name: f.name, url: f.url, s3Key: f.s3Key}))
+        })), null, 2)
+      );
+    }
+    
+    // Asegurarse de que las referencias de imágenes estén completas
+    questions.forEach(q => {
+      if (q.files && q.files.length > 0) {
+        q.files = q.files.filter(f => f && f.s3Key && f.url);
+        console.log(`[DIAGNOSTICO-IMAGEN:MODEL:CREATE] Pregunta ${q.id} tiene ${q.files.length} archivos válidos`);
+      }
+    });
+    
     const standardMetadata = {
       createdAt: now,
       updatedAt: now,
@@ -112,6 +136,11 @@ export class CognitiveTaskModel {
       createdAt: now,
       updatedAt: now
     };
+
+    // Log del JSON que se guardará en la BD
+    console.log('[DIAGNOSTICO-IMAGEN:MODEL:CREATE] JSON de preguntas que se guardará en DynamoDB:', 
+      item.questions.substring(0, 300) + (item.questions.length > 300 ? '...' : '')
+    );
 
     // Guardar en DynamoDB
     const command = new PutCommand({
@@ -166,10 +195,28 @@ export class CognitiveTaskModel {
       const item = result.Item as CognitiveTaskDynamoItem;
       const parsedMetadata = JSON.parse(item.metadata);
       
+      // Parsear las preguntas del resultado
+      const parsedQuestions = JSON.parse(item.questions) as Question[];
+      
+      // Log para diagnóstico de imágenes en el resultado
+      const resultQuestionsWithFiles = parsedQuestions.filter(q => 
+        ['navigation_flow', 'preference_test'].includes(q.type) && q.files && q.files.length > 0
+      );
+      
+      if (resultQuestionsWithFiles.length > 0) {
+        console.log('[DIAGNOSTICO-IMAGEN:MODEL:GET_BY_ID] Preguntas con archivos al recuperar:', 
+          JSON.stringify(resultQuestionsWithFiles.map(q => ({
+            id: q.id, 
+            type: q.type, 
+            files: q.files?.map(f => ({id: f.id, name: f.name, url: f.url, s3Key: f.s3Key}))
+          })), null, 2)
+        );
+      }
+      
       return {
         id: item.id,
         researchId: item.researchId,
-        questions: JSON.parse(item.questions) as Question[],
+        questions: parsedQuestions,
         randomizeQuestions: item.randomizeQuestions,
         metadata: {
           createdAt: parsedMetadata.createdAt,
@@ -257,8 +304,37 @@ export class CognitiveTaskModel {
     
     // Actualizar preguntas si se proporcionan
     if (data.questions) {
+      // Log para diagnóstico de imágenes
+      const questionsWithFiles = data.questions.filter(q => 
+        ['navigation_flow', 'preference_test'].includes(q.type) && q.files && q.files.length > 0
+      );
+      
+      if (questionsWithFiles.length > 0) {
+        console.log('[DIAGNOSTICO-IMAGEN:MODEL:UPDATE] Preguntas con archivos antes de actualizar:', 
+          JSON.stringify(questionsWithFiles.map(q => ({
+            id: q.id, 
+            type: q.type, 
+            files: q.files?.map(f => ({id: f.id, name: f.name, url: f.url, s3Key: f.s3Key}))
+          })), null, 2)
+        );
+      }
+      
+      // Asegurarse de que las referencias de imágenes estén completas
+      data.questions.forEach(q => {
+        if (q.files && q.files.length > 0) {
+          q.files = q.files.filter(f => f && f.s3Key && f.url);
+          console.log(`[DIAGNOSTICO-IMAGEN:MODEL:UPDATE] Pregunta ${q.id} tiene ${q.files.length} archivos válidos`);
+        }
+      });
+      
       updateExpression += ', questions = :questions';
       expressionAttributeValues[':questions'] = JSON.stringify(data.questions);
+      
+      // Log del JSON que se guardará en la BD
+      console.log('[DIAGNOSTICO-IMAGEN:MODEL:UPDATE] JSON de preguntas que se actualizará en DynamoDB:', 
+        expressionAttributeValues[':questions'].substring(0, 300) + 
+        (expressionAttributeValues[':questions'].length > 300 ? '...' : '')
+      );
     }
     
     // Actualizar randomizeQuestions si se proporciona
@@ -299,10 +375,30 @@ export class CognitiveTaskModel {
       const updatedItem = result.Attributes as CognitiveTaskDynamoItem;
       const parsedMetadata = JSON.parse(updatedItem.metadata);
       
+      // Parsear las preguntas del resultado
+      const parsedQuestions = JSON.parse(updatedItem.questions) as Question[];
+      
+      // Log para diagnóstico de imágenes en el resultado
+      const resultQuestionsWithFiles = parsedQuestions.filter(q => 
+        ['navigation_flow', 'preference_test'].includes(q.type) && q.files && q.files.length > 0
+      );
+      
+      if (resultQuestionsWithFiles.length > 0) {
+        console.log('[DIAGNOSTICO-IMAGEN:MODEL:UPDATE] Preguntas con archivos después de actualizar:', 
+          JSON.stringify(resultQuestionsWithFiles.map(q => ({
+            id: q.id, 
+            type: q.type, 
+            files: q.files?.map(f => ({id: f.id, name: f.name, url: f.url, s3Key: f.s3Key}))
+          })), null, 2)
+        );
+      } else {
+        console.log('[DIAGNOSTICO-IMAGEN:MODEL:UPDATE] No se encontraron preguntas con archivos en el resultado');
+      }
+      
       return {
         id: updatedItem.id,
         researchId: updatedItem.researchId,
-        questions: JSON.parse(updatedItem.questions) as Question[],
+        questions: parsedQuestions,
         randomizeQuestions: updatedItem.randomizeQuestions,
         metadata: {
           createdAt: parsedMetadata.createdAt,

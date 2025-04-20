@@ -2,7 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { authService } from './services/auth.service';
 import { v4 as uuidv4 } from 'uuid';
 import { WelcomeScreenController } from './controllers/welcomeScreen.controller';
-import { validateTokenAndSetupAuth } from './utils/controller.utils';
+import { validateTokenAndSetupAuth, getCorsHeaders } from './utils/controller.utils';
 import cognitiveTaskController from './controllers/cognitiveTask.controller';
 import { s3Handler } from './controllers/s3.controller';
 
@@ -10,13 +10,7 @@ import { s3Handler } from './controllers/s3.controller';
 const createResponse = (statusCode: number, body: any): APIGatewayProxyResult => {
   return {
     statusCode,
-    headers: { 
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Credentials': 'true',
-      'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type,Authorization'
-    },
+    headers: getCorsHeaders(),
     body: JSON.stringify(body)
   };
 };
@@ -31,13 +25,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
   
   // Manejar CORS para peticiones OPTIONS
   if (method === 'OPTIONS') {
+    console.log('Recibida petición OPTIONS - Enviando respuesta CORS preflight');
     return {
       statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
-      },
+      headers: getCorsHeaders(),
       body: ''
     };
   }

@@ -1,10 +1,39 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { Switch } from '@/components/ui/Switch';
 import { Question } from '../types';
 import { QuestionCard } from './QuestionCard';
 import { AddQuestionModal } from './AddQuestionModal';
-import { UI_TEXTS } from '../constants';
+import { Label } from '@/components/ui/Label';
+import { Checkbox } from '@/components/ui/Checkbox';
+import { Info, Plus } from 'lucide-react';
+
+// Componente Tooltip personalizado
+interface TooltipProps {
+  content: React.ReactNode;
+  children: React.ReactNode;
+}
+
+const Tooltip = ({ content, children }: TooltipProps) => {
+  const [isVisible, setIsVisible] = useState(false);
+  
+  return (
+    <div className="relative inline-block">
+      <div 
+        onMouseEnter={() => setIsVisible(true)}
+        onMouseLeave={() => setIsVisible(false)}
+        className="inline-flex"
+      >
+        {children}
+      </div>
+      {isVisible && (
+        <div className="absolute z-50 p-2 text-sm bg-white text-gray-800 rounded-md shadow-lg max-w-xs top-0 left-full ml-2">
+          {content}
+          <div className="absolute top-2 -left-1 w-2 h-2 rotate-45 bg-white"></div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 // Definición de props explícita para evitar problemas de tipos
 type Props = {
@@ -37,8 +66,6 @@ export const CognitiveTaskFields: React.FC<Props> = ({
   disabled = false,
   isUploading,
   uploadProgress,
-  FileItemComponent,
-  FileUploaderComponent
 }) => {
   const [isAddQuestionModalOpen, setIsAddQuestionModalOpen] = useState(false);
 
@@ -55,37 +82,46 @@ export const CognitiveTaskFields: React.FC<Props> = ({
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Configuración global */}
-      <div className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg">
-        <div className="space-y-0.5">
-          <h2 className="text-sm font-medium text-neutral-900">Aleatorizar Preguntas</h2>
-          <p className="text-sm text-neutral-500">Presentar preguntas en orden aleatorio a cada participante</p>
+    <div>
+      <div className="mb-6">
+        <Label className="mb-2 block text-sm font-medium">
+          <div className="flex items-center gap-2">
+            <span>Configuración</span>
+            <Tooltip content="Opciones generales para configurar la tarea cognitiva">
+              <Info className="h-4 w-4 text-muted-foreground" />
+            </Tooltip>
+          </div>
+        </Label>
+
+        <div className="rounded-md border p-4 space-y-4">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="randomizeQuestions"
+              checked={randomizeQuestions}
+              onCheckedChange={(checked) => setRandomizeQuestions(!!checked)}
+              disabled={disabled}
+            />
+            <Label
+              htmlFor="randomizeQuestions"
+              className="text-sm font-normal cursor-pointer"
+            >
+              Randomizar orden de preguntas
+            </Label>
+          </div>
         </div>
-        <Switch 
-          checked={randomizeQuestions} 
-          onCheckedChange={setRandomizeQuestions} 
-          disabled={disabled}
-        />
       </div>
 
-      {/* Lista de preguntas */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-medium text-neutral-900">Preguntas</h2>
-          <Button 
-            variant="outline" 
-            size="sm" 
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-3">
+          <Label className="text-sm font-medium">Preguntas</Label>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setIsAddQuestionModalOpen(true)}
-            className="text-blue-500 border-blue-200 hover:bg-blue-50"
-            type="button"
             disabled={disabled}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            Añadir Pregunta
+            <Plus className="h-4 w-4 mr-1" />
+            Agregar pregunta
           </Button>
         </div>
 

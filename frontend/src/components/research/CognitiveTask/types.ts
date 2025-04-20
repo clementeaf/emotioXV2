@@ -216,7 +216,9 @@ export const DEFAULT_QUESTIONS: Question[] = [
     showConditionally: false,
     scaleConfig: {
       startValue: 1,
-      endValue: 5
+      endValue: 5,
+      startLabel: '',
+      endLabel: ''
     },
     deviceFrame: false
   },
@@ -237,19 +239,19 @@ export const DEFAULT_QUESTIONS: Question[] = [
     id: '3.7',
     type: 'navigation_flow',
     title: '',
-    required: true,
+    required: false,
     showConditionally: false,
     files: [],
-    deviceFrame: false
+    deviceFrame: true
   },
   {
     id: '3.8',
     type: 'preference_test',
     title: '',
-    required: true,
+    required: false,
     showConditionally: false,
     files: [],
-    deviceFrame: false
+    deviceFrame: true
   }
 ];
 

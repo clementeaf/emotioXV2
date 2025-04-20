@@ -91,7 +91,6 @@ const ResearchPage = () => {
 
   return (
     <div>
-      <h1>Configuración de tareas cognitivas</h1>
       <CognitiveTaskForm 
         researchId="research-123"
         onSave={handleSave}

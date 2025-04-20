@@ -297,6 +297,14 @@ const researchRouteMap: RouteMap = {
     'GET': controller.getUserResearches.bind(controller)
   },
   
+  '/research/current': {
+    'GET': controller.getUserResearches.bind(controller)
+  },
+  
+  '/research/all': {
+    'GET': controller.getAllResearches.bind(controller)
+  },
+  
   '/research/:id': {
     'GET': controller.getResearchById.bind(controller),
     'PUT': controller.updateResearch.bind(controller),

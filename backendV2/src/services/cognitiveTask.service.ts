@@ -34,73 +34,137 @@ export class CognitiveTaskService {
     
     const errors: Record<string, string> = {};
     
-    // Verificar si researchId está presente
+    // Validar que la investigación tenga un ID
     if (!data.researchId) {
-      errors.researchId = 'El ID de investigación es obligatorio';
+      throw new ApiError(
+        `${CognitiveTaskError.RESEARCH_REQUIRED}: Se requiere un ID de investigación`,
+        400
+      );
     }
 
-    // Verificar que tengamos preguntas
-    if (!data.questions || data.questions.length === 0) {
-      errors.questions = 'El formulario debe tener al menos una pregunta';
-    } else {
-      // Verificar las preguntas
+    // Validar preguntas si se proporcionan
+    if (data.questions) {
+      // Validar que las preguntas sean un array
+      if (!Array.isArray(data.questions)) {
+        throw new ApiError(
+          `${CognitiveTaskError.INVALID_DATA}: Las preguntas deben ser un array`,
+          400
+        );
+      }
+
+      // Validar cada pregunta
       data.questions.forEach((question, index) => {
-        if (!question.title) {
-          errors[`questions[${index}].title`] = 'La pregunta debe tener un título';
+        // Validar tipo de pregunta
+        if (!question.type || typeof question.type !== 'string') {
+          throw new ApiError(
+            `${CognitiveTaskError.INVALID_DATA}: La pregunta ${index + 1} debe tener un tipo válido`,
+            400
+          );
         }
 
-        // Verificar opciones para preguntas de tipo choice
-        if (['single_choice', 'multiple_choice', 'ranking'].includes(question.type)) {
-          if (!question.choices || question.choices.length < 2) {
-            errors[`questions[${index}].choices`] = `La pregunta "${question.title}" debe tener al menos 2 opciones`;
+        // Validar título si existe
+        if (question.title && question.title.length > COGNITIVE_TASK_VALIDATION.title.maxLength) {
+          throw new ApiError(
+            `${CognitiveTaskError.INVALID_DATA}: El título de la pregunta ${index + 1} no debe exceder ${COGNITIVE_TASK_VALIDATION.title.maxLength} caracteres`,
+            400
+          );
+        }
+
+        // Validar opciones para preguntas de selección
+        if (['single_choice', 'multiple_choice', 'ranking'].includes(question.type) && question.choices) {
+          if (!Array.isArray(question.choices)) {
+            throw new ApiError(
+              `${CognitiveTaskError.INVALID_DATA}: Las opciones de la pregunta ${index + 1} deben ser un array`,
+              400
+            );
+          }
+
+          if (question.choices.length < COGNITIVE_TASK_VALIDATION.choices.min) {
+            throw new ApiError(
+              `${CognitiveTaskError.INVALID_DATA}: La pregunta ${index + 1} debe tener al menos ${COGNITIVE_TASK_VALIDATION.choices.min} opción`,
+              400
+            );
+          }
+
+          if (question.choices.length > COGNITIVE_TASK_VALIDATION.choices.max) {
+            throw new ApiError(
+              `${CognitiveTaskError.INVALID_DATA}: La pregunta ${index + 1} no debe exceder ${COGNITIVE_TASK_VALIDATION.choices.max} opciones`,
+              400
+            );
           }
         }
 
-        // Verificar escala para preguntas de tipo linear_scale
-        if (question.type === 'linear_scale') {
-          if (!question.scaleConfig) {
-            errors[`questions[${index}].scaleConfig`] = `La pregunta "${question.title}" debe tener configuración de escala`;
-          } else if (question.scaleConfig.startValue >= question.scaleConfig.endValue) {
-            errors[`questions[${index}].scaleConfig`] = `La escala de la pregunta "${question.title}" debe tener un valor inicial menor que el valor final`;
+        // Validar escala para preguntas de escala lineal
+        if (question.type === 'linear_scale' && question.scaleConfig) {
+          if (typeof question.scaleConfig !== 'object') {
+            throw new ApiError(
+              `${CognitiveTaskError.INVALID_DATA}: La configuración de escala de la pregunta ${index + 1} debe ser un objeto`,
+              400
+            );
+          }
+
+          if (question.scaleConfig.startValue < COGNITIVE_TASK_VALIDATION.scaleConfig.minValue) {
+            throw new ApiError(
+              `${CognitiveTaskError.INVALID_DATA}: El valor inicial de la escala debe ser al menos ${COGNITIVE_TASK_VALIDATION.scaleConfig.minValue}`,
+              400
+            );
+          }
+
+          if (question.scaleConfig.endValue > COGNITIVE_TASK_VALIDATION.scaleConfig.maxValue) {
+            throw new ApiError(
+              `${CognitiveTaskError.INVALID_DATA}: El valor final de la escala no debe exceder ${COGNITIVE_TASK_VALIDATION.scaleConfig.maxValue}`,
+              400
+            );
           }
         }
-
-        // Verificar archivos para preguntas de tipo navigation_flow o preference_test
-        if (['navigation_flow', 'preference_test'].includes(question.type)) {
-          if (question.required && (!question.files || question.files.length === 0)) {
-            errors[`questions[${index}].files`] = `La pregunta obligatoria "${question.title}" debe tener al menos un archivo asociado`;
+        
+        // Validar archivos para preguntas de navegación y preferencia
+        if (['navigation_flow', 'preference_test'].includes(question.type) && question.files) {
+          if (!Array.isArray(question.files)) {
+            throw new ApiError(
+              `${CognitiveTaskError.INVALID_DATA}: Los archivos de la pregunta ${index + 1} deben ser un array`,
+              400
+            );
           }
           
-          // Si hay archivos, verificar que tengan la información necesaria
-          if (question.files && question.files.length > 0) {
-            question.files.forEach((file, fileIndex) => {
-              if (!file.url || file.url.trim() === '') {
-                errors[`questions[${index}].files[${fileIndex}].url`] = 'La URL del archivo no puede estar vacía';
-              }
-              if (!file.s3Key || file.s3Key.trim() === '') {
-                errors[`questions[${index}].files[${fileIndex}].s3Key`] = 'La clave S3 del archivo no puede estar vacía';
-              }
-              
-              // Verificar que url y s3Key sean coherentes
-              if (file.url && file.s3Key && !file.url.includes(file.s3Key)) {
-                errors[`questions[${index}].files[${fileIndex}].consistency`] = 'La URL del archivo debe incluir su clave S3';
-              }
-            });
-          }
+          // Verificar integridad de los archivos
+          question.files.forEach((file, fileIndex) => {
+            if (!file || typeof file !== 'object') {
+              throw new ApiError(
+                `${CognitiveTaskError.INVALID_DATA}: El archivo ${fileIndex + 1} de la pregunta ${index + 1} es inválido`,
+                400
+              );
+            }
+            
+            if (!file.id || !file.name || !file.size || !file.type) {
+              throw new ApiError(
+                `${CognitiveTaskError.INVALID_DATA}: El archivo ${fileIndex + 1} de la pregunta ${index + 1} debe tener id, name, size y type`,
+                400
+              );
+            }
+            
+            // Validar campos críticos para imágenes
+            if (!file.url || !file.s3Key) {
+              console.log(`[VALIDACION-IMAGEN] Archivo con datos incompletos: Pregunta ${index + 1}, Archivo ${fileIndex + 1}`, file);
+              throw new ApiError(
+                `${CognitiveTaskError.INVALID_DATA}: El archivo ${fileIndex + 1} de la pregunta ${index + 1} debe tener url y s3Key`,
+                400
+              );
+            }
+            
+            // Validar tamaño máximo
+            if (file.size > COGNITIVE_TASK_VALIDATION.files.maxSize) {
+              throw new ApiError(
+                `${CognitiveTaskError.INVALID_DATA}: El archivo ${fileIndex + 1} de la pregunta ${index + 1} excede el tamaño máximo permitido (${COGNITIVE_TASK_VALIDATION.files.maxSize / (1024 * 1024)} MB)`,
+                400
+              );
+            }
+          });
         }
       });
     }
 
-    // Si hay errores, lanzar excepción
-    if (Object.keys(errors).length > 0) {
-      console.error('[DEBUG] CognitiveTaskService.validateFormData - Errores encontrados:', errors);
-      throw new ApiError(
-        `${CognitiveTaskError.INVALID_DATA}: Los datos del formulario de tareas cognitivas no son válidos. Errores: ${JSON.stringify(errors)}`,
-        400
-      );
-    }
-    
-    console.log('[DEBUG] CognitiveTaskService.validateFormData - Validación exitosa');
+    // Si no hay errores, la validación es exitosa
     return true;
   }
 
@@ -423,19 +487,57 @@ export class CognitiveTaskService {
    */
   async createOrUpdateCognitiveTaskForm(researchId: string, formData: CognitiveTaskFormData): Promise<CognitiveTaskRecord> {
     try {
+      // Agregar logs detallados para diagnosticar el problema con las imágenes
+      console.log('[DIAGNOSTICO-IMAGEN] Datos recibidos del formulario:', JSON.stringify(formData, null, 2));
+      
+      // Verificar específicamente las preguntas que podrían tener imágenes
+      if (formData.questions && formData.questions.length > 0) {
+        const questionsWithFiles = formData.questions.filter(q => 
+          ['navigation_flow', 'preference_test'].includes(q.type) && q.files && q.files.length > 0
+        );
+        
+        if (questionsWithFiles.length > 0) {
+          console.log('[DIAGNOSTICO-IMAGEN] Encontradas preguntas con archivos:', questionsWithFiles.length);
+          questionsWithFiles.forEach((q, index) => {
+            console.log(`[DIAGNOSTICO-IMAGEN] Pregunta ${index + 1} (ID: ${q.id}, Tipo: ${q.type}):`, 
+              JSON.stringify(q.files?.map(f => ({id: f.id, name: f.name, url: f.url, s3Key: f.s3Key})), null, 2)
+            );
+          });
+        } else {
+          console.log('[DIAGNOSTICO-IMAGEN] No se encontraron preguntas con archivos');
+        }
+      }
+      
       // Validar datos
       this.validateFormData({...formData, researchId});
       
       // Verificamos si ya existe un formulario para esta investigación
       const existingForm = await this.model.getByResearchId(researchId);
       
+      let result: CognitiveTaskRecord;
+      
       if (existingForm) {
         // Si existe, lo actualizamos
-        return await this.model.update(existingForm.id, formData);
+        console.log('[DIAGNOSTICO-IMAGEN] Actualizando formulario existente:', existingForm.id);
+        result = await this.model.update(existingForm.id, formData);
       } else {
         // Si no existe, lo creamos
-        return await this.model.create(formData, researchId);
+        console.log('[DIAGNOSTICO-IMAGEN] Creando nuevo formulario para research:', researchId);
+        result = await this.model.create(formData, researchId);
       }
+      
+      // Verificar el resultado después de guardar
+      console.log('[DIAGNOSTICO-IMAGEN] Resultado después de guardar:', 
+        JSON.stringify(result.questions
+          .filter(q => ['navigation_flow', 'preference_test'].includes(q.type) && q.files && q.files.length > 0)
+          .map(q => ({
+            id: q.id, 
+            type: q.type, 
+            files: q.files?.map(f => ({id: f.id, name: f.name, url: f.url, s3Key: f.s3Key}))
+          })), null, 2)
+      );
+      
+      return result;
     } catch (error) {
       console.error('Error al crear o actualizar formulario CognitiveTask:', error);
       

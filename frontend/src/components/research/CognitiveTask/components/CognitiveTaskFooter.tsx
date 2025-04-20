@@ -1,49 +1,73 @@
 import React from 'react';
+import { Button } from '@/components/ui/Button';
+import { ArrowRight, Save } from 'lucide-react';
 
 interface CognitiveTaskFooterProps {
-  completionTimeText: string;
-  previewButtonText: string;
-  saveButtonText: string;
-  onPreview: () => void;
   onSave: () => void;
-  isSaving: boolean;
-  disabled: boolean;
+  onPreview?: () => void;
+  isSaving?: boolean;
+  isEditing?: boolean;
+  cognitiveTaskId?: string | null;
 }
 
 export const CognitiveTaskFooter: React.FC<CognitiveTaskFooterProps> = ({
-  completionTimeText,
-  previewButtonText,
-  saveButtonText,
-  onPreview,
   onSave,
-  isSaving,
-  disabled
+  onPreview,
+  isSaving = false,
+  isEditing = false,
+  cognitiveTaskId = null
 }) => {
+  // Determinar si estamos editando un formulario existente
+  const isExistingForm = !!cognitiveTaskId;
+  
+  // Log para depuración
+  React.useEffect(() => {
+    console.log('[CognitiveTaskFooter] Estado del botón:', { 
+      isSaving, 
+      isExistingForm, 
+      cognitiveTaskId 
+    });
+  }, [isSaving, isExistingForm, cognitiveTaskId]);
+  
   return (
-    <footer className="flex items-center justify-between px-8 py-4 mt-6 bg-neutral-50 rounded-lg border border-neutral-100">
-      <p className="text-sm text-neutral-500">{completionTimeText}</p>
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          className={`px-4 py-2 text-sm font-medium text-neutral-700 bg-white border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors ${
-            disabled ? 'opacity-50 cursor-not-allowed' : ''
-          }`}
+    <div className="flex justify-between items-center pt-6 border-t mt-8">
+      {onPreview && (
+        <Button 
+          type="button" 
+          variant="outline" 
           onClick={onPreview}
-          disabled={disabled}
+          disabled={isSaving}
         >
-          {previewButtonText}
-        </button>
-        <button
-          type="button"
-          className={`px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors ${
-            disabled ? 'opacity-50 cursor-not-allowed' : ''
-          }`}
+          Vista previa
+        </Button>
+      )}
+      
+      <div className="flex ml-auto gap-4">
+        <Button 
+          type="button" 
           onClick={onSave}
-          disabled={disabled || isSaving}
+          disabled={isSaving}
         >
-          {saveButtonText}
-        </button>
+          {isSaving ? (
+            <>
+              <span className="animate-spin mr-2">
+                <Save className="h-4 w-4" />
+              </span>
+              Guardando...
+            </>
+          ) : isExistingForm ? (
+            <>
+              <Save className="h-4 w-4 mr-2" />
+              Actualizar
+            </>
+          ) : (
+            <>
+              Guardar y Continuar
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </>
+          )}
+        </Button>
       </div>
-    </footer>
+    </div>
   );
 }; 

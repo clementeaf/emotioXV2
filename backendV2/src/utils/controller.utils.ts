@@ -5,29 +5,9 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
  * @returns Objeto con los headers CORS configurados
  */
 export const getCorsHeaders = (): { [key: string]: string } => {
-  // Obtenemos la URL de origen (para desarrollo y producción)
-  const allowedOrigins = process.env.ALLOWED_ORIGIN || 'http://localhost:4700,https://main.di4935nnx8tyk.amplifyapp.com';
-  const requestOrigin = process.env.REQUEST_ORIGIN || '*';
-  
-  // Verificar si el origen de la solicitud está en la lista de orígenes permitidos
-  let origin = '*';
-  
-  if (allowedOrigins !== '*') {
-    const originsArray = allowedOrigins.split(',');
-    // Si el origen de la solicitud está permitido, lo usamos, de lo contrario '*'
-    if (originsArray.includes(requestOrigin)) {
-      origin = requestOrigin;
-    } else if (originsArray.length > 0) {
-      // Si hay al menos un origen específico y no coincide con la solicitud,
-      // usamos el primer origen permitido
-      origin = originsArray[0];
-    }
-  }
-  
-  console.log(`CORS: Request Origin=${requestOrigin}, Selected Origin=${origin}`);
-  
+  // Para desarrollo, permitimos cualquier origen
   return {
-    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Credentials': 'true',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Amz-Date, X-Api-Key, X-Amz-Security-Token, X-Requested-With, x-requested-with, Accept, Cache-Control, cache-control, Pragma, pragma, X-Amz-User-Agent',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
@@ -43,13 +23,11 @@ export const getCorsHeaders = (): { [key: string]: string } => {
  * @returns Respuesta HTTP formateada
  */
 export const createResponse = (statusCode: number, body: any): APIGatewayProxyResult => {
+  const corsHeaders = getCorsHeaders();
+  
   return {
     statusCode,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Credentials': true,
-    },
+    headers: corsHeaders,
     body: JSON.stringify(body)
   };
 };

@@ -676,3 +676,22 @@ custom:
       - 'httpApi'
 
   participantTableName: ${self:service}-participants-${self:provider.stage}
+  
+  # Configuración global de CORS
+  cors:
+    origin: '*'
+    headers:
+      - Content-Type
+      - X-Amz-Date
+      - Authorization
+      - X-Api-Key
+      - X-Amz-Security-Token
+      - X-Requested-With
+      - Accept
+      - Origin
+      - Cache-Control
+      - cache-control
+      - Pragma
+      - pragma
+      - x-requested-with
+    allowCredentials: true

@@ -60,13 +60,35 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
     continueWithAction
   } = useCognitiveTaskForm(researchId, onSave);
   
+  // Registrar información importante para debugging
+  React.useEffect(() => {
+    if (cognitiveTaskId) {
+      console.log('[CognitiveTaskForm] Editando tarea cognitiva existente:', cognitiveTaskId);
+      
+      // Registrar información sobre archivos en las preguntas
+      const questionsWithFiles = formData.questions.filter(q => q.files && q.files.length > 0);
+      if (questionsWithFiles.length > 0) {
+        console.log('[CognitiveTaskForm] Preguntas con archivos:', questionsWithFiles.length);
+        questionsWithFiles.forEach(q => {
+          console.log(`[CognitiveTaskForm] Pregunta ${q.id} (${q.type}) tiene ${q.files?.length || 0} archivos:`, 
+            q.files?.map(f => ({id: f.id, name: f.name, url: f.url, s3Key: f.s3Key})));
+        });
+      }
+    } else {
+      console.log('[CognitiveTaskForm] Creando nueva tarea cognitiva');
+    }
+    
+    // Mostrar el modo actual del botón de guardar
+    console.log('[CognitiveTaskForm] Estado del botón de guardar:', isSaving ? "Guardando..." : cognitiveTaskId ? "Actualizar" : "Guardar y Continuar");
+  }, [cognitiveTaskId, formData.questions, isSaving]);
+  
   // Mientras carga, mostrar un esqueleto de carga
   if (isLoading) {
     return <LoadingSkeleton variant="form" rows={6} />;
   }
   
   return (
-    <div className={cn('max-w-3xl mx-auto', className)}>
+    <div className={cn('bg-white p-8 rounded-lg shadow-sm ml-0', className)}>
       {/* Encabezado */}
       <CognitiveTaskHeader 
         title={UI_TEXTS.TITLE} 
@@ -74,30 +96,28 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
       />
 
       {/* Campos del formulario */}
-      <CognitiveTaskFields 
-        questions={formData.questions || []}
-        randomizeQuestions={formData.randomizeQuestions || false}
-        onQuestionChange={handleQuestionChange}
-        onAddChoice={handleAddChoice}
-        onRemoveChoice={handleRemoveChoice}
-        onFileUpload={handleFileUpload}
-        onFileDelete={handleRemoveFile}
-        setRandomizeQuestions={setRandomizeQuestions}
-        onAddQuestion={handleAddQuestion}
-        disabled={isLoading || isSaving}
-        isUploading={isUploading}
-        uploadProgress={uploadProgress}
-      />
+      <div className="pb-16">
+        <CognitiveTaskFields
+          questions={formData.questions}
+          randomizeQuestions={formData.randomizeQuestions}
+          onQuestionChange={handleQuestionChange}
+          onAddChoice={handleAddChoice}
+          onRemoveChoice={handleRemoveChoice}
+          onFileUpload={handleFileUpload}
+          onFileDelete={handleRemoveFile}
+          setRandomizeQuestions={setRandomizeQuestions}
+          onAddQuestion={handleAddQuestion}
+          disabled={isSaving}
+          isUploading={isUploading}
+          uploadProgress={uploadProgress}
+        />
+      </div>
       
-      {/* Pie de página con acciones */}
-      <CognitiveTaskFooter 
-        completionTimeText="Tiempo estimado de finalización: 5-7 minutos"
-        previewButtonText="Vista Previa"
-        saveButtonText={isSaving ? "Guardando..." : "Guardar y Continuar"}
-        onPreview={handlePreview}
+      <CognitiveTaskFooter
         onSave={saveForm}
+        onPreview={handlePreview}
         isSaving={isSaving}
-        disabled={isLoading || isSaving}
+        cognitiveTaskId={cognitiveTaskId}
       />
 
       {/* Modal para mostrar errores y mensajes */}
