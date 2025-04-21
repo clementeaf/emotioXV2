@@ -23,6 +23,11 @@ export const authHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
     const path = event.path;
     const subPath = path.split('/auth/')[1] || '';
     
+    // Manejar solicitudes OPTIONS (preflight CORS)
+    if (method === 'OPTIONS') {
+      return createCorsResponse(200, {});
+    }
+    
     // Extraer token de autorización para operaciones protegidas
     const authHeader = event.headers.Authorization || event.headers.authorization;
     const token = authHeader ? authHeader.replace('Bearer ', '') : null;
@@ -411,8 +416,27 @@ const createResponse = (statusCode: number, body: any): APIGatewayProxyResult =>
     statusCode,
     headers: {
       'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Credentials': true
+      'Access-Control-Allow-Origin': 'http://localhost:4700',
+      'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Requested-With',
+      'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
+      'Access-Control-Allow-Credentials': 'true'
+    },
+    body: JSON.stringify(body)
+  };
+};
+
+/**
+ * Crea una respuesta específica para solicitudes CORS preflight
+ */
+const createCorsResponse = (statusCode: number, body: any): APIGatewayProxyResult => {
+  return {
+    statusCode,
+    headers: {
+      'Access-Control-Allow-Origin': 'http://localhost:4700',
+      'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Requested-With,Accept,Cache-Control,Pragma',
+      'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
+      'Access-Control-Allow-Credentials': 'true',
+      'Access-Control-Max-Age': '86400'
     },
     body: JSON.stringify(body)
   };

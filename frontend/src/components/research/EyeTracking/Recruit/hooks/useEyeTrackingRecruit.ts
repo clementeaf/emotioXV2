@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { useErrorLog } from '@/components/utils/ErrorLogger';
 import { 
   EyeTrackingRecruitStats,
@@ -120,6 +120,7 @@ interface UseEyeTrackingRecruitResult {
   
   // Acciones
   saveForm: () => void;
+  handleConfirmSave: () => Promise<void>;
   generateRecruitmentLink: () => string;
   generateQRCode: () => void;
   copyLinkToClipboard: () => void;
@@ -127,6 +128,8 @@ interface UseEyeTrackingRecruitResult {
   // Estados para los modales
   modalError: ErrorModalData | null;
   modalVisible: boolean;
+  showConfirmModal: boolean;
+  apiErrors: {visible: boolean, title: string, message: string} | undefined;
   
   // Métodos para los modales
   closeModal: () => void;
@@ -229,7 +232,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   // Estados
   const [formData, setFormData] = useState<EyeTrackingRecruitFormData>({
     ...DEFAULT_CONFIG,
-    researchId
+    researchId: researchId === 'current' ? '1234' : researchId // Replicando WelcomeScreen: si es 'current', usa un ID real
   });
   const [stats, setStats] = useState<EyeTrackingRecruitStats | null>(DEFAULT_STATS);
   const [loading, setLoading] = useState(true);
@@ -242,10 +245,110 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   // Estados para los modales
   const [modalError, setModalError] = useState<ErrorModalData | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
+  const [apiErrors, setApiErrors] = useState<{visible: boolean, title: string, message: string} | undefined>(undefined);
   
   // Nuevos estados para QR
   const [qrCodeData, setQrCodeData] = useState<string | null>(null);
   const [showQRModal, setShowQRModal] = useState<boolean>(false);
+  
+  // Cargar configuración existente
+  const actualResearchId = researchId === 'current' ? '1234' : researchId;
+  const { isLoading: isLoadingConfig } = useQuery({
+    queryKey: ['eyeTrackingRecruit', actualResearchId],
+    queryFn: async () => {
+      try {
+        console.log('[useEyeTrackingRecruit] Cargando config para:', actualResearchId);
+        const data = await eyeTrackingFixedAPI.getRecruitConfig(actualResearchId);
+        console.log('[useEyeTrackingRecruit] Config cargada:', data);
+        
+        if (data && data.data) {
+          // Actualizar formulario con datos cargados
+          setFormData({
+            ...data.data,
+            researchId: actualResearchId
+          });
+          
+          // Actualizar estados de habilitación según datos cargados
+          const hasDemographics = Object.values(data.data.demographicQuestions).some(
+            (q: any) => q.enabled
+          );
+          setDemographicQuestionsEnabledState(hasDemographics);
+          
+          // Actualizar estado del linkConfig
+          const hasLinkConfig = Object.values(data.data.linkConfig).some(value => value);
+          setLinkConfigEnabledState(hasLinkConfig);
+        }
+        
+        return data;
+      } catch (error: any) {
+        console.log('[useEyeTrackingRecruit] Error al cargar:', error);
+        // Si es 404, no es un error real, solo no hay datos previos
+        if (error.statusCode === 404) {
+          console.log('[useEyeTrackingRecruit] No hay configuración previa para:', actualResearchId);
+          return null;
+        }
+        
+        // Para otros errores, mostrar notificación
+        toast.error(`Error al cargar configuración: ${error.message || 'Error desconocido'}`);
+        throw error;
+      }
+    },
+    enabled: !!actualResearchId // Solo ejecutar si hay un ID válido
+  });
+  
+  // Actualizar estado de carga cuando termina la consulta
+  useEffect(() => {
+    if (!isLoadingConfig) {
+      setLoading(false);
+    }
+  }, [isLoadingConfig]);
+  
+  // Función para validar campos requeridos
+  const checkRequiredFields = useCallback(() => {
+    const errors: string[] = [];
+    
+    // Verificar que tenga una URL de investigación
+    if (!formData.researchUrl) {
+      errors.push('URL de investigación es requerida');
+    }
+    
+    // Verificar campos demográficos marcados como required
+    Object.entries(formData.demographicQuestions).forEach(([key, value]) => {
+      if (value.enabled && value.required) {
+        // Aquí podríamos verificar más condiciones si fuera necesario
+      }
+    });
+    
+    // Verificar otras condiciones según sea necesario...
+    
+    if (errors.length > 0) {
+      console.log('[useEyeTrackingRecruit] Errores de validación:', errors);
+      return false;
+    }
+    
+    return true;
+  }, [formData]);
+
+  // Configuración de la mutación para guardar
+  const saveConfigMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await eyeTrackingFixedAPI.saveRecruitConfig(data);
+    },
+    onSuccess: () => {
+      toast.success('Configuración guardada correctamente');
+      const actualResearchId = researchId === 'current' ? '1234' : researchId;
+      queryClient.invalidateQueries({ queryKey: ['eyeTrackingRecruit', actualResearchId] });
+    },
+    onError: (error: any) => {
+      console.error('[useEyeTrackingRecruit] Error en mutación:', error);
+      setApiErrors({
+        visible: true,
+        title: 'Error al guardar',
+        message: error.message || 'Ocurrió un error inesperado'
+      });
+    }
+  });
   
   // Handlers para el modal de error
   const closeModal = useCallback(() => {
@@ -264,272 +367,78 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     setModalVisible(true);
   }, []);
   
-  // Mutación para guardar datos
-  const { mutate } = useMutation({
-    mutationFn: async (data: CreateEyeTrackingRecruitRequest) => {
-      try {
-        console.log('[useEyeTrackingRecruit] Enviando datos al backend:', data);
-        return await eyeTrackingFixedAPI.saveRecruitConfig(data);
-      } catch (error: any) {
-        console.error('[useEyeTrackingRecruit] Error al guardar:', error);
-        throw error;
-      }
-    },
-    onSuccess: (response) => {
-      console.log('[useEyeTrackingRecruit] Guardado exitoso:', response);
-      toast.success('Configuración guardada correctamente', {
-        duration: 4000,
-        style: {
-          background: '#10b981',
-          color: '#fff',
-          fontWeight: 'bold'
-        },
-        icon: '✅'
-      });
-      
-      // Invalidar queries para recargar datos
-      queryClient.invalidateQueries({ queryKey: ['eyeTrackingRecruit', researchId] });
-      
-      // Restablecer el estado de guardado
-      setTimeout(() => setSaving(false), 300);
-    },
-    onError: (error: any) => {
-      console.error('[useEyeTrackingRecruit] Error en mutación:', error);
-      
-      let errorMessage = 'Error al guardar la configuración';
-      if (error.statusCode === 404) {
-        errorMessage = 'Error 404: API no encontrada';
-      } else if (error.statusCode === 400) {
-        errorMessage = `Error 400: Datos inválidos - ${error.message || ''}`;
-      } else if (error.statusCode === 401 || error.statusCode === 403) {
-        errorMessage = 'Error de autenticación: Inicie sesión nuevamente';
-      } else if (error.message) {
-        errorMessage = `Error: ${error.message}`;
-      }
-      
-      showModal({
-        title: 'Error al guardar',
-        message: errorMessage,
-        type: 'error'
-      });
-      
-      toast.error(errorMessage);
-      
-      // Restablecer el estado de guardado
-      setSaving(false);
-    },
-    onSettled: () => {
-      // Asegurar que siempre se restablezca el estado de guardado, independientemente del resultado
-      setSaving(false);
-    }
-  });
-
   // Función para guardar el formulario
-  const saveForm = useCallback(() => {
+  const saveForm = React.useCallback(async () => {
+    setLoading(true);
+    setApiErrors(undefined);
+    
     try {
-      if (!researchId) {
-        toast.error('ID de investigación inválido');
-        return;
+      // Validamos los datos antes de enviar
+      if (checkRequiredFields()) {
+        // Mostramos la ventana de confirmación
+        setShowConfirmModal(true);
+      } else {
+        toast.error('Por favor complete todos los campos requeridos');
       }
-
-      // Validaciones
-      if (formData.participantLimit.enabled && formData.participantLimit.value <= 0) {
-        toast.error('El límite de participantes debe ser mayor a 0');
-        return;
-      }
-
-      if (!formData.researchUrl.trim()) {
-        toast.error('La URL de investigación no puede estar vacía');
-        return;
-      }
-
-      // Preparar datos para enviar
-      const linkConfigData = {
-        allowMobile: formData.linkConfig.allowMobile,
-        allowMobileDevices: formData.linkConfig.allowMobile, // Para compatibilidad con la API
-        trackLocation: formData.linkConfig.trackLocation,
-        allowMultipleAttempts: formData.linkConfig.allowMultipleAttempts
-      };
-      
-      const configToSave: CreateEyeTrackingRecruitRequest = {
-        researchId,
-        demographicQuestions: formData.demographicQuestions,
-        linkConfig: linkConfigData,
-        participantLimit: {
-          enabled: formData.participantLimit.enabled,
-          value: formData.participantLimit.value
-        },
-        backlinks: formData.backlinks,
-        researchUrl: formData.researchUrl,
-        parameterOptions: formData.parameterOptions
-      };
-
-      // Mostrar modal de confirmación con los datos
-      const confirmModalContainer = document.createElement('div');
-      confirmModalContainer.innerHTML = `
-        <div style="position: fixed; inset: 0; background-color: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-          <div style="background: white; border-radius: 12px; max-width: 90%; width: 650px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 8px 30px rgba(0,0,0,0.12); overflow: hidden; animation: fadeIn 0.2s ease-out;">
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid #f1f1f1;">
-              <h2 style="margin: 0; font-size: 24px; font-weight: 600; color: #111827;">Confirmar configuración</h2>
-              <button id="closeConfirmModal" style="background: none; border: none; cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; color: #6b7280; border-radius: 50%; transition: background-color 0.2s; font-size: 24px;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-              </button>
-            </div>
-            <div style="padding: 24px; overflow-y: auto; max-height: 60vh;">
-              <p style="margin: 0 0 24px; color: #4b5563; font-size: 16px;">¿Estás seguro de que deseas guardar la siguiente configuración?</p>
-              
-              <div style="margin-bottom: 24px;">
-                <h3 style="font-size: 18px; margin: 0 0 12px; color: #111827; font-weight: 600;">Preguntas demográficas</h3>
-                <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px;">
-                  ${demographicQuestionsEnabled ? 
-                    (Object.entries(formData.demographicQuestions)
-                      .filter(([_, value]) => value.enabled)
-                      .map(([key, _]) => `
-                        <div style="padding: 8px 0; color: #4b5563; display: flex; align-items: center;">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4d7c0f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <path d="M8 12l2 2 6-6"></path>
-                          </svg>
-                          ${key}
-                        </div>
-                      `).join('') || '<div style="color: #6b7280; padding: 8px 0;">No se han seleccionado preguntas demográficas</div>'
-                    ) : '<div style="color: #ef4444; padding: 8px 0; display: flex; align-items: center;"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>Preguntas demográficas desactivadas</div>'
-                  }
-                </div>
-              </div>
-
-              <div style="margin-bottom: 24px;">
-                <h3 style="font-size: 18px; margin: 0 0 12px; color: #111827; font-weight: 600;">Configuración del enlace</h3>
-                <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px;">
-                  ${linkConfigEnabled ?
-                    (Object.entries(formData.linkConfig)
-                      .filter(([_, value]) => value)
-                      .map(([key, _]) => `
-                        <div style="padding: 8px 0; color: #4b5563; display: flex; align-items: center;">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4d7c0f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <path d="M8 12l2 2 6-6"></path>
-                          </svg>
-                          ${key}
-                        </div>
-                      `).join('') || '<div style="color: #6b7280; padding: 8px 0;">No se ha configurado ninguna opción</div>'
-                    ) : '<div style="color: #ef4444; padding: 8px 0; display: flex; align-items: center;"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>Configuración del enlace desactivada</div>'
-                  }
-                </div>
-              </div>
-
-              <div style="margin-bottom: 24px;">
-                <h3 style="font-size: 18px; margin: 0 0 12px; color: #111827; font-weight: 600;">URL de la investigación</h3>
-                <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; color: #4b5563;">
-                  ${formData.researchUrl || 'No se ha especificado URL'}
-                </div>
-              </div>
-
-              ${Object.values(formData.parameterOptions).some(value => value) ? `
-                <div style="margin-bottom: 24px;">
-                  <h3 style="font-size: 18px; margin: 0 0 12px; color: #111827; font-weight: 600;">Parámetros a guardar</h3>
-                  <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px;">
-                    ${Object.entries(formData.parameterOptions)
-                      .filter(([_, value]) => value)
-                      .map(([key, _]) => `
-                        <div style="padding: 8px 0; color: #4b5563; display: flex; align-items: center;">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4d7c0f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <path d="M8 12l2 2 6-6"></path>
-                          </svg>
-                          ${key}
-                        </div>
-                      `).join('')
-                    }
-                  </div>
-                </div>
-              ` : ''}
-            </div>
-            <div style="padding: 20px 24px; border-top: 1px solid #f1f1f1; display: flex; justify-content: flex-end; gap: 12px;">
-              <button id="cancelConfirmation" style="background: #f9fafb; color: #4b5563; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 20px; font-weight: 500; cursor: pointer; font-size: 16px; transition: all 0.2s;">
-                Cancelar
-              </button>
-              <button id="confirmSave" style="background: #4f46e5; color: white; border: none; border-radius: 8px; padding: 10px 20px; font-weight: 500; cursor: pointer; font-size: 16px; transition: all 0.2s; box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);">
-                Confirmar y guardar
-              </button>
-            </div>
-          </div>
-        </div>
-        <style>
-          @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.98); }
-            to { opacity: 1; transform: scale(1); }
-          }
-          #closeConfirmModal:hover {
-            background-color: #f3f4f6;
-          }
-          #cancelConfirmation:hover {
-            background-color: #f3f4f6;
-            border-color: #d1d5db;
-          }
-          #confirmSave:hover {
-            background-color: #4338ca;
-            box-shadow: 0 4px 6px rgba(79, 70, 229, 0.25);
-          }
-        </style>
-      `;
-      
-      document.body.appendChild(confirmModalContainer);
-      
-      // Configurar eventos
-      document.getElementById('closeConfirmModal')?.addEventListener('click', () => {
-        document.body.removeChild(confirmModalContainer);
-      });
-      
-      document.getElementById('cancelConfirmation')?.addEventListener('click', () => {
-        document.body.removeChild(confirmModalContainer);
-      });
-      
-      document.getElementById('confirmSave')?.addEventListener('click', () => {
-        document.body.removeChild(confirmModalContainer);
-        setSaving(true);
-        
-        // Llamar a la mutación y manejar manualmente el resultado
-        mutate(configToSave, {
-          onSuccess: () => {
-            // Asegurarse de que el estado "saving" se restablezca
-            setTimeout(() => setSaving(false), 300);
-          },
-          onError: () => {
-            // Asegurarse de que el estado "saving" se restablezca
-            setTimeout(() => setSaving(false), 300);
-          }
-        });
-      });
-
-      // También permitir cerrar haciendo clic fuera del modal
-      confirmModalContainer.addEventListener('click', (e) => {
-        if (e.target === confirmModalContainer.firstChild) {
-          document.body.removeChild(confirmModalContainer);
-        }
-      });
-    } catch (error) {
-      console.error('[useEyeTrackingRecruit] Error al preparar datos:', error);
-      showModal({
+    } catch (error: any) {
+      console.error('[useEyeTrackingRecruit] Error al preparar datos para guardar:', error);
+      setApiErrors({
+        visible: true,
         title: 'Error al preparar datos',
-        message: 'Ocurrió un error al preparar los datos para guardar.',
-        type: 'error'
+        message: error.message || 'Ocurrió un error inesperado al preparar los datos para guardar'
       });
-      setSaving(false);
-    }
-  }, [formData, researchId, showModal, mutate, demographicQuestionsEnabled, linkConfigEnabled]);
-  
-  // Cargar datos (simulado por ahora)
-  useEffect(() => {
-    // Simular carga de datos
-    setTimeout(() => {
+    } finally {
       setLoading(false);
-    }, 1000);
-  }, []);
-  
+    }
+  }, [checkRequiredFields]);
+
+  // Función que se ejecuta cuando se confirma el guardado
+  const handleConfirmSave = React.useCallback(async () => {
+    setLoading(true);
+    setShowConfirmModal(false);
+    
+    try {
+      // Preparamos los datos para enviar (exactamente como en WelcomeScreen)
+      const actualResearchId = researchId === 'current' ? '1234' : researchId; // Replicando WelcomeScreen
+      
+      const dataToSave = {
+        ...formData,
+        researchId: actualResearchId // Usar el ID real, no "current"
+      };
+      
+      console.log('[useEyeTrackingRecruit] Guardando config con ID:', dataToSave.researchId);
+      console.log('[useEyeTrackingRecruit] Payload completo:', JSON.stringify(dataToSave, null, 2));
+      
+      // Enviamos los datos al servidor (igual que WelcomeScreen)
+      const result = await saveConfigMutation.mutateAsync(dataToSave);
+      console.log('[useEyeTrackingRecruit] Resultado exitoso:', result);
+      
+    } catch (error: any) {
+      console.error('[useEyeTrackingRecruit] Error al guardar:', error);
+      
+      // Mostrar información detallada del error
+      let errorMessage = '';
+      if (error.statusCode) {
+        errorMessage = `Error ${error.statusCode}: ${error.message || 'Error desconocido'}`;
+      } else if (error.message) {
+        errorMessage = error.message;
+      } else {
+        errorMessage = 'Error desconocido al guardar la configuración';
+      }
+      
+      toast.error(`Error: ${errorMessage}`);
+      
+      // Mostrar el modal de error
+      setApiErrors({
+        visible: true,
+        title: 'Error al guardar',
+        message: errorMessage
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [formData, saveConfigMutation, researchId]);
+
   // Actualizar el efecto de demographicQuestionsEnabled
   useEffect(() => {
     if (!demographicQuestionsEnabled) {
@@ -651,7 +560,8 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   
   // Acciones
   const generateRecruitmentLink = useCallback(() => {
-    return `https://useremotion.com/link/${researchId}?respondent={participant_id}`;
+    const actualResearchId = researchId === 'current' ? '1234' : researchId;
+    return `https://useremotion.com/link/${actualResearchId}?respondent={participant_id}`;
   }, [researchId]);
   
   const generateQRCode = useCallback(() => {
@@ -803,6 +713,8 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     // Estados para los modales
     modalError,
     modalVisible,
+    showConfirmModal,
+    apiErrors,
     
     // Métodos para los modales
     closeModal,
@@ -824,6 +736,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     
     // Acciones
     saveForm,
+    handleConfirmSave,
     generateRecruitmentLink,
     generateQRCode,
     copyLinkToClipboard

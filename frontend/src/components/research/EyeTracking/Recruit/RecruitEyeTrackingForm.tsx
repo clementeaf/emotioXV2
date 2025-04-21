@@ -87,6 +87,8 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
     setParticipantLimit,
     setResearchUrl,
     saveForm,
+    handleConfirmSave,
+    showConfirmModal,
     generateRecruitmentLink,
     generateQRCode,
     copyLinkToClipboard
@@ -536,6 +538,32 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
           </div>
         </div>
       </div>
+
+      {/* Modal de confirmación */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold mb-2">Confirmar guardar</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              ¿Está seguro de que desea guardar la configuración de reclutamiento?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => saveForm()} // Vuelve a mostrar el modal
+                className="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmSave}
+                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 } 

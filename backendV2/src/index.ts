@@ -1,10 +1,11 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { authService } from './services/auth.service';
 import { v4 as uuidv4 } from 'uuid';
-import { WelcomeScreenController } from './controllers/welcomeScreen.controller';
-import { validateTokenAndSetupAuth, getCorsHeaders } from './utils/controller.utils';
+import { welcomeScreenHandler } from './controllers/welcomeScreen.controller';
+import { getCorsHeaders } from './utils/controller.utils';
 import cognitiveTaskController from './controllers/cognitiveTask.controller';
 import { s3Handler } from './controllers/s3.controller';
+import { thankYouScreenHandler } from './controllers/thankYouScreen.controller';
 
 // Helper para crear respuestas HTTP con formato consistente
 const createResponse = (statusCode: number, body: any): APIGatewayProxyResult => {
@@ -331,88 +332,28 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         console.log('[index] Extrayendo researchId de la ruta:', { path, researchId: match[1] });
       }
 
-      // Validar el token y obtener el userId
-      const authResult = await validateTokenAndSetupAuth(event, path);
-      if ('statusCode' in authResult) {
-        return authResult;
-      }
-
-      // Instanciar el controlador
-      const welcomeScreenController = new WelcomeScreenController();
-
-      // Manejar los diferentes métodos HTTP
-      if (method === 'GET') {
-        return await welcomeScreenController.getWelcomeScreenByResearchId(event);
-      } else if (method === 'POST') {
-        return await welcomeScreenController.createWelcomeScreen(event, authResult.userId);
-      } else if (method === 'PUT') {
-        return await welcomeScreenController.updateWelcomeScreenByResearchId(event, authResult.userId);
-      } else if (method === 'DELETE') {
-        return await welcomeScreenController.deleteWelcomeScreen(event, authResult.userId);
-      }
-
-      return createResponse(405, {
-        success: false,
-        message: 'Método no permitido para esta ruta'
-      });
+      // Usar el handler dedicado para welcome-screen
+      console.log('[index] Solicitud a welcome-screen:', { path, method });
+      return await welcomeScreenHandler(event);
     } else if (path.startsWith('/cognitive-task')) {
       // Usar el controlador dedicado para cognitive-task
       console.log('[index] Solicitud a cognitive-task:', { path, method });
       return await cognitiveTaskController(event);
-    } else if (path.startsWith('/thank-you-screens')) {
-      // Similar a welcome-screens
-      if (method === 'GET') {
-        const parts = path.split('/');
-        const id = parts.length > 2 ? parts[2] : null;
-        
-        if (id) {
-          return createResponse(200, {
-            data: {
-              id,
-              title: 'Pantalla de Agradecimiento de ejemplo',
-              message: 'Gracias por participar',
-              isEnabled: true,
-              metadata: {
-                createdAt: new Date().toISOString()
-              }
-            }
-          });
-        } else {
-          return createResponse(200, {
-            data: [
-              {
-                id: 'thanks-1',
-                title: 'Pantalla de Agradecimiento 1',
-                isEnabled: true
-              }
-            ]
-          });
+    } else if (path.startsWith('/thank-you-screen')) {
+      // Extraer researchId de la ruta si existe
+      // Formato esperado: /thank-you-screen/research/{researchId}
+      const match = path.match(/^\/thank-you-screen\/research\/([^\/]+)$/);
+      if (match) {
+        if (!event.pathParameters) {
+          event.pathParameters = {};
         }
-      } else if (method === 'POST') {
-        return createResponse(201, {
-          message: 'Pantalla de agradecimiento creada',
-          data: {
-            id: `thanks-${Date.now()}`,
-            ...JSON.parse(event.body || '{}')
-          }
-        });
-      } else if (method === 'PUT') {
-        return createResponse(200, {
-          message: 'Pantalla de agradecimiento actualizada',
-          data: {
-            ...JSON.parse(event.body || '{}')
-          }
-        });
-      } else if (method === 'DELETE') {
-        return createResponse(200, {
-          message: 'Pantalla de agradecimiento eliminada'
-        });
+        event.pathParameters.researchId = match[1];
+        console.log('[index] Extrayendo researchId de la ruta:', { path, researchId: match[1] });
       }
-      
-      // Método no soportado para esta ruta
-      return createResponse(405, {
-        message: 'Método no permitido para esta ruta'
-      });
+
+      // Usar el handler dedicado para thank-you-screen
+      console.log('[index] Solicitud a thank-you-screen:', { path, method });
+      return await thankYouScreenHandler(event);
     } else if (path.startsWith('/smart-voc')) {
       // Rutas para SmartVOC
       console.log('SmartVOC request:', { path, method, body: event.body });
@@ -600,8 +541,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         status: 'error',
         endpoints: [
           '/auth - Autenticación y gestión de usuarios',
-          '/welcome-screens - Configuración de pantallas de bienvenida (GET, POST, PUT, DELETE)',
-          '/thank-you-screens - Configuración de pantallas de agradecimiento (GET, POST, PUT, DELETE)',
+          '/welcome-screen - Configuración de pantallas de bienvenida (GET, POST, PUT, DELETE)',
+          '/thank-you-screen - Configuración de pantallas de agradecimiento (GET, POST, PUT, DELETE)',
           '/smart-voc - Configuración de formularios SmartVOC (GET, POST, PUT, DELETE)',
           '/eye-tracking - Configuración y datos de eye tracking (GET, POST, PUT, DELETE)',
           '/cognitive-task - Formularios de tareas cognitivas (GET, POST, PUT, DELETE)',

@@ -23,8 +23,17 @@ export interface User {
 }
 
 interface AuthResponse {
-  token: string;
-  user: {
+  token?: string;
+  auth?: {
+    token: string;
+    refreshToken: string;
+    user: {
+      id: string;
+      name: string;
+      email: string;
+    }
+  };
+  user?: {
     id: string;
     name: string;
     email: string;

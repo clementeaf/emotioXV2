@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
+import { authAPI } from '@/lib/api'; // Importar la API configurada con Alova
 
 interface LoginFormState {
   email: string;
@@ -113,25 +114,19 @@ export function LoginForm({ className }: LoginFormProps) {
     
     try {
       console.log('Iniciando proceso de login...');
-      const response = await fetch('https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          email: state.email, 
-          password: state.password 
-        }),
+      // Usar authAPI en lugar de fetch directo
+      const response = await authAPI.login({ 
+        email: state.email, 
+        password: state.password 
       });
 
-      const data = await response.json();
-      console.log('Respuesta del servidor:', { ok: response.ok, status: response.status });
+      console.log('Respuesta del servidor:', response);
       
-      if (!response.ok) {
-        throw new Error(data.message || 'Error al iniciar sesión');
-      }
-
+      // La respuesta ya viene procesada por Alova
+      const data = response.data;
+      // Acceder al token correctamente desde data.auth.token
       const token = data.auth?.token || data.token;
+      
       if (token) {
         console.log('Token recibido, procediendo con login...');
         await login(token, state.rememberMe);

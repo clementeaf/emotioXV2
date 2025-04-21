@@ -290,85 +290,36 @@ export const eyeTrackingFixedAPI = {
   },
 
   /**
-   * Guarda la configuración de reclutamiento de Eye Tracking
-   * @param data Datos de la configuración de reclutamiento
-   * @returns Respuesta de la API
+   * Guarda la configuración de reclutamiento para una investigación
    */
-  saveRecruitConfig: async (data: any) => {
-    if (!data || !data.researchId) {
-      throw new Error('Se requieren datos y un ID de investigación para guardar la configuración de reclutamiento');
-    }
-    
-    console.log('[EyeTrackingAPI] Guardando configuración de reclutamiento:', data);
-    
+  saveRecruitConfig: async (data: any): Promise<any> => {
     try {
+      console.log('[EyeTrackingAPI] Guardando configuración de reclutamiento:', data);
+      
+      // Exactamente igual a WelcomeScreen, pero usando la ruta correcta
+      const url = `/eye-tracking-recruit/research/${data.researchId}/config`;
       const method = 'POST';
-      // Usar la ruta correcta del controlador de reclutamiento
-      const url = (API_CONFIG.endpoints.eyeTracking?.RECRUIT_CREATE_ALT || '/eye-tracking-recruit/research/{researchId}/config')
-        .replace('{researchId}', data.researchId);
+
+      console.log('[EyeTrackingAPI] Enviando petición:', { url, method, data });
       
-      console.log(`[EyeTrackingAPI] Usando ruta correcta: ${API_CONFIG.baseURL}${url}`);
-      
-      // Alinear nombres de campos para que coincidan con lo que espera el backend
-      const formattedData = {
-        researchId: data.researchId,
-        demographicQuestions: data.demographicQuestions,
-        linkConfig: {
-          // Asegurarnos de usar los nombres de campo correctos, 
-          // verificando si ya vienen con el nombre correcto o necesitan transformación
-          allowMobileDevices: data.linkConfig.allowMobileDevices || data.linkConfig.allowMobile || false,
-          trackLocation: data.linkConfig.trackLocation || false,
-          allowMultipleAttempts: data.linkConfig.allowMultipleAttempts || false
-        },
-        participantLimit: {
-          enabled: data.participantLimit.enabled || false,
-          value: data.participantLimit.value || 50
-        },
-        backlinks: data.backlinks,
-        researchUrl: data.researchUrl,
-        parameterOptions: data.parameterOptions
-      };
-      
-      console.log('[EyeTrackingAPI] Método: ', method);
-      console.log('[EyeTrackingAPI] Datos formateados:', formattedData);
-      
-      const headers = getAuthHeaders();
       const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
         method,
-        headers,
-        body: JSON.stringify(formattedData)
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data)
       });
-      
-      // Capturar el texto de respuesta para análisis, incluso si hay error
-      const responseText = await response.text();
-      console.log(`[EyeTrackingAPI] Respuesta (${response.status}): `, responseText);
-      
-      // Intentar parsear como JSON
-      let responseData;
-      try {
-        responseData = JSON.parse(responseText);
-      } catch (e) {
-        console.log('[EyeTrackingAPI] Respuesta no es JSON válido');
-        responseData = { message: responseText };
-      }
-      
+
       if (!response.ok) {
-        console.log(`[EyeTrackingAPI] Error en respuesta: ${response.status} ${response.statusText}`);
-        
-        const error = { 
-          statusCode: response.status,
-          message: responseData.message || 'Error desconocido al guardar configuración de reclutamiento',
-          data: responseData
-        };
-        
-        throw error;
+        const errorData = await response.json();
+        console.error('[EyeTrackingAPI] Error en respuesta:', errorData);
+        throw new Error(errorData.message || `Error al guardar configuración: ${response.statusText}`);
       }
+
+      const result = await response.json();
+      console.log('[EyeTrackingAPI] Configuración guardada:', result);
       
-      // Si llegamos aquí, la petición fue exitosa
-      console.log('[EyeTrackingAPI] Configuración guardada correctamente:', responseData);
-      return responseData;
-    } catch (error: any) {
-      console.error('[EyeTrackingAPI] Error al guardar:', error);
+      return result.data;
+    } catch (error) {
+      console.error('[EyeTrackingAPI] Error en saveRecruitConfig:', error);
       throw error;
     }
   },
@@ -383,11 +334,10 @@ export const eyeTrackingFixedAPI = {
       throw new Error('Se requiere un ID de investigación para obtener la configuración de reclutamiento');
     }
     
-    // Usar la URL con formato correcto (con guión)
-    const url = (API_CONFIG.endpoints.eyeTracking?.RECRUIT_GET_ALT || '/eye-tracking-recruit/research/{researchId}/config')
-      .replace('{researchId}', researchId);
+    // Usar la ruta correcta con /config al final
+    const url = '/eye-tracking-recruit/research/' + researchId + '/config';
     
-    console.log('[EyeTrackingAPI] Obteniendo configuración usando URL:', `${API_CONFIG.baseURL}${url}`);
+    console.log('[EyeTrackingAPI] Obteniendo configuración usando URL correcta:', `${API_CONFIG.baseURL}${url}`);
     
     try {
       const headers = getAuthHeaders();

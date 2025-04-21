@@ -32,8 +32,6 @@ export class CognitiveTaskService {
   private validateFormData(data: Partial<CognitiveTaskFormData>): boolean {
     console.log('[DEBUG] CognitiveTaskService.validateFormData - Datos recibidos:', JSON.stringify(data, null, 2));
     
-    const errors: Record<string, string> = {};
-    
     // Validar que la investigación tenga un ID
     if (!data.researchId) {
       throw new ApiError(

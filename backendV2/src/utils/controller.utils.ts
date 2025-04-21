@@ -5,13 +5,14 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
  * @returns Objeto con los headers CORS configurados
  */
 export const getCorsHeaders = (): { [key: string]: string } => {
-  // Para desarrollo, permitimos cualquier origen
+  // Configuración de CORS para permitir todos los orígenes
   return {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Credentials': 'true',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Amz-Date, X-Api-Key, X-Amz-Security-Token, X-Requested-With, x-requested-with, Accept, Cache-Control, cache-control, Pragma, pragma, X-Amz-User-Agent',
+    // Permitir los headers comunes usados por la aplicación
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Amz-Date, X-Api-Key, X-Amz-Security-Token, X-Requested-With, Accept, Cache-Control, cache-control, Pragma, pragma, X-Amz-User-Agent',
+    // Métodos HTTP permitidos
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
-    'Access-Control-Expose-Headers': 'Authorization, X-Api-Key',
+    // Definir el tipo de contenido por defecto
     'Content-Type': 'application/json'
   };
 };

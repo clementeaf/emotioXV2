@@ -58,11 +58,15 @@ export function createController(
         return {
           statusCode: 200,
           headers: {
-            'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || '*',
-            'Access-Control-Allow-Credentials': 'true',
+            // Permitir todos los orígenes
+            'Access-Control-Allow-Origin': '*',
+            // Métodos HTTP permitidos
             'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
+            // Permitir los headers requeridos
             'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Amz-Date, X-Api-Key, X-Amz-Security-Token, X-Requested-With, Accept, Cache-Control, cache-control, Pragma, pragma, X-Amz-User-Agent',
+            // Tiempo máximo de cache de la preflight en segundos
             'Access-Control-Max-Age': '600',
+            // Tipo de contenido
             'Content-Type': 'application/json',
             'Content-Length': '0'
           },
