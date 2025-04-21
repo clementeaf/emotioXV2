@@ -18,7 +18,7 @@ export interface ValidationErrors {
 export interface ErrorModalData {
   title: string;
   message: string;
-  type: 'error' | 'info' | 'success';
+  type: 'error' | 'info' | 'success' | 'warning';
 }
 
 // Props para el componente principal

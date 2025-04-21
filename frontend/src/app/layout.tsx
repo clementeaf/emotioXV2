@@ -10,6 +10,7 @@ import { QueryProvider } from '@/providers/QueryProvider';
 import { ResearchProvider } from '@/providers/ResearchProvider';
 import { ErrorLogProvider, LogViewer } from '@/components/utils/ErrorLogger';
 import { apiClient } from '@/config/api-client';
+import { AuthDebugger } from '@/components/auth/AuthDebugger';
 
 // Importar utilidades de debugging - solo se cargan en el cliente
 import '@/utils/debugging';
@@ -73,6 +74,7 @@ export default function RootLayout({
                 {children}
                 <Toaster position="top-right" />
                 <LogViewer />
+                <AuthDebugger />
               </ErrorLogProvider>
             </ResearchProvider>
           </QueryProvider>

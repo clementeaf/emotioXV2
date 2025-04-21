@@ -17,6 +17,7 @@ interface AuthContextType {
   login: (token: string, rememberMe: boolean) => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
+  restoreSession: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -53,6 +54,73 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     sessionStorage.removeItem('user');
     sessionStorage.removeItem('auth_type');
   };
+
+  // Intentar restaurar una sesión desde localStorage/sessionStorage
+  const restoreSession = useCallback(async (): Promise<boolean> => {
+    console.log('Intentando restaurar sesión...');
+    try {
+      // Si ya hay un token en el contexto, no es necesario restaurar
+      if (token) {
+        console.log('Ya existe una sesión activa');
+        return true;
+      }
+
+      // Buscar token en localStorage primero
+      let storedToken = localStorage.getItem('token');
+      let authType = 'local';
+      
+      // Si no está en localStorage, intentar en sessionStorage
+      if (!storedToken) {
+        storedToken = sessionStorage.getItem('token');
+        authType = 'session';
+      }
+      
+      // Si no hay token en ningún storage, no podemos restaurar
+      if (!storedToken) {
+        console.log('No se encontró ningún token almacenado');
+        return false;
+      }
+      
+      try {
+        // Decodificar el token para verificar si es válido
+        const tokenParts = storedToken.split('.');
+        if (tokenParts.length !== 3) {
+          throw new Error('Token inválido');
+        }
+        
+        const payload = JSON.parse(atob(tokenParts[1]));
+        
+        // Verificar si el token ha expirado
+        const now = Math.floor(Date.now() / 1000);
+        if (payload.exp && payload.exp < now) {
+          console.log('Token expirado, no se puede restaurar la sesión');
+          clearStorage();
+          return false;
+        }
+        
+        // Token válido, extraer datos del usuario
+        const userData: User = {
+          id: payload.id || payload.sub,
+          email: payload.email,
+          name: payload.name
+        };
+        
+        // Actualizar estado
+        setToken(storedToken);
+        setUser(userData);
+        
+        console.log('Sesión restaurada exitosamente');
+        return true;
+      } catch (error) {
+        console.error('Error al decodificar token:', error);
+        clearStorage();
+        return false;
+      }
+    } catch (error) {
+      console.error('Error al restaurar sesión:', error);
+      return false;
+    }
+  }, [token]);
 
   const login = useCallback(async (newToken: string, rememberMe: boolean) => {
     console.log('Iniciando login con token:', newToken.substring(0, 10) + '...');
@@ -150,7 +218,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       authError,
       login,
       logout,
-      clearError
+      clearError,
+      restoreSession
     }}>
       {isTransitioning && <LoadingScreen />}
       {children}

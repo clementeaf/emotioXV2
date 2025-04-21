@@ -303,18 +303,20 @@ export const eyeTrackingFixedAPI = {
     
     try {
       const method = 'POST';
-      const url = `/eye-tracking`;
+      // Usar la ruta correcta del controlador de reclutamiento
+      const url = (API_CONFIG.endpoints.eyeTracking?.RECRUIT_CREATE_ALT || '/eye-tracking-recruit/research/{researchId}/config')
+        .replace('{researchId}', data.researchId);
       
-      console.log(`[EyeTrackingAPI] Cambiando a ruta: ${API_CONFIG.baseURL}${url}`);
+      console.log(`[EyeTrackingAPI] Usando ruta correcta: ${API_CONFIG.baseURL}${url}`);
       
+      // Alinear nombres de campos para que coincidan con lo que espera el backend
       const formattedData = {
-        ...data,
-        operation: 'recruit',
-        action: 'createConfig',
         researchId: data.researchId,
         demographicQuestions: data.demographicQuestions,
         linkConfig: {
-          allowMobileDevices: data.linkConfig.allowMobileDevices || false,
+          // Asegurarnos de usar los nombres de campo correctos, 
+          // verificando si ya vienen con el nombre correcto o necesitan transformación
+          allowMobileDevices: data.linkConfig.allowMobileDevices || data.linkConfig.allowMobile || false,
           trackLocation: data.linkConfig.trackLocation || false,
           allowMultipleAttempts: data.linkConfig.allowMultipleAttempts || false
         },

@@ -17,6 +17,7 @@ export interface DemographicQuestions {
 
 export interface LinkConfig {
   allowMobile: boolean;
+  allowMobileDevices?: boolean;
   trackLocation: boolean;
   allowMultipleAttempts: boolean;
 }
@@ -79,7 +80,12 @@ export interface EyeTrackingRecruitStats {
 export interface CreateEyeTrackingRecruitRequest {
   researchId: string;
   demographicQuestions: DemographicQuestions;
-  linkConfig: LinkConfig;
+  linkConfig: {
+    allowMobile?: boolean;
+    allowMobileDevices?: boolean;
+    trackLocation: boolean;
+    allowMultipleAttempts: boolean;
+  };
   participantLimit: ParticipantLimit;
   backlinks: Backlinks;
   researchUrl: string;

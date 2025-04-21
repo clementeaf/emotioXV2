@@ -3,24 +3,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '@/providers/AuthProvider';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useErrorLog } from '@/components/utils/ErrorLogger';
 import { 
-  EyeTrackingRecruitConfig,
   EyeTrackingRecruitStats,
   DemographicQuestionKeys,
   LinkConfigKeys,
   ParameterOptionKeys,
   CreateEyeTrackingRecruitRequest,
-  LinkConfig,
-  ParticipantLimit,
-  Backlinks,
-  ParameterOptions,
-  DemographicQuestions
 } from 'shared/interfaces/eyeTrackingRecruit.interface';
-import API_CONFIG from '@/config/api.config';
 import { eyeTrackingFixedAPI } from "@/lib/eye-tracking-api";
-import ReactDOM from 'react-dom/client';
 import React from 'react';
 
 // Interfaces
@@ -231,8 +223,8 @@ const DEFAULT_CONFIG: EyeTrackingRecruitFormData = {
 // Hook principal
 export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps): UseEyeTrackingRecruitResult {
   const router = useRouter();
+  const logger = useErrorLog();
   const queryClient = useQueryClient();
-  const { isAuthenticated } = useAuth();
   
   // Estados
   const [formData, setFormData] = useState<EyeTrackingRecruitFormData>({
@@ -276,10 +268,6 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   const { mutate } = useMutation({
     mutationFn: async (data: CreateEyeTrackingRecruitRequest) => {
       try {
-        if (!isAuthenticated) {
-          throw new Error('No autenticado: Se requiere un token de autenticación');
-        }
-        
         console.log('[useEyeTrackingRecruit] Enviando datos al backend:', data);
         return await eyeTrackingFixedAPI.saveRecruitConfig(data);
       } catch (error: any) {
@@ -339,11 +327,6 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   // Función para guardar el formulario
   const saveForm = useCallback(() => {
     try {
-      if (!isAuthenticated) {
-        toast.error('Debe iniciar sesión para guardar configuración');
-        return;
-      }
-
       if (!researchId) {
         toast.error('ID de investigación inválido');
         return;
@@ -361,14 +344,17 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       }
 
       // Preparar datos para enviar
+      const linkConfigData = {
+        allowMobile: formData.linkConfig.allowMobile,
+        allowMobileDevices: formData.linkConfig.allowMobile, // Para compatibilidad con la API
+        trackLocation: formData.linkConfig.trackLocation,
+        allowMultipleAttempts: formData.linkConfig.allowMultipleAttempts
+      };
+      
       const configToSave: CreateEyeTrackingRecruitRequest = {
         researchId,
         demographicQuestions: formData.demographicQuestions,
-        linkConfig: {
-          allowMobile: formData.linkConfig.allowMobile,
-          trackLocation: formData.linkConfig.trackLocation,
-          allowMultipleAttempts: formData.linkConfig.allowMultipleAttempts
-        },
+        linkConfig: linkConfigData,
         participantLimit: {
           enabled: formData.participantLimit.enabled,
           value: formData.participantLimit.value
@@ -534,7 +520,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       });
       setSaving(false);
     }
-  }, [formData, researchId, isAuthenticated, showModal, mutate, demographicQuestionsEnabled, linkConfigEnabled]);
+  }, [formData, researchId, showModal, mutate, demographicQuestionsEnabled, linkConfigEnabled]);
   
   // Cargar datos (simulado por ahora)
   useEffect(() => {

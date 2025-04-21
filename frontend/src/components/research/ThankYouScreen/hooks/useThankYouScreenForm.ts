@@ -15,6 +15,7 @@ import {
   ERROR_MESSAGES,
 } from '../constants';
 import { useAuth } from '@/providers/AuthProvider';
+import { authService } from '@/services/authService';
 
 /**
  * Hook personalizado para gestionar la lógica del formulario de pantalla de agradecimiento
@@ -35,7 +36,21 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [modalError, setModalError] = useState<ErrorModalData | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
-  const { isAuthenticated, token } = useAuth();
+  const { token, user, restoreSession } = useAuth();
+  
+  // Comprobamos si está autenticado (token existe)
+  const isAuthenticated = !!token;
+
+  // Añadimos log de estado de autenticación para depuración
+  useEffect(() => {
+    const isTokenInStorage = !!localStorage.getItem('token') || !!sessionStorage.getItem('token');
+    console.log('[ThankYouScreenForm] Estado de autenticación:', { 
+      isAuthenticated, 
+      tokenInHook: !!token,
+      tokenInStorage: isTokenInStorage,
+      user: !!user
+    });
+  }, [isAuthenticated, token, user]);
 
   // Handlers para el modal
   const closeModal = () => setModalVisible(false);
@@ -133,7 +148,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
     // Solo validar título y mensaje si la pantalla está habilitada
     if (formData.isEnabled) {
       // Validar título
-      if (!formData.title.trim()) {
+      if (!formData.title || formData.title.trim() === '') {
         errors.title = ERROR_MESSAGES.VALIDATION_ERRORS.TITLE_REQUIRED;
       } else if (formData.title.length < DEFAULT_THANK_YOU_SCREEN_VALIDATION.title.minLength) {
         errors.title = ERROR_MESSAGES.VALIDATION_ERRORS.TITLE_TOO_SHORT.replace(
@@ -148,7 +163,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
       }
 
       // Validar mensaje
-      if (!formData.message.trim()) {
+      if (!formData.message || formData.message.trim() === '') {
         errors.message = ERROR_MESSAGES.VALIDATION_ERRORS.MESSAGE_REQUIRED;
       } else if (formData.message.length < DEFAULT_THANK_YOU_SCREEN_VALIDATION.message.minLength) {
         errors.message = ERROR_MESSAGES.VALIDATION_ERRORS.MESSAGE_TOO_SHORT.replace(
@@ -175,13 +190,71 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
   };
 
   // Guardar formulario (modificado para mostrar DOM modal)
-  const handleSave = () => {
+  const handleSave = async () => {
+    // Verificar si hay tokens en localStorage o sessionStorage aunque isAuthenticated sea false
+    const localStorageToken = localStorage.getItem('token');
+    const sessionStorageToken = sessionStorage.getItem('token');
+    const hasStorageToken = !!localStorageToken || !!sessionStorageToken;
+    
+    // Si hay tokens en storage pero isAuthenticated es false, hay un problema de sincronización
+    if (hasStorageToken && !isAuthenticated) {
+      // Intentar restaurar la sesión automáticamente
+      const restored = await restoreSession();
+      
+      if (restored) {
+        // Si se restauró la sesión correctamente, volver a intentar la operación
+        toast.success('Sesión restaurada correctamente', { duration: 3000 });
+        
+        // Esperar un momento para que el estado se actualice
+        setTimeout(() => {
+          // Intentar guardar nuevamente
+          handleSave();
+        }, 500);
+        return;
+      }
+      
+      // Si no se pudo restaurar, mostrar el mensaje de error
+      showModal({
+        title: 'Problema de sincronización de sesión',
+        message: 'Detectamos un token en el almacenamiento, pero la sesión no está activa. Por favor, actualice la página para restaurar su sesión.',
+        type: 'warning'
+      });
+      
+      // Añadimos botón para recargar la página en el mismo modal
+      setTimeout(() => {
+        const modalContent = document.querySelector('.modal-content');
+        if (modalContent) {
+          const reloadButton = document.createElement('button');
+          reloadButton.textContent = 'Recargar página';
+          reloadButton.className = 'px-4 py-2 mt-4 bg-blue-600 text-white rounded hover:bg-blue-700';
+          reloadButton.onclick = () => window.location.reload();
+          modalContent.appendChild(reloadButton);
+        }
+      }, 100);
+      
+      return;
+    }
+    
+    // Si realmente no hay sesión, mostrar error y opción de login
     if (!isAuthenticated) {
       showModal({
         title: 'Error de autenticación',
-        message: 'No está autenticado. Por favor, inicie sesión para guardar la pantalla de agradecimiento.',
+        message: 'No ha iniciado sesión. Por favor, inicie sesión para guardar la pantalla de agradecimiento.',
         type: 'error'
       });
+      
+      // Crear un botón para ir a la página de login
+      setTimeout(() => {
+        const modalContent = document.querySelector('.modal-content');
+        if (modalContent) {
+          const loginButton = document.createElement('button');
+          loginButton.textContent = 'Ir a iniciar sesión';
+          loginButton.className = 'px-4 py-2 mt-4 bg-blue-600 text-white rounded hover:bg-blue-700';
+          loginButton.onclick = () => window.location.href = '/login';
+          modalContent.appendChild(loginButton);
+        }
+      }, 100);
+      
       return;
     }
 
@@ -352,30 +425,18 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
             // Mostrar modal de error
             showModal({
               title: ERROR_MESSAGES.SAVE_ERROR,
-              message: errorMsg,
+              message: error.message || 'Ocurrió un error al guardar la configuración',
               type: 'error'
             });
           }
         });
       });
-
-      // Cerrar modal al hacer clic fuera de él
-      confirmModalContainer.addEventListener('click', (e) => {
-        if (e.target === confirmModalContainer.firstChild) {
-          document.body.removeChild(confirmModalContainer);
-        }
-      });
-    } catch (error) {
-      console.error('[ThankYouScreenForm] Error al preparar guardado:', error);
-      toast.error('Error al preparar la pantalla de agradecimiento para guardar', {
-        duration: 5000,
-        style: {
-          background: '#FEF2F2',
-          color: '#991B1B',
-          padding: '16px',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-        },
-        icon: '❌'
+    } catch (error: any) {
+      console.error('[ThankYouScreenForm] Error en preparación:', error);
+      showModal({
+        title: ERROR_MESSAGES.SAVE_ERROR,
+        message: error.message || 'Ocurrió un error al preparar la configuración',
+        type: 'error'
       });
     }
   };
