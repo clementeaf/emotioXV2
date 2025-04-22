@@ -2,7 +2,7 @@ import {
   WelcomeScreenFormData,
   WelcomeScreenRecord 
 } from '../../../shared/interfaces/welcome-screen.interface';
-import { apiClient } from '../config/api-client';
+import { welcomeScreenAPI } from '@/lib/api';
 
 /**
  * Servicio para manejar las operaciones relacionadas con pantallas de bienvenida
@@ -14,12 +14,13 @@ export class WelcomeScreenService {
   async getByResearchId(researchId: string): Promise<WelcomeScreenRecord | null> {
     try {
       console.log('[WelcomeScreenService] Obteniendo welcome screen para researchId:', researchId);
-      const data = await apiClient.get<WelcomeScreenRecord, 'welcomeScreen'>('welcomeScreen', 'getByResearch', { researchId });
+      const response = await welcomeScreenAPI.getByResearchId(researchId);
+      const data = response.data;
       console.log('[WelcomeScreenService] Welcome screen obtenido:', data);
       return data;
     } catch (error) {
       console.error('[WelcomeScreenService] Error en getByResearchId:', error);
-      throw new Error(`Error al obtener welcome screen: ${error instanceof Error ? error.message : String(error)}`);
+      return null; // Devolvemos null para indicar que no existe
     }
   }
 
@@ -33,21 +34,25 @@ export class WelcomeScreenService {
       let result;
       try {
         // Intentar obtener la pantalla existente primero
-        await this.getByResearchId(data.researchId);
-        // Si existe, actualizar
-        result = await apiClient.put<WelcomeScreenRecord, WelcomeScreenFormData & { researchId: string }, 'welcomeScreen'>(
-          'welcomeScreen', 
-          'update', 
-          data, 
-          { id: data.researchId }
-        );
+        const existing = await this.getByResearchId(data.researchId);
+        
+        if (existing && existing.id) {
+          // Si existe, actualizar
+          console.log('[WelcomeScreenService] Actualizando welcome screen existente con ID:', existing.id);
+          const response = await welcomeScreenAPI.update(existing.id, data);
+          result = response.data;
+        } else {
+          throw new Error('No existe');
+        }
       } catch (error) {
-        // Si no existe, crear
-        result = await apiClient.post<WelcomeScreenRecord, WelcomeScreenFormData & { researchId: string }, 'welcomeScreen'>(
-          'welcomeScreen', 
-          'create', 
-          data
-        );
+        // Si no existe o hay error, crear uno nuevo
+        console.log('[WelcomeScreenService] Creando nuevo welcome screen');
+        const response = await welcomeScreenAPI.create({
+          ...data,
+          // Asegurar que el researchId esté presente
+          researchId: data.researchId
+        });
+        result = response.data;
       }
       
       console.log('[WelcomeScreenService] Welcome screen guardado:', result);
@@ -61,10 +66,10 @@ export class WelcomeScreenService {
   /**
    * Elimina una pantalla de bienvenida
    */
-  async delete(researchId: string): Promise<void> {
+  async delete(id: string): Promise<void> {
     try {
-      console.log('[WelcomeScreenService] Eliminando welcome screen para researchId:', researchId);
-      await apiClient.delete<void, 'welcomeScreen'>('welcomeScreen', 'delete', { researchId });
+      console.log('[WelcomeScreenService] Eliminando welcome screen con ID:', id);
+      await welcomeScreenAPI.delete(id);
       console.log('[WelcomeScreenService] Welcome screen eliminado correctamente');
     } catch (error) {
       console.error('[WelcomeScreenService] Error en delete:', error);

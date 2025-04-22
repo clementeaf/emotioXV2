@@ -13,7 +13,7 @@ import { ResearchProject } from '@/interfaces/research';
  * @returns ID único
  */
 export function generateMockId(prefix: string = 'mock'): string {
-  return `${prefix}-${uuidv4().slice(0, 8)}-${Date.now().toString().slice(-6)}`;
+  return `${prefix}-${Math.random().toString(36).substring(2, 15)}`;
 }
 
 /**
@@ -21,11 +21,11 @@ export function generateMockId(prefix: string = 'mock'): string {
  * @param maxDaysAgo Máximo de días hacia atrás
  * @returns Fecha ISO string
  */
-export function getRandomRecentDate(maxDaysAgo: number = 30): string {
+export function getRandomRecentDate(maxDaysAgo: number = 30): Date {
   const now = new Date();
   const daysAgo = Math.floor(Math.random() * maxDaysAgo);
   now.setDate(now.getDate() - daysAgo);
-  return now.toISOString();
+  return now;
 }
 
 /**
@@ -33,38 +33,9 @@ export function getRandomRecentDate(maxDaysAgo: number = 30): string {
  * @param count Número de proyectos a generar
  * @returns Array de proyectos simulados
  */
-export function generateMockResearchProjects(count: number = 5): ResearchProject[] {
-  const statuses = ['draft', 'in-progress', 'completed', 'archived'];
-  const types = ['eye-tracking', 'attention-prediction', 'cognitive-analysis'];
-  const techniques = ['aim-framework', 'biometric', 'interview', 'standard'];
-  
-  return Array(count).fill(0).map((_, index) => {
-    // Determinar estado aleatoriamente
-    const statusIndex = Math.floor(Math.random() * statuses.length);
-    const status = statuses[statusIndex];
-    
-    // Progreso basado en estado
-    let progress = 0;
-    if (status === 'in-progress') {
-      progress = Math.floor(Math.random() * 80) + 10; // Entre 10 y 90
-    } else if (status === 'completed') {
-      progress = 100;
-    }
-    
-    // Seleccionar tipo y técnica aleatoriamente
-    const type = types[Math.floor(Math.random() * types.length)];
-    const technique = techniques[Math.floor(Math.random() * techniques.length)];
-    
-    return {
-      id: generateMockId('research'),
-      name: `Investigación simulada ${index + 1}`,
-      status,
-      createdAt: getRandomRecentDate(),
-      progress,
-      type,
-      technique
-    };
-  });
+export function generateMockResearchProjects(): ResearchProject[] {
+  // Retornar un array vacío en lugar de generar datos mock
+  return [];
 }
 
 /**
@@ -72,11 +43,15 @@ export function generateMockResearchProjects(count: number = 5): ResearchProject
  * @param data Datos a incluir en la respuesta
  * @returns Objeto con formato de respuesta de API
  */
-export function generateMockApiResponse<T>(data: T) {
+export function generateMockApiResponse<T>(data: T): {
+  success: boolean;
+  data: T;
+  message?: string;
+} {
   return {
     success: true,
-    data: data,
-    message: 'Datos simulados generados correctamente'
+    data,
+    message: 'Operación completada exitosamente'
   };
 }
 
@@ -86,7 +61,7 @@ export function generateMockApiResponse<T>(data: T) {
  * @param maxMs Máximo tiempo de retraso en ms
  * @returns Promise que se resuelve después del retraso
  */
-export function simulateNetworkDelay(minMs: number = 200, maxMs: number = 800): Promise<void> {
+export function simulateNetworkDelay(minMs: number = 300, maxMs: number = 1500): Promise<void> {
   const delay = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
   return new Promise(resolve => setTimeout(resolve, delay));
 }
@@ -95,13 +70,13 @@ export function simulateNetworkDelay(minMs: number = 200, maxMs: number = 800): 
  * API simulada de investigaciones para desarrollo local
  */
 export const mockResearchAPI = {
-  // Lista global de investigaciones simuladas
-  _mockStorage: generateMockResearchProjects(8),
+  // Almacenamiento vacío en lugar de datos generados
+  _mockStorage: [] as ResearchProject[],
   
   /**
    * Obtiene lista de investigaciones
    */
-  list: async () => {
+  async list(): Promise<{ success: boolean; data: ResearchProject[] }> {
     await simulateNetworkDelay();
     return generateMockApiResponse(mockResearchAPI._mockStorage);
   },
@@ -109,64 +84,51 @@ export const mockResearchAPI = {
   /**
    * Obtiene una investigación por ID
    */
-  get: async (id: string) => {
+  async get(id: string): Promise<{ success: boolean; data: ResearchProject | null }> {
     await simulateNetworkDelay();
     const research = mockResearchAPI._mockStorage.find(r => r.id === id);
-    
-    if (!research) {
-      return {
-        success: false,
-        message: 'Investigación no encontrada',
-        data: null
-      };
-    }
-    
-    return generateMockApiResponse(research);
+    return generateMockApiResponse(research || null);
   },
   
   /**
    * Crea una nueva investigación
    */
-  create: async (data: any) => {
-    await simulateNetworkDelay(400, 1000);
+  async create(data: Omit<ResearchProject, 'id' | 'createdAt'>): Promise<{
+    success: boolean;
+    data: ResearchProject;
+  }> {
+    await simulateNetworkDelay();
     
+    // Crear nueva investigación con ID generado y fecha actual
     const newResearch: ResearchProject = {
+      ...data,
       id: generateMockId('research'),
-      name: data.name || 'Nueva investigación',
-      status: 'draft',
       createdAt: new Date().toISOString(),
-      progress: 0,
-      type: data.type || 'eye-tracking',
-      technique: data.technique || 'standard'
     };
     
     mockResearchAPI._mockStorage.push(newResearch);
-    
-    return generateMockApiResponse({
-      ...newResearch
-    });
+    return generateMockApiResponse(newResearch);
   },
   
   /**
    * Actualiza una investigación existente
    */
-  update: async (id: string, data: any) => {
+  async update(id: string, data: Partial<ResearchProject>): Promise<{
+    success: boolean;
+    data: ResearchProject | null;
+  }> {
     await simulateNetworkDelay();
     
     const index = mockResearchAPI._mockStorage.findIndex(r => r.id === id);
     if (index === -1) {
-      return {
-        success: false,
-        message: 'Investigación no encontrada',
-        data: null
-      };
+      return generateMockApiResponse(null);
     }
     
-    // Actualizar los campos proporcionados
+    // Actualizar los datos de la investigación
     mockResearchAPI._mockStorage[index] = {
       ...mockResearchAPI._mockStorage[index],
       ...data,
-      // Mantener ID original
+      // Preservar ID original
       id: mockResearchAPI._mockStorage[index].id
     };
     
@@ -176,22 +138,21 @@ export const mockResearchAPI = {
   /**
    * Elimina una investigación
    */
-  delete: async (id: string) => {
-    await simulateNetworkDelay(300, 700);
+  async delete(id: string): Promise<{ success: boolean; message: string }> {
+    await simulateNetworkDelay();
     
     const index = mockResearchAPI._mockStorage.findIndex(r => r.id === id);
     if (index === -1) {
       return {
         success: false,
-        message: 'Investigación no encontrada',
-        data: null
+        message: 'Investigación no encontrada'
       };
     }
     
     mockResearchAPI._mockStorage.splice(index, 1);
-    
-    return generateMockApiResponse({
+    return {
+      success: true,
       message: 'Investigación eliminada correctamente'
-    });
+    };
   }
 }; 

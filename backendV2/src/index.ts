@@ -1,569 +1,412 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { authService } from './services/auth.service';
-import { v4 as uuidv4 } from 'uuid';
-import { welcomeScreenHandler } from './controllers/welcomeScreen.controller';
-import { getCorsHeaders } from './utils/controller.utils';
-import cognitiveTaskController from './controllers/cognitiveTask.controller';
-import { s3Handler } from './controllers/s3.controller';
-import { thankYouScreenHandler } from './controllers/thankYouScreen.controller';
+/**
+ * Punto de entrada principal para la API de EmotioXV2
+ * Implementa un router unificado para HTTP y WebSocket
+ */
 
-// Helper para crear respuestas HTTP con formato consistente
-const createResponse = (statusCode: number, body: any): APIGatewayProxyResult => {
-  return {
-    statusCode,
-    headers: getCorsHeaders(),
-    body: JSON.stringify(body)
-  };
+import { 
+  APIGatewayProxyEvent, 
+  APIGatewayProxyResult, 
+  APIGatewayProxyWebsocketEventV2,
+  Context
+} from 'aws-lambda';
+
+// Importar servicios y controladores mediante el índice centralizado
+import { authService } from './services/auth.service';
+import { 
+  researchHandler, 
+  welcomeScreenHandler, 
+  thankYouScreenHandler,
+  eyeTrackingHandler,
+  authHandler
+} from './controllers';
+
+// Importar controladores específicos
+import { smartVocFormHandler } from './controllers/smartVocForm.controller';
+import { s3Handler } from './controllers/s3.controller';
+import { participantHandler } from './controllers/participant.controller';
+import { cognitiveTaskController } from './controllers/cognitiveTask.controller';
+import { corsHeaders, createResponse, errorHandler } from './utils/responses';
+
+/**
+ * Tipo para identificar eventos de Lambda
+ */
+type LambdaEvent = APIGatewayProxyEvent | APIGatewayProxyWebsocketEventV2;
+
+/**
+ * Mapa de rutas para los controladores HTTP
+ */
+const httpRouteHandlers: Record<string, (event: APIGatewayProxyEvent) => Promise<APIGatewayProxyResult>> = {
+  'auth': authHandler,
+  'research': researchHandler,
+  'welcome-screen': welcomeScreenHandler,
+  'thank-you-screen': thankYouScreenHandler,
+  'smart-voc': smartVocFormHandler,
+  'cognitive-task': cognitiveTaskController,
+  'eye-tracking': eyeTrackingHandler,
+  's3': s3Handler,
+  'participants': participantHandler
 };
 
-// Handler principal para AWS Lambda
-export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-  // Extraer información de la petición
-  const path = event.path;
-  const method = event.httpMethod;
-  
-  console.log('Processing request:', { path, method });
-  
-  // Manejar CORS para peticiones OPTIONS
-  if (method === 'OPTIONS') {
-    console.log('Recibida petición OPTIONS - Enviando respuesta CORS preflight');
+/**
+ * Funciones simples para manejar WebSocket mientras se implementa la solución completa
+ */
+async function handleWebSocketConnection(event: APIGatewayProxyWebsocketEventV2, _context: Context): Promise<any> {
+  console.log('Conexión WebSocket establecida:', event.requestContext.connectionId);
+  return { statusCode: 200, body: 'Conexión establecida' };
+}
+
+async function handleWebSocketDisconnection(event: APIGatewayProxyWebsocketEventV2, _context: Context): Promise<any> {
+  console.log('Conexión WebSocket cerrada:', event.requestContext.connectionId);
+  return { statusCode: 200, body: 'Conexión cerrada' };
+}
+
+async function handleWebSocketDefault(event: APIGatewayProxyWebsocketEventV2, _context: Context): Promise<any> {
+  console.log('Mensaje WebSocket por defecto:', event.body);
+  return { statusCode: 200, body: 'Mensaje recibido' };
+}
+
+async function handleWebSocketMessage(event: APIGatewayProxyWebsocketEventV2, _context: Context): Promise<any> {
+  console.log('Mensaje WebSocket específico:', event.body);
+  return { statusCode: 200, body: 'Mensaje específico recibido' };
+}
+
+/**
+ * Mapa de rutas para WebSocket
+ */
+const webSocketRouteHandlers: Record<string, (event: APIGatewayProxyWebsocketEventV2, context: Context) => Promise<any>> = {
+  '$connect': handleWebSocketConnection,
+  '$disconnect': handleWebSocketDisconnection,
+  '$default': handleWebSocketDefault,
+  'message': handleWebSocketMessage
+};
+
+/**
+ * Manejador principal que detecta automáticamente el tipo de evento
+ */
+export const handler = async (
+  event: LambdaEvent, 
+  context: Context
+): Promise<APIGatewayProxyResult | void> => {
+  // Logging para depuración
+  console.log('Evento recibido:', JSON.stringify({
+    connectionType: process.env.CONNECTION_TYPE || 'unknown',
+    eventType: 'routeKey' in event.requestContext ? 'WEBSOCKET' : 'HTTP',
+    connectionId: 'connectionId' in event.requestContext ? event.requestContext.connectionId : undefined,
+    route: 'routeKey' in event.requestContext ? event.requestContext.routeKey : undefined,
+    httpMethod: 'httpMethod' in event ? event.httpMethod : undefined,
+    path: 'path' in event ? event.path : undefined
+  }, null, 2));
+
+  try {
+    // Usar la variable de entorno CONNECTION_TYPE para determinar el tipo de evento
+    // Esto se configura en serverless.yml para cada función
+    if (process.env.CONNECTION_TYPE === 'websocket' && 'routeKey' in event.requestContext) {
+      return await handleWebSocketEvent(event as APIGatewayProxyWebsocketEventV2, context);
+    } else if (process.env.CONNECTION_TYPE === 'http' && !('routeKey' in event.requestContext)) {
+      return await handleHttpEvent(event as APIGatewayProxyEvent);
+    } else {
+      console.error('Tipo de evento no coincide con CONNECTION_TYPE:', 
+        process.env.CONNECTION_TYPE, 
+        ('routeKey' in event.requestContext ? 'WEBSOCKET' : 'HTTP'));
+      
+      return {
+        statusCode: 400,
+        body: JSON.stringify({
+          message: `Tipo de conexión incompatible: ${process.env.CONNECTION_TYPE}`,
+          eventType: ('routeKey' in event.requestContext ? 'WEBSOCKET' : 'HTTP')
+        })
+      };
+    }
+  } catch (error) {
+    console.error('Error en el manejador principal:', error);
+    return errorHandler(error);
+  }
+};
+
+/**
+ * Manejador para eventos WebSocket
+ */
+async function handleWebSocketEvent(
+  event: APIGatewayProxyWebsocketEventV2, 
+  context: Context
+): Promise<any> {
+  const route = event.requestContext.routeKey;
+  const handler = webSocketRouteHandlers[route];
+
+  if (!handler) {
+    console.error(`Manejador no encontrado para la ruta WebSocket: ${route}`);
+    return { statusCode: 400, body: 'Ruta WebSocket no soportada' };
+  }
+
+  return await handler(event, context);
+}
+
+/**
+ * Manejador para eventos HTTP
+ */
+async function handleHttpEvent(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  // Manejar preflight CORS OPTIONS
+  if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
-      headers: getCorsHeaders(),
+      headers: corsHeaders,
       body: ''
     };
   }
-
+  
   try {
-    // Rutas específicas
-    if (path.match(/^\/research\/([^\/]+)\/cognitive-task(?:\/.*)?$/)) {
-      // Ruta específica para cognitive-task con research ID
-      console.log('[index] Solicitud específica a cognitive-task con research ID:', { path, method });
-      
-      // Extraer el researchId de la ruta
-      const researchIdMatch = path.match(/^\/research\/([^\/]+)\/cognitive-task/);
-      const researchId = researchIdMatch ? researchIdMatch[1] : null;
-      
-      if (researchId) {
-        if (!event.pathParameters) {
-          event.pathParameters = {};
-        }
-        event.pathParameters.researchId = researchId;
-        console.log('[index] Extrayendo researchId para cognitive-task:', { path, researchId });
-      }
-      
-      // Usar el controlador de cognitive-task
-      return await cognitiveTaskController(event);
-    } else if (path === '/research' || path.startsWith('/research/')) {
-      // Manejo de rutas de research
-      if (path === '/research') {
-        if (method === 'POST') {
-          try {
-            // Verificar que hay un cuerpo en la petición
-            if (!event.body) {
-              return createResponse(400, {
-                success: false,
-                message: 'Se requieren datos para crear la investigación'
-              });
-            }
-
-            // Parsear el cuerpo de la petición
-            const researchData = JSON.parse(event.body);
-
-            // Crear la investigación
-            const newResearch = {
-              id: uuidv4(),
-              ...researchData,
-              status: 'draft',
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString()
-            };
-
-            return createResponse(201, {
-              success: true,
-              message: 'Investigación creada exitosamente',
-              data: newResearch
-            });
-          } catch (error) {
-            console.error('Error al crear investigación:', error);
-            return createResponse(500, {
-              success: false,
-              message: 'Error al crear la investigación'
-            });
-          }
-        }
-      } else if (path.startsWith('/research/')) {
-        // Manejo de rutas específicas de research
-        const pathParts = path.split('/');
-        const researchId = pathParts[2];
-
-        if (!researchId) {
-          return createResponse(400, {
-            success: false,
-            message: 'ID de investigación no proporcionado'
-          });
-        }
-
-        if (method === 'GET') {
-          // Obtener detalles de la investigación
-          return createResponse(200, {
-            success: true,
-            data: {
-              id: researchId,
-              title: 'Investigación de ejemplo',
-              description: 'Esta es una investigación de prueba',
-              status: 'active',
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-              metadata: {
-                type: 'eye-tracking',
-                participantCount: 0,
-                settings: {
-                  allowAnonymous: true,
-                  requireConsent: true
-                }
-              }
-            }
-          });
-        } else if (method === 'PUT') {
-          // Actualizar investigación
-          const requestBody = JSON.parse(event.body || '{}');
-          return createResponse(200, {
-            success: true,
-            message: 'Investigación actualizada correctamente',
-            data: {
-              id: researchId,
-              ...requestBody,
-              updatedAt: new Date().toISOString()
-            }
-          });
-        } else if (method === 'DELETE') {
-          // Eliminar investigación
-          return createResponse(200, {
-            success: true,
-            message: 'Investigación eliminada correctamente'
-          });
-        }
-      }
-
-      // Método no soportado para esta ruta
-      return createResponse(405, {
-        success: false,
-        message: 'Método no permitido para esta ruta'
-      });
-    } else if (path === '/auth/login') {
-      if (method === 'POST') {
-        try {
-          if (!event.body) {
-            return createResponse(400, {
-              success: false,
-              message: 'Se requieren credenciales para iniciar sesión'
-            });
-          }
-
-          const credentials = JSON.parse(event.body);
-          
-          // Validar que se proporcionaron las credenciales necesarias
-          if (!credentials.email || !credentials.password) {
-            return createResponse(400, {
-              success: false,
-              message: 'Se requiere email y contraseña'
-            });
-          }
-
-          // Intentar hacer login
-          const authResult = await authService.login(credentials);
-          
-          return createResponse(200, {
-            success: true,
-            message: 'Login exitoso',
-            auth: authResult
-          });
-        } catch (error) {
-          console.error('Error en login:', error);
-          return createResponse(401, {
-            success: false,
-            message: error instanceof Error ? error.message : 'Credenciales inválidas'
-          });
-        }
-      }
-      
-      return createResponse(405, {
-        success: false,
-        message: 'Método no permitido para esta ruta'
-      });
-    } else if (path === '/auth/register') {
-      if (method === 'POST') {
-        try {
-          if (!event.body) {
-            return createResponse(400, {
-              success: false,
-              message: 'Se requieren datos para el registro'
-            });
-          }
-
-          const userData = JSON.parse(event.body);
-          
-          // Validar que se proporcionaron los datos necesarios
-          if (!userData.email || !userData.password || !userData.name) {
-            return createResponse(400, {
-              success: false,
-              message: 'Se requiere email, contraseña y nombre'
-            });
-          }
-
-          // Intentar registrar el usuario
-          const user = await authService.registerUser(userData);
-          
-          return createResponse(201, {
-            success: true,
-            message: 'Usuario registrado exitosamente',
-            user
-          });
-        } catch (error) {
-          console.error('Error en registro:', error);
-          return createResponse(400, {
-            success: false,
-            message: error instanceof Error ? error.message : 'Error al registrar usuario'
-          });
-        }
-      }
-      
-      return createResponse(405, {
-        success: false,
-        message: 'Método no permitido para esta ruta'
-      });
-    } else if (path === '/auth/refreshToken' && method === 'POST') {
-      try {
-        // Intentar obtener el token del body
-        const requestBody = JSON.parse(event.body || '{}');
-        
-        // Intentar obtener el token del header de autorización si no está en el body
-        const authHeader = event.headers.Authorization || event.headers.authorization;
-        let token = requestBody.token || requestBody.refreshToken;
-        
-        // Si no hay token en el body, intentar obtenerlo del header
-        if (!token && authHeader) {
-          token = authHeader.replace('Bearer ', '');
-        }
-
-        if (!token) {
-          console.error('No se encontró token en el body ni en los headers:', {
-            body: event.body,
-            headers: event.headers
-          });
-          return createResponse(400, {
-            success: false,
-            message: 'No se proporcionó el token'
-          });
-        }
-
-        console.log('Token recibido:', token.substring(0, 20) + '...');
-
-        // Renovar el token usando el servicio existente
-        const result = await authService.renovateTokenIfNeeded(token);
-        
-        if (!result.renewed) {
-          return createResponse(200, {
-            success: true,
-            message: 'Token aún válido',
-            token: result.token,
-            expiresAt: result.expiresAt,
-            user: result.user
-          });
-        }
-
-        return createResponse(200, {
-          success: true,
-          message: 'Token renovado correctamente',
-          token: result.token,
-          expiresAt: result.expiresAt,
-          user: result.user
-        });
-      } catch (error) {
-        console.error('Error al renovar token:', error);
-        return createResponse(401, {
-          success: false,
-          message: 'Error al renovar token',
-          error: error instanceof Error ? error.message : 'Error desconocido'
-        });
-      }
-    } else if (path === '/auth/profile' && method === 'GET') {
-      try {
-        // Obtener el token del header de autorización
-        const authHeader = event.headers.Authorization || event.headers.authorization;
-        if (!authHeader) {
-          return createResponse(401, {
-            success: false,
-            message: 'Token no proporcionado'
-          });
-        }
-
-        const token = authHeader.replace('Bearer ', '');
-        const payload = await authService.validateToken(token);
-        const user = await authService.getUserById(payload.id);
-
-        return createResponse(200, {
-          success: true,
-          user: {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            role: user.role
-          }
-        });
-      } catch (error) {
-        console.error('Error al obtener perfil:', error);
-        return createResponse(401, {
-          success: false,
-          message: 'Error al obtener perfil de usuario',
-          error: error instanceof Error ? error.message : 'Error desconocido'
-        });
-      }
-    } else if (path.startsWith('/welcome-screen')) {
-      // Extraer researchId de la ruta si existe
-      // Formato esperado: /welcome-screen/research/{researchId}
-      const match = path.match(/^\/welcome-screen\/research\/([^\/]+)$/);
-      if (match) {
-        if (!event.pathParameters) {
-          event.pathParameters = {};
-        }
-        event.pathParameters.researchId = match[1];
-        console.log('[index] Extrayendo researchId de la ruta:', { path, researchId: match[1] });
-      }
-
-      // Usar el handler dedicado para welcome-screen
-      console.log('[index] Solicitud a welcome-screen:', { path, method });
-      return await welcomeScreenHandler(event);
-    } else if (path.startsWith('/cognitive-task')) {
-      // Usar el controlador dedicado para cognitive-task
-      console.log('[index] Solicitud a cognitive-task:', { path, method });
-      return await cognitiveTaskController(event);
-    } else if (path.startsWith('/thank-you-screen')) {
-      // Extraer researchId de la ruta si existe
-      // Formato esperado: /thank-you-screen/research/{researchId}
-      const match = path.match(/^\/thank-you-screen\/research\/([^\/]+)$/);
-      if (match) {
-        if (!event.pathParameters) {
-          event.pathParameters = {};
-        }
-        event.pathParameters.researchId = match[1];
-        console.log('[index] Extrayendo researchId de la ruta:', { path, researchId: match[1] });
-      }
-
-      // Usar el handler dedicado para thank-you-screen
-      console.log('[index] Solicitud a thank-you-screen:', { path, method });
-      return await thankYouScreenHandler(event);
-    } else if (path.startsWith('/smart-voc')) {
-      // Rutas para SmartVOC
-      console.log('SmartVOC request:', { path, method, body: event.body });
-      
-      if (method === 'GET') {
-        // GET para obtener un formulario específico
-        if (path.includes('/smart-voc/')) {
-          const pathParts = path.split('/');
-          const formId = pathParts[pathParts.length - 1];
-          
-          // Si es un ID numérico, tratarlo como ID de formulario
-          if (/^\d+$/.test(formId)) {
-            return createResponse(200, {
-              data: {
-                id: formId,
-                researchId: "research-123",
-                questions: [
-                  {
-                    id: "q1",
-                    type: "CSAT",
-                    title: "Customer Satisfaction",
-                    description: "¿Cómo califica su experiencia?",
-                    required: true,
-                    showConditionally: false,
-                    config: {
-                      type: "stars",
-                      companyName: "Empresa"
-                    }
-                  },
-                  {
-                    id: "q2",
-                    type: "CES",
-                    title: "Customer Effort Score",
-                    description: "¿Fue fácil resolver su problema?",
-                    required: true,
-                    showConditionally: false,
-                    config: {
-                      type: "scale",
-                      scaleRange: { start: 1, end: 7 }
-                    }
-                  }
-                ],
-                randomizeQuestions: false,
-                smartVocRequired: true,
-                metadata: {
-                  createdAt: new Date().toISOString(),
-                  updatedAt: new Date().toISOString()
-                }
-              }
-            });
-          }
-        }
-        
-        // Manejar GET por researchId (usado en /research/:researchId/smart-voc)
-        if (path.includes('/research/') && path.includes('/smart-voc')) {
-          const pathParts = path.split('/');
-          const researchIdIndex = pathParts.findIndex(part => part === 'research') + 1;
-          const researchId = pathParts[researchIdIndex];
-          
-          // Simular respuesta para getByResearchId
-          return createResponse(200, {
-            data: {
-              id: `form-${Date.now()}`,
-              researchId: researchId,
-              questions: [
-                {
-                  id: "q1",
-                  type: "CSAT",
-                  title: "Customer Satisfaction",
-                  description: "¿Cómo califica su experiencia?",
-                  required: true,
-                  showConditionally: false,
-                  config: {
-                    type: "stars",
-                    companyName: "Empresa"
-                  }
-                }
-              ],
-              randomizeQuestions: false,
-              smartVocRequired: true,
-              metadata: {
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-              }
-            }
-          });
-        }
-        
-        // GET para listar todos
-        return createResponse(200, {
-          data: [
-            {
-              id: "form-1",
-              researchId: "research-123",
-              questions: [
-                {
-                  id: "q1",
-                  type: "CSAT",
-                  title: "Customer Satisfaction",
-                  description: "¿Cómo califica su experiencia?",
-                  required: true,
-                  showConditionally: false,
-                  config: {
-                    type: "stars",
-                    companyName: "Empresa"
-                  }
-                }
-              ],
-              randomizeQuestions: false,
-              smartVocRequired: true
-            }
-          ]
-        });
-      } else if (method === 'POST') {
-        // Crear nuevo formulario SmartVOC
-        const requestBody = JSON.parse(event.body || '{}');
-        
-        // Ruta para clonar
-        if (path.endsWith('/clone')) {
-          return createResponse(201, {
-            message: 'Formulario SmartVOC clonado exitosamente',
-            data: {
-              id: `form-clone-${Date.now()}`,
-              ...requestBody,
-              metadata: {
-                ...(requestBody.metadata || {}),
-                clonedAt: new Date().toISOString(),
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-              }
-            }
-          });
-        }
-        
-        // Crear nuevo
-        return createResponse(201, {
-          message: 'Formulario SmartVOC creado exitosamente',
-          data: {
-            id: `form-${Date.now()}`,
-            ...requestBody,
-            metadata: {
-              ...(requestBody.metadata || {}),
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString()
-            }
-          }
-        });
-      } else if (method === 'PUT') {
-        // Actualizar formulario existente
-        const requestBody = JSON.parse(event.body || '{}');
-        const pathParts = path.split('/');
-        const formId = path.includes('/smart-voc/') ? pathParts[pathParts.length - 1] : null;
-        
-        return createResponse(200, {
-          message: 'Formulario SmartVOC actualizado exitosamente',
-          data: {
-            id: formId || `form-${Date.now()}`,
-            ...requestBody,
-            metadata: {
-              ...(requestBody.metadata || {}),
-              updatedAt: new Date().toISOString()
-            }
-          }
-        });
-      } else if (method === 'DELETE') {
-        // Eliminar formulario
-        return createResponse(200, {
-          message: 'Formulario SmartVOC eliminado exitosamente'
-        });
-      }
-      
-      // Método no soportado para esta ruta
-      return createResponse(405, {
-        message: 'Método no permitido para esta ruta'
-      });
-    } else if (path.startsWith('/s3')) {
-      // Manejar rutas de S3
-      console.log('S3 request:', { path, method, body: event.body });
-      return await s3Handler(event);
-    } else {
-      // Ruta no encontrada - documentación de la API
-      return createResponse(404, {
-        success: false,
-        message: 'Ruta no encontrada: ' + path,
-        status: 'error',
-        endpoints: [
-          '/auth - Autenticación y gestión de usuarios',
-          '/welcome-screen - Configuración de pantallas de bienvenida (GET, POST, PUT, DELETE)',
-          '/thank-you-screen - Configuración de pantallas de agradecimiento (GET, POST, PUT, DELETE)',
-          '/smart-voc - Configuración de formularios SmartVOC (GET, POST, PUT, DELETE)',
-          '/eye-tracking - Configuración y datos de eye tracking (GET, POST, PUT, DELETE)',
-          '/cognitive-task - Formularios de tareas cognitivas (GET, POST, PUT, DELETE)',
-          '/research - Gestión de investigaciones (GET, POST, PUT, DELETE)',
-          '/s3 - Operaciones con archivos (upload, download, delete)'
-        ]
+    // Extraer base path para routing simplificado
+    const path = event.path;
+    const segments = path.split('/').filter(Boolean);
+    
+    // Mostrar endpoints disponibles en la raíz
+    if (segments.length === 0) {
+      return createResponse(200, { 
+        message: 'EmotioXV2 API',
+        version: '2.0.0',
+        endpoints: Object.keys(httpRouteHandlers).map(route => `/api/${route}`)
       });
     }
+    
+    // Determinar el controlador a usar basado en los segmentos de la ruta
+    const controllerKey = segments[0] === 'api' && segments.length > 1 
+      ? segments[1]  // Nueva estructura: /api/{controller}/...
+      : segments[0]; // Compatibilidad con rutas antiguas
+    
+    // Buscar el controlador en el mapa de rutas
+    const handler = httpRouteHandlers[controllerKey];
+    
+    // Si no se encuentra el controlador, devolver 404
+    if (!handler) {
+      return createResponse(404, {
+        success: false,
+        message: `Ruta ${path} no encontrada`
+      });
+    }
+    
+    // Si estamos usando el nuevo formato, ajustar el path para compatibilidad
+    if (segments[0] === 'api' && segments.length > 1) {
+      const modifiedEvent = {...event};
+      modifiedEvent.path = '/' + segments.slice(1).join('/');
+      return await handler(modifiedEvent);
+    }
+    
+    // Usar el formato antiguo directamente
+    return await handler(event);
+    
   } catch (error) {
-    console.error('Error no manejado:', error);
-    return createResponse(500, {
+    return errorHandler(error);
+  }
+}
+
+/**
+ * Manejador específico para rutas de autenticación
+ */
+async function handleAuthRoutes(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  const path = event.path;
+  
+  // Mapa de acciones de autenticación
+  const authActions: Record<string, (event: APIGatewayProxyEvent) => Promise<APIGatewayProxyResult>> = {
+    'login': handleLogin,
+    'register': handleRegister,
+    'profile': handleProfile,
+    'refreshToken': handleRefreshToken
+  };
+  
+  // Obtener el segmento después de /auth/
+  const segments = path.split('/').filter(Boolean);
+  const action = segments.length > 1 ? segments[1] : '';
+  
+  // Buscar la acción en el mapa
+  const actionHandler = authActions[action];
+  
+  // Si no se encuentra la acción, devolver 404
+  if (!actionHandler) {
+    return createResponse(404, {
       success: false,
-      message: 'Error interno del servidor',
+      message: `Ruta de autenticación ${path} no encontrada`
+    });
+  }
+  
+  // Ejecutar la acción
+  return await actionHandler(event);
+}
+
+/**
+ * Manejador para el inicio de sesión
+ */
+async function handleLogin(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  // Solo permitir método POST
+  if (event.httpMethod !== 'POST') {
+    return createResponse(405, { success: false, message: 'Método no permitido' });
+  }
+  
+  try {
+    if (!event.body) {
+      return createResponse(400, {
+        success: false,
+        message: 'Se requieren credenciales para iniciar sesión'
+      });
+    }
+
+    const credentials = JSON.parse(event.body);
+    
+    // Validar credenciales
+    if (!credentials.email || !credentials.password) {
+      return createResponse(400, {
+        success: false,
+        message: 'Se requiere email y contraseña'
+      });
+    }
+
+    // Procesar login
+    const authResult = await authService.login(credentials);
+    
+    return createResponse(200, {
+      success: true,
+      message: 'Login exitoso',
+      token: authResult.token,
+      user: authResult.user
+    });
+  } catch (error: any) {
+    console.error('Error en login:', error);
+    return createResponse(401, {
+      success: false,
+      message: error instanceof Error ? error.message : 'Credenciales inválidas'
+    });
+  }
+}
+
+/**
+ * Manejador para el registro de usuarios
+ */
+async function handleRegister(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  // Solo permitir método POST
+  if (event.httpMethod !== 'POST') {
+    return createResponse(405, { success: false, message: 'Método no permitido' });
+  }
+  
+  try {
+    if (!event.body) {
+      return createResponse(400, {
+        success: false,
+        message: 'Se requieren datos para el registro'
+      });
+    }
+
+    const userData = JSON.parse(event.body);
+    
+    // Validar datos
+    if (!userData.email || !userData.password || !userData.name) {
+      return createResponse(400, {
+        success: false,
+        message: 'Se requiere email, contraseña y nombre'
+      });
+    }
+
+    // Registrar usuario
+    const user = await authService.registerUser(userData);
+    
+    return createResponse(201, {
+      success: true,
+      message: 'Usuario registrado exitosamente',
+      user
+    });
+  } catch (error: any) {
+    console.error('Error en registro:', error);
+    return createResponse(400, {
+      success: false,
+      message: error instanceof Error ? error.message : 'Error al registrar usuario'
+    });
+  }
+}
+
+/**
+ * Manejador para obtener el perfil de usuario
+ */
+async function handleProfile(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  // Solo permitir método GET
+  if (event.httpMethod !== 'GET') {
+    return createResponse(405, { success: false, message: 'Método no permitido' });
+  }
+  
+  try {
+    // Obtener token de autorización
+    const authHeader = event.headers.Authorization || event.headers.authorization;
+    if (!authHeader) {
+      return createResponse(401, {
+        success: false,
+        message: 'Token no proporcionado'
+      });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const payload = await authService.validateToken(token);
+    const user = await authService.getUserById(payload.id);
+
+    return createResponse(200, {
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role
+      }
+    });
+  } catch (error: any) {
+    console.error('Error al obtener perfil:', error);
+    return createResponse(401, {
+      success: false,
+      message: 'Error al obtener perfil de usuario',
       error: error instanceof Error ? error.message : 'Error desconocido'
     });
   }
+}
 
-  // Return por defecto en caso de que ninguna ruta coincida
-  return createResponse(404, {
-    success: false,
-    message: 'Ruta no encontrada',
-    status: 'error'
-  });
-};
+/**
+ * Manejador para renovar el token
+ */
+async function handleRefreshToken(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  // Solo permitir método POST
+  if (event.httpMethod !== 'POST') {
+    return createResponse(405, { success: false, message: 'Método no permitido' });
+  }
+  
+  try {
+    // Obtener token del body
+    const requestBody = JSON.parse(event.body || '{}');
+    
+    // Intentar obtener token del header
+    const authHeader = event.headers.Authorization || event.headers.authorization;
+    let token = requestBody.token || requestBody.refreshToken;
+    
+    if (!token && authHeader) {
+      token = authHeader.replace('Bearer ', '');
+    }
+
+    if (!token) {
+      return createResponse(400, {
+        success: false,
+        message: 'No se proporcionó el token'
+      });
+    }
+
+    // Renovar token
+    const result = await authService.renovateTokenIfNeeded(token);
+    
+    return createResponse(200, {
+      success: true,
+      message: result.renewed ? 'Token renovado correctamente' : 'Token aún válido',
+      token: result.token,
+      expiresAt: result.expiresAt,
+      user: result.user
+    });
+  } catch (error: any) {
+    console.error('Error al renovar token:', error);
+    return createResponse(401, {
+      success: false,
+      message: 'Error al renovar token',
+      error: error instanceof Error ? error.message : 'Error desconocido'
+    });
+  }
+}

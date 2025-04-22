@@ -1,18 +1,17 @@
-
 /**
  * Configuración de endpoints de la API
  * Este archivo es generado automáticamente por el script export-endpoints.js
  * No modificar manualmente.
  * 
- * Generado: 2025-04-04T00:05:41.619Z
+ * Generado: 2025-04-23T15:30:00.000Z
  */
 
 const API_CONFIG = {
-  "apiBaseUrl": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev",
-  "authApiUrl": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/auth",
-  "researchApiUrl": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/research",
-  "welcomeScreenApiUrl": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/welcome-screens",
-  "eyeTrackingRecruitApiUrl": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/eye-tracking-recruit",
+  "apiBaseUrl": "https://5jdha0p3jl.execute-api.us-east-1.amazonaws.com/dev",
+  "authApiUrl": "https://5jdha0p3jl.execute-api.us-east-1.amazonaws.com/dev/auth",
+  "researchApiUrl": "https://5jdha0p3jl.execute-api.us-east-1.amazonaws.com/dev/research",
+  "welcomeScreenApiUrl": "https://5jdha0p3jl.execute-api.us-east-1.amazonaws.com/dev/welcome-screens",
+  "eyeTrackingRecruitApiUrl": "https://5jdha0p3jl.execute-api.us-east-1.amazonaws.com/dev/eye-tracking-recruit",
   "webSocketEndpoint": "",
   "stage": "dev",
   "region": "us-east-1",

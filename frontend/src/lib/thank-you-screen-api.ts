@@ -106,7 +106,7 @@ export const thankYouScreenFixedAPI = {
       throw new Error('Se requiere un ID de investigación');
     }
     
-    const url = `/thank-you-screen/research/${researchId}/thank-you-screen`;
+    const url = API_CONFIG.endpoints.thankYouScreen.GET_BY_RESEARCH.replace('{researchId}', researchId);
     console.log(`[ThankYouScreenAPI] Obteniendo ThankYouScreen para investigación ${researchId}, URL: ${url}`);
     console.log(`[ThankYouScreenAPI] URL completa: ${API_CONFIG.baseURL}${url}`);
     
@@ -149,7 +149,7 @@ export const thankYouScreenFixedAPI = {
       throw new Error('Se requieren datos y un ID de investigación para crear el ThankYouScreen');
     }
     
-    const url = API_CONFIG.endpoints.thankYouScreen?.CREATE || '/thank-you-screen';
+    const url = API_CONFIG.endpoints.thankYouScreen.CREATE;
     console.log(`[ThankYouScreenAPI] Creando ThankYouScreen para investigación ${data.researchId}, URL: ${url}`);
     console.log(`[ThankYouScreenAPI] URL completa: ${API_CONFIG.baseURL}${url}`);
     console.log('[ThankYouScreenAPI] Datos a enviar:', data);
@@ -219,7 +219,7 @@ export const thankYouScreenFixedAPI = {
       throw new Error('Se requieren datos para actualizar el ThankYouScreen');
     }
     
-    const url = (API_CONFIG.endpoints.thankYouScreen?.UPDATE || '/thank-you-screen/{id}').replace('{id}', id);
+    const url = API_CONFIG.endpoints.thankYouScreen.UPDATE.replace('{id}', id);
     console.log(`[ThankYouScreenAPI] Actualizando ThankYouScreen con ID ${id}, URL: ${url}`);
     console.log(`[ThankYouScreenAPI] URL completa: ${API_CONFIG.baseURL}${url}`);
     console.log('[ThankYouScreenAPI] Datos a enviar:', data);

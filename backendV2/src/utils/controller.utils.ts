@@ -5,9 +5,10 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
  * @returns Objeto con los headers CORS configurados
  */
 export const getCorsHeaders = (): { [key: string]: string } => {
-  // Configuración de CORS para permitir todos los orígenes
+  // Configuración de CORS para permitir el origen específico
   return {
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': 'http://localhost:4700',
+    'Access-Control-Allow-Credentials': 'true',
     // Permitir los headers comunes usados por la aplicación
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Amz-Date, X-Api-Key, X-Amz-Security-Token, X-Requested-With, Accept, Cache-Control, cache-control, Pragma, pragma, X-Amz-User-Agent',
     // Métodos HTTP permitidos
@@ -138,12 +139,7 @@ export const getUserIdFromEvent = (event: APIGatewayProxyEvent): string | null =
       return event.requestContext.authorizer.claims.sub;
     }
     
-    // Si estamos en modo desarrollo, podemos usar un ID simulado
-    if (process.env.USE_MOCK_DB === 'true' && process.env.NODE_ENV === 'dev') {
-      console.log('Usando ID simulado en modo de desarrollo');
-      return 'mock-user-id';
-    }
-    
+    // No usar IDs simulados bajo ninguna circunstancia
     return null;
   } catch (error) {
     console.error('Error al obtener el ID del usuario:', error);

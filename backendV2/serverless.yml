@@ -3,64 +3,98 @@ service: emotioxv2-backend
 frameworkVersion: '3'
 
 plugins:
+  - serverless-esbuild
   - serverless-offline
   - serverless-dotenv-plugin
-  - serverless-dynamodb-local
   - serverless-export-outputs
   - serverless-plugin-export-endpoints
 
-# Configuración del paquete
-package:
-  individually: true
-  patterns:
-    - 'node_modules/**'
-    - '!node_modules/@types/**'
-    - '!node_modules/**/*.md'
-    - '!node_modules/**/*.ts'
-    - '!node_modules/**/*.map'
-    - '!.git/**'
-    - '!.serverless/**'
-    - '!test/**'
-    - '!src/**'
-    - 'dist/**'
-    - 'package.json'
-    - '.env'
+# Configuración de esbuild para compilación TypeScript optimizada
+custom:
+  esbuild:
+    bundle: true
+    minify: true
+    sourcemap: true
+    exclude: []
+    target: 'node18'
+    define:
+      'process.env.NODE_ENV': '"${self:provider.stage}"'
+    platform: 'node'
+    concurrency: 10
+    keepOutputDirectory: false
+
+  # Configuración para entorno de desarrollo
+  serverless-offline:
+    httpPort: 3000
+    lambdaPort: 3002
+    websocketPort: 3001
+    noPrependStageInUrl: true
+    allowCache: true
+    
+  # Exportar endpoints para frontend
+  exportOutputs:
+    include:
+      - HttpApiUrl
+      - WebsocketApiUrl
+    output:
+      file: ./endpoints-output.json
+  
+  exportEndpoints:
+    fileName: ./endpoints.json
+    include:
+      - 'http'
+      - 'httpApi'
+      - 'websocket'
+
+  # Variables de entorno dinámicas
+  stages:
+    dev: 
+      apiGatewayCors: '*'
+    prod:
+      apiGatewayCors: ${env:ALLOWED_ORIGIN, '*'}
 
 provider:
   name: aws
   runtime: nodejs18.x
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'us-east-1'}
-  memorySize: 512
-  timeout: 10
+  memorySize: 1024
+  timeout: 30
+  logRetentionInDays: 7
+  
+  # Variables de entorno dinámicas
   environment:
     NODE_ENV: ${self:provider.stage}
+    STAGE: ${self:provider.stage}
+    AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
     APP_REGION: ${self:provider.region}
-    USER_TABLE: ${self:service}-users-${self:provider.stage}
-    DYNAMODB_TABLE: ${self:service}-table-${self:provider.stage}
-    JWT_SECRET: ${env:JWT_SECRET, 'mi-clave-secreta-para-firmar-tokens'}
-    TOKEN_EXPIRATION: '604800'
-    USE_MOCK_DB: 'false'
-    IS_OFFLINE: ${self:custom.isOffline, 'false'}
-    ALLOWED_ORIGIN: ${env:ALLOWED_ORIGIN, 'http://localhost:4700,http://localhost:5173,https://main.di4935nnx8tyk.amplifyapp.com'}
-    S3_BUCKET_NAME: emotiox-v2-${self:provider.stage}-storage
-    EYETRACKING_RECRUIT_CONFIG_TABLE: ${self:service}-eye-tracking-recruit-config-${self:provider.stage}
-    EYETRACKING_RECRUIT_PARTICIPANT_TABLE: ${self:service}-eye-tracking-recruit-participant-${self:provider.stage}
-    RECRUITMENT_LINK_TABLE: ${self:service}-recruitment-link-${self:provider.stage}
-    PARTICIPANT_TABLE: ${self:custom.participantTableName}
     API_ENDPOINT: 
       Fn::Join:
         - ""
         - - "https://"
           - Ref: "ApiGatewayRestApi"
-          - ".execute-api."
-          - Ref: "AWS::Region"
-          - ".amazonaws.com/${self:provider.stage}"
+          - ".execute-api.${self:provider.region}.amazonaws.com/${self:provider.stage}"
+    WEBSOCKET_ENDPOINT: 
+      Fn::Join:
+        - ""
+        - - "wss://"
+          - Ref: "WebsocketsApi"
+          - ".execute-api.${self:provider.region}.amazonaws.com/${self:provider.stage}"
+    USER_TABLE: ${self:service}-users-${self:provider.stage}
+    DYNAMODB_TABLE: ${self:service}-table-${self:provider.stage}
+    PARTICIPANT_TABLE: ${self:service}-participants-${self:provider.stage}
+    JWT_SECRET: ${env:JWT_SECRET, 'mi-clave-secreta-para-firmar-tokens'}
+    TOKEN_EXPIRATION: '604800'
+    S3_BUCKET_NAME: ${self:service}-${self:provider.stage}-storage
+    EYETRACKING_RECRUIT_CONFIG_TABLE: ${self:service}-eye-tracking-recruit-config-${self:provider.stage}
+    EYETRACKING_RECRUIT_PARTICIPANT_TABLE: ${self:service}-eye-tracking-recruit-participant-${self:provider.stage}
+    RECRUITMENT_LINK_TABLE: ${self:service}-recruitment-link-${self:provider.stage}
   
-  # IAM roles
+  # IAM roles unificados con acceso completo a recursos
   iam:
     role:
       statements:
+        # Acceso completo a DynamoDB (todas las tablas del servicio)
         - Effect: Allow
           Action:
             - dynamodb:Query
@@ -73,17 +107,10 @@ provider:
             - dynamodb:BatchWriteItem
             - dynamodb:DescribeTable
           Resource:
-            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USER_TABLE}"
-            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USER_TABLE}/index/*"
-            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
-            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}/index/*"
-            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.EYETRACKING_RECRUIT_CONFIG_TABLE}"
-            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.EYETRACKING_RECRUIT_CONFIG_TABLE}/index/*"
-            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.EYETRACKING_RECRUIT_PARTICIPANT_TABLE}"
-            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.EYETRACKING_RECRUIT_PARTICIPANT_TABLE}/index/*"
-            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.RECRUITMENT_LINK_TABLE}"
-            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.RECRUITMENT_LINK_TABLE}/index/*"
-        # Permisos para S3
+            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:service}-*-${self:provider.stage}"
+            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:service}-*-${self:provider.stage}/index/*"
+        
+        # Acceso completo a S3
         - Effect: Allow
           Action:
             - s3:PutObject
@@ -91,320 +118,32 @@ provider:
             - s3:DeleteObject
             - s3:PutObjectAcl
             - s3:ListBucket
+            - s3:HeadObject
+            - s3:GetObjectTagging
+            - s3:PutObjectTagging
           Resource:
             - "arn:aws:s3:::${self:provider.environment.S3_BUCKET_NAME}"
             - "arn:aws:s3:::${self:provider.environment.S3_BUCKET_NAME}/*"
-        - Effect: Allow
-          Action:
-            - dynamodb:Query
-            - dynamodb:Scan
-            - dynamodb:GetItem
-            - dynamodb:PutItem
-            - dynamodb:UpdateItem
-            - dynamodb:DeleteItem
-          Resource:
-            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:custom.participantTableName}"
-            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:custom.participantTableName}/index/*"
 
 functions:
+  # Función principal para API REST - maneja todas las rutas
   api:
-    handler: dist/backendV2/src/index.handler
+    handler: src/index.handler
     events:
       - http:
-          path: /{proxy+}
+          path: /{proxy+} # Una sola ruta para todas las peticiones
           method: ANY
-          cors:
-            origin: '*'
-            headers:
-              - Content-Type
-              - X-Amz-Date
-              - Authorization
-              - X-Api-Key
-              - X-Amz-Security-Token
-              - X-Amz-User-Agent
-              - X-Requested-With
-              - Accept
-              - Cache-Control
-              - cache-control
-              - Pragma
-              - pragma
-            allowCredentials: true
+          cors: true
       - http:
-          path: /
+          path: / # Ruta raíz
           method: ANY
-          cors:
-            origin: '*'
-            headers:
-              - Content-Type
-              - X-Amz-Date
-              - Authorization
-              - X-Api-Key
-              - X-Amz-Security-Token
-              - X-Amz-User-Agent
-              - X-Requested-With
-              - Accept
-              - Cache-Control
-              - cache-control
-              - Pragma
-              - pragma
-            allowCredentials: true
-      - http:
-          path: /eye-tracking
-          method: ANY
-          cors:
-            origin: '*'
-            headers:
-              - Content-Type
-              - X-Amz-Date
-              - Authorization
-              - X-Api-Key
-              - X-Amz-Security-Token
-              - X-Amz-User-Agent
-              - X-Requested-With
-              - Accept
-              - Cache-Control
-              - cache-control
-              - Pragma
-              - pragma
-            allowCredentials: true
-      - http:
-          path: /eye-tracking/{proxy+}
-          method: ANY
-          cors:
-            origin: '*'
-            headers:
-              - Content-Type
-              - X-Amz-Date
-              - Authorization
-              - X-Api-Key
-              - X-Amz-Security-Token
-              - X-Amz-User-Agent
-              - X-Requested-With
-              - Accept
-              - Cache-Control
-              - cache-control
-              - Pragma
-              - pragma
-            allowCredentials: true
-      - http:
-          path: /smart-voc
-          method: ANY
-          cors:
-            origin: '*'
-            headers:
-              - Content-Type
-              - X-Amz-Date
-              - Authorization
-              - X-Api-Key
-              - X-Amz-Security-Token
-              - X-Amz-User-Agent
-              - X-Requested-With
-              - Accept
-              - Cache-Control
-              - cache-control
-              - Pragma
-              - pragma
-            allowCredentials: true
-      - http:
-          path: /smart-voc/{proxy+}
-          method: ANY
-          cors:
-            origin: '*'
-            headers:
-              - Content-Type
-              - X-Amz-Date
-              - Authorization
-              - X-Api-Key
-              - X-Amz-Security-Token
-              - X-Amz-User-Agent
-              - X-Requested-With
-              - Accept
-              - Cache-Control
-              - cache-control
-              - Pragma
-              - pragma
-            allowCredentials: true
-      # Rutas para cognitive-task
-      - http:
-          path: /cognitive-task
-          method: ANY
-          cors:
-            origin: '*'
-            headers:
-              - Content-Type
-              - X-Amz-Date
-              - Authorization
-              - X-Api-Key
-              - X-Amz-Security-Token
-              - X-Amz-User-Agent
-              - X-Requested-With
-              - Accept
-              - Cache-Control
-              - cache-control
-              - Pragma
-              - pragma
-            allowCredentials: true
-      - http:
-          path: /cognitive-task/{proxy+}
-          method: ANY
-          cors:
-            origin: '*'
-            headers:
-              - Content-Type
-              - X-Amz-Date
-              - Authorization
-              - X-Api-Key
-              - X-Amz-Security-Token
-              - X-Amz-User-Agent
-              - X-Requested-With
-              - Accept
-              - Cache-Control
-              - cache-control
-              - Pragma
-              - pragma
-            allowCredentials: true
-      # Rutas para eye-tracking-recruit
-      - http:
-          path: /eye-tracking-recruit
-          method: ANY
-          cors:
-            origin: '*'
-            headers:
-              - Content-Type
-              - X-Amz-Date
-              - Authorization
-              - X-Api-Key
-              - X-Amz-Security-Token
-              - X-Amz-User-Agent
-              - X-Requested-With
-              - Accept
-              - Cache-Control
-              - cache-control
-              - Pragma
-              - pragma
-            allowCredentials: true
-      - http:
-          path: /eye-tracking-recruit/{proxy+}
-          method: ANY
-          cors:
-            origin: '*'
-            headers:
-              - Content-Type
-              - X-Amz-Date
-              - Authorization
-              - X-Api-Key
-              - X-Amz-Security-Token
-              - X-Amz-User-Agent
-              - X-Requested-With
-              - Accept
-              - Cache-Control
-              - cache-control
-              - Pragma
-              - pragma
-            allowCredentials: true
-      # Rutas explícitas para el servicio S3
-      - http:
-          path: /s3/upload
-          method: POST
-          cors:
-            origin: '*'
-            headers:
-              - Content-Type
-              - X-Amz-Date
-              - Authorization
-              - X-Api-Key
-              - X-Amz-Security-Token
-              - X-Amz-User-Agent
-              - X-Requested-With
-              - Accept
-              - Cache-Control
-              - cache-control
-              - Pragma
-              - pragma
-            allowCredentials: true
-      - http:
-          path: /s3/download/{key}
-          method: GET
-          cors:
-            origin: '*'
-            headers:
-              - Content-Type
-              - X-Amz-Date
-              - Authorization
-              - X-Api-Key
-              - X-Amz-Security-Token
-              - X-Amz-User-Agent
-              - X-Requested-With
-              - Accept
-              - Cache-Control
-              - cache-control
-              - Pragma
-              - pragma
-            allowCredentials: true
-      - http:
-          path: /s3/delete/{key}
-          method: DELETE
-          cors:
-            origin: '*'
-            headers:
-              - Content-Type
-              - X-Amz-Date
-              - Authorization
-              - X-Api-Key
-              - X-Amz-Security-Token
-              - X-Amz-User-Agent
-              - X-Requested-With
-              - Accept
-              - Cache-Control
-              - cache-control
-              - Pragma
-              - pragma
-            allowCredentials: true
-      - http:
-          path: /participants
-          method: ANY
-          cors:
-            origin: '*'
-            headers:
-              - Content-Type
-              - X-Amz-Date
-              - Authorization
-              - X-Api-Key
-              - X-Amz-Security-Token
-              - X-Amz-User-Agent
-              - X-Requested-With
-              - Accept
-              - Cache-Control
-              - cache-control
-              - Pragma
-              - pragma
-              - Origin
-              - origin
-            allowCredentials: true
-      - http:
-          path: /participants/{proxy+}
-          method: ANY
-          cors:
-            origin: '*'
-            headers:
-              - Content-Type
-              - X-Amz-Date
-              - Authorization
-              - X-Api-Key
-              - X-Amz-Security-Token
-              - X-Amz-User-Agent
-              - X-Requested-With
-              - Accept
-              - Cache-Control
-              - cache-control
-              - Pragma
-              - pragma
-              - Origin
-              - origin
-            allowCredentials: true
-  
+          cors: true
+    environment:
+      CONNECTION_TYPE: http
+
+  # Función para WebSockets
   websocket:
-    handler: dist/backendV2/src/index.handler
+    handler: src/index.handler
     events:
       - websocket:
           route: $connect
@@ -412,9 +151,38 @@ functions:
           route: $disconnect
       - websocket:
           route: $default
+      - websocket:
+          route: message
+    environment: 
+      CONNECTION_TYPE: websocket
 
 resources:
   Resources:
+    # Bucket S3 para almacenamiento
+    StorageBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:provider.environment.S3_BUCKET_NAME}
+        CorsConfiguration:
+          CorsRules:
+            - AllowedHeaders:
+                - '*'
+              AllowedMethods:
+                - GET
+                - PUT
+                - POST
+                - DELETE
+                - HEAD
+              AllowedOrigins:
+                - '*'
+              MaxAge: 3000
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: false
+          BlockPublicPolicy: false
+          IgnorePublicAcls: false
+          RestrictPublicBuckets: false
+    
+    # Tabla de usuarios
     UsersTable:
       Type: AWS::DynamoDB::Table
       Properties:
@@ -435,9 +203,12 @@ resources:
                 KeyType: HASH
             Projection:
               ProjectionType: ALL
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         SSESpecification:
           SSEEnabled: true
     
+    # Tabla principal DynamoDB
     DynamoDBTable:
       Type: AWS::DynamoDB::Table
       Properties:
@@ -470,10 +241,12 @@ resources:
                 KeyType: HASH
             Projection:
               ProjectionType: ALL
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         SSESpecification:
           SSEEnabled: true
     
-    # Nuevas tablas para EyeTracking Recruit
+    # Tabla EyeTracking Recruit Config
     EyeTrackingRecruitConfigTable:
       Type: AWS::DynamoDB::Table
       Properties:
@@ -502,9 +275,12 @@ resources:
                 KeyType: RANGE
             Projection:
               ProjectionType: ALL
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         SSESpecification:
           SSEEnabled: true
     
+    # Tabla EyeTracking Recruit Participant
     EyeTrackingRecruitParticipantTable:
       Type: AWS::DynamoDB::Table
       Properties:
@@ -545,9 +321,12 @@ resources:
                 KeyType: RANGE
             Projection:
               ProjectionType: ALL
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         SSESpecification:
           SSEEnabled: true
     
+    # Tabla Recruitment Link
     RecruitmentLinkTable:
       Type: AWS::DynamoDB::Table
       Properties:
@@ -584,38 +363,17 @@ resources:
                 KeyType: HASH
             Projection:
               ProjectionType: ALL
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         SSESpecification:
           SSEEnabled: true
     
-    # Configuración CORS para API Gateway
-    GatewayResponseDefault4XX:
-      Type: 'AWS::ApiGateway::GatewayResponse'
-      Properties:
-        ResponseParameters:
-          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
-          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type, Authorization, X-Amz-Date, X-Api-Key, X-Amz-Security-Token, X-Requested-With, x-requested-with, Accept, Cache-Control, cache-control, Pragma, pragma, X-Amz-User-Agent'"
-          gatewayresponse.header.Access-Control-Allow-Methods: "'GET, POST, PUT, DELETE, OPTIONS, PATCH'"
-          gatewayresponse.header.Access-Control-Allow-Credentials: "'true'"
-        ResponseType: DEFAULT_4XX
-        RestApiId:
-          Ref: 'ApiGatewayRestApi'
-    
-    GatewayResponseDefault5XX:
-      Type: 'AWS::ApiGateway::GatewayResponse'
-      Properties:
-        ResponseParameters:
-          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
-          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type, Authorization, X-Amz-Date, X-Api-Key, X-Amz-Security-Token, X-Requested-With, x-requested-with, Accept, Cache-Control, cache-control, Pragma, pragma, X-Amz-User-Agent'"
-          gatewayresponse.header.Access-Control-Allow-Methods: "'GET, POST, PUT, DELETE, OPTIONS, PATCH'"
-          gatewayresponse.header.Access-Control-Allow-Credentials: "'true'"
-        ResponseType: DEFAULT_5XX
-        RestApiId:
-          Ref: 'ApiGatewayRestApi'
-
+    # Tabla de participantes
     ParticipantTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: ${self:custom.participantTableName}
+        TableName: ${self:provider.environment.PARTICIPANT_TABLE}
+        BillingMode: PAY_PER_REQUEST
         AttributeDefinitions:
           - AttributeName: id
             AttributeType: S
@@ -631,67 +389,45 @@ resources:
                 KeyType: HASH
             Projection:
               ProjectionType: ALL
-            ProvisionedThroughput:
-              ReadCapacityUnits: 1
-              WriteCapacityUnits: 1
-        ProvisionedThroughput:
-          ReadCapacityUnits: 1
-          WriteCapacityUnits: 1
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
+        SSESpecification:
+          SSEEnabled: true
         StreamSpecification:
           StreamViewType: NEW_AND_OLD_IMAGES
 
-custom:
-  serverless-offline:
-    httpPort: 3000
-    lambdaPort: 3002
-    websocketPort: 3001
-  
-  useMockDb:
-    dev: 'false'
-    test: 'false'
-    prod: 'false'
-  
-  dynamodb:
-    start:
-      port: 8000
-      inMemory: true
-      migrate: true
-    stages:
-      - dev
-    migration:
-      dir: migrations
-  
-  isOffline: ${opt:offline, 'false'}
-  
-  exportOutputs:
-    fileName: outputs.json
-    include:
-      - ServiceEndpoint
-      - WebsocketEndpoint
-  
-  exportEndpoints:
-    fileName: endpoints.json
-    include:
-      - 'http'
-      - 'httpApi'
-
-  participantTableName: ${self:service}-participants-${self:provider.stage}
-  
-  # Configuración global de CORS
-  cors:
-    origin: '*'
-    headers:
-      - Content-Type
-      - X-Amz-Date
-      - Authorization
-      - X-Api-Key
-      - X-Amz-Security-Token
-      - X-Requested-With
-      - Accept
-      - Origin
-      - Cache-Control
-      - cache-control
-      - Pragma
-      - pragma
-      - x-requested-with
-    allowCredentials: true
+  # Outputs para exportar automáticamente
+  Outputs:
+    HttpApiUrl:
+      Description: URL of the HTTP API
+      Value:
+        Fn::Join:
+          - ""
+          - - "https://"
+            - Ref: "ApiGatewayRestApi"
+            - ".execute-api.${self:provider.region}.amazonaws.com/${self:provider.stage}"
+      Export:
+        Name: ${self:service}-${self:provider.stage}-HttpApiUrl
+    
+    WebsocketApiUrl:
+      Description: URL of the WebSocket API
+      Value:
+        Fn::Join:
+          - ""
+          - - "wss://"
+            - Ref: "WebsocketsApi"
+            - ".execute-api.${self:provider.region}.amazonaws.com/${self:provider.stage}"
+      Export:
+        Name: ${self:service}-${self:provider.stage}-WebsocketApiUrl
+    
+    ServiceName:
+      Description: Nombre del servicio
+      Value: ${self:service}
+      Export:
+        Name: ${self:service}-${self:provider.stage}-ServiceName
+    
+    Stage:
+      Description: Etapa de despliegue
+      Value: ${self:provider.stage}
+      Export:
+        Name: ${self:service}-${self:provider.stage}-Stage

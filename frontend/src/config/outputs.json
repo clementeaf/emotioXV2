@@ -1,9 +1,9 @@
 {
-  "ServiceEndpoint": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev",
-  "WebSocketEndpoint": "",
+  "ServiceEndpoint": "https://5jdha0p3jl.execute-api.us-east-1.amazonaws.com/dev",
+  "WebSocketEndpoint": "wss://93dqskpbm6.execute-api.us-east-1.amazonaws.com/dev",
   "Region": "us-east-1",
   "Stage": "dev",
-  "AuthApiUrl": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/auth",
-  "ResearchApiUrl": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/research",
-  "WelcomeScreenApiUrl": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/welcome-screens"
+  "AuthApiUrl": "https://5jdha0p3jl.execute-api.us-east-1.amazonaws.com/dev/auth",
+  "ResearchApiUrl": "https://5jdha0p3jl.execute-api.us-east-1.amazonaws.com/dev/research",
+  "WelcomeScreenApiUrl": "https://5jdha0p3jl.execute-api.us-east-1.amazonaws.com/dev/welcome-screens"
 }

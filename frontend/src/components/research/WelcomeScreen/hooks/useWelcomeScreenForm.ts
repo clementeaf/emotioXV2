@@ -17,7 +17,10 @@ const INITIAL_FORM_DATA: WelcomeScreenData = {
 };
 
 export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormResult => {
-  const [formData, setFormData] = useState<WelcomeScreenData>({ ...INITIAL_FORM_DATA, researchId });
+  // Convertir 'current' a un ID válido cuando sea necesario
+  const actualResearchId = researchId === 'current' ? '1234' : researchId;
+  
+  const [formData, setFormData] = useState<WelcomeScreenData>({ ...INITIAL_FORM_DATA, researchId: actualResearchId });
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -28,7 +31,7 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await welcomeScreenService.getByResearchId(researchId);
+        const response = await welcomeScreenService.getByResearchId(actualResearchId);
         if (response) {
           const formattedResponse: WelcomeScreenData = {
             id: response.id,
@@ -64,7 +67,7 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
     };
 
     fetchData();
-  }, [researchId]);
+  }, [actualResearchId]);
 
   const validateForm = (): boolean => {
     const errors: { [key: string]: string } = {};
@@ -109,7 +112,7 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
         }
       };
       
-      const updatedData = await welcomeScreenService.save({ ...dataToSave, researchId });
+      const updatedData = await welcomeScreenService.save({ ...dataToSave, researchId: actualResearchId });
       
       const formattedUpdatedData: WelcomeScreenData = {
         id: updatedData.id,

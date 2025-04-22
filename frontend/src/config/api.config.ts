@@ -1,4 +1,4 @@
-import endpoints from './endpoints.json';
+import { API_ENDPOINTS, API_HTTP_ENDPOINT, API_WEBSOCKET_ENDPOINT } from '@/api/endpoints';
 
 // Estructura para welcome screen
 interface WelcomeScreenEndpoints {
@@ -86,18 +86,11 @@ interface Endpoints {
   s3: S3Endpoints;
 }
 
-// Obtener la URL base desde el archivo endpoints.json generado dinámicamente
+// Obtener la URL base desde el archivo endpoints.js generado dinámicamente
 const getBaseURL = () => {
-  // Usar directamente la URL desde endpoints.json
-  if (endpoints && endpoints.apiUrl) {
-    console.log('Usando URL base desde endpoints.json:', endpoints.apiUrl);
-    return endpoints.apiUrl;
-  }
-  
-  // Fallback por si no existe endpoints.json
-  const fallbackUrl = 'https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev';
-  console.log('Usando URL base fallback:', fallbackUrl);
-  return fallbackUrl;
+  // Usar la URL desde API_ENDPOINTS generado automáticamente
+  console.log('Usando URL base desde endpoints.js:', API_HTTP_ENDPOINT);
+  return API_HTTP_ENDPOINT;
 };
 
 // Configuración de la API
@@ -171,12 +164,12 @@ const API_CONFIG = {
     
     // Tareas Cognitivas
     cognitiveTask: {
-      getByResearch: '/cognitive-task/research/{researchId}',
+      getByResearch: '/research/{researchId}/cognitive-task',
       get: '/cognitive-task/{id}',
       create: '/cognitive-task',
       update: '/cognitive-task/{id}',
       delete: '/cognitive-task/{id}',
-      createOrUpdate: '/cognitive-task/research/{researchId}'
+      createOrUpdate: '/research/{researchId}/cognitive-task'
     },
     
     // S3
@@ -198,7 +191,7 @@ const API_CONFIG = {
 // Agregar logs para depuración
 console.log('API_CONFIG:', {
   baseURL: API_CONFIG.baseURL,
-  endpointExample: API_CONFIG.baseURL + API_CONFIG.endpoints.research.CREATE
+  endpointExample: API_CONFIG.baseURL + API_CONFIG.endpoints.research.createResearch
 });
 
 // Añadir logs adicionales para depuración

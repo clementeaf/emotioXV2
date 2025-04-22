@@ -1,6 +1,7 @@
 {
-  "apiUrl": "https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com",
-  "websocketUrl": "wss://pgfnp44rj1.execute-api.us-east-1.amazonaws.com",
+  "apiUrl": "https://5jdha0p3jl.execute-api.us-east-1.amazonaws.com",
+  "env": "development",
+  "websocketUrl": "wss://93dqskpbm6.execute-api.us-east-1.amazonaws.com/dev",
   "stage": "dev",
   "region": "us-east-1",
   "allowedOrigins": [

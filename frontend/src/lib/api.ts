@@ -102,8 +102,7 @@ const customFetchAdapter = () => {
       body: bodyData, // Usar la variable bodyData en lugar de la conversión inline
       signal,
       mode: 'cors',
-      // No enviar credenciales automáticamente para evitar problemas CORS
-      credentials: 'omit'
+      credentials: 'omit' // Omitir credenciales completamente para evitar CORS complejos
     });
 
     return {
@@ -364,7 +363,14 @@ export const researchAPI = {
   },
   
   delete: (id: string) => {
+    // Validar que el ID sea válido
+    if (!id || id === 'undefined' || id === 'null') {
+      console.error('Error: Intento de eliminar una investigación con ID inválido:', id);
+      return Promise.reject(new Error('ID de investigación inválido'));
+    }
+    
     const url = (API_CONFIG.endpoints.research.deleteResearch || '/research/{id}').replace('{id}', id);
+    console.log(`Eliminando investigación con ID ${id} en URL: ${url}`);
     return alovaInstance.Delete<APIResponse<boolean>>(url);
   },
   

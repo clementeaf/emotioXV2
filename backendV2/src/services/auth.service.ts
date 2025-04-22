@@ -4,7 +4,7 @@
  */
 
 import { DynamoDBClient, ReturnValue } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, GetCommand, QueryCommand, PutCommand, UpdateCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, GetCommand, QueryCommand, PutCommand, UpdateCommand, DeleteCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
 import { uuidv4 } from '../utils/id-generator';
 import * as jwt from 'jsonwebtoken';
 
@@ -57,21 +57,12 @@ class AuthService implements IAuthService {
   private tableName: string;
   private jwtSecret: string;
   private tokenExpiration: number; // En segundos
-  private mockUsers: Map<string, User>;
-  private useMock: boolean;
-  
-  // Almacenamiento estático para simular persistencia entre invocaciones
-  private static persistentMockUsers: Map<string, User> = new Map<string, User>();
   
   constructor() {
-    // NO USAREMOS MOCKDB BAJO NINGÚN CASO
-    this.useMock = false;
-    
-    console.log('AUTH SERVICE CONSTRUCTOR - MODO MOCK DESACTIVADO 100%');
+    console.log('AUTH SERVICE CONSTRUCTOR - MODO PRODUCCIÓN');
     console.log('Variables de entorno disponibles:', JSON.stringify({
       APP_REGION: process.env.APP_REGION,
-      USER_TABLE: process.env.USER_TABLE,
-      USE_MOCK_DB: process.env.USE_MOCK_DB
+      USER_TABLE: process.env.USER_TABLE
     }));
     
     this.dynamoClient = new DynamoDBClient({
@@ -84,100 +75,15 @@ class AuthService implements IAuthService {
     this.jwtSecret = process.env.JWT_SECRET || 'mi-clave-secreta-para-firmar-tokens';
     this.tokenExpiration = parseInt(process.env.TOKEN_EXPIRATION || '604800', 10); // Aumentado a 7 días (604800 segundos)
     
-    // Inicializar por si acaso, pero no lo usaremos
-    this.mockUsers = AuthService.persistentMockUsers;
-    
     console.log('Uso de DynamoDB configurado:');
     console.log('- Tabla de usuarios:', this.tableName);
     console.log('- Region de AWS:', process.env.APP_REGION || 'us-east-1');
-    
-    // Inicializar usuario de prueba solo en entorno de desarrollo
-    if (process.env.NODE_ENV === 'dev') {
-      this.ensureTestUserExists()
-        .then(() => console.log('Usuario de prueba verificado'))
-        .catch(err => console.error('Error al verificar usuario de prueba:', err));
-    }
-  }
-  
-  /**
-   * Asegura que exista un usuario de prueba en la base de datos
-   */
-  private async ensureTestUserExists(): Promise<void> {
-    const testEmail = 'clemente@gmail.com';
-    const testPassword = 'clemente';
-    
-    try {
-      // Verificar si ya existe
-      try {
-        await this.getUserByEmail(testEmail);
-        console.log('Usuario de prueba ya existe');
-        return;
-      } catch (error) {
-        // Si el error es que no se encontró, creamos el usuario
-        console.log('Usuario de prueba no encontrado, se creará uno nuevo');
-      }
-      
-      // Generar el hash de la contraseña
-      const salt = "EmotioX-salt-fixed-839254";
-      const passwordHash = `${salt}:${testPassword}`;
-      
-      console.log('Creando usuario de prueba con hash:', passwordHash);
-      
-      // Crear usuario de prueba directamente
-      const testUser: User = {
-        id: uuidv4(),
-        email: testEmail,
-        name: 'Clemente',
-        passwordHash,
-        role: 'researcher',
-        isActive: true,
-        isVerified: true,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-        lastLogin: null as unknown as number,
-        loginCount: 0,
-        preferences: {
-          language: 'es',
-          notifications: true,
-          theme: 'light'
-        }
-      };
-
-      // Guardar en DynamoDB directamente
-      const params = {
-        TableName: this.tableName,
-        Item: testUser
-      };
-
-      console.log('Guardando usuario de prueba en DynamoDB:', {
-        id: testUser.id,
-        email: testUser.email,
-        passwordHash: testUser.passwordHash
-      });
-
-      const command = new PutCommand(params);
-      await this.dynamoDb.send(command);
-      
-      console.log('Usuario de prueba creado exitosamente');
-    } catch (error) {
-      console.error('Error al crear usuario de prueba:', error);
-      throw error;
-    }
   }
   
   /**
    * Obtiene un usuario por su ID
    */
   async getUserById(id: string): Promise<User> {
-    if (this.useMock) {
-      const user = this.mockUsers.get(id);
-      console.log(`Buscando usuario con ID ${id}...`, user ? 'Encontrado' : 'No encontrado');
-      if (!user) {
-        throw new Error(`Usuario con ID ${id} no encontrado`);
-      }
-      return this.sanitizeUser(user);
-    }
-    
     const params = {
       TableName: this.tableName,
       Key: { id }
@@ -201,41 +107,54 @@ class AuthService implements IAuthService {
    * Obtiene un usuario por su email
    */
   async getUserByEmail(email: string): Promise<User> {
-    if (this.useMock) {
-      const user = Array.from(this.mockUsers.values()).find(u => u.email === email);
-      if (!user) {
-        throw new Error(`Usuario con email ${email} no encontrado`);
-      }
-      
-      // Para depuración: No sanitizamos el usuario para el login
-      console.log('Usuario encontrado con email, datos completos:', JSON.stringify({
-        id: user.id,
-        email: user.email,
-        passwordHash: user.passwordHash
-      }));
-      
-      return user; // Retornamos el usuario completo con el hash
-    }
-    
-    const params = {
-      TableName: this.tableName,
-      IndexName: 'EmailIndex',
-      KeyConditionExpression: 'email = :email',
-      ExpressionAttributeValues: {
-        ':email': email
-      }
-    };
-    
     try {
-      const command = new QueryCommand(params);
-      const result = await this.dynamoDb.send(command);
-      if (!result.Items || result.Items.length === 0) {
+      console.log(`Buscando usuario con email: ${email} en tabla ${this.tableName}`);
+      
+      // Intenta primero buscar por GSI (índice secundario global)
+      const queryParams = {
+        TableName: this.tableName,
+        IndexName: 'EmailIndex',
+        KeyConditionExpression: 'email = :email',
+        ExpressionAttributeValues: {
+          ':email': email
+        }
+      };
+      
+      try {
+        console.log('Ejecutando consulta con GSI EmailIndex');
+        const command = new QueryCommand(queryParams);
+        const result = await this.dynamoDb.send(command);
+        
+        if (result.Items && result.Items.length > 0) {
+          console.log(`Usuario encontrado usando GSI: ${result.Items[0].id}`);
+          return result.Items[0] as User; // Retornamos el usuario completo
+        }
+        
+        throw new Error(`Usuario con email ${email} no encontrado en índice`);
+      } catch (indexError) {
+        // Si hay un error con el índice, intentar un escaneo completo como fallback
+        console.warn(`Error al consultar índice EmailIndex: ${indexError}. Intentando escaneo completo...`);
+        
+        const scanParams = {
+          TableName: this.tableName,
+          FilterExpression: 'email = :email',
+          ExpressionAttributeValues: {
+            ':email': email
+          }
+        };
+        
+        const scanCommand = new ScanCommand(scanParams);
+        const scanResult = await this.dynamoDb.send(scanCommand);
+        
+        if (scanResult.Items && scanResult.Items.length > 0) {
+          console.log(`Usuario encontrado usando escaneo: ${scanResult.Items[0].id}`);
+          return scanResult.Items[0] as User;
+        }
+        
         throw new Error(`Usuario con email ${email} no encontrado`);
       }
-      
-      return result.Items[0] as User; // Retornamos el usuario completo
     } catch (error) {
-      console.error('Error al obtener usuario por email:', error);
+      console.error(`Error al obtener usuario por email ${email}:`, error);
       throw error;
     }
   }
@@ -280,18 +199,15 @@ class AuthService implements IAuthService {
         }
       };
       
-      if (this.useMock) {
-        this.mockUsers.set(newUser.id, newUser);
-        console.log('Usuario guardado en mock DB:', newUser.id);
-      } else {
-        const params = {
-          TableName: this.tableName,
-          Item: newUser
-        };
-        
-        const command = new PutCommand(params);
-        await this.dynamoDb.send(command);
-      }
+      const params = {
+        TableName: this.tableName,
+        Item: newUser
+      };
+      
+      const command = new PutCommand(params);
+      await this.dynamoDb.send(command);
+      
+      console.log('Usuario guardado en DynamoDB:', newUser.id);
       
       return this.sanitizeUser(newUser);
     } catch (error) {
@@ -305,58 +221,57 @@ class AuthService implements IAuthService {
    */
   async updateUser(id: string, data: UpdateUserDto): Promise<User> {
     try {
-      // Verificar que el usuario existe
-      const existingUser = await this.getUserById(id);
+      // Recupera el usuario actual para validar
+      const currentUser = await this.getUserById(id);
+      let updatedUser = { ...currentUser };
       
-      // Preparar datos actualizados
-      const updatedUser: User = {
-        ...existingUser,
-        ...data,
-        updatedAt: Date.now()
-      };
-      
-      // Si se proporciona una nueva contraseña, hashearla
+      // Si se está actualizando la contraseña, generar un nuevo hash
       if (data.password) {
         updatedUser.passwordHash = await this.hashPassword(data.password);
       }
       
-      if (this.useMock) {
-        this.mockUsers.set(id, updatedUser);
-      } else {
-        // Construir la expresión de actualización
-        let updateExpression = 'SET updatedAt = :updatedAt';
-        const expressionAttributeValues: Record<string, any> = {
-          ':updatedAt': updatedUser.updatedAt
-        };
-        
-        // Añadir los campos que se están actualizando
-        Object.entries(data).forEach(([key, value]) => {
-          if (key !== 'password' && key !== 'id') {
-            updateExpression += `, ${key} = :${key}`;
-            expressionAttributeValues[`:${key}`] = value;
-          }
-        });
-        
-        // Si se actualizó la contraseña, actualizar el hash
-        if (data.password) {
-          updateExpression += ', passwordHash = :passwordHash';
-          expressionAttributeValues[':passwordHash'] = updatedUser.passwordHash;
+      // Actualizar los campos proporcionados
+      Object.entries(data).forEach(([key, value]) => {
+        if (key !== 'password' && value !== undefined) {
+          // @ts-ignore - Ignorar error de tipo en asignación dinámica
+          updatedUser[key] = value;
         }
-        
-        const params = {
-          TableName: this.tableName,
-          Key: { id },
-          UpdateExpression: updateExpression,
-          ExpressionAttributeValues: expressionAttributeValues,
-          ReturnValues: ReturnValue.ALL_NEW
-        };
-        
-        const command = new UpdateCommand(params);
-        const result = await this.dynamoDb.send(command);
-        return this.sanitizeUser(result.Attributes as User);
+      });
+      
+      // Actualizar el timestamp
+      updatedUser.updatedAt = Date.now();
+      
+      // Construir la expresión de actualización
+      let updateExpression = 'SET updatedAt = :updatedAt';
+      const expressionAttributeValues: Record<string, any> = {
+        ':updatedAt': updatedUser.updatedAt
+      };
+      
+      // Añadir los campos que se están actualizando
+      Object.entries(data).forEach(([key, value]) => {
+        if (key !== 'password' && key !== 'id' && value !== undefined) {
+          updateExpression += `, ${key} = :${key}`;
+          expressionAttributeValues[`:${key}`] = value;
+        }
+      });
+      
+      // Si se actualizó la contraseña, actualizar el hash
+      if (data.password) {
+        updateExpression += ', passwordHash = :passwordHash';
+        expressionAttributeValues[':passwordHash'] = updatedUser.passwordHash;
       }
       
-      return this.sanitizeUser(updatedUser);
+      const params = {
+        TableName: this.tableName,
+        Key: { id },
+        UpdateExpression: updateExpression,
+        ExpressionAttributeValues: expressionAttributeValues,
+        ReturnValues: ReturnValue.ALL_NEW
+      };
+      
+      const command = new UpdateCommand(params);
+      const result = await this.dynamoDb.send(command);
+      return this.sanitizeUser(result.Attributes as User);
     } catch (error) {
       console.error('Error al actualizar usuario:', error);
       throw error;
@@ -371,17 +286,13 @@ class AuthService implements IAuthService {
       // Verificar que el usuario existe
       await this.getUserById(id);
       
-      if (this.useMock) {
-        this.mockUsers.delete(id);
-      } else {
-        const params = {
-          TableName: this.tableName,
-          Key: { id }
-        };
-        
-        const command = new DeleteCommand(params);
-        await this.dynamoDb.send(command);
-      }
+      const params = {
+        TableName: this.tableName,
+        Key: { id }
+      };
+      
+      const command = new DeleteCommand(params);
+      await this.dynamoDb.send(command);
     } catch (error) {
       console.error('Error al eliminar usuario:', error);
       throw error;
@@ -680,10 +591,12 @@ class AuthService implements IAuthService {
           throw new Error('El email ya está registrado');
         }
       } catch (error: any) {
-        // Si el error es porque no se encontró el usuario, es lo que queremos
-        if (error.message !== 'Usuario no encontrado') {
+        // Si el error contiene "no encontrado", significa que el usuario no existe
+        // y podemos continuar con el registro
+        if (!error.message.includes('no encontrado')) {
           throw error;
         }
+        console.log('Email no registrado, se procederá a crear el usuario');
       }
       
       // Generar un hash simple para la contraseña
@@ -713,16 +626,14 @@ class AuthService implements IAuthService {
       
       console.log('Guardando usuario nuevo con ID:', newUser.id);
       
-      // Convertir a CreateUserDto
-      const createUserDto: CreateUserDto = {
-        email: userDto.email,
-        name: userDto.name,
-        password: userDto.password,
-        role: newUser.role
+      // Guardar en DynamoDB
+      const params = {
+        TableName: this.tableName,
+        Item: newUser
       };
       
-      // Guardar el usuario usando createUser
-      await this.createUser(createUserDto);
+      const command = new PutCommand(params);
+      await this.dynamoDb.send(command);
       
       // Devolver usuario (sin contraseña)
       return this.sanitizeUser(newUser);

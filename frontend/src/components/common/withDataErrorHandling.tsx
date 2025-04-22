@@ -85,47 +85,14 @@ export function withDataErrorHandling<
       setError(null);
       
       try {
-        // Determinar si debemos usar datos simulados
-        const shouldUseMock = 
-          forceMock || 
-          (isDevMode && shouldUseSimulatedMode()) ||
-          (isDevMode && localStorage.getItem(localStorageKey) === 'true');
+        // Nunca usar datos simulados, incluso si se solicita explícitamente
+        const shouldUseMock = false;
         
-        // Si estamos en modo simulado o se fuerza el uso de datos simulados
-        if (shouldUseMock) {
-          if (tryRealDataFirst) {
-            try {
-              // Intentar cargar datos reales primero, con un tiempo límite
-              const realDataPromise = loadData();
-              const timeoutPromise = new Promise<TData>((_, reject) => {
-                setTimeout(() => reject(new Error('Timeout loading real data')), 3000);
-              });
-              
-              const realData = await Promise.race([realDataPromise, timeoutPromise]);
-              setData(realData);
-              setIsSimulatedData(false);
-              console.log('Cargados datos reales exitosamente (modo mixto)');
-            } catch (e) {
-              // Si falla, cargar datos simulados como respaldo
-              console.log('Error cargando datos reales en modo mixto, usando simulados:', e);
-              const mockData = await getMockData();
-              setData(mockData);
-              setIsSimulatedData(true);
-            }
-          } else {
-            // Directamente cargamos datos simulados
-            console.log('Usando datos simulados...');
-            const mockData = await getMockData();
-            setData(mockData);
-            setIsSimulatedData(true);
-          }
-        } else {
-          // Cargar datos reales
-          console.log('Cargando datos reales...');
-          const realData = await loadData();
-          setData(realData);
-          setIsSimulatedData(false);
-        }
+        // Ya que nunca usaremos datos simulados, siempre intentamos cargar datos reales
+        console.log('Cargando datos reales...');
+        const realData = await loadData();
+        setData(realData);
+        setIsSimulatedData(false);
       } catch (e) {
         console.error('Error cargando datos:', e);
         setError(e instanceof Error ? e : new Error(String(e)));
@@ -149,18 +116,21 @@ export function withDataErrorHandling<
     const handleUseMockData = async () => {
       setIsLoading(true);
       try {
-        console.log('Cargando datos simulados como respuesta a error...');
-        const mockData = await getMockData();
-        setData(mockData);
-        setIsSimulatedData(true);
+        // Aunque se llame a esta función, mostrar un mensaje de que no se pueden usar datos simulados
+        console.log('Datos simulados deshabilitados. Intentando cargar datos reales de nuevo...');
+        
+        // Intentar cargar datos reales en lugar de simulados
+        const realData = await loadData();
+        setData(realData);
+        setIsSimulatedData(false);
         setError(null);
         
-        // Guardar preferencia en localStorage si estamos en desarrollo
+        // Asegurarse de que localStorage tenga la preferencia de datos reales
         if (isDevMode) {
-          localStorage.setItem(localStorageKey, 'true');
+          localStorage.setItem(localStorageKey, 'false');
         }
       } catch (e) {
-        console.error('Error cargando datos simulados:', e);
+        console.error('Error cargando datos reales:', e);
         setError(e instanceof Error ? e : new Error(String(e)));
       } finally {
         setIsLoading(false);
@@ -181,10 +151,14 @@ export function withDataErrorHandling<
 
     // Cambiar a datos simulados
     const switchToMockData = async () => {
+      // Esta función ya no debe hacer nada útil
+      console.log('Datos simulados deshabilitados. Usando datos reales.');
+      // Asegurarse de que localStorage tenga la preferencia de datos reales
       if (isDevMode) {
-        localStorage.setItem(localStorageKey, 'true');
+        localStorage.setItem(localStorageKey, 'false');
       }
-      await loadDataWithErrorHandling(true);
+      // Cargar datos reales
+      await loadDataWithErrorHandling(false);
     };
 
     // Cambiar a datos reales

@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/Input';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
 import { authAPI } from '@/lib/api'; // Importar la API configurada con Alova
+import { PUBLIC_ROUTES, DASHBOARD_ROUTES } from '@/routes'; // Importar rutas centralizadas
 
 interface LoginFormState {
   email: string;
@@ -34,6 +35,7 @@ interface LoginFormProps {
 type LoginStatus = 'idle' | 'validating' | 'connecting' | 'authenticating' | 'success' | 'error';
 
 export function LoginForm({ className }: LoginFormProps) {
+  const router = useRouter();
   const { login, authLoading, authError } = useAuth();
   const [status, setStatus] = useState<LoginStatus>('idle');
   const [formError, setFormError] = useState<string | null>(null);
@@ -114,26 +116,32 @@ export function LoginForm({ className }: LoginFormProps) {
     
     try {
       console.log('Iniciando proceso de login...');
-      // Usar authAPI en lugar de fetch directo
+      
+      // Usar authAPI que ya tiene la configuración correcta
       const response = await authAPI.login({ 
         email: state.email, 
         password: state.password 
+      }).catch(error => {
+        // Verificar si es un error de servidor
+        if (error.message && error.message.includes('502')) {
+          throw new Error('Error 502: El servidor está caído. Por favor contacta al administrador.');
+        }
+        throw error;
       });
-
+      
       console.log('Respuesta del servidor:', response);
       
       // La respuesta ya viene procesada por Alova
       const data = response.data;
-      // Acceder al token correctamente desde data.auth.token
-      const token = data.auth?.token || data.token;
+      const token = data.token || (data.auth && data.auth.token);
       
       if (token) {
         console.log('Token recibido, procediendo con login...');
         await login(token, state.rememberMe);
         setStatus('success');
         console.log('Login exitoso');
-        // Forzar recarga de la página para actualizar el estado
-        window.location.href = '/dashboard';
+        // Usar ruta centralizada para redirección
+        router.push(DASHBOARD_ROUTES.DASHBOARD);
       } else {
         console.error('Respuesta sin token:', data);
         throw new Error('Token no recibido en el formato esperado');
@@ -228,9 +236,12 @@ export function LoginForm({ className }: LoginFormProps) {
               Recordarme
             </label>
           </div>
-          <a href="#" className="text-sm text-blue-600 hover:text-blue-500">
+          <Link 
+            href={PUBLIC_ROUTES.FORGOT_PASSWORD} 
+            className="text-sm text-blue-600 hover:text-blue-500"
+          >
             ¿Olvidaste tu contraseña?
-          </a>
+          </Link>
         </div>
 
         <button
@@ -249,9 +260,12 @@ export function LoginForm({ className }: LoginFormProps) {
 
         <div className="text-center mt-4">
           <span className="text-sm text-neutral-600">¿No tienes una cuenta? </span>
-          <a href="#" className="text-sm text-blue-600 hover:text-blue-500">
+          <Link 
+            href={PUBLIC_ROUTES.REGISTER} 
+            className="text-sm text-blue-600 hover:text-blue-500"
+          >
             Regístrate aquí
-          </a>
+          </Link>
         </div>
       </form>
     </div>

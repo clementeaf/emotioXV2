@@ -1,3 +1,4 @@
+import { API_HTTP_ENDPOINT, API_WEBSOCKET_ENDPOINT, getApiUrl } from '@/api/endpoints';
 import endpointsJson from './endpoints.json';
 
 /**
@@ -6,7 +7,11 @@ import endpointsJson from './endpoints.json';
 export interface EndpointsConfig {
   apiUrl: string;
   websocketUrl: string;
-  endpoints: Record<string, Record<string, string>>;
+  endpoints: {
+    [category: string]: {
+      [operation: string]: string;
+    };
+  };
   _original?: any;
   _cors_enabled?: boolean;
 }
@@ -130,14 +135,14 @@ export class ApiEndpointManager {
    * Obtiene la URL base de la API
    */
   public getBaseUrl(): string {
-    return this.config.apiUrl;
+    return API_HTTP_ENDPOINT;
   }
   
   /**
    * Obtiene la URL de WebSocket
    */
-  public getWebSocketUrl(): string {
-    return this.config.websocketUrl;
+  public getWebsocketUrl(): string {
+    return API_WEBSOCKET_ENDPOINT;
   }
 }
 
@@ -368,7 +373,7 @@ export class ApiError extends Error {
 }
 
 // Crear instancias singleton
-export const apiEndpoints = new ApiEndpointManager(endpointsJson as EndpointsConfig);
-export const apiClient = new ApiClient(apiEndpoints);
+export const endpointManager = new ApiEndpointManager(endpointsJson as EndpointsConfig);
+export const apiClient = new ApiClient(endpointManager);
 
 export default apiClient; 

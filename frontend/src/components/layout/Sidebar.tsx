@@ -9,6 +9,7 @@ import { researchAPI } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useResearch } from '@/stores/useResearchStore';
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
+import { API_HTTP_ENDPOINT } from '@/api/endpoints';
 
 interface SidebarProps {
   className?: string;
@@ -187,7 +188,7 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
       setIsLoadingResearch(true);
       try {
         // Primero intentar obtener la investigación actual
-        const currentResponse = await fetch('https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/research/current', {
+        const currentResponse = await fetch(`${API_HTTP_ENDPOINT}/research/current`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
             'Content-Type': 'application/json'
@@ -209,7 +210,7 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
         }
 
         // Si no hay investigación actual, intentar obtener la lista
-        const response = await fetch('https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/research/all', {
+        const response = await fetch(`${API_HTTP_ENDPOINT}/research/all`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
             'Content-Type': 'application/json'
@@ -266,11 +267,16 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
   };
 
   const confirmDeleteResearch = async () => {
-    if (!researchToDelete) { return; }
+    if (!researchToDelete || !researchToDelete.id) {
+      console.error('Error: Intentando eliminar una investigación sin ID válido');
+      closeDeleteModal();
+      return;
+    }
 
     try {
       // Llamar a la API para eliminar la investigación del backend
       try {
+        console.log('Eliminando investigación con ID:', researchToDelete.id);
         const response = await researchAPI.delete(researchToDelete.id);
         console.log('Investigación eliminada en el backend:', response);
       } catch (apiError) {
@@ -327,7 +333,7 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
           <div className="mb-4">
             <h3 className="font-semibold text-xs text-neutral-500 uppercase mb-2">BUILD</h3>
             <ul className="space-y-1">
-              <li>
+              <li key="welcome-screen">
                 <Link
                   href={`/dashboard?research=${activeResearch.id}&aim=true&section=welcome-screen`}
                   className={cn(
@@ -341,7 +347,7 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
                   Welcome Screen
                 </Link>
               </li>
-              <li>
+              <li key="smart-voc">
                 <Link
                   href={`/dashboard?research=${activeResearch.id}&aim=true&section=smart-voc`}
                   className={cn(
@@ -355,7 +361,7 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
                   Smart VOC
                 </Link>
               </li>
-              <li>
+              <li key="cognitive-task">
                 <Link
                   href={`/dashboard?research=${activeResearch.id}&aim=true&section=cognitive-task`}
                   className={cn(
@@ -369,7 +375,7 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
                   Cognitive Tasks
                 </Link>
               </li>
-              <li>
+              <li key="eye-tracking">
                 <Link
                   href={`/dashboard?research=${activeResearch.id}&aim=true&section=eye-tracking`}
                   className={cn(
@@ -383,7 +389,7 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
                   Eye Tracking
                 </Link>
               </li>
-              <li>
+              <li key="thank-you">
                 <Link
                   href={`/dashboard?research=${activeResearch.id}&aim=true&section=thank-you`}
                   className={cn(
@@ -403,7 +409,7 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
           <div className="mb-6">
             <h3 className="font-semibold text-xs text-neutral-500 uppercase mb-2">RECRUIT</h3>
             <ul className="space-y-1">
-              <li>
+              <li key="eye-tracking-recruit">
                 <Link
                   href={`/dashboard?research=${activeResearch.id}&aim=true&section=eye-tracking-recruit`}
                   className={cn(
@@ -422,7 +428,7 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
           <div>
             <h3 className="font-semibold text-xs text-neutral-500 uppercase mb-2">RESULTS</h3>
             <ul className="space-y-1">
-              <li>
+              <li key="smart-voc-results">
                 <Link
                   href={`/dashboard?research=${activeResearch.id}&aim=true&section=smart-voc-results`}
                   className={cn(
@@ -435,7 +441,7 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
                   SmartVOC
                 </Link>
               </li>
-              <li>
+              <li key="cognitive-task-results">
                 <Link
                   href={`/dashboard?research=${activeResearch.id}&aim=true&section=cognitive-task-results`}
                   className={cn(
@@ -562,35 +568,37 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
           ) : recentResearch.length > 0 ? (
             <ul>
               {recentResearch.map((item) => (
-                <div key={item.id} className="flex ml-5">
-                  <Link
-                    href={`/dashboard?research=${item.id}&section=welcome-screen`}
-                    className={cn(
-                      'flex-1 flex items-center py-2 px-2 rounded-lg text-sm bg-blue-50 border border-blue-100 text-blue-700 hover:bg-blue-100 transition-colors max-w-[150px]',
-                      pathname?.includes(`research=${item.id}`)
-                        ? 'bg-neutral-100 text-neutral-900 font-medium'
-                        : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
-                    )}
-                  >
-                    <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                    <span className="truncate">{item.name}</span>
-                    {item.technique === 'aim-framework' && (
-                      <span className="ml-auto text-xs text-blue-500 bg-blue-100 px-2 py-0.5 rounded-full">AIM</span>
-                    )}
-                  </Link>
-                  <button
-                    onClick={() => {
-                      setResearchToDelete(item);
-                      setShowDeleteModal(true);
-                    }}
-                    className="ml-2 p-1 text-neutral-400 hover:text-red-500 transition-colors"
-                    title="Eliminar investigación"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
+                <li key={`recent-${item.id}`}>
+                  <div className="flex ml-5">
+                    <Link
+                      href={`/dashboard?research=${item.id}&section=welcome-screen`}
+                      className={cn(
+                        'flex-1 flex items-center py-2 px-2 rounded-lg text-sm bg-blue-50 border border-blue-100 text-blue-700 hover:bg-blue-100 transition-colors max-w-[150px]',
+                        pathname?.includes(`research=${item.id}`)
+                          ? 'bg-neutral-100 text-neutral-900 font-medium'
+                          : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
+                      )}
+                    >
+                      <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                      <span className="truncate">{item.name}</span>
+                      {item.technique === 'aim-framework' && (
+                        <span className="ml-auto text-xs text-blue-500 bg-blue-100 px-2 py-0.5 rounded-full">AIM</span>
+                      )}
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setResearchToDelete(item);
+                        setShowDeleteModal(true);
+                      }}
+                      className="ml-2 p-1 text-neutral-400 hover:text-red-500 transition-colors"
+                      title="Eliminar investigación"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                </li>
               ))}
             </ul>
           ) : null}

@@ -7,6 +7,8 @@ import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/Button';
 import { ErrorBoundary } from '../common/ErrorBoundary';
 import Link from 'next/link';
+import { API_HTTP_ENDPOINT } from '@/api/endpoints';
+import { researchAPI } from '@/lib/api'; // Opcional: importar el API cliente para operaciones REST
 
 interface Research {
   id: string;
@@ -36,7 +38,7 @@ function ResearchTableContent() {
       setError(null);
 
       // Primero intentar obtener la investigación actual
-      const currentResponse = await fetch('https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/research/current', {
+      const currentResponse = await fetch(`${API_HTTP_ENDPOINT}/research/current`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -55,14 +57,12 @@ function ResearchTableContent() {
             progress: currentData.data.progress,
             technique: currentData.data.metadata?.type || ''
           }]);
-          setLastUpdate(new Date().toLocaleString());
-          setIsLoading(false);
-          return;
+          return; // Terminar aquí, setLastUpdate se hará en el finally
         }
       }
 
       // Si no hay investigación actual, obtener todas las investigaciones
-      const response = await fetch('https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/research/all', {
+      const response = await fetch(`${API_HTTP_ENDPOINT}/research/all`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -77,12 +77,13 @@ function ResearchTableContent() {
       const data = await response.json();
       const researchData = data?.data || data;
       setResearch(Array.isArray(researchData) ? researchData : []);
-      setLastUpdate(new Date().toLocaleString());
     } catch (error) {
       console.error('Error:', error);
       setError(error instanceof Error ? error.message : 'Error al cargar las investigaciones');
       setResearch([]);
     } finally {
+      // Actualizar timestamp después de cada solicitud, no durante el renderizado
+      setLastUpdate(new Date().toLocaleString());
       setIsLoading(false);
     }
   }, []);
@@ -110,10 +111,17 @@ function ResearchTableContent() {
   };
 
   const confirmDeleteResearch = async () => {
-    if (!projectToDelete) return;
+    if (!projectToDelete || !projectToDelete.id) {
+      console.error('Error: No se puede eliminar una investigación sin ID válido');
+      setError('No se puede eliminar la investigación - ID no válido');
+      setShowDeleteModal(false);
+      setProjectToDelete(null);
+      return;
+    }
 
     try {
-      const response = await fetch(`https://4hdn6j00e6.execute-api.us-east-1.amazonaws.com/dev/research/${projectToDelete.id}`, {
+      console.log('Eliminando investigación con ID:', projectToDelete.id);
+      const response = await fetch(`${API_HTTP_ENDPOINT}/research/${projectToDelete.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -194,7 +202,7 @@ function ResearchTableContent() {
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-neutral-200">
               <thead>
-                <tr className="bg-neutral-50">
+                <tr key="header-row" className="bg-neutral-50">
                   <th scope="col" className="px-6 py-3 text-left text-sm font-medium text-neutral-600">Nombre</th>
                   <th scope="col" className="px-6 py-3 text-left text-sm font-medium text-neutral-600">Estado</th>
                   <th scope="col" className="px-6 py-3 text-left text-sm font-medium text-neutral-600">Fecha</th>
@@ -202,8 +210,8 @@ function ResearchTableContent() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-neutral-200">
-                {research.map((item) => (
-                  <tr key={item.id} className="hover:bg-neutral-50">
+                {research.map((item, index) => (
+                  <tr key={`research-item-${item.id || index}`} className="hover:bg-neutral-50">
                     <td className="px-6 py-4 text-sm text-neutral-900 max-w-xs truncate">
                       {item.name}
                     </td>
@@ -211,7 +219,22 @@ function ResearchTableContent() {
                       {getStatusBadge(item.status)}
                     </td>
                     <td className="px-6 py-4 text-sm text-neutral-500 whitespace-nowrap">
-                      {format(new Date(item.createdAt), "d 'de' MMMM, yyyy", { locale: es })}
+                      {item.createdAt ? 
+                        (() => {
+                          try {
+                            const date = new Date(item.createdAt);
+                            // Verificar si la fecha es válida
+                            if (isNaN(date.getTime())) {
+                              return 'Fecha no disponible';
+                            }
+                            return format(date, "d 'de' MMMM, yyyy", { locale: es });
+                          } catch (error) {
+                            console.error('Error formateando fecha:', error);
+                            return 'Fecha no disponible';
+                          }
+                        })() 
+                        : 'Fecha no disponible'
+                      }
                     </td>
                     <td className="px-6 py-4 text-sm whitespace-nowrap">
                       <div className="flex space-x-2">
