@@ -20,6 +20,7 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
 }) => {
   const {
     formData,
+    setFormData,
     validationErrors,
     isLoading,
     isSaving,
@@ -28,12 +29,12 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
     handleChange,
     handleSubmit,
     handlePreview,
-    validateForm,
     closeModal,
-    isExisting,
-    closeErrorModal,
     existingScreen
-  } = useWelcomeScreenForm(researchId, onSave);
+  } = useWelcomeScreenForm(researchId);
+
+  // Determine if it's an existing config based on existingScreen data
+  const isExisting = !!existingScreen?.id;
 
   if (isLoading) {
     return <WelcomeScreenSkeleton />;

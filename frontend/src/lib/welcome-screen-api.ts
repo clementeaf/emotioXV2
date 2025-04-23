@@ -233,143 +233,36 @@ export const welcomeScreenFixedAPI = {
   
   /**
    * Crea una nueva pantalla de bienvenida
+   * @param researchId ID de la investigación
    * @param data Datos de la pantalla de bienvenida
    * @returns Objeto con método send
    */
-  create: (data: any) => {
-    if (!data || !data.researchId) {
-      throw new Error('Se requieren datos y un ID de investigación para crear la pantalla');
+  create: (researchId: string, data: any) => {
+    if (!researchId) {
+      throw new Error('Se requiere un ID de investigación para crear la pantalla');
+    }
+    if (!data) {
+      throw new Error('Se requieren datos para crear la pantalla');
     }
     
-    const url = API_CONFIG.endpoints.welcomeScreen.CREATE;
-    console.log(`[WelcomeScreenAPI] Creando pantalla para investigación ${data.researchId}, URL: ${url}`);
-    console.log(`[WelcomeScreenAPI] URL completa: ${API_CONFIG.baseURL}${url}`);
+    // Usar la ruta base y reemplazar {researchId}
+    const url = API_CONFIG.endpoints.welcomeScreen.BASE_PATH.replace('{researchId}', researchId);
+    console.log(`[WelcomeScreenAPI] Creando (POST) pantalla para investigación ${researchId}, URL: ${url}`);
     console.log('[WelcomeScreenAPI] Datos a enviar:', data);
     
     return {
       send: async () => {
         try {
           const headers = getAuthHeaders();
-          
-          // Usamos nuestra implementación mejorada para POST también
-          const truelyQuietFetch = async (url: string, options: RequestInit) => {
-            const headers: Record<string, string> = {};
-            
-            // Convertir headers del RequestInit a Record<string, string>
-            if (options.headers) {
-              if (options.headers instanceof Headers) {
-                options.headers.forEach((value, key) => {
-                  headers[key] = value;
-                });
-              } else if (typeof options.headers === 'object') {
-                Object.keys(options.headers).forEach(key => {
-                  const value = (options.headers as Record<string, string>)[key];
-                  if (value) headers[key] = value;
-                });
-              }
-            }
-            
-            // Para PUT/POST, extraer el body
-            let body: string | null = null;
-            if (options.body && typeof options.body === 'string') {
-              body = options.body;
-            }
-            
-            try {
-              return new Promise<any>((resolve, reject) => {
-                const xhr = new XMLHttpRequest();
-                
-                xhr.onreadystatechange = function() {
-                  if (xhr.readyState !== 4) return;
-                  
-                  if (xhr.status === 404) {
-                    // Para creación, 404 significa que el endpoint no existe - es un error real
-                    console.log(`[WelcomeScreenAPI] Endpoint no encontrado (404) al crear en ${url}`);
-                    console.log('[WelcomeScreenAPI] Esto puede indicar un problema con la URL de la API');
-                    
-                    let errorData;
-                    try {
-                      errorData = JSON.parse(xhr.responseText);
-                    } catch (e) {
-                      errorData = xhr.responseText;
-                    }
-                    
-                    // Notificar el problema pero de manera controlada
-                    reject({
-                      status: 404,
-                      statusText: 'Not Found',
-                      data: errorData,
-                      message: 'El endpoint para crear la pantalla de bienvenida no existe'
-                    });
-                  } else if (xhr.status >= 200 && xhr.status < 300) {
-                    // Respuesta exitosa
-                    let responseData;
-                    try {
-                      responseData = JSON.parse(xhr.responseText);
-                    } catch (e) {
-                      responseData = xhr.responseText;
-                    }
-                    resolve({ 
-                      ok: true,
-                      status: xhr.status,
-                      statusText: xhr.statusText,
-                      json: () => Promise.resolve(responseData),
-                      text: () => Promise.resolve(xhr.responseText)
-                    });
-                  } else {
-                    // Otros errores
-                    let errorData;
-                    try {
-                      errorData = JSON.parse(xhr.responseText);
-                    } catch (e) {
-                      errorData = xhr.responseText;
-                    }
-                    
-                    reject({
-                      status: xhr.status,
-                      statusText: xhr.statusText,
-                      data: errorData,
-                      message: `Error ${xhr.status}: ${xhr.statusText}`
-                    });
-                  }
-                };
-                
-                xhr.open(options.method || 'GET', url);
-                
-                // Añadir headers
-                Object.keys(headers).forEach(key => {
-                  xhr.setRequestHeader(key, headers[key]);
-                });
-                
-                // Enviar con body si existe
-                xhr.send(body);
-              });
-            } catch (error) {
-              console.log('[WelcomeScreenAPI] Error en truelyQuietFetch para creación:', error);
-              throw error;
-            }
-          };
-          
-          // Usar nuestra función personalizada
-          const response: any = await truelyQuietFetch(`${API_CONFIG.baseURL}${url}`, {
-            method: 'POST',
+          const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
+            method: 'POST', // Asegurar que es POST
             headers,
             body: JSON.stringify(data)
           });
-          
-          return response;
-        } catch (error: any) {
-          // Personalizar mensajes de error para el usuario
-          if (error.status === 404) {
-            console.error('[WelcomeScreenAPI] Error 404 en creación:', error.message);
-            throw new Error('No se pudo encontrar el endpoint para crear la pantalla de bienvenida. Por favor, contacta al soporte técnico.');
-          } else if (error.status === 400) {
-            console.error('[WelcomeScreenAPI] Error 400 en creación:', error.data);
-            throw new Error('Datos incorrectos: ' + (error.data?.message || 'Revisa los datos enviados'));
-          } else {
-            console.error('[WelcomeScreenAPI] Error en create:', error);
-            throw new Error('No se pudo crear la pantalla de bienvenida. Por favor, inténtalo de nuevo más tarde.');
-          }
+          return handleWelcomeScreenResponse(response);
+        } catch (error) {
+          console.error('[WelcomeScreenAPI] Error en create:', error);
+          throw error;
         }
       }
     };
@@ -377,135 +270,37 @@ export const welcomeScreenFixedAPI = {
   
   /**
    * Actualiza una pantalla de bienvenida existente
-   * @param id ID de la pantalla de bienvenida
-   * @param data Datos actualizados
+   * @param researchId ID de la investigación
+   * @param screenId ID específico de la pantalla de bienvenida a actualizar
+   * @param data Datos actualizados de la pantalla de bienvenida
    * @returns Objeto con método send
    */
-  update: (id: string, data: any) => {
-    if (!id) {
-      throw new Error('Se requiere un ID para actualizar la pantalla');
+  update: (researchId: string, screenId: string, data: any) => {
+    if (!researchId || !screenId) {
+      throw new Error('Se requieren researchId y screenId para actualizar la pantalla');
     }
-    
     if (!data) {
       throw new Error('Se requieren datos para actualizar la pantalla');
     }
+
+    // Construir la URL específica para la actualización
+    // Asumiendo que el endpoint es /research/{researchId}/welcome-screen/{screenId}
+    const baseUrl = API_CONFIG.endpoints.welcomeScreen.BASE_PATH.replace('{researchId}', researchId);
+    const url = `${baseUrl}/${screenId}`; // Añadir el ID específico
     
-    const url = API_CONFIG.endpoints.welcomeScreen.UPDATE.replace('{id}', id);
-    console.log(`[WelcomeScreenAPI] Actualizando pantalla con ID ${id}, URL: ${url}`);
-    console.log(`[WelcomeScreenAPI] URL completa: ${API_CONFIG.baseURL}${url}`);
+    console.log(`[WelcomeScreenAPI] Actualizando (PUT) pantalla ${screenId} para investigación ${researchId}, URL: ${url}`);
     console.log('[WelcomeScreenAPI] Datos a enviar:', data);
-    
+
     return {
       send: async () => {
         try {
           const headers = getAuthHeaders();
-          
-          // Primero verificamos si el recurso existe para evitar errores 404 ruidosos
-          const truelyQuietFetch = async (url: string, options: RequestInit) => {
-            const headers: Record<string, string> = {};
-            
-            // Convertir headers del RequestInit a Record<string, string>
-            if (options.headers) {
-              if (options.headers instanceof Headers) {
-                options.headers.forEach((value, key) => {
-                  headers[key] = value;
-                });
-              } else if (typeof options.headers === 'object') {
-                Object.keys(options.headers).forEach(key => {
-                  const value = (options.headers as Record<string, string>)[key];
-                  if (value) headers[key] = value;
-                });
-              }
-            }
-            
-            // Para PUT/POST, extraer el body
-            let body: string | null = null;
-            if (options.body && typeof options.body === 'string') {
-              body = options.body;
-            }
-            
-            try {
-              return new Promise<any>((resolve, reject) => {
-                const xhr = new XMLHttpRequest();
-                
-                xhr.onreadystatechange = function() {
-                  if (xhr.readyState !== 4) return;
-                  
-                  if (xhr.status === 404) {
-                    // Para el caso de actualización, un 404 es un error que debemos manejar de forma especial
-                    console.log(`[WelcomeScreenAPI] Recurso no encontrado (404) al actualizar en ${url}`);
-                    console.log('[WelcomeScreenAPI] Este error es esperado si el ID de pantalla de bienvenida ya no existe');
-                    // Retornamos un objeto específico para este caso
-                    resolve({ 
-                      notFoundError: true, 
-                      errorData: {
-                        message: "La pantalla de bienvenida que intentas actualizar no existe. Puede que haya sido eliminada."
-                      }
-                    });
-                  } else if (xhr.status >= 200 && xhr.status < 300) {
-                    // Respuesta exitosa
-                    let responseData;
-                    try {
-                      responseData = JSON.parse(xhr.responseText);
-                    } catch (e) {
-                      responseData = xhr.responseText;
-                    }
-                    resolve({ 
-                      ok: true,
-                      status: xhr.status,
-                      statusText: xhr.statusText,
-                      json: () => Promise.resolve(responseData),
-                      text: () => Promise.resolve(xhr.responseText)
-                    });
-                  } else {
-                    // Otros errores
-                    let errorData;
-                    try {
-                      errorData = JSON.parse(xhr.responseText);
-                    } catch (e) {
-                      errorData = xhr.responseText;
-                    }
-                    
-                    reject({
-                      status: xhr.status,
-                      statusText: xhr.statusText,
-                      data: errorData,
-                      message: `Error ${xhr.status}: ${xhr.statusText}`
-                    });
-                  }
-                };
-                
-                xhr.open(options.method || 'GET', url);
-                
-                // Añadir headers
-                Object.keys(headers).forEach(key => {
-                  xhr.setRequestHeader(key, headers[key]);
-                });
-                
-                // Enviar con body si existe
-                xhr.send(body);
-              });
-            } catch (error) {
-              console.log('[WelcomeScreenAPI] Error en truelyQuietFetch para actualización:', error);
-              throw error;
-            }
-          };
-          
-          // Usar nuestra función personalizada
-          const response: any = await truelyQuietFetch(`${API_CONFIG.baseURL}${url}`, {
-            method: 'PUT',
+          const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
+            method: 'PUT', // Usar PUT para actualizar
             headers,
-            body: JSON.stringify(data)
+            body: JSON.stringify(data) // Enviar los datos actualizados
           });
-          
-          // Manejar caso específico de recurso no encontrado
-          if (response && response.notFoundError) {
-            // Lanzar un error amigable para que el componente lo muestre adecuadamente
-            console.error('[WelcomeScreenAPI] Error 404 al actualizar:', response.errorData.message);
-            throw new Error(response.errorData.message);
-          }
-          
-          return response;
+          return handleWelcomeScreenResponse(response);
         } catch (error) {
           console.error('[WelcomeScreenAPI] Error en update:', error);
           throw error;
@@ -515,29 +310,42 @@ export const welcomeScreenFixedAPI = {
   },
   
   /**
-   * Elimina una pantalla de bienvenida
-   * @param id ID de la pantalla de bienvenida
+   * Elimina la pantalla de bienvenida asociada a una investigación
+   * @param researchId ID de la investigación
    * @returns Objeto con método send
    */
-  delete: (id: string) => {
-    if (!id) {
-      throw new Error('Se requiere un ID para eliminar la pantalla');
+  delete: (researchId: string) => {
+    if (!researchId) {
+      throw new Error('Se requiere un ID de investigación para eliminar la pantalla');
     }
     
-    const url = API_CONFIG.endpoints.welcomeScreen.DELETE.replace('{id}', id);
-    console.log(`[WelcomeScreenAPI] Eliminando pantalla con ID ${id}, URL: ${url}`);
-    console.log(`[WelcomeScreenAPI] URL completa: ${API_CONFIG.baseURL}${url}`);
-    
+    // Usar la ruta base y reemplazar {researchId}
+    const url = API_CONFIG.endpoints.welcomeScreen.BASE_PATH.replace('{researchId}', researchId);
+    console.log(`[WelcomeScreenAPI] Eliminando (DELETE) pantalla para investigación ${researchId}, URL: ${url}`);
+
     return {
       send: async () => {
-        const headers = getAuthHeaders();
-        const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
-          method: 'DELETE',
-          headers
-        });
-        
-        return handleWelcomeScreenResponse(response);
+        try {
+          const headers = getAuthHeaders();
+          // No necesitamos Content-Type para DELETE sin body
+          headers['Content-Type'] = undefined as any; // Alternativa para eliminar la propiedad sin error de linter
+          const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
+            method: 'DELETE', // Usar DELETE
+            headers: headers as HeadersInit // Castear a HeadersInit después de la modificación
+          });
+          // DELETE exitoso usualmente devuelve 204 No Content
+          if (response.status === 204) {
+            return { success: true, data: null, status: 204 }; // Devolver éxito
+          }
+          return handleWelcomeScreenResponse(response); // Manejar otros casos/errores
+        } catch (error) {
+          console.error('[WelcomeScreenAPI] Error en delete:', error);
+          throw error;
+        }
       }
     };
   }
-}; 
+};
+
+// Exportar la API para ser usada por los servicios
+export const welcomeScreenAPI = welcomeScreenFixedAPI; 

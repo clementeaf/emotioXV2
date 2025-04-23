@@ -257,19 +257,21 @@ export class ThankYouScreenController {
       // Invalidar caché al eliminar
       this.invalidateCache(researchId, userId);
       
-      return successResponse({ message: 'Pantalla de agradecimiento eliminada con éxito' });
+      return successResponse({ message: 'Pantalla de agradecimiento eliminada correctamente' });
     } catch (error) {
       return this.handleError(error, 'eliminar pantalla de agradecimiento');
     }
   }
 
   /**
-   * Invalida la entrada de caché para un researchId específico
+   * Invalida la caché para una investigación específica
    */
   private invalidateCache(researchId: string, userId: string): void {
     const cacheKey = `thankYouScreen_${researchId}_${userId}`;
-    this.cache.delete(cacheKey);
-    this.log('debug', 'invalidateCache', 'Caché invalidado', { researchId });
+    if (this.cache.has(cacheKey)) {
+      this.cache.delete(cacheKey);
+      this.log('info', 'invalidateCache', 'Caché invalidada', { researchId });
+    }
   }
 
   /**
@@ -289,34 +291,24 @@ export class ThankYouScreenController {
 // Instanciar el controlador
 const controller = new ThankYouScreenController();
 
-// Definir el mapa de rutas para pantallas de agradecimiento
+// Definir el mapa de rutas para ThankYouScreen
 const thankYouScreenRouteMap: RouteMap = {
-  // Ruta jerárquica para thank-you-screen asociado a investigación
+  // Ruta jerárquica principal (autenticada)
   '/research/{researchId}/thank-you-screen': {
     'GET': controller.getThankYouScreen.bind(controller),
     'POST': controller.createThankYouScreen.bind(controller),
     'PUT': controller.updateThankYouScreen.bind(controller),
     'DELETE': controller.deleteThankYouScreen.bind(controller)
   },
+  // Ruta pública (si aplica, podría necesitar un handler específico o bandera)
+  '/public/research/{researchId}/thank-you-screen': {
+     'GET': controller.getThankYouScreen.bind(controller) // Reutiliza el método que ya maneja 'isPublic'
+  }
 };
 
 /**
- * Manejador principal para las rutas de pantallas de agradecimiento
- * 
- * Utiliza el decorador de controlador para manejar la autenticación y CORS automáticamente.
- * 
- * Estructura jerárquica:
- * - GET /research/{researchId}/thank-you-screen : Obtiene la pantalla de agradecimiento de la investigación
- * - POST /research/{researchId}/thank-you-screen : Crea una nueva pantalla de agradecimiento para la investigación
- * - PUT /research/{researchId}/thank-you-screen : Actualiza la pantalla de agradecimiento de la investigación
- * - DELETE /research/{researchId}/thank-you-screen : Elimina la pantalla de agradecimiento de la investigación
- * - GET /public/research/{researchId}/thank-you-screen : Obtiene la versión pública de la pantalla (sin autenticación)
+ * Manejador principal para las rutas de ThankYouScreen
  */
-export const thankYouScreenHandler = createController(thankYouScreenRouteMap, {
-  basePath: '',  // Sin base path para permitir múltiples patrones de ruta
-  publicRoutes: [
-    { path: '/public/research/:researchId/thank-you-screen', method: 'GET' }
-  ]
-});
+export const thankYouScreenHandler = createController(thankYouScreenRouteMap, { basePath: '' });
 
 export default thankYouScreenHandler; 

@@ -74,9 +74,9 @@ export class NewResearchController {
   async getResearchById(event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
     try {
       // Obtener ID de la investigación de los parámetros
-      const researchId = event.pathParameters?.id;
+      const researchId = event.pathParameters?.researchId;
       if (!researchId) {
-        return errorResponse('ID de investigación no proporcionado', 400);
+        return errorResponse('ID de investigación no proporcionado en pathParameters', 400);
       }
 
       if (!userId) {
@@ -131,9 +131,9 @@ export class NewResearchController {
       }
 
       // Obtener ID de la investigación de los parámetros
-      const researchId = event.pathParameters?.id;
+      const researchId = event.pathParameters?.researchId;
       if (!researchId) {
-        return errorResponse('ID de investigación no proporcionado', 400);
+        return errorResponse('ID de investigación no proporcionado en pathParameters', 400);
       }
 
       if (!userId) {
@@ -168,9 +168,9 @@ export class NewResearchController {
   async deleteResearch(event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
     try {
       // Obtener ID de la investigación de los parámetros
-      const researchId = event.pathParameters?.id;
+      const researchId = event.pathParameters?.researchId;
       if (!researchId) {
-        return errorResponse('ID de investigación no proporcionado', 400);
+        return errorResponse('ID de investigación no proporcionado en pathParameters', 400);
       }
 
       if (!userId) {
@@ -202,9 +202,9 @@ export class NewResearchController {
       }
 
       // Obtener ID de la investigación de los parámetros
-      const researchId = event.pathParameters?.id;
+      const researchId = event.pathParameters?.researchId;
       if (!researchId) {
-        return errorResponse('ID de investigación no proporcionado', 400);
+        return errorResponse('ID de investigación no proporcionado en pathParameters', 400);
       }
 
       if (!userId) {
@@ -278,7 +278,8 @@ export class NewResearchController {
     }
     
     return createResponse(500, {
-      message: 'Error interno del servidor'
+      error: 'Error interno del servidor',
+      details: error.message || 'Error no especificado',
     });
   }
 }
@@ -286,37 +287,43 @@ export class NewResearchController {
 // Instanciar el controlador
 const controller = new NewResearchController();
 
-// Definir el mapa de rutas para Investigaciones
-const researchRouteMap: RouteMap = {
-  '/research': {
-    'GET': controller.getAllResearches.bind(controller),
-    'POST': controller.createResearch.bind(controller)
-  },
-  
-  '/research/user': {
-    'GET': controller.getUserResearches.bind(controller)
-  },
-  
-  '/research/current': {
-    'GET': controller.getUserResearches.bind(controller)
-  },
-  
+// Definir el mapa de rutas para NewResearch
+const newResearchRouteMap: RouteMap = {
+  // Ruta base para investigaciones
   '/research/all': {
-    'GET': controller.getAllResearches.bind(controller)
+    'GET': controller.getAllResearches.bind(controller) // Obtener todas las investigaciones
   },
-  
-  '/research/:id': {
-    'GET': controller.getResearchById.bind(controller),
-    'PUT': controller.updateResearch.bind(controller),
-    'DELETE': controller.deleteResearch.bind(controller)
+  // Ruta para crear investigación
+  '/research': {
+    'POST': controller.createResearch.bind(controller) // Crear nueva investigación
   },
-  
-  '/research/:id/status': {
-    'PUT': controller.changeResearchStatus.bind(controller)
+  // Ruta para investigación específica por ID
+  '/research/{researchId}': {
+    'GET': controller.getResearchById.bind(controller),    // Obtener investigación por ID
+    'PUT': controller.updateResearch.bind(controller),    // Actualizar investigación por ID
+    'DELETE': controller.deleteResearch.bind(controller) // Eliminar investigación por ID
+  },
+  // Ruta para cambiar el estado de una investigación
+  '/research/{researchId}/status': {
+    'PUT': controller.changeResearchStatus.bind(controller) // Cambiar estado
   }
+  // Podríamos añadir más rutas específicas aquí si fuera necesario
 };
 
-export const researchHandler = createController(researchRouteMap, {
-  basePath: '/research',
-  // No hay rutas públicas, todas requieren autenticación
+/**
+ * Manejador principal para las rutas de investigaciones.
+ * 
+ * Utiliza createController para la gestión automática de CORS, autenticación y enrutamiento.
+ * 
+ * Estructura:
+ * - POST /research : Crear nueva investigación
+ * - GET /research : Obtener todas las investigaciones (requiere ajuste si se necesita filtrar por usuario)
+ * - GET /research/{researchId} : Obtener investigación específica
+ * - PUT /research/{researchId} : Actualizar investigación específica
+ * - DELETE /research/{researchId} : Eliminar investigación específica
+ * - PUT /research/{researchId}/status : Cambiar estado de investigación específica
+ */
+export const newResearchHandler = createController(newResearchRouteMap, {
+  basePath: '/research', // Ruta base para este controlador
+  // Todas las rutas aquí requieren autenticación por defecto, no hay publicRoutes definidas.
 }); 

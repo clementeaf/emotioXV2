@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { welcomeScreenService } from '@/services/welcomeScreen.service';
-import { WelcomeScreenData, ErrorModalData, UseWelcomeScreenFormResult } from '../types';
-import { WelcomeScreenFormData, WelcomeScreenRecord } from 'shared/interfaces/welcome-screen.interface';
+import { WelcomeScreenData, ErrorModalData, UseWelcomeScreenFormResult, ValidationErrors } from '../types';
+import { WelcomeScreenFormData } from 'shared/interfaces/welcome-screen.interface';
 
+// Valor inicial con cadenas vacías para campos de texto
 const INITIAL_FORM_DATA: WelcomeScreenData = {
   researchId: '',
   isEnabled: true,
@@ -17,11 +18,11 @@ const INITIAL_FORM_DATA: WelcomeScreenData = {
 };
 
 export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormResult => {
-  // Convertir 'current' a un ID válido cuando sea necesario
-  const actualResearchId = researchId === 'current' ? '1234' : researchId;
-  
+  // Convertir 'current' a un ID válido cuando sea necesario (revisar esta lógica si aplica)
+  const actualResearchId = researchId === 'current' ? '' : researchId; // Usar '' si es current y no hay ID real
+
   const [formData, setFormData] = useState<WelcomeScreenData>({ ...INITIAL_FORM_DATA, researchId: actualResearchId });
-  const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [existingScreen, setExistingScreen] = useState<WelcomeScreenData | null>(null);
@@ -30,39 +31,60 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
 
   useEffect(() => {
     const fetchData = async () => {
+      setIsLoading(true); // Iniciar carga
+      // No resetear aquí, esperar a la respuesta
       try {
+        if (!actualResearchId) {
+          // Si no hay researchId real, no buscar y usar valores iniciales
+          console.log('No researchId provided, using initial form data.');
+          setFormData({ ...INITIAL_FORM_DATA, researchId: '' });
+          setExistingScreen(null);
+          setIsLoading(false);
+          return;
+        }
+
         const response = await welcomeScreenService.getByResearchId(actualResearchId);
-        if (response) {
+
+        if (response && response.id) { // Verificar que la respuesta no sea null y tenga ID
+          console.log('Fetched existing data:', response);
           const formattedResponse: WelcomeScreenData = {
             id: response.id,
             researchId: response.researchId,
-            isEnabled: response.isEnabled,
-            title: response.title,
-            message: response.message,
-            startButtonText: response.startButtonText,
+            isEnabled: response.isEnabled ?? true, // Valor por defecto si es null/undefined
+            title: response.title ?? '', // Usar '' si es null/undefined
+            message: response.message ?? '', // Usar '' si es null/undefined
+            startButtonText: response.startButtonText ?? '', // Usar '' si es null/undefined
             createdAt: response.createdAt instanceof Date ? response.createdAt.toISOString() : response.createdAt,
             updatedAt: response.updatedAt instanceof Date ? response.updatedAt.toISOString() : response.updatedAt,
             metadata: {
               version: response.metadata?.version || '1.0',
-              lastUpdated: response.metadata?.lastUpdated instanceof Date ? 
-                response.metadata.lastUpdated.toISOString() : 
+              lastUpdated: response.metadata?.lastUpdated instanceof Date ?
+                response.metadata.lastUpdated.toISOString() :
                 response.metadata?.lastUpdated || new Date().toISOString(),
               lastModifiedBy: response.metadata?.lastModifiedBy || 'user'
             }
           };
           setFormData(formattedResponse);
           setExistingScreen(formattedResponse);
+        } else {
+          // No hay datos existentes, usar valores iniciales asegurando cadenas vacías
+          console.log('No existing data found, using initial form data.');
+          setFormData({ ...INITIAL_FORM_DATA, researchId: actualResearchId });
+          setExistingScreen(null);
         }
       } catch (error) {
         console.error('Error fetching welcome screen:', error);
+        // Mantener los valores iniciales en caso de error
+        setFormData({ ...INITIAL_FORM_DATA, researchId: actualResearchId });
+        setExistingScreen(null);
         setModalError({
           title: 'Error',
-          message: 'No se pudo cargar la pantalla de bienvenida',
+          message: 'No se pudo cargar la configuración de la pantalla de bienvenida.',
           type: 'error'
         });
         setModalVisible(true);
       } finally {
-        setIsLoading(false);
+        setIsLoading(false); // Finalizar carga
       }
     };
 
@@ -70,8 +92,7 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
   }, [actualResearchId]);
 
   const validateForm = (): boolean => {
-    const errors: { [key: string]: string } = {};
-    
+    const errors: ValidationErrors = {};
     if (!formData.title) errors.title = 'El título es requerido';
     if (!formData.message) errors.message = 'El mensaje es requerido';
     if (!formData.startButtonText) errors.startButtonText = 'El texto del botón es requerido';
@@ -80,23 +101,31 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
     return Object.keys(errors).length === 0;
   };
 
-  const handleChange = (field: keyof WelcomeScreenData, value: any): void => {
-    setFormData((prev: WelcomeScreenData) => {
-      const updatedData: WelcomeScreenData = {
-        ...prev,
-        [field]: value,
-        metadata: {
-          version: prev.metadata?.version || '1.0',
-          lastUpdated: new Date().toISOString(),
-          lastModifiedBy: prev.metadata?.lastModifiedBy || 'user'
-        }
-      };
-      return updatedData;
-    });
-  };
+  const handleChange = useCallback((field: keyof WelcomeScreenData, value: any): void => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value,
+      metadata: {
+        ...(prev.metadata || INITIAL_FORM_DATA.metadata),
+        lastUpdated: new Date().toISOString(),
+        lastModifiedBy: 'user'
+      }
+    }));
+    if (validationErrors[field as keyof ValidationErrors]) {
+      setValidationErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+  }, [validationErrors]);
 
   const handleSubmit = async () => {
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      setModalError({
+        title: 'Campos incompletos',
+        message: 'Por favor, complete todos los campos requeridos.',
+        type: 'warning'
+      });
+      setModalVisible(true);
+      return;
+    }
 
     setIsSaving(true);
     try {
@@ -111,39 +140,48 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
           lastModifiedBy: formData.metadata?.lastModifiedBy || 'user'
         }
       };
-      
-      const updatedData = await welcomeScreenService.save({ ...dataToSave, researchId: actualResearchId });
-      
+
+      const payload = {
+        ...dataToSave,
+        researchId: actualResearchId,
+        id: existingScreen?.id
+      };
+
+      console.log('Saving welcome screen with payload:', payload);
+      const updatedData = await welcomeScreenService.save(payload);
+
       const formattedUpdatedData: WelcomeScreenData = {
         id: updatedData.id,
         researchId: updatedData.researchId,
-        isEnabled: updatedData.isEnabled,
-        title: updatedData.title,
-        message: updatedData.message,
-        startButtonText: updatedData.startButtonText,
+        isEnabled: updatedData.isEnabled ?? true,
+        title: updatedData.title ?? '',
+        message: updatedData.message ?? '',
+        startButtonText: updatedData.startButtonText ?? '',
         createdAt: updatedData.createdAt instanceof Date ? updatedData.createdAt.toISOString() : updatedData.createdAt,
         updatedAt: updatedData.updatedAt instanceof Date ? updatedData.updatedAt.toISOString() : updatedData.updatedAt,
         metadata: {
           version: updatedData.metadata?.version || '1.0',
-          lastUpdated: updatedData.metadata?.lastUpdated instanceof Date ? 
-            updatedData.metadata.lastUpdated.toISOString() : 
+          lastUpdated: updatedData.metadata?.lastUpdated instanceof Date ?
+            updatedData.metadata.lastUpdated.toISOString() :
             updatedData.metadata?.lastUpdated || new Date().toISOString(),
           lastModifiedBy: updatedData.metadata?.lastModifiedBy || 'user'
         }
       };
-      
+
+      setFormData(formattedUpdatedData);
       setExistingScreen(formattedUpdatedData);
+
       setModalError({
         title: 'Éxito',
-        message: 'Pantalla de bienvenida guardada correctamente',
+        message: 'Pantalla de bienvenida guardada correctamente.',
         type: 'info'
       });
       setModalVisible(true);
     } catch (error) {
       console.error('Error saving welcome screen:', error);
       setModalError({
-        title: 'Error',
-        message: 'No se pudo guardar la pantalla de bienvenida',
+        title: 'Error al Guardar',
+        message: `No se pudo guardar la pantalla de bienvenida: ${error instanceof Error ? error.message : String(error)}`,
         type: 'error'
       });
       setModalVisible(true);
@@ -155,99 +193,50 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
   const handlePreview = () => {
     if (!validateForm()) {
       setModalError({
-        title: 'Error',
-        message: 'Por favor, complete todos los campos requeridos antes de previsualizar',
-        type: 'error'
+        title: 'Campos incompletos',
+        message: 'Por favor, complete todos los campos requeridos antes de previsualizar.',
+        type: 'warning'
       });
       setModalVisible(true);
       return;
     }
 
-    // Crear una nueva ventana para la vista previa
     const previewWindow = window.open('', '_blank');
     if (previewWindow) {
+      const { title, message, startButtonText } = formData;
       const previewHtml = `
         <!DOCTYPE html>
         <html lang="es">
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Vista previa - ${formData.title}</title>
+          <title>Vista previa - ${title}</title>
           <style>
-            body {
-              font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-              margin: 0;
-              padding: 0;
-              min-height: 100vh;
-              background-color: #f5f5f5;
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              justify-content: center;
-            }
-            .welcome-container {
-              max-width: 800px;
-              width: 90%;
-              margin: 40px auto;
-              padding: 40px;
-              background: white;
-              border-radius: 8px;
-              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-              text-align: center;
-            }
-            h1 {
-              font-size: 28px;
-              color: #333;
-              margin-bottom: 20px;
-            }
-            .message {
-              font-size: 16px;
-              line-height: 1.6;
-              color: #555;
-              margin-bottom: 30px;
-            }
-            .start-button {
-              background-color: #3f51b5;
-              color: white;
-              border: none;
-              padding: 12px 28px;
-              font-size: 16px;
-              border-radius: 4px;
-              cursor: pointer;
-              transition: background-color 0.2s;
-            }
-            .start-button:hover {
-              background-color: #303f9f;
-            }
-            .preview-badge {
-              position: fixed;
-              top: 10px;
-              right: 10px;
-              background: rgba(0,0,0,0.7);
-              color: white;
-              padding: 5px 10px;
-              font-size: 12px;
-              border-radius: 4px;
-            }
+            body { font-family: sans-serif; margin: 40px; background-color: #f4f4f4; display: flex; justify-content: center; align-items: center; min-height: calc(100vh - 80px); }
+            .container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; max-width: 600px; width: 90%; }
+            h1 { color: #333; margin-bottom: 15px; }
+            .message { color: #555; line-height: 1.6; margin-bottom: 25px; white-space: pre-wrap; }
+            button { background-color: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; }
+            button:hover { background-color: #0056b3; }
+            .badge { position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,0.6); color: white; padding: 4px 8px; font-size: 12px; border-radius: 3px; }
           </style>
         </head>
         <body>
-          <div class="preview-badge">Vista previa</div>
-          <div class="welcome-container">
-            <h1>${formData.title}</h1>
-            <div class="message">${formData.message}</div>
-            <button class="start-button">${formData.startButtonText}</button>
+          <div class="badge">Vista Previa</div>
+          <div class="container">
+            <h1>${title}</h1>
+            <div class="message">${message.replace(/\n/g, '<br>')}</div>
+            <button>${startButtonText}</button>
           </div>
         </body>
         </html>
       `;
-      
       previewWindow.document.write(previewHtml);
       previewWindow.document.close();
     } else {
       setModalError({
-        title: 'Error',
-        message: 'No se pudo abrir la ventana de vista previa. Por favor, permita las ventanas emergentes para este sitio.',
+        title: 'Error de Vista Previa',
+        message: 'No se pudo abrir la ventana de vista previa. Por favor, habilite las ventanas emergentes.',
         type: 'error'
       });
       setModalVisible(true);

@@ -23,6 +23,14 @@ custom:
     concurrency: 10
     keepOutputDirectory: false
 
+  # Definición de nombres de recursos
+  tableName: ${self:service}-researches-${self:provider.stage} # Tabla para Investigaciones
+  usersTableName: ${self:service}-users-${self:provider.stage} # Tabla para Usuarios
+  s3BucketName: ${self:service}-${self:provider.stage}-storage # Bucket S3
+  eyeTrackingRecruitConfigTable: ${self:service}-eye-tracking-recruit-config-${self:provider.stage}
+  eyeTrackingRecruitParticipantTable: ${self:service}-eye-tracking-recruit-participant-${self:provider.stage}
+  recruitmentLinkTable: ${self:service}-recruitment-link-${self:provider.stage}
+
   # Configuración para entorno de desarrollo
   serverless-offline:
     httpPort: 3000
@@ -80,15 +88,18 @@ provider:
         - - "wss://"
           - Ref: "WebsocketsApi"
           - ".execute-api.${self:provider.region}.amazonaws.com/${self:provider.stage}"
-    USER_TABLE: ${self:service}-users-${self:provider.stage}
+    USER_TABLE: ${self:custom.usersTableName}
     DYNAMODB_TABLE: ${self:service}-table-${self:provider.stage}
     PARTICIPANT_TABLE: ${self:service}-participants-${self:provider.stage}
     JWT_SECRET: ${env:JWT_SECRET, 'mi-clave-secreta-para-firmar-tokens'}
     TOKEN_EXPIRATION: '604800'
-    S3_BUCKET_NAME: ${self:service}-${self:provider.stage}-storage
-    EYETRACKING_RECRUIT_CONFIG_TABLE: ${self:service}-eye-tracking-recruit-config-${self:provider.stage}
-    EYETRACKING_RECRUIT_PARTICIPANT_TABLE: ${self:service}-eye-tracking-recruit-participant-${self:provider.stage}
-    RECRUITMENT_LINK_TABLE: ${self:service}-recruitment-link-${self:provider.stage}
+    S3_BUCKET_NAME: ${self:custom.s3BucketName}
+    EYETRACKING_RECRUIT_CONFIG_TABLE: ${self:custom.eyeTrackingRecruitConfigTable}
+    EYETRACKING_RECRUIT_PARTICIPANT_TABLE: ${self:custom.eyeTrackingRecruitParticipantTable}
+    RECRUITMENT_LINK_TABLE: ${self:custom.recruitmentLinkTable}
+    EMAIL_FROM: process.env.EMAIL_FROM
+    EMAIL_TO: process.env.EMAIL_TO
+    TABLE_NAME: ${self:custom.tableName}
   
   # IAM roles unificados con acceso completo a recursos
   iam:
@@ -223,6 +234,8 @@ resources:
             AttributeType: S
           - AttributeName: researchId
             AttributeType: S
+          - AttributeName: EntityType
+            AttributeType: S
         KeySchema:
           - AttributeName: id
             KeyType: HASH
@@ -239,6 +252,14 @@ resources:
             KeySchema:
               - AttributeName: researchId
                 KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+          - IndexName: EntityTypeSkIndex
+            KeySchema:
+              - AttributeName: EntityType
+                KeyType: HASH
+              - AttributeName: sk
+                KeyType: RANGE
             Projection:
               ProjectionType: ALL
         PointInTimeRecoverySpecification:

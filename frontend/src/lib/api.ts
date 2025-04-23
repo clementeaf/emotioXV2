@@ -385,106 +385,182 @@ export const researchAPI = {
   },
 };
 
-// Endpoints de pantalla de agradecimiento
+// Endpoints de pantalla de agradecimiento - REFACTORIZADO
 export const thankYouScreenAPI = {
-  create: (data: any) => {
-    const url = API_CONFIG.endpoints.thankYouScreen.CREATE || '/thank-you-screens';
+  create: (researchId: string, data: any) => {
+    if (!researchId) {
+      throw new Error('Se requiere un ID de investigación para crear la pantalla de agradecimiento');
+    }
+    const urlTemplate = API_CONFIG.endpoints.thankYouScreen.CREATE || '/research/{researchId}/thank-you-screen';
+    const url = urlTemplate.replace('{researchId}', researchId);
     console.log(`Endpoint CREATE thankYouScreen utilizado: ${url}`);
     return alovaInstance.Post<any>(url, data);
   },
   
   getByResearchId: (researchId: string) => {
-    const url = (API_CONFIG.endpoints.thankYouScreen.GET_BY_RESEARCH || '/thank-you-screens/research/{researchId}').replace('{researchId}', researchId);
+    if (!researchId) {
+      throw new Error('Se requiere un ID de investigación');
+    }
+    const urlTemplate = API_CONFIG.endpoints.thankYouScreen.GET_BY_RESEARCH || '/research/{researchId}/thank-you-screen';
+    const url = urlTemplate.replace('{researchId}', researchId);
     console.log(`Endpoint GET_BY_RESEARCH thankYouScreen utilizado: ${url}`);
     return alovaInstance.Get<any>(url);
   },
   
-  getById: (id: string) => {
-    const url = (API_CONFIG.endpoints.thankYouScreen.GET || '/thank-you-screens/{id}').replace('{id}', id);
-    console.log(`Endpoint GET thankYouScreen utilizado: ${url}`);
-    return alovaInstance.Get<any>(url);
-  },
-  
-  update: (id: string, data: any) => {
-    const url = (API_CONFIG.endpoints.thankYouScreen.UPDATE || '/thank-you-screens/{id}').replace('{id}', id);
+  update: (researchId: string, data: any) => {
+    if (!researchId) {
+      throw new Error('Se requiere un ID de investigación para actualizar la pantalla de agradecimiento');
+    }
+    const urlTemplate = API_CONFIG.endpoints.thankYouScreen.UPDATE || '/research/{researchId}/thank-you-screen';
+    const url = urlTemplate.replace('{researchId}', researchId);
     console.log(`Endpoint UPDATE thankYouScreen utilizado: ${url}`);
     return alovaInstance.Put<any>(url, data);
   },
   
-  delete: (id: string) => {
-    const url = (API_CONFIG.endpoints.thankYouScreen.DELETE || '/thank-you-screens/{id}').replace('{id}', id);
+  delete: (researchId: string) => {
+    if (!researchId) {
+      throw new Error('Se requiere un ID de investigación para eliminar la pantalla de agradecimiento');
+    }
+    const urlTemplate = API_CONFIG.endpoints.thankYouScreen.DELETE || '/research/{researchId}/thank-you-screen';
+    const url = urlTemplate.replace('{researchId}', researchId);
     console.log(`Endpoint DELETE thankYouScreen utilizado: ${url}`);
     return alovaInstance.Delete<any>(url);
   }
 };
 
-// También API para eye tracking
+// API para eye tracking - REFACTORIZADO
 export const eyeTrackingAPI = {
-  create: (data: any) => {
-    const url = API_CONFIG.endpoints.eyeTracking?.CREATE || '/eye-tracking';
+  create: (researchId: string, data: any) => {
+    if (!researchId) {
+      throw new Error('Se requiere un ID de investigación para crear eye tracking');
+    }
+    const urlTemplate = API_CONFIG.endpoints.eyeTracking?.CREATE || '/research/{researchId}/eye-tracking';
+    const url = urlTemplate.replace('{researchId}', researchId);
     console.log(`Endpoint CREATE eyeTracking utilizado: ${url}`);
     return alovaInstance.Post<any>(url, data);
   },
   
   getByResearchId: (researchId: string) => {
-    const url = (API_CONFIG.endpoints.eyeTracking?.GET_BY_RESEARCH || '/eye-tracking/research/{researchId}').replace('{researchId}', researchId);
+    if (!researchId) {
+      throw new Error('Se requiere un ID de investigación');
+    }
+    const urlTemplate = API_CONFIG.endpoints.eyeTracking?.GET_BY_RESEARCH || '/research/{researchId}/eye-tracking';
+    const url = urlTemplate.replace('{researchId}', researchId);
     console.log(`Endpoint GET_BY_RESEARCH eyeTracking utilizado: ${url}`);
     return alovaInstance.Get<any>(url);
   },
   
-  update: (id: string, data: any) => {
-    const url = (API_CONFIG.endpoints.eyeTracking?.UPDATE || '/eye-tracking/{id}').replace('{id}', id);
+  update: (researchId: string, data: any) => {
+    if (!researchId) {
+      throw new Error('Se requiere un ID de investigación para actualizar eye tracking');
+    }
+    const urlTemplate = API_CONFIG.endpoints.eyeTracking?.UPDATE || '/research/{researchId}/eye-tracking';
+    const url = urlTemplate.replace('{researchId}', researchId);
     console.log(`Endpoint UPDATE eyeTracking utilizado: ${url}`);
     return alovaInstance.Put<any>(url, data);
+  },
+  
+  delete: (researchId: string) => {
+    if (!researchId) {
+      throw new Error('Se requiere un ID de investigación para eliminar eye tracking');
+    }
+    const urlTemplate = API_CONFIG.endpoints.eyeTracking?.DELETE || '/research/{researchId}/eye-tracking';
+    const url = urlTemplate.replace('{researchId}', researchId);
+    console.log(`Endpoint DELETE eyeTracking utilizado: ${url}`);
+    return alovaInstance.Delete<any>(url);
   }
 };
 
-// API para SmartVOC
-export const smartVocAPI = {
-  create: (data: any) => {
-    const url = API_CONFIG.endpoints.smartVoc?.CREATE || '/smart-voc';
-    console.log(`Endpoint CREATE smartVoc utilizado: ${url}`);
-    
-    // Verificar explícitamente que el researchId está presente y es válido
-    if (!data || !data.researchId || typeof data.researchId !== 'string' || !data.researchId.trim()) {
-      console.error('ERROR: researchId inválido o faltante en los datos enviados:', data);
-      throw new Error('Se requiere un ID de investigación válido (researchId)');
+// API para Eye Tracking Recruit - AÑADIDO Y REFACTORIZADO
+export const eyeTrackingRecruitAPI = {
+  create: (researchId: string, data: any) => {
+    if (!researchId) {
+      throw new Error('Se requiere un ID de investigación para crear eye tracking recruit');
     }
-    
-    // Construir URL completa
-    const fullUrl = `${API_CONFIG.baseURL}${url}`;
-    console.log('URL completa para crear SmartVOC:', fullUrl);
-    
-    // Imprimir los datos que se enviarán para depuración
-    console.log('DEBUG - smartVocAPI.create - Datos a enviar:', {
-      researchId: data.researchId,
-      questionsCount: data.questions?.length || 0,
-      randomizeQuestions: data.randomizeQuestions,
-      smartVocRequired: data.smartVocRequired
-    });
-    
-    // Crear un método POST explícito con el cuerpo de la solicitud correctamente formateado
-    return alovaInstance.Post<any>(url, {
-      ...data,
-      // Asegurar que el researchId se envía correctamente
-      researchId: data.researchId.trim()
-    });
+    const urlTemplate = API_CONFIG.endpoints.eyeTracking?.RECRUIT_CREATE || '/research/{researchId}/eye-tracking-recruit';
+    const url = urlTemplate.replace('{researchId}', researchId);
+    console.log(`Endpoint CREATE eyeTrackingRecruit utilizado: ${url}`);
+    return alovaInstance.Post<any>(url, data);
   },
   
   getByResearchId: (researchId: string) => {
-    // La ruta correcta es /smart-voc/research/{researchId}/smart-voc debido al basePath del controlador
-    const url = `/smart-voc/research/${researchId}/smart-voc`;
-    console.log(`Endpoint GET_BY_RESEARCH smartVoc utilizado: ${url}`);
-    console.log(`URL completa: ${API_CONFIG.baseURL}${url}`);
-    
+    if (!researchId) {
+      throw new Error('Se requiere un ID de investigación');
+    }
+    const urlTemplate = API_CONFIG.endpoints.eyeTracking?.RECRUIT_GET || '/research/{researchId}/eye-tracking-recruit';
+    const url = urlTemplate.replace('{researchId}', researchId);
+    console.log(`Endpoint GET_BY_RESEARCH eyeTrackingRecruit utilizado: ${url}`);
     return alovaInstance.Get<any>(url);
   },
   
-  update: (id: string, data: any) => {
-    const url = (API_CONFIG.endpoints.smartVoc?.UPDATE || '/smart-voc/{id}').replace('{id}', id);
-    console.log(`Endpoint UPDATE smartVoc utilizado: ${url}`);
-    
+  update: (researchId: string, data: any) => {
+    if (!researchId) {
+      throw new Error('Se requiere un ID de investigación para actualizar eye tracking recruit');
+    }
+    const urlTemplate = API_CONFIG.endpoints.eyeTracking?.RECRUIT_UPDATE || '/research/{researchId}/eye-tracking-recruit';
+    const url = urlTemplate.replace('{researchId}', researchId);
+    console.log(`Endpoint UPDATE eyeTrackingRecruit utilizado: ${url}`);
     return alovaInstance.Put<any>(url, data);
+  },
+  
+  delete: (researchId: string) => {
+    if (!researchId) {
+      throw new Error('Se requiere un ID de investigación para eliminar eye tracking recruit');
+    }
+    // Asumimos que DELETE usa la misma ruta base, ya que no está explícito en API_CONFIG
+    const urlTemplate = API_CONFIG.endpoints.eyeTracking?.RECRUIT_BASE_PATH || '/research/{researchId}/eye-tracking-recruit';
+    const url = urlTemplate.replace('{researchId}', researchId);
+    console.log(`Endpoint DELETE eyeTrackingRecruit utilizado: ${url}`);
+    return alovaInstance.Delete<any>(url);
+  }
+};
+
+// API para SmartVOC - REFACTORIZADO
+export const smartVocAPI = {
+  create: (researchId: string, data: any) => {
+    if (!researchId) {
+      throw new Error('Se requiere un ID de investigación válido (researchId)');
+    }
+    // Usar la ruta base y reemplazar {researchId}
+    const urlTemplate = API_CONFIG.endpoints.smartVoc?.CREATE || '/research/{researchId}/smart-voc';
+    const url = urlTemplate.replace('{researchId}', researchId);
+    console.log(`Endpoint CREATE smartVoc utilizado: ${url}`);
+    
+    // Crear un método POST explícito con el cuerpo de la solicitud
+    return alovaInstance.Post<any>(url, data);
+  },
+  
+  getByResearchId: (researchId: string) => {
+    if (!researchId) {
+      throw new Error('Se requiere un ID de investigación');
+    }
+    // Usar la ruta base y reemplazar {researchId}
+    const urlTemplate = API_CONFIG.endpoints.smartVoc?.GET_BY_RESEARCH || '/research/{researchId}/smart-voc';
+    const url = urlTemplate.replace('{researchId}', researchId);
+    console.log(`Endpoint GET_BY_RESEARCH smartVoc utilizado: ${url}`);
+    return alovaInstance.Get<any>(url);
+  },
+  
+  update: (researchId: string, data: any) => {
+    if (!researchId) {
+      throw new Error('Se requiere un ID de investigación para actualizar SmartVOC');
+    }
+    // Usar la ruta base y reemplazar {researchId}
+    const urlTemplate = API_CONFIG.endpoints.smartVoc?.UPDATE || '/research/{researchId}/smart-voc';
+    const url = urlTemplate.replace('{researchId}', researchId);
+    console.log(`Endpoint UPDATE smartVoc utilizado: ${url}`);
+    return alovaInstance.Put<any>(url, data);
+  },
+
+  delete: (researchId: string) => {
+    if (!researchId) {
+      throw new Error('Se requiere un ID de investigación para eliminar SmartVOC');
+    }
+    // Usar la ruta base y reemplazar {researchId}
+    const urlTemplate = API_CONFIG.endpoints.smartVoc?.DELETE || '/research/{researchId}/smart-voc';
+    const url = urlTemplate.replace('{researchId}', researchId);
+    console.log(`Endpoint DELETE smartVoc utilizado: ${url}`);
+    return alovaInstance.Delete<any>(url);
   }
 };
 
@@ -518,14 +594,15 @@ export const handleAPIError = (error: unknown): string => {
   return 'Error desconocido al procesar la solicitud';
 };
 
-// API para pantallas de bienvenida
+// API para pantallas de bienvenida - REFACTORIZADO Y CORREGIDO
 export const welcomeScreenAPI = {
-  create: (data: any) => {
-    if (!data || !data.researchId) {
+  create: (researchId: string, data: any) => {
+    if (!researchId) {
       throw new Error('Se requiere un ID de investigación para crear la pantalla de bienvenida');
     }
-    
-    const url = API_CONFIG.endpoints.welcomeScreen.CREATE || '/api/welcome-screen';
+    // Usar la ruta base y reemplazar {researchId}
+    const urlTemplate = API_CONFIG.endpoints.welcomeScreen.CREATE || '/research/{researchId}/welcome-screen';
+    const url = urlTemplate.replace('{researchId}', researchId);
     console.log(`Endpoint CREATE welcomeScreen utilizado: ${url}`);
     return alovaInstance.Post<any>(url, data);
   },
@@ -534,56 +611,79 @@ export const welcomeScreenAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación');
     }
-    
-    const url = API_CONFIG.endpoints.welcomeScreen.GET_BY_RESEARCH || '/api/welcome-screen';
+    // Usar la ruta base y reemplazar {researchId} - Corregido
+    const urlTemplate = API_CONFIG.endpoints.welcomeScreen.GET_BY_RESEARCH || '/research/{researchId}/welcome-screen';
+    const url = urlTemplate.replace('{researchId}', researchId);
     console.log(`Endpoint GET_BY_RESEARCH welcomeScreen utilizado: ${url} con researchId:`, researchId);
-    
-    // Si es la ruta legacy, usar método GET con parámetros en query
-    if (url === '/api/welcome-screen') {
-      return alovaInstance.Get<any>(`${url}?researchId=${encodeURIComponent(researchId)}`, { 
-        params: { researchId }
-      });
-    }
-    
-    // De lo contrario, usar POST con action como hacíamos antes
-    return alovaInstance.Post<any>(url, { 
-      researchId: researchId,
-      action: 'get-by-research-id'
-    });
+    // Usar GET para obtener el recurso
+    return alovaInstance.Get<any>(url);
   },
   
-  getById: (id: string) => {
-    const url = API_CONFIG.endpoints.welcomeScreen.GET || '/api/welcome-screen';
-    console.log(`Endpoint GET welcomeScreen utilizado: ${url} con id:`, id);
-    return alovaInstance.Post<any>(url, { 
-      id: id,
-      action: 'get-by-id'
-    });
-  },
-  
-  update: (id: string, data: any) => {
-    if (!data || !data.researchId) {
+  update: (researchId: string, data: any) => {
+    if (!researchId) {
       throw new Error('Se requiere un ID de investigación para actualizar la pantalla de bienvenida');
     }
-    
-    const url = API_CONFIG.endpoints.welcomeScreen.UPDATE || '/api/welcome-screen';
-    console.log(`Endpoint UPDATE welcomeScreen utilizado: ${url} con id:`, id);
-    // Usar POST en lugar de PUT para mayor compatibilidad con el backend
-    return alovaInstance.Post<any>(url, {
-      ...data,
-      id: id,
-      action: 'update'
-    });
+    // Usar la ruta base y reemplazar {researchId}
+    const urlTemplate = API_CONFIG.endpoints.welcomeScreen.UPDATE || '/research/{researchId}/welcome-screen';
+    const url = urlTemplate.replace('{researchId}', researchId);
+    console.log(`Endpoint UPDATE welcomeScreen utilizado: ${url} con researchId:`, researchId);
+    // Usar PUT para actualizar el recurso
+    return alovaInstance.Put<any>(url, data);
   },
   
-  delete: (id: string) => {
-    const url = API_CONFIG.endpoints.welcomeScreen.DELETE || '/api/welcome-screen';
-    console.log(`Endpoint DELETE welcomeScreen utilizado: ${url} con id:`, id);
-    // Usar POST con parámetro action para mayor compatibilidad con el backend
-    return alovaInstance.Post<any>(url, {
-      id: id,
-      action: 'delete'
-    });
+  delete: (researchId: string) => {
+    if (!researchId) {
+      throw new Error('Se requiere un ID de investigación para eliminar la pantalla de bienvenida');
+    }
+    // Usar la ruta base y reemplazar {researchId}
+    const urlTemplate = API_CONFIG.endpoints.welcomeScreen.DELETE || '/research/{researchId}/welcome-screen';
+    const url = urlTemplate.replace('{researchId}', researchId);
+    console.log(`Endpoint DELETE welcomeScreen utilizado: ${url} con researchId:`, researchId);
+    // Usar DELETE para eliminar el recurso
+    return alovaInstance.Delete<any>(url);
+  }
+};
+
+// API para Cognitive Task - AÑADIDO
+export const cognitiveTaskAPI = {
+  create: (researchId: string, data: any) => {
+    if (!researchId) {
+      throw new Error('Se requiere un ID de investigación para crear la tarea cognitiva');
+    }
+    const urlTemplate = API_CONFIG.endpoints.cognitiveTask?.CREATE || '/research/{researchId}/cognitive-task';
+    const url = urlTemplate.replace('{researchId}', researchId);
+    console.log(`Endpoint CREATE cognitiveTask utilizado: ${url}`);
+    return alovaInstance.Post<any>(url, data);
+  },
+  
+  getByResearchId: (researchId: string) => {
+    if (!researchId) {
+      throw new Error('Se requiere un ID de investigación');
+    }
+    const urlTemplate = API_CONFIG.endpoints.cognitiveTask?.GET_BY_RESEARCH || '/research/{researchId}/cognitive-task';
+    const url = urlTemplate.replace('{researchId}', researchId);
+    console.log(`Endpoint GET_BY_RESEARCH cognitiveTask utilizado: ${url}`);
+    return alovaInstance.Get<any>(url);
+  },
+  
+  update: (researchId: string, data: any) => {
+    if (!researchId) {
+      throw new Error('Se requiere un ID de investigación para actualizar la tarea cognitiva');
+    }
+    const urlTemplate = API_CONFIG.endpoints.cognitiveTask?.UPDATE || '/research/{researchId}/cognitive-task';
+    const url = urlTemplate.replace('{researchId}', researchId);
+    console.log(`Endpoint UPDATE cognitiveTask utilizado: ${url}`);
+    return alovaInstance.Put<any>(url, data);
+  },
+  
+  delete: (researchId: string) => {
+    if (!researchId) {
+      throw new Error('Se requiere un ID de investigación para eliminar la tarea cognitiva');
+    }
+    const urlTemplate = API_CONFIG.endpoints.cognitiveTask?.DELETE || '/research/{researchId}/cognitive-task';
+    const url = urlTemplate.replace('{researchId}', researchId);
+    console.log(`Endpoint DELETE cognitiveTask utilizado: ${url}`);
+    return alovaInstance.Delete<any>(url);
   }
 };
 

@@ -37,43 +37,8 @@ function ResearchTableContent() {
       setIsLoading(true);
       setError(null);
 
-      // Primero intentar obtener la investigación actual
-      const currentResponse = await fetch(`${API_HTTP_ENDPOINT}/research/current`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (currentResponse.ok) {
-        const currentData = await currentResponse.json();
-        console.log('currentData en ResearchTable:', currentData);
-        
-        // Verificar que data no sea un array vacío y que tenga propiedades válidas
-        if (currentData?.data && 
-            ((Array.isArray(currentData.data) && currentData.data.length > 0) || 
-             (!Array.isArray(currentData.data) && currentData.data.id))) {
-          
-          // Si es un array con elementos, usar el primer elemento
-          const dataItem = Array.isArray(currentData.data) ? currentData.data[0] : currentData.data;
-          
-          setResearch([{
-            id: dataItem.id,
-            name: dataItem.title || dataItem.name,
-            status: dataItem.status || 'in-progress',
-            createdAt: dataItem.createdAt,
-            progress: dataItem.progress,
-            technique: dataItem.metadata?.type || ''
-          }]);
-          return; // Terminar aquí, setLastUpdate se hará en el finally
-        } else {
-          // Si es un array vacío o no tiene ID válido, continuamos para buscar todas las investigaciones
-          console.log('No hay investigación actual válida, buscando todas las investigaciones');
-        }
-      }
-
-      // Si no hay investigación actual, obtener todas las investigaciones
+      // Obtener todas las investigaciones directamente
+      console.log('ResearchTable: Fetching /research/all...'); // Log para depuración
       const response = await fetch(`${API_HTTP_ENDPOINT}/research/all`, {
         method: 'GET',
         headers: {

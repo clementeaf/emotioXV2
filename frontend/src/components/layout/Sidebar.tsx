@@ -186,44 +186,10 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
   useEffect(() => {
     const fetchMostRecentResearch = async () => {
       setIsLoadingResearch(true);
+      setShowNoResearchMessage(false); // Asumir que hay investigaciones inicialmente
       try {
-        // Primero intentar obtener la investigación actual
-        const currentResponse = await fetch(`${API_HTTP_ENDPOINT}/research/current`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (currentResponse.ok) {
-          const currentData = await currentResponse.json();
-          console.log('currentData: ', currentData);  
-          
-          // Verifica que data no sea un array vacío
-          if (currentData?.data && 
-              ((Array.isArray(currentData.data) && currentData.data.length > 0) || 
-               (!Array.isArray(currentData.data) && currentData.data.id))) {
-            
-            // Si es un array con elementos, usa el primer elemento
-            const dataItem = Array.isArray(currentData.data) ? currentData.data[0] : currentData.data;
-            
-            setRecentResearch([{
-              id: dataItem.id,
-              name: dataItem.title || dataItem.name,
-              technique: dataItem.metadata?.type || ''
-            }]);
-            setShowNoResearchMessage(false);
-          } else {
-            // Si es un array vacío o no tiene ID
-            setRecentResearch([]);
-            setShowNoResearchMessage(true);
-          }
-          
-          setIsLoadingResearch(false);
-          return;
-        }
-
-        // Si no hay investigación actual, intentar obtener la lista
+        // Obtener todas las investigaciones del usuario
+        console.log('Fetching /research/all...'); // Log para depuración
         const response = await fetch(`${API_HTTP_ENDPOINT}/research/all`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -232,39 +198,59 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
         });
 
         if (!response.ok) {
-          throw new Error('Error al obtener investigaciones');
+          // Lanzar error si la respuesta no es OK (incluye 4xx y 5xx)
+          const errorText = await response.text();
+          console.error('Error response from /research/all:', response.status, errorText);
+          throw new Error(`Error ${response.status} al obtener investigaciones: ${errorText}`);
         }
 
         const data = await response.json();
+        // Asegurarse de que data.data es un array
         const researches = Array.isArray(data?.data) ? data.data : [];
+        console.log('Researches received:', researches); // Log para depuración
 
-        // Ordenar por fecha de creación y tomar la más reciente
-        const sortedResearches = researches.sort((a: Research, b: Research) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-
-        if (sortedResearches.length > 0 && sortedResearches[0].id) {
-          setRecentResearch([{
-            id: sortedResearches[0].id,
-            name: sortedResearches[0].name,
-            technique: sortedResearches[0].technique || ''
-          }]);
-          setShowNoResearchMessage(false);
-        } else {
+        if (researches.length === 0) {
+          console.log('No researches found.');
           setRecentResearch([]);
           setShowNoResearchMessage(true);
+        } else {
+          // Ordenar por fecha de creación (más reciente primero)
+          const sortedResearches = researches.sort((a: Research, b: Research) => {
+            // Manejar posibles valores nulos o inválidos de createdAt
+            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return dateB - dateA; // Descendente
+          });
+          console.log('Sorted researches:', sortedResearches); // Log para depuración
+
+          // Tomar la más reciente (el primer elemento)
+          const mostRecent = sortedResearches[0];
+          console.log('Most recent research:', mostRecent); // Log para depuración
+
+          if (mostRecent && mostRecent.id) {
+            setRecentResearch([{
+              id: mostRecent.id,
+              name: mostRecent.name || 'Investigación sin nombre', // Valor por defecto
+              technique: mostRecent.technique || ''
+            }]);
+            setShowNoResearchMessage(false);
+          } else {
+            console.log('Most recent research has no valid ID.');
+            setRecentResearch([]);
+            setShowNoResearchMessage(true);
+          }
         }
       } catch (error) {
-        console.error('Error cargando investigación reciente:', error);
+        console.error('Error cargando investigaciones en fetchMostRecentResearch:', error);
         setRecentResearch([]);
-        setShowNoResearchMessage(true);
+        setShowNoResearchMessage(true); // Mostrar mensaje si hay error
       } finally {
         setIsLoadingResearch(false);
       }
     };
 
     fetchMostRecentResearch();
-  }, [activeResearch]);
+  }, [activeResearch]); // Dependencia mantenida por si cambia la investigación activa externa
 
   // Determinar si debemos mostrar el sidebar de AIM Framework
   const isAimFrameworkResearch = isAimFramework ||

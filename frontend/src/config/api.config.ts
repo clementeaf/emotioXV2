@@ -121,56 +121,69 @@ const API_CONFIG = {
       UPDATE_STAGE: '/research/{id}/stage',
     },
     
-    // Pantallas de bienvenida
+    // Pantallas de bienvenida - USAR RUTAS JERÁRQUICAS
     welcomeScreen: {
-      GET_BY_RESEARCH: routes.API_ROUTES.LEGACY.WELCOME_SCREEN,
-      GET: routes.API_ROUTES.LEGACY.WELCOME_SCREEN,
-      CREATE: routes.API_ROUTES.LEGACY.WELCOME_SCREEN,
-      UPDATE: routes.API_ROUTES.LEGACY.WELCOME_SCREEN,
-      DELETE: routes.API_ROUTES.LEGACY.WELCOME_SCREEN,
+      // Todas las operaciones (GET, POST, PUT, DELETE) van a la misma ruta base
+      // lib/api.ts deberá reemplazar {researchId}
+      BASE_PATH: '/research/{researchId}/welcome-screen',
+      // Mantener estructura anterior por compatibilidad con lib/api.ts, pero apuntando a la ruta correcta
+      GET_BY_RESEARCH: '/research/{researchId}/welcome-screen',
+      GET: '/research/{researchId}/welcome-screen', // GET directo al form no aplica, pero se deja por si acaso
+      CREATE: '/research/{researchId}/welcome-screen',
+      UPDATE: '/research/{researchId}/welcome-screen',
+      DELETE: '/research/{researchId}/welcome-screen',
     },
     
-    // Pantallas de agradecimiento
+    // Pantallas de agradecimiento - USAR RUTAS JERÁRQUICAS
     thankYouScreen: {
-      GET_BY_RESEARCH: '/thank-you-screens/research/{researchId}',
-      GET: '/thank-you-screens/{id}',
-      CREATE: '/thank-you-screens',
-      UPDATE: '/thank-you-screens/{id}',
-      DELETE: '/thank-you-screens/{id}',
+      BASE_PATH: '/research/{researchId}/thank-you-screen',
+      GET_BY_RESEARCH: '/research/{researchId}/thank-you-screen',
+      GET: '/research/{researchId}/thank-you-screen', // GET directo no aplica
+      CREATE: '/research/{researchId}/thank-you-screen',
+      UPDATE: '/research/{researchId}/thank-you-screen',
+      DELETE: '/research/{researchId}/thank-you-screen',
     },
     
-    // SmartVOC
+    // SmartVOC - USAR RUTAS JERÁRQUICAS
     smartVoc: {
-      GET_BY_RESEARCH: '/smart-voc/research/{researchId}',
-      GET: '/smart-voc/{id}',
-      CREATE: '/smart-voc',
-      UPDATE: '/smart-voc/{id}',
-      DELETE: '/smart-voc/{id}',
+      BASE_PATH: '/research/{researchId}/smart-voc',
+      GET_BY_RESEARCH: '/research/{researchId}/smart-voc',
+      GET: '/research/{researchId}/smart-voc', // GET directo no aplica
+      CREATE: '/research/{researchId}/smart-voc',
+      UPDATE: '/research/{researchId}/smart-voc',
+      DELETE: '/research/{researchId}/smart-voc',
     },
     
-    // Eye Tracking
+    // Eye Tracking - USAR RUTAS JERÁRQUICAS
     eyeTracking: {
-      GET_BY_RESEARCH: '/eye-tracking/research/{researchId}',
-      GET: '/eye-tracking/{id}',
-      CREATE: '/eye-tracking',
-      UPDATE: '/eye-tracking/{id}',
-      DELETE: '/eye-tracking/{id}',
-      RECRUIT_GET: '/eye-tracking/recruit/{recruitId}',
-      RECRUIT_UPDATE: '/eye-tracking/recruit/{recruitId}',
-      RECRUIT_CREATE: '/eye-tracking/recruit',
-      RECRUIT_GET_ALT: '/eye-tracking-recruit/config/{recruitId}',
-      RECRUIT_UPDATE_ALT: '/eye-tracking-recruit/config/{recruitId}',
-      RECRUIT_CREATE_ALT: '/eye-tracking-recruit/research/{researchId}/config',
+      BASE_PATH: '/research/{researchId}/eye-tracking',
+      GET_BY_RESEARCH: '/research/{researchId}/eye-tracking',
+      GET: '/research/{researchId}/eye-tracking', // GET directo no aplica
+      CREATE: '/research/{researchId}/eye-tracking',
+      UPDATE: '/research/{researchId}/eye-tracking',
+      DELETE: '/research/{researchId}/eye-tracking',
+      // Para Reclutamiento, usar la ruta específica
+      RECRUIT_BASE_PATH: '/research/{researchId}/eye-tracking-recruit',
+      RECRUIT_GET: '/research/{researchId}/eye-tracking-recruit',
+      RECRUIT_UPDATE: '/research/{researchId}/eye-tracking-recruit',
+      RECRUIT_CREATE: '/research/{researchId}/eye-tracking-recruit',
+      // Eliminar rutas _ALT que ya no son necesarias
+      // RECRUIT_GET_ALT: ...
+      // RECRUIT_UPDATE_ALT: ...
+      // RECRUIT_CREATE_ALT: ...
     },
     
-    // Tareas Cognitivas
+    // Tareas Cognitivas - USAR RUTAS JERÁRQUICAS
     cognitiveTask: {
+      BASE_PATH: '/research/{researchId}/cognitive-task',
+      GET_BY_RESEARCH: '/research/{researchId}/cognitive-task',
+      GET: '/research/{researchId}/cognitive-task', // GET directo no aplica
+      CREATE: '/research/{researchId}/cognitive-task',
+      UPDATE: '/research/{researchId}/cognitive-task',
+      DELETE: '/research/{researchId}/cognitive-task',
+      // Mantener por si se usa específicamente
       getByResearch: '/research/{researchId}/cognitive-task',
-      get: '/cognitive-task/{id}',
-      create: '/cognitive-task',
-      update: '/cognitive-task/{id}',
-      delete: '/cognitive-task/{id}',
-      createOrUpdate: '/research/{researchId}/cognitive-task'
+      createOrUpdate: '/research/{researchId}/cognitive-task' 
     },
     
     // S3

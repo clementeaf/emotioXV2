@@ -37,4 +37,33 @@ export interface UseWelcomeScreenFormResult {
   handleSubmit: () => Promise<void>;
   closeModal: () => void;
   handlePreview: () => void;
+}
+
+/**
+ * Type definition for validation errors in the Welcome Screen form.
+ */
+export interface ValidationErrors {
+  title?: string;
+  message?: string;
+  startButtonText?: string;
+  // Allow for other potential validation keys if needed
+  [key: string]: string | undefined;
+}
+
+/**
+ * Props for the main WelcomeScreenForm component.
+ */
+export interface WelcomeScreenFormProps {
+  className?: string;
+  researchId: string;
+  onSave?: (data: WelcomeScreenData) => void; // Optional callback after save
+}
+
+/**
+ * Props for the ErrorModal component.
+ */
+export interface ErrorModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  error: ErrorModalData | null;
 } 

@@ -237,8 +237,11 @@ export class NewResearchService {
     try {
       return await newResearchModel.getAll();
     } catch (error) {
-      console.error('Error al obtener todas las investigaciones:', error);
-      throw new ResearchError('Error al obtener todas las investigaciones', 500);
+      console.error('Error al obtener todas las investigaciones desde el modelo:', error);
+      // Re-lanzar el error original para que el controlador lo maneje
+      // Si el modelo devuelve [], no entrará aquí.
+      // Si hay un error real (permisos, red, etc.), se propagará.
+      throw error; 
     }
   }
 }

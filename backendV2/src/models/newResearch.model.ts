@@ -1,7 +1,6 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, UpdateCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import { uuidv4 } from '../utils/id-generator';
-import { DynamoDB } from 'aws-sdk';
 
 /**
  * Enum para los tipos de investigación
@@ -54,6 +53,7 @@ export interface NewResearchDynamoItem {
   // Fechas
   createdAt: string;
   updatedAt: string;
+  EntityType: string;
 }
 
 /**
@@ -101,6 +101,7 @@ export class NewResearchModel {
       id: researchId,
       sk: `RESEARCH#${researchId}`,
       userId,
+      EntityType: 'RESEARCH',
       name: data.name,
       enterprise: data.enterprise,
       type: data.type,
@@ -430,25 +431,24 @@ export class NewResearchModel {
    */
   async getAll(): Promise<NewResearch[]> {
     try {
-      console.log('Iniciando modelo getAll() para obtener todas las investigaciones');
+      console.log('Iniciando modelo getAll() usando Query en EntityTypeSkIndex');
       
-      // Usar la misma instancia de cliente que se configura en el constructor
       const params = {
         TableName: this.tableName,
-        IndexName: 'sk-index', // Asegúrate de que este índice exista en DynamoDB
-        KeyConditionExpression: 'begins_with(sk, :sk)',
+        IndexName: 'EntityTypeSkIndex',
+        KeyConditionExpression: 'EntityType = :type AND begins_with(sk, :prefix)',
         ExpressionAttributeValues: {
-          ':sk': 'RESEARCH#'
+          ':type': 'RESEARCH',
+          ':prefix': 'RESEARCH#'
         }
       };
 
-      console.log('Parámetros de consulta:', JSON.stringify(params, null, 2));
+      console.log('Parámetros de QueryCommand:', JSON.stringify(params, null, 2));
       
-      // Usar el cliente configurado en el constructor
       const command = new QueryCommand(params);
       const result = await this.dynamoClient.send(command);
       
-      console.log(`Consulta completada. Encontrados: ${result.Items?.length || 0} elementos`);
+      console.log(`Query completado. Encontrados: ${result.Items?.length || 0} elementos.`);
       
       if (!result.Items || result.Items.length === 0) {
         console.log('No se encontraron investigaciones');
@@ -477,19 +477,6 @@ export class NewResearchModel {
     }
   }
 }
-
-// Función helper para obtener la instancia de DynamoDB
-const getDB = (): DynamoDB.DocumentClient => {
-  const options: DynamoDB.DocumentClient.DocumentClientOptions & { region?: string; endpoint?: string } = {};
-  
-  // Para entornos de desarrollo local
-  if (process.env.IS_OFFLINE === 'true') {
-    options.region = 'localhost';
-    options.endpoint = 'http://localhost:8000';
-  }
-  
-  return new DynamoDB.DocumentClient(options);
-};
 
 // Exportar una instancia única del modelo
 export const newResearchModel = new NewResearchModel(); 

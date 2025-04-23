@@ -105,18 +105,18 @@ export function createController(
       } else {
         // Buscar coincidencia por patrones (útil para rutas con parámetros)
         for (const routePath in routeMap) {
-          // Convertir ruta a expresión regular
+          // Convertir ruta a expresión regular - CORREGIDO para usar llaves {}
           const routeRegex = new RegExp(
-            `^${routePath.replace(/\/:([^\/]+)/g, '/([^/]+)')}$`
+            `^${routePath.replace(/\/{([^\/]+)}/g, '/([^/]+)')}$`
           );
           
           if (routeRegex.test(path) && routeMap[routePath][method]) {
             controller = routeMap[routePath][method];
             matchedPath = routePath;
             
-            // Extraer parámetros de la URL y agregarlos a pathParameters
-            const paramNames = (routePath.match(/\/:([^\/]+)/g) || [])
-              .map(p => p.substr(2));
+            // Extraer parámetros de la URL y agregarlos a pathParameters - CORREGIDO para usar llaves {}
+            const paramNames = (routePath.match(/\/{([^\/]+)}/g) || [])
+              .map(p => p.substring(2, p.length - 1)); // Extraer el nombre entre {}
             const paramValues = path.match(routeRegex)?.slice(1);
             
             if (paramNames.length > 0 && paramValues) {
@@ -136,9 +136,11 @@ export function createController(
       // Si encontramos un controlador, ejecutarlo
       if (controller && userId !== null) {
         console.log(`CONTROLLER [${options.basePath}] - Ejecutando controlador para ruta: ${matchedPath}, método: ${method}`);
+        console.log(`CONTROLLER [${options.basePath}] - Pasando pathParameters:`, JSON.stringify(event.pathParameters || {}));
         return await controller(event, userId);
       } else if (controller && isPublicRoute) {
         console.log(`CONTROLLER [${options.basePath}] - Ejecutando controlador público para ruta: ${matchedPath}, método: ${method}`);
+        console.log(`CONTROLLER [${options.basePath}] - Pasando pathParameters:`, JSON.stringify(event.pathParameters || {}));
         return await controller(event, '');
       }
       

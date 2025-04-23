@@ -28,7 +28,7 @@ async function getHandler(type: string) {
       return handlers.auth;
     case 'research':
       const researchModule = await import('./controllers/newResearch.controller');
-      handlers.research = researchModule.researchHandler || researchModule;
+      handlers.research = researchModule.newResearchHandler || researchModule;
       return handlers.research;
     case 'welcome-screen':
       const welcomeScreenModule = await import('./controllers/welcomeScreen.controller');
@@ -200,26 +200,26 @@ async function handleHttpRequest(
     const path = event.path || '';
     let controllerType: string | null = null;
 
-    // Mapeo de rutas 
+    // Mapeo de rutas - DE MÁS ESPECÍFICO A MENOS ESPECÍFICO
     if (path.startsWith('/auth')) {
       controllerType = 'auth';
-    } else if (path.startsWith('/api/research') || path.startsWith('/research')) {
-      controllerType = 'research';
-    } else if (path.startsWith('/api/welcome-screen') || path.includes('/welcome-screen')) {
+    } else if (path.includes('/welcome-screen')) { // Primero chequear subrutas específicas
       controllerType = 'welcome-screen';
-    } else if (path.startsWith('/api/thank-you-screen') || path.includes('/thank-you-screen')) {
+    } else if (path.includes('/thank-you-screen')) {
       controllerType = 'thank-you-screen';
-    } else if (path.startsWith('/api/eye-tracking-recruit') || path.includes('/eye-tracking-recruit')) {
+    } else if (path.includes('/eye-tracking-recruit')) {
       controllerType = 'eye-tracking-recruit';
-    } else if (path.startsWith('/api/eye-tracking') || path.includes('/eye-tracking')) {
+    } else if (path.includes('/eye-tracking')) {
       controllerType = 'eye-tracking';
-    } else if (path.startsWith('/api/smart-voc') || path.includes('/smart-voc')) {
+    } else if (path.includes('/smart-voc')) {
       controllerType = 'smart-voc';
-    } else if (path.startsWith('/api/cognitive-task') || path.includes('/cognitive-task')) {
+    } else if (path.includes('/cognitive-task')) {
       controllerType = 'cognitive-task';
-    } else if (path.startsWith('/api/s3')) {
+    } else if (path.startsWith('/research')) { // Luego la ruta base de research
+      controllerType = 'research';
+    } else if (path.startsWith('/s3')) { // Mover S3 después de research
       controllerType = 's3';
-    } else if (path.startsWith('/api/participants')) {
+    } else if (path.startsWith('/participants')) { // Mover Participants después de research
       controllerType = 'participants';
     } else if (path === '/') {
       // Ruta principal/health check

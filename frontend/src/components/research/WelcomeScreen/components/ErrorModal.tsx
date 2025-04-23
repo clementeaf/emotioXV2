@@ -1,17 +1,25 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import ReactDOM from 'react-dom'; // Importar createPortal
 import { ErrorModalProps } from '../types';
 import { UI_TEXTS } from '../constants';
 
 /**
- * Componente para mostrar errores y mensajes en un modal
+ * Componente para mostrar errores y mensajes en un modal, usando Portal.
  */
 export const ErrorModal: React.FC<ErrorModalProps> = ({ 
   isOpen, 
   onClose, 
   error 
 }) => {
-  // Si no debe mostrarse o no hay error, no renderizar nada
-  if (!isOpen || !error) {
+  const [isClient, setIsClient] = useState(false);
+
+  // Asegurarse de que el código solo se ejecute en el cliente para usar document.body
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Si no debe mostrarse, no hay error, o no estamos en el cliente, no renderizar nada
+  if (!isOpen || !error || !isClient) {
     return null;
   }
 
@@ -62,14 +70,16 @@ export const ErrorModal: React.FC<ErrorModalProps> = ({
   const colorClasses = getColorClasses();
   const title = getModalTitle();
 
-  return (
-    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-30">
-      <div className="bg-white rounded-lg shadow-lg max-w-md w-full overflow-hidden">
+  // El JSX del modal que se renderizará en el portal
+  const modalContent = (
+    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-30 h-screen">
+      <div className="bg-white rounded-lg shadow-lg max-w-md w-full overflow-hidden m-4">
         <div className={`p-4 flex justify-between items-center ${colorClasses.header}`}>
           <h3 className="text-lg font-medium">{title}</h3>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700"
+            aria-label="Cerrar modal"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -90,4 +100,7 @@ export const ErrorModal: React.FC<ErrorModalProps> = ({
       </div>
     </div>
   );
+
+  // Usar createPortal para renderizar el contenido del modal en document.body
+  return ReactDOM.createPortal(modalContent, document.body);
 }; 

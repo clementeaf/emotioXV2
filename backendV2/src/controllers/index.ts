@@ -16,3 +16,4 @@ export * from './s3.controller';
 export * from './eyeTrackingRecruit.controller';
 
 // Otros controladores serán exportados aquí a medida que se creen 
+export * from './cognitiveTask.controller'; 
