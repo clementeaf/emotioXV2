@@ -197,16 +197,30 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
 
         if (currentResponse.ok) {
           const currentData = await currentResponse.json();
-          if (currentData?.data) {
+          console.log('currentData: ', currentData);  
+          
+          // Verifica que data no sea un array vacío
+          if (currentData?.data && 
+              ((Array.isArray(currentData.data) && currentData.data.length > 0) || 
+               (!Array.isArray(currentData.data) && currentData.data.id))) {
+            
+            // Si es un array con elementos, usa el primer elemento
+            const dataItem = Array.isArray(currentData.data) ? currentData.data[0] : currentData.data;
+            
             setRecentResearch([{
-              id: currentData.data.id,
-              name: currentData.data.title || currentData.data.name,
-              technique: currentData.data.metadata?.type || ''
+              id: dataItem.id,
+              name: dataItem.title || dataItem.name,
+              technique: dataItem.metadata?.type || ''
             }]);
             setShowNoResearchMessage(false);
-            setIsLoadingResearch(false);
-            return;
+          } else {
+            // Si es un array vacío o no tiene ID
+            setRecentResearch([]);
+            setShowNoResearchMessage(true);
           }
+          
+          setIsLoadingResearch(false);
+          return;
         }
 
         // Si no hay investigación actual, intentar obtener la lista
@@ -229,7 +243,7 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
 
-        if (sortedResearches.length > 0) {
+        if (sortedResearches.length > 0 && sortedResearches[0].id) {
           setRecentResearch([{
             id: sortedResearches[0].id,
             name: sortedResearches[0].name,
@@ -255,11 +269,6 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
   // Determinar si debemos mostrar el sidebar de AIM Framework
   const isAimFrameworkResearch = isAimFramework ||
     (recentResearch.length > 0 && recentResearch[0].technique === 'aim-framework');
-
-  // Función para manejar el clic en "New Research" cuando hay una investigación en curso
-  const handleNewResearchClick = () => {
-    router.push('/dashboard/research/new');
-  };
 
   // Función para manejar el clic en el logo de EmotioX
   const handleLogoClick = () => {
@@ -561,47 +570,49 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
             <div className="px-3 text-xs text-neutral-500">
               Buscando investigación reciente...
             </div>
-          ) : showNoResearchMessage ? (
+          ) : showNoResearchMessage || !recentResearch.length || !recentResearch[0]?.id ? (
             <div className="px-3 text-xs ml-2 text-sm text-neutral-500">
-              No hay investigación en curso
+              NO HAY INVESTIGACIÓN EN CURSO
             </div>
-          ) : recentResearch.length > 0 ? (
+          ) : (
             <ul>
               {recentResearch.map((item) => (
-                <li key={`recent-${item.id}`}>
-                  <div className="flex ml-5">
-                    <Link
-                      href={`/dashboard?research=${item.id}&section=welcome-screen`}
-                      className={cn(
-                        'flex-1 flex items-center py-2 px-2 rounded-lg text-sm bg-blue-50 border border-blue-100 text-blue-700 hover:bg-blue-100 transition-colors max-w-[150px]',
-                        pathname?.includes(`research=${item.id}`)
-                          ? 'bg-neutral-100 text-neutral-900 font-medium'
-                          : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
-                      )}
-                    >
-                      <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                      <span className="truncate">{item.name}</span>
-                      {item.technique === 'aim-framework' && (
-                        <span className="ml-auto text-xs text-blue-500 bg-blue-100 px-2 py-0.5 rounded-full">AIM</span>
-                      )}
-                    </Link>
-                    <button
-                      onClick={() => {
-                        setResearchToDelete(item);
-                        setShowDeleteModal(true);
-                      }}
-                      className="ml-2 p-1 text-neutral-400 hover:text-red-500 transition-colors"
-                      title="Eliminar investigación"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                </li>
+                item && item.id ? (
+                  <li key={`recent-${item.id}`}>
+                    <div className="flex ml-5">
+                      <Link
+                        href={`/dashboard?research=${item.id}&section=welcome-screen`}
+                        className={cn(
+                          'flex-1 flex items-center py-2 px-2 rounded-lg text-sm bg-blue-50 border border-blue-100 text-blue-700 hover:bg-blue-100 transition-colors max-w-[150px]',
+                          pathname?.includes(`research=${item.id}`)
+                            ? 'bg-neutral-100 text-neutral-900 font-medium'
+                            : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
+                        )}
+                      >
+                        <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                        <span className="truncate">{item.name}</span>
+                        {item.technique === 'aim-framework' && (
+                          <span className="ml-auto text-xs text-blue-500 bg-blue-100 px-2 py-0.5 rounded-full">AIM</span>
+                        )}
+                      </Link>
+                      <button
+                        onClick={() => {
+                          setResearchToDelete(item);
+                          setShowDeleteModal(true);
+                        }}
+                        className="ml-2 p-1 text-neutral-400 hover:text-red-500 transition-colors"
+                        title="Eliminar investigación"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  </li>
+                ) : null
               ))}
             </ul>
-          ) : null}
+          )}
         </div>
       </div>
 

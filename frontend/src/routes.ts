@@ -75,6 +75,48 @@ export const SMART_VOC_ROUTES = {
   VIEW: (id: string) => `/smart-voc/view/${id}`
 };
 
+// NUEVA SECCIÓN: Rutas API para el backend
+export const API_ROUTES = {
+  // Base de Research
+  RESEARCH: {
+    BASE: '/research',
+    USER: '/research/user',
+    CURRENT: '/research/current',
+    ALL: '/research/all',
+    ITEM: (id: string) => `/research/${id}`,
+    STATUS: (id: string) => `/research/${id}/status`,
+    
+    // Rutas jerárquicas para recursos asociados a una investigación
+    WELCOME_SCREEN: (id: string) => `/research/${id}/welcome-screen`,
+    THANK_YOU_SCREEN: (id: string) => `/research/${id}/thank-you-screen`,
+    COGNITIVE_TASK: (id: string) => `/research/${id}/cognitive-task`,
+    EYE_TRACKING: (id: string) => `/research/${id}/eye-tracking`,
+    SMART_VOC: (id: string) => `/research/${id}/smart-voc`,
+    // Para rutas de reclutamiento
+    EYE_TRACKING_RECRUIT: (id: string) => `/research/${id}/eye-tracking-recruit`
+  },
+  
+  // Para las rutas de compatibilidad con versiones anteriores
+  // NOTA: Estas rutas están en proceso de obsolescencia, favor de usar las nuevas rutas jerárquicas en API_ROUTES.RESEARCH
+  LEGACY: {
+    WELCOME_SCREEN: '/api/welcome-screen',
+    THANK_YOU_SCREEN: '/api/thank-you-screen',
+    COGNITIVE_TASK: '/api/cognitive-task',
+    EYE_TRACKING: '/api/eye-tracking',
+    EYE_TRACKING_RECRUIT: '/api/eye-tracking-recruit',
+    SMART_VOC: '/api/smart-voc',
+    PARTICIPANTS: '/api/participants',
+    S3: '/api/s3'
+  },
+  
+  AUTH: {
+    LOGIN: '/auth/login',
+    REGISTER: '/auth/register',
+    PROFILE: '/auth/profile',
+    REFRESH_TOKEN: '/auth/refreshToken'
+  }
+};
+
 // Función helper para obtener una ruta basada en su nombre
 export function getRoute(routeName: string, id?: string): string {
   const allRoutes = {
@@ -108,5 +150,6 @@ export default {
   EYE_TRACKING_ROUTES,
   PARTICIPANT_ROUTES,
   SMART_VOC_ROUTES,
+  API_ROUTES,
   getRoute
 }; 

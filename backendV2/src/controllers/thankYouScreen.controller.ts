@@ -1,407 +1,322 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { thankYouScreenService, ThankYouScreenError } from '../services/thankYouScreen.service';
-import { ThankYouScreenFormData as SharedThankYouScreenFormData } from '../../../shared/interfaces/thank-you-screen.interface';
-import { ApiError } from '../utils/errors';
+import { ThankYouScreenFormData } from '../../../shared/interfaces/thank-you-screen.interface';
 import { 
   createResponse, 
   errorResponse
 } from '../utils/controller.utils';
 import { createController, RouteMap } from '../utils/controller.decorator';
+import { validateUserId, extractResearchId, ERROR_MESSAGES } from '../utils/validation';
+
+// Función auxiliar para crear respuestas exitosas
+const successResponse = (body: any): APIGatewayProxyResult => createResponse(200, body);
 
 /**
- * Extendemos la interfaz compartida para agregar el campo researchId que se usa en el controlador
- */
-interface ThankYouScreenFormData extends SharedThankYouScreenFormData {
-  researchId?: string;
-}
-
-/**
- * Controlador para manejar las peticiones relacionadas con pantallas de agradecimiento
- * 
- * Este controlador gestiona la creación, actualización, obtención y eliminación de
- * pantallas de agradecimiento para investigaciones. Trabaja en conjunto con el servicio
- * thankYouScreenService para las operaciones de datos y requiere que el usuario esté
- * autenticado para todas las operaciones excepto la obtención pública de pantallas.
- * 
- * La autenticación se verifica a través del token JWT proporcionado en el header
- * Authorization de la solicitud, siguiendo el mismo patrón que otros controladores.
+ * Controlador para manejar operaciones relacionadas con pantallas de agradecimiento
  */
 export class ThankYouScreenController {
+  private service = thankYouScreenService;
+  private cache: Map<string, { data: any; timestamp: number; researchId: string }> = new Map();
+  private readonly CACHE_TTL = 60000; // 1 minuto en milisegundos
+
+  constructor() {}
+
   /**
-   * Crea una nueva pantalla de agradecimiento
-   * @param event Evento de API Gateway
-   * @returns Respuesta HTTP con la pantalla de agradecimiento creada
+   * Log estructurado con nivel, contexto y mensaje
    */
-  async createThankYouScreen(event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
+  private log(level: 'info' | 'error' | 'warn' | 'debug', context: string, message: string, data?: any): void {
+    const logEntry = {
+      timestamp: new Date().toISOString(),
+      level,
+      context: `ThankYouScreenController.${context}`,
+      message,
+      ...(data && { data })
+    };
+    
+    if (level === 'error') {
+      console.error(JSON.stringify(logEntry));
+    } else if (level === 'warn') {
+      console.warn(JSON.stringify(logEntry));
+    } else {
+      console.log(JSON.stringify(logEntry));
+    }
+  }
+
+  /**
+   * Maneja errores en las operaciones del controlador
+   */
+  private handleError(error: any, context: string): APIGatewayProxyResult {
+    this.log('error', context, 'Error al procesar la solicitud', { error });
+    
+    // Mapear errores conocidos del servicio a códigos HTTP
+    if (error.message?.includes(ThankYouScreenError.NOT_FOUND)) {
+      return errorResponse(ERROR_MESSAGES.RESOURCE.NOT_FOUND('La pantalla de agradecimiento'), 404);
+    }
+
+    if (error.message?.includes(ThankYouScreenError.INVALID_DATA) ||
+        error.message?.includes(ThankYouScreenError.RESEARCH_REQUIRED)) {
+      return errorResponse('Error de validación: ' + error.message, 400);
+    }
+
+    if (error.message?.includes(ThankYouScreenError.PERMISSION_DENIED)) {
+      return errorResponse(ERROR_MESSAGES.AUTH.FORBIDDEN, 403);
+    }
+    
+    // Error genérico
+    return errorResponse(`Error al ${context}: ${error.message || 'error desconocido'}`, 500);
+  }
+
+  /**
+   * Obtiene una pantalla de agradecimiento según el ID de investigación
+   */
+  public async getThankYouScreen(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
     try {
-      console.log('Iniciando createThankYouScreen...');
+      // Verificar si es una solicitud pública
+      const isPublic = event.path.includes('/public/');
+      
+      // Para solicitudes no públicas, validar autenticación
+      if (!isPublic) {
+        const userId = event.requestContext.authorizer?.claims?.sub;
+        const result = validateUserId(userId);
+        if (result) return result;
+      }
+
+      // Extraer y validar el researchId
+      const idResult = extractResearchId(event);
+      if ('statusCode' in idResult) return idResult;
+      const { researchId } = idResult;
+      
+      // Verificar si tenemos una versión en caché válida (solo para solicitudes autenticadas)
+      let cacheKey;
+      let cachedEntry;
+      
+      if (!isPublic) {
+        const userId = event.requestContext.authorizer?.claims?.sub;
+        cacheKey = `thankYouScreen_${researchId}_${userId}`;
+        cachedEntry = this.cache.get(cacheKey);
+        
+        if (cachedEntry && 
+            (Date.now() - cachedEntry.timestamp) < this.CACHE_TTL && 
+            cachedEntry.researchId === researchId) {
+          this.log('info', 'getThankYouScreen', 'Datos recuperados de caché', { researchId });
+          return successResponse(cachedEntry.data);
+        }
+      }
+
+      // Si no hay caché o está expirado, obtener datos frescos
+      this.log('info', 'getThankYouScreen', 'Obteniendo datos para investigación', { researchId, isPublic });
+      const screen = await this.service.getByResearchId(researchId);
+      
+      // Si es una solicitud pública, verificar si está habilitada y filtrar campos
+      if (isPublic) {
+        if (!screen || !screen.isEnabled) {
+          return successResponse({ 
+            data: null,
+            message: 'La pantalla de agradecimiento no está disponible'
+          });
+        }
+        
+        // Filtrar solo los campos necesarios para el participante
+        const participantView = {
+          title: screen.title,
+          message: screen.message,
+          redirectUrl: screen.redirectUrl,
+          isEnabled: screen.isEnabled
+        };
+        
+        return successResponse({ data: participantView });
+      }
+      
+      // Para solicitudes autenticadas, guardar en caché
+      if (!isPublic && screen && cacheKey) {
+        this.cache.set(cacheKey, {
+          data: screen,
+          timestamp: Date.now(),
+          researchId
+        });
+      }
+      
+      return successResponse(screen || { message: 'No se encontró una pantalla de agradecimiento para esta investigación' });
+    } catch (error) {
+      return this.handleError(error, 'obtener pantalla de agradecimiento');
+    }
+  }
+
+  /**
+   * Crea una pantalla de agradecimiento
+   */
+  public async createThankYouScreen(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    try {
+      const userId = event.requestContext.authorizer?.claims?.sub;
+      
+      // Validar múltiples condiciones juntas
+      const validationError = validateUserId(userId);
+      if (validationError) return validationError;
+
+      // Extraer y validar el researchId
+      const idResult = extractResearchId(event);
+      if ('statusCode' in idResult) return idResult;
+      const { researchId } = idResult;
       
       // Verificar que hay un cuerpo en la petición
       if (!event.body) {
-        console.error('Error: No hay cuerpo en la petición');
+        this.log('error', 'createThankYouScreen', 'No hay cuerpo en la petición');
         return errorResponse('Se requieren datos para crear la pantalla de agradecimiento', 400);
       }
-
-      console.log('ID de usuario extraído:', userId);
       
-      if (!userId) {
-        console.error('Error: No se pudo extraer el ID de usuario');
-        return errorResponse('Usuario no autenticado', 401);
-      }
-
-      // Parsear el cuerpo de la petición con manejo de errores
+      // Parsear el cuerpo de la petición
       let screenData: ThankYouScreenFormData;
       try {
-        screenData = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
-        console.log('Datos de pantalla parseados:', screenData);
+        screenData = JSON.parse(event.body);
       } catch (e) {
-        console.error('Error al parsear JSON del cuerpo:', e);
+        this.log('error', 'createThankYouScreen', 'Error al parsear JSON', { error: e });
         return errorResponse('Error al procesar los datos de la petición, formato JSON inválido', 400);
       }
 
-      // Obtener el ID de la investigación desde el cuerpo de la petición o parámetros de ruta
-      const researchId = screenData.researchId || event.pathParameters?.researchId;
-      console.log('ID de investigación:', researchId);
+      this.log('info', 'createThankYouScreen', 'Creando pantalla de agradecimiento', { researchId });
+      const result = await this.service.create(screenData, researchId, userId);
       
-      if (!researchId) {
-        console.error('Error: No se proporcionó ID de investigación');
-        return errorResponse('Se requiere un ID de investigación (proporcione researchId en el cuerpo de la petición)', 400);
-      }
-
-      // Crear la pantalla de agradecimiento usando el servicio
-      console.log('Llamando al servicio para crear pantalla de agradecimiento...');
-      const thankYouScreen = await thankYouScreenService.create(screenData, researchId, userId);
-      console.log('Pantalla de agradecimiento creada exitosamente:', thankYouScreen.id);
-
-      return createResponse(201, {
-        message: 'Pantalla de agradecimiento creada exitosamente',
-        data: thankYouScreen
-      });
+      // Invalidar caché al crear
+      this.invalidateCache(researchId, userId);
+      
+      return successResponse(result);
     } catch (error) {
-      console.error('Error en createThankYouScreen:', error);
-      return this.handleError(error);
-    }
-  }
-
-  /**
-   * Obtiene una pantalla de agradecimiento por su ID
-   * @param event Evento de API Gateway
-   * @returns Respuesta HTTP con la pantalla de agradecimiento solicitada
-   */
-  async getThankYouScreenById(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-    try {
-      // Obtener el ID de la pantalla desde los parámetros de ruta
-      const screenId = event.pathParameters?.id;
-      if (!screenId) {
-        return errorResponse('Se requiere un ID de pantalla de agradecimiento', 400);
-      }
-
-      // Obtener la pantalla de agradecimiento usando el servicio
-      const thankYouScreen = await thankYouScreenService.getById(screenId);
-
-      return createResponse(200, {
-        data: thankYouScreen
-      });
-    } catch (error) {
-      return this.handleError(error);
-    }
-  }
-
-  /**
-   * Obtiene la pantalla de agradecimiento de una investigación
-   * @param event Evento de API Gateway
-   * @returns Respuesta HTTP con la pantalla de agradecimiento de la investigación
-   */
-  async getThankYouScreenByResearchId(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-    try {
-      // Obtener el ID de la investigación desde los parámetros de ruta
-      const researchId = event.pathParameters?.researchId;
-      if (!researchId) {
-        return errorResponse('Se requiere un ID de investigación', 400);
-      }
-
-      // Obtener la pantalla de agradecimiento usando el servicio
-      const thankYouScreen = await thankYouScreenService.getByResearchId(researchId);
-
-      return createResponse(200, {
-        data: thankYouScreen
-      });
-    } catch (error) {
-      return this.handleError(error);
+      return this.handleError(error, 'crear pantalla de agradecimiento');
     }
   }
 
   /**
    * Actualiza una pantalla de agradecimiento
-   * @param event Evento de API Gateway
-   * @returns Respuesta HTTP con la pantalla de agradecimiento actualizada
    */
-  async updateThankYouScreen(event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
+  public async updateThankYouScreen(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
     try {
+      const userId = event.requestContext.authorizer?.claims?.sub;
+      
+      // Validar múltiples condiciones juntas
+      const validationError = validateUserId(userId);
+      if (validationError) return validationError;
+
+      // Extraer y validar el researchId
+      const idResult = extractResearchId(event);
+      if ('statusCode' in idResult) return idResult;
+      const { researchId } = idResult;
+      
       // Verificar que hay un cuerpo en la petición
       if (!event.body) {
+        this.log('error', 'updateThankYouScreen', 'No hay cuerpo en la petición');
         return errorResponse('Se requieren datos para actualizar la pantalla de agradecimiento', 400);
       }
-
-      if (!userId) {
-        return errorResponse('Usuario no autenticado', 401);
-      }
-
+      
       // Parsear el cuerpo de la petición
-      const screenData: Partial<ThankYouScreenFormData> = JSON.parse(event.body);
-
-      // Obtener el ID de la pantalla desde los parámetros de ruta
-      const screenId = event.pathParameters?.id;
-      if (!screenId) {
-        return errorResponse('Se requiere un ID de pantalla de agradecimiento', 400);
+      let screenData: ThankYouScreenFormData;
+      try {
+        screenData = JSON.parse(event.body);
+      } catch (e) {
+        this.log('error', 'updateThankYouScreen', 'Error al parsear JSON', { error: e });
+        return errorResponse('Error al procesar los datos de la petición, formato JSON inválido', 400);
       }
 
-      // Actualizar la pantalla de agradecimiento usando el servicio
-      const updatedScreen = await thankYouScreenService.update(screenId, screenData, userId);
-
-      return createResponse(200, {
-        message: 'Pantalla de agradecimiento actualizada exitosamente',
-        data: updatedScreen
-      });
+      this.log('info', 'updateThankYouScreen', 'Actualizando pantalla de agradecimiento', { researchId });
+      const result = await this.service.updateByResearchId(researchId, screenData, userId);
+      
+      // Invalidar caché al actualizar
+      this.invalidateCache(researchId, userId);
+      
+      return successResponse(result);
     } catch (error) {
-      return this.handleError(error);
-    }
-  }
-
-  /**
-   * Actualiza o crea la pantalla de agradecimiento de una investigación
-   * @param event Evento de API Gateway
-   * @returns Respuesta HTTP con la pantalla de agradecimiento actualizada o creada
-   */
-  async updateThankYouScreenByResearchId(event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
-    try {
-      // Verificar que hay un cuerpo en la petición
-      if (!event.body) {
-        return errorResponse('Se requieren datos para actualizar la pantalla de agradecimiento', 400);
-      }
-
-      if (!userId) {
-        return errorResponse('Usuario no autenticado', 401);
-      }
-
-      // Parsear el cuerpo de la petición
-      const screenData: ThankYouScreenFormData = JSON.parse(event.body);
-
-      // Obtener el ID de la investigación desde los parámetros de ruta
-      const researchId = event.pathParameters?.researchId;
-      if (!researchId) {
-        return errorResponse('Se requiere un ID de investigación', 400);
-      }
-
-      // Actualizar o crear la pantalla de agradecimiento usando el servicio
-      const thankYouScreen = await thankYouScreenService.updateByResearchId(researchId, screenData, userId);
-
-      return createResponse(200, {
-        message: 'Pantalla de agradecimiento actualizada exitosamente',
-        data: thankYouScreen
-      });
-    } catch (error) {
-      return this.handleError(error);
+      return this.handleError(error, 'actualizar pantalla de agradecimiento');
     }
   }
 
   /**
    * Elimina una pantalla de agradecimiento
-   * @param event Evento de API Gateway
-   * @returns Respuesta HTTP indicando el resultado de la operación
    */
-  async deleteThankYouScreen(event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
+  public async deleteThankYouScreen(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
     try {
-      if (!userId) {
-        return errorResponse('Usuario no autenticado', 401);
+      const userId = event.requestContext.authorizer?.claims?.sub;
+      
+      // Validar múltiples condiciones juntas
+      const validationError = validateUserId(userId);
+      if (validationError) return validationError;
+
+      // Extraer y validar el researchId
+      const idResult = extractResearchId(event);
+      if ('statusCode' in idResult) return idResult;
+      const { researchId } = idResult;
+
+      this.log('info', 'deleteThankYouScreen', 'Eliminando pantalla de agradecimiento', { researchId });
+      
+      // Obtener la pantalla existente para conseguir su ID
+      const existingScreen = await this.service.getByResearchId(researchId);
+      if (!existingScreen || !existingScreen.id) {
+        return errorResponse('No existe una pantalla de agradecimiento para eliminar', 404);
       }
-
-      // Obtener el ID de la pantalla desde los parámetros de ruta
-      const screenId = event.pathParameters?.id;
-      if (!screenId) {
-        return errorResponse('Se requiere un ID de pantalla de agradecimiento', 400);
-      }
-
-      // Eliminar la pantalla de agradecimiento usando el servicio
-      await thankYouScreenService.delete(screenId, userId);
-
-      return createResponse(200, {
-        message: 'Pantalla de agradecimiento eliminada exitosamente'
-      });
+      
+      await this.service.delete(existingScreen.id, userId);
+      
+      // Invalidar caché al eliminar
+      this.invalidateCache(researchId, userId);
+      
+      return successResponse({ message: 'Pantalla de agradecimiento eliminada con éxito' });
     } catch (error) {
-      return this.handleError(error);
+      return this.handleError(error, 'eliminar pantalla de agradecimiento');
     }
   }
 
   /**
-   * Obtiene una pantalla de agradecimiento para el participante de una investigación (acceso público)
-   * @param event Evento de API Gateway
-   * @returns Respuesta HTTP con la pantalla de agradecimiento para el participante
+   * Invalida la entrada de caché para un researchId específico
    */
-  async getParticipantThankYouScreen(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-    try {
-      // Obtener el ID de la investigación desde los parámetros de ruta
-      const researchId = event.pathParameters?.researchId;
-      if (!researchId) {
-        return errorResponse('Se requiere un ID de investigación', 400);
-      }
-
-      // Obtener la pantalla de agradecimiento usando el servicio
-      const thankYouScreen = await thankYouScreenService.getByResearchId(researchId);
-
-      // Para participantes, solo devolver datos si está habilitada
-      if (!thankYouScreen.isEnabled) {
-        return createResponse(200, {
-          data: null,
-          message: 'La pantalla de agradecimiento no está habilitada para esta investigación'
-        });
-      }
-
-      // Filtrar solo los campos necesarios para el participante
-      const participantView = {
-        title: thankYouScreen.title,
-        message: thankYouScreen.message,
-        redirectUrl: thankYouScreen.redirectUrl,
-        isEnabled: thankYouScreen.isEnabled
-      };
-
-      return createResponse(200, {
-        data: participantView
-      });
-    } catch (error) {
-      return this.handleError(error);
-    }
+  private invalidateCache(researchId: string, userId: string): void {
+    const cacheKey = `thankYouScreen_${researchId}_${userId}`;
+    this.cache.delete(cacheKey);
+    this.log('debug', 'invalidateCache', 'Caché invalidado', { researchId });
   }
 
   /**
-   * Obtiene todas las pantallas de agradecimiento
-   * @param _event Evento de API Gateway (no utilizado directamente)
-   * @returns Respuesta HTTP con todas las pantallas de agradecimiento
+   * Mapa de rutas para el controlador de pantallas de agradecimiento
    */
-  async getAllThankYouScreens(_event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-    try {
-      // Obtener todas las pantallas de agradecimiento
-      const thankYouScreens = await thankYouScreenService.getAll();
-      
-      return createResponse(200, {
-        data: thankYouScreens
-      });
-    } catch (error) {
-      return this.handleError(error);
-    }
-  }
-
-  /**
-   * Manejador para la ruta incorrecta /thank-you-screen/research/:researchId/thank-you-screen
-   * Redirige a la ruta correcta /research/:researchId/thank-you-screen
-   */
-  async handleLegacyThankYouScreenRoute(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-    try {
-      console.log('Manejando ruta legacy thank-you-screen:', event.path);
-      // Extraer el ID de la investigación de la ruta
-      const matches = event.path.match(/\/thank-you-screen\/research\/([^\/]+)\/thank-you-screen/);
-      if (!matches || !matches[1]) {
-        return errorResponse('Formato de ruta incorrecto', 400);
-      }
-      
-      const researchId = matches[1];
-      console.log('ID de investigación extraído:', researchId);
-      
-      // Actualizar los parámetros del evento para que coincidan con la estructura esperada
-      event.pathParameters = { ...event.pathParameters, researchId };
-      
-      // Usar el método existente para obtener la pantalla
-      return this.getThankYouScreenByResearchId(event);
-    } catch (error) {
-      return this.handleError(error);
-    }
-  }
-
-  /**
-   * Maneja errores y genera respuestas HTTP adecuadas
-   * @param error Error capturado
-   * @returns Respuesta HTTP de error
-   */
-  private handleError(error: any): APIGatewayProxyResult {
-    console.error('Error en ThankYouScreenController:', error);
-
-    // Si es un error de API conocido, usar su código de estado
-    if (error instanceof ApiError) {
-      return createResponse(error.statusCode, {
-        error: error.message
-      });
-    }
-
-    // Mapear errores conocidos del servicio a códigos HTTP
-    if (error.message?.includes(ThankYouScreenError.NOT_FOUND)) {
-      return errorResponse(error.message, 404);
-    }
-
-    if (error.message?.includes(ThankYouScreenError.INVALID_DATA) ||
-        error.message?.includes(ThankYouScreenError.RESEARCH_REQUIRED)) {
-      return errorResponse(error.message, 400);
-    }
-
-    if (error.message?.includes(ThankYouScreenError.PERMISSION_DENIED)) {
-      return errorResponse(error.message, 403);
-    }
-
-    // Por defecto, devolver error 500
-    return errorResponse('Error interno del servidor', 500);
+  public routes(): Record<string, (event: APIGatewayProxyEvent) => Promise<APIGatewayProxyResult>> {
+    return {
+      // Ruta jerárquica para operaciones con pantallas de agradecimiento relacionadas con una investigación específica
+      'GET /research/{researchId}/thank-you-screen': this.getThankYouScreen.bind(this),
+      'POST /research/{researchId}/thank-you-screen': this.createThankYouScreen.bind(this),
+      'PUT /research/{researchId}/thank-you-screen': this.updateThankYouScreen.bind(this),
+      'DELETE /research/{researchId}/thank-you-screen': this.deleteThankYouScreen.bind(this),
+    };
   }
 }
 
-/**
- * Mapa de rutas para el controlador de pantallas de agradecimiento
- */
-const routes: RouteMap = {
-  '/thank-you-screens': {
-    'GET': (e) => new ThankYouScreenController().getAllThankYouScreens(e),
-    'POST': (e, id) => new ThankYouScreenController().createThankYouScreen(e, id)
+// Instanciar el controlador
+const controller = new ThankYouScreenController();
+
+// Definir el mapa de rutas para pantallas de agradecimiento
+const thankYouScreenRouteMap: RouteMap = {
+  // Ruta jerárquica para thank-you-screen asociado a investigación
+  '/research/{researchId}/thank-you-screen': {
+    'GET': controller.getThankYouScreen.bind(controller),
+    'POST': controller.createThankYouScreen.bind(controller),
+    'PUT': controller.updateThankYouScreen.bind(controller),
+    'DELETE': controller.deleteThankYouScreen.bind(controller)
   },
-  '/thank-you-screens/:id': {
-    'GET': (e) => new ThankYouScreenController().getThankYouScreenById(e),
-    'PUT': (e, id) => new ThankYouScreenController().updateThankYouScreen(e, id),
-    'DELETE': (e, id) => new ThankYouScreenController().deleteThankYouScreen(e, id)
-  },
-  '/thank-you-screens/research/:researchId': {
-    'GET': (e) => new ThankYouScreenController().getThankYouScreenByResearchId(e),
-    'PUT': (e, id) => new ThankYouScreenController().updateThankYouScreenByResearchId(e, id)
-  },
-  '/thank-you-screen': {
-    'POST': (e, id) => new ThankYouScreenController().createThankYouScreen(e, id)
-  },
-  '/thank-you-screen/:id': {
-    'GET': (e) => new ThankYouScreenController().getThankYouScreenById(e),
-    'PUT': (e, id) => new ThankYouScreenController().updateThankYouScreen(e, id),
-    'DELETE': (e, id) => new ThankYouScreenController().deleteThankYouScreen(e, id)
-  },
-  '/research/:researchId/thank-you-screen': {
-    'GET': (e) => new ThankYouScreenController().getThankYouScreenByResearchId(e),
-    'PUT': (e, id) => new ThankYouScreenController().updateThankYouScreenByResearchId(e, id),
-    'POST': (e, id) => new ThankYouScreenController().createThankYouScreen(e, id)
-  },
-  '/public/research/:researchId/thank-you-screen': {
-    'GET': (e) => new ThankYouScreenController().getParticipantThankYouScreen(e)
-  },
-  '/thank-you-screen/research/:researchId/thank-you-screen': {
-    'GET': (e) => new ThankYouScreenController().handleLegacyThankYouScreenRoute(e)
-  }
 };
 
 /**
- * Opciones del controlador
- * Definimos la ruta base y las rutas públicas que no requieren autenticación
+ * Manejador principal para las rutas de pantallas de agradecimiento
+ * 
+ * Utiliza el decorador de controlador para manejar la autenticación y CORS automáticamente.
+ * 
+ * Estructura jerárquica:
+ * - GET /research/{researchId}/thank-you-screen : Obtiene la pantalla de agradecimiento de la investigación
+ * - POST /research/{researchId}/thank-you-screen : Crea una nueva pantalla de agradecimiento para la investigación
+ * - PUT /research/{researchId}/thank-you-screen : Actualiza la pantalla de agradecimiento de la investigación
+ * - DELETE /research/{researchId}/thank-you-screen : Elimina la pantalla de agradecimiento de la investigación
+ * - GET /public/research/{researchId}/thank-you-screen : Obtiene la versión pública de la pantalla (sin autenticación)
  */
-const controllerOptions = {
-  basePath: '/thank-you-screens',
+export const thankYouScreenHandler = createController(thankYouScreenRouteMap, {
+  basePath: '',  // Sin base path para permitir múltiples patrones de ruta
   publicRoutes: [
     { path: '/public/research/:researchId/thank-you-screen', method: 'GET' }
   ]
-};
+});
 
-/**
- * Handler para API Gateway
- * Esta función es el punto de entrada para las solicitudes HTTP a través de API Gateway
- */
-export const thankYouScreenHandler = createController(routes, controllerOptions); 
+export default thankYouScreenHandler; 

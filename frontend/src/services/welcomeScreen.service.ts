@@ -31,6 +31,10 @@ export class WelcomeScreenService {
     try {
       console.log('[WelcomeScreenService] Guardando welcome screen:', data);
       
+      if (!data.researchId) {
+        throw new Error('Se requiere un ID de investigación para guardar la pantalla de bienvenida');
+      }
+      
       let result;
       try {
         // Intentar obtener la pantalla existente primero
@@ -39,7 +43,10 @@ export class WelcomeScreenService {
         if (existing && existing.id) {
           // Si existe, actualizar
           console.log('[WelcomeScreenService] Actualizando welcome screen existente con ID:', existing.id);
-          const response = await welcomeScreenAPI.update(existing.id, data);
+          const response = await welcomeScreenAPI.update(existing.id, {
+            ...data,
+            researchId: data.researchId // Asegurar que el researchId está presente
+          });
           result = response.data;
         } else {
           throw new Error('No existe');
@@ -65,6 +72,7 @@ export class WelcomeScreenService {
 
   /**
    * Elimina una pantalla de bienvenida
+   * @deprecated Esta función no es compatible con la nueva API jerárquica
    */
   async delete(id: string): Promise<void> {
     try {

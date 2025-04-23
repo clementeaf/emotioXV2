@@ -521,33 +521,69 @@ export const handleAPIError = (error: unknown): string => {
 // API para pantallas de bienvenida
 export const welcomeScreenAPI = {
   create: (data: any) => {
-    const url = API_CONFIG.endpoints.welcomeScreen.CREATE || '/welcome-screens';
+    if (!data || !data.researchId) {
+      throw new Error('Se requiere un ID de investigación para crear la pantalla de bienvenida');
+    }
+    
+    const url = API_CONFIG.endpoints.welcomeScreen.CREATE || '/api/welcome-screen';
     console.log(`Endpoint CREATE welcomeScreen utilizado: ${url}`);
     return alovaInstance.Post<any>(url, data);
   },
   
   getByResearchId: (researchId: string) => {
-    const url = (API_CONFIG.endpoints.welcomeScreen.GET_BY_RESEARCH || '/welcome-screens/research/{researchId}').replace('{researchId}', researchId);
-    console.log(`Endpoint GET_BY_RESEARCH welcomeScreen utilizado: ${url}`);
-    return alovaInstance.Get<any>(url);
+    if (!researchId) {
+      throw new Error('Se requiere un ID de investigación');
+    }
+    
+    const url = API_CONFIG.endpoints.welcomeScreen.GET_BY_RESEARCH || '/api/welcome-screen';
+    console.log(`Endpoint GET_BY_RESEARCH welcomeScreen utilizado: ${url} con researchId:`, researchId);
+    
+    // Si es la ruta legacy, usar método GET con parámetros en query
+    if (url === '/api/welcome-screen') {
+      return alovaInstance.Get<any>(`${url}?researchId=${encodeURIComponent(researchId)}`, { 
+        params: { researchId }
+      });
+    }
+    
+    // De lo contrario, usar POST con action como hacíamos antes
+    return alovaInstance.Post<any>(url, { 
+      researchId: researchId,
+      action: 'get-by-research-id'
+    });
   },
   
   getById: (id: string) => {
-    const url = (API_CONFIG.endpoints.welcomeScreen.GET || '/welcome-screens/{id}').replace('{id}', id);
-    console.log(`Endpoint GET welcomeScreen utilizado: ${url}`);
-    return alovaInstance.Get<any>(url);
+    const url = API_CONFIG.endpoints.welcomeScreen.GET || '/api/welcome-screen';
+    console.log(`Endpoint GET welcomeScreen utilizado: ${url} con id:`, id);
+    return alovaInstance.Post<any>(url, { 
+      id: id,
+      action: 'get-by-id'
+    });
   },
   
   update: (id: string, data: any) => {
-    const url = (API_CONFIG.endpoints.welcomeScreen.UPDATE || '/welcome-screens/{id}').replace('{id}', id);
-    console.log(`Endpoint UPDATE welcomeScreen utilizado: ${url}`);
-    return alovaInstance.Put<any>(url, data);
+    if (!data || !data.researchId) {
+      throw new Error('Se requiere un ID de investigación para actualizar la pantalla de bienvenida');
+    }
+    
+    const url = API_CONFIG.endpoints.welcomeScreen.UPDATE || '/api/welcome-screen';
+    console.log(`Endpoint UPDATE welcomeScreen utilizado: ${url} con id:`, id);
+    // Usar POST en lugar de PUT para mayor compatibilidad con el backend
+    return alovaInstance.Post<any>(url, {
+      ...data,
+      id: id,
+      action: 'update'
+    });
   },
   
   delete: (id: string) => {
-    const url = (API_CONFIG.endpoints.welcomeScreen.DELETE || '/welcome-screens/{id}').replace('{id}', id);
-    console.log(`Endpoint DELETE welcomeScreen utilizado: ${url}`);
-    return alovaInstance.Delete<any>(url);
+    const url = API_CONFIG.endpoints.welcomeScreen.DELETE || '/api/welcome-screen';
+    console.log(`Endpoint DELETE welcomeScreen utilizado: ${url} con id:`, id);
+    // Usar POST con parámetro action para mayor compatibilidad con el backend
+    return alovaInstance.Post<any>(url, {
+      id: id,
+      action: 'delete'
+    });
   }
 };
 

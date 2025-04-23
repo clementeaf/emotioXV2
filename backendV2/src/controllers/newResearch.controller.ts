@@ -316,19 +316,6 @@ const researchRouteMap: RouteMap = {
   }
 };
 
-/**
- * Manejador principal para las operaciones de investigación
- * 
- * Utiliza el decorador de controlador para manejar la autenticación y CORS automáticamente.
- * 
- * Rutas soportadas:
- * - POST /research : Crea una nueva investigación
- * - GET /research/user : Obtiene todas las investigaciones del usuario
- * - GET /research/:id : Obtiene una investigación por su ID
- * - PUT /research/:id : Actualiza una investigación existente
- * - DELETE /research/:id : Elimina una investigación
- * - PUT /research/:id/status : Cambia el estado de una investigación
- */
 export const researchHandler = createController(researchRouteMap, {
   basePath: '/research',
   // No hay rutas públicas, todas requieren autenticación

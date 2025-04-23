@@ -3,518 +3,298 @@ import { createResponse, errorResponse } from '../utils/controller.utils';
 import { createController, RouteMap } from '../utils/controller.decorator';
 import { CognitiveTaskService } from '../services/cognitiveTask.service';
 import { CognitiveTaskFormData } from '../../../shared/interfaces/cognitive-task.interface';
-import { ApiError } from '../utils/errors';
+import { validateUserId, extractResearchId, ERROR_MESSAGES } from '../utils/validation';
+
+// Función auxiliar para crear respuestas exitosas
+const successResponse = (body: any): APIGatewayProxyResult => createResponse(200, body);
 
 /**
- * Controlador para manejar las peticiones relacionadas con formularios CognitiveTask
- * 
- * Este controlador gestiona la creación, actualización, obtención y eliminación de
- * formularios CognitiveTask para investigaciones. Trabaja en conjunto con el servicio
- * CognitiveTaskService para las operaciones de datos y requiere que el usuario esté
- * autenticado para todas las operaciones.
+ * Controlador para manejar operaciones relacionadas con formularios CognitiveTask
  */
 export class CognitiveTaskController {
-  // Instanciar el servicio una vez
-  private cognitiveTaskService = new CognitiveTaskService();
+  private service: CognitiveTaskService;
+  private cache: Map<string, { data: any; timestamp: number; researchId: string }> = new Map();
+  private readonly CACHE_TTL = 60000; // 1 minuto en milisegundos
+
+  constructor() {
+    this.service = new CognitiveTaskService();
+  }
 
   /**
-   * Crea un nuevo formulario CognitiveTask
-   * @param event Evento de API Gateway
-   * @returns Respuesta HTTP con el formulario CognitiveTask creado
+   * Log estructurado con nivel, contexto y mensaje
    */
-  async createCognitiveTaskForm(event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
+  private log(level: 'info' | 'error' | 'warn' | 'debug', context: string, message: string, data?: any): void {
+    const logEntry = {
+      timestamp: new Date().toISOString(),
+      level,
+      context: `CognitiveTaskController.${context}`,
+      message,
+      ...(data && { data })
+    };
+    
+    if (level === 'error') {
+      console.error(JSON.stringify(logEntry));
+    } else if (level === 'warn') {
+      console.warn(JSON.stringify(logEntry));
+    } else {
+      console.log(JSON.stringify(logEntry));
+    }
+  }
+
+  /**
+   * Maneja errores en las operaciones del controlador
+   */
+  private handleError(error: any, context: string): APIGatewayProxyResult {
+    this.log('error', context, 'Error al procesar la solicitud', { error });
+    
+    // Verificar si es un error de DynamoDB relacionado con recursos no encontrados
+    if (error.name === 'ResourceNotFoundException') {
+      return errorResponse(ERROR_MESSAGES.RESOURCE.NOT_FOUND('El formulario CognitiveTask'), 404);
+    }
+    
+    // Verificar si es un error de validación de datos
+    if (error.name === 'ValidationError') {
+      return errorResponse('Error de validación: ' + error.message, 400);
+    }
+    
+    // Verificar si es un error de acceso denegado
+    if (error.name === 'AccessDeniedException') {
+      return errorResponse(ERROR_MESSAGES.AUTH.FORBIDDEN, 403);
+    }
+    
+    // Error genérico
+    return errorResponse(`Error al ${context}: ${error.message || 'error desconocido'}`, 500);
+  }
+
+  /**
+   * Obtiene un formulario CognitiveTask según el ID de investigación
+   */
+  public async getCognitiveTaskForm(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
     try {
-      console.log('Iniciando createCognitiveTaskForm...');
+      const userId = event.requestContext.authorizer?.claims?.sub;
+      const result = validateUserId(userId);
+      if (result) return result;
+
+      // Extraer y validar el researchId
+      const idResult = extractResearchId(event);
+      if ('statusCode' in idResult) return idResult;
+      const { researchId } = idResult;
+      
+      // Verificar si tenemos una versión en caché válida
+      const cacheKey = `cognitiveTask_${researchId}_${userId}`;
+      const cachedEntry = this.cache.get(cacheKey);
+      
+      if (cachedEntry && 
+          (Date.now() - cachedEntry.timestamp) < this.CACHE_TTL && 
+          cachedEntry.researchId === researchId) {
+        this.log('info', 'getCognitiveTaskForm', 'Datos recuperados de caché', { researchId });
+        return successResponse(cachedEntry.data);
+      }
+
+      // Si no hay caché o está expirado, obtener datos frescos
+      this.log('info', 'getCognitiveTaskForm', 'Obteniendo datos para investigación', { researchId });
+      const form = await this.service.getCognitiveTaskFormByResearchId(researchId);
+      
+      // Guardar en caché
+      if (form) {
+        this.cache.set(cacheKey, {
+          data: form,
+          timestamp: Date.now(),
+          researchId
+        });
+      }
+      
+      return successResponse(form || { message: 'No se encontró un formulario CognitiveTask para esta investigación' });
+    } catch (error) {
+      return this.handleError(error, 'obtener formulario CognitiveTask');
+    }
+  }
+
+  /**
+   * Crea un formulario CognitiveTask
+   */
+  public async createCognitiveTaskForm(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    try {
+      const userId = event.requestContext.authorizer?.claims?.sub;
+      
+      // Validar múltiples condiciones juntas
+      const validationError = validateUserId(userId);
+      if (validationError) return validationError;
+
+      // Extraer y validar el researchId
+      const idResult = extractResearchId(event);
+      if ('statusCode' in idResult) return idResult;
+      const { researchId } = idResult;
       
       // Verificar que hay un cuerpo en la petición
       if (!event.body) {
-        console.error('Error: No hay cuerpo en la petición');
+        this.log('error', 'createCognitiveTaskForm', 'No hay cuerpo en la petición');
         return errorResponse('Se requieren datos para crear el formulario CognitiveTask', 400);
       }
-
-      console.log('ID de usuario extraído:', userId);
       
-      if (!userId) {
-        console.error('Error: No se pudo extraer el ID de usuario');
-        return errorResponse('Usuario no autenticado', 401);
-      }
-
-      // Parsear el cuerpo de la petición con manejo de errores
+      // Parsear el cuerpo de la petición
       let formData: CognitiveTaskFormData;
       try {
-        formData = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
-        console.log('Datos de formulario parseados:', formData);
+        formData = JSON.parse(event.body);
       } catch (e) {
-        console.error('Error al parsear JSON del cuerpo:', e);
+        this.log('error', 'createCognitiveTaskForm', 'Error al parsear JSON', { error: e });
         return errorResponse('Error al procesar los datos de la petición, formato JSON inválido', 400);
       }
-
-      // Obtener el ID de la investigación desde el cuerpo de la petición o parámetros de ruta
-      const researchId = formData.researchId || event.pathParameters?.researchId;
-      console.log('ID de investigación:', researchId);
       
-      if (!researchId) {
-        console.error('Error: No se proporcionó ID de investigación');
-        return errorResponse('Se requiere un ID de investigación (proporcione researchId en el cuerpo de la petición)', 400);
-      }
+      // Asegurar que el researchId esté en el objeto de datos
+      formData.researchId = researchId;
 
-      // Crear el formulario CognitiveTask usando el servicio
-      console.log('Llamando al servicio para crear formulario CognitiveTask...');
+      this.log('info', 'createCognitiveTaskForm', 'Creando formulario CognitiveTask', { researchId });
+      const result = await this.service.createCognitiveTaskForm(researchId, formData);
       
-      const cognitiveTaskForm = await this.cognitiveTaskService.createCognitiveTaskForm(researchId, formData);
-      console.log('Formulario CognitiveTask creado exitosamente:', cognitiveTaskForm.id);
-
-      return createResponse(201, {
-        message: 'Formulario CognitiveTask creado exitosamente',
-        data: cognitiveTaskForm
-      });
+      // Invalidar caché al crear
+      this.invalidateCache(researchId, userId);
+      
+      return successResponse(result);
     } catch (error) {
-      console.error('Error en createCognitiveTaskForm:', error);
-      return this.handleError(error);
-    }
-  }
-
-  /**
-   * Obtiene un formulario CognitiveTask por su ID
-   * @param event Evento de API Gateway
-   * @returns Respuesta HTTP con el formulario CognitiveTask solicitado
-   */
-  async getCognitiveTaskFormById(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-    try {
-      // Obtener el ID del formulario desde los parámetros de ruta
-      const formId = event.pathParameters?.id;
-      if (!formId) {
-        return errorResponse('Se requiere un ID de formulario CognitiveTask', 400);
-      }
-
-      // Obtener el formulario CognitiveTask usando el servicio
-      const cognitiveTaskForm = await this.cognitiveTaskService.getCognitiveTaskFormById(formId);
-      
-      if (!cognitiveTaskForm) {
-        return errorResponse('Formulario CognitiveTask no encontrado', 404);
-      }
-
-      return createResponse(200, {
-        data: cognitiveTaskForm
-      });
-    } catch (error) {
-      return this.handleError(error);
-    }
-  }
-
-  /**
-   * Obtiene el formulario CognitiveTask de una investigación
-   * @param event Evento de API Gateway
-   * @returns Respuesta HTTP con el formulario CognitiveTask de la investigación
-   */
-  async getCognitiveTaskFormByResearchId(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-    try {
-      // Obtener el ID de la investigación desde los parámetros de ruta
-      const researchId = event.pathParameters?.researchId;
-      
-      console.log('DEBUG - getCognitiveTaskFormByResearchId:', {
-        path: event.path,
-        pathParameters: event.pathParameters,
-        researchId
-      });
-      
-      if (!researchId) {
-        return errorResponse('Se requiere un ID de investigación', 400);
-      }
-
-      // Obtener el formulario CognitiveTask usando el servicio
-      const cognitiveTaskForm = await this.cognitiveTaskService.getCognitiveTaskFormByResearchId(researchId);
-      
-      if (!cognitiveTaskForm) {
-        return createResponse(200, {
-          data: null,
-          message: 'No existe un formulario CognitiveTask para esta investigación'
-        });
-      }
-
-      return createResponse(200, {
-        data: cognitiveTaskForm
-      });
-    } catch (error) {
-      return this.handleError(error);
+      return this.handleError(error, 'crear formulario CognitiveTask');
     }
   }
 
   /**
    * Actualiza un formulario CognitiveTask
-   * @param event Evento de API Gateway
-   * @returns Respuesta HTTP con el formulario CognitiveTask actualizado
    */
-  async updateCognitiveTaskForm(event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
+  public async updateCognitiveTaskForm(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
     try {
+      const userId = event.requestContext.authorizer?.claims?.sub;
+      
+      // Validar múltiples condiciones juntas
+      const validationError = validateUserId(userId);
+      if (validationError) return validationError;
+
+      // Extraer y validar el researchId
+      const idResult = extractResearchId(event);
+      if ('statusCode' in idResult) return idResult;
+      const { researchId } = idResult;
+      
       // Verificar que hay un cuerpo en la petición
       if (!event.body) {
+        this.log('error', 'updateCognitiveTaskForm', 'No hay cuerpo en la petición');
         return errorResponse('Se requieren datos para actualizar el formulario CognitiveTask', 400);
       }
-
-      if (!userId) {
-        return errorResponse('Usuario no autenticado', 401);
-      }
-
+      
       // Parsear el cuerpo de la petición
-      const formData: Partial<CognitiveTaskFormData> = JSON.parse(event.body);
-
-      // Obtener el ID del formulario desde los parámetros de ruta
-      const formId = event.pathParameters?.id;
-      if (!formId) {
-        return errorResponse('Se requiere un ID de formulario CognitiveTask', 400);
+      let formData: CognitiveTaskFormData;
+      try {
+        formData = JSON.parse(event.body);
+      } catch (e) {
+        this.log('error', 'updateCognitiveTaskForm', 'Error al parsear JSON', { error: e });
+        return errorResponse('Error al procesar los datos de la petición, formato JSON inválido', 400);
       }
+      
+      // Asegurar que el researchId esté en el objeto de datos
+      formData.researchId = researchId;
 
-      // Actualizar el formulario CognitiveTask usando el servicio
-      const updatedForm = await this.cognitiveTaskService.updateCognitiveTaskForm(formId, formData);
-
-      return createResponse(200, {
-        message: 'Formulario CognitiveTask actualizado exitosamente',
-        data: updatedForm
-      });
+      this.log('info', 'updateCognitiveTaskForm', 'Actualizando formulario CognitiveTask', { researchId });
+      
+      // Obtener el ID del formulario existente
+      const existingForm = await this.service.getCognitiveTaskFormByResearchId(researchId);
+      if (!existingForm) {
+        return errorResponse('No existe un formulario CognitiveTask para actualizar', 404);
+      }
+      
+      const result = await this.service.updateCognitiveTaskForm(existingForm.id, formData);
+      
+      // Invalidar caché al actualizar
+      this.invalidateCache(researchId, userId);
+      
+      return successResponse(result);
     } catch (error) {
-      return this.handleError(error);
-    }
-  }
-
-  /**
-   * Actualiza o crea el formulario CognitiveTask de una investigación
-   * @param event Evento de API Gateway
-   * @returns Respuesta HTTP con el formulario CognitiveTask actualizado o creado
-   */
-  async createOrUpdateCognitiveTaskForm(event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
-    try {
-      // Verificar que hay un cuerpo en la petición
-      if (!event.body) {
-        return errorResponse('Se requieren datos para actualizar el formulario CognitiveTask', 400);
-      }
-
-      if (!userId) {
-        return errorResponse('Usuario no autenticado', 401);
-      }
-
-      // Parsear el cuerpo de la petición
-      const formData: CognitiveTaskFormData = JSON.parse(event.body);
-
-      // Obtener el ID de la investigación desde los parámetros de ruta
-      const researchId = event.pathParameters?.researchId;
-      if (!researchId) {
-        return errorResponse('Se requiere un ID de investigación', 400);
-      }
-
-      // Actualizar o crear el formulario CognitiveTask usando el servicio
-      const cognitiveTaskForm = await this.cognitiveTaskService.createOrUpdateCognitiveTaskForm(researchId, formData);
-
-      return createResponse(200, {
-        message: 'Formulario CognitiveTask actualizado exitosamente',
-        data: cognitiveTaskForm
-      });
-    } catch (error) {
-      return this.handleError(error);
+      return this.handleError(error, 'actualizar formulario CognitiveTask');
     }
   }
 
   /**
    * Elimina un formulario CognitiveTask
-   * @param event Evento de API Gateway
-   * @returns Respuesta HTTP con el resultado de la eliminación
    */
-  async deleteCognitiveTaskForm(event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
+  public async deleteCognitiveTaskForm(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
     try {
-      if (!userId) {
-        return errorResponse('Usuario no autenticado', 401);
-      }
-
-      // Obtener el ID del formulario desde los parámetros de ruta
-      const formId = event.pathParameters?.id;
-      if (!formId) {
-        return errorResponse('Se requiere un ID de formulario CognitiveTask', 400);
-      }
-
-      // Eliminar el formulario CognitiveTask usando el servicio
-      await this.cognitiveTaskService.deleteCognitiveTaskForm(formId);
-
-      return createResponse(200, {
-        message: 'Formulario CognitiveTask eliminado exitosamente'
-      });
-    } catch (error) {
-      return this.handleError(error);
-    }
-  }
-
-  /**
-   * Clona un formulario CognitiveTask existente para una nueva investigación
-   * @param event Evento de API Gateway
-   * @returns Respuesta HTTP con el formulario CognitiveTask clonado
-   */
-  async cloneCognitiveTaskForm(event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
-    try {
-      // Verificar que hay un cuerpo en la petición
-      if (!event.body) {
-        return errorResponse('Se requieren datos para clonar el formulario CognitiveTask', 400);
-      }
-
-      if (!userId) {
-        return errorResponse('Usuario no autenticado', 401);
-      }
-
-      // Parsear el cuerpo de la petición
-      const cloneData: { sourceFormId: string; targetResearchId: string } = JSON.parse(event.body);
+      const userId = event.requestContext.authorizer?.claims?.sub;
       
-      if (!cloneData.sourceFormId || !cloneData.targetResearchId) {
-        return errorResponse('Se requiere sourceFormId y targetResearchId para clonar el formulario', 400);
-      }
+      // Validar múltiples condiciones juntas
+      const validationError = validateUserId(userId);
+      if (validationError) return validationError;
 
-      // Clonar el formulario CognitiveTask usando el servicio
-      const clonedForm = await this.cognitiveTaskService.cloneCognitiveTaskForm(
-        cloneData.sourceFormId,
-        cloneData.targetResearchId
-      );
+      // Extraer y validar el researchId
+      const idResult = extractResearchId(event);
+      if ('statusCode' in idResult) return idResult;
+      const { researchId } = idResult;
 
-      return createResponse(201, {
-        message: 'Formulario CognitiveTask clonado exitosamente',
-        data: clonedForm
-      });
-    } catch (error) {
-      return this.handleError(error);
-    }
-  }
-
-  /**
-   * Obtiene todos los formularios CognitiveTask
-   * @returns Respuesta HTTP con todos los formularios CognitiveTask
-   */
-  async getAllCognitiveTaskForms(): Promise<APIGatewayProxyResult> {
-    try {
-      // Obtener todos los formularios CognitiveTask usando el servicio
-      const forms = await this.cognitiveTaskService.getAllForms();
+      this.log('info', 'deleteCognitiveTaskForm', 'Eliminando formulario CognitiveTask', { researchId });
       
-      return createResponse(200, {
-        data: forms
-      });
-    } catch (error) {
-      return this.handleError(error);
-    }
-  }
-  
-  /**
-   * Actualizaciones batch de formularios CognitiveTask
-   * @param event Evento de API Gateway
-   * @returns Respuesta HTTP con el resultado de las actualizaciones
-   */
-  async batchUpdateCognitiveTaskForms(event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
-    try {
-      // Verificar que hay un cuerpo en la petición
-      if (!event.body) {
-        return errorResponse('Se requieren datos para actualizar los formularios', 400);
+      // Obtener el ID del formulario existente
+      const existingForm = await this.service.getCognitiveTaskFormByResearchId(researchId);
+      if (!existingForm) {
+        return errorResponse('No existe un formulario CognitiveTask para eliminar', 404);
       }
-
-      if (!userId) {
-        return errorResponse('Usuario no autenticado', 401);
-      }
-
-      // Parsear el cuerpo de la petición
-      const batchData: { formIds: string[]; updateData: Partial<CognitiveTaskFormData> } = JSON.parse(event.body);
       
-      if (!batchData.formIds || !Array.isArray(batchData.formIds) || batchData.formIds.length === 0) {
-        return errorResponse('Se requiere un array de IDs de formularios para actualizar', 400);
-      }
-
-      // Realizar actualizaciones batch usando el servicio
-      const successCount = await this.cognitiveTaskService.batchUpdate(
-        batchData.formIds,
-        batchData.updateData
-      );
-
-      return createResponse(200, {
-        message: `${successCount} de ${batchData.formIds.length} formularios actualizados exitosamente`,
-        successCount,
-        totalCount: batchData.formIds.length
-      });
-    } catch (error) {
-      return this.handleError(error);
-    }
-  }
-
-  /**
-   * Genera una URL prefirmada para subir un archivo
-   * @param event Evento de API Gateway
-   * @returns Respuesta HTTP con la URL prefirmada y metadatos
-   */
-  async generateFileUploadUrl(event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
-    try {
-      // Verificar que hay un cuerpo en la petición
-      if (!event.body) {
-        return errorResponse('Se requieren datos para generar la URL de subida', 400);
-      }
-
-      if (!userId) {
-        return errorResponse('Usuario no autenticado', 401);
-      }
-
-      // Parsear el cuerpo de la petición
-      const fileParams = JSON.parse(event.body);
+      await this.service.deleteCognitiveTaskForm(existingForm.id);
       
-      // Validar parámetros necesarios
-      if (!fileParams.fileName || !fileParams.fileSize || !fileParams.fileType) {
-        return errorResponse('Se requiere fileName, fileSize y fileType para generar la URL de subida', 400);
-      }
-
-      // Obtener researchId
-      const researchId = fileParams.researchId || event.pathParameters?.researchId;
-      if (!researchId) {
-        return errorResponse('Se requiere un ID de investigación', 400);
-      }
-
-      // Generar URL de subida
-      const uploadUrlResponse = await this.cognitiveTaskService.getFileUploadUrl({
-        fileName: fileParams.fileName,
-        fileSize: fileParams.fileSize,
-        fileType: fileParams.fileType,
-        researchId: researchId
-      });
-
-      return createResponse(200, {
-        message: 'URL de subida generada exitosamente',
-        data: uploadUrlResponse
-      });
+      // Invalidar caché al eliminar
+      this.invalidateCache(researchId, userId);
+      
+      return successResponse({ message: 'Formulario CognitiveTask eliminado con éxito' });
     } catch (error) {
-      return this.handleError(error);
+      return this.handleError(error, 'eliminar formulario CognitiveTask');
     }
   }
 
   /**
-   * Genera una URL prefirmada para descargar un archivo
-   * @param event Evento de API Gateway
-   * @returns Respuesta HTTP con la URL prefirmada
+   * Invalida la entrada de caché para un researchId específico
    */
-  async generateFileDownloadUrl(event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
-    try {
-      if (!userId) {
-        return errorResponse('Usuario no autenticado', 401);
-      }
-
-      // Obtener la clave S3 desde los parámetros de ruta
-      const s3Key = event.pathParameters?.key;
-      if (!s3Key) {
-        return errorResponse('Se requiere una clave S3 para descargar el archivo', 400);
-      }
-
-      // Obtener tiempo de expiración si se proporciona
-      let expiresIn = 3600; // 1 hora por defecto
-      if (event.queryStringParameters?.expiresIn) {
-        expiresIn = parseInt(event.queryStringParameters.expiresIn, 10);
-        if (isNaN(expiresIn) || expiresIn <= 0) {
-          return errorResponse('El parámetro expiresIn debe ser un número positivo', 400);
-        }
-      }
-
-      // Generar URL de descarga
-      const downloadUrl = await this.cognitiveTaskService.getFileDownloadUrl(s3Key);
-
-      return createResponse(200, {
-        message: 'URL de descarga generada exitosamente',
-        url: downloadUrl,
-        key: s3Key,
-        expiresIn: expiresIn
-      });
-    } catch (error) {
-      return this.handleError(error);
-    }
+  private invalidateCache(researchId: string, userId: string): void {
+    const cacheKey = `cognitiveTask_${researchId}_${userId}`;
+    this.cache.delete(cacheKey);
+    this.log('debug', 'invalidateCache', 'Caché invalidado', { researchId });
   }
 
   /**
-   * Genera una URL prefirmada para eliminar un archivo
-   * @param event Evento de API Gateway
-   * @returns Respuesta HTTP con la URL prefirmada
+   * Mapa de rutas para el controlador CognitiveTask
    */
-  async generateFileDeleteUrl(event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
-    try {
-      if (!userId) {
-        return errorResponse('Usuario no autenticado', 401);
-      }
-
-      // Obtener la clave S3 desde los parámetros de ruta
-      const s3Key = event.pathParameters?.key;
-      if (!s3Key) {
-        return errorResponse('Se requiere una clave S3 para eliminar el archivo', 400);
-      }
-
-      // Generar URL de eliminación
-      const deleteUrl = await this.cognitiveTaskService.getFileDeleteUrl(s3Key);
-
-      return createResponse(200, {
-        message: 'URL de eliminación generada exitosamente',
-        url: deleteUrl,
-        key: s3Key
-      });
-    } catch (error) {
-      return this.handleError(error);
-    }
-  }
-
-  /**
-   * Maneja errores comunes y devuelve una respuesta adecuada
-   * @param error Error ocurrido
-   * @returns Respuesta HTTP con el error
-   */
-  private handleError(error: any): APIGatewayProxyResult {
-    console.error('Error en CognitiveTaskController:', error);
-    
-    if (error instanceof ApiError) {
-      return errorResponse(error.message, error.statusCode);
-    }
-    
-    const errorMessage = error.message || 'Error interno del servidor';
-    const statusCode = error.statusCode || 500;
-    
-    return errorResponse(errorMessage, statusCode);
+  public routes(): Record<string, (event: APIGatewayProxyEvent) => Promise<APIGatewayProxyResult>> {
+    return {
+      // Ruta jerárquica para operaciones con formularios CognitiveTask relacionados con una investigación específica
+      'GET /research/{researchId}/cognitive-task': this.getCognitiveTaskForm.bind(this),
+      'POST /research/{researchId}/cognitive-task': this.createCognitiveTaskForm.bind(this),
+      'PUT /research/{researchId}/cognitive-task': this.updateCognitiveTaskForm.bind(this),
+      'DELETE /research/{researchId}/cognitive-task': this.deleteCognitiveTaskForm.bind(this)
+    };
   }
 }
 
-// Crear instancia del controlador
+// Instanciar el controlador
 const controller = new CognitiveTaskController();
 
-// Definir mapa de rutas para el controlador
-const routes: RouteMap = {
-  '/cognitive-task': {
-    'GET': controller.getAllCognitiveTaskForms.bind(controller),
-    'POST': controller.createCognitiveTaskForm.bind(controller)
-  },
-  '/cognitive-task/:id': {
-    'GET': controller.getCognitiveTaskFormById.bind(controller),
+// Definir el mapa de rutas para CognitiveTask
+const cognitiveTaskRouteMap: RouteMap = {
+  // Ruta jerárquica para cognitive-task asociado a investigación
+  '/research/{researchId}/cognitive-task': {
+    'GET': controller.getCognitiveTaskForm.bind(controller),
+    'POST': controller.createCognitiveTaskForm.bind(controller),
     'PUT': controller.updateCognitiveTaskForm.bind(controller),
     'DELETE': controller.deleteCognitiveTaskForm.bind(controller)
-  },
-  '/research/:researchId/cognitive-task': {
-    'GET': controller.getCognitiveTaskFormByResearchId.bind(controller),
-    'POST': controller.createOrUpdateCognitiveTaskForm.bind(controller),
-    'PUT': controller.createOrUpdateCognitiveTaskForm.bind(controller)
-  },
-  '/cognitive-task/clone': {
-    'POST': controller.cloneCognitiveTaskForm.bind(controller)
-  },
-  '/cognitive-task/batch-update': {
-    'POST': controller.batchUpdateCognitiveTaskForms.bind(controller)
-  },
-  '/cognitive-task/file/upload': {
-    'POST': controller.generateFileUploadUrl.bind(controller)
-  },
-  '/research/:researchId/cognitive-task/file/upload': {
-    'POST': controller.generateFileUploadUrl.bind(controller)
-  },
-  '/cognitive-task/file/download/:key': {
-    'GET': controller.generateFileDownloadUrl.bind(controller)
-  },
-  '/cognitive-task/file/delete/:key': {
-    'DELETE': controller.generateFileDeleteUrl.bind(controller)
   }
 };
 
-// Crear y exportar el controlador con las rutas definidas
-export const cognitiveTaskController = createController(routes, {
-  basePath: '',  // Permite rutas como /research/:researchId/cognitive-task
-  publicRoutes: [] // Todas las rutas requieren autenticación
+/**
+ * Manejador principal para las rutas de formularios CognitiveTask
+ * 
+ * Utiliza el decorador de controlador para manejar la autenticación y CORS automáticamente.
+ * 
+ * Estructura jerárquica:
+ * - GET /research/{researchId}/cognitive-task : Obtiene el formulario CognitiveTask de la investigación
+ * - POST /research/{researchId}/cognitive-task : Crea un nuevo formulario CognitiveTask para la investigación
+ * - PUT /research/{researchId}/cognitive-task : Actualiza el formulario CognitiveTask de la investigación
+ * - DELETE /research/{researchId}/cognitive-task : Elimina el formulario CognitiveTask de la investigación
+ */
+export const cognitiveTaskHandler = createController(cognitiveTaskRouteMap, {
+  basePath: '',  // Sin base path para permitir múltiples patrones de ruta
+  // No hay rutas públicas, todas requieren autenticación
 });
 
-export default cognitiveTaskController; 
+export default cognitiveTaskHandler; 

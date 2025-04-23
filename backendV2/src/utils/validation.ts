@@ -1,4 +1,35 @@
 import { NewResearch, ResearchType } from '../models/newResearch.model';
+import { WelcomeScreenFormData } from '../../../shared/interfaces/welcome-screen.interface';
+import { SmartVOCFormData, SmartVOCQuestion } from '../../../shared/interfaces/smart-voc.interface';
+import { APIGatewayProxyResult, APIGatewayProxyEvent } from 'aws-lambda';
+import { errorResponse } from './controller.utils';
+
+// Constantes para mensajes de error comunes
+export const ERROR_MESSAGES = {
+  VALIDATION: {
+    REQUIRED_FIELD: (fieldName: string) => `El campo ${fieldName} es requerido`,
+    INVALID_FORMAT: (fieldName: string) => `El formato de ${fieldName} no es válido`,
+    TOO_LONG: (fieldName: string, maxLength: number) => `${fieldName} no puede exceder los ${maxLength} caracteres`,
+    TOO_SHORT: (fieldName: string, minLength: number) => `${fieldName} debe tener al menos ${minLength} caracteres`,
+    EMPTY_ARRAY: (fieldName: string) => `${fieldName} debe contener al menos un elemento`,
+    INVALID_TYPE: (fieldName: string, validTypes: string[]) => 
+      `${fieldName} debe ser uno de los siguientes: ${validTypes.join(', ')}`,
+    INVALID_RANGE: (fieldName: string) => `${fieldName} debe tener un rango válido`,
+    MISSING_CONFIG: (fieldName: string) => `${fieldName} debe tener una configuración válida`
+  },
+  AUTH: {
+    UNAUTHORIZED: 'Usuario no autenticado',
+    FORBIDDEN: 'No tiene permisos para realizar esta operación'
+  },
+  RESOURCE: {
+    NOT_FOUND: (resourceName: string) => `No se encontró ${resourceName}`,
+    ALREADY_EXISTS: (resourceName: string) => `${resourceName} ya existe`
+  },
+  SERVER: {
+    INTERNAL_ERROR: 'Error interno del servidor',
+    DATABASE_ERROR: 'Error al acceder a la base de datos'
+  }
+};
 
 /**
  * Clase para errores de validación
@@ -42,7 +73,7 @@ export function validateNewResearch(data: Partial<NewResearch>): void {
 
   if (data.type !== undefined) {
     const validTypes = Object.values(ResearchType);
-    
+
     // Mapa para convertir los tipos mostrados en el frontend a los tipos del backend
     const typeMap: Record<string, ResearchType> = {
       'Behavioural Research': ResearchType.BEHAVIOURAL,
@@ -50,13 +81,13 @@ export function validateNewResearch(data: Partial<NewResearch>): void {
       'Attention Prediction': ResearchType.ATTENTION_PREDICTION,
       'Cognitive Analysis': ResearchType.COGNITIVE_ANALYSIS
     };
-    
+
     // Si el tipo está en el mapa, convertirlo al valor correcto
     if (typeMap[data.type as string]) {
       // Convertir automáticamente el tipo
       (data.type as any) = typeMap[data.type as string];
     }
-    
+
     // Ahora validar contra los tipos válidos
     if (!validTypes.includes(data.type)) {
       errors.type = `El tipo debe ser uno de los siguientes: ${validTypes.join(', ')}`;
@@ -91,7 +122,7 @@ export function validateNewResearch(data: Partial<NewResearch>): void {
       if (data.objectives.length > 10) {
         errors.objectives = 'No se pueden tener más de 10 objetivos';
       }
-      
+
       for (let i = 0; i < data.objectives.length; i++) {
         const objective = data.objectives[i];
         if (typeof objective !== 'string') {
@@ -112,7 +143,7 @@ export function validateNewResearch(data: Partial<NewResearch>): void {
       if (data.tags.length > 20) {
         errors.tags = 'No se pueden tener más de 20 etiquetas';
       }
-      
+
       for (let i = 0; i < data.tags.length; i++) {
         const tag = data.tags[i];
         if (typeof tag !== 'string') {
@@ -146,19 +177,365 @@ export function validateNewResearch(data: Partial<NewResearch>): void {
  */
 export function validateRequiredFields(data: Partial<NewResearch>): void {
   const errors: Record<string, string> = {};
-  
+
   // Lista de campos obligatorios
   const requiredFields = ['name', 'enterprise', 'type', 'technique'];
-  
+
   // Verificar cada campo obligatorio
   for (const field of requiredFields) {
     if (!data[field as keyof NewResearch]) {
       errors[field] = `El campo ${field} es obligatorio`;
     }
   }
-  
+
   // Si hay errores, lanzar excepción
   if (Object.keys(errors).length > 0) {
     throw new ValidationError('Faltan campos obligatorios', errors);
   }
-} 
+}
+
+/**
+ * Valida el ID de investigación y devuelve un error si no es válido
+ * @param researchId ID de investigación a validar
+ * @returns Respuesta de error o null si es válido
+ */
+export function validateResearchId(researchId: string | undefined): APIGatewayProxyResult | null {
+  if (!researchId) {
+    console.log('No se proporcionó un ID de investigación válido');
+    return errorResponse(ERROR_MESSAGES.VALIDATION.REQUIRED_FIELD('ID de investigación'), 400);
+  }
+  return null;
+}
+
+/**
+ * Resultado del parseo del cuerpo de la petición
+ */
+export type ParsedBody<T> = { success: true; data: T } | { success: false; error: APIGatewayProxyResult };
+
+/**
+ * Valida el cuerpo de la petición y lo parsea
+ * @param body Cuerpo de la petición
+ * @returns Objeto con resultado del parseo
+ */
+export function parseRequestBody<T = any>(body: string | null): ParsedBody<T> {
+  if (!body) {
+    console.log('No se proporcionaron datos en la petición');
+    return { 
+      success: false, 
+      error: errorResponse('Se requieren datos para procesar la petición', 400)
+    };
+  }
+
+  try {
+    const data = JSON.parse(body);
+    return { success: true, data };
+  } catch (e) {
+    console.error('Error al parsear JSON del cuerpo:', e);
+    return { 
+      success: false, 
+      error: errorResponse('Error al procesar los datos de la petición, formato JSON inválido', 400)
+    };
+  }
+}
+
+/**
+ * Valida la autenticación del usuario
+ * @param userId ID del usuario a validar
+ * @returns Respuesta de error o null si es válido
+ */
+export function validateUserId(userId: string | undefined): APIGatewayProxyResult | null {
+  if (!userId) {
+    console.error('Error: No se pudo extraer el ID de usuario');
+    return errorResponse(ERROR_MESSAGES.AUTH.UNAUTHORIZED, 401);
+  }
+  return null;
+}
+
+/**
+ * Valida que un campo requerido exista y sea valido
+ * @param field Valor del campo a validar
+ * @param fieldName Nombre del campo para el mensaje de error
+ * @returns Respuesta de error o null si es válido
+ */
+export function validateRequiredField(field: any, fieldName: string): APIGatewayProxyResult | null {
+  if (field === undefined || field === null || field === '') {
+    console.log(`Campo requerido no proporcionado: ${fieldName}`);
+    return errorResponse(ERROR_MESSAGES.VALIDATION.REQUIRED_FIELD(fieldName), 400);
+  }
+  return null;
+}
+
+/**
+ * Valida que un ID tenga el formato correcto
+ * @param id ID a validar
+ * @param fieldName Nombre del campo para el mensaje de error
+ * @returns Respuesta de error o null si es válido
+ */
+export function validateIdFormat(id: string, fieldName: string): APIGatewayProxyResult | null {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(id)) {
+    console.log(`ID con formato inválido: ${id}`);
+    return errorResponse(ERROR_MESSAGES.VALIDATION.INVALID_FORMAT(fieldName), 400);
+  }
+  return null;
+}
+
+/**
+ * Valida los datos específicos de una pantalla de bienvenida
+ * @param data Datos de la pantalla de bienvenida
+ * @returns Respuesta de error o null si los datos son válidos
+ * 
+ * @example
+ * // Ejemplo de datos válidos:
+ * {
+ *   title: "Bienvenido a nuestra investigación",
+ *   message: "Gracias por participar en este estudio...",
+ *   startButtonText: "Comenzar",
+ *   isEnabled: true
+ * }
+ */
+export function validateWelcomeScreenData(data: WelcomeScreenFormData): APIGatewayProxyResult | null {
+  // Validar título
+  if (data.title !== undefined) {
+    if (data.title.trim() === '') {
+      return errorResponse(ERROR_MESSAGES.VALIDATION.REQUIRED_FIELD('título'), 400);
+    } else if (data.title.length < 3) {
+      return errorResponse(ERROR_MESSAGES.VALIDATION.TOO_SHORT('El título', 3), 400);
+    } else if (data.title.length > 100) {
+      return errorResponse(ERROR_MESSAGES.VALIDATION.TOO_LONG('El título', 100), 400);
+    }
+  }
+
+  // Validar mensaje
+  if (data.message !== undefined && data.message.length > 1000) {
+    return errorResponse(ERROR_MESSAGES.VALIDATION.TOO_LONG('El mensaje', 1000), 400);
+  }
+
+  // Validar texto del botón de inicio
+  if (data.startButtonText !== undefined) {
+    if (data.startButtonText.trim() === '') {
+      return errorResponse(ERROR_MESSAGES.VALIDATION.REQUIRED_FIELD('texto del botón'), 400);
+    } else if (data.startButtonText.length < 2) {
+      return errorResponse(ERROR_MESSAGES.VALIDATION.TOO_SHORT('El texto del botón', 2), 400);
+    } else if (data.startButtonText.length > 50) {
+      return errorResponse(ERROR_MESSAGES.VALIDATION.TOO_LONG('El texto del botón', 50), 400);
+    }
+  }
+
+  // Si isEnabled está definido, verificar que sea booleano
+  if (data.isEnabled !== undefined && typeof data.isEnabled !== 'boolean') {
+    return errorResponse('El estado de habilitación debe ser un valor booleano', 400);
+  }
+
+  return null;
+}
+
+/**
+ * Valida los datos del formulario SmartVOC
+ * @param data Datos del formulario a validar
+ * @returns Respuesta de error o null si los datos son válidos
+ */
+export function validateSmartVOCData(data: SmartVOCFormData): APIGatewayProxyResult | null {
+  // Cache para mensajes de error comunes
+  const error = ERROR_MESSAGES.VALIDATION;
+  
+  // Validar que existan preguntas
+  if (!data.questions || !Array.isArray(data.questions) || data.questions.length === 0) {
+    return errorResponse(error.EMPTY_ARRAY('El formulario'), 400);
+  }
+
+  // Validar cada pregunta
+  for (let i = 0; i < data.questions.length; i++) {
+    const question = data.questions[i];
+    const questionLabel = `La pregunta ${i + 1}`;
+    
+    // Validar título
+    if (!question.title || question.title.trim() === '') {
+      return errorResponse(error.REQUIRED_FIELD(`título de ${questionLabel.toLowerCase()}`), 400);
+    }
+    
+    if (question.title.length > 100) {
+      return errorResponse(error.TOO_LONG(`El título de ${questionLabel.toLowerCase()}`, 100), 400);
+    }
+    
+    // Validar descripción
+    if (!question.description || question.description.trim() === '') {
+      return errorResponse(error.REQUIRED_FIELD(`descripción de ${questionLabel.toLowerCase()}`), 400);
+    }
+    
+    if (question.description.length > 500) {
+      return errorResponse(error.TOO_LONG(`La descripción de ${questionLabel.toLowerCase()}`, 500), 400);
+    }
+    
+    // Validar tipo
+    const validTypes = ['CSAT', 'CES', 'CV', 'NEV', 'NPS', 'VOC'];
+    if (!validTypes.includes(question.type)) {
+      return errorResponse(error.INVALID_TYPE(`El tipo de ${questionLabel.toLowerCase()}`, validTypes), 400);
+    }
+    
+    // Validar configuración
+    if (!question.config) {
+      return errorResponse(error.MISSING_CONFIG(questionLabel), 400);
+    }
+    
+    // Validar configuración específica según el tipo
+    const validationResult = validateQuestionConfigByType(question, i);
+    if (validationResult) {
+      return validationResult;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Función auxiliar para validar la configuración de una pregunta según su tipo
+ * @param question Pregunta a validar
+ * @param index Índice de la pregunta (para mensajes de error)
+ * @returns Respuesta de error o null si la configuración es válida
+ */
+function validateQuestionConfigByType(question: SmartVOCQuestion, index: number): APIGatewayProxyResult | null {
+  const questionLabel = `La pregunta ${index + 1}`;
+  const error = ERROR_MESSAGES.VALIDATION;
+  
+  switch (question.type) {
+    case 'CSAT':
+      if (!question.config.companyName) {
+        return errorResponse(error.REQUIRED_FIELD(`nombre de empresa en ${questionLabel.toLowerCase()}`), 400);
+      }
+      if (question.config.type !== 'stars' && question.config.type !== 'numbers' && question.config.type !== 'emojis') {
+        return errorResponse(
+          `${questionLabel} de tipo CSAT debe tener un tipo de entrada válido: stars, numbers o emojis`, 
+          400
+        );
+      }
+      break;
+      
+    case 'NPS':
+    case 'CES':
+    case 'CV':
+      if (question.config.type !== 'scale') {
+        return errorResponse(
+          `${questionLabel} de tipo ${question.type} debe tener un tipo de entrada 'scale'`, 
+          400
+        );
+      }
+      if (!question.config.scaleRange || 
+          question.config.scaleRange.start >= question.config.scaleRange.end) {
+        return errorResponse(error.INVALID_RANGE(`${questionLabel} de tipo ${question.type}`), 400);
+      }
+      break;
+      
+    case 'VOC':
+      if (question.config.type !== 'text') {
+        return errorResponse(
+          `${questionLabel} de tipo VOC debe tener un tipo de entrada 'text'`, 
+          400
+        );
+      }
+      break;
+      
+    case 'NEV':
+      if (question.config.type !== 'emojis') {
+        return errorResponse(
+          `${questionLabel} de tipo NEV debe tener un tipo de entrada 'emojis'`, 
+          400
+        );
+      }
+      if (!question.config.companyName) {
+        return errorResponse(error.REQUIRED_FIELD(`nombre de empresa en ${questionLabel.toLowerCase()}`), 400);
+      }
+      break;
+  }
+  
+  return null;
+}
+
+/**
+ * Ejecuta múltiples validaciones y devuelve el primer error encontrado
+ * @param validations Lista de resultados de validación
+ * @returns El primer error encontrado o null si todas las validaciones pasan
+ * 
+ * @example
+ * const error = validateMultiple(
+ *   validateUserId(userId),
+ *   validateResearchId(researchId),
+ *   validateWelcomeScreenData(screenData)
+ * );
+ * if (error) return error;
+ */
+export function validateMultiple(...validations: (APIGatewayProxyResult | null)[]): APIGatewayProxyResult | null {
+  for (const validation of validations) {
+    if (validation) return validation;
+  }
+  return null;
+}
+
+/**
+ * Extrae y valida el ID de investigación de un evento API Gateway
+ * @param event Evento API Gateway
+ * @param bodyData Datos opcionales del cuerpo que podrían contener un researchId
+ * @returns Un objeto con el ID validado o una respuesta de error
+ * 
+ * @example
+ * const result = extractResearchId(event, screenData);
+ * if ('statusCode' in result) return result;
+ * const { researchId } = result;
+ */
+export function extractResearchId(
+  event: APIGatewayProxyEvent, 
+  bodyData?: any
+): { researchId: string } | APIGatewayProxyResult {
+  // Intentar obtener el researchId de diferentes fuentes en orden de prioridad
+  const researchId = 
+    bodyData?.researchId || 
+    event.pathParameters?.researchId || 
+    event.queryStringParameters?.researchId;
+    
+  const error = validateResearchId(researchId);
+  
+  if (error) {
+    return error;
+  }
+  
+  // Si llegamos aquí, sabemos que researchId está definido
+  return { researchId: researchId! };
+}
+
+/**
+ * Valida y parsea el cuerpo de la petición con tipo específico
+ * @param event Evento API Gateway
+ * @param validator Función opcional para validar el cuerpo una vez parseado
+ * @returns Objeto con los datos validados o una respuesta de error
+ * 
+ * @example
+ * const result = parseAndValidateBody<WelcomeScreenFormData>(
+ *   event,
+ *   validateWelcomeScreenData
+ * );
+ * if ('statusCode' in result) return result;
+ * const { data } = result;
+ */
+export function parseAndValidateBody<T>(
+  event: APIGatewayProxyEvent,
+  validator?: (data: T) => APIGatewayProxyResult | null
+): { data: T } | APIGatewayProxyResult {
+  // Parsear el cuerpo
+  const bodyResult = parseRequestBody<T>(event.body);
+  
+  if (!bodyResult.success) {
+    return bodyResult.error;
+  }
+  
+  const data = bodyResult.data;
+  
+  // Si hay un validador, usarlo
+  if (validator) {
+    const validationError = validator(data);
+    if (validationError) {
+      return validationError;
+    }
+  }
+  
+  return { data };
+}

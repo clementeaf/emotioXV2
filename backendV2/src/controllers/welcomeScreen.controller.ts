@@ -7,26 +7,21 @@ import {
   errorResponse
 } from '../utils/controller.utils';
 import { createController, RouteMap } from '../utils/controller.decorator';
+import { 
+  validateUserId, 
+  validateResearchId, 
+  validateWelcomeScreenData, 
+  validateMultiple,
+  extractResearchId,
+  parseAndValidateBody
+} from '../utils/validation';
 
-/**
- * Extendemos la interfaz compartida para agregar el campo researchId que se usa en el controlador
- */
 interface WelcomeScreenFormData extends SharedWelcomeScreenFormData {
   researchId?: string;
 }
 
-/**
- * Controlador para manejar las peticiones relacionadas con pantallas de bienvenida
- * 
- * Este controlador gestiona la creación, actualización, obtención y eliminación de
- * pantallas de bienvenida para investigaciones. Trabaja en conjunto con el servicio
- * welcomeScreenService para las operaciones de datos y requiere que el usuario esté
- * autenticado para todas las operaciones.
- * 
- * La autenticación se verifica a través del token JWT proporcionado en el header
- * Authorization de la solicitud, siguiendo el mismo patrón que otros controladores.
- */
 export class WelcomeScreenController {
+
   /**
    * Crea una nueva pantalla de bienvenida
    * @param event Evento de API Gateway
@@ -36,37 +31,21 @@ export class WelcomeScreenController {
     try {
       console.log('Iniciando createWelcomeScreen...');
       
-      // Verificar que hay un cuerpo en la petición
-      if (!event.body) {
-        console.error('Error: No hay cuerpo en la petición');
-        return errorResponse('Se requieren datos para crear la pantalla de bienvenida', 400);
-      }
-
-      console.log('ID de usuario extraído:', userId);
+      // Validar autenticación
+      const authError = validateUserId(userId);
+      if (authError) return authError;
       
-      if (!userId) {
-        console.error('Error: No se pudo extraer el ID de usuario');
-        return errorResponse('Usuario no autenticado', 401);
-      }
-
-      // Parsear el cuerpo de la petición con manejo de errores
-      let screenData: WelcomeScreenFormData;
-      try {
-        screenData = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
-        console.log('Datos de pantalla parseados:', screenData);
-      } catch (e) {
-        console.error('Error al parsear JSON del cuerpo:', e);
-        return errorResponse('Error al procesar los datos de la petición, formato JSON inválido', 400);
-      }
-
-      // Obtener el ID de la investigación desde el cuerpo de la petición o parámetros de ruta
-      const researchId = screenData.researchId || event.pathParameters?.researchId;
-      console.log('ID de investigación:', researchId);
+      // Parsear y validar el cuerpo de la petición
+      const bodyResult = parseAndValidateBody<WelcomeScreenFormData>(event, validateWelcomeScreenData);
+      if ('statusCode' in bodyResult) return bodyResult;
       
-      if (!researchId) {
-        console.error('Error: No se proporcionó ID de investigación');
-        return errorResponse('Se requiere un ID de investigación (proporcione researchId en el cuerpo de la petición)', 400);
-      }
+      const screenData = bodyResult.data;
+      
+      // Extraer y validar el ID de investigación
+      const researchResult = extractResearchId(event, screenData);
+      if ('statusCode' in researchResult) return researchResult;
+      
+      const { researchId } = researchResult;
 
       // Crear la pantalla de bienvenida usando el servicio
       console.log('Llamando al servicio para crear pantalla de bienvenida...');
@@ -84,153 +63,90 @@ export class WelcomeScreenController {
   }
 
   /**
-   * Obtiene una pantalla de bienvenida por su ID
-   * @param event Evento de API Gateway
-   * @returns Respuesta HTTP con la pantalla de bienvenida solicitada
+   * Obtiene la pantalla de bienvenida asociada a una investigación
+   * @param event Evento API Gateway
+   * @returns Respuesta con los datos de la pantalla o null si no existe
    */
-  async getWelcomeScreenById(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  async getWelcomeScreen(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
     try {
-      // Obtener el ID de la pantalla desde los parámetros de ruta
-      const screenId = event.pathParameters?.id;
-      if (!screenId) {
-        return errorResponse('Se requiere un ID de pantalla de bienvenida', 400);
+      console.log('Buscando welcome screen por research ID');
+      
+      // Extraer y validar el ID de investigación
+      const researchResult = extractResearchId(event);
+      if ('statusCode' in researchResult) return researchResult;
+      
+      const { researchId } = researchResult;
+      
+      console.log(`Buscando welcome screen para la investigación: ${researchId}`);
+      const screen = await welcomeScreenService.getByResearchId(researchId);
+      
+      if (!screen) {
+        console.log(`No se encontró welcome screen para la investigación: ${researchId}`);
+        return createResponse(200, { data: null });
       }
-
-      // Obtener la pantalla de bienvenida usando el servicio
-      const welcomeScreen = await welcomeScreenService.getById(screenId);
-
-      return createResponse(200, {
-        data: welcomeScreen
-      });
+      
+      console.log('Welcome screen encontrado:', screen);
+      return createResponse(200, { data: screen });
     } catch (error) {
-      return this.handleError(error);
+      console.error('Error al obtener welcome screen:', error);
+      return errorResponse(
+        'Error al obtener la pantalla de bienvenida',
+        500
+      );
     }
   }
 
   /**
-   * Obtiene la pantalla de bienvenida de una investigación
-   * @param event Evento de API Gateway
-   * @returns Respuesta HTTP con la pantalla de bienvenida de la investigación
-   */
-  async getWelcomeScreenByResearchId(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-    try {
-      console.log('[WelcomeScreenController] Iniciando getWelcomeScreenByResearchId');
-      
-      // Obtener el ID de la investigación desde los parámetros de ruta
-      const researchId = event.pathParameters?.researchId;
-      if (!researchId) {
-        console.error('[WelcomeScreenController] No se proporcionó ID de investigación');
-        return errorResponse('Se requiere un ID de investigación', 400);
-      }
-
-      console.log('[WelcomeScreenController] Buscando welcome screen para researchId:', researchId);
-      
-      // Obtener la pantalla de bienvenida usando el servicio
-      const welcomeScreen = await welcomeScreenService.getByResearchId(researchId);
-
-      if (!welcomeScreen) {
-        console.log('[WelcomeScreenController] No se encontró welcome screen');
-        return createResponse(200, {
-          data: null
-        });
-      }
-
-      console.log('[WelcomeScreenController] Welcome screen encontrado:', welcomeScreen);
-      return createResponse(200, {
-        data: welcomeScreen
-      });
-    } catch (error) {
-      console.error('[WelcomeScreenController] Error en getWelcomeScreenByResearchId:', error);
-      return this.handleError(error);
-    }
-  }
-
-  /**
-   * Actualiza una pantalla de bienvenida
+   * Actualiza una pantalla de bienvenida de una investigación
    * @param event Evento de API Gateway
    * @returns Respuesta HTTP con la pantalla de bienvenida actualizada
    */
   async updateWelcomeScreen(event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
     try {
-      // Verificar que hay un cuerpo en la petición
-      if (!event.body) {
-        return errorResponse('Se requieren datos para actualizar la pantalla de bienvenida', 400);
-      }
-
-      if (!userId) {
-        return errorResponse('Usuario no autenticado', 401);
-      }
-
-      // Parsear el cuerpo de la petición
-      const screenData: Partial<WelcomeScreenFormData> = JSON.parse(event.body);
-
-      // Obtener el ID de la pantalla desde los parámetros de ruta
-      const screenId = event.pathParameters?.id;
-      if (!screenId) {
-        return errorResponse('Se requiere un ID de pantalla de bienvenida', 400);
-      }
-
-      // Actualizar la pantalla de bienvenida usando el servicio
-      const updatedScreen = await welcomeScreenService.update(screenId, screenData, userId);
-
-      return createResponse(200, {
-        message: 'Pantalla de bienvenida actualizada exitosamente',
-        data: updatedScreen
-      });
-    } catch (error) {
-      return this.handleError(error);
-    }
-  }
-
-  /**
-   * Actualiza o crea la pantalla de bienvenida de una investigación
-   * @param event Evento de API Gateway
-   * @returns Respuesta HTTP con la pantalla de bienvenida actualizada o creada
-   */
-  async updateWelcomeScreenByResearchId(event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
-    try {
-      console.log('[WelcomeScreenController] Iniciando updateWelcomeScreenByResearchId');
+      console.log('Iniciando updateWelcomeScreen...');
       
-      // Verificar que hay un cuerpo en la petición
-      if (!event.body) {
-        console.error('[WelcomeScreenController] No hay cuerpo en la petición');
-        return errorResponse('Se requieren datos para actualizar la pantalla de bienvenida', 400);
+      // Validaciones
+      const validationError = validateUserId(userId);
+      if (validationError) return validationError;
+      
+      // Parsear y validar el cuerpo de la petición
+      const bodyResult = parseAndValidateBody<WelcomeScreenFormData>(event, validateWelcomeScreenData);
+      if ('statusCode' in bodyResult) return bodyResult;
+      
+      const screenData = bodyResult.data;
+      
+      // Extraer y validar el ID de investigación
+      const researchResult = extractResearchId(event, screenData);
+      if ('statusCode' in researchResult) return researchResult;
+      
+      const { researchId } = researchResult;
+
+      console.log(`Actualizando welcome screen para la investigación: ${researchId}`);
+      
+      // Buscar la pantalla existente
+      const existingScreen = await welcomeScreenService.getByResearchId(researchId);
+      
+      if (!existingScreen) {
+        // Si no existe, crearla
+        console.log(`No existe welcome screen, creando para la investigación: ${researchId}`);
+        const welcomeScreen = await welcomeScreenService.create(screenData, researchId, userId);
+        
+        return createResponse(201, {
+          message: 'Pantalla de bienvenida creada exitosamente',
+          data: welcomeScreen
+        });
+      } else {
+        // Si existe, actualizarla
+        console.log(`Actualizando welcome screen existente para la investigación: ${researchId}`);
+        const updatedScreen = await welcomeScreenService.update(existingScreen.id, screenData, userId);
+        
+        return createResponse(200, {
+          message: 'Pantalla de bienvenida actualizada exitosamente',
+          data: updatedScreen
+        });
       }
-
-      if (!userId) {
-        console.error('[WelcomeScreenController] No se proporcionó ID de usuario');
-        return errorResponse('Usuario no autenticado', 401);
-      }
-
-      // Parsear el cuerpo de la petición
-      let screenData: WelcomeScreenFormData;
-      try {
-        screenData = JSON.parse(event.body);
-      } catch (e) {
-        console.error('[WelcomeScreenController] Error al parsear JSON:', e);
-        return errorResponse('Error al procesar los datos de la petición', 400);
-      }
-
-      // Obtener el ID de la investigación desde los parámetros de ruta
-      const researchId = event.pathParameters?.researchId;
-      if (!researchId) {
-        console.error('[WelcomeScreenController] No se proporcionó ID de investigación');
-        return errorResponse('Se requiere un ID de investigación', 400);
-      }
-
-      console.log('[WelcomeScreenController] Actualizando welcome screen para researchId:', researchId);
-      console.log('[WelcomeScreenController] Datos recibidos:', screenData);
-
-      // Actualizar o crear la pantalla de bienvenida usando el servicio
-      const welcomeScreen = await welcomeScreenService.updateByResearchId(researchId, screenData, userId);
-
-      console.log('[WelcomeScreenController] Welcome screen actualizado:', welcomeScreen);
-      return createResponse(200, {
-        message: 'Pantalla de bienvenida actualizada correctamente',
-        data: welcomeScreen
-      });
     } catch (error) {
-      console.error('[WelcomeScreenController] Error en updateWelcomeScreenByResearchId:', error);
+      console.error('Error en updateWelcomeScreen:', error);
       return this.handleError(error);
     }
   }
@@ -242,42 +158,36 @@ export class WelcomeScreenController {
    */
   async deleteWelcomeScreen(event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
     try {
-      if (!userId) {
-        return errorResponse('Usuario no autenticado', 401);
+      console.log('Iniciando deleteWelcomeScreen...');
+      
+      // Validaciones múltiples
+      const validationError = validateMultiple(
+        validateUserId(userId),
+        validateResearchId(event.pathParameters?.researchId)
+      );
+      if (validationError) return validationError;
+      
+      // Extraer y validar el ID de investigación (sabemos que es válido por la validación anterior)
+      const researchId = event.pathParameters!.researchId!;
+      
+      // Verificar si existe la pantalla de bienvenida para esta investigación
+      const existingScreen = await welcomeScreenService.getByResearchId(researchId);
+      
+      if (!existingScreen) {
+        console.log(`No se encontró welcome screen para la investigación: ${researchId}`);
+        return errorResponse('No se encontró la pantalla de bienvenida para eliminar', 404);
       }
-
-      // Obtener el ID de la pantalla desde los parámetros de ruta
-      const screenId = event.pathParameters?.id;
-      if (!screenId) {
-        return errorResponse('Se requiere un ID de pantalla de bienvenida', 400);
-      }
-
-      // Eliminar la pantalla de bienvenida usando el servicio
-      await welcomeScreenService.delete(screenId, userId);
-
+      
+      // Eliminar la pantalla de bienvenida
+      console.log(`Eliminando welcome screen para la investigación: ${researchId}`);
+      await welcomeScreenService.delete(existingScreen.id, userId);
+      console.log('Welcome screen eliminado correctamente');
+      
       return createResponse(200, {
         message: 'Pantalla de bienvenida eliminada exitosamente'
       });
     } catch (error) {
-      return this.handleError(error);
-    }
-  }
-
-  /**
-   * Obtiene todas las pantallas de bienvenida
-   * @param _event Evento de API Gateway (no utilizado directamente)
-   * @param _userId ID del usuario autenticado (no utilizado directamente)
-   * @returns Respuesta HTTP con todas las pantallas de bienvenida
-   */
-  async getAllWelcomeScreens(_event: APIGatewayProxyEvent, _userId: string): Promise<APIGatewayProxyResult> {
-    try {
-      // Obtener todas las pantallas de bienvenida
-      const welcomeScreens = await welcomeScreenService.getAll();
-      
-      return createResponse(200, {
-        data: welcomeScreens
-      });
-    } catch (error) {
+      console.error('Error en deleteWelcomeScreen:', error);
       return this.handleError(error);
     }
   }
@@ -321,12 +231,13 @@ const controller = new WelcomeScreenController();
 
 // Definir el mapa de rutas para WelcomeScreen
 const welcomeScreenRouteMap: RouteMap = {
-  '/welcome-screen': {
-    'GET': controller.getWelcomeScreenByResearchId.bind(controller),
+  // Ruta jerárquica para welcome-screen asociada a investigación
+  '/research/{researchId}/welcome-screen': {
+    'GET': controller.getWelcomeScreen.bind(controller),
     'POST': controller.createWelcomeScreen.bind(controller),
-    'PUT': controller.updateWelcomeScreenByResearchId.bind(controller),
+    'PUT': controller.updateWelcomeScreen.bind(controller),
     'DELETE': controller.deleteWelcomeScreen.bind(controller)
-  }
+  },
 };
 
 /**
@@ -334,13 +245,13 @@ const welcomeScreenRouteMap: RouteMap = {
  * 
  * Utiliza el decorador de controlador para manejar la autenticación y CORS automáticamente.
  * 
- * Rutas soportadas:
- * - GET /welcome-screen : Obtiene el welcome screen de la investigación actual
- * - POST /welcome-screen : Crea un nuevo welcome screen
- * - PUT /welcome-screen : Actualiza el welcome screen existente
- * - DELETE /welcome-screen : Elimina el welcome screen
+ * Estructura jerárquica:
+ * - GET /research/{researchId}/welcome-screen : Obtiene el welcome screen de la investigación
+ * - POST /research/{researchId}/welcome-screen : Crea un nuevo welcome screen para la investigación
+ * - PUT /research/{researchId}/welcome-screen : Actualiza el welcome screen de la investigación
+ * - DELETE /research/{researchId}/welcome-screen : Elimina el welcome screen de la investigación
  */
 export const welcomeScreenHandler = createController(welcomeScreenRouteMap, {
-  basePath: '/welcome-screen',
+  basePath: '',  // Sin base path para permitir múltiples patrones de ruta
   // No hay rutas públicas, todas requieren autenticación
 }); 

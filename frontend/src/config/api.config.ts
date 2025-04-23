@@ -1,4 +1,5 @@
 import { API_ENDPOINTS, API_HTTP_ENDPOINT, API_WEBSOCKET_ENDPOINT } from '@/api/endpoints';
+import routes from '@/routes';
 
 // Estructura para welcome screen
 interface WelcomeScreenEndpoints {
@@ -122,11 +123,11 @@ const API_CONFIG = {
     
     // Pantallas de bienvenida
     welcomeScreen: {
-      GET_BY_RESEARCH: '/welcome-screens/research/{researchId}',
-      GET: '/welcome-screens/{id}',
-      CREATE: '/welcome-screens',
-      UPDATE: '/welcome-screens/{id}',
-      DELETE: '/welcome-screens/{id}',
+      GET_BY_RESEARCH: routes.API_ROUTES.LEGACY.WELCOME_SCREEN,
+      GET: routes.API_ROUTES.LEGACY.WELCOME_SCREEN,
+      CREATE: routes.API_ROUTES.LEGACY.WELCOME_SCREEN,
+      UPDATE: routes.API_ROUTES.LEGACY.WELCOME_SCREEN,
+      DELETE: routes.API_ROUTES.LEGACY.WELCOME_SCREEN,
     },
     
     // Pantallas de agradecimiento

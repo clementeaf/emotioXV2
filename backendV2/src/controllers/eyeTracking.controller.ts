@@ -1,403 +1,301 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { EyeTrackingService, EyeTrackingError } from '../services/eyeTracking.service';
-import { ApiError } from '../utils/errors';
 import { EyeTrackingFormData } from '../models/eyeTracking.model';
 import { 
   createResponse, 
   errorResponse
 } from '../utils/controller.utils';
 import { createController, RouteMap } from '../utils/controller.decorator';
+import { validateUserId, extractResearchId, ERROR_MESSAGES } from '../utils/validation';
 
-// Instancia del servicio
-const eyeTrackingService = new EyeTrackingService();
+// Función auxiliar para crear respuestas exitosas
+const successResponse = (body: any): APIGatewayProxyResult => createResponse(200, body);
 
 /**
- * Controlador para manejar las peticiones relacionadas con eye tracking
- * 
- * Este controlador gestiona la creación, actualización, obtención y eliminación de
- * configuraciones de eye tracking para investigaciones. Trabaja en conjunto con el servicio
- * eyeTrackingService para las operaciones de datos y requiere que el usuario esté
- * autenticado para todas las operaciones excepto la obtención pública de configuraciones.
- * 
- * La autenticación se verifica a través del token JWT proporcionado en el header
- * Authorization de la solicitud, siguiendo el mismo patrón que otros controladores.
+ * Controlador para manejar operaciones relacionadas con eye tracking
  */
 export class EyeTrackingController {
+  private service: EyeTrackingService;
+  private cache: Map<string, { data: any; timestamp: number; researchId: string }> = new Map();
+  private readonly CACHE_TTL = 60000; // 1 minuto en milisegundos
+
+  constructor() {
+    this.service = new EyeTrackingService();
+  }
+
   /**
-   * Crea una nueva configuración de eye tracking
-   * @param event Evento de API Gateway
-   * @param userId ID del usuario autenticado
-   * @returns Respuesta HTTP con la configuración creada
+   * Log estructurado con nivel, contexto y mensaje
    */
-  async createEyeTracking(event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
+  private log(level: 'info' | 'error' | 'warn' | 'debug', context: string, message: string, data?: any): void {
+    const logEntry = {
+      timestamp: new Date().toISOString(),
+      level,
+      context: `EyeTrackingController.${context}`,
+      message,
+      ...(data && { data })
+    };
+    
+    if (level === 'error') {
+      console.error(JSON.stringify(logEntry));
+    } else if (level === 'warn') {
+      console.warn(JSON.stringify(logEntry));
+    } else {
+      console.log(JSON.stringify(logEntry));
+    }
+  }
+
+  /**
+   * Maneja errores en las operaciones del controlador
+   */
+  private handleError(error: any, context: string): APIGatewayProxyResult {
+    this.log('error', context, 'Error al procesar la solicitud', { error });
+    
+    // Manejo de errores específicos de eye tracking
+    if (error.message?.includes(EyeTrackingError.NOT_FOUND)) {
+      return errorResponse(ERROR_MESSAGES.RESOURCE.NOT_FOUND('La configuración de eye tracking'), 404);
+    }
+
+    if (error.message?.includes(EyeTrackingError.INVALID_DATA)) {
+      return errorResponse('Error de validación: ' + error.message, 400);
+    }
+
+    if (error.message?.includes(EyeTrackingError.RESEARCH_REQUIRED)) {
+      return errorResponse('Se requiere ID de investigación', 400);
+    }
+
+    if (error.message?.includes(EyeTrackingError.PERMISSION_DENIED)) {
+      return errorResponse(ERROR_MESSAGES.AUTH.FORBIDDEN, 403);
+    }
+
+    if (error.message?.includes(EyeTrackingError.DATABASE_ERROR)) {
+      return errorResponse('Error de base de datos', 500);
+    }
+    
+    // Error genérico
+    return errorResponse(`Error al ${context}: ${error.message || 'error desconocido'}`, 500);
+  }
+
+  /**
+   * Obtiene una configuración de eye tracking según el ID de investigación
+   */
+  public async getEyeTracking(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
     try {
-      console.log('Iniciando createEyeTracking...');
+      const userId = event.requestContext.authorizer?.claims?.sub;
+      const result = validateUserId(userId);
+      if (result) return result;
+
+      // Extraer y validar el researchId
+      const idResult = extractResearchId(event);
+      if ('statusCode' in idResult) return idResult;
+      const { researchId } = idResult;
+      
+      // Verificar si tenemos una versión en caché válida
+      const cacheKey = `eyeTracking_${researchId}_${userId}`;
+      const cachedEntry = this.cache.get(cacheKey);
+      
+      if (cachedEntry && 
+          (Date.now() - cachedEntry.timestamp) < this.CACHE_TTL && 
+          cachedEntry.researchId === researchId) {
+        this.log('info', 'getEyeTracking', 'Datos recuperados de caché', { researchId });
+        return successResponse(cachedEntry.data);
+      }
+
+      // Si no hay caché o está expirado, obtener datos frescos
+      this.log('info', 'getEyeTracking', 'Obteniendo datos para investigación', { researchId });
+      const eyeTracking = await this.service.getByResearchId(researchId);
+      
+      // Guardar en caché
+      if (eyeTracking) {
+        this.cache.set(cacheKey, {
+          data: eyeTracking,
+          timestamp: Date.now(),
+          researchId
+        });
+      }
+      
+      return successResponse(eyeTracking || { message: 'No se encontró una configuración de eye tracking para esta investigación' });
+    } catch (error) {
+      return this.handleError(error, 'obtener configuración de eye tracking');
+    }
+  }
+
+  /**
+   * Crea una configuración de eye tracking
+   */
+  public async createEyeTracking(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    try {
+      const userId = event.requestContext.authorizer?.claims?.sub;
+      
+      // Validar múltiples condiciones juntas
+      const validationError = validateUserId(userId);
+      if (validationError) return validationError;
+
+      // Extraer y validar el researchId
+      const idResult = extractResearchId(event);
+      if ('statusCode' in idResult) return idResult;
+      const { researchId } = idResult;
       
       // Verificar que hay un cuerpo en la petición
       if (!event.body) {
-        console.error('Error: No hay cuerpo en la petición');
+        this.log('error', 'createEyeTracking', 'No hay cuerpo en la petición');
         return errorResponse('Se requieren datos para crear la configuración de eye tracking', 400);
       }
-
-      console.log('ID de usuario extraído:', userId);
       
-      if (!userId) {
-        console.error('Error: No se pudo extraer el ID de usuario');
-        return errorResponse('Usuario no autenticado', 401);
-      }
-
-      // Parsear el cuerpo de la petición con manejo de errores
+      // Parsear el cuerpo de la petición
       let configData: EyeTrackingFormData;
       try {
-        configData = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
-        console.log('Datos de configuración parseados:', configData);
+        configData = JSON.parse(event.body);
       } catch (e) {
-        console.error('Error al parsear JSON del cuerpo:', e);
+        this.log('error', 'createEyeTracking', 'Error al parsear JSON', { error: e });
         return errorResponse('Error al procesar los datos de la petición, formato JSON inválido', 400);
       }
-
-      // Obtener el ID de la investigación desde el cuerpo de la petición o parámetros de ruta
-      const researchId = configData.researchId || event.pathParameters?.researchId;
-      console.log('ID de investigación:', researchId);
       
-      if (!researchId) {
-        console.error('Error: No se proporcionó ID de investigación');
-        return errorResponse('Se requiere un ID de investigación (proporcione researchId en el cuerpo de la petición)', 400);
-      }
+      // Asegurar que el researchId esté en el objeto de datos
+      configData.researchId = researchId;
 
-      // Crear la configuración de eye tracking usando el servicio
-      console.log('Llamando al servicio para crear configuración de eye tracking...');
-      const eyeTracking = await eyeTrackingService.create(configData, researchId, userId);
-      console.log('Configuración de eye tracking creada exitosamente:', eyeTracking.id);
-
-      return createResponse(201, {
-        message: 'Configuración de eye tracking creada exitosamente',
-        data: eyeTracking
-      });
+      this.log('info', 'createEyeTracking', 'Creando configuración de eye tracking', { researchId });
+      const result = await this.service.create(configData, researchId, userId);
+      
+      // Invalidar caché al crear
+      this.invalidateCache(researchId, userId);
+      
+      return successResponse(result);
     } catch (error) {
-      console.error('Error en createEyeTracking:', error);
-      return this.handleError(error);
-    }
-  }
-
-  /**
-   * Obtiene una configuración de eye tracking por su ID
-   * @param event Evento de API Gateway
-   * @returns Respuesta HTTP con la configuración solicitada
-   */
-  async getEyeTrackingById(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-    try {
-      // Obtener el ID de la configuración desde los parámetros de ruta
-      const configId = event.pathParameters?.id;
-      if (!configId) {
-        return errorResponse('Se requiere un ID de configuración de eye tracking', 400);
-      }
-
-      // Obtener la configuración de eye tracking usando el servicio
-      const eyeTracking = await eyeTrackingService.getById(configId);
-
-      return createResponse(200, {
-        data: eyeTracking
-      });
-    } catch (error) {
-      return this.handleError(error);
-    }
-  }
-
-  /**
-   * Obtiene la configuración de eye tracking de una investigación
-   * @param event Evento de API Gateway
-   * @returns Respuesta HTTP con la configuración de la investigación
-   */
-  async getEyeTrackingByResearchId(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-    try {
-      // Obtener el ID de la investigación desde los parámetros de ruta
-      const researchId = event.pathParameters?.researchId;
-      if (!researchId) {
-        return errorResponse('Se requiere un ID de investigación', 400);
-      }
-
-      // Obtener la configuración de eye tracking usando el servicio
-      const eyeTracking = await eyeTrackingService.getByResearchId(researchId);
-
-      return createResponse(200, {
-        data: eyeTracking
-      });
-    } catch (error) {
-      return this.handleError(error);
+      return this.handleError(error, 'crear configuración de eye tracking');
     }
   }
 
   /**
    * Actualiza una configuración de eye tracking
-   * @param event Evento de API Gateway
-   * @param userId ID del usuario autenticado
-   * @returns Respuesta HTTP con la configuración actualizada
    */
-  async updateEyeTracking(event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
+  public async updateEyeTracking(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
     try {
+      const userId = event.requestContext.authorizer?.claims?.sub;
+      
+      // Validar múltiples condiciones juntas
+      const validationError = validateUserId(userId);
+      if (validationError) return validationError;
+
+      // Extraer y validar el researchId
+      const idResult = extractResearchId(event);
+      if ('statusCode' in idResult) return idResult;
+      const { researchId } = idResult;
+      
       // Verificar que hay un cuerpo en la petición
       if (!event.body) {
+        this.log('error', 'updateEyeTracking', 'No hay cuerpo en la petición');
         return errorResponse('Se requieren datos para actualizar la configuración de eye tracking', 400);
       }
-
-      if (!userId) {
-        return errorResponse('Usuario no autenticado', 401);
-      }
-
+      
       // Parsear el cuerpo de la petición
-      const configData: Partial<EyeTrackingFormData> = JSON.parse(event.body);
-
-      // Obtener el ID de la configuración desde los parámetros de ruta
-      const configId = event.pathParameters?.id;
-      if (!configId) {
-        return errorResponse('Se requiere un ID de configuración de eye tracking', 400);
+      let configData: EyeTrackingFormData;
+      try {
+        configData = JSON.parse(event.body);
+      } catch (e) {
+        this.log('error', 'updateEyeTracking', 'Error al parsear JSON', { error: e });
+        return errorResponse('Error al procesar los datos de la petición, formato JSON inválido', 400);
       }
-
-      // Actualizar la configuración de eye tracking usando el servicio
-      const updatedConfig = await eyeTrackingService.update(configId, configData, userId);
-
-      return createResponse(200, {
-        message: 'Configuración de eye tracking actualizada exitosamente',
-        data: updatedConfig
-      });
-    } catch (error) {
-      return this.handleError(error);
-    }
-  }
-
-  /**
-   * Actualiza o crea la configuración de eye tracking de una investigación
-   * @param event Evento de API Gateway
-   * @param userId ID del usuario autenticado
-   * @returns Respuesta HTTP con la configuración actualizada o creada
-   */
-  async updateEyeTrackingByResearchId(event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
-    try {
-      // Verificar que hay un cuerpo en la petición
-      if (!event.body) {
-        return errorResponse('Se requieren datos para actualizar la configuración de eye tracking', 400);
-      }
-
-      if (!userId) {
-        return errorResponse('Usuario no autenticado', 401);
-      }
-
-      // Parsear el cuerpo de la petición
-      const configData: EyeTrackingFormData = JSON.parse(event.body);
-
-      // Obtener el ID de la investigación desde los parámetros de ruta
-      const researchId = event.pathParameters?.researchId;
-      if (!researchId) {
-        return errorResponse('Se requiere un ID de investigación', 400);
-      }
-
-      // Asegurar que el researchId coincide
+      
+      // Asegurar que el researchId esté en el objeto de datos
       configData.researchId = researchId;
 
-      // Actualizar o crear la configuración de eye tracking usando el servicio
-      const eyeTracking = await eyeTrackingService.updateByResearchId(researchId, configData, userId);
-
-      return createResponse(200, {
-        message: 'Configuración de eye tracking actualizada exitosamente',
-        data: eyeTracking
-      });
+      this.log('info', 'updateEyeTracking', 'Actualizando configuración de eye tracking', { researchId });
+      const result = await this.service.updateByResearchId(researchId, configData, userId);
+      
+      // Invalidar caché al actualizar
+      this.invalidateCache(researchId, userId);
+      
+      return successResponse(result);
     } catch (error) {
-      return this.handleError(error);
+      return this.handleError(error, 'actualizar configuración de eye tracking');
     }
   }
 
   /**
    * Elimina una configuración de eye tracking
-   * @param event Evento de API Gateway
-   * @param userId ID del usuario autenticado
-   * @returns Respuesta HTTP indicando el resultado de la operación
    */
-  async deleteEyeTracking(event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
+  public async deleteEyeTracking(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
     try {
-      if (!userId) {
-        return errorResponse('Usuario no autenticado', 401);
-      }
+      const userId = event.requestContext.authorizer?.claims?.sub;
+      
+      // Validar múltiples condiciones juntas
+      const validationError = validateUserId(userId);
+      if (validationError) return validationError;
 
-      // Obtener el ID de la configuración desde los parámetros de ruta
-      const configId = event.pathParameters?.id;
-      if (!configId) {
-        return errorResponse('Se requiere un ID de configuración de eye tracking', 400);
-      }
+      // Extraer y validar el researchId
+      const idResult = extractResearchId(event);
+      if ('statusCode' in idResult) return idResult;
+      const { researchId } = idResult;
 
-      // Eliminar la configuración de eye tracking usando el servicio
-      await eyeTrackingService.delete(configId, userId);
-
-      return createResponse(200, {
-        message: 'Configuración de eye tracking eliminada exitosamente'
-      });
-    } catch (error) {
-      return this.handleError(error);
-    }
-  }
-
-  /**
-   * Obtiene una configuración de eye tracking para el participante de una investigación (acceso público)
-   * @param event Evento de API Gateway
-   * @returns Respuesta HTTP con la configuración para el participante
-   */
-  async getParticipantEyeTracking(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-    try {
-      // Obtener el ID de la investigación desde los parámetros de ruta
-      const researchId = event.pathParameters?.researchId;
-      if (!researchId) {
-        return errorResponse('Se requiere un ID de investigación', 400);
-      }
-
-      // Obtener la configuración de eye tracking usando el servicio
-      const eyeTracking = await eyeTrackingService.getByResearchId(researchId);
-
-      // Para participantes, solo devolver datos si está habilitada
-      if (!eyeTracking.config.enabled) {
-        return createResponse(200, {
-          data: null,
-          message: 'El eye tracking no está habilitado para esta investigación'
-        });
-      }
-
-      return createResponse(200, {
-        data: eyeTracking
-      });
-    } catch (error) {
-      return this.handleError(error);
-    }
-  }
-
-  /**
-   * Obtiene todas las configuraciones de eye tracking
-   * @param event Evento de API Gateway
-   * @returns Respuesta HTTP con todas las configuraciones
-   */
-  async getAllEyeTracking(_event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-    try {
-      // Obtener todas las configuraciones de eye tracking usando el servicio
-      const eyeTrackingConfigs = await eyeTrackingService.getAll();
-
-      return createResponse(200, {
-        data: eyeTrackingConfigs
-      });
-    } catch (error) {
-      return this.handleError(error);
-    }
-  }
-
-  /**
-   * Manejador para la ruta incorrecta /eye-tracking/research/:researchId/eye-tracking
-   * Redirige a la ruta correcta /research/:researchId/eye-tracking
-   */
-  async handleLegacyEyeTrackingRoute(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-    try {
-      console.log('Manejando ruta legacy eye-tracking:', event.path);
-      // Extraer el ID de la investigación de la ruta
-      const matches = event.path.match(/\/eye-tracking\/research\/([^\/]+)\/eye-tracking/);
-      if (!matches || !matches[1]) {
-        return errorResponse('Formato de ruta incorrecto', 400);
+      this.log('info', 'deleteEyeTracking', 'Eliminando configuración de eye tracking', { researchId });
+      
+      // Obtener la configuración existente para conseguir su ID
+      const existingConfig = await this.service.getByResearchId(researchId);
+      if (!existingConfig || !existingConfig.id) {
+        return errorResponse('No existe una configuración de eye tracking para eliminar', 404);
       }
       
-      const researchId = matches[1];
-      console.log('ID de investigación extraído:', researchId);
+      await this.service.delete(existingConfig.id, userId);
       
-      // Actualizar los parámetros del evento para que coincidan con la estructura esperada
-      event.pathParameters = { ...event.pathParameters, researchId };
+      // Invalidar caché al eliminar
+      this.invalidateCache(researchId, userId);
       
-      // Usar el método existente para obtener el eye tracking
-      return this.getEyeTrackingByResearchId(event);
+      return successResponse({ message: 'Configuración de eye tracking eliminada con éxito' });
     } catch (error) {
-      return this.handleError(error);
+      return this.handleError(error, 'eliminar configuración de eye tracking');
     }
   }
 
   /**
-   * Maneja errores comunes y los convierte en respuestas HTTP apropiadas
-   * @param error Error capturado
-   * @returns Respuesta HTTP con información del error
+   * Invalida la entrada de caché para un researchId específico
    */
-  private handleError(error: any): APIGatewayProxyResult {
-    console.error('Error en EyeTrackingController:', error);
+  private invalidateCache(researchId: string, userId: string): void {
+    const cacheKey = `eyeTracking_${researchId}_${userId}`;
+    this.cache.delete(cacheKey);
+    this.log('debug', 'invalidateCache', 'Caché invalidado', { researchId });
+  }
 
-    if (error instanceof ApiError) {
-      return createResponse(error.statusCode, {
-        error: error.message
-      });
-    }
-
-    // Manejo de errores específicos de eye tracking
-    if (error.message?.includes(EyeTrackingError.NOT_FOUND)) {
-      return createResponse(404, {
-        error: 'Configuración de eye tracking no encontrada'
-      });
-    }
-
-    if (error.message?.includes(EyeTrackingError.INVALID_DATA)) {
-      return createResponse(400, {
-        error: error.message
-      });
-    }
-
-    if (error.message?.includes(EyeTrackingError.RESEARCH_REQUIRED)) {
-      return createResponse(400, {
-        error: 'Se requiere ID de investigación'
-      });
-    }
-
-    if (error.message?.includes(EyeTrackingError.PERMISSION_DENIED)) {
-      return createResponse(403, {
-        error: 'Permiso denegado'
-      });
-    }
-
-    if (error.message?.includes(EyeTrackingError.DATABASE_ERROR)) {
-      return createResponse(500, {
-        error: 'Error de base de datos'
-      });
-    }
-
-    // Error genérico
-    return createResponse(500, {
-      error: 'Error interno del servidor',
-      message: error.message
-    });
+  /**
+   * Mapa de rutas para el controlador de eye tracking
+   */
+  public routes(): Record<string, (event: APIGatewayProxyEvent) => Promise<APIGatewayProxyResult>> {
+    return {
+      // Ruta jerárquica para operaciones con eye tracking relacionadas con una investigación específica
+      'GET /research/{researchId}/eye-tracking': this.getEyeTracking.bind(this),
+      'POST /research/{researchId}/eye-tracking': this.createEyeTracking.bind(this),
+      'PUT /research/{researchId}/eye-tracking': this.updateEyeTracking.bind(this),
+      'DELETE /research/{researchId}/eye-tracking': this.deleteEyeTracking.bind(this)
+    };
   }
 }
 
-/**
- * Definición de rutas para el controlador de eye tracking
- */
-const routes: RouteMap = {
-  '/eye-tracking': {
-    'GET': new EyeTrackingController().getAllEyeTracking,
-    'POST': new EyeTrackingController().createEyeTracking
-  },
-  '/eye-tracking/:id': {
-    'GET': new EyeTrackingController().getEyeTrackingById,
-    'PUT': new EyeTrackingController().updateEyeTracking,
-    'DELETE': new EyeTrackingController().deleteEyeTracking
-  },
-  '/eye-tracking/research/:researchId': {
-    'GET': new EyeTrackingController().getEyeTrackingByResearchId,
-    'PUT': new EyeTrackingController().updateEyeTrackingByResearchId
-  },
-  '/research/:researchId/eye-tracking': {
-    'GET': new EyeTrackingController().getEyeTrackingByResearchId,
-    'POST': new EyeTrackingController().createEyeTracking,
-    'PUT': new EyeTrackingController().updateEyeTrackingByResearchId
-  },
-  '/participant/:researchId/eye-tracking': {
-    'GET': new EyeTrackingController().getParticipantEyeTracking
+// Instanciar el controlador
+const controller = new EyeTrackingController();
+
+// Definir el mapa de rutas para eye tracking
+const eyeTrackingRouteMap: RouteMap = {
+  // Ruta jerárquica para eye tracking asociado a investigación
+  '/research/{researchId}/eye-tracking': {
+    'GET': controller.getEyeTracking.bind(controller),
+    'POST': controller.createEyeTracking.bind(controller),
+    'PUT': controller.updateEyeTracking.bind(controller),
+    'DELETE': controller.deleteEyeTracking.bind(controller)
   }
 };
 
 /**
- * Handler principal para las rutas de eye tracking
+ * Manejador principal para las rutas de eye tracking
+ * 
+ * Utiliza el decorador de controlador para manejar la autenticación y CORS automáticamente.
+ * 
+ * Estructura jerárquica:
+ * - GET /research/{researchId}/eye-tracking : Obtiene la configuración de eye tracking de la investigación
+ * - POST /research/{researchId}/eye-tracking : Crea una nueva configuración de eye tracking para la investigación
+ * - PUT /research/{researchId}/eye-tracking : Actualiza la configuración de eye tracking de la investigación
+ * - DELETE /research/{researchId}/eye-tracking : Elimina la configuración de eye tracking de la investigación
  */
-export const eyeTrackingHandler = createController(routes, {
-  basePath: '/eye-tracking',
-  publicRoutes: [
-    { path: '/participant/:researchId/eye-tracking', method: 'GET' }
-  ]
-}); 
+export const eyeTrackingHandler = createController(eyeTrackingRouteMap, {
+  basePath: ''  // Sin base path para permitir múltiples patrones de ruta
+});
+
+export default eyeTrackingHandler; 

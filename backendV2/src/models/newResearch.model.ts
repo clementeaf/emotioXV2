@@ -430,37 +430,49 @@ export class NewResearchModel {
    */
   async getAll(): Promise<NewResearch[]> {
     try {
-      const db = getDB();
+      console.log('Iniciando modelo getAll() para obtener todas las investigaciones');
+      
+      // Usar la misma instancia de cliente que se configura en el constructor
       const params = {
-        TableName: process.env.DYNAMODB_TABLE || '',
+        TableName: this.tableName,
         IndexName: 'sk-index', // Asegúrate de que este índice exista en DynamoDB
-        KeyConditionExpression: 'sk = :sk',
+        KeyConditionExpression: 'begins_with(sk, :sk)',
         ExpressionAttributeValues: {
-          ':sk': 'RESEARCH'
+          ':sk': 'RESEARCH#'
         }
       };
 
-      const result = await db.query(params).promise();
+      console.log('Parámetros de consulta:', JSON.stringify(params, null, 2));
+      
+      // Usar el cliente configurado en el constructor
+      const command = new QueryCommand(params);
+      const result = await this.dynamoClient.send(command);
+      
+      console.log(`Consulta completada. Encontrados: ${result.Items?.length || 0} elementos`);
       
       if (!result.Items || result.Items.length === 0) {
+        console.log('No se encontraron investigaciones');
         return [];
       }
 
-      return result.Items.map(item => ({
+      // Mapear resultados al formato de la interfaz
+      return result.Items.map((item: any) => ({
         id: item.id,
         name: item.name,
         enterprise: item.enterprise,
-        type: item.type,
+        type: item.type as ResearchType,
         technique: item.technique,
-        userId: item.userId,
+        description: item.description,
+        targetParticipants: item.targetParticipants,
+        objectives: JSON.parse(item.objectives || '[]'),
+        tags: JSON.parse(item.tags || '[]'),
         status: item.status,
-        stage: item.stage,
+        userId: item.userId,
         createdAt: item.createdAt,
-        updatedAt: item.updatedAt,
-        metadata: item.metadata
+        updatedAt: item.updatedAt
       }));
     } catch (error) {
-      console.error('Error en newResearchModel.getAll:', error);
+      console.error('Error detallado en newResearchModel.getAll:', error);
       throw error;
     }
   }

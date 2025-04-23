@@ -48,16 +48,28 @@ function ResearchTableContent() {
 
       if (currentResponse.ok) {
         const currentData = await currentResponse.json();
-        if (currentData?.data) {
+        console.log('currentData en ResearchTable:', currentData);
+        
+        // Verificar que data no sea un array vacío y que tenga propiedades válidas
+        if (currentData?.data && 
+            ((Array.isArray(currentData.data) && currentData.data.length > 0) || 
+             (!Array.isArray(currentData.data) && currentData.data.id))) {
+          
+          // Si es un array con elementos, usar el primer elemento
+          const dataItem = Array.isArray(currentData.data) ? currentData.data[0] : currentData.data;
+          
           setResearch([{
-            id: currentData.data.id,
-            name: currentData.data.title || currentData.data.name,
-            status: currentData.data.status || 'in-progress',
-            createdAt: currentData.data.createdAt,
-            progress: currentData.data.progress,
-            technique: currentData.data.metadata?.type || ''
+            id: dataItem.id,
+            name: dataItem.title || dataItem.name,
+            status: dataItem.status || 'in-progress',
+            createdAt: dataItem.createdAt,
+            progress: dataItem.progress,
+            technique: dataItem.metadata?.type || ''
           }]);
           return; // Terminar aquí, setLastUpdate se hará en el finally
+        } else {
+          // Si es un array vacío o no tiene ID válido, continuamos para buscar todas las investigaciones
+          console.log('No hay investigación actual válida, buscando todas las investigaciones');
         }
       }
 
@@ -76,7 +88,13 @@ function ResearchTableContent() {
 
       const data = await response.json();
       const researchData = data?.data || data;
-      setResearch(Array.isArray(researchData) ? researchData : []);
+      
+      // Verificar que cada item tenga un ID válido antes de agregarlo
+      const validResearch = Array.isArray(researchData) 
+        ? researchData.filter(item => item && item.id)
+        : [];
+        
+      setResearch(validResearch);
     } catch (error) {
       console.error('Error:', error);
       setError(error instanceof Error ? error.message : 'Error al cargar las investigaciones');
