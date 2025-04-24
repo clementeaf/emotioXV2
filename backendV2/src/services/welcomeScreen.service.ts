@@ -346,6 +346,51 @@ export class WelcomeScreenService {
       );
     }
   }
+
+  /**
+   * Actualizar una pantalla de bienvenida específica asegurando que pertenece a una investigación
+   * @param researchId ID de la investigación
+   * @param screenId ID de la pantalla a actualizar
+   * @param data Datos a actualizar
+   * @param _userId ID del usuario que realiza la operación
+   * @returns La pantalla de bienvenida actualizada
+   */
+  async updateForResearch(researchId: string, screenId: string, data: Partial<WelcomeScreenFormData>, _userId: string): Promise<WelcomeScreenRecord> {
+    try {
+      // Validar datos
+      this.validateData(data);
+
+      // Verificar existencia y pertenencia
+      const existing = await welcomeScreenModel.getById(screenId);
+      if (!existing) {
+        throw new ApiError(
+          `${WelcomeScreenError.NOT_FOUND}: Pantalla de bienvenida no encontrada con ID ${screenId}`,
+          404
+        );
+      }
+      if (existing.researchId !== researchId) {
+        throw new ApiError(
+          `${WelcomeScreenError.PERMISSION_DENIED}: La pantalla de bienvenida ${screenId} no pertenece a la investigación ${researchId}`,
+          403 // Forbidden
+        );
+      }
+
+      // Actualizar en el modelo usando el screenId verificado
+      const updatedScreen = await welcomeScreenModel.update(screenId, data);
+      return updatedScreen;
+    } catch (error) {
+      // Si ya es un ApiError, relanzarlo
+      if (error instanceof ApiError) {
+        throw error;
+      }
+
+      console.error('Error en WelcomeScreenService.updateForResearch:', error);
+      throw new ApiError(
+        `${WelcomeScreenError.DATABASE_ERROR}: Error al actualizar la pantalla de bienvenida para la investigación`,
+        500
+      );
+    }
+  }
 }
 
 // Exportar una instancia única del servicio

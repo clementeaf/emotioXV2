@@ -1,6 +1,6 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand, GetCommand, UpdateCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
-import { DynamoDB } from 'aws-sdk';
+import { DynamoDBDocumentClient, PutCommand, GetCommand, UpdateCommand, DeleteCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { v4 as uuidv4 } from 'uuid';
 import { 
   WelcomeScreenConfig, 
   WelcomeScreenRecord, 
@@ -12,10 +12,12 @@ import {
  * Interfaz para el modelo DynamoDB de una pantalla de bienvenida
  */
 export interface WelcomeScreenDynamoItem {
-  // Clave primaria (researchId)
-  id: string;
-  // Clave de ordenación (WELCOME_SCREEN)
-  sk: string;
+  // Clave primaria (UUID único)
+  id: string; 
+  // Clave de ordenación (constante para este tipo de item)
+  sk: string; 
+  // Atributo para búsqueda por researchId (potencial GSI)
+  researchId: string; 
   // Propiedades de la pantalla de bienvenida
   isEnabled: boolean;
   title: string;
@@ -66,11 +68,13 @@ export class WelcomeScreenModel {
     // Primero verificamos si ya existe una pantalla de bienvenida para este researchId
     const existingScreen = await this.getByResearchId(researchId);
     if (existingScreen) {
-      throw new Error('Ya existe una pantalla de bienvenida para esta investigación');
+      throw new Error(`WELCOME_SCREEN_EXISTS: Ya existe una pantalla de bienvenida para la investigación ${researchId}`);
     }
 
-    // Fecha actual para created/updated
+    // Generar un ID único para la pantalla
+    const screenId = uuidv4(); 
     const now = new Date().toISOString();
+    const skValue = 'WELCOME_SCREEN'; // Valor constante para la Sort Key
     
     // Combinar con valores por defecto
     const config: WelcomeScreenConfig = {
@@ -85,15 +89,16 @@ export class WelcomeScreenModel {
       }
     };
 
-    // Convertir a formato para DynamoDB usando researchId como clave primaria
+    // Convertir a formato para DynamoDB usando el ID único y SK constante
     const item: WelcomeScreenDynamoItem = {
-      id: researchId,
-      sk: 'WELCOME_SCREEN',
+      id: screenId, // Usar el UUID generado
+      sk: skValue,  // Añadir la Sort Key constante
+      researchId: researchId, // Guardar researchId como atributo separado
       isEnabled: config.isEnabled,
       title: config.title,
       message: config.message,
       startButtonText: config.startButtonText,
-      metadata: JSON.stringify(config.metadata),
+      metadata: JSON.stringify(config.metadata), 
       createdAt: now,
       updatedAt: now
     };
@@ -101,16 +106,19 @@ export class WelcomeScreenModel {
     // Guardar en DynamoDB
     const command = new PutCommand({
       TableName: this.tableName,
-      Item: item
+      Item: item,
+      // Ya no necesitamos ConditionExpression si la PK es id/sk, 
+      // aunque podrías mantenerla en 'id' si quisieras asegurar unicidad del UUID
+      // ConditionExpression: 'attribute_not_exists(id)' 
     });
 
     try {
       await this.docClient.send(command);
       
-      // Devolver el objeto creado
+      // Devolver el objeto creado con el ID correcto
       return {
-        id: researchId,
-        researchId,
+        id: screenId, 
+        researchId: researchId, 
         isEnabled: config.isEnabled,
         title: config.title,
         message: config.message,
@@ -119,23 +127,35 @@ export class WelcomeScreenModel {
         createdAt: new Date(now),
         updatedAt: new Date(now)
       };
-    } catch (error) {
-      console.error('Error al crear pantalla de bienvenida:', error);
-      throw new Error('Error al crear la pantalla de bienvenida');
+    } catch (error: any) {
+      // Loguear el error específico de DynamoDB
+      console.error('ERROR DETALLADO de DynamoDB PutCommand:', JSON.stringify(error, null, 2));
+
+      // Mantener el chequeo específico para ConditionalCheckFailedException
+      if (error.name === 'ConditionalCheckFailedException') {
+         console.error(`Error: Conflicto de ID al crear pantalla de bienvenida (ID: ${screenId})`);
+         // Podríamos lanzar un error más específico si queremos manejarlo diferente
+         throw new Error('Error interno: Conflicto al generar ID único para la pantalla de bienvenida.');
+      }
+      // Para cualquier otro error, lanzar el error genérico PERO después de loguear el detalle
+      console.error('Error genérico al crear pantalla de bienvenida en DynamoDB:', error.message);
+      throw new Error('DATABASE_ERROR: Error al guardar la pantalla de bienvenida en la base de datos'); // Mantener este mensaje para consistencia si el frontend lo espera
     }
   }
 
   /**
-   * Obtiene una pantalla de bienvenida por su ID
-   * @param id ID de la pantalla de bienvenida
+   * Obtiene una pantalla de bienvenida por su ID único (UUID)
+   * @param id ID único (UUID) de la pantalla de bienvenida
    * @returns La pantalla de bienvenida encontrada o null
    */
   async getById(id: string): Promise<WelcomeScreenRecord | null> {
+    // Necesitamos buscar por id (PK) Y sk (SK)
+    const skValue = 'WELCOME_SCREEN'; // Asume sk constante para buscar por ID
     const command = new GetCommand({
       TableName: this.tableName,
       Key: {
-        id,
-        sk: `WELCOME_SCREEN#${id}`
+        id: id, 
+        sk: skValue // Añadir sk a la clave de búsqueda
       }
     });
 
@@ -148,231 +168,253 @@ export class WelcomeScreenModel {
 
       const item = result.Item as WelcomeScreenDynamoItem;
       
-      // Convertir de formato DynamoDB a la interfaz WelcomeScreenRecord
       return {
-        id: item.id,
-        researchId: item.id,
+        id: item.id, 
+        researchId: item.researchId, 
         isEnabled: item.isEnabled,
         title: item.title,
         message: item.message,
         startButtonText: item.startButtonText,
-        metadata: JSON.parse(item.metadata),
+        metadata: JSON.parse(item.metadata || '{}'), 
         createdAt: new Date(item.createdAt),
         updatedAt: new Date(item.updatedAt)
       };
     } catch (error) {
       console.error('Error al obtener pantalla de bienvenida por ID:', error);
-      throw new Error('Error al obtener la pantalla de bienvenida');
+      throw new Error('Error al obtener la pantalla de bienvenida por ID desde la base de datos');
     }
   }
 
   /**
-   * Obtiene la pantalla de bienvenida asociada a una investigación
+   * Obtiene la pantalla de bienvenida asociada a una investigación usando GSI
+   * ASUME que existe un GSI llamado 'ResearchIdIndex' con 'researchId' como clave de partición.
    * @param researchId ID de la investigación
    * @returns La pantalla de bienvenida asociada o null
    */
   async getByResearchId(researchId: string): Promise<WelcomeScreenRecord | null> {
-    const command = new GetCommand({
+    const command = new QueryCommand({
       TableName: this.tableName,
-      Key: {
-        id: researchId,
-        sk: 'WELCOME_SCREEN'
-      }
+      IndexName: 'ResearchIdIndex',
+      KeyConditionExpression: 'researchId = :rid',
+      ExpressionAttributeValues: {
+        ':rid': researchId
+      },
+      Limit: 1
     });
 
     try {
       const result = await this.docClient.send(command);
       
-      if (!result.Item) {
+      if (!result.Items || result.Items.length === 0) { 
         return null;
       }
 
-      const item = result.Item as WelcomeScreenDynamoItem;
+      const item = result.Items[0] as WelcomeScreenDynamoItem; 
       
-      // Convertir de formato DynamoDB a la interfaz WelcomeScreenRecord
       return {
         id: item.id,
-        researchId: item.id,
+        researchId: item.researchId,
         isEnabled: item.isEnabled,
         title: item.title,
         message: item.message,
         startButtonText: item.startButtonText,
-        metadata: JSON.parse(item.metadata),
+        metadata: JSON.parse(item.metadata || '{}'),
         createdAt: new Date(item.createdAt),
         updatedAt: new Date(item.updatedAt)
       };
     } catch (error) {
-      console.error('Error al obtener pantalla de bienvenida por researchId:', error);
-      throw new Error('Error al obtener la pantalla de bienvenida');
+      console.error('Error al obtener pantalla de bienvenida por researchId (Query GSI):', error);
+      if ((error as Error).message?.includes('index')) {
+         console.error("Error: Parece que el índice GSI 'ResearchIdIndex' no existe o no está configurado correctamente en la tabla DynamoDB.");
+         throw new Error("Error de configuración de base de datos: falta índice para búsqueda.");
+      }
+      throw new Error('Error al buscar la pantalla de bienvenida asociada a la investigación');
     }
   }
 
   /**
-   * Actualiza una pantalla de bienvenida existente
-   * @param researchId ID de la investigación
-   * @param data Datos a actualizar
+   * Actualiza una pantalla de bienvenida existente usando su ID único (UUID)
+   * @param id ID único (UUID) de la pantalla
+   * @param data Datos a actualizar (parcial)
    * @returns La pantalla de bienvenida actualizada
    */
-  async update(researchId: string, data: Partial<WelcomeScreenFormData>): Promise<WelcomeScreenRecord> {
-    // Verificar que existe
-    const existingScreen = await this.getByResearchId(researchId);
+  async update(id: string, data: Partial<WelcomeScreenFormData>): Promise<WelcomeScreenRecord> {
+    const skValue = 'WELCOME_SCREEN'; // SK constante
+    // Verificar que existe usando la clave completa
+    const existingScreen = await this.getById(id); // getById ahora usa id y sk internamente
     if (!existingScreen) {
-      throw new Error('No existe una pantalla de bienvenida para esta investigación');
+      throw new Error(`WELCOME_SCREEN_NOT_FOUND: No existe una pantalla de bienvenida con ID ${id}`); 
     }
 
     const now = new Date().toISOString();
 
-    // Preparar expresiones de actualización
     let updateExpression = 'SET updatedAt = :updatedAt';
-    const expressionAttributeValues: any = {
+    const expressionAttributeValues: Record<string, any> = {
       ':updatedAt': now
     };
 
-    if (data.isEnabled !== undefined) {
-      updateExpression += ', isEnabled = :isEnabled';
-      expressionAttributeValues[':isEnabled'] = data.isEnabled;
-    }
-    if (data.title !== undefined) {
-      updateExpression += ', title = :title';
-      expressionAttributeValues[':title'] = data.title;
-    }
-    if (data.message !== undefined) {
-      updateExpression += ', message = :message';
-      expressionAttributeValues[':message'] = data.message;
-    }
-    if (data.startButtonText !== undefined) {
-      updateExpression += ', startButtonText = :startButtonText';
-      expressionAttributeValues[':startButtonText'] = data.startButtonText;
+    const addUpdate = (field: keyof WelcomeScreenFormData, alias: string) => {
+       if (data[field] !== undefined) {
+         const placeholder = `:${alias}`;
+         updateExpression += `, ${field} = ${placeholder}`; 
+         expressionAttributeValues[placeholder] = data[field];
+       }
+    };
+    
+    addUpdate('isEnabled', 'isEnabled');
+    addUpdate('title', 'title');
+    addUpdate('message', 'message');
+    addUpdate('startButtonText', 'startButtonText');
+
+    if (data.metadata !== undefined) {
+       updateExpression += ', metadata = :metadata';
+       expressionAttributeValues[':metadata'] = JSON.stringify({ 
+           ...(existingScreen.metadata || {}),
+           ...data.metadata,
+           lastUpdated: new Date(),
+       });
+    } else {
+        updateExpression += ', metadata = :metadata';
+        expressionAttributeValues[':metadata'] = JSON.stringify({
+            ...(existingScreen.metadata || {}),
+            lastUpdated: new Date(),
+        });
     }
 
     const command = new UpdateCommand({
       TableName: this.tableName,
       Key: {
-        id: researchId,
-        sk: 'WELCOME_SCREEN'
+        id: id, // Usar el ID único como clave
+        sk: skValue // AÑADIR sk a la clave
       },
       UpdateExpression: updateExpression,
       ExpressionAttributeValues: expressionAttributeValues,
-      ReturnValues: 'ALL_NEW'
+      ReturnValues: 'ALL_NEW' 
     });
 
     try {
       const result = await this.docClient.send(command);
-      const updatedItem = result.Attributes as WelcomeScreenDynamoItem;
+      
+      const updatedAttributes = result.Attributes as WelcomeScreenDynamoItem;
+      if (!updatedAttributes) {
+         throw new Error('La actualización no devolvió los atributos actualizados.');
+      }
 
       return {
-        id: updatedItem.id,
-        researchId: updatedItem.id,
-        isEnabled: updatedItem.isEnabled,
-        title: updatedItem.title,
-        message: updatedItem.message,
-        startButtonText: updatedItem.startButtonText,
-        metadata: JSON.parse(updatedItem.metadata),
-        createdAt: new Date(updatedItem.createdAt),
-        updatedAt: new Date(updatedItem.updatedAt)
+        id: updatedAttributes.id,
+        researchId: updatedAttributes.researchId,
+        isEnabled: updatedAttributes.isEnabled,
+        title: updatedAttributes.title,
+        message: updatedAttributes.message,
+        startButtonText: updatedAttributes.startButtonText,
+        metadata: JSON.parse(updatedAttributes.metadata || '{}'),
+        createdAt: new Date(updatedAttributes.createdAt),
+        updatedAt: new Date(updatedAttributes.updatedAt)
       };
     } catch (error) {
-      console.error('Error al actualizar pantalla de bienvenida:', error);
-      throw new Error('Error al actualizar la pantalla de bienvenida');
+      console.error('Error al actualizar pantalla de bienvenida en DynamoDB:', error);
+      throw new Error('Error al guardar los cambios de la pantalla de bienvenida');
     }
   }
-
+  
   /**
-   * Elimina una pantalla de bienvenida por su ID
-   * @param id ID de la pantalla de bienvenida
+   * Elimina una pantalla de bienvenida por su ID único (UUID)
+   * @param id ID único (UUID) de la pantalla
    */
   async delete(id: string): Promise<void> {
+    const skValue = 'WELCOME_SCREEN'; // SK constante
+    // Verificar que existe usando la clave completa
+    const existingScreen = await this.getById(id); // getById ahora usa id y sk internamente
+    if (!existingScreen) {
+      throw new Error(`WELCOME_SCREEN_NOT_FOUND: No existe una pantalla de bienvenida con ID ${id}`);
+    }
+
     const command = new DeleteCommand({
       TableName: this.tableName,
       Key: {
-        id,
-        sk: `WELCOME_SCREEN#${id}`
+        id: id, // Usar el ID único como clave
+        sk: skValue // AÑADIR sk a la clave
       }
     });
 
     try {
       await this.docClient.send(command);
+      console.log(`Pantalla de bienvenida con ID ${id} eliminada correctamente.`);
     } catch (error) {
-      console.error('Error al eliminar pantalla de bienvenida:', error);
+      console.error('Error al eliminar pantalla de bienvenida en DynamoDB:', error);
       throw new Error('Error al eliminar la pantalla de bienvenida');
     }
   }
 
   /**
-   * Crea o actualiza la pantalla de bienvenida para una investigación
+   * Crea o actualiza la pantalla de bienvenida de una investigación
    * @param researchId ID de la investigación
-   * @param data Datos de la pantalla de bienvenida
+   * @param data Datos a crear/actualizar
    * @returns La pantalla de bienvenida creada o actualizada
    */
   async createOrUpdate(researchId: string, data: WelcomeScreenFormData): Promise<WelcomeScreenRecord> {
     try {
-      // Buscar si ya existe una pantalla para esta investigación
+      // Intentar obtener la pantalla existente por researchId
       const existing = await this.getByResearchId(researchId);
-      
+
       if (existing) {
-        // Actualizar la existente
-        return await this.update(researchId, data);
+        // Actualizar la existente usando su ID único
+        console.log(`[Model] Welcome screen existente encontrado (ID: ${existing.id}), actualizando...`);
+        return await this.update(existing.id, data); // Usar el ID único (UUID)
       } else {
         // Crear una nueva
+        console.log('[Model] No existe welcome screen, creando uno nuevo...');
         return await this.create(data, researchId);
       }
     } catch (error) {
-      console.error('Error al crear o actualizar pantalla de bienvenida:', error);
-      throw new Error('Error al procesar la pantalla de bienvenida');
+      console.error('Error en WelcomeScreenModel.createOrUpdate:', error);
+      throw new Error('Error al crear o actualizar la pantalla de bienvenida');
     }
   }
 
   /**
-   * Obtiene todas las pantallas de bienvenida
-   * @returns Array con todas las pantallas de bienvenida
+   * Obtiene todas las pantallas de bienvenida (POTENCIALMENTE LENTO - USAR CON PRECAUCIÓN)
+   * Nota: Esto haría un Scan o usaría un índice específico si todas tuvieran un atributo común.
+   * Adapta según tu necesidad real y estructura de tabla.
+   * ESTA IMPLEMENTACIÓN ASUME QUE NO ES FRECUENTE Y USA SCAN (INEFICIENTE EN TABLAS GRANDES)
+   * Si necesitas listar frecuentemente, considera un mejor patrón de acceso.
+   * @returns Lista de todas las pantallas de bienvenida
    */
   async getAll(): Promise<WelcomeScreenRecord[]> {
-    try {
-      const db = getDB();
-      const params = {
-        TableName: process.env.DYNAMODB_TABLE || '',
-        IndexName: 'sk-index', // Asegúrate de que este índice exista en DynamoDB
-        KeyConditionExpression: 'sk = :sk',
-        ExpressionAttributeValues: {
-          ':sk': 'WELCOME_SCREEN'
-        }
-      };
+     console.warn('[WelcomeScreenModel] getAll() está usando Scan, puede ser ineficiente.');
+     // Implementación simple con Scan (no recomendada para producción a gran escala)
+     // Deberías filtrar por un atributo común si es posible o replantear la necesidad.
+     /*
+     const command = new ScanCommand({
+       TableName: this.tableName,
+       // Podrías añadir un FilterExpression si buscas un tipo específico si 'sk' ya no existe
+       // FilterExpression: "attribute_exists(researchId)" // Ejemplo simple
+     });
 
-      const result = await db.query(params).promise();
-      
-      if (!result.Items || result.Items.length === 0) {
-        return [];
-      }
-
-      return result.Items.map(item => ({
-        id: item.id,
-        researchId: item.id,
-        createdAt: item.createdAt,
-        updatedAt: item.updatedAt,
-        isEnabled: item.isEnabled,
-        title: item.title,
-        message: item.message,
-        startButtonText: item.startButtonText
-      }));
-    } catch (error) {
-      console.error('Error en welcomeScreenModel.getAll:', error);
-      throw error;
-    }
+     try {
+       const result = await this.docClient.send(command);
+       const items = result.Items || [];
+       
+       return items.map((item: any): WelcomeScreenRecord => ({ // Especificar tipo para item
+         id: item.id,
+         researchId: item.researchId,
+         isEnabled: item.isEnabled,
+         title: item.title,
+         message: item.message,
+         startButtonText: item.startButtonText,
+         metadata: typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata || {},
+         createdAt: new Date(item.createdAt),
+         updatedAt: new Date(item.updatedAt)
+       }));
+     } catch (error) {
+       console.error('Error en WelcomeScreenModel.getAll (Scan):', error);
+       throw new Error('Error al obtener todas las pantallas de bienvenida');
+     }
+     */
+     // Devolver array vacío temporalmente hasta definir mejor el caso de uso
+     return []; 
   }
 }
 
 // Exportar una instancia única del modelo
-export const welcomeScreenModel = new WelcomeScreenModel();
-
-// Función helper para obtener la instancia de DynamoDB
-const getDB = (): DynamoDB.DocumentClient => {
-  const options: DynamoDB.DocumentClient.DocumentClientOptions & { region?: string; endpoint?: string } = {};
-  
-  // Para entornos de desarrollo local
-  if (process.env.IS_OFFLINE === 'true') {
-    options.region = 'localhost';
-    options.endpoint = 'http://localhost:8000';
-  }
-  
-  return new DynamoDB.DocumentClient(options);
-}; 
+export const welcomeScreenModel = new WelcomeScreenModel(); 

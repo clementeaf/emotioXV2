@@ -130,8 +130,11 @@ export class WelcomeScreenController {
 
       console.log(`Actualizando welcome screen con ID: ${screenId} para la investigación: ${researchId}`);
       
-      // Llamar directamente al servicio de actualización con el screenId
-      const updatedScreen = await welcomeScreenService.update(screenId, screenData, userId);
+      // Llamar al servicio pasando ambos IDs para asegurar la pertenencia
+      // Asumimos que existe una función `updateForResearch` o similar en el servicio
+      // que acepta researchId, screenId, data y userId.
+      // Si no existe, habrá que crearla o modificar la existente `update`.
+      const updatedScreen = await welcomeScreenService.updateForResearch(researchId, screenId, screenData, userId);
         
       return createResponse(200, {
         message: 'Pantalla de bienvenida actualizada exitosamente',

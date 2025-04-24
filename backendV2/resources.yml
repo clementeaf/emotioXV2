@@ -1,0 +1,262 @@
+# Bucket S3 para almacenamiento
+StorageBucket:
+  Type: AWS::S3::Bucket
+  Properties:
+    BucketName: ${self:provider.environment.S3_BUCKET_NAME}
+    CorsConfiguration:
+      CorsRules:
+        - AllowedHeaders:
+            - \'*\'
+          AllowedMethods:
+            - GET
+            - PUT
+            - POST
+            - DELETE
+            - HEAD
+          AllowedOrigins:
+            - \'*\'
+          MaxAge: 3000
+    PublicAccessBlockConfiguration:
+      BlockPublicAcls: false
+      BlockPublicPolicy: false
+      IgnorePublicAcls: false
+      RestrictPublicBuckets: false
+
+# Tabla de usuarios
+UsersTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    TableName: ${self:provider.environment.USER_TABLE}
+    BillingMode: PAY_PER_REQUEST
+    AttributeDefinitions:
+      - AttributeName: id
+        AttributeType: S
+      - AttributeName: email
+        AttributeType: S
+    KeySchema:
+      - AttributeName: id
+        KeyType: HASH
+    GlobalSecondaryIndexes:
+      - IndexName: EmailIndex
+        KeySchema:
+          - AttributeName: email
+            KeyType: HASH
+        Projection:
+          ProjectionType: ALL
+    PointInTimeRecoverySpecification:
+      PointInTimeRecoveryEnabled: true
+    SSESpecification:
+      SSEEnabled: true
+
+# Tabla principal DynamoDB
+DynamoDBTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    TableName: ${self:provider.environment.DYNAMODB_TABLE}
+    BillingMode: PAY_PER_REQUEST
+    AttributeDefinitions:
+      - AttributeName: id
+        AttributeType: S
+      - AttributeName: sk
+        AttributeType: S
+      # Asegúrate de definir TODOS los atributos usados como claves en la tabla O en CUALQUIER GSI
+      - AttributeName: userId 
+        AttributeType: S 
+      - AttributeName: researchId
+        AttributeType: S
+      - AttributeName: EntityType 
+        AttributeType: S
+    KeySchema:
+      - AttributeName: id
+        KeyType: HASH
+      - AttributeName: sk
+        KeyType: RANGE
+    GlobalSecondaryIndexes: # Definir EXACTAMENTE los índices existentes
+      - IndexName: userId-index
+        KeySchema:
+          - AttributeName: userId # Clave del índice
+            KeyType: HASH
+        Projection:
+          ProjectionType: ALL # O el tipo de proyección que tenga el índice existente
+          
+      # OJO: Tienes dos índices basados en researchId. Asegúrate de que ambos estén definidos si existen.
+      - IndexName: researchId-index # Este parece existir en tu tabla
+        KeySchema:
+          - AttributeName: researchId # Clave del índice
+            KeyType: HASH
+        Projection:
+          ProjectionType: ALL # O el tipo de proyección que tenga el índice existente
+          
+      - IndexName: EntityTypeSkIndex # Este parece existir en tu tabla
+        KeySchema:
+          - AttributeName: EntityType # Clave de partición del índice
+            KeyType: HASH
+          - AttributeName: sk # Clave de ordenación del índice (si la tiene)
+            KeyType: RANGE 
+        Projection:
+          ProjectionType: ALL # O el tipo de proyección que tenga el índice existente
+          
+      - IndexName: ResearchIdIndex # El que necesitábamos para la búsqueda
+        KeySchema:
+          - AttributeName: researchId # Clave del índice
+            KeyType: HASH
+        Projection:
+          ProjectionType: ALL # O el tipo de proyección que tenga el índice existente
+          
+    PointInTimeRecoverySpecification:
+      PointInTimeRecoveryEnabled: true
+    SSESpecification:
+      SSEEnabled: true
+    
+# Tabla EyeTracking Recruit Config
+EyeTrackingRecruitConfigTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    TableName: ${self:provider.environment.EYETRACKING_RECRUIT_CONFIG_TABLE}
+    BillingMode: PAY_PER_REQUEST
+    AttributeDefinitions:
+      - AttributeName: PK
+        AttributeType: S
+      - AttributeName: SK
+        AttributeType: S
+      - AttributeName: GSI1PK
+        AttributeType: S
+      - AttributeName: GSI1SK
+        AttributeType: S
+    KeySchema:
+      - AttributeName: PK
+        KeyType: HASH
+      - AttributeName: SK
+        KeyType: RANGE
+    GlobalSecondaryIndexes:
+      - IndexName: GSI1
+        KeySchema:
+          - AttributeName: GSI1PK
+            KeyType: HASH
+          - AttributeName: GSI1SK
+            KeyType: RANGE
+        Projection:
+          ProjectionType: ALL
+    PointInTimeRecoverySpecification:
+      PointInTimeRecoveryEnabled: true
+    SSESpecification:
+      SSEEnabled: true
+
+# Tabla EyeTracking Recruit Participant
+EyeTrackingRecruitParticipantTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    TableName: ${self:provider.environment.EYETRACKING_RECRUIT_PARTICIPANT_TABLE}
+    BillingMode: PAY_PER_REQUEST
+    AttributeDefinitions:
+      - AttributeName: PK
+        AttributeType: S
+      - AttributeName: SK
+        AttributeType: S
+      - AttributeName: GSI1PK
+        AttributeType: S
+      - AttributeName: GSI1SK
+        AttributeType: S
+      - AttributeName: GSI2PK
+        AttributeType: S
+      - AttributeName: GSI2SK
+        AttributeType: S
+    KeySchema:
+      - AttributeName: PK
+        KeyType: HASH
+      - AttributeName: SK
+        KeyType: RANGE
+    GlobalSecondaryIndexes:
+      - IndexName: GSI1
+        KeySchema:
+          - AttributeName: GSI1PK
+            KeyType: HASH
+          - AttributeName: GSI1SK
+            KeyType: RANGE
+        Projection:
+          ProjectionType: ALL
+      - IndexName: GSI2
+        KeySchema:
+          - AttributeName: GSI2PK
+            KeyType: HASH
+          - AttributeName: GSI2SK
+            KeyType: RANGE
+        Projection:
+          ProjectionType: ALL
+    PointInTimeRecoverySpecification:
+      PointInTimeRecoveryEnabled: true
+    SSESpecification:
+      SSEEnabled: true
+
+# Tabla Recruitment Link
+RecruitmentLinkTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    TableName: ${self:provider.environment.RECRUITMENT_LINK_TABLE}
+    BillingMode: PAY_PER_REQUEST
+    AttributeDefinitions:
+      - AttributeName: PK
+        AttributeType: S
+      - AttributeName: SK
+        AttributeType: S
+      - AttributeName: GSI1PK
+        AttributeType: S
+      - AttributeName: GSI1SK
+        AttributeType: S
+      - AttributeName: token
+        AttributeType: S
+    KeySchema:
+      - AttributeName: PK
+        KeyType: HASH
+      - AttributeName: SK
+        KeyType: RANGE
+    GlobalSecondaryIndexes:
+      - IndexName: GSI1
+        KeySchema:
+          - AttributeName: GSI1PK
+            KeyType: HASH
+          - AttributeName: GSI1SK
+            KeyType: RANGE
+        Projection:
+          ProjectionType: ALL
+      - IndexName: TokenIndex
+        KeySchema:
+          - AttributeName: token
+            KeyType: HASH
+        Projection:
+          ProjectionType: ALL
+    PointInTimeRecoverySpecification:
+      PointInTimeRecoveryEnabled: true
+    SSESpecification:
+      SSEEnabled: true
+
+# Tabla de participantes
+ParticipantTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    TableName: ${self:provider.environment.PARTICIPANT_TABLE}
+    BillingMode: PAY_PER_REQUEST
+    AttributeDefinitions:
+      - AttributeName: id
+        AttributeType: S
+      - AttributeName: email
+        AttributeType: S
+    KeySchema:
+      - AttributeName: id
+        KeyType: HASH
+    GlobalSecondaryIndexes:
+      - IndexName: EmailIndex
+        KeySchema:
+          - AttributeName: email
+            KeyType: HASH
+        Projection:
+          ProjectionType: ALL
+    PointInTimeRecoverySpecification:
+      PointInTimeRecoveryEnabled: true
+    SSESpecification:
+      SSEEnabled: true
+    StreamSpecification:
+      StreamViewType: NEW_AND_OLD_IMAGES
+
+# --- Fin de las definiciones de Recursos --- 
+# La sección Outputs se movió de nuevo a serverless.yml 

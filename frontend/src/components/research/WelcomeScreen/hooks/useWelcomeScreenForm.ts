@@ -48,6 +48,13 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
 
         const response: WelcomeScreenData | null = await welcomeScreenService.getByResearchId(actualResearchId);
 
+        // ----> LOG DE DEPURACIÓN <----
+        console.log('[DEBUG] Datos recibidos de getByResearchId:', response);
+        if (response) {
+          console.log(`[DEBUG] ID Recibido: ${response.id}, Research ID Recibido: ${response.researchId}`);
+        }
+        // ---------------------------
+
         if (response && response.id) {
           console.log('Fetched existing data:', response);
           const formattedResponse: WelcomeScreenData = {

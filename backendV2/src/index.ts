@@ -9,6 +9,7 @@ import {
   Context
 } from 'aws-lambda';
 import { APIGatewayEventWebsocketRequestContext } from './types/websocket';
+import { ROUTE_DEFINITIONS } from './routeDefinitions'; // Importar definiciones de ruta
 
 // Definición del tipo de conexión
 type ConnectionType = 'http' | 'websocket';
@@ -170,14 +171,14 @@ async function handleWebsocketRequest(
   }
 }
 
-// Manejo de solicitudes HTTP
+// Manejo de solicitudes HTTP (Refactorizado)
 async function handleHttpRequest(
   event: APIGatewayProxyEvent,
   context: Context
 ): Promise<APIGatewayProxyResult> {
   // Configura headers CORS por defecto
   const headers = {
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': '*' /* Considera restringir esto en producción */,
     'Access-Control-Allow-Credentials': true,
     'Content-Type': 'application/json',
   };
@@ -188,44 +189,19 @@ async function handleHttpRequest(
       statusCode: 200,
       headers: {
         ...headers,
-        'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE,PATCH',
-        'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Requested-With',
+        'Access-Control-Allow-Methods': 'GET, PUT, POST, DELETE, PATCH, OPTIONS' /* Incluir OPTIONS */,
+        'Access-Control-Allow-Headers': 'Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token, X-Requested-With' /* Revisar si se necesitan más */,
       },
       body: '',
     };
   }
 
   try {
-    // Extrae el path para determinar el controlador
     const path = event.path || '';
     let controllerType: string | null = null;
 
-    // Mapeo de rutas - DE MÁS ESPECÍFICO A MENOS ESPECÍFICO
-    // Patrón para rutas de welcome screen (con o sin ID específico)
-    const welcomeScreenPattern = /^\/research\/[^\/]+\/welcome-screen(\/[^\/]+)?$/;
-
-    if (path.startsWith('/auth')) {
-      controllerType = 'auth';
-    } else if (welcomeScreenPattern.test(path)) { // Usar regex para ambas rutas de welcome screen
-      controllerType = 'welcome-screen';
-    } else if (path.includes('/thank-you-screen')) {
-      controllerType = 'thank-you-screen';
-    } else if (path.includes('/eye-tracking-recruit')) {
-      controllerType = 'eye-tracking-recruit';
-    } else if (path.includes('/eye-tracking')) {
-      controllerType = 'eye-tracking';
-    } else if (path.includes('/smart-voc')) {
-      controllerType = 'smart-voc';
-    } else if (path.includes('/cognitive-task')) {
-      controllerType = 'cognitive-task';
-    } else if (path.startsWith('/research')) { // Ruta base de research (si no coincide con las anteriores)
-      controllerType = 'research';
-    } else if (path.startsWith('/s3')) {
-      controllerType = 's3';
-    } else if (path.startsWith('/participants')) {
-      controllerType = 'participants';
-    } else if (path === '/') {
-      // Ruta principal/health check
+    // Manejo especial para la ruta raíz
+    if (path === '/') {
       return {
         statusCode: 200,
         headers,
@@ -236,6 +212,15 @@ async function handleHttpRequest(
           timestamp: new Date().toISOString()
         }),
       };
+    }
+
+    // Buscar el controlador correspondiente en las definiciones de ruta
+    for (const route of ROUTE_DEFINITIONS) {
+      if (route.pathPattern.test(path)) {
+        controllerType = route.controllerType;
+        log.info(`Ruta encontrada: ${path} -> Controlador: ${controllerType}`);
+        break; // Detenerse en la primera coincidencia
+      }
     }
 
     // Si no se encontró un controlador adecuado
@@ -251,15 +236,20 @@ async function handleHttpRequest(
     // Carga dinámica del controlador adecuado (lazy loading)
     const controller = await getHandler(controllerType);
     if (!controller) {
+      // Este caso no debería ocurrir si controllerType se encontró en ROUTE_DEFINITIONS
+      // y getHandler está actualizado, pero es bueno tener un fallback.
+      log.error(`Error interno: Controlador para ${controllerType} no pudo ser cargado por getHandler.`);
       return {
-        statusCode: 501,
+        statusCode: 500, // Error interno del servidor
         headers,
-        body: JSON.stringify({ message: `Controlador no implementado: ${controllerType}` }),
+        body: JSON.stringify({ message: `Error interno al cargar el controlador: ${controllerType}` }),
       };
     }
 
     // Ejecuta el controlador con los parámetros adecuados
-    return await controller(event, context);
+    // Asumiendo que cada controlador exportado maneja (event, context)
+    return await controller(event, context); 
+
   } catch (error) {
     log.error(`Error en HTTP handler: ${error}`);
     
