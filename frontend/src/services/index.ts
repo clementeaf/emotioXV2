@@ -4,7 +4,7 @@
  */
 
 // Servicios de API
-export { default as apiClient } from '../config/api-client';
+export { apiClient } from '../config/api-client';
 
 // Servicios de autenticación y usuario
 export { default as authService } from './authService';

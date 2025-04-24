@@ -1,5 +1,4 @@
-import { API_ENDPOINTS, API_HTTP_ENDPOINT, API_WEBSOCKET_ENDPOINT } from '@/api/endpoints';
-import routes from '@/routes';
+import { API_HTTP_ENDPOINT } from '@/api/endpoints';
 
 // Estructura para welcome screen
 interface WelcomeScreenEndpoints {
@@ -121,17 +120,15 @@ const API_CONFIG = {
       UPDATE_STAGE: '/research/{id}/stage',
     },
     
-    // Pantallas de bienvenida - USAR RUTAS JERÁRQUICAS
+    // Pantallas de bienvenida - RUTAS ESPECÍFICAS POR OPERACIÓN
     welcomeScreen: {
-      // Todas las operaciones (GET, POST, PUT, DELETE) van a la misma ruta base
-      // lib/api.ts deberá reemplazar {researchId}
-      BASE_PATH: '/research/{researchId}/welcome-screen',
-      // Mantener estructura anterior por compatibilidad con lib/api.ts, pero apuntando a la ruta correcta
+      // Ruta para GET por researchId y CREATE
       GET_BY_RESEARCH: '/research/{researchId}/welcome-screen',
-      GET: '/research/{researchId}/welcome-screen', // GET directo al form no aplica, pero se deja por si acaso
       CREATE: '/research/{researchId}/welcome-screen',
-      UPDATE: '/research/{researchId}/welcome-screen',
-      DELETE: '/research/{researchId}/welcome-screen',
+      // Ruta para UPDATE y DELETE específicos (y GET por screenId si existiera)
+      UPDATE: '/research/{researchId}/welcome-screen/{screenId}',
+      DELETE: '/research/{researchId}/welcome-screen/{screenId}',
+      GET: '/research/{researchId}/welcome-screen/{screenId}',
     },
     
     // Pantallas de agradecimiento - USAR RUTAS JERÁRQUICAS

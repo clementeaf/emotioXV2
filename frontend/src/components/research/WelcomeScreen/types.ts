@@ -7,12 +7,18 @@ export interface WelcomeScreenMetadata {
 export interface WelcomeScreenData {
   id?: string;
   researchId: string;
-  isEnabled: boolean;
+  isEnabled?: boolean;
   title: string;
   message: string;
   startButtonText: string;
   subtitle?: string;
   logoUrl?: string;
+  backgroundImageUrl?: string;
+  backgroundColor?: string;
+  textColor?: string;
+  theme?: string;
+  disclaimer?: string;
+  customCss?: string;
   createdAt?: string;
   updatedAt?: string;
   metadata?: WelcomeScreenMetadata;
@@ -26,8 +32,8 @@ export interface ErrorModalData {
 
 export interface UseWelcomeScreenFormResult {
   formData: WelcomeScreenData;
-  setFormData: (data: WelcomeScreenData) => void;
-  validationErrors: { [key: string]: string };
+  setFormData: React.Dispatch<React.SetStateAction<WelcomeScreenData>>;
+  validationErrors: ValidationErrors;
   isLoading: boolean;
   isSaving: boolean;
   existingScreen: WelcomeScreenData | null;
@@ -46,7 +52,14 @@ export interface ValidationErrors {
   title?: string;
   message?: string;
   startButtonText?: string;
-  // Allow for other potential validation keys if needed
+  subtitle?: string;
+  logoUrl?: string;
+  backgroundImageUrl?: string;
+  backgroundColor?: string;
+  textColor?: string;
+  theme?: string;
+  disclaimer?: string;
+  customCss?: string;
   [key: string]: string | undefined;
 }
 

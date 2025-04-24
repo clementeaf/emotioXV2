@@ -97,16 +97,26 @@ export class WelcomeScreenController {
   }
 
   /**
-   * Actualiza una pantalla de bienvenida de una investigación
-   * @param event Evento de API Gateway
+   * Actualiza una pantalla de bienvenida específica por su ID
+   * @param event Evento de API Gateway (con screenId en pathParameters)
    * @returns Respuesta HTTP con la pantalla de bienvenida actualizada
    */
   async updateWelcomeScreen(event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
     try {
-      console.log('Iniciando updateWelcomeScreen...');
+      console.log('Iniciando updateWelcomeScreen por screenId...');
       
-      // Validaciones
-      const validationError = validateUserId(userId);
+      // Validar screenId por separado primero
+      const screenId = event.pathParameters?.screenId;
+      if (!screenId) {
+        return errorResponse('Se requiere screenId en la ruta', 400);
+      }
+      
+      // Validaciones restantes
+      const validationError = validateMultiple(
+        validateUserId(userId),
+        validateResearchId(event.pathParameters?.researchId)
+        // Ya no se valida screenId aquí
+      );
       if (validationError) return validationError;
       
       // Parsear y validar el cuerpo de la petición
@@ -115,36 +125,19 @@ export class WelcomeScreenController {
       
       const screenData = bodyResult.data;
       
-      // Extraer y validar el ID de investigación
-      const researchResult = extractResearchId(event, screenData);
-      if ('statusCode' in researchResult) return researchResult;
-      
-      const { researchId } = researchResult;
+      // Extraer researchId (ya validado)
+      const researchId = event.pathParameters!.researchId!;
 
-      console.log(`Actualizando welcome screen para la investigación: ${researchId}`);
+      console.log(`Actualizando welcome screen con ID: ${screenId} para la investigación: ${researchId}`);
       
-      // Buscar la pantalla existente
-      const existingScreen = await welcomeScreenService.getByResearchId(researchId);
-      
-      if (!existingScreen) {
-        // Si no existe, crearla
-        console.log(`No existe welcome screen, creando para la investigación: ${researchId}`);
-        const welcomeScreen = await welcomeScreenService.create(screenData, researchId, userId);
+      // Llamar directamente al servicio de actualización con el screenId
+      const updatedScreen = await welcomeScreenService.update(screenId, screenData, userId);
         
-        return createResponse(201, {
-          message: 'Pantalla de bienvenida creada exitosamente',
-          data: welcomeScreen
-        });
-      } else {
-        // Si existe, actualizarla
-        console.log(`Actualizando welcome screen existente para la investigación: ${researchId}`);
-        const updatedScreen = await welcomeScreenService.update(existingScreen.id, screenData, userId);
-        
-        return createResponse(200, {
-          message: 'Pantalla de bienvenida actualizada exitosamente',
-          data: updatedScreen
-        });
-      }
+      return createResponse(200, {
+        message: 'Pantalla de bienvenida actualizada exitosamente',
+        data: updatedScreen
+      });
+
     } catch (error) {
       console.error('Error en updateWelcomeScreen:', error);
       return this.handleError(error);
@@ -152,40 +145,39 @@ export class WelcomeScreenController {
   }
 
   /**
-   * Elimina una pantalla de bienvenida
-   * @param event Evento de API Gateway
+   * Elimina una pantalla de bienvenida específica por su ID
+   * @param event Evento de API Gateway (con screenId en pathParameters)
    * @returns Respuesta HTTP indicando el resultado de la operación
    */
   async deleteWelcomeScreen(event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
     try {
-      console.log('Iniciando deleteWelcomeScreen...');
+      console.log('Iniciando deleteWelcomeScreen por screenId...');
       
-      // Validaciones múltiples
+      // Validar screenId por separado primero
+      const screenId = event.pathParameters?.screenId;
+      if (!screenId) {
+        return errorResponse('Se requiere screenId en la ruta', 400);
+      }
+
+      // Validaciones múltiples restantes
       const validationError = validateMultiple(
         validateUserId(userId),
         validateResearchId(event.pathParameters?.researchId)
+        // Ya no se valida screenId aquí
       );
       if (validationError) return validationError;
       
-      // Extraer y validar el ID de investigación (sabemos que es válido por la validación anterior)
+      // Extraer researchId (ya validado)
       const researchId = event.pathParameters!.researchId!;
-      
-      // Verificar si existe la pantalla de bienvenida para esta investigación
-      const existingScreen = await welcomeScreenService.getByResearchId(researchId);
-      
-      if (!existingScreen) {
-        console.log(`No se encontró welcome screen para la investigación: ${researchId}`);
-        return errorResponse('No se encontró la pantalla de bienvenida para eliminar', 404);
-      }
-      
-      // Eliminar la pantalla de bienvenida
-      console.log(`Eliminando welcome screen para la investigación: ${researchId}`);
-      await welcomeScreenService.delete(existingScreen.id, userId);
+            
+      // Eliminar directamente la pantalla de bienvenida por su ID
+      console.log(`Eliminando welcome screen con ID: ${screenId} para la investigación: ${researchId}`);
+      await welcomeScreenService.delete(screenId, userId);
       console.log('Welcome screen eliminado correctamente');
       
-      return createResponse(200, {
-        message: 'Pantalla de bienvenida eliminada exitosamente'
-      });
+      // Usar 204 No Content para DELETE exitoso
+      return createResponse(204, null);
+
     } catch (error) {
       console.error('Error en deleteWelcomeScreen:', error);
       return this.handleError(error);
@@ -229,15 +221,21 @@ export class WelcomeScreenController {
 // Instanciar el controlador
 const controller = new WelcomeScreenController();
 
-// Definir el mapa de rutas para WelcomeScreen
+// Definir el mapa de rutas para WelcomeScreen ASEGURANDO QUE PUT SOLO ESTÉ EN LA RUTA ESPECÍFICA
 const welcomeScreenRouteMap: RouteMap = {
-  // Ruta jerárquica para welcome-screen asociada a investigación
+  // Ruta base para OBTENER por researchId y CREAR
   '/research/{researchId}/welcome-screen': {
     'GET': controller.getWelcomeScreen.bind(controller),
     'POST': controller.createWelcomeScreen.bind(controller),
-    'PUT': controller.updateWelcomeScreen.bind(controller),
-    'DELETE': controller.deleteWelcomeScreen.bind(controller)
+    // PUT NO DEBE ESTAR AQUÍ
+    // DELETE tampoco debería estar aquí si se borra por screenId
   },
+  // Ruta específica con screenId para ACTUALIZAR y ELIMINAR
+  '/research/{researchId}/welcome-screen/{screenId}': {
+    'PUT': controller.updateWelcomeScreen.bind(controller),
+    'DELETE': controller.deleteWelcomeScreen.bind(controller),
+    // GET específico por screenId podría ir aquí si se necesita
+  }
 };
 
 /**

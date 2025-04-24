@@ -1,25 +1,20 @@
-import { API_HTTP_ENDPOINT, API_WEBSOCKET_ENDPOINT, getApiUrl } from '@/api/endpoints';
-import endpointsJson from './endpoints.json';
+import { API_HTTP_ENDPOINT, API_WEBSOCKET_ENDPOINT } from '@/api/endpoints';
+// Eliminar la importación de endpoints.json
+// import endpointsJson from './endpoints.json';
+
+// Importar API_CONFIG para acceder a la estructura de endpoints
+import API_CONFIG from './api.config'; 
 
 /**
- * Tipo que representa la estructura del archivo endpoints.json
+ * Tipo que representa la estructura de configuración de endpoints (simplificado)
  */
-export interface EndpointsConfig {
-  apiUrl: string;
-  websocketUrl: string;
-  endpoints: {
-    [category: string]: {
-      [operation: string]: string;
-    };
-  };
-  _original?: any;
-  _cors_enabled?: boolean;
-}
+// Ya no necesitamos EndpointsConfig basada en endpoints.json
+// export interface EndpointsConfig { ... }
 
 /**
- * Categorías principales de endpoints
+ * Categorías principales de endpoints, ahora inferidas de API_CONFIG
  */
-export type ApiCategory = keyof typeof endpointsJson.endpoints;
+export type ApiCategory = keyof typeof API_CONFIG.endpoints;
 
 /**
  * Mapeo de alias para endpoints que pueden tener diferentes nombres
@@ -30,17 +25,25 @@ const endpointAliases: Record<string, string> = {
   'cognitiveTask.create': 'cognitiveTask.CREATE',
   'cognitiveTask.update': 'cognitiveTask.UPDATE',
   'cognitiveTask.delete': 'cognitiveTask.DELETE',
+  // Mantener alias para welcomeScreen si se usan en el servicio
+  'welcomeScreen.getByResearch': 'welcomeScreen.GET_BY_RESEARCH',
+  'welcomeScreen.get': 'welcomeScreen.GET',
+  'welcomeScreen.create': 'welcomeScreen.CREATE',
+  'welcomeScreen.update': 'welcomeScreen.UPDATE',
+  'welcomeScreen.delete': 'welcomeScreen.DELETE',
 };
 
 /**
- * Clase para manejar los endpoints de la API dinámicamente
+ * Clase para manejar los endpoints de la API dinámicamente usando API_CONFIG
  */
 export class ApiEndpointManager {
-  private config: EndpointsConfig;
+  // Ya no necesita el config de endpoints.json
+  // private config: EndpointsConfig;
   
-  constructor(config: EndpointsConfig) {
-    this.config = config;
-  }
+  // constructor(config: EndpointsConfig) {
+  //   this.config = config;
+  // }
+  constructor() {}
 
   /**
    * Obtiene el endpoint completo para una categoría y operación específica
@@ -51,85 +54,68 @@ export class ApiEndpointManager {
    */
   public getEndpoint<T extends ApiCategory>(
     category: T, 
-    operation: keyof typeof endpointsJson.endpoints[T], 
+    operation: keyof typeof API_CONFIG.endpoints[T], 
     params?: Record<string, string>
   ): string {
-    // Verificar si existe un alias para este endpoint
+    // Usar API_CONFIG directamente
+    const baseUrl = API_HTTP_ENDPOINT; // Usar la URL correcta importada
+    
+    // Usar alias si existen
     const endpointKey = `${category}.${String(operation)}`;
     const aliasKey = endpointAliases[endpointKey];
-    
-    // Si hay un alias, usar esos valores
     let actualCategory = category;
     let actualOperation = operation;
-    
     if (aliasKey) {
-      console.log(`Usando alias para endpoint: ${endpointKey} -> ${aliasKey}`);
       const [aliasCategory, aliasOp] = aliasKey.split('.');
       actualCategory = aliasCategory as T;
       actualOperation = aliasOp as any;
     }
     
-    // Obtener la URL base y el path específico
-    const baseUrl = this.config.apiUrl;
-    
-    // Acceder de forma segura a los endpoints de la categoría
-    const categoryEndpoints = this.config.endpoints[actualCategory as string] || {};
-    let path = categoryEndpoints[actualOperation as string];
-    
-    // Si no se encuentra el endpoint incluso con el alias, intentar crear la URL basada en las convenciones
+    // Acceder al path desde API_CONFIG
+    const categoryEndpoints = API_CONFIG.endpoints[actualCategory];
+    let path = categoryEndpoints ? (categoryEndpoints as any)[actualOperation as string] : undefined;
+
     if (!path) {
-      console.log(`Endpoint ${category}.${String(operation)} no encontrado en configuración, generando URL dinámica`);
-      
-      // Para tareas cognitivas, construir basados en la convención
-      if (String(category) === 'cognitiveTask') {
-        if (String(operation) === 'getByResearch') {
-          path = `/research/{researchId}/cognitive-task`;
-          console.log(`Construyendo URL dinámica para cognitiveTask.getByResearch: ${path}`);
-        } else if (String(operation) === 'get') {
-          path = `/cognitive-task/{id}`;
-        } else if (String(operation) === 'create') {
-          path = `/cognitive-task`;
-        } else if (String(operation) === 'update') {
-          path = `/cognitive-task/{id}`;
-        } else if (String(operation) === 'delete') {
-          path = `/cognitive-task/{id}`;
-        } else if (String(operation) === 'createOrUpdate') {
-          path = `/research/{researchId}/cognitive-task`;
-        }
-      }
-      
-      // Si aún no hay path, lanzar error
-      if (!path) {
-        throw new Error(`Endpoint no encontrado: ${category}.${String(operation)}`);
+      // Intentar construir dinámicamente si falta (mantener lógica si es útil)
+      if (String(category) === 'cognitiveTask') { // Ejemplo
+         // ... (lógica de construcción dinámica para cognitiveTask) ...
+          if (String(operation) === 'getByResearch') {
+            path = `/research/{researchId}/cognitive-task`;
+          } else if (String(operation) === 'createOrUpdate') {
+            path = `/research/{researchId}/cognitive-task`;
+          } else {
+             // Podrías tener una convención general, ej: /<category>/<operation>/{id}?
+             // O simplemente lanzar el error:
+            throw new Error(`Endpoint no encontrado y sin lógica dinámica: ${category}.${String(operation)}`);
+          }
+      } else {
+        // Lanzar error si no se encuentra y no hay lógica dinámica
+        throw new Error(`Endpoint no encontrado en API_CONFIG: ${category}.${String(operation)}`);
       }
     }
     
-    // Si hay parámetros, reemplazarlos en la URL
+    // Reemplazar parámetros en el path
     let endpoint = path;
-    
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
-        endpoint = endpoint.replace(`{${key}}`, value);
+        endpoint = endpoint.replace(`{${key}}`, String(value)); // Asegurar que value sea string
       });
     }
     
-    // Si el endpoint es una URL completa, usarla directamente
-    if (endpoint.startsWith('http')) {
-      return endpoint;
+    // Comprobar si todavía hay parámetros sin reemplazar (error)
+    if (/\{[^\/]+\}/.test(endpoint)) {
+        console.error(`Error: Parámetros no reemplazados en la URL final: ${endpoint}. Params recibidos:`, params);
+        throw new Error(`Error al construir la URL: Faltan parámetros para reemplazar en ${path}`);
     }
-    
-    // Si el endpoint comienza con /, es relativo a la base
+
+    // Devolver URL completa
     return endpoint.startsWith('/') ? `${baseUrl}${endpoint}` : `${baseUrl}/${endpoint}`;
   }
   
-  /**
-   * Obtiene todos los endpoints de una categoría
-   * @param category Categoría del endpoint
-   * @returns Objeto con todos los endpoints de la categoría
-   */
-  public getCategory<T extends ApiCategory>(category: T): Record<string, string> {
-    return this.config.endpoints[category as string] || {};
-  }
+  // ... (getCategory - podría necesitar ajuste si se usa) ...
+  // public getCategory<T extends ApiCategory>(category: T): Record<string, string> {
+  //   return API_CONFIG.endpoints[category as string] || {};
+  // }
   
   /**
    * Obtiene la URL base de la API
@@ -156,8 +142,9 @@ export class ApiClient {
     'Accept': 'application/json'
   };
   
-  constructor(endpointManager: ApiEndpointManager) {
-    this.endpointManager = endpointManager;
+  // El constructor ahora solo necesita crear una instancia de ApiEndpointManager
+  constructor() {
+    this.endpointManager = new ApiEndpointManager();
   }
   
   /**
@@ -185,7 +172,6 @@ export class ApiClient {
    * Esta función se llamará antes de cada petición
    */
   private ensureAuthToken(): void {
-    // Solo ejecutar en el cliente, no en el servidor
     if (typeof window === 'undefined') {
       return;
     }
@@ -213,7 +199,7 @@ export class ApiClient {
    */
   public async get<T, P extends ApiCategory>(
     category: P,
-    operation: keyof typeof endpointsJson.endpoints[P],
+    operation: keyof typeof API_CONFIG.endpoints[P], // Usar API_CONFIG para el tipo
     params?: Record<string, string>,
     queryParams?: Record<string, string>
   ): Promise<T> {
@@ -222,6 +208,7 @@ export class ApiClient {
       this.endpointManager.getEndpoint(category, operation, params),
       queryParams
     );
+    console.log(`[API-CLIENT] GET ${url}`); // Log para depurar URL
     
     const response = await fetch(url, {
       method: 'GET',
@@ -241,12 +228,13 @@ export class ApiClient {
    */
   public async post<T, D, P extends ApiCategory>(
     category: P,
-    operation: keyof typeof endpointsJson.endpoints[P],
+    operation: keyof typeof API_CONFIG.endpoints[P], // Usar API_CONFIG para el tipo
     data: D,
     params?: Record<string, string>
   ): Promise<T> {
     this.ensureAuthToken();
     const url = this.endpointManager.getEndpoint(category, operation, params);
+    console.log(`[API-CLIENT] POST ${url}`); // Log para depurar URL
     
     const response = await fetch(url, {
       method: 'POST',
@@ -267,12 +255,13 @@ export class ApiClient {
    */
   public async put<T, D, P extends ApiCategory>(
     category: P,
-    operation: keyof typeof endpointsJson.endpoints[P],
+    operation: keyof typeof API_CONFIG.endpoints[P], // Usar API_CONFIG para el tipo
     data: D,
     params?: Record<string, string>
   ): Promise<T> {
     this.ensureAuthToken();
     const url = this.endpointManager.getEndpoint(category, operation, params);
+    console.log(`[API-CLIENT] PUT ${url}`); // Log para depurar URL
     
     const response = await fetch(url, {
       method: 'PUT',
@@ -288,92 +277,97 @@ export class ApiClient {
    * @param category Categoría del endpoint
    * @param operation Operación dentro de la categoría
    * @param params Parámetros para reemplazar en la URL
-   * @returns Respuesta de la petición
+   * @returns Respuesta de la petición (puede ser void o T dependiendo del handleResponse)
    */
   public async delete<T, P extends ApiCategory>(
     category: P,
-    operation: keyof typeof endpointsJson.endpoints[P],
+    operation: keyof typeof API_CONFIG.endpoints[P], // Usar API_CONFIG para el tipo
     params?: Record<string, string>
   ): Promise<T> {
     this.ensureAuthToken();
     const url = this.endpointManager.getEndpoint(category, operation, params);
+    console.log(`[API-CLIENT] DELETE ${url}`); // Log para depurar URL
     
+    // Preparar headers, eliminando Content-Type si no hay body
+    const headers = { ...this.defaultHeaders };
+    delete headers['Content-Type'];
+
     const response = await fetch(url, {
       method: 'DELETE',
-      headers: this.defaultHeaders
+      headers: headers
     });
     
+    // DELETE exitoso a menudo retorna 204 No Content, handleResponse debe manejarlo
     return this.handleResponse<T>(response);
   }
-  
+
   /**
-   * Construye una URL con parámetros de consulta
-   * @param baseUrl URL base
-   * @param params Parámetros de consulta
-   * @returns URL completa
+   * Construye la URL completa incluyendo query parameters
    */
   private buildUrl(baseUrl: string, params?: Record<string, string>): string {
-    if (!params) {return baseUrl;}
-    
+    if (!params || Object.keys(params).length === 0) {
+      return baseUrl;
+    }
     const url = new URL(baseUrl);
     Object.entries(params).forEach(([key, value]) => {
-      url.searchParams.append(key, value);
+      if (value !== undefined && value !== null) { // Solo añadir si tiene valor
+        url.searchParams.append(key, String(value));
+      }
     });
-    
     return url.toString();
   }
   
   /**
-   * Maneja la respuesta de la petición
-   * @param response Respuesta de fetch
-   * @returns Datos parseados de la respuesta
+   * Maneja la respuesta de la API
    */
   private async handleResponse<T>(response: Response): Promise<T> {
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      throw new ApiError(
-        response.statusText,
-        response.status,
-        errorData
-      );
+    if (response.status === 204) { // Manejar No Content para DELETE
+      return undefined as T; // O null, o un objeto vacío según se necesite
     }
-    
-    // Si la respuesta está vacía, devolver un objeto vacío
-    if (response.status === 204) {
-      return {} as T;
-    }
-    
-    // Intentar parsear la respuesta como JSON
+
+    let data;
     try {
-      return await response.json();
+      data = await response.json();
     } catch (error) {
-      console.error('Error al parsear respuesta JSON:', error);
-      throw new ApiError(
-        'Error al parsear respuesta',
-        response.status,
-        null
-      );
+      // Si no es JSON válido, podría ser un error de texto plano
+      const text = await response.text().catch(() => 'Respuesta no válida');
+      if (!response.ok) {
+        console.error(`[API-CLIENT] Error ${response.status}, Respuesta texto: ${text}`);
+        throw new ApiError(text || `Error ${response.status}`, response.status, text);
+      }
+      // Si es OK pero no JSON (raro para API REST), devolver texto
+      console.warn('[API-CLIENT] Respuesta OK pero no es JSON:', text);
+      return text as unknown as T;
     }
+    
+    if (!response.ok) {
+      console.error(`[API-CLIENT] Error ${response.status}, Respuesta JSON:`, data);
+      // Usar mensaje de error del backend si existe
+      const message = data?.message || data?.error || `Error ${response.status}`;
+      throw new ApiError(message, response.status, data);
+    }
+    
+    // Devolver solo los datos relevantes si la respuesta tiene estructura { data: ... }
+    return data.data || data;
   }
 }
 
 /**
- * Error personalizado para peticiones a la API
+ * Clase de Error personalizada para errores de API
  */
 export class ApiError extends Error {
   public statusCode: number;
   public data: any;
-  
+
   constructor(message: string, statusCode: number, data: any) {
     super(message);
     this.name = 'ApiError';
     this.statusCode = statusCode;
     this.data = data;
+    Object.setPrototypeOf(this, ApiError.prototype);
   }
 }
 
-// Crear instancias singleton
-export const endpointManager = new ApiEndpointManager(endpointsJson as EndpointsConfig);
-export const apiClient = new ApiClient(endpointManager);
-
-export default apiClient; 
+// Crear una instancia única del EndpointManager y del ApiClient
+// Ya no necesitamos pasarle el config de endpoints.json
+export const apiClient = new ApiClient(); 

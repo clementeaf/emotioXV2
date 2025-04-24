@@ -201,9 +201,12 @@ async function handleHttpRequest(
     let controllerType: string | null = null;
 
     // Mapeo de rutas - DE MÁS ESPECÍFICO A MENOS ESPECÍFICO
+    // Patrón para rutas de welcome screen (con o sin ID específico)
+    const welcomeScreenPattern = /^\/research\/[^\/]+\/welcome-screen(\/[^\/]+)?$/;
+
     if (path.startsWith('/auth')) {
       controllerType = 'auth';
-    } else if (path.includes('/welcome-screen')) { // Primero chequear subrutas específicas
+    } else if (welcomeScreenPattern.test(path)) { // Usar regex para ambas rutas de welcome screen
       controllerType = 'welcome-screen';
     } else if (path.includes('/thank-you-screen')) {
       controllerType = 'thank-you-screen';
@@ -215,11 +218,11 @@ async function handleHttpRequest(
       controllerType = 'smart-voc';
     } else if (path.includes('/cognitive-task')) {
       controllerType = 'cognitive-task';
-    } else if (path.startsWith('/research')) { // Luego la ruta base de research
+    } else if (path.startsWith('/research')) { // Ruta base de research (si no coincide con las anteriores)
       controllerType = 'research';
-    } else if (path.startsWith('/s3')) { // Mover S3 después de research
+    } else if (path.startsWith('/s3')) {
       controllerType = 's3';
-    } else if (path.startsWith('/participants')) { // Mover Participants después de research
+    } else if (path.startsWith('/participants')) {
       controllerType = 'participants';
     } else if (path === '/') {
       // Ruta principal/health check

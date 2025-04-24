@@ -1,7 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { welcomeScreenService } from '@/services/welcomeScreen.service';
-import { WelcomeScreenData, ErrorModalData, UseWelcomeScreenFormResult, ValidationErrors } from '../types';
-import { WelcomeScreenFormData } from 'shared/interfaces/welcome-screen.interface';
+import welcomeScreenService from '@/services/welcomeScreenService';
+import {
+  WelcomeScreenData,
+  ErrorModalData,
+  UseWelcomeScreenFormResult,
+  ValidationErrors,
+} from '../types';
 
 // Valor inicial con cadenas vacías para campos de texto
 const INITIAL_FORM_DATA: WelcomeScreenData = {
@@ -31,8 +35,7 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
 
   useEffect(() => {
     const fetchData = async () => {
-      setIsLoading(true); // Iniciar carga
-      // No resetear aquí, esperar a la respuesta
+      setIsLoading(true);
       try {
         if (!actualResearchId) {
           // Si no hay researchId real, no buscar y usar valores iniciales
@@ -43,24 +46,32 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
           return;
         }
 
-        const response = await welcomeScreenService.getByResearchId(actualResearchId);
+        const response: WelcomeScreenData | null = await welcomeScreenService.getByResearchId(actualResearchId);
 
-        if (response && response.id) { // Verificar que la respuesta no sea null y tenga ID
+        if (response && response.id) {
           console.log('Fetched existing data:', response);
           const formattedResponse: WelcomeScreenData = {
             id: response.id,
             researchId: response.researchId,
-            isEnabled: response.isEnabled ?? true, // Valor por defecto si es null/undefined
-            title: response.title ?? '', // Usar '' si es null/undefined
-            message: response.message ?? '', // Usar '' si es null/undefined
-            startButtonText: response.startButtonText ?? '', // Usar '' si es null/undefined
-            createdAt: response.createdAt instanceof Date ? response.createdAt.toISOString() : response.createdAt,
-            updatedAt: response.updatedAt instanceof Date ? response.updatedAt.toISOString() : response.updatedAt,
+            isEnabled: response.isEnabled ?? true,
+            title: response.title ?? '',
+            message: response.message ?? '',
+            startButtonText: response.startButtonText ?? '',
+            subtitle: response.subtitle ?? '',
+            logoUrl: response.logoUrl ?? '',
+            backgroundImageUrl: response.backgroundImageUrl ?? '',
+            backgroundColor: response.backgroundColor ?? '',
+            textColor: response.textColor ?? '',
+            theme: response.theme ?? '',
+            disclaimer: response.disclaimer ?? '',
+            customCss: response.customCss ?? '',
+            createdAt: typeof response.createdAt === 'string' ? response.createdAt : undefined,
+            updatedAt: typeof response.updatedAt === 'string' ? response.updatedAt : undefined,
             metadata: {
               version: response.metadata?.version || '1.0',
-              lastUpdated: response.metadata?.lastUpdated instanceof Date ?
-                response.metadata.lastUpdated.toISOString() :
-                response.metadata?.lastUpdated || new Date().toISOString(),
+              lastUpdated: typeof response.metadata?.lastUpdated === 'string' 
+                ? response.metadata.lastUpdated 
+                : new Date().toISOString(),
               lastModifiedBy: response.metadata?.lastModifiedBy || 'user'
             }
           };
@@ -84,7 +95,7 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
         });
         setModalVisible(true);
       } finally {
-        setIsLoading(false); // Finalizar carga
+        setIsLoading(false);
       }
     };
 
@@ -107,12 +118,17 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
       [field]: value,
       metadata: {
         ...(prev.metadata || INITIAL_FORM_DATA.metadata),
+        version: prev.metadata?.version || '1.0',
         lastUpdated: new Date().toISOString(),
-        lastModifiedBy: 'user'
+        lastModifiedBy: prev.metadata?.lastModifiedBy || 'user'
       }
     }));
     if (validationErrors[field as keyof ValidationErrors]) {
-      setValidationErrors(prev => ({ ...prev, [field]: undefined }));
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field as keyof ValidationErrors];
+        return newErrors;
+      });
     }
   }, [validationErrors]);
 
@@ -129,47 +145,70 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
 
     setIsSaving(true);
     try {
-      const dataToSave: WelcomeScreenFormData = {
-        isEnabled: formData.isEnabled,
-        title: formData.title,
-        message: formData.message,
-        startButtonText: formData.startButtonText,
+      const dataToSubmit = { ...formData };
+
+      let resultRecord: WelcomeScreenData & { id: string; createdAt: string; updatedAt: string };
+
+      if (existingScreen?.id && actualResearchId) {
+        console.log(`[DEBUG] Intentando actualizar:
+          Research ID: ${actualResearchId}
+          Screen ID: ${existingScreen.id}
+          Datos:`, dataToSubmit);
+        
+        console.log(`Llamando a updateForResearch con screenId: ${existingScreen.id}`);
+        const { id, createdAt, updatedAt, researchId: formResearchId, ...updatePayload } = dataToSubmit;
+        resultRecord = await welcomeScreenService.updateForResearch(
+          actualResearchId,
+          existingScreen.id,
+          updatePayload
+        );
+      } else if (actualResearchId) {
+        console.log(`[DEBUG] Intentando crear:
+          Research ID: ${actualResearchId}
+          Datos:`, dataToSubmit);
+        
+        console.log(`Llamando a createForResearch para researchId: ${actualResearchId}`);
+        const { id, createdAt, updatedAt, ...createPayloadBase } = dataToSubmit;
+        const createPayload: WelcomeScreenData = {
+          ...createPayloadBase,
+          researchId: actualResearchId
+        };
+        resultRecord = await welcomeScreenService.createForResearch(
+          actualResearchId,
+          createPayload
+        );
+      } else {
+        throw new Error('No hay researchId válido para guardar.');
+      }
+
+      const formattedResponseData: WelcomeScreenData = {
+        id: resultRecord.id,
+        researchId: resultRecord.researchId,
+        isEnabled: resultRecord.isEnabled ?? true,
+        title: resultRecord.title ?? '',
+        message: resultRecord.message ?? '',
+        startButtonText: resultRecord.startButtonText ?? '',
+        subtitle: resultRecord.subtitle ?? '',
+        logoUrl: resultRecord.logoUrl ?? '',
+        backgroundImageUrl: resultRecord.backgroundImageUrl ?? '',
+        backgroundColor: resultRecord.backgroundColor ?? '',
+        textColor: resultRecord.textColor ?? '',
+        theme: resultRecord.theme ?? '',
+        disclaimer: resultRecord.disclaimer ?? '',
+        customCss: resultRecord.customCss ?? '',
+        createdAt: typeof resultRecord.createdAt === 'string' ? resultRecord.createdAt : undefined,
+        updatedAt: typeof resultRecord.updatedAt === 'string' ? resultRecord.updatedAt : undefined,
         metadata: {
-          version: formData.metadata?.version || '1.0',
-          lastUpdated: new Date(),
-          lastModifiedBy: formData.metadata?.lastModifiedBy || 'user'
+          version: resultRecord.metadata?.version || '1.0',
+          lastUpdated: typeof resultRecord.metadata?.lastUpdated === 'string' 
+            ? resultRecord.metadata.lastUpdated 
+            : new Date().toISOString(),
+          lastModifiedBy: resultRecord.metadata?.lastModifiedBy || 'user'
         }
       };
 
-      const payload = {
-        ...dataToSave,
-        researchId: actualResearchId,
-        id: existingScreen?.id
-      };
-
-      console.log('Saving welcome screen with payload:', payload);
-      const updatedData = await welcomeScreenService.save(payload);
-
-      const formattedUpdatedData: WelcomeScreenData = {
-        id: updatedData.id,
-        researchId: updatedData.researchId,
-        isEnabled: updatedData.isEnabled ?? true,
-        title: updatedData.title ?? '',
-        message: updatedData.message ?? '',
-        startButtonText: updatedData.startButtonText ?? '',
-        createdAt: updatedData.createdAt instanceof Date ? updatedData.createdAt.toISOString() : updatedData.createdAt,
-        updatedAt: updatedData.updatedAt instanceof Date ? updatedData.updatedAt.toISOString() : updatedData.updatedAt,
-        metadata: {
-          version: updatedData.metadata?.version || '1.0',
-          lastUpdated: updatedData.metadata?.lastUpdated instanceof Date ?
-            updatedData.metadata.lastUpdated.toISOString() :
-            updatedData.metadata?.lastUpdated || new Date().toISOString(),
-          lastModifiedBy: updatedData.metadata?.lastModifiedBy || 'user'
-        }
-      };
-
-      setFormData(formattedUpdatedData);
-      setExistingScreen(formattedUpdatedData);
+      setFormData(formattedResponseData);
+      setExistingScreen(formattedResponseData);
 
       setModalError({
         title: 'Éxito',

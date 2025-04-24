@@ -1,4 +1,4 @@
-import { apiClient } from '../config/api-client';
+import { apiClient, ApiError } from '../config/api-client';
 
 /**
  * Interfaz para los datos de la pantalla de bienvenida
@@ -33,15 +33,21 @@ export interface WelcomeScreenRecord extends WelcomeScreenData {
  */
 export const welcomeScreenService = {
   /**
-   * Obtiene una pantalla de bienvenida por su ID
-   * @param id ID de la pantalla
-   * @returns Pantalla de bienvenida
+   * Obtiene una pantalla de bienvenida por su ID específico y el de su investigación.
+   * @param researchId ID de la investigación padre.
+   * @param screenId ID específico de la pantalla.
+   * @returns Pantalla de bienvenida.
    */
-  async getById(id: string): Promise<WelcomeScreenRecord> {
+  async getById(researchId: string, screenId: string): Promise<WelcomeScreenRecord> {
     try {
-      return await apiClient.get<WelcomeScreenRecord, 'welcomeScreen'>('welcomeScreen', 'get', { id });
+      // Usar 'GET' (mayúsculas) como se define en API_CONFIG
+      return await apiClient.get<WelcomeScreenRecord, 'welcomeScreen'>(
+        'welcomeScreen', 
+        'GET', // Corregido
+        { researchId, screenId } 
+      );
     } catch (error) {
-      console.error(`Error al obtener pantalla de bienvenida ${id}:`, error);
+      console.error(`Error al obtener pantalla de bienvenida ${screenId} para investigación ${researchId}:`, error);
       throw error;
     }
   },
@@ -51,23 +57,41 @@ export const welcomeScreenService = {
    * @param researchId ID de la investigación
    * @returns Pantalla de bienvenida
    */
-  async getByResearchId(researchId: string): Promise<WelcomeScreenRecord> {
+  async getByResearchId(researchId: string): Promise<WelcomeScreenRecord | null> {
     try {
-      return await apiClient.get<WelcomeScreenRecord, 'welcomeScreen'>('welcomeScreen', 'getByResearch', { researchId });
-    } catch (error) {
+      // Usar 'GET_BY_RESEARCH' (mayúsculas)
+      const result = await apiClient.get<WelcomeScreenRecord, 'welcomeScreen'>(
+        'welcomeScreen', 
+        'GET_BY_RESEARCH', // Corregido
+        { researchId } 
+      );
+      return result;
+    } catch (error: any) {
+      // Usar ApiError importado
+      if (error instanceof ApiError && error.statusCode === 404) {
+         console.log(`[Service] No se encontró pantalla para investigación ${researchId}, devolviendo null.`);
+        return null;
+      }
       console.error(`Error al obtener pantalla de bienvenida para investigación ${researchId}:`, error);
       throw error;
     }
   },
 
   /**
-   * Crea una nueva pantalla de bienvenida
-   * @param data Datos de la pantalla
+   * Crea una nueva pantalla de bienvenida (POST a ruta base)
+   * @param data Datos de la pantalla (debe incluir researchId)
    * @returns Pantalla creada
    */
   async create(data: WelcomeScreenData): Promise<WelcomeScreenRecord> {
     try {
-      return await apiClient.post<WelcomeScreenRecord, WelcomeScreenData, 'welcomeScreen'>('welcomeScreen', 'create', data);
+      if (!data.researchId) throw new Error('researchId es requerido en los datos para crear.');
+      // Usar 'CREATE' (mayúsculas)
+      return await apiClient.post<WelcomeScreenRecord, WelcomeScreenData, 'welcomeScreen'>(
+        'welcomeScreen', 
+        'CREATE', // Corregido
+        data, 
+        { researchId: data.researchId } 
+      );
     } catch (error) {
       console.error('Error al crear pantalla de bienvenida:', error);
       throw error;
@@ -75,92 +99,74 @@ export const welcomeScreenService = {
   },
 
   /**
-   * Actualiza una pantalla de bienvenida existente
-   * @param id ID de la pantalla
-   * @param data Datos a actualizar
-   * @returns Pantalla actualizada
+   * Actualiza una pantalla de bienvenida existente (PUT a ruta específica)
+   * @param researchId ID de la investigación padre.
+   * @param screenId ID específico de la pantalla a actualizar.
+   * @param data Datos parciales a actualizar.
+   * @returns Pantalla actualizada.
    */
-  async update(id: string, data: Partial<WelcomeScreenData>): Promise<WelcomeScreenRecord> {
+  async update(researchId: string, screenId: string, data: Partial<WelcomeScreenData>): Promise<WelcomeScreenRecord> {
     try {
-      // Verificar que el ID sea válido
-      if (!id || typeof id !== 'string' || id.trim() === '') {
-        throw new Error('ID inválido para actualizar la pantalla de bienvenida');
+      if (!researchId || !screenId) {
+        throw new Error('researchId y screenId son requeridos para actualizar.');
       }
-      
-      console.log(`[DEBUG] Actualizando pantalla con ID: ${id}`);
-      return await apiClient.put<WelcomeScreenRecord, Partial<WelcomeScreenData>, 'welcomeScreen'>('welcomeScreen', 'update', data, { id });
+      console.log(`[Service DEBUG] Actualizando pantalla con screenId: ${screenId}, researchId: ${researchId}`);
+      // Usar 'UPDATE' (mayúsculas)
+      return await apiClient.put<WelcomeScreenRecord, Partial<WelcomeScreenData>, 'welcomeScreen'>(
+        'welcomeScreen', 
+        'UPDATE', // Corregido
+        data, 
+        { researchId, screenId } 
+      );
     } catch (error) {
-      console.error(`Error al actualizar pantalla de bienvenida ${id}:`, error);
+      console.error(`Error al actualizar pantalla de bienvenida ${screenId}:`, error);
       throw error;
     }
   },
 
   /**
-   * Elimina una pantalla de bienvenida
-   * @param id ID de la pantalla
+   * Elimina una pantalla de bienvenida (DELETE a ruta específica)
+   * @param researchId ID de la investigación padre.
+   * @param screenId ID específico de la pantalla a eliminar.
    */
-  async delete(id: string): Promise<void> {
+  async delete(researchId: string, screenId: string): Promise<void> {
     try {
-      await apiClient.delete<void, 'welcomeScreen'>('welcomeScreen', 'delete', { id });
+      if (!researchId || !screenId) {
+        throw new Error('researchId y screenId son requeridos para eliminar.');
+      }
+      // Usar 'DELETE' (mayúsculas)
+      await apiClient.delete<void, 'welcomeScreen'>(
+        'welcomeScreen', 
+        'DELETE', // Corregido
+        { researchId, screenId } 
+      );
     } catch (error) {
-      console.error(`Error al eliminar pantalla de bienvenida ${id}:`, error);
+      console.error(`Error al eliminar pantalla de bienvenida ${screenId}:`, error);
       throw error;
     }
   },
 
   /**
-   * Crea o actualiza la pantalla de bienvenida para una investigación
-   * @param researchId ID de la investigación
-   * @param data Datos de la pantalla
-   * @returns Pantalla creada o actualizada
+   * Crea una nueva pantalla de bienvenida para una investigación específica (Usa POST).
    */
-  async createOrUpdateForResearch(
+  async createForResearch(
     researchId: string,
-    data: Partial<WelcomeScreenData>
+    data: WelcomeScreenData // Incluye researchId
   ): Promise<WelcomeScreenRecord> {
-    try {
-      console.log(`[DEBUG] Creando/actualizando pantalla para investigación: ${researchId}`);
-      console.log(`[DEBUG] Datos a guardar:`, data);
-      
-      // Primero verificamos si ya existe una pantalla para esta investigación
-      try {
-        const existingScreen = await this.getByResearchId(researchId);
-        console.log(`[DEBUG] Pantalla existente encontrada:`, existingScreen);
-        
-        // Solo actualizar si tenemos un ID válido
-        if (existingScreen && existingScreen.id && 
-            typeof existingScreen.id === 'string' && 
-            existingScreen.id.trim() !== '') {
-          console.log(`[DEBUG] Actualizando pantalla existente con ID: ${existingScreen.id}`);
-          const updateData = { ...data };
-          return await this.update(existingScreen.id, updateData);
-        } else {
-          console.log(`[DEBUG] La pantalla existente no tiene un ID válido, creando nueva`);
-          const createData = {
-            title: '',
-            message: '',
-            startButtonText: '',
-            ...data,
-            researchId
-          } as WelcomeScreenData;
-          return await this.create(createData);
-        }
-      } catch (error) {
-        // Si no existe, creamos una nueva
-        console.log(`[DEBUG] No se encontró pantalla existente, creando nueva`);
-        const createData = {
-          title: '',
-          message: '',
-          startButtonText: '',
-          ...data,
-          researchId
-        } as WelcomeScreenData;
-        return await this.create(createData);
-      }
-    } catch (error) {
-      console.error(`Error al crear/actualizar pantalla para investigación ${researchId}:`, error);
-      throw error;
-    }
+      // Llama a la función `create` base 
+      return this.create(data); 
+  },
+
+  /**
+   * Actualiza una pantalla de bienvenida existente para una investigación (Usa PUT).
+   */
+  async updateForResearch(
+    researchId: string, 
+    screenId: string,
+    data: Partial<WelcomeScreenData> // No incluye researchId/screenId aquí
+  ): Promise<WelcomeScreenRecord> {
+      // Llama a la función `update` base pasando todos los IDs
+      return this.update(researchId, screenId, data); 
   }
 };
 
