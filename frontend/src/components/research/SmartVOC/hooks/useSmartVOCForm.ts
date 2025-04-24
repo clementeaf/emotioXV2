@@ -133,25 +133,26 @@ export const useSmartVOCForm = (researchId: string) => {
         throw new Error('No autenticado');
       }
       
-      // Crear una copia limpia de los datos
-      const cleanedData = {
-        ...data,
+      // Crear una copia limpia de los datos, seleccionando solo los campos de la interfaz
+      const cleanedData: SmartVOCFormData = {
+        researchId: data.researchId,
+        randomizeQuestions: data.randomizeQuestions,
+        smartVocRequired: data.smartVocRequired,
+        metadata: data.metadata, // Incluir metadata si existe
         questions: data.questions.map((q: SmartVOCQuestion) => {
-          const { instructions, config, ...restOfQuestion } = q; // Separar config
-          const cleanedConfig = { ...config }; // Copiar config
+          const { instructions, config, ...restOfQuestion } = q; 
+          const cleanedConfig = { ...config }; 
           
-          // Si companyName existe y está vacío en config, eliminarlo
           if (cleanedConfig.companyName === '') {
             delete cleanedConfig.companyName;
           }
           
-          // Devolver la pregunta CON instructions y con config limpia
+          // Mantener instructions
           return { ...restOfQuestion, instructions, config: cleanedConfig }; 
         })
       };
-      // NO eliminamos metadata, volvemos a la versión anterior
 
-      console.log('[SmartVOCForm] Datos limpios (sin instructions, companyName vacío eliminado) a guardar:', JSON.stringify(cleanedData, null, 2));
+      console.log('[SmartVOCForm] Datos limpios a guardar (solo campos de interfaz):', JSON.stringify(cleanedData, null, 2));
       
       if (smartVocId) {
         console.log(`[SmartVOCForm] Actualizando Smart VOC con ID: ${smartVocId}`);

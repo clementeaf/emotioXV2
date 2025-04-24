@@ -190,7 +190,20 @@ functions:
       - http:
           path: /research/{researchId}/smart-voc
           method: GET
-          cors: true
+          # Reemplazar cors: true con configuración explícita
+          # cors: true
+          cors: 
+            origin: 'http://localhost:4700' # O usa ${self:custom.stages.${self:provider.stage}.apiGatewayCors} si prefieres
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+            allowCredentials: true
+            methods:
+              - OPTIONS # ¡Muy importante para preflight!
+              - GET     # Permitir GET
           # Habilitar caché para este método/ruta específico
           # caching:
           #   enabled: true # Requiere habilitar caché a nivel de etapa
@@ -203,13 +216,47 @@ functions:
       - http:
           path: /{proxy+}
           method: ANY
-          cors: true
-          # No habilitar caché aquí por defecto para PUT/POST/DELETE/etc
+          # Reemplazar cors: true con configuración explícita
+          # cors: true 
+          cors: 
+            origin: 'http://localhost:4700' # O usa ${self:custom.stages.${self:provider.stage}.apiGatewayCors} si prefieres
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+            allowCredentials: true
+            methods:
+              - OPTIONS # ¡Muy importante para preflight!
+              - GET
+              - POST
+              - PUT    # <-- Asegurarse que PUT está permitido
+              - DELETE
+              - PATCH
+              - HEAD
       - http:
           path: /
           method: ANY
-          cors: true
-          # No habilitar caché para la raíz
+          # Reemplazar cors: true con configuración explícita también para la raíz
+          # cors: true 
+          cors:
+            origin: 'http://localhost:4700' # O usa ${self:custom.stages.${self:provider.stage}.apiGatewayCors} si prefieres
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+            allowCredentials: true
+            methods:
+              - OPTIONS 
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
+              - HEAD
     environment:
       CONNECTION_TYPE: http
 
