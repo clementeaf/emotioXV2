@@ -114,7 +114,7 @@ export class SmartVOCFixedAPI extends ApiClient {
   async update(id: string, data: Partial<SmartVOCFormData>): Promise<SmartVOCFormData> {
     console.log(`[SmartVOCAPI] Actualizando smart-voc ${id}:`, data);
     if (!data.researchId) throw new Error('ResearchId es necesario para actualizar SmartVOC');
-    const path = `/research/${data.researchId}/smart-voc`;
+    const path = `/research/${data.researchId}/smart-voc/${id}`;
     return this.put<SmartVOCFormData>(path, data);
   }
 
@@ -135,9 +135,9 @@ export class SmartVOCFixedAPI extends ApiClient {
     }
   }
 
-  async deleteSmartVOC(researchId: string): Promise<void> {
-     console.log(`[SmartVOCAPI] Eliminando smart-voc para researchId: ${researchId}`);
-     const path = `/research/${researchId}/smart-voc`;
+  async deleteSmartVOC(researchId: string, formId: string): Promise<void> {
+     console.log(`[SmartVOCAPI] Eliminando smart-voc para researchId: ${researchId}, formId: ${formId}`);
+     const path = `/research/${researchId}/smart-voc/${formId}`;
      await this.delete<void>(path);
   }
 }

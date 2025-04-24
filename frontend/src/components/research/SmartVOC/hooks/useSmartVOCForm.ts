@@ -156,10 +156,10 @@ export const useSmartVOCForm = (researchId: string) => {
       
       if (smartVocId) {
         console.log(`[SmartVOCForm] Actualizando Smart VOC con ID: ${smartVocId}`);
-        return await smartVocFixedAPI.update(smartVocId, cleanedData); // Usar cleanedData
+        return await smartVocFixedAPI.update(smartVocId, cleanedData);
       } else {
         console.log('[SmartVOCForm] Creando nuevo Smart VOC');
-        return await smartVocFixedAPI.create(cleanedData); // Usar cleanedData
+        return await smartVocFixedAPI.create(cleanedData);
       }
     },
     onSuccess: (response: SmartVOCFormData) => {

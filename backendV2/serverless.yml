@@ -212,6 +212,22 @@ functions:
           #     - name: method.request.path.researchId # Incluir researchId en la clave
           #       required: true
           #   dataEncrypted: true # Recomendado
+      # Añadir ruta explícita para PUT SmartVOC con CORS detallado
+      - http:
+          path: /research/{researchId}/smart-voc
+          method: PUT
+          cors: 
+            origin: 'http://localhost:4700' # O usa ${self:custom.stages.${self:provider.stage}.apiGatewayCors} si prefieres
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+            allowCredentials: true
+            methods:
+              - OPTIONS # ¡Muy importante para preflight!
+              - PUT     # Permitir PUT explícitamente
       # Ruta genérica para el resto (Sin Caché por defecto aquí)
       - http:
           path: /{proxy+}
