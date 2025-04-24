@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { SmartVOCQuestionsProps, SmartVOCQuestion, QuestionType } from '../types';
+import { SmartVOCQuestionsProps, SmartVOCQuestion } from '../types';
 import { UI_TEXTS } from '../constants';
 import { AddQuestionModal } from './AddQuestionModal';
 
@@ -313,26 +313,8 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
                 className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                 value={question.description}
                 onChange={(e) => onUpdateQuestion(question.id, { description: e.target.value })}
-                disabled={disabled || ['CSAT', 'CES', 'NPS', 'NEV'].includes(question.type)}
+                disabled={disabled}
               />
-              {['CSAT', 'CES', 'NPS', 'NEV'].includes(question.type) && (
-                <p className="text-xs text-amber-600 mt-1">
-                  Esta pregunta no se puede editar para mantener la consistencia de los indicadores.
-                </p>
-              )}
-              
-              {question.type === 'CV' && question.description.includes("Example:") && (
-                <button
-                  type="button"
-                  className="mt-1 text-xs text-blue-600 hover:text-blue-800"
-                  onClick={() => onUpdateQuestion(question.id, { 
-                    description: 'Ejemplo: Esta fue la mejor aplicación que mis ojos han visto.' 
-                  })}
-                  disabled={disabled}
-                >
-                  Traducir al español
-                </button>
-              )}
             </div>
             
             <div>

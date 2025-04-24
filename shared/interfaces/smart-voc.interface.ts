@@ -124,6 +124,11 @@ export interface SmartVOCQuestion {
   description: string;
   
   /**
+   * Optional instructions or additional information for participants
+   */
+  instructions?: string;
+  
+  /**
    * Whether this question is required
    */
   required: boolean;
@@ -248,6 +253,7 @@ export const DEFAULT_SMART_VOC_FORM: SmartVOCFormData = {
       description: 'How would you rate your overall satisfaction level with [company]?',
       required: true,
       showConditionally: false,
+      instructions: '',
       config: {
         type: 'stars',
         companyName: ''

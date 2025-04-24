@@ -70,6 +70,25 @@ provider:
   timeout: 30
   logRetentionInDays: 7
   
+  # Mover stackTags aquí, directamente bajo provider
+  stackTags:
+    SERVICE_NAME: ${self:service}
+    STAGE: ${self:provider.stage}
+
+  # Simplificar configuración de apiGateway
+  apiGateway:
+    shouldStartNameWithService: true # Buena práctica
+    # Eliminar referencias explícitas a restApiId y restApiRootResourceId
+    # restApiId:
+    #   Ref: ApiGatewayRestApi 
+    # restApiRootResourceId:
+    #   Fn::GetAtt: [ApiGatewayRestApi, RootResourceId]
+    # Mantener la configuración de caché comentada por ahora
+    # cacheClusterEnabled: true 
+    # cacheClusterSize: '0.5'
+    # cacheDataEncrypted: true
+    # cacheTtlInSeconds: 300
+
   # Variables de entorno dinámicas
   environment:
     NODE_ENV: ${self:provider.stage}
@@ -149,15 +168,48 @@ functions:
   # Función principal para API REST - maneja todas las rutas
   api:
     handler: src/index.handler
+    # Añadir configuraciones de caché específicas para endpoints GET
     events:
+      # Ruta específica para GET WelcomeScreen (Habilitar Caché)
       - http:
-          path: /{proxy+} # Una sola ruta para todas las peticiones
+          path: /research/{researchId}/welcome-screen
+          method: GET
+          cors: true
+          # Habilitar caché para este método/ruta específico
+          # caching:
+          #   enabled: true # Requiere habilitar caché a nivel de etapa
+          #   ttlInSeconds: 300 # TTL específico (opcional, usa el de etapa si no)
+          #   cacheKeyParameters:
+          #     - name: method.request.path.researchId # Incluir researchId en la clave
+          #       required: true
+          #     # Añadir otros parámetros si son necesarios (ej: query strings, headers)
+          #     # - name: method.request.header.Authorization 
+          #     # - name: method.request.querystring.myParam
+          #   dataEncrypted: true # Recomendado
+      # Ruta específica para GET SmartVOC (Habilitar Caché)
+      - http:
+          path: /research/{researchId}/smart-voc
+          method: GET
+          cors: true
+          # Habilitar caché para este método/ruta específico
+          # caching:
+          #   enabled: true # Requiere habilitar caché a nivel de etapa
+          #   ttlInSeconds: 300 # TTL específico (opcional)
+          #   cacheKeyParameters:
+          #     - name: method.request.path.researchId # Incluir researchId en la clave
+          #       required: true
+          #   dataEncrypted: true # Recomendado
+      # Ruta genérica para el resto (Sin Caché por defecto aquí)
+      - http:
+          path: /{proxy+}
           method: ANY
           cors: true
+          # No habilitar caché aquí por defecto para PUT/POST/DELETE/etc
       - http:
-          path: / # Ruta raíz
+          path: /
           method: ANY
           cors: true
+          # No habilitar caché para la raíz
     environment:
       CONNECTION_TYPE: http
 

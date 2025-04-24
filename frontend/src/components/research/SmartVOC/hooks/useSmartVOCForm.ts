@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { 
-  SmartVOCFormData 
+  SmartVOCFormData,
+  SmartVOCFormResponse
 } from 'shared/interfaces/smart-voc.interface';
 import { 
   ErrorModalData, 
@@ -127,7 +128,7 @@ export const useSmartVOCForm = (researchId: string) => {
 
   // Mutación para guardar datos
   const { mutate } = useMutation({
-    mutationFn: async (data: SmartVOCFormData) => {
+    mutationFn: async (data: SmartVOCFormData): Promise<SmartVOCFormData> => {
       if (!isAuthenticated || !token) {
         throw new Error('No autenticado');
       }
@@ -144,8 +145,8 @@ export const useSmartVOCForm = (researchId: string) => {
             delete cleanedConfig.companyName;
           }
           
-          // Devolver la pregunta sin instructions y con config limpia
-          return { ...restOfQuestion, config: cleanedConfig }; 
+          // Devolver la pregunta CON instructions y con config limpia
+          return { ...restOfQuestion, instructions, config: cleanedConfig }; 
         })
       };
       // NO eliminamos metadata, volvemos a la versión anterior
@@ -160,9 +161,12 @@ export const useSmartVOCForm = (researchId: string) => {
         return await smartVocFixedAPI.create(cleanedData); // Usar cleanedData
       }
     },
-    onSuccess: (response) => {
-      if (response?.data?.id) {
-        setSmartVocId(response.data.id);
+    onSuccess: (response: SmartVOCFormData) => {
+      const responseWithId = response as SmartVOCFormData & { id?: string }; 
+      if (responseWithId?.id) {
+        setSmartVocId(responseWithId.id);
+      } else {
+        console.warn('[SmartVOCForm] No se encontró ID en la respuesta onSuccess directa. Invalidando query.');
       }
       
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SMART_VOC, researchId] });
@@ -205,20 +209,21 @@ export const useSmartVOCForm = (researchId: string) => {
 
   // Efecto para cargar datos existentes
   useEffect(() => {
-    // smartVocData puede ser SmartVOCFormData | null | { notFound: boolean }
     const dataFromQuery = smartVocData;
-    
-    // Determinar si tenemos datos válidos o si es un caso de notFound/null
-    const isNotFoundOrNull = dataFromQuery === null || (typeof dataFromQuery === 'object' && 'notFound' in dataFromQuery && dataFromQuery.notFound);
-    const existingData = !isNotFoundOrNull ? dataFromQuery as SmartVOCFormData : null;
             
-    if (existingData) { 
-      console.log("[SmartVOCForm] Cargando datos existentes (objeto directo):", existingData);
-      if (existingData.id) {
-        setSmartVocId(existingData.id);
+    // Asegurarse que dataFromQuery no es null/undefined y no es el objeto {notFound: true}
+    if (dataFromQuery && typeof dataFromQuery === 'object' && !('notFound' in dataFromQuery)) { 
+      // Ahora TypeScript sabe que dataFromQuery es SmartVOCFormData
+      const existingData = dataFromQuery as SmartVOCFormData;
+      console.log("[SmartVOCForm] Cargando datos existentes:", existingData);
+
+      // Intentamos setear el smartVocId si existe en los datos cargados (como propiedad 'id')
+      const dataWithId = existingData as SmartVOCFormData & { id?: string };
+      if (dataWithId.id) {
+        setSmartVocId(dataWithId.id);
       }
 
-      // Usa existingData (objeto directo)
+      // Actualizar formData con los datos existentes
       setFormData(prev => ({
         ...prev,
         ...existingData,
@@ -231,9 +236,19 @@ export const useSmartVOCForm = (researchId: string) => {
         }
       }));
     } else if (!isLoading) { 
-        // Si no está cargando y no hay existingData, es notFound o error
-        console.log("[SmartVOCForm] No se encontraron datos existentes (notFound o null), usando defaults.");
-        setFormData(prev => ({ ...prev, questions: [...DEFAULT_QUESTIONS] }));
+        // Caso notFound, null, undefined o error durante la carga inicial
+        console.log("[SmartVOCForm] No se encontraron datos existentes o hubo un error, usando defaults.");
+        // Resetear a los valores por defecto manteniendo researchId
+        setFormData({
+          researchId,
+          questions: [...DEFAULT_QUESTIONS],
+          randomizeQuestions: false,
+          smartVocRequired: true,
+          metadata: {
+            createdAt: new Date().toISOString(),
+            estimatedCompletionTime: '5-10'
+          }
+        });
         setSmartVocId(null);
     }
   }, [smartVocData, researchId, isLoading]);
@@ -255,19 +270,7 @@ export const useSmartVOCForm = (researchId: string) => {
   }, []);
 
   // Función para añadir una nueva pregunta
-  const addQuestion = useCallback(() => {
-    const newQuestion: SmartVOCQuestion = {
-      id: `q_${Date.now()}`,
-      type: 'VOC',
-      title: 'Nueva Pregunta',
-      description: '¿Cuál es tu opinión?',
-      required: true,
-      showConditionally: false,
-      config: {
-        type: 'text'
-      }
-    };
-
+  const addQuestion = useCallback((newQuestion: SmartVOCQuestion) => {
     setFormData(prev => ({
       ...prev,
       questions: [...prev.questions, newQuestion]

@@ -224,9 +224,9 @@ export interface SmartVOCSettingsProps {
 export interface SmartVOCQuestionsProps {
   questions: SmartVOCQuestion[];
   onUpdateQuestion: (id: string, updates: Partial<SmartVOCQuestion>) => void;
-  onAddQuestion: () => void;
+  onAddQuestion: (question: SmartVOCQuestion) => void;
   onRemoveQuestion: (id: string) => void;
-  disabled: boolean;
+  disabled?: boolean;
 }
 
 /**

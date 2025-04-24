@@ -36,72 +36,102 @@ export interface SmartVOCFormDynamoItem {
   updatedAt: string;
 }
 
-class SmartVOCFormModel {
+// Exportar la clase directamente en lugar de una instancia
+export class SmartVOCFormModel {
   private readonly tableName: string;
   private readonly dynamoClient: DynamoDBDocumentClient;
   private static readonly SORT_KEY_VALUE = 'SMART_VOC_FORM'; // SK constante
 
   constructor() {
     // Usar consistentemente la variable de entorno y asegurar que no sea undefined
-    this.tableName = process.env.DYNAMODB_TABLE!; // Añadir '!' para aserción no nula
+    this.tableName = process.env.DYNAMODB_TABLE!;
     if (!this.tableName) {
-      console.error('FATAL ERROR: DYNAMODB_TABLE environment variable is not set.');
+      const errorMsg = 'FATAL ERROR: DYNAMODB_TABLE environment variable is not set.';
+      console.error(errorMsg);
       throw new Error('Table name environment variable is missing.');
     }
-    // Asegurar que la región sea siempre string y asignar tipo explícito
     const region: string = process.env.APP_REGION || 'us-east-1';
-    const client = new DynamoDBClient({ region }); // Usar la variable region
+    const client = new DynamoDBClient({ region });
     this.dynamoClient = DynamoDBDocumentClient.from(client);
     console.log(`[SmartVOCFormModel] Initialized for table: ${this.tableName} in region: ${region}`);
   }
 
   // Función helper para mapear de DynamoItem a Record
   private mapToRecord(item: SmartVOCFormDynamoItem): SmartVOCFormRecord {
+    // Asegurarse de que los campos booleanos tengan valores por defecto si son undefined en DynamoDB
+    const randomizeQuestions = typeof item.randomizeQuestions === 'boolean' ? item.randomizeQuestions : false;
+    const smartVocRequired = typeof item.smartVocRequired === 'boolean' ? item.smartVocRequired : false;
+    
     return {
       id: item.id,
       researchId: item.researchId,
       questions: JSON.parse(item.questions || '[]'), // Deserializar
-      randomizeQuestions: item.randomizeQuestions,
-      smartVocRequired: item.smartVocRequired,
-      // Añadir otros campos de SmartVOCFormData aquí
-      metadata: JSON.parse(item.metadata || '{}'), // Deserializar
+      randomizeQuestions: randomizeQuestions,
+      smartVocRequired: smartVocRequired,
+      // Recuperar otros campos de SmartVOCFormData aquí si existen en SmartVOCFormDynamoItem
+      // Asegurarse que metadata es un objeto válido tras deserializar
+      metadata: typeof item.metadata === 'string' ? JSON.parse(item.metadata) : {},
       createdAt: item.createdAt,
       updatedAt: item.updatedAt
     };
   }
 
+  /**
+   * Crea un nuevo formulario SmartVOC en DynamoDB.
+   * @param formData Datos del formulario.
+   * @param researchId ID de la investigación asociada.
+   * @returns El registro del formulario creado.
+   * @throws Error si falla la operación en DynamoDB.
+   */
   async create(formData: SmartVOCFormData, researchId: string): Promise<SmartVOCFormRecord> {
     const now = new Date().toISOString();
-    const formId = uuidv4();
+    const formId = uuidv4(); // Generar ID único aquí
 
+    // Crear el item para DynamoDB
     const item: SmartVOCFormDynamoItem = {
       id: formId,
       sk: SmartVOCFormModel.SORT_KEY_VALUE,
       researchId: researchId,
-      questions: JSON.stringify(formData.questions || []), // Serializar
+      // Asegurarse que los campos booleanos y arrays tengan valores por defecto
+      questions: JSON.stringify(formData.questions || []), 
       randomizeQuestions: formData.randomizeQuestions ?? false,
       smartVocRequired: formData.smartVocRequired ?? false,
-      // Añadir otros campos de SmartVOCFormData aquí
-      metadata: JSON.stringify(formData.metadata || { version: '1.0.0', lastUpdated: now, lastModifiedBy: 'system' }), // Serializar metadata
+      metadata: JSON.stringify(formData.metadata || { version: '1.0.0', lastUpdated: now, lastModifiedBy: 'system' }),
       createdAt: now,
       updatedAt: now
     };
 
     const command = new PutCommand({
       TableName: this.tableName,
-      Item: item
+      Item: item,
+      // Condición para evitar sobrescribir si ya existe (opcional, pero bueno para 'create')
+      ConditionExpression: 'attribute_not_exists(id)'
     });
 
     try {
+      console.log(`[SmartVOCFormModel.create] Intentando crear item: ${formId}`);
       await this.dynamoClient.send(command);
-      return this.mapToRecord(item); // Devolver usando el mapeo
+      console.log(`[SmartVOCFormModel.create] Item creado exitosamente: ${formId}`);
+      return this.mapToRecord(item); // Devolver el item mapeado
     } catch (error: any) {
-      console.error('ERROR DETALLADO de DynamoDB PutCommand (SmartVOCForm):', JSON.stringify(error, null, 2));
-      console.error('Error al crear SmartVOCForm:', error.message);
-      throw new Error('DATABASE_ERROR: Error al crear el formulario SmartVOC');
+      console.error('[SmartVOCFormModel.create] ERROR DETALLADO DynamoDB:', JSON.stringify(error, null, 2));
+      if (error.name === 'ConditionalCheckFailedException') {
+          console.error(`[SmartVOCFormModel.create] Error: Ya existe un formulario con ID ${formId}`);
+          // Lanzar error con código específico en el mensaje
+          throw new Error('SMART_VOC_FORM_ALREADY_EXISTS'); 
+      }
+      console.error(`[SmartVOCFormModel.create] Error al crear SmartVOCForm (${formId}):`, error.message);
+      // Incluir código de error genérico de DB
+      throw new Error(`DATABASE_ERROR: Error al crear el formulario SmartVOC - ${error.message}`); 
     }
   }
 
+  /**
+   * Obtiene un formulario SmartVOC por su ID único.
+   * @param id ID del formulario.
+   * @returns El registro del formulario encontrado o null si no existe.
+   * @throws Error si falla la operación en DynamoDB.
+   */
   async getById(id: string): Promise<SmartVOCFormRecord | null> {
     const command = new GetCommand({
       TableName: this.tableName,
@@ -112,88 +142,97 @@ class SmartVOCFormModel {
     });
 
     try {
+      console.log(`[SmartVOCFormModel.getById] Buscando item: ${id}`);
       const result = await this.dynamoClient.send(command);
       if (!result.Item) {
+        console.log(`[SmartVOCFormModel.getById] Item no encontrado: ${id}`);
         return null;
       }
+      console.log(`[SmartVOCFormModel.getById] Item encontrado: ${id}`);
       return this.mapToRecord(result.Item as SmartVOCFormDynamoItem);
     } catch (error: any) {
-      console.error('ERROR DETALLADO de DynamoDB GetCommand (SmartVOCForm):', JSON.stringify(error, null, 2));
-      console.error(`Error al obtener SmartVOCForm por ID ${id}:`, error.message);
-      throw new Error('DATABASE_ERROR: Error al obtener el formulario SmartVOC por ID');
+      console.error('[SmartVOCFormModel.getById] ERROR DETALLADO DynamoDB:', JSON.stringify(error, null, 2));
+      console.error(`[SmartVOCFormModel.getById] Error al obtener SmartVOCForm por ID ${id}:`, error.message);
+       // Incluir código de error genérico de DB
+      throw new Error(`DATABASE_ERROR: Error al obtener el formulario SmartVOC por ID - ${error.message}`); 
     }
   }
 
+  /**
+   * Obtiene un formulario SmartVOC por el ID de investigación usando GSI.
+   * @param researchId ID de la investigación.
+   * @returns El registro del formulario encontrado o null si no existe.
+   * @throws Error si falla la operación en DynamoDB.
+   */
   async getByResearchId(researchId: string): Promise<SmartVOCFormRecord | null> {
     const command = new QueryCommand({
       TableName: this.tableName,
-      IndexName: 'ResearchIdIndex', // Usar el índice correcto
+      IndexName: 'ResearchIdIndex', // Asegurarse que este GSI existe
       KeyConditionExpression: 'researchId = :rid',
+      // Añadir filtro por SK para asegurar que es el tipo correcto de item
+      FilterExpression: 'sk = :skVal',
       ExpressionAttributeValues: {
-        ':rid': researchId
+        ':rid': researchId,
+        ':skVal': SmartVOCFormModel.SORT_KEY_VALUE
       },
-      // Podríamos añadir FilterExpression si quisiéramos asegurar que es un SMART_VOC_FORM 
-      // FilterExpression: 'sk = :skVal',
-      // ExpressionAttributeValues: { ':rid': researchId, ':skVal': SmartVOCFormModel.SORT_KEY_VALUE },
-      Limit: 1
+      Limit: 1 // Asumimos que solo debe haber uno por researchId
     });
 
     try {
+      console.log(`[SmartVOCFormModel.getByResearchId] Buscando item por researchId: ${researchId}`);
       const result = await this.dynamoClient.send(command);
       if (!result.Items || result.Items.length === 0) {
+        console.log(`[SmartVOCFormModel.getByResearchId] Item no encontrado para researchId: ${researchId}`);
         return null;
       }
+      console.log(`[SmartVOCFormModel.getByResearchId] Item encontrado para researchId: ${researchId}`);
+      // Ya no necesitamos verificar sk aquí por el FilterExpression
       return this.mapToRecord(result.Items[0] as SmartVOCFormDynamoItem);
     } catch (error: any) {
-      console.error('ERROR DETALLADO de DynamoDB QueryCommand GSI (SmartVOCForm):', JSON.stringify(error, null, 2));
-      console.error(`Error al obtener SmartVOCForm por researchId ${researchId}:`, error.message);
-      throw new Error('DATABASE_ERROR: Error al obtener el formulario SmartVOC por Research ID');
+      console.error('[SmartVOCFormModel.getByResearchId] ERROR DETALLADO DynamoDB:', JSON.stringify(error, null, 2));
+      console.error(`[SmartVOCFormModel.getByResearchId] Error al obtener SmartVOCForm por researchId ${researchId}:`, error.message);
+       if ((error as Error).message?.includes('index')) {
+         console.error("Error: Parece que el índice GSI 'ResearchIdIndex' no existe o no está configurado correctamente.");
+         // Incluir código de error de configuración
+         throw new Error("DATABASE_CONFIG_ERROR: Falta índice para búsqueda por researchId.");
+       }
+       // Incluir código de error genérico de DB
+      throw new Error(`DATABASE_ERROR: Error al obtener el formulario SmartVOC por Research ID - ${error.message}`);
     }
   }
 
+  /**
+   * Actualiza un formulario SmartVOC existente.
+   * @param id ID del formulario a actualizar.
+   * @param formData Datos parciales para actualizar.
+   * @returns El registro del formulario actualizado.
+   * @throws Error si el formulario no se encuentra o falla la operación en DynamoDB.
+   */
   async update(id: string, formData: Partial<SmartVOCFormData>): Promise<SmartVOCFormRecord> {
     const now = new Date().toISOString();
     
-    // Verificar existencia primero
-    const existing = await this.getById(id);
-    if (!existing) {
-      throw new Error(`SMART_VOC_FORM_NOT_FOUND: Formulario con ID ${id} no encontrado.`);
-    }
+    // Nota: La verificación de existencia se hace implícitamente con ConditionExpression abajo
+    // Si se quiere un error 404 explícito antes de intentar actualizar, 
+    // se podría llamar a this.getById(id) primero, pero aumenta el coste.
 
     let updateExpression = 'SET updatedAt = :updatedAt';
     const expressionAttributeValues: Record<string, any> = { ':updatedAt': now };
-    // const expressionAttributeNames: Record<string, string> = {}; // Si se usan nombres reservados
+    // const expressionAttributeNames: Record<string, string> = {}; // Para atributos con nombres reservados
 
-    // Añadir campos a actualizar dinámicamente
-    if (formData.questions !== undefined) {
-      updateExpression += ', questions = :questions';
-      expressionAttributeValues[':questions'] = JSON.stringify(formData.questions); // Serializar
-    }
-    if (formData.randomizeQuestions !== undefined) {
-      updateExpression += ', randomizeQuestions = :randomizeQuestions';
-      expressionAttributeValues[':randomizeQuestions'] = formData.randomizeQuestions;
-    }
-    if (formData.smartVocRequired !== undefined) {
-      updateExpression += ', smartVocRequired = :smartVocRequired';
-      expressionAttributeValues[':smartVocRequired'] = formData.smartVocRequired;
-    }
-     // Actualizar metadata si se provee, manteniendo consistencia
-    if (formData.metadata !== undefined) {
-        updateExpression += ', metadata = :metadata';
-        expressionAttributeValues[':metadata'] = JSON.stringify({ 
-            ...(existing.metadata || {}), // Usar metadata existente deserializado
-            ...formData.metadata,
-            lastUpdated: new Date(),
-        });
-    } else {
-        // Opcional: actualizar sólo lastUpdated si no se pasa nuevo metadata
-        updateExpression += ', metadata = :metadata';
-        expressionAttributeValues[':metadata'] = JSON.stringify({
-            ...(existing.metadata || {}),
-            lastUpdated: new Date(),
-        });
-    }
-    // Añadir otros campos de formData aquí...
+    // Construir la expresión de actualización dinámicamente
+    // Usar Object.entries para manejar cualquier campo de formData
+    Object.entries(formData).forEach(([key, value]) => {
+        if (value !== undefined && key !== 'id' && key !== 'sk' && key !== 'researchId' && key !== 'createdAt' && key !== 'updatedAt') {
+            const attributeKey = `:${key}`;
+            updateExpression += `, ${key} = ${attributeKey}`;
+            // Serializar si es necesario (questions, metadata)
+            if (key === 'questions' || key === 'metadata') {
+                expressionAttributeValues[attributeKey] = JSON.stringify(value);
+            } else {
+                expressionAttributeValues[attributeKey] = value;
+            }
+        }
+    });
 
     const command = new UpdateCommand({
       TableName: this.tableName,
@@ -203,30 +242,43 @@ class SmartVOCFormModel {
       },
       UpdateExpression: updateExpression,
       ExpressionAttributeValues: expressionAttributeValues,
-      // ExpressionAttributeNames: ...,
-      ReturnValues: 'ALL_NEW'
+      // ConditionExpression para asegurar que el item existe antes de actualizar
+      ConditionExpression: 'attribute_exists(id)', 
+      ReturnValues: 'ALL_NEW' // Devolver el item completo actualizado
     });
 
     try {
+      console.log(`[SmartVOCFormModel.update] Intentando actualizar item: ${id}`);
       const result = await this.dynamoClient.send(command);
+      console.log(`[SmartVOCFormModel.update] Item actualizado exitosamente: ${id}`);
+      // Asegurarse que Attributes no sea undefined (aunque con ReturnValues: ALL_NEW debería estar)
       if (!result.Attributes) {
-        throw new Error('La actualización no devolvió atributos.');
+          console.error(`[SmartVOCFormModel.update] La actualización no devolvió atributos para ${id}`);
+           // Lanzar error genérico si no hay atributos
+          throw new Error('Update operation did not return attributes.');
       }
       return this.mapToRecord(result.Attributes as SmartVOCFormDynamoItem);
     } catch (error: any) {
-      console.error('ERROR DETALLADO de DynamoDB UpdateCommand (SmartVOCForm):', JSON.stringify(error, null, 2));
-      console.error(`Error al actualizar SmartVOCForm con ID ${id}:`, error.message);
-      throw new Error('DATABASE_ERROR: Error al actualizar el formulario SmartVOC');
+      console.error('[SmartVOCFormModel.update] ERROR DETALLADO DynamoDB:', JSON.stringify(error, null, 2));
+      if (error.name === 'ConditionalCheckFailedException') {
+          console.error(`[SmartVOCFormModel.update] Error: No se encontró el formulario con ID ${id} para actualizar.`);
+          // Lanzar error con código específico en el mensaje
+          throw new Error('SMART_VOC_FORM_NOT_FOUND'); 
+      }
+      console.error(`[SmartVOCFormModel.update] Error al actualizar SmartVOCForm con ID ${id}:`, error.message);
+       // Incluir código de error genérico de DB
+      throw new Error(`DATABASE_ERROR: Error al actualizar el formulario SmartVOC - ${error.message}`); 
     }
   }
 
+  /**
+   * Elimina un formulario SmartVOC por su ID.
+   * @param id ID del formulario a eliminar.
+   * @throws Error si falla la operación en DynamoDB.
+   */
   async delete(id: string): Promise<void> {
-     // Opcional: verificar existencia primero
-     const existing = await this.getById(id);
-     if (!existing) {
-       console.warn(`[SmartVOCFormModel] Intento de eliminar formulario no existente: ${id}`);
-       return; // O lanzar error si se prefiere
-     }
+    // Opcional: verificar existencia primero con getById si se quiere devolver error si no existe.
+    // La operación Delete es idempotente por defecto si el item no existe.
 
     const command = new DeleteCommand({
       TableName: this.tableName,
@@ -234,21 +286,29 @@ class SmartVOCFormModel {
         id: id,
         sk: SmartVOCFormModel.SORT_KEY_VALUE 
       }
+      // Se podría añadir ConditionExpression: 'attribute_exists(id)' si se quiere error si no existe
     });
     try {
+      console.log(`[SmartVOCFormModel.delete] Intentando eliminar item: ${id}`);
       await this.dynamoClient.send(command);
+      console.log(`[SmartVOCFormModel.delete] Item eliminado (o no existía): ${id}`);
     } catch (error: any) {
-      console.error('ERROR DETALLADO de DynamoDB DeleteCommand (SmartVOCForm):', JSON.stringify(error, null, 2));
-      console.error(`Error al eliminar SmartVOCForm con ID ${id}:`, error.message);
-      throw new Error('DATABASE_ERROR: Error al eliminar el formulario SmartVOC');
+      console.error('[SmartVOCFormModel.delete] ERROR DETALLADO DynamoDB:', JSON.stringify(error, null, 2));
+      console.error(`[SmartVOCFormModel.delete] Error al eliminar SmartVOCForm con ID ${id}:`, error.message);
+      // Incluir código de error genérico de DB
+      throw new Error(`DATABASE_ERROR: Error al eliminar el formulario SmartVOC - ${error.message}`); 
     }
   }
 
-  // getAll sigue siendo Scan, usar con precaución o eliminar
+  /**
+   * Obtiene todos los formularios SmartVOC (operación Scan, usar con precaución).
+   * @returns Un array con todos los registros de formularios SmartVOC.
+   * @throws Error si falla la operación en DynamoDB.
+   */
   async getAll(): Promise<SmartVOCFormRecord[]> {
+    console.warn('[SmartVOCFormModel.getAll] Ejecutando Scan para obtener todos los SmartVOC forms. Evitar en producción si es posible.')
     const command = new ScanCommand({
       TableName: this.tableName,
-      // Podríamos añadir FilterExpression para obtener sólo SK='SMART_VOC_FORM'
       FilterExpression: 'sk = :skVal',
       ExpressionAttributeValues: { ':skVal': SmartVOCFormModel.SORT_KEY_VALUE }
     });
@@ -256,14 +316,13 @@ class SmartVOCFormModel {
     try {
       const result = await this.dynamoClient.send(command);
       const items = result.Items || [];
+      console.log(`[SmartVOCFormModel.getAll] Scan completado. Items encontrados: ${items.length}`);
       return items.map(item => this.mapToRecord(item as SmartVOCFormDynamoItem));
     } catch (error: any) {
-      console.error('ERROR DETALLADO de DynamoDB ScanCommand (SmartVOCForm - getAll):', JSON.stringify(error, null, 2));
-      console.error('Error en SmartVOCFormModel.getAll:', error.message);
-      throw new Error('DATABASE_ERROR: Error al obtener todos los formularios SmartVOC');
+      console.error('[SmartVOCFormModel.getAll] ERROR DETALLADO DynamoDB:', JSON.stringify(error, null, 2));
+      console.error('[SmartVOCFormModel.getAll] Error en ScanCommand:', error.message);
+      // Incluir código de error genérico de DB
+      throw new Error(`DATABASE_ERROR: Error al obtener todos los formularios SmartVOC - ${error.message}`); 
     }
   }
-}
-
-// Exportar una instancia única del modelo
-export const smartVocFormModel = new SmartVOCFormModel(); 
+} 
