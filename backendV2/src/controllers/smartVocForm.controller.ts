@@ -165,29 +165,31 @@ export class SmartVOCFormController {
   public async updateSmartVOCForm(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
     try {
       const userId = event.requestContext.authorizer?.claims?.sub;
-      
-      // Validar múltiples condiciones juntas
       const validationError = validateUserId(userId);
       if (validationError) return validationError;
 
-      // Extraer y validar el researchId
       const idResult = extractResearchId(event);
       if ('statusCode' in idResult) return idResult;
       const { researchId } = idResult;
       
-      // Parsear y validar cuerpo
+      // Obtener el ID del formulario existente para esta investigación
+      const existingForm = await this.service.getByResearchId(researchId);
+      if (!existingForm) {
+        return errorResponse(ERROR_MESSAGES.RESOURCE.NOT_FOUND('El formulario SmartVOC para esta investigación'), 404);
+      }
+      const formId = existingForm.id; // Obtener el ID
+
       const bodyResult = parseAndValidateBody<SmartVOCFormData>(event, validateSmartVOCData);
       if ('statusCode' in bodyResult) return bodyResult;
       const { data } = bodyResult;
       
-      // Asegurar que el researchId esté en el objeto de datos
-      data.researchId = researchId;
+      data.researchId = researchId; // Asegurar researchId
 
-      this.log('info', 'updateSmartVOCForm', 'Actualizando formulario SmartVOC', { researchId });
-      const result = await this.service.update(data);
+      this.log('info', 'updateSmartVOCForm', 'Actualizando formulario SmartVOC', { formId, researchId });
+      // Pasar el ID recuperado y los datos parciales al servicio
+      const result = await this.service.update(formId, data); 
       
-      // Invalidar caché al actualizar
-      this.invalidateCache(researchId, userId);
+      this.invalidateCache(researchId, userId!); // userId ya está validado
       
       return successResponse(result);
     } catch (error) {

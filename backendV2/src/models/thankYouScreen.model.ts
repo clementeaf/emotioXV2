@@ -1,21 +1,20 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, UpdateCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
-import { uuidv4 } from '../utils/id-generator';
+import { v4 as uuidv4 } from 'uuid';
 import {
   ThankYouScreenConfig,
   ThankYouScreenModel as SharedThankYouScreenModel,
   ThankYouScreenFormData,
   DEFAULT_THANK_YOU_SCREEN_CONFIG,
-  DEFAULT_THANK_YOU_SCREEN_VALIDATION
 } from '../../../shared/interfaces/thank-you-screen.interface';
 
 /**
  * Interfaz para el modelo DynamoDB de una pantalla de agradecimiento
  */
 export interface ThankYouScreenDynamoItem {
-  // Clave primaria
+  // Clave primaria (UUID único)
   id: string;
-  // Clave de ordenación
+  // Clave de ordenación (constante para este tipo)
   sk: string;
   // Research ID relacionado
   researchId: string;
@@ -23,7 +22,7 @@ export interface ThankYouScreenDynamoItem {
   isEnabled: boolean;
   title: string;
   message: string;
-  redirectUrl: string;
+  redirectUrl?: string; // Hacer opcional si puede no estar
   // Metadata serializado
   metadata: string;
   // Fechas
@@ -41,7 +40,6 @@ export type {
 // Re-exportamos las constantes compartidas
 export {
   DEFAULT_THANK_YOU_SCREEN_CONFIG,
-  DEFAULT_THANK_YOU_SCREEN_VALIDATION
 };
 
 /**
@@ -50,6 +48,7 @@ export {
 export class ThankYouScreenModel {
   private tableName: string;
   private dynamoClient: DynamoDBDocumentClient;
+  private static readonly SORT_KEY_VALUE = 'THANK_YOU_SCREEN'; // Definir SK constante
 
   constructor() {
     console.log('======== THANK YOU SCREEN MODEL CONSTRUCTOR ========');
@@ -77,45 +76,45 @@ export class ThankYouScreenModel {
    * @returns La configuración creada con su ID generado
    */
   async create(data: ThankYouScreenFormData, researchId: string): Promise<SharedThankYouScreenModel> {
-    // Generar ID único para la pantalla de agradecimiento
     const screenId = uuidv4();
-    
-    // Fecha actual para created/updated
     const now = new Date().toISOString();
     
-    // Usar los datos tal como vienen, sin valores predeterminados
+    // Consistencia con welcomeScreen: usar valores por defecto si no se proporcionan
     const config: ThankYouScreenConfig = {
-      isEnabled: data.isEnabled,
-      title: data.title,
-      message: data.message,
-      redirectUrl: data.redirectUrl || '',
-      metadata: {
-        version: '1.0.0'
+      isEnabled: data.isEnabled ?? DEFAULT_THANK_YOU_SCREEN_CONFIG.isEnabled,
+      title: data.title || DEFAULT_THANK_YOU_SCREEN_CONFIG.title,
+      message: data.message || DEFAULT_THANK_YOU_SCREEN_CONFIG.message,
+      redirectUrl: data.redirectUrl || DEFAULT_THANK_YOU_SCREEN_CONFIG.redirectUrl,
+      metadata: { // Estructura metadata consistente
+        version: '1.0.0',
+        lastUpdated: new Date(),
+        lastModifiedBy: 'system' // O userId si está disponible
       }
     };
 
     // Convertir a formato para DynamoDB
     const item: ThankYouScreenDynamoItem = {
       id: screenId,
-      sk: `THANK_YOU_SCREEN#${screenId}`,
+      sk: ThankYouScreenModel.SORT_KEY_VALUE, // Usar SK constante
       researchId,
       isEnabled: config.isEnabled,
       title: config.title,
       message: config.message,
-      redirectUrl: config.redirectUrl || '',
+      redirectUrl: config.redirectUrl,
       metadata: JSON.stringify(config.metadata),
       createdAt: now,
       updatedAt: now
     };
 
     // Guardar en DynamoDB
-    const params = new PutCommand({
+    const command = new PutCommand({
       TableName: this.tableName,
       Item: item
+      // Podríamos añadir ConditionExpression: 'attribute_not_exists(id)' si quisiéramos
     });
 
     try {
-      await this.dynamoClient.send(params);
+      await this.dynamoClient.send(command);
       
       // Devolver el objeto creado con su ID
       return {
@@ -125,32 +124,34 @@ export class ThankYouScreenModel {
         title: config.title,
         message: config.message,
         redirectUrl: config.redirectUrl,
-        metadata: config.metadata,
-        createdAt: now,
+        metadata: config.metadata, // Devolver objeto
+        // Asegurar que createdAt/updatedAt sean string o Date según la interfaz
+        createdAt: now, 
         updatedAt: now
       };
-    } catch (error) {
-      console.error('Error al crear pantalla de agradecimiento:', error);
-      throw new Error('Error al crear la pantalla de agradecimiento');
+    } catch (error: any) {
+      console.error('ERROR DETALLADO de DynamoDB PutCommand (ThankYouScreen):', JSON.stringify(error, null, 2));
+      console.error('Error al crear pantalla de agradecimiento:', error.message);
+      throw new Error('DATABASE_ERROR: Error al crear la pantalla de agradecimiento');
     }
   }
 
   /**
-   * Obtiene una pantalla de agradecimiento por su ID
-   * @param id ID de la pantalla
+   * Obtiene una pantalla de agradecimiento por su ID único (UUID)
+   * @param id ID único (UUID) de la pantalla
    * @returns La pantalla de agradecimiento encontrada o null si no existe
    */
   async getById(id: string): Promise<SharedThankYouScreenModel | null> {
-    const params = new GetCommand({
+    const command = new GetCommand({
       TableName: this.tableName,
       Key: {
         id,
-        sk: `THANK_YOU_SCREEN#${id}`
+        sk: ThankYouScreenModel.SORT_KEY_VALUE // Usar SK constante
       }
     });
 
     try {
-      const result = await this.dynamoClient.send(params);
+      const result = await this.dynamoClient.send(command);
       
       if (!result.Item) {
         return null;
@@ -158,7 +159,7 @@ export class ThankYouScreenModel {
 
       const item = result.Item as ThankYouScreenDynamoItem;
       
-      // Convertir de formato DynamoDB a la interfaz ThankYouScreenRecord
+      // Convertir de formato DynamoDB
       return {
         id: item.id,
         researchId: item.researchId,
@@ -166,8 +167,8 @@ export class ThankYouScreenModel {
         title: item.title,
         message: item.message,
         redirectUrl: item.redirectUrl,
-        metadata: JSON.parse(item.metadata),
-        createdAt: item.createdAt,
+        metadata: JSON.parse(item.metadata || '{}'),
+        createdAt: item.createdAt, // Mantener string si la interfaz lo espera
         updatedAt: item.updatedAt
       };
     } catch (error) {
@@ -177,24 +178,24 @@ export class ThankYouScreenModel {
   }
 
   /**
-   * Obtiene la pantalla de agradecimiento de una investigación
+   * Obtiene la pantalla de agradecimiento de una investigación usando GSI
    * @param researchId ID de la investigación
    * @returns La pantalla de agradecimiento encontrada o null si no existe
    */
   async getByResearchId(researchId: string): Promise<SharedThankYouScreenModel | null> {
-    const params = new QueryCommand({
+    const command = new QueryCommand({ // Usar Query sobre el GSI correcto
       TableName: this.tableName,
-      IndexName: 'researchId-index',
-      KeyConditionExpression: 'researchId = :researchId',
-      FilterExpression: 'begins_with(sk, :prefix)',
+      IndexName: 'ResearchIdIndex', // USAR el índice común
+      KeyConditionExpression: 'researchId = :rid', 
       ExpressionAttributeValues: {
-        ':researchId': researchId,
-        ':prefix': 'THANK_YOU_SCREEN#'
-      }
+        ':rid': researchId,
+        // No necesitamos filtrar por SK aquí si asumimos una pantalla por researchId
+      },
+      Limit: 1
     });
 
     try {
-      const result = await this.dynamoClient.send(params);
+      const result = await this.dynamoClient.send(command);
       
       if (!result.Items || result.Items.length === 0) {
         return null;
@@ -202,7 +203,7 @@ export class ThankYouScreenModel {
 
       const item = result.Items[0] as ThankYouScreenDynamoItem;
       
-      // Convertir de formato DynamoDB a la interfaz ThankYouScreenRecord
+      // Convertir de formato DynamoDB
       return {
         id: item.id,
         researchId: item.researchId,
@@ -210,174 +211,145 @@ export class ThankYouScreenModel {
         title: item.title,
         message: item.message,
         redirectUrl: item.redirectUrl,
-        metadata: JSON.parse(item.metadata),
-        createdAt: item.createdAt,
+        metadata: JSON.parse(item.metadata || '{}'),
+        createdAt: item.createdAt, 
         updatedAt: item.updatedAt
       };
     } catch (error) {
-      console.error('Error al obtener pantalla de agradecimiento por Research ID:', error);
+      console.error('Error al obtener pantalla de agradecimiento por Research ID (Query GSI):', error);
+      if ((error as Error).message?.includes('index')) {
+         console.error("Error GSI 'ResearchIdIndex' no encontrado para ThankYouScreen.");
+         throw new Error("Error de configuración de base de datos: falta índice para búsqueda.");
+      }
       throw new Error('Error al obtener la pantalla de agradecimiento para esta investigación');
     }
   }
 
   /**
-   * Actualiza una pantalla de agradecimiento existente
-   * @param id ID de la pantalla
-   * @param data Datos a actualizar
+   * Actualiza una pantalla de agradecimiento existente usando su ID único (UUID)
+   * @param id ID único (UUID) de la pantalla
+   * @param data Datos a actualizar (parcial)
    * @returns La pantalla de agradecimiento actualizada o null si no existe
    */
-  async update(id: string, data: Partial<ThankYouScreenConfig>): Promise<SharedThankYouScreenModel | null> {
-    // Primero verificamos que la pantalla exista
+  async update(id: string, data: Partial<ThankYouScreenFormData>): Promise<SharedThankYouScreenModel | null> {
+    // Verificar que existe usando el ID único y SK constante
     const existingScreen = await this.getById(id);
-    
     if (!existingScreen) {
-      return null;
+      return null; // O lanzar error si se prefiere
     }
 
-    // Fecha actual para updated
     const now = new Date().toISOString();
     
-    // Actualizamos solo los campos proporcionados
-    const updateExpression = [];
-    const expressionAttributeNames: Record<string, string> = {};
-    const expressionAttributeValues: Record<string, any> = {};
+    let updateExpression = 'SET updatedAt = :updatedAt';
+    const expressionAttributeValues: Record<string, any> = { ':updatedAt': now };
+    // const expressionAttributeNames: Record<string, string> = {}; // Descomentar si se usan nombres reservados
 
-    // Construir expresión de actualización dinámica
+    // Construir expresión de actualización dinámica (simplificado)
     if (data.isEnabled !== undefined) {
-      updateExpression.push('#isEnabled = :isEnabled');
-      expressionAttributeNames['#isEnabled'] = 'isEnabled';
+      updateExpression += ', isEnabled = :isEnabled';
       expressionAttributeValues[':isEnabled'] = data.isEnabled;
     }
-
     if (data.title !== undefined) {
-      updateExpression.push('#title = :title');
-      expressionAttributeNames['#title'] = 'title';
+      updateExpression += ', title = :title';
       expressionAttributeValues[':title'] = data.title;
     }
-
     if (data.message !== undefined) {
-      updateExpression.push('#message = :message');
-      expressionAttributeNames['#message'] = 'message';
+      updateExpression += ', message = :message';
       expressionAttributeValues[':message'] = data.message;
     }
-
     if (data.redirectUrl !== undefined) {
-      updateExpression.push('#redirectUrl = :redirectUrl');
-      expressionAttributeNames['#redirectUrl'] = 'redirectUrl';
-      expressionAttributeValues[':redirectUrl'] = data.redirectUrl ?? '';
+      updateExpression += ', redirectUrl = :redirectUrl';
+      expressionAttributeValues[':redirectUrl'] = data.redirectUrl;
+    }
+    // Actualizar metadata de forma consistente
+    if (data.metadata !== undefined) {
+       updateExpression += ', metadata = :metadata';
+       expressionAttributeValues[':metadata'] = JSON.stringify({ 
+           ...(existingScreen.metadata || {}), 
+           ...data.metadata,
+           lastUpdated: new Date(), 
+       });
+    } else {
+        updateExpression += ', metadata = :metadata';
+        expressionAttributeValues[':metadata'] = JSON.stringify({
+            ...(existingScreen.metadata || {}),
+            lastUpdated: new Date(),
+        });
     }
 
-    // Siempre actualizamos la fecha de última modificación
-    updateExpression.push('#updatedAt = :updatedAt');
-    expressionAttributeNames['#updatedAt'] = 'updatedAt';
-    expressionAttributeValues[':updatedAt'] = now;
-
-    // Actualizamos el metadata si se proporciona
-    let metadata = existingScreen.metadata || { version: '1.0.0' };
-    if (data.metadata) {
-      metadata = {
-        ...metadata,
-        ...data.metadata
-      };
-    }
-    updateExpression.push('#metadata = :metadata');
-    expressionAttributeNames['#metadata'] = 'metadata';
-    expressionAttributeValues[':metadata'] = JSON.stringify(metadata);
-
-    const params = new UpdateCommand({
+    const command = new UpdateCommand({
       TableName: this.tableName,
       Key: {
-        id,
-        sk: `THANK_YOU_SCREEN#${id}`
+        id: id,
+        sk: ThankYouScreenModel.SORT_KEY_VALUE // Usar SK constante
       },
-      UpdateExpression: `SET ${updateExpression.join(', ')}`,
-      ExpressionAttributeNames: expressionAttributeNames,
+      UpdateExpression: updateExpression,
       ExpressionAttributeValues: expressionAttributeValues,
-      ReturnValues: 'ALL_NEW'
+      // ExpressionAttributeNames: Object.keys(expressionAttributeNames).length > 0 ? expressionAttributeNames : undefined,
+      ReturnValues: 'ALL_NEW' 
     });
 
     try {
-      const result = await this.dynamoClient.send(params);
-      const updatedItem = result.Attributes as ThankYouScreenDynamoItem;
-      
-      // Convertir de formato DynamoDB a la interfaz ThankYouScreenRecord
+      const result = await this.dynamoClient.send(command);
+      const updatedAttributes = result.Attributes as ThankYouScreenDynamoItem;
+      if (!updatedAttributes) {
+        throw new Error('La actualización no devolvió los atributos actualizados.');
+      }
+      // Convertir a formato de retorno
       return {
-        id: updatedItem.id,
-        researchId: updatedItem.researchId,
-        isEnabled: updatedItem.isEnabled,
-        title: updatedItem.title,
-        message: updatedItem.message,
-        redirectUrl: updatedItem.redirectUrl,
-        metadata: JSON.parse(updatedItem.metadata),
-        createdAt: updatedItem.createdAt,
-        updatedAt: updatedItem.updatedAt
+        id: updatedAttributes.id,
+        researchId: updatedAttributes.researchId,
+        isEnabled: updatedAttributes.isEnabled,
+        title: updatedAttributes.title,
+        message: updatedAttributes.message,
+        redirectUrl: updatedAttributes.redirectUrl,
+        metadata: JSON.parse(updatedAttributes.metadata || '{}'),
+        createdAt: updatedAttributes.createdAt,
+        updatedAt: updatedAttributes.updatedAt
       };
-    } catch (error) {
-      console.error('Error al actualizar pantalla de agradecimiento:', error);
-      throw new Error('Error al actualizar la pantalla de agradecimiento');
+    } catch (error: any) {
+      console.error('ERROR DETALLADO de DynamoDB UpdateCommand (ThankYouScreen):', JSON.stringify(error, null, 2));
+      console.error('Error al actualizar pantalla de agradecimiento:', error.message);
+      throw new Error('DATABASE_ERROR: Error al actualizar la pantalla de agradecimiento');
     }
   }
 
   /**
-   * Elimina una pantalla de agradecimiento
-   * @param id ID de la pantalla de agradecimiento
-   * @returns true si se eliminó correctamente
+   * Elimina una pantalla de agradecimiento por su ID único (UUID)
+   * @param id ID único (UUID) de la pantalla
+   * @returns true si se eliminó, false si no se encontró
    */
   async delete(id: string): Promise<boolean> {
-    const params = new DeleteCommand({
+    // Verificar existencia
+    const existingScreen = await this.getById(id);
+    if (!existingScreen) {
+      return false;
+    }
+
+    const command = new DeleteCommand({
       TableName: this.tableName,
       Key: {
-        id,
-        sk: `THANK_YOU_SCREEN#${id}`
+        id: id,
+        sk: ThankYouScreenModel.SORT_KEY_VALUE // Usar SK constante
       }
     });
 
     try {
-      await this.dynamoClient.send(params);
+      await this.dynamoClient.send(command);
       return true;
-    } catch (error) {
-      console.error('Error al eliminar pantalla de agradecimiento:', error);
-      throw new Error('Error al eliminar la pantalla de agradecimiento');
+    } catch (error: any) {
+      console.error('ERROR DETALLADO de DynamoDB DeleteCommand (ThankYouScreen):', JSON.stringify(error, null, 2));
+      console.error('Error al eliminar pantalla de agradecimiento:', error.message);
+      throw new Error('DATABASE_ERROR: Error al eliminar la pantalla de agradecimiento');
     }
   }
 
-  /**
-   * Obtiene todas las pantallas de agradecimiento
-   * @returns Array con todas las pantallas de agradecimiento
-   */
+  // Eliminar getAll o refactorizar si es necesario (Scan es ineficiente)
   async getAll(): Promise<SharedThankYouScreenModel[]> {
-    try {
-      // Usar el cliente de AWS SDK v3 para consultar
-      const result = await this.dynamoClient.send(new QueryCommand({
-        TableName: this.tableName,
-        IndexName: 'researchId-index',
-        KeyConditionExpression: 'begins_with(sk, :sk)',
-        ExpressionAttributeValues: {
-          ':sk': 'THANK_YOU_SCREEN#'
-        }
-      }));
-      
-      if (!result.Items || result.Items.length === 0) {
-        return [];
-      }
-
-      return result.Items.map(item => {
-        const dynamoItem = item as ThankYouScreenDynamoItem;
-        return {
-          id: dynamoItem.id,
-          researchId: dynamoItem.researchId,
-          isEnabled: dynamoItem.isEnabled,
-          title: dynamoItem.title,
-          message: dynamoItem.message,
-          redirectUrl: dynamoItem.redirectUrl,
-          metadata: JSON.parse(dynamoItem.metadata),
-          createdAt: dynamoItem.createdAt,
-          updatedAt: dynamoItem.updatedAt
-        };
-      });
-    } catch (error) {
-      console.error('Error en thankYouScreenModel.getAll:', error);
-      return [];
-    }
+    console.warn('[ThankYouScreenModel] getAll() no implementado eficientemente.');
+    return [];
   }
-} 
+}
+
+// Exportar una instancia única del modelo
+export const thankYouScreenModel = new ThankYouScreenModel(); 

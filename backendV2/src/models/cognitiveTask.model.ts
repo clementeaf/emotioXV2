@@ -5,51 +5,48 @@ import {
   PutCommand, 
   UpdateCommand, 
   QueryCommand,
-  DeleteCommand
+  DeleteCommand,
+  ScanCommand
 } from '@aws-sdk/lib-dynamodb';
 import { v4 as uuidv4 } from 'uuid';
 import {
   CognitiveTaskFormData,
-  Question
+  Question,
+  CognitiveTaskModel as SharedCognitiveTaskModel
 } from '../../../shared/interfaces/cognitive-task.interface';
 
 /**
- * Registro completo de un formulario CognitiveTask en la base de datos
+ * Usaremos directamente la interfaz compartida que ya debería incluir id, researchId, etc.
+ * Añadimos campos específicos si es necesario, pero la base es SharedCognitiveTaskModel.
  */
-export interface CognitiveTaskRecord extends CognitiveTaskFormData {
-  /**
-   * ID único del formulario
-   */
-  id: string;
-
-  /**
-   * Timestamp de creación del registro
-   */
-  createdAt: Date;
-
-  /**
-   * Timestamp de última actualización del registro
-   */
-  updatedAt: Date;
+export interface CognitiveTaskRecord extends SharedCognitiveTaskModel { 
+  // La interfaz compartida SharedCognitiveTaskModel debería tener:
+  // id: string;
+  // researchId: string;
+  // questions: Question[];
+  // randomizeQuestions: boolean;
+  // metadata?: { [key: string]: any }; // O una estructura más específica
+  // createdAt?: Date | string; // Revisar tipo en interfaz compartida
+  // updatedAt?: Date | string; // Revisar tipo en interfaz compartida
 }
 
 /**
- * Interfaz para el modelo DynamoDB de un formulario CognitiveTask
+ * Interfaz para el item DynamoDB de un formulario CognitiveTask
  */
 export interface CognitiveTaskDynamoItem {
-  // Clave primaria
+  // Clave primaria (UUID único)
   id: string;
-  // Clave de ordenación
+  // Clave de ordenación (constante para este tipo)
   sk: string;
-  // Research ID relacionado
+  // Research ID relacionado (para GSI)
   researchId: string;
-  // Preguntas del formulario (serializado)
+  // Preguntas del formulario (serializado a JSON string)
   questions: string;
   // Configuración
   randomizeQuestions: boolean;
-  // Metadata serializado
+  // Metadata serializado (objeto JSON como string)
   metadata: string;
-  // Fechas
+  // Fechas (ISO string)
   createdAt: string;
   updatedAt: string;
 }
@@ -58,43 +55,61 @@ export interface CognitiveTaskDynamoItem {
  * Modelo para manejar las operaciones de formularios CognitiveTask en DynamoDB
  */
 export class CognitiveTaskModel {
-  private tableName: string;
-  private dynamoClient: DynamoDBDocumentClient;
+  private readonly tableName: string;
+  private readonly dynamoClient: DynamoDBDocumentClient;
+  private static readonly SORT_KEY_VALUE = 'COGNITIVE_TASK'; // SK constante
 
   constructor() {
-    console.log('======== COGNITIVE TASK MODEL CONSTRUCTOR ========');
-    
-    // Obtenemos el nombre de la tabla desde variables de entorno o usamos un valor por defecto
-    this.tableName = process.env.DYNAMODB_TABLE || 'emotioXV2-table-dev';
-    console.log('Nombre de tabla DynamoDB para Cognitive Task forms:', this.tableName);
-    
-    // Configuración para DynamoDB en AWS Cloud
-    const options = {
-      region: process.env.APP_REGION || 'us-east-1'
+    this.tableName = process.env.DYNAMODB_TABLE!;
+    if (!this.tableName) {
+      console.error('FATAL ERROR: DYNAMODB_TABLE environment variable is not set.');
+      throw new Error('Table name environment variable is missing.');
+    }
+    const region: string = process.env.APP_REGION || 'us-east-1';
+    const client = new DynamoDBClient({ region });
+    this.dynamoClient = DynamoDBDocumentClient.from(client);
+    console.log(`[CognitiveTaskModel] Initialized for table: ${this.tableName} in region: ${region}`);
+  }
+
+  // Función helper para mapear de DynamoItem a Record
+  private mapToRecord(item: CognitiveTaskDynamoItem): CognitiveTaskRecord {
+    const parsedMetadata = JSON.parse(item.metadata || '{}');
+    const parsedQuestions = JSON.parse(item.questions || '[]') as Question[];
+
+    // Log de diagnóstico al mapear
+    const resultQuestionsWithFiles = parsedQuestions.filter(q => 
+        ['navigation_flow', 'preference_test'].includes(q.type) && q.files && q.files.length > 0
+      );
+      
+    if (resultQuestionsWithFiles.length > 0) {
+      console.log('[DIAGNOSTICO-IMAGEN:MODEL:MAP_TO_RECORD] Preguntas con archivos al mapear desde DB:', 
+        JSON.stringify(resultQuestionsWithFiles.map(q => ({
+          id: q.id, 
+          type: q.type, 
+          files: q.files?.map(f => ({id: f.id, name: f.name, url: f.url, s3Key: f.s3Key}))
+        })), null, 2)
+      );
+    }
+
+    return {
+      id: item.id,
+      researchId: item.researchId,
+      questions: parsedQuestions,
+      randomizeQuestions: item.randomizeQuestions,
+      metadata: parsedMetadata,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt
     };
-    
-    console.log('Configuración DynamoDB para Cognitive Task forms:', options);
-    
-    this.dynamoClient = DynamoDBDocumentClient.from(new DynamoDBClient(options));
-    console.log('=======================================');
   }
 
   /**
    * Crea un nuevo formulario CognitiveTask
-   * @param data Datos del formulario
-   * @param researchId ID de la investigación asociada
-   * @returns El formulario creado con su ID generado
    */
   async create(data: CognitiveTaskFormData, researchId: string): Promise<CognitiveTaskRecord> {
-    // Generar ID único para el formulario
     const formId = uuidv4();
-    
-    // Fecha actual para created/updated
     const now = new Date().toISOString();
-    
-    // Combinar con valores por defecto si es necesario
     const questions = data.questions || [];
-    
+
     // Log para diagnóstico de imágenes
     const questionsWithFiles = questions.filter(q => 
       ['navigation_flow', 'preference_test'].includes(q.type) && q.files && q.files.length > 0
@@ -128,11 +143,11 @@ export class CognitiveTaskModel {
     // Convertir a formato para DynamoDB
     const item: CognitiveTaskDynamoItem = {
       id: formId,
-      sk: `COGNITIVE_TASK#${formId}`,
+      sk: CognitiveTaskModel.SORT_KEY_VALUE, // Usar SK constante
       researchId,
       questions: JSON.stringify(questions),
-      randomizeQuestions: data.randomizeQuestions || false,
-      metadata: JSON.stringify(standardMetadata),
+      randomizeQuestions: data.randomizeQuestions ?? false,
+      metadata: JSON.stringify(data.metadata ? { ...standardMetadata, ...data.metadata } : standardMetadata),
       createdAt: now,
       updatedAt: now
     };
@@ -142,7 +157,6 @@ export class CognitiveTaskModel {
       item.questions.substring(0, 300) + (item.questions.length > 300 ? '...' : '')
     );
 
-    // Guardar en DynamoDB
     const command = new PutCommand({
       TableName: this.tableName,
       Item: item
@@ -150,157 +164,83 @@ export class CognitiveTaskModel {
 
     try {
       await this.dynamoClient.send(command);
-      
-      // Devolver el objeto creado con su ID
-      return {
-        id: formId,
-        researchId,
-        questions: questions,
-        randomizeQuestions: data.randomizeQuestions || false,
-        metadata: {
-          createdAt: now,
-          updatedAt: now,
-          lastModifiedBy: 'system'
-        },
-        createdAt: new Date(now),
-        updatedAt: new Date(now)
-      };
-    } catch (error) {
-      console.error('Error al crear formulario CognitiveTask:', error);
-      throw error;
+      return this.mapToRecord(item); // Devolver usando el mapeo
+    } catch (error: any) {
+      console.error('ERROR DETALLADO de DynamoDB PutCommand (CognitiveTask):', JSON.stringify(error, null, 2));
+      console.error('Error al crear formulario CognitiveTask:', error.message);
+      throw new Error('DATABASE_ERROR: Error al crear el formulario de tarea cognitiva'); // Mensaje más específico
     }
   }
 
   /**
-   * Obtiene un formulario CognitiveTask por su ID
-   * @param formId ID del formulario
-   * @returns El formulario si existe, null si no
+   * Obtiene un formulario CognitiveTask por su ID único (UUID)
    */
   async getById(formId: string): Promise<CognitiveTaskRecord | null> {
     const command = new GetCommand({
       TableName: this.tableName,
       Key: {
         id: formId,
-        sk: `COGNITIVE_TASK#${formId}`
+        sk: CognitiveTaskModel.SORT_KEY_VALUE // Usar SK constante
       }
     });
 
     try {
       const result = await this.dynamoClient.send(command);
-      
       if (!result.Item) {
         return null;
       }
-
-      const item = result.Item as CognitiveTaskDynamoItem;
-      const parsedMetadata = JSON.parse(item.metadata);
-      
-      // Parsear las preguntas del resultado
-      const parsedQuestions = JSON.parse(item.questions) as Question[];
-      
-      // Log para diagnóstico de imágenes en el resultado
-      const resultQuestionsWithFiles = parsedQuestions.filter(q => 
-        ['navigation_flow', 'preference_test'].includes(q.type) && q.files && q.files.length > 0
-      );
-      
-      if (resultQuestionsWithFiles.length > 0) {
-        console.log('[DIAGNOSTICO-IMAGEN:MODEL:GET_BY_ID] Preguntas con archivos al recuperar:', 
-          JSON.stringify(resultQuestionsWithFiles.map(q => ({
-            id: q.id, 
-            type: q.type, 
-            files: q.files?.map(f => ({id: f.id, name: f.name, url: f.url, s3Key: f.s3Key}))
-          })), null, 2)
-        );
-      }
-      
-      return {
-        id: item.id,
-        researchId: item.researchId,
-        questions: parsedQuestions,
-        randomizeQuestions: item.randomizeQuestions,
-        metadata: {
-          createdAt: parsedMetadata.createdAt,
-          updatedAt: parsedMetadata.updatedAt,
-          lastModifiedBy: parsedMetadata.lastModifiedBy
-        },
-        createdAt: new Date(item.createdAt),
-        updatedAt: new Date(item.updatedAt)
-      };
-    } catch (error) {
-      console.error('Error al obtener formulario CognitiveTask:', error);
-      throw error;
+      // Mapear y devolver (el log de diagnóstico ya está en mapToRecord)
+      return this.mapToRecord(result.Item as CognitiveTaskDynamoItem);
+    } catch (error: any) {
+      console.error('ERROR DETALLADO de DynamoDB GetCommand (CognitiveTask):', JSON.stringify(error, null, 2));
+      console.error(`Error al obtener CognitiveTask por ID ${formId}:`, error.message);
+      throw new Error('DATABASE_ERROR: Error al obtener el formulario de tarea cognitiva por ID');
     }
   }
 
   /**
-   * Obtiene el formulario CognitiveTask asociado a una investigación
-   * @param researchId ID de la investigación
-   * @returns El formulario si existe, null si no
+   * Obtiene el formulario CognitiveTask asociado a una investigación usando GSI
    */
   async getByResearchId(researchId: string): Promise<CognitiveTaskRecord | null> {
     const command = new QueryCommand({
       TableName: this.tableName,
-      IndexName: 'researchId-index',
-      KeyConditionExpression: 'researchId = :researchId',
-      FilterExpression: 'begins_with(sk, :prefix)',
+      IndexName: 'ResearchIdIndex', // Usar GSI correcto
+      KeyConditionExpression: 'researchId = :rid',
+      // FilterExpression ya no es necesario si asumimos uno por researchId
       ExpressionAttributeValues: {
-        ':researchId': researchId,
-        ':prefix': 'COGNITIVE_TASK#'
-      }
+        ':rid': researchId
+      },
+      Limit: 1
     });
 
     try {
       const result = await this.dynamoClient.send(command);
-      
       if (!result.Items || result.Items.length === 0) {
         return null;
       }
-
-      // Asumimos que solo hay un formulario por investigación
-      const item = result.Items[0] as CognitiveTaskDynamoItem;
-      const parsedMetadata = JSON.parse(item.metadata);
-      
-      return {
-        id: item.id,
-        researchId: item.researchId,
-        questions: JSON.parse(item.questions) as Question[],
-        randomizeQuestions: item.randomizeQuestions,
-        metadata: {
-          createdAt: parsedMetadata.createdAt,
-          updatedAt: parsedMetadata.updatedAt,
-          lastModifiedBy: parsedMetadata.lastModifiedBy
-        },
-        createdAt: new Date(item.createdAt),
-        updatedAt: new Date(item.updatedAt)
-      };
-    } catch (error) {
-      console.error('Error al obtener formulario CognitiveTask por researchId:', error);
-      throw error;
+      // Mapear y devolver
+      return this.mapToRecord(result.Items[0] as CognitiveTaskDynamoItem);
+    } catch (error: any) {
+      console.error('ERROR DETALLADO de DynamoDB QueryCommand GSI (CognitiveTask):', JSON.stringify(error, null, 2));
+      console.error(`Error al obtener CognitiveTask por researchId ${researchId}:`, error.message);
+      throw new Error('DATABASE_ERROR: Error al obtener el formulario de tarea cognitiva por Research ID');
     }
   }
 
   /**
    * Actualiza un formulario CognitiveTask existente
-   * @param formId ID del formulario a actualizar
-   * @param data Datos parciales para actualizar
-   * @returns El formulario actualizado
    */
   async update(formId: string, data: Partial<CognitiveTaskFormData>): Promise<CognitiveTaskRecord> {
-    // Primero obtenemos el registro actual
+    // Verificar existencia
     const currentRecord = await this.getById(formId);
-    
     if (!currentRecord) {
-      throw new Error(`Formulario CognitiveTask con ID ${formId} no encontrado`);
+      throw new Error(`COGNITIVE_TASK_NOT_FOUND: Formulario con ID ${formId} no encontrado.`);
     }
     
-    // Fecha actual para updated
     const now = new Date().toISOString();
     
-    // Preparar los campos a actualizar
     let updateExpression = 'SET updatedAt = :updatedAt';
-    const expressionAttributeValues: any = {
-      ':updatedAt': now
-    };
+    const expressionAttributeValues: Record<string, any> = { ':updatedAt': now };
     
     // Actualizar preguntas si se proporcionan
     if (data.questions) {
@@ -337,28 +277,31 @@ export class CognitiveTaskModel {
       );
     }
     
-    // Actualizar randomizeQuestions si se proporciona
     if (data.randomizeQuestions !== undefined) {
       updateExpression += ', randomizeQuestions = :randomizeQuestions';
       expressionAttributeValues[':randomizeQuestions'] = data.randomizeQuestions;
     }
     
-    // Preparar la metadata para actualizar
-    const currentMetadata = {
-      createdAt: currentRecord.metadata?.createdAt || '',
-      updatedAt: now,
-      lastModifiedBy: data.metadata?.lastModifiedBy || currentRecord.metadata?.lastModifiedBy || 'system'
+    // Actualizar metadata consistentemente
+    const currentMetadataObject = currentRecord.metadata || {};
+    const incomingMetadata = data.metadata || {};
+    const newMetadata = {
+        ...currentMetadataObject,
+        ...incomingMetadata, // Sobrescribir con lo nuevo si existe
+        updatedAt: now, // Siempre actualizar updatedAt
+        lastModifiedBy: incomingMetadata.lastModifiedBy || currentMetadataObject.lastModifiedBy || 'system'
+        // Mantener createdAt original si existe en currentMetadataObject
+        // createdAt: currentMetadataObject.createdAt || now 
     };
 
-    // Actualizar metadata
     updateExpression += ', metadata = :metadata';
-    expressionAttributeValues[':metadata'] = JSON.stringify(currentMetadata);
+    expressionAttributeValues[':metadata'] = JSON.stringify(newMetadata);
     
     const command = new UpdateCommand({
       TableName: this.tableName,
       Key: {
         id: formId,
-        sk: `COGNITIVE_TASK#${formId}`
+        sk: CognitiveTaskModel.SORT_KEY_VALUE // Usar SK constante
       },
       UpdateExpression: updateExpression,
       ExpressionAttributeValues: expressionAttributeValues,
@@ -367,115 +310,70 @@ export class CognitiveTaskModel {
     
     try {
       const result = await this.dynamoClient.send(command);
-      
       if (!result.Attributes) {
-        throw new Error('Error al actualizar: no se devolvieron atributos');
+        throw new Error('La actualización no devolvió atributos.');
       }
-      
-      const updatedItem = result.Attributes as CognitiveTaskDynamoItem;
-      const parsedMetadata = JSON.parse(updatedItem.metadata);
-      
-      // Parsear las preguntas del resultado
-      const parsedQuestions = JSON.parse(updatedItem.questions) as Question[];
-      
-      // Log para diagnóstico de imágenes en el resultado
-      const resultQuestionsWithFiles = parsedQuestions.filter(q => 
-        ['navigation_flow', 'preference_test'].includes(q.type) && q.files && q.files.length > 0
-      );
-      
-      if (resultQuestionsWithFiles.length > 0) {
-        console.log('[DIAGNOSTICO-IMAGEN:MODEL:UPDATE] Preguntas con archivos después de actualizar:', 
-          JSON.stringify(resultQuestionsWithFiles.map(q => ({
-            id: q.id, 
-            type: q.type, 
-            files: q.files?.map(f => ({id: f.id, name: f.name, url: f.url, s3Key: f.s3Key}))
-          })), null, 2)
-        );
-      } else {
-        console.log('[DIAGNOSTICO-IMAGEN:MODEL:UPDATE] No se encontraron preguntas con archivos en el resultado');
-      }
-      
-      return {
-        id: updatedItem.id,
-        researchId: updatedItem.researchId,
-        questions: parsedQuestions,
-        randomizeQuestions: updatedItem.randomizeQuestions,
-        metadata: {
-          createdAt: parsedMetadata.createdAt,
-          updatedAt: parsedMetadata.updatedAt,
-          lastModifiedBy: parsedMetadata.lastModifiedBy
-        },
-        createdAt: new Date(updatedItem.createdAt),
-        updatedAt: new Date(updatedItem.updatedAt)
-      };
-    } catch (error) {
-      console.error('Error al actualizar formulario CognitiveTask:', error);
-      throw error;
+      // Mapear y devolver (log de diagnóstico en mapToRecord)
+      return this.mapToRecord(result.Attributes as CognitiveTaskDynamoItem);
+    } catch (error: any) {
+      console.error('ERROR DETALLADO de DynamoDB UpdateCommand (CognitiveTask):', JSON.stringify(error, null, 2));
+      console.error(`Error al actualizar CognitiveTask con ID ${formId}:`, error.message);
+      throw new Error('DATABASE_ERROR: Error al actualizar el formulario de tarea cognitiva');
     }
   }
 
   /**
    * Elimina un formulario CognitiveTask
-   * @param formId ID del formulario a eliminar
    */
   async delete(formId: string): Promise<void> {
+     // Opcional: verificar existencia
+     const existing = await this.getById(formId);
+     if (!existing) {
+        console.warn(`[CognitiveTaskModel] Intento de eliminar formulario no existente: ${formId}`);
+        return;
+     }
+
     const command = new DeleteCommand({
       TableName: this.tableName,
       Key: {
         id: formId,
-        sk: `COGNITIVE_TASK#${formId}`
+        sk: CognitiveTaskModel.SORT_KEY_VALUE // Usar SK constante
       }
     });
     
     try {
       await this.dynamoClient.send(command);
-    } catch (error) {
-      console.error('Error al eliminar formulario CognitiveTask:', error);
-      throw error;
+    } catch (error: any) {
+      console.error('ERROR DETALLADO de DynamoDB DeleteCommand (CognitiveTask):', JSON.stringify(error, null, 2));
+      console.error(`Error al eliminar CognitiveTask con ID ${formId}:`, error.message);
+      throw new Error('DATABASE_ERROR: Error al eliminar el formulario de tarea cognitiva');
     }
   }
 
   /**
-   * Obtiene todos los formularios CognitiveTask
-   * @returns Lista de todos los formularios
+   * Obtiene todos los formularios CognitiveTask (Scan - Ineficiente)
    */
   async getAll(): Promise<CognitiveTaskRecord[]> {
-    const command = new QueryCommand({
+    // Usar Scan filtrando por SK
+    const command = new ScanCommand({
       TableName: this.tableName,
-      IndexName: 'sk-index',
-      KeyConditionExpression: 'begins_with(sk, :prefix)',
+      FilterExpression: 'sk = :skVal',
       ExpressionAttributeValues: {
-        ':prefix': 'COGNITIVE_TASK#'
+        ':skVal': CognitiveTaskModel.SORT_KEY_VALUE
       }
     });
     
     try {
       const result = await this.dynamoClient.send(command);
-      
-      if (!result.Items || result.Items.length === 0) {
-        return [];
-      }
-      
-      return result.Items.map((item: any) => {
-        const parsedMetadata = JSON.parse(item.metadata);
-        
-        return {
-          id: item.id,
-          researchId: item.researchId,
-          questions: JSON.parse(item.questions) as Question[],
-          randomizeQuestions: item.randomizeQuestions,
-          metadata: {
-            createdAt: parsedMetadata.createdAt,
-            updatedAt: parsedMetadata.updatedAt,
-            lastModifiedBy: parsedMetadata.lastModifiedBy
-          },
-          createdAt: new Date(item.createdAt),
-          updatedAt: new Date(item.updatedAt)
-        };
-      });
-    } catch (error) {
-      console.error('Error al obtener todos los formularios CognitiveTask:', error);
-      throw error;
+      const items = result.Items || [];
+      return items.map(item => this.mapToRecord(item as CognitiveTaskDynamoItem));
+    } catch (error: any) {
+      console.error('ERROR DETALLADO de DynamoDB ScanCommand (CognitiveTask - getAll):', JSON.stringify(error, null, 2));
+      console.error('Error en CognitiveTaskModel.getAll:', error.message);
+      throw new Error('DATABASE_ERROR: Error al obtener todos los formularios de tareas cognitivas');
     }
   }
-} 
+}
+
+// Exportar instancia
+export const cognitiveTaskModel = new CognitiveTaskModel(); 

@@ -400,14 +400,7 @@ export class EyeTrackingService {
       await this.getById(id);
       
       // Eliminar
-      const deleted = await eyeTrackingModel.delete(id);
-      
-      if (!deleted) {
-        throw new ApiError(
-          `${EyeTrackingError.DATABASE_ERROR}: Error al eliminar la configuración de eye tracking`,
-          500
-        );
-      }
+      await eyeTrackingModel.delete(id);
     } catch (error) {
       // Si ya es un ApiError, relanzarlo
       if (error instanceof ApiError) {
