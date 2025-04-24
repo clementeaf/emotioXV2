@@ -6,6 +6,7 @@
 import { SmartVOCFormData, SmartVOCFormResponse } from 'shared/interfaces/smart-voc.interface';
 import API_CONFIG from '@/config/api.config';
 import { ApiClient } from '@/lib/api-client';
+import { ApiError } from '@/config/api-client';
 
 interface ApiResponse<T> {
   data?: T & { id?: string };
@@ -104,38 +105,40 @@ export class SmartVOCFixedAPI extends ApiClient {
     super(`${API_CONFIG.baseURL}`); // Cambiar baseURL base si es necesario o quitar /smart-voc
   }
 
-  async create(data: SmartVOCFormData): Promise<ApiResponse<SmartVOCFormResponse>> {
+  async create(data: SmartVOCFormData): Promise<SmartVOCFormData> {
     console.log('[SmartVOCAPI] Creando smart-voc:', data);
-    // Ruta POST: /research/{researchId}/smart-voc
     const path = `/research/${data.researchId}/smart-voc`;
-    return this.post<ApiResponse<SmartVOCFormResponse>>(path, data);
+    return this.post<SmartVOCFormData>(path, data);
   }
 
-  async update(id: string, data: Partial<SmartVOCFormData>): Promise<ApiResponse<SmartVOCFormResponse>> {
+  async update(id: string, data: Partial<SmartVOCFormData>): Promise<SmartVOCFormData> {
     console.log(`[SmartVOCAPI] Actualizando smart-voc ${id}:`, data);
-     // Ruta PUT: /research/{researchId}/smart-voc (asume researchId está en data)
     if (!data.researchId) throw new Error('ResearchId es necesario para actualizar SmartVOC');
     const path = `/research/${data.researchId}/smart-voc`;
-    return this.put<ApiResponse<SmartVOCFormResponse>>(path, data);
+    return this.put<SmartVOCFormData>(path, data);
   }
 
-  // getById probablemente no sea necesario si siempre se accede por researchId
-  // async getById(id: string): Promise<ApiResponse<SmartVOCFormResponse>> { ... }
-
-  async getByResearchId(researchId: string): Promise<ApiResponse<SmartVOCFormResponse>> {
+  async getByResearchId(researchId: string): Promise<SmartVOCFormData | null> {
     console.log(`[SmartVOCAPI] Obteniendo smart-voc por researchId: ${researchId}`);
-    // Ruta correcta definida en el backend
     const path = `/research/${researchId}/smart-voc`; 
     console.log(`[SmartVOCAPI] Llamando a GET ${path}`);
-    // Usar la baseURL base del constructor (asumiendo que es la raíz de la API)
-    return this.get<ApiResponse<SmartVOCFormResponse>>(path); 
+    try {
+      const result = await this.get<SmartVOCFormData>(path);
+      return result;
+    } catch (error) {
+      if (error instanceof ApiError && error.statusCode === 404) {
+        console.log(`[SmartVOCAPI] No se encontró SmartVOC para researchId: ${researchId}, devolviendo null.`);
+        return null;
+      }
+      console.error("[SmartVOCAPI] Error en getByResearchId:", error);
+      throw error;
+    }
   }
 
-  async deleteSmartVOC(researchId: string): Promise<ApiResponse<SmartVOCFormResponse>> {
+  async deleteSmartVOC(researchId: string): Promise<void> {
      console.log(`[SmartVOCAPI] Eliminando smart-voc para researchId: ${researchId}`);
-     // Ruta DELETE: /research/{researchId}/smart-voc
      const path = `/research/${researchId}/smart-voc`;
-     return this.delete<ApiResponse<SmartVOCFormResponse>>(path);
+     await this.delete<void>(path);
   }
 }
 

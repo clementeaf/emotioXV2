@@ -1,28 +1,5 @@
-export interface WelcomeScreenMetadata {
-  version: string;
-  lastUpdated: string;
-  lastModifiedBy: string;
-}
-
-export interface WelcomeScreenData {
-  id?: string;
-  researchId: string;
-  isEnabled?: boolean;
-  title: string;
-  message: string;
-  startButtonText: string;
-  subtitle?: string;
-  logoUrl?: string;
-  backgroundImageUrl?: string;
-  backgroundColor?: string;
-  textColor?: string;
-  theme?: string;
-  disclaimer?: string;
-  customCss?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  metadata?: WelcomeScreenMetadata;
-}
+// Importar los tipos correctos desde el servicio
+import { WelcomeScreenData, WelcomeScreenRecord } from '@/services/welcomeScreenService';
 
 export interface ErrorModalData {
   title: string;
@@ -31,12 +8,12 @@ export interface ErrorModalData {
 }
 
 export interface UseWelcomeScreenFormResult {
-  formData: WelcomeScreenData;
+  formData: WelcomeScreenData; // Usa la WelcomeScreenData importada
   setFormData: React.Dispatch<React.SetStateAction<WelcomeScreenData>>;
   validationErrors: ValidationErrors;
   isLoading: boolean;
   isSaving: boolean;
-  existingScreen: WelcomeScreenData | null;
+  existingScreen: WelcomeScreenRecord | null; // <-- Usa WelcomeScreenRecord importada
   modalError: ErrorModalData | null;
   modalVisible: boolean;
   handleChange: (field: keyof WelcomeScreenData, value: any) => void;

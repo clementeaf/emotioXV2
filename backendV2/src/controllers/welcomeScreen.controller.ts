@@ -81,12 +81,15 @@ export class WelcomeScreenController {
       const screen = await welcomeScreenService.getByResearchId(researchId);
       
       if (!screen) {
-        console.log(`No se encontró welcome screen para la investigación: ${researchId}`);
-        return createResponse(200, { data: null });
+        console.log(`No se encontró welcome screen para la investigación: ${researchId}, devolviendo 404.`);
+        // Devolver 404 Not Found si no se encuentra
+        return createResponse(404, { message: 'Welcome screen not found for this research.'});
       }
       
       console.log('Welcome screen encontrado:', screen);
-      return createResponse(200, { data: screen });
+      // Devolver el objeto screen directamente con status 200 OK
+      console.log('[DEBUG] Respuesta GET WelcomeScreen preparada (objeto directo):', JSON.stringify(screen));
+      return createResponse(200, screen);
     } catch (error) {
       console.error('Error al obtener welcome screen:', error);
       return errorResponse(

@@ -192,14 +192,19 @@ export class WelcomeScreenModel {
    * @returns La pantalla de bienvenida asociada o null
    */
   async getByResearchId(researchId: string): Promise<WelcomeScreenRecord | null> {
+    const skValue = 'WELCOME_SCREEN'; // Definir el SK esperado
     const command = new QueryCommand({
       TableName: this.tableName,
       IndexName: 'ResearchIdIndex',
       KeyConditionExpression: 'researchId = :rid',
+      // Usar FilterExpression ya que sk está proyectado (ProjectionType: ALL)
+      FilterExpression: 'sk = :skVal',
       ExpressionAttributeValues: {
-        ':rid': researchId
+        ':rid': researchId,
+        ':skVal': skValue 
       },
-      Limit: 1
+      // Quitar Limit: 1 para asegurar que el filtro se aplique a todos los items posibles
+      // Limit: 1 
     });
 
     try {
@@ -211,6 +216,15 @@ export class WelcomeScreenModel {
 
       const item = result.Items[0] as WelcomeScreenDynamoItem; 
       
+      // Ya no es necesario verificar sk aquí porque el filtro lo hizo
+      /*
+      if (item.sk !== skValue) {
+          console.warn(`[WelcomeScreenModel] Item encontrado por researchId ${researchId} pero tiene SK incorrecto (${item.sk}). Devolviendo null.`);
+          return null; // No es el tipo de item correcto
+      }
+      */
+      
+      // Si el SK es correcto, convertir y devolver
       return {
         id: item.id,
         researchId: item.researchId,

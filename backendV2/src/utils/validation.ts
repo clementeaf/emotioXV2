@@ -533,6 +533,8 @@ export function parseAndValidateBody<T>(
   if (validator) {
     const validationError = validator(data);
     if (validationError) {
+      // Loguear el error específico antes de devolverlo
+      console.error('[Validation] Error de validación detectado:', JSON.stringify(validationError));
       return validationError;
     }
   }

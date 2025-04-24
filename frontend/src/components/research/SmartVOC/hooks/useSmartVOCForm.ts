@@ -2,10 +2,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { 
-  SmartVOCFormData,
-  SmartVOCQuestion
+  SmartVOCFormData 
 } from 'shared/interfaces/smart-voc.interface';
-import { ErrorModalData, ValidationErrors, DEFAULT_QUESTIONS } from '../types';
+import { 
+  ErrorModalData, 
+  ValidationErrors, 
+  DEFAULT_QUESTIONS, 
+  SmartVOCQuestion
+} from '../types';
 import { smartVocFixedAPI } from '@/lib/smart-voc-api';
 import { 
   QUERY_KEYS, 
@@ -128,14 +132,32 @@ export const useSmartVOCForm = (researchId: string) => {
         throw new Error('No autenticado');
       }
       
-      console.log('[SmartVOCForm] Datos a guardar:', JSON.stringify(data, null, 2));
+      // Crear una copia limpia de los datos
+      const cleanedData = {
+        ...data,
+        questions: data.questions.map((q: SmartVOCQuestion) => {
+          const { instructions, config, ...restOfQuestion } = q; // Separar config
+          const cleanedConfig = { ...config }; // Copiar config
+          
+          // Si companyName existe y está vacío en config, eliminarlo
+          if (cleanedConfig.companyName === '') {
+            delete cleanedConfig.companyName;
+          }
+          
+          // Devolver la pregunta sin instructions y con config limpia
+          return { ...restOfQuestion, config: cleanedConfig }; 
+        })
+      };
+      // NO eliminamos metadata, volvemos a la versión anterior
+
+      console.log('[SmartVOCForm] Datos limpios (sin instructions, companyName vacío eliminado) a guardar:', JSON.stringify(cleanedData, null, 2));
       
       if (smartVocId) {
         console.log(`[SmartVOCForm] Actualizando Smart VOC con ID: ${smartVocId}`);
-        return await smartVocFixedAPI.update(smartVocId, data);
+        return await smartVocFixedAPI.update(smartVocId, cleanedData); // Usar cleanedData
       } else {
         console.log('[SmartVOCForm] Creando nuevo Smart VOC');
-        return await smartVocFixedAPI.create(data);
+        return await smartVocFixedAPI.create(cleanedData); // Usar cleanedData
       }
     },
     onSuccess: (response) => {
@@ -183,19 +205,24 @@ export const useSmartVOCForm = (researchId: string) => {
 
   // Efecto para cargar datos existentes
   useEffect(() => {
-    const existingData = smartVocData?.data?.data;
-    const existingId = smartVocData?.data?.id;
-
-    if (existingData) {
-      console.log("[SmartVOCForm] Cargando datos existentes:", existingData);
-      if (existingId) {
-        setSmartVocId(existingId);
+    // smartVocData puede ser SmartVOCFormData | null | { notFound: boolean }
+    const dataFromQuery = smartVocData;
+    
+    // Determinar si tenemos datos válidos o si es un caso de notFound/null
+    const isNotFoundOrNull = dataFromQuery === null || (typeof dataFromQuery === 'object' && 'notFound' in dataFromQuery && dataFromQuery.notFound);
+    const existingData = !isNotFoundOrNull ? dataFromQuery as SmartVOCFormData : null;
+            
+    if (existingData) { 
+      console.log("[SmartVOCForm] Cargando datos existentes (objeto directo):", existingData);
+      if (existingData.id) {
+        setSmartVocId(existingData.id);
       }
 
+      // Usa existingData (objeto directo)
       setFormData(prev => ({
         ...prev,
         ...existingData,
-        researchId,
+        researchId, // Asegurar que researchId se mantenga
         questions: existingData.questions?.length > 0 ? existingData.questions : [...DEFAULT_QUESTIONS],
         metadata: {
           ...(prev.metadata || {}),
@@ -203,8 +230,9 @@ export const useSmartVOCForm = (researchId: string) => {
           updatedAt: new Date().toISOString()
         }
       }));
-    } else if (!isLoading && !smartVocData?.notFound) {
-        console.log("[SmartVOCForm] No se encontraron datos existentes, usando defaults.");
+    } else if (!isLoading) { 
+        // Si no está cargando y no hay existingData, es notFound o error
+        console.log("[SmartVOCForm] No se encontraron datos existentes (notFound o null), usando defaults.");
         setFormData(prev => ({ ...prev, questions: [...DEFAULT_QUESTIONS] }));
         setSmartVocId(null);
     }

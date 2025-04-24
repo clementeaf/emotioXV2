@@ -1,23 +1,22 @@
 import { useState, useEffect, useCallback } from 'react';
-import welcomeScreenService from '@/services/welcomeScreenService';
+import welcomeScreenService, { WelcomeScreenData, WelcomeScreenRecord } from '@/services/welcomeScreenService';
 import {
-  WelcomeScreenData,
   ErrorModalData,
   UseWelcomeScreenFormResult,
   ValidationErrors,
 } from '../types';
 
-// Valor inicial con cadenas vacías para campos de texto
+// Valor inicial: Usar WelcomeScreenData importada. 
+// Necesita definir metadata si WelcomeScreenData la requiere.
 const INITIAL_FORM_DATA: WelcomeScreenData = {
   researchId: '',
   isEnabled: true,
   title: '',
   message: '',
   startButtonText: '',
-  metadata: {
-    version: '1.0',
-    lastUpdated: new Date().toISOString(),
-    lastModifiedBy: 'user'
+  // Añadir metadata inicial para cumplir el tipo
+  metadata: { 
+    // version, lastUpdated, lastModifiedBy son opcionales según la interfaz del servicio
   }
 };
 
@@ -25,89 +24,76 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
   // Convertir 'current' a un ID válido cuando sea necesario (revisar esta lógica si aplica)
   const actualResearchId = researchId === 'current' ? '' : researchId; // Usar '' si es current y no hay ID real
 
-  const [formData, setFormData] = useState<WelcomeScreenData>({ ...INITIAL_FORM_DATA, researchId: actualResearchId });
+  const [formData, setFormData] = useState<WelcomeScreenData>(INITIAL_FORM_DATA);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [existingScreen, setExistingScreen] = useState<WelcomeScreenData | null>(null);
+  const [existingScreen, setExistingScreen] = useState<WelcomeScreenRecord | null>(null);
   const [modalError, setModalError] = useState<ErrorModalData | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  // Estado para disparar un refetch manual después de guardar
+  const [refetchTrigger, setRefetchTrigger] = useState(0);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        if (!actualResearchId) {
-          // Si no hay researchId real, no buscar y usar valores iniciales
-          console.log('No researchId provided, using initial form data.');
-          setFormData({ ...INITIAL_FORM_DATA, researchId: '' });
-          setExistingScreen(null);
-          setIsLoading(false);
-          return;
-        }
+  // Mover fetchData fuera de useEffect y envolver con useCallback
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      if (!actualResearchId) {
+        console.log('No researchId provided, using initial form data.');
+        setFormData({ ...INITIAL_FORM_DATA, researchId: '' });
+        setExistingScreen(null);
+        setIsLoading(false);
+        return;
+      }
 
-        const response: WelcomeScreenData | null = await welcomeScreenService.getByResearchId(actualResearchId);
+      const fetchedRecord: WelcomeScreenRecord | null = await welcomeScreenService.getByResearchId(actualResearchId);
+      console.log('[DEBUG] Registro recibido del SERVICIO:', fetchedRecord);
 
-        // ----> LOG DE DEPURACIÓN <----
-        console.log('[DEBUG] Datos recibidos de getByResearchId:', response);
-        if (response) {
-          console.log(`[DEBUG] ID Recibido: ${response.id}, Research ID Recibido: ${response.researchId}`);
-        }
-        // ---------------------------
-
-        if (response && response.id) {
-          console.log('Fetched existing data:', response);
-          const formattedResponse: WelcomeScreenData = {
-            id: response.id,
-            researchId: response.researchId,
-            isEnabled: response.isEnabled ?? true,
-            title: response.title ?? '',
-            message: response.message ?? '',
-            startButtonText: response.startButtonText ?? '',
-            subtitle: response.subtitle ?? '',
-            logoUrl: response.logoUrl ?? '',
-            backgroundImageUrl: response.backgroundImageUrl ?? '',
-            backgroundColor: response.backgroundColor ?? '',
-            textColor: response.textColor ?? '',
-            theme: response.theme ?? '',
-            disclaimer: response.disclaimer ?? '',
-            customCss: response.customCss ?? '',
-            createdAt: typeof response.createdAt === 'string' ? response.createdAt : undefined,
-            updatedAt: typeof response.updatedAt === 'string' ? response.updatedAt : undefined,
-            metadata: {
-              version: response.metadata?.version || '1.0',
-              lastUpdated: typeof response.metadata?.lastUpdated === 'string' 
-                ? response.metadata.lastUpdated 
-                : new Date().toISOString(),
-              lastModifiedBy: response.metadata?.lastModifiedBy || 'user'
-            }
-          };
-          setFormData(formattedResponse);
-          setExistingScreen(formattedResponse);
-        } else {
-          // No hay datos existentes, usar valores iniciales asegurando cadenas vacías
-          console.log('No existing data found, using initial form data.');
-          setFormData({ ...INITIAL_FORM_DATA, researchId: actualResearchId });
-          setExistingScreen(null);
-        }
-      } catch (error) {
-        console.error('Error fetching welcome screen:', error);
-        // Mantener los valores iniciales en caso de error
+      if (fetchedRecord) {
+        console.log('[DEBUG] Registro encontrado, actualizando estados.');
+        setExistingScreen(fetchedRecord);
+        const formDataToSet: WelcomeScreenData = {
+          researchId: fetchedRecord.researchId,
+          isEnabled: fetchedRecord.isEnabled ?? true,
+          title: fetchedRecord.title ?? '',
+          message: fetchedRecord.message ?? '',
+          startButtonText: fetchedRecord.startButtonText ?? '',
+          subtitle: fetchedRecord.subtitle ?? '',
+          logoUrl: fetchedRecord.logoUrl ?? '',
+          backgroundImageUrl: fetchedRecord.backgroundImageUrl ?? '',
+          backgroundColor: fetchedRecord.backgroundColor ?? '',
+          textColor: fetchedRecord.textColor ?? '',
+          theme: fetchedRecord.theme ?? '',
+          disclaimer: fetchedRecord.disclaimer ?? '',
+          customCss: fetchedRecord.customCss ?? '',
+          metadata: fetchedRecord.metadata
+        };
+        setFormData(formDataToSet);
+      } else {
+        console.log('No existing record found (null response), using initial form data.');
         setFormData({ ...INITIAL_FORM_DATA, researchId: actualResearchId });
         setExistingScreen(null);
-        setModalError({
-          title: 'Error',
-          message: 'No se pudo cargar la configuración de la pantalla de bienvenida.',
-          type: 'error'
-        });
-        setModalVisible(true);
-      } finally {
-        setIsLoading(false);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching welcome screen:', error);
+      setFormData({ ...INITIAL_FORM_DATA, researchId: actualResearchId });
+      setExistingScreen(null);
+      setModalError({
+        title: 'Error',
+        message: 'No se pudo cargar la configuración de la pantalla de bienvenida.',
+        type: 'error'
+      });
+      setModalVisible(true);
+    } finally {
+      setIsLoading(false);
+    }
+    // Dependencias de fetchData
+  }, [actualResearchId, setIsLoading, setFormData, setExistingScreen, setModalError, setModalVisible]);
 
+  useEffect(() => {
     fetchData();
-  }, [actualResearchId]);
+    // Dependencias de useEffect: fetchData y refetchTrigger
+  }, [fetchData, refetchTrigger]);
 
   const validateForm = (): boolean => {
     const errors: ValidationErrors = {};
@@ -152,33 +138,29 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
 
     setIsSaving(true);
     try {
-      const dataToSubmit = { ...formData };
+      // Usar formData para los datos a enviar (solo campos editables)
+      const dataToSubmit: Partial<WelcomeScreenData> = { ...formData }; 
+      // Eliminar researchId si no es necesario en el payload de PUT/POST
+      // delete dataToSubmit.researchId;
+      
+      let resultRecord: WelcomeScreenRecord;
 
-      let resultRecord: WelcomeScreenData & { id: string; createdAt: string; updatedAt: string };
-
+      // Usar existingScreen.id para determinar si es UPDATE
       if (existingScreen?.id && actualResearchId) {
-        console.log(`[DEBUG] Intentando actualizar:
-          Research ID: ${actualResearchId}
-          Screen ID: ${existingScreen.id}
-          Datos:`, dataToSubmit);
-        
         console.log(`Llamando a updateForResearch con screenId: ${existingScreen.id}`);
-        const { id, createdAt, updatedAt, researchId: formResearchId, ...updatePayload } = dataToSubmit;
+        // Pasar solo los datos de formData al servicio update
         resultRecord = await welcomeScreenService.updateForResearch(
           actualResearchId,
           existingScreen.id,
-          updatePayload
+          dataToSubmit // Enviar solo los campos editables
         );
       } else if (actualResearchId) {
-        console.log(`[DEBUG] Intentando crear:
-          Research ID: ${actualResearchId}
-          Datos:`, dataToSubmit);
-        
         console.log(`Llamando a createForResearch para researchId: ${actualResearchId}`);
-        const { id, createdAt, updatedAt, ...createPayloadBase } = dataToSubmit;
+        // Crear el payload completo para create
         const createPayload: WelcomeScreenData = {
-          ...createPayloadBase,
-          researchId: actualResearchId
+          ...INITIAL_FORM_DATA, // Empezar con defaults
+          ...dataToSubmit,       // Sobrescribir con valores del form
+          researchId: actualResearchId // Asegurar researchId
         };
         resultRecord = await welcomeScreenService.createForResearch(
           actualResearchId,
@@ -188,13 +170,14 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
         throw new Error('No hay researchId válido para guardar.');
       }
 
-      const formattedResponseData: WelcomeScreenData = {
-        id: resultRecord.id,
+      // --- Actualizar Estado DESPUÉS de Éxito --- 
+      // 1. Preparar los datos para el formulario desde el resultado
+      const formDataFromResult: WelcomeScreenData = {
         researchId: resultRecord.researchId,
         isEnabled: resultRecord.isEnabled ?? true,
-        title: resultRecord.title ?? '',
-        message: resultRecord.message ?? '',
-        startButtonText: resultRecord.startButtonText ?? '',
+        title: resultRecord.title ?? '', 
+        message: resultRecord.message ?? '', 
+        startButtonText: resultRecord.startButtonText ?? '', 
         subtitle: resultRecord.subtitle ?? '',
         logoUrl: resultRecord.logoUrl ?? '',
         backgroundImageUrl: resultRecord.backgroundImageUrl ?? '',
@@ -203,26 +186,26 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
         theme: resultRecord.theme ?? '',
         disclaimer: resultRecord.disclaimer ?? '',
         customCss: resultRecord.customCss ?? '',
-        createdAt: typeof resultRecord.createdAt === 'string' ? resultRecord.createdAt : undefined,
-        updatedAt: typeof resultRecord.updatedAt === 'string' ? resultRecord.updatedAt : undefined,
-        metadata: {
-          version: resultRecord.metadata?.version || '1.0',
-          lastUpdated: typeof resultRecord.metadata?.lastUpdated === 'string' 
-            ? resultRecord.metadata.lastUpdated 
-            : new Date().toISOString(),
-          lastModifiedBy: resultRecord.metadata?.lastModifiedBy || 'user'
-        }
+        metadata: resultRecord.metadata
       };
+      
+      // 2. Actualizar el estado del formulario PRIMERO
+      setFormData(formDataFromResult);
+      
+      // 3. Actualizar el registro existente
+      setExistingScreen(resultRecord); 
 
-      setFormData(formattedResponseData);
-      setExistingScreen(formattedResponseData);
-
+      // 4. Mostrar el modal de éxito DESPUÉS
       setModalError({
         title: 'Éxito',
         message: 'Pantalla de bienvenida guardada correctamente.',
         type: 'info'
       });
       setModalVisible(true);
+      
+      // 5. Disparar refetch para obtener los datos más frescos
+      setRefetchTrigger(prev => prev + 1);
+
     } catch (error) {
       console.error('Error saving welcome screen:', error);
       setModalError({

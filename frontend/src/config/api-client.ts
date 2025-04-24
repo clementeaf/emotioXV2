@@ -347,8 +347,9 @@ export class ApiClient {
       throw new ApiError(message, response.status, data);
     }
     
-    // Devolver solo los datos relevantes si la respuesta tiene estructura { data: ... }
-    return data.data || data;
+    // Devolver siempre el objeto JSON completo recibido
+    return data;
+    // return data.data || data; // Eliminar la lógica que desenvuelve .data
   }
 }
 

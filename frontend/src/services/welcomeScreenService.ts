@@ -17,6 +17,11 @@ export interface WelcomeScreenData {
   disclaimer?: string;
   customCss?: string;
   researchId: string;
+  metadata?: { 
+    version?: string;
+    lastUpdated?: string;
+    lastModifiedBy?: string;
+  };
 }
 
 /**
@@ -55,22 +60,22 @@ export const welcomeScreenService = {
   /**
    * Obtiene la pantalla de bienvenida asociada a una investigación
    * @param researchId ID de la investigación
-   * @returns Pantalla de bienvenida
+   * @returns Pantalla de bienvenida o null si no se encuentra.
    */
   async getByResearchId(researchId: string): Promise<WelcomeScreenRecord | null> {
     try {
-      // Usar 'GET_BY_RESEARCH' (mayúsculas)
+      // El tipo genérico T aquí es lo que devuelve la API (y apiClient)
       const result = await apiClient.get<WelcomeScreenRecord, 'welcomeScreen'>(
         'welcomeScreen', 
-        'GET_BY_RESEARCH', // Corregido
+        'GET_BY_RESEARCH', 
         { researchId } 
       );
+      // Devolver directamente el resultado de apiClient
       return result;
     } catch (error: any) {
-      // Usar ApiError importado
       if (error instanceof ApiError && error.statusCode === 404) {
-         console.log(`[Service] No se encontró pantalla para investigación ${researchId}, devolviendo null.`);
-        return null;
+         console.log(`[Service] No se encontró pantalla (404), devolviendo null.`);
+        return null; // <-- Correcto
       }
       console.error(`Error al obtener pantalla de bienvenida para investigación ${researchId}:`, error);
       throw error;

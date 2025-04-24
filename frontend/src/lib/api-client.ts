@@ -44,12 +44,32 @@ export class ApiClient {
       });
 
       if (!response.ok) {
+        // Manejo especial para 404
+        if (response.status === 404) {
+          console.warn(`[ApiClient] Recurso no encontrado (404) en ${url}. Devolviendo null.`);
+          // Intentar leer el cuerpo por si hay un mensaje, pero devolver null
+          try {
+            const errorBody = await response.json();
+            console.warn('[ApiClient] Cuerpo de error 404:', errorBody);
+          } catch (jsonError) {
+            // Ignorar si el cuerpo del 404 no es JSON válido
+            console.warn('[ApiClient] No se pudo parsear el cuerpo del error 404 como JSON.');
+          }
+          return null as T; // Devolver null para indicar que no se encontró
+        }
+
+        // Para otros errores (!response.ok y no 404), lanzar el error
         console.error(`[ApiClient] Error HTTP ${response.status} en petición a ${url}`, {
           status: response.status,
           statusText: response.statusText,
           headers: Object.fromEntries(response.headers.entries())
         });
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // Intentar obtener cuerpo del error para más detalles
+        let errorBodyText = '';
+        try {
+          errorBodyText = await response.text();
+        } catch (textError) { /* ignorar */ }
+        throw new Error(`HTTP error! status: ${response.status}. Body: ${errorBodyText}`);
       }
 
       const data = await response.json();
