@@ -284,8 +284,8 @@ export class WelcomeScreenModel {
     const command = new UpdateCommand({
       TableName: this.tableName,
       Key: {
-        id: id, // Usar el ID único como clave
-        sk: skValue // AÑADIR sk a la clave
+        id: id,
+        sk: skValue
       },
       UpdateExpression: updateExpression,
       ExpressionAttributeValues: expressionAttributeValues,
@@ -322,9 +322,8 @@ export class WelcomeScreenModel {
    * @param id ID único (UUID) de la pantalla
    */
   async delete(id: string): Promise<void> {
-    const skValue = 'WELCOME_SCREEN'; // SK constante
-    // Verificar que existe usando la clave completa
-    const existingScreen = await this.getById(id); // getById ahora usa id y sk internamente
+    const skValue = 'WELCOME_SCREEN';
+    const existingScreen = await this.getById(id);
     if (!existingScreen) {
       throw new Error(`WELCOME_SCREEN_NOT_FOUND: No existe una pantalla de bienvenida con ID ${id}`);
     }
@@ -332,8 +331,8 @@ export class WelcomeScreenModel {
     const command = new DeleteCommand({
       TableName: this.tableName,
       Key: {
-        id: id, // Usar el ID único como clave
-        sk: skValue // AÑADIR sk a la clave
+        id: id,
+        sk: skValue
       }
     });
 
@@ -354,16 +353,11 @@ export class WelcomeScreenModel {
    */
   async createOrUpdate(researchId: string, data: WelcomeScreenFormData): Promise<WelcomeScreenRecord> {
     try {
-      // Intentar obtener la pantalla existente por researchId
       const existing = await this.getByResearchId(researchId);
 
       if (existing) {
-        // Actualizar la existente usando su ID único
-        console.log(`[Model] Welcome screen existente encontrado (ID: ${existing.id}), actualizando...`);
-        return await this.update(existing.id, data); // Usar el ID único (UUID)
+        return await this.update(existing.id, data);
       } else {
-        // Crear una nueva
-        console.log('[Model] No existe welcome screen, creando uno nuevo...');
         return await this.create(data, researchId);
       }
     } catch (error) {
@@ -382,36 +376,6 @@ export class WelcomeScreenModel {
    */
   async getAll(): Promise<WelcomeScreenRecord[]> {
      console.warn('[WelcomeScreenModel] getAll() está usando Scan, puede ser ineficiente.');
-     // Implementación simple con Scan (no recomendada para producción a gran escala)
-     // Deberías filtrar por un atributo común si es posible o replantear la necesidad.
-     /*
-     const command = new ScanCommand({
-       TableName: this.tableName,
-       // Podrías añadir un FilterExpression si buscas un tipo específico si 'sk' ya no existe
-       // FilterExpression: "attribute_exists(researchId)" // Ejemplo simple
-     });
-
-     try {
-       const result = await this.docClient.send(command);
-       const items = result.Items || [];
-       
-       return items.map((item: any): WelcomeScreenRecord => ({ // Especificar tipo para item
-         id: item.id,
-         researchId: item.researchId,
-         isEnabled: item.isEnabled,
-         title: item.title,
-         message: item.message,
-         startButtonText: item.startButtonText,
-         metadata: typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata || {},
-         createdAt: new Date(item.createdAt),
-         updatedAt: new Date(item.updatedAt)
-       }));
-     } catch (error) {
-       console.error('Error en WelcomeScreenModel.getAll (Scan):', error);
-       throw new Error('Error al obtener todas las pantallas de bienvenida');
-     }
-     */
-     // Devolver array vacío temporalmente hasta definir mejor el caso de uso
      return []; 
   }
 }
