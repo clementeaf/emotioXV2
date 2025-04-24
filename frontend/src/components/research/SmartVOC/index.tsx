@@ -33,7 +33,7 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
     updateQuestion,
     addQuestion,
     removeQuestion,
-    handleSettingChange,
+    updateSettings,
     handleSave,
     handlePreview,
     closeModal,
@@ -46,20 +46,36 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
 
   // Callbacks para cambios en los ajustes
   const handleRandomizeChange = (checked: boolean) => {
-    handleSettingChange('randomize', checked);
+    updateSettings({ randomizeQuestions: checked });
   };
 
   const handleRequireAnswersChange = (checked: boolean) => {
-    handleSettingChange('requireAnswers', checked);
+    updateSettings({ smartVocRequired: checked });
   };
 
   // Callback para guardar y notificar al componente padre si es necesario
   const handleSaveAndNotify = () => {
     handleSave();
     if (onSave) {
+      // Asegurar que metadata y createdAt existan para cumplir el tipo esperado por onSave
+      const metadataToSend = {
+        createdAt: new Date().toISOString(), // Valor por defecto
+        estimatedCompletionTime: 'unknown', // Valor por defecto
+        ...(formData.metadata || {}), // Sobrescribir con valores existentes si existen
+      };
+      // Asegurar que createdAt es string
+      if(typeof metadataToSend.createdAt !== 'string') {
+        metadataToSend.createdAt = new Date().toISOString();
+      }
+      // Asegurar que estimatedCompletionTime es string
+      if(typeof metadataToSend.estimatedCompletionTime !== 'string'){
+        metadataToSend.estimatedCompletionTime = 'unknown';
+      }
+
       onSave({
         ...formData,
-        questions
+        questions, // Asegúrate que 'questions' también esté actualizado si es necesario
+        metadata: metadataToSend as { createdAt: string; updatedAt?: string; estimatedCompletionTime: string; }, // Type assertion
       });
     }
   };
@@ -103,16 +119,16 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
           <p>Estado: {smartVocId ? 'Configuración existente' : 'Nueva configuración'}</p>
           <p>ID: {smartVocId || 'No hay ID (nueva)'}</p>
           <p>Preguntas activas: {questions.length}</p>
-          <p>Aleatorizar: {formData.randomize ? 'Sí' : 'No'}</p>
-          <p>Requerir respuestas: {formData.requireAnswers ? 'Sí' : 'No'}</p>
+          <p>Aleatorizar: {formData.randomizeQuestions ? 'Sí' : 'No'}</p>
+          <p>Requerir respuestas: {formData.smartVocRequired ? 'Sí' : 'No'}</p>
         </div>
       )}
       
       {/* Configuración general */}
       <SmartVOCSettings 
-        randomize={formData.randomize}
+        randomize={formData.randomizeQuestions}
         onRandomizeChange={handleRandomizeChange}
-        requireAnswers={formData.requireAnswers}
+        requireAnswers={formData.smartVocRequired}
         onRequireAnswersChange={handleRequireAnswersChange}
         disabled={isLoading || isSaving}
       />

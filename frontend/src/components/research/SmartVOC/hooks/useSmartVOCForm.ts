@@ -19,7 +19,6 @@ import { useAuth } from '@/providers/AuthProvider';
  */
 export const useSmartVOCForm = (researchId: string) => {
   const queryClient = useQueryClient();
-  const [questions, setQuestions] = useState<SmartVOCQuestion[]>([...DEFAULT_QUESTIONS]);
   const [formData, setFormData] = useState<SmartVOCFormData>({ 
     researchId,
     questions: [...DEFAULT_QUESTIONS],
@@ -158,7 +157,10 @@ export const useSmartVOCForm = (researchId: string) => {
       
       setIsSaving(false);
     },
-    onError: (error: any) => {
+    onError: (error: any, variables: SmartVOCFormData, context: any) => {
+      // Log detallado del formData que causó el error
+      console.error('[SmartVOCForm] Error al guardar. Datos enviados:', JSON.stringify(variables, null, 2));
+      
       showModal({
         title: ERROR_MESSAGES.SAVE_ERROR,
         message: error.message || 'Ocurrió un error al guardar la configuración',
@@ -181,34 +183,35 @@ export const useSmartVOCForm = (researchId: string) => {
 
   // Efecto para cargar datos existentes
   useEffect(() => {
-    if (smartVocData?.data?.data) {
-      const existingData = smartVocData.data.data;
-      
-      if (smartVocData.data.id) {
-        setSmartVocId(smartVocData.data.id);
+    const existingData = smartVocData?.data?.data;
+    const existingId = smartVocData?.data?.id;
+
+    if (existingData) {
+      console.log("[SmartVOCForm] Cargando datos existentes:", existingData);
+      if (existingId) {
+        setSmartVocId(existingId);
       }
 
-      setFormData({
+      setFormData(prev => ({
+        ...prev,
         ...existingData,
         researchId,
+        questions: existingData.questions?.length > 0 ? existingData.questions : [...DEFAULT_QUESTIONS],
         metadata: {
-          ...existingData.metadata,
+          ...(prev.metadata || {}),
+          ...(existingData.metadata || {}),
           updatedAt: new Date().toISOString()
         }
-      });
-      
-      if (existingData.questions?.length > 0) {
-        setQuestions(existingData.questions);
-      }
+      }));
+    } else if (!isLoading && !smartVocData?.notFound) {
+        console.log("[SmartVOCForm] No se encontraron datos existentes, usando defaults.");
+        setFormData(prev => ({ ...prev, questions: [...DEFAULT_QUESTIONS] }));
+        setSmartVocId(null);
     }
-  }, [smartVocData, researchId]);
+  }, [smartVocData, researchId, isLoading]);
 
   // Función para actualizar una pregunta específica
   const updateQuestion = useCallback((id: string, updates: Partial<SmartVOCQuestion>) => {
-    setQuestions(prevQuestions => 
-      prevQuestions.map(q => q.id === id ? { ...q, ...updates } : q)
-    );
-    
     setFormData(prev => ({
       ...prev,
       questions: prev.questions.map(q => q.id === id ? { ...q, ...updates } : q)
@@ -237,7 +240,6 @@ export const useSmartVOCForm = (researchId: string) => {
       }
     };
 
-    setQuestions(prev => [...prev, newQuestion]);
     setFormData(prev => ({
       ...prev,
       questions: [...prev.questions, newQuestion]
@@ -246,7 +248,6 @@ export const useSmartVOCForm = (researchId: string) => {
 
   // Función para eliminar una pregunta
   const removeQuestion = useCallback((id: string) => {
-    setQuestions(prev => prev.filter(q => q.id !== id));
     setFormData(prev => ({
       ...prev,
       questions: prev.questions.filter(q => q.id !== id)
@@ -311,8 +312,8 @@ export const useSmartVOCForm = (researchId: string) => {
   }, [pendingAction, handleSave, closeJsonModal]);
 
   return {
-    questions,
     formData,
+    questions: formData.questions,
     smartVocId,
     validationErrors,
     isLoading,
