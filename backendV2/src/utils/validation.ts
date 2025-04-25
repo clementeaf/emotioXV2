@@ -3,6 +3,10 @@ import { WelcomeScreenFormData } from '../../../shared/interfaces/welcome-screen
 import { SmartVOCFormData, SmartVOCQuestion } from '../../../shared/interfaces/smart-voc.interface';
 import { APIGatewayProxyResult, APIGatewayProxyEvent } from 'aws-lambda';
 import { errorResponse } from './controller.utils';
+import { 
+  ThankYouScreenFormData, 
+  DEFAULT_THANK_YOU_SCREEN_VALIDATION 
+} from '../../../shared/interfaces/thank-you-screen.interface';
 
 // Constantes para mensajes de error comunes
 export const ERROR_MESSAGES = {
@@ -541,3 +545,130 @@ export function parseAndValidateBody<T>(
   
   return { data };
 }
+
+/**
+ * Valida los datos del formulario CognitiveTask.
+ * Devuelve null si es válido, o APIGatewayProxyResult con error 400 si no.
+ * TODO: Implementar reglas de validación detalladas.
+ */
+export const validateCognitiveTaskData = (data: any, partial: boolean = false): APIGatewayProxyResult | null => {
+  if (typeof data !== 'object' || data === null) {
+    // Devolver respuesta de error directamente
+    return errorResponse('Formato de datos inválido: se esperaba un objeto.', 400);
+  }
+
+  const errors: Record<string, string> = {};
+
+  // --- Validación de Campos Obligatorios (solo si NO es parcial) ---
+  if (!partial) {
+    if (!data.questions || !Array.isArray(data.questions) || data.questions.length === 0) {
+      errors.questions = 'Debe definir al menos una pregunta.';
+    }
+    // ...
+  }
+
+  // --- Validación de Tipos y Formatos ---
+  if (data.questions && Array.isArray(data.questions)) {
+    data.questions.forEach((q: any, index: number) => {
+      if (!q.id) errors[`questions[${index}].id`] = 'ID de pregunta es requerido.';
+      if (!q.type) errors[`questions[${index}].type`] = 'Tipo de pregunta es requerido.';
+      // ...
+    });
+  }
+  if (data.hasOwnProperty('randomizeQuestions') && typeof data.randomizeQuestions !== 'boolean') {
+     errors.randomizeQuestions = 'randomizeQuestions debe ser un valor booleano.';
+  }
+  // ...
+
+  // Si hay errores, construir y devolver la respuesta de error
+  if (Object.keys(errors).length > 0) {
+    // Incrustar los errores como JSON string dentro del mensaje
+    const errorMessage = `Error de validación en los datos del formulario CognitiveTask. Detalles: ${JSON.stringify(errors)}`;
+    return errorResponse(errorMessage, 400);
+  }
+
+  // Si no hay errores, devolver null
+  return null; 
+};
+
+/**
+ * Valida los datos de una pantalla de agradecimiento
+ */
+export function validateThankYouScreenData(data: Partial<ThankYouScreenFormData>): APIGatewayProxyResult | null {
+  const errors: Record<string, string> = {};
+  const validationRules = DEFAULT_THANK_YOU_SCREEN_VALIDATION;
+
+  if (data.title !== undefined) {
+    if (data.title.trim() === '') errors.title = 'El título no puede estar vacío';
+    else if (data.title.length < validationRules.title.minLength) errors.title = `El título debe tener al menos ${validationRules.title.minLength} caracteres`;
+    else if (data.title.length > validationRules.title.maxLength) errors.title = `El título no puede exceder los ${validationRules.title.maxLength} caracteres`;
+  }
+
+  if (data.message !== undefined) {
+    if (data.message.trim() === '') errors.message = 'El mensaje no puede estar vacío';
+    else if (data.message.length < validationRules.message.minLength) errors.message = `El mensaje debe tener al menos ${validationRules.message.minLength} caracteres`;
+    else if (data.message.length > validationRules.message.maxLength) errors.message = `El mensaje no puede exceder los ${validationRules.message.maxLength} caracteres`;
+  }
+
+  if (data.redirectUrl && data.redirectUrl.trim() !== '') {
+    if (validationRules.redirectUrl.pattern && !validationRules.redirectUrl.pattern.test(data.redirectUrl)) errors.redirectUrl = 'La URL de redirección no tiene un formato válido';
+    else if (data.redirectUrl.length < validationRules.redirectUrl.minLength) errors.redirectUrl = `La URL debe tener al menos ${validationRules.redirectUrl.minLength} caracteres`;
+    else if (data.redirectUrl.length > validationRules.redirectUrl.maxLength) errors.redirectUrl = `La URL no puede exceder los ${validationRules.redirectUrl.maxLength} caracteres`;
+  }
+  
+  if (Object.keys(errors).length > 0) {
+    const errorMessage = `Datos de pantalla de agradecimiento inválidos: ${JSON.stringify(errors)}`;
+    return errorResponse(errorMessage, 400);
+  }
+
+  return null; // Sin errores
+}
+
+/**
+ * Valida que un screenId (generalmente de path parameters) esté presente.
+ */
+export function validateScreenId(screenId: string | undefined): APIGatewayProxyResult | null {
+  if (!screenId || screenId.trim() === '') {
+    return errorResponse('Se requiere el ID de la pantalla (screenId) en la ruta', 400);
+  }
+  // Podríamos añadir validación de formato si los IDs tienen un patrón específico
+  return null;
+}
+
+/**
+ * Valida los datos de entrada para la configuración de eye tracking.
+ * TODO: Implementar reglas de validación específicas si son necesarias.
+ * @param data Los datos a validar.
+ * @returns null si los datos son válidos, o un objeto APIGatewayProxyResult si hay errores.
+ */
+export const validateEyeTrackingData = (data: any): APIGatewayProxyResult | null => {
+  // Por ahora, asumimos que los datos son válidos si están presentes.
+  // Se pueden añadir validaciones más específicas aquí.
+  if (!data) {
+    return errorResponse('Cuerpo de la solicitud vacío o inválido', 400);
+  }
+  // Ejemplo: verificar un campo requerido específico
+  // if (!data.someRequiredField) {
+  //   return errorResponse('El campo someRequiredField es obligatorio', 400);
+  // }
+  return null; // Indica que la validación fue exitosa
+};
+
+/**
+ * Valida los datos de entrada para la configuración de reclutamiento de eye tracking.
+ * TODO: Implementar reglas de validación específicas si son necesarias.
+ * @param data Los datos a validar (debería ser de tipo CreateEyeTrackingRecruitRequest o similar).
+ * @returns null si los datos son válidos, o un objeto APIGatewayProxyResult si hay errores.
+ */
+export const validateEyeTrackingRecruitData = (data: any): APIGatewayProxyResult | null => {
+  // Por ahora, asumimos que los datos son válidos si están presentes.
+  // Se pueden añadir validaciones más específicas aquí, por ejemplo, para quotas, criteria, etc.
+  if (!data) {
+    return errorResponse('Cuerpo de la solicitud vacío o inválido para la configuración de reclutamiento', 400);
+  }
+  // Ejemplo:
+  // if (data.quota !== undefined && (typeof data.quota !== 'number' || data.quota <= 0)) {
+  //    return errorResponse('La cuota debe ser un número positivo', 400);
+  // }
+  return null; // Indica que la validación fue exitosa
+};

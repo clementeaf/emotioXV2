@@ -5,9 +5,13 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
  * @returns Objeto con los headers CORS configurados
  */
 export const getCorsHeaders = (): { [key: string]: string } => {
-  // Configuración de CORS para permitir el origen específico
+  // Lee el origen permitido desde una variable de entorno
+  // Usa 'http://localhost:4700' como fallback si no está definida (para desarrollo)
+  const allowedOrigin = process.env.ALLOWED_ORIGIN || 'http://localhost:4700';
+
   return {
-    'Access-Control-Allow-Origin': 'http://localhost:4700',
+    // Configuración de CORS para permitir el origen configurado
+    'Access-Control-Allow-Origin': allowedOrigin,
     'Access-Control-Allow-Credentials': 'true',
     // Permitir los headers comunes usados por la aplicación
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Amz-Date, X-Api-Key, X-Amz-Security-Token, X-Requested-With, Accept, Cache-Control, cache-control, Pragma, pragma, X-Amz-User-Agent',

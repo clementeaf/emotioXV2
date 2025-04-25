@@ -1,0 +1,27 @@
+# Definiciones de Outputs para serverless.yml
+
+# Usando Fn::Sub para construir la URL (SIN barras invertidas antes de $)
+HttpApiUrl:
+  Description: URL of the HTTP API
+  Value: !Sub "https://${ApiGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com/${sls:stage}"
+  Export:
+    Name: ${self:service}-${self:provider.stage}-HttpApiUrl
+
+# Usando Fn::Sub para construir la URL (SIN barras invertidas antes de $)
+WebsocketApiUrl:
+  Description: URL of the WebSocket API
+  Value: !Sub "wss://${WebsocketsApi}.execute-api.${AWS::Region}.amazonaws.com/${sls:stage}"
+  Export:
+    Name: ${self:service}-${self:provider.stage}-WebsocketApiUrl
+
+ServiceName:
+  Description: Nombre del servicio
+  Value: ${self:service}
+  Export:
+    Name: ${self:service}-${self:provider.stage}-ServiceName
+
+Stage:
+  Description: Etapa de despliegue
+  Value: ${self:provider.stage}
+  Export:
+    Name: ${self:service}-${self:provider.stage}-Stage 

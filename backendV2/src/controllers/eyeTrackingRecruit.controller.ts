@@ -3,285 +3,174 @@ import { eyeTrackingRecruitService } from '../services/eyeTrackingRecruit.servic
 import { 
   CreateEyeTrackingRecruitRequest 
 } from '../../../shared/interfaces/eyeTrackingRecruit.interface';
+import { ApiError } from '../utils/errors';
 import { createResponse, errorResponse } from '../utils/controller.utils';
 import { createController, RouteMap } from '../utils/controller.decorator';
-import { validateUserId, extractResearchId, ERROR_MESSAGES } from '../utils/validation';
-
-// Función auxiliar para crear respuestas exitosas
-const successResponse = (body: any): APIGatewayProxyResult => createResponse(200, body);
+import { structuredLog } from '../utils/logging.util';
+import { 
+  extractResearchId, 
+  ERROR_MESSAGES,
+  parseAndValidateBody,
+  validateEyeTrackingRecruitData
+} from '../utils/validation';
 
 /**
  * Controlador para manejar operaciones relacionadas con reclutamiento para eye tracking
  */
 export class EyeTrackingRecruitController {
-  private service = eyeTrackingRecruitService;
-  private cache: Map<string, { data: any; timestamp: number; researchId: string }> = new Map();
-  private readonly CACHE_TTL = 60000; // 1 minuto en milisegundos
-
-  constructor() {}
-
   /**
-   * Log estructurado con nivel, contexto y mensaje
+   * Maneja errores en las operaciones del controlador (simplificado)
    */
-  private log(level: 'info' | 'error' | 'warn' | 'debug', context: string, message: string, data?: any): void {
-    const logEntry = {
-      timestamp: new Date().toISOString(),
-      level,
-      context: `EyeTrackingRecruitController.${context}`,
-      message,
-      ...(data && { data })
-    };
-    
-    if (level === 'error') {
-      console.error(JSON.stringify(logEntry));
-    } else if (level === 'warn') {
-      console.warn(JSON.stringify(logEntry));
-    } else {
-      console.log(JSON.stringify(logEntry));
-    }
-  }
+  private handleError(error: any, context: string, extraData?: Record<string, any>): APIGatewayProxyResult {
+    structuredLog('error', `EyeTrackingRecruitController.${context}`, 'Error procesando la solicitud', { 
+        error: error instanceof Error ? { name: error.name, message: error.message } : error,
+        ...extraData
+    });
 
-  /**
-   * Maneja errores en las operaciones del controlador
-   */
-  private handleError(error: any, context: string): APIGatewayProxyResult {
-    this.log('error', context, 'Error al procesar la solicitud', { error });
-    
-    if (error.statusCode === 404) {
-      return errorResponse(error.message || ERROR_MESSAGES.RESOURCE.NOT_FOUND('La configuración de reclutamiento'), 404);
+    if (error instanceof ApiError) {
+      return errorResponse(error.message, error.statusCode);
     }
     
-    if (error.statusCode === 400) {
-      return errorResponse(error.message || 'Error de validación en la solicitud', 400);
+    if (error.message?.includes('RECRUIT_CONFIG_NOT_FOUND')) {
+       return errorResponse(ERROR_MESSAGES.RESOURCE.NOT_FOUND('La configuración de reclutamiento'), 404);
     }
     
-    if (error.statusCode === 403) {
-      return errorResponse(error.message || ERROR_MESSAGES.AUTH.FORBIDDEN, 403);
-    }
-    
-    // Error genérico
-    return errorResponse(`Error al ${context}: ${error.message || 'error desconocido'}`, 500);
+    return errorResponse('Error interno del servidor', 500);
   }
 
   /**
    * Obtiene la configuración de reclutamiento según el ID de investigación
    */
   public async getEyeTrackingRecruit(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    const context = 'getEyeTrackingRecruit';
+    let researchId: string | undefined;
     try {
-      const userId = event.requestContext.authorizer?.claims?.sub;
-      const result = validateUserId(userId);
-      if (result) return result;
-
-      // Extraer y validar el researchId
       const idResult = extractResearchId(event);
       if ('statusCode' in idResult) return idResult;
-      const { researchId } = idResult;
+      researchId = idResult.researchId;
       
-      // Verificar si tenemos una versión en caché válida
-      const cacheKey = `eyeTrackingRecruit_${researchId}_${userId}`;
-      const cachedEntry = this.cache.get(cacheKey);
-      
-      if (cachedEntry && 
-          (Date.now() - cachedEntry.timestamp) < this.CACHE_TTL && 
-          cachedEntry.researchId === researchId) {
-        this.log('info', 'getEyeTrackingRecruit', 'Datos recuperados de caché', { researchId });
-        return successResponse(cachedEntry.data);
-      }
-
-      // Si no hay caché o está expirado, obtener datos frescos
-      this.log('info', 'getEyeTrackingRecruit', 'Obteniendo datos para investigación', { researchId });
-      const config = await this.service.getConfigByResearchId(researchId);
+      structuredLog('info', `EyeTrackingRecruitController.${context}`, 'Obteniendo datos para investigación', { researchId });
+      const config = await eyeTrackingRecruitService.getConfigByResearchId(researchId);
       
       if (!config) {
+        structuredLog('warn', `EyeTrackingRecruitController.${context}`, 'No se encontró configuración de reclutamiento', { researchId });
         return errorResponse(ERROR_MESSAGES.RESOURCE.NOT_FOUND('La configuración de reclutamiento'), 404);
       }
       
-      // Obtener información adicional: estadísticas y enlaces activos
       const configId = config.id as string;
-      const stats = await this.service.getStatsByConfigId(configId);
-      const links = await this.service.getActiveLinks(configId);
-      const participants = await this.service.getParticipantsByConfigId(configId);
+      const [stats, links, participants] = await Promise.all([
+        eyeTrackingRecruitService.getStatsByConfigId(configId),
+        eyeTrackingRecruitService.getActiveLinks(configId),
+        eyeTrackingRecruitService.getParticipantsByConfigId(configId)
+      ]);
       
-      const fullData = {
-        config,
-        stats,
-        links,
-        participants
-      };
+      const fullData = { config, stats, links, participants };
       
-      // Guardar en caché
-      this.cache.set(cacheKey, {
-        data: fullData,
-        timestamp: Date.now(),
-        researchId
-      });
-      
-      return successResponse(fullData);
+      structuredLog('info', `EyeTrackingRecruitController.${context}`, 'Datos de reclutamiento obtenidos', { researchId, configId });
+      return createResponse(200, fullData);
     } catch (error) {
-      return this.handleError(error, 'obtener configuración de reclutamiento');
+      return this.handleError(error, context, { researchId });
     }
   }
 
   /**
    * Crea una configuración de reclutamiento
    */
-  public async createEyeTrackingRecruit(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  public async createEyeTrackingRecruit(event: APIGatewayProxyEvent, _userId: string): Promise<APIGatewayProxyResult> {
+    const context = 'createEyeTrackingRecruit';
+    let researchId: string | undefined;
     try {
-      const userId = event.requestContext.authorizer?.claims?.sub;
-      
-      // Validar múltiples condiciones juntas
-      const validationError = validateUserId(userId);
-      if (validationError) return validationError;
-
-      // Extraer y validar el researchId
       const idResult = extractResearchId(event);
       if ('statusCode' in idResult) return idResult;
-      const { researchId } = idResult;
+      researchId = idResult.researchId;
       
-      // Verificar que hay un cuerpo en la petición
-      if (!event.body) {
-        this.log('error', 'createEyeTrackingRecruit', 'No hay cuerpo en la petición');
-        return errorResponse('Se requieren datos para crear la configuración de reclutamiento', 400);
-      }
+      const bodyResult = parseAndValidateBody<CreateEyeTrackingRecruitRequest>(event, validateEyeTrackingRecruitData);
+      if ('statusCode' in bodyResult) return bodyResult;
+      const configData = bodyResult.data;
       
-      // Parsear el cuerpo de la petición
-      let configData: CreateEyeTrackingRecruitRequest;
-      try {
-        configData = JSON.parse(event.body);
-      } catch (e) {
-        this.log('error', 'createEyeTrackingRecruit', 'Error al parsear JSON', { error: e });
-        return errorResponse('Error al procesar los datos de la petición, formato JSON inválido', 400);
-      }
-
-      this.log('info', 'createEyeTrackingRecruit', 'Creando configuración de reclutamiento', { researchId });
-      const result = await this.service.createConfig(researchId, configData);
+      structuredLog('info', `EyeTrackingRecruitController.${context}`, 'Creando configuración de reclutamiento', { researchId });
+      const result = await eyeTrackingRecruitService.createConfig(researchId, configData);
       
-      // Invalidar caché al crear
-      this.invalidateCache(researchId, userId);
-      
-      return successResponse({ config: result });
+      structuredLog('info', `EyeTrackingRecruitController.${context}`, 'Configuración creada', { researchId, configId: result.id });
+      return createResponse(201, { 
+          message: "Configuración de reclutamiento creada exitosamente",
+          config: result 
+      });
     } catch (error) {
-      return this.handleError(error, 'crear configuración de reclutamiento');
+      return this.handleError(error, context, { researchId });
     }
   }
 
   /**
    * Actualiza una configuración de reclutamiento
    */
-  public async updateEyeTrackingRecruit(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  public async updateEyeTrackingRecruit(event: APIGatewayProxyEvent, _userId: string): Promise<APIGatewayProxyResult> {
+    const context = 'updateEyeTrackingRecruit';
+    let researchId: string | undefined;
+    let configId: string | undefined;
     try {
-      const userId = event.requestContext.authorizer?.claims?.sub;
-      
-      // Validar múltiples condiciones juntas
-      const validationError = validateUserId(userId);
-      if (validationError) return validationError;
-
-      // Extraer y validar el researchId
       const idResult = extractResearchId(event);
       if ('statusCode' in idResult) return idResult;
-      const { researchId } = idResult;
+      researchId = idResult.researchId;
       
-      // Verificar que hay un cuerpo en la petición
-      if (!event.body) {
-        this.log('error', 'updateEyeTrackingRecruit', 'No hay cuerpo en la petición');
-        return errorResponse('Se requieren datos para actualizar la configuración de reclutamiento', 400);
-      }
+      const bodyResult = parseAndValidateBody<Partial<CreateEyeTrackingRecruitRequest>>(event, /* validador opcional para update */);
+      if ('statusCode' in bodyResult) return bodyResult;
+      const updateData = bodyResult.data;
       
-      // Parsear el cuerpo de la petición
-      let updateData: any;
-      try {
-        updateData = JSON.parse(event.body);
-      } catch (e) {
-        this.log('error', 'updateEyeTrackingRecruit', 'Error al parsear JSON', { error: e });
-        return errorResponse('Error al procesar los datos de la petición, formato JSON inválido', 400);
+      const existingConfig = await eyeTrackingRecruitService.getConfigByResearchId(researchId);
+      if (!existingConfig || !existingConfig.id) {
+         structuredLog('warn', `EyeTrackingRecruitController.${context}`, 'No se encontró config para actualizar', { researchId });
+         return errorResponse('No existe una configuración de reclutamiento para actualizar', 404);
       }
-      
-      // Obtener la configuración existente para el researchId
-      const existingConfig = await this.service.getConfigByResearchId(researchId);
-      if (!existingConfig) {
-        return errorResponse('No existe una configuración de reclutamiento para actualizar', 404);
-      }
+      configId = existingConfig.id as string;
 
-      // Asegurarnos que existingConfig.id es una string
-      const configId = existingConfig.id as string;
-      this.log('info', 'updateEyeTrackingRecruit', 'Actualizando configuración de reclutamiento', { researchId });
-      const result = await this.service.updateConfig(configId, updateData);
+      structuredLog('info', `EyeTrackingRecruitController.${context}`, 'Actualizando configuración de reclutamiento', { researchId, configId });
+      const result = await eyeTrackingRecruitService.updateConfig(configId, updateData);
       
-      // Invalidar caché al actualizar
-      this.invalidateCache(researchId, userId);
-      
-      return successResponse({ config: result });
+      structuredLog('info', `EyeTrackingRecruitController.${context}`, 'Configuración actualizada', { researchId, configId: result.id });
+      return createResponse(200, { 
+          message: "Configuración de reclutamiento actualizada exitosamente",
+          config: result 
+      });
     } catch (error) {
-      return this.handleError(error, 'actualizar configuración de reclutamiento');
+      return this.handleError(error, context, { researchId, configId });
     }
   }
 
   /**
    * Elimina una configuración de reclutamiento
    */
-  public async deleteEyeTrackingRecruit(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  public async deleteEyeTrackingRecruit(event: APIGatewayProxyEvent, _userId: string): Promise<APIGatewayProxyResult> {
+    const context = 'deleteEyeTrackingRecruit';
+    let researchId: string | undefined;
+    let configId: string | undefined;
     try {
-      const userId = event.requestContext.authorizer?.claims?.sub;
-      
-      // Validar múltiples condiciones juntas
-      const validationError = validateUserId(userId);
-      if (validationError) return validationError;
-
-      // Extraer y validar el researchId
       const idResult = extractResearchId(event);
       if ('statusCode' in idResult) return idResult;
-      const { researchId } = idResult;
+      researchId = idResult.researchId;
 
-      this.log('info', 'deleteEyeTrackingRecruit', 'Eliminando configuración de reclutamiento', { researchId });
+      structuredLog('info', `EyeTrackingRecruitController.${context}`, 'Eliminando configuración de reclutamiento', { researchId });
       
-      // Obtener la configuración existente para conseguir su ID
-      const existingConfig = await this.service.getConfigByResearchId(researchId);
-      if (!existingConfig) {
-        return errorResponse('No existe una configuración de reclutamiento para eliminar', 404);
+      const existingConfig = await eyeTrackingRecruitService.getConfigByResearchId(researchId);
+      if (!existingConfig || !existingConfig.id) {
+         structuredLog('warn', `EyeTrackingRecruitController.${context}`, 'No se encontró config para eliminar', { researchId });
+         return createResponse(204, null);
       }
+      configId = existingConfig.id as string;
       
-      // Asegurarnos que existingConfig.id es una string
-      const configId = existingConfig.id as string;
-      await this.service.deleteConfig(configId);
+      await eyeTrackingRecruitService.deleteConfig(configId);
       
-      // Invalidar caché al eliminar
-      this.invalidateCache(researchId, userId);
-      
-      return successResponse({ message: 'Configuración de reclutamiento eliminada con éxito' });
+      structuredLog('info', `EyeTrackingRecruitController.${context}`, 'Configuración eliminada', { researchId, configId });
+      return createResponse(204, null); 
     } catch (error) {
-      return this.handleError(error, 'eliminar configuración de reclutamiento');
+      return this.handleError(error, context, { researchId, configId });
     }
-  }
-
-  /**
-   * Invalida la entrada de caché para un researchId específico
-   */
-  private invalidateCache(researchId: string, userId: string): void {
-    const cacheKey = `eyeTrackingRecruit_${researchId}_${userId}`;
-    this.cache.delete(cacheKey);
-    this.log('debug', 'invalidateCache', 'Caché invalidado', { researchId });
-  }
-
-  /**
-   * Mapa de rutas para el controlador
-   */
-  public routes(): Record<string, (event: APIGatewayProxyEvent) => Promise<APIGatewayProxyResult>> {
-    return {
-      // Ruta jerárquica para operaciones con reclutamiento relacionadas con una investigación específica
-      'GET /research/{researchId}/eye-tracking-recruit': this.getEyeTrackingRecruit.bind(this),
-      'POST /research/{researchId}/eye-tracking-recruit': this.createEyeTrackingRecruit.bind(this),
-      'PUT /research/{researchId}/eye-tracking-recruit': this.updateEyeTrackingRecruit.bind(this),
-      'DELETE /research/{researchId}/eye-tracking-recruit': this.deleteEyeTrackingRecruit.bind(this)
-    };
   }
 }
 
-// Instanciar el controlador
 const controller = new EyeTrackingRecruitController();
 
-// Definir el mapa de rutas para eye tracking recruit
 const eyeTrackingRecruitRouteMap: RouteMap = {
-  // Ruta jerárquica para eye tracking recruit asociado a investigación
   '/research/{researchId}/eye-tracking-recruit': {
     'GET': controller.getEyeTrackingRecruit.bind(controller),
     'POST': controller.createEyeTrackingRecruit.bind(controller),
@@ -291,7 +180,5 @@ const eyeTrackingRecruitRouteMap: RouteMap = {
 };
 
 export const eyeTrackingRecruitHandler = createController(eyeTrackingRecruitRouteMap, {
-  basePath: ''  // Sin base path para permitir múltiples patrones de ruta
-});
-
-export default eyeTrackingRecruitHandler; 
+  basePath: ''
+}); 

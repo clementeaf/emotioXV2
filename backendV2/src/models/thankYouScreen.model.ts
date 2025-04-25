@@ -7,6 +7,8 @@ import {
   ThankYouScreenFormData,
   DEFAULT_THANK_YOU_SCREEN_CONFIG,
 } from '../../../shared/interfaces/thank-you-screen.interface';
+import { ApiError } from '../utils/errors';
+import { structuredLog } from '../utils/logging.util';
 
 /**
  * Interfaz para el modelo DynamoDB de una pantalla de agradecimiento
@@ -49,24 +51,25 @@ export class ThankYouScreenModel {
   private tableName: string;
   private dynamoClient: DynamoDBDocumentClient;
   private static readonly SORT_KEY_VALUE = 'THANK_YOU_SCREEN'; // Definir SK constante
+  private modelName = 'ThankYouScreenModel'; // Para logging
 
   constructor() {
-    console.log('======== THANK YOU SCREEN MODEL CONSTRUCTOR ========');
+    const context = 'constructor';
+    structuredLog('info', `${this.modelName}.${context}`, 'Inicializando modelo');
     
     // Obtenemos el nombre de la tabla desde variables de entorno o usamos un valor por defecto
     this.tableName = process.env.DYNAMODB_TABLE || 'emotioXV2-table-dev';
-    console.log('Nombre de tabla DynamoDB para thank you screens:', this.tableName);
+    structuredLog('info', `${this.modelName}.${context}`, `Usando tabla: ${this.tableName}`);
     
     // Configuración para DynamoDB en AWS Cloud (producción)
     const options = {
       region: process.env.APP_REGION || 'us-east-1'
     };
     
-    console.log('Configuración DynamoDB para thank you screens:', options);
-    console.log('SIEMPRE usando DynamoDB en AWS Cloud - NO LOCAL');
+    structuredLog('info', `${this.modelName}.${context}`, 'Configuración DynamoDB', { options });
+    structuredLog('info', `${this.modelName}.${context}`, 'SIEMPRE usando DynamoDB en AWS Cloud - NO LOCAL');
     
     this.dynamoClient = DynamoDBDocumentClient.from(new DynamoDBClient(options));
-    console.log('=======================================');
   }
 
   /**
@@ -76,6 +79,7 @@ export class ThankYouScreenModel {
    * @returns La configuración creada con su ID generado
    */
   async create(data: ThankYouScreenFormData, researchId: string): Promise<SharedThankYouScreenModel> {
+    const context = 'create';
     const screenId = uuidv4();
     const now = new Date().toISOString();
     
@@ -117,7 +121,7 @@ export class ThankYouScreenModel {
       await this.dynamoClient.send(command);
       
       // Devolver el objeto creado con su ID
-      return {
+      const createdRecord = {
         id: screenId,
         researchId,
         isEnabled: config.isEnabled,
@@ -129,10 +133,12 @@ export class ThankYouScreenModel {
         createdAt: now, 
         updatedAt: now
       };
+      structuredLog('info', `${this.modelName}.${context}`, 'Pantalla de agradecimiento creada', { id: screenId, researchId });
+      return createdRecord;
     } catch (error: any) {
-      console.error('ERROR DETALLADO de DynamoDB PutCommand (ThankYouScreen):', JSON.stringify(error, null, 2));
-      console.error('Error al crear pantalla de agradecimiento:', error.message);
-      throw new Error('DATABASE_ERROR: Error al crear la pantalla de agradecimiento');
+      structuredLog('error', `${this.modelName}.${context}`, 'ERROR DETALLADO de DynamoDB PutCommand (ThankYouScreen)', { error: error, researchId });
+      structuredLog('error', `${this.modelName}.${context}`, 'Error al crear pantalla de agradecimiento', { error: error, researchId });
+      throw new ApiError(`DATABASE_ERROR: Error al crear la pantalla de agradecimiento: ${error.message}`, 500);
     }
   }
 
@@ -142,6 +148,7 @@ export class ThankYouScreenModel {
    * @returns La pantalla de agradecimiento encontrada o null si no existe
    */
   async getById(id: string): Promise<SharedThankYouScreenModel | null> {
+    const context = 'getById';
     const command = new GetCommand({
       TableName: this.tableName,
       Key: {
@@ -160,7 +167,7 @@ export class ThankYouScreenModel {
       const item = result.Item as ThankYouScreenDynamoItem;
       
       // Convertir de formato DynamoDB
-      return {
+      const record = {
         id: item.id,
         researchId: item.researchId,
         isEnabled: item.isEnabled,
@@ -171,9 +178,11 @@ export class ThankYouScreenModel {
         createdAt: item.createdAt, // Mantener string si la interfaz lo espera
         updatedAt: item.updatedAt
       };
-    } catch (error) {
-      console.error('Error al obtener pantalla de agradecimiento por ID:', error);
-      throw new Error('Error al obtener la pantalla de agradecimiento');
+      structuredLog('debug', `${this.modelName}.${context}`, 'Pantalla encontrada por ID', { id });
+      return record;
+    } catch (error: any) {
+      structuredLog('error', `${this.modelName}.${context}`, 'Error al obtener pantalla por ID', { error: error, id });
+      throw new ApiError(`DATABASE_ERROR: Error al obtener la pantalla de agradecimiento por ID: ${error.message}`, 500);
     }
   }
 
@@ -183,6 +192,7 @@ export class ThankYouScreenModel {
    * @returns La pantalla de agradecimiento encontrada o null si no existe
    */
   async getByResearchId(researchId: string): Promise<SharedThankYouScreenModel | null> {
+    const context = 'getByResearchId';
     const command = new QueryCommand({ // Usar Query sobre el GSI correcto
       TableName: this.tableName,
       IndexName: 'ResearchIdIndex', // USAR el índice común
@@ -204,7 +214,7 @@ export class ThankYouScreenModel {
       const item = result.Items[0] as ThankYouScreenDynamoItem;
       
       // Convertir de formato DynamoDB
-      return {
+      const record = {
         id: item.id,
         researchId: item.researchId,
         isEnabled: item.isEnabled,
@@ -215,13 +225,15 @@ export class ThankYouScreenModel {
         createdAt: item.createdAt, 
         updatedAt: item.updatedAt
       };
-    } catch (error) {
-      console.error('Error al obtener pantalla de agradecimiento por Research ID (Query GSI):', error);
+      structuredLog('debug', `${this.modelName}.${context}`, 'Pantalla encontrada por ResearchID', { researchId, id: item.id });
+      return record;
+    } catch (error: any) {
+      structuredLog('error', `${this.modelName}.${context}`, 'Error al obtener pantalla por Research ID (Query GSI)', { error: error, researchId });
       if ((error as Error).message?.includes('index')) {
-         console.error("Error GSI 'ResearchIdIndex' no encontrado para ThankYouScreen.");
-         throw new Error("Error de configuración de base de datos: falta índice para búsqueda.");
+         structuredLog('error', `${this.modelName}.${context}`, 'Índice GSI ResearchIdIndex no encontrado');
+         throw new ApiError("DATABASE_ERROR: Error de configuración de base de datos: falta índice para búsqueda.", 500);
       }
-      throw new Error('Error al obtener la pantalla de agradecimiento para esta investigación');
+      throw new ApiError(`DATABASE_ERROR: Error al obtener la pantalla de agradecimiento para esta investigación: ${error.message}`, 500);
     }
   }
 
@@ -232,6 +244,7 @@ export class ThankYouScreenModel {
    * @returns La pantalla de agradecimiento actualizada o null si no existe
    */
   async update(id: string, data: Partial<ThankYouScreenFormData>): Promise<SharedThankYouScreenModel | null> {
+    const context = 'update';
     // Verificar que existe usando el ID único y SK constante
     const existingScreen = await this.getById(id);
     if (!existingScreen) {
@@ -296,7 +309,7 @@ export class ThankYouScreenModel {
         throw new Error('La actualización no devolvió los atributos actualizados.');
       }
       // Convertir a formato de retorno
-      return {
+      const record = {
         id: updatedAttributes.id,
         researchId: updatedAttributes.researchId,
         isEnabled: updatedAttributes.isEnabled,
@@ -307,10 +320,12 @@ export class ThankYouScreenModel {
         createdAt: updatedAttributes.createdAt,
         updatedAt: updatedAttributes.updatedAt
       };
+      structuredLog('info', `${this.modelName}.${context}`, 'Pantalla actualizada', { id });
+      return record;
     } catch (error: any) {
-      console.error('ERROR DETALLADO de DynamoDB UpdateCommand (ThankYouScreen):', JSON.stringify(error, null, 2));
-      console.error('Error al actualizar pantalla de agradecimiento:', error.message);
-      throw new Error('DATABASE_ERROR: Error al actualizar la pantalla de agradecimiento');
+      structuredLog('error', `${this.modelName}.${context}`, 'ERROR DETALLADO de DynamoDB UpdateCommand (ThankYouScreen)', { error: error, id });
+      structuredLog('error', `${this.modelName}.${context}`, 'Error al actualizar pantalla de agradecimiento', { error: error, id });
+      throw new ApiError(`DATABASE_ERROR: Error al actualizar la pantalla de agradecimiento: ${error.message}`, 500);
     }
   }
 
@@ -320,6 +335,7 @@ export class ThankYouScreenModel {
    * @returns true si se eliminó, false si no se encontró
    */
   async delete(id: string): Promise<boolean> {
+    const context = 'delete';
     // Verificar existencia
     const existingScreen = await this.getById(id);
     if (!existingScreen) {
@@ -336,17 +352,18 @@ export class ThankYouScreenModel {
 
     try {
       await this.dynamoClient.send(command);
+      structuredLog('info', `${this.modelName}.${context}`, 'Pantalla eliminada', { id });
       return true;
     } catch (error: any) {
-      console.error('ERROR DETALLADO de DynamoDB DeleteCommand (ThankYouScreen):', JSON.stringify(error, null, 2));
-      console.error('Error al eliminar pantalla de agradecimiento:', error.message);
-      throw new Error('DATABASE_ERROR: Error al eliminar la pantalla de agradecimiento');
+      structuredLog('error', `${this.modelName}.${context}`, 'ERROR DETALLADO de DynamoDB DeleteCommand (ThankYouScreen)', { error: error, id });
+      structuredLog('error', `${this.modelName}.${context}`, 'Error al eliminar pantalla de agradecimiento', { error: error, id });
+      throw new ApiError(`DATABASE_ERROR: Error al eliminar la pantalla de agradecimiento: ${error.message}`, 500);
     }
   }
 
   // Eliminar getAll o refactorizar si es necesario (Scan es ineficiente)
   async getAll(): Promise<SharedThankYouScreenModel[]> {
-    console.warn('[ThankYouScreenModel] getAll() no implementado eficientemente.');
+    structuredLog('warn', `${this.modelName}.getAll`, 'getAll() llamado - Operación Scan ineficiente.');
     return [];
   }
 }

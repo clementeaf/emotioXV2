@@ -1,60 +1,33 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { createResponse, errorResponse } from '../utils/controller.utils';
+import { createResponse } from '../utils/controller.utils';
 import { createController, RouteMap } from '../utils/controller.decorator';
-import { CognitiveTaskService, CognitiveTaskError } from '../services/cognitiveTask.service';
+import { cognitiveTaskService, CognitiveTaskError } from '../services/cognitiveTask.service';
 import { CognitiveTaskFormData } from '../../../shared/interfaces/cognitive-task.interface';
-import { validateUserId, extractResearchId, ERROR_MESSAGES } from '../utils/validation';
+import { validateUserId, extractResearchId, ERROR_MESSAGES, parseAndValidateBody, validateCognitiveTaskData } from '../utils/validation';
 import { ApiError } from '../utils/errors';
+import { structuredLog } from '../utils/logging.util';
 
-// Función auxiliar para crear respuestas exitosas
-const successResponse = (body: any): APIGatewayProxyResult => createResponse(200, body);
 
 /**
  * Controlador para manejar operaciones relacionadas con formularios CognitiveTask
  * Utiliza el decorador createController para enrutamiento y middleware.
  */
 export class CognitiveTaskController {
-  private service: CognitiveTaskService;
-
-  constructor() {
-    this.service = new CognitiveTaskService();
-  }
-
-  /**
-   * Log estructurado con nivel, contexto y mensaje
-   */
-  private log(level: 'info' | 'error' | 'warn' | 'debug', context: string, message: string, data?: any): void {
-    const logEntry = {
-      timestamp: new Date().toISOString(),
-      level,
-      context: `CognitiveTaskController.${context}`,
-      message,
-      ...(data && { data })
-    };
-    
-    if (level === 'error') {
-      console.error(JSON.stringify(logEntry));
-    } else if (level === 'warn') {
-      console.warn(JSON.stringify(logEntry));
-    } else {
-      console.log(JSON.stringify(logEntry));
-    }
-  }
-
   /**
    * Maneja errores en las operaciones del controlador, incluyendo ApiError del servicio.
    */
-  private handleError(error: any, context: string): APIGatewayProxyResult {
-    const errorData = error instanceof Error ? { name: error.name, message: error.message, stack: error.stack } : error;
-    this.log('error', context, 'Error al procesar la solicitud', { error: errorData });
-    
+  private handleError(error: any, context: string, extraData?: Record<string, any>): APIGatewayProxyResult {
+    // Usar structuredLog para el error
+    structuredLog('error', `CognitiveTaskController.${context}`, 'Error procesando la solicitud', {
+      error: error instanceof Error ? { name: error.name, message: error.message } : error,
+      ...extraData
+    });
+
     if (error instanceof ApiError) {
-      // Usar el código y mensaje del ApiError lanzado por el servicio
-      // Mapear códigos de error específicos si es necesario, o usar directamente
       let statusCode = error.statusCode;
       let message = error.message;
 
-      // Ejemplo de mapeo (se puede refinar según necesidad)
+      // Mapeo de errores específicos del servicio
       if (message.startsWith(CognitiveTaskError.NOT_FOUND)) {
         statusCode = 404;
         message = ERROR_MESSAGES.RESOURCE.NOT_FOUND('Formulario CognitiveTask');
@@ -63,22 +36,14 @@ export class CognitiveTaskController {
       } else if (message.startsWith(CognitiveTaskError.PERMISSION_DENIED)) {
         statusCode = 403;
         message = ERROR_MESSAGES.AUTH.FORBIDDEN;
-      } // Añadir más mapeos si se necesitan (ej. FILE_ERROR, DATABASE_ERROR)
+      } // Añadir más mapeos si es necesario
       
-      return errorResponse(message, statusCode);
+      // Usar createResponse para consistencia
+      return createResponse(statusCode, { error: message });
     }
 
-    // Fallback para errores no esperados (que no son ApiError)
-    // Mantener manejo específico si es necesario, aunque idealmente el servicio captura todo
-    if (error.name === 'ResourceNotFoundException') { // Específico de AWS SDK v2? Revisar si aplica con v3
-      return errorResponse(ERROR_MESSAGES.RESOURCE.NOT_FOUND('Recurso DynamoDB'), 404);
-    }
-    if (error.name === 'AccessDeniedException') { // Específico de AWS SDK v2? Revisar si aplica con v3
-      return errorResponse(ERROR_MESSAGES.AUTH.FORBIDDEN, 403);
-    }
-    
     // Error genérico por defecto
-    return errorResponse(`Error interno del servidor al ${context}`, 500);
+    return createResponse(500, { error: `Error interno del servidor al ${context}` });
   }
 
   // Función auxiliar para validación y extracción común
@@ -102,30 +67,26 @@ export class CognitiveTaskController {
    * Obtiene un formulario CognitiveTask según el ID de investigación
    */
   public async get(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    const context = 'get'; // Definir contexto para logs
+    let researchId: string | undefined;
     try {
       const extracted = this.validateAndExtractIds(event);
       if ('statusCode' in extracted) return extracted;
-      const { researchId } = extracted;
+      researchId = extracted.researchId; // Asignar para usar en catch
 
-      this.log('info', 'get', 'Obteniendo datos para investigación', { researchId });
-      const form = await this.service.getByResearchId(researchId);
+      structuredLog('info', `CognitiveTaskController.${context}`, 'Obteniendo datos para investigación', { researchId });
+      const form = await cognitiveTaskService.getByResearchId(researchId);
       
-      // El servicio debería lanzar ApiError si no se encuentra, que será capturado por handleError
-      // Ya no es necesario el chequeo explícito de null aquí si el servicio maneja NOT_FOUND
-      // if (!form) {
-      //     return errorResponse(ERROR_MESSAGES.RESOURCE.NOT_FOUND('Formulario CognitiveTask'), 404);
-      // }
-
-      // Si form es null y el servicio NO lanza error (comportamiento inesperado), devolvemos 404 igualmente.
+      // Si el servicio devuelve null pero no lanza ApiError (comportamiento inesperado)
       if (!form) {
-         this.log('warn', 'get', 'Servicio retornó null pero no lanzó ApiError para NOT_FOUND', { researchId });
-         return errorResponse(ERROR_MESSAGES.RESOURCE.NOT_FOUND('Formulario CognitiveTask'), 404);
+         structuredLog('warn', `CognitiveTaskController.${context}`, 'Servicio retornó null pero no lanzó ApiError para NOT_FOUND', { researchId });
+         return createResponse(404, { error: ERROR_MESSAGES.RESOURCE.NOT_FOUND('Formulario CognitiveTask') });
       }
 
-      return successResponse(form);
+      structuredLog('info', `CognitiveTaskController.${context}`, 'Formulario encontrado', { researchId, formId: form.id });
+      return createResponse(200, form);
     } catch (error) {
-      // handleError se encarga de mapear ApiError (incluyendo NOT_FOUND) a la respuesta correcta
-      return this.handleError(error, 'obtener formulario CognitiveTask');
+      return this.handleError(error, context, { researchId }); // Pasar IDs al handleError
     }
   }
 
@@ -133,37 +94,27 @@ export class CognitiveTaskController {
    * Crea un formulario CognitiveTask
    */
   public async create(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    const context = 'create';
+    let researchId: string | undefined;
     try {
       const extracted = this.validateAndExtractIds(event);
       if ('statusCode' in extracted) return extracted;
-      const { researchId } = extracted; // userId no se usa directamente aquí, pero se valida
-      
-      if (!event.body) {
-        this.log('error', 'create', 'No hay cuerpo en la petición');
-        // Podría ser un ApiError específico
-        return errorResponse('Se requieren datos para crear el formulario', 400); 
-      }
-      
-      let formData: CognitiveTaskFormData;
-      try {
-        formData = JSON.parse(event.body);
-      } catch (e) {
-        this.log('error', 'create', 'Error al parsear JSON', { error: e });
-        return errorResponse('Formato JSON inválido', 400);
-      }
-      
-      // Añadir researchId a los datos que se envían al servicio si no viene en el body
-      // O asegurar que el servicio lo maneje correctamente. Asumimos que el servicio espera researchId como argumento separado.
-      // formData.researchId = researchId; // Descomentar si es necesario
+      researchId = extracted.researchId; // Asignar para usar en catch
 
-      this.log('info', 'create', 'Creando formulario CognitiveTask', { researchId });
-      // El servicio valida los datos internos de formData
-      const result = await this.service.create(researchId, formData); 
+      // Usar parseAndValidateBody
+      const bodyResult = parseAndValidateBody<CognitiveTaskFormData>(event, validateCognitiveTaskData);
+      if ('statusCode' in bodyResult) return bodyResult;
+      const formData = bodyResult.data;
       
+      structuredLog('info', `CognitiveTaskController.${context}`, 'Creando formulario CognitiveTask', { researchId });
+      // Pasar userId al servicio si es necesario para lógica de permisos/auditoría
+      const result = await cognitiveTaskService.create(researchId, formData /*, userId */); 
+      
+      structuredLog('info', `CognitiveTaskController.${context}`, 'Formulario creado', { researchId, formId: result.id });
       return createResponse(201, result);
     } catch (error) {
        // handleError maneja ApiError de validación (INVALID_DATA) y otros errores
-      return this.handleError(error, 'crear formulario CognitiveTask');
+      return this.handleError(error, context, { researchId });
     }
   }
 
@@ -171,36 +122,34 @@ export class CognitiveTaskController {
    * Actualiza un formulario CognitiveTask existente usando su ID
    */
   public async update(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    const context = 'update';
+    let researchId: string | undefined;
+    let taskId: string | undefined;
     try {
       const extracted = this.validateAndExtractIds(event);
       if ('statusCode' in extracted) return extracted;
-      const { researchId, taskId } = extracted; // userId no se usa directamente aquí
+      researchId = extracted.researchId;
+      taskId = extracted.taskId;
 
       if (!taskId) {
-          // Lanzar un error que handleError pueda interpretar como Bad Request (400)
           throw new ApiError('Falta el ID de la tarea cognitiva en la ruta', 400);
       }
       
-      if (!event.body) {
-        this.log('error', 'update', 'No hay cuerpo en la petición');
-        // Lanzar un error que handleError pueda interpretar como Bad Request (400)
-        throw new ApiError('Se requieren datos para actualizar el formulario', 400);
-      }
+      // Usar parseAndValidateBody (validación parcial si aplica)
+      // NOTA: La validación aquí podría ser parcial (Partial<CognitiveTaskFormData>)
+      // Ajustar validateCognitiveTaskData o crear una función específica si es necesario
+      const bodyResult = parseAndValidateBody<Partial<CognitiveTaskFormData>>(event, data => validateCognitiveTaskData(data, true)); // true indica validación parcial
+      if ('statusCode' in bodyResult) return bodyResult;
+      const formData = bodyResult.data;
       
-      let formData: Partial<CognitiveTaskFormData>;
-      try {
-        formData = JSON.parse(event.body);
-      } catch (e) {
-        this.log('error', 'update', 'Error al parsear JSON', { error: e });
-        throw new ApiError('Formato JSON inválido', 400);
-      }
+      structuredLog('info', `CognitiveTaskController.${context}`, 'Actualizando formulario CognitiveTask', { researchId, taskId });
+      // Pasar userId si es necesario
+      const result = await cognitiveTaskService.update(taskId, formData /*, userId */); 
       
-      this.log('info', 'update', 'Actualizando formulario CognitiveTask', { researchId, taskId });
-      const result = await this.service.update(taskId, formData); 
-      
-      return successResponse(result);
+      structuredLog('info', `CognitiveTaskController.${context}`, 'Formulario actualizado', { researchId, taskId });
+      return createResponse(200, result);
     } catch (error) {
-      return this.handleError(error, 'actualizar formulario CognitiveTask');
+      return this.handleError(error, context, { researchId, taskId });
     }
   }
 
@@ -208,21 +157,28 @@ export class CognitiveTaskController {
    * Elimina un formulario CognitiveTask usando su ID
    */
   public async delete(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    const context = 'delete';
+    let researchId: string | undefined;
+    let taskId: string | undefined;
     try {
       const extracted = this.validateAndExtractIds(event);
       if ('statusCode' in extracted) return extracted;
-      const { researchId, taskId } = extracted;
+      researchId = extracted.researchId;
+      taskId = extracted.taskId;
 
       if (!taskId) {
           throw new ApiError('Falta el ID de la tarea cognitiva en la ruta', 400);
       }
 
-      this.log('info', 'delete', 'Eliminando formulario CognitiveTask', { researchId, taskId });
-      await this.service.delete(taskId); 
+      structuredLog('info', `CognitiveTaskController.${context}`, 'Eliminando formulario CognitiveTask', { researchId, taskId });
+      // Pasar userId si es necesario
+      await cognitiveTaskService.delete(taskId /*, userId */); 
       
-      return successResponse({ message: 'Formulario CognitiveTask eliminado con éxito' });
+      structuredLog('info', `CognitiveTaskController.${context}`, 'Formulario eliminado', { researchId, taskId });
+      // Respuesta 204 No Content para DELETE exitoso
+      return createResponse(204, null); 
     } catch (error) {
-      return this.handleError(error, 'eliminar formulario CognitiveTask');
+      return this.handleError(error, context, { researchId, taskId });
     }
   }
 
@@ -234,7 +190,6 @@ export class CognitiveTaskController {
       },
 
       '^\/[^\/]+$': {
-
         'PUT': this.update.bind(this),
         'DELETE': this.delete.bind(this)
       }
@@ -244,4 +199,20 @@ export class CognitiveTaskController {
 
 const controllerInstance = new CognitiveTaskController();
 
-export const cognitiveTaskHandler = createController(controllerInstance.routes(), { basePath: '' }); // <<< AÑADIR basePath
+// Definir RouteMap como constante
+const cognitiveTaskRouteMap: RouteMap = {
+  '^': {
+    'GET': controllerInstance.get.bind(controllerInstance),
+    'POST': controllerInstance.create.bind(controllerInstance),
+  },
+  '^/[^\\/]+$': { // Este regex coincide con /<cualquier-cosa-sin-slash>
+    'PUT': controllerInstance.update.bind(controllerInstance),
+    'DELETE': controllerInstance.delete.bind(controllerInstance)
+  }
+};
+
+export const cognitiveTaskHandler = createController(cognitiveTaskRouteMap, {
+  // Quitar basePath si el decorador no lo maneja como se espera con regex
+  // basePath: '/research/{researchId}/cognitive-task' // Revisar si esto funciona con las regex
+  basePath: '' // Probablemente más seguro dejarlo vacío y que las regex/mapa manejen todo
+});

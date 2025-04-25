@@ -241,7 +241,6 @@ export class CognitiveTaskModel {
 
     let updateExpression = 'SET updatedAt = :updatedAt';
     const expressionAttributeValues: Record<string, any> = { ':updatedAt': now };
-    const expressionAttributeNames: Record<string, string> = {};
 
     if (data.questions) {
       const questionsWithFiles = data.questions.filter(q => 

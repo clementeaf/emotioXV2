@@ -7,6 +7,8 @@ import {
 } from '../../../shared/interfaces/thank-you-screen.interface';
 import { ThankYouScreenModel } from '../models/thankYouScreen.model';
 import { ApiError } from '../utils/errors';
+import { structuredLog } from '../utils/logging.util';
+import { handleDbError } from '../utils/dbError.util';
 
 // Instancia del modelo
 const thankYouScreenModel = new ThankYouScreenModel();
@@ -33,6 +35,8 @@ export type {
  * Servicio para gestionar pantallas de agradecimiento
  */
 export class ThankYouScreenService {
+  private serviceName = 'ThankYouScreenService';
+
   /**
    * Validación básica de los datos de entrada
    * @param data Datos a validar
@@ -250,70 +254,34 @@ export class ThankYouScreenService {
   }
 
   /**
-   * Actualizar la pantalla de agradecimiento de una investigación
+   * Actualiza O CREA la pantalla de agradecimiento de una investigación
    * @param researchId ID de la investigación
-   * @param data Datos a actualizar
+   * @param data Datos a actualizar/crear
    * @param _userId ID del usuario que realiza la operación
-   * @returns La pantalla de agradecimiento actualizada
+   * @returns La pantalla de agradecimiento actualizada o creada
    */
   async updateByResearchId(researchId: string, data: ThankYouScreenFormData, _userId: string): Promise<SharedThankYouScreenModel> {
+    const context = 'updateByResearchId'; // Contexto para logging
     try {
-      // Validar que existe researchId
       if (!researchId) {
         throw new ApiError(
-          `${ThankYouScreenError.RESEARCH_REQUIRED}: Se requiere ID de investigación para actualizar la pantalla de agradecimiento`,
+          `${ThankYouScreenError.RESEARCH_REQUIRED}: Se requiere ID de investigación para actualizar/crear la pantalla de agradecimiento`,
           400
         );
       }
+      this.validateData(data); // Validar datos entrantes
 
-      // Validar datos
-      this.validateData(data);
-
-      // Verificar si existe la pantalla para esta investigación
       const existing = await thankYouScreenModel.getByResearchId(researchId);
       
-      if (!existing) {
-        // Si no existe, crear una nueva
-        const createData: ThankYouScreenFormData = {
-          ...data,
-          isEnabled: data.isEnabled ?? DEFAULT_THANK_YOU_SCREEN_CONFIG.isEnabled,
-          title: data.title || DEFAULT_THANK_YOU_SCREEN_CONFIG.title,
-          message: data.message || DEFAULT_THANK_YOU_SCREEN_CONFIG.message,
-          redirectUrl: data.redirectUrl || DEFAULT_THANK_YOU_SCREEN_CONFIG.redirectUrl
-        };
-        
-        return await thankYouScreenModel.create(createData, researchId);
+      if (existing) {
+        structuredLog('info', `${this.serviceName}.${context}`, 'Actualizando pantalla existente', { researchId, screenId: existing.id });
+        return await this.update(existing.id, data, _userId);
+      } else {
+        structuredLog('info', `${this.serviceName}.${context}`, 'Creando nueva pantalla porque no existe', { researchId });
+        return await this.create(data, researchId, _userId);
       }
-
-      // Si existe, actualizarla
-      const updateData = {
-        isEnabled: data.isEnabled !== undefined ? data.isEnabled : existing.isEnabled,
-        title: data.title || existing.title,
-        message: data.message || existing.message,
-        redirectUrl: data.redirectUrl !== undefined ? data.redirectUrl : existing.redirectUrl
-      };
-      
-      const updated = await thankYouScreenModel.update(existing.id, updateData);
-      
-      if (!updated) {
-        throw new ApiError(
-          `${ThankYouScreenError.DATABASE_ERROR}: No se pudo actualizar la pantalla de agradecimiento`,
-          500
-        );
-      }
-      
-      return updated;
     } catch (error) {
-      // Si ya es un ApiError, relanzarlo
-      if (error instanceof ApiError) {
-        throw error;
-      }
-
-      console.error('Error en ThankYouScreenService.updateByResearchId:', error);
-      throw new ApiError(
-        `${ThankYouScreenError.DATABASE_ERROR}: Error al actualizar la pantalla de agradecimiento`,
-        500
-      );
+      throw handleDbError(error, context, this.serviceName, {});
     }
   }
 

@@ -1,0 +1,127 @@
+# Definiciones de Funciones Lambda para serverless.yml
+
+# Función principal para API REST - maneja todas las rutas
+api:
+  handler: src/index.handler
+  # Añadir configuraciones de caché específicas para endpoints GET
+  events:
+    # Ruta específica para GET WelcomeScreen (Habilitar Caché)
+    - http:
+        path: /research/{researchId}/welcome-screen
+        method: GET
+        cors: true
+        # Habilitar caché para este método/ruta específico
+        # caching:
+        #   enabled: true # Requiere habilitar caché a nivel de etapa
+        #   ttlInSeconds: 300 # TTL específico (opcional, usa el de etapa si no)
+        #   cacheKeyParameters:
+        #     - name: method.request.path.researchId # Incluir researchId en la clave
+        #       required: true
+        #     # Añadir otros parámetros si son necesarios (ej: query strings, headers)
+        #     # - name: method.request.header.Authorization 
+        #     # - name: method.request.querystring.myParam
+        #   dataEncrypted: true # Recomendado
+    # Ruta específica para GET SmartVOC (Habilitar Caché)
+    - http:
+        path: /research/{researchId}/smart-voc
+        method: GET
+        # Reemplazar cors: true con configuración explícita
+        # cors: true
+        cors: 
+          origin: ${self:provider.environment.ALLOWED_ORIGIN} # Referencia a la variable de entorno
+          headers:
+            - Content-Type
+            - X-Amz-Date
+            - Authorization
+            - X-Api-Key
+            - X-Amz-Security-Token
+          allowCredentials: true
+          methods:
+            - OPTIONS # ¡Muy importante para preflight!
+            - GET     # Permitir GET
+        # Habilitar caché para este método/ruta específico
+        # caching:
+        #   enabled: true # Requiere habilitar caché a nivel de etapa
+        #   ttlInSeconds: 300 # TTL específico (opcional)
+        #   cacheKeyParameters:
+        #     - name: method.request.path.researchId # Incluir researchId en la clave
+        #       required: true
+        #   dataEncrypted: true # Recomendado
+    # Añadir ruta explícita para PUT SmartVOC con CORS detallado
+    - http:
+        path: /research/{researchId}/smart-voc
+        method: PUT
+        cors: 
+          origin: ${self:provider.environment.ALLOWED_ORIGIN} # Referencia a la variable de entorno
+          headers:
+            - Content-Type
+            - X-Amz-Date
+            - Authorization
+            - X-Api-Key
+            - X-Amz-Security-Token
+          allowCredentials: true
+          methods:
+            - OPTIONS # ¡Muy importante para preflight!
+            - PUT     # Permitir PUT explícitamente
+    # Ruta genérica para el resto (Sin Caché por defecto aquí)
+    - http:
+        path: /{proxy+}
+        method: ANY
+        # Reemplazar cors: true con configuración explícita
+        # cors: true 
+        cors: 
+          origin: ${self:provider.environment.ALLOWED_ORIGIN} # Referencia a la variable de entorno
+          headers:
+            - Content-Type
+            - X-Amz-Date
+            - Authorization
+            - X-Api-Key
+            - X-Amz-Security-Token
+          allowCredentials: true
+          methods:
+            - OPTIONS # ¡Muy importante para preflight!
+            - GET
+            - POST
+            - PUT    # <-- Asegurarse que PUT está permitido
+            - DELETE
+            - PATCH
+            - HEAD
+    - http:
+        path: /
+        method: ANY
+        # Reemplazar cors: true con configuración explícita también para la raíz
+        # cors: true 
+        cors:
+          origin: ${self:provider.environment.ALLOWED_ORIGIN} # Referencia a la variable de entorno
+          headers:
+            - Content-Type
+            - X-Amz-Date
+            - Authorization
+            - X-Api-Key
+            - X-Amz-Security-Token
+          allowCredentials: true
+          methods:
+            - OPTIONS 
+            - GET
+            - POST
+            - PUT
+            - DELETE
+            - PATCH
+            - HEAD
+  environment:
+    CONNECTION_TYPE: http
+
+# Función para WebSockets
+websocket:
+  handler: src/index.handler
+  events:
+    - websocket:
+        route: $connect
+    - websocket:
+        route: $disconnect
+    - websocket:
+        route: $default
+    - websocket:
+        route: message
+  environment: 
+    CONNECTION_TYPE: websocket 

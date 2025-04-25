@@ -1,0 +1,43 @@
+# Permisos IAM para serverless.yml
+
+role:
+  statements:
+    # Permisos CRUD para TODAS las tablas DynamoDB de este servicio/etapa
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+        - dynamodb:DescribeTable
+      Resource:
+        # ARN para TODAS las tablas de este servicio/etapa usando comodín '*'. Usamos Fn::Sub aquí.
+        - Fn::Sub: arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${self:service}-*-${self:provider.stage}
+        # ARN para TODOS los índices de esas tablas
+        - Fn::Sub: arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${self:service}-*-${self:provider.stage}/index/*
+        
+    # Permisos para el bucket S3
+    - Effect: Allow
+      Action:
+        - s3:GetObject
+        - s3:PutObject
+        - s3:PutObjectAcl
+        - s3:DeleteObject
+        - s3:ListBucket
+      Resource:
+        # ARN del bucket referenciando el recurso lógico
+        - Fn::GetAtt: [StorageBucket, Arn] 
+        # ARN para los objetos dentro del bucket
+        - Fn::Join: ['', [Fn::GetAtt: [StorageBucket, Arn], '/*']]
+
+    # Permisos básicos para Logging en CloudWatch
+    - Effect: "Allow"
+      Action:
+        - "logs:CreateLogGroup"
+        - "logs:CreateLogStream"
+        - "logs:PutLogEvents"
+      Resource: 
+        # ARN para los grupos de logs de las funciones de este stack
+        - Fn::Sub: arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${self:service}-${self:provider.stage}-*:* 

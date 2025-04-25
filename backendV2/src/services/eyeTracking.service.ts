@@ -6,6 +6,9 @@ import {
   EYE_TRACKING_VALIDATION
 } from '../models/eyeTracking.model';
 import { ApiError } from '../utils/errors';
+import { NotFoundError } from '../errors';
+import { structuredLog } from '../utils/logging.util';
+import { handleDbError } from '../utils/dbError.util';
 
 // Instancia del modelo
 const eyeTrackingModel = new EyeTrackingModel();
@@ -27,6 +30,8 @@ export enum EyeTrackingError {
  * Servicio para gestionar configuraciones de eye tracking
  */
 export class EyeTrackingService {
+  private serviceName = 'EyeTrackingService';
+
   /**
    * Validación básica de los datos de entrada
    * @param data Datos a validar
@@ -34,7 +39,8 @@ export class EyeTrackingService {
    * @throws ApiError si hay errores de validación
    */
   private validateData(data: Partial<EyeTrackingFormData>): boolean {
-    console.log('[DEBUG] EyeTrackingService.validateData - Datos recibidos:', JSON.stringify(data, null, 2));
+    const context = 'validateData';
+    structuredLog('debug', `${this.serviceName}.${context}`, 'Datos recibidos para validación', { data: JSON.stringify(data) });
     
     const errors: Record<string, string> = {};
     
@@ -75,7 +81,7 @@ export class EyeTrackingService {
 
     // Validar configuración de estímulos si está presente
     if (data.stimuli) {
-      console.log('[DEBUG] EyeTrackingService.validateData - Validando stimuli:', JSON.stringify(data.stimuli, null, 2));
+      structuredLog('debug', `${this.serviceName}.${context}`, 'Validando stimuli', { count: data.stimuli.items?.length });
       
       // Validar duración por estímulo
       if (data.stimuli.durationPerStimulus !== undefined) {
@@ -88,7 +94,7 @@ export class EyeTrackingService {
 
       // Validar estímulos individuales
       if (data.stimuli.items && Array.isArray(data.stimuli.items)) {
-        console.log('[DEBUG] EyeTrackingService.validateData - Número de estímulos:', data.stimuli.items.length);
+        structuredLog('debug', `${this.serviceName}.${context}`, 'Número de estímulos:', { count: data.stimuli.items.length });
         
         data.stimuli.items.forEach((item, index) => {
           if (!item.fileName || item.fileName.trim() === '') {
@@ -111,14 +117,14 @@ export class EyeTrackingService {
 
     // Si hay errores, lanzar excepción
     if (Object.keys(errors).length > 0) {
-      console.error('[DEBUG] EyeTrackingService.validateData - Errores encontrados:', errors);
+      structuredLog('error', `${this.serviceName}.${context}`, 'Errores de validación encontrados', { errors });
       throw new ApiError(
         `${EyeTrackingError.INVALID_DATA}: Los datos de eye tracking no son válidos. Errores: ${JSON.stringify(errors)}`,
         400
       );
     }
     
-    console.log('[DEBUG] EyeTrackingService.validateData - Validación exitosa');
+    structuredLog('debug', `${this.serviceName}.${context}`, 'Validación exitosa');
     return true;
   }
 
@@ -130,6 +136,8 @@ export class EyeTrackingService {
    * @returns La configuración de eye tracking creada
    */
   async create(data: EyeTrackingFormData, researchId: string, _userId: string): Promise<EyeTrackingRecord> {
+    const context = 'create';
+    structuredLog('info', `${this.serviceName}.${context}`, 'Creando configuración', { researchId });
     try {
       // Validar que existe researchId
       if (!researchId) {
@@ -151,18 +159,18 @@ export class EyeTrackingService {
 
       // Crear en el modelo
       const eyeTracking = await eyeTrackingModel.create(eyeTrackingData, researchId);
+      structuredLog('info', `${this.serviceName}.${context}`, 'Configuración creada exitosamente', { researchId, id: eyeTracking.id });
       return eyeTracking;
     } catch (error) {
-      // Si ya es un ApiError, relanzarlo
-      if (error instanceof ApiError) {
+      if (error instanceof ApiError || error instanceof NotFoundError) {
         throw error;
       }
-
-      console.error('Error en EyeTrackingService.create:', error);
-      throw new ApiError(
-        `${EyeTrackingError.DATABASE_ERROR}: Error al crear la configuración de eye tracking`,
-        500
-      );
+      if ((error instanceof Error) && error.message?.includes('EYE_TRACKING_CONFIG_EXISTS')) {
+        structuredLog('warn', `${this.serviceName}.${context}`, 'Intento de crear configuración duplicada', { researchId });
+        throw new ApiError('Configuración ya existe para esta investigación', 409);
+      }
+      structuredLog('error', `${this.serviceName}.${context}`, 'Error inesperado durante la creación', { error, researchId });
+      throw handleDbError(error, context, this.serviceName, {});
     }
   }
 
@@ -172,28 +180,26 @@ export class EyeTrackingService {
    * @returns La configuración de eye tracking encontrada
    */
   async getById(id: string): Promise<EyeTrackingRecord> {
+    const context = 'getById';
+    structuredLog('info', `${this.serviceName}.${context}`, 'Obteniendo configuración por ID', { id });
     try {
       const eyeTracking = await eyeTrackingModel.getById(id);
       
       if (!eyeTracking) {
-        throw new ApiError(
-          `${EyeTrackingError.NOT_FOUND}: Configuración de eye tracking no encontrada`,
-          404
-        );
+        structuredLog('error', `${this.serviceName}.${context}`, 'Modelo devolvió null inesperadamente', { id });
+        throw new NotFoundError(EyeTrackingError.NOT_FOUND);
       }
 
+      structuredLog('info', `${this.serviceName}.${context}`, 'Configuración encontrada', { id });
       return eyeTracking;
     } catch (error) {
-      // Si ya es un ApiError, relanzarlo
-      if (error instanceof ApiError) {
+      if (error instanceof ApiError || error instanceof NotFoundError) {
         throw error;
       }
-
-      console.error('Error en EyeTrackingService.getById:', error);
-      throw new ApiError(
-        `${EyeTrackingError.DATABASE_ERROR}: Error al obtener la configuración de eye tracking`,
-        500
-      );
+      structuredLog('error', `${this.serviceName}.${context}`, 'Error inesperado al obtener por ID', { error, id });
+      throw handleDbError(error, context, this.serviceName, {
+        'EYE_TRACKING_CONFIG_NOT_FOUND': { errorClass: NotFoundError, statusCode: 404 }
+      });
     }
   }
 
@@ -203,41 +209,46 @@ export class EyeTrackingService {
    * @returns La configuración de eye tracking encontrada o una nueva con valores por defecto
    */
   async getByResearchId(researchId: string): Promise<EyeTrackingRecord> {
+    const context = 'getByResearchId';
+    structuredLog('info', `${this.serviceName}.${context}`, 'Obteniendo configuración por researchId', { researchId });
+    if (!researchId) {
+      throw new ApiError(
+        `${EyeTrackingError.RESEARCH_REQUIRED}: Se requiere ID de investigación para obtener la configuración de eye tracking`,
+        400
+      );
+    }
+    
+    let eyeTracking: EyeTrackingRecord | null = null;
     try {
-      // Validar que existe researchId
-      if (!researchId) {
-        throw new ApiError(
-          `${EyeTrackingError.RESEARCH_REQUIRED}: Se requiere ID de investigación para obtener la configuración de eye tracking`,
-          400
-        );
+      // 1. Intentar obtener la existente
+      eyeTracking = await eyeTrackingModel.getByResearchId(researchId);
+    } catch (error) {
+      if (error instanceof ApiError || error instanceof NotFoundError) {
+        throw error;
       }
+      structuredLog('error', `${this.serviceName}.${context}`, 'Error inesperado durante GetStep', { error, researchId });
+      throw handleDbError(error, `${context} [GetStep]`, this.serviceName, {});
+    }
 
-      const eyeTracking = await eyeTrackingModel.getByResearchId(researchId);
-      
-      if (!eyeTracking) {
-        // Si no existe, crear una por defecto
+    if (!eyeTracking) {
+      structuredLog('info', `${this.serviceName}.${context}`, 'No existe configuración, creando por defecto', { researchId });
+      try {
         const defaultData: EyeTrackingFormData = {
           ...DEFAULT_EYE_TRACKING_CONFIG,
           researchId
         };
-        
-        // Crear configuración por defecto y retornarla
-        return await eyeTrackingModel.create(defaultData, researchId);
+        eyeTracking = await this.create(defaultData, researchId, 'system');
+      } catch (error) {
+        if (error instanceof ApiError || error instanceof NotFoundError) {
+          throw error;
+        }
+        structuredLog('error', `${this.serviceName}.${context}`, 'Error inesperado durante CreateDefaultStep', { error, researchId });
+        throw handleDbError(error, `${context} [CreateDefaultStep]`, this.serviceName, {});
       }
-
-      return eyeTracking;
-    } catch (error) {
-      // Si ya es un ApiError, relanzarlo
-      if (error instanceof ApiError) {
-        throw error;
-      }
-
-      console.error('Error en EyeTrackingService.getByResearchId:', error);
-      throw new ApiError(
-        `${EyeTrackingError.DATABASE_ERROR}: Error al obtener la configuración de eye tracking para la investigación`,
-        500
-      );
     }
+
+    structuredLog('info', `${this.serviceName}.${context}`, 'Configuración obtenida/creada', { researchId, id: eyeTracking.id });
+    return eyeTracking;
   }
 
   /**
@@ -248,35 +259,31 @@ export class EyeTrackingService {
    * @returns La configuración actualizada
    */
   async update(id: string, data: Partial<EyeTrackingFormData>, _userId: string): Promise<EyeTrackingRecord> {
+    const context = 'update';
+    structuredLog('info', `${this.serviceName}.${context}`, 'Actualizando configuración', { id });
     try {
       // Verificar que existe
       await this.getById(id);
       
       // Validar datos
-      this.validateData(data);
+      this.validateData({ ...data /*, researchId: existing.researchId */ });
       
       // Actualizar en el modelo
       const updatedConfig = await eyeTrackingModel.update(id, data);
       
       if (!updatedConfig) {
-        throw new ApiError(
-          `${EyeTrackingError.NOT_FOUND}: Configuración de eye tracking no encontrada`,
-          404
-        );
+        throw new ApiError('Error interno: La actualización no devolvió un resultado válido.', 500);
       }
-      
+      structuredLog('info', `${this.serviceName}.${context}`, 'Configuración actualizada exitosamente', { id });
       return updatedConfig;
     } catch (error) {
-      // Si ya es un ApiError, relanzarlo
-      if (error instanceof ApiError) {
+      if (error instanceof ApiError || error instanceof NotFoundError) {
         throw error;
       }
-
-      console.error('Error en EyeTrackingService.update:', error);
-      throw new ApiError(
-        `${EyeTrackingError.DATABASE_ERROR}: Error al actualizar la configuración de eye tracking`,
-        500
-      );
+      structuredLog('error', `${this.serviceName}.${context}`, 'Error inesperado al actualizar', { error, id });
+      throw handleDbError(error, context, this.serviceName, {
+        'EYE_TRACKING_CONFIG_NOT_FOUND': { errorClass: NotFoundError, statusCode: 404 }
+      });
     }
   }
 
@@ -287,104 +294,58 @@ export class EyeTrackingService {
    * @param _userId ID del usuario que realiza la operación
    * @returns La configuración actualizada
    */
-  async updateByResearchId(researchId: string, data: EyeTrackingFormData, _userId: string): Promise<EyeTrackingRecord> {
+  async updateByResearchId(researchId: string, data: EyeTrackingFormData, userId: string): Promise<EyeTrackingRecord> {
+    const context = 'updateByResearchId';
+    structuredLog('info', `${this.serviceName}.${context}`, 'Actualizando/Creando configuración por researchId', { researchId });
+    
+    if (!researchId) {
+      throw new ApiError(
+        `${EyeTrackingError.RESEARCH_REQUIRED}: Se requiere ID de investigación para actualizar la configuración`, 400
+      );
+    }
+    this.validateData({ ...data, researchId });
+      
+    if (data.stimuli && Array.isArray(data.stimuli.items)) {
+      data.stimuli.items.forEach((item, index) => {
+        if (!item.s3Key) {
+          structuredLog('warn', `${this.serviceName}.${context}`, `Estímulo ${index} sin s3Key`, { itemId: item.id, fileName: item.fileName });
+        }
+      });
+    } else {
+      structuredLog('warn', `${this.serviceName}.${context}`, 'No hay estímulos en los datos recibidos');
+    }
+      
+    let existingConfig: EyeTrackingRecord | null = null;
     try {
-      console.log('[DEBUG] EyeTrackingService.updateByResearchId - Iniciando para researchId:', researchId);
-      console.log('[DEBUG] EyeTrackingService.updateByResearchId - Datos recibidos:', JSON.stringify(data, null, 2));
-      
-      // Validar que existe researchId
-      if (!researchId) {
-        throw new ApiError(
-          `${EyeTrackingError.RESEARCH_REQUIRED}: Se requiere ID de investigación para actualizar la configuración de eye tracking`,
-          400
-        );
-      }
-      
-      // Validar datos
-      this.validateData(data);
-      
-      // Verificar específicamente los estímulos
-      if (data.stimuli && Array.isArray(data.stimuli.items)) {
-        console.log('[DEBUG] EyeTrackingService.updateByResearchId - Verificando estímulos, cantidad:', data.stimuli.items.length);
-        
-        // Verificar cada estímulo
-        data.stimuli.items.forEach((item, index) => {
-          if (!item.s3Key) {
-            console.warn(`[DEBUG] EyeTrackingService.updateByResearchId - Estímulo ${index} sin s3Key:`, item);
-          }
-        });
-      } else {
-        console.warn('[DEBUG] EyeTrackingService.updateByResearchId - No hay estímulos en los datos recibidos');
-      }
-      
-      // Buscar si ya existe una configuración para esta investigación
-      const existingConfig = await eyeTrackingModel.getByResearchId(researchId);
-      
-      if (existingConfig) {
-        console.log('[DEBUG] EyeTrackingService.updateByResearchId - Encontrada configuración existente, ID:', existingConfig.id);
-        console.log('[DEBUG] EyeTrackingService.updateByResearchId - Estímulos en configuración existente:', 
-          existingConfig.stimuli.items?.length || 0);
-        
-        // Si existe, actualizar
-        const dataToUpdate = {
-          ...data,
-          researchId // Asegurarse de que el researchId no se cambie
-        };
-        
-        // Verificar continuidad de estímulos para debugging
-        if (existingConfig.stimuli && existingConfig.stimuli.items && 
-            dataToUpdate.stimuli && dataToUpdate.stimuli.items) {
-          const existingIds = existingConfig.stimuli.items.map(item => item.id);
-          const newIds = dataToUpdate.stimuli.items.map(item => item.id);
-          
-          console.log('[DEBUG] EyeTrackingService.updateByResearchId - IDs de estímulos existentes:', existingIds);
-          console.log('[DEBUG] EyeTrackingService.updateByResearchId - IDs de estímulos nuevos:', newIds);
-          
-          // Verificar estímulos que se mantienen
-          const retainedIds = existingIds.filter(id => newIds.includes(id));
-          console.log('[DEBUG] EyeTrackingService.updateByResearchId - Estímulos que se mantienen:', retainedIds.length);
-          
-          // Verificar estímulos nuevos
-          const addedIds = newIds.filter(id => !existingIds.includes(id));
-          console.log('[DEBUG] EyeTrackingService.updateByResearchId - Estímulos nuevos:', addedIds.length);
-          
-          // Verificar estímulos eliminados
-          const removedIds = existingIds.filter(id => !newIds.includes(id));
-          console.log('[DEBUG] EyeTrackingService.updateByResearchId - Estímulos eliminados:', removedIds.length);
-        }
-        
-        console.log('[DEBUG] EyeTrackingService.updateByResearchId - Actualizando configuración con ID:', existingConfig.id);
-        const updatedConfig = await eyeTrackingModel.update(existingConfig.id, dataToUpdate);
-        
-        if (!updatedConfig) {
-          console.error('[DEBUG] EyeTrackingService.updateByResearchId - Error al actualizar la configuración');
-          throw new ApiError(
-            `${EyeTrackingError.DATABASE_ERROR}: No se pudo actualizar la configuración de eye tracking`,
-            500
-          );
-        }
-        
-        console.log('[DEBUG] EyeTrackingService.updateByResearchId - Configuración actualizada exitosamente');
-        console.log('[DEBUG] EyeTrackingService.updateByResearchId - Estímulos en configuración actualizada:', 
-          updatedConfig.stimuli.items?.length || 0);
-        
-        return updatedConfig;
-      } else {
-        // Si no existe, crear nueva
-        console.log('[DEBUG] EyeTrackingService.updateByResearchId - No existe configuración, creando nueva');
-        return await this.create(data, researchId, _userId);
-      }
+      existingConfig = await eyeTrackingModel.getByResearchId(researchId);
     } catch (error) {
-      // Si ya es un ApiError, relanzarlo
-      if (error instanceof ApiError) {
+      if (error instanceof ApiError || error instanceof NotFoundError) {
         throw error;
       }
-
-      console.error('[DEBUG] EyeTrackingService.updateByResearchId - Error:', error);
-      throw new ApiError(
-        `${EyeTrackingError.DATABASE_ERROR}: Error al actualizar la configuración de eye tracking para la investigación`,
-        500
-      );
+      structuredLog('error', `${this.serviceName}.${context}`, 'Error inesperado durante GetExistingStep', { error, researchId });
+      throw handleDbError(error, `${context} [GetExistingStep]`, this.serviceName, {});
+    }
+      
+    try {
+      if (existingConfig) {
+        structuredLog('info', `${this.serviceName}.${context}`, 'Configuración existente encontrada, actualizando', { researchId, id: existingConfig.id });
+        return await this.update(existingConfig.id, { ...data, researchId }, userId);
+      } else {
+        structuredLog('info', `${this.serviceName}.${context}`, 'No existe configuración, creando nueva', { researchId });
+        return await this.create({ ...data, researchId }, researchId, userId);
+      }
+    } catch (error) {
+      if (error instanceof ApiError || error instanceof NotFoundError) {
+        throw error;
+      }
+      if ((error instanceof Error) && error.message?.includes('EYE_TRACKING_CONFIG_EXISTS')) {
+        structuredLog('warn', `${this.serviceName}.${context}`, 'Conflicto al intentar crear configuración durante upsert', { researchId });
+        throw new ApiError('Conflicto al crear configuración', 409);
+      }
+      structuredLog('error', `${this.serviceName}.${context}`, 'Error inesperado durante Update/Create step', { error, researchId });
+      throw handleDbError(error, context, this.serviceName, {
+        'EYE_TRACKING_CONFIG_NOT_FOUND': { errorClass: NotFoundError, statusCode: 404 },
+      });
     }
   }
 
@@ -395,23 +356,23 @@ export class EyeTrackingService {
    * @returns void
    */
   async delete(id: string, _userId: string): Promise<void> {
+    const context = 'delete';
+    structuredLog('info', `${this.serviceName}.${context}`, 'Eliminando configuración', { id });
     try {
       // Verificar que existe
       await this.getById(id);
       
       // Eliminar
       await eyeTrackingModel.delete(id);
+      structuredLog('info', `${this.serviceName}.${context}`, 'Configuración eliminada exitosamente', { id });
     } catch (error) {
-      // Si ya es un ApiError, relanzarlo
-      if (error instanceof ApiError) {
+      if (error instanceof ApiError || error instanceof NotFoundError) {
         throw error;
       }
-
-      console.error('Error en EyeTrackingService.delete:', error);
-      throw new ApiError(
-        `${EyeTrackingError.DATABASE_ERROR}: Error al eliminar la configuración de eye tracking`,
-        500
-      );
+      structuredLog('error', `${this.serviceName}.${context}`, 'Error inesperado al eliminar', { error, id });
+      throw handleDbError(error, context, this.serviceName, {
+        'EYE_TRACKING_CONFIG_NOT_FOUND': { errorClass: NotFoundError, statusCode: 404 }
+      });
     }
   }
 
@@ -420,20 +381,20 @@ export class EyeTrackingService {
    * @returns Lista de todas las configuraciones de eye tracking
    */
   async getAll(): Promise<EyeTrackingRecord[]> {
+    const context = 'getAll';
+    structuredLog('info', `${this.serviceName}.${context}`, 'Obteniendo todas las configuraciones');
     try {
       const eyeTrackingConfigs = await eyeTrackingModel.getAll();
+      structuredLog('info', `${this.serviceName}.${context}`, `Encontradas ${eyeTrackingConfigs.length} configuraciones`);
       return eyeTrackingConfigs;
     } catch (error) {
-      // Si ya es un ApiError, relanzarlo
-      if (error instanceof ApiError) {
+      if (error instanceof ApiError || error instanceof NotFoundError) {
         throw error;
       }
-
-      console.error('Error en EyeTrackingService.getAll:', error);
-      throw new ApiError(
-        `${EyeTrackingError.DATABASE_ERROR}: Error al obtener todas las configuraciones de eye tracking`,
-        500
-      );
+      structuredLog('error', `${this.serviceName}.${context}`, 'Error inesperado al obtener todas', { error });
+      throw handleDbError(error, context, this.serviceName, {});
     }
   }
-} 
+}
+
+export const eyeTrackingService = new EyeTrackingService(); 

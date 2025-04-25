@@ -11,6 +11,13 @@ plugins:
 
 # Configuración de esbuild para compilación TypeScript optimizada
 custom:
+  tableName: ${self:service}-researches-${self:provider.stage} # Tabla para Investigaciones
+  usersTableName: ${self:service}-users-${self:provider.stage} # Tabla para Usuarios
+  s3BucketName: ${self:service}-${self:provider.stage}-storage # Bucket S3
+  eyeTrackingRecruitConfigTable: ${self:service}-eye-tracking-recruit-config-${self:provider.stage}
+  eyeTrackingRecruitParticipantTable: ${self:service}-eye-tracking-recruit-participant-${self:provider.stage}
+  recruitmentLinkTable: ${self:service}-recruitment-link-${self:provider.stage}
+
   esbuild:
     bundle: true
     minify: true
@@ -22,14 +29,6 @@ custom:
     platform: 'node'
     concurrency: 10
     keepOutputDirectory: false
-
-  # Definición de nombres de recursos
-  tableName: ${self:service}-researches-${self:provider.stage} # Tabla para Investigaciones
-  usersTableName: ${self:service}-users-${self:provider.stage} # Tabla para Usuarios
-  s3BucketName: ${self:service}-${self:provider.stage}-storage # Bucket S3
-  eyeTrackingRecruitConfigTable: ${self:service}-eye-tracking-recruit-config-${self:provider.stage}
-  eyeTrackingRecruitParticipantTable: ${self:service}-eye-tracking-recruit-participant-${self:provider.stage}
-  recruitmentLinkTable: ${self:service}-recruitment-link-${self:provider.stage}
 
   # Configuración para entorno de desarrollo
   serverless-offline:
@@ -70,253 +69,24 @@ provider:
   timeout: 30
   logRetentionInDays: 7
   
-  # Mover stackTags aquí, directamente bajo provider
   stackTags:
     SERVICE_NAME: ${self:service}
     STAGE: ${self:provider.stage}
 
-  # Simplificar configuración de apiGateway
   apiGateway:
-    shouldStartNameWithService: true # Buena práctica
-    # Eliminar referencias explícitas a restApiId y restApiRootResourceId
-    # restApiId:
-    #   Ref: ApiGatewayRestApi 
-    # restApiRootResourceId:
-    #   Fn::GetAtt: [ApiGatewayRestApi, RootResourceId]
+    shouldStartNameWithService: true
     # Mantener la configuración de caché comentada por ahora
     # cacheClusterEnabled: true 
     # cacheClusterSize: '0.5'
     # cacheDataEncrypted: true
     # cacheTtlInSeconds: 300
 
-  # Variables de entorno dinámicas
-  environment:
-    NODE_ENV: ${self:provider.stage}
-    STAGE: ${self:provider.stage}
-    AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
-    APP_REGION: ${self:provider.region}
-    API_ENDPOINT: 
-      Fn::Join:
-        - ""
-        - - "https://"
-          - Ref: "ApiGatewayRestApi"
-          - ".execute-api.${self:provider.region}.amazonaws.com/${self:provider.stage}"
-    WEBSOCKET_ENDPOINT: 
-      Fn::Join:
-        - ""
-        - - "wss://"
-          - Ref: "WebsocketsApi"
-          - ".execute-api.${self:provider.region}.amazonaws.com/${self:provider.stage}"
-    USER_TABLE: ${self:custom.usersTableName}
-    DYNAMODB_TABLE: ${self:service}-table-${self:provider.stage}
-    PARTICIPANT_TABLE: ${self:service}-participants-${self:provider.stage}
-    JWT_SECRET: ${env:JWT_SECRET, 'mi-clave-secreta-para-firmar-tokens'}
-    TOKEN_EXPIRATION: '604800'
-    S3_BUCKET_NAME: ${self:custom.s3BucketName}
-    EYETRACKING_RECRUIT_CONFIG_TABLE: ${self:custom.eyeTrackingRecruitConfigTable}
-    EYETRACKING_RECRUIT_PARTICIPANT_TABLE: ${self:custom.eyeTrackingRecruitParticipantTable}
-    RECRUITMENT_LINK_TABLE: ${self:custom.recruitmentLinkTable}
-    EMAIL_FROM: process.env.EMAIL_FROM
-    EMAIL_TO: process.env.EMAIL_TO
-    TABLE_NAME: ${self:custom.tableName}
-  
-  # Definir las declaraciones IAM directamente aquí
-  iam:
-    role:
-      statements:
-        # Permisos CRUD para TODAS las tablas DynamoDB de este servicio/etapa
-        - Effect: Allow
-          Action:
-            - dynamodb:Query
-            - dynamodb:Scan
-            - dynamodb:GetItem
-            - dynamodb:PutItem
-            - dynamodb:UpdateItem
-            - dynamodb:DeleteItem
-            - dynamodb:DescribeTable
-          Resource:
-            # ARN para TODAS las tablas de este servicio/etapa usando comodín '*'. Usamos Fn::Sub aquí.
-            - Fn::Sub: arn:aws:dynamodb:\${AWS::Region}:\${AWS::AccountId}:table/${self:service}-*-${self:provider.stage}
-            # ARN para TODOS los índices de esas tablas
-            - Fn::Sub: arn:aws:dynamodb:\${AWS::Region}:\${AWS::AccountId}:table/${self:service}-*-${self:provider.stage}/index/*
-            
-        # Permisos para el bucket S3
-        - Effect: Allow
-          Action:
-            - s3:GetObject
-            - s3:PutObject
-            - s3:PutObjectAcl
-            - s3:DeleteObject
-            - s3:ListBucket
-          Resource:
-            # ARN del bucket referenciando el recurso lógico
-            - Fn::GetAtt: [StorageBucket, Arn] 
-            # ARN para los objetos dentro del bucket
-            - Fn::Join: [\'\', [Fn::GetAtt: [StorageBucket, Arn], \'/*\']]
+  environment: ${file(./environment-variables.yml)}
+  iam: ${file(./iam-permissions.yml)}
 
-        # Permisos básicos para Logging en CloudWatch
-        - Effect: "Allow"
-          Action:
-            - "logs:CreateLogGroup"
-            - "logs:CreateLogStream"
-            - "logs:PutLogEvents"
-          Resource: 
-            # ARN para los grupos de logs de las funciones de este stack
-            - Fn::Sub: arn:aws:logs:\${AWS::Region}:\${AWS::AccountId}:log-group:/aws/lambda/${self:service}-${self:provider.stage}-*:*
-
-functions:
-  # Función principal para API REST - maneja todas las rutas
-  api:
-    handler: src/index.handler
-    # Añadir configuraciones de caché específicas para endpoints GET
-    events:
-      # Ruta específica para GET WelcomeScreen (Habilitar Caché)
-      - http:
-          path: /research/{researchId}/welcome-screen
-          method: GET
-          cors: true
-          # Habilitar caché para este método/ruta específico
-          # caching:
-          #   enabled: true # Requiere habilitar caché a nivel de etapa
-          #   ttlInSeconds: 300 # TTL específico (opcional, usa el de etapa si no)
-          #   cacheKeyParameters:
-          #     - name: method.request.path.researchId # Incluir researchId en la clave
-          #       required: true
-          #     # Añadir otros parámetros si son necesarios (ej: query strings, headers)
-          #     # - name: method.request.header.Authorization 
-          #     # - name: method.request.querystring.myParam
-          #   dataEncrypted: true # Recomendado
-      # Ruta específica para GET SmartVOC (Habilitar Caché)
-      - http:
-          path: /research/{researchId}/smart-voc
-          method: GET
-          # Reemplazar cors: true con configuración explícita
-          # cors: true
-          cors: 
-            origin: 'http://localhost:4700' # O usa ${self:custom.stages.${self:provider.stage}.apiGatewayCors} si prefieres
-            headers:
-              - Content-Type
-              - X-Amz-Date
-              - Authorization
-              - X-Api-Key
-              - X-Amz-Security-Token
-            allowCredentials: true
-            methods:
-              - OPTIONS # ¡Muy importante para preflight!
-              - GET     # Permitir GET
-          # Habilitar caché para este método/ruta específico
-          # caching:
-          #   enabled: true # Requiere habilitar caché a nivel de etapa
-          #   ttlInSeconds: 300 # TTL específico (opcional)
-          #   cacheKeyParameters:
-          #     - name: method.request.path.researchId # Incluir researchId en la clave
-          #       required: true
-          #   dataEncrypted: true # Recomendado
-      # Añadir ruta explícita para PUT SmartVOC con CORS detallado
-      - http:
-          path: /research/{researchId}/smart-voc
-          method: PUT
-          cors: 
-            origin: 'http://localhost:4700' # O usa ${self:custom.stages.${self:provider.stage}.apiGatewayCors} si prefieres
-            headers:
-              - Content-Type
-              - X-Amz-Date
-              - Authorization
-              - X-Api-Key
-              - X-Amz-Security-Token
-            allowCredentials: true
-            methods:
-              - OPTIONS # ¡Muy importante para preflight!
-              - PUT     # Permitir PUT explícitamente
-      # Ruta genérica para el resto (Sin Caché por defecto aquí)
-      - http:
-          path: /{proxy+}
-          method: ANY
-          # Reemplazar cors: true con configuración explícita
-          # cors: true 
-          cors: 
-            origin: 'http://localhost:4700' # O usa ${self:custom.stages.${self:provider.stage}.apiGatewayCors} si prefieres
-            headers:
-              - Content-Type
-              - X-Amz-Date
-              - Authorization
-              - X-Api-Key
-              - X-Amz-Security-Token
-            allowCredentials: true
-            methods:
-              - OPTIONS # ¡Muy importante para preflight!
-              - GET
-              - POST
-              - PUT    # <-- Asegurarse que PUT está permitido
-              - DELETE
-              - PATCH
-              - HEAD
-      - http:
-          path: /
-          method: ANY
-          # Reemplazar cors: true con configuración explícita también para la raíz
-          # cors: true 
-          cors:
-            origin: 'http://localhost:4700' # O usa ${self:custom.stages.${self:provider.stage}.apiGatewayCors} si prefieres
-            headers:
-              - Content-Type
-              - X-Amz-Date
-              - Authorization
-              - X-Api-Key
-              - X-Amz-Security-Token
-            allowCredentials: true
-            methods:
-              - OPTIONS 
-              - GET
-              - POST
-              - PUT
-              - DELETE
-              - PATCH
-              - HEAD
-    environment:
-      CONNECTION_TYPE: http
-
-  # Función para WebSockets
-  websocket:
-    handler: src/index.handler
-    events:
-      - websocket:
-          route: $connect
-      - websocket:
-          route: $disconnect
-      - websocket:
-          route: $default
-      - websocket:
-          route: message
-    environment: 
-      CONNECTION_TYPE: websocket
+functions: ${file(./function-definitions.yml)}
 
 # Recursos y Outputs
 resources:
-  Resources: ${file(./resources.yml)} # Referencia al contenido del archivo bajo la clave Resources
-  Outputs:
-    # Usando Fn::Sub para construir la URL (SIN barras invertidas antes de $)
-    HttpApiUrl:
-      Description: URL of the HTTP API
-      Value: !Sub "https://${ApiGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com/${sls:stage}"
-      Export:
-        Name: ${self:service}-${self:provider.stage}-HttpApiUrl
-    
-    # Usando Fn::Sub para construir la URL (SIN barras invertidas antes de $)
-    WebsocketApiUrl:
-      Description: URL of the WebSocket API
-      Value: !Sub "wss://${WebsocketsApi}.execute-api.${AWS::Region}.amazonaws.com/${sls:stage}"
-      Export:
-        Name: ${self:service}-${self:provider.stage}-WebsocketApiUrl
-    
-    ServiceName:
-      Description: Nombre del servicio
-      Value: ${self:service}
-      Export:
-        Name: ${self:service}-${self:provider.stage}-ServiceName
-    
-    Stage:
-      Description: Etapa de despliegue
-      Value: ${self:provider.stage}
-      Export:
-        Name: ${self:service}-${self:provider.stage}-Stage
+  Resources: ${file(./resources.yml)}
+  Outputs: ${file(./outputs.yml)} 

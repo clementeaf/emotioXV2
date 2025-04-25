@@ -1,12 +1,20 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { thankYouScreenService, ThankYouScreenError } from '../services/thankYouScreen.service';
 import { ThankYouScreenFormData } from '../../../shared/interfaces/thank-you-screen.interface';
-import { 
-  createResponse, 
-  errorResponse
-} from '../utils/controller.utils';
+import { createResponse, errorResponse } from '../utils/controller.utils';
 import { createController, RouteMap } from '../utils/controller.decorator';
-import { validateUserId, extractResearchId, ERROR_MESSAGES } from '../utils/validation';
+import { structuredLog } from '../utils/logging.util';
+import { ApiError } from '../utils/errors';
+import { 
+  validateUserId, 
+  extractResearchId, 
+  ERROR_MESSAGES, 
+  parseAndValidateBody, 
+  validateMultiple,
+  validateScreenId,
+  validateResearchId
+} from '../utils/validation';
+import { validateThankYouScreenData } from '../utils/validation';
 
 // Función auxiliar para crear respuestas exitosas
 const successResponse = (body: any): APIGatewayProxyResult => createResponse(200, body);
@@ -18,127 +26,94 @@ export class ThankYouScreenController {
   private service = thankYouScreenService;
   private cache: Map<string, { data: any; timestamp: number; researchId: string }> = new Map();
   private readonly CACHE_TTL = 60000; // 1 minuto en milisegundos
+  private controllerName = 'ThankYouScreenController'; // Para logs
 
   constructor() {}
 
   /**
-   * Log estructurado con nivel, contexto y mensaje
-   */
-  private log(level: 'info' | 'error' | 'warn' | 'debug', context: string, message: string, data?: any): void {
-    const logEntry = {
-      timestamp: new Date().toISOString(),
-      level,
-      context: `ThankYouScreenController.${context}`,
-      message,
-      ...(data && { data })
-    };
-    
-    if (level === 'error') {
-      console.error(JSON.stringify(logEntry));
-    } else if (level === 'warn') {
-      console.warn(JSON.stringify(logEntry));
-    } else {
-      console.log(JSON.stringify(logEntry));
-    }
-  }
-
-  /**
    * Maneja errores en las operaciones del controlador
    */
-  private handleError(error: any, context: string): APIGatewayProxyResult {
-    this.log('error', context, 'Error al procesar la solicitud', { error });
+  private handleError(error: any, context: string, extraData?: Record<string, any>): APIGatewayProxyResult {
+    structuredLog('error', `${this.controllerName}.${context}`, 'Error procesando la solicitud', { 
+        error: error instanceof Error ? { name: error.name, message: error.message, stack: error.stack } : error,
+        ...extraData
+    });
     
-    // Mapear errores conocidos del servicio a códigos HTTP
+    if (error instanceof ApiError) {
+        return createResponse(error.statusCode, { error: error.message });
+    }    
     if (error.message?.includes(ThankYouScreenError.NOT_FOUND)) {
       return errorResponse(ERROR_MESSAGES.RESOURCE.NOT_FOUND('La pantalla de agradecimiento'), 404);
     }
-
-    if (error.message?.includes(ThankYouScreenError.INVALID_DATA) ||
-        error.message?.includes(ThankYouScreenError.RESEARCH_REQUIRED)) {
-      return errorResponse('Error de validación: ' + error.message, 400);
-    }
-
     if (error.message?.includes(ThankYouScreenError.PERMISSION_DENIED)) {
       return errorResponse(ERROR_MESSAGES.AUTH.FORBIDDEN, 403);
     }
+    if (error.message?.includes(ThankYouScreenError.INVALID_DATA) ||
+        error.message?.includes(ThankYouScreenError.RESEARCH_REQUIRED)) {
+      return errorResponse(error.message, 400);
+    }
     
-    // Error genérico
-    return errorResponse(`Error al ${context}: ${error.message || 'error desconocido'}`, 500);
+    return errorResponse(`Error interno del servidor en ${context}`, 500);
   }
 
   /**
    * Obtiene una pantalla de agradecimiento según el ID de investigación
    */
   public async getThankYouScreen(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    const context = 'getThankYouScreen';
+    let researchId: string | undefined;
     try {
-      // Verificar si es una solicitud pública
       const isPublic = event.path.includes('/public/');
+      let userId: string | undefined;
       
-      // Para solicitudes no públicas, validar autenticación
       if (!isPublic) {
-        const userId = event.requestContext.authorizer?.claims?.sub;
+        userId = event.requestContext.authorizer?.claims?.sub;
         const result = validateUserId(userId);
         if (result) return result;
       }
 
-      // Extraer y validar el researchId
       const idResult = extractResearchId(event);
       if ('statusCode' in idResult) return idResult;
-      const { researchId } = idResult;
+      researchId = idResult.researchId;
       
-      // Verificar si tenemos una versión en caché válida (solo para solicitudes autenticadas)
-      let cacheKey;
+      let cacheKey: string | undefined;
       let cachedEntry;
       
-      if (!isPublic) {
-        const userId = event.requestContext.authorizer?.claims?.sub;
+      if (!isPublic && userId) {
         cacheKey = `thankYouScreen_${researchId}_${userId}`;
         cachedEntry = this.cache.get(cacheKey);
         
-        if (cachedEntry && 
-            (Date.now() - cachedEntry.timestamp) < this.CACHE_TTL && 
-            cachedEntry.researchId === researchId) {
-          this.log('info', 'getThankYouScreen', 'Datos recuperados de caché', { researchId });
+        if (cachedEntry && (Date.now() - cachedEntry.timestamp) < this.CACHE_TTL && cachedEntry.researchId === researchId) {
+          structuredLog('info', `${this.controllerName}.${context}`, 'Datos recuperados de caché', { researchId });
           return successResponse(cachedEntry.data);
         }
       }
 
-      // Si no hay caché o está expirado, obtener datos frescos
-      this.log('info', 'getThankYouScreen', 'Obteniendo datos para investigación', { researchId, isPublic });
+      structuredLog('info', `${this.controllerName}.${context}`, 'Obteniendo datos para investigación', { researchId, isPublic });
       const screen = await this.service.getByResearchId(researchId);
       
-      // Si es una solicitud pública, verificar si está habilitada y filtrar campos
       if (isPublic) {
         if (!screen || !screen.isEnabled) {
-          return successResponse({ 
-            data: null,
-            message: 'La pantalla de agradecimiento no está disponible'
-          });
+          structuredLog('info', `${this.controllerName}.${context}`, 'Pantalla no encontrada o no habilitada para público', { researchId });
+          return successResponse({ data: null, message: 'La pantalla de agradecimiento no está disponible' });
         }
-        
-        // Filtrar solo los campos necesarios para el participante
         const participantView = {
           title: screen.title,
           message: screen.message,
           redirectUrl: screen.redirectUrl,
           isEnabled: screen.isEnabled
         };
-        
         return successResponse({ data: participantView });
       }
       
-      // Para solicitudes autenticadas, guardar en caché
       if (!isPublic && screen && cacheKey) {
-        this.cache.set(cacheKey, {
-          data: screen,
-          timestamp: Date.now(),
-          researchId
-        });
+        this.cache.set(cacheKey, { data: screen, timestamp: Date.now(), researchId });
+        structuredLog('info', `${this.controllerName}.${context}`, 'Datos guardados en caché', { researchId });
       }
       
       return successResponse(screen || { message: 'No se encontró una pantalla de agradecimiento para esta investigación' });
     } catch (error) {
-      return this.handleError(error, 'obtener pantalla de agradecimiento');
+      return this.handleError(error, context, { researchId });
     }
   }
 
@@ -146,120 +121,111 @@ export class ThankYouScreenController {
    * Crea una pantalla de agradecimiento
    */
   public async createThankYouScreen(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    const context = 'createThankYouScreen';
+    let researchId: string | undefined;
+    let userId: string | undefined;
     try {
-      const userId = event.requestContext.authorizer?.claims?.sub;
+      userId = event.requestContext.authorizer?.claims?.sub;
+      const researchResult = extractResearchId(event);
       
-      // Validar múltiples condiciones juntas
-      const validationError = validateUserId(userId);
+      const validationError = validateMultiple(
+          validateUserId(userId),
+          ('statusCode' in researchResult ? researchResult : null)
+      );
       if (validationError) return validationError;
 
-      // Extraer y validar el researchId
-      const idResult = extractResearchId(event);
-      if ('statusCode' in idResult) return idResult;
-      const { researchId } = idResult;
-      
-      // Verificar que hay un cuerpo en la petición
-      if (!event.body) {
-        this.log('error', 'createThankYouScreen', 'No hay cuerpo en la petición');
-        return errorResponse('Se requieren datos para crear la pantalla de agradecimiento', 400);
-      }
-      
-      // Parsear el cuerpo de la petición
-      let screenData: ThankYouScreenFormData;
-      try {
-        screenData = JSON.parse(event.body);
-      } catch (e) {
-        this.log('error', 'createThankYouScreen', 'Error al parsear JSON', { error: e });
-        return errorResponse('Error al procesar los datos de la petición, formato JSON inválido', 400);
-      }
+      if ('statusCode' in researchResult) return researchResult; 
+      researchId = researchResult.researchId;
 
-      this.log('info', 'createThankYouScreen', 'Creando pantalla de agradecimiento', { researchId });
-      const result = await this.service.create(screenData, researchId, userId);
+      const bodyResult = parseAndValidateBody<ThankYouScreenFormData>(event, validateThankYouScreenData);
+      if ('statusCode' in bodyResult) return bodyResult;
+      const screenData = bodyResult.data;
       
-      // Invalidar caché al crear
-      this.invalidateCache(researchId, userId);
+      structuredLog('info', `${this.controllerName}.${context}`, 'Creando pantalla de agradecimiento', { researchId });
+      const result = await this.service.create(screenData, researchId, userId!);
       
-      return successResponse(result);
+      this.invalidateCache(researchId, userId!);
+      structuredLog('info', `${this.controllerName}.${context}`, 'Creación completada', { researchId, screenId: result.id });
+      
+      return createResponse(201, result);
     } catch (error) {
-      return this.handleError(error, 'crear pantalla de agradecimiento');
+      return this.handleError(error, context, { researchId });
     }
   }
 
   /**
-   * Actualiza una pantalla de agradecimiento
+   * Actualiza una pantalla de agradecimiento por su ID
    */
-  public async updateThankYouScreen(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  public async updateThankYouScreenById(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    const context = 'updateThankYouScreenById';
+    let researchId: string | undefined;
+    let screenId: string | undefined;
+    let userId: string | undefined;
     try {
-      const userId = event.requestContext.authorizer?.claims?.sub;
+      userId = event.requestContext.authorizer?.claims?.sub;
+      researchId = event.pathParameters?.researchId;
+      screenId = event.pathParameters?.screenId;
       
-      // Validar múltiples condiciones juntas
-      const validationError = validateUserId(userId);
+      const validationError = validateMultiple(
+        validateUserId(userId),
+        validateResearchId(researchId),
+        validateScreenId(screenId)
+      );
       if (validationError) return validationError;
 
-      // Extraer y validar el researchId
-      const idResult = extractResearchId(event);
-      if ('statusCode' in idResult) return idResult;
-      const { researchId } = idResult;
-      
-      // Verificar que hay un cuerpo en la petición
-      if (!event.body) {
-        this.log('error', 'updateThankYouScreen', 'No hay cuerpo en la petición');
-        return errorResponse('Se requieren datos para actualizar la pantalla de agradecimiento', 400);
-      }
-      
-      // Parsear el cuerpo de la petición
-      let screenData: ThankYouScreenFormData;
-      try {
-        screenData = JSON.parse(event.body);
-      } catch (e) {
-        this.log('error', 'updateThankYouScreen', 'Error al parsear JSON', { error: e });
-        return errorResponse('Error al procesar los datos de la petición, formato JSON inválido', 400);
-      }
+      const bodyResult = parseAndValidateBody<ThankYouScreenFormData>(event, validateThankYouScreenData);
+      if ('statusCode' in bodyResult) return bodyResult;
+      const screenData = bodyResult.data;
 
-      this.log('info', 'updateThankYouScreen', 'Actualizando pantalla de agradecimiento', { researchId });
-      const result = await this.service.updateByResearchId(researchId, screenData, userId);
+      const currentResearchId = researchId!;
+      const currentScreenId = screenId!;
+
+      structuredLog('info', `${this.controllerName}.${context}`, 'Actualizando pantalla de agradecimiento por ID', { researchId: currentResearchId, screenId: currentScreenId });
       
-      // Invalidar caché al actualizar
-      this.invalidateCache(researchId, userId);
+      const result = await this.service.update(currentScreenId, screenData, userId!);
+      
+      this.invalidateCache(currentResearchId, userId!);
+      structuredLog('info', `${this.controllerName}.${context}`, 'Actualización completada', { researchId: currentResearchId, screenId: result.id });
       
       return successResponse(result);
     } catch (error) {
-      return this.handleError(error, 'actualizar pantalla de agradecimiento');
+      return this.handleError(error, context, { researchId, screenId });
     }
   }
 
   /**
-   * Elimina una pantalla de agradecimiento
+   * Elimina una pantalla de agradecimiento por su ID
    */
-  public async deleteThankYouScreen(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  public async deleteThankYouScreenById(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    const context = 'deleteThankYouScreenById';
+    let researchId: string | undefined;
+    let screenId: string | undefined;
+    let userId: string | undefined;
     try {
-      const userId = event.requestContext.authorizer?.claims?.sub;
+      userId = event.requestContext.authorizer?.claims?.sub;
+      researchId = event.pathParameters?.researchId;
+      screenId = event.pathParameters?.screenId;
       
-      // Validar múltiples condiciones juntas
-      const validationError = validateUserId(userId);
+      const validationError = validateMultiple(
+        validateUserId(userId),
+        validateResearchId(researchId),
+        validateScreenId(screenId)
+      );
       if (validationError) return validationError;
 
-      // Extraer y validar el researchId
-      const idResult = extractResearchId(event);
-      if ('statusCode' in idResult) return idResult;
-      const { researchId } = idResult;
+      const currentResearchId = researchId!;
+      const currentScreenId = screenId!;
 
-      this.log('info', 'deleteThankYouScreen', 'Eliminando pantalla de agradecimiento', { researchId });
+      structuredLog('info', `${this.controllerName}.${context}`, 'Eliminando pantalla de agradecimiento por ID', { researchId: currentResearchId, screenId: currentScreenId });
       
-      // Obtener la pantalla existente para conseguir su ID
-      const existingScreen = await this.service.getByResearchId(researchId);
-      if (!existingScreen || !existingScreen.id) {
-        return errorResponse('No existe una pantalla de agradecimiento para eliminar', 404);
-      }
+      await this.service.delete(currentScreenId, userId!);
       
-      await this.service.delete(existingScreen.id, userId);
+      this.invalidateCache(currentResearchId, userId!);
+      structuredLog('info', `${this.controllerName}.${context}`, 'Eliminación completada', { researchId: currentResearchId, screenId: currentScreenId });
       
-      // Invalidar caché al eliminar
-      this.invalidateCache(researchId, userId);
-      
-      return successResponse({ message: 'Pantalla de agradecimiento eliminada correctamente' });
+      return createResponse(204, null);
     } catch (error) {
-      return this.handleError(error, 'eliminar pantalla de agradecimiento');
+      return this.handleError(error, context, { researchId, screenId });
     }
   }
 
@@ -270,21 +236,8 @@ export class ThankYouScreenController {
     const cacheKey = `thankYouScreen_${researchId}_${userId}`;
     if (this.cache.has(cacheKey)) {
       this.cache.delete(cacheKey);
-      this.log('info', 'invalidateCache', 'Caché invalidada', { researchId });
+      structuredLog('info', `${this.controllerName}.invalidateCache`, 'Caché invalidada', { researchId });
     }
-  }
-
-  /**
-   * Mapa de rutas para el controlador de pantallas de agradecimiento
-   */
-  public routes(): Record<string, (event: APIGatewayProxyEvent) => Promise<APIGatewayProxyResult>> {
-    return {
-      // Ruta jerárquica para operaciones con pantallas de agradecimiento relacionadas con una investigación específica
-      'GET /research/{researchId}/thank-you-screen': this.getThankYouScreen.bind(this),
-      'POST /research/{researchId}/thank-you-screen': this.createThankYouScreen.bind(this),
-      'PUT /research/{researchId}/thank-you-screen': this.updateThankYouScreen.bind(this),
-      'DELETE /research/{researchId}/thank-you-screen': this.deleteThankYouScreen.bind(this),
-    };
   }
 }
 
@@ -293,16 +246,19 @@ const controller = new ThankYouScreenController();
 
 // Definir el mapa de rutas para ThankYouScreen
 const thankYouScreenRouteMap: RouteMap = {
-  // Ruta jerárquica principal (autenticada)
+  // Ruta base para GET por researchId y CREAR
   '/research/{researchId}/thank-you-screen': {
     'GET': controller.getThankYouScreen.bind(controller),
     'POST': controller.createThankYouScreen.bind(controller),
-    'PUT': controller.updateThankYouScreen.bind(controller),
-    'DELETE': controller.deleteThankYouScreen.bind(controller)
   },
-  // Ruta pública (si aplica, podría necesitar un handler específico o bandera)
+  // Ruta específica con screenId para ACTUALIZAR y ELIMINAR
+  '/research/{researchId}/thank-you-screen/{screenId}': {
+    'PUT': controller.updateThankYouScreenById.bind(controller),
+    'DELETE': controller.deleteThankYouScreenById.bind(controller),
+  },
+  // Ruta pública (sin cambios)
   '/public/research/{researchId}/thank-you-screen': {
-     'GET': controller.getThankYouScreen.bind(controller) // Reutiliza el método que ya maneja 'isPublic'
+     'GET': controller.getThankYouScreen.bind(controller)
   }
 };
 

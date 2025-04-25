@@ -7,6 +7,8 @@ import {
   WelcomeScreenFormData,
   DEFAULT_WELCOME_SCREEN_CONFIG 
 } from '../../../shared/interfaces/welcome-screen.interface';
+import { ApiError } from '../utils/errors';
+import { structuredLog } from '../utils/logging.util';
 
 /**
  * Interfaz para el modelo DynamoDB de una pantalla de bienvenida
@@ -37,25 +39,18 @@ export class WelcomeScreenModel {
   private tableName: string;
   private dynamoClient: DynamoDBClient;
   private docClient: DynamoDBDocumentClient;
+  private modelName = 'WelcomeScreenModel'; // Para logging
 
   constructor() {
-    console.log('======== WELCOME SCREEN MODEL CONSTRUCTOR ========');
-    
-    // Obtenemos el nombre de la tabla desde variables de entorno o usamos un valor por defecto
+    const context = 'constructor';
+    structuredLog('info', `${this.modelName}.${context}`, 'Inicializando modelo');
     this.tableName = process.env.DYNAMODB_TABLE || 'emotioXV2-table-dev';
-    console.log('Nombre de tabla DynamoDB para welcome screens:', this.tableName);
-    
-    // Configuración para DynamoDB en AWS Cloud (producción)
-    const options = {
-      region: process.env.APP_REGION || 'us-east-1'
-    };
-    
-    console.log('Configuración DynamoDB para welcome screens:', options);
-    console.log('SIEMPRE usando DynamoDB en AWS Cloud - NO LOCAL');
-    
+    structuredLog('info', `${this.modelName}.${context}`, `Usando tabla: ${this.tableName}`);
+    const options = { region: process.env.APP_REGION || 'us-east-1' };
+    structuredLog('info', `${this.modelName}.${context}`, 'Configuración DynamoDB', { options });
+    structuredLog('info', `${this.modelName}.${context}`, 'SIEMPRE usando DynamoDB en AWS Cloud - NO LOCAL');
     this.dynamoClient = new DynamoDBClient(options);
     this.docClient = DynamoDBDocumentClient.from(this.dynamoClient);
-    console.log('=======================================');
   }
 
   /**
@@ -65,10 +60,11 @@ export class WelcomeScreenModel {
    * @returns La configuración creada con su ID generado
    */
   async create(data: WelcomeScreenFormData, researchId: string): Promise<WelcomeScreenRecord> {
+    const context = 'create';
     // Primero verificamos si ya existe una pantalla de bienvenida para este researchId
     const existingScreen = await this.getByResearchId(researchId);
     if (existingScreen) {
-      throw new Error(`WELCOME_SCREEN_EXISTS: Ya existe una pantalla de bienvenida para la investigación ${researchId}`);
+      throw new ApiError(`WELCOME_SCREEN_EXISTS: Ya existe una pantalla de bienvenida para la investigación ${researchId}`, 409); // 409 Conflict
     }
 
     // Generar un ID único para la pantalla
@@ -116,7 +112,7 @@ export class WelcomeScreenModel {
       await this.docClient.send(command);
       
       // Devolver el objeto creado con el ID correcto
-      return {
+      const createdRecord = {
         id: screenId, 
         researchId: researchId, 
         isEnabled: config.isEnabled,
@@ -127,19 +123,19 @@ export class WelcomeScreenModel {
         createdAt: new Date(now),
         updatedAt: new Date(now)
       };
+      structuredLog('info', `${this.modelName}.${context}`, 'Pantalla de bienvenida creada', { id: screenId, researchId });
+      return createdRecord;
     } catch (error: any) {
-      // Loguear el error específico de DynamoDB
-      console.error('ERROR DETALLADO de DynamoDB PutCommand:', JSON.stringify(error, null, 2));
+      structuredLog('error', `${this.modelName}.${context}`, 'ERROR DETALLADO de DynamoDB PutCommand', { error: error, researchId, screenId });
 
       // Mantener el chequeo específico para ConditionalCheckFailedException
       if (error.name === 'ConditionalCheckFailedException') {
-         console.error(`Error: Conflicto de ID al crear pantalla de bienvenida (ID: ${screenId})`);
-         // Podríamos lanzar un error más específico si queremos manejarlo diferente
-         throw new Error('Error interno: Conflicto al generar ID único para la pantalla de bienvenida.');
+         structuredLog('error', `${this.modelName}.${context}`, `Conflicto de ID al crear (ID: ${screenId})`);
+         throw new ApiError('DATABASE_ERROR: Conflicto al generar ID único.', 500); // O 409 si se quiere manejar diferente
       }
       // Para cualquier otro error, lanzar el error genérico PERO después de loguear el detalle
-      console.error('Error genérico al crear pantalla de bienvenida en DynamoDB:', error.message);
-      throw new Error('DATABASE_ERROR: Error al guardar la pantalla de bienvenida en la base de datos'); // Mantener este mensaje para consistencia si el frontend lo espera
+      structuredLog('error', `${this.modelName}.${context}`, 'Error genérico al crear pantalla de bienvenida en DynamoDB', { error: error, researchId, screenId });
+      throw new ApiError(`DATABASE_ERROR: Error al guardar la pantalla de bienvenida: ${error.message}`, 500);
     }
   }
 
@@ -149,6 +145,7 @@ export class WelcomeScreenModel {
    * @returns La pantalla de bienvenida encontrada o null
    */
   async getById(id: string): Promise<WelcomeScreenRecord | null> {
+    const context = 'getById';
     // Necesitamos buscar por id (PK) Y sk (SK)
     const skValue = 'WELCOME_SCREEN'; // Asume sk constante para buscar por ID
     const command = new GetCommand({
@@ -168,7 +165,7 @@ export class WelcomeScreenModel {
 
       const item = result.Item as WelcomeScreenDynamoItem;
       
-      return {
+      const record = {
         id: item.id, 
         researchId: item.researchId, 
         isEnabled: item.isEnabled,
@@ -179,9 +176,11 @@ export class WelcomeScreenModel {
         createdAt: new Date(item.createdAt),
         updatedAt: new Date(item.updatedAt)
       };
-    } catch (error) {
-      console.error('Error al obtener pantalla de bienvenida por ID:', error);
-      throw new Error('Error al obtener la pantalla de bienvenida por ID desde la base de datos');
+      structuredLog('debug', `${this.modelName}.${context}`, 'Pantalla encontrada por ID', { id });
+      return record;
+    } catch (error: any) {
+      structuredLog('error', `${this.modelName}.${context}`, 'Error al obtener pantalla por ID', { error: error, id });
+      throw new ApiError(`DATABASE_ERROR: Error al obtener pantalla por ID: ${error.message}`, 500);
     }
   }
 
@@ -192,6 +191,7 @@ export class WelcomeScreenModel {
    * @returns La pantalla de bienvenida asociada o null
    */
   async getByResearchId(researchId: string): Promise<WelcomeScreenRecord | null> {
+    const context = 'getByResearchId';
     const skValue = 'WELCOME_SCREEN'; // Definir el SK esperado
     const command = new QueryCommand({
       TableName: this.tableName,
@@ -225,7 +225,7 @@ export class WelcomeScreenModel {
       */
       
       // Si el SK es correcto, convertir y devolver
-      return {
+      const record = {
         id: item.id,
         researchId: item.researchId,
         isEnabled: item.isEnabled,
@@ -236,13 +236,15 @@ export class WelcomeScreenModel {
         createdAt: new Date(item.createdAt),
         updatedAt: new Date(item.updatedAt)
       };
-    } catch (error) {
-      console.error('Error al obtener pantalla de bienvenida por researchId (Query GSI):', error);
+      structuredLog('debug', `${this.modelName}.${context}`, 'Pantalla encontrada por ResearchID', { researchId, id: item.id });
+      return record;
+    } catch (error: any) {
+      structuredLog('error', `${this.modelName}.${context}`, 'Error al obtener pantalla por researchId (Query GSI)', { error: error, researchId });
       if ((error as Error).message?.includes('index')) {
-         console.error("Error: Parece que el índice GSI 'ResearchIdIndex' no existe o no está configurado correctamente en la tabla DynamoDB.");
-         throw new Error("Error de configuración de base de datos: falta índice para búsqueda.");
+         structuredLog('error', `${this.modelName}.${context}`, 'Índice GSI ResearchIdIndex no encontrado o mal configurado');
+         throw new ApiError("DATABASE_ERROR: Error de configuración de base de datos: falta índice para búsqueda.", 500);
       }
-      throw new Error('Error al buscar la pantalla de bienvenida asociada a la investigación');
+      throw new ApiError(`DATABASE_ERROR: Error al buscar pantalla asociada a la investigación: ${error.message}`, 500);
     }
   }
 
@@ -253,11 +255,12 @@ export class WelcomeScreenModel {
    * @returns La pantalla de bienvenida actualizada
    */
   async update(id: string, data: Partial<WelcomeScreenFormData>): Promise<WelcomeScreenRecord> {
+    const context = 'update';
     const skValue = 'WELCOME_SCREEN'; // SK constante
     // Verificar que existe usando la clave completa
     const existingScreen = await this.getById(id); // getById ahora usa id y sk internamente
     if (!existingScreen) {
-      throw new Error(`WELCOME_SCREEN_NOT_FOUND: No existe una pantalla de bienvenida con ID ${id}`); 
+      throw new ApiError(`WELCOME_SCREEN_NOT_FOUND: No existe una pantalla de bienvenida con ID ${id}`, 404); 
     }
 
     const now = new Date().toISOString();
@@ -311,10 +314,10 @@ export class WelcomeScreenModel {
       
       const updatedAttributes = result.Attributes as WelcomeScreenDynamoItem;
       if (!updatedAttributes) {
-         throw new Error('La actualización no devolvió los atributos actualizados.');
+         throw new ApiError('DATABASE_ERROR: La actualización no devolvió los atributos actualizados.', 500);
       }
 
-      return {
+      const record = {
         id: updatedAttributes.id,
         researchId: updatedAttributes.researchId,
         isEnabled: updatedAttributes.isEnabled,
@@ -325,9 +328,12 @@ export class WelcomeScreenModel {
         createdAt: new Date(updatedAttributes.createdAt),
         updatedAt: new Date(updatedAttributes.updatedAt)
       };
-    } catch (error) {
-      console.error('Error al actualizar pantalla de bienvenida en DynamoDB:', error);
-      throw new Error('Error al guardar los cambios de la pantalla de bienvenida');
+      structuredLog('info', `${this.modelName}.${context}`, 'Pantalla actualizada', { id });
+      return record;
+    } catch (error: any) {
+      structuredLog('error', `${this.modelName}.${context}`, 'Error al actualizar pantalla en DynamoDB', { error: error, id });
+      // Considerar mapeo de ConditionalCheckFailedException si se usa
+      throw new ApiError(`DATABASE_ERROR: Error al guardar cambios de la pantalla: ${error.message}`, 500);
     }
   }
   
@@ -336,10 +342,11 @@ export class WelcomeScreenModel {
    * @param id ID único (UUID) de la pantalla
    */
   async delete(id: string): Promise<void> {
+    const context = 'delete';
     const skValue = 'WELCOME_SCREEN';
     const existingScreen = await this.getById(id);
     if (!existingScreen) {
-      throw new Error(`WELCOME_SCREEN_NOT_FOUND: No existe una pantalla de bienvenida con ID ${id}`);
+      throw new ApiError(`WELCOME_SCREEN_NOT_FOUND: No existe una pantalla de bienvenida con ID ${id}`, 404);
     }
 
     const command = new DeleteCommand({
@@ -352,10 +359,10 @@ export class WelcomeScreenModel {
 
     try {
       await this.docClient.send(command);
-      console.log(`Pantalla de bienvenida con ID ${id} eliminada correctamente.`);
-    } catch (error) {
-      console.error('Error al eliminar pantalla de bienvenida en DynamoDB:', error);
-      throw new Error('Error al eliminar la pantalla de bienvenida');
+      structuredLog('info', `${this.modelName}.${context}`, 'Pantalla eliminada', { id });
+    } catch (error: any) {
+      structuredLog('error', `${this.modelName}.${context}`, 'Error al eliminar pantalla en DynamoDB', { error: error, id });
+      throw new ApiError(`DATABASE_ERROR: Error al eliminar la pantalla de bienvenida: ${error.message}`, 500);
     }
   }
 
@@ -366,6 +373,7 @@ export class WelcomeScreenModel {
    * @returns La pantalla de bienvenida creada o actualizada
    */
   async createOrUpdate(researchId: string, data: WelcomeScreenFormData): Promise<WelcomeScreenRecord> {
+    const context = 'createOrUpdate';
     try {
       const existing = await this.getByResearchId(researchId);
 
@@ -374,9 +382,13 @@ export class WelcomeScreenModel {
       } else {
         return await this.create(data, researchId);
       }
-    } catch (error) {
-      console.error('Error en WelcomeScreenModel.createOrUpdate:', error);
-      throw new Error('Error al crear o actualizar la pantalla de bienvenida');
+    } catch (error: any) {
+      structuredLog('error', `${this.modelName}.${context}`, 'Error en createOrUpdate', { error: error, researchId });
+      // Re-lanzar el error si ya es ApiError, o crear uno nuevo si no
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      throw new ApiError(`DATABASE_ERROR: Error al crear o actualizar la pantalla: ${error.message}`, 500);
     }
   }
 
@@ -389,7 +401,7 @@ export class WelcomeScreenModel {
    * @returns Lista de todas las pantallas de bienvenida
    */
   async getAll(): Promise<WelcomeScreenRecord[]> {
-     console.warn('[WelcomeScreenModel] getAll() está usando Scan, puede ser ineficiente.');
+     structuredLog('warn', `${this.modelName}.getAll`, 'getAll() llamado - Operación Scan ineficiente.');
      return []; 
   }
 }

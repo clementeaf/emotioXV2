@@ -9,6 +9,8 @@ import {
   ScanCommand
 } from '@aws-sdk/lib-dynamodb';
 import { v4 as uuidv4 } from 'uuid';
+import { structuredLog } from '../utils/logging.util';
+import { ApiError } from '../utils/errors';
 
 /**
  * Tipos de dispositivos de seguimiento ocular
@@ -418,28 +420,27 @@ export class EyeTrackingModel {
   private readonly tableName: string;
   private readonly dynamoClient: DynamoDBDocumentClient;
   private static readonly SORT_KEY_VALUE = 'EYE_TRACKING_CONFIG'; // SK constante
+  private modelName = 'EyeTrackingModel';
 
   constructor() {
+    const context = 'constructor';
     this.tableName = process.env.DYNAMODB_TABLE!;
     if (!this.tableName) {
-      console.error('FATAL ERROR: DYNAMODB_TABLE environment variable is not set.');
+      structuredLog('error', `${this.modelName}.${context}`, 'FATAL ERROR: DYNAMODB_TABLE environment variable is not set.');
       throw new Error('Table name environment variable is missing.');
     }
     const region: string = process.env.APP_REGION || 'us-east-1';
     const client = new DynamoDBClient({ region });
     this.dynamoClient = DynamoDBDocumentClient.from(client);
-    console.log(`[EyeTrackingModel] Initialized for table: ${this.tableName} in region: ${region}`);
+    structuredLog('info', `${this.modelName}.${context}`, `Initialized for table: ${this.tableName} in region: ${region}`);
   }
 
-  // Helper para mapear de DynamoItem a Record
   private mapToRecord(item: EyeTrackingDynamoItem): EyeTrackingRecord {
-      // Deserializar los objetos almacenados como strings
       const config = JSON.parse(item.config || '{}') as EyeTrackingConfig;
       const stimuli = JSON.parse(item.stimuli || '{}') as EyeTrackingStimuliConfig;
       const areasOfInterest = JSON.parse(item.areasOfInterest || '{}') as EyeTrackingAreaOfInterestConfig;
       const metadata = JSON.parse(item.metadata || '{}');
       
-      // Devolver objeto que cumple con EyeTrackingRecord (SharedEyeTrackingRecord)
       return {
         id: item.id,
         researchId: item.researchId,
@@ -447,87 +448,82 @@ export class EyeTrackingModel {
         stimuli,
         areasOfInterest,
         deviceFrame: item.deviceFrame,
-        metadata, // Asumiendo que metadata en SharedEyeTrackingRecord es un objeto
-        // Convertir a Date si la interfaz lo requiere
+        metadata,
         createdAt: new Date(item.createdAt),
         updatedAt: new Date(item.updatedAt)
-        // Asegurar que todos los campos de SharedEyeTrackingRecord estén aquí
       };
   }
 
-  /**
-   * Crea una nueva configuración de eye tracking
-   */
   async create(data: EyeTrackingFormData, researchId: string): Promise<EyeTrackingRecord> {
+    const context = 'create';
+    const existingScreen = await this.getByResearchId(researchId);
+    if (existingScreen) {
+      structuredLog('warn', `${this.modelName}.${context}`, 'Intento de crear configuración duplicada para researchId', { researchId });
+      throw new ApiError(`EYE_TRACKING_CONFIG_EXISTS: Ya existe una configuración para la investigación ${researchId}`, 409);
+    }
+
     const eyeTrackingId = uuidv4();
     const now = new Date().toISOString();
     
-    // Crear el ítem para DynamoDB
     const item: EyeTrackingDynamoItem = {
       id: eyeTrackingId,
-      sk: EyeTrackingModel.SORT_KEY_VALUE, // Usar SK constante
+      sk: EyeTrackingModel.SORT_KEY_VALUE,
       researchId,
-      config: JSON.stringify(data.config), // Serializar
-      stimuli: JSON.stringify(data.stimuli), // Serializar
-      areasOfInterest: JSON.stringify(data.areasOfInterest), // Serializar
+      config: JSON.stringify(data.config),
+      stimuli: JSON.stringify(data.stimuli),
+      areasOfInterest: JSON.stringify(data.areasOfInterest),
       deviceFrame: data.deviceFrame,
-      metadata: JSON.stringify(data.metadata || { createdAt: now, updatedAt: now, lastModifiedBy: 'system' }), // Serializar
+      metadata: JSON.stringify(data.metadata || { createdAt: now, updatedAt: now, lastModifiedBy: 'system' }),
       createdAt: now,
       updatedAt: now
     };
     
-    const command = new PutCommand({
-      TableName: this.tableName,
-      Item: item
-    });
+    const command = new PutCommand({ TableName: this.tableName, Item: item });
 
     try {
         await this.dynamoClient.send(command);
-        return this.mapToRecord(item); // Devolver usando mapeo
+        structuredLog('info', `${this.modelName}.${context}`, 'Configuración creada', { id: eyeTrackingId, researchId });
+        return this.mapToRecord(item);
     } catch (error: any) {
-        console.error('ERROR DETALLADO de DynamoDB PutCommand (EyeTracking):', JSON.stringify(error, null, 2));
-        console.error('Error al crear configuración eye tracking:', error.message);
-        throw new Error('DATABASE_ERROR: Error al crear la configuración de eye tracking');
+        structuredLog('error', `${this.modelName}.${context}`, 'Error detallado de DynamoDB PutCommand', { error: error, researchId, id: eyeTrackingId });
+        throw new ApiError(`DATABASE_ERROR: Error al crear la configuración de eye tracking: ${error.message}`, 500);
     }
   }
 
-  /**
-   * Obtiene una configuración de eye tracking por su ID único (UUID)
-   */
   async getById(id: string): Promise<EyeTrackingRecord | null> {
+    const context = 'getById';
     const command = new GetCommand({
         TableName: this.tableName,
         Key: {
           id: id,
-          sk: EyeTrackingModel.SORT_KEY_VALUE // Usar SK constante
+          sk: EyeTrackingModel.SORT_KEY_VALUE
         }
       });
 
     try {
       const result = await this.dynamoClient.send(command);
       if (!result.Item) {
+        structuredLog('info', `${this.modelName}.${context}`, 'Configuración no encontrada por ID', { id });
         return null;
       }
+      structuredLog('debug', `${this.modelName}.${context}`, 'Configuración encontrada por ID', { id });
       return this.mapToRecord(result.Item as EyeTrackingDynamoItem);
     } catch (error: any) {
-        console.error('ERROR DETALLADO de DynamoDB GetCommand (EyeTracking):', JSON.stringify(error, null, 2));
-        console.error(`Error al obtener EyeTracking por ID ${id}:`, error.message);
-        throw new Error('DATABASE_ERROR: Error al obtener la configuración de eye tracking por ID');
+        structuredLog('error', `${this.modelName}.${context}`, 'Error detallado de DynamoDB GetCommand', { error: error, id });
+        throw new ApiError(`DATABASE_ERROR: Error al obtener la configuración de eye tracking por ID: ${error.message}`, 500);
     }
   }
 
-  /**
-   * Obtiene una configuración de eye tracking por researchId usando GSI
-   */
   async getByResearchId(researchId: string): Promise<EyeTrackingRecord | null> {
     const command = new QueryCommand({
         TableName: this.tableName,
-        IndexName: 'ResearchIdIndex', // Usar GSI correcto
+        IndexName: 'ResearchIdIndex',
         KeyConditionExpression: 'researchId = :rid',
+        FilterExpression: 'sk = :skVal',
         ExpressionAttributeValues: {
-          ':rid': researchId
+          ':rid': researchId,
+          ':skVal': EyeTrackingModel.SORT_KEY_VALUE
         },
-        Limit: 1
       });
 
     try {
@@ -547,18 +543,16 @@ export class EyeTrackingModel {
    * Actualiza una configuración de eye tracking existente
    */
   async update(id: string, data: Partial<EyeTrackingFormData>): Promise<EyeTrackingRecord> {
-    // Verificar existencia
+    const context = 'update';
     const currentRecord = await this.getById(id);
     if (!currentRecord) {
-      throw new Error(`EYE_TRACKING_CONFIG_NOT_FOUND: Configuración con ID ${id} no encontrada.`);
+      throw new ApiError(`EYE_TRACKING_CONFIG_NOT_FOUND: Configuración con ID ${id} no encontrada.`, 404);
     }
     
     const now = new Date().toISOString();
-    
     let updateExpression = 'SET updatedAt = :updatedAt';
     const expressionAttributeValues: Record<string, any> = { ':updatedAt': now };
 
-    // Añadir campos a actualizar dinámicamente
     if (data.config !== undefined) {
       updateExpression += ', config = :config';
       expressionAttributeValues[':config'] = JSON.stringify(data.config);
@@ -576,7 +570,6 @@ export class EyeTrackingModel {
       expressionAttributeValues[':deviceFrame'] = data.deviceFrame;
     }
     
-    // Actualizar metadata consistentemente
     const currentMetadataObject = currentRecord.metadata || {};
     const incomingMetadata = data.metadata || {};
     const newMetadata = {
@@ -592,7 +585,7 @@ export class EyeTrackingModel {
       TableName: this.tableName,
       Key: {
         id: id,
-        sk: EyeTrackingModel.SORT_KEY_VALUE // Usar SK constante
+        sk: EyeTrackingModel.SORT_KEY_VALUE
       },
       UpdateExpression: updateExpression,
       ExpressionAttributeValues: expressionAttributeValues,
@@ -602,13 +595,13 @@ export class EyeTrackingModel {
     try {
       const result = await this.dynamoClient.send(command);
       if (!result.Attributes) {
-        throw new Error('La actualización no devolvió atributos.');
+        throw new ApiError('DATABASE_ERROR: La actualización no devolvió atributos.', 500);
       }
+      structuredLog('info', `${this.modelName}.${context}`, 'Configuración actualizada', { id });
       return this.mapToRecord(result.Attributes as EyeTrackingDynamoItem);
     } catch (error: any) {
-        console.error('ERROR DETALLADO de DynamoDB UpdateCommand (EyeTracking):', JSON.stringify(error, null, 2));
-        console.error(`Error al actualizar EyeTracking con ID ${id}:`, error.message);
-        throw new Error('DATABASE_ERROR: Error al actualizar la configuración de eye tracking');
+        structuredLog('error', `${this.modelName}.${context}`, 'Error detallado de DynamoDB UpdateCommand', { error: error, id });
+        throw new ApiError(`DATABASE_ERROR: Error al actualizar la configuración de eye tracking: ${error.message}`, 500);
     }
   }
 
@@ -616,27 +609,27 @@ export class EyeTrackingModel {
    * Elimina una configuración de eye tracking
    */
   async delete(id: string): Promise<void> {
-    // Opcional: verificar existencia
-     const existing = await this.getById(id);
-     if (!existing) {
-        console.warn(`[EyeTrackingModel] Intento de eliminar configuración no existente: ${id}`);
-        return;
-     }
+    const context = 'delete';
+    const existing = await this.getById(id);
+    if (!existing) {
+        structuredLog('warn', `${this.modelName}.${context}`, 'Intento de eliminar configuración no existente', { id });
+        throw new ApiError(`EYE_TRACKING_CONFIG_NOT_FOUND: Configuración con ID ${id} no encontrada para eliminar.`, 404);
+    }
 
     const command = new DeleteCommand({
       TableName: this.tableName,
       Key: {
         id: id,
-        sk: EyeTrackingModel.SORT_KEY_VALUE // Usar SK constante
+        sk: EyeTrackingModel.SORT_KEY_VALUE
       }
     });
     
     try {
       await this.dynamoClient.send(command);
+      structuredLog('info', `${this.modelName}.${context}`, 'Configuración eliminada', { id });
     } catch (error: any) {
-        console.error('ERROR DETALLADO de DynamoDB DeleteCommand (EyeTracking):', JSON.stringify(error, null, 2));
-        console.error(`Error al eliminar EyeTracking con ID ${id}:`, error.message);
-        throw new Error('DATABASE_ERROR: Error al eliminar la configuración de eye tracking');
+        structuredLog('error', `${this.modelName}.${context}`, 'Error detallado de DynamoDB DeleteCommand', { error: error, id });
+        throw new ApiError(`DATABASE_ERROR: Error al eliminar la configuración de eye tracking: ${error.message}`, 500);
     }
   }
 
@@ -644,6 +637,8 @@ export class EyeTrackingModel {
    * Obtiene todas las configuraciones de eye tracking (Scan - Ineficiente)
    */
   async getAll(): Promise<EyeTrackingRecord[]> {
+    const context = 'getAll';
+    structuredLog('warn', `${this.modelName}.${context}`, 'getAll() llamado - Operación Scan puede ser ineficiente en tablas grandes.');
     const command = new ScanCommand({
       TableName: this.tableName,
       FilterExpression: 'sk = :skVal',
@@ -655,11 +650,11 @@ export class EyeTrackingModel {
     try {
       const result = await this.dynamoClient.send(command);
       const items = result.Items || [];
+      structuredLog('debug', `${this.modelName}.${context}`, `Scan completado, encontrados ${items.length} items.`);
       return items.map(item => this.mapToRecord(item as EyeTrackingDynamoItem));
     } catch (error: any) {
-        console.error('ERROR DETALLADO de DynamoDB ScanCommand (EyeTracking - getAll):', JSON.stringify(error, null, 2));
-        console.error('Error en EyeTrackingModel.getAll:', error.message);
-        throw new Error('DATABASE_ERROR: Error al obtener todas las configuraciones de eye tracking');
+        structuredLog('error', `${this.modelName}.${context}`, 'Error detallado de DynamoDB ScanCommand', { error: error });
+        throw new ApiError(`DATABASE_ERROR: Error al obtener todas las configuraciones de eye tracking: ${error.message}`, 500);
     }
   }
 }
