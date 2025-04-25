@@ -87,13 +87,19 @@ async function getHandler(type: string) {
           logger.info(`Usando exportación específica 'thankYouScreenHandler' para ${type}`);
       }
       // <<< FIN: Lógica específica para 'thank-you-screen' >>>
+      // <<< INICIO: Lógica específica para 'cognitive-task' >>>
+      else if (type === 'cognitive-task' && typeof module.cognitiveTaskHandler === 'function') {
+          handler = module.cognitiveTaskHandler;
+          logger.info(`Usando exportación específica 'cognitiveTaskHandler' para ${type}`);
+      }
+      // <<< FIN: Lógica específica para 'cognitive-task' >>>
       // <<< Mantener la lógica existente como fallback >>>
-      // 1. Priorizar la exportación nombrada 'handler' (si no es 'research', 'welcome-screen', 'smart-voc', o 'thank-you-screen' o no se encontró el específico)
+      // 1. Priorizar la exportación nombrada 'handler' (si no es uno de los específicos)
       else if (typeof module.handler === 'function') {
         handler = module.handler;
         logger.info(`Usando exportación 'handler' para ${type}`);
       }
-      // 2. Si no, buscar la primera función exportada (si no es 'research', 'welcome-screen', 'smart-voc', o 'thank-you-screen' o no se encontró el específico)
+      // 2. Si no, buscar la primera función exportada (si no es uno de los específicos)
       else {
         for (const key in module) {
           // Asegurarse de no seleccionar la clase constructora si ya intentamos el específico
@@ -101,7 +107,8 @@ async function getHandler(type: string) {
               !(type === 'research' && key === 'NewResearchController') &&
               !(type === 'welcome-screen' && key === 'WelcomeScreenController') &&
               !(type === 'smart-voc' && key === 'SmartVOCFormController') &&
-              !(type === 'thank-you-screen' && key === 'ThankYouScreenController')) { // Added check for ThankYouScreenController
+              !(type === 'thank-you-screen' && key === 'ThankYouScreenController') &&
+              !(type === 'cognitive-task' && key === 'CognitiveTaskController')) { // Added check for CognitiveTaskController
             handler = module[key];
             logger.info(`Usando la primera función exportada encontrada ('${key}') para ${type}`);
             break; // Usar la primera que se encuentre

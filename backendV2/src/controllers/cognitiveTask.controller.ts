@@ -183,13 +183,13 @@ export class CognitiveTaskController {
   }
 
   public routes(): RouteMap {
+    // Usar rutas relativas al basePath esperado
     return {
-      '^': {
+      '/': { // Corresponde a /research/{researchId}/cognitive-task
         'GET': this.get.bind(this),
         'POST': this.create.bind(this),
       },
-
-      '^\/[^\/]+$': {
+      '/{taskId}': { // Corresponde a /research/{researchId}/cognitive-task/{taskId}
         'PUT': this.update.bind(this),
         'DELETE': this.delete.bind(this)
       }
@@ -199,20 +199,19 @@ export class CognitiveTaskController {
 
 const controllerInstance = new CognitiveTaskController();
 
-// Definir RouteMap como constante
+// Definir RouteMap como constante, usando rutas relativas
 const cognitiveTaskRouteMap: RouteMap = {
-  '^': {
+  '/': {
     'GET': controllerInstance.get.bind(controllerInstance),
     'POST': controllerInstance.create.bind(controllerInstance),
   },
-  '^/[^\\/]+$': { // Este regex coincide con /<cualquier-cosa-sin-slash>
+  '/{taskId}': {
     'PUT': controllerInstance.update.bind(controllerInstance),
     'DELETE': controllerInstance.delete.bind(controllerInstance)
   }
 };
 
 export const cognitiveTaskHandler = createController(cognitiveTaskRouteMap, {
-  // Quitar basePath si el decorador no lo maneja como se espera con regex
-  // basePath: '/research/{researchId}/cognitive-task' // Revisar si esto funciona con las regex
-  basePath: '' // Probablemente más seguro dejarlo vacío y que las regex/mapa manejen todo
+  // Especificar el basePath que coincide con la parte principal de la ruta en routeDefinitions
+  basePath: '/research/{researchId}/cognitive-task' 
 });
