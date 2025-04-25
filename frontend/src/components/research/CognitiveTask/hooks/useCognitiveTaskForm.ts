@@ -79,7 +79,7 @@ const VALIDATION_ERROR_MESSAGES = {
   QUESTIONS_REQUIRED: 'Debe agregar al menos una pregunta'
 };
 
-// Interfaz para el resultado del hook
+// Interfaz para el resultado del hook (actualizada)
 interface UseCognitiveTaskFormResult {
   formData: CognitiveTaskFormData;
   cognitiveTaskId: string | null;
@@ -88,31 +88,31 @@ interface UseCognitiveTaskFormResult {
   isSaving: boolean;
   modalError: ErrorModalData | null;
   modalVisible: boolean;
-  isAddQuestionModalOpen: boolean;
+  // Quitado: isAddQuestionModalOpen: boolean;
   isUploading: boolean;
   uploadProgress: number;
   currentFileIndex: number;
   totalFiles: number;
   questionTypes: { id: QuestionType; label: string; description: string }[];
   
-  // Métodos de gestión
+  // Métodos de gestión (actualizados)
   handleQuestionChange: (questionId: string, updates: Partial<Question>) => void;
   handleAddChoice: (questionId: string) => void;
   handleRemoveChoice: (questionId: string, choiceId: string) => void;
   handleFileUpload: (questionId: string, files: FileList) => void;
   handleMultipleFilesUpload: (questionId: string, files: FileList) => void;
   handleFileDelete: (questionId: string, fileId: string) => void;
-  handleAddQuestion: (type: QuestionType) => void;
+  // Quitado: handleAddQuestion: (type: QuestionType) => void;
   handleRandomizeChange: (checked: boolean) => void;
-  openAddQuestionModal: () => void;
-  closeAddQuestionModal: () => void;
+  // Quitado: openAddQuestionModal: () => void;
+  // Quitado: closeAddQuestionModal: () => void;
   
-  // Métodos de acción
+  // Métodos de acción (actualizados)
   handleSave: () => void;
   handlePreview: () => void;
   validateForm: () => boolean;
   closeModal: () => void;
-  initializeDefaultQuestions: (defaultQuestions: Question[]) => void;
+  // Quitado: initializeDefaultQuestions: (defaultQuestions: Question[]) => void;
   
   // Propiedades del modal JSON
   showJsonPreview: boolean;
@@ -244,7 +244,6 @@ export const useCognitiveTaskForm = (
   const [validationErrors, setValidationErrors] = useState<ValidationErrors | null>(null);
   const [modalError, setModalError] = useState<ErrorModalData | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
-  const [isAddQuestionModalOpen, setIsAddQuestionModalOpen] = useState<boolean>(false);
   const { user, token } = useAuth();
   const isAuthenticated = !!user && !!token;
   
@@ -275,10 +274,6 @@ export const useCognitiveTaskForm = (
     setModalError(errorData);
     setModalVisible(true);
   }, []);
-
-  // Handlers para el modal de agregar pregunta
-  const openAddQuestionModal = useCallback(() => setIsAddQuestionModalOpen(true), []);
-  const closeAddQuestionModal = useCallback(() => setIsAddQuestionModalOpen(false), []);
 
   // Consulta para obtener datos existentes
   const { data: cognitiveTaskData, isLoading } = useQuery({
@@ -580,20 +575,16 @@ export const useCognitiveTaskForm = (
       return;
     }
     
-    // Si hubo un error o notFound explícito, inicializar con valores predeterminados solo si no hay estado previo
+    // Si hubo un error o notFound explícito, inicializar SIEMPRE con valores predeterminados
     if (cognitiveTaskData.error || cognitiveTaskData.notFound) {
-      console.log('[useCognitiveTaskForm] No hay datos existentes o hubo un error:', cognitiveTaskData);
+      console.log('[useCognitiveTaskForm] No hay datos existentes o hubo un error. Aplicando defaults locales:', cognitiveTaskData);
       
-      // Solo inicializar si no hay preguntas previas
-      setFormData(prevData => {
-        if (prevData.questions.length === 0) {
-          return {
-            ...DEFAULT_COGNITIVE_TASK,
-            questions: [...DEFAULT_QUESTIONS],
-            researchId: researchId || ''
-          };
-        }
-        return prevData; // Mantener el estado existente si ya hay preguntas
+      // Quitado: setFormData(prevData => { if (prevData.questions.length === 0) { ... } return prevData });
+      // Aplicar siempre los defaults locales en este caso
+      setFormData({
+        ...DEFAULT_COGNITIVE_TASK,
+        questions: [...DEFAULT_QUESTIONS],
+        researchId: researchId || ''
       });
       
       setCognitiveTaskId(null);
@@ -603,19 +594,16 @@ export const useCognitiveTaskForm = (
     // Obtener los datos que llegaron de la API
     const existingData = cognitiveTaskData.data;
     
+    // Si no hay datos válidos en la respuesta, inicializar SIEMPRE con defaults locales
     if (!existingData) {
-      console.log('[useCognitiveTaskForm] No hay datos en la respuesta, usando estructura predefinida');
+      console.log('[useCognitiveTaskForm] No hay datos en la respuesta, usando estructura predefinida local');
       
-      // Solo inicializar si no hay preguntas previas
-      setFormData(prevData => {
-        if (prevData.questions.length === 0) {
-          return {
-            ...DEFAULT_COGNITIVE_TASK,
-            questions: [...DEFAULT_QUESTIONS],
-            researchId: researchId || ''
-          };
-        }
-        return prevData; // Mantener el estado existente si ya hay preguntas
+      // Quitado: setFormData(prevData => { if (prevData.questions.length === 0) { ... } return prevData });
+      // Aplicar siempre los defaults locales
+      setFormData({
+        ...DEFAULT_COGNITIVE_TASK,
+        questions: [...DEFAULT_QUESTIONS],
+        researchId: researchId || ''
       });
       
       setCognitiveTaskId(null);
@@ -638,7 +626,8 @@ export const useCognitiveTaskForm = (
     // NUEVO: Crear un mapa de las preguntas del backend por ID para facilitar el acceso
     const backendQuestionsMap = new Map();
     if (existingData.questions && Array.isArray(existingData.questions)) {
-      existingData.questions.forEach(question => {
+      // Añadir tipo explícito aquí
+      existingData.questions.forEach((question: Question) => { 
         if (question && question.id) {
           backendQuestionsMap.set(question.id, question);
         }
@@ -648,60 +637,34 @@ export const useCognitiveTaskForm = (
     console.log('[useCognitiveTaskForm] Preguntas del backend:', 
       Array.from(backendQuestionsMap.keys()));
     
-    // Actualizar formData fusionando los datos del backend con los predeterminados
+    // Actualizar formData usando SIEMPRE la estructura de 8 preguntas default,
+    // y poblando con datos del backend SOLO para esas 8 si existen.
     setFormData(prevData => {
-      // Comenzar con las 8 preguntas predeterminadas
       const updatedQuestions = DEFAULT_QUESTIONS.map(defaultQuestion => {
-        // Verificar si hay datos para esta pregunta en el backend
         const backendQuestion = backendQuestionsMap.get(defaultQuestion.id);
-        
         if (backendQuestion) {
-          // Fusionar datos del backend con la pregunta predeterminada
-          console.log(`[useCognitiveTaskForm] Fusionando datos del backend para pregunta ${defaultQuestion.id}`);
-          return {
-            ...defaultQuestion,
-            ...backendQuestion,
-            // Garantizar que el ID no cambie
-            id: defaultQuestion.id
-          };
+          // Fusionar datos del backend en la pregunta default correspondiente
+          return { ...defaultQuestion, ...backendQuestion, id: defaultQuestion.id };
         }
-        
-        // Si no hay datos en el backend, usar la pregunta predeterminada 
-        // o la versión local si existe
-        const localQuestion = prevData.questions.find(q => q.id === defaultQuestion.id);
-        return localQuestion || defaultQuestion;
+        // Si no hay datos del backend para este ID, usar la pregunta default tal cual
+        return defaultQuestion;
       });
-      
-      // Agregar preguntas adicionales del backend que no estén en las predeterminadas
-      existingData.questions?.forEach(question => {
-        if (question && question.id && !['3.1', '3.2', '3.3', '3.4', '3.5', '3.6', '3.7', '3.8'].includes(question.id)) {
-          console.log(`[useCognitiveTaskForm] Agregando pregunta adicional del backend: ${question.id}`);
-          updatedQuestions.push(question);
-        }
-      });
-      
-      // Agregar preguntas locales adicionales que no estén ni en las predeterminadas ni en el backend
-      prevData.questions.forEach(question => {
-        if (question && question.id && 
-            !['3.1', '3.2', '3.3', '3.4', '3.5', '3.6', '3.7', '3.8'].includes(question.id) &&
-            !updatedQuestions.some(q => q.id === question.id)) {
-          console.log(`[useCognitiveTaskForm] Manteniendo pregunta local adicional: ${question.id}`);
-          updatedQuestions.push(question);
-        }
-      });
-      
+
+      // Quitado: Bloque que añadía preguntas extra del backend
+      // Quitado: Bloque que añadía preguntas extra del estado previo
+
+      // Construir el estado final asegurando usar SOLO las 8 preguntas procesadas
       return {
-        ...DEFAULT_COGNITIVE_TASK,
-        ...existingData,
+        ...DEFAULT_COGNITIVE_TASK, // Empezar con defaults base
         researchId: researchId || '',
-        questions: updatedQuestions
+        randomizeQuestions: existingData.randomizeQuestions ?? DEFAULT_COGNITIVE_TASK.randomizeQuestions,
+        metadata: existingData.metadata, // Tomar metadata si existe
+        questions: updatedQuestions // <--- Asegura que siempre sean solo las 8 preguntas
       };
     });
-    
-    console.log(`[useCognitiveTaskForm] Formulario configurado fusionando datos del backend y locales`);
-    
-    // Forzar la restauración de preguntas predeterminadas
-    defaultQuestionsInitializedRef.current = false;
+
+    console.log('[useCognitiveTaskForm] Formulario configurado con las 8 preguntas predeterminadas, actualizadas con datos del backend si aplica.');
+
   }, [cognitiveTaskData, researchId]);
 
   // Función para manejar cambios en preguntas
@@ -1333,46 +1296,6 @@ export const useCognitiveTaskForm = (
     };
   }, [researchId, queryClient]);
 
-  // Función para agregar una nueva pregunta
-  const handleAddQuestion = useCallback((type: QuestionType) => {
-    // Generar un ID único para la nueva pregunta que no sea 3.1-3.8
-    let newQuestionId = uuidv4();
-    
-    // Si estamos usando IDs numéricos secuenciales, asegurarse de que el nuevo ID
-    // no colisione con los IDs predeterminados (3.1-3.8)
-    if (/^\d+\.\d+$/.test(newQuestionId)) {
-      newQuestionId = `custom_${newQuestionId}`;
-    }
-    
-    // Obtener la plantilla para este tipo de pregunta
-    const template = QUESTION_TEMPLATES[type];
-    
-    if (!template) {
-      console.error(`[useCognitiveTaskForm] No hay plantilla para el tipo: ${type}`);
-      return;
-    }
-    
-    // Crear nueva pregunta basada en la plantilla, asegurando que todas las propiedades requeridas estén presentes
-    const newQuestion: Question = {
-      ...template,               // Primero aplicamos la plantilla
-      id: newQuestionId,
-      type: type,
-      title: 'Nueva Pregunta',  
-      required: false,           
-      showConditionally: false, 
-      deviceFrame: false        // Aseguramos que deviceFrame siempre sea un boolean
-    };
-    
-    // Agregar la nueva pregunta al estado
-    setFormData(prevData => ({
-      ...prevData,
-      questions: [...prevData.questions, newQuestion]
-    }));
-    
-    // Cerrar el modal
-    closeAddQuestionModal();
-  }, [closeAddQuestionModal]);
-
   // Función para controlar el aleatorizado de preguntas
   const handleRandomizeChange = useCallback((checked: boolean) => {
     setFormData(prevData => ({
@@ -1575,19 +1498,6 @@ export const useCognitiveTaskForm = (
       });
     }
   }, [validateForm, validationErrors, formData, showModal, showJsonModal]);
-
-  // Función para inicializar preguntas predeterminadas
-  const initializeDefaultQuestions = useCallback((defaultQuestions: Question[]) => {
-    setFormData(prevData => ({
-      ...prevData,
-      questions: defaultQuestions.map(q => ({
-        ...q,
-        id: q.id || uuidv4()
-      }))
-    }));
-    
-    console.log('[useCognitiveTaskForm] Inicializadas preguntas predeterminadas:', defaultQuestions.length);
-  }, []);
 
   // Función para guardar formulario (modificado para mostrar JSON primero)
   const handleSave = useCallback(() => {
@@ -1884,6 +1794,11 @@ export const useCognitiveTaskForm = (
     }
   }, [formData.questions, isMutating]);
 
+  // LOG FINAL ANTES DE RETORNAR
+  console.log('[useCognitiveTaskForm] Estado FINAL de formData.questions antes de retornar:', 
+    JSON.stringify(formData.questions?.map(q => ({ id: q.id, type: q.type, title: q.title?.substring(0, 20) })) || [], null, 2)
+  );
+
   return {
     formData,
     cognitiveTaskId,
@@ -1892,7 +1807,6 @@ export const useCognitiveTaskForm = (
     isSaving,
     modalError,
     modalVisible,
-    isAddQuestionModalOpen,
     isUploading,
     uploadProgress,
     currentFileIndex,
@@ -1904,15 +1818,11 @@ export const useCognitiveTaskForm = (
     handleFileUpload,
     handleMultipleFilesUpload,
     handleFileDelete,
-    handleAddQuestion,
     handleRandomizeChange,
-    openAddQuestionModal,
-    closeAddQuestionModal,
     handleSave,
     handlePreview,
     validateForm,
     closeModal,
-    initializeDefaultQuestions,
     showJsonPreview,
     closeJsonModal,
     jsonToSend,

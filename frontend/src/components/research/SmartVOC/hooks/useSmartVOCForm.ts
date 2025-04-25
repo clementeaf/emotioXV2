@@ -307,9 +307,67 @@ export const useSmartVOCForm = (researchId: string) => {
     mutate(formData);
   }, [formData, mutate, validateForm, showModal]);
 
-  // Función para manejar la previsualización (si se mantiene)
+  // Función para manejar la previsualización
   const handlePreview = useCallback(() => {
-    console.log("Previsualización solicitada (lógica pendiente)");
+    if (!validateForm()) {
+      showModal({
+        title: 'Error de Validación',
+        message: 'Por favor, corrija los errores antes de previsualizar',
+        type: 'warning'
+      });
+      return;
+    }
+
+    const previewWindow = window.open('', '_blank');
+    if (previewWindow) {
+      const { questions, randomizeQuestions } = formData;
+      // Generar HTML básico para la vista previa
+      let questionsHtml = '';
+      questions.forEach((q, index) => {
+        questionsHtml += `
+          <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #eee; border-radius: 4px;">
+            <h4>${index + 1}. ${q.title} ${q.required ? '<span style="color: red;">*</span>' : ''}</h4>
+            ${q.description ? `<p style="font-size: 0.9em; color: #555;">${q.description}</p>` : ''}
+            <p><strong>Tipo:</strong> ${q.type}</p>
+            ${q.instructions ? `<p style="font-style: italic; color: #777;">Instrucciones: ${q.instructions}</p>` : ''}
+            <p><strong>Config:</strong> <pre style="font-size: 0.8em; background: #f8f8f8; padding: 5px;">${JSON.stringify(q.config, null, 2)}</pre></p>
+            {/* Aquí podrías renderizar un input/control básico según q.type */}
+          </div>
+        `;
+      });
+
+      const previewHtml = `
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+          <meta charset="UTF-8">
+          <title>Vista Previa - SmartVOC</title>
+          <style>
+            body { font-family: sans-serif; margin: 20px; line-height: 1.6; }
+            .container { max-width: 800px; margin: auto; background: #fff; padding: 20px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+            h2, h4 { margin-top: 0; }
+            pre { white-space: pre-wrap; word-wrap: break-word; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h2>Vista Previa del Formulario SmartVOC</h2>
+            <p><strong>Orden Aleatorio:</strong> ${randomizeQuestions ? 'Sí' : 'No'}</p>
+            <hr style="margin: 20px 0;"/>
+            ${questionsHtml}
+          </div>
+        </body>
+        </html>
+      `;
+      previewWindow.document.write(previewHtml);
+      previewWindow.document.close();
+    } else {
+      showModal({
+        title: 'Error al Previsualizar',
+        message: 'No se pudo abrir la ventana de vista previa. Asegúrese de que su navegador no bloquee las ventanas emergentes.',
+        type: 'error'
+      });
+    }
   }, [formData, validateForm, showModal]);
 
   return {

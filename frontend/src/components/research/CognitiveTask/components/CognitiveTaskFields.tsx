@@ -2,10 +2,9 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Question } from '../types';
 import { QuestionCard } from './QuestionCard';
-import { AddQuestionModal } from './AddQuestionModal';
 import { Label } from '@/components/ui/Label';
 import { Checkbox } from '@/components/ui/Checkbox';
-import { Info, Plus } from 'lucide-react';
+import { Info } from 'lucide-react';
 
 // Componente Tooltip personalizado
 interface TooltipProps {
@@ -45,7 +44,6 @@ type Props = {
   onFileUpload: (questionId: string, files: FileList) => void;
   onFileDelete: (questionId: string, fileId: string) => void;
   setRandomizeQuestions: (checked: boolean) => void;
-  onAddQuestion: (type: Question['type']) => void;
   disabled?: boolean;
   isUploading?: boolean;
   uploadProgress?: number;
@@ -62,24 +60,14 @@ export const CognitiveTaskFields: React.FC<Props> = ({
   onFileUpload,
   onFileDelete,
   setRandomizeQuestions,
-  onAddQuestion,
   disabled = false,
   isUploading,
   uploadProgress,
 }) => {
-  const [isAddQuestionModalOpen, setIsAddQuestionModalOpen] = useState(false);
-
-  // Definir los tipos de preguntas disponibles
-  const questionTypes = [
-    {id: 'short_text' as Question['type'], label: 'Texto'},
-    {id: 'long_text' as Question['type'], label: 'Párrafo'},
-    {id: 'single_choice' as Question['type'], label: 'Opción Única'},
-    {id: 'multiple_choice' as Question['type'], label: 'Opción Múltiple'},
-    {id: 'linear_scale' as Question['type'], label: 'Escala'},
-    {id: 'ranking' as Question['type'], label: 'Ranking'},
-    {id: 'navigation_flow' as Question['type'], label: 'Navegación'},
-    {id: 'preference_test' as Question['type'], label: 'Preferencia'}
-  ];
+  // LOG INICIAL AL RECIBIR PROPS
+  console.log('[CognitiveTaskFields] Props RECIBIDAS - questions:', 
+    JSON.stringify(questions?.map(q => ({ id: q.id, type: q.type, title: q.title?.substring(0, 20) })) || [], null, 2)
+  );
 
   return (
     <div>
@@ -112,32 +100,14 @@ export const CognitiveTaskFields: React.FC<Props> = ({
       </div>
 
       <div className="mb-6">
-        <div className="flex justify-between items-center mb-3">
-          <Label className="text-sm font-medium">Preguntas</Label>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsAddQuestionModalOpen(true)}
-            disabled={disabled}
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            Agregar pregunta
-          </Button>
-        </div>
+        <Label className="text-sm font-medium mb-3 block">Preguntas</Label>
 
         <div className="space-y-4">
-          {questions.length === 0 ? (
-            <div className="text-center py-8 border-2 border-dashed border-neutral-200 rounded-lg">
-              <p className="text-neutral-500">No hay preguntas configuradas</p>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setIsAddQuestionModalOpen(true)}
-                className="mt-4"
-                disabled={disabled}
-              >
-                Añadir Pregunta
-              </Button>
+          {questions.length !== 8 ? (
+            <div className="text-center py-8 border-2 border-dashed border-red-300 bg-red-50 text-red-700 rounded-lg">
+              <p className="font-semibold">Error de Configuración</p>
+              <p>Se esperaba encontrar 8 preguntas, pero se encontraron {questions.length}.</p>
+              <p>Por favor, recargue la página o contacte soporte.</p>
             </div>
           ) : (
             questions.map((question) => (
@@ -158,12 +128,6 @@ export const CognitiveTaskFields: React.FC<Props> = ({
           )}
         </div>
       </div>
-
-      <AddQuestionModal 
-        isOpen={isAddQuestionModalOpen}
-        onClose={() => setIsAddQuestionModalOpen(false)}
-        onAddQuestion={onAddQuestion}
-      />
     </div>
   );
 }; 
