@@ -1,11 +1,5 @@
 import { useState, useCallback } from 'react';
-
-// Tipos locales necesarios para este hook
-interface ErrorModalData {
-  title: string;
-  message: string;
-  type: 'error' | 'warning' | 'info' | 'success';
-}
+import type { ErrorModalData } from '../types';
 
 interface UseCognitiveTaskModalsResult {
   // Estado de Visibilidad

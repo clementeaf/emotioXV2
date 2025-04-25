@@ -3,7 +3,6 @@ import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Button } from '@/components/ui/Button';
 import { ChoiceQuestionProps } from '../../types';
-import { UI_TEXTS } from '../../constants';
 
 // Ícono de papelera simplificado
 const TrashIcon = () => (
@@ -24,7 +23,7 @@ const TrashIcon = () => (
   </svg>
 );
 
-// Textos predeterminados para evitar errores
+// Textos predeterminados
 const DEFAULT_TEXTS = {
   QUESTION_TITLE_LABEL: 'Título de la pregunta',
   QUESTION_TITLE_PLACEHOLDER: 'Introduce el título de la pregunta',
@@ -36,7 +35,7 @@ const DEFAULT_TEXTS = {
 };
 
 /**
- * Componente que maneja la configuración de preguntas de selección (opción única, múltiple y ranking)
+ * Componente que maneja la configuración de preguntas de selección
  */
 export const ChoiceQuestion: React.FC<ChoiceQuestionProps> = ({
   question,
@@ -46,35 +45,34 @@ export const ChoiceQuestion: React.FC<ChoiceQuestionProps> = ({
   validationErrors,
   disabled
 }) => {
-  // Buscar errores para esta pregunta
-  const questionId = question.id;
-  const titleError = validationErrors[`question_${questionId}_title`];
-  const choicesError = validationErrors[`question_${questionId}_choices`];
+  // Buscar errores
+  const titleError = validationErrors ? validationErrors['title'] : null;
+  const choicesError = validationErrors ? validationErrors['choices'] : null; // Error general para el array
 
   return (
     <div className="space-y-4">
       <div>
         <label className="block text-sm font-medium text-neutral-700 mb-1">
-          {UI_TEXTS.CHOICE_QUESTION?.QUESTION_TITLE_LABEL || DEFAULT_TEXTS.QUESTION_TITLE_LABEL}
+          {DEFAULT_TEXTS.QUESTION_TITLE_LABEL}
         </label>
         <Input
           value={question.title || ''}
           onChange={(e) => onQuestionChange({ title: e.target.value })}
-          placeholder={UI_TEXTS.CHOICE_QUESTION?.QUESTION_TITLE_PLACEHOLDER || DEFAULT_TEXTS.QUESTION_TITLE_PLACEHOLDER}
+          placeholder={DEFAULT_TEXTS.QUESTION_TITLE_PLACEHOLDER}
           disabled={disabled}
           error={!!titleError}
-          helperText={titleError}
+          helperText={titleError || undefined}
         />
       </div>
 
       <div>
         <label className="block text-sm font-medium text-neutral-700 mb-1">
-          {UI_TEXTS.CHOICE_QUESTION?.DESCRIPTION_LABEL || DEFAULT_TEXTS.DESCRIPTION_LABEL}
+          {DEFAULT_TEXTS.DESCRIPTION_LABEL}
         </label>
         <Textarea
           value={question.description || ''}
           onChange={(e) => onQuestionChange({ description: e.target.value })}
-          placeholder={UI_TEXTS.CHOICE_QUESTION?.DESCRIPTION_PLACEHOLDER || DEFAULT_TEXTS.DESCRIPTION_PLACEHOLDER}
+          placeholder={DEFAULT_TEXTS.DESCRIPTION_PLACEHOLDER}
           rows={3}
           disabled={disabled}
         />
@@ -83,8 +81,8 @@ export const ChoiceQuestion: React.FC<ChoiceQuestionProps> = ({
       <div>
         <div className="flex items-center justify-between mb-2">
           <label className="block text-sm font-medium text-neutral-700">
-            {UI_TEXTS.CHOICE_QUESTION?.OPTIONS_LABEL || DEFAULT_TEXTS.OPTIONS_LABEL}
-            {choicesError && <span className="ml-2 text-xs text-red-500">{choicesError}</span>}
+            {DEFAULT_TEXTS.OPTIONS_LABEL}
+            {choicesError && <span className="ml-2 text-xs text-red-500">({choicesError})</span>}
           </label>
           <Button
             variant="outline"
@@ -92,40 +90,47 @@ export const ChoiceQuestion: React.FC<ChoiceQuestionProps> = ({
             onClick={onAddChoice}
             disabled={disabled}
           >
-            {UI_TEXTS.CHOICE_QUESTION?.ADD_OPTION || DEFAULT_TEXTS.ADD_OPTION}
+            {DEFAULT_TEXTS.ADD_OPTION}
           </Button>
         </div>
 
         <div className="space-y-2">
-          {question.choices?.map((choice, index) => (
-            <div key={choice.id} className="flex items-center gap-2">
-              <Input
-                value={choice.text || ''}
-                onChange={(e) => 
-                  onQuestionChange({
-                    choices: question.choices?.map(c => 
-                      c.id === choice.id 
-                        ? { ...c, text: e.target.value } 
-                        : c
-                    )
-                  })
-                }
-                placeholder={`${UI_TEXTS.CHOICE_QUESTION?.OPTION_PLACEHOLDER || DEFAULT_TEXTS.OPTION_PLACEHOLDER} ${index + 1}`}
-                disabled={disabled}
-                className="flex-1"
-                error={!!validationErrors[`question_${questionId}_choice_${index}`]}
-                helperText={validationErrors[`question_${questionId}_choice_${index}`]}
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => onRemoveChoice(choice.id)}
-                disabled={disabled || (question.choices?.length || 0) <= 1}
-              >
-                <TrashIcon />
-              </Button>
-            </div>
-          ))}
+          {question.choices?.map((choice, index) => {
+            // <<< Buscar error específico para el texto de esta opción >>>
+            const choiceTextErrorKey = `choices.${index}.text`;
+            const choiceTextError = validationErrors ? validationErrors[choiceTextErrorKey] : null;
+            
+            return (
+              <div key={choice.id} className="flex items-center gap-2">
+                <Input
+                  value={choice.text || ''}
+                  onChange={(e) => 
+                    onQuestionChange({
+                      choices: question.choices?.map(c => 
+                        c.id === choice.id 
+                          ? { ...c, text: e.target.value } 
+                          : c
+                      )
+                    })
+                  }
+                  placeholder={`${DEFAULT_TEXTS.OPTION_PLACEHOLDER} ${index + 1}`}
+                  disabled={disabled}
+                  className="flex-1"
+                  // <<< Pasar error y helperText para la opción >>>
+                  error={!!choiceTextError}
+                  helperText={choiceTextError || undefined}
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onRemoveChoice && onRemoveChoice(choice.id)} // Asegurar que onRemoveChoice existe
+                  disabled={disabled || (question.choices?.length || 0) <= 1}
+                >
+                  <TrashIcon />
+                </Button>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

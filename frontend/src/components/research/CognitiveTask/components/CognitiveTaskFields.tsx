@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { Question } from '../types';
 import { QuestionCard } from './QuestionCard';
 import { Label } from '@/components/ui/Label';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Info } from 'lucide-react';
+import type { Question, ValidationErrors } from '../types';
 
 // Componente Tooltip personalizado
 interface TooltipProps {
@@ -49,6 +49,7 @@ type Props = {
   uploadProgress?: number;
   FileItemComponent?: React.ComponentType<any>;
   FileUploaderComponent?: React.ComponentType<any>;
+  validationErrors: ValidationErrors | null;
 };
 
 export const CognitiveTaskFields: React.FC<Props> = ({
@@ -63,6 +64,7 @@ export const CognitiveTaskFields: React.FC<Props> = ({
   disabled = false,
   isUploading,
   uploadProgress,
+  validationErrors,
 }) => {
   // LOG INICIAL AL RECIBIR PROPS
   console.log('[CognitiveTaskFields] Props RECIBIDAS - questions:', 
@@ -109,21 +111,33 @@ export const CognitiveTaskFields: React.FC<Props> = ({
               <p>Por favor, recargue la página o contacte soporte.</p>
             </div>
           ) : (
-            questions.map((question) => (
-              <QuestionCard
-                key={question.id}
-                question={question}
-                onQuestionChange={onQuestionChange}
-                onAddChoice={onAddChoice}
-                onRemoveChoice={onRemoveChoice}
-                onFileUpload={onFileUpload}
-                onFileDelete={onFileDelete}
-                disabled={disabled}
-                validationErrors={{}}
-                isUploading={isUploading}
-                uploadProgress={uploadProgress}
-              />
-            ))
+            questions.map((question) => {
+              const questionErrors: ValidationErrors = {};
+              if (validationErrors) {
+                Object.keys(validationErrors).forEach(key => {
+                  if (key.startsWith(`${question.id}.`)) {
+                    const fieldName = key.substring(question.id.length + 1);
+                    questionErrors[fieldName] = validationErrors[key];
+                  }
+                });
+              }
+
+              return (
+                <QuestionCard
+                  key={question.id}
+                  question={question}
+                  onQuestionChange={onQuestionChange}
+                  onAddChoice={onAddChoice}
+                  onRemoveChoice={onRemoveChoice}
+                  onFileUpload={onFileUpload}
+                  onFileDelete={onFileDelete}
+                  disabled={disabled}
+                  validationErrors={questionErrors}
+                  isUploading={isUploading}
+                  uploadProgress={uploadProgress}
+                />
+              );
+            })
           )}
         </div>
       </div>

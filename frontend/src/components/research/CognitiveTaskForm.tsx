@@ -15,7 +15,7 @@ export interface CognitiveTaskFormProps {
 // Configuración para usar la versión original o la versión modular del formulario
 // Establece esto como true para usar la versión original con todos los tipos de preguntas predefinidos
 // o como false para usar la versión refactorizada modular
-const useOriginalForm = true;
+const useOriginalForm = false;
 
 // Componente selector que decide qué implementación usar
 export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = (props) => {

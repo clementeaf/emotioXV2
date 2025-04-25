@@ -35,6 +35,7 @@ export interface Question {
   scaleConfig?: ScaleConfig;
   files?: FileInfo[];
   deviceFrame: boolean;
+  answerPlaceholder?: string;
 }
 
 export interface CognitiveTaskData {
@@ -43,6 +44,8 @@ export interface CognitiveTaskData {
   questions: Question[];
   randomizeQuestions: boolean;
 }
+
+export type ValidationErrors = Record<string, string>;
 
 export interface ErrorModalData {
   title: string;

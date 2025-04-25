@@ -1,25 +1,22 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { 
-  Question,
   UploadedFile
 } from 'shared/interfaces/cognitive-task.interface';
 import { 
   QUERY_KEYS, 
   SUCCESS_MESSAGES
 } from '../constants';
+import { Question, ValidationErrors } from '../types';
 import { useAuth } from '@/providers/AuthProvider';
 import { cognitiveTaskFixedAPI } from '@/lib/cognitive-task-api';
 import { ApiError } from '@/config/api-client';
 import { useCognitiveTaskModals } from './useCognitiveTaskModals';
+import type { ErrorModalData } from '../types';
 import { useCognitiveTaskValidation } from './useCognitiveTaskValidation';
 import { useCognitiveTaskFileUpload } from './useCognitiveTaskFileUpload';
 import { useCognitiveTaskState } from './useCognitiveTaskState';
-import { v4 as uuidv4 } from 'uuid';
 import { toast } from 'react-hot-toast';
-
-// Tipos que faltan o que provocan conflictos
-type ValidationErrors = Record<string, string>;
 
 // Definición de QuestionType para evitar conflictos de importación
 type QuestionType = 'short_text' | 'long_text' | 'single_choice' | 'multiple_choice' | 'linear_scale' | 'ranking' | 'navigation_flow' | 'preference_test';
@@ -104,6 +101,16 @@ interface UseCognitiveTaskFormResult {
   uploadProgress: number;
   currentFileIndex: number;
   totalFiles: number;
+  
+  // <<< Añadir propiedades faltantes para los modales >>>
+  modalError: ErrorModalData | null;
+  modalVisible: boolean;
+  closeModal: () => void;
+  showJsonPreview: boolean;
+  closeJsonModal: () => void;
+  jsonToSend: string;
+  pendingAction: 'save' | 'preview' | null;
+  continueWithAction: () => void; // Asegurarse que esta función existe y se devuelve
 }
 
 // Definiciones locales para QUESTION_TYPES
@@ -256,23 +263,20 @@ export const useCognitiveTaskForm = (
     queryFn: async () => {
       try {
         if (!isAuthenticated || !token || !researchId) {
-          // Devolver null o un objeto que indique error/no encontrado
           return null; 
         }
         console.log(`[useCognitiveTaskForm] Buscando config existente (fixed API): ${researchId}`);
-        // Usar el método de la nueva API
         const response = await cognitiveTaskFixedAPI.getByResearchId(researchId);
         console.log('[useCognitiveTaskForm] Respuesta de API (fixed): ', response);
-        // Devolver directamente la respuesta (puede ser null si es 404)
         return response; 
       } catch (error: any) {
         console.error('[useCognitiveTaskForm] Error al obtener datos (fixed API):', error);
-        // Manejar errores específicos de ApiError si es necesario
         if (error instanceof ApiError && error.statusCode === 404) {
+            console.log('[useCognitiveTaskForm] Configuración no encontrada (404), tratando como null.');
             return null; // Tratar 404 como "no encontrado"
         }
-        // Lanzar otros errores para que React Query los maneje
-        throw error; 
+        console.error('[useCognitiveTaskForm] Error no manejado en queryFn, devolviendo null.', error);
+        return null; // Indicar a React Query que la consulta falló pero no relanzar
       }
     },
     enabled: !!researchId && isAuthenticated,
@@ -284,26 +288,35 @@ export const useCognitiveTaskForm = (
   // <<< Definir mutate e isPending (isMutating) aquí >>>
   const { mutate, isPending: isSaving } = useMutation({
     mutationFn: async (dataToSave: CognitiveTaskFormData): Promise<CognitiveTaskFormData> => {
-      console.warn("[MUTATE PLACEHOLDER] Simulating save for:", dataToSave);
-      await new Promise(res => setTimeout(res, 750)); 
-      
-      let resultData: CognitiveTaskFormData;
-      const finalData = { ...dataToSave, researchId: researchId || dataToSave.researchId }; // Asegurar researchId
-
-      if (!cognitiveTaskId) { 
-        const newId = uuidv4();
-        console.log(`[MUTATE PLACEHOLDER] Simulating CREATE, new ID: ${newId}`);
-        resultData = { ...finalData, id: newId };
-      } else {
-        console.log(`[MUTATE PLACEHOLDER] Simulating UPDATE for ID: ${cognitiveTaskId}`);
-        resultData = { ...finalData, id: cognitiveTaskId }; 
+      // <<< Implementación REAL de la mutación >>>
+      const currentResearchId = researchId || dataToSave.researchId;
+      if (!currentResearchId) {
+          throw new Error('Research ID es requerido para guardar.');
       }
-      return resultData; 
+      // <<< Revertir: Usar dataToSave directamente o una copia simple >>>
+      const payload = { ...dataToSave }; // Asegurar que researchId está en payload
+      // const { researchId: _, ...payload } = dataToSave; // Ya no se usa
+      
+      if (!isAuthenticated || !token) {
+          throw new Error('Usuario no autenticado.');
+      }
+
+      if (cognitiveTaskId) {
+        console.log(`[useCognitiveTaskForm] Llamando a update para researchId: ${currentResearchId}, taskId: ${cognitiveTaskId}`);
+        // Pasar researchId, taskId y el payload completo (que incluye researchId)
+        return await cognitiveTaskFixedAPI.update(currentResearchId, cognitiveTaskId, payload);
+      } else {
+        console.log(`[useCognitiveTaskForm] Llamando a create para researchId: ${currentResearchId}`);
+        // Pasar researchId y el payload completo (que incluye researchId)
+        return await cognitiveTaskFixedAPI.create(currentResearchId, payload);
+      }
     },
     onSuccess: (data) => {
-      console.log('[useCognitiveTaskForm] Datos guardados (simulado):', data);
+      console.log('[useCognitiveTaskForm] Datos guardados (REAL):', data);
+      // <<< Guardar el ID antes de usarlo para el mensaje de toast >>>
+      const wasUpdating = !!cognitiveTaskId; 
       if (data && data.id) {
-        setCognitiveTaskId(data.id);
+        setCognitiveTaskId(data.id); // Actualizar ID si se creó uno nuevo
       }
       if (researchId) {
         localStorage.removeItem(`cognitive_task_temp_files_${researchId}`);
@@ -312,13 +325,17 @@ export const useCognitiveTaskForm = (
       modals.closeConfirmModal(); 
       modals.closeJsonModal();
       if (typeof onSave === 'function') { onSave(data); }
-      toast.success('Formulario guardado (simulado)');
+      // Usar mensaje de éxito específico y los nombres correctos de las constantes
+      // <<< Usar wasUpdating para determinar el mensaje correcto >>>
+      toast.success(wasUpdating ? SUCCESS_MESSAGES.UPDATED : SUCCESS_MESSAGES.CREATED);
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.COGNITIVE_TASK, researchId] }); 
     },
     onError: (error: any) => {
-      console.error('[useCognitiveTaskForm] Error en mutación (simulado):', error);
+      console.error('[useCognitiveTaskForm] Error en mutación (REAL):', error);
       modals.closeConfirmModal(); 
-      modals.showModal({ title: 'Error de Guardado (Simulado)', message: error.message || 'Error desconocido', type: 'error' });
+      // Usar ApiError si está disponible
+      const errorMessage = error instanceof ApiError ? error.message : (error.message || 'Error desconocido al guardar');
+      modals.showModal({ title: 'Error de Guardado', message: errorMessage, type: 'error' });
     }
   });
 
@@ -373,9 +390,30 @@ export const useCognitiveTaskForm = (
 
   // --- Lógica de Acciones Principales (sin cambios grandes) ---
   const continueWithAction = () => { /* ... */ };
+  
+  // <<< Implementar handlePreview >>>
   const handlePreview = useCallback(() => {
-    toast.success(SUCCESS_MESSAGES_EXTENDED.PREVIEW_COMING_SOON); 
-  }, []);
+    if (validateCurrentForm()) {
+        // Formatear formData para mostrarlo
+        // Usar una copia profunda y limpiar archivos si es necesario para el preview
+        const previewData = JSON.parse(JSON.stringify(formData));
+        // Opcional: Limpiar/simplificar datos para la vista previa si es necesario
+        // previewData.questions = previewData.questions.map((q: Question) => ({ ... }));
+
+        const jsonData = JSON.stringify(previewData, null, 2); // Indentado para legibilidad
+        modals.showJsonModal(jsonData, 'preview');
+    } else {
+        // Mostrar un toast o modal si falla la validación
+        toast.error('Por favor, corrija los errores en el formulario antes de previsualizar.');
+        // Opcionalmente, usar el modal general:
+        // modals.showModal({ 
+        //     title: 'Formulario Inválido', 
+        //     message: 'Por favor, corrija los errores antes de previsualizar.', 
+        //     type: 'warning' 
+        // });
+    }
+  }, [formData, validateCurrentForm, modals]);
+
   const handleSave = () => {
     if (validateCurrentForm()) {
         // Solo abrir modal si la validación pasa
@@ -441,5 +479,14 @@ export const useCognitiveTaskForm = (
     uploadProgress, 
     currentFileIndex, 
     totalFiles,
+    // <<< Añadir propiedades faltantes para los modales >>>
+    modalError: null,
+    modalVisible: false,
+    closeModal: () => {},
+    showJsonPreview: false,
+    closeJsonModal: () => {},
+    jsonToSend: '',
+    pendingAction: null,
+    continueWithAction,
   };
 };

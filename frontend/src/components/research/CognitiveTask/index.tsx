@@ -107,6 +107,7 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
           disabled={isSaving}
           isUploading={isUploading}
           uploadProgress={uploadProgress}
+          validationErrors={validationErrors}
         />
       </div>
       
