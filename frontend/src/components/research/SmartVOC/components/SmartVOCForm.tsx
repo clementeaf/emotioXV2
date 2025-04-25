@@ -7,21 +7,25 @@ import {
   SmartVOCQuestions,
   SmartVOCFooter,
   ErrorModal,
-  JsonPreviewModal
+  AddQuestionButton,
 } from '.';
 import { cn } from '@/lib/utils';
 import { UI_TEXTS } from '../constants';
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
+import { Button } from '@/components/ui/Button';
+import { Spinner } from '@/components/ui/Spinner';
+import { generateNewQuestion } from '../utils';
 
 export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({ 
   className,
   researchId,
-  onSave
 }) => {
   const {
     questions,
     formData,
     smartVocId,
-    validationErrors,
     isLoading,
     isSaving,
     modalError,
@@ -33,59 +37,71 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
     handleSave,
     handlePreview,
     closeModal,
-    showJsonPreview,
-    closeJsonModal,
-    jsonToSend,
     pendingAction,
-    continueWithAction
+    showConfirmationModal,
+    closeConfirmationModal,
+    confirmationData,
+    confirmPendingAction,
   } = useSmartVOCForm(researchId);
 
+  const handleAddQuestion = () => {
+    const newQuestion = generateNewQuestion(questions.length);
+    addQuestion(newQuestion);
+  };
+
+  if (isLoading) {
+    return <Spinner />;
+  }
+
   return (
-    <div className={cn('space-y-6', className)}>
-      <SmartVOCHeader 
-        title={UI_TEXTS.TITLE}
-        description={UI_TEXTS.DESCRIPTION}
-      />
-
-      <SmartVOCSettings
-        randomize={formData.randomizeQuestions}
-        onRandomizeChange={(value) => updateSettings({ randomizeQuestions: value })}
-        requireAnswers={formData.smartVocRequired}
-        onRequireAnswersChange={(value) => updateSettings({ smartVocRequired: value })}
-        disabled={isLoading || isSaving}
-      />
-
-      <SmartVOCQuestions
-        questions={questions}
-        onUpdateQuestion={updateQuestion}
-        onAddQuestion={addQuestion}
-        onRemoveQuestion={removeQuestion}
-        disabled={isLoading || isSaving}
-      />
-
-      <SmartVOCFooter
-        isSaving={isSaving}
-        isLoading={isLoading}
-        smartVocId={smartVocId}
-        onSave={handleSave}
-        onPreview={handlePreview}
-      />
-
-      <ErrorModal
-        isOpen={modalVisible}
-        onClose={closeModal}
-        error={modalError}
-      />
-
-      {showJsonPreview && (
-        <JsonPreviewModal
-          isOpen={showJsonPreview}
-          onClose={closeJsonModal}
-          onContinue={continueWithAction}
-          jsonData={jsonToSend}
-          pendingAction={pendingAction}
+    <DndProvider backend={HTML5Backend}>
+      <div className={cn('space-y-6', className)}>
+        <SmartVOCHeader 
+          title={UI_TEXTS.TITLE}
+          description={UI_TEXTS.DESCRIPTION}
         />
-      )}
-    </div>
+
+        <SmartVOCSettings
+          randomize={formData.randomizeQuestions}
+          onRandomizeChange={(value) => updateSettings({ randomizeQuestions: value })}
+          requireAnswers={formData.smartVocRequired}
+          onRequireAnswersChange={(value) => updateSettings({ smartVocRequired: value })}
+          disabled={isLoading || isSaving}
+        />
+
+        <SmartVOCQuestions
+          questions={questions}
+          onUpdateQuestion={updateQuestion}
+          onAddQuestion={addQuestion}
+          onRemoveQuestion={removeQuestion}
+          disabled={isLoading || isSaving}
+        />
+
+        <AddQuestionButton onClick={handleAddQuestion} />
+
+        <SmartVOCFooter
+          isSaving={isSaving}
+          isLoading={isLoading}
+          smartVocId={smartVocId}
+          onSave={handleSave}
+          onPreview={handlePreview}
+        />
+
+        <ErrorModal
+          isOpen={modalVisible}
+          onClose={closeModal}
+          error={modalError}
+        />
+
+        <Dialog
+          open={showConfirmationModal}
+          onOpenChange={closeConfirmationModal}
+        >
+          <DialogContent>
+            <p>Probando si el diálogo aparece.</p>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </DndProvider>
   );
-}; 
+};

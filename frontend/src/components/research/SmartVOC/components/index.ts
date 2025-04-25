@@ -3,4 +3,5 @@ export * from './SmartVOCFooter';
 export * from './SmartVOCHeader';
 export * from './SmartVOCQuestions';
 export * from './SmartVOCSettings';
-export * from './JsonPreviewModal'; 
+export * from './JsonPreviewModal';
+export * from './AddQuestionButton'; 

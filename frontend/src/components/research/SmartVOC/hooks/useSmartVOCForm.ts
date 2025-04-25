@@ -65,10 +65,10 @@ export const useSmartVOCForm = (researchId: string) => {
     }
   }, [isAuthenticated, token, user, researchId, authLoading]);
 
-  // Estados para el modal de confirmación JSON
-  const [showJsonPreview, setShowJsonPreview] = useState<boolean>(false);
-  const [jsonToSend, setJsonToSend] = useState<string>('');
-  const [pendingAction, setPendingAction] = useState<'save' | 'preview' | null>(null);
+  // Estados para el modal de confirmación
+  const [showConfirmationModal, setShowConfirmationModal] = useState<boolean>(false);
+  const [confirmationData, setConfirmationData] = useState<string>('');
+  const [pendingAction, setPendingAction] = useState<'save' | 'preview' | 'delete' | null>(null);
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
   // Handlers para el modal
@@ -298,9 +298,15 @@ export const useSmartVOCForm = (researchId: string) => {
     return Object.keys(errors).length === 0;
   }, [formData.questions]);
 
-  // Función para manejar el guardado
+  // Función para manejar el guardado (ahora inicia la confirmación)
   const handleSave = useCallback(async () => {
-    if (!validateForm()) {
+    console.log("[SmartVOCForm] handleSave iniciado.");
+    
+    const isValid = validateForm();
+    console.log("[SmartVOCForm] Resultado de validación:", isValid);
+
+    if (!isValid) {
+      console.log("[SmartVOCForm] Validación fallida. Mostrando modal de error.");
       showModal({
         title: 'Error de Validación',
         message: 'Por favor, corrija los errores antes de guardar',
@@ -309,11 +315,17 @@ export const useSmartVOCForm = (researchId: string) => {
       return;
     }
 
-    setIsSaving(true);
-    mutate(formData);
-  }, [formData, mutate, validateForm, showModal]);
+    // Preparar datos para el modal y mostrarlo
+    console.log("[SmartVOCForm] Validación exitosa. Preparando datos para modal de confirmación.");
+    const dataString = JSON.stringify(formData, null, 2);
+    setConfirmationData(dataString);
+    setPendingAction('save');
+    console.log("[SmartVOCForm] Llamando a setShowConfirmationModal(true)");
+    setShowConfirmationModal(true);
 
-  // Función para manejar la previsualización
+  }, [formData, validateForm, showModal]);
+
+  // Función para manejar la previsualización (si se mantiene un botón dedicado)
   const handlePreview = useCallback(() => {
     if (!validateForm()) {
       showModal({
@@ -324,24 +336,32 @@ export const useSmartVOCForm = (researchId: string) => {
       return;
     }
 
-    setJsonToSend(JSON.stringify(formData, null, 2));
-    setShowJsonPreview(true);
+    setConfirmationData(JSON.stringify(formData, null, 2));
+    setShowConfirmationModal(true);
     setPendingAction('preview');
   }, [formData, validateForm, showModal]);
 
-  // Función para cerrar el modal JSON
-  const closeJsonModal = useCallback(() => {
-    setShowJsonPreview(false);
+  // Función para cerrar el modal de confirmación
+  const closeConfirmationModal = useCallback(() => {
+    setShowConfirmationModal(false);
     setPendingAction(null);
   }, []);
 
-  // Función para continuar con la acción pendiente
-  const continueWithAction = useCallback(() => {
+  // Función para confirmar la acción pendiente (Guardar, Previsualizar, Eliminar)
+  const confirmPendingAction = useCallback(() => {
     if (pendingAction === 'save') {
-      handleSave();
+      console.log("[SmartVOCForm] Confirmado guardado. Mutando...");
+      setIsSaving(true);
+      mutate(formData);
+    } else if (pendingAction === 'delete') {
+      // TODO: Implementar lógica de eliminación si es necesario
+      console.log("[SmartVOCForm] Confirmada eliminación.");
+      // Ejemplo: handleDeleteConfirmation();
+    } else {
+      console.log("[SmartVOCForm] Acción confirmada:", pendingAction);
     }
-    closeJsonModal();
-  }, [pendingAction, handleSave, closeJsonModal]);
+    closeConfirmationModal();
+  }, [pendingAction, formData, mutate, closeConfirmationModal]);
 
   return {
     formData,
@@ -360,11 +380,11 @@ export const useSmartVOCForm = (researchId: string) => {
     handlePreview,
     validateForm,
     closeModal,
-    showJsonPreview,
-    closeJsonModal,
-    jsonToSend,
+    showConfirmationModal,
+    closeConfirmationModal,
+    confirmationData,
     pendingAction,
-    continueWithAction,
+    confirmPendingAction,
     isExisting: !!smartVocId
   };
 }; 
