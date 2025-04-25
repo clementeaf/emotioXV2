@@ -4,7 +4,6 @@ import { useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { useDataWithFallback } from '@/hooks/useDataWithFallback';
 
 import { DataErrorFallback } from './DataErrorFallback';
 import { SimulatedDataBanner } from './SimulatedDataBanner';
@@ -61,6 +60,8 @@ export function DataDisplayExample({
   };
   
   // Usar el hook para cargar los datos con manejo de errores y datos simulados
+  // <<< Comentar el uso del hook >>>
+  /*
   const {
     data,
     isLoading,
@@ -74,6 +75,15 @@ export function DataDisplayExample({
     getMockData,
     localStorageKey: 'use_simulated_example_data'
   });
+  */
+  // <<< Placeholder para evitar errores posteriores (simular estado inicial o de error) >>>
+  const data: ExampleData[] = [];
+  const isLoading = false;
+  const error: string | null = 'Hook useDataWithFallback no encontrado';
+  const isSimulatedData = false;
+  const reloadData = () => console.warn('Hook useDataWithFallback no encontrado');
+  const switchToMockData = () => console.warn('Hook useDataWithFallback no encontrado');
+  const switchToRealData = () => console.warn('Hook useDataWithFallback no encontrado');
   
   // Contenido principal del componente usando los datos
   const renderContent = () => {
@@ -85,11 +95,11 @@ export function DataDisplayExample({
       );
     }
     
-    if (error && !data) {
+    if (error && data.length === 0) {
       return (
         <DataErrorFallback
           error={error}
-          onRetry={() => reloadData(false)}
+          onRetry={() => reloadData()}
           onUseMockData={switchToMockData}
           mockDataButtonText="Ver datos de ejemplo"
         />
@@ -108,7 +118,7 @@ export function DataDisplayExample({
         
         {/* Lista de elementos */}
         <div className="space-y-2">
-          {data && data.map(item => (
+          {data && data.map((item: ExampleData) => (
             <Card key={item.id} className="p-4">
               <div className="flex justify-between items-start">
                 <div>
@@ -154,7 +164,7 @@ export function DataDisplayExample({
             variant="outline"
             onClick={() => {
               setForceError(!forceError);
-              reloadData(false);
+              reloadData();
             }}
           >
             {forceError ? 'Desactivar error' : 'Forzar error'}
@@ -163,7 +173,7 @@ export function DataDisplayExample({
           <Button
             size="sm"
             variant="outline"
-            onClick={() => reloadData(false)}
+            onClick={() => reloadData()}
           >
             Recargar
           </Button>

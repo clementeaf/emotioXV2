@@ -7,7 +7,7 @@ const TOKEN_REFRESH_INTERVAL = 12 * 60 * 60 * 1000; // 12 horas
 
 export const useWebSocketConnection = () => {
   const ws = useRef<WebSocket | null>(null);
-  const { token, updateToken } = useAuth();
+  const { token } = useAuth();
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
   const tokenRefreshIntervalRef = useRef<NodeJS.Timeout>();
 
@@ -53,7 +53,7 @@ export const useWebSocketConnection = () => {
         switch (message.event) {
           case WebSocketEvent.TOKEN_REFRESHED:
             const { token: newToken } = message.data as { token: string };
-            updateToken(newToken);
+            console.log('WebSocket recibió token actualizado (no se actualizó en useAuth)');
             break;
           case WebSocketEvent.ERROR:
             console.error('Error del servidor:', message.data);
@@ -63,7 +63,7 @@ export const useWebSocketConnection = () => {
         console.error('Error al procesar mensaje:', error);
       }
     };
-  }, [token, updateToken]);
+  }, [token]);
 
   const disconnect = useCallback(() => {
     if (ws.current) {

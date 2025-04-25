@@ -36,6 +36,12 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
   // Determine if it's an existing config based on existingScreen data
   const isExisting = !!existingScreen?.id;
 
+  // <<< Lógica para el modal de confirmación (si se implementa) >>>
+  const confirmModalVisible = false; // Placeholder
+  const showConfirmModalAction = () => {}; // Placeholder
+  const closeConfirmModal = () => {}; // Placeholder
+  const confirmAction = handleSubmit; // Placeholder - llamar a handleSubmit al confirmar
+
   if (isLoading) {
     return <WelcomeScreenSkeleton />;
   }
@@ -44,7 +50,7 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
     <div className={cn('space-y-4', className)}>
       {/* Toggle de habilitación */}
       <WelcomeScreenSettings 
-        isEnabled={formData.isEnabled}
+        isEnabled={formData.isEnabled ?? false}
         onChange={(checked) => handleChange('isEnabled', checked)}
         disabled={isLoading || isSaving}
       />
@@ -74,10 +80,8 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
       {/* Pie de página con acciones */}
       <WelcomeScreenFooter 
         isSaving={isSaving}
-        isLoading={isLoading}
-        isEnabled={formData.isEnabled}
-        isExisting={isExisting}
-        onSave={handleSubmit}
+        disabled={!formData.isEnabled || isSaving}
+        onSave={showConfirmModalAction}
         onPreview={handlePreview}
       />
       
@@ -85,6 +89,12 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
       <ErrorModal 
         isOpen={modalVisible}
         onClose={closeModal}
+        error={modalError}
+      />
+
+      <ErrorModal 
+        isOpen={confirmModalVisible}
+        onClose={closeConfirmModal}
         error={modalError}
       />
     </div>

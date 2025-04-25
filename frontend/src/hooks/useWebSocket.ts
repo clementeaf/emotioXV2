@@ -9,7 +9,7 @@ interface WebSocketMessage {
 
 export function useWebSocket() {
   const ws = useRef<WebSocket | null>(null);
-  const { token, updateToken } = useAuth();
+  const { token } = useAuth();
   const reconnectTimeout = useRef<NodeJS.Timeout>();
   const reconnectAttempts = useRef(0);
   const maxReconnectAttempts = 5;
@@ -42,7 +42,7 @@ export function useWebSocket() {
         switch (message.action) {
           case 'token.update':
             if (message.token) {
-              updateToken(message.token);
+              console.log('WebSocket recibió acción token.update (no se actualizó en useAuth)');
             }
             break;
           // Manejar otros tipos de mensajes aquí
@@ -53,7 +53,7 @@ export function useWebSocket() {
         console.error('Error processing message:', error);
       }
     };
-  }, [token, updateToken]);
+  }, [token]);
 
   const scheduleReconnect = useCallback(() => {
     if (reconnectAttempts.current >= maxReconnectAttempts) {

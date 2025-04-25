@@ -37,9 +37,9 @@ export const eyeTrackingRecruitService = {
    */
   async getConfigByResearchId(researchId: string): Promise<EyeTrackingRecruitConfig | null> {
     try {
-      return await apiClient.get<EyeTrackingRecruitConfig, 'eyeTrackingRecruit'>(
-        'eyeTrackingRecruit', 
-        'getConfigByResearchId', 
+      return await apiClient.get<EyeTrackingRecruitConfig, 'eyeTracking'>(
+        'eyeTracking', 
+        'RECRUIT_GET',
         { researchId }
       );
     } catch (error) {
@@ -56,9 +56,9 @@ export const eyeTrackingRecruitService = {
    */
   async createConfig(researchId: string, data: CreateEyeTrackingRecruitRequest): Promise<EyeTrackingRecruitConfig> {
     try {
-      return await apiClient.post<EyeTrackingRecruitConfig, CreateEyeTrackingRecruitRequest, 'eyeTrackingRecruit'>(
-        'eyeTrackingRecruit', 
-        'createConfig', 
+      return await apiClient.post<EyeTrackingRecruitConfig, CreateEyeTrackingRecruitRequest, 'eyeTracking'>(
+        'eyeTracking', 
+        'RECRUIT_CREATE',
         data, 
         { researchId }
       );
@@ -76,9 +76,9 @@ export const eyeTrackingRecruitService = {
    */
   async updateConfig(configId: string, data: UpdateEyeTrackingRecruitRequest): Promise<EyeTrackingRecruitConfig> {
     try {
-      return await apiClient.put<EyeTrackingRecruitConfig, UpdateEyeTrackingRecruitRequest, 'eyeTrackingRecruit'>(
-        'eyeTrackingRecruit', 
-        'updateConfig', 
+      return await apiClient.put<EyeTrackingRecruitConfig, UpdateEyeTrackingRecruitRequest, 'eyeTracking'>(
+        'eyeTracking', 
+        'RECRUIT_UPDATE',
         data, 
         { configId }
       );
@@ -95,10 +95,10 @@ export const eyeTrackingRecruitService = {
    */
   async completeConfig(configId: string): Promise<EyeTrackingRecruitConfig> {
     try {
-      return await apiClient.put<EyeTrackingRecruitConfig, {}, 'eyeTrackingRecruit'>(
-        'eyeTrackingRecruit', 
-        'completeConfig', 
-        {}, 
+      return await apiClient.put<EyeTrackingRecruitConfig, {}, 'eyeTracking'>(
+        'eyeTracking', 
+        'RECRUIT_UPDATE',
+        { status: 'completed' },
         { configId }
       );
     } catch (error) {
@@ -114,9 +114,9 @@ export const eyeTrackingRecruitService = {
    */
   async deleteConfig(configId: string): Promise<void> {
     try {
-      await apiClient.delete<void, 'eyeTrackingRecruit'>(
-        'eyeTrackingRecruit', 
-        'deleteConfig', 
+      await apiClient.delete<void, 'eyeTracking'>(
+        'eyeTracking', 
+        'RECRUIT_UPDATE',
         { configId }
       );
     } catch (error) {
@@ -135,9 +135,9 @@ export const eyeTrackingRecruitService = {
    */
   async createParticipant(configId: string, data: Partial<EyeTrackingRecruitParticipant>): Promise<EyeTrackingRecruitParticipant> {
     try {
-      return await apiClient.post<EyeTrackingRecruitParticipant, Partial<EyeTrackingRecruitParticipant>, 'eyeTrackingRecruit'>(
-        'eyeTrackingRecruit', 
-        'createParticipant', 
+      return await apiClient.post<EyeTrackingRecruitParticipant, Partial<EyeTrackingRecruitParticipant>, 'eyeTracking'>(
+        'eyeTracking', 
+        'RECRUIT_CREATE',
         data, 
         { configId }
       );
@@ -155,9 +155,9 @@ export const eyeTrackingRecruitService = {
    */
   async updateParticipantStatus(participantId: string, status: string): Promise<EyeTrackingRecruitParticipant> {
     try {
-      return await apiClient.put<EyeTrackingRecruitParticipant, { status: string }, 'eyeTrackingRecruit'>(
-        'eyeTrackingRecruit', 
-        'updateParticipantStatus', 
+      return await apiClient.put<EyeTrackingRecruitParticipant, { status: string }, 'eyeTracking'>(
+        'eyeTracking', 
+        'RECRUIT_UPDATE',
         { status }, 
         { participantId }
       );
@@ -174,9 +174,9 @@ export const eyeTrackingRecruitService = {
    */
   async getParticipantsByConfigId(configId: string): Promise<EyeTrackingRecruitParticipant[]> {
     try {
-      return await apiClient.get<EyeTrackingRecruitParticipant[], 'eyeTrackingRecruit'>(
-        'eyeTrackingRecruit', 
-        'getParticipantsByConfigId', 
+      return await apiClient.get<EyeTrackingRecruitParticipant[], 'eyeTracking'>(
+        'eyeTracking', 
+        'RECRUIT_GET',
         { configId }
       );
     } catch (error) {
@@ -192,9 +192,9 @@ export const eyeTrackingRecruitService = {
    */
   async getStatsByConfigId(configId: string): Promise<EyeTrackingRecruitStats> {
     try {
-      return await apiClient.get<EyeTrackingRecruitStats, 'eyeTrackingRecruit'>(
-        'eyeTrackingRecruit', 
-        'getStatsByConfigId', 
+      return await apiClient.get<EyeTrackingRecruitStats, 'eyeTracking'>(
+        'eyeTracking', 
+        'RECRUIT_GET',
         { configId }
       );
     } catch (error) {
@@ -218,9 +218,9 @@ export const eyeTrackingRecruitService = {
     expirationDays?: number
   ): Promise<GenerateRecruitmentLinkResponse> {
     try {
-      return await apiClient.post<GenerateRecruitmentLinkResponse, { type: RecruitLinkType, expirationDays?: number }, 'eyeTrackingRecruit'>(
-        'eyeTrackingRecruit', 
-        'generateRecruitmentLink', 
+      return await apiClient.post<GenerateRecruitmentLinkResponse, { type: RecruitLinkType, expirationDays?: number }, 'eyeTracking'>(
+        'eyeTracking', 
+        'RECRUIT_CREATE',
         { type, expirationDays }, 
         { configId }
       );
@@ -237,9 +237,9 @@ export const eyeTrackingRecruitService = {
    */
   async getActiveLinks(configId: string): Promise<RecruitmentLink[]> {
     try {
-      return await apiClient.get<RecruitmentLink[], 'eyeTrackingRecruit'>(
-        'eyeTrackingRecruit', 
-        'getActiveLinks', 
+      return await apiClient.get<RecruitmentLink[], 'eyeTracking'>(
+        'eyeTracking', 
+        'RECRUIT_GET',
         { configId }
       );
     } catch (error) {
@@ -255,9 +255,9 @@ export const eyeTrackingRecruitService = {
    */
   async deactivateLink(token: string): Promise<RecruitmentLink> {
     try {
-      return await apiClient.put<RecruitmentLink, {}, 'eyeTrackingRecruit'>(
-        'eyeTrackingRecruit', 
-        'deactivateLink', 
+      return await apiClient.put<RecruitmentLink, {}, 'eyeTracking'>(
+        'eyeTracking', 
+        'RECRUIT_UPDATE',
         {}, 
         { token }
       );
@@ -274,9 +274,9 @@ export const eyeTrackingRecruitService = {
    */
   async validateRecruitmentLink(token: string): Promise<{ valid: boolean, link?: RecruitmentLink }> {
     try {
-      return await apiClient.get<{ valid: boolean, link?: RecruitmentLink }, 'eyeTrackingRecruit'>(
-        'eyeTrackingRecruit', 
-        'validateRecruitmentLink', 
+      return await apiClient.get<{ valid: boolean, link?: RecruitmentLink }, 'eyeTracking'>(
+        'eyeTracking', 
+        'RECRUIT_GET',
         { token }
       );
     } catch (error) {
@@ -294,9 +294,9 @@ export const eyeTrackingRecruitService = {
    */
   async getResearchSummary(researchId: string): Promise<any> {
     try {
-      return await apiClient.get<any, 'eyeTrackingRecruit'>(
-        'eyeTrackingRecruit', 
-        'getResearchSummary', 
+      return await apiClient.get<any, 'eyeTracking'>(
+        'eyeTracking', 
+        'RECRUIT_GET',
         { researchId }
       );
     } catch (error) {
@@ -314,9 +314,9 @@ export const eyeTrackingRecruitService = {
    */
   async registerPublicParticipant(data: Partial<EyeTrackingRecruitParticipant>): Promise<EyeTrackingRecruitParticipant> {
     try {
-      return await apiClient.post<EyeTrackingRecruitParticipant, Partial<EyeTrackingRecruitParticipant>, 'eyeTrackingRecruit'>(
-        'eyeTrackingRecruit', 
-        'registerPublicParticipant', 
+      return await apiClient.post<EyeTrackingRecruitParticipant, Partial<EyeTrackingRecruitParticipant>, 'eyeTracking'>(
+        'eyeTracking', 
+        'RECRUIT_CREATE',
         data
       );
     } catch (error) {
@@ -333,9 +333,9 @@ export const eyeTrackingRecruitService = {
    */
   async updatePublicParticipantStatus(participantId: string, status: string): Promise<EyeTrackingRecruitParticipant> {
     try {
-      return await apiClient.put<EyeTrackingRecruitParticipant, { status: string }, 'eyeTrackingRecruit'>(
-        'eyeTrackingRecruit', 
-        'updatePublicParticipantStatus', 
+      return await apiClient.put<EyeTrackingRecruitParticipant, { status: string }, 'eyeTracking'>(
+        'eyeTracking', 
+        'RECRUIT_UPDATE',
         { status }, 
         { participantId }
       );

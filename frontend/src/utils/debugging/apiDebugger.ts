@@ -28,7 +28,10 @@ export const debugFetch = async (url: string, options: RequestInit = {}) => {
     const clonedResponse = response.clone();
     
     console.log(`🔍 [API-DEBUG] Respuesta status: ${response.status} (${response.statusText})`);
-    console.log('🔍 [API-DEBUG] Cabeceras respuesta:', Object.fromEntries([...response.headers.entries()]));
+    const responseHeadersObj: { [key: string]: string } = {};
+    response.headers.forEach((value, key) => {
+      responseHeadersObj[key] = value;
+    });
     
     try {
       const responseData = await clonedResponse.json();
@@ -59,9 +62,15 @@ export const debugFetch = async (url: string, options: RequestInit = {}) => {
           response: response ? {
             status: response.status,
             statusText: response.statusText,
-            headers: Object.fromEntries([...response.headers.entries()])
+            headers: (() => {
+              const headersObj: { [key: string]: string } = {};
+              response.headers.forEach((value, key) => {
+                headersObj[key] = value;
+              });
+              return headersObj;
+            })()
           } : null,
-          error: error ? {
+          error: error instanceof Error ? { 
             name: error.name,
             message: error.message
           } : null

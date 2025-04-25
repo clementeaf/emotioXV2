@@ -59,12 +59,19 @@ export function EmotionForm({ emotionId, onSuccess, onCancel }: EmotionFormProps
     
     setLoading(true);
     try {
+      // <<< Comentar llamada a API >>>
+      /*
       const response = await api.emotions.getById(emotionId);
       if (response.data) {
         setFormData(response.data);
       }
+      */
+      console.log('Funcionalidad loadEmotion comentada temporalmente');
+      throw new Error('Carga de emoción deshabilitada temporalmente'); // Simular error
+
     } catch (err) {
-      setError('Error al cargar la emoción');
+      // setError('Error al cargar la emoción'); // Mantenido por el throw
+      setError(err instanceof Error ? err.message : 'Error desconocido al cargar emoción');
     } finally {
       setLoading(false);
     }
@@ -76,14 +83,21 @@ export function EmotionForm({ emotionId, onSuccess, onCancel }: EmotionFormProps
     setLoading(true);
 
     try {
+      // <<< Comentar llamadas a API >>>
+      /*
       if (emotionId) {
         await api.emotions.update(emotionId, formData);
       } else {
         await api.emotions.create(formData);
       }
-      onSuccess?.();
+      onSuccess?.(); // No llamar a onSuccess si la API está comentada
+      */
+      console.log('Funcionalidad handleSubmit comentada temporalmente');
+      throw new Error('Guardado de emoción deshabilitado temporalmente'); // Simular error
+
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al guardar la emoción');
+      // setError(err instanceof Error ? err.message : 'Error al guardar la emoción'); // Mantenido por el throw
+      setError(err instanceof Error ? err.message : 'Error desconocido al guardar emoción');
     } finally {
       setLoading(false);
     }

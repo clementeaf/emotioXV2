@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { cn } from '@/lib/utils';
 import { useEyeTrackingRecruit } from './hooks/useEyeTrackingRecruit';
-import { DemographicQuestionKeys, LinkConfigKeys, ParameterOptionKeys, BacklinkKeys, DemographicQuestions } from '@/shared/interfaces/eyeTrackingRecruit.interface';
-import { ParticipantView } from './components/ParticipantView';
+import { DemographicQuestionKeys, LinkConfigKeys, ParameterOptionKeys, BacklinkKeys } from '@/shared/interfaces/eyeTrackingRecruit.interface';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { Spinner } from '@/components/ui/Spinner';
 
@@ -283,7 +282,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           checked={formData.linkConfig.allowMobile}
                           onChange={(e) => {
                             console.log('Dispositivos móviles clicado:', e.target.checked);
-                            handleLinkConfigChange('allowMobile' as LinkConfigKeys, e.target.checked);
+                            handleLinkConfigChange('allowMobile', e.target.checked);
                           }}
                           disabled={!linkConfigEnabled}
                           className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
@@ -296,7 +295,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           type="checkbox"
                           id="trackLocation"
                           checked={formData.linkConfig.trackLocation}
-                          onChange={(e) => handleLinkConfigChange('trackLocation' as LinkConfigKeys, e.target.checked)}
+                          onChange={(e) => handleLinkConfigChange('trackLocation', e.target.checked)}
                           disabled={!linkConfigEnabled}
                           className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                         />
@@ -308,7 +307,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           type="checkbox"
                           id="allowMultipleAttempts"
                           checked={formData.linkConfig.allowMultipleAttempts}
-                          onChange={(e) => handleLinkConfigChange('allowMultipleAttempts' as LinkConfigKeys, e.target.checked)}
+                          onChange={(e) => handleLinkConfigChange('allowMultipleAttempts', e.target.checked)}
                           disabled={!linkConfigEnabled}
                           className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                         />

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-import { apiEndpoints } from '../config/api.config';
+import apiEndpoints from '../config/api.config';
 import { useAuth } from '../hooks/useAuth';
 
 // Estado de la conexión
@@ -13,7 +13,7 @@ export enum ConnectionStatus {
 
 // Utilidad para el WebSocket
 export const useWebSocketConnection = () => {
-  const { token, updateToken, logout } = useAuth();
+  const { token } = useAuth();
   const wsRef = useRef<WebSocket | null>(null);
   const statusRef = useRef<ConnectionStatus>(ConnectionStatus.DISCONNECTED);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -32,7 +32,12 @@ export const useWebSocketConnection = () => {
       statusRef.current = ConnectionStatus.CONNECTING;
       
       // Crear nueva conexión con el token como parámetro
-      const wsUrl = apiEndpoints.websocket.connect(token);
+      const httpUrl = apiEndpoints.baseURL;
+      const wsProtoUrl = httpUrl.replace(/^http/, 'ws'); // Cambiar http:// a ws:// o https:// a wss://
+      // Asumir ruta /ws y token como query param (ajustar si es diferente)
+      const wsUrl = `${wsProtoUrl}/ws?token=${token}`;
+      console.log('[WebSocket] Connecting to:', wsUrl); // Log para depuración
+      
       const ws = new WebSocket(wsUrl);
       
       ws.onopen = () => {
@@ -66,8 +71,9 @@ export const useWebSocketConnection = () => {
           const data = JSON.parse(event.data);
           
           if (data.action === 'tokenRefreshed' && data.token) {
-            console.log('Token renovado');
-            updateToken(data.token);
+            console.log('Token renovado recibido por WebSocket');
+            // TODO: Implementar la actualización del token en el estado global de useAuth si es necesario.
+            // Actualmente, esta lógica solo actualiza el token en el contexto del WebSocket.
           }
         } catch (error) {
           console.error('Error al procesar mensaje WebSocket:', error);

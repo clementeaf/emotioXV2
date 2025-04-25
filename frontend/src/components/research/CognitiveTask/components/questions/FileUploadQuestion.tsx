@@ -1,9 +1,27 @@
 import React, { useRef } from 'react';
 import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
 import { Button } from '@/components/ui/Button';
 import { Upload, Trash2 } from 'lucide-react';
 import { FileUploadQuestionProps } from '../../types';
 import { Switch } from '@/components/ui/Switch';
+
+const DEFAULT_TEXTS = {
+  QUESTION_TITLE_PLACEHOLDER: 'Añadir pregunta',
+  DESCRIPTION_LABEL: 'Descripción',
+  DESCRIPTION_PLACEHOLDER: 'Introduce una descripción opcional',
+  SHOW_CONDITIONALLY_LABEL: 'Mostrar condicionalmente',
+  REQUIRED_LABEL: 'Obligatorio',
+  UPLOAD_AREA_INSTRUCTION: 'Arrastra un archivo o',
+  SELECT_FILE_BUTTON: 'Seleccionar archivo',
+  UPLOAD_ANOTHER_FILE_BUTTON: 'Subir otro archivo',
+  RESOLUTION_HINT: 'Resolución recomendada: 1000x1000px',
+  UPLOADING_FILE_MESSAGE: 'Subiendo archivo...',
+  PERCENTAGE_COMPLETE: '% completado',
+  DEVICE_FRAME_LABEL: 'Marco de Dispositivo',
+  WITH_FRAME: 'Con Marco',
+  WITHOUT_FRAME: 'Sin Marco'
+};
 
 /**
  * Componente que maneja la configuración de preguntas con carga de archivos
@@ -13,14 +31,17 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
   onQuestionChange,
   onFileUpload,
   onFileDelete,
+  validationErrors,
   disabled,
   isUploading,
   uploadProgress
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Determinar si esta pregunta específica está en estado de carga
-  // Esto asegura que cada pregunta tenga su propio estado independiente
+  const titleError = validationErrors ? validationErrors['title'] : null;
+  const descriptionError = validationErrors ? validationErrors['description'] : null;
+  const filesError = validationErrors ? validationErrors['files'] : null;
+
   const isThisQuestionUploading = isUploading && 
     question.files?.some(file => file.isLoading);
 
@@ -32,41 +53,39 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0 && onFileUpload) {
-      // Incluir el ID de la pregunta para identificar a qué pregunta corresponde
       console.log(`[FileUploadQuestion] Subiendo archivo para pregunta ${question.id}`);
       onFileUpload(e.target.files);
-      // Reset the file input
       e.target.value = '';
     }
   };
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="space-y-2">
         <Input
-          placeholder="Añadir pregunta"
-          value={question.title}
+          placeholder={DEFAULT_TEXTS.QUESTION_TITLE_PLACEHOLDER}
+          value={question.title || ''}
           onChange={(e) => onQuestionChange({ title: e.target.value })}
-          className="w-[300px] mr-4"
+          className="w-full"
           disabled={disabled}
+          error={!!titleError}
+          helperText={titleError || undefined}
         />
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-neutral-600">Mostrar condicionalmente</span>
-            <Switch
-              checked={question.showConditionally}
-              onCheckedChange={(checked: boolean) => onQuestionChange({ showConditionally: checked })}
-              disabled={disabled}
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-neutral-600">Obligatorio</span>
-            <Switch
-              checked={question.required}
-              onCheckedChange={(checked: boolean) => onQuestionChange({ required: checked })}
-              disabled={disabled}
-            />
-          </div>
+        <div>
+           <label className="block text-sm font-medium text-neutral-700 mb-1 sr-only">
+             {DEFAULT_TEXTS.DESCRIPTION_LABEL}
+           </label>
+           <Textarea
+             value={question.description || ''}
+             onChange={(e) => onQuestionChange({ description: e.target.value })}
+             placeholder={DEFAULT_TEXTS.DESCRIPTION_PLACEHOLDER}
+             rows={3}
+             disabled={disabled}
+             error={!!descriptionError}
+           />
+           {descriptionError && (
+              <p className="mt-1 text-xs text-red-500">{descriptionError}</p>
+           )}
         </div>
       </div>
 
@@ -78,19 +97,19 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
           className="hidden"
           disabled={disabled || isThisQuestionUploading}
           accept="image/*,.pdf"
-          data-question-id={question.id} /* Agregar un atributo de datos para identificar la pregunta */
+          data-question-id={question.id}
         />
         
         {isThisQuestionUploading ? (
           <div className="flex flex-col items-center gap-3 w-full">
-            <p className="text-sm text-neutral-600">Subiendo archivo para {question.id}...</p>
+            <p className="text-sm text-neutral-600">{DEFAULT_TEXTS.UPLOADING_FILE_MESSAGE}</p>
             <div className="w-full bg-neutral-200 rounded-full h-2.5">
               <div 
                 className="bg-blue-600 h-2.5 rounded-full" 
                 style={{ width: `${uploadProgress || 0}%` }}
               ></div>
             </div>
-            <p className="text-xs text-neutral-500">{uploadProgress || 0}% completado</p>
+            <p className="text-xs text-neutral-500">{uploadProgress || 0}{DEFAULT_TEXTS.PERCENTAGE_COMPLETE}</p>
           </div>
         ) : question.files && question.files.length > 0 ? (
           <div className="w-full space-y-3">
@@ -132,7 +151,7 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
                   disabled={disabled}
                   data-role="delete-file"
                   data-file-id={file.id}
-                  data-question-id={question.id} /* Agregar un atributo de datos para identificar la pregunta */
+                  data-question-id={question.id}
                   aria-label="Eliminar archivo"
                 >
                   <Trash2 size={18} />
@@ -147,38 +166,60 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
               disabled={disabled || isThisQuestionUploading}
             >
               <Upload className="mr-2 h-4 w-4" />
-              Subir otro archivo
+              {DEFAULT_TEXTS.UPLOAD_ANOTHER_FILE_BUTTON}
             </Button>
           </div>
         ) : (
           <>
             <Upload size={24} className="text-neutral-400" />
-            <p className="text-sm text-neutral-600">Arrastra un archivo o</p>
+            <p className="text-sm text-neutral-600">{DEFAULT_TEXTS.UPLOAD_AREA_INSTRUCTION}</p>
             <Button
               type="button"
               variant="outline"
               onClick={handleButtonClick}
               disabled={disabled || isThisQuestionUploading}
             >
-              Seleccionar archivo
+              {DEFAULT_TEXTS.SELECT_FILE_BUTTON}
             </Button>
-            <p className="text-xs text-neutral-500">Resolución recomendada: 1000x1000px</p>
+            <p className="text-xs text-neutral-500">{DEFAULT_TEXTS.RESOLUTION_HINT}</p>
           </>
+        )}
+        {filesError && (
+          <p className="mt-2 text-xs text-red-500 w-full text-center">{filesError}</p>
         )}
       </div>
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-neutral-600">Marco de Dispositivo</span>
-          <Switch
-            checked={question.deviceFrame || false}
-            onCheckedChange={(checked: boolean) => onQuestionChange({ deviceFrame: checked })}
-            disabled={disabled}
-          />
-        </div>
-        <span className="text-xs text-neutral-500">
-          {question.deviceFrame ? 'Con Marco' : 'Sin Marco'}
-        </span>
+      <div className="pt-4 border-t border-neutral-200 space-y-3">
+           <h4 className="text-sm font-medium text-neutral-800 sr-only">Opciones Adicionales</h4>
+           <div className="flex items-center justify-between">
+             <span className="text-sm text-neutral-600">{DEFAULT_TEXTS.REQUIRED_LABEL}</span>
+             <Switch
+              checked={question.required || false}
+              onCheckedChange={(checked: boolean) => onQuestionChange({ required: checked })}
+              disabled={disabled}
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-neutral-600">{DEFAULT_TEXTS.SHOW_CONDITIONALLY_LABEL}</span>
+             <Switch
+              checked={question.showConditionally || false}
+              onCheckedChange={(checked: boolean) => onQuestionChange({ showConditionally: checked })}
+              disabled={disabled}
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-neutral-600">{DEFAULT_TEXTS.DEVICE_FRAME_LABEL}</span>
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={question.deviceFrame || false}
+                onCheckedChange={(checked: boolean) => onQuestionChange({ deviceFrame: checked })}
+                disabled={disabled}
+              />
+               <span className="text-xs text-neutral-500">
+                {question.deviceFrame ? DEFAULT_TEXTS.WITH_FRAME : DEFAULT_TEXTS.WITHOUT_FRAME}
+               </span>
+             </div>
+           </div>
       </div>
     </div>
   );

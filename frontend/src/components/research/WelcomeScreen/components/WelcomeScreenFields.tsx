@@ -1,93 +1,74 @@
 import React from 'react';
-import { WelcomeScreenFieldsProps, DEFAULT_WELCOME_SCREEN_CONFIG } from '../types';
-import { UI_TEXTS } from '../constants';
+import { DEFAULT_WELCOME_SCREEN_CONFIG, ValidationErrors } from '../types';
+import { WelcomeScreenData } from '@/services/welcomeScreenService';
+import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
 
 /**
  * Componente para los campos del formulario de pantalla de bienvenida
  * Asegura que los valores nunca sean undefined
  */
+interface WelcomeScreenFieldsProps {
+  formData: WelcomeScreenData;
+  handleChange: (field: keyof WelcomeScreenData, value: any) => void;
+  validationErrors: ValidationErrors;
+  disabled?: boolean;
+}
+
+/**
+ * Componente que renderiza los campos del formulario de Welcome Screen.
+ */
 export const WelcomeScreenFields: React.FC<WelcomeScreenFieldsProps> = ({
   formData,
-  onChange,
-  validationErrors = {}, // Valor por defecto para evitar errores
-  disabled = false // Valor por defecto para evitar errores
+  handleChange,
+  validationErrors,
+  disabled = false
 }) => {
-  // Asegurarnos de que formData siempre tenga valores definidos
-  const safeFormData = {
-    ...DEFAULT_WELCOME_SCREEN_CONFIG,
-    ...formData
-  };
-  
-  // Manejar cambios de forma segura
-  const handleChange = (field: keyof typeof safeFormData, value: any) => {
-    if (onChange) {
-      onChange(field, value ?? ''); // Asegurar que nunca se pase undefined
-    }
-  };
-
   return (
-    <div className={`space-y-4 ${!safeFormData.isEnabled ? 'opacity-50 pointer-events-none' : ''}`}>
-      {/* Campo de título */}
-      <div className="space-y-1">
-        <label htmlFor="title" className="block text-sm font-medium">
-          {UI_TEXTS.FORM.TITLE_LABEL} <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          id="title"
-          value={safeFormData.title ?? ''} // Nunca undefined
+    <div className="space-y-4">
+      {/* Campo Título */}
+      <div>
+        <label htmlFor="ws-title" className="block text-sm font-medium text-neutral-700 mb-1">Título</label>
+        <Input
+          id="ws-title"
+          value={formData.title || ''}
           onChange={(e) => handleChange('title', e.target.value)}
-          disabled={disabled || !safeFormData.isEnabled}
-          className={`w-full px-3 py-2 border rounded-md shadow-sm ${
-            validationErrors.title ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
-          } focus:border-blue-500 focus:ring-1 focus:outline-none`}
-          placeholder={UI_TEXTS.FORM.TITLE_PLACEHOLDER}
+          placeholder={DEFAULT_WELCOME_SCREEN_CONFIG.title}
+          disabled={disabled}
+          error={!!validationErrors.title}
+          helperText={validationErrors.title}
         />
-        {validationErrors.title && (
-          <p className="text-red-500 text-xs mt-1">{validationErrors.title}</p>
-        )}
       </div>
 
-      {/* Campo de mensaje */}
-      <div className="space-y-1">
-        <label htmlFor="message" className="block text-sm font-medium">
-          {UI_TEXTS.FORM.MESSAGE_LABEL} <span className="text-red-500">*</span>
-        </label>
-        <textarea
-          id="message"
-          value={safeFormData.message ?? ''} // Nunca undefined
+      {/* Campo Mensaje */}
+      <div>
+        <label htmlFor="ws-message" className="block text-sm font-medium text-neutral-700 mb-1">Mensaje</label>
+        <Textarea
+          id="ws-message"
+          value={formData.message || ''}
           onChange={(e) => handleChange('message', e.target.value)}
-          disabled={disabled || !safeFormData.isEnabled}
+          placeholder={DEFAULT_WELCOME_SCREEN_CONFIG.message}
           rows={4}
-          className={`w-full px-3 py-2 border rounded-md shadow-sm ${
-            validationErrors.message ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
-          } focus:border-blue-500 focus:ring-1 focus:outline-none`}
-          placeholder={UI_TEXTS.FORM.MESSAGE_PLACEHOLDER}
+          disabled={disabled}
+          error={!!validationErrors.message}
         />
         {validationErrors.message && (
-          <p className="text-red-500 text-xs mt-1">{validationErrors.message}</p>
+          <p className="mt-1 text-xs text-red-500">{validationErrors.message}</p>
         )}
       </div>
-
-      {/* Campo de texto del botón */}
-      <div className="space-y-1">
-        <label htmlFor="startButtonText" className="block text-sm font-medium">
-          {UI_TEXTS.FORM.BUTTON_TEXT_LABEL} <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          id="startButtonText"
-          value={safeFormData.startButtonText ?? ''} // Nunca undefined
+      
+      {/* Campo Texto Botón */}
+      <div>
+        <label htmlFor="ws-button-text" className="block text-sm font-medium text-neutral-700 mb-1">Texto del Botón de Inicio</label>
+        <Input
+          id="ws-button-text"
+          value={formData.startButtonText || ''}
           onChange={(e) => handleChange('startButtonText', e.target.value)}
-          disabled={disabled || !safeFormData.isEnabled}
-          className={`w-full px-3 py-2 border rounded-md shadow-sm ${
-            validationErrors.startButtonText ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
-          } focus:border-blue-500 focus:ring-1 focus:outline-none`}
-          placeholder={UI_TEXTS.FORM.BUTTON_TEXT_PLACEHOLDER}
+          placeholder={DEFAULT_WELCOME_SCREEN_CONFIG.startButtonText}
+          disabled={disabled}
+          error={!!validationErrors.startButtonText}
+          helperText={validationErrors.startButtonText}
         />
-        {validationErrors.startButtonText && (
-          <p className="text-red-500 text-xs mt-1">{validationErrors.startButtonText}</p>
-        )}
       </div>
     </div>
   );

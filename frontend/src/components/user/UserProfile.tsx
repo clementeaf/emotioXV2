@@ -60,6 +60,8 @@ export function UserProfileComponent({ className }: UserProfileComponentProps) {
     setError(null);
 
     try {
+      // <<< Comentar llamada a api.user.get() >>>
+      /*
       const response = await api.user.get();
       
       if (response.error) {
@@ -70,8 +72,14 @@ export function UserProfileComponent({ className }: UserProfileComponentProps) {
           setFormData(response.data.profile);
         }
       }
+      */
+      // Placeholder para evitar error de no uso:
+      console.log('Funcionalidad fetchUserProfile comentada temporalmente');
+      throw new Error('Perfil no disponible temporalmente'); // Simular error ya que no hay datos
+
     } catch (err) {
-      setError('Error al cargar el perfil de usuario');
+      // setError('Error al cargar el perfil de usuario'); // Mantenido por el throw
+      setError(err instanceof Error ? err.message : 'Error desconocido al cargar perfil');
       console.error(err);
     } finally {
       setLoading(false);
@@ -107,6 +115,8 @@ export function UserProfileComponent({ className }: UserProfileComponentProps) {
     setError(null);
 
     try {
+      // <<< Comentar llamada a api.user.update() >>>
+      /*
       const response = await api.user.update({
         profile: formData,
       });
@@ -117,8 +127,14 @@ export function UserProfileComponent({ className }: UserProfileComponentProps) {
         setUser(response.data);
         setIsEditing(false);
       }
+      */
+      // Placeholder:
+      console.log('Funcionalidad handleSubmit comentada temporalmente');
+      throw new Error('Actualización no disponible temporalmente'); // Simular error
+
     } catch (err) {
-      setError('Error al actualizar el perfil');
+      // setError('Error al actualizar el perfil'); // Mantenido por el throw
+       setError(err instanceof Error ? err.message : 'Error desconocido al actualizar perfil');
       console.error(err);
     } finally {
       setLoading(false);

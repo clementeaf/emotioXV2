@@ -1,41 +1,39 @@
 import React from 'react';
-import { Switch } from '@headlessui/react';
-import { WelcomeScreenToggleProps } from '../types';
+import { Switch } from '@/components/ui/Switch';
+import { Label } from '@/components/ui/Label';
 import { UI_TEXTS } from '../constants';
 
+interface WelcomeScreenToggleProps {
+  isEnabled: boolean;
+  onEnabledChange: (isEnabled: boolean) => void;
+  disabled?: boolean;
+}
+
 /**
- * Componente para activar/desactivar la pantalla de bienvenida
+ * Componente para el interruptor de habilitar/deshabilitar Welcome Screen
  */
 export const WelcomeScreenToggle: React.FC<WelcomeScreenToggleProps> = ({
   isEnabled,
-  onChange,
+  onEnabledChange,
   disabled
 }) => {
   return (
-    <div className="flex items-center justify-between mb-6 p-4 border rounded-lg bg-gray-50">
+    <div className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg border border-neutral-200">
       <div>
-        <p className="text-sm text-gray-500">
-          {isEnabled 
-            ? UI_TEXTS.TOGGLE.ENABLED 
-            : UI_TEXTS.TOGGLE.DISABLED}
+        <Label htmlFor="welcome-screen-enabled" className="font-medium text-neutral-800">
+          {'Habilitar Pantalla de Bienvenida'}
+        </Label>
+        <p className="text-sm text-neutral-600">
+          {isEnabled ? UI_TEXTS.TOGGLE.ENABLED : UI_TEXTS.TOGGLE.DISABLED}
         </p>
       </div>
       <Switch
+        id="welcome-screen-enabled"
         checked={isEnabled}
-        onChange={onChange}
+        onCheckedChange={onEnabledChange}
         disabled={disabled}
-        className={`${
-          isEnabled ? 'bg-blue-600' : 'bg-gray-300'
-        } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-          disabled ? 'opacity-50 cursor-not-allowed' : ''
-        }`}
-      >
-        <span
-          className={`${
-            isEnabled ? 'translate-x-6' : 'translate-x-1'
-          } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
-        />
-      </Switch>
+        aria-label={'Habilitar/Deshabilitar Pantalla de Bienvenida'}
+      />
     </div>
   );
 }; 

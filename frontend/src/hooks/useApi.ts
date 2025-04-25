@@ -103,29 +103,15 @@ export function useApi<T = any>(defaultOptions: UseApiOptions = {}) {
       login: (data: { email: string; password: string }) => post(API_CONFIG.endpoints.auth.LOGIN, data),
       register: (data: any) => post(API_CONFIG.endpoints.auth.REGISTER, data),
       logout: () => post(API_CONFIG.endpoints.auth.LOGOUT, {}),
-      
-      // Mantener compatibilidad con las operaciones opcionales anteriores
-      ...(API_CONFIG.endpoints.requestOTP ? {
-        requestOTP: (data: { email: string }) => post(API_CONFIG.endpoints.requestOTP?.POST as string, data),
-        validateOTP: (data: { email: string; code: string }) => post(API_CONFIG.endpoints.validateOTP?.POST as string, data),
-      } : {})
     },
-
-    // Usuario
-    user: API_CONFIG.endpoints.createUser ? {
-      create: (data: any) => post(API_CONFIG.endpoints.createUser?.POST as string, data),
-      get: () => get(API_CONFIG.endpoints.getUser?.GET as string),
-      update: (data: any) => put(API_CONFIG.endpoints.updateUser?.PUT as string, data),
-      delete: () => del(API_CONFIG.endpoints.deleteUser?.DELETE as string),
-    } : undefined,
 
     // Investigaciones - Siempre disponible ya que es requerido en el tipo Endpoints
     research: {
-      create: (data: any) => post(API_CONFIG.endpoints.research.CREATE, data),
-      getById: (id: string) => get(API_CONFIG.endpoints.research.GET.replace('{id}', id)),
-      getAll: () => get(API_CONFIG.endpoints.research.LIST),
-      update: (id: string, data: any) => put(API_CONFIG.endpoints.research.UPDATE.replace('{id}', id), data),
-      delete: (id: string) => del(API_CONFIG.endpoints.research.DELETE.replace('{id}', id)),
+      create: (data: any) => post(API_CONFIG.endpoints.research.createResearch, data),
+      getById: (id: string) => get(API_CONFIG.endpoints.research.getResearch.replace('{id}', id)),
+      getAll: () => get(API_CONFIG.endpoints.research.getAllResearch),
+      update: (id: string, data: any) => put(API_CONFIG.endpoints.research.updateResearch.replace('{id}', id), data),
+      delete: (id: string) => del(API_CONFIG.endpoints.research.deleteResearch.replace('{id}', id)),
       updateStatus: (id: string, status: string) => put(API_CONFIG.endpoints.research.UPDATE_STATUS.replace('{id}', id), { status }),
       updateStage: (id: string, stage: string) => put(API_CONFIG.endpoints.research.UPDATE_STAGE.replace('{id}', id), { stage }),
     },

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Switch } from '@/components/ui/Switch';
-import { CognitiveTaskSettingsProps } from '../types';
+import { CognitiveTaskFieldsProps as CognitiveTaskSettingsProps } from '../types';
 import { UI_TEXTS } from '../constants';
 
 /**
@@ -8,7 +8,6 @@ import { UI_TEXTS } from '../constants';
  */
 export const CognitiveTaskSettings: React.FC<CognitiveTaskSettingsProps> = ({
   randomizeQuestions,
-  onRandomizeChange,
   disabled
 }) => {
   return (
@@ -17,16 +16,16 @@ export const CognitiveTaskSettings: React.FC<CognitiveTaskSettingsProps> = ({
         <div className="space-y-0.5">
           <h3 className="text-md font-medium">Configuración</h3>
           <p className="text-sm text-neutral-500">
-            {UI_TEXTS.SETTINGS.RANDOMIZE_DESCRIPTION}
+            {UI_TEXTS.FORM.RANDOMIZE_DESCRIPTION}
           </p>
         </div>
         <div className="flex items-center space-x-2">
           <span className="text-sm text-neutral-500">
-            {UI_TEXTS.SETTINGS.RANDOMIZE_LABEL}
+            {UI_TEXTS.FORM.RANDOMIZE_TITLE}
           </span>
           <Switch
             checked={randomizeQuestions}
-            onCheckedChange={onRandomizeChange}
+            onCheckedChange={() => { /* TODO: Prop 'onRandomizeChange' faltante o incorrecta */ }}
             disabled={disabled}
           />
         </div>

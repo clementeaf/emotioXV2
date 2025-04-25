@@ -82,7 +82,7 @@ const ClientsContent = () => {
         // Filtrar por cliente si hay un clientId seleccionado
         const research = response.data || [];
         return selectedClientId 
-          ? research.filter(item => item.enterprise === selectedClientId || 
+          ? research.filter((item: any) => item.enterprise === selectedClientId || 
                                     item.basic?.enterprise === selectedClientId)
           : research;
       } catch (error) {

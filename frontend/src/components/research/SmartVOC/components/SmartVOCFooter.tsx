@@ -15,7 +15,7 @@ export const SmartVOCFooter: React.FC<SmartVOCFooterProps> = ({
   // Determinando el texto adecuado para el botón de guardar
   const getSaveButtonText = () => {
     if (isSaving) {
-      return UI_TEXTS.BUTTONS.SAVING;
+      return 'Guardando...';
     }
     
     // Si existe un ID, es un registro existente, por lo que usamos "Actualizar"
@@ -54,7 +54,7 @@ export const SmartVOCFooter: React.FC<SmartVOCFooterProps> = ({
           {isSaving ? (
             <div className="flex items-center gap-2">
               <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
-              <span>{UI_TEXTS.BUTTONS.SAVING}</span>
+              <span>{'Guardando...'}</span>
             </div>
           ) : getSaveButtonText()}
         </button>

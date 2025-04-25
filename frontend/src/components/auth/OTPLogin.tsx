@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 
 export function OTPLogin() {
   const { api } = useApi();
-  const { updateToken } = useAuth();
+  // const { updateToken } = useAuth(); // <<< Comentar updateToken
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
@@ -20,14 +20,21 @@ export function OTPLogin() {
     setLoading(true);
 
     try {
+      // <<< Comentar llamada a API >>>
+      /*
       const result = await api.auth.requestOTP({ email });
       if (result.error) {
         setError(result.error);
       } else {
         setStep('code');
       }
+      */
+      console.warn('Funcionalidad requestOTP deshabilitada');
+      setError('Inicio de sesión OTP no disponible temporalmente.');
+
     } catch (err) {
-      setError('Error al enviar el código. Por favor, intenta nuevamente.');
+      // setError('Error al enviar el código. Por favor, intenta nuevamente.'); // Mantenido por el throw simulado
+      setError('Error al enviar el código. Funcionalidad deshabilitada.');
     } finally {
       setLoading(false);
     }
@@ -39,6 +46,8 @@ export function OTPLogin() {
     setLoading(true);
 
     try {
+      // <<< Comentar llamada a API y updateToken >>>
+      /*
       const result = await api.auth.validateOTP({ email, code });
       if (result.error) {
         setError(result.error);
@@ -46,8 +55,13 @@ export function OTPLogin() {
         updateToken(result.data.access_token);
         router.push('/dashboard'); // O la ruta que corresponda después del login
       }
+      */
+      console.warn('Funcionalidad validateOTP deshabilitada');
+      setError('Código inválido o funcionalidad deshabilitada.');
+
     } catch (err) {
-      setError('Código inválido. Por favor, intenta nuevamente.');
+      // setError('Código inválido. Por favor, intenta nuevamente.'); // Mantenido por el throw simulado
+       setError('Código inválido o funcionalidad deshabilitada.');
     } finally {
       setLoading(false);
     }

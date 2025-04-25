@@ -1,5 +1,20 @@
-// Importar los tipos correctos desde el servicio
-import { WelcomeScreenData, WelcomeScreenRecord } from '@/services/welcomeScreenService';
+// <<< Eliminar la re-exportación >>>
+// export type { WelcomeScreenData } from '@/services/welcomeScreenService';
+
+// <<< Usar el alias importado abajo >>>
+export const DEFAULT_WELCOME_SCREEN_CONFIG: Partial<WelcomeScreenServiceData> = {
+  isEnabled: false,
+  title: 'Bienvenido/a a la Investigación',
+  message: 'Gracias por tu interés en participar. Por favor, lee la información y haz clic en \'Continuar\' cuando estés listo/a.',
+  startButtonText: 'Continuar',
+  backgroundColor: '#FFFFFF',
+  textColor: '#333333',
+  theme: 'light',
+  // logoUrl y backgroundImageUrl se dejan vacíos por defecto
+};
+
+// Importar los tipos correctos desde el servicio (con alias)
+import { WelcomeScreenData as WelcomeScreenServiceData, WelcomeScreenRecord } from '@/services/welcomeScreenService';
 
 export interface ErrorModalData {
   title: string;
@@ -8,15 +23,15 @@ export interface ErrorModalData {
 }
 
 export interface UseWelcomeScreenFormResult {
-  formData: WelcomeScreenData; // Usa la WelcomeScreenData importada
-  setFormData: React.Dispatch<React.SetStateAction<WelcomeScreenData>>;
+  formData: WelcomeScreenServiceData;
+  setFormData: React.Dispatch<React.SetStateAction<WelcomeScreenServiceData>>;
   validationErrors: ValidationErrors;
   isLoading: boolean;
   isSaving: boolean;
-  existingScreen: WelcomeScreenRecord | null; // <-- Usa WelcomeScreenRecord importada
+  existingScreen: WelcomeScreenRecord | null;
   modalError: ErrorModalData | null;
   modalVisible: boolean;
-  handleChange: (field: keyof WelcomeScreenData, value: any) => void;
+  handleChange: (field: keyof WelcomeScreenServiceData, value: any) => void;
   handleSubmit: () => Promise<void>;
   closeModal: () => void;
   handlePreview: () => void;
@@ -46,7 +61,7 @@ export interface ValidationErrors {
 export interface WelcomeScreenFormProps {
   className?: string;
   researchId: string;
-  onSave?: (data: WelcomeScreenData) => void; // Optional callback after save
+  onSave?: (data: WelcomeScreenServiceData) => void;
 }
 
 /**

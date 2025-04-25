@@ -21,7 +21,7 @@ export const eyeTrackingService = {
    */
   async getById(id: string): Promise<EyeTrackingRecord> {
     try {
-      return await apiClient.get<EyeTrackingRecord, 'eyeTracking'>('eyeTracking', 'get', { id });
+      return await apiClient.get<EyeTrackingRecord, 'eyeTracking'>('eyeTracking', 'GET', { id });
     } catch (error) {
       console.error(`Error al obtener configuración de seguimiento ocular ${id}:`, error);
       throw error;
@@ -35,7 +35,7 @@ export const eyeTrackingService = {
    */
   async getByResearchId(researchId: string): Promise<EyeTrackingRecord> {
     try {
-      return await apiClient.get<EyeTrackingRecord, 'eyeTracking'>('eyeTracking', 'getByResearch', { researchId });
+      return await apiClient.get<EyeTrackingRecord, 'eyeTracking'>('eyeTracking', 'GET_BY_RESEARCH', { researchId });
     } catch (error) {
       console.error(`Error al obtener configuración de seguimiento ocular para investigación ${researchId}:`, error);
       throw error;
@@ -50,9 +50,8 @@ export const eyeTrackingService = {
    */
   async create(data: EyeTrackingFormData, researchId?: string): Promise<EyeTrackingRecord> {
     try {
-      // Si se proporciona un ID de investigación, se usa para vincular la configuración
       const payload = researchId ? { ...data, researchId } : data;
-      return await apiClient.post<EyeTrackingRecord, typeof payload, 'eyeTracking'>('eyeTracking', 'create', payload);
+      return await apiClient.post<EyeTrackingRecord, typeof payload, 'eyeTracking'>('eyeTracking', 'CREATE', payload);
     } catch (error) {
       console.error('Error al crear configuración de seguimiento ocular:', error);
       throw error;
@@ -67,7 +66,7 @@ export const eyeTrackingService = {
    */
   async update(id: string, data: Partial<EyeTrackingFormData>): Promise<EyeTrackingRecord> {
     try {
-      return await apiClient.put<EyeTrackingRecord, Partial<EyeTrackingFormData>, 'eyeTracking'>('eyeTracking', 'update', data, { id });
+      return await apiClient.put<EyeTrackingRecord, Partial<EyeTrackingFormData>, 'eyeTracking'>('eyeTracking', 'UPDATE', data, { id });
     } catch (error) {
       console.error(`Error al actualizar configuración de seguimiento ocular ${id}:`, error);
       throw error;
@@ -82,7 +81,7 @@ export const eyeTrackingService = {
    */
   async updateByResearchId(researchId: string, data: EyeTrackingFormData): Promise<EyeTrackingRecord> {
     try {
-      return await apiClient.put<EyeTrackingRecord, EyeTrackingFormData, 'eyeTracking'>('eyeTracking', 'updateByResearch', data, { researchId });
+      return await apiClient.put<EyeTrackingRecord, EyeTrackingFormData, 'eyeTracking'>('eyeTracking', 'UPDATE', data, { researchId });
     } catch (error) {
       console.error(`Error al actualizar configuración de seguimiento ocular para investigación ${researchId}:`, error);
       throw error;
@@ -96,7 +95,7 @@ export const eyeTrackingService = {
    */
   async delete(id: string): Promise<void> {
     try {
-      await apiClient.delete<void, 'eyeTracking'>('eyeTracking', 'delete', { id });
+      await apiClient.delete<void, 'eyeTracking'>('eyeTracking', 'DELETE', { id });
     } catch (error) {
       console.error(`Error al eliminar configuración de seguimiento ocular ${id}:`, error);
       throw error;
@@ -110,7 +109,7 @@ export const eyeTrackingService = {
    */
   async getForParticipant(researchId: string): Promise<EyeTrackingRecord> {
     try {
-      return await apiClient.get<EyeTrackingRecord, 'eyeTracking'>('eyeTracking', 'getParticipant', { researchId });
+      return await apiClient.get<EyeTrackingRecord, 'eyeTracking'>('eyeTracking', 'GET_BY_RESEARCH', { researchId });
     } catch (error) {
       console.error(`Error al obtener configuración de seguimiento ocular para participantes de investigación ${researchId}:`, error);
       throw error;

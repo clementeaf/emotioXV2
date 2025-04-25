@@ -1,10 +1,25 @@
 import { apiClient } from '../config/api-client';
 import { s3Service } from './index';
 import { 
-  CognitiveTaskFormData, 
-  CognitiveTaskModel as CognitiveTaskRecord, 
-  UploadedFile
+  CognitiveTaskData, 
+  CognitiveTaskData as CognitiveTaskRecord, 
+  // UploadedFile // <-- Comentado hasta saber dónde está definido
 } from '../components/research/CognitiveTask/types';
+
+// <<< Definir UploadedFile localmente si no se puede importar (Ejemplo) >>>
+// O importar desde la ubicación correcta si se conoce
+interface UploadedFile {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+  s3Key: string;
+  isLoading?: boolean;
+  progress?: number;
+  error?: boolean;
+  questionId?: string;
+}
 
 /**
  * Servicio para manejar operaciones relacionadas con las tareas cognitivas
@@ -17,7 +32,8 @@ export const cognitiveTaskService = {
    */
   async getById(id: string): Promise<CognitiveTaskRecord> {
     try {
-      return await apiClient.get<CognitiveTaskRecord, 'cognitiveTask'>('cognitiveTask', 'get', { id });
+      // <<< Usar clave GET >>>
+      return await apiClient.get<CognitiveTaskRecord, 'cognitiveTask'>('cognitiveTask', 'GET', { id });
     } catch (error) {
       console.error(`Error al obtener configuración de tarea cognitiva ${id}:`, error);
       throw error;
@@ -31,7 +47,8 @@ export const cognitiveTaskService = {
    */
   async getByResearchId(researchId: string): Promise<CognitiveTaskRecord> {
     try {
-      return await apiClient.get<CognitiveTaskRecord, 'cognitiveTask'>('cognitiveTask', 'getByResearch', { researchId });
+      // <<< Usar clave GET_BY_RESEARCH >>>
+      return await apiClient.get<CognitiveTaskRecord, 'cognitiveTask'>('cognitiveTask', 'GET_BY_RESEARCH', { researchId });
     } catch (error) {
       console.error(`Error al obtener configuración de tarea cognitiva para investigación ${researchId}:`, error);
       throw error;
@@ -44,16 +61,14 @@ export const cognitiveTaskService = {
    * @param researchId ID de la investigación (opcional)
    * @returns Configuración creada
    */
-  async create(data: CognitiveTaskFormData, researchId?: string): Promise<CognitiveTaskRecord> {
+  async create(data: CognitiveTaskData, researchId?: string): Promise<CognitiveTaskRecord> { // <<< Usar CognitiveTaskData >>>
     try {
-      // Procesar los archivos en el formulario para asegurar que tengan las claves de S3
       const processedData = await this.processFormFiles(data);
-      
-      // Si se proporciona un ID de investigación, se usa para vincular la configuración
       const payload = researchId ? { ...processedData, researchId } : processedData;
+      // <<< Usar clave CREATE >>>
       return await apiClient.post<CognitiveTaskRecord, typeof payload, 'cognitiveTask'>(
         'cognitiveTask', 
-        'create', 
+        'CREATE', 
         payload
       );
     } catch (error) {
@@ -68,14 +83,13 @@ export const cognitiveTaskService = {
    * @param data Datos a actualizar
    * @returns Configuración actualizada
    */
-  async update(id: string, data: Partial<CognitiveTaskFormData>): Promise<CognitiveTaskRecord> {
+  async update(id: string, data: Partial<CognitiveTaskData>): Promise<CognitiveTaskRecord> { // <<< Usar CognitiveTaskData >>>
     try {
-      // Procesar los archivos en el formulario para asegurar que tengan las claves de S3
       const processedData = await this.processFormFiles(data);
-      
-      return await apiClient.put<CognitiveTaskRecord, Partial<CognitiveTaskFormData>, 'cognitiveTask'>(
+      // <<< Usar clave UPDATE >>>
+      return await apiClient.put<CognitiveTaskRecord, Partial<CognitiveTaskData>, 'cognitiveTask'>(
         'cognitiveTask', 
-        'update', 
+        'UPDATE', 
         processedData, 
         { id }
       );
@@ -91,14 +105,13 @@ export const cognitiveTaskService = {
    * @param data Datos completos de la configuración
    * @returns Configuración actualizada o creada
    */
-  async updateByResearchId(researchId: string, data: CognitiveTaskFormData): Promise<CognitiveTaskRecord> {
+  async updateByResearchId(researchId: string, data: CognitiveTaskData): Promise<CognitiveTaskRecord> { // <<< Usar CognitiveTaskData >>>
     try {
-      // Procesar los archivos en el formulario para asegurar que tengan las claves de S3
       const processedData = await this.processFormFiles(data);
-      
-      return await apiClient.put<CognitiveTaskRecord, CognitiveTaskFormData, 'cognitiveTask'>(
+      // <<< Usar clave UPDATE (para PUT) y aceptar Partial como payload >>>
+      return await apiClient.put<CognitiveTaskRecord, Partial<CognitiveTaskData>, 'cognitiveTask'>(
         'cognitiveTask', 
-        'createOrUpdate', 
+        'UPDATE', // Asumiendo que PUT al endpoint base actualiza o crea 
         processedData, 
         { researchId }
       );
@@ -115,7 +128,8 @@ export const cognitiveTaskService = {
    */
   async delete(id: string): Promise<void> {
     try {
-      await apiClient.delete<void, 'cognitiveTask'>('cognitiveTask', 'delete', { id });
+      // <<< Usar clave DELETE >>>
+      await apiClient.delete<void, 'cognitiveTask'>('cognitiveTask', 'DELETE', { id });
     } catch (error) {
       console.error(`Error al eliminar configuración de tarea cognitiva ${id}:`, error);
       throw error;
@@ -216,32 +230,22 @@ export const cognitiveTaskService = {
    * @param formData Datos del formulario a procesar
    * @returns Datos del formulario con archivos procesados
    */
-  async processFormFiles(formData: Partial<CognitiveTaskFormData>): Promise<Partial<CognitiveTaskFormData>> {
-    // Si no hay preguntas o es un formulario vacío, devolver los datos sin cambios
+  async processFormFiles(formData: Partial<CognitiveTaskData>): Promise<Partial<CognitiveTaskData>> { // <<< Usar CognitiveTaskData >>>
     if (!formData.questions || formData.questions.length === 0) {
       return formData;
     }
+    const processedData = JSON.parse(JSON.stringify(formData)) as Partial<CognitiveTaskData>; // <<< Usar CognitiveTaskData >>>
     
-    // Copia profunda para no modificar el original
-    const processedData = JSON.parse(JSON.stringify(formData)) as Partial<CognitiveTaskFormData>;
-    
-    // Recorrer todas las preguntas que pueden tener archivos
     for (const question of processedData.questions || []) {
-      // Solo procesar preguntas de tipo navigation_flow o preference_test que tienen archivos
       if (
         (question.type === 'navigation_flow' || question.type === 'preference_test') &&
         question.files && 
         question.files.length > 0
       ) {
-        // Asegurarse de que cada archivo tenga una clave de S3 válida
-        for (const file of question.files) {
-          // Si el archivo ya tiene una clave S3 y una URL válida, continuar
+        for (const file of question.files as UploadedFile[]) { // <<< Añadir type assertion >>>
           if (file.s3Key && file.url && !file.url.startsWith('blob:')) {
             continue;
           }
-          
-          // Si encontramos un archivo sin clave S3 o con URL local, 
-          // significa que hubo un error en la carga o que no se completó
           if (!file.s3Key || file.url.startsWith('blob:')) {
             console.error('Archivo sin clave S3 o con URL local:', file);
             throw new Error(`El archivo ${file.name} no se cargó correctamente en S3`);
@@ -249,7 +253,6 @@ export const cognitiveTaskService = {
         }
       }
     }
-    
     return processedData;
   }
 };

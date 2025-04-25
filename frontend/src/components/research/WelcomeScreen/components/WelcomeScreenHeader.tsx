@@ -1,17 +1,18 @@
 import React from 'react';
-import { WelcomeScreenHeaderProps } from '../types';
+import { WelcomeScreenData } from '@/services/welcomeScreenService';
+import { UI_TEXTS } from '../constants';
+
+interface WelcomeScreenHeaderProps {
+  title: string;
+}
 
 /**
- * Componente de encabezado para el formulario de pantalla de bienvenida
+ * Componente para la cabecera del formulario de Welcome Screen
  */
-export const WelcomeScreenHeader: React.FC<WelcomeScreenHeaderProps> = ({ 
-  title, 
-  description 
-}) => {
+export const WelcomeScreenHeader: React.FC<WelcomeScreenHeaderProps> = ({ title }) => {
   return (
     <div className="mb-6">
-      <h2 className="text-xl font-semibold mb-2">{title}</h2>
-      <p className="text-gray-500 text-sm">{description}</p>
+      <h1 className="text-2xl font-semibold text-neutral-800">{title || 'Configurar Pantalla de Bienvenida'}</h1>
     </div>
   );
 }; 

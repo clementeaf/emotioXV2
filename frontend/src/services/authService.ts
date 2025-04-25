@@ -44,7 +44,7 @@ export const authService = {
    */
   async register(data: RegisterData): Promise<AuthResponse> {
     try {
-      const response = await apiClient.post<AuthResponse, RegisterData, 'auth'>('auth', 'register', data);
+      const response = await apiClient.post<AuthResponse, RegisterData, 'auth'>('auth', 'REGISTER', data);
       
       // Almacenar el token en localStorage para uso en futuras peticiones
       if (response.token) {
@@ -67,7 +67,7 @@ export const authService = {
    */
   async login(data: LoginData): Promise<AuthResponse> {
     try {
-      const response = await apiClient.post<AuthResponse, LoginData, 'auth'>('auth', 'login', data);
+      const response = await apiClient.post<AuthResponse, LoginData, 'auth'>('auth', 'LOGIN', data);
       
       // Almacenar el token en localStorage para uso en futuras peticiones
       if (response.token) {
@@ -88,7 +88,7 @@ export const authService = {
    */
   async logout(): Promise<void> {
     try {
-      await apiClient.post<void, {}, 'auth'>('auth', 'logout', {});
+      await apiClient.post<void, {}, 'auth'>('auth', 'LOGOUT', {});
       
       // Limpiar tokens almacenados
       localStorage.removeItem('token');

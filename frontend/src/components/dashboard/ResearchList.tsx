@@ -32,7 +32,7 @@ const ResearchList = () => {
       </div>
       
       <div className="bg-white shadow-sm rounded-lg border border-neutral-200">
-        <ResearchTable showActions={true} />
+        <ResearchTable />
       </div>
     </div>
   );

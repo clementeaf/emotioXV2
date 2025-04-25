@@ -1,4 +1,11 @@
-import { QuestionTypeInfo } from '../types';
+// import { QuestionTypeInfo } from '../types'; // <<< Eliminar importación
+
+// <<< Definir el tipo directamente aquí >>>
+interface QuestionTypeInfo {
+  id: string;
+  label: string;
+  description: string;
+}
 
 /**
  * Constantes para el componente CognitiveTask

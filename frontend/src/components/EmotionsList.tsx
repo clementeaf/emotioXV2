@@ -1,12 +1,16 @@
 'use client';
 
-import { EmotionIntensity, EmotionCategory } from '@emotiox/shared';
+// import { EmotionIntensity, EmotionCategory } from '@emotiox/shared'; // <<< Eliminar importación
 import { useEffect, useReducer, useCallback, useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
 import { useApi } from '@/hooks/useApi';
 
 import { EmotionForm } from './emotions/EmotionForm';
+
+// <<< Definir tipos localmente (temporal) >>>
+type EmotionIntensity = 'LOW' | 'MEDIUM' | 'HIGH';
+type EmotionCategory = 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL';
 
 interface Emotion {
   id: string;
@@ -74,6 +78,8 @@ export function EmotionsList() {
 
   const loadEmotions = useCallback(async () => {
     dispatch({ type: 'FETCH_START' });
+    // <<< Comentar llamada a API >>>
+    /*
     const result = await api.emotions.getAll();
     
     if (result.error) {
@@ -81,18 +87,31 @@ export function EmotionsList() {
     } else {
       dispatch({ type: 'FETCH_SUCCESS', payload: result.data || [] });
     }
-  }, [api.emotions]);
+    */
+    // Placeholder para simular carga y posible error
+    console.log('Funcionalidad loadEmotions comentada temporalmente');
+    dispatch({ type: 'FETCH_ERROR', payload: 'Carga de emociones deshabilitada temporalmente' });
+
+  //}, [api.emotions]); // <<< Eliminar dependencia
+  }, []);
 
   const handleDelete = useCallback(async (id: string) => {
     if (!window.confirm('¿Estás seguro de que deseas eliminar esta emoción?')) {
       return;
     }
 
+    // <<< Comentar llamada a API >>>
+    /*
     const result = await api.emotions.delete(id);
     if (!result.error) {
       dispatch({ type: 'DELETE_SUCCESS', payload: id });
     }
-  }, [api.emotions]);
+    */
+    console.log('Funcionalidad handleDelete comentada temporalmente');
+    // Simular que no se pudo borrar
+
+  //}, [api.emotions]); // <<< Eliminar dependencia
+  }, []);
 
   const handleEdit = (emotion: Emotion) => {
     setEditingId(emotion.id);

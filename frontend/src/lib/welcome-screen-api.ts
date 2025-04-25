@@ -245,8 +245,8 @@ export const welcomeScreenFixedAPI = {
       throw new Error('Se requieren datos para crear la pantalla');
     }
     
-    // Usar la ruta base y reemplazar {researchId}
-    const url = API_CONFIG.endpoints.welcomeScreen.BASE_PATH.replace('{researchId}', researchId);
+    // <<< Usar el endpoint CREATE >>>
+    const url = API_CONFIG.endpoints.welcomeScreen.CREATE.replace('{researchId}', researchId);
     console.log(`[WelcomeScreenAPI] Creando (POST) pantalla para investigación ${researchId}, URL: ${url}`);
     console.log('[WelcomeScreenAPI] Datos a enviar:', data);
     
@@ -255,7 +255,7 @@ export const welcomeScreenFixedAPI = {
         try {
           const headers = getAuthHeaders();
           const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
-            method: 'POST', // Asegurar que es POST
+            method: 'POST',
             headers,
             body: JSON.stringify(data)
           });
@@ -283,10 +283,10 @@ export const welcomeScreenFixedAPI = {
       throw new Error('Se requieren datos para actualizar la pantalla');
     }
 
-    // Construir la URL específica para la actualización
-    // Asumiendo que el endpoint es /research/{researchId}/welcome-screen/{screenId}
-    const baseUrl = API_CONFIG.endpoints.welcomeScreen.BASE_PATH.replace('{researchId}', researchId);
-    const url = `${baseUrl}/${screenId}`; // Añadir el ID específico
+    // <<< Usar el endpoint UPDATE y reemplazar ambos parámetros >>>
+    const url = API_CONFIG.endpoints.welcomeScreen.UPDATE
+      .replace('{researchId}', researchId)
+      .replace('{screenId}', screenId);
     
     console.log(`[WelcomeScreenAPI] Actualizando (PUT) pantalla ${screenId} para investigación ${researchId}, URL: ${url}`);
     console.log('[WelcomeScreenAPI] Datos a enviar:', data);
@@ -296,9 +296,9 @@ export const welcomeScreenFixedAPI = {
         try {
           const headers = getAuthHeaders();
           const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
-            method: 'PUT', // Usar PUT para actualizar
+            method: 'PUT',
             headers,
-            body: JSON.stringify(data) // Enviar los datos actualizados
+            body: JSON.stringify(data)
           });
           return handleWelcomeScreenResponse(response);
         } catch (error) {
@@ -312,32 +312,33 @@ export const welcomeScreenFixedAPI = {
   /**
    * Elimina la pantalla de bienvenida asociada a una investigación
    * @param researchId ID de la investigación
+   * @param screenId ID específico de la pantalla a eliminar
    * @returns Objeto con método send
    */
-  delete: (researchId: string) => {
-    if (!researchId) {
-      throw new Error('Se requiere un ID de investigación para eliminar la pantalla');
+  delete: (researchId: string, screenId: string) => {
+    if (!researchId || !screenId) {
+      throw new Error('Se requieren researchId y screenId para eliminar la pantalla');
     }
     
-    // Usar la ruta base y reemplazar {researchId}
-    const url = API_CONFIG.endpoints.welcomeScreen.BASE_PATH.replace('{researchId}', researchId);
-    console.log(`[WelcomeScreenAPI] Eliminando (DELETE) pantalla para investigación ${researchId}, URL: ${url}`);
+    // <<< Usar el endpoint DELETE y reemplazar ambos parámetros >>>
+    const url = API_CONFIG.endpoints.welcomeScreen.DELETE
+       .replace('{researchId}', researchId)
+       .replace('{screenId}', screenId);
+    console.log(`[WelcomeScreenAPI] Eliminando (DELETE) pantalla ${screenId} para investigación ${researchId}, URL: ${url}`);
 
     return {
       send: async () => {
         try {
           const headers = getAuthHeaders();
-          // No necesitamos Content-Type para DELETE sin body
-          headers['Content-Type'] = undefined as any; // Alternativa para eliminar la propiedad sin error de linter
+          headers['Content-Type'] = undefined as any;
           const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
-            method: 'DELETE', // Usar DELETE
-            headers: headers as HeadersInit // Castear a HeadersInit después de la modificación
+            method: 'DELETE',
+            headers: headers as HeadersInit
           });
-          // DELETE exitoso usualmente devuelve 204 No Content
           if (response.status === 204) {
-            return { success: true, data: null, status: 204 }; // Devolver éxito
+            return { success: true, data: null, status: 204 };
           }
-          return handleWelcomeScreenResponse(response); // Manejar otros casos/errores
+          return handleWelcomeScreenResponse(response);
         } catch (error) {
           console.error('[WelcomeScreenAPI] Error en delete:', error);
           throw error;
