@@ -108,6 +108,7 @@ export interface CognitiveTaskFormData {
     updatedAt?: string;
     lastModifiedBy?: string;
   };
+  id?: string;
 }
 
 // Modelo de tareas cognitivas para almacenamiento en BD (extiende los datos del formulario con ID)

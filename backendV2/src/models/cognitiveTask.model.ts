@@ -301,7 +301,7 @@ export class CognitiveTaskModel {
       TableName: this.tableName,
       Key: {
         id: formId,
-        sk: CognitiveTaskModel.SORT_KEY_VALUE // Usar SK constante
+        sk: CognitiveTaskModel.SORT_KEY_VALUE
       },
       UpdateExpression: updateExpression,
       ExpressionAttributeValues: expressionAttributeValues,
@@ -311,9 +311,9 @@ export class CognitiveTaskModel {
     try {
       const result = await this.dynamoClient.send(command);
       if (!result.Attributes) {
-        throw new Error('La actualización no devolvió atributos.');
+        throw new Error('Update did not return attributes');
       }
-      // Mapear y devolver (log de diagnóstico en mapToRecord)
+      // Mapear y devolver el item actualizado
       return this.mapToRecord(result.Attributes as CognitiveTaskDynamoItem);
     } catch (error: any) {
       console.error('ERROR DETALLADO de DynamoDB UpdateCommand (CognitiveTask):', JSON.stringify(error, null, 2));
@@ -325,27 +325,21 @@ export class CognitiveTaskModel {
   /**
    * Elimina un formulario CognitiveTask
    */
-  async delete(formId: string): Promise<void> {
-     // Opcional: verificar existencia
-     const existing = await this.getById(formId);
-     if (!existing) {
-        console.warn(`[CognitiveTaskModel] Intento de eliminar formulario no existente: ${formId}`);
-        return;
-     }
-
+  async delete(formId: string): Promise<boolean> {
     const command = new DeleteCommand({
       TableName: this.tableName,
       Key: {
         id: formId,
-        sk: CognitiveTaskModel.SORT_KEY_VALUE // Usar SK constante
+        sk: CognitiveTaskModel.SORT_KEY_VALUE
       }
     });
-    
+
     try {
       await this.dynamoClient.send(command);
+      return true;
     } catch (error: any) {
       console.error('ERROR DETALLADO de DynamoDB DeleteCommand (CognitiveTask):', JSON.stringify(error, null, 2));
-      console.error(`Error al eliminar CognitiveTask con ID ${formId}:`, error.message);
+      console.error(`Error al eliminar CognitiveTask ${formId}:`, error.message);
       throw new Error('DATABASE_ERROR: Error al eliminar el formulario de tarea cognitiva');
     }
   }

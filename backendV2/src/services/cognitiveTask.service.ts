@@ -2,6 +2,7 @@ import { CognitiveTaskModel, CognitiveTaskRecord } from '../models/cognitiveTask
 import { CognitiveTaskFormData, Question, UploadedFile, COGNITIVE_TASK_VALIDATION } from '../../../shared/interfaces/cognitive-task.interface';
 import { ApiError } from '../utils/errors';
 import { S3Service, FileType, PresignedUrlParams } from '../services/s3.service';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Errores específicos del servicio de tareas cognitivas
@@ -276,277 +277,89 @@ export class CognitiveTaskService {
   }
 
   /**
-   * Crea un nuevo formulario CognitiveTask para una investigación
-   * @param researchId ID de la investigación
-   * @param formData Datos del formulario
-   * @returns El formulario creado
+   * Obtiene un formulario CognitiveTask según el ID de investigación
+   * Nombre refactorizado: getByResearchId
    */
-  async createCognitiveTaskForm(researchId: string, formData: CognitiveTaskFormData): Promise<CognitiveTaskRecord> {
+  async getByResearchId(researchId: string): Promise<CognitiveTaskRecord | null> {
+    this.validateResearchId(researchId);
     try {
-      // Validar que existe researchId
-      if (!researchId) {
-        throw new ApiError(
-          `${CognitiveTaskError.RESEARCH_REQUIRED}: Se requiere ID de investigación para crear un formulario de tareas cognitivas`,
-          400
-        );
-      }
-
-      // Validar datos
-      this.validateFormData({...formData, researchId});
-
-      // Verificamos si ya existe un formulario para esta investigación
-      const existingForm = await this.model.getByResearchId(researchId);
-      
-      if (existingForm) {
-        throw new ApiError(
-          `${CognitiveTaskError.INVALID_DATA}: Ya existe un formulario CognitiveTask para la investigación con ID: ${researchId}`,
-          400
-        );
-      }
-      
-      return await this.model.create(formData, researchId);
+      return await this.model.getByResearchId(researchId);
     } catch (error) {
-      console.error('Error al crear formulario CognitiveTask:', error);
-      
-      if (error instanceof ApiError) {
-        throw error;
-      }
-      
-      throw new ApiError(
-        `${CognitiveTaskError.DATABASE_ERROR}: Error al crear formulario CognitiveTask: ${error instanceof Error ? error.message : 'Error desconocido'}`,
-        500
-      );
+      console.error('[CognitiveTaskService] Error en getByResearchId:', error);
+      throw this.handleDbError(error, 'obtener tarea cognitiva por researchId');
     }
   }
 
   /**
-   * Obtiene un formulario CognitiveTask por su ID
-   * @param formId ID del formulario
-   * @returns El formulario si existe, null si no
+   * Crea un formulario CognitiveTask
+   * Nombre refactorizado: create
    */
-  async getCognitiveTaskFormById(formId: string): Promise<CognitiveTaskRecord | null> {
+  async create(researchId: string, data: CognitiveTaskFormData): Promise<CognitiveTaskRecord> {
+    this.validateResearchId(researchId);
+    // Validar datos completos al crear
+    this.validateFormData(data);
+    
+    const formDataWithId = { 
+      ...data, 
+      researchId, 
+      id: uuidv4() // Generar ID aquí o dejar que el modelo lo haga?
+    };
+    
     try {
-      const form = await this.model.getById(formId);
-      
-      if (!form) {
-        console.log(`No se encontró formulario CognitiveTask con ID: ${formId}`);
-      }
-      
-      return form;
+      return await this.model.create(formDataWithId);
     } catch (error) {
-      console.error('Error al obtener formulario CognitiveTask por ID:', error);
-      throw new ApiError(
-        `${CognitiveTaskError.DATABASE_ERROR}: Error al obtener formulario CognitiveTask: ${error instanceof Error ? error.message : 'Error desconocido'}`,
-        500
-      );
+      console.error('[CognitiveTaskService] Error en create:', error);
+      throw this.handleDbError(error, 'crear tarea cognitiva');
     }
   }
 
   /**
-   * Obtiene el formulario CognitiveTask asociado a una investigación
-   * @param researchId ID de la investigación
-   * @returns El formulario si existe, null si no
+   * Actualiza un formulario CognitiveTask existente usando su ID
+   * Nombre refactorizado: update
+   * @param taskId - ID del formulario a actualizar (PK)
+   * @param data - Datos parciales para actualizar
    */
-  async getCognitiveTaskFormByResearchId(researchId: string): Promise<CognitiveTaskRecord | null> {
+  async update(taskId: string, data: Partial<CognitiveTaskFormData>): Promise<CognitiveTaskRecord> {
+    if (!taskId) throw new ApiError('Se requiere taskId para actualizar', 400);
+    // Validar datos parciales si existen
+    this.validateFormData(data); 
+
     try {
-      const form = await this.model.getByResearchId(researchId);
+      // Eliminar researchId de los datos de actualización si existe,
+      // ya que no debería cambiarse y podría causar conflicto con la clave de DynamoDB.
+      const { researchId, ...updatePayload } = data;
       
-      if (!form) {
-        console.log(`No se encontró formulario CognitiveTask para la investigación con ID: ${researchId}`);
+      const updatedRecord = await this.model.update(taskId, updatePayload);
+      if (!updatedRecord) {
+        throw new ApiError(CognitiveTaskError.NOT_FOUND, 404);
       }
-      
-      return form;
+      return updatedRecord;
     } catch (error) {
-      console.error('Error al obtener formulario CognitiveTask por ID de investigación:', error);
-      throw new ApiError(
-        `${CognitiveTaskError.DATABASE_ERROR}: Error al obtener formulario CognitiveTask: ${error instanceof Error ? error.message : 'Error desconocido'}`,
-        500
-      );
+      console.error(`[CognitiveTaskService] Error en update (taskId: ${taskId}):`, error);
+      if (error instanceof ApiError && error.statusCode === 404) throw error;
+      throw this.handleDbError(error, 'actualizar tarea cognitiva');
     }
   }
 
   /**
-   * Actualiza un formulario CognitiveTask
-   * @param formId ID del formulario
-   * @param updateData Datos actualizados
-   * @returns El formulario actualizado
+   * Elimina un formulario CognitiveTask usando su ID
+   * Nombre refactorizado: delete
+   * @param taskId - ID del formulario a eliminar (PK)
    */
-  async updateCognitiveTaskForm(formId: string, updateData: Partial<CognitiveTaskFormData>): Promise<CognitiveTaskRecord> {
+  async delete(taskId: string): Promise<boolean> {
+    if (!taskId) throw new ApiError('Se requiere taskId para eliminar', 400);
     try {
-      // Verificamos si el formulario existe
-      const existingForm = await this.model.getById(formId);
-      
-      if (!existingForm) {
-        throw new ApiError(
-          `${CognitiveTaskError.NOT_FOUND}: No se encontró formulario CognitiveTask con ID: ${formId}`,
-          404
-        );
+      const success = await this.model.delete(taskId);
+      if (!success) {
+        // Podría ser que el modelo ya devuelva error si no lo encuentra,
+        // o podemos lanzar uno aquí.
+        throw new ApiError(CognitiveTaskError.NOT_FOUND, 404); 
       }
-      
-      // Si se están actualizando las preguntas, validar los datos
-      if (updateData.questions) {
-        this.validateFormData({
-          ...existingForm,
-          ...updateData
-        });
-      }
-      
-      return await this.model.update(formId, updateData);
-    } catch (error) {
-      console.error('Error al actualizar formulario CognitiveTask:', error);
-      
-      if (error instanceof ApiError) {
-        throw error;
-      }
-      
-      throw new ApiError(
-        `${CognitiveTaskError.DATABASE_ERROR}: Error al actualizar formulario CognitiveTask: ${error instanceof Error ? error.message : 'Error desconocido'}`,
-        500
-      );
-    }
-  }
-
-  /**
-   * Elimina un formulario CognitiveTask
-   * @param formId ID del formulario a eliminar
-   * @returns true si se eliminó correctamente
-   */
-  async deleteCognitiveTaskForm(formId: string): Promise<boolean> {
-    try {
-      // Verificamos si el formulario existe
-      const existingForm = await this.model.getById(formId);
-      
-      if (!existingForm) {
-        throw new ApiError(
-          `${CognitiveTaskError.NOT_FOUND}: No se encontró formulario CognitiveTask con ID: ${formId}`,
-          404
-        );
-      }
-      
-      // Eliminar los archivos asociados
-      const filesToDelete: string[] = [];
-      
-      // Recopilar todas las claves S3 de los archivos en las preguntas
-      if (existingForm.questions) {
-        existingForm.questions.forEach(question => {
-          if (question.files && question.files.length > 0) {
-            question.files.forEach(file => {
-              if (file.s3Key) {
-                filesToDelete.push(file.s3Key);
-              }
-            });
-          }
-        });
-      }
-      
-      // Eliminar archivos de S3 si hay alguno
-      if (filesToDelete.length > 0) {
-        const deletePromises = filesToDelete.map(s3Key => 
-          this.s3Service.generateDeleteUrl(s3Key)
-            .then(deleteUrl => {
-              // Aquí normalmente se haría una petición HTTP a la URL,
-              // pero eso lo manejará el cliente frontend
-              console.log(`URL generada para eliminar archivo ${s3Key}`);
-              return deleteUrl;
-            })
-            .catch(error => {
-              console.error(`Error al generar URL para eliminar archivo ${s3Key}:`, error);
-              return null;
-            })
-        );
-        
-        // Esperar a que se completen todas las promesas
-        await Promise.all(deletePromises);
-      }
-      
-      await this.model.delete(formId);
       return true;
     } catch (error) {
-      console.error('Error al eliminar formulario CognitiveTask:', error);
-      
-      if (error instanceof ApiError) {
-        throw error;
-      }
-      
-      throw new ApiError(
-        `${CognitiveTaskError.DATABASE_ERROR}: Error al eliminar formulario CognitiveTask: ${error instanceof Error ? error.message : 'Error desconocido'}`,
-        500
-      );
-    }
-  }
-
-  /**
-   * Crea o actualiza un formulario CognitiveTask para una investigación
-   * Si ya existe un formulario para esa investigación, lo actualiza
-   * Si no existe, crea uno nuevo
-   * @param researchId ID de la investigación
-   * @param formData Datos del formulario
-   * @returns El formulario creado o actualizado
-   */
-  async createOrUpdateCognitiveTaskForm(researchId: string, formData: CognitiveTaskFormData): Promise<CognitiveTaskRecord> {
-    try {
-      // Agregar logs detallados para diagnosticar el problema con las imágenes
-      console.log('[DIAGNOSTICO-IMAGEN] Datos recibidos del formulario:', JSON.stringify(formData, null, 2));
-      
-      // Verificar específicamente las preguntas que podrían tener imágenes
-      if (formData.questions && formData.questions.length > 0) {
-        const questionsWithFiles = formData.questions.filter(q => 
-          ['navigation_flow', 'preference_test'].includes(q.type) && q.files && q.files.length > 0
-        );
-        
-        if (questionsWithFiles.length > 0) {
-          console.log('[DIAGNOSTICO-IMAGEN] Encontradas preguntas con archivos:', questionsWithFiles.length);
-          questionsWithFiles.forEach((q, index) => {
-            console.log(`[DIAGNOSTICO-IMAGEN] Pregunta ${index + 1} (ID: ${q.id}, Tipo: ${q.type}):`, 
-              JSON.stringify(q.files?.map(f => ({id: f.id, name: f.name, url: f.url, s3Key: f.s3Key})), null, 2)
-            );
-          });
-        } else {
-          console.log('[DIAGNOSTICO-IMAGEN] No se encontraron preguntas con archivos');
-        }
-      }
-      
-      // Validar datos
-      this.validateFormData({...formData, researchId});
-      
-      // Verificamos si ya existe un formulario para esta investigación
-      const existingForm = await this.model.getByResearchId(researchId);
-      
-      let result: CognitiveTaskRecord;
-      
-      if (existingForm) {
-        // Si existe, lo actualizamos
-        console.log('[DIAGNOSTICO-IMAGEN] Actualizando formulario existente:', existingForm.id);
-        result = await this.model.update(existingForm.id, formData);
-      } else {
-        // Si no existe, lo creamos
-        console.log('[DIAGNOSTICO-IMAGEN] Creando nuevo formulario para research:', researchId);
-        result = await this.model.create(formData, researchId);
-      }
-      
-      // Verificar el resultado después de guardar
-      console.log('[DIAGNOSTICO-IMAGEN] Resultado después de guardar:', 
-        JSON.stringify(result.questions
-          .filter(q => ['navigation_flow', 'preference_test'].includes(q.type) && q.files && q.files.length > 0)
-          .map(q => ({
-            id: q.id, 
-            type: q.type, 
-            files: q.files?.map(f => ({id: f.id, name: f.name, url: f.url, s3Key: f.s3Key}))
-          })), null, 2)
-      );
-      
-      return result;
-    } catch (error) {
-      console.error('Error al crear o actualizar formulario CognitiveTask:', error);
-      
-      if (error instanceof ApiError) {
-        throw error;
-      }
-      
-      throw new ApiError(
-        `${CognitiveTaskError.DATABASE_ERROR}: Error al crear o actualizar formulario CognitiveTask: ${error instanceof Error ? error.message : 'Error desconocido'}`,
-        500
-      );
+      console.error(`[CognitiveTaskService] Error en delete (taskId: ${taskId}):`, error);
+      if (error instanceof ApiError && error.statusCode === 404) throw error;
+      throw this.handleDbError(error, 'eliminar tarea cognitiva');
     }
   }
 
@@ -719,7 +532,7 @@ export class CognitiveTaskService {
       // Actualizar cada formulario individualmente
       for (const formId of formIds) {
         try {
-          await this.updateCognitiveTaskForm(formId, updateData);
+          await this.update(formId, updateData);
           successCount++;
         } catch (error) {
           console.error(`Error al actualizar formulario ${formId}:`, error);
@@ -735,5 +548,26 @@ export class CognitiveTaskService {
         500
       );
     }
+  }
+
+  // --- Funciones Auxiliares --- 
+  private validateResearchId(researchId: string): void {
+    if (!researchId) {
+      throw new ApiError(
+        `${CognitiveTaskError.RESEARCH_REQUIRED}: Se requiere un ID de investigación`,
+        400
+      );
+    }
+  }
+  
+  private handleDbError(error: any, context: string): ApiError {
+    if (error instanceof ApiError) {
+      return error; // Re-lanzar errores de validación o específicos
+    }
+    console.error(`[CognitiveTaskService] Error de base de datos en ${context}:`, error);
+    return new ApiError(
+      `${CognitiveTaskError.DATABASE_ERROR}: ${error.message || 'Error inesperado en base de datos'}`,
+      500
+    );
   }
 } 

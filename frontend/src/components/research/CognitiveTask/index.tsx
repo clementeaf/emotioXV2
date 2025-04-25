@@ -12,7 +12,6 @@ import {
 import { UI_TEXTS } from './constants';
 import { cn } from '@/lib/utils';
 import { CognitiveTaskFields } from './components/CognitiveTaskFields';
-import { FileUploader } from './components/FileUploader';
 import { ProgressBar } from './components/ProgressBar';
 import { Loader2 } from 'lucide-react';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
@@ -41,7 +40,6 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
     handleRemoveChoice,
     handleFileUpload,
     handleFileDelete: handleRemoveFile,
-    handleAddQuestion,
     handleRandomizeChange: setRandomizeQuestions,
     handleSave: saveForm,
     handlePreview,
@@ -96,7 +94,7 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
       />
 
       {/* Campos del formulario */}
-      <div className="pb-16">
+      <div>
         <CognitiveTaskFields
           questions={formData.questions}
           randomizeQuestions={formData.randomizeQuestions}
@@ -106,7 +104,6 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
           onFileUpload={handleFileUpload}
           onFileDelete={handleRemoveFile}
           setRandomizeQuestions={setRandomizeQuestions}
-          onAddQuestion={handleAddQuestion}
           disabled={isSaving}
           isUploading={isUploading}
           uploadProgress={uploadProgress}

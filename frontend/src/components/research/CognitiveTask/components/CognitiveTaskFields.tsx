@@ -99,9 +99,8 @@ export const CognitiveTaskFields: React.FC<Props> = ({
         </div>
       </div>
 
-      <div className="mb-6">
+      <div>
         <Label className="text-sm font-medium mb-3 block">Preguntas</Label>
-
         <div className="space-y-4">
           {questions.length !== 8 ? (
             <div className="text-center py-8 border-2 border-dashed border-red-300 bg-red-50 text-red-700 rounded-lg">

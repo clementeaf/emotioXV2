@@ -1,10 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { 
-  SmartVOCFormData,
-  SmartVOCFormResponse
-} from 'shared/interfaces/smart-voc.interface';
+import { SmartVOCFormData } from 'shared/interfaces/smart-voc.interface';
 import { 
   ErrorModalData, 
   ValidationErrors, 
@@ -313,7 +310,7 @@ export const useSmartVOCForm = (researchId: string) => {
       showModal({
         title: 'Error de Validación',
         message: 'Por favor, corrija los errores antes de previsualizar',
-        type: 'warning'
+        type: 'error'
       });
       return;
     }
