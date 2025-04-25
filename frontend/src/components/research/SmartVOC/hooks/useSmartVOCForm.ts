@@ -40,6 +40,14 @@ export const useSmartVOCForm = (researchId: string) => {
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const { user, token, authLoading } = useAuth();
   const isAuthenticated = !!user && !!token;
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+
+  // Restaurar Handlers para el modal de error
+  const closeModal = useCallback(() => setModalVisible(false), []); 
+  const showModal = useCallback((errorData: ErrorModalData) => {
+    setModalError(errorData);
+    setModalVisible(true);
+  }, []); // Dependencias implícitas: setModalError, setModalVisible
 
   // Añadimos logs de depuración para la autenticación
   useEffect(() => {
@@ -64,19 +72,6 @@ export const useSmartVOCForm = (researchId: string) => {
       });
     }
   }, [isAuthenticated, token, user, researchId, authLoading]);
-
-  // Estados para el modal de confirmación
-  const [showConfirmationModal, setShowConfirmationModal] = useState<boolean>(false);
-  const [confirmationData, setConfirmationData] = useState<string>('');
-  const [pendingAction, setPendingAction] = useState<'save' | 'preview' | 'delete' | null>(null);
-  const [isSaving, setIsSaving] = useState<boolean>(false);
-
-  // Handlers para el modal
-  const closeModal = useCallback(() => setModalVisible(false), []);
-  const showModal = useCallback((errorData: ErrorModalData) => {
-    setModalError(errorData);
-    setModalVisible(true);
-  }, []);
 
   // Consulta para obtener datos existentes
   const { data: smartVocData, isLoading } = useQuery({
@@ -152,7 +147,7 @@ export const useSmartVOCForm = (researchId: string) => {
         })
       };
 
-      console.log('[SmartVOCForm] Datos limpios a guardar (solo campos de interfaz):', JSON.stringify(cleanedData, null, 2));
+      console.log('[SmartVOCForm] Datos limpios a guardar:', JSON.stringify(cleanedData, null, 2));
       
       if (smartVocId) {
         console.log(`[SmartVOCForm] Actualizando Smart VOC con ID: ${smartVocId}`);
@@ -172,14 +167,10 @@ export const useSmartVOCForm = (researchId: string) => {
       
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SMART_VOC, researchId] });
       
-      toast.success(smartVocId ? SUCCESS_MESSAGES.UPDATE_SUCCESS : SUCCESS_MESSAGES.CREATE_SUCCESS, {
-        duration: 4000,
-        style: {
-          background: '#10b981',
-          color: '#fff',
-          fontWeight: 'bold'
-        },
-        icon: '✅'
+      showModal({ 
+        title: 'Éxito',
+        message: smartVocId ? SUCCESS_MESSAGES.UPDATE_SUCCESS : SUCCESS_MESSAGES.CREATE_SUCCESS,
+        type: 'info'
       });
       
       setIsSaving(false);
@@ -298,14 +289,10 @@ export const useSmartVOCForm = (researchId: string) => {
     return Object.keys(errors).length === 0;
   }, [formData.questions]);
 
-  // Función para manejar el guardado (ahora inicia la confirmación)
+  // Función para manejar el guardado (vuelve a guardar directamente)
   const handleSave = useCallback(async () => {
-    console.log("[SmartVOCForm] handleSave iniciado.");
-    
-    const isValid = validateForm();
-    console.log("[SmartVOCForm] Resultado de validación:", isValid);
-
-    if (!isValid) {
+    console.log("[SmartVOCForm] handleSave iniciado (directo).");
+    if (!validateForm()) {
       console.log("[SmartVOCForm] Validación fallida. Mostrando modal de error.");
       showModal({
         title: 'Error de Validación',
@@ -315,53 +302,15 @@ export const useSmartVOCForm = (researchId: string) => {
       return;
     }
 
-    // Preparar datos para el modal y mostrarlo
-    console.log("[SmartVOCForm] Validación exitosa. Preparando datos para modal de confirmación.");
-    const dataString = JSON.stringify(formData, null, 2);
-    setConfirmationData(dataString);
-    setPendingAction('save');
-    console.log("[SmartVOCForm] Llamando a setShowConfirmationModal(true)");
-    setShowConfirmationModal(true);
+    console.log("[SmartVOCForm] Validación exitosa. Mutando...");
+    setIsSaving(true);
+    mutate(formData);
+  }, [formData, mutate, validateForm, showModal]);
 
-  }, [formData, validateForm, showModal]);
-
-  // Función para manejar la previsualización (si se mantiene un botón dedicado)
+  // Función para manejar la previsualización (si se mantiene)
   const handlePreview = useCallback(() => {
-    if (!validateForm()) {
-      showModal({
-        title: 'Error de Validación',
-        message: 'Por favor, corrija los errores antes de previsualizar',
-        type: 'error'
-      });
-      return;
-    }
-
-    setConfirmationData(JSON.stringify(formData, null, 2));
-    setShowConfirmationModal(true);
-    setPendingAction('preview');
+    console.log("Previsualización solicitada (lógica pendiente)");
   }, [formData, validateForm, showModal]);
-
-  // Función para cerrar el modal de confirmación
-  const closeConfirmationModal = useCallback(() => {
-    setShowConfirmationModal(false);
-    setPendingAction(null);
-  }, []);
-
-  // Función para confirmar la acción pendiente (Guardar, Previsualizar, Eliminar)
-  const confirmPendingAction = useCallback(() => {
-    if (pendingAction === 'save') {
-      console.log("[SmartVOCForm] Confirmado guardado. Mutando...");
-      setIsSaving(true);
-      mutate(formData);
-    } else if (pendingAction === 'delete') {
-      // TODO: Implementar lógica de eliminación si es necesario
-      console.log("[SmartVOCForm] Confirmada eliminación.");
-      // Ejemplo: handleDeleteConfirmation();
-    } else {
-      console.log("[SmartVOCForm] Acción confirmada:", pendingAction);
-    }
-    closeConfirmationModal();
-  }, [pendingAction, formData, mutate, closeConfirmationModal]);
 
   return {
     formData,
@@ -380,11 +329,6 @@ export const useSmartVOCForm = (researchId: string) => {
     handlePreview,
     validateForm,
     closeModal,
-    showConfirmationModal,
-    closeConfirmationModal,
-    confirmationData,
-    pendingAction,
-    confirmPendingAction,
     isExisting: !!smartVocId
   };
 }; 

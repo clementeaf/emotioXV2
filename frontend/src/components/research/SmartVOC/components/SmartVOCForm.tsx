@@ -13,7 +13,6 @@ import { cn } from '@/lib/utils';
 import { UI_TEXTS } from '../constants';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { generateNewQuestion } from '../utils';
@@ -37,11 +36,6 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
     handleSave,
     handlePreview,
     closeModal,
-    pendingAction,
-    showConfirmationModal,
-    closeConfirmationModal,
-    confirmationData,
-    confirmPendingAction,
   } = useSmartVOCForm(researchId);
 
   const handleAddQuestion = () => {
@@ -92,15 +86,6 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
           onClose={closeModal}
           error={modalError}
         />
-
-        <Dialog
-          open={showConfirmationModal}
-          onOpenChange={closeConfirmationModal}
-        >
-          <DialogContent>
-            <p>Probando si el diálogo aparece.</p>
-          </DialogContent>
-        </Dialog>
       </div>
     </DndProvider>
   );
