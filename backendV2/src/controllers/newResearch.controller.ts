@@ -3,9 +3,9 @@ import { NewResearch } from '../models/newResearch.model';
 import { newResearchService, ResearchError } from '../services/newResearch.service';
 import { 
   createResponse, 
-  errorResponse
+  errorResponse,
+  validateTokenAndSetupAuth
 } from '../utils/controller.utils';
-import { createController, RouteMap } from '../utils/controller.decorator';
 
 /**
  * Controlador para manejar las peticiones relacionadas con nuevas investigaciones
@@ -284,46 +284,60 @@ export class NewResearchController {
   }
 }
 
-// Instanciar el controlador
-const controller = new NewResearchController();
+// <<< Instanciar el controlador >>>
+const controllerInstance = new NewResearchController();
 
+// <<< Handler simple y directo para GET /research/all >>>
+// Exportar como el nombre original esperado por el index/router
+export const newResearchHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+  console.log('Ejecutando simpleGetAllResearchesHandler (exportado como newResearchHandler)');
+  try {
+    // Simular validación de token (necesario para obtener userId)
+    const authResult = await validateTokenAndSetupAuth(event, '/research/all');
+    if ('statusCode' in authResult) {
+      return authResult;
+    }
+    const userId = authResult.userId;
+
+    // Llamar directamente al método del controlador instanciado
+    return await controllerInstance.getAllResearches(event, userId);
+
+  } catch (error: any) {
+    console.error('Error en simple handler (exportado como newResearchHandler):', error);
+    return createResponse(500, {
+      error: 'Error interno del servidor (simple handler)',
+      details: error.message || 'Error no especificado'
+    });
+  }
+};
+
+// <<< Mantener comentado el RouteMap y el handler original con createController >>>
+/*
 // Definir el mapa de rutas para NewResearch
 const newResearchRouteMap: RouteMap = {
   // Ruta base para investigaciones
   '/research/all': {
-    'GET': controller.getAllResearches.bind(controller) // Obtener todas las investigaciones
+    'GET': controllerInstance.getAllResearches.bind(controllerInstance) // Obtener todas las investigaciones
   },
   // Ruta para crear investigación
   '/research': {
-    'POST': controller.createResearch.bind(controller) // Crear nueva investigación
+    'POST': controllerInstance.createResearch.bind(controllerInstance) // Crear nueva investigación
   },
   // Ruta para investigación específica por ID
   '/research/{researchId}': {
-    'GET': controller.getResearchById.bind(controller),    // Obtener investigación por ID
-    'PUT': controller.updateResearch.bind(controller),    // Actualizar investigación por ID
-    'DELETE': controller.deleteResearch.bind(controller) // Eliminar investigación por ID
+    'GET': controllerInstance.getResearchById.bind(controllerInstance),    // Obtener investigación por ID
+    'PUT': controllerInstance.updateResearch.bind(controllerInstance),    // Actualizar investigación por ID
+    'DELETE': controllerInstance.deleteResearch.bind(controllerInstance) // Eliminar investigación por ID
   },
   // Ruta para cambiar el estado de una investigación
   '/research/{researchId}/status': {
-    'PUT': controller.changeResearchStatus.bind(controller) // Cambiar estado
+    'PUT': controllerInstance.changeResearchStatus.bind(controllerInstance) // Cambiar estado
   }
   // Podríamos añadir más rutas específicas aquí si fuera necesario
 };
 
-/**
- * Manejador principal para las rutas de investigaciones.
- * 
- * Utiliza createController para la gestión automática de CORS, autenticación y enrutamiento.
- * 
- * Estructura:
- * - POST /research : Crear nueva investigación
- * - GET /research : Obtener todas las investigaciones (requiere ajuste si se necesita filtrar por usuario)
- * - GET /research/{researchId} : Obtener investigación específica
- * - PUT /research/{researchId} : Actualizar investigación específica
- * - DELETE /research/{researchId} : Eliminar investigación específica
- * - PUT /research/{researchId}/status : Cambiar estado de investigación específica
- */
-export const newResearchHandler = createController(newResearchRouteMap, {
-  basePath: '/research', // Ruta base para este controlador
-  // Todas las rutas aquí requieren autenticación por defecto, no hay publicRoutes definidas.
-}); 
+// Exportación original comentada
+export const newResearchHandler_original = createController(newResearchRouteMap, {
+  basePath: '/research',
+});
+*/ 

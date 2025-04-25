@@ -81,8 +81,9 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
       <WelcomeScreenFooter 
         isSaving={isSaving}
         disabled={!formData.isEnabled || isSaving}
-        onSave={showConfirmModalAction}
+        onSave={handleSubmit}
         onPreview={handlePreview}
+        isUpdate={isExisting}
       />
       
       {/* Modal para mostrar errores y mensajes */}

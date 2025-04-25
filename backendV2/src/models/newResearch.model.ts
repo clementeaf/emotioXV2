@@ -1,6 +1,7 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, UpdateCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import { uuidv4 } from '../utils/id-generator';
+import { structuredLog } from '../utils/logging.util';
 
 /**
  * Enum para los tipos de investigación
@@ -427,54 +428,56 @@ export class NewResearchModel {
 
   /**
    * Obtiene todas las investigaciones
-   * @returns Array con todas las investigaciones
+   * @returns Lista de todas las investigaciones
    */
   async getAll(): Promise<NewResearch[]> {
-    try {
-      console.log('Iniciando modelo getAll() usando Query en EntityTypeSkIndex');
-      
-      const params = {
-        TableName: this.tableName,
-        IndexName: 'EntityTypeSkIndex',
-        KeyConditionExpression: 'EntityType = :type AND begins_with(sk, :prefix)',
-        ExpressionAttributeValues: {
-          ':type': 'RESEARCH',
-          ':prefix': 'RESEARCH#'
-        }
-      };
+    const context = { functionName: 'NewResearchModel.getAll' };
+    const contextString = context.functionName; // Extract string context
+    structuredLog('info', contextString, 'Iniciando modelo getAll() usando Query en EntityTypeSkIndex');
 
-      console.log('Parámetros de QueryCommand:', JSON.stringify(params, null, 2));
-      
-      const command = new QueryCommand(params);
-      const result = await this.dynamoClient.send(command);
-      
-      console.log(`Query completado. Encontrados: ${result.Items?.length || 0} elementos.`);
-      
-      if (!result.Items || result.Items.length === 0) {
-        console.log('No se encontraron investigaciones');
-        return [];
+    const params = {
+      TableName: this.tableName,
+      IndexName: 'EntityTypeSkIndex',
+      KeyConditionExpression: 'EntityType = :type AND begins_with(sk, :prefix)',
+      ExpressionAttributeValues: {
+        ':type': 'RESEARCH',
+        ':prefix': 'RESEARCH#'
       }
+    };
+    structuredLog('info', contextString, 'Parámetros de QueryCommand:', { params });
 
-      // Mapear resultados al formato de la interfaz
-      return result.Items.map((item: any) => ({
-        id: item.id,
-        name: item.name,
-        enterprise: item.enterprise,
-        type: item.type as ResearchType,
-        technique: item.technique,
-        description: item.description,
-        targetParticipants: item.targetParticipants,
-        objectives: JSON.parse(item.objectives || '[]'),
-        tags: JSON.parse(item.tags || '[]'),
-        status: item.status,
-        userId: item.userId,
-        createdAt: item.createdAt,
-        updatedAt: item.updatedAt
-      }));
-    } catch (error) {
-      console.error('Error detallado en newResearchModel.getAll:', error);
-      throw error;
+    try {
+      const command = new QueryCommand(params);
+      const { Items } = await this.dynamoClient.send(command);
+      structuredLog('info', contextString, `Query completado. Encontrados: ${Items?.length ?? 0} elementos.`);
+      structuredLog('info', contextString, 'Raw items from DynamoDB:', { items: Items });
+
+      const researches = Items?.map(item => this.mapToEntity(item as unknown as NewResearch)) || [];
+
+      structuredLog('info', contextString, 'Items mapeados justo antes de retornar:', { researches });
+
+      return researches;
+    } catch (error: unknown) {
+       structuredLog('error', contextString, 'Error al obtener todas las investigaciones:', { error });
+       throw error; 
     }
+  }
+
+  private mapToEntity(item: any): NewResearch {
+    // Implement the logic to map a DynamoDB item to a NewResearch object
+    // This is a placeholder and should be replaced with the actual implementation
+    return {
+      id: item.id,
+      name: item.name,
+      enterprise: item.enterprise,
+      type: item.type as ResearchType,
+      technique: item.technique,
+      description: item.description,
+      targetParticipants: item.targetParticipants,
+      objectives: JSON.parse(item.objectives),
+      tags: JSON.parse(item.tags),
+      status: item.status
+    };
   }
 }
 

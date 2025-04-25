@@ -63,22 +63,52 @@ async function getHandler(type: string) {
       
       let handler: Function | undefined;
 
-      // 1. Priorizar la exportación nombrada 'handler'
-      if (typeof module.handler === 'function') {
+      // <<< INICIO: Lógica específica para 'research' >>>
+      if (type === 'research' && typeof module.newResearchHandler === 'function') {
+          handler = module.newResearchHandler;
+          logger.info(`Usando exportación específica 'newResearchHandler' para ${type}`);
+      } 
+      // <<< FIN: Lógica específica para 'research' >>>
+      // <<< INICIO: Lógica específica para 'welcome-screen' >>>
+      else if (type === 'welcome-screen' && typeof module.welcomeScreenHandler === 'function') {
+          handler = module.welcomeScreenHandler;
+          logger.info(`Usando exportación específica 'welcomeScreenHandler' para ${type}`);
+      }
+      // <<< FIN: Lógica específica para 'welcome-screen' >>>
+      // <<< INICIO: Lógica específica para 'smart-voc' >>>
+      else if (type === 'smart-voc' && typeof module.smartVocFormHandler === 'function') {
+          handler = module.smartVocFormHandler;
+          logger.info(`Usando exportación específica 'smartVocFormHandler' para ${type}`);
+      }
+      // <<< FIN: Lógica específica para 'smart-voc' >>>
+      // <<< INICIO: Lógica específica para 'thank-you-screen' >>>
+      else if (type === 'thank-you-screen' && typeof module.thankYouScreenHandler === 'function') {
+          handler = module.thankYouScreenHandler;
+          logger.info(`Usando exportación específica 'thankYouScreenHandler' para ${type}`);
+      }
+      // <<< FIN: Lógica específica para 'thank-you-screen' >>>
+      // <<< Mantener la lógica existente como fallback >>>
+      // 1. Priorizar la exportación nombrada 'handler' (si no es 'research', 'welcome-screen', 'smart-voc', o 'thank-you-screen' o no se encontró el específico)
+      else if (typeof module.handler === 'function') {
         handler = module.handler;
         logger.info(`Usando exportación 'handler' para ${type}`);
       }
-      // 2. Si no, buscar la primera función exportada
+      // 2. Si no, buscar la primera función exportada (si no es 'research', 'welcome-screen', 'smart-voc', o 'thank-you-screen' o no se encontró el específico)
       else {
         for (const key in module) {
-          if (typeof module[key] === 'function') {
+          // Asegurarse de no seleccionar la clase constructora si ya intentamos el específico
+          if (typeof module[key] === 'function' && 
+              !(type === 'research' && key === 'NewResearchController') &&
+              !(type === 'welcome-screen' && key === 'WelcomeScreenController') &&
+              !(type === 'smart-voc' && key === 'SmartVOCFormController') &&
+              !(type === 'thank-you-screen' && key === 'ThankYouScreenController')) { // Added check for ThankYouScreenController
             handler = module[key];
             logger.info(`Usando la primera función exportada encontrada ('${key}') para ${type}`);
             break; // Usar la primera que se encuentre
           }
         }
       }
-      // 3. Si no, verificar si el módulo mismo es una función
+      // 3. Si no, verificar si el módulo mismo es una función (esto probablemente no aplique a nuestros controladores)
       if (!handler && typeof module === 'function') {
         handler = module;
          logger.info(`Usando el módulo exportado directamente como handler para ${type}`);

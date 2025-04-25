@@ -20,14 +20,15 @@ custom:
 
   esbuild:
     bundle: true
-    minify: true
+    minify: false
     sourcemap: true
-    exclude: []
+    exclude: ['@aws-sdk/*']
     target: 'node18'
     define:
       'process.env.NODE_ENV': '"${self:provider.stage}"'
     platform: 'node'
     concurrency: 10
+    keepNames: true
     keepOutputDirectory: false
 
   # Configuración para entorno de desarrollo

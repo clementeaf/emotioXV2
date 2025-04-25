@@ -9,6 +9,7 @@ interface WelcomeScreenFooterProps {
   onPreview: () => void;
   isSaving?: boolean;
   disabled?: boolean;
+  isUpdate?: boolean;
 }
 
 /**
@@ -18,8 +19,15 @@ export const WelcomeScreenFooter: React.FC<WelcomeScreenFooterProps> = ({
   onSave,
   onPreview,
   isSaving,
-  disabled
+  disabled,
+  isUpdate
 }) => {
+  const buttonText = isSaving
+    ? UI_TEXTS.BUTTONS.SAVING
+    : isUpdate
+    ? UI_TEXTS.BUTTONS.UPDATE
+    : UI_TEXTS.BUTTONS.SAVE;
+
   return (
     <div className="flex justify-end items-center gap-3 pt-4 border-t border-neutral-200">
       <Button
@@ -34,7 +42,7 @@ export const WelcomeScreenFooter: React.FC<WelcomeScreenFooterProps> = ({
         disabled={disabled || isSaving}
         loading={isSaving}
       >
-        {isSaving ? UI_TEXTS.BUTTONS.SAVING : UI_TEXTS.BUTTONS.SAVE}
+        {buttonText}
       </Button>
     </div>
   );
