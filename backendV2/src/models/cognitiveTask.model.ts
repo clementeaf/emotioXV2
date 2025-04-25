@@ -16,30 +16,25 @@ import {
 } from '../../../shared/interfaces/cognitive-task.interface';
 
 /**
- * Usaremos directamente la interfaz compartida que ya debería incluir id, researchId, etc.
- * Añadimos campos específicos si es necesario, pero la base es SharedCognitiveTaskModel.
+ * Interfaz que representa el registro de CognitiveTask en la aplicación.
+ * El 'id' aquí es el UUID lógico, NO la PK de DynamoDB.
  */
-export interface CognitiveTaskRecord extends SharedCognitiveTaskModel { 
-  // La interfaz compartida SharedCognitiveTaskModel debería tener:
-  // id: string;
-  // researchId: string;
-  // questions: Question[];
-  // randomizeQuestions: boolean;
-  // metadata?: { [key: string]: any }; // O una estructura más específica
-  // createdAt?: Date | string; // Revisar tipo en interfaz compartida
-  // updatedAt?: Date | string; // Revisar tipo en interfaz compartida
+export interface CognitiveTaskRecord extends SharedCognitiveTaskModel {
+  // id: string; // Ya está en SharedCognitiveTaskModel
+  // researchId: string; // Ya está en SharedCognitiveTaskModel
 }
 
 /**
  * Interfaz para el item DynamoDB de un formulario CognitiveTask
+ * PK: researchId, SK: 'COGNITIVE_TASK'
  */
 export interface CognitiveTaskDynamoItem {
-  // Clave primaria (UUID único)
-  id: string;
-  // Clave de ordenación (constante para este tipo)
-  sk: string;
-  // Research ID relacionado (para GSI)
+  // Clave primaria (PK)
   researchId: string;
+  // Clave de ordenación (SK)
+  sk: string;
+  // ID lógico único (UUID), no es parte de la clave
+  id: string;
   // Preguntas del formulario (serializado a JSON string)
   questions: string;
   // Configuración
@@ -53,11 +48,13 @@ export interface CognitiveTaskDynamoItem {
 
 /**
  * Modelo para manejar las operaciones de formularios CognitiveTask en DynamoDB
+ * Usa researchId como PK. Incluye GSI por id (UUID).
  */
 export class CognitiveTaskModel {
   private readonly tableName: string;
   private readonly dynamoClient: DynamoDBDocumentClient;
   private static readonly SORT_KEY_VALUE = 'COGNITIVE_TASK'; // SK constante
+  private static readonly ID_INDEX_NAME = 'IdIndex'; // GSI por id (UUID)
 
   constructor() {
     this.tableName = process.env.DYNAMODB_TABLE!;
@@ -103,10 +100,11 @@ export class CognitiveTaskModel {
   }
 
   /**
-   * Crea un nuevo formulario CognitiveTask
+   * Crea un nuevo formulario CognitiveTask para una investigación específica.
+   * Utiliza researchId como PK.
    */
   async create(data: CognitiveTaskFormData, researchId: string): Promise<CognitiveTaskRecord> {
-    const formId = uuidv4();
+    const formId = data.id || uuidv4();
     const now = new Date().toISOString();
     const questions = data.questions || [];
 
@@ -142,9 +140,9 @@ export class CognitiveTaskModel {
 
     // Convertir a formato para DynamoDB
     const item: CognitiveTaskDynamoItem = {
+      researchId: researchId,
+      sk: CognitiveTaskModel.SORT_KEY_VALUE,
       id: formId,
-      sk: CognitiveTaskModel.SORT_KEY_VALUE, // Usar SK constante
-      researchId,
       questions: JSON.stringify(questions),
       randomizeQuestions: data.randomizeQuestions ?? false,
       metadata: JSON.stringify(data.metadata ? { ...standardMetadata, ...data.metadata } : standardMetadata),
@@ -164,23 +162,60 @@ export class CognitiveTaskModel {
 
     try {
       await this.dynamoClient.send(command);
-      return this.mapToRecord(item); // Devolver usando el mapeo
+      return this.mapToRecord(item);
     } catch (error: any) {
       console.error('ERROR DETALLADO de DynamoDB PutCommand (CognitiveTask):', JSON.stringify(error, null, 2));
       console.error('Error al crear formulario CognitiveTask:', error.message);
-      throw new Error('DATABASE_ERROR: Error al crear el formulario de tarea cognitiva'); // Mensaje más específico
+      throw new Error(`DATABASE_ERROR: Error al crear el formulario para researchId ${researchId}`);
     }
   }
 
   /**
-   * Obtiene un formulario CognitiveTask por su ID único (UUID)
+   * Obtiene el formulario CognitiveTask asociado a su ID lógico (UUID).
+   * Usa un GSI ('IdIndex') con 'id' como clave de partición.
    */
-  async getById(formId: string): Promise<CognitiveTaskRecord | null> {
+  async getById(id: string): Promise<CognitiveTaskRecord | null> {
+    // Nota: Asume que el GSI 'IdIndex' está configurado en la tabla DynamoDB
+    // con 'id' como su clave de partición.
+    const command = new QueryCommand({
+      TableName: this.tableName,
+      IndexName: CognitiveTaskModel.ID_INDEX_NAME,
+      KeyConditionExpression: 'id = :idVal',
+      ExpressionAttributeValues: {
+        ':idVal': id
+      },
+      Limit: 1 // Esperamos solo uno por ID lógico
+    });
+
+    try {
+      const result = await this.dynamoClient.send(command);
+      if (!result.Items || result.Items.length === 0) {
+        return null; // No encontrado
+      }
+      // Mapear el primer (y único esperado) item encontrado
+      return this.mapToRecord(result.Items[0] as CognitiveTaskDynamoItem);
+    } catch (error: any) {
+      console.error(`ERROR DETALLADO de DynamoDB QueryCommand GSI (${CognitiveTaskModel.ID_INDEX_NAME}):`, JSON.stringify(error, null, 2));
+      console.error(`Error al obtener CognitiveTask por id (UUID) ${id}:`, error.message);
+      // Podríamos lanzar un error más específico si el índice no existe
+      if (error.name === 'ResourceNotFoundException') {
+         console.error(`FATAL: GSI '${CognitiveTaskModel.ID_INDEX_NAME}' no encontrado en la tabla '${this.tableName}'.`);
+         throw new Error(`DATABASE_ERROR: Índice GSI '${CognitiveTaskModel.ID_INDEX_NAME}' no encontrado.`);
+      }
+      throw new Error(`DATABASE_ERROR: Error al obtener el formulario por id (UUID) ${id}`);
+    }
+  }
+
+  /**
+   * Obtiene el formulario CognitiveTask asociado a una investigación.
+   * Usa GetCommand con researchId (PK) y SK constante.
+   */
+  async getByResearchId(researchId: string): Promise<CognitiveTaskRecord | null> {
     const command = new GetCommand({
       TableName: this.tableName,
       Key: {
-        id: formId,
-        sk: CognitiveTaskModel.SORT_KEY_VALUE // Usar SK constante
+        researchId: researchId,
+        sk: CognitiveTaskModel.SORT_KEY_VALUE
       }
     });
 
@@ -189,62 +224,26 @@ export class CognitiveTaskModel {
       if (!result.Item) {
         return null;
       }
-      // Mapear y devolver (el log de diagnóstico ya está en mapToRecord)
       return this.mapToRecord(result.Item as CognitiveTaskDynamoItem);
     } catch (error: any) {
       console.error('ERROR DETALLADO de DynamoDB GetCommand (CognitiveTask):', JSON.stringify(error, null, 2));
-      console.error(`Error al obtener CognitiveTask por ID ${formId}:`, error.message);
-      throw new Error('DATABASE_ERROR: Error al obtener el formulario de tarea cognitiva por ID');
-    }
-  }
-
-  /**
-   * Obtiene el formulario CognitiveTask asociado a una investigación usando GSI
-   */
-  async getByResearchId(researchId: string): Promise<CognitiveTaskRecord | null> {
-    const command = new QueryCommand({
-      TableName: this.tableName,
-      IndexName: 'ResearchIdIndex', // Usar GSI correcto
-      KeyConditionExpression: 'researchId = :rid',
-      // FilterExpression ya no es necesario si asumimos uno por researchId
-      ExpressionAttributeValues: {
-        ':rid': researchId
-      },
-      Limit: 1
-    });
-
-    try {
-      const result = await this.dynamoClient.send(command);
-      if (!result.Items || result.Items.length === 0) {
-        return null;
-      }
-      // Mapear y devolver
-      return this.mapToRecord(result.Items[0] as CognitiveTaskDynamoItem);
-    } catch (error: any) {
-      console.error('ERROR DETALLADO de DynamoDB QueryCommand GSI (CognitiveTask):', JSON.stringify(error, null, 2));
       console.error(`Error al obtener CognitiveTask por researchId ${researchId}:`, error.message);
-      throw new Error('DATABASE_ERROR: Error al obtener el formulario de tarea cognitiva por Research ID');
+      throw new Error(`DATABASE_ERROR: Error al obtener el formulario para researchId ${researchId}`);
     }
   }
 
   /**
-   * Actualiza un formulario CognitiveTask existente
+   * Actualiza un formulario CognitiveTask existente para una investigación.
+   * Usa researchId como PK.
    */
-  async update(formId: string, data: Partial<CognitiveTaskFormData>): Promise<CognitiveTaskRecord> {
-    // Verificar existencia
-    const currentRecord = await this.getById(formId);
-    if (!currentRecord) {
-      throw new Error(`COGNITIVE_TASK_NOT_FOUND: Formulario con ID ${formId} no encontrado.`);
-    }
-    
+  async update(researchId: string, data: Partial<CognitiveTaskFormData>): Promise<CognitiveTaskRecord> {
     const now = new Date().toISOString();
-    
+
     let updateExpression = 'SET updatedAt = :updatedAt';
     const expressionAttributeValues: Record<string, any> = { ':updatedAt': now };
-    
-    // Actualizar preguntas si se proporcionan
+    const expressionAttributeNames: Record<string, string> = {};
+
     if (data.questions) {
-      // Log para diagnóstico de imágenes
       const questionsWithFiles = data.questions.filter(q => 
         ['navigation_flow', 'preference_test'].includes(q.type) && q.files && q.files.length > 0
       );
@@ -259,7 +258,6 @@ export class CognitiveTaskModel {
         );
       }
       
-      // Asegurarse de que las referencias de imágenes estén completas
       data.questions.forEach(q => {
         if (q.files && q.files.length > 0) {
           q.files = q.files.filter(f => f && f.s3Key && f.url);
@@ -270,7 +268,6 @@ export class CognitiveTaskModel {
       updateExpression += ', questions = :questions';
       expressionAttributeValues[':questions'] = JSON.stringify(data.questions);
       
-      // Log del JSON que se guardará en la BD
       console.log('[DIAGNOSTICO-IMAGEN:MODEL:UPDATE] JSON de preguntas que se actualizará en DynamoDB:', 
         expressionAttributeValues[':questions'].substring(0, 300) + 
         (expressionAttributeValues[':questions'].length > 300 ? '...' : '')
@@ -282,25 +279,20 @@ export class CognitiveTaskModel {
       expressionAttributeValues[':randomizeQuestions'] = data.randomizeQuestions;
     }
     
-    // Actualizar metadata consistentemente
-    const currentMetadataObject = currentRecord.metadata || {};
-    const incomingMetadata = data.metadata || {};
-    const newMetadata = {
-        ...currentMetadataObject,
-        ...incomingMetadata, // Sobrescribir con lo nuevo si existe
-        updatedAt: now, // Siempre actualizar updatedAt
-        lastModifiedBy: incomingMetadata.lastModifiedBy || currentMetadataObject.lastModifiedBy || 'system'
-        // Mantener createdAt original si existe en currentMetadataObject
-        // createdAt: currentMetadataObject.createdAt || now 
-    };
+    if (data.metadata) {
+      const newMetadata = {
+        ...(data.metadata || {}),
+        updatedAt: now,
+        lastModifiedBy: data.metadata?.lastModifiedBy || 'system_update'
+      };
+      updateExpression += ', metadata = :metadata';
+      expressionAttributeValues[':metadata'] = JSON.stringify(newMetadata);
+    }
 
-    updateExpression += ', metadata = :metadata';
-    expressionAttributeValues[':metadata'] = JSON.stringify(newMetadata);
-    
     const command = new UpdateCommand({
       TableName: this.tableName,
       Key: {
-        id: formId,
+        researchId: researchId,
         sk: CognitiveTaskModel.SORT_KEY_VALUE
       },
       UpdateExpression: updateExpression,
@@ -311,36 +303,45 @@ export class CognitiveTaskModel {
     try {
       const result = await this.dynamoClient.send(command);
       if (!result.Attributes) {
-        throw new Error('Update did not return attributes');
+        console.warn(`UpdateCommand para researchId ${researchId} no devolvió atributos. El item podría no existir.`);
+        throw new Error(`COGNITIVE_TASK_NOT_FOUND: Formulario para researchId ${researchId} no encontrado para actualizar.`);
       }
-      // Mapear y devolver el item actualizado
       return this.mapToRecord(result.Attributes as CognitiveTaskDynamoItem);
     } catch (error: any) {
+      if (error.message?.startsWith('COGNITIVE_TASK_NOT_FOUND')) {
+        throw error;
+      }
       console.error('ERROR DETALLADO de DynamoDB UpdateCommand (CognitiveTask):', JSON.stringify(error, null, 2));
-      console.error(`Error al actualizar CognitiveTask con ID ${formId}:`, error.message);
-      throw new Error('DATABASE_ERROR: Error al actualizar el formulario de tarea cognitiva');
+      console.error(`Error al actualizar CognitiveTask para researchId ${researchId}:`, error.message);
+      throw new Error(`DATABASE_ERROR: Error al actualizar el formulario para researchId ${researchId}`);
     }
   }
 
   /**
-   * Elimina un formulario CognitiveTask
+   * Elimina un formulario CognitiveTask para una investigación.
+   * Usa researchId como PK y ConditionExpression para asegurar existencia.
    */
-  async delete(formId: string): Promise<boolean> {
+  async delete(researchId: string): Promise<boolean> {
     const command = new DeleteCommand({
       TableName: this.tableName,
       Key: {
-        id: formId,
+        researchId: researchId,
         sk: CognitiveTaskModel.SORT_KEY_VALUE
-      }
+      },
+      ConditionExpression: 'attribute_exists(researchId)'
     });
 
     try {
       await this.dynamoClient.send(command);
       return true;
     } catch (error: any) {
+      if (error.name === 'ConditionalCheckFailedException') {
+        console.warn(`DeleteCommand falló chequeo condicional para researchId ${researchId}. El item no existe.`);
+        throw new Error(`COGNITIVE_TASK_NOT_FOUND: Formulario para researchId ${researchId} no encontrado para eliminar.`);
+      }
       console.error('ERROR DETALLADO de DynamoDB DeleteCommand (CognitiveTask):', JSON.stringify(error, null, 2));
-      console.error(`Error al eliminar CognitiveTask ${formId}:`, error.message);
-      throw new Error('DATABASE_ERROR: Error al eliminar el formulario de tarea cognitiva');
+      console.error(`Error al eliminar CognitiveTask para researchId ${researchId}:`, error.message);
+      throw new Error(`DATABASE_ERROR: Error al eliminar el formulario para researchId ${researchId}`);
     }
   }
 
@@ -348,7 +349,6 @@ export class CognitiveTaskModel {
    * Obtiene todos los formularios CognitiveTask (Scan - Ineficiente)
    */
   async getAll(): Promise<CognitiveTaskRecord[]> {
-    // Usar Scan filtrando por SK
     const command = new ScanCommand({
       TableName: this.tableName,
       FilterExpression: 'sk = :skVal',

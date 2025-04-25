@@ -1,5 +1,5 @@
 import { CognitiveTaskModel, CognitiveTaskRecord } from '../models/cognitiveTask.model';
-import { CognitiveTaskFormData, Question, UploadedFile, COGNITIVE_TASK_VALIDATION } from '../../../shared/interfaces/cognitive-task.interface';
+import { CognitiveTaskFormData, Question, UploadedFile, COGNITIVE_TASK_VALIDATION, ScaleConfig, Choice } from '../../../shared/interfaces/cognitive-task.interface';
 import { ApiError } from '../utils/errors';
 import { S3Service, FileType, PresignedUrlParams } from '../services/s3.service';
 import { v4 as uuidv4 } from 'uuid';
@@ -19,21 +19,20 @@ export enum CognitiveTaskError {
 
 /**
  * Clase que proporciona servicios para gestionar formularios CognitiveTask
+ * Adaptado para usar researchId como PK en el modelo.
  */
 export class CognitiveTaskService {
   private model = new CognitiveTaskModel();
   private s3Service = new S3Service();
 
   /**
-   * Validación básica de los datos de entrada
-   * @param data Datos a validar
-   * @returns true si la validación es exitosa
-   * @throws ApiError si hay errores de validación
+   * Validación principal de los datos de entrada para CognitiveTaskFormData.
+   * Llama a validaciones auxiliares.
    */
-  private validateFormData(data: Partial<CognitiveTaskFormData>): boolean {
+  private validateFormData(data: Partial<CognitiveTaskFormData>): void {
     console.log('[DEBUG] CognitiveTaskService.validateFormData - Datos recibidos:', JSON.stringify(data, null, 2));
     
-    // Validar que la investigación tenga un ID
+    // 1. Validar researchId (esencial)
     if (!data.researchId) {
       throw new ApiError(
         `${CognitiveTaskError.RESEARCH_REQUIRED}: Se requiere un ID de investigación`,
@@ -41,130 +40,178 @@ export class CognitiveTaskService {
       );
     }
 
-    // Validar preguntas si se proporcionan
+    // 2. Validar preguntas si existen
     if (data.questions) {
-      // Validar que las preguntas sean un array
-      if (!Array.isArray(data.questions)) {
+      this._validateQuestionsArray(data.questions);
+      data.questions.forEach((question, index) => {
+        this._validateSingleQuestion(question, index);
+      });
+    }
+  }
+
+  /**
+   * Valida que las preguntas sean un array.
+   */
+  private _validateQuestionsArray(questions: any): void {
+    if (!Array.isArray(questions)) {
+      throw new ApiError(
+        `${CognitiveTaskError.INVALID_DATA}: Las preguntas deben ser un array`,
+        400
+      );
+    }
+  }
+
+  /**
+   * Valida la estructura y tipos básicos de una pregunta individual.
+   */
+  private _validateSingleQuestion(question: Question, index: number): void {
+    const questionNumber = index + 1;
+    
+    // Validar tipo de pregunta
+    if (!question.type || typeof question.type !== 'string') {
+      throw new ApiError(
+        `${CognitiveTaskError.INVALID_DATA}: La pregunta ${questionNumber} debe tener un tipo válido`,
+        400
+      );
+    }
+
+    // Validar longitud del título si existe
+    if (question.title && question.title.length > COGNITIVE_TASK_VALIDATION.title.maxLength) {
+      throw new ApiError(
+        `${CognitiveTaskError.INVALID_DATA}: El título de la pregunta ${questionNumber} no debe exceder ${COGNITIVE_TASK_VALIDATION.title.maxLength} caracteres`,
+        400
+      );
+    }
+    
+    // Validaciones específicas por tipo
+    switch (question.type) {
+      case 'single_choice':
+      case 'multiple_choice':
+      case 'ranking':
+        this._validateQuestionChoices(question.choices, questionNumber);
+        break;
+      case 'linear_scale':
+        this._validateQuestionScale(question.scaleConfig, questionNumber);
+        break;
+      case 'navigation_flow':
+      case 'preference_test':
+        this._validateQuestionFiles(question.files, questionNumber);
+        break;
+      // Añadir casos para otros tipos si existen (e.g., 'text_input')
+    }
+  }
+
+  /**
+   * Valida las opciones (choices) para preguntas de selección múltiple, única o ranking.
+   */
+  private _validateQuestionChoices(choices: Choice[] | undefined, questionNumber: number): void {
+    if (!choices || !Array.isArray(choices)) {
+      throw new ApiError(
+        `${CognitiveTaskError.INVALID_DATA}: Las opciones de la pregunta ${questionNumber} deben ser un array`,
+        400
+      );
+    }
+
+    if (choices.length < COGNITIVE_TASK_VALIDATION.choices.min) {
+      throw new ApiError(
+        `${CognitiveTaskError.INVALID_DATA}: La pregunta ${questionNumber} debe tener al menos ${COGNITIVE_TASK_VALIDATION.choices.min} opción`,
+        400
+      );
+    }
+
+    if (choices.length > COGNITIVE_TASK_VALIDATION.choices.max) {
+      throw new ApiError(
+        `${CognitiveTaskError.INVALID_DATA}: La pregunta ${questionNumber} no debe exceder ${COGNITIVE_TASK_VALIDATION.choices.max} opciones`,
+        400
+      );
+    }
+    // Podría añadirse validación del contenido de cada choice si es necesario
+  }
+
+  /**
+   * Valida la configuración de escala (scaleConfig) para preguntas de escala lineal.
+   */
+  private _validateQuestionScale(scaleConfig: ScaleConfig | undefined, questionNumber: number): void {
+    if (!scaleConfig || typeof scaleConfig !== 'object') {
+      throw new ApiError(
+        `${CognitiveTaskError.INVALID_DATA}: La configuración de escala de la pregunta ${questionNumber} debe ser un objeto`,
+        400
+      );
+    }
+
+    if (scaleConfig.startValue < COGNITIVE_TASK_VALIDATION.scaleConfig.minValue) {
+      throw new ApiError(
+        `${CognitiveTaskError.INVALID_DATA}: El valor inicial de la escala (pregunta ${questionNumber}) debe ser al menos ${COGNITIVE_TASK_VALIDATION.scaleConfig.minValue}`,
+        400
+      );
+    }
+
+    if (scaleConfig.endValue > COGNITIVE_TASK_VALIDATION.scaleConfig.maxValue) {
+      throw new ApiError(
+        `${CognitiveTaskError.INVALID_DATA}: El valor final de la escala (pregunta ${questionNumber}) no debe exceder ${COGNITIVE_TASK_VALIDATION.scaleConfig.maxValue}`,
+        400
+      );
+    }
+    // Añadir validación startValue <= endValue si aplica
+    if (scaleConfig.startValue > scaleConfig.endValue) {
+       throw new ApiError(
+        `${CognitiveTaskError.INVALID_DATA}: El valor inicial de la escala (pregunta ${questionNumber}) no puede ser mayor que el valor final`,
+        400
+      );
+    }
+  }
+
+  /**
+   * Valida los archivos (files) para preguntas que los requieren.
+   */
+  private _validateQuestionFiles(files: UploadedFile[] | undefined, questionNumber: number): void {
+    if (!files || !Array.isArray(files)) {
+      // Permitir que no haya archivos si no son obligatorios? Depende de la lógica.
+      // Si son obligatorios, lanzar error aquí. Si no, simplemente retornar.
+      // Asumiendo que *pueden* estar vacíos, pero si existen, deben ser un array válido.
+       if (files === undefined) return; // Si no existe el array, OK (asumiendo opcional)
+       throw new ApiError(
+        `${CognitiveTaskError.INVALID_DATA}: Los archivos de la pregunta ${questionNumber} deben ser un array`,
+        400
+      ); 
+    }
+    
+    // Si el array existe, validar cada archivo
+    files.forEach((file, fileIndex) => {
+      const fileNumber = fileIndex + 1;
+      if (!file || typeof file !== 'object') {
         throw new ApiError(
-          `${CognitiveTaskError.INVALID_DATA}: Las preguntas deben ser un array`,
+          `${CognitiveTaskError.INVALID_DATA}: El archivo ${fileNumber} de la pregunta ${questionNumber} es inválido`,
           400
         );
       }
-
-      // Validar cada pregunta
-      data.questions.forEach((question, index) => {
-        // Validar tipo de pregunta
-        if (!question.type || typeof question.type !== 'string') {
-          throw new ApiError(
-            `${CognitiveTaskError.INVALID_DATA}: La pregunta ${index + 1} debe tener un tipo válido`,
-            400
-          );
-        }
-
-        // Validar título si existe
-        if (question.title && question.title.length > COGNITIVE_TASK_VALIDATION.title.maxLength) {
-          throw new ApiError(
-            `${CognitiveTaskError.INVALID_DATA}: El título de la pregunta ${index + 1} no debe exceder ${COGNITIVE_TASK_VALIDATION.title.maxLength} caracteres`,
-            400
-          );
-        }
-
-        // Validar opciones para preguntas de selección
-        if (['single_choice', 'multiple_choice', 'ranking'].includes(question.type) && question.choices) {
-          if (!Array.isArray(question.choices)) {
-            throw new ApiError(
-              `${CognitiveTaskError.INVALID_DATA}: Las opciones de la pregunta ${index + 1} deben ser un array`,
-              400
-            );
-          }
-
-          if (question.choices.length < COGNITIVE_TASK_VALIDATION.choices.min) {
-            throw new ApiError(
-              `${CognitiveTaskError.INVALID_DATA}: La pregunta ${index + 1} debe tener al menos ${COGNITIVE_TASK_VALIDATION.choices.min} opción`,
-              400
-            );
-          }
-
-          if (question.choices.length > COGNITIVE_TASK_VALIDATION.choices.max) {
-            throw new ApiError(
-              `${CognitiveTaskError.INVALID_DATA}: La pregunta ${index + 1} no debe exceder ${COGNITIVE_TASK_VALIDATION.choices.max} opciones`,
-              400
-            );
-          }
-        }
-
-        // Validar escala para preguntas de escala lineal
-        if (question.type === 'linear_scale' && question.scaleConfig) {
-          if (typeof question.scaleConfig !== 'object') {
-            throw new ApiError(
-              `${CognitiveTaskError.INVALID_DATA}: La configuración de escala de la pregunta ${index + 1} debe ser un objeto`,
-              400
-            );
-          }
-
-          if (question.scaleConfig.startValue < COGNITIVE_TASK_VALIDATION.scaleConfig.minValue) {
-            throw new ApiError(
-              `${CognitiveTaskError.INVALID_DATA}: El valor inicial de la escala debe ser al menos ${COGNITIVE_TASK_VALIDATION.scaleConfig.minValue}`,
-              400
-            );
-          }
-
-          if (question.scaleConfig.endValue > COGNITIVE_TASK_VALIDATION.scaleConfig.maxValue) {
-            throw new ApiError(
-              `${CognitiveTaskError.INVALID_DATA}: El valor final de la escala no debe exceder ${COGNITIVE_TASK_VALIDATION.scaleConfig.maxValue}`,
-              400
-            );
-          }
-        }
-        
-        // Validar archivos para preguntas de navegación y preferencia
-        if (['navigation_flow', 'preference_test'].includes(question.type) && question.files) {
-          if (!Array.isArray(question.files)) {
-            throw new ApiError(
-              `${CognitiveTaskError.INVALID_DATA}: Los archivos de la pregunta ${index + 1} deben ser un array`,
-              400
-            );
-          }
-          
-          // Verificar integridad de los archivos
-          question.files.forEach((file, fileIndex) => {
-            if (!file || typeof file !== 'object') {
-              throw new ApiError(
-                `${CognitiveTaskError.INVALID_DATA}: El archivo ${fileIndex + 1} de la pregunta ${index + 1} es inválido`,
-                400
-              );
-            }
-            
-            if (!file.id || !file.name || !file.size || !file.type) {
-              throw new ApiError(
-                `${CognitiveTaskError.INVALID_DATA}: El archivo ${fileIndex + 1} de la pregunta ${index + 1} debe tener id, name, size y type`,
-                400
-              );
-            }
-            
-            // Validar campos críticos para imágenes
-            if (!file.url || !file.s3Key) {
-              console.log(`[VALIDACION-IMAGEN] Archivo con datos incompletos: Pregunta ${index + 1}, Archivo ${fileIndex + 1}`, file);
-              throw new ApiError(
-                `${CognitiveTaskError.INVALID_DATA}: El archivo ${fileIndex + 1} de la pregunta ${index + 1} debe tener url y s3Key`,
-                400
-              );
-            }
-            
-            // Validar tamaño máximo
-            if (file.size > COGNITIVE_TASK_VALIDATION.files.maxSize) {
-              throw new ApiError(
-                `${CognitiveTaskError.INVALID_DATA}: El archivo ${fileIndex + 1} de la pregunta ${index + 1} excede el tamaño máximo permitido (${COGNITIVE_TASK_VALIDATION.files.maxSize / (1024 * 1024)} MB)`,
-                400
-              );
-            }
-          });
-        }
-      });
-    }
-
-    // Si no hay errores, la validación es exitosa
-    return true;
+      
+      // Validar campos básicos del archivo
+      if (!file.id || !file.name || !file.size || !file.type) {
+        throw new ApiError(
+          `${CognitiveTaskError.INVALID_DATA}: El archivo ${fileNumber} (pregunta ${questionNumber}) debe tener id, name, size y type`,
+          400
+        );
+      }
+      
+      // Validar campos críticos para S3 (URL y Key)
+      if (!file.url || !file.s3Key) {
+        console.log(`[VALIDACION-IMAGEN] Archivo con datos incompletos: Pregunta ${questionNumber}, Archivo ${fileNumber}`, file);
+        throw new ApiError(
+          `${CognitiveTaskError.INVALID_DATA}: El archivo ${fileNumber} (pregunta ${questionNumber}) debe tener url y s3Key`,
+          400
+        );
+      }
+      
+      // Validar tamaño máximo
+      if (file.size > COGNITIVE_TASK_VALIDATION.files.maxSize) {
+        throw new ApiError(
+          `${CognitiveTaskError.INVALID_DATA}: El archivo ${fileNumber} (pregunta ${questionNumber}) excede el tamaño máximo (${COGNITIVE_TASK_VALIDATION.files.maxSize / (1024 * 1024)} MB)`,
+          400
+        );
+      }
+      // Podría añadirse validación de tipo MIME si COGNITIVE_TASK_VALIDATION.files.validTypes existe
+    });
   }
 
   /**
@@ -277,36 +324,42 @@ export class CognitiveTaskService {
   }
 
   /**
-   * Obtiene un formulario CognitiveTask según el ID de investigación
-   * Nombre refactorizado: getByResearchId
+   * Obtiene un formulario CognitiveTask según el ID de investigación.
+   * Llama directamente al modelo que usa researchId como PK.
    */
   async getByResearchId(researchId: string): Promise<CognitiveTaskRecord | null> {
-    this.validateResearchId(researchId);
+    this.validateResearchId(researchId); // Validar ID
     try {
+      // La llamada al modelo es la misma, pero ahora usa GetCommand por PK
       return await this.model.getByResearchId(researchId);
     } catch (error) {
       console.error('[CognitiveTaskService] Error en getByResearchId:', error);
+      // Usar handleDbError para mapear errores del modelo
       throw this.handleDbError(error, 'obtener tarea cognitiva por researchId');
     }
   }
 
   /**
-   * Crea un formulario CognitiveTask
-   * Nombre refactorizado: create
+   * Crea un formulario CognitiveTask.
+   * Genera el ID lógico (UUID) aquí.
    */
   async create(researchId: string, data: CognitiveTaskFormData): Promise<CognitiveTaskRecord> {
     this.validateResearchId(researchId);
-    // Validar datos completos al crear
-    this.validateFormData(data);
     
+    // Generar ID lógico (UUID) si no viene
+    const formId = data.id || uuidv4();
     const formDataWithId = { 
       ...data, 
-      researchId, 
-      id: uuidv4() // Generar ID aquí o dejar que el modelo lo haga?
+      id: formId, // Asegurar que el ID lógico existe
+      researchId // Asegurar que researchId existe para validación
     };
+
+    // Validar datos completos al crear (usa el método refactorizado)
+    this.validateFormData(formDataWithId);
     
     try {
-      return await this.model.create(formDataWithId);
+      // Pasar el objeto completo (con id y researchId) y researchId por separado al modelo
+      return await this.model.create(formDataWithId, researchId);
     } catch (error) {
       console.error('[CognitiveTaskService] Error en create:', error);
       throw this.handleDbError(error, 'crear tarea cognitiva');
@@ -314,107 +367,123 @@ export class CognitiveTaskService {
   }
 
   /**
-   * Actualiza un formulario CognitiveTask existente usando su ID
-   * Nombre refactorizado: update
-   * @param taskId - ID del formulario a actualizar (PK)
-   * @param data - Datos parciales para actualizar
+   * Actualiza un formulario CognitiveTask existente usando su ID lógico (UUID).
+   * Obtiene el researchId asociado antes de llamar al modelo.
    */
   async update(taskId: string, data: Partial<CognitiveTaskFormData>): Promise<CognitiveTaskRecord> {
-    if (!taskId) throw new ApiError('Se requiere taskId para actualizar', 400);
-    // Validar datos parciales si existen
-    this.validateFormData(data); 
+    if (!taskId) throw new ApiError('Se requiere taskId (UUID) para actualizar', 400);
 
     try {
-      // Eliminar researchId de los datos de actualización si existe,
-      // ya que no debería cambiarse y podría causar conflicto con la clave de DynamoDB.
-      const { researchId, ...updatePayload } = data;
-      
-      const updatedRecord = await this.model.update(taskId, updatePayload);
-      if (!updatedRecord) {
-        throw new ApiError(CognitiveTaskError.NOT_FOUND, 404);
+      // 1. Obtener el registro actual usando el ID lógico (UUID) para obtener researchId y verificar existencia
+      const currentRecord = await this.model.getById(taskId);
+      if (!currentRecord) {
+        throw new ApiError(CognitiveTaskError.NOT_FOUND, 404); // Lanzar 404 si no existe
       }
-      return updatedRecord;
+      const researchId = currentRecord.researchId;
+
+      // 2. Validar los datos parciales, asegurando que researchId esté presente para la validación
+      // Eliminar id y researchId del payload de validación si no deben validarse directamente.
+      const { id, researchId: dataResearchId, ...validationPayload } = data;
+      this.validateFormData({ ...validationPayload, researchId }); // Validar con el researchId real
+      
+      // 3. Llamar al modelo para actualizar usando researchId (PK)
+      // Eliminar id y researchId del payload de actualización
+      const { id: removedId, researchId: removedResearchId, ...updatePayload } = data;
+      const updatedRecord = await this.model.update(researchId, updatePayload);
+      
+      // El modelo ahora verifica si result.Attributes existe, así que confiamos en eso.
+      return updatedRecord; 
+      
     } catch (error) {
       console.error(`[CognitiveTaskService] Error en update (taskId: ${taskId}):`, error);
-      if (error instanceof ApiError && error.statusCode === 404) throw error;
+      // Re-lanzar ApiErrors (como NOT_FOUND de getById)
+      if (error instanceof ApiError) throw error; 
+      // Mapear errores específicos del modelo (como COGNITIVE_TASK_NOT_FOUND de update)
       throw this.handleDbError(error, 'actualizar tarea cognitiva');
     }
   }
 
   /**
-   * Elimina un formulario CognitiveTask usando su ID
-   * Nombre refactorizado: delete
-   * @param taskId - ID del formulario a eliminar (PK)
+   * Elimina un formulario CognitiveTask usando su ID lógico (UUID).
+   * Obtiene el researchId asociado antes de llamar al modelo.
    */
   async delete(taskId: string): Promise<boolean> {
-    if (!taskId) throw new ApiError('Se requiere taskId para eliminar', 400);
+    if (!taskId) throw new ApiError('Se requiere taskId (UUID) para eliminar', 400);
     try {
-      const success = await this.model.delete(taskId);
-      if (!success) {
-        // Podría ser que el modelo ya devuelva error si no lo encuentra,
-        // o podemos lanzar uno aquí.
-        throw new ApiError(CognitiveTaskError.NOT_FOUND, 404); 
+       // 1. Obtener el registro actual usando el ID lógico (UUID) para obtener researchId y verificar existencia
+      const currentRecord = await this.model.getById(taskId);
+      if (!currentRecord) {
+        throw new ApiError(CognitiveTaskError.NOT_FOUND, 404); // Lanzar 404 si no existe
       }
-      return true;
+      const researchId = currentRecord.researchId;
+
+      // 2. Llamar al modelo para eliminar usando researchId (PK)
+      return await this.model.delete(researchId);
+      // El modelo usa ConditionCheck y lanza error si no existe, que será mapeado por handleDbError
+
     } catch (error) {
       console.error(`[CognitiveTaskService] Error en delete (taskId: ${taskId}):`, error);
-      if (error instanceof ApiError && error.statusCode === 404) throw error;
+      // Re-lanzar ApiErrors (como NOT_FOUND de getById)
+      if (error instanceof ApiError) throw error;
+      // Mapear errores específicos del modelo (como COGNITIVE_TASK_NOT_FOUND de delete)
       throw this.handleDbError(error, 'eliminar tarea cognitiva');
     }
   }
 
   /**
-   * Clona un formulario CognitiveTask existente para una nueva investigación
-   * @param sourceFormId ID del formulario a clonar
-   * @param targetResearchId ID de la investigación destino
-   * @returns El nuevo formulario clonado
+   * Clona un formulario CognitiveTask existente para una nueva investigación.
+   * Usa getById con el ID lógico (UUID) del formulario fuente.
    */
   async cloneCognitiveTaskForm(sourceFormId: string, targetResearchId: string): Promise<CognitiveTaskRecord> {
+    if (!sourceFormId) throw new ApiError('Se requiere sourceFormId (UUID) para clonar', 400);
+    this.validateResearchId(targetResearchId);
+    
     try {
-      // Verificamos si el formulario origen existe
+      // 1. Obtener formulario origen usando su ID lógico (UUID)
       const sourceForm = await this.model.getById(sourceFormId);
-      
       if (!sourceForm) {
         throw new ApiError(
-          `${CognitiveTaskError.NOT_FOUND}: No se encontró formulario CognitiveTask con ID: ${sourceFormId}`,
+          `${CognitiveTaskError.NOT_FOUND}: No se encontró formulario CognitiveTask fuente con ID: ${sourceFormId}`,
           404
         );
       }
       
-      // Verificamos si ya existe un formulario para la investigación destino
+      // 2. Verificar si ya existe un formulario para la investigación destino (usando PK)
       const existingTargetForm = await this.model.getByResearchId(targetResearchId);
-      
       if (existingTargetForm) {
         throw new ApiError(
-          `${CognitiveTaskError.INVALID_DATA}: Ya existe un formulario CognitiveTask para la investigación con ID: ${targetResearchId}`,
+          `${CognitiveTaskError.INVALID_DATA}: Ya existe un formulario CognitiveTask para la investigación destino con ID: ${targetResearchId}`,
           400
         );
       }
       
-      // Creamos un nuevo formulario con los datos del origen
+      // 3. Preparar datos para clonar
+      const newFormId = uuidv4(); 
+      const clonedQuestions = await this.cloneQuestions(sourceForm.questions, targetResearchId);
+      const now = new Date().toISOString();
+      
       const formDataToClone: CognitiveTaskFormData = {
+        id: newFormId, 
         researchId: targetResearchId,
-        questions: await this.cloneQuestions(sourceForm.questions, targetResearchId),
+        questions: clonedQuestions,
         randomizeQuestions: sourceForm.randomizeQuestions,
         metadata: {
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          lastModifiedBy: 'system'
+          // Copiar metadata original si existe, pero sin añadir campos no definidos
+          ...(sourceForm.metadata || {}),
+          createdAt: now, 
+          updatedAt: now,
+          lastModifiedBy: 'system_clone'
         }
       };
       
+      // 4. Crear el nuevo formulario usando el modelo
       return await this.model.create(formDataToClone, targetResearchId);
+
     } catch (error) {
       console.error('Error al clonar formulario CognitiveTask:', error);
-      
-      if (error instanceof ApiError) {
-        throw error;
-      }
-      
-      throw new ApiError(
-        `${CognitiveTaskError.DATABASE_ERROR}: Error al clonar formulario CognitiveTask: ${error instanceof Error ? error.message : 'Error desconocido'}`,
-        500
-      );
+      if (error instanceof ApiError) throw error;
+      // Mapear errores de DB
+      throw this.handleDbError(error, 'clonar formulario CognitiveTask');
     }
   }
 
@@ -431,7 +500,9 @@ export class CognitiveTaskService {
       for (const question of questions) {
         const clonedQuestion: Question = {
           ...question,
-          id: question.id // Mantenemos el mismo ID para conservar referencias
+          // Generar nuevo ID para la pregunta clonada?
+          // id: uuidv4(), // O mantener el ID original si es necesario para referencias?
+          id: question.id // Mantenemos el mismo ID por ahora
         };
         
         // Si la pregunta tiene archivos, clonarlos
@@ -445,60 +516,67 @@ export class CognitiveTaskService {
       return clonedQuestions;
     } catch (error) {
       console.error('Error al clonar preguntas:', error);
-      throw error;
+      // Re-lanzar para que cloneCognitiveTaskForm lo maneje
+      throw error; 
     }
   }
 
   /**
-   * Clona archivos de S3 para una nueva investigación
-   * @param files Archivos originales
-   * @param targetResearchId ID de la investigación destino
-   * @returns Archivos clonados
+   * Clona archivos de S3 para una nueva investigación.
+   * Genera nueva metadata y URL de subida para cada archivo en el destino.
+   * NO realiza la copia física del contenido.
    */
   private async cloneFiles(files: UploadedFile[], targetResearchId: string): Promise<UploadedFile[]> {
     try {
-      const clonedFiles: UploadedFile[] = [];
-      
-      for (const file of files) {
-        // Crear parámetros para S3
+      const clonedFilesPromises = files.map(async (file) => {
+        const mimeType = file.type || 'application/octet-stream'; 
+        const fileSize = typeof file.size === 'string' ? parseInt(file.size, 10) : file.size;
+
+        if (isNaN(fileSize) || fileSize === null || fileSize === undefined) {
+            console.warn(`[CLONE_FILES] Tamaño de archivo inválido o nulo para ${file.name}, omitiendo.`);
+            return null;
+        }
+        
         const params: PresignedUrlParams = {
-          fileType: FileType.IMAGE,
+          fileType: FileType.IMAGE, // Ajustar según sea necesario
           fileName: file.name,
-          mimeType: file.type,
-          fileSize: file.size,
+          mimeType: mimeType,
+          fileSize: fileSize,
           researchId: targetResearchId,
           folder: 'cognitive-tasks'
         };
 
-        // Generar nueva URL prefirmada
         const presignedUrlResponse = await this.s3Service.generateUploadUrl(params);
-        
-        // Crear objeto de archivo clonado
+
+        // Crear objeto de archivo clonado con la nueva metadata de S3
         const clonedFile: UploadedFile = {
-          id: presignedUrlResponse.key.split('/').pop() || '',
-          name: file.name,
-          size: file.size,
-          type: file.type,
-          url: presignedUrlResponse.fileUrl,
-          s3Key: presignedUrlResponse.key,
-          time: file.time
+          id: presignedUrlResponse.key.split('/').pop() || uuidv4(), 
+          name: file.name, 
+          size: fileSize, 
+          type: mimeType,
+          url: presignedUrlResponse.fileUrl, 
+          s3Key: presignedUrlResponse.key, 
+          time: Date.now() // Usar Date.now() para timestamp numérico
         };
-        
-        // Si el archivo original tiene zonas de interés, clonarlas
+
+        // Clonar hitZones si existen
         if (file.hitZones && file.hitZones.length > 0) {
           clonedFile.hitZones = file.hitZones.map(zone => ({
             ...zone,
-            fileId: clonedFile.id
+            id: uuidv4(), 
+            fileId: clonedFile.id 
           }));
         }
-        
-        clonedFiles.push(clonedFile);
-      }
+        return clonedFile;
+      });
+
+      const results = await Promise.all(clonedFilesPromises);
+      return results.filter(file => file !== null) as UploadedFile[];
       
-      return clonedFiles;
     } catch (error) {
-      console.error('Error al clonar archivos:', error);
-      throw error;
+      console.error('Error al clonar archivos (generando nueva metadata S3):', error);
+      if (error instanceof ApiError) throw error;
+      throw new ApiError(`${CognitiveTaskError.FILE_ERROR}: Error durante la preparación de clonación de archivos S3`, 500);
     }
   }
 
@@ -511,10 +589,12 @@ export class CognitiveTaskService {
       return await this.model.getAll();
     } catch (error) {
       console.error('Error al obtener todos los formularios CognitiveTask:', error);
-      throw new ApiError(
-        `${CognitiveTaskError.DATABASE_ERROR}: Error al obtener formularios CognitiveTask: ${error instanceof Error ? error.message : 'Error desconocido'}`,
-        500
-      );
+      // Usar handleDbError
+      throw this.handleDbError(error, 'obtener todos los formularios CognitiveTask');
+      // throw new ApiError(
+      //   `${CognitiveTaskError.DATABASE_ERROR}: Error al obtener formularios CognitiveTask: ${error instanceof Error ? error.message : 'Error desconocido'}`,
+      //   500
+      // );
     }
   }
 
@@ -526,25 +606,32 @@ export class CognitiveTaskService {
    * @returns Número de formularios actualizados correctamente
    */
   async batchUpdate(formIds: string[], updateData: Partial<CognitiveTaskFormData>): Promise<number> {
+    // Validar los datos de actualización una vez antes del bucle
+    // Necesitaríamos un researchId genérico o adaptar la validación
+    // this.validateFormData(updateData); // Esto fallará si requiere researchId
+    // Por ahora, omitimos la validación en batch o asumimos que los datos son válidos.
+    
     try {
       let successCount = 0;
       
       // Actualizar cada formulario individualmente
       for (const formId of formIds) {
         try {
+          // La llamada a `update` ya incluye la validación interna (con la limitación de researchId mencionada)
           await this.update(formId, updateData);
           successCount++;
         } catch (error) {
-          console.error(`Error al actualizar formulario ${formId}:`, error);
-          // Continuamos con el siguiente a pesar del error
+          // Loggear error específico pero continuar con el batch
+          console.error(`[BatchUpdate] Error al actualizar formulario ${formId}:`, error);
         }
       }
       
       return successCount;
     } catch (error) {
-      console.error('Error en actualización batch de formularios CognitiveTask:', error);
+      // Capturar errores generales del proceso batch (poco probable si los errores individuales se capturan)
+      console.error('Error general en actualización batch de formularios CognitiveTask:', error);
       throw new ApiError(
-        `${CognitiveTaskError.DATABASE_ERROR}: Error en actualización batch: ${error instanceof Error ? error.message : 'Error desconocido'}`,
+        `${CognitiveTaskError.DATABASE_ERROR}: Error general en actualización batch: ${error instanceof Error ? error.message : 'Error desconocido'}`,
         500
       );
     }
@@ -560,14 +647,27 @@ export class CognitiveTaskService {
     }
   }
   
+  // Manejador de errores de base de datos refactorizado para incluir mapeo de errores específicos del modelo
   private handleDbError(error: any, context: string): ApiError {
     if (error instanceof ApiError) {
-      return error; // Re-lanzar errores de validación o específicos
+      return error; 
     }
-    console.error(`[CognitiveTaskService] Error de base de datos en ${context}:`, error);
-    return new ApiError(
-      `${CognitiveTaskError.DATABASE_ERROR}: ${error.message || 'Error inesperado en base de datos'}`,
-      500
-    );
+    
+    if (error instanceof Error) {
+        if (error.message.startsWith('COGNITIVE_TASK_NOT_FOUND')) {
+             console.warn(`[handleDbError] Mapeando error NOT_FOUND en contexto: ${context}`);
+             return new ApiError(CognitiveTaskError.NOT_FOUND, 404);
+        } 
+        
+        console.error(`[CognitiveTaskService] Error de base de datos en ${context}:`, error);
+        return new ApiError(
+          `${CognitiveTaskError.DATABASE_ERROR}: ${error.message || 'Error inesperado en base de datos'}`,
+          500
+        );
+    }
+    
+    // Fallback para errores no estándar - Corregir console.error y asegurar retorno
+    console.error(`[CognitiveTaskService] Error desconocido/no-Error en ${context}:`, JSON.stringify(error));
+    return new ApiError(CognitiveTaskError.DATABASE_ERROR, 500);
   }
-} 
+}

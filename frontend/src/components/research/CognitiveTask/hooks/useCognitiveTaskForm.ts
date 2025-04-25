@@ -32,6 +32,7 @@ interface ErrorModalData {
 
 // Definir CognitiveTaskFormData localmente
 interface CognitiveTaskFormData {
+  id?: string;
   researchId: string;
   questions: Question[];
   randomizeQuestions: boolean;
@@ -548,8 +549,8 @@ export const useCognitiveTaskForm = (
     } else {
       // Si hay datos, usarlos
       console.log('[useCognitiveTaskForm] Datos recibidos del backend (fixed API):', cognitiveTaskData);
-      const existingData = cognitiveTaskData;
-      const taskId = existingData.id; // Asumir que ID está en la raíz
+      const existingData = cognitiveTaskData as CognitiveTaskFormData;
+      const taskId = existingData.id;
       if (taskId) {
         setCognitiveTaskId(taskId);
       } else {
@@ -938,106 +939,56 @@ export const useCognitiveTaskForm = (
     });
 
     try {
-      // Usar s3Service para subir los archivos
-      const results = await s3Service.uploadMultipleFiles(
-        researchId, // Necesitamos el researchId aquí
-        filesToUpload,
-        (progress: number, fileIndex: number) => {
-          // Calcular progreso general si es necesario o usar por archivo
-          const overallProgress = ((fileIndex * 100 + progress) / (totalFilesToUpload * 100)) * 100;
-          setUploadProgress(overallProgress);
-          setCurrentFileIndex(fileIndex + 1);
-          
-          // Actualizar progreso del archivo específico en el estado
-          const targetFileId = tempFiles[fileIndex]?.id;
-          if (targetFileId) {
-            setFormData(prevData => {
-              const updatedQuestions = prevData.questions.map(q => {
-                if (q.id === questionId && q.files) {
-                  const updatedFiles = q.files.map(f => 
-                    f.id === targetFileId ? { ...f, progress: progress, isLoading: progress < 100 } : f
-                  );
-                  return { ...q, files: updatedFiles };
-                }
-                return q;
-              });
-              return { ...prevData, questions: updatedQuestions };
-            });
-          }
-        }
-      );
-
-      // Actualizar el estado con los resultados de S3 (URLs y s3Keys)
-      setFormData(prevData => {
-        const updatedQuestions = [...prevData.questions];
-        const currentQuestion = updatedQuestions[questionIndex];
+      for (let i = 0; i < filesToUpload.length; i++) {
+        const file = filesToUpload[i];
+        const tempFile = tempFiles[i];
         
-        if (currentQuestion && currentQuestion.files) {
-          // Crear un mapa para buscar archivos por su ID temporal
-          const tempFileMap = new Map(tempFiles.map(f => [f.id, f]));
-          
-          // Actualizar los archivos en el estado con la información de S3
-          const finalFiles = currentQuestion.files.map(file => {
-            const tempMatch = tempFileMap.get(file.id);
-            if (tempMatch) {
-              // Encontrar el resultado correspondiente de S3 (asumiendo que el orden se mantiene)
-              const s3Result = results.find(r => r.originalName === tempMatch.name);
-              if (s3Result) {
-                return {
-                  ...file,
-                  url: s3Result.url, // URL final de S3
-                  s3Key: s3Result.s3Key,
-                  isLoading: false,
-                  progress: 100,
-                  error: false,
-                };
-              } else {
-                // Marcar como error si no se encontró resultado
-                console.error("No se encontró resultado de S3 para:", tempMatch.name);
-                return { ...file, isLoading: false, error: true };
-              }
-            } else {
-              // Es un archivo que ya estaba, mantenerlo
-              return file;
+        setCurrentFileIndex(i + 1);
+        setUploadProgress(((i + 1) / totalFilesToUpload) * 100);
+
+        await new Promise(resolve => setTimeout(resolve, 50)); // Pequeña pausa simulada
+
+        const cleanFileName = file.name.replace(/\s+/g, '_');
+        const s3Key = `cognitive-task-files/${researchId}/${questionId}/${cleanFileName}`;
+        const simulatedUrl = `https://placeholder-bucket.s3.amazonaws.com/${s3Key}`;
+
+        // Actualizar el estado del archivo con los datos simulados
+        setFormData(prevData => {
+          const updatedQuestions = prevData.questions.map(q => {
+            if (q.id === questionId && q.files) {
+              const updatedFiles = q.files.map(f => 
+                f.id === tempFile.id 
+                ? { ...f, url: simulatedUrl, s3Key: s3Key, isLoading: false, progress: 100, error: false } 
+                : f
+              );
+              return { ...q, files: updatedFiles };
             }
+            return q;
           });
-
-          // Filtrar archivos que pudieron haber fallado (opcional)
-          const successfulFiles = finalFiles.filter(f => !f.error);
-          
-          updatedQuestions[questionIndex] = {
-            ...currentQuestion,
-            // Usar solo los archivos que se subieron correctamente
-            files: successfulFiles 
-          };
           return { ...prevData, questions: updatedQuestions };
-        } else {
-          return prevData; // No hacer cambios si la pregunta o los archivos no existen
-        }
-      });
-
-      toast.success('Archivos subidos correctamente.');
-    } catch (error) {
-      console.error('Error al subir archivos a S3:', error);
-      toast.error('Error al subir uno o más archivos.');
-      // Marcar los archivos temporales como fallidos en el estado
-      setFormData(prevData => {
-        const updatedQuestions = prevData.questions.map(q => {
-          if (q.id === questionId && q.files) {
-            const updatedFiles = q.files.map(f => 
-              tempFiles.some(temp => temp.id === f.id) ? { ...f, isLoading: false, error: true } : f
-            );
-            return { ...q, files: updatedFiles };
-          }
-          return q;
         });
-        return { ...prevData, questions: updatedQuestions };
-      });
+      }
+      toast.success(`${totalFilesToUpload} archivos subidos (simulado).`);
+
+    } catch (error) {
+      console.error('Error simulando subida múltiple:', error);
+      toast.error('Error al simular la subida de archivos.');
+       setFormData(prevData => {
+         const updatedQuestions = prevData.questions.map(q => {
+            if (q.id === questionId && q.files) {
+              const updatedFiles = q.files.map(f => 
+                tempFiles.some(temp => temp.id === f.id) ? { ...f, isLoading: false, error: true } : f
+              );
+              return { ...q, files: updatedFiles };
+            }
+            return q;
+          });
+         return { ...prevData, questions: updatedQuestions };
+       });
     } finally {
       setIsUploading(false);
-      setUploadProgress(100); // Asegurar que la barra se llene
     }
-  }, [formData.questions, researchId, setFormData]); // Añadir dependencias
+  }, [formData.questions, researchId, setFormData]);
 
   // Función para eliminar un archivo
   const handleFileDelete = useCallback(async (questionId: string, fileId: string) => {
@@ -1576,7 +1527,7 @@ export const useCognitiveTaskForm = (
 
     try {
       console.log('[useCognitiveTaskForm] Obteniendo datos actualizados después de guardar');
-      const response = await cognitiveTaskFixedAPI.getByResearchId(researchId);
+      const response = await cognitiveTaskFixedAPI.getByResearchId(researchId) as CognitiveTaskFormData | null;
       console.log('[useCognitiveTaskForm] Datos actualizados recibidos:', response);
       
       // Actualizar solamente el ID

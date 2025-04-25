@@ -53,7 +53,7 @@ async function getHandler(type: string) {
       return handlers.smartVoc;
     case 'cognitive-task':
       const cognitiveTaskModule = await import('./controllers/cognitiveTask.controller');
-      handlers.cognitiveTask = cognitiveTaskModule.cognitiveTaskHandler || cognitiveTaskModule;
+      handlers.cognitiveTask = cognitiveTaskModule.cognitiveTaskHandler;
       return handlers.cognitiveTask;
     case 's3':
       const s3Module = await import('./controllers/s3.controller');
