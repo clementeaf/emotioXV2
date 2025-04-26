@@ -113,51 +113,55 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
           </div>
         ) : question.files && question.files.length > 0 ? (
           <div className="w-full space-y-3">
-            {question.files.map((file) => (
-              <div key={file.id} className="flex items-center justify-between p-2 bg-white border rounded">
-                <div className="flex items-center gap-2">
-                  {file.type.startsWith('image/') ? (
-                    <div className="relative w-10 h-10">
-                      <img 
-                        src={file.url} 
-                        alt={file.name} 
-                        className={`w-10 h-10 object-cover rounded ${file.isLoading ? 'opacity-50' : ''}`}
-                        onError={(e) => {
-                          e.currentTarget.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><rect width="40" height="40" fill="%23f0f0f0"/><text x="20" y="20" font-family="Arial" font-size="8" text-anchor="middle" dominant-baseline="middle" fill="%23999">Error</text></svg>';
-                        }}
-                      />
-                      {file.isLoading && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                        </div>
-                      )}
+            {(console.log(`[FileUploadQuestion ${question.id}] Rendering files. Data:`, JSON.stringify(question.files?.map(f => f.id))), null)}
+            {question.files.map((file, index) => {
+              console.log(`[FileUploadQuestion ${question.id}] Using key: ${file.id}-${index}`);
+              return (
+                <div key={`${file.id}-${index}`} className="flex items-center justify-between p-2 bg-white border rounded">
+                  <div className="flex items-center gap-2">
+                    {file.type.startsWith('image/') ? (
+                      <div className="relative w-10 h-10">
+                        <img 
+                          src={file.url} 
+                          alt={file.name} 
+                          className={`w-10 h-10 object-cover rounded ${file.isLoading ? 'opacity-50' : ''}`}
+                          onError={(e) => {
+                            e.currentTarget.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><rect width="40" height="40" fill="%23f0f0f0"/><text x="20" y="20" font-family="Arial" font-size="8" text-anchor="middle" dominant-baseline="middle" fill="%23999">Error</text></svg>';
+                          }}
+                        />
+                        {file.isLoading && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="w-10 h-10 bg-blue-100 flex items-center justify-center rounded">
+                        <span className="text-xs text-blue-700">{file.type.split('/')[1]}</span>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-sm font-medium truncate max-w-xs">{file.name}</p>
+                      <p className="text-xs text-neutral-500">
+                        {(file.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
                     </div>
-                  ) : (
-                    <div className="w-10 h-10 bg-blue-100 flex items-center justify-center rounded">
-                      <span className="text-xs text-blue-700">{file.type.split('/')[1]}</span>
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-sm font-medium truncate max-w-xs">{file.name}</p>
-                    <p className="text-xs text-neutral-500">
-                      {(file.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => onFileDelete && onFileDelete(file.id)}
+                    className="text-red-500 hover:text-red-700 delete-file-button"
+                    disabled={disabled}
+                    data-role="delete-file"
+                    data-file-id={file.id}
+                    data-question-id={question.id}
+                    aria-label="Eliminar archivo"
+                  >
+                    <Trash2 size={18} />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => onFileDelete && onFileDelete(file.id)}
-                  className="text-red-500 hover:text-red-700 delete-file-button"
-                  disabled={disabled}
-                  data-role="delete-file"
-                  data-file-id={file.id}
-                  data-question-id={question.id}
-                  aria-label="Eliminar archivo"
-                >
-                  <Trash2 size={18} />
-                </button>
-              </div>
-            ))}
+              );
+            })}
             <Button
               type="button"
               variant="outline"

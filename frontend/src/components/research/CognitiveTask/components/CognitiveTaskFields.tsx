@@ -112,6 +112,8 @@ export const CognitiveTaskFields: React.FC<Props> = ({
             </div>
           ) : (
             questions.map((question) => {
+              
+              // <<< Código original descomentado >>>
               const questionErrors: ValidationErrors = {};
               if (validationErrors) {
                 Object.keys(validationErrors).forEach(key => {

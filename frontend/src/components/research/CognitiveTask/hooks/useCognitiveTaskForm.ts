@@ -339,48 +339,78 @@ export const useCognitiveTaskForm = (
     }
   });
 
-  // Efecto para cargar datos existentes (ajustado para usar setFormData y el inicializador)
+  // Efecto para cargar datos existentes y fusionar centralizadamente
   useEffect(() => {
     if (isLoading) return; 
 
-    let loadedData: Partial<CognitiveTaskFormData> = {};
+    // Llamar a loadFilesFromLocalStorage para obtener datos guardados
+    const filesFromLocalStorage = loadFilesFromLocalStorage();
+    console.log('[useEffect Form Data] Archivos cargados de localStorage:', filesFromLocalStorage);
 
-    if (!cognitiveTaskData) {
-      console.log('[useCognitiveTaskForm] No hay datos o hubo error (fixed API). Usando defaults.');
-      loadedData = {
-        researchId: researchId || '',
-        questions: initializeDefaultQuestionsIfNeeded([]), // Usar inicializador con array vacío
-        randomizeQuestions: false // <<< Corregido: Usar un valor default, no derivado de DEFAULT_QUESTIONS
-      };
-      setCognitiveTaskId(null);
-    } else {
-      console.log('[useCognitiveTaskForm] Datos recibidos del backend (fixed API):', cognitiveTaskData);
-      const existingData = cognitiveTaskData as CognitiveTaskFormData;
-      const taskId = existingData.id;
-      setCognitiveTaskId(taskId || null);
+    // Usar la forma funcional de setFormData para asegurar consistencia 
+    // aunque en este enfoque centralizado, el `prev` es menos crítico.
+    setFormData(prev => { // `prev` aquí representa el estado inicial o el anterior a la carga completa
+      let finalQuestions: Question[];
+      let finalRandomize = false;
+      let finalDataFromBackend: Partial<CognitiveTaskFormData> = {};
 
-      // Usar el inicializador para fusionar datos del backend con los defaults
-      const mergedQuestions = initializeDefaultQuestionsIfNeeded(existingData.questions || []);
+      if (!cognitiveTaskData) {
+        console.log('[useEffect Form Data] No hay datos backend. Usando defaults y localStorage.');
+        // Empezar con las preguntas default
+        finalQuestions = initializeDefaultQuestionsIfNeeded([]); 
+        finalRandomize = false; 
+        setCognitiveTaskId(null); 
+      } else {
+        console.log('[useEffect Form Data] Hay datos backend. Fusionando con defaults y localStorage.');
+        const existingData = cognitiveTaskData as CognitiveTaskFormData;
+        finalDataFromBackend = existingData; // Guardar datos del backend
+        finalRandomize = existingData.randomizeQuestions ?? false;
+        setCognitiveTaskId(existingData.id || null);
+        // Fusionar estructura de preguntas default con datos del backend (sin archivos aún)
+        finalQuestions = initializeDefaultQuestionsIfNeeded(existingData.questions || []);
+      }
+
+      // <<< FUSION FINAL DE ARCHIVOS >>>
+      // Iterar sobre las preguntas finales (ya fusionadas con backend si aplica)
+      finalQuestions = finalQuestions.map(question => {
+        const backendFiles = (finalDataFromBackend.questions?.find(q => q.id === question.id)?.files || []) as ExtendedUploadedFile[];
+        const localStorageFiles = filesFromLocalStorage ? (filesFromLocalStorage[question.id] || []) : [];
+        
+        // Combinar y eliminar duplicados por ID
+        const allFilesMap = new Map<string, ExtendedUploadedFile>();
+        
+        // Prioridad a archivos del backend (más recientes/autoritativos)
+        backendFiles.forEach(file => allFilesMap.set(file.id, file));
+        
+        // Añadir archivos de localStorage solo si no existen ya (por ID)
+        localStorageFiles.forEach(file => {
+          if (!allFilesMap.has(file.id)) {
+            allFilesMap.set(file.id, file);
+          }
+        });
+
+        // Devolver la pregunta con la lista de archivos única
+        return {
+          ...question,
+          files: Array.from(allFilesMap.values())
+        };
+      });
       
-      loadedData = {
-          ...existingData,
-          researchId: researchId || existingData.researchId, // Asegurar researchId
-          questions: mergedQuestions,
-          randomizeQuestions: existingData.randomizeQuestions ?? false // <<< Corregido: Usar valor existente o default
+      // Construir el estado final a devolver
+      const finalState: CognitiveTaskFormData = {
+        ...(prev || {}), // Usar prev como base MUY inicial si es necesario
+        ...finalDataFromBackend, // Sobrescribir con datos del backend (ID, metadata, etc.)
+        researchId: researchId || finalDataFromBackend.researchId || '', // Asegurar researchId
+        questions: finalQuestions, // Usar las preguntas con archivos correctamente fusionados
+        randomizeQuestions: finalRandomize,
       };
-    }
 
-    // Establecer el estado inicial usando setFormData del hook de estado
-    setFormData(prev => ({ 
-        ...prev, // Mantener cualquier estado previo si fuera necesario (poco probable aquí)
-        ...loadedData 
-    }));
-
-    // Cargar archivos de localStorage DESPUÉS de establecer el estado inicial
-    if(researchId) { // Siempre intentar cargar si hay researchId
-        loadFilesFromLocalStorage();
-    }
+      console.log('[useEffect Form Data] Estado FINAL a devolver:', JSON.stringify(finalState.questions.find(q=>q.id==='3.8')?.files?.map(f=>f.id), null, 2));
+      return finalState;
+    });
     
+  // Dependencias: Ejecutar cuando cambie la carga, los datos del backend, el researchId 
+  // o las funciones de los hooks hijos que usamos.
   }, [cognitiveTaskData, researchId, isLoading, setFormData, initializeDefaultQuestionsIfNeeded, loadFilesFromLocalStorage]);
 
   // Wrapper para validación

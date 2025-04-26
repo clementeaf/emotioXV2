@@ -94,35 +94,13 @@ export const useCognitiveTaskState = ({
 
   // Función reutilizable para asegurar que las preguntas default existan
   const initializeDefaultQuestionsIfNeeded = useCallback((currentQuestions: Question[]): Question[] => {
-    const defaultIds = new Set(defaultQuestions.map(dq => dq.id));
-    const currentIds = new Set(currentQuestions.map(cq => cq.id));
-    let needsUpdate = false;
-
-    // Verificar si falta alguna default
-    for (const defaultId of Array.from(defaultIds)) {
-        if (!currentIds.has(defaultId)) {
-            needsUpdate = true;
-            break;
-        }
-    }
-
-    // Si no falta ninguna, retornar las actuales
-    if (!needsUpdate) return currentQuestions;
-
-    console.log('[StateHook] Restaurando preguntas predeterminadas faltantes');
+    console.log('[StateHook] Asegurando exactamente 8 preguntas predeterminadas.');
+    // Crear mapa de preguntas actuales
     const existingMap = new Map(currentQuestions.map(q => [q.id, q]));
-    const mergedQuestions = defaultQuestions.map(dq => existingMap.get(dq.id) || dq);
+    // Construir SIEMPRE el array basado en las 8 defaultQuestions, usando datos existentes si coinciden por ID
+    const mergedQuestions = defaultQuestions.map(dq => existingMap.get(dq.id) || dq); 
     
-    // Añadir preguntas extra (no default) que pudieran existir
-    currentQuestions.forEach(q => {
-        if (!defaultIds.has(q.id)) {
-            if (!mergedQuestions.some(mq => mq.id === q.id)) {
-                 mergedQuestions.push(q);
-            }
-        }
-    });
-
-    return mergedQuestions;
+    return mergedQuestions; // Devolver siempre las 8 (fusionadas o default)
 
   }, [defaultQuestions]);
 

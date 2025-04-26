@@ -28,7 +28,7 @@ interface UseCognitiveTaskFileUploadResult {
   handleFileUpload: (questionId: string, files: FileList) => Promise<void>; // Hacer async si es necesario
   handleMultipleFilesUpload: (questionId: string, files: FileList) => Promise<void>; // Hacer async si es necesario
   handleFileDelete: (questionId: string, fileId: string) => Promise<void>;
-  loadFilesFromLocalStorage: () => void;
+  loadFilesFromLocalStorage: () => Record<string, ExtendedUploadedFile[]> | null;
 }
 
 export const useCognitiveTaskFileUpload = ({
@@ -68,51 +68,32 @@ export const useCognitiveTaskFileUpload = ({
     }
   }, [researchId]);
 
-  const loadFilesFromLocalStorage = useCallback(() => {
-    if (!researchId) return;
+  const loadFilesFromLocalStorage = useCallback((): Record<string, ExtendedUploadedFile[]> | null => {
+    if (!researchId) return null;
     try {
       const storageKey = `cognitive_task_temp_files_${researchId}`;
       const savedFilesJson = localStorage.getItem(storageKey);
-      if (!savedFilesJson) return;
+      if (!savedFilesJson) return null;
       
-      const savedFiles = JSON.parse(savedFilesJson);
-      console.log('[FileUploadHook] Recuperando archivos de localStorage', savedFiles);
+      const savedFiles = JSON.parse(savedFilesJson) as Record<string, ExtendedUploadedFile[]>;
+      console.log('[FileUploadHook] Archivos recuperados de localStorage para devolver:', savedFiles);
       
-      setFormData((prevData: CognitiveTaskFormData) => {
-        const updatedQuestions = prevData.questions.map((question: Question) => {
-          const questionFiles = savedFiles[question.id];
-          if (questionFiles && questionFiles.length > 0) {
-            const existingFileIds = new Set(question.files?.map((f: UploadedFile) => f.id) || []);
-            const newFiles = questionFiles.filter((f: UploadedFile) => !existingFileIds.has(f.id));
-            if (newFiles.length > 0) {
-              const processedNewFiles = newFiles.map((file: UploadedFile) => ({
-                ...file,
-                isLoading: false,
-                progress: 100,
-                error: false
-              }));
-              return {
-                ...question,
-                files: [...(question.files || []), ...processedNewFiles]
-              };
-            }
-          }
-          return question;
-        });
-        return { ...prevData, questions: updatedQuestions };
+      Object.keys(savedFiles).forEach(questionId => {
+        savedFiles[questionId] = savedFiles[questionId].map(file => ({
+          ...file,
+          isLoading: false,
+          progress: 100,
+          error: false,
+        }));
       });
+      
+      return savedFiles;
+
     } catch (error) {
       console.error('[FileUploadHook] Error recuperando de localStorage:', error);
+      return null;
     }
-  }, [researchId, setFormData]);
-
-  // Efecto para cargar desde localStorage al montar (si hay researchId)
-  useEffect(() => {
-    if (researchId) {
-      loadFilesFromLocalStorage();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [researchId]); // Solo al cambiar researchId
+  }, [researchId]);
 
   // --- Lógica de Carga/Eliminación de Archivos --- 
 
