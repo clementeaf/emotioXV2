@@ -87,7 +87,6 @@ provider:
 
 functions: ${file(./function-definitions.yml)}
 
-# Recursos y Outputs
 resources:
   Resources: ${file(./resources.yml)}
   Outputs: ${file(./outputs.yml)} 

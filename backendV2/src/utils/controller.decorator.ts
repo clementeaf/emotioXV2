@@ -105,18 +105,24 @@ export function createController(
       } else {
         // Buscar coincidencia por patrones (útil para rutas con parámetros)
         for (const routePath in routeMap) {
-          // Convertir ruta a expresión regular - CORREGIDO para usar llaves {}
+          // Construir la ruta completa combinando basePath y la clave relativa
+          // Asegurarse de manejar barras dobles si basePath termina o routePath empieza con /
+          const fullRoutePattern = `${options.basePath.replace(/\/$/, '')}/${routePath.replace(/^\//, '')}`;
+          console.log(`CONTROLLER [${options.basePath}] - Probando patrón: ${fullRoutePattern}`); // Log para ver patrón
           const routeRegex = new RegExp(
-            `^${routePath.replace(/\/{([^\/]+)}/g, '/([^/]+)')}$`
+             // Usar el patrón completo para la regex
+            `^${fullRoutePattern.replace(/\/{([^\/]+)}/g, '/([^/]+)')}$` 
           );
+          console.log(`CONTROLLER [${options.basePath}] - Regex: ${routeRegex}`); // Log para ver regex
           
           if (routeRegex.test(path) && routeMap[routePath][method]) {
             controller = routeMap[routePath][method];
-            matchedPath = routePath;
+            matchedPath = routePath; // Mantener el path relativo original para logs?
+            console.log(`CONTROLLER [${options.basePath}] - Coincidencia encontrada con patrón: ${fullRoutePattern}`);
             
-            // Extraer parámetros de la URL y agregarlos a pathParameters - CORREGIDO para usar llaves {}
-            const paramNames = (routePath.match(/\/{([^\/]+)}/g) || [])
-              .map(p => p.substring(2, p.length - 1)); // Extraer el nombre entre {}
+            // Extraer parámetros de la URL usando la regex del patrón completo
+            const paramNames = (fullRoutePattern.match(/\/{([^\/]+)}/g) || [])
+              .map(p => p.substring(2, p.length - 1)); 
             const paramValues = path.match(routeRegex)?.slice(1);
             
             if (paramNames.length > 0 && paramValues) {

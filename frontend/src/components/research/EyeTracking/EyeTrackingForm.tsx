@@ -6,17 +6,24 @@ import { useErrorLog } from '@/components/utils/ErrorLogger';
 import { StimuliTab } from '../StimuliTab/StimuliTab';
 import { CalibrationTab } from './CalibrationTab';
 import { SettingsTab } from './SettingsTab';
+import { Save } from 'lucide-react';
 
 interface EyeTrackingFormProps {
   researchId: string;
   initialData?: any;
   onSubmit: (data: any) => void;
+  onPreview?: () => void;
+  isSaving?: boolean;
+  eyeTrackingId?: string | null;
 }
 
 export const EyeTrackingForm: React.FC<EyeTrackingFormProps> = ({
   researchId,
   initialData,
-  onSubmit
+  onSubmit: onSave,
+  onPreview,
+  isSaving,
+  eyeTrackingId
 }) => {
   // Usar logger al inicio del componente
   const logger = useErrorLog();
@@ -130,11 +137,11 @@ export const EyeTrackingForm: React.FC<EyeTrackingFormProps> = ({
         completedTabs: tabCompletionRef.current
       });
       
-      onSubmit(formDataRef.current);
+      onSave(formDataRef.current);
     } catch (err) {
-      logError('EyeTrackingForm - Error al enviar formulario', err);
+      logError('EyeTrackingForm - Error al guardar formulario', err);
     }
-  }, [onSubmit, logDebug, logError]);
+  }, [onSave, logDebug, logError]);
   
   return (
     <Card className="p-6">
@@ -164,38 +171,44 @@ export const EyeTrackingForm: React.FC<EyeTrackingFormProps> = ({
         </Tab>
       </Tabs>
       
-      <div className="flex justify-between mt-8">
-        <Button 
-          variant="outline" 
-          disabled={activeTab === "stimuli"}
-          onClick={() => {
-            const tabs = ["stimuli", "calibration", "settings"];
-            const currentIndex = tabs.indexOf(activeTab);
-            handleChangeTab(tabs[currentIndex - 1]);
-          }}
-        >
-          Anterior
-        </Button>
-        
-        {activeTab !== "settings" ? (
+      <div className="flex justify-between items-center pt-6 border-t mt-8">
+        {onPreview && (
           <Button 
-            variant="default"
-            onClick={() => {
-              const tabs = ["stimuli", "calibration", "settings"];
-              const currentIndex = tabs.indexOf(activeTab);
-              handleChangeTab(tabs[currentIndex + 1]);
-            }}
+            type="button" 
+            variant="outline" 
+            onClick={onPreview}
+            disabled={isSaving}
           >
-            Siguiente
-          </Button>
-        ) : (
-          <Button 
-            variant="default"
-            onClick={handleSubmit}
-          >
-            Guardar Configuración
+            Vista previa
           </Button>
         )}
+        
+        <div className="flex ml-auto gap-4">
+          <Button 
+            type="button" 
+            onClick={handleSubmit}
+            disabled={isSaving}
+          >
+            {isSaving ? (
+              <>
+                <span className="animate-spin mr-2">
+                  <Save className="h-4 w-4" />
+                </span>
+                Guardando...
+              </>
+            ) : eyeTrackingId ? (
+              <>
+                <Save className="h-4 w-4 mr-2" />
+                Actualizar
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4 mr-2" />
+                Guardar
+              </>
+            )}
+          </Button>
+        </div>
       </div>
     </Card>
   );

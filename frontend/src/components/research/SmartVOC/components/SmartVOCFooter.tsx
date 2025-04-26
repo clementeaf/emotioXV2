@@ -20,11 +20,11 @@ export const SmartVOCFooter: React.FC<SmartVOCFooterProps> = ({
     
     // Si existe un ID, es un registro existente, por lo que usamos "Actualizar"
     if (smartVocId) {
-      return UI_TEXTS.BUTTONS.UPDATE;
+      return 'Actualizar';
     }
     
     // Por defecto, si no hay ID, es un nuevo registro, por lo que usamos "Guardar"
-    return UI_TEXTS.BUTTONS.SAVE;
+    return 'Guardar';
   };
   
   return (

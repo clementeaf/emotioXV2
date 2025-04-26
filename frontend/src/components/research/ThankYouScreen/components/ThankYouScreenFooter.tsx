@@ -32,7 +32,7 @@ export const ThankYouScreenFooter: React.FC<ThankYouScreenFooterProps> = ({
     if (isSaving) {
       return UI_TEXTS.FOOTER.SAVING_BUTTON;
     }
-    return thankYouScreenId ? "Actualizar" : "Guardar cambios";
+    return thankYouScreenId ? "Actualizar" : "Guardar";
   };
 
   return (

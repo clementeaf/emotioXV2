@@ -149,7 +149,10 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
                   </div>
                   <button
                     type="button"
-                    onClick={() => onFileDelete && onFileDelete(file.id)}
+                    onClick={() => {
+                      console.log(`[FileUploadQuestion ${question.id}] Delete button clicked for file ID:`, file.id);
+                      onFileDelete && onFileDelete(file.id)
+                    }}
                     className="text-red-500 hover:text-red-700 delete-file-button"
                     disabled={disabled}
                     data-role="delete-file"

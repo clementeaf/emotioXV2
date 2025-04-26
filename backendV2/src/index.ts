@@ -252,8 +252,8 @@ async function handleHttpRequest(
     }
 
     // Ejecuta el controlador con los parámetros adecuados
-    // Asumiendo que cada controlador exportado maneja (event, context)
-    return await controller(event, context, requestLogger); 
+    // Los controladores creados con createController esperan solo (event)
+    return await controller(event); 
 
   } catch (error: unknown) {
     // <<< Bloque catch mejorado >>>
