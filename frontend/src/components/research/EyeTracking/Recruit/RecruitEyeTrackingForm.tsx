@@ -93,6 +93,19 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
     copyLinkToClipboard
   } = useEyeTrackingRecruit({ researchId });
 
+  // Function to determine the save button text
+  const getSaveButtonText = () => {
+    if (saving) {
+      return 'Guardando...';
+    }
+    // If formData.id exists, it's an update
+    if (formData.id) {
+      return 'Actualizar';
+    }
+    // Otherwise, it's a new creation
+    return 'Guardar';
+  };
+
   if (loading) {
     return <LoadingSkeleton variant="form" rows={8} title={true} className="max-w-4xl mx-auto" />;
   }
@@ -109,13 +122,6 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
               <div className="flex gap-3">
                 <button
                   type="button"
-                  onClick={() => {}}
-                  className="px-4 py-2 rounded-lg border border-neutral-200 bg-white shadow-sm hover:bg-neutral-100 text-sm font-medium"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
                   onClick={saveForm}
                   disabled={saving}
                   className="px-4 py-2 rounded-lg bg-neutral-900 text-white shadow hover:bg-neutral-800 text-sm font-medium disabled:opacity-50 flex items-center justify-center min-w-[160px]"
@@ -125,7 +131,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                       <Spinner size="sm" className="text-white" />
                       <span>Guardando...</span>
                     </div>
-                  ) : 'Guardar configuración'}
+                  ) : getSaveButtonText()}
                 </button>
               </div>
             </header>
