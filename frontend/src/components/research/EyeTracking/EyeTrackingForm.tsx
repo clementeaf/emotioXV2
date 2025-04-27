@@ -145,7 +145,17 @@ export const EyeTrackingForm: React.FC<EyeTrackingFormProps> = ({
   
   return (
     <Card className="p-6">
-      <h2 className="text-2xl font-bold mb-6">Configuración de Seguimiento Ocular</h2>
+      <h2 className="text-2xl font-bold mb-4">Configuración de Seguimiento Ocular</h2>
+      
+      {/* --- Información Contextual --- */}
+      <div className="mb-6 p-3 bg-gray-50 border rounded-md text-sm text-gray-600">
+        <p><span className="font-semibold">Estado:</span> {eyeTrackingId ? 'Configuración existente' : 'Configuración nueva'}</p>
+        {eyeTrackingId && (
+          <p><span className="font-semibold">ID:</span> {eyeTrackingId}</p>
+        )}
+        <p><span className="font-semibold">Research ID:</span> {researchId}</p>
+      </div>
+      {/* --- Fin Información Contextual --- */}
       
       <Tabs activeTab={activeTab} onChange={handleChangeTab}>
         <Tab id="stimuli" label="Estímulos">

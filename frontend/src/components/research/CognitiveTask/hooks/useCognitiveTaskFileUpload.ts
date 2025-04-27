@@ -99,7 +99,12 @@ export const useCognitiveTaskFileUpload = ({
   // --- Lógica de Carga/Eliminación de Archivos --- 
 
   const handleFileUpload = useCallback(async (questionId: string, files: FileList) => {
-      if (!researchId || files.length === 0) return;
+      console.log(`[!!!] handleFileUpload CALLED for question ${questionId} with ${files.length} files at ${new Date().toISOString()}`);
+      
+      if (!researchId || files.length === 0) {
+          console.warn(`[FileUploadHook ${questionId}] handleFileUpload returning early: researchId=${researchId}, files.length=${files.length}`);
+          return;
+      }
       
       console.log(`[FileUploadHook ${questionId}] handleFileUpload called with FileList length:`, files.length, files);
 
@@ -164,25 +169,42 @@ export const useCognitiveTaskFileUpload = ({
             const simulatedUrl = `https://placeholder-bucket.s3.amazonaws.com/${s3Key}`;
             
             setFormData((prevData: CognitiveTaskFormData): CognitiveTaskFormData => { 
-                const updatedQuestions = prevData.questions.map((q: Question) => {
-                    if (q.id === questionId && q.files) {
-                      const filesAsInfo: FileInfo[] = q.files.map(asFileInfo);
-                      const updatedFiles: FileInfo[] = filesAsInfo.map((f: FileInfo): FileInfo => 
-                          f.id === tempFile.id
-                          ? { ...f, url: simulatedUrl, s3Key: s3Key, status: 'uploaded', progress: 100 }
-                          : f
-                      );
-                      return { ...q, files: updatedFiles };
-                    }
-                    return q;
-                });
-                const currentQ = updatedQuestions.find(q => q.id === questionId);
-                const currentQFilesAsInfo = currentQ?.files?.map(asFileInfo);
+                const updatedQuestions = [...prevData.questions]; 
+                const questionIndex = updatedQuestions.findIndex(q => q.id === questionId);
                 
-                console.log(`[FileUploadHook ${questionId}] State after updating file ${tempFile.id}:`, 
-                  JSON.stringify(currentQFilesAsInfo?.map(f => ({ id: f.id, name: f.name, status: f.status })))
-                );
-                saveFilesToLocalStorage(updatedQuestions);
+                if (questionIndex !== -1 && updatedQuestions[questionIndex].files) {
+                    // Filtrar para quitar la versión temporal del archivo
+                    let currentFiles = updatedQuestions[questionIndex].files.filter(f => f.id !== tempFile.id);
+                    
+                    // Crear el nuevo objeto FileInfo representando el estado final "uploaded"
+                    const uploadedFileInfo: FileInfo = {
+                        id: tempFile.id, // Mantener el ID original temporal
+                        name: file.name,
+                        size: file.size,
+                        type: file.type,
+                        url: simulatedUrl,
+                        s3Key: s3Key,
+                        status: 'uploaded',
+                        progress: 100,
+                        isLoading: false,
+                        questionId: questionId
+                    };
+
+                    // Añadir el objeto final al array de archivos
+                    currentFiles.push(uploadedFileInfo);
+
+                    // Actualizar los archivos de la pregunta
+                    updatedQuestions[questionIndex].files = currentFiles;
+                        
+                    console.log(`[FileUploadHook ${questionId}] State updated (Filter & Add) for file ${tempFile.id}:`,
+                     JSON.stringify(currentFiles.map(f => ({ id: f.id, name: f.name, status: f.status })))
+                   );
+                    
+                    saveFilesToLocalStorage(updatedQuestions); 
+                } else {
+                     console.warn(`[FileUploadHook ${questionId}] Question not found or has no files during final update.`);
+                }
+                
                 return { ...prevData, questions: updatedQuestions };
             });
           }
@@ -215,30 +237,39 @@ export const useCognitiveTaskFileUpload = ({
   }, [handleFileUpload]);
 
   const handleFileDelete = useCallback(async (questionId: string, fileId: string) => {
-      console.log(`[FileUploadHook] Solicitud para marcar como pendiente de eliminación: ${fileId} en pregunta ${questionId}`);
+      console.log(`[FileUploadHook] Solicitud para eliminar localmente archivo: ${fileId} en pregunta ${questionId}`);
+      
+      // Encontrar el archivo a eliminar para revocar su URL si es blob
+      let fileToDelete: FileInfo | undefined;
+      const currentQuestions = formData.questions;
+      const question = currentQuestions.find(q => q.id === questionId);
+      if (question && question.files) {
+        fileToDelete = question.files.map(asFileInfo).find(f => f.id === fileId);
+      }
+
+      if (fileToDelete?.url?.startsWith('blob:')) {
+        console.log('[FileUploadHook] Revocando URL blob al eliminar archivo:', fileToDelete.url);
+        URL.revokeObjectURL(fileToDelete.url);
+      }
+      
       setFormData((prevData: CognitiveTaskFormData): CognitiveTaskFormData => { 
         const updatedQuestions = prevData.questions.map((q: Question) => {
           if (q.id === questionId && q.files) {
-            const filesAsInfo: FileInfo[] = q.files.map(asFileInfo);
-            const updatedFiles: FileInfo[] = filesAsInfo.map((f: FileInfo): FileInfo => {
-              if (f.id === fileId) {
-                if (f.url?.startsWith('blob:')) {
-                  console.log('[FileUploadHook] Revocando URL blob al marcar para eliminar:', f.url);
-                  URL.revokeObjectURL(f.url);
-                }
-                console.log(`[FileUploadHook] Marcando archivo ${fileId} como 'pending-delete'`);
-                return { ...f, status: 'pending-delete' as const };
-              }
-              return f;
-            });
+            // Filtrar el array de archivos para quitar el que coincide con fileId
+            const updatedFiles: FileInfo[] = q.files.map(asFileInfo).filter((f: FileInfo) => f.id !== fileId);
+            console.log(`[FileUploadHook] Archivo ${fileId} eliminado localmente. Archivos restantes: ${updatedFiles.length}`);
             return { ...q, files: updatedFiles };
           }
           return q;
         });
-        saveFilesToLocalStorage(updatedQuestions);
+        // Guardar el estado actualizado en localStorage (sin el archivo eliminado)
+        saveFilesToLocalStorage(updatedQuestions); 
         return { ...prevData, questions: updatedQuestions };
       });
-      toast('Archivo marcado para eliminar. Guarde los cambios para confirmar.', { icon: '🗑️' }); 
+      
+      // Cambiar el mensaje de toast
+      toast.success('Archivo eliminado localmente.'); 
+
   }, [formData.questions, setFormData, saveFilesToLocalStorage]);
 
   return {

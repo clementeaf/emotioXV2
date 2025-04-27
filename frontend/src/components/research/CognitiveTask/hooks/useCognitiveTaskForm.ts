@@ -93,6 +93,7 @@ interface UseCognitiveTaskFormResult {
   validateForm: () => boolean; 
   
   // Funciones de Modal de Confirmación
+  showConfirmModal: boolean;
   confirmAndSave: () => void;
   cancelSave: () => void;
 
@@ -110,7 +111,7 @@ interface UseCognitiveTaskFormResult {
   closeJsonModal: () => void;
   jsonToSend: string;
   pendingAction: 'save' | 'preview' | null;
-  continueWithAction: () => void; // Asegurarse que esta función existe y se devuelve
+  continueWithAction: () => void;
 }
 
 // Definiciones locales para QUESTION_TYPES
@@ -560,9 +561,12 @@ export const useCognitiveTaskForm = (
     // Validación (del hook)
     validationErrors, 
     validateForm: validateCurrentForm,
-    // Modal de confirmación
+    
+    // <<< Asegurarse que se retornan las funciones y estado del modal de confirmación >>>
+    showConfirmModal: modals.showConfirmModal,
     confirmAndSave,
     cancelSave,
+    
     // Estado de carga (del hook)
     isUploading, 
     uploadProgress, 

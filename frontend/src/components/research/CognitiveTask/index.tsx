@@ -7,7 +7,8 @@ import {
   CognitiveTaskHeader,
   CognitiveTaskFooter,
   ErrorModal,
-  JsonPreviewModal 
+  JsonPreviewModal,
+  ConfirmModal
 } from './components';
 import { UI_TEXTS } from './constants';
 import { cn } from '@/lib/utils';
@@ -55,7 +56,10 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
     closeJsonModal,
     jsonToSend,
     pendingAction,
-    continueWithAction
+    continueWithAction,
+    showConfirmModal,
+    confirmAndSave,
+    cancelSave
   } = useCognitiveTaskForm(researchId, onSave);
   
   // Registrar información importante para debugging
@@ -92,6 +96,17 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
         title={UI_TEXTS.TITLE} 
         description={UI_TEXTS.DESCRIPTION}
       />
+      
+      {/* --- Información Contextual --- */}
+      <div className="mt-4 mb-6 p-3 bg-gray-50 border rounded-md text-sm text-gray-600">
+        <p><span className="font-semibold">Estado:</span> {cognitiveTaskId ? 'Configuración existente' : 'Configuración nueva'}</p>
+        {cognitiveTaskId && (
+          <p><span className="font-semibold">ID:</span> {cognitiveTaskId}</p>
+        )}
+        {/* Asegurarse de que researchId siempre tenga valor aquí */}
+        <p><span className="font-semibold">Research ID:</span> {researchId || 'No disponible'}</p> 
+      </div>
+      {/* --- Fin Información Contextual --- */}
 
       {/* Campos del formulario */}
       <div>
@@ -133,6 +148,16 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
         jsonData={jsonToSend}
         pendingAction={pendingAction}
         hasValidationErrors={!!validationErrors && Object.keys(validationErrors).length > 0}
+      />
+      
+      <ConfirmModal
+        isOpen={showConfirmModal}
+        onClose={cancelSave}
+        onConfirm={confirmAndSave}
+        title={cognitiveTaskId ? "Confirmar Actualización" : "Confirmar Guardado"}
+        description="¿Estás seguro de que deseas guardar los cambios en esta tarea cognitiva?"
+        confirmText={cognitiveTaskId ? "Actualizar" : "Guardar"}
+        isConfirming={isSaving}
       />
     </div>
   );
