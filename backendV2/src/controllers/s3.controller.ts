@@ -151,52 +151,52 @@ export class S3Controller {
   }
 
   /**
-   * Genera una URL prefirmada para eliminar un archivo de S3
+   * Elimina un objeto de S3 directamente (obteniendo key de query param)
    * @param event Evento API Gateway
-   * @param userId ID del usuario autenticado
-   * @returns Respuesta con la URL prefirmada o error
+   * @param _userId ID del usuario autenticado
+   * @returns Respuesta de éxito (204 No Content) o error
    */
-  async generateDeleteUrl(event: APIGatewayProxyEvent, _userId: string): Promise<APIGatewayProxyResult> {
+  async deleteObject(event: APIGatewayProxyEvent, _userId: string): Promise<APIGatewayProxyResult> {
+    const operation = 'S3Controller.deleteObject';
     try {
-      console.log('S3Controller.generateDeleteUrl - Inicio');
-      
-      // Obtener la clave del objeto desde los parámetros de ruta
-      const key = event.pathParameters?.key;
-      
+      console.log(`${operation} - Inicio`);
+
+      // Obtener la clave del objeto desde los query string parameters
+      const encodedKey = event.queryStringParameters?.key;
+
       // Verificar que se proporcionó una clave
-      if (!key) {
-        return createResponse(400, { error: 'Se requiere la clave del objeto (key)' });
+      if (!encodedKey) {
+        console.warn(`${operation} - Falta el query parameter 'key'`);
+        return createResponse(400, { error: 'Se requiere el parámetro de consulta \'key\'' });
       }
-      
-      // Extraer tiempo de expiración (opcional)
-      let expiresIn: number | undefined;
-      
-      // Verificar si hay un cuerpo en la petición
-      if (event.body) {
-        const requestBody = JSON.parse(event.body);
-        expiresIn = requestBody.expiresIn;
+
+      // Decodificar la clave de la URL
+      let decodedKey: string;
+      try {
+        decodedKey = decodeURIComponent(encodedKey);
+        console.log(`${operation} - Clave decodificada: ${decodedKey}`);
+      } catch (decodeError) {
+        console.error(`${operation} - Error decodificando la clave: ${encodedKey}`, decodeError);
+        return createResponse(400, { error: 'La clave del objeto proporcionada no es válida (error de decodificación)' });
       }
-      
-      // Generar URL prefirmada para eliminación
-      const deleteUrl = await s3Service.generateDeleteUrl(key, expiresIn);
-      
-      console.log('S3Controller.generateDeleteUrl - URL generada exitosamente');
-      
-      // Devolver respuesta exitosa
-      return createResponse(200, {
-        success: true,
-        data: {
-          deleteUrl,
-          key,
-          expiresAt: Math.floor(Date.now() / 1000) + (expiresIn || 900)
-        }
-      });
-      
+
+      // Llamar al servicio para eliminar el objeto
+      await s3Service.deleteObject(decodedKey);
+
+      console.log(`${operation} - Objeto eliminado exitosamente: ${decodedKey}`);
+
+      // Devolver respuesta exitosa (204 No Content es estándar para DELETE exitoso sin cuerpo)
+      return createResponse(204, {}); 
+
     } catch (error: any) {
-      console.error('S3Controller.generateDeleteUrl - Error:', error);
-      
+      console.error(`${operation} - Error eliminando objeto:`, error);
+
+      // Podríamos añadir manejo específico para errores de S3 si es necesario
+      // ej. if (error.name === 'AccessDenied') return createResponse(403, {...})
+
+      // Error general
       return createResponse(500, {
-        error: 'Error al generar URL prefirmada para eliminación',
+        error: 'Error al eliminar objeto de S3',
         details: error.message || 'Error interno del servidor'
       });
     }
@@ -206,22 +206,25 @@ export class S3Controller {
 // Crear instancia del controlador
 const s3Controller = new S3Controller();
 
-// Definir el mapa de rutas
+// Definir el mapa de rutas (claves relativas al basePath '/s3')
 const routeMap: RouteMap = {
-  '/s3/upload': {
+  // Clave relativa: '/upload' corresponde a POST /s3/upload
+  '/upload': {
     POST: s3Controller.generateUploadUrl
   },
-  '/s3/download/:key': {
+  // Clave relativa: '/download/:key' corresponde a GET /s3/download/:key
+  '/download/:key': {
     GET: s3Controller.generateDownloadUrl
   },
-  '/s3/delete/:key': {
-    DELETE: s3Controller.generateDeleteUrl
+  // Clave relativa: '/delete' corresponde a DELETE /s3/delete
+  '/delete': {
+    DELETE: s3Controller.deleteObject
   }
 };
 
 // Exportar el handler para uso con Lambda
 export const s3Handler = createController(routeMap, {
-  basePath: '/s3',
+  basePath: '/s3', // <--- createController usará esto como prefijo
   publicRoutes: [] // Todas las rutas requieren autenticación
 });
 

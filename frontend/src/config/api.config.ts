@@ -187,7 +187,7 @@ const API_CONFIG = {
     s3: {
       UPLOAD: '/s3/upload',
       DOWNLOAD: '/s3/download/{key}',
-      DELETE: '/s3/delete/{key}',
+      DELETE: '/s3/delete',
     },
   },
   

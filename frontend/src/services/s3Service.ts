@@ -5,6 +5,7 @@
 
 import API_CONFIG from '@/config/api.config';
 import tokenService from '@/services/tokenService';
+import { apiClient } from '@/config/api-client'; // Use named import
 
 // Tipos de archivos soportados
 export enum FileType {
@@ -190,33 +191,36 @@ class S3Service {
   }
 
   /**
-   * Obtiene una URL prefirmada para eliminar un archivo
+   * Elimina un archivo de S3 llamando directamente al endpoint del backend
+   * @param key Clave S3 del archivo a eliminar
+   * @throws Error si la eliminación falla
    */
-  async getDeleteUrl(key: string): Promise<string> {
-    // URL encode el key para la ruta
-    const encodedKey = encodeURIComponent(key);
-    
-    // Usar el endpoint definido en api.config.ts
-    const deleteEndpoint = API_CONFIG.endpoints.s3.DELETE.replace('{key}', encodedKey);
-    
-    console.log('S3Service.getDeleteUrl - Solicitando URL para eliminación:', 
-      this.baseURL + deleteEndpoint);
-    
-    const response = await fetch(`${this.baseURL}${deleteEndpoint}`, {
-      method: 'DELETE',
-      headers: this.getAuthHeaders()
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('S3Service.getDeleteUrl - Error en respuesta:', 
-        response.status, response.statusText, errorText);
-      throw new Error(`Error al obtener URL de eliminación: ${response.status} ${response.statusText}`);
+  async deleteFile(key: string): Promise<void> { // Cambiado para devolver Promise<void> o lanzar error
+    const operation = '[Frontend S3Service.deleteFile]';
+    if (!key) {
+      console.error(`${operation} - Se requiere clave S3 para eliminar.`);
+      throw new Error('Se requiere clave S3 para eliminar');
     }
+    
+    try {
+      const encodedKey = encodeURIComponent(key); // Encode the key
+      
+      console.log(`${operation} - Enviando solicitud DELETE al endpoint 's3' tipo 'DELETE' con query param key: ${encodedKey}`);
 
-    const data = await response.json();
-    console.log('S3Service.getDeleteUrl - URL obtenida:', data.data.deleteUrl);
-    return data.data.deleteUrl;
+      // <<< Pass encodedKey directly as the value for the params key >>>
+      await apiClient.delete('s3', 'DELETE', { 
+        params: encodedKey // Assign encoded key string directly to params
+      }); 
+
+      console.log(`${operation} - Solicitud DELETE completada exitosamente para: ${key}`);
+      // No se devuelve nada en caso de éxito (void)
+
+    } catch (error: any) {
+      console.error(`${operation} - Error en llamada DELETE para ${key}:`, error);
+      // Re-lanzar el error para que el hook (useCognitiveTaskFileUpload) lo capture
+      // y muestre el mensaje de error al usuario.
+      throw error;
+    }
   }
 
   /**
@@ -373,26 +377,6 @@ class S3Service {
       document.body.removeChild(link);
     } catch (error) {
       console.error('Error al descargar archivo:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Elimina un archivo de S3 usando URL prefirmada
-   */
-  async deleteFile(key: string): Promise<boolean> {
-    try {
-      // 1. Obtener URL prefirmada para eliminación
-      const deleteUrl = await this.getDeleteUrl(key);
-      
-      // 2. Ejecutar solicitud DELETE usando la URL prefirmada
-      const response = await fetch(deleteUrl, {
-        method: 'DELETE'
-      });
-      
-      return response.ok;
-    } catch (error) {
-      console.error('Error al eliminar archivo:', error);
       throw error;
     }
   }

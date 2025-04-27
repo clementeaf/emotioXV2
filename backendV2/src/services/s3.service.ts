@@ -284,6 +284,37 @@ export class S3Service {
       throw error;
     }
   }
+
+  /**
+   * Elimina un objeto de S3
+   * @param key Clave del objeto a eliminar
+   */
+  async deleteObject(key: string): Promise<void> {
+    const operation = 'S3Service.deleteObject';
+    try {
+      if (!key || key.trim() === '') {
+        console.warn(`${operation} - Se intentó eliminar con una clave vacía.`);
+        throw new Error('Se requiere una clave de objeto válida para eliminar');
+      }
+
+      console.log(`${operation} - Intentando eliminar objeto con clave: ${key}`);
+
+      const command = new DeleteObjectCommand({
+        Bucket: this.bucketName,
+        Key: key
+      });
+
+      await this.s3Client.send(command);
+
+      console.log(`${operation} - Objeto eliminado con éxito de S3: ${key}`);
+      
+    } catch (error) {
+      console.error(`${operation} - Error al eliminar objeto de S3 (${key}):`, error);
+      // Re-lanzar el error para que el llamador (controlador) pueda manejarlo
+      // y devolver una respuesta de error adecuada al cliente.
+      throw error;
+    }
+  }
 }
 
 // Instancia singleton del servicio

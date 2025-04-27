@@ -93,6 +93,12 @@ async function getHandler(type: string) {
           logger.info(`Usando exportación específica 'cognitiveTaskHandler' para ${type}`);
       }
       // <<< FIN: Lógica específica para 'cognitive-task' >>>
+      // <<< INICIO: Lógica específica para 's3' >>>
+      else if (type === 's3' && typeof module.s3Handler === 'function') {
+          handler = module.s3Handler;
+          logger.info(`Usando exportación específica 's3Handler' para ${type}`);
+      }
+      // <<< FIN: Lógica específica para 's3' >>>
       // <<< Mantener la lógica existente como fallback >>>
       // 1. Priorizar la exportación nombrada 'handler' (si no es uno de los específicos)
       else if (typeof module.handler === 'function') {
@@ -108,7 +114,8 @@ async function getHandler(type: string) {
               !(type === 'welcome-screen' && key === 'WelcomeScreenController') &&
               !(type === 'smart-voc' && key === 'SmartVOCFormController') &&
               !(type === 'thank-you-screen' && key === 'ThankYouScreenController') &&
-              !(type === 'cognitive-task' && key === 'CognitiveTaskController')) { // Added check for CognitiveTaskController
+              !(type === 'cognitive-task' && key === 'CognitiveTaskController') &&
+              !(type === 's3' && key === 'S3Controller')) {
             handler = module[key];
             logger.info(`Usando la primera función exportada encontrada ('${key}') para ${type}`);
             break; // Usar la primera que se encuentre
