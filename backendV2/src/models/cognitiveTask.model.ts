@@ -122,11 +122,11 @@ export class CognitiveTaskModel {
       );
     }
     
-    // Asegurarse de que las referencias de imágenes estén completas
+    // Asegurarse de que las referencias de imágenes estén completas (solo s3Key es vital)
     questions.forEach(q => {
       if (q.files && q.files.length > 0) {
-        q.files = q.files.filter(f => f && f.s3Key && f.url);
-        console.log(`[DIAGNOSTICO-IMAGEN:MODEL:CREATE] Pregunta ${q.id} tiene ${q.files.length} archivos válidos`);
+        q.files = q.files.filter(f => f && f.s3Key); 
+        console.log(`[DIAGNOSTICO-IMAGEN:MODEL:CREATE] Pregunta ${q.id} tiene ${q.files.length} archivos válidos (con s3Key)`);
       }
     });
     
@@ -212,15 +212,14 @@ export class CognitiveTaskModel {
   async getByResearchId(researchId: string): Promise<CognitiveTaskRecord | null> {
     const command = new QueryCommand({
       TableName: this.tableName,
-      IndexName: 'ResearchIdIndex', // <<< Usar el GSI por researchId >>>
-      KeyConditionExpression: 'researchId = :researchIdVal', // <<< Condición sobre la PK del GSI >>>
-      // Opcional: Filtrar por SK para obtener solo el item CognitiveTask
-      // FilterExpression: 'sk = :skVal', 
+      IndexName: 'ResearchIdIndex', 
+      KeyConditionExpression: 'researchId = :researchIdVal',
+      FilterExpression: 'sk = :skVal', 
       ExpressionAttributeValues: {
         ':researchIdVal': researchId,
-        // ':skVal': CognitiveTaskModel.SORT_KEY_VALUE // Descomentar si se usa FilterExpression
+        ':skVal': CognitiveTaskModel.SORT_KEY_VALUE // Usar la constante para el valor de sk
       },
-      Limit: 1 // Solo esperamos un formulario por investigación
+      Limit: 1 
     });
 
     try {

@@ -67,47 +67,47 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
 
       try {
         // 1. Intentar obtener los datos desde la API
+        console.log(`[ResearchSidebar] Intentando obtener nombre desde API para ${researchId}`);
         const response = await researchAPI.get(researchId);
         const responseData = response?.data as any;
         let nameFromApi: string | null = null;
         
-        // Intentar extraer el nombre de posibles estructuras de respuesta
         if (responseData?.data?.name) { 
           nameFromApi = responseData.data.name;
+          console.log("[ResearchSidebar] Nombre encontrado en response.data.name");
         } else if (responseData?.name) {
           nameFromApi = responseData.name;
+          console.log("[ResearchSidebar] Nombre encontrado en response.name");
         }
 
         if (nameFromApi) {
           setResearchName(nameFromApi);
           setIsLoading(false);
           foundName = true;
-          // Opcional: Guardar en localStorage para caché/fallback
           try {
             localStorage.setItem(`research_${researchId}`, JSON.stringify(responseData?.data || responseData));
           } catch (e) { /* Ignorar errores de localStorage */ }
         } else {
-          // Si la API responde pero no hay nombre, forzar fallback
-          throw new Error('Nombre no encontrado en la respuesta de la API');
+          // <<< No lanzar error aquí, simplemente registrar y continuar a fallback >>>
+          console.warn(`[ResearchSidebar] Nombre no encontrado en la respuesta de la API para ${researchId}. Intentando fallback.`);
         }
 
       } catch (apiError: any) {
-        // Gestionar errores específicos de la API
+        // Gestionar errores REALES de la API (red, 500, etc.)
         if (apiError?.response?.status === 404 || apiError?.message?.includes('404')) {
           console.warn(`ResearchSidebar: Investigación ${researchId} no encontrada (404).`);
           cleanResearchFromLocalStorage(researchId);
           setResearchName("Investigación no encontrada"); 
-          // Mantener redirección para 404
           setTimeout(() => router.push('/dashboard'), 100);
           setIsLoading(false);
-          return; // Salir si es 404
+          return; 
         } else {
           // Loguear otros errores de API, pero continuar al fallback
-          console.warn('Error al obtener nombre desde API (continuando a fallback):', apiError);
+          console.error('Error en llamada API (continuando a fallback):', apiError); // Usar console.error para errores reales
         }
       }
 
-      // 2. Fallback: intentar obtener los datos desde localStorage (solo si la API falló)
+      // 2. Fallback: intentar obtener los datos desde localStorage (solo si API falló o no encontró nombre)
       if (!foundName) {
           try {
             const storedResearch = localStorage.getItem(`research_${researchId}`);

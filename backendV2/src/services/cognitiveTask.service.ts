@@ -203,11 +203,12 @@ export class CognitiveTaskService {
         );
       }
       
-      // Validar campos críticos para S3 (URL y Key)
-      if (!file.url || !file.s3Key) {
-        console.log(`[VALIDACION-IMAGEN] Archivo con datos incompletos: Pregunta ${questionNumber}, Archivo ${fileNumber}`, file);
+      // <<< Modificar Validación: Solo requerir s3Key, no url >>>
+      // La URL final se deriva de S3, no necesitamos recibirla.
+      if (!file.s3Key) { 
+        console.log(`[VALIDACION-IMAGEN] Archivo sin s3Key: Pregunta ${questionNumber}, Archivo ${fileNumber}`, file);
         throw new ApiError(
-          `${CognitiveTaskError.INVALID_DATA}: El archivo ${fileNumber} (pregunta ${questionNumber}) debe tener url y s3Key`,
+          `${CognitiveTaskError.INVALID_DATA}: El archivo ${fileNumber} (pregunta ${questionNumber}) debe tener una s3Key`,
           400
         );
       }

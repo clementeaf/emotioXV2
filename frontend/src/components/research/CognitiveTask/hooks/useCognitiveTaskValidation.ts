@@ -26,13 +26,13 @@ const VALIDATION_ERROR_MESSAGES = {
 
 interface UseCognitiveTaskValidationResult {
   validationErrors: ValidationErrors | null;
-  validateForm: (formData: ValidationFormData, researchId?: string) => boolean;
+  validateForm: (formData: ValidationFormData, researchId?: string) => ValidationErrors | null;
 }
 
 export const useCognitiveTaskValidation = (): UseCognitiveTaskValidationResult => {
   const [validationErrors, setValidationErrors] = useState<ValidationErrors | null>(null);
 
-  const validateForm = useCallback((formData: ValidationFormData, researchId?: string): boolean => {
+  const validateForm = useCallback((formData: ValidationFormData, researchId?: string): ValidationErrors | null => {
     const errors: ValidationErrors = {};
     
     // Validar researchId (si se pasa)
@@ -84,20 +84,24 @@ export const useCognitiveTaskValidation = (): UseCognitiveTaskValidationResult =
         }
       }
       
-      // Añadir validación de archivos si es necesaria y está definida en VALIDATION_ERROR_MESSAGES
-      // if (question.required && ['navigation_flow', 'preference_test'].includes(question.type)) {
-      //    if (!question.files || question.files.length === 0) {
-      //        errors[`question_${index}_files`] = VALIDATION_ERROR_MESSAGES.FILES_REQUIRED;
-      //    } else if (question.type === 'preference_test' && question.files.length !== 2) {
-      //        errors[`question_${index}_files`] = VALIDATION_ERROR_MESSAGES.PREFERENCE_TEST_FILES_REQUIRED;
-      //    }
-      // }
+      // Validación de Archivos (Corregida)
+      if (question.required && ['navigation_flow', 'preference_test'].includes(question.type)) {
+         const fileCount = question.files?.length || 0; // Usar longitud directa del array
+         if (fileCount === 0) {
+             errors[`question_${index}_files`] = VALIDATION_ERROR_MESSAGES.FILES_REQUIRED;
+         } else if (question.type === 'preference_test' && fileCount !== 2) {
+             errors[`question_${index}_files`] = VALIDATION_ERROR_MESSAGES.PREFERENCE_TEST_FILES_REQUIRED;
+         }
+      }
     });
     
-    console.log('[useCognitiveTaskValidation] Errores encontrados:', errors);
-    setValidationErrors(Object.keys(errors).length > 0 ? errors : null); // Guardar null si no hay errores
-    return Object.keys(errors).length === 0;
-  }, []); // Sin dependencias externas, la lógica está contenida
+    const errorCount = Object.keys(errors).length;
+    const result = errorCount > 0 ? errors : null;
+    console.log(`[useCognitiveTaskValidation] Validación completada. ${errorCount} errores encontrados:`, result || '{}');
+    
+    setValidationErrors(result);
+    return result;
+  }, []);
 
   return {
     validationErrors,

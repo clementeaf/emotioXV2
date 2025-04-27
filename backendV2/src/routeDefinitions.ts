@@ -20,7 +20,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
   { pathPattern: /^\/research\/[^\/]+\/welcome-screen(\/[^\/]+)?$/, controllerType: 'welcome-screen' },
 
   // Thank You Screen
-  { pathPattern: /^\/research\/[^\/]+\/thank-you-screen/, controllerType: 'thank-you-screen' },
+  { pathPattern: /^\/research\/[^\/]+\/thank-you-screen(\/[^\/]+)?$/, controllerType: 'thank-you-screen' },
 
   // Eye Tracking Recruit
   { pathPattern: /^\/research\/[^\/]+\/eye-tracking-recruit/, controllerType: 'eye-tracking-recruit' },

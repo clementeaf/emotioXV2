@@ -90,7 +90,7 @@ interface UseCognitiveTaskFormResult {
   
   // Validación
   validationErrors: ValidationErrors | null;
-  validateForm: () => boolean; 
+  validateForm: () => ValidationErrors | null;
   
   // Funciones de Modal de Confirmación
   showConfirmModal: boolean;
@@ -473,10 +473,12 @@ export const useCognitiveTaskForm = (
   // o las funciones de los hooks hijos que usamos.
   }, [cognitiveTaskData, researchId, isLoading, setFormData, initializeDefaultQuestionsIfNeeded, loadFilesFromLocalStorage]);
 
-  // Wrapper para validación
-  const validateCurrentForm = useCallback(() => {
-      return runValidation(formData, researchId);
-  }, [formData, researchId, runValidation]);
+  // Wrapper para validación (actualizar para que coincida)
+  const validateCurrentForm = useCallback((): ValidationErrors | null => {
+      // Pasar solo los campos necesarios de formData para la validación
+      const dataToValidate = { questions: formData.questions };
+      return runValidation(dataToValidate, researchId);
+  }, [formData.questions, researchId, runValidation]); // Asegurar dependencias correctas
 
   // --- Lógica de Acciones Principales (sin cambios grandes) ---
   const continueWithAction = () => { /* ... */ };
@@ -505,12 +507,23 @@ export const useCognitiveTaskForm = (
   }, [formData, validateCurrentForm, modals]);
 
   const handleSave = () => {
-    if (validateCurrentForm()) {
-        // Solo abrir modal si la validación pasa
+    console.log(`[handleSave] Iniciando guardado. researchId: ${researchId}`);
+    const errorsFound = validateCurrentForm(); // <<< Capturar errores o null
+    const isValid = errorsFound === null; // <<< Determinar validez
+    
+    console.log(`[handleSave] Resultado de validateCurrentForm: ${isValid}`);
+    // <<< Loguear los errores encontrados INMEDIATAMENTE
+    console.log('[handleSave] Errores encontrados por validateCurrentForm:', errorsFound);
+    
+    if (isValid) {
         modals.showConfirmModalAction();
     } else {
-        // Opcional: Mostrar un toast general si falla la validación
-        toast.error('Por favor, corrija los errores en el formulario.');
+        // <<< Mostrar toast específico si el único error es sobre las preguntas >>>
+        if (errorsFound && errorsFound.questions && Object.keys(errorsFound).length === 1) {
+          toast.error(errorsFound.questions); // Mostrar error específico de preguntas
+        } else {
+          toast.error('Por favor, corrija los errores en el formulario.'); // Toast genérico para otros errores
+        }
     }
   };
   const confirmAndSave = useCallback(() => {

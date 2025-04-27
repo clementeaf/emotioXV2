@@ -193,13 +193,14 @@ export class ThankYouScreenModel {
    */
   async getByResearchId(researchId: string): Promise<SharedThankYouScreenModel | null> {
     const context = 'getByResearchId';
-    const command = new QueryCommand({ // Usar Query sobre el GSI correcto
+    const command = new QueryCommand({ 
       TableName: this.tableName,
-      IndexName: 'ResearchIdIndex', // USAR el índice común
+      IndexName: 'ResearchIdIndex',
       KeyConditionExpression: 'researchId = :rid', 
+      FilterExpression: 'sk = :skVal',
       ExpressionAttributeValues: {
         ':rid': researchId,
-        // No necesitamos filtrar por SK aquí si asumimos una pantalla por researchId
+        ':skVal': ThankYouScreenModel.SORT_KEY_VALUE // Filtrar por SK="THANK_YOU_SCREEN"
       },
       Limit: 1
     });
