@@ -37,8 +37,8 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
   // Research (Ruta base - DEBE IR DESPUÉS de las rutas específicas de research)
   { pathPattern: /^\/research/, controllerType: 'research' },
 
-  // S3 (Actualizado para capturar /delete sin :key)
-  { pathPattern: /^\/s3\/(upload|download\/[^\/]+|delete)$/, controllerType: 's3' },
+  // S3 (Ajustar regex para download sin parámetro de ruta)
+  { pathPattern: /^\/s3\/(upload|download|delete-object)$/, controllerType: 's3' },
 
   // Participants
   { pathPattern: /^\/participants/, controllerType: 'participants' },

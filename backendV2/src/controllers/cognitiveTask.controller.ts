@@ -2,10 +2,11 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { createResponse } from '../utils/controller.utils';
 import { createController, RouteMap } from '../utils/controller.decorator';
 import { cognitiveTaskService, CognitiveTaskError } from '../services/cognitiveTask.service';
-import { CognitiveTaskFormData } from '../../../shared/interfaces/cognitive-task.interface';
-import { validateUserId, extractResearchId, ERROR_MESSAGES, parseAndValidateBody, validateCognitiveTaskData } from '../utils/validation';
+import { CognitiveTaskFormData, Question, UploadedFile } from '../../../shared/interfaces/cognitive-task.interface';
+import { extractResearchId, ERROR_MESSAGES, parseAndValidateBody, validateCognitiveTaskData } from '../utils/validation';
 import { ApiError } from '../utils/errors';
 import { structuredLog } from '../utils/logging.util';
+import s3Service from '../services/s3.service';
 
 
 /**
@@ -47,20 +48,19 @@ export class CognitiveTaskController {
   }
 
   // Función auxiliar para validación y extracción común
-  private validateAndExtractIds(event: APIGatewayProxyEvent): { userId: string; researchId: string; taskId?: string } | APIGatewayProxyResult {
-    const userId = event.requestContext.authorizer?.claims?.sub;
-    const userValidationError = validateUserId(userId);
-    if (userValidationError) return userValidationError;
+  private validateAndExtractIds(event: APIGatewayProxyEvent): { /*userId: string;*/ researchId: string; taskId?: string } | APIGatewayProxyResult {
+    // const userId = event.requestContext.authorizer?.claims?.sub;
+    // const userValidationError = validateUserId(userId);
+    // if (userValidationError) return userValidationError;
 
     const researchIdResult = extractResearchId(event);
     if ('statusCode' in researchIdResult) return researchIdResult;
     const { researchId } = researchIdResult;
 
-    // Extraer taskId si existe (para update/delete)
-    // La validación de si es obligatorio se hace en el método que lo requiere
-    const taskId = event.pathParameters?.taskId; 
+    const taskId = event.pathParameters?.taskId;
     
-    return { userId: userId!, researchId, taskId };
+    // return { userId: userId!, researchId, taskId };
+    return { researchId, taskId }; // Devolver solo researchId y taskId
   }
 
   /**
@@ -134,18 +134,63 @@ export class CognitiveTaskController {
       if (!taskId) {
           throw new ApiError('Falta el ID de la tarea cognitiva en la ruta', 400);
       }
-      
-      // Usar parseAndValidateBody (validación parcial si aplica)
-      // NOTA: La validación aquí podría ser parcial (Partial<CognitiveTaskFormData>)
-      // Ajustar validateCognitiveTaskData o crear una función específica si es necesario
-      const bodyResult = parseAndValidateBody<Partial<CognitiveTaskFormData>>(event, data => validateCognitiveTaskData(data, true)); // true indica validación parcial
+
+      const bodyResult = parseAndValidateBody<Partial<CognitiveTaskFormData>>(event, data => validateCognitiveTaskData(data, true));
       if ('statusCode' in bodyResult) return bodyResult;
       const formData = bodyResult.data;
-      
+
       structuredLog('info', `CognitiveTaskController.${context}`, 'Actualizando formulario CognitiveTask', { researchId, taskId });
-      // Pasar userId si es necesario
-      const result = await cognitiveTaskService.update(taskId, formData /*, userId */); 
-      
+
+      const currentTask = await cognitiveTaskService.getById(taskId);
+      if (currentTask && currentTask.questions) {
+        const s3KeysToDelete: string[] = [];
+
+        currentTask.questions.forEach((currentQuestion: Question) => {
+          const currentFiles = currentQuestion.files || []; 
+          const updatedQuestion = formData.questions?.find(q => q.id === currentQuestion.id);
+          const updatedFiles = updatedQuestion?.files || [];
+
+          if (currentFiles.length > 0) {
+            currentFiles.forEach((currentFile: UploadedFile) => {
+              if (!currentFile || !currentFile.s3Key) return;
+
+              const isFileKept = (updatedFiles as UploadedFile[]).some(updatedFile => 
+                updatedFile && currentFile && 
+                updatedFile.id === currentFile.id && 
+                updatedFile.s3Key === currentFile.s3Key
+              );
+
+              if (!isFileKept) {
+                s3KeysToDelete.push(currentFile.s3Key);
+                structuredLog('info', `CognitiveTaskController.${context}.s3Delete`, 'Archivo marcado para eliminación de S3', { researchId, taskId, questionId: currentQuestion.id, fileId: currentFile.id, s3Key: currentFile.s3Key });
+              }
+            });
+          }
+        });
+
+        if (s3KeysToDelete.length > 0) {
+          structuredLog('info', `CognitiveTaskController.${context}.s3Delete`, `Intentando eliminar ${s3KeysToDelete.length} archivos de S3`, { researchId, taskId, keys: s3KeysToDelete });
+          const deletePromises = s3KeysToDelete.map(key =>
+            s3Service.deleteObject(key).catch((err: unknown) => {
+              let errorMessage = 'Error desconocido';
+              if (err instanceof Error) {
+                  errorMessage = err.message;
+              } else if (typeof err === 'string') {
+                  errorMessage = err;
+              }
+              structuredLog('error', `CognitiveTaskController.${context}.s3Delete`, `Error al eliminar archivo de S3: ${key}`, { researchId, taskId, error: errorMessage });
+            })
+          );
+          await Promise.all(deletePromises);
+        }
+      } else if (currentTask) {
+          structuredLog('warn', `CognitiveTaskController.${context}.s3Delete`, 'No se encontraron preguntas en el registro actual para verificar archivos S3', { researchId, taskId });
+      } else {
+          structuredLog('warn', `CognitiveTaskController.${context}.s3Delete`, 'No se encontró el registro actual para verificar archivos S3', { researchId, taskId });
+      }
+
+      const result = await cognitiveTaskService.update(taskId, formData);
+
       structuredLog('info', `CognitiveTaskController.${context}`, 'Formulario actualizado', { researchId, taskId });
       return createResponse(200, result);
     } catch (error) {
@@ -199,19 +244,21 @@ export class CognitiveTaskController {
 
 const controllerInstance = new CognitiveTaskController();
 
-// Definir RouteMap como constante, usando rutas relativas
+// Definir RouteMap como constante, usando rutas relativas al nuevo basePath 'research'
 const cognitiveTaskRouteMap: RouteMap = {
-  '/': {
+  // Mapear la ruta completa relativa al basePath
+  '/{researchId}/cognitive-task': { 
     'GET': controllerInstance.get.bind(controllerInstance),
     'POST': controllerInstance.create.bind(controllerInstance),
   },
-  '/{taskId}': {
+  // Mapear la ruta con taskId relativa al basePath
+  '/{researchId}/cognitive-task/{taskId}': {
     'PUT': controllerInstance.update.bind(controllerInstance),
     'DELETE': controllerInstance.delete.bind(controllerInstance)
   }
 };
 
 export const cognitiveTaskHandler = createController(cognitiveTaskRouteMap, {
-  // Especificar el basePath que coincide con la parte principal de la ruta en routeDefinitions
-  basePath: '/research/{researchId}/cognitive-task' 
+  // Cambiar basePath a solo '/research'
+  basePath: '/research' 
 });

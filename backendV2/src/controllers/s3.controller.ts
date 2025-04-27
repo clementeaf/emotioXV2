@@ -108,25 +108,31 @@ export class S3Controller {
     try {
       console.log('S3Controller.generateDownloadUrl - Inicio');
       
-      // Obtener la clave del objeto desde los parámetros de ruta
-      const key = event.pathParameters?.key;
+      // <<< LEER key DESDE QUERY STRING PARAMETERS >>>
+      const key = event.queryStringParameters?.key;
       
       // Verificar que se proporcionó una clave
       if (!key) {
-        return createResponse(400, { error: 'Se requiere la clave del objeto (key)' });
+        return createResponse(400, { error: 'Se requiere el parámetro "key" en la query string' });
       }
       
-      // Extraer tiempo de expiración (opcional)
-      let expiresIn: number | undefined;
+      // Decodificar la clave si viene codificada en la URL
+      const decodedKey = decodeURIComponent(key);
+      console.log(`[S3Controller.generateDownloadUrl] - Key decodificada: ${decodedKey}`);
       
-      // Verificar si hay un cuerpo en la petición
+      // Extraer tiempo de expiración (opcional del body o query string? Usaremos body por consistencia)
+      let expiresIn: number | undefined;
       if (event.body) {
-        const requestBody = JSON.parse(event.body);
-        expiresIn = requestBody.expiresIn;
+        try {
+          const requestBody = JSON.parse(event.body);
+          expiresIn = requestBody.expiresIn;
+        } catch (parseError) {
+            console.warn('[S3Controller.generateDownloadUrl] - No se pudo parsear el body para expiresIn');
+        }
       }
       
       // Generar URL prefirmada para descarga
-      const downloadUrl = await s3Service.generateDownloadUrl(key, expiresIn);
+      const downloadUrl = await s3Service.generateDownloadUrl(decodedKey, expiresIn);
       
       console.log('S3Controller.generateDownloadUrl - URL generada exitosamente');
       
@@ -135,14 +141,17 @@ export class S3Controller {
         success: true,
         data: {
           downloadUrl,
-          key,
+          key: decodedKey,
           expiresAt: Math.floor(Date.now() / 1000) + (expiresIn || 3600)
         }
       });
       
     } catch (error: any) {
       console.error('S3Controller.generateDownloadUrl - Error:', error);
-      
+      // Manejar caso específico si s3Service lanza error por clave no encontrada
+      if (error.name === 'NoSuchKey') { 
+          return createResponse(404, { error: `No se encontró el archivo con la clave proporcionada.` });
+      }
       return createResponse(500, {
         error: 'Error al generar URL prefirmada para descarga',
         details: error.message || 'Error interno del servidor'
@@ -151,53 +160,47 @@ export class S3Controller {
   }
 
   /**
-   * Elimina un objeto de S3 directamente (obteniendo key de query param)
+   * Elimina un objeto de S3 directamente (obteniendo key de path param)
    * @param event Evento API Gateway
    * @param _userId ID del usuario autenticado
    * @returns Respuesta de éxito (204 No Content) o error
    */
-  async deleteObject(event: APIGatewayProxyEvent, _userId: string): Promise<APIGatewayProxyResult> {
-    const operation = 'S3Controller.deleteObject';
+  async deleteObject(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    console.log('[Backend S3Controller.deleteObject] - Iniciando eliminación');
+    console.log('[Backend S3Controller.deleteObject] - Event:', JSON.stringify(event, null, 2));
+
+    let key: string | undefined;
     try {
-      console.log(`${operation} - Inicio`);
-
-      // Obtener la clave del objeto desde los query string parameters
-      const encodedKey = event.queryStringParameters?.key;
-
-      // Verificar que se proporcionó una clave
-      if (!encodedKey) {
-        console.warn(`${operation} - Falta el query parameter 'key'`);
-        return createResponse(400, { error: 'Se requiere el parámetro de consulta \'key\'' });
+      // Leer la clave del cuerpo de la solicitud POST
+      if (event.body) {
+        const body = JSON.parse(event.body);
+        key = body.key;
+        console.log(`[Backend S3Controller.deleteObject] - Key obtenida del body: ${key}`);
+      } else {
+        console.warn('[Backend S3Controller.deleteObject] - El cuerpo de la solicitud está vacío.');
       }
 
-      // Decodificar la clave de la URL
-      let decodedKey: string;
-      try {
-        decodedKey = decodeURIComponent(encodedKey);
-        console.log(`${operation} - Clave decodificada: ${decodedKey}`);
-      } catch (decodeError) {
-        console.error(`${operation} - Error decodificando la clave: ${encodedKey}`, decodeError);
-        return createResponse(400, { error: 'La clave del objeto proporcionada no es válida (error de decodificación)' });
+      if (!key) {
+        console.warn('[Backend S3Controller.deleteObject] - Falta el parámetro "key" en el body de la solicitud.');
+        return createResponse(400, { error: 'Falta el parámetro "key" en el body' });
       }
 
-      // Llamar al servicio para eliminar el objeto
+      // Decodificar la clave si está codificada como URL (aunque viene del body, podría estarlo)
+      const decodedKey = decodeURIComponent(key);
+      console.log(`[Backend S3Controller.deleteObject] - Key decodificada: ${decodedKey}`);
+
       await s3Service.deleteObject(decodedKey);
-
-      console.log(`${operation} - Objeto eliminado exitosamente: ${decodedKey}`);
-
-      // Devolver respuesta exitosa (204 No Content es estándar para DELETE exitoso sin cuerpo)
-      return createResponse(204, {}); 
+      console.log(`[Backend S3Controller.deleteObject] - Archivo eliminado exitosamente de S3: ${decodedKey}`);
+      return createResponse(200, { message: 'Archivo eliminado exitosamente' });
 
     } catch (error: any) {
-      console.error(`${operation} - Error eliminando objeto:`, error);
-
-      // Podríamos añadir manejo específico para errores de S3 si es necesario
-      // ej. if (error.name === 'AccessDenied') return createResponse(403, {...})
-
-      // Error general
+      console.error(`[Backend S3Controller.deleteObject] - Error al eliminar objeto de S3 con key '${key}':`, error);
+      if (error.name === 'NoSuchKey') {
+        return createResponse(404, { error: 'El archivo no existe en S3' });
+      }
       return createResponse(500, {
-        error: 'Error al eliminar objeto de S3',
-        details: error.message || 'Error interno del servidor'
+        error: 'Error interno del servidor al eliminar el archivo',
+        details: error.message,
       });
     }
   }
@@ -212,13 +215,14 @@ const routeMap: RouteMap = {
   '/upload': {
     POST: s3Controller.generateUploadUrl
   },
-  // Clave relativa: '/download/:key' corresponde a GET /s3/download/:key
-  '/download/:key': {
+  // <<< CAMBIAR RUTA PARA DESCARGA >>>
+  // Clave relativa: '/download' corresponde a GET /s3/download?key=...
+  '/download': { 
     GET: s3Controller.generateDownloadUrl
   },
-  // Clave relativa: '/delete' corresponde a DELETE /s3/delete
-  '/delete': {
-    DELETE: s3Controller.deleteObject
+  // Ruta para eliminar usando POST y la clave en el body
+  '/delete-object': {
+    POST: s3Controller.deleteObject
   }
 };
 

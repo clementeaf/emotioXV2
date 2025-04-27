@@ -63,7 +63,7 @@ interface CognitiveTaskEndpoints {
 interface S3Endpoints {
   UPLOAD: string;
   DOWNLOAD: string;
-  DELETE: string;
+  DELETE_OBJECT: string;
 }
 
 // Modificamos la interfaz para incluir los endpoints añadidos
@@ -186,8 +186,8 @@ const API_CONFIG = {
     // S3
     s3: {
       UPLOAD: '/s3/upload',
-      DOWNLOAD: '/s3/download/{key}',
-      DELETE: '/s3/delete',
+      DOWNLOAD: '/s3/download',
+      DELETE_OBJECT: '/s3/delete-object',
     },
   },
   

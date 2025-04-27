@@ -2,8 +2,8 @@ import React, { useRef } from 'react';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Button } from '@/components/ui/Button';
-import { Upload, Trash2 } from 'lucide-react';
-import { FileUploadQuestionProps } from '../../types';
+import { Upload, Trash2, Clock } from 'lucide-react';
+import { FileUploadQuestionProps, FileInfo } from '../../types';
 import { Switch } from '@/components/ui/Switch';
 
 const DEFAULT_TEXTS = {
@@ -113,13 +113,15 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
           </div>
         ) : question.files && question.files.length > 0 ? (
           <div className="w-full space-y-3">
-            {(console.log(`[FileUploadQuestion ${question.id}] Rendering files. Data:`, JSON.stringify(question.files?.map(f => f.id))), null)}
-            {question.files.map((file, index) => {
-              console.log(`[FileUploadQuestion ${question.id}] Using key: ${file.id}-${index}`);
+            {question.files.map((file: FileInfo, index) => {
+              const isPendingDelete = file.status === 'pending-delete';
               return (
-                <div key={`${file.id}-${index}`} className="flex items-center justify-between p-2 bg-white border rounded">
+                <div 
+                  key={`${file.id}-${index}`} 
+                  className={`flex items-center justify-between p-2 bg-white border rounded transition-opacity duration-300 ${isPendingDelete ? 'opacity-50 border-dashed border-amber-400' : ''}`}
+                >
                   <div className="flex items-center gap-2">
-                    {file.type.startsWith('image/') ? (
+                    {file.type?.startsWith('image/') ? (
                       <div className="relative w-10 h-10">
                         <img 
                           src={file.url} 
@@ -137,7 +139,7 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
                       </div>
                     ) : (
                       <div className="w-10 h-10 bg-blue-100 flex items-center justify-center rounded">
-                        <span className="text-xs text-blue-700">{file.type.split('/')[1]}</span>
+                        <span className="text-xs text-blue-700">{file.type?.split('/')[1] || 'file'}</span>
                       </div>
                     )}
                     <div>
@@ -145,20 +147,25 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
                       <p className="text-xs text-neutral-500">
                         {(file.size / 1024 / 1024).toFixed(2)} MB
                       </p>
+                      {isPendingDelete && (
+                         <p className="text-xs text-amber-600 italic">Pendiente de eliminar...</p>
+                      )}
                     </div>
                   </div>
                   <button
                     type="button"
                     onClick={() => {
-                      console.log(`[FileUploadQuestion ${question.id}] Delete button clicked for file ID:`, file.id);
-                      onFileDelete && onFileDelete(file.id)
+                      if (!isPendingDelete && onFileDelete) {
+                        console.log(`[FileUploadQuestion ${question.id}] Delete button clicked for file ID:`, file.id);
+                        onFileDelete(file.id)
+                      }
                     }}
-                    className="text-red-500 hover:text-red-700 delete-file-button"
-                    disabled={disabled}
+                    className={`p-1 rounded ${isPendingDelete ? 'text-gray-400 cursor-not-allowed' : 'text-red-500 hover:text-red-700 hover:bg-red-50'} delete-file-button transition-colors`}
+                    disabled={disabled || isPendingDelete}
                     data-role="delete-file"
                     data-file-id={file.id}
                     data-question-id={question.id}
-                    aria-label="Eliminar archivo"
+                    aria-label={isPendingDelete ? "Archivo pendiente de eliminar" : "Eliminar archivo"}
                   >
                     <Trash2 size={18} />
                   </button>

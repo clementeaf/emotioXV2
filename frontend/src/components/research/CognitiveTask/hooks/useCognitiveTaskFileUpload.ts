@@ -2,22 +2,31 @@ import { useState, useCallback, useEffect, Dispatch, SetStateAction } from 'reac
 import toast from 'react-hot-toast';
 import { v4 as uuidv4 } from 'uuid';
 import { s3Service } from '@/services'; // Asegurar path correcto
-import { Question, UploadedFile } from 'shared/interfaces/cognitive-task.interface';
+import { Question } from 'shared/interfaces/cognitive-task.interface'; // Quitar UploadedFile si no se usa directo
 import { CognitiveTaskFormData } from './useCognitiveTaskForm'; // Asumiendo que se exporta
+import { FileInfo } from '../types'; // <-- Importar FileInfo
 
-// Tipos locales necesarios
-interface ExtendedUploadedFile extends UploadedFile {
-  isLoading?: boolean;
-  progress?: number;
-  error?: boolean;
-  url: string; // URL puede ser blob temporal o S3 final
-  questionId?: string; 
-}
+// Tipos locales necesarios --> Eliminado ExtendedUploadedFile
+
+// Helper para asegurar que un objeto es FileInfo
+const asFileInfo = (file: any): FileInfo => ({
+  id: file.id || uuidv4(),
+  name: file.name || '',
+  size: file.size || 0,
+  type: file.type || '',
+  url: file.url || '',
+  s3Key: file.s3Key,
+  status: file.status || 'uploaded',
+  progress: file.progress,
+  error: file.error,
+  isLoading: file.isLoading,
+  questionId: file.questionId
+});
 
 interface UseCognitiveTaskFileUploadProps {
   researchId?: string;
-  formData: CognitiveTaskFormData; // Aceptar tipo completo
-  setFormData: Dispatch<SetStateAction<CognitiveTaskFormData>>; // Aceptar setter del tipo completo
+  formData: CognitiveTaskFormData;
+  setFormData: Dispatch<SetStateAction<CognitiveTaskFormData>>;
 }
 
 interface UseCognitiveTaskFileUploadResult {
@@ -25,10 +34,10 @@ interface UseCognitiveTaskFileUploadResult {
   uploadProgress: number;
   currentFileIndex: number;
   totalFiles: number;
-  handleFileUpload: (questionId: string, files: FileList) => Promise<void>; // Hacer async si es necesario
-  handleMultipleFilesUpload: (questionId: string, files: FileList) => Promise<void>; // Hacer async si es necesario
+  handleFileUpload: (questionId: string, files: FileList) => Promise<void>;
+  handleMultipleFilesUpload: (questionId: string, files: FileList) => Promise<void>;
   handleFileDelete: (questionId: string, fileId: string) => Promise<void>;
-  loadFilesFromLocalStorage: () => Record<string, ExtendedUploadedFile[]> | null;
+  loadFilesFromLocalStorage: () => Record<string, FileInfo[]> | null; // Usar FileInfo
 }
 
 export const useCognitiveTaskFileUpload = ({
@@ -45,14 +54,10 @@ export const useCognitiveTaskFileUpload = ({
   const saveFilesToLocalStorage = useCallback((questions: Question[]) => {
     if (!researchId) return;
     try {
-      const filesMap: Record<string, ExtendedUploadedFile[]> = {};
+      const filesMap: Record<string, FileInfo[]> = {};
       questions.forEach(question => {
         if (question.files && question.files.length > 0) {
-          const validFiles = question.files.map(file => ({
-            ...file,
-            isLoading: false,
-            progress: 100
-          }));
+          const validFiles: FileInfo[] = question.files.map(asFileInfo);
           if (validFiles.length > 0) {
             filesMap[question.id] = validFiles;
           }
@@ -68,26 +73,22 @@ export const useCognitiveTaskFileUpload = ({
     }
   }, [researchId]);
 
-  const loadFilesFromLocalStorage = useCallback((): Record<string, ExtendedUploadedFile[]> | null => {
+  const loadFilesFromLocalStorage = useCallback((): Record<string, FileInfo[]> | null => {
     if (!researchId) return null;
     try {
       const storageKey = `cognitive_task_temp_files_${researchId}`;
       const savedFilesJson = localStorage.getItem(storageKey);
       if (!savedFilesJson) return null;
       
-      const savedFiles = JSON.parse(savedFilesJson) as Record<string, ExtendedUploadedFile[]>;
+      const savedFiles = JSON.parse(savedFilesJson) as Record<string, any[]>;
       console.log('[FileUploadHook] Archivos recuperados de localStorage para devolver:', savedFiles);
       
+      const filesMapResult: Record<string, FileInfo[]> = {};
       Object.keys(savedFiles).forEach(questionId => {
-        savedFiles[questionId] = savedFiles[questionId].map(file => ({
-          ...file,
-          isLoading: false,
-          progress: 100,
-          error: false,
-        }));
+        filesMapResult[questionId] = savedFiles[questionId].map(asFileInfo);
       });
       
-      return savedFiles;
+      return filesMapResult;
 
     } catch (error) {
       console.error('[FileUploadHook] Error recuperando de localStorage:', error);
@@ -97,102 +98,106 @@ export const useCognitiveTaskFileUpload = ({
 
   // --- Lógica de Carga/Eliminación de Archivos --- 
 
-  // handleFileUpload (lógica de simulación/s3Service simplificada)
   const handleFileUpload = useCallback(async (questionId: string, files: FileList) => {
       if (!researchId || files.length === 0) return;
       
-      // <<< LOG 1: Incoming FileList >>>
       console.log(`[FileUploadHook ${questionId}] handleFileUpload called with FileList length:`, files.length, files);
 
-      const questionIndex = formData.questions.findIndex(q => q.id === questionId);
-      if (questionIndex === -1) return;
-      
       const filesToUpload = Array.from(files);
       setIsUploading(true);
       setTotalFiles(filesToUpload.length);
       setCurrentFileIndex(0);
       setUploadProgress(0);
 
-      const tempFiles: ExtendedUploadedFile[] = filesToUpload.map((file, index) => ({
-          id: `${questionId}_${uuidv4()}`, // Generar ID único
+      const tempFiles: FileInfo[] = filesToUpload.map((file): FileInfo => ({
+          id: `${questionId}_${uuidv4()}`,
           name: file.name,
           size: file.size,
           type: file.type,
           url: URL.createObjectURL(file),
           s3Key: '',
-          isLoading: true,
+          status: 'uploading',
           progress: 0,
-          error: false,
           questionId: questionId
       }));
 
-      // <<< LOG 2: Generated Temp Files >>>
       console.log(`[FileUploadHook ${questionId}] Generated tempFiles:`, JSON.stringify(tempFiles.map(f => ({ id: f.id, name: f.name }))));
 
-      // Añadir temporales al estado
-      setFormData((prevData: CognitiveTaskFormData) => {
+      setFormData((prevData: CognitiveTaskFormData): CognitiveTaskFormData => {
           const updatedQuestions = [...prevData.questions];
-          const existingFiles = updatedQuestions[questionIndex].files || [];
+          const questionIndex = updatedQuestions.findIndex(q => q.id === questionId);
+          if (questionIndex === -1) return prevData;
+          const existingFiles = (updatedQuestions[questionIndex].files || []).map(asFileInfo);
           updatedQuestions[questionIndex].files = [...existingFiles, ...tempFiles];
-          // <<< LOG 3: State After Adding Temp Files >>>
-          console.log(`[FileUploadHook ${questionId}] State after adding temp files:`, JSON.stringify(updatedQuestions[questionIndex].files.map(f => f.id)));
+          console.log(`[FileUploadHook ${questionId}] State after adding temp files:`, JSON.stringify(updatedQuestions[questionIndex].files?.map(f => f.id)));
           return { ...prevData, questions: updatedQuestions };
       });
 
-      // Simulación/Subida real
       try {
           for (let i = 0; i < filesToUpload.length; i++) {
             const file = filesToUpload[i];
-            const tempFile = tempFiles[i]; // Obtener temp file correspondiente por índice
+            const tempFile = tempFiles[i];
 
-            // <<< LOG 4: Processing file in loop >>>
             console.log(`[FileUploadHook ${questionId}] Processing file in loop index ${i}:`, file.name, `(Temp ID: ${tempFile.id})`);
 
             setCurrentFileIndex(i + 1);
-            setUploadProgress(((i + 1) / filesToUpload.length) * 100);
+            const currentProgress = ((i + 1) / filesToUpload.length) * 100;
             
-            // *** Lógica de subida real a S3 iría aquí ***
-            // Simulando éxito por ahora:
-            await new Promise(resolve => setTimeout(resolve, 50)); // Simular retraso de red
+            setFormData((prevData: CognitiveTaskFormData): CognitiveTaskFormData => {
+              const updatedQuestions = prevData.questions.map((q) => {
+                if (q.id === questionId && q.files) {
+                  const filesAsInfo: FileInfo[] = q.files.map(asFileInfo);
+                  const updatedFiles: FileInfo[] = filesAsInfo.map((f: FileInfo) =>
+                    f.id === tempFile.id ? { ...f, progress: currentProgress } : f
+                  );
+                  return { ...q, files: updatedFiles };
+                }
+                return q;
+              });
+              return { ...prevData, questions: updatedQuestions };
+            });
+            setUploadProgress(currentProgress); 
+
+            await new Promise(resolve => setTimeout(resolve, 50)); 
             const cleanFileName = file.name.replace(/\s+/g, '_');
-            // Asegurar unicidad en S3 Key también si es necesario
-            const s3Key = `cognitive-task-files/${researchId}/${questionId}/${cleanFileName}_${tempFile.id.split('_').pop()}`; 
+            const s3Key = `cognitive-task-files/${researchId}/${questionId}/${cleanFileName}_${tempFile.id.split('_').pop()}`;
             const simulatedUrl = `https://placeholder-bucket.s3.amazonaws.com/${s3Key}`;
             
-            // Actualizar estado del archivo específico
-            setFormData((prevData: CognitiveTaskFormData) => {
+            setFormData((prevData: CognitiveTaskFormData): CognitiveTaskFormData => { 
                 const updatedQuestions = prevData.questions.map((q: Question) => {
                     if (q.id === questionId && q.files) {
-                    const updatedFiles = q.files.map((f: ExtendedUploadedFile) => 
-                        f.id === tempFile.id // Comparar con el ID único temporal
-                        ? { ...f, url: simulatedUrl, s3Key: s3Key, isLoading: false, progress: 100, error: false } 
-                        : f
-                    );
-                    return { ...q, files: updatedFiles };
+                      const filesAsInfo: FileInfo[] = q.files.map(asFileInfo);
+                      const updatedFiles: FileInfo[] = filesAsInfo.map((f: FileInfo): FileInfo => 
+                          f.id === tempFile.id
+                          ? { ...f, url: simulatedUrl, s3Key: s3Key, status: 'uploaded', progress: 100 }
+                          : f
+                      );
+                      return { ...q, files: updatedFiles };
                     }
                     return q;
                 });
-                // <<< LOG 5: State After Updating Single File Status >>>
-                const currentQFiles = updatedQuestions.find(q=>q.id===questionId)?.files;
-                console.log(`[FileUploadHook ${questionId}] State after updating file ${tempFile.id}:`, JSON.stringify(currentQFiles?.map(f => ({ id: f.id, name: f.name }))));
-                saveFilesToLocalStorage(updatedQuestions); // Guardar después de cada actualización?
+                const currentQ = updatedQuestions.find(q => q.id === questionId);
+                const currentQFilesAsInfo = currentQ?.files?.map(asFileInfo);
+                
+                console.log(`[FileUploadHook ${questionId}] State after updating file ${tempFile.id}:`, 
+                  JSON.stringify(currentQFilesAsInfo?.map(f => ({ id: f.id, name: f.name, status: f.status })))
+                );
+                saveFilesToLocalStorage(updatedQuestions);
                 return { ...prevData, questions: updatedQuestions };
             });
           }
-          // <<< LOG 6: Upload Loop Finished >>>
           console.log(`[FileUploadHook ${questionId}] Upload loop finished.`);
-          toast.success('Archivos subidos (simulado)'); // Ajustar si es subida real
+          toast.success('Archivos subidos (simulado)');
       } catch (error) {
           console.error('Error simulando subida:', error);
           toast.error('Error simulando subida');
-          // Marcar como error (ejemplo)
-          setFormData((prevData: CognitiveTaskFormData) => {
+          setFormData((prevData: CognitiveTaskFormData): CognitiveTaskFormData => { 
               const updatedQuestions = prevData.questions.map((q: Question) => {
                   if (q.id === questionId && q.files) {
-                      // Marcar todos los archivos subidos en este lote como error?
                       const tempFileIds = new Set(tempFiles.map(tf => tf.id));
-                      const updatedFiles = q.files.map((f: ExtendedUploadedFile) => 
-                          tempFileIds.has(f.id) ? { ...f, error: true, isLoading: false } : f
+                      const filesAsInfo: FileInfo[] = q.files.map(asFileInfo);
+                      const updatedFiles: FileInfo[] = filesAsInfo.map((f: FileInfo): FileInfo => 
+                          tempFileIds.has(f.id) ? { ...f, status: 'error' } : f
                       );
                       return { ...q, files: updatedFiles };
                   }
@@ -205,65 +210,36 @@ export const useCognitiveTaskFileUpload = ({
       }
   }, [researchId, formData.questions, setFormData, saveFilesToLocalStorage]);
 
-  // handleMultipleFilesUpload (reusa la lógica de handleFileUpload en bucle)
   const handleMultipleFilesUpload = useCallback(async (questionId: string, files: FileList) => {
-      // Prácticamente la misma lógica que handleFileUpload, ya que procesa uno a uno.
-      // Se podría unificar o mantener separado si la lógica futura difiere.
       await handleFileUpload(questionId, files);
-  }, [handleFileUpload]); // Depende de handleFileUpload
+  }, [handleFileUpload]);
 
-  // handleFileDelete
   const handleFileDelete = useCallback(async (questionId: string, fileId: string) => {
-      try {
-        const question = formData.questions.find(q => q.id === questionId);
-        const file = question?.files?.find(f => f.id === fileId) as ExtendedUploadedFile | undefined;
-        if (!file) throw new Error('Archivo no encontrado en el estado');
-
-        const isTemporaryFile = file.url?.startsWith('blob:') || !file.s3Key;
-
-        // Eliminar de S3 si aplica (Llamada original)
-        if (!isTemporaryFile && file.s3Key) {
-          console.log(`[FileUploadHook] Intentando eliminar de S3 (original): ${file.s3Key}`);
-          try {
-            await s3Service.deleteFile(file.s3Key);
-            toast.success('Archivo eliminado de S3.');
-          } catch (s3Error) {
-            console.error('Error eliminando de S3:', s3Error);
-            // Mostrar error específico de S3
-            const message = s3Error instanceof Error ? s3Error.message : 'Error desconocido al eliminar de S3';
-            toast.error(`Error eliminando archivo de S3: ${message}`);
-            // Detenerse si falla S3
-            return; 
+      console.log(`[FileUploadHook] Solicitud para marcar como pendiente de eliminación: ${fileId} en pregunta ${questionId}`);
+      setFormData((prevData: CognitiveTaskFormData): CognitiveTaskFormData => { 
+        const updatedQuestions = prevData.questions.map((q: Question) => {
+          if (q.id === questionId && q.files) {
+            const filesAsInfo: FileInfo[] = q.files.map(asFileInfo);
+            const updatedFiles: FileInfo[] = filesAsInfo.map((f: FileInfo): FileInfo => {
+              if (f.id === fileId) {
+                if (f.url?.startsWith('blob:')) {
+                  console.log('[FileUploadHook] Revocando URL blob al marcar para eliminar:', f.url);
+                  URL.revokeObjectURL(f.url);
+                }
+                console.log(`[FileUploadHook] Marcando archivo ${fileId} como 'pending-delete'`);
+                return { ...f, status: 'pending-delete' as const };
+              }
+              return f;
+            });
+            return { ...q, files: updatedFiles };
           }
-        }
-
-        // Revocar URL temporal
-        if (isTemporaryFile && file.url?.startsWith('blob:')) {
-          console.log('[FileUploadHook] Revocando URL blob:', file.url);
-          URL.revokeObjectURL(file.url);
-        }
-
-        // Eliminar del estado y actualizar localStorage
-        console.log(`[FileUploadHook] Eliminando archivo del estado local: ${fileId}`);
-        setFormData((prevData: CognitiveTaskFormData) => {
-          const updatedQuestions = prevData.questions.map((q: Question) =>
-            q.id === questionId && q.files
-              ? { ...q, files: q.files.filter((f: UploadedFile) => f.id !== fileId) }
-              : q
-          );
-          saveFilesToLocalStorage(updatedQuestions);
-          return { ...prevData, questions: updatedQuestions };
+          return q;
         });
-        
-        toast.success('Archivo eliminado localmente.');
-
-      } catch (error) {
-          // Error general
-          console.error('[FileUploadHook] Error eliminando archivo:', error);
-          const message = error instanceof Error ? error.message : 'Error desconocido';
-          toast.error(`Error al eliminar archivo: ${message}`);
-      }
-  }, [formData.questions, setFormData, saveFilesToLocalStorage]); // Dependencias originales
+        saveFilesToLocalStorage(updatedQuestions);
+        return { ...prevData, questions: updatedQuestions };
+      });
+      toast('Archivo marcado para eliminar. Guarde los cambios para confirmar.', { icon: '🗑️' }); 
+  }, [formData.questions, setFormData, saveFilesToLocalStorage]);
 
   return {
     isUploading,

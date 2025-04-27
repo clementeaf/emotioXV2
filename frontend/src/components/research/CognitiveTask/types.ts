@@ -15,6 +15,8 @@ export interface FileInfo {
   isLoading?: boolean;
   progress?: number;
   error?: boolean;
+  status?: 'uploading' | 'uploaded' | 'pending-delete' | 'error';
+  questionId?: string;
 }
 
 export interface ScaleConfig {

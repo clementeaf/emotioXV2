@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { uuidv4 } from '../utils/id-generator';
 
@@ -190,43 +190,27 @@ export class S3Service {
    */
   async generateUploadUrl(params: PresignedUrlParams): Promise<PresignedUrlResponse> {
     try {
-      // Validar parámetros
       this.validateParams(params);
-      
-      // Obtener extensión del archivo
       const extension = this.getFileExtension(params.fileName);
-      
-      // Generar un ID único para el archivo
       const fileId = uuidv4();
-      
-      // Construir la clave (key) del objeto en S3
       const folder = params.folder || 'general';
       const key = `${params.researchId}/${folder}/${fileId}${extension}`;
       
-      // Configurar el comando para subir el objeto
       const command = new PutObjectCommand({
         Bucket: this.bucketName,
         Key: key,
         ContentType: params.mimeType,
         Metadata: {
-          'original-filename': encodeURIComponent(params.fileName),
+          'original-filename': params.fileName,
           'research-id': params.researchId,
           'file-type': params.fileType,
           'upload-date': new Date().toISOString()
         }
       });
       
-      // Tiempo de expiración en segundos (15 minutos por defecto)
       const expiresIn = params.expiresIn || 15 * 60;
-      
-      // Generar URL prefirmada
       const uploadUrl = await getSignedUrl(this.s3Client, command, { expiresIn });
-      
-      // Construir URL pública del archivo
-      // Nota: La URL real dependería de la configuración del bucket y las políticas de acceso
       const fileUrl = `https://${this.bucketName}.s3.${process.env.APP_REGION || 'us-east-1'}.amazonaws.com/${key}`;
-      
-      // Calcular timestamp de expiración
       const expiresAt = Math.floor(Date.now() / 1000) + expiresIn;
       
       return {
@@ -248,17 +232,43 @@ export class S3Service {
    * @returns URL prefirmada para descargar
    */
   async generateDownloadUrl(key: string, expiresIn: number = 60 * 60): Promise<string> {
+    const operation = 'S3Service.generateDownloadUrl';
+    console.log(`${operation} - Solicitando URL de descarga para la clave: ${key}`);
+    
     try {
-      const command = new GetObjectCommand({
+      // PASO 1: Verificar existencia con HeadObjectCommand
+      console.log(`${operation} - Verificando existencia con HeadObject para la clave: ${key}`);
+      const headCommand = new HeadObjectCommand({
+        Bucket: this.bucketName,
+        Key: key
+      });
+      await this.s3Client.send(headCommand);
+      console.log(`${operation} - Verificación de existencia exitosa (HeadObject OK) para la clave: ${key}`);
+      
+      // PASO 2: Si existe, generar la URL de descarga
+      const getCommand = new GetObjectCommand({
         Bucket: this.bucketName,
         Key: key
       });
       
-      const downloadUrl = await getSignedUrl(this.s3Client, command, { expiresIn });
+      console.log(`${operation} - Comando GetObject preparado para la clave: ${key}`);
+      console.log(`${operation} - Llamando a getSignedUrl para la clave: ${key}`);
+      const downloadUrl = await getSignedUrl(this.s3Client, getCommand, { expiresIn });
+      console.log(`${operation} - URL de descarga generada exitosamente para la clave: ${key}`);
       
       return downloadUrl;
-    } catch (error) {
-      console.error('Error al generar URL prefirmada para descarga:', error);
+
+    } catch (error: any) {
+      // Comprobar si el error viene de HeadObject (o GetObject)
+      if (error.name === 'NotFound' || error.name === 'NoSuchKey') {
+          console.error(`${operation} - Error específico: El objeto con clave ${key} no existe en S3 (Error: ${error.name}).`);
+          // Crear y lanzar un error específico que el controlador pueda identificar
+          const notFoundError = new Error(`El objeto con clave ${key} no se encontró.`);
+          notFoundError.name = 'NoSuchKey'; // Usar un nombre consistente
+          throw notFoundError; 
+      }
+      // Para otros errores, también relanzamos
+      console.error(`${operation} - Error inesperado al generar URL de descarga (${key}):`, error);
       throw error;
     }
   }
@@ -304,14 +314,24 @@ export class S3Service {
         Key: key
       });
 
-      await this.s3Client.send(command);
-
-      console.log(`${operation} - Objeto eliminado con éxito de S3: ${key}`);
+      console.log(`${operation} - Comando DeleteObject preparado para la clave: ${key}`);
+      console.log(`${operation} - Llamando a s3Client.send(command) para la clave: ${key}`);
       
-    } catch (error) {
-      console.error(`${operation} - Error al eliminar objeto de S3 (${key}):`, error);
-      // Re-lanzar el error para que el llamador (controlador) pueda manejarlo
-      // y devolver una respuesta de error adecuada al cliente.
+      // Ejecutar el comando
+      const output = await this.s3Client.send(command);
+      
+      console.log(`${operation} - Resultado de s3Client.send(command):`, output);
+      console.log(`${operation} - Objeto eliminado con éxito de S3 (o ya no existía): ${key}`);
+      
+    } catch (error: any) { // Usar any temporalmente para acceder a error.name
+      console.error(`${operation} - Error CAPTURADO al llamar a s3Client.send(command) para clave (${key}):`, error);
+      // Si el error es que la clave no existe, lo tratamos como éxito (idempotencia)
+      if (error.name === 'NoSuchKey' || error.name === 'NotFound') {
+        console.warn(`${operation} - El objeto con clave ${key} no existía en S3 (Error: ${error.name}), considerado éxito.`);
+        return; // No lanzar error
+      }
+      // Para otros errores, sí los relanzamos
+      console.error(`${operation} - Error INESPERADO al eliminar objeto de S3 (${key}), relanzando:`, error);
       throw error;
     }
   }

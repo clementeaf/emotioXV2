@@ -1,7 +1,6 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { 
   DynamoDBDocumentClient, 
-  GetCommand, 
   PutCommand, 
   UpdateCommand, 
   QueryCommand,
@@ -208,27 +207,38 @@ export class CognitiveTaskModel {
 
   /**
    * Obtiene el formulario CognitiveTask asociado a una investigación.
-   * Usa GetCommand con researchId (PK) y SK constante.
+   * Usa QueryCommand sobre el GSI 'ResearchIdIndex' (PK: researchId).
    */
   async getByResearchId(researchId: string): Promise<CognitiveTaskRecord | null> {
-    const command = new GetCommand({
+    const command = new QueryCommand({
       TableName: this.tableName,
-      Key: {
-        researchId: researchId,
-        sk: CognitiveTaskModel.SORT_KEY_VALUE
-      }
+      IndexName: 'ResearchIdIndex', // <<< Usar el GSI por researchId >>>
+      KeyConditionExpression: 'researchId = :researchIdVal', // <<< Condición sobre la PK del GSI >>>
+      // Opcional: Filtrar por SK para obtener solo el item CognitiveTask
+      // FilterExpression: 'sk = :skVal', 
+      ExpressionAttributeValues: {
+        ':researchIdVal': researchId,
+        // ':skVal': CognitiveTaskModel.SORT_KEY_VALUE // Descomentar si se usa FilterExpression
+      },
+      Limit: 1 // Solo esperamos un formulario por investigación
     });
 
     try {
       const result = await this.dynamoClient.send(command);
-      if (!result.Item) {
-        return null;
+      if (!result.Items || result.Items.length === 0) {
+        return null; // No encontrado
       }
-      return this.mapToRecord(result.Item as CognitiveTaskDynamoItem);
+      // Mapear el primer (y único esperado) item encontrado
+      return this.mapToRecord(result.Items[0] as CognitiveTaskDynamoItem);
     } catch (error: any) {
-      console.error('ERROR DETALLADO de DynamoDB GetCommand (CognitiveTask):', JSON.stringify(error, null, 2));
+      console.error(`ERROR DETALLADO de DynamoDB QueryCommand GSI (ResearchIdIndex):`, JSON.stringify(error, null, 2));
       console.error(`Error al obtener CognitiveTask por researchId ${researchId}:`, error.message);
-      throw new Error(`DATABASE_ERROR: Error al obtener el formulario para researchId ${researchId}`);
+       if (error.name === 'ResourceNotFoundException') {
+         console.error(`FATAL: GSI 'ResearchIdIndex' no encontrado en la tabla '${this.tableName}'. Verifica la definición en resources.yml.`);
+         throw new Error(`DATABASE_ERROR: Índice GSI 'ResearchIdIndex' no encontrado.`);
+      }
+      // Modificar mensaje para reflejar el método Query
+      throw new Error(`DATABASE_ERROR: Error al consultar el formulario para researchId ${researchId}`);
     }
   }
 

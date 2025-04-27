@@ -585,6 +585,30 @@ export class CognitiveTaskService {
       );
     }
   }
+
+  /**
+   * Obtiene un formulario CognitiveTask por su ID lógico (UUID).
+   * Utiliza el GSI del modelo.
+   */
+  async getById(taskId: string): Promise<CognitiveTaskRecord | null> {
+    const context = 'getById';
+    try {
+      // Delegar directamente al método del modelo que usa el GSI
+      const record = await this.model.getById(taskId);
+      if (!record) {
+        // Si el modelo devuelve null, lanzar un error específico del servicio
+        throw new NotFoundError(CognitiveTaskError.NOT_FOUND);
+      }
+      return record;
+    } catch (error: any) {
+      // Re-lanzar errores conocidos o manejar como error de DB
+      if (error instanceof NotFoundError) {
+        throw error; // Propagar NotFoundError
+      }
+      // Usar handleDbError para otros errores de base de datos
+      throw handleDbError(error, this.serviceName, context, COGNITIVE_TASK_MODEL_ERRORS);
+    }
+  }
 }
 
 export const cognitiveTaskService = new CognitiveTaskService();

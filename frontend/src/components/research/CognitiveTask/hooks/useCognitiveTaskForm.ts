@@ -7,7 +7,7 @@ import {
   QUERY_KEYS, 
   SUCCESS_MESSAGES
 } from '../constants';
-import { Question, ValidationErrors } from '../types';
+import { Question, ValidationErrors, FileInfo } from '../types';
 import { useAuth } from '@/providers/AuthProvider';
 import { cognitiveTaskFixedAPI } from '@/lib/cognitive-task-api';
 import { ApiError } from '@/config/api-client';
@@ -216,6 +216,36 @@ const DEFAULT_QUESTIONS: Question[] = [
   }
 ];
 
+// Helper para limpieza profunda de archivos pendientes de eliminación
+const cleanupPendingDeleteFiles = (questions: Question[]): Question[] => {
+  return questions.map(q => {
+    if (!q.files) return q;
+    // Filtrar archivos que NO están pendientes de eliminar
+    const keptFiles = q.files.filter(f => f.status !== 'pending-delete');
+    return { ...q, files: keptFiles };
+  });
+};
+
+// Helper para revertir archivos pendientes de eliminación
+const revertPendingDeleteFiles = (questions: Question[]): Question[] => {
+  return questions.map(q => {
+    if (!q.files) return q;
+    const revertedFiles = q.files.map(f => {
+      if (f.status === 'pending-delete') {
+        const { status, ...restOfFile } = f; // Quitar status
+        // Si tenía s3Key, restaurar status a 'uploaded'
+        if (f.s3Key) {
+          return { ...restOfFile, status: 'uploaded' as const }; // Volver a uploaded
+        }
+        // Si no tenía s3Key (era temporal), simplemente devolver sin status
+        return restOfFile; 
+      }
+      return f;
+    });
+    return { ...q, files: revertedFiles as FileInfo[] }; // Asegurar tipo final del array
+  });
+};
+
 /**
  * Hook principal refactorizado...
  */
@@ -253,7 +283,7 @@ export const useCognitiveTaskForm = (
       totalFiles, 
       handleFileUpload, 
       handleMultipleFilesUpload, 
-      handleFileDelete, 
+      handleFileDelete: originalHandleFileDelete,
       loadFilesFromLocalStorage
   } = useCognitiveTaskFileUpload({ researchId, formData, setFormData });
 
@@ -288,27 +318,42 @@ export const useCognitiveTaskForm = (
   // <<< Definir mutate e isPending (isMutating) aquí >>>
   const { mutate, isPending: isSaving } = useMutation({
     mutationFn: async (dataToSave: CognitiveTaskFormData): Promise<CognitiveTaskFormData> => {
-      // <<< Implementación REAL de la mutación >>>
-      const currentResearchId = researchId || dataToSave.researchId;
-      if (!currentResearchId) {
-          throw new Error('Research ID es requerido para guardar.');
-      }
-      // <<< Revertir: Usar dataToSave directamente o una copia simple >>>
-      const payload = { ...dataToSave }; // Asegurar que researchId está en payload
-      // const { researchId: _, ...payload } = dataToSave; // Ya no se usa
+      if (!researchId) throw new Error(VALIDATION_ERROR_MESSAGES.RESEARCH_ID_REQUIRED);
       
-      if (!isAuthenticated || !token) {
-          throw new Error('Usuario no autenticado.');
+      // --- Inicio: Filtrar archivos pending-delete antes de enviar --- 
+      const questionsForPayload = dataToSave.questions.map(q => {
+        if (!q.files) return q;
+        // Filtrar solo los archivos que NO están pendientes de eliminar
+        const keptFiles = q.files.filter(f => f.status !== 'pending-delete');
+        // Limpiar el estado interno `status` antes de enviar al backend
+        const cleanedFiles = keptFiles.map(({ status, isLoading, progress, error, questionId, ...rest }) => rest);
+        return { ...q, files: cleanedFiles }; 
+      });
+      // --- Fin: Filtrar archivos --- 
+
+      // Construir payload final
+      const payload = {
+        ...dataToSave,
+        questions: questionsForPayload, // Usar preguntas filtradas
+        researchId: researchId, // Asegurar que researchId va en el payload
+      };
+      
+      // Limpiar metadata interna si existe antes de enviar
+      if (payload.metadata) {
+          delete payload.metadata.version;
+          // delete payload.metadata.lastModifiedBy; // Podría ser útil mantenerlo
       }
 
+      console.log("[DIAGNOSTICO-IMAGEN:FORM:MUTATE] Payload a enviar:", JSON.stringify(payload, null, 2));
+
       if (cognitiveTaskId) {
-        console.log(`[useCognitiveTaskForm] Llamando a update para researchId: ${currentResearchId}, taskId: ${cognitiveTaskId}`);
+        console.log(`[useCognitiveTaskForm] Llamando a update para researchId: ${researchId}, taskId: ${cognitiveTaskId}`);
         // Pasar researchId, taskId y el payload completo (que incluye researchId)
-        return await cognitiveTaskFixedAPI.update(currentResearchId, cognitiveTaskId, payload);
+        return await cognitiveTaskFixedAPI.update(researchId, cognitiveTaskId, payload);
       } else {
-        console.log(`[useCognitiveTaskForm] Llamando a create para researchId: ${currentResearchId}`);
+        console.log(`[useCognitiveTaskForm] Llamando a create para researchId: ${researchId}`);
         // Pasar researchId y el payload completo (que incluye researchId)
-        return await cognitiveTaskFixedAPI.create(currentResearchId, payload);
+        return await cognitiveTaskFixedAPI.create(researchId, payload);
       }
     },
     onSuccess: (data) => {
@@ -329,6 +374,13 @@ export const useCognitiveTaskForm = (
       // <<< Usar wasUpdating para determinar el mensaje correcto >>>
       toast.success(wasUpdating ? SUCCESS_MESSAGES.UPDATED : SUCCESS_MESSAGES.CREATED);
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.COGNITIVE_TASK, researchId] }); 
+      
+      // --- Inicio: Limpiar archivos pending-delete del estado local --- 
+      setFormData(prevData => ({
+        ...prevData,
+        questions: cleanupPendingDeleteFiles(prevData.questions)
+      }));
+      // --- Fin: Limpiar archivos --- 
     },
     onError: (error: any) => {
       console.error('[useCognitiveTaskForm] Error en mutación (REAL):', error);
@@ -336,6 +388,13 @@ export const useCognitiveTaskForm = (
       // Usar ApiError si está disponible
       const errorMessage = error instanceof ApiError ? error.message : (error.message || 'Error desconocido al guardar');
       modals.showModal({ title: 'Error de Guardado', message: errorMessage, type: 'error' });
+      
+      // --- Inicio: Revertir estado pending-delete en error --- 
+      setFormData(prevData => ({
+        ...prevData,
+        questions: revertPendingDeleteFiles(prevData.questions)
+      }));
+      // --- Fin: Revertir estado --- 
     }
   });
 
@@ -494,7 +553,7 @@ export const useCognitiveTaskForm = (
     // Handlers de archivos (del hook)
     handleFileUpload, 
     handleMultipleFilesUpload, 
-    handleFileDelete, 
+    handleFileDelete: originalHandleFileDelete,
     // Acciones principales
     handleSave, 
     handlePreview, 
