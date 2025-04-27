@@ -137,8 +137,8 @@ const API_CONFIG = {
       GET_BY_RESEARCH: '/research/{researchId}/thank-you-screen',
       GET: '/research/{researchId}/thank-you-screen', // GET directo no aplica
       CREATE: '/research/{researchId}/thank-you-screen',
-      UPDATE: '/research/{researchId}/thank-you-screen',
-      DELETE: '/research/{researchId}/thank-you-screen',
+      UPDATE: '/research/{researchId}/thank-you-screen/{screenId}',
+      DELETE: '/research/{researchId}/thank-you-screen/{screenId}',
     },
     
     // SmartVOC - USAR RUTAS JERÁRQUICAS

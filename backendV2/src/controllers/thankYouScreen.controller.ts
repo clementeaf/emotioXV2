@@ -25,7 +25,6 @@ const successResponse = (body: any): APIGatewayProxyResult => createResponse(200
 export class ThankYouScreenController {
   private service = thankYouScreenService;
   private cache: Map<string, { data: any; timestamp: number; researchId: string }> = new Map();
-  private readonly CACHE_TTL = 60000; // 1 minuto en milisegundos
   private controllerName = 'ThankYouScreenController'; // Para logs
 
   constructor() {}
@@ -76,6 +75,7 @@ export class ThankYouScreenController {
       if ('statusCode' in idResult) return idResult;
       researchId = idResult.researchId;
       
+      /* --- INICIO: COMENTAR CACHÉ ---
       let cacheKey: string | undefined;
       let cachedEntry;
       
@@ -84,12 +84,13 @@ export class ThankYouScreenController {
         cachedEntry = this.cache.get(cacheKey);
         
         if (cachedEntry && (Date.now() - cachedEntry.timestamp) < this.CACHE_TTL && cachedEntry.researchId === researchId) {
-          structuredLog('info', `${this.controllerName}.${context}`, 'Datos recuperados de caché', { researchId });
-          return successResponse(cachedEntry.data);
+          structuredLog('info', `${this.controllerName}.${context}`, 'Datos recuperados de caché (TEMPORALMENTE DESHABILITADO)', { researchId });
+          // return successResponse(cachedEntry.data); // <- Comentado
         }
       }
+      --- FIN: COMENTAR CACHÉ --- */
 
-      structuredLog('info', `${this.controllerName}.${context}`, 'Obteniendo datos para investigación', { researchId, isPublic });
+      structuredLog('info', `${this.controllerName}.${context}`, 'Obteniendo datos para investigación (Caché deshabilitado)', { researchId, isPublic });
       const screen = await this.service.getByResearchId(researchId);
       
       if (isPublic) {
@@ -106,10 +107,18 @@ export class ThankYouScreenController {
         return successResponse({ data: participantView });
       }
       
-      if (!isPublic && screen && cacheKey) {
-        this.cache.set(cacheKey, { data: screen, timestamp: Date.now(), researchId });
-        structuredLog('info', `${this.controllerName}.${context}`, 'Datos guardados en caché', { researchId });
+      /* --- INICIO: COMENTAR CACHÉ ---
+      if (!isPublic && screen && cacheKey) { // cacheKey podría ser undefined aquí
+        // Asegurarse de que cacheKey se define incluso si el bloque if anterior se salta
+        if (!cacheKey && userId) { 
+            cacheKey = `thankYouScreen_${researchId}_${userId}`;
+        }
+        if (cacheKey) { // Doble chequeo por si userId no estaba definido
+           this.cache.set(cacheKey, { data: screen, timestamp: Date.now(), researchId });
+           structuredLog('info', `${this.controllerName}.${context}`, 'Datos guardados en caché (TEMPORALMENTE DESHABILITADO)', { researchId });
+        }
       }
+      --- FIN: COMENTAR CACHÉ --- */
       
       return successResponse(screen || { message: 'No se encontró una pantalla de agradecimiento para esta investigación' });
     } catch (error) {

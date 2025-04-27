@@ -149,8 +149,12 @@ export const thankYouScreenFixedAPI = {
       throw new Error('Se requieren datos y un ID de investigación para crear el ThankYouScreen');
     }
     
-    const url = API_CONFIG.endpoints.thankYouScreen.CREATE;
-    console.log(`[ThankYouScreenAPI] Creando ThankYouScreen para investigación ${data.researchId}, URL: ${url}`);
+    // Obtener la plantilla URL
+    const urlTemplate = API_CONFIG.endpoints.thankYouScreen.CREATE;
+    // Reemplazar el placeholder con el researchId real
+    const url = urlTemplate.replace('{researchId}', data.researchId.trim());
+
+    console.log(`[ThankYouScreenAPI] Creando ThankYouScreen para investigación ${data.researchId}, URL plantilla: ${urlTemplate}, URL final: ${url}`);
     console.log(`[ThankYouScreenAPI] URL completa: ${API_CONFIG.baseURL}${url}`);
     console.log('[ThankYouScreenAPI] Datos a enviar:', data);
     
@@ -158,6 +162,7 @@ export const thankYouScreenFixedAPI = {
       send: async () => {
         try {
           const headers = getAuthHeaders();
+          // Usar la URL corregida
           const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
             method: 'POST',
             headers,

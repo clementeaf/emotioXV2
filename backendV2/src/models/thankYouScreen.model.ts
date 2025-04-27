@@ -193,10 +193,15 @@ export class ThankYouScreenModel {
    */
   async getByResearchId(researchId: string): Promise<SharedThankYouScreenModel | null> {
     const context = 'getByResearchId';
-    const command = new QueryCommand({ 
+
+    // *** INICIO LOGS ADICIONALES ***
+    console.log(`[${this.modelName}.${context}] Iniciando búsqueda para researchId: ${researchId}`);
+    // *** FIN LOGS ADICIONALES ***
+
+    const command = new QueryCommand({
       TableName: this.tableName,
       IndexName: 'ResearchIdIndex',
-      KeyConditionExpression: 'researchId = :rid', 
+      KeyConditionExpression: 'researchId = :rid',
       FilterExpression: 'sk = :skVal',
       ExpressionAttributeValues: {
         ':rid': researchId,
@@ -205,10 +210,21 @@ export class ThankYouScreenModel {
       Limit: 1
     });
 
+    // *** INICIO LOGS ADICIONALES ***
+    console.log(`[${this.modelName}.${context}] Parámetros QueryCommand:`, JSON.stringify(command.input));
+    // *** FIN LOGS ADICIONALES ***
+
     try {
       const result = await this.dynamoClient.send(command);
-      
+
+      // *** INICIO LOGS ADICIONALES ***
+      console.log(`[${this.modelName}.${context}] Respuesta cruda DynamoDB:`, JSON.stringify(result));
+      // *** FIN LOGS ADICIONALES ***
+
       if (!result.Items || result.Items.length === 0) {
+         // *** INICIO LOGS ADICIONALES ***
+         console.warn(`[${this.modelName}.${context}] No se encontraron items después de la consulta y filtro para researchId: ${researchId}`);
+         // *** FIN LOGS ADICIONALES ***
         return null;
       }
 
@@ -223,12 +239,15 @@ export class ThankYouScreenModel {
         message: item.message,
         redirectUrl: item.redirectUrl,
         metadata: JSON.parse(item.metadata || '{}'),
-        createdAt: item.createdAt, 
+        createdAt: item.createdAt,
         updatedAt: item.updatedAt
       };
       structuredLog('debug', `${this.modelName}.${context}`, 'Pantalla encontrada por ResearchID', { researchId, id: item.id });
       return record;
     } catch (error: any) {
+       // *** INICIO LOGS ADICIONALES ***
+       console.error(`[${this.modelName}.${context}] Error durante la ejecución de DynamoDB QueryCommand`, { error });
+       // *** FIN LOGS ADICIONALES ***
       structuredLog('error', `${this.modelName}.${context}`, 'Error al obtener pantalla por Research ID (Query GSI)', { error: error, researchId });
       if ((error as Error).message?.includes('index')) {
          structuredLog('error', `${this.modelName}.${context}`, 'Índice GSI ResearchIdIndex no encontrado');

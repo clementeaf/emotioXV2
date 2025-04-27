@@ -10,6 +10,7 @@ import { withSearchParams } from '@/components/common/SearchParamsWrapper';
 import { Button } from '@/components/ui/Button';
 import { researchAPI } from '@/lib/api';
 import { cleanResearchFromLocalStorage } from '@/lib/cleanup/localStorageCleanup';
+import { ResearchRecord } from '@/types'; // Importar ResearchRecord
 
 const sections: ResearchSection[] = [
   {
@@ -48,95 +49,83 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
   // Estados para el nombre y la carga
   const [researchName, setResearchName] = useState<string>('Cargando nombre...'); // Estado inicial de carga
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Obtener nombre de la investigación
   useEffect(() => {
     const fetchResearchName = async () => {
       if (!researchId) {
-        console.error("ResearchSidebar: No researchId provided.");
-        setResearchName("ID de investigación no encontrado");
+        setResearchName('Investigación no encontrada');
         setIsLoading(false);
-        // Considerar redirección si un ID es estrictamente necesario aquí
-        // router.push('/dashboard'); 
         return;
       }
 
-      setIsLoading(true); // Marcar inicio de carga
-      setResearchName('Cargando nombre...'); // Resetear a estado de carga
-      let foundName = false;
+      setIsLoading(true);
+      setError(null); // Reset error state on new fetch
 
       try {
-        // 1. Intentar obtener los datos desde la API
-        console.log(`[ResearchSidebar] Intentando obtener nombre desde API para ${researchId}`);
+        // La respuesta de researchAPI.get ya es el objeto Research gracias a la configuración de alova
         const response = await researchAPI.get(researchId);
-        const responseData = response?.data as any;
-        let nameFromApi: string | null = null;
+        const researchData = response.data; // Asumiendo que la estructura es { data: Research }
         
-        if (responseData?.data?.name) { 
-          nameFromApi = responseData.data.name;
-          console.log("[ResearchSidebar] Nombre encontrado en response.data.name");
-        } else if (responseData?.name) {
-          nameFromApi = responseData.name;
-          console.log("[ResearchSidebar] Nombre encontrado en response.name");
-        }
+        // Acceder directamente al nombre desde researchData
+        const nameFromApi = researchData?.name;
 
         if (nameFromApi) {
           setResearchName(nameFromApi);
-          setIsLoading(false);
-          foundName = true;
+          // Guardar la respuesta completa en localStorage sigue siendo útil como caché
           try {
-            localStorage.setItem(`research_${researchId}`, JSON.stringify(responseData?.data || responseData));
-          } catch (e) { /* Ignorar errores de localStorage */ }
-        } else {
-          // <<< No lanzar error aquí, simplemente registrar y continuar a fallback >>>
-          console.warn(`[ResearchSidebar] Nombre no encontrado en la respuesta de la API para ${researchId}. Intentando fallback.`);
-        }
-
-      } catch (apiError: any) {
-        // Gestionar errores REALES de la API (red, 500, etc.)
-        if (apiError?.response?.status === 404 || apiError?.message?.includes('404')) {
-          console.warn(`ResearchSidebar: Investigación ${researchId} no encontrada (404).`);
-          cleanResearchFromLocalStorage(researchId);
-          setResearchName("Investigación no encontrada"); 
-          setTimeout(() => router.push('/dashboard'), 100);
-          setIsLoading(false);
-          return; 
-        } else {
-          // Loguear otros errores de API, pero continuar al fallback
-          console.error('Error en llamada API (continuando a fallback):', apiError); // Usar console.error para errores reales
-        }
-      }
-
-      // 2. Fallback: intentar obtener los datos desde localStorage (solo si API falló o no encontró nombre)
-      if (!foundName) {
-          try {
-            const storedResearch = localStorage.getItem(`research_${researchId}`);
-            if (storedResearch) {
-              const researchData = JSON.parse(storedResearch);
-              if (researchData && researchData.name) {
-                setResearchName(researchData.name);
-                foundName = true;
-              } else {
-                 console.warn(`ResearchSidebar: Datos inválidos en localStorage para ${researchId}.`);
-              }
-            } else {
-              console.warn(`ResearchSidebar: Investigación ${researchId} no encontrada en localStorage.`);
-            }
-          } catch (localStorageError) {
-            console.error('Error al acceder/parsear localStorage:', localStorageError);
+            localStorage.setItem(`research_${researchId}`, JSON.stringify(researchData));
+            console.log(`Research data for ${researchId} saved to localStorage.`);
+          } catch (storageError) {
+            console.error('Failed to save research data to localStorage:', storageError);
+            // No lanzar error aquí, sólo loggear. La app puede continuar.
           }
+        } else {
+          // Si la API devolvió datos pero sin nombre (caso improbable pero posible)
+          console.warn(`Research data fetched for ${researchId}, but name is missing. Attempting localStorage.`);
+          fetchNameFromLocalStorage();
+        }
+      } catch (apiError: any) {
+        console.warn(`Failed to fetch research name for ${researchId} from API:`, apiError.message);
+        setError(`Error al cargar datos (${apiError.message || 'detalle desconocido'})`);
+        // Si la API falla, intentar obtener de localStorage como fallback
+        fetchNameFromLocalStorage();
+      } finally {
+        // Asegurarse de que loading se ponga a false incluso si localStorage falla
+        // setLoading(false); // Se maneja dentro de fetchNameFromLocalStorage o al final si no se llama
+        console.log('[ResearchSidebar] Fetch process finished, setting loading to false.');
+        setIsLoading(false);
       }
-      
-      // 3. Estado final si no se encontró nombre
-      if (!foundName) {
-         setResearchName("Nombre no disponible");
-      }
-      
-      setIsLoading(false); // Marcar fin de carga
     };
-    
+
+    const fetchNameFromLocalStorage = () => {
+      try {
+        const storedData = localStorage.getItem(`research_${researchId}`);
+        if (storedData) {
+          const parsedData = JSON.parse(storedData);
+          if (parsedData?.name) {
+            setResearchName(parsedData.name);
+            console.log(`Research name for ${researchId} retrieved from localStorage.`);
+            setIsLoading(false); // Nombre encontrado en localStorage
+            return; // Salir temprano
+          } else {
+             console.warn(`Data found in localStorage for ${researchId}, but name is missing.`);
+          }
+        } else {
+          console.log(`No data found in localStorage for ${researchId}.`);
+        }
+      } catch (storageError) {
+        console.error('Failed to retrieve or parse research data from localStorage:', storageError);
+        setError('Error al acceder a datos locales.'); // Informar al usuario del error de localStorage
+      }
+      // Si no se encontró en localStorage o hubo error, establecer nombre por defecto
+      setResearchName('Nombre no disponible');
+      setIsLoading(false); // Terminado el intento de carga (API falló, localStorage falló/no encontró)
+    };
+
     fetchResearchName();
-  }, [researchId, router]); // Dependencias
+  }, [researchId]);
   
   const handleBackToDashboard = () => {
     router.push('/dashboard');
