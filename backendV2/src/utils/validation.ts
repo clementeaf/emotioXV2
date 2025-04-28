@@ -491,10 +491,26 @@ export function extractResearchId(
   bodyData?: any
 ): { researchId: string } | APIGatewayProxyResult {
   // Intentar obtener el researchId de diferentes fuentes en orden de prioridad
-  const researchId = 
+  let researchId = 
     bodyData?.researchId || 
     event.pathParameters?.researchId || 
     event.queryStringParameters?.researchId;
+
+  // <<< NUEVO: Fallback si no se encuentra en las fuentes anteriores >>>
+  if (!researchId && event.path) {
+    try {
+      const pathSegments = event.path.split('/');
+      // Asumir estructura como /.../research/{researchId}/...
+      const researchIndex = pathSegments.indexOf('research');
+      if (researchIndex !== -1 && pathSegments.length > researchIndex + 1 && pathSegments[researchIndex + 1]) {
+        researchId = pathSegments[researchIndex + 1];
+        console.log(`[extractResearchId] ID extraído del path: ${researchId}`);
+      }
+    } catch (e) {
+      // Ignorar errores al parsear el path, simplemente no se encontró el ID
+      console.warn('[extractResearchId] Error al intentar extraer ID del path:', e);
+    }
+  }
     
   const error = validateResearchId(researchId);
   
