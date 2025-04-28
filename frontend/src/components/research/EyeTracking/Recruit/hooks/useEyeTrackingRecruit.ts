@@ -260,41 +260,42 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       try {
         console.log('[useEyeTrackingRecruit] Cargando config para:', actualResearchId);
         const data = await eyeTrackingFixedAPI.getRecruitConfig(actualResearchId);
-        console.log('[useEyeTrackingRecruit] Config cargada:', data);
+        console.log('[useEyeTrackingRecruit] Config cargada (respuesta API):', data);
         
-        if (data && data.data) {
-          // Actualizar formulario con datos cargados
+        const configData = data?.config; 
+        
+        if (configData && configData.id) { 
+          console.log('[useEyeTrackingRecruit] Datos de configuración encontrados en data.config:', configData);
           setFormData({
-            ...data.data,
-            researchId: actualResearchId
+            ...configData,
+            researchId: actualResearchId 
           });
           
-          // Actualizar estados de habilitación según datos cargados
-          const hasDemographics = Object.values(data.data.demographicQuestions).some(
+          const hasDemographics = Object.values(configData.demographicQuestions).some(
             (q: any) => q.enabled
           );
           setDemographicQuestionsEnabledState(hasDemographics);
           
-          // Actualizar estado del linkConfig
-          const hasLinkConfig = Object.values(data.data.linkConfig).some(value => value);
+          const hasLinkConfig = Object.values(configData.linkConfig).some(value => value);
           setLinkConfigEnabledState(hasLinkConfig);
+          
+          return configData; 
+        } else {
+          console.warn('[useEyeTrackingRecruit] La respuesta de la API no contiene configData válido:', data);
+          return null;
         }
-        
-        return data;
+
       } catch (error: any) {
         console.log('[useEyeTrackingRecruit] Error al cargar:', error);
-        // Si es 404, no es un error real, solo no hay datos previos
         if (error.statusCode === 404) {
           console.log('[useEyeTrackingRecruit] No hay configuración previa para:', actualResearchId);
           return null;
         }
-        
-        // Para otros errores, mostrar notificación
         toast.error(`Error al cargar configuración: ${error.message || 'Error desconocido'}`);
         throw error;
       }
     },
-    enabled: !!actualResearchId // Solo ejecutar si hay un ID válido
+    enabled: !!actualResearchId
   });
   
   // Actualizar estado de carga cuando termina la consulta
