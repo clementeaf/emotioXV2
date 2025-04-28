@@ -7,11 +7,9 @@ import { Suspense, useEffect, useState } from 'react';
 import { ResearchSidebarProps, ResearchSection } from '@/interfaces/research';
 import { cn } from '@/lib/utils';
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
-import { Research } from '../../../../shared/interfaces/research.model';
 import { Button } from '@/components/ui/Button';
 import { researchAPI } from '@/lib/api';
-import { cleanResearchFromLocalStorage } from '@/lib/cleanup/localStorageCleanup';
-import { ResearchRecord } from '@/types'; // Mantener ResearchRecord si se usa
+import { Research } from '../../../../shared/interfaces/research.model';
 
 const sections: ResearchSection[] = [
   {
@@ -55,10 +53,7 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
   // Obtener nombre de la investigación
   useEffect(() => {
     const fetchResearchName = async () => {
-      console.log(`[ResearchSidebar] Iniciando fetch para researchId: ${researchId}`);
-
       if (!researchId) {
-        console.warn('[ResearchSidebar] researchId es nulo o indefinido.');
         setResearchName('Investigación no encontrada');
         setIsLoading(false);
         return;
@@ -68,65 +63,56 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
       setError(null); 
 
       try {
-        console.log(`[ResearchSidebar] Llamando a researchAPI.list() para obtener todas las investigaciones.`);
-        const response = await researchAPI.list(); // Obtiene la lista completa
-        console.log('[ResearchSidebar] Respuesta cruda de researchAPI.list():', response);
+        const response = await researchAPI.get(researchId);
 
-        const researchList = response.data as Research[]; // Castear a Research[]
-        console.log('[ResearchSidebar] researchList extraído (response.data):', researchList);
+        // Alova procesa la respuesta, response.data es la carga útil.
+        // Verificar si la carga útil es un array antes de tratarla como tal.
+        let researchData: Research | null = null;
+        if (Array.isArray(response.data) && response.data.length > 0) {
+          // Si es un array (como vimos en curl), toma el primer elemento.
+          researchData = response.data[0] as Research;
+        } else if (response.data && typeof response.data === 'object' && !Array.isArray(response.data)) {
+          // Si NO es un array pero es un objeto (posible estructura directa), úsalo.
+          researchData = response.data as Research;
+        }
+        // Si no es ni array con elementos ni un objeto, researchData permanecerá null.
 
-        const currentResearch = researchList?.find(research => research.id === researchId);
-        console.log('[ResearchSidebar] currentResearch encontrado en la lista:', currentResearch);
+        const nameFromApi = researchData?.name;
 
-        const nameFromList = currentResearch?.name;
-        console.log(`[ResearchSidebar] nameFromList extraído: ${nameFromList}`);
-
-        if (nameFromList) {
-          console.log(`[ResearchSidebar] Nombre "${nameFromList}" encontrado en la lista. Actualizando estado.`);
-          setResearchName(nameFromList);
+        if (nameFromApi) {
+          setResearchName(nameFromApi);
           try {
-            localStorage.setItem(`research_${researchId}`, JSON.stringify(currentResearch)); 
-            console.log(`[ResearchSidebar] Datos de la investigación actual guardados en localStorage para ${researchId}.`);
+            localStorage.setItem(`research_${researchId}`, JSON.stringify(researchData)); 
           } catch (storageError) {
             console.error('[ResearchSidebar] Falló al guardar en localStorage:', storageError);
           }
         } else {
-          console.warn(`[ResearchSidebar] Nombre no encontrado en la lista para ${researchId}. Intentando localStorage (fallback).`);
-          fetchNameFromLocalStorage(); // Llama al fallback si no se encontró en la lista
+          fetchNameFromLocalStorage(); // Llama al fallback
         }
       } catch (apiError: any) {
-        console.error(`[ResearchSidebar] Error capturado al llamar a researchAPI.list() para ${researchId}:`, apiError);
-        setError(`Error al cargar lista de datos (${apiError.message || 'detalle desconocido'})`);
-        fetchNameFromLocalStorage(); // Intenta fallback si la API falla
+        console.error(`[ResearchSidebar] Error capturado al llamar a researchAPI.get para ${researchId}:`, apiError);
+        setError(`Error al cargar datos (${apiError.message || 'detalle desconocido'})`);
+        fetchNameFromLocalStorage(); // Intenta fallback
       } finally {
-        console.log('[ResearchSidebar] Bloque finally alcanzado. Estableciendo isLoading a false.');
         setIsLoading(false); 
       }
     };
 
     const fetchNameFromLocalStorage = () => {
-      console.log(`[ResearchSidebar] Intentando obtener nombre desde localStorage para ${researchId}`);
       try {
         const storedData = localStorage.getItem(`research_${researchId}`);
         if (storedData) {
           const parsedData = JSON.parse(storedData);
-          console.log('[ResearchSidebar] Datos parseados de localStorage:', parsedData);
           if (parsedData?.name) {
-            console.log(`[ResearchSidebar] Nombre "${parsedData.name}" encontrado en localStorage.`);
             setResearchName(parsedData.name);
             setError(null);
             return; 
-          } else {
-             console.warn(`[ResearchSidebar] Datos encontrados en localStorage para ${researchId}, pero sin nombre.`);
           }
-        } else {
-          console.log(`[ResearchSidebar] No se encontraron datos en localStorage para ${researchId}.`);
         }
       } catch (storageError) {
          console.error('[ResearchSidebar] Error al leer/parsear localStorage:', storageError);
         setError('Error al acceder a datos locales.');
       }
-      console.warn('[ResearchSidebar] Fallback final: Nombre no encontrado ni en API ni en localStorage.');
       setResearchName('Nombre no disponible');
     };
 

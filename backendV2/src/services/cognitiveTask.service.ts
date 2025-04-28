@@ -350,16 +350,42 @@ export class CognitiveTaskService {
   /**
    * Crea un formulario CognitiveTask.
    * Genera el ID lógico (UUID) aquí.
+   * <<< AÑADIR: Verifica si ya existe uno para el researchId >>>
    */
   async create(researchId: string, data: CognitiveTaskFormData): Promise<CognitiveTaskRecord> {
     const context = 'create';
     this.validateResearchId(researchId);
+    
+    // <<< PASO 1: Verificar si ya existe un formulario para este researchId >>>
+    try {
+      const existingForm = await this.model.getByResearchId(researchId);
+      if (existingForm) {
+        // Si ya existe, lanzar un error de conflicto (409)
+        throw new ApiError(
+          `Ya existe un formulario Cognitive Task para la investigación con ID: ${researchId}`,
+          409 // Código de Conflicto
+        );
+      }
+      // Si no existe (existingForm es null), continuar con la creación.
+    } catch (error) {
+      // Si el error es NotFoundError, significa que NO existe, lo cual es bueno para crear.
+      // Si es cualquier otro error de DB al verificar, lo relanzamos.
+      if (!(error instanceof NotFoundError)) {
+         // Relanzar errores inesperados durante la verificación
+         throw handleDbError(error, `${context} [CheckExistingStep]`, this.serviceName, COGNITIVE_TASK_MODEL_ERRORS);
+      }
+      // Si es NotFoundError, ignorarlo y proceder a crear.
+    }
+    
+    // <<< PASO 2: Proceder con la creación si no existe >>>
     const formId = data.id || uuidv4();
     const formDataWithId = { ...data, id: formId, researchId };
     this.validateFormData(formDataWithId);
     try {
+      // Llamar al método create del modelo
       return await this.model.create(formDataWithId, researchId);
     } catch (error) {
+      // Manejar errores específicos de la operación de creación
       throw handleDbError(error, context, this.serviceName, COGNITIVE_TASK_MODEL_ERRORS);
     }
   }
