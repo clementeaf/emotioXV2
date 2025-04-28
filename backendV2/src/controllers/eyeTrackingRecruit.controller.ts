@@ -5,7 +5,6 @@ import {
 } from '../../../shared/interfaces/eyeTrackingRecruit.interface';
 import { ApiError } from '../utils/errors';
 import { createResponse, errorResponse } from '../utils/controller.utils';
-import { createController, RouteMap } from '../utils/controller.decorator';
 import { structuredLog } from '../utils/logging.util';
 import { 
   extractResearchId, 
@@ -27,19 +26,21 @@ export class EyeTrackingRecruitController {
         ...extraData
     });
 
+    if (error?.name === 'NotFoundError') { 
+        return errorResponse(error.message, 404); 
+    }
+
     if (error instanceof ApiError) {
       return errorResponse(error.message, error.statusCode);
     }
     
-    if (error.message?.includes('RECRUIT_CONFIG_NOT_FOUND')) {
-       return errorResponse(ERROR_MESSAGES.RESOURCE.NOT_FOUND('La configuración de reclutamiento'), 404);
-    }
-    
+    structuredLog('error', `EyeTrackingRecruitController.${context}`, 'Cayendo en Fallback 500', { errorType: typeof error, errorName: error?.name, errorMessage: (error as Error)?.message });
     return errorResponse('Error interno del servidor', 500);
   }
 
   /**
-   * Obtiene la configuración de reclutamiento según el ID de investigación
+   * Obtiene la configuración de reclutamiento, estadísticas, links y participantes
+   * Ruta: GET /research/{researchId}/eye-tracking-recruit
    */
   public async getEyeTrackingRecruit(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
     const context = 'getEyeTrackingRecruit';
@@ -53,11 +54,16 @@ export class EyeTrackingRecruitController {
       const config = await eyeTrackingRecruitService.getConfigByResearchId(researchId);
       
       if (!config) {
-        structuredLog('warn', `EyeTrackingRecruitController.${context}`, 'No se encontró configuración de reclutamiento', { researchId });
+        structuredLog('warn', `EyeTrackingRecruitController.${context}`, 'No se encontró configuración de reclutamiento (explicit check)', { researchId });
         return errorResponse(ERROR_MESSAGES.RESOURCE.NOT_FOUND('La configuración de reclutamiento'), 404);
       }
       
-      const configId = config.id as string;
+      const configId = config.id;
+      if (!configId) {
+         structuredLog('error', `EyeTrackingRecruitController.${context}`, 'ID de configuración faltante después de obtener config', { researchId });
+         return errorResponse('Error interno: ID de configuración faltante.', 500);
+      }
+      
       const [stats, links, participants] = await Promise.all([
         eyeTrackingRecruitService.getStatsByConfigId(configId),
         eyeTrackingRecruitService.getActiveLinks(configId),
@@ -70,6 +76,55 @@ export class EyeTrackingRecruitController {
       return createResponse(200, fullData);
     } catch (error) {
       return this.handleError(error, context, { researchId });
+    }
+  }
+
+  /**
+   * Obtiene SOLO la configuración de reclutamiento según el ID de investigación
+   * Ruta: GET /research/{researchId}/eye-tracking-recruit/config
+   */
+  public async getEyeTrackingRecruitConfig(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    const context = 'getEyeTrackingRecruitConfig';
+    let researchId: string | undefined;
+    try {
+      // // <<< Revertir a extracción desde event.path >>>
+      const pathSegments = event.path.split('/'); // ['', 'eye-tracking-recruit', 'research', 'researchId', 'config']
+      if (pathSegments.length < 4 || !pathSegments[3]) {
+          return errorResponse(ERROR_MESSAGES.VALIDATION.REQUIRED_FIELD('ID de investigación en la ruta /eye-tracking-recruit/research/{id}'), 400);
+      }
+      researchId = pathSegments[3]; // El ID está en el 4to segmento (índice 3)
+      
+      // // <<< Eliminar lógica de extracción de proxyPath >>>
+      // const proxyPath = event.pathParameters?.proxy;
+      // if (!proxyPath) {
+      //     return errorResponse(ERROR_MESSAGES.VALIDATION.REQUIRED_FIELD('Parámetro proxy en la ruta'), 400);
+      // }
+      // // Asumir que proxyPath es algo como "research/researchId/config"
+      // const proxySegments = proxyPath.split('/'); // ['research', 'researchId', 'config']
+      // if (proxySegments.length < 2 || !proxySegments[1]) {
+      //     return errorResponse(ERROR_MESSAGES.VALIDATION.REQUIRED_FIELD('ID de investigación dentro del parámetro proxy'), 400);
+      // }
+      // researchId = proxySegments[1]; // El ID estaría en el segundo segmento del proxy
+      
+      structuredLog('info', `EyeTrackingRecruitController.${context}`, 'Obteniendo solo config para investigación', { researchId });
+      
+      // // <<< Restaurar llamada al servicio >>>
+      const config = await eyeTrackingRecruitService.getConfigByResearchId(researchId);
+      
+      if (!config) {
+        structuredLog('warn', `EyeTrackingRecruitController.${context}`, 'No se encontró configuración de reclutamiento', { researchId });
+        return errorResponse(ERROR_MESSAGES.RESOURCE.NOT_FOUND('La configuración de reclutamiento'), 404);
+      }
+      
+      structuredLog('info', `EyeTrackingRecruitController.${context}`, 'Configuración obtenida', { researchId, configId: config.id });
+      // // Devolver solo el objeto de configuración
+      return createResponse(200, { config }); 
+
+      // // <<< Eliminar respuesta de debug >>>
+      // return createResponse(200, { extractedResearchId: researchId, pathParamUsed: 'proxy' });
+
+    } catch (error) {
+      return this.handleError(error, context, { researchId }); // researchId podría ser undefined aquí si falla antes
     }
   }
 
@@ -170,15 +225,30 @@ export class EyeTrackingRecruitController {
 
 const controller = new EyeTrackingRecruitController();
 
-const eyeTrackingRecruitRouteMap: RouteMap = {
-  '/research/{researchId}/eye-tracking-recruit': {
-    'GET': controller.getEyeTrackingRecruit.bind(controller),
-    'POST': controller.createEyeTrackingRecruit.bind(controller),
-    'PUT': controller.updateEyeTrackingRecruit.bind(controller),
-    'DELETE': controller.deleteEyeTrackingRecruit.bind(controller)
-  }
-};
+export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+  const path = event.path || '';
+  const method = event.httpMethod;
+  // El userId se podría extraer aquí si los métodos lo necesitan consistentemente
+  // const userId = event.requestContext.authorizer?.claims?.sub;
 
-export const eyeTrackingRecruitHandler = createController(eyeTrackingRecruitRouteMap, {
-  basePath: ''
-}); 
+  // Lógica de enrutamiento simple basada en el final del path
+  if (method === 'GET' && path.endsWith('/config')) {
+    return controller.getEyeTrackingRecruitConfig(event);
+  } else if (method === 'GET') {
+    return controller.getEyeTrackingRecruit(event);
+  } else if (method === 'POST') {
+    // Asumimos que userId se pasa internamente si es necesario
+    return controller.createEyeTrackingRecruit(event, 'placeholder-user-id'); // TODO: Pasar userId real si es necesario
+  } else if (method === 'PUT') {
+    return controller.updateEyeTrackingRecruit(event, 'placeholder-user-id'); // TODO: Pasar userId real si es necesario
+  } else if (method === 'DELETE') {
+    return controller.deleteEyeTrackingRecruit(event, 'placeholder-user-id'); // TODO: Pasar userId real si es necesario
+  }
+  
+  // Si no coincide ninguna ruta conocida dentro de este controlador
+  return {
+    statusCode: 404,
+    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }, // Headers básicos
+    body: JSON.stringify({ message: `Método ${method} no soportado para la ruta ${path} dentro del controlador EyeTrackingRecruit` })
+  };
+}; 

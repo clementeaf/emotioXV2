@@ -22,8 +22,8 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
   // Thank You Screen
   { pathPattern: /^\/research\/[^\/]+\/thank-you-screen(\/[^\/]+)?$/, controllerType: 'thank-you-screen' },
 
-  // Eye Tracking Recruit
-  { pathPattern: /^\/research\/[^\/]+\/eye-tracking-recruit/, controllerType: 'eye-tracking-recruit' },
+  // Eye Tracking Recruit - Corregir patrón para que coincida con la ruta real
+  { pathPattern: /^\/eye-tracking-recruit\/research\/[^\/]+/, controllerType: 'eye-tracking-recruit' },
 
   // Eye Tracking (Base)
   { pathPattern: /^\/research\/[^\/]+\/eye-tracking/, controllerType: 'eye-tracking' },

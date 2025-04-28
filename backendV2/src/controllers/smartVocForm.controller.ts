@@ -191,6 +191,6 @@ const smartVocRouteMap: RouteMap = {
   }
 };
 
-export const smartVocFormHandler = createController(smartVocRouteMap, {
+export const mainHandler = createController(smartVocRouteMap, {
   basePath: '', 
 }); 

@@ -287,7 +287,7 @@ const controller = new ParticipantController();
 /**
  * Handler principal para las rutas de participantes
  */
-export const participantHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
     // Manejar preflight CORS
     if (event.httpMethod === 'OPTIONS') {

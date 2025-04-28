@@ -175,7 +175,7 @@ export class EyeTrackingRecruitConfigModel {
   /**
    * Obtiene configuraciones por ID de investigación
    */
-  static async getByResearchId(researchId: string): Promise<EyeTrackingRecruitConfig[]> {
+  static async getByResearchId(researchId: string): Promise<EyeTrackingRecruitConfig | null> {
     const context = `${this.modelName}.getByResearchId`;
     structuredLog('info', context, 'Buscando configuraciones por researchId', { researchId });
     const command = new DocQueryCommand({
@@ -190,8 +190,12 @@ export class EyeTrackingRecruitConfigModel {
     try {
       const response = await docClient.send(command);
       const items = (response.Items || []) as DynamoEyeTrackingRecruitConfig[];
+      if (items.length === 0) {
+          structuredLog('info', context, 'No se encontraron configuraciones', { researchId });
+          return null;
+      }
       structuredLog('info', context, `Encontradas ${items.length} configuraciones`, { researchId });
-      return converters.configsFromDynamo(items);
+      return converters.configFromDynamo(items[0]);
     } catch (error: any) {
       structuredLog('error', context, 'Error al consultar configuraciones por researchId en DynamoDB', { error: error, researchId });
       throw new ApiError(`DATABASE_ERROR: Error al obtener configuraciones por investigación: ${error.message}`, 500);
@@ -424,57 +428,30 @@ export class EyeTrackingRecruitParticipantModel {
   /**
    * Obtiene un participante por su ID
    */
-  static async getById(id: string): Promise<EyeTrackingRecruitParticipant | null> {
+  static async getById(id: string, configId: string): Promise<EyeTrackingRecruitParticipant | null> {
     const context = `${this.modelName}.getById`;
-    structuredLog('info', context, 'Buscando participante por ID', { id });
+    structuredLog('info', context, 'Buscando participante por ID', { id, configId });
 
-    // <<< Aquí también se asume que la SK puede derivarse o necesita ser pasada >>>
-    // <<< Asumimos que el ID de participante NO contiene el configId >>>
-    // <<< NECESITAMOS el configId para formar la SK (`CONFIG#configId`) >>>
-    // <<< Este método REQUIERE configId como parámetro adicional >>>
-    /* 
-    // Lógica antigua que no funcionaría sin configId
-    const response = await docClient.send(
-      new GetCommand({
-        TableName: TABLES.EYETRACKING_RECRUIT_PARTICIPANT,
-        Key: {
-          PK: `PARTICIPANT#${id}`,
-          SK: `CONFIG#${id.split('-')[0]}` // ¡Incorrecto! SK es CONFIG#configId
-        }
-      })
-    );
-    */
-    // <<< Placeholder: Lanzar error indicando que falta configId >>>
-    structuredLog('error', context, 'Método getById llamado sin configId, necesario para SK', { id });
-    throw new ApiError('INTERNAL_ERROR: Parámetro configId faltante para buscar participante por ID.', 500);
-    
-    // <<< Si tuviéramos configId, la lógica sería: >>>
-    /*
-    static async getById(id: string, configId: string): Promise<EyeTrackingRecruitParticipant | null> {
-      const context = `${this.modelName}.getById`;
-      structuredLog('info', context, 'Buscando participante por ID', { id, configId });
-      const command = new GetCommand({
-        TableName: TABLES.EYETRACKING_RECRUIT_PARTICIPANT,
-        Key: {
-          PK: `PARTICIPANT#${id}`,
-          SK: `CONFIG#${configId}`
-        }
-      });
-
-      try {
-        const response = await docClient.send(command);
-        if (!response.Item) {
-           structuredLog('info', context, 'Participante no encontrado', { id, configId });
-           return null;
-        }
-        structuredLog('info', context, 'Participante encontrado', { id, configId });
-        return converters.participantFromDynamo(response.Item as DynamoEyeTrackingRecruitParticipant);
-      } catch (error: any) {
-         structuredLog('error', context, 'Error al obtener participante de DynamoDB', { error: error, id, configId });
-         throw new ApiError(`DATABASE_ERROR: Error al obtener el participante por ID: ${error.message}`, 500);
+    const command = new GetCommand({
+      TableName: TABLES.EYETRACKING_RECRUIT_PARTICIPANT,
+      Key: {
+        PK: `PARTICIPANT#${id}`,
+        SK: `CONFIG#${configId}`
       }
+    });
+
+    try {
+      const response = await docClient.send(command);
+      if (!response.Item) {
+          structuredLog('info', context, 'Participante no encontrado', { id, configId });
+          return null;
+      }
+      structuredLog('info', context, 'Participante encontrado', { id, configId });
+      return converters.participantFromDynamo(response.Item as DynamoEyeTrackingRecruitParticipant);
+    } catch (error: any) {
+        structuredLog('error', context, 'Error al obtener participante de DynamoDB', { error: error, id, configId });
+        throw new ApiError(`DATABASE_ERROR: Error al obtener el participante por ID: ${error.message}`, 500);
     }
-    */
   }
   
   /**
@@ -482,7 +459,6 @@ export class EyeTrackingRecruitParticipantModel {
    */
   static async updateStatus(
     id: string, 
-    // <<< Añadir configId como parámetro necesario para la clave >>>
     configId: string, 
     status: 'complete' | 'disqualified' | 'overquota' | 'inprogress',
     demographicData?: Record<string, any>

@@ -227,10 +227,12 @@ const routeMap: RouteMap = {
 };
 
 // Exportar el handler para uso con Lambda
-export const s3Handler = createController(routeMap, {
+// export const s3Handler = createController(routeMap, {
+export const mainHandler = createController(routeMap, {
   basePath: '/s3', // <--- createController usará esto como prefijo
   publicRoutes: [] // Todas las rutas requieren autenticación
 });
 
 // Exportar controlador para uso en otros módulos
-export default s3Controller; 
+// export default s3Controller; 
+export default mainHandler; // <<< Exportar el handler principal como default >>> 

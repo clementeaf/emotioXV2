@@ -418,7 +418,7 @@ export interface EyeTrackingDynamoItem {
  */
 export class EyeTrackingModel {
   private readonly tableName: string;
-  private readonly dynamoClient: DynamoDBDocumentClient;
+  private readonly docClient: DynamoDBDocumentClient;
   private static readonly SORT_KEY_VALUE = 'EYE_TRACKING_CONFIG'; // SK constante
   private modelName = 'EyeTrackingModel';
 
@@ -431,7 +431,7 @@ export class EyeTrackingModel {
     }
     const region: string = process.env.APP_REGION || 'us-east-1';
     const client = new DynamoDBClient({ region });
-    this.dynamoClient = DynamoDBDocumentClient.from(client);
+    this.docClient = DynamoDBDocumentClient.from(client);
     structuredLog('info', `${this.modelName}.${context}`, `Initialized for table: ${this.tableName} in region: ${region}`);
   }
 
@@ -481,7 +481,7 @@ export class EyeTrackingModel {
     const command = new PutCommand({ TableName: this.tableName, Item: item });
 
     try {
-        await this.dynamoClient.send(command);
+        await this.docClient.send(command);
         structuredLog('info', `${this.modelName}.${context}`, 'Configuración creada', { id: eyeTrackingId, researchId });
         return this.mapToRecord(item);
     } catch (error: any) {
@@ -501,7 +501,7 @@ export class EyeTrackingModel {
       });
 
     try {
-      const result = await this.dynamoClient.send(command);
+      const result = await this.docClient.send(command);
       if (!result.Item) {
         structuredLog('info', `${this.modelName}.${context}`, 'Configuración no encontrada por ID', { id });
         return null;
@@ -515,6 +515,7 @@ export class EyeTrackingModel {
   }
 
   async getByResearchId(researchId: string): Promise<EyeTrackingRecord | null> {
+    const context = 'getByResearchId';
     const command = new QueryCommand({
         TableName: this.tableName,
         IndexName: 'ResearchIdIndex',
@@ -527,15 +528,18 @@ export class EyeTrackingModel {
       });
 
     try {
-      const result = await this.dynamoClient.send(command);
+      const result = await this.docClient.send(command);
       if (!result.Items || result.Items.length === 0) {
         return null;
       }
       return this.mapToRecord(result.Items[0] as EyeTrackingDynamoItem);
     } catch (error: any) {
-        console.error('ERROR DETALLADO de DynamoDB QueryCommand GSI (EyeTracking):', JSON.stringify(error, null, 2));
-        console.error(`Error al obtener EyeTracking por researchId ${researchId}:`, error.message);
-        throw new Error('DATABASE_ERROR: Error al obtener la configuración de eye tracking por Research ID');
+        structuredLog('error', `${this.modelName}.${context}`, 'Error al obtener eye tracking por researchId (Query GSI)', { error: error, researchId });
+        if ((error as Error).message?.includes('index')) {
+           structuredLog('error', `${this.modelName}.${context}`, 'Índice GSI ResearchIdIndex no encontrado o mal configurado');
+           throw new ApiError("DATABASE_ERROR: Error de configuración de base de datos: falta índice para búsqueda.", 500);
+        }
+        throw new ApiError(`DATABASE_ERROR: Error al buscar configuración asociada a la investigación: ${error.message}`, 500);
     }
   }
 
@@ -593,7 +597,7 @@ export class EyeTrackingModel {
     });
     
     try {
-      const result = await this.dynamoClient.send(command);
+      const result = await this.docClient.send(command);
       if (!result.Attributes) {
         throw new ApiError('DATABASE_ERROR: La actualización no devolvió atributos.', 500);
       }
@@ -625,7 +629,7 @@ export class EyeTrackingModel {
     });
     
     try {
-      await this.dynamoClient.send(command);
+      await this.docClient.send(command);
       structuredLog('info', `${this.modelName}.${context}`, 'Configuración eliminada', { id });
     } catch (error: any) {
         structuredLog('error', `${this.modelName}.${context}`, 'Error detallado de DynamoDB DeleteCommand', { error: error, id });
@@ -648,7 +652,7 @@ export class EyeTrackingModel {
     });
     
     try {
-      const result = await this.dynamoClient.send(command);
+      const result = await this.docClient.send(command);
       const items = result.Items || [];
       structuredLog('debug', `${this.modelName}.${context}`, `Scan completado, encontrados ${items.length} items.`);
       return items.map(item => this.mapToRecord(item as EyeTrackingDynamoItem));

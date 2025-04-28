@@ -62,7 +62,7 @@ export class EyeTrackingController {
       const eyeTracking = await eyeTrackingService.getByResearchId(researchId);
       
       if (!eyeTracking) {
-         structuredLog('warn', `EyeTrackingController.${context}`, 'Servicio no devolvió configuración (inesperado)', { researchId });
+         structuredLog('warn', `EyeTrackingController.${context}`, 'No se encontró configuración (explicit check)', { researchId });
          return errorResponse(ERROR_MESSAGES.RESOURCE.NOT_FOUND('Configuración de Eye Tracking'), 404);
       }
 
@@ -219,6 +219,7 @@ const eyeTrackingRouteMap: RouteMap = {
   }
 };
 
-export const eyeTrackingHandler = createController(eyeTrackingRouteMap, {
-  basePath: ''
+// Nueva exportación con el nombre estándar
+export const mainHandler = createController(eyeTrackingRouteMap, {
+    basePath: ''
 }); 

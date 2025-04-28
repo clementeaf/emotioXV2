@@ -206,8 +206,7 @@ export class ThankYouScreenModel {
       ExpressionAttributeValues: {
         ':rid': researchId,
         ':skVal': ThankYouScreenModel.SORT_KEY_VALUE // Filtrar por SK="THANK_YOU_SCREEN"
-      },
-      Limit: 1
+      }
     });
 
     // *** INICIO LOGS ADICIONALES ***

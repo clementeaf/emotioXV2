@@ -26,123 +26,54 @@ const controllerImports = {
   'cognitive-task': () => import('./controllers/cognitiveTask.controller'),
   's3': () => import('./controllers/s3.controller'),
   'participants': () => import('./controllers/participant.controller'),
+  // Añadir otros controladores aquí si es necesario
 };
 
 // Función para obtener un handler de forma lazy (refactorizada)
-async function getHandler(type: string) {
+async function getHandler(type: string): Promise<Function | null> {
   if (handlers[type]) return handlers[type];
 
   if (type === 'websocket') {
+    // Keep WebSocket handler simple for now
     try {
-      // Placeholder para la lógica real del handler WebSocket
       const websocketHandler = async (_event: any, _context: any) => {
         return {
           statusCode: 501,
-          body: JSON.stringify({ message: 'Servicio de WebSocket no implementado o en desarrollo' })
+          body: JSON.stringify({ message: 'WebSocket service not implemented or under development' })
         };
       };
       handlers.websocket = websocketHandler;
       return websocketHandler;
     } catch (error) {
-      logger.error('Error con controlador de websocket:', error);
-      return async (_event: any, _context: any) => {
-        return {
-          statusCode: 500,
-          body: JSON.stringify({ message: 'Servicio de WebSocket no disponible' })
-        };
-      };
+      logger.error('Error loading placeholder WebSocket handler:', error);
+      return null;
     }
   }
 
-  // Buscar en el mapa de importadores
+  // Standard dynamic import based on controller type
   const importer = controllerImports[type as keyof typeof controllerImports];
 
   if (importer) {
     try {
-      const module: any = await importer(); // Tratar como any para acceso dinámico
-      
-      let handler: Function | undefined;
+      const module = await importer();
+      // Convention: Expect a 'mainHandler' export
+      const handler = module.mainHandler;
 
-      // <<< INICIO: Lógica específica para 'research' >>>
-      if (type === 'research' && typeof module.newResearchHandler === 'function') {
-          handler = module.newResearchHandler;
-          logger.info(`Usando exportación específica 'newResearchHandler' para ${type}`);
-      } 
-      // <<< FIN: Lógica específica para 'research' >>>
-      // <<< INICIO: Lógica específica para 'welcome-screen' >>>
-      else if (type === 'welcome-screen' && typeof module.welcomeScreenHandler === 'function') {
-          handler = module.welcomeScreenHandler;
-          logger.info(`Usando exportación específica 'welcomeScreenHandler' para ${type}`);
-      }
-      // <<< FIN: Lógica específica para 'welcome-screen' >>>
-      // <<< INICIO: Lógica específica para 'smart-voc' >>>
-      else if (type === 'smart-voc' && typeof module.smartVocFormHandler === 'function') {
-          handler = module.smartVocFormHandler;
-          logger.info(`Usando exportación específica 'smartVocFormHandler' para ${type}`);
-      }
-      // <<< FIN: Lógica específica para 'smart-voc' >>>
-      // <<< INICIO: Lógica específica para 'thank-you-screen' >>>
-      else if (type === 'thank-you-screen' && typeof module.thankYouScreenHandler === 'function') {
-          handler = module.thankYouScreenHandler;
-          logger.info(`Usando exportación específica 'thankYouScreenHandler' para ${type}`);
-      }
-      // <<< FIN: Lógica específica para 'thank-you-screen' >>>
-      // <<< INICIO: Lógica específica para 'cognitive-task' >>>
-      else if (type === 'cognitive-task' && typeof module.cognitiveTaskHandler === 'function') {
-          handler = module.cognitiveTaskHandler;
-          logger.info(`Usando exportación específica 'cognitiveTaskHandler' para ${type}`);
-      }
-      // <<< FIN: Lógica específica para 'cognitive-task' >>>
-      // <<< INICIO: Lógica específica para 's3' >>>
-      else if (type === 's3' && typeof module.s3Handler === 'function') {
-          handler = module.s3Handler;
-          logger.info(`Usando exportación específica 's3Handler' para ${type}`);
-      }
-      // <<< FIN: Lógica específica para 's3' >>>
-      // <<< Mantener la lógica existente como fallback >>>
-      // 1. Priorizar la exportación nombrada 'handler' (si no es uno de los específicos)
-      else if (typeof module.handler === 'function') {
-        handler = module.handler;
-        logger.info(`Usando exportación 'handler' para ${type}`);
-      }
-      // 2. Si no, buscar la primera función exportada (si no es uno de los específicos)
-      else {
-        for (const key in module) {
-          // Asegurarse de no seleccionar la clase constructora si ya intentamos el específico
-          if (typeof module[key] === 'function' && 
-              !(type === 'research' && key === 'NewResearchController') &&
-              !(type === 'welcome-screen' && key === 'WelcomeScreenController') &&
-              !(type === 'smart-voc' && key === 'SmartVOCFormController') &&
-              !(type === 'thank-you-screen' && key === 'ThankYouScreenController') &&
-              !(type === 'cognitive-task' && key === 'CognitiveTaskController') &&
-              !(type === 's3' && key === 'S3Controller')) {
-            handler = module[key];
-            logger.info(`Usando la primera función exportada encontrada ('${key}') para ${type}`);
-            break; // Usar la primera que se encuentre
-          }
-        }
-      }
-      // 3. Si no, verificar si el módulo mismo es una función (esto probablemente no aplique a nuestros controladores)
-      if (!handler && typeof module === 'function') {
-        handler = module;
-         logger.info(`Usando el módulo exportado directamente como handler para ${type}`);
-      }
-
-      if (handler) { // Verificar si se encontró un handler válido
-        logger.info(`Controlador listo para ${type}`);
-        handlers[type] = handler; 
+      if (typeof handler === 'function') {
+        logger.info(`Controller ready for ${type} using 'mainHandler' export.`);
+        handlers[type] = handler;
         return handler;
       } else {
-        logger.error(`No se encontró una función handler exportada válida en el módulo para ${type}`);
+        logger.error(`Module for controller type '${type}' loaded, but 'mainHandler' export is missing or not a function.`);
         return null;
       }
     } catch (error) {
-      logger.error({ err: error, controllerType: type }, `Error al cargar dinámicamente el controlador ${type}`);
+      logger.error({ err: error, controllerType: type }, `Error dynamically loading controller module '${type}'`);
       return null;
     }
   } else {
-    logger.error(`Tipo de controlador desconocido: ${type}`);
-    return null; // Manejo de tipo desconocido
+    logger.error(`Unknown controller type requested: ${type}`);
+    return null; 
   }
 }
 

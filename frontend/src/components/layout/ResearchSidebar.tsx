@@ -7,10 +7,11 @@ import { Suspense, useEffect, useState } from 'react';
 import { ResearchSidebarProps, ResearchSection } from '@/interfaces/research';
 import { cn } from '@/lib/utils';
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
+import { Research } from '../../../../shared/interfaces/research.model';
 import { Button } from '@/components/ui/Button';
 import { researchAPI } from '@/lib/api';
 import { cleanResearchFromLocalStorage } from '@/lib/cleanup/localStorageCleanup';
-import { ResearchRecord } from '@/types'; // Importar ResearchRecord
+import { ResearchRecord } from '@/types'; // Mantener ResearchRecord si se usa
 
 const sections: ResearchSection[] = [
   {
@@ -54,74 +55,79 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
   // Obtener nombre de la investigación
   useEffect(() => {
     const fetchResearchName = async () => {
+      console.log(`[ResearchSidebar] Iniciando fetch para researchId: ${researchId}`);
+
       if (!researchId) {
+        console.warn('[ResearchSidebar] researchId es nulo o indefinido.');
         setResearchName('Investigación no encontrada');
         setIsLoading(false);
         return;
       }
 
       setIsLoading(true);
-      setError(null); // Reset error state on new fetch
+      setError(null); 
 
       try {
-        // La respuesta de researchAPI.get ya es el objeto Research gracias a la configuración de alova
-        const response = await researchAPI.get(researchId);
-        const researchData = response.data; // Asumiendo que la estructura es { data: Research }
-        
-        // Acceder directamente al nombre desde researchData
-        const nameFromApi = researchData?.name;
+        console.log(`[ResearchSidebar] Llamando a researchAPI.list() para obtener todas las investigaciones.`);
+        const response = await researchAPI.list(); // Obtiene la lista completa
+        console.log('[ResearchSidebar] Respuesta cruda de researchAPI.list():', response);
 
-        if (nameFromApi) {
-          setResearchName(nameFromApi);
-          // Guardar la respuesta completa en localStorage sigue siendo útil como caché
+        const researchList = response.data as Research[]; // Castear a Research[]
+        console.log('[ResearchSidebar] researchList extraído (response.data):', researchList);
+
+        const currentResearch = researchList?.find(research => research.id === researchId);
+        console.log('[ResearchSidebar] currentResearch encontrado en la lista:', currentResearch);
+
+        const nameFromList = currentResearch?.name;
+        console.log(`[ResearchSidebar] nameFromList extraído: ${nameFromList}`);
+
+        if (nameFromList) {
+          console.log(`[ResearchSidebar] Nombre "${nameFromList}" encontrado en la lista. Actualizando estado.`);
+          setResearchName(nameFromList);
           try {
-            localStorage.setItem(`research_${researchId}`, JSON.stringify(researchData));
-            console.log(`Research data for ${researchId} saved to localStorage.`);
+            localStorage.setItem(`research_${researchId}`, JSON.stringify(currentResearch)); 
+            console.log(`[ResearchSidebar] Datos de la investigación actual guardados en localStorage para ${researchId}.`);
           } catch (storageError) {
-            console.error('Failed to save research data to localStorage:', storageError);
-            // No lanzar error aquí, sólo loggear. La app puede continuar.
+            console.error('[ResearchSidebar] Falló al guardar en localStorage:', storageError);
           }
         } else {
-          // Si la API devolvió datos pero sin nombre (caso improbable pero posible)
-          console.warn(`Research data fetched for ${researchId}, but name is missing. Attempting localStorage.`);
-          fetchNameFromLocalStorage();
+          console.warn(`[ResearchSidebar] Nombre no encontrado en la lista para ${researchId}. Intentando localStorage (fallback).`);
+          fetchNameFromLocalStorage(); // Llama al fallback si no se encontró en la lista
         }
       } catch (apiError: any) {
-        console.warn(`Failed to fetch research name for ${researchId} from API:`, apiError.message);
-        setError(`Error al cargar datos (${apiError.message || 'detalle desconocido'})`);
-        // Si la API falla, intentar obtener de localStorage como fallback
-        fetchNameFromLocalStorage();
+        console.error(`[ResearchSidebar] Error capturado al llamar a researchAPI.list() para ${researchId}:`, apiError);
+        setError(`Error al cargar lista de datos (${apiError.message || 'detalle desconocido'})`);
+        fetchNameFromLocalStorage(); // Intenta fallback si la API falla
       } finally {
-        // Asegurarse de que loading se ponga a false incluso si localStorage falla
-        // setLoading(false); // Se maneja dentro de fetchNameFromLocalStorage o al final si no se llama
-        console.log('[ResearchSidebar] Fetch process finished, setting loading to false.');
-        setIsLoading(false);
+        console.log('[ResearchSidebar] Bloque finally alcanzado. Estableciendo isLoading a false.');
+        setIsLoading(false); 
       }
     };
 
     const fetchNameFromLocalStorage = () => {
+      console.log(`[ResearchSidebar] Intentando obtener nombre desde localStorage para ${researchId}`);
       try {
         const storedData = localStorage.getItem(`research_${researchId}`);
         if (storedData) {
           const parsedData = JSON.parse(storedData);
+          console.log('[ResearchSidebar] Datos parseados de localStorage:', parsedData);
           if (parsedData?.name) {
+            console.log(`[ResearchSidebar] Nombre "${parsedData.name}" encontrado en localStorage.`);
             setResearchName(parsedData.name);
-            console.log(`Research name for ${researchId} retrieved from localStorage.`);
-            setIsLoading(false); // Nombre encontrado en localStorage
-            return; // Salir temprano
+            setError(null);
+            return; 
           } else {
-             console.warn(`Data found in localStorage for ${researchId}, but name is missing.`);
+             console.warn(`[ResearchSidebar] Datos encontrados en localStorage para ${researchId}, pero sin nombre.`);
           }
         } else {
-          console.log(`No data found in localStorage for ${researchId}.`);
+          console.log(`[ResearchSidebar] No se encontraron datos en localStorage para ${researchId}.`);
         }
       } catch (storageError) {
-        console.error('Failed to retrieve or parse research data from localStorage:', storageError);
-        setError('Error al acceder a datos locales.'); // Informar al usuario del error de localStorage
+         console.error('[ResearchSidebar] Error al leer/parsear localStorage:', storageError);
+        setError('Error al acceder a datos locales.');
       }
-      // Si no se encontró en localStorage o hubo error, establecer nombre por defecto
+      console.warn('[ResearchSidebar] Fallback final: Nombre no encontrado ni en API ni en localStorage.');
       setResearchName('Nombre no disponible');
-      setIsLoading(false); // Terminado el intento de carga (API falló, localStorage falló/no encontró)
     };
 
     fetchResearchName();

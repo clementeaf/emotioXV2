@@ -289,7 +289,7 @@ const controllerInstance = new NewResearchController();
 
 // <<< Handler simple y directo para GET /research/all >>>
 // Exportar como el nombre original esperado por el index/router
-export const newResearchHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   console.log('Ejecutando simpleGetAllResearchesHandler (exportado como newResearchHandler)');
   try {
     // Simular validación de token (necesario para obtener userId)

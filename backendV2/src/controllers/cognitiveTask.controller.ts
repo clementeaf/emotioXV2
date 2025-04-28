@@ -258,7 +258,8 @@ const cognitiveTaskRouteMap: RouteMap = {
   }
 };
 
-export const cognitiveTaskHandler = createController(cognitiveTaskRouteMap, {
-  // Cambiar basePath a solo '/research'
-  basePath: '/research' 
+// Crear el handler principal usando el decorador
+// export const cognitiveTaskHandler = createController(cognitiveTaskRouteMap, {
+export const mainHandler = createController(cognitiveTaskRouteMap, {
+  basePath: '/research', // Base path común para estas rutas
 });

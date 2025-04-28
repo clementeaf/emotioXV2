@@ -78,12 +78,25 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
 
   // Efecto para cargar datos existentes
   useEffect(() => {
-    if (existingScreen?.data) {
+    // Verificar que existingScreen exista, que no sea la respuesta del 404 (que tiene notFound: true)
+    // y que contenga datos (ej. verificando el id o title)
+    if (existingScreen && !existingScreen.notFound && existingScreen.id) { 
       setFormData({
-        ...existingScreen.data,
-        researchId
+        // Usar directamente las propiedades de existingScreen
+        isEnabled: existingScreen.isEnabled,
+        title: existingScreen.title,
+        message: existingScreen.message,
+        redirectUrl: existingScreen.redirectUrl,
+        metadata: existingScreen.metadata, // Asegúrate que metadata existe o maneja su ausencia
+        // Mantener el researchId del prop, no el de la respuesta (por si acaso)
+        researchId 
       });
-      setThankYouScreenId(existingScreen.data.id);
+      setThankYouScreenId(existingScreen.id);
+    } else if (existingScreen?.notFound) {
+      // Si es notFound, asegurarse de que el estado esté limpio (ya debería estarlo por defecto)
+      // Podrías querer resetear aquí si hubiera cambios previos
+      // setFormData(DEFAULT_FORM_DATA); // Si tuvieras DEFAULT_FORM_DATA definido
+      setThankYouScreenId(null);
     }
   }, [existingScreen, researchId]);
 

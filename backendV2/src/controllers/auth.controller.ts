@@ -17,7 +17,7 @@ import {
 /**
  * Maneja las solicitudes de autenticación
  */
-export const authHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
     const method = event.httpMethod;
     const path = event.path;

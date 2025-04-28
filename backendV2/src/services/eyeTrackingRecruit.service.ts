@@ -27,28 +27,27 @@ export class EyeTrackingRecruitService {
   /**
    * Obtiene la configuración de reclutamiento para una investigación
    */
-  async getConfigByResearchId(researchId: string): Promise<EyeTrackingRecruitConfig | null> {
+  async getConfigByResearchId(researchId: string): Promise<EyeTrackingRecruitConfig> {
     const context = 'getConfigByResearchId';
     structuredLog('info', `${this.serviceName}.${context}`, 'Buscando configuración por researchId', { researchId });
     try {
-      // <<< Llamar al modelo directamente dentro del try >>>
-      const configs: EyeTrackingRecruitConfig[] = await EyeTrackingRecruitConfigModel.getByResearchId(researchId);
+      // Model now returns single config or null
+      const config = await EyeTrackingRecruitConfigModel.getByResearchId(researchId);
       
-      if (!configs || configs.length === 0) {
-        structuredLog('info', `${this.serviceName}.${context}`, 'No se encontraron configuraciones', { researchId });
-        return null;
+      // Throw NotFoundError if model returns null
+      if (!config) {
+        structuredLog('warn', `${this.serviceName}.${context}`, 'No se encontró configuración', { researchId });
+        throw new NotFoundError(`Configuración de reclutamiento no encontrada para researchId ${researchId}`);
       }
       
-      const sortedConfigs = configs.sort((a: EyeTrackingRecruitConfig, b: EyeTrackingRecruitConfig) => {
-         const dateA = a.createdAt instanceof Date ? a.createdAt.getTime() : 0;
-         const dateB = b.createdAt instanceof Date ? b.createdAt.getTime() : 0;
-         return dateB - dateA;
-      });
-      structuredLog('info', `${this.serviceName}.${context}`, 'Configuración más reciente encontrada', { researchId, configId: sortedConfigs[0].id });
-      return sortedConfigs[0];
+      // Assuming only one config per researchId is valid (model already returns first or null)
+      structuredLog('info', `${this.serviceName}.${context}`, 'Configuración encontrada', { researchId, configId: config.id });
+      return config;
     } catch (error) {
-        // <<< Envolver el error con handleDbError >>>
-        // handleDbError se encargará de loguear el error original y lanzar ApiError/NotFoundError
+        // Standardize catch block
+        if (error instanceof ApiError || error instanceof NotFoundError) {
+            throw error;
+        }
         throw handleDbError(error, context, this.serviceName, {});
     }
   }
@@ -60,14 +59,23 @@ export class EyeTrackingRecruitService {
     const context = 'createConfig';
     structuredLog('info', `${this.serviceName}.${context}`, 'Iniciando creación de configuración', { researchId });
     
-    // 1. Verificar existencia (esta llamada ya usa el patrón try/catch + handleDbError)
-    const existingConfig = await this.getConfigByResearchId(researchId);
+    // 1. Check existence (getConfigByResearchId now throws NotFoundError)
+    let existingConfig: EyeTrackingRecruitConfig | null = null;
+    try {
+      existingConfig = await this.getConfigByResearchId(researchId);
+    } catch (error) {
+      if (!(error instanceof NotFoundError)) { // Only ignore NotFoundError
+        throw handleDbError(error, `${context} [CheckExistingStep]`, this.serviceName, {});
+      }
+      // If NotFoundError, existingConfig remains null, proceed to create
+    }
+
     if (existingConfig) {
       structuredLog('warn', `${this.serviceName}.${context}`, 'Conflicto: ya existe configuración para la investigación', { researchId });
       throw new ApiError('Ya existe una configuración para esta investigación', 409);
     }
     
-    // 2. Crear la configuración
+    // 2. Create config
     try {
       const createdConfig = await EyeTrackingRecruitConfigModel.create({
           ...configData,
@@ -76,7 +84,10 @@ export class EyeTrackingRecruitService {
       structuredLog('info', `${this.serviceName}.${context}`, 'Configuración creada', { researchId, configId: createdConfig.id });
       return createdConfig;
     } catch (error) {
-       // <<< Envolver el error con handleDbError >>>
+       // Standardize catch block for create step
+       if (error instanceof ApiError || error instanceof NotFoundError) {
+          throw error;
+       }
        throw handleDbError(error, context, this.serviceName, {});
     }
   }
@@ -88,6 +99,7 @@ export class EyeTrackingRecruitService {
     const context = 'updateConfig';
     structuredLog('info', `${this.serviceName}.${context}`, 'Actualizando configuración', { configId });
     try {
+        // Model's update method checks existence and throws 404
         const updatedConfigResult = await EyeTrackingRecruitConfigModel.update(configId, updateData);
         
         if (!updatedConfigResult) {
@@ -98,9 +110,11 @@ export class EyeTrackingRecruitService {
         structuredLog('info', `${this.serviceName}.${context}`, 'Configuración actualizada', { configId });
         return updatedConfigResult;
     } catch (error) {
-        throw handleDbError(error, context, this.serviceName, {
-             'CONFIG_NOT_FOUND': { errorClass: NotFoundError, statusCode: 404 } 
-        }); 
+        // Standardize catch block
+        if (error instanceof ApiError || error instanceof NotFoundError) {
+            throw error;
+        }
+        throw handleDbError(error, context, this.serviceName, {}); 
     }
   }
   
@@ -111,6 +125,7 @@ export class EyeTrackingRecruitService {
     const context = 'completeConfig';
     structuredLog('info', `${this.serviceName}.${context}`, 'Marcando configuración como completada', { configId });
      try {
+        // Model's method checks existence and throws 404
         const updatedConfigResult = await EyeTrackingRecruitConfigModel.markAsCompleted(configId);
         
         if (!updatedConfigResult) {
@@ -121,9 +136,11 @@ export class EyeTrackingRecruitService {
         structuredLog('info', `${this.serviceName}.${context}`, 'Configuración completada', { configId });
         return updatedConfigResult;
     } catch (error) {
-        throw handleDbError(error, context, this.serviceName, {
-             'CONFIG_NOT_FOUND': { errorClass: NotFoundError, statusCode: 404 }
-        });
+        // Standardize catch block
+        if (error instanceof ApiError || error instanceof NotFoundError) {
+            throw error;
+        }
+        throw handleDbError(error, context, this.serviceName, {});
     }
   }
   
@@ -134,13 +151,16 @@ export class EyeTrackingRecruitService {
     const context = 'deleteConfig';
     structuredLog('info', `${this.serviceName}.${context}`, 'Eliminando configuración', { configId });
     try {
+       // Model's method checks existence and throws 404
        await EyeTrackingRecruitConfigModel.delete(configId);
        structuredLog('info', `${this.serviceName}.${context}`, 'Configuración eliminada', { configId });
        return true;
     } catch (error) {
-        throw handleDbError(error, context, this.serviceName, {
-             'CONFIG_NOT_FOUND': { errorClass: NotFoundError, statusCode: 404 }
-        });
+        // Standardize catch block
+        if (error instanceof ApiError || error instanceof NotFoundError) {
+            throw error;
+        }
+        throw handleDbError(error, context, this.serviceName, {});
     }
   }
   
@@ -156,29 +176,19 @@ export class EyeTrackingRecruitService {
     let config: EyeTrackingRecruitConfig | null = null; 
     
     try {
-      // 1. Obtener la configuración (usando el patrón revisado)
-      try {
-          config = await EyeTrackingRecruitConfigModel.getById(recruitConfigId);
-      } catch (error) {
-          // Relanzar usando handleDbError solo para errores inesperados de getById
-          throw handleDbError(error, `${context} [GetConfigStep]`, this.serviceName, { 'CONFIG_NOT_FOUND': { errorClass: NotFoundError, statusCode: 404 } });
-      }
+      // 1. Get config (using helper which throws 404 if needed)
+      config = await this.getConfigByIdInternal(recruitConfigId, context);
 
-      if (!config) {
-         structuredLog('warn', `${this.serviceName}.${context}`, 'Configuración no encontrada para asociar participante', { recruitConfigId });
-         throw new NotFoundError(`Configuración con ID ${recruitConfigId} no encontrada.`);
-      }
-      
-      // 2. Verificar límite de participantes
+      // 2. Check participant limit (getStatsByConfigId uses standardized error handling)
       if (config.participantLimit?.enabled && config.participantLimit.value > 0) {
-        const stats = await this.getStatsByConfigId(recruitConfigId); // Esta llamada usa el patrón revisado internamente
+        const stats = await this.getStatsByConfigId(recruitConfigId); 
         if (stats.complete.count >= config.participantLimit.value) {
           structuredLog('warn', `${this.serviceName}.${context}`, 'Límite de participantes alcanzado', { recruitConfigId, limit: config.participantLimit.value });
           throw new ApiError('Se ha alcanzado el límite de participantes', 400);
         }
       }
       
-      // 3. Crear el participante (usando el patrón revisado)
+      // 3. Create participant
       const newParticipant = await EyeTrackingRecruitParticipantModel.create({
           ...participantData,
           researchId: config.researchId,
@@ -189,15 +199,11 @@ export class EyeTrackingRecruitService {
       return newParticipant;
 
     } catch (error) {
-      // <<< Revisar manejo de errores: relanzar ApiError/NotFoundError, usar handleDbError para otros >>>
+      // Standardize catch block
       if (error instanceof ApiError || error instanceof NotFoundError) {
-          // Log opcional si queremos loguear también en el nivel de servicio
-          // structuredLog('warn', `${this.serviceName}.${context}`, 'Error conocido durante la creación', { errorName: error.name, message: error.message });
           throw error;
       }
-      // Para errores inesperados del modelo create o del getStats, usar handleDbError
-      structuredLog('error', `${this.serviceName}.${context}`, 'Error inesperado durante la creación del participante', { error, recruitConfigId });
-      throw handleDbError(error, context, this.serviceName, {}); // handleDbError manejará el log detallado y lanzará ApiError(500)
+      throw handleDbError(error, context, this.serviceName, {}); 
     }
   }
   
@@ -213,14 +219,14 @@ export class EyeTrackingRecruitService {
     const context = 'updateParticipantStatus';
     structuredLog('info', `${this.serviceName}.${context}`, 'Actualizando estado de participante', { participantId, configId, status });
     try {
-        // La llamada al modelo ya fue refactorizada para lanzar ApiError 404 si no existe
+        // Model's updateStatus checks existence and throws 404
         const updatedParticipant = await EyeTrackingRecruitParticipantModel.updateStatus(
             participantId, 
-            configId, // Pasar configId
+            configId, 
             status, 
             demographicData
         );
-        // Añadir verificación explícita de null (aunque no debería ocurrir)
+
         if (!updatedParticipant) {
              structuredLog('error', `${this.serviceName}.${context}`, 'La actualización de estado devolvió null inesperadamente', { participantId, configId });
              throw new ApiError('Error interno: La actualización de estado no devolvió un resultado válido.', 500);
@@ -228,12 +234,11 @@ export class EyeTrackingRecruitService {
         structuredLog('info', `${this.serviceName}.${context}`, 'Estado actualizado', { participantId, newStatus: status });
         return updatedParticipant;
     } catch (error) {
-        // <<< Revisar manejo de errores >>>
+        // Standardize catch block
         if (error instanceof ApiError || error instanceof NotFoundError) {
-            throw error; // El modelo ya lanzó el error correcto (ej. 404)
+            throw error; 
         }
-        structuredLog('error', `${this.serviceName}.${context}`, 'Error inesperado al actualizar estado', { error, participantId, configId });
-        throw handleDbError(error, context, this.serviceName, { 'PARTICIPANT_NOT_FOUND': { errorClass: NotFoundError, statusCode: 404 } });
+        throw handleDbError(error, context, this.serviceName, {});
     }
   }
   
@@ -248,11 +253,10 @@ export class EyeTrackingRecruitService {
         structuredLog('info', `${this.serviceName}.${context}`, `Encontrados ${participants.length} participantes`, { configId });
         return participants;
     } catch (error) {
-        // <<< Revisar manejo de errores >>>
-        if (error instanceof ApiError || error instanceof NotFoundError) {
+        // Standardize catch block
+         if (error instanceof ApiError || error instanceof NotFoundError) {
              throw error;
-        }
-        structuredLog('error', `${this.serviceName}.${context}`, 'Error inesperado al obtener participantes', { error, configId });
+         }
         throw handleDbError(error, context, this.serviceName, {});
     }
   }
@@ -264,15 +268,15 @@ export class EyeTrackingRecruitService {
     const context = 'getStatsByConfigId';
     structuredLog('info', `${this.serviceName}.${context}`, 'Obteniendo estadísticas por configId', { configId });
     try {
+        // Model's getStats calls getByConfigId which has standardized error handling
         const stats = await EyeTrackingRecruitParticipantModel.getStats(configId);
         structuredLog('info', `${this.serviceName}.${context}`, 'Estadísticas obtenidas', { configId, stats });
         return stats;
      } catch (error) {
-        // <<< Revisar manejo de errores >>>
+        // Standardize catch block
          if (error instanceof ApiError || error instanceof NotFoundError) {
              throw error;
          }
-        structuredLog('error', `${this.serviceName}.${context}`, 'Error inesperado al obtener estadísticas', { error, configId });
         throw handleDbError(error, context, this.serviceName, {});
     }
   }
@@ -287,12 +291,11 @@ export class EyeTrackingRecruitService {
   ): Promise<RecruitmentLink> {
     const context = 'generateRecruitmentLink';
     structuredLog('info', `${this.serviceName}.${context}`, 'Generando enlace', { configId, type, expirationDays });
-    let config: EyeTrackingRecruitConfig | null = null;
     try {
-        // 1. Obtener config (maneja errores internamente ahora)
-        config = await this.getConfigByIdInternal(configId, context); // Usar helper
+        // 1. Get config (using helper which throws 404 if needed)
+        const config = await this.getConfigByIdInternal(configId, context);
 
-        // 2. Calcular expiración
+        // 2. Calculate expiration
         let expiresAt: string | undefined;
         if (expirationDays && expirationDays > 0) {
             const expirationDate = new Date();
@@ -300,7 +303,7 @@ export class EyeTrackingRecruitService {
             expiresAt = expirationDate.toISOString();
         }
         
-        // 3. Crear enlace
+        // 3. Create link
         const link = await RecruitmentLinkModel.create(
             config.researchId, 
             configId, 
@@ -310,11 +313,10 @@ export class EyeTrackingRecruitService {
         structuredLog('info', `${this.serviceName}.${context}`, 'Enlace generado', { linkId: link.id, configId });
         return link;
     } catch (error) {
-        // <<< Revisar manejo de errores >>>
+        // Standardize catch block
         if (error instanceof ApiError || error instanceof NotFoundError) {
             throw error;
         }
-        structuredLog('error', `${this.serviceName}.${context}`, 'Error inesperado al generar enlace', { error, configId });
         throw handleDbError(error, context, this.serviceName, {});
     }
   }
@@ -330,11 +332,10 @@ export class EyeTrackingRecruitService {
         structuredLog('info', `${this.serviceName}.${context}`, `Encontrados ${links.length} enlaces activos`, { configId });
         return links;
     } catch (error) {
-        // <<< Revisar manejo de errores >>>
+        // Standardize catch block
          if (error instanceof ApiError || error instanceof NotFoundError) {
              throw error;
          }
-        structuredLog('error', `${this.serviceName}.${context}`, 'Error inesperado al obtener enlaces activos', { error, configId });
         throw handleDbError(error, context, this.serviceName, {});
     }
   }
@@ -346,9 +347,9 @@ export class EyeTrackingRecruitService {
     const context = 'deactivateLink';
     structuredLog('info', `${this.serviceName}.${context}`, 'Desactivando enlace', { token });
     try {
-        // El modelo refactorizado lanza ApiError(404)
+        // Model's deactivate method checks existence and throws 404
         const deactivatedLink = await RecruitmentLinkModel.deactivate(token);
-         // Añadir verificación explícita de null (aunque no debería ocurrir)
+
         if (!deactivatedLink) {
              structuredLog('error', `${this.serviceName}.${context}`, 'La desactivación devolvió null inesperadamente', { token });
              throw new ApiError('Error interno: La desactivación no devolvió un resultado válido.', 500);
@@ -356,12 +357,11 @@ export class EyeTrackingRecruitService {
         structuredLog('info', `${this.serviceName}.${context}`, 'Enlace desactivado', { token, linkId: deactivatedLink.id });
         return deactivatedLink;
     } catch (error) {
-        // <<< Revisar manejo de errores >>>
+        // Standardize catch block
         if (error instanceof ApiError || error instanceof NotFoundError) {
             throw error;
         }
-        structuredLog('error', `${this.serviceName}.${context}`, 'Error inesperado al desactivar enlace', { error, token });
-        throw handleDbError(error, context, this.serviceName, { 'LINK_NOT_FOUND': { errorClass: NotFoundError, statusCode: 404 } });
+        throw handleDbError(error, context, this.serviceName, {});
     }
   }
   
@@ -372,9 +372,9 @@ export class EyeTrackingRecruitService {
     const context = 'recordLinkAccess';
     structuredLog('info', `${this.serviceName}.${context}`, 'Registrando acceso a enlace', { token });
      try {
-        // El modelo refactorizado lanza ApiError(404)
+        // Model's method checks existence and throws 404
         const updatedLink = await RecruitmentLinkModel.incrementAccessCount(token);
-         // Añadir verificación explícita de null (aunque no debería ocurrir)
+
          if (!updatedLink) {
              structuredLog('error', `${this.serviceName}.${context}`, 'El incremento de acceso devolvió null inesperadamente', { token });
              throw new ApiError('Error interno: El incremento de acceso no devolvió un resultado válido.', 500);
@@ -382,12 +382,11 @@ export class EyeTrackingRecruitService {
         structuredLog('info', `${this.serviceName}.${context}`, 'Acceso registrado', { token, linkId: updatedLink.id, accessCount: updatedLink.accessCount });
         return updatedLink;
     } catch (error) {
-        // <<< Revisar manejo de errores >>>
+        // Standardize catch block
         if (error instanceof ApiError || error instanceof NotFoundError) {
             throw error;
         }
-        structuredLog('error', `${this.serviceName}.${context}`, 'Error inesperado al registrar acceso', { error, token });
-        throw handleDbError(error, context, this.serviceName, { 'LINK_NOT_FOUND': { errorClass: NotFoundError, statusCode: 404 } });
+        throw handleDbError(error, context, this.serviceName, {});
     }
   }
   
@@ -398,16 +397,15 @@ export class EyeTrackingRecruitService {
     const context = 'validateRecruitmentLink';
     structuredLog('info', `${this.serviceName}.${context}`, 'Validando enlace', { token });
     try {
-        // 1. Obtener enlace (el modelo lanza 404 si no existe)
+        // 1. Get link (model throws 404 if not found)
         const link = await RecruitmentLinkModel.getByToken(token);
 
         if (!link) {
-            // Esto no debería ocurrir si getByToken lanza 404, pero por seguridad:
-            structuredLog('warn', `${this.serviceName}.${context}`, 'Enlace no encontrado durante validación (inesperado)', { token });
+            structuredLog('warn', `${this.serviceName}.${context}`, 'Enlace no encontrado durante validación', { token });
             throw new NotFoundError(`Enlace no encontrado`);
         }
         
-        // 2. Validar estado y expiración
+        // 2. Validate status and expiration
         if (!link.isActive) {
             structuredLog('warn', `${this.serviceName}.${context}`, 'Intento de usar enlace desactivado', { token, linkId: link.id });
             throw new ApiError('El enlace ha sido desactivado', 400);
@@ -417,18 +415,17 @@ export class EyeTrackingRecruitService {
             throw new ApiError('El enlace ha expirado', 400);
         }
         
-        // 3. Incrementar contador (usa el método refactorizado que maneja 404)
+        // 3. Increment access count (this method has standardized error handling)
         await this.recordLinkAccess(token); 
         
         structuredLog('info', `${this.serviceName}.${context}`, 'Enlace validado exitosamente', { token, linkId: link.id });
         return link;
     } catch (error) {
-         // <<< Revisar manejo de errores >>>
+         // Standardize catch block
          if (error instanceof ApiError || error instanceof NotFoundError) {
              throw error;
          }
-         structuredLog('error', `${this.serviceName}.${context}`, 'Error inesperado al validar enlace', { error, token });
-         throw handleDbError(error, context, this.serviceName, { 'LINK_NOT_FOUND': { errorClass: NotFoundError, statusCode: 404 } });
+         throw handleDbError(error, context, this.serviceName, {});
     }
   }
   
@@ -439,20 +436,23 @@ export class EyeTrackingRecruitService {
     const context = 'getResearchSummary';
     structuredLog('info', `${this.serviceName}.${context}`, 'Generando resumen para investigación', { researchId });
     try {
+      // getConfigByResearchId now throws NotFoundError
       const config = await this.getConfigByResearchId(researchId);
       
+      // No need to check for null config here, NotFoundError would have been thrown
+      /*
       if (!config) {
         structuredLog('info', `${this.serviceName}.${context}`, 'No se encontró configuración para el resumen', { researchId });
         return { config: null, stats: null, activeLinks: [] };
       }
+      */
       
       if (!config.id) {
          structuredLog('error', `${this.serviceName}.${context}`, 'ID de configuración faltante en objeto recuperado', { researchId });
-         // Lanzar un error interno si falta el ID
          throw new ApiError('Error interno: ID de configuración faltante.', 500); 
       }
       
-      // Estas llamadas usan el patrón try/catch + handleDbError internamente
+      // These methods use standardized error handling
       const stats = await this.getStatsByConfigId(config.id);
       const activeLinks = await this.getActiveLinks(config.id);
       
@@ -460,32 +460,31 @@ export class EyeTrackingRecruitService {
       return { config, stats, activeLinks };
 
     } catch (error) {
-      // <<< Revisar manejo de errores >>>
+      // Standardize catch block
       if (error instanceof ApiError || error instanceof NotFoundError) {
           throw error;
       }
-      structuredLog('error', `${this.serviceName}.${context}`, 'Error inesperado al generar resumen', { error, researchId });
-      // Usar handleDbError para asegurar log y error 500 estandarizado
       throw handleDbError(error, context, this.serviceName, {}); 
     }
   }
 
-  // <<< Helper interno para obtener config por ID y lanzar 404 >>>
+  // Helper function with standardized error handling
   private async getConfigByIdInternal(configId: string, parentContext: string): Promise<EyeTrackingRecruitConfig> {
       const context = `${parentContext} [GetConfigByIdInternal]`;
       try {
+          // Model's getById checks existence, but might have fragility in key construction
           const config = await EyeTrackingRecruitConfigModel.getById(configId);
           if (!config) {
-              structuredLog('warn', `${this.serviceName}.${context}`, 'Configuración no encontrada', { configId });
+              structuredLog('warn', `${this.serviceName}.${context}`, 'Configuración no encontrada por helper', { configId });
               throw new NotFoundError(`Configuración con ID ${configId} no encontrada.`);
           }
           return config;
       } catch (error) {
+           // Standardize catch block
            if (error instanceof ApiError || error instanceof NotFoundError) {
                throw error;
            }
-           structuredLog('error', `${this.serviceName}.${context}`, 'Error inesperado al obtener configuración por ID', { error, configId });
-           throw handleDbError(error, context, this.serviceName, { 'CONFIG_NOT_FOUND': { errorClass: NotFoundError, statusCode: 404 } });
+           throw handleDbError(error, context, this.serviceName, {});
       }
   }
 }

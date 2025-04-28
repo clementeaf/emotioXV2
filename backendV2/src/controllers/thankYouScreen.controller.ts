@@ -120,7 +120,7 @@ export class ThankYouScreenController {
       }
       --- FIN: COMENTAR CACHÉ --- */
       
-      return successResponse(screen || { message: 'No se encontró una pantalla de agradecimiento para esta investigación' });
+      return successResponse(screen);
     } catch (error) {
       return this.handleError(error, context, { researchId });
     }
@@ -274,6 +274,11 @@ const thankYouScreenRouteMap: RouteMap = {
 /**
  * Manejador principal para las rutas de ThankYouScreen
  */
-export const thankYouScreenHandler = createController(thankYouScreenRouteMap, { basePath: '' });
+export const mainHandler = createController(thankYouScreenRouteMap, {
+  basePath: '', // No base path, rutas definidas en el mapa
+  publicRoutes: [
+    // ... existing code ...
+  ]
+});
 
-export default thankYouScreenHandler; 
+export default mainHandler; 

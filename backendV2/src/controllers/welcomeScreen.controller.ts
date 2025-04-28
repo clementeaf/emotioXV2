@@ -220,7 +220,7 @@ const welcomeScreenRouteMap: RouteMap = {
  * - PUT /research/{researchId}/welcome-screen : Actualiza el welcome screen de la investigación
  * - DELETE /research/{researchId}/welcome-screen : Elimina el welcome screen de la investigación
  */
-export const welcomeScreenHandler = createController(welcomeScreenRouteMap, {
+export const mainHandler = createController(welcomeScreenRouteMap, {
   basePath: '',  // Sin base path para permitir múltiples patrones de ruta
   // No hay rutas públicas, todas requieren autenticación
 }); 

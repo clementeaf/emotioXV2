@@ -4,16 +4,16 @@
  */
 
 // Exportar controladores existentes
-export * from './auth.controller';
-export * from './newResearch.controller';
-export * from './welcomeScreen.controller';
-export * from './smartVocForm.controller';
-export * from './thankYouScreen.controller';
-export * from './eyeTracking.controller';
-export * from './s3.controller';
+// export * from './auth.controller';
+// export * from './newResearch.controller';
+// export * from './welcomeScreen.controller';
+// export * from './smartVocForm.controller';
+// export * from './thankYouScreen.controller';
+// export * from './eyeTracking.controller';
+// export * from './s3.controller';
 
 // Exportar controlador de Eye Tracking Recruit
-export * from './eyeTrackingRecruit.controller';
+// export * from './eyeTrackingRecruit.controller';
 
 // Otros controladores serán exportados aquí a medida que se creen 
-export * from './cognitiveTask.controller'; 
+// export * from './cognitiveTask.controller'; 

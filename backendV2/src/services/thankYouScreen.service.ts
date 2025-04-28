@@ -99,6 +99,7 @@ export class ThankYouScreenService {
    * @returns La pantalla de agradecimiento creada
    */
   async create(data: ThankYouScreenFormData, researchId: string, _userId: string): Promise<SharedThankYouScreenModel> {
+    const context = 'create'; // Contexto para logging
     try {
       // Validar que existe researchId
       if (!researchId) {
@@ -124,16 +125,8 @@ export class ThankYouScreenService {
       const thankYouScreen = await thankYouScreenModel.create(screenData, researchId);
       return thankYouScreen;
     } catch (error) {
-      // Si ya es un ApiError, relanzarlo
-      if (error instanceof ApiError) {
-        throw error;
-      }
-
-      console.error('Error en ThankYouScreenService.create:', error);
-      throw new ApiError(
-        `${ThankYouScreenError.DATABASE_ERROR}: Error al crear la pantalla de agradecimiento`,
-        500
-      );
+      // Usar handleDbError para consistencia, pasando {} explícitamente como 4to arg
+      throw handleDbError(error, context, this.serviceName, {});
     }
   }
 
@@ -143,10 +136,12 @@ export class ThankYouScreenService {
    * @returns La pantalla de agradecimiento encontrada
    */
   async getById(id: string): Promise<SharedThankYouScreenModel> {
+    const context = 'getById'; // Contexto para logging
     try {
       const thankYouScreen = await thankYouScreenModel.getById(id);
       
       if (!thankYouScreen) {
+        // Lanzar ApiError directamente para que lo capture handleDbError
         throw new ApiError(
           `${ThankYouScreenError.NOT_FOUND}: Pantalla de agradecimiento no encontrada`,
           404
@@ -155,16 +150,8 @@ export class ThankYouScreenService {
 
       return thankYouScreen;
     } catch (error) {
-      // Si ya es un ApiError, relanzarlo
-      if (error instanceof ApiError) {
-        throw error;
-      }
-
-      console.error('Error en ThankYouScreenService.getById:', error);
-      throw new ApiError(
-        `${ThankYouScreenError.DATABASE_ERROR}: Error al obtener la pantalla de agradecimiento`,
-        500
-      );
+      // Usar handleDbError para consistencia, pasando {} explícitamente como 4to arg
+      throw handleDbError(error, context, this.serviceName, {});
     }
   }
 
@@ -174,6 +161,7 @@ export class ThankYouScreenService {
    * @returns La pantalla de agradecimiento encontrada
    */
   async getByResearchId(researchId: string): Promise<SharedThankYouScreenModel> {
+    const context = 'getByResearchId'; // Contexto para logging
     try {
       // Validar que existe researchId
       if (!researchId) {
@@ -185,7 +173,10 @@ export class ThankYouScreenService {
 
       const thankYouScreen = await thankYouScreenModel.getByResearchId(researchId);
       
+      // Throw ApiError if not found (reverting previous change)
       if (!thankYouScreen) {
+        structuredLog('warn', `${this.serviceName}.${context}`, 'No se encontró ThankYouScreen', { researchId });
+        // Lanzar ApiError directamente
         throw new ApiError(
           `${ThankYouScreenError.NOT_FOUND}: No se encontró una pantalla de agradecimiento para esta investigación`,
           404
@@ -194,16 +185,8 @@ export class ThankYouScreenService {
 
       return thankYouScreen;
     } catch (error) {
-      // Si ya es un ApiError, relanzarlo
-      if (error instanceof ApiError) {
-        throw error;
-      }
-
-      console.error('Error en ThankYouScreenService.getByResearchId:', error);
-      throw new ApiError(
-        `${ThankYouScreenError.DATABASE_ERROR}: Error al obtener la pantalla de agradecimiento`,
-        500
-      );
+      // Usar handleDbError para consistencia, pasando {} explícitamente como 4to arg
+      throw handleDbError(error, context, this.serviceName, {});
     }
   }
 
@@ -215,41 +198,29 @@ export class ThankYouScreenService {
    * @returns La pantalla de agradecimiento actualizada
    */
   async update(id: string, data: Partial<ThankYouScreenFormData>, _userId: string): Promise<SharedThankYouScreenModel> {
+    const context = 'update'; // Contexto para logging
     try {
       // Validar datos
       this.validateData(data);
 
-      // Verificar existencia
-      const existing = await thankYouScreenModel.getById(id);
-      if (!existing) {
-        throw new ApiError(
-          `${ThankYouScreenError.NOT_FOUND}: Pantalla de agradecimiento no encontrada`,
-          404
-        );
-      }
+      // Verificar existencia (getById lanzará ApiError si no existe)
+      await this.getById(id); 
 
       // Actualizar en el modelo
       const updatedScreen = await thankYouScreenModel.update(id, data);
       
+      // Si update devuelve null o undefined (aunque no debería si existe)
       if (!updatedScreen) {
-        throw new ApiError(
-          `${ThankYouScreenError.DATABASE_ERROR}: No se pudo actualizar la pantalla de agradecimiento`,
+         throw new ApiError(
+          `${ThankYouScreenError.DATABASE_ERROR}: No se pudo actualizar la pantalla de agradecimiento después de verificar existencia.`,
           500
         );
       }
       
       return updatedScreen;
     } catch (error) {
-      // Si ya es un ApiError, relanzarlo
-      if (error instanceof ApiError) {
-        throw error;
-      }
-
-      console.error('Error en ThankYouScreenService.update:', error);
-      throw new ApiError(
-        `${ThankYouScreenError.DATABASE_ERROR}: Error al actualizar la pantalla de agradecimiento`,
-        500
-      );
+       // Usar handleDbError, pasando {} explícitamente como 4to arg
+      throw handleDbError(error, context, this.serviceName, {});
     }
   }
 
@@ -281,6 +252,7 @@ export class ThankYouScreenService {
         return await this.create(data, researchId, _userId);
       }
     } catch (error) {
+      // Usar handleDbError, pasando {} explícitamente como 4to arg
       throw handleDbError(error, context, this.serviceName, {});
     }
   }
@@ -291,36 +263,24 @@ export class ThankYouScreenService {
    * @param _userId ID del usuario que realiza la operación
    */
   async delete(id: string, _userId: string): Promise<void> {
+    const context = 'delete'; // Contexto para logging
     try {
-      // Verificar existencia
-      const existing = await thankYouScreenModel.getById(id);
-      if (!existing) {
-        throw new ApiError(
-          `${ThankYouScreenError.NOT_FOUND}: Pantalla de agradecimiento no encontrada`,
-          404
-        );
-      }
+      // Verificar existencia (getById lanzará ApiError si no existe)
+      await this.getById(id); 
 
       // Eliminar en el modelo
       const success = await thankYouScreenModel.delete(id);
       
+      // Si delete devuelve false (indicando fallo)
       if (!success) {
         throw new ApiError(
-          `${ThankYouScreenError.DATABASE_ERROR}: Error al eliminar la pantalla de agradecimiento`,
+          `${ThankYouScreenError.DATABASE_ERROR}: Error al eliminar la pantalla de agradecimiento desde el modelo`,
           500
         );
       }
     } catch (error) {
-      // Si ya es un ApiError, relanzarlo
-      if (error instanceof ApiError) {
-        throw error;
-      }
-
-      console.error('Error en ThankYouScreenService.delete:', error);
-      throw new ApiError(
-        `${ThankYouScreenError.DATABASE_ERROR}: Error al eliminar la pantalla de agradecimiento`,
-        500
-      );
+      // Usar handleDbError, pasando {} explícitamente como 4to arg
+      throw handleDbError(error, context, this.serviceName, {});
     }
   }
 
@@ -329,20 +289,13 @@ export class ThankYouScreenService {
    * @returns Array con todas las pantallas de agradecimiento
    */
   async getAll(): Promise<SharedThankYouScreenModel[]> {
+    const context = 'getAll'; // Contexto para logging
     try {
       const thankYouScreens = await thankYouScreenModel.getAll();
       return thankYouScreens;
     } catch (error) {
-      // Si ya es un ApiError, relanzarlo
-      if (error instanceof ApiError) {
-        throw error;
-      }
-
-      console.error('Error en ThankYouScreenService.getAll:', error);
-      throw new ApiError(
-        `${ThankYouScreenError.DATABASE_ERROR}: Error al obtener todas las pantallas de agradecimiento`,
-        500
-      );
+      // Usar handleDbError, pasando {} explícitamente como 4to arg
+      throw handleDbError(error, context, this.serviceName, {});
     }
   }
 }

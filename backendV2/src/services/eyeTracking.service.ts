@@ -186,7 +186,7 @@ export class EyeTrackingService {
       const eyeTracking = await eyeTrackingModel.getById(id);
       
       if (!eyeTracking) {
-        structuredLog('error', `${this.serviceName}.${context}`, 'Modelo devolvió null inesperadamente', { id });
+        structuredLog('warn', `${this.serviceName}.${context}`, 'Configuración no encontrada', { id });
         throw new NotFoundError(EyeTrackingError.NOT_FOUND);
       }
 
@@ -197,9 +197,7 @@ export class EyeTrackingService {
         throw error;
       }
       structuredLog('error', `${this.serviceName}.${context}`, 'Error inesperado al obtener por ID', { error, id });
-      throw handleDbError(error, context, this.serviceName, {
-        'EYE_TRACKING_CONFIG_NOT_FOUND': { errorClass: NotFoundError, statusCode: 404 }
-      });
+      throw handleDbError(error, context, this.serviceName, {});
     }
   }
 
