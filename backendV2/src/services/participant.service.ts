@@ -1,91 +1,150 @@
-import { DynamoDB } from 'aws-sdk';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import {
+  DynamoDBDocumentClient,
+  PutCommand,
+  GetCommand,
+  QueryCommand,
+  DeleteCommand,
+  ScanCommand
+} from '@aws-sdk/lib-dynamodb';
 import { v4 as uuidv4 } from 'uuid';
 import { Participant } from '../models/participant.model';
+import { ApiError } from '../utils/errors';
 
-const dynamoDb = new DynamoDB.DocumentClient({
-  region: process.env.APP_REGION || 'us-east-1',
-  ...(process.env.IS_OFFLINE === 'true' && {
-    endpoint: 'http://localhost:8000'
-  })
-});
-
-const TABLE_NAME = process.env.PARTICIPANT_TABLE || '';
+const EMAIL_INDEX_NAME = 'EmailIndex';
 
 export class ParticipantService {
+  private readonly tableName: string;
+  private readonly dynamoClient: DynamoDBDocumentClient;
+
+  constructor() {
+    this.tableName = process.env.PARTICIPANT_TABLE!;
+    if (!this.tableName) {
+      throw new Error('FATAL ERROR: PARTICIPANT_TABLE environment variable is not set.');
+    }
+    const region: string = process.env.APP_REGION || 'us-east-1';
+    const client = new DynamoDBClient({
+        region,
+        ...(process.env.IS_OFFLINE === 'true' && { endpoint: 'http://localhost:8000' })
+    });
+    const marshallOptions = { removeUndefinedValues: true };
+    const unmarshallOptions = { wrapNumbers: false };
+    const translateConfig = { marshallOptions, unmarshallOptions };
+    this.dynamoClient = DynamoDBDocumentClient.from(client, translateConfig);
+    console.log(`[ParticipantService] Initialized for table: ${this.tableName} in region: ${region}`);
+  }
+
   /**
    * Crea un nuevo participante
    */
-  async create(participant: Omit<Participant, 'id'>): Promise<Participant> {
+  async create(participantData: Omit<Participant, 'id' | 'createdAt' | 'updatedAt'>): Promise<Participant> {
     const id = uuidv4();
     const now = new Date().toISOString();
-
     const newParticipant: Participant = {
       id,
-      ...participant,
+      ...participantData,
       createdAt: now,
       updatedAt: now
     };
 
-    await dynamoDb.put({
-      TableName: TABLE_NAME,
-      Item: newParticipant
-    }).promise();
+    const command = new PutCommand({
+      TableName: this.tableName,
+      Item: newParticipant,
+      ConditionExpression: 'attribute_not_exists(id)'
+    });
 
-    return newParticipant;
+    try {
+      await this.dynamoClient.send(command);
+      return newParticipant;
+    } catch (error: any) {
+        console.error('[ParticipantService.create] Error:', error);
+         if (error.name === 'ConditionalCheckFailedException') {
+             throw new ApiError('Conflict: Participant ID collision or already exists.', 409);
+        }
+        throw new ApiError(`Database Error: Could not create participant - ${error.message}`, 500);
+    }
   }
 
   /**
    * Obtiene un participante por su ID
    */
   async findById(id: string): Promise<Participant | null> {
-    const result = await dynamoDb.get({
-      TableName: TABLE_NAME,
+    const command = new GetCommand({
+      TableName: this.tableName,
       Key: { id }
-    }).promise();
+    });
 
-    return result.Item as Participant || null;
+    try {
+      const result = await this.dynamoClient.send(command);
+      return result.Item as Participant || null;
+    } catch (error: any) {
+        console.error('[ParticipantService.findById] Error:', error);
+        throw new ApiError(`Database Error: Could not retrieve participant by ID - ${error.message}`, 500);
+    }
   }
 
   /**
-   * Obtiene un participante por su email
+   * Obtiene un participante por su email usando GSI
    */
   async findByEmail(email: string): Promise<Participant | null> {
-    const result = await dynamoDb.query({
-      TableName: TABLE_NAME,
-      IndexName: 'EmailIndex',
-      KeyConditionExpression: 'email = :email',
+    const command = new QueryCommand({
+      TableName: this.tableName,
+      IndexName: EMAIL_INDEX_NAME,
+      KeyConditionExpression: 'email = :emailVal',
       ExpressionAttributeValues: {
-        ':email': email
-      }
-    }).promise();
+        ':emailVal': email
+      },
+      Limit: 1
+    });
 
-    return result.Items?.[0] as Participant || null;
+    try {
+      const result = await this.dynamoClient.send(command);
+      return result.Items?.[0] as Participant || null;
+    } catch (error: any) {
+        console.error('[ParticipantService.findByEmail] Error:', error);
+         if ((error as Error).message?.includes('index')) {
+            console.error(`Error: GSI '${EMAIL_INDEX_NAME}' not found or not configured correctly for table ${this.tableName}.`);
+            throw new ApiError(`Configuration Error: Missing index for email lookup.`, 500);
+       }
+        throw new ApiError(`Database Error: Could not retrieve participant by email - ${error.message}`, 500);
+    }
   }
 
   /**
-   * Obtiene todos los participantes
+   * Obtiene todos los participantes (Usar con precaución)
    */
   async findAll(): Promise<Participant[]> {
-    const result = await dynamoDb.scan({
-      TableName: TABLE_NAME
-    }).promise();
+    console.warn('[ParticipantService.findAll] Executing Scan operation. Avoid in production for large tables.');
+    const command = new ScanCommand({
+      TableName: this.tableName
+    });
 
-    return result.Items as Participant[] || [];
+    try {
+      const result = await this.dynamoClient.send(command);
+      return (result.Items as Participant[]) || [];
+    } catch (error: any) {
+        console.error('[ParticipantService.findAll] Error:', error);
+        throw new ApiError(`Database Error: Could not retrieve all participants - ${error.message}`, 500);
+    }
   }
 
   /**
    * Elimina un participante por su ID
    */
-  async delete(id: string): Promise<Participant> {
-    const result = await dynamoDb.delete({
-      TableName: TABLE_NAME,
+  async delete(id: string): Promise<Participant | null> {
+    const command = new DeleteCommand({
+      TableName: this.tableName,
       Key: { id },
       ReturnValues: 'ALL_OLD'
-    }).promise();
-
-    return result.Attributes as Participant;
+    });
+    try {
+      const result = await this.dynamoClient.send(command);
+      return result.Attributes as Participant || null;
+    } catch (error: any) {
+        console.error('[ParticipantService.delete] Error:', error);
+        throw new ApiError(`Database Error: Could not delete participant - ${error.message}`, 500);
+    }
   }
 }
 
-// Exportamos una instancia única del servicio
 export const participantService = new ParticipantService(); 

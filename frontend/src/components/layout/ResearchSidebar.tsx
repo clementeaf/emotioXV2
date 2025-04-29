@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
+import { ExternalLink } from 'lucide-react';
 
 import { ResearchSidebarProps, ResearchSection } from '@/interfaces/research';
 import { cn } from '@/lib/utils';
@@ -49,6 +50,9 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
   const [researchName, setResearchName] = useState<string>('Cargando nombre...'); // Estado inicial de carga
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Obtener URL base de public-tests desde variable de entorno
+  const publicTestsBaseUrl = process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL;
 
   // Obtener nombre de la investigación
   useEffect(() => {
@@ -123,10 +127,15 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
     router.push('/dashboard');
   };
 
+  // Construir la URL de public-tests
+  const publicTestUrl = researchId && publicTestsBaseUrl
+    ? `${publicTestsBaseUrl}/link/${researchId}`
+    : null;
+
   return (
     <div className={cn('bg-white rounded-lg shadow-xl p-4 mt-4 mx-4 flex flex-col min-h-[510px] border border-neutral-200', className)}>
       {/* Header del sidebar */}
-      <div className="mb-4">
+      <div className="mb-4 pb-4 border-b border-neutral-200">
         <div className="flex items-center justify-between mb-2">
           {/* Mostrar estado de carga o nombre */}
           <h2 className="text-lg font-semibold text-neutral-900 truncate" title={researchName}>
@@ -137,13 +146,27 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
           variant="ghost" 
           size="sm" 
           onClick={handleBackToDashboard} 
-          className="text-neutral-700 flex items-center justify-start p-0"
+          className="text-neutral-700 flex items-center justify-start p-0 text-sm mb-2"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1"><path d="M15 18l-6-6 6-6" /></svg>
           Volver al dashboard
         </Button>
+        
+        {/* Enlace a Public Tests */}
+        {publicTestUrl ? (
+          <a
+            href={publicTestUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 hover:underline"
+          >
+            Abrir vista de participante
+            <ExternalLink size={14} className="ml-1.5" />
+          </a>
+        ) : (
+          <p className="text-xs text-neutral-500">(URL de Public Tests no configurada)</p>
+        )}
+        {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
       </div>
       
       {/* Contenido del sidebar */}

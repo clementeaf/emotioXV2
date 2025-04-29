@@ -4,9 +4,10 @@ import { config } from '../../config/env';
 
 interface ParticipantLoginProps {
   onLogin: (participant: Participant) => void;
+  researchId: string;
 }
 
-export const ParticipantLogin = ({ onLogin }: ParticipantLoginProps) => {
+export const ParticipantLogin = ({ onLogin, researchId }: ParticipantLoginProps) => {
   const [participant, setParticipant] = useState<Omit<Participant, 'id' | 'createdAt' | 'updatedAt'>>({
     name: '',
     email: ''
@@ -48,13 +49,18 @@ export const ParticipantLogin = ({ onLogin }: ParticipantLoginProps) => {
     if (validateForm()) {
       setIsLoading(true);
       try {
-        // Hacemos login directamente con el email y nombre
+        const payload = {
+          name: participant.name,
+          email: participant.email,
+          researchId: researchId
+        };
+        
         const loginResponse = await fetch(`${config.apiUrl}/participants/login`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(participant)
+          body: JSON.stringify(payload)
         });
 
         const loginResult = await loginResponse.json();
@@ -64,9 +70,7 @@ export const ParticipantLogin = ({ onLogin }: ParticipantLoginProps) => {
         }
 
         if (loginResult.data?.token) {
-          // Guardamos el token en localStorage
           localStorage.setItem('participantToken', loginResult.data.token);
-          // Llamamos a onLogin con los datos del participante
           onLogin(loginResult.data.participant);
         } else {
           throw new Error('No se recibió el token de autenticación');

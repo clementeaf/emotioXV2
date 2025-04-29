@@ -167,36 +167,50 @@ export class SmartVOCFormModel {
   async getByResearchId(researchId: string): Promise<SmartVOCFormRecord | null> {
     const command = new QueryCommand({
       TableName: this.tableName,
-      IndexName: 'ResearchIdIndex', // Asegurarse que este GSI existe
+      IndexName: 'researchId-index',
       KeyConditionExpression: 'researchId = :rid',
-      // Añadir filtro por SK para asegurar que es el tipo correcto de item
-      FilterExpression: 'sk = :skVal',
+      // FilterExpression: 'sk = :skVal', // <-- Sigue comentado
       ExpressionAttributeValues: {
         ':rid': researchId,
-        ':skVal': SmartVOCFormModel.SORT_KEY_VALUE
+        // ':skVal': SmartVOCFormModel.SORT_KEY_VALUE // <-- Sigue comentado
       },
-      Limit: 1 // Asumimos que solo debe haber uno por researchId
+      // Limit: 1 // <-- QUITAMOS EL LÍMITE
     });
 
     try {
-      console.log(`[SmartVOCFormModel.getByResearchId] Buscando item por researchId: ${researchId}`);
+      console.log(`[SmartVOCFormModel.getByResearchId] SUPER_DEBUG: Buscando por researchId: ${researchId} usando índice 'researchId-index' SIN filtro SK y SIN límite`); 
       const result = await this.dynamoClient.send(command);
+      
+      // Imprimir cuántos items devuelve la consulta SIN límite
+      console.log(`[SmartVOCFormModel.getByResearchId] SUPER_DEBUG: Query devolvió ${result.Items?.length ?? 0} items.`);
+
       if (!result.Items || result.Items.length === 0) {
-        console.log(`[SmartVOCFormModel.getByResearchId] Item no encontrado para researchId: ${researchId}`);
+        console.log(`[SmartVOCFormModel.getByResearchId] SUPER_DEBUG: Ningún item encontrado para researchId: ${researchId} usando índice 'researchId-index' SIN filtro SK y SIN límite`);
         return null;
       }
-      console.log(`[SmartVOCFormModel.getByResearchId] Item encontrado para researchId: ${researchId}`);
-      // Ya no necesitamos verificar sk aquí por el FilterExpression
-      return this.mapToRecord(result.Items[0] as SmartVOCFormDynamoItem);
+      
+      // Iterar sobre los resultados para encontrar el correcto
+      for (const item of result.Items) {
+          const dynamoItem = item as SmartVOCFormDynamoItem;
+          // Imprimir el SK de cada item encontrado para depurar
+          console.log(`[SmartVOCFormModel.getByResearchId] SUPER_DEBUG: Verificando item con SK: ${dynamoItem.sk}`);
+          if (dynamoItem.sk === SmartVOCFormModel.SORT_KEY_VALUE) {
+              console.log(`[SmartVOCFormModel.getByResearchId] SUPER_DEBUG: Item SMART_VOC_FORM encontrado! ID: ${dynamoItem.id}`);
+              return this.mapToRecord(dynamoItem);
+          }
+      }
+
+      // Si el bucle termina sin encontrarlo
+      console.log(`[SmartVOCFormModel.getByResearchId] SUPER_DEBUG: Se encontraron ${result.Items.length} items, pero ninguno tenía SK = SMART_VOC_FORM.`);
+      return null;
+
     } catch (error: any) {
       console.error('[SmartVOCFormModel.getByResearchId] ERROR DETALLADO DynamoDB:', JSON.stringify(error, null, 2));
       console.error(`[SmartVOCFormModel.getByResearchId] Error al obtener SmartVOCForm por researchId ${researchId}:`, error.message);
        if ((error as Error).message?.includes('index')) {
-         console.error("Error: Parece que el índice GSI 'ResearchIdIndex' no existe o no está configurado correctamente.");
-         // Incluir código de error de configuración
+         console.error("Error: Parece que el índice GSI 'researchId-index' no existe o no está configurado correctamente.");
          throw new Error("DATABASE_CONFIG_ERROR: Falta índice para búsqueda por researchId.");
        }
-       // Incluir código de error genérico de DB
       throw new Error(`DATABASE_ERROR: Error al obtener el formulario SmartVOC por Research ID - ${error.message}`);
     }
   }

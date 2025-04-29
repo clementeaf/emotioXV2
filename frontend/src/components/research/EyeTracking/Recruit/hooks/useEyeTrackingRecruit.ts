@@ -10,7 +10,6 @@ import {
   DemographicQuestionKeys,
   LinkConfigKeys,
   ParameterOptionKeys,
-  CreateEyeTrackingRecruitRequest,
 } from 'shared/interfaces/eyeTrackingRecruit.interface';
 import { eyeTrackingFixedAPI } from "@/lib/eye-tracking-api";
 import React from 'react';

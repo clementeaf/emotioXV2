@@ -96,13 +96,6 @@ DynamoDBTable:
         Projection:
           ProjectionType: ALL # O el tipo de proyección que tenga el índice existente
           
-      - IndexName: ResearchIdIndex # El que necesitábamos para la búsqueda
-        KeySchema:
-          - AttributeName: researchId # Clave del índice
-            KeyType: HASH
-        Projection:
-          ProjectionType: ALL # O el tipo de proyección que tenga el índice existente
-          
     PointInTimeRecoverySpecification:
       PointInTimeRecoveryEnabled: true
     SSESpecification:

@@ -50,17 +50,19 @@ export interface ParticipantResponse {
 
 // Tipos para WelcomeScreen
 export interface WelcomeScreenResponse {
+  id: string;
   title: string;
-  description: string;
-  duration: number;
-  showDuration: boolean;
-  showProgress: boolean;
+  message: string;
+  startButtonText: string;
+  isEnabled: boolean;
 }
 
 // Tipos para SmartVOC
 export interface SmartVOCFormData {
-  questions: SmartVOCQuestion[];
-  settings: SmartVOCSettings;
+  id?: string;
+  questions: any[];
+  randomizeQuestions?: boolean;
+  smartVocRequired?: boolean;
 }
 
 export interface SmartVOCQuestion {
@@ -80,8 +82,9 @@ export interface SmartVOCSettings {
 
 // Tipos para CognitiveTask
 export interface CognitiveTaskFormData {
-  tasks: CognitiveTask[];
-  settings: CognitiveTaskSettings;
+  id?: string;
+  questions: any[];
+  randomizeQuestions?: boolean;
 }
 
 export interface CognitiveTask {
@@ -103,9 +106,51 @@ export interface CognitiveTaskSettings {
 
 // Tipos para ThankYouScreen
 export interface ThankYouScreenFormData {
+  id?: string;
   title: string;
   message: string;
-  showSocialShare: boolean;
   redirectUrl?: string;
-  redirectDelay?: number;
+  isEnabled: boolean;
+}
+
+// Interfaz para un paso del flujo de investigación
+export interface Step {
+  id: string;
+  type: string;
+  config?: any;
+}
+
+// Ejemplo de uso en la respuesta del endpoint /flow
+export interface ResearchFlowResponse {
+  data: Step[];
+}
+
+// Mantener otras interfaces existentes
+export interface WelcomeScreenResponse {
+  id: string;
+  title: string;
+  message: string;
+  startButtonText: string;
+  isEnabled: boolean;
+}
+
+export interface SmartVOCFormData {
+  id?: string;
+  questions: any[];
+  randomizeQuestions?: boolean;
+  smartVocRequired?: boolean;
+}
+
+export interface CognitiveTaskFormData {
+  id?: string;
+  questions: any[];
+  randomizeQuestions?: boolean;
+}
+
+export interface ThankYouScreenFormData {
+  id?: string;
+  title: string;
+  message: string;
+  redirectUrl?: string;
+  isEnabled: boolean;
 } 

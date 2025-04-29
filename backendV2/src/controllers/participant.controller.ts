@@ -3,6 +3,7 @@ import { participantService } from '../services/participant.service';
 import { getCorsHeaders } from '../middlewares/cors';
 import { z } from 'zod';
 import * as jwt from 'jsonwebtoken';
+import { NewResearchService } from '../services/newResearch.service';
 
 // Schema de validación para participantes
 const ParticipantSchema = z.object({
@@ -13,7 +14,8 @@ const ParticipantSchema = z.object({
 // Schema de validación para login
 const LoginSchema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
-  email: z.string().email('Email inválido')
+  email: z.string().email('Email inválido'),
+  researchId: z.string().uuid('Research ID inválido')
 });
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -22,6 +24,12 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
  * Controlador para el manejo de participantes
  */
 export class ParticipantController {
+  private researchServiceInstance: NewResearchService;
+
+  constructor() {
+    this.researchServiceInstance = new NewResearchService();
+  }
+
   /**
    * Crea un nuevo participante
    */
@@ -53,11 +61,7 @@ export class ParticipantController {
         };
       }
 
-      const newParticipant = await participantService.create({
-        ...validatedData,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      });
+      const newParticipant = await participantService.create(validatedData);
 
       return {
         statusCode: 201,
@@ -69,6 +73,13 @@ export class ParticipantController {
       };
     } catch (error: any) {
       console.error('Error al crear participante:', error);
+      if (error instanceof z.ZodError) {
+        return {
+          statusCode: 400,
+          headers: getCorsHeaders(event),
+          body: JSON.stringify({ error: error.errors, status: 400 })
+        };
+      }
       return {
         statusCode: 400,
         headers: getCorsHeaders(event),
@@ -233,27 +244,36 @@ export class ParticipantController {
       const data = JSON.parse(event.body);
       const validatedData = LoginSchema.parse(data);
 
-      // Buscamos o creamos el participante
+      // --- Validación de Research ID --- 
+      const researchData = await this.researchServiceInstance.getResearchById(validatedData.researchId, 'public-check');
+      if (!researchData) {
+        console.warn(`[ParticipantController.login] Intento de login para investigación inexistente: ${validatedData.researchId}`);
+        return {
+          statusCode: 404,
+          headers: getCorsHeaders(event),
+          body: JSON.stringify({ error: 'La investigación especificada no existe.', status: 404 })
+        };
+      }
+      // --- Fin Validación --- 
+
       let participant = await participantService.findByEmail(validatedData.email);
       
       if (!participant) {
-        // Si no existe, lo creamos
         participant = await participantService.create({
-          ...validatedData,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+          name: validatedData.name,
+          email: validatedData.email
         });
       }
 
-      // Generar token JWT
       const token = jwt.sign(
         { 
-          id: participant.id,
+          id: participant.id, 
           email: participant.email,
-          name: participant.name
+          researchId: validatedData.researchId,
+          type: 'participant'
         },
         JWT_SECRET,
-        { expiresIn: '24h' }
+        { expiresIn: '7d' }
       );
 
       return {
@@ -261,20 +281,29 @@ export class ParticipantController {
         headers: getCorsHeaders(event),
         body: JSON.stringify({
           data: {
-            token,
-            participant
+            participant: participant,
+            token: token          
           },
           status: 200
         })
       };
     } catch (error: any) {
       console.error('Error en login de participante:', error);
+      if (error instanceof z.ZodError) {
+        return {
+          statusCode: 400,
+          headers: getCorsHeaders(event),
+          body: JSON.stringify({ error: error.errors, status: 400 })
+        };
+      }
+      // Manejar errores específicos del researchService.isActive si los hubiera
+      // if (error.message === 'RESEARCH_SERVICE_ERROR') { ... }
       return {
-        statusCode: 400,
+        statusCode: 500,
         headers: getCorsHeaders(event),
         body: JSON.stringify({
-          error: error.message || 'Error en login de participante',
-          status: 400
+          error: error.message || 'Error interno en el login',
+          status: 500
         })
       };
     }
@@ -314,13 +343,12 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
       return controller.login(event);
     }
 
+    // Ruta no encontrada o método no permitido en ruta existente
+    console.log('[ParticipantHandler] Ruta/Método no manejado:', { method, path });
     return {
-      statusCode: 405,
+      statusCode: 404, // Cambiado a 404 genérico para rutas no encontradas
       headers: getCorsHeaders(event),
-      body: JSON.stringify({
-        error: 'Método no permitido',
-        status: 405
-      })
+      body: JSON.stringify({ error: 'Recurso no encontrado', status: 404 })
     };
   } catch (error: any) {
     console.error('Error en participantHandler:', error);
