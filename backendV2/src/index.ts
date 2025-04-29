@@ -26,6 +26,8 @@ const controllerImports = {
   'cognitive-task': () => import('./controllers/cognitiveTask.controller'),
   's3': () => import('./controllers/s3.controller'),
   'participants': () => import('./controllers/participant.controller'),
+  // Añadir controlador para formularios de investigación
+  'researchForms': () => import('./controllers/getResearchAvailableForms'),
   // Añadir otros controladores aquí si es necesario
 };
 

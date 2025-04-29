@@ -34,6 +34,9 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
   // Cognitive Task (Modificado para capturar ID opcional)
   { pathPattern: /^\/research\/[^\/]+\/cognitive-task(\/[^\/]+)?$/, controllerType: 'cognitive-task' },
 
+  // Research Forms/Steps (NUEVA RUTA)
+  { pathPattern: /^\/research\/[^\/]+\/forms$/, controllerType: 'researchForms' },
+
   // Research (Ruta base - DEBE IR DESPUÉS de las rutas específicas de research)
   { pathPattern: /^\/research/, controllerType: 'research' },
 

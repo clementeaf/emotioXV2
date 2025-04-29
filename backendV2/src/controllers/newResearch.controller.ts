@@ -84,7 +84,7 @@ export class NewResearchController {
       }
 
       // Obtener la investigación
-      const research = await newResearchService.getResearchById(researchId, userId);
+      const research = await newResearchService.getResearchById(researchId, 'user', userId);
 
       return createResponse(200, {
         data: research

@@ -15,7 +15,7 @@
     "deploy:dev": "serverless deploy --stage dev",
     "deploy:prod": "serverless deploy --stage prod",
     "postdeploy": "cross-env SERVERLESS_STAGE=dev ts-node src/utils/endpoints-exporter.ts ../frontend/src/api/endpoints.js",
-    "postdeploy:dev": "cross-env SERVERLESS_STAGE=dev ts-node src/utils/endpoints-exporter.ts ../frontend/src/api/endpoints.js",
+    "postdeploy:dev": "cross-env SERVERLESS_STAGE=dev ts-node src/utils/endpoints-exporter.ts ../frontend/src/api/endpoints.js && cross-env SERVERLESS_STAGE=dev ts-node src/utils/endpoints-exporter.ts ../public-tests/src/config/endpoints.js",
     "postdeploy:prod": "cross-env SERVERLESS_STAGE=prod ts-node src/utils/endpoints-exporter.ts ../frontend/src/api/endpoints.js",
     "export-endpoints": "ts-node src/utils/endpoints-exporter.ts ../frontend/src/api/endpoints.js",
     "info": "serverless info",

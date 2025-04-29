@@ -17,7 +17,12 @@ role:
         - Fn::Sub: arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${self:service}-*-${self:provider.stage}
         # ARN para TODOS los índices de esas tablas
         - Fn::Sub: arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${self:service}-*-${self:provider.stage}/index/*
-        
+        # CORREGIR/AÑADIR ARN explícito para la tabla principal y su GSI researchId-gsi (NOMBRE DE TABLA CORREGIDO)
+        # (Reemplazar researchId-gsi con el nombre real del GSI si es diferente)
+        - Fn::Sub: arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/emotioxv2-backend-table-dev
+        # Nombre de Índice Corregido
+        - Fn::Sub: arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/emotioxv2-backend-table-dev/index/researchId-index
+
     # Permisos para el bucket S3
     - Effect: Allow
       Action:

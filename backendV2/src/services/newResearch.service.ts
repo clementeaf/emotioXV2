@@ -61,10 +61,13 @@ export class NewResearchService {
   /**
    * Obtiene una investigación por su ID
    * @param id ID de la investigación
-   * @param userId ID del usuario (para verificar permisos)
+   * @param context Contexto de la llamada ('user' o 'public-check')
+   *                - 'user': Verifica propiedad usando userId
+   *                - 'public-check': Verifica existencia y estado activo
+   * @param userId ID del usuario (requerido si context es 'user')
    * @returns Datos de la investigación
    */
-  async getResearchById(id: string, userId: string): Promise<NewResearch> {
+  async getResearchById(id: string, context: 'user' | 'public-check', userId?: string): Promise<NewResearch> {
     try {
       const research = await newResearchModel.getById(id);
       
@@ -72,12 +75,27 @@ export class NewResearchService {
         throw new ResearchError('Investigación no encontrada', 404);
       }
       
-      // Verificar si el usuario tiene permiso para ver esta investigación
-      if (await this.canAccessResearch(id, userId)) {
-        return research;
-      } else {
-        throw new ResearchError('No tienes permiso para acceder a esta investigación', 403);
+      // Lógica de permisos basada en el contexto
+      if (context === 'user') {
+        if (!userId) {
+          // Error si se requiere userId pero no se proporciona
+          throw new ResearchError('Se requiere userId para verificar permisos de usuario', 500);
+        }
+        // Verificar si el usuario tiene permiso (es propietario)
+        if (!(await this.canAccessResearch(id, userId))) {
+          throw new ResearchError('No tienes permiso para acceder a esta investigación', 403);
+        }
+      } else if (context === 'public-check') {
+        // Para acceso público/participante, solo verificar estado
+        console.log(`[NewResearchService.getResearchById - public-check] Verificando investigación ID: ${id}. Estado actual: ${research.status}`);
+        if (research.status !== 'active') {
+          console.warn(`[NewResearchService.getResearchById - public-check] Investigación ${id} no está activa (estado: ${research.status}). Denegando acceso.`);
+          throw new ResearchError('No tienes permiso para acceder a esta investigación', 403);
+        }
+        // Si está activa, el acceso público está permitido (para este chequeo)
       }
+      
+      return research; // Si pasa los chequeos, devuelve la investigación
     } catch (error) {
       if (error instanceof ResearchError) {
         throw error;

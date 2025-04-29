@@ -88,6 +88,21 @@ api:
           headers: [Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token]
           allowCredentials: true
           methods: [OPTIONS, PUT]
+    # --- NUEVA RUTA: Obtener formularios/pasos de una investigación ---
+    - http:
+        path: /research/{researchId}/forms
+        method: GET
+        cors:
+          origin: ${self:provider.environment.ALLOWED_ORIGIN}
+          headers: [Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token]
+          allowCredentials: true
+          methods: [OPTIONS, GET]
+        # Podrías habilitar caché aquí también si estos datos cambian poco
+        # caching:
+        #   enabled: true
+        #   cacheKeyParameters:
+        #     - name: method.request.path.researchId
+        #       required: true
     # Ruta genérica para el resto (Sin Caché por defecto aquí)
     - http:
         path: /{proxy+}

@@ -90,7 +90,7 @@ export const WelcomeScreen = ({ onStart, researchId, onError }: WelcomeScreenPro
       const token = getValidToken();
       console.log('🔑 Token obtenido correctamente');
 
-      const url = `${config.apiUrl}/welcome-screens/research/${researchId}`;
+      const url = `${config.apiUrl}/research/${researchId}/welcome-screen`;
       console.log('🌐 URL de la petición:', url);
 
       const response = await fetch(
@@ -114,13 +114,10 @@ export const WelcomeScreen = ({ onStart, researchId, onError }: WelcomeScreenPro
       }
 
       const result = await response.json();
-      console.log('📦 Datos recibidos:', result);
-      
-      if (!result.data) {
-        throw new Error('No se recibieron datos del servidor');
-      }
+      console.log('[WelcomeScreen] API Response Data:', result);
 
-      const validatedData = validateApiResponse(result.data);
+      // Pasar 'result' directamente a la validación
+      const validatedData = validateApiResponse(result);
       console.log('✅ Datos validados:', validatedData);
       setWelcomeData(validatedData);
 
