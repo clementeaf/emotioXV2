@@ -195,7 +195,7 @@ export class WelcomeScreenModel {
     const skValue = 'WELCOME_SCREEN'; // Definir el SK esperado
     const command = new QueryCommand({
       TableName: this.tableName,
-      IndexName: 'ResearchIdIndex',
+      IndexName: 'researchId-index',
       KeyConditionExpression: 'researchId = :rid',
       // Usar FilterExpression ya que sk está proyectado (ProjectionType: ALL)
       FilterExpression: 'sk = :skVal',
@@ -241,7 +241,7 @@ export class WelcomeScreenModel {
     } catch (error: any) {
       structuredLog('error', `${this.modelName}.${context}`, 'Error al obtener pantalla por researchId (Query GSI)', { error: error, researchId });
       if ((error as Error).message?.includes('index')) {
-         structuredLog('error', `${this.modelName}.${context}`, 'Índice GSI ResearchIdIndex no encontrado o mal configurado');
+         structuredLog('error', `${this.modelName}.${context}`, 'Índice GSI researchId-index no encontrado o mal configurado');
          throw new ApiError("DATABASE_ERROR: Error de configuración de base de datos: falta índice para búsqueda.", 500);
       }
       throw new ApiError(`DATABASE_ERROR: Error al buscar pantalla asociada a la investigación: ${error.message}`, 500);

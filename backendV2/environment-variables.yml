@@ -28,4 +28,4 @@ RECRUITMENT_LINK_TABLE: ${self:custom.recruitmentLinkTable}
 EMAIL_FROM: process.env.EMAIL_FROM
 EMAIL_TO: process.env.EMAIL_TO
 TABLE_NAME: ${self:custom.tableName}
-ALLOWED_ORIGIN: ${env:ALLOWED_ORIGIN, 'http://localhost:4700'} # Variable para CORS 
+ALLOWED_ORIGIN: ${env:ALLOWED_ORIGIN, '*'} # Permitir cualquier origen por defecto para dev 

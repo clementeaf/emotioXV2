@@ -207,14 +207,14 @@ export class CognitiveTaskModel {
 
   /**
    * Obtiene el formulario CognitiveTask asociado a una investigación.
-   * Usa QueryCommand sobre el GSI 'ResearchIdIndex' (PK: researchId).
+   * Usa QueryCommand sobre el GSI 'researchId-index' (PK: researchId).
    */
   async getByResearchId(researchId: string): Promise<CognitiveTaskRecord | null> {
     const command = new QueryCommand({
       TableName: this.tableName,
-      IndexName: 'ResearchIdIndex', 
+      IndexName: 'researchId-index',
       KeyConditionExpression: 'researchId = :researchIdVal',
-      FilterExpression: 'sk = :skVal', 
+      FilterExpression: 'sk = :skVal',
       ExpressionAttributeValues: {
         ':researchIdVal': researchId,
         ':skVal': CognitiveTaskModel.SORT_KEY_VALUE // Usar la constante para el valor de sk
@@ -230,11 +230,11 @@ export class CognitiveTaskModel {
       // Mapear el primer (y único esperado) item encontrado
       return this.mapToRecord(result.Items[0] as CognitiveTaskDynamoItem);
     } catch (error: any) {
-      console.error(`ERROR DETALLADO de DynamoDB QueryCommand GSI (ResearchIdIndex):`, JSON.stringify(error, null, 2));
+      console.error(`ERROR DETALLADO de DynamoDB QueryCommand GSI (researchId-index):`, JSON.stringify(error, null, 2));
       console.error(`Error al obtener CognitiveTask por researchId ${researchId}:`, error.message);
        if (error.name === 'ResourceNotFoundException') {
-         console.error(`FATAL: GSI 'ResearchIdIndex' no encontrado en la tabla '${this.tableName}'. Verifica la definición en resources.yml.`);
-         throw new Error(`DATABASE_ERROR: Índice GSI 'ResearchIdIndex' no encontrado.`);
+         console.error(`FATAL: GSI 'researchId-index' no encontrado en la tabla '${this.tableName}'. Verifica la definición en resources.yml.`);
+         throw new Error(`DATABASE_ERROR: Índice GSI 'researchId-index' no encontrado.`);
       }
       // Modificar mensaje para reflejar el método Query
       throw new Error(`DATABASE_ERROR: Error al consultar el formulario para researchId ${researchId}`);

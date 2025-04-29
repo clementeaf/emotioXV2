@@ -296,8 +296,15 @@ export class ParticipantController {
           body: JSON.stringify({ error: error.errors, status: 400 })
         };
       }
-      // Manejar errores específicos del researchService.isActive si los hubiera
-      // if (error.message === 'RESEARCH_SERVICE_ERROR') { ... }
+      // Añadir chequeo para errores con statusCode 403 (Forbidden)
+      if (error?.statusCode === 403) {
+        return {
+            statusCode: 403,
+            headers: getCorsHeaders(event),
+            body: JSON.stringify({ error: error.message || 'No tienes permiso para esta acción', status: 403 })
+        };
+      }
+      // Manejar otros errores como 500 genérico
       return {
         statusCode: 500,
         headers: getCorsHeaders(event),

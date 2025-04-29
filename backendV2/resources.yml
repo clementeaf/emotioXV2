@@ -79,8 +79,8 @@ DynamoDBTable:
         Projection:
           ProjectionType: ALL # O el tipo de proyección que tenga el índice existente
           
-      # OJO: Tienes dos índices basados en researchId. Asegúrate de que ambos estén definidos si existen.
-      - IndexName: researchId-index # Este parece existir en tu tabla
+      # Volver a añadir con el nombre original para sincronizar
+      - IndexName: researchId-index # <- NOMBRE ORIGINAL
         KeySchema:
           - AttributeName: researchId # Clave del índice
             KeyType: HASH

@@ -200,7 +200,7 @@ export class ThankYouScreenModel {
 
     const command = new QueryCommand({
       TableName: this.tableName,
-      IndexName: 'ResearchIdIndex',
+      IndexName: 'researchId-index',
       KeyConditionExpression: 'researchId = :rid',
       FilterExpression: 'sk = :skVal',
       ExpressionAttributeValues: {
@@ -249,7 +249,7 @@ export class ThankYouScreenModel {
        // *** FIN LOGS ADICIONALES ***
       structuredLog('error', `${this.modelName}.${context}`, 'Error al obtener pantalla por Research ID (Query GSI)', { error: error, researchId });
       if ((error as Error).message?.includes('index')) {
-         structuredLog('error', `${this.modelName}.${context}`, 'Índice GSI ResearchIdIndex no encontrado');
+         structuredLog('error', `${this.modelName}.${context}`, 'Índice GSI researchId-index no encontrado');
          throw new ApiError("DATABASE_ERROR: Error de configuración de base de datos: falta índice para búsqueda.", 500);
       }
       throw new ApiError(`DATABASE_ERROR: Error al obtener la pantalla de agradecimiento para esta investigación: ${error.message}`, 500);
