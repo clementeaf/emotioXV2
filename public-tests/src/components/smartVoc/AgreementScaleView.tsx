@@ -1,43 +1,75 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 
-// Componente para la escala de acuerdo (1-7)
-const AgreementScaleView = ({ onContinue }: { onContinue: () => void }) => {
-  const [selected, setSelected] = useState<number>(4); // Predefinido en 4 como en la imagen
-  
+interface AgreementScaleViewProps {
+  questionText: string;
+  instructions?: string;
+  scaleSize?: number; // Típicamente 5 o 7 para Likert
+  leftLabel?: string; // Etiqueta izquierda (e.g., "No en absoluto")
+  rightLabel?: string; // Etiqueta derecha (e.g., "Totalmente")
+  onNext: (selectedValue: number) => void;
+}
+
+const AgreementScaleView: React.FC<AgreementScaleViewProps> = ({
+  questionText,
+  instructions,
+  scaleSize = 7, // Defecto 7 según la imagen
+  leftLabel = "No en absoluto", // Defecto en español
+  rightLabel = "Totalmente", // Defecto en español
+  onNext
+}) => {
+  const [selectedValue, setSelectedValue] = useState<number | null>(null); // Iniciar en null
+
+  const scaleButtons = Array.from({ length: scaleSize }, (_, i) => i + 1); // [1, ..., scaleSize]
+
+  const handleSelect = (value: number) => {
+    setSelectedValue(value);
+  };
+
+  const handleNextClick = () => {
+    if (selectedValue !== null) {
+      onNext(selectedValue);
+    }
+  };
+
   return (
-    <div className="flex flex-col items-center justify-center w-full h-full bg-white">
-      <div className="max-w-xl w-full p-8 flex flex-col items-center">
-        <h2 className="text-xl font-medium text-center text-neutral-800 mb-12">
-          This was the best app my eyes had see
+    <div className="flex flex-col items-center justify-center w-full h-full bg-white p-8">
+      <div className="max-w-xl w-full flex flex-col items-center">
+        <h2 className="text-xl font-medium text-center text-neutral-800 mb-4">
+          {questionText}
         </h2>
         
+        {instructions && (
+          <p className="text-sm text-center text-neutral-600 mb-8">
+            {instructions}
+          </p>
+        )}
+        
         <div className="flex space-x-4 justify-center w-full mb-4">
-          {[1, 2, 3, 4, 5, 6, 7].map((value) => (
-            <div key={value} className="flex flex-col items-center">
-              <button
-                className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-medium transition-colors ${
-                  selected === value 
-                    ? 'bg-indigo-600 text-white' 
-                    : 'bg-white border border-neutral-300 text-neutral-700 hover:border-indigo-400'
-                }`}
-                onClick={() => setSelected(value)}
-              >
-                {value}
-              </button>
-            </div>
+          {scaleButtons.map((value) => (
+            <button
+              key={value}
+              onClick={() => handleSelect(value)}
+              className={`w-10 h-10 rounded-full border flex items-center justify-center font-medium transition-colors ${selectedValue === value
+                ? 'bg-indigo-600 text-white border-indigo-600'
+                : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-100'
+              }`}
+            >
+              {value}
+            </button>
           ))}
         </div>
         
         <div className="flex justify-between w-full mt-2 px-1">
-          <span className="text-sm text-neutral-500">Strongly Disagree</span>
-          <span className="text-sm text-neutral-500">Strongly Agree</span>
+          <span className="text-sm text-neutral-500">{leftLabel}</span>
+          <span className="text-sm text-neutral-500">{rightLabel}</span>
         </div>
         
         <button
-          className="mt-12 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-8 rounded-md w-fit transition-colors shadow-sm"
-          onClick={onContinue}
+          className="mt-12 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-8 rounded-md w-fit transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={handleNextClick}
+          disabled={selectedValue === null} // Deshabilitar si no hay selección
         >
-          Continue
+          Siguiente
         </button>
       </div>
     </div>

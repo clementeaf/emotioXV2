@@ -1,4 +1,5 @@
 import React from 'react';
+import PreviewHeader from '../layout/PreviewHeader';
 
 interface ThankYouViewProps {
   onComplete?: () => void;
@@ -18,23 +19,7 @@ const ThankYouView: React.FC<ThankYouViewProps> = ({
 }) => {
   return (
     <div className="w-full h-full flex flex-col">
-      {/* Cabecera morada */}
-      <div className="bg-indigo-700 text-white p-2.5 flex items-center justify-between">
-        <div className="flex items-center">
-          <div className="w-6 h-6 rounded-full bg-yellow-300 flex items-center justify-center mr-2">
-            <span className="text-indigo-800 text-xs font-bold">E</span>
-          </div>
-          <span className="text-sm font-medium">Emolo</span>
-        </div>
-        <div className="text-xs">This is a preview. Your response will not be saved.</div>
-        <div className="bg-indigo-600 rounded px-3 py-1 text-xs flex items-center">
-          Jump to section
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </div>
-      </div>
-
+      <PreviewHeader />
       {/* Contenido principal */}
       <div className="flex-1 flex">
         {/* Sección izquierda (texto) */}

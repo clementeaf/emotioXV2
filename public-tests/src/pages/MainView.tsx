@@ -11,7 +11,6 @@ import {
 import { CognitiveTaskView } from '../components/cognitiveTask';
 import { ParticipantLogin } from '../components/auth/ParticipantLogin';
 import { Participant } from '../../../shared/interfaces/participant';
-import { WelcomeScreen } from '../components/research/WelcomeScreen/WelcomeScreen';
 
 // Componente para la pantalla de Screener (ejemplo)
 const ScreenerView = () => {
@@ -150,23 +149,12 @@ const MainView = () => {
     // Si no hay participante y no estamos en la pantalla de login, redirigir a login
     if (!participant && currentScreen !== 'login') {
       setCurrentScreen('login');
-      return <ParticipantLogin onLogin={handleParticipantLogin} />;
+      return <ParticipantLogin onLogin={handleParticipantLogin} researchId={researchId} />;
     }
 
     switch (currentScreen) {
       case 'login':
-        return <ParticipantLogin onLogin={handleParticipantLogin} />;
-      case 'welcome':
-        return (
-          <WelcomeScreen 
-            onStart={handleStartClick}
-            researchId={researchId}
-            onError={(error) => {
-              console.error('Error en WelcomeScreen:', error);
-              // Aquí podrías manejar el error, por ejemplo mostrando una notificación
-            }}
-          />
-        );
+        return <ParticipantLogin onLogin={handleParticipantLogin} researchId={researchId} />;
       case 'csat':
         return <CSATView onNext={handleCSATNext} />;
       case 'difficulty-scale':
@@ -182,13 +170,28 @@ const MainView = () => {
       case 'implicit':
         return <div className="p-10 bg-white"><h1 className="text-2xl font-bold">Implicit Association</h1></div>;
       case 'cognitive':
-        return <CognitiveTaskView onComplete={() => handleMenuSelect('welcome')} />;
+        return (
+          <CognitiveTaskView 
+            researchId={researchId} 
+            stepId="cognitive-preview"
+            stepConfig={{ 
+              id: 'preview-task', 
+              researchId: researchId, 
+              questions: [],
+              randomizeQuestions: false 
+            }}
+            onComplete={() => handleMenuSelect('csat')}
+            onError={(err) => console.error("Error en CognitiveTaskView (preview):", err)}
+            cognitiveAnswers={{}}
+            onAnswerChange={() => {}}
+          />
+        );
       case 'eye-tracking':
         return <div className="p-10 bg-white"><h1 className="text-2xl font-bold">Eye Tracking</h1></div>;
       case 'thank-you':
         return <ThankYouView onContinue={handleThankYouContinue} />;
       default:
-        return <ParticipantLogin onLogin={handleParticipantLogin} />;
+        return <ParticipantLogin onLogin={handleParticipantLogin} researchId={researchId} />;
     }
   };
 
