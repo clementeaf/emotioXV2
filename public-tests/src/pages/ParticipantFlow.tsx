@@ -1,9 +1,9 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import TopNavBar from '../components/layout/TopNavBar';
 import { ParticipantFlowStep } from '../types/flow';
 import { useParticipantFlow } from '../hooks/useParticipantFlow';
 import FlowStepContent from '../components/flow/FlowStepContent';
+import { ProgressSidebar } from '../components/layout/ProgressSidebar';
 
 const ParticipantFlow: React.FC = () => {
     const { researchId } = useParams<{ researchId: string }>();
@@ -15,22 +15,28 @@ const ParticipantFlow: React.FC = () => {
         handleLoginSuccess,
         handleStepComplete,
         handleError,
-        handleNavigation,
+        expandedSteps,
+        currentStepIndex,
+        isFlowLoading,
+        navigateToStep,
     } = useParticipantFlow(researchId);
 
-    const showNavBar = 
+    const currentExpandedStep = expandedSteps && expandedSteps.length > currentStepIndex 
+                                ? expandedSteps[currentStepIndex] 
+                                : null;
+
+    const showMainLayout = 
         currentStep !== ParticipantFlowStep.LOGIN && 
-        currentStep !== ParticipantFlowStep.DONE &&
         currentStep !== ParticipantFlowStep.LOADING_SESSION &&
         currentStep !== ParticipantFlowStep.ERROR;
 
-
-    return (
-         <div className="min-h-screen bg-gray-100 flex flex-col">
-            {showNavBar && <TopNavBar onNavigate={handleNavigation} />}
-            <div className="flex-grow w-full flex flex-col items-center justify-center p-4">
-                <FlowStepContent
-                    currentStep={currentStep}
+    if (!showMainLayout) {
+        return (
+             <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center">
+                 <FlowStepContent
+                    currentStepEnum={currentStep}
+                    currentExpandedStep={null}
+                    isLoading={isFlowLoading}
                     researchId={researchId}
                     token={token}
                     error={error}
@@ -39,6 +45,30 @@ const ParticipantFlow: React.FC = () => {
                     handleError={handleError}
                 />
             </div>
+        );
+    }
+
+    return (
+         <div className="flex h-screen w-screen overflow-hidden bg-neutral-100">
+            <ProgressSidebar 
+                steps={(expandedSteps || []).map((step) => ({ id: step.id, name: step.name }))}
+                currentStepIndex={currentStepIndex} 
+                onNavigateToStep={navigateToStep}
+            />
+
+            <main className="flex-1 overflow-y-auto bg-white flex flex-col items-center justify-center">
+                 <FlowStepContent
+                    currentStepEnum={currentStep}
+                    currentExpandedStep={currentExpandedStep}
+                    isLoading={isFlowLoading}
+                    researchId={researchId}
+                    token={token}
+                    error={error}
+                    handleLoginSuccess={handleLoginSuccess}
+                    handleStepComplete={handleStepComplete}
+                    handleError={handleError}
+                />
+            </main>
          </div>
     );
 };

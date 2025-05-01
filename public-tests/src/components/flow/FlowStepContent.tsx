@@ -1,12 +1,20 @@
 import React from 'react';
-import { ParticipantFlowStep } from '../../types/flow';
+import { ParticipantFlowStep, ExpandedStep } from '../../types/flow';
 import CurrentStepRenderer from './CurrentStepRenderer';
 import LoadingIndicator from '../common/LoadingIndicator';
 import ErrorDisplay from '../common/ErrorDisplay';
-import { FlowStepContentProps } from './types';
+import { FlowStepContentProps as OldFlowStepContentProps } from './types';
+
+interface FlowStepContentProps extends Omit<OldFlowStepContentProps, 'currentStep'> {
+    currentStepEnum: ParticipantFlowStep;
+    currentExpandedStep: ExpandedStep | null;
+    isLoading: boolean;
+}
 
 const FlowStepContent: React.FC<FlowStepContentProps> = ({
-    currentStep,
+    currentStepEnum,
+    currentExpandedStep,
+    isLoading,
     researchId,
     token,
     error,
@@ -14,34 +22,48 @@ const FlowStepContent: React.FC<FlowStepContentProps> = ({
     handleStepComplete,
     handleError,
 }) => {
-    console.log('[FlowStepContent] Decidiendo qué renderizar para el paso:', ParticipantFlowStep[currentStep], 'Error:', error);
+    console.log('[FlowStepContent] Estado global:', ParticipantFlowStep[currentStepEnum], 'Cargando:', isLoading, 'Paso actual:', currentExpandedStep?.id);
 
-    // 1. Manejar caso de researchId faltante (Error crítico)
     if (!researchId) {
         return <ErrorDisplay title="Error Crítico" message="ID de investigación no encontrado en la URL." />;
     }
 
-    // 2. Manejar estado de carga
-    if (currentStep === ParticipantFlowStep.LOADING_SESSION) {
-        return <LoadingIndicator message="Cargando sesión..." />;
+    if (isLoading || currentStepEnum === ParticipantFlowStep.LOADING_SESSION) {
+        return <LoadingIndicator message="Cargando sesión y flujo..." />;
     }
 
-    // 3. Manejar estado de error
-    if (currentStep === ParticipantFlowStep.ERROR) {
-        return <ErrorDisplay message={error} />; // ErrorDisplay maneja mensaje null
+    if (currentStepEnum === ParticipantFlowStep.ERROR) {
+        return <ErrorDisplay title="Error en el Flujo" message={error || 'Ocurrió un error desconocido.'} />;
     }
 
-    // 4. Si no es carga ni error, renderizar el contenido del paso actual
-    return (
-        <CurrentStepRenderer 
-            currentStep={currentStep}
-            researchId={researchId}
-            token={token}
-            onLoginSuccess={handleLoginSuccess}
-            onStepComplete={handleStepComplete}
-            onError={handleError}
-        />
-    );
+    if (currentStepEnum !== ParticipantFlowStep.LOGIN && currentExpandedStep) {
+        return (
+            <CurrentStepRenderer 
+                stepType={currentExpandedStep.type}
+                stepConfig={currentExpandedStep.config}
+                stepId={currentExpandedStep.id}
+                stepName={currentExpandedStep.name}
+                researchId={researchId}
+                token={token}
+                onStepComplete={handleStepComplete}
+                onError={handleError}
+            />
+        );
+    }
+
+    if (currentStepEnum === ParticipantFlowStep.LOGIN) {
+        return (
+            <CurrentStepRenderer 
+                stepType="login"
+                researchId={researchId}
+                onLoginSuccess={handleLoginSuccess}
+                onError={handleError}
+            />
+        );
+    }
+
+    console.error('[FlowStepContent] Estado inesperado: No se pudo determinar qué renderizar.', { currentStepEnum, isLoading, currentExpandedStep });
+    return <ErrorDisplay title="Error Inesperado" message="El estado actual de la aplicación es inconsistente." />;
 };
 
 export default FlowStepContent; 
