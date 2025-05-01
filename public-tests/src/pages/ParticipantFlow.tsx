@@ -19,6 +19,8 @@ const ParticipantFlow: React.FC = () => {
         currentStepIndex,
         isFlowLoading,
         navigateToStep,
+        completedRelevantSteps,
+        totalRelevantSteps,
     } = useParticipantFlow(researchId);
 
     const currentExpandedStep = expandedSteps && expandedSteps.length > currentStepIndex 
@@ -54,6 +56,8 @@ const ParticipantFlow: React.FC = () => {
                 steps={(expandedSteps || []).map((step) => ({ id: step.id, name: step.name }))}
                 currentStepIndex={currentStepIndex} 
                 onNavigateToStep={navigateToStep}
+                completedSteps={completedRelevantSteps}
+                totalSteps={totalRelevantSteps}
             />
 
             <main className="flex-1 overflow-y-auto bg-white flex flex-col items-center justify-center">

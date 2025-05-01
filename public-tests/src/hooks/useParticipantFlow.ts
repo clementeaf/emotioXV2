@@ -233,6 +233,27 @@ export const useParticipantFlow = (researchId: string | undefined) => {
     const handleNavigation = useCallback((targetStep: ParticipantFlowStep) => { ... });
     */
 
+    // <<< NUEVO: Calcular pasos relevantes >>>
+    const totalRelevantSteps = Math.max(0, expandedSteps.length - 2); // Total sin Welcome/Thankyou
+    // El índice actual (currentStepIndex) representa el paso EN EL QUE ESTÁ el usuario.
+    // Si está en índice 0 (Welcome), no ha completado ningún paso relevante.
+    // Si está en índice 1 (primera pregunta), ha completado 0 pasos relevantes.
+    // Si está en índice N (última pregunta), ha completado N-1 pasos relevantes.
+    // Si está en el índice final (Thankyou), ha completado todos los pasos relevantes.
+    let completedRelevantSteps = 0;
+    if (currentStepIndex > 0 && expandedSteps.length > 2) {
+        // Si el índice es mayor que 0 (no estamos en Welcome) y hay pasos relevantes
+        completedRelevantSteps = Math.min(currentStepIndex, totalRelevantSteps); 
+        // Si estamos en ThankYou (índice final), contamos todos los relevantes como completados
+        if (currentStepIndex === expandedSteps.length - 1) {
+             completedRelevantSteps = totalRelevantSteps;
+        }
+    }
+    // Si el flujo ha terminado (estado DONE), consideramos todos completados
+    if (currentStep === ParticipantFlowStep.DONE) {
+        completedRelevantSteps = totalRelevantSteps;
+    }
+
     // --- Valor de Retorno (ACTUALIZADO) --- 
     return {
         currentStep,
@@ -244,6 +265,8 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         expandedSteps,
         currentStepIndex,
         isFlowLoading,
-        navigateToStep, // <<< Exponer la nueva función
+        navigateToStep, 
+        completedRelevantSteps, // <<< Exponer pasos completados
+        totalRelevantSteps,     // <<< Exponer pasos totales
     };
 }; 

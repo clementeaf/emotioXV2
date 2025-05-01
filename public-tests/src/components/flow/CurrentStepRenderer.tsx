@@ -180,6 +180,202 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
              );
             } 
 
+        case 'cognitive_single_choice': { 
+            if (!onStepComplete) return null;
+            const isMock = !stepConfig || !stepConfig.questionText || !Array.isArray(stepConfig.options) || stepConfig.options.length === 0;
+            const config = isMock
+                ? { questionText: 'Pregunta de opción única (Prueba)?', options: ['Opción A', 'Opción B', 'Opción C'] }
+                : stepConfig;
+            
+            const title = config.title || stepName || 'Selecciona una opción';
+            const description = config.description;
+            const questionText = config.questionText || (isMock ? 'Pregunta de prueba' : '');
+            const options = config.options || [];
+
+            // Placeholder - Reemplazar con componente real SingleChoiceView si existe
+            // return renderStepWithWarning(<SingleChoiceView config={config} onNext={onStepComplete} isMock={isMock}/>, isMock);
+             return renderStepWithWarning(
+                 <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full">
+                    <h2 className="text-xl font-medium mb-1 text-neutral-800">{title}</h2>
+                    {description && <p className="text-sm text-neutral-500 mb-3">{description}</p>}
+                    <p className="text-neutral-600 mb-4">{questionText}</p>
+                    <div className="space-y-3 mb-6">
+                        {options.map((option: string, index: number) => (
+                            <label key={index} className="flex items-center space-x-3 p-3 border border-neutral-200 rounded-md hover:bg-neutral-50 cursor-pointer">
+                                <input type="radio" name={`single-choice-${stepId}`} value={option} className="form-radio h-4 w-4 text-primary-600 border-neutral-300 focus:ring-primary-500" />
+                                <span className="text-neutral-700">{option}</span>
+                            </label>
+                        ))}
+                    </div>
+                    <button
+                        onClick={() => onStepComplete(options[0])} // Simular selección de la primera opción
+                        className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
+                    >
+                        Siguiente
+                    </button>
+                </div>,
+                 isMock // Pasar el flag de mock
+             );
+            } 
+
+        // <<< NUEVO CASE para cognitive_multiple_choice >>>
+        case 'cognitive_multiple_choice': { 
+            if (!onStepComplete) return null;
+            const isMock = !stepConfig || !stepConfig.questionText || !Array.isArray(stepConfig.options) || stepConfig.options.length === 0;
+            const config = isMock
+                ? { questionText: 'Pregunta de opción múltiple (Prueba)?', options: ['Opción 1', 'Opción 2', 'Opción 3'] }
+                : stepConfig;
+            
+            const title = config.title || stepName || 'Selecciona una o más opciones';
+            const description = config.description;
+            const questionText = config.questionText || (isMock ? 'Pregunta de prueba' : '');
+            const options = config.options || [];
+
+            // Placeholder - Reemplazar con componente real MultipleChoiceView
+             return renderStepWithWarning(
+                 <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full">
+                    <h2 className="text-xl font-medium mb-1 text-neutral-800">{title}</h2>
+                    {description && <p className="text-sm text-neutral-500 mb-3">{description}</p>}
+                    <p className="text-neutral-600 mb-4">{questionText}</p>
+                    <div className="space-y-3 mb-6">
+                        {options.map((option: string, index: number) => (
+                            <label key={index} className="flex items-center space-x-3 p-3 border border-neutral-200 rounded-md hover:bg-neutral-50 cursor-pointer">
+                                <input type="checkbox" name={`multiple-choice-${stepId}-${index}`} value={option} className="form-checkbox h-4 w-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500" />
+                                <span className="text-neutral-700">{option}</span>
+                            </label>
+                        ))}
+                    </div>
+                    <button
+                        onClick={() => onStepComplete([options[0]])} // Simular selección de la primera opción
+                        className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
+                    >
+                        Siguiente
+                    </button>
+                </div>,
+                 isMock
+             );
+            } 
+
+        // <<< NUEVO CASE para cognitive_linear_scale >>>
+        case 'cognitive_linear_scale': { 
+             if (!onStepComplete) return null;
+             const isMock = !stepConfig || !stepConfig.questionText || !stepConfig.scaleSize;
+             const config = isMock
+                ? { questionText: 'Pregunta escala lineal (Prueba)?', scaleSize: 5, leftLabel: 'Izquierda', rightLabel: 'Derecha' }
+                : stepConfig;
+
+            const title = config.title || stepName || 'Valora en la escala';
+            const description = config.description;
+            const questionText = config.questionText || (isMock ? 'Pregunta de prueba' : '');
+
+             return renderStepWithWarning(
+                 <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full">
+                     <h2 className="text-xl font-medium mb-1 text-neutral-800">{title}</h2>
+                    {description && <p className="text-sm text-neutral-500 mb-3">{description}</p>}
+                    <p className="text-neutral-600 mb-4">{questionText}</p>
+                     <div className="flex justify-between text-xs text-neutral-500 mb-1">
+                         <span>{config.leftLabel}</span>
+                         <span>{config.rightLabel}</span>
+                     </div>
+                     <div className="flex justify-between space-x-2 mb-4">
+                         {[...Array(config.scaleSize)].map((_, i) => (
+                             <button key={i} className="w-8 h-8 border border-neutral-300 rounded-full hover:bg-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500">{i + 1}</button>
+                         ))}
+                     </div>
+                     <button onClick={() => onStepComplete(3)} className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors">Siguiente</button>
+                 </div>,
+                 isMock
+             );
+            } 
+        
+        // <<< NUEVO CASE para cognitive_ranking >>>
+        case 'cognitive_ranking': {
+            if (!onStepComplete) return null;
+            const isMock = !stepConfig || !stepConfig.questionText || !Array.isArray(stepConfig.items) || stepConfig.items.length === 0;
+            const config = isMock
+                ? { questionText: 'Pregunta de ranking (Prueba)?', items: ['Item 1', 'Item 2', 'Item 3'] }
+                : stepConfig;
+
+            const title = config.title || stepName || 'Ordena los elementos';
+            const description = config.description;
+            const questionText = config.questionText || (isMock ? 'Pregunta de prueba' : '');
+            const items = config.items || [];
+
+            return renderStepWithWarning(
+                 <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full">
+                     <h2 className="text-xl font-medium mb-1 text-neutral-800">{title}</h2>
+                     {description && <p className="text-sm text-neutral-500 mb-3">{description}</p>}
+                     <p className="text-neutral-600 mb-4">{questionText}</p>
+                     <p className="text-sm text-neutral-500 mb-4">(Placeholder: Arrastra y suelta para ordenar)</p>
+                     <div className="space-y-2 border border-dashed border-neutral-300 p-4 rounded-md mb-6 min-h-[100px]">
+                         {items.map((item: string, index: number) => (
+                             <div key={index} className="bg-neutral-100 p-2 rounded border border-neutral-200 cursor-grab">{item}</div>
+                         ))}
+                     </div>
+                     <button onClick={() => onStepComplete(items)} className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors">Siguiente</button>
+                 </div>,
+                 isMock
+            );
+        }
+
+        // <<< NUEVO CASE para cognitive_navigation_flow >>>
+        case 'cognitive_navigation_flow': {
+            if (!onStepComplete) return null;
+            const isMock = !stepConfig || !stepConfig.taskDescription;
+            const config = isMock ? { taskDescription: 'Tarea de flujo de navegación (Prueba).' } : stepConfig;
+
+            const title = config.title || stepName || 'Flujo de Navegación';
+            const description = config.description;
+            const taskDescription = config.taskDescription || (isMock ? 'Descripción de prueba' : '');
+
+             return renderStepWithWarning(
+                 <div className="bg-white p-8 rounded-lg shadow-md max-w-2xl w-full">
+                     <h2 className="text-xl font-medium mb-1 text-neutral-800">{title}</h2>
+                     {description && <p className="text-sm text-neutral-500 mb-3">{description}</p>}
+                     <p className="text-neutral-600 mb-4">{taskDescription}</p>
+                     <p className="text-sm text-neutral-500 mb-4">(Placeholder: Aquí iría la interfaz/simulación para la tarea de navegación)</p>
+                     <div className="border border-dashed border-neutral-300 p-4 rounded-md mb-6 min-h-[200px] flex items-center justify-center text-neutral-400">
+                         Simulación de Navegación
+                     </div>
+                     <button onClick={() => onStepComplete({})} className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors">Siguiente</button>
+                 </div>,
+                 isMock
+             );
+        }
+
+        // <<< NUEVO CASE para cognitive_preference_test >>>
+        case 'cognitive_preference_test': {
+            if (!onStepComplete) return null;
+            const isMock = !stepConfig || !stepConfig.questionText || !Array.isArray(stepConfig.options) || stepConfig.options.length < 2;
+            const config = isMock ? { questionText: 'Test de preferencia (Prueba)?', options: ['Opción A', 'Opción B'] } : stepConfig;
+
+            const title = config.title || stepName || 'Test de Preferencia';
+            const description = config.description;
+            const questionText = config.questionText || (isMock ? 'Pregunta de prueba' : '');
+            const options = config.options || ['Mock A', 'Mock B']; // Asegurar al menos 2 para el layout
+
+            return renderStepWithWarning(
+                 <div className="bg-white p-8 rounded-lg shadow-md max-w-3xl w-full">
+                     <h2 className="text-xl font-medium mb-1 text-neutral-800">{title}</h2>
+                     {description && <p className="text-sm text-neutral-500 mb-3">{description}</p>}
+                     <p className="text-neutral-600 mb-4 text-center">{questionText}</p>
+                     <p className="text-sm text-neutral-500 mb-4 text-center">(Placeholder: Elige la opción que prefieras)</p>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                         {options.slice(0, 2).map((option: any, index: number) => ( // Mostrar solo las 2 primeras como placeholder
+                             <div key={index} className="border border-neutral-200 rounded-md p-4 hover:bg-neutral-50 cursor-pointer flex flex-col items-center justify-center min-h-[150px]">
+                                 {/* Aquí podría ir una imagen (option.imageUrl) o texto (option.text) */}
+                                 <span className="text-neutral-700">{typeof option === 'string' ? option : `Opción ${index + 1}`}</span> 
+                             </div>
+                         ))}
+                     </div>
+                     <div className="flex justify-center">
+                        <button onClick={() => onStepComplete(options[0])} className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors">Siguiente</button>
+                     </div>
+                 </div>,
+                 isMock
+             );
+        }
+
         case 'smartvoc_csat': { 
              if (!onStepComplete) return null;
              const isCsatMock = !stepConfig || !stepConfig.questionText || !stepConfig.scaleSize;
@@ -194,6 +390,63 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
                     onNext={onStepComplete}
                 />,
                  isCsatMock
+             );
+            } 
+
+        // <<< NUEVO CASE para smartvoc_cv >>>
+        case 'smartvoc_cv': { 
+             if (!onStepComplete) return null;
+             const isMock = !stepConfig || !stepConfig.questionText;
+             const config = isMock ? { questionText: 'Pregunta Customer Value (Prueba)?' } : stepConfig;
+             return renderStepWithWarning(
+                 <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full text-center">
+                     <h2 className="text-xl font-medium mb-3 text-neutral-700">{stepName || 'Valor Percibido'}</h2>
+                     <p className="text-neutral-600 mb-4">{config.questionText}</p>
+                     <p className="text-sm text-neutral-500">(Placeholder: Vista para Customer Value)</p>
+                     <button onClick={() => onStepComplete({})} className="mt-4 bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors">Siguiente</button>
+                 </div>,
+                 isMock
+             );
+            } 
+        
+        // <<< NUEVO CASE para smartvoc_nps >>>
+        case 'smartvoc_nps': { 
+             if (!onStepComplete) return null;
+             const isMock = !stepConfig || !stepConfig.questionText;
+             const config = isMock ? { questionText: 'Pregunta NPS (Prueba)?', leftLabel: 'Nada probable', rightLabel: 'Muy probable' } : stepConfig;
+
+            return renderStepWithWarning(
+                 <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full">
+                     <h2 className="text-xl font-medium mb-3 text-neutral-700">{stepName || 'NPS'}</h2>
+                     <p className="text-neutral-600 mb-4">{config.questionText}</p>
+                     <div className="flex justify-between text-xs text-neutral-500 mb-1">
+                         <span>{config.leftLabel}</span>
+                         <span>{config.rightLabel}</span>
+                     </div>
+                     <div className="flex flex-wrap justify-center gap-2 mb-4">
+                         {[...Array(11)].map((_, i) => (
+                             <button key={i} className="w-8 h-8 border border-neutral-300 rounded-full hover:bg-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm">{i}</button>
+                         ))}
+                     </div>
+                     <button onClick={() => onStepComplete(8)} className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors">Siguiente</button>
+                 </div>,
+                 isMock
+             );
+            } 
+        
+        // <<< NUEVO CASE para smartvoc_nev >>>
+        case 'smartvoc_nev': { 
+             if (!onStepComplete) return null;
+             const isMock = !stepConfig || !stepConfig.questionText;
+             const config = isMock ? { questionText: 'Pregunta NEV (Prueba)?' } : stepConfig;
+             return renderStepWithWarning(
+                 <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full text-center">
+                     <h2 className="text-xl font-medium mb-3 text-neutral-700">{stepName || 'Valor Emocional Neto'}</h2>
+                     <p className="text-neutral-600 mb-4">{config.questionText}</p>
+                     <p className="text-sm text-neutral-500">(Placeholder: Vista para NEV)</p>
+                     <button onClick={() => onStepComplete({})} className="mt-4 bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors">Siguiente</button>
+                 </div>,
+                 isMock
              );
             } 
 

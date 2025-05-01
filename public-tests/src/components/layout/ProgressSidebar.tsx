@@ -12,6 +12,8 @@ interface ProgressSidebarProps {
   steps: Step[]; // Array de todos los pasos del flujo
   currentStepIndex: number; // Índice del paso actual en el array 'steps'
   onNavigateToStep?: (index: number) => void; // Añadir prop para callback de navegación
+  completedSteps?: number; // <<< Prop opcional para pasos completados
+  totalSteps?: number;     // <<< Prop opcional para pasos totales
   // Podríamos añadir un array de booleanos si el flujo permite saltos o necesita marcar completados de forma no secuencial
   // completedSteps?: boolean[]; 
 }
@@ -29,8 +31,21 @@ const colors = {
   textPending: 'text-neutral-600', // Color de texto para pasos pendientes
 };
 
-export function ProgressSidebar({ steps, currentStepIndex, onNavigateToStep }: ProgressSidebarProps) {
+export function ProgressSidebar({ 
+    steps, 
+    currentStepIndex, 
+    onNavigateToStep, 
+    completedSteps, 
+    totalSteps      
+}: ProgressSidebarProps) {
   console.log("[ProgressSidebar] Steps recibidos:", steps);
+
+  // Determinar si mostrar el contador y calcular porcentaje
+  const showCounter = typeof completedSteps === 'number' && typeof totalSteps === 'number' && completedSteps >= 0 && totalSteps >= 0;
+  let percentage = 0;
+  if (showCounter && totalSteps > 0) {
+      percentage = Math.round((completedSteps / totalSteps) * 100);
+  }
 
   return (
     <nav 
@@ -38,8 +53,16 @@ export function ProgressSidebar({ steps, currentStepIndex, onNavigateToStep }: P
       // Estilos base: ancho fijo, altura completa, fondo, padding, borde derecho, flex column, sticky
       className="w-56 md:w-64 h-screen bg-neutral-50 p-4 md:p-6 border-r border-neutral-200 flex flex-col sticky top-0 shrink-0"
     >
-        {/* Título opcional de la barra lateral */}
-        <h2 className="text-lg font-semibold mb-6 text-neutral-800 hidden md:block">Progreso</h2> 
+        {/* Contenedor para el título y el contador/porcentaje */}
+        <div className="flex justify-between items-center mb-6">
+             <h2 className="text-lg font-semibold text-neutral-800">Progreso</h2> 
+             {/* Mostrar contador y porcentaje si los datos son válidos */}
+             {showCounter && (
+                 <span className="text-sm font-medium text-neutral-600 bg-neutral-200 px-2 py-0.5 rounded-md whitespace-nowrap">
+                     {completedSteps}/{totalSteps} ({percentage}%)
+                 </span>
+             )}
+        </div>
         
         {/* Contenedor principal para los pasos, relativo para posicionar las líneas */}
         <div className="relative flex-grow overflow-y-auto -mr-4 pr-4 md:-mr-6 md:pr-6"> {/* Permitir scroll si hay muchos pasos */}
