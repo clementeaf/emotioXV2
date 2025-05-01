@@ -235,11 +235,13 @@ export class CognitiveTaskService {
     fileSize: number;
     fileType: string;
     researchId: string;
+    questionId: string;
   }): Promise<{
     uploadUrl: string;
     fileUrl: string;
     file: UploadedFile;
   }> {
+    const operation = `${this.serviceName}.getFileUploadUrl`;
     try {
       // Validar tipo MIME
       if (!COGNITIVE_TASK_VALIDATION.files.validTypes.includes(fileParams.fileType)) {
@@ -248,54 +250,77 @@ export class CognitiveTaskService {
           400
         );
       }
+      
+      // Construir la ruta de la carpeta incluyendo el questionId
+      const folderPath = `cognitive-task-files/${fileParams.questionId}`;
 
-      // Validar tamaño
-      if (fileParams.fileSize > COGNITIVE_TASK_VALIDATION.files.maxSize) {
-        throw new ApiError(
-          `${CognitiveTaskError.FILE_ERROR}: El archivo excede el tamaño máximo permitido (${COGNITIVE_TASK_VALIDATION.files.maxSize / (1024 * 1024)} MB)`,
-          400
-        );
-      }
-
-      // Crear parámetros para S3
-      const params: PresignedUrlParams = {
-        fileType: FileType.IMAGE, // Asumimos que todos los archivos son imágenes
-        fileName: fileParams.fileName,
+      // Llamar al servicio S3 para obtener la URL de subida
+      const uploadUrlData = await this.s3Service.generateUploadUrl({
+        // Determinar FileType del enum basado en MIME type (simplificado, podría mejorarse)
+        fileType: fileParams.fileType.startsWith('image/') ? FileType.IMAGE : 
+                  fileParams.fileType.startsWith('video/') ? FileType.VIDEO :
+                  FileType.DOCUMENT, // Default a document si no es imagen/video
+        fileName: fileParams.fileName, // s3Service extraerá la extensión de aquí
         mimeType: fileParams.fileType,
         fileSize: fileParams.fileSize,
         researchId: fileParams.researchId,
-        folder: 'cognitive-tasks' // Carpeta específica para tareas cognitivas
-      };
+        folder: folderPath, // <<< Pasar la carpeta con questionId
+      });
+      
+      // <<< EXTRAER el fileId REAL de la s3Key devuelta >>>
+      let extractedFileId = uuidv4(); // Fallback por si falla la extracción
+      try {
+          const keyParts = uploadUrlData.key.split('/');
+          const fileNameWithExt = keyParts[keyParts.length - 1]; // Nombre con UUID y extensión
+          const lastDotIndex = fileNameWithExt.lastIndexOf('.');
+          if (lastDotIndex > 0) { // Asume que hay extensión y UUID antes
+              // Extraer la parte entre el último '_' (antes del UUID) y el último '.'
+              // O, más simple, extraer la parte ANTES del último punto, que es el UUID
+              // CORRECCIÓN: s3Service.generateUploadUrl genera ${fileId}${extension}
+              extractedFileId = fileNameWithExt.substring(0, lastDotIndex); 
+              // Validar si parece UUID (opcional pero recomendado)
+              if (!/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(extractedFileId)) {
+                 console.warn(`[${operation}] No se pudo extraer un UUID válido de la key: ${uploadUrlData.key}. Usando fallback.`);
+                 extractedFileId = uuidv4(); // Volver al fallback si no es UUID
+              }
+          } else {
+              // Si no hay extensión, asumir que todo después del último / es el ID
+              extractedFileId = fileNameWithExt; 
+               if (!/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(extractedFileId)) {
+                 console.warn(`[${operation}] No se pudo extraer un UUID válido (sin ext) de la key: ${uploadUrlData.key}. Usando fallback.`);
+                 extractedFileId = uuidv4(); // Volver al fallback si no es UUID
+              }
+          }
+      } catch (extractError) {
+          console.error(`[${operation}] Error extrayendo fileId de la key ${uploadUrlData.key}:`, extractError);
+          // Usará el fallback uuidv4() definido al inicio
+      }
 
-      // Generar URL prefirmada
-      const presignedUrlResponse = await this.s3Service.generateUploadUrl(params);
-
-      // Crear objeto de archivo
-      const file: UploadedFile = {
-        id: presignedUrlResponse.key.split('/').pop() || '', // Extraer nombre del archivo de la clave S3
+      // Construir el objeto UploadedFile usando el ID EXTRAIDO
+      const uploadedFile: UploadedFile = {
+        id: extractedFileId, // <<< Usar el ID EXTRAIDO de la s3Key
         name: fileParams.fileName,
         size: fileParams.fileSize,
         type: fileParams.fileType,
-        url: presignedUrlResponse.fileUrl,
-        s3Key: presignedUrlResponse.key
+        s3Key: uploadUrlData.key, 
+        url: uploadUrlData.fileUrl, 
       };
+      
+       console.log(`${operation} - Datos de archivo preparado (con ID extraído):`, uploadedFile);
 
       return {
-        uploadUrl: presignedUrlResponse.uploadUrl,
-        fileUrl: presignedUrlResponse.fileUrl,
-        file
+        uploadUrl: uploadUrlData.uploadUrl,
+        fileUrl: uploadUrlData.fileUrl, // Devolver la URL directa por si es útil en algún otro lugar? O quitarla.
+        file: uploadedFile,
       };
+
     } catch (error) {
-      console.error('Error al generar URL para subir archivo:', error);
-      
-      if (error instanceof ApiError) {
-        throw error;
-      }
-      
-      throw new ApiError(
-        `${CognitiveTaskError.UPLOAD_ERROR}: Error al generar URL para subir archivo: ${error instanceof Error ? error.message : 'Error desconocido'}`,
-        500
-      );
+        console.error(`${operation} - Error:`, error);
+         if (error instanceof ApiError) {
+             throw error;
+         }
+         // Re-lanzar como error genérico de archivo
+         throw new ApiError(`${CognitiveTaskError.UPLOAD_ERROR}: ${error instanceof Error ? error.message : 'Error desconocido al preparar subida'}`, 500);
     }
   }
 

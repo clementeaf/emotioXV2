@@ -1,42 +1,27 @@
-import React from 'react';
-// Eliminar ParticipantFlowStep si no se usa en onError
-// import { ParticipantFlowStep } from '../../types/flow'; 
+import React, { useState, useEffect } from 'react';
 import { ParticipantLogin } from '../auth/ParticipantLogin';
-// Importar componentes de vista directamente si los handlers ya no son necesarios
-// O mantener los handlers si encapsulan lógica útil (ej. fetch interno)
 import WelcomeScreenHandler from './WelcomeScreenHandler';
-import SmartVOCHandler from './SmartVOCHandler'; // <<< Este handler maneja preguntas INTERNAMENTE
-import CognitiveTaskHandler from './CognitiveTaskHandler'; // <<< Este handler maneja preguntas INTERNAMENTE
-// Importar tipos
-import { CurrentStepRendererProps as OldProps } from './types';
 import { Participant } from '../../../../shared/interfaces/participant';
-// Importar los componentes de VISTA si se usan directamente
 import { CSATView, FeedbackView, ThankYouView } from '../smartVoc';
-// Asumir un componente de vista para texto corto
-// import { ShortTextView } from '../cognitiveTask/ShortTextView';
 
-// <<< Añadir URL base de S3 (¡Idealmente desde variables de entorno!) >>>
-const S3_BASE_URL = 'https://your-s3-bucket-name.s3.amazonaws.com/'; // <<< REEMPLAZAR con tu URL base real
+const API_BASE_URL = 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev';
 
-// <<< Añadir un componente de advertencia >>>
 const MockDataWarning: React.FC<{ message?: string }> = ({ message }) => (
     <div className="absolute top-0 left-1/2 transform -translate-x-1/2 mt-2 bg-yellow-100 border border-yellow-300 text-yellow-800 px-3 py-1 rounded-md text-xs shadow z-20">
         ⚠️ {message || 'Mostrando datos de prueba'}
     </div>
 );
 
-// <<< Definir Nuevas Props >>>
 interface CurrentStepRendererProps {
-    stepType: string;       // Tipo del paso (e.g., 'login', 'welcome', 'cognitive_short_text')
-    stepConfig?: any;       // Config específica del paso (pregunta, textos, etc.)
-    stepId?: string;        // ID único del paso (opcional, para key)
-    stepName?: string;      // Nombre del paso (opcional, para títulos)
+    stepType: string;
+    stepConfig?: any;    
+    stepId?: string;     
+    stepName?: string;   
     researchId: string;
     token?: string | null; 
     onLoginSuccess?: (participant: Participant) => void;
-    onStepComplete?: (answer?: any) => void; // Callback general para completar paso
-    // onError?: (errorMessage: string, step: ParticipantFlowStep) => void; // Opción 1: Mantener enum para contexto de error
-    onError: (errorMessage: string, stepType: string) => void; // Opción 2: Usar el string type
+    onStepComplete?: (answer?: any) => void;
+    onError: (errorMessage: string, stepType: string) => void;
 }
 
 const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
@@ -63,22 +48,16 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
         </div>
     );
 
-    // <<< Usar stepType en el switch >>>
     switch (stepType) {
         case 'login':
-             // Asegurarse de que onLoginSuccess esté definido
              if (!onLoginSuccess) {
                 onError("onLoginSuccess no fue proporcionado a CurrentStepRenderer para el paso LOGIN", 'login');
                 return <div className="p-6 text-center text-red-500">Error de configuración interna (Login).</div>;
             }
             return <ParticipantLogin researchId={researchId} onLogin={onLoginSuccess} />;
-        
-        // --- Casos que usan Handlers (si mantienen lógica compleja o fetch interno) ---
-        case 'welcome': { // <<< Usar bloque
+        case 'welcome': {
             if (!token || !onStepComplete) return null;
             const isWelcomeMock = !stepConfig; // Asumir que necesita config
-            // WelcomeScreenHandler puede que busque su propia config, ajustar si es necesario
-            // const welcomeConfig = stepConfig || { title: 'Bienvenida (Prueba)', message: 'Mensaje de bienvenida de prueba.' }; 
             return renderStepWithWarning(
                  <WelcomeScreenHandler
                         researchId={researchId}
@@ -89,18 +68,8 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
                  isWelcomeMock,
                  isWelcomeMock ? "Datos de bienvenida podrían ser de prueba si no se cargan." : undefined
             );
-           } // <<< Fin bloque
-
-        // EJEMPLO: Si SmartVOC/Cognitive fueran pasos ÚNICOS que internamente manejan sus preguntas
-        // case 'smartvoc_module': 
-        //    if (!token || !onStepComplete) return null; 
-        //    return <SmartVOCHandler researchId={researchId} token={token} onComplete={onStepComplete} onError={(msg) => onError(msg, stepType)} />;
-        // case 'cognitive_module':
-        //    if (!token || !onStepComplete) return null;
-        //    return <CognitiveTaskHandler researchId={researchId} token={token} onComplete={onStepComplete} onError={(msg) => onError(msg, stepType)} />;
-
-        // --- Casos que renderizan VISTAS directamente (para preguntas individuales) ---
-        case 'instruction': { // <<< Usar bloque
+           }
+        case 'instruction': {
              if (!onStepComplete) return null;
              const isInstructionMock = !stepConfig || !stepConfig.text;
              const instructionConfig = isInstructionMock 
@@ -348,31 +317,87 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
 
         // <<< CASE MODIFICADO para cognitive_preference_test >>>
         case 'cognitive_preference_test': {
+            const [presignedUrl, setPresignedUrl] = useState<string | null>(null);
+            const [isUrlLoading, setIsUrlLoading] = useState<boolean>(false);
+            const [urlError, setUrlError] = useState<string | null>(null);
+
             if (!onStepComplete) return null;
             
-            // Check for real config, specifically the files array and s3Key
+            // Determinar si es mock (basado en la falta de config real de archivos)
             const hasRealFiles = stepConfig && Array.isArray(stepConfig.files) && stepConfig.files.length > 0 && stepConfig.files[0].s3Key;
             const isMock = !hasRealFiles;
             
-            // Use mock config only if real files are missing
+            // Usar config mock solo si no hay archivos reales
             const config = isMock ? { 
                 questionText: 'Test de preferencia (Prueba)?', 
-                options: ['Opción A Placeholder', 'Opción B Placeholder'], // Placeholder text/options for mock
-                files: [] // Mock has no files
+                options: ['Opción A Placeholder', 'Opción B Placeholder'], 
+                files: [] 
             } : stepConfig;
 
             const title = config.title || stepName || 'Test de Preferencia';
             const description = config.description;
             const questionText = config.questionText || (isMock ? '¿Cuál de estas opciones prefieres?' : '');
-            
-            // Get image URL from the first file if available
-            const imageUrl = !isMock && config.files && config.files.length > 0 && config.files[0].s3Key 
-                                ? `${S3_BASE_URL}${config.files[0].s3Key}` 
-                                : null;
-            
-            // Get device frame flag
             const useDeviceFrame = !isMock && config.deviceFrame === true;
-            
+            const s3Key = !isMock ? config.files[0].s3Key : null;
+            const fileId = !isMock ? config.files[0].id : null;
+
+            // Efecto para buscar la URL prefirmada cuando cambie la clave o el token
+            useEffect(() => {
+                if (s3Key && token) {
+                    const fetchPresignedUrl = async () => {
+                        console.log(`[PreferenceTest] Fetching presigned URL for key: ${s3Key}`);
+                        setIsUrlLoading(true);
+                        setPresignedUrl(null);
+                        setUrlError(null);
+                        try {
+                            const encodedKey = encodeURIComponent(s3Key);
+                            const url = `${API_BASE_URL}/s3/download?key=${encodedKey}`;
+                            
+                            const response = await fetch(url, {
+                                method: 'GET',
+                                headers: {
+                                    'Authorization': `Bearer ${token}`
+                                }
+                            });
+
+                            if (response.ok) {
+                                const result = await response.json();
+                                if (result.success && result.data?.downloadUrl) {
+                                    console.log("[PreferenceTest] Presigned URL received.");
+                                    setPresignedUrl(result.data.downloadUrl);
+                                } else {
+                                    console.error("[PreferenceTest] Invalid response structure from backend:", result);
+                                    setUrlError('Respuesta inválida del servidor al obtener URL.');
+                                }
+                            } else if (response.status === 404) {
+                                console.warn(`[PreferenceTest] File not found (404) for key: ${s3Key}`);
+                                setUrlError('El archivo de imagen no fue encontrado.');
+                            } else {
+                                console.error(`[PreferenceTest] Error fetching presigned URL (${response.status}):`, await response.text());
+                                setUrlError(`Error (${response.status}) al obtener la URL de la imagen.`);
+                            }
+                        } catch (fetchError: any) {
+                            console.error("[PreferenceTest] Network error fetching presigned URL:", fetchError);
+                            setUrlError(fetchError.message || 'Error de red al obtener URL.');
+                        } finally {
+                            setIsUrlLoading(false);
+                        }
+                    };
+
+                    fetchPresignedUrl();
+                } else if (!isMock && !token) {
+                    console.warn("[PreferenceTest] Missing token to fetch presigned URL.");
+                    setUrlError("Se requiere autenticación para ver la imagen.");
+                    setIsUrlLoading(false);
+                }
+                // Cleanup o reseteo si es necesario al desmontar o cambiar s3Key/token
+                return () => {
+                   setIsUrlLoading(false); 
+                   setPresignedUrl(null);
+                   setUrlError(null);
+                }
+            }, [s3Key, token, isMock]); // Dependencias: s3Key, token, isMock
+
             // --- Renderizado --- 
             return renderStepWithWarning(
                  <div className="bg-white p-8 rounded-lg shadow-md max-w-3xl w-full">
@@ -380,42 +405,58 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
                      {description && <p className="text-sm text-neutral-500 mb-3 text-center">{description}</p>}
                      <p className="text-neutral-600 mb-6 text-center">{questionText || 'Elige la opción que prefieras'}</p>
                      
-                     {/* Área para mostrar las opciones (imágenes o mocks) */}
-                     <div className="flex justify-center items-center mb-6 min-h-[250px]"> {/* Centered container */}
+                     {/* Área para mostrar las opciones (imagen real, carga, error o mocks) */}
+                     <div className="flex justify-center items-center mb-6 min-h-[250px]">
                          {isMock ? (
-                             // Mock display (e.g., text placeholders)
+                             // Mock display
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
                                  {(config.options || ['Mock A', 'Mock B']).slice(0, 2).map((optionText: string, index: number) => (
                                      <div key={index} className="border border-dashed border-neutral-300 rounded-md p-4 flex items-center justify-center min-h-[150px]">
                                          <span className="text-neutral-500 italic">{optionText}</span> 
                                      </div>
                                  ))}
-                            </div>
-                         ) : imageUrl ? (
-                             // Real image display
-                             <div className={`p-2 ${useDeviceFrame ? 'border-4 border-neutral-700 rounded-lg shadow-lg' : ''}`}> {/* Optional frame */}
+                             </div>
+                         ) : isUrlLoading ? (
+                             // Loading indicator
+                             <div className="flex flex-col items-center text-neutral-500">
+                                 <svg className="animate-spin h-8 w-8 text-primary-600 mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                 </svg>
+                                 <span>Cargando imagen...</span>
+                             </div>
+                         ) : urlError ? (
+                             // Error display
+                              <div className="border border-dashed border-red-300 bg-red-50 rounded-md p-4 flex flex-col items-center justify-center min-h-[150px] text-red-700">
+                                 <span className="font-medium">Error al cargar imagen</span>
+                                 <span className="text-sm">{urlError}</span> 
+                             </div>
+                         ) : presignedUrl ? (
+                             // Real image display with presigned URL
+                             <div className={`p-2 ${useDeviceFrame ? 'border-4 border-neutral-700 rounded-lg shadow-lg' : ''}`}> 
                                 <img 
-                                    src={imageUrl} 
-                                    alt={`Opción preferencia ${config.files[0].name || 1}`}
-                                    className="max-w-sm md:max-w-md max-h-[400px] object-contain rounded" // Adjust size as needed
+                                    src={presignedUrl} 
+                                    alt={`Opción preferencia ${config.files[0]?.name || 1}`}
+                                    className="max-w-sm md:max-w-md max-h-[400px] object-contain rounded"
                                 />
                              </div>
                          ) : (
-                             // Fallback if image URL is somehow missing despite not being mock
-                             <div className="text-neutral-500 italic">No se pudo cargar la imagen de preferencia.</div>
+                             // Fallback if URL is null after loading without error (should not happen often)
+                             <div className="text-neutral-500 italic">No hay imagen disponible.</div>
                          )}
                      </div>
                      
-                     {/* Botón Siguiente (Simulado) */}
+                     {/* Botón Siguiente (deshabilitado mientras carga o si hay error?) */}
                      <div className="flex justify-center">
                         <button 
-                             onClick={() => onStepComplete(isMock ? config.options[0] : config.files[0]?.id || 'selected_image')} // Pass mock option or file id
-                             className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors">
+                             onClick={() => onStepComplete(fileId || (isMock ? config.options[0] : 'selected_image_no_id'))} // Pasar fileId si existe
+                             disabled={isUrlLoading || !!urlError} // Deshabilitar si carga o hay error
+                             className={`bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors ${isUrlLoading || urlError ? 'opacity-50 cursor-not-allowed' : ''}`}>
                              Siguiente
                         </button>
                      </div>
                  </div>,
-                 isMock // Pass the mock flag
+                 isMock // Pasar el flag de mock original
              );
         }
 

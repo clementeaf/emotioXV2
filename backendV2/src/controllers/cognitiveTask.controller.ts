@@ -227,6 +227,66 @@ export class CognitiveTaskController {
     }
   }
 
+  /**
+   * Genera una URL prefirmada para subir un archivo asociado a una pregunta de Cognitive Task.
+   * @param event Evento API Gateway
+   * @returns Respuesta con URL prefirmada y datos del archivo, o error.
+   */
+  public async generateCognitiveTaskUploadUrl(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    const context = 'generateCognitiveTaskUploadUrl';
+    let researchId: string | undefined;
+    let questionId: string | undefined;
+    try {
+      // 1. Extraer researchId de la ruta
+      const extracted = this.validateAndExtractIds(event);
+      if ('statusCode' in extracted) return extracted;
+      researchId = extracted.researchId;
+      
+      // 2. Parsear y validar el cuerpo de la solicitud
+      if (!event.body) {
+          throw new ApiError('Se requiere un cuerpo en la petición', 400);
+      }
+      const body = JSON.parse(event.body);
+
+      // 3. Extraer parámetros necesarios del body
+      const { fileName, fileSize, fileType, questionId: bodyQuestionId } = body;
+      questionId = bodyQuestionId; // Asignar para logging en catch
+
+      // 4. Validar parámetros obligatorios del body
+      if (!fileName || !fileSize || !fileType || !questionId) {
+        throw new ApiError(
+          'Parámetros incompletos: Se requieren fileName, fileSize, fileType y questionId en el body.', 
+          400
+        );
+      }
+      
+      // Validar tipos básicos (añadir más validaciones si es necesario)
+      if (typeof fileName !== 'string' || typeof fileSize !== 'number' || fileSize <= 0 || typeof fileType !== 'string' || typeof questionId !== 'string') {
+           throw new ApiError('Tipos de parámetros inválidos en el body.', 400);
+      }
+
+      structuredLog('info', `CognitiveTaskController.${context}`, 'Solicitud para generar URL de subida', { researchId, questionId, fileName, fileSize, fileType });
+
+      // 5. Llamar al servicio para obtener la URL y los datos del archivo
+      const result = await cognitiveTaskService.getFileUploadUrl({
+        fileName,
+        fileSize,
+        fileType,
+        researchId,
+        questionId
+      });
+
+      structuredLog('info', `CognitiveTaskController.${context}`, 'URL de subida generada', { researchId, questionId, fileId: result.file.id });
+
+      // 6. Devolver respuesta exitosa
+      return createResponse(200, result);
+
+    } catch (error: any) {
+       // Usar handleError para consistencia (manejará ApiError, incluyendo validación del servicio)
+      return this.handleError(error, context, { researchId, questionId });
+    }
+  }
+
   public routes(): RouteMap {
     // Usar rutas relativas al basePath esperado
     return {
@@ -237,6 +297,9 @@ export class CognitiveTaskController {
       '/{taskId}': { // Corresponde a /research/{researchId}/cognitive-task/{taskId}
         'PUT': this.update.bind(this),
         'DELETE': this.delete.bind(this)
+      },
+      '/upload-url': {
+           POST: this.generateCognitiveTaskUploadUrl.bind(this)
       }
     };
   }
@@ -251,11 +314,13 @@ const cognitiveTaskRouteMap: RouteMap = {
     'GET': controllerInstance.get.bind(controllerInstance),
     'POST': controllerInstance.create.bind(controllerInstance),
   },
-  // Mapear la ruta con taskId relativa al basePath
   '/{researchId}/cognitive-task/{taskId}': {
     'PUT': controllerInstance.update.bind(controllerInstance),
     'DELETE': controllerInstance.delete.bind(controllerInstance)
-  }
+  },
+  '/{researchId}/cognitive-task/upload-url': {
+       POST: controllerInstance.generateCognitiveTaskUploadUrl.bind(controllerInstance)
+   }
 };
 
 // Crear el handler principal usando el decorador
