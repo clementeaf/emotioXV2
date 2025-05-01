@@ -15,6 +15,9 @@ import { CSATView, FeedbackView, ThankYouView } from '../smartVoc';
 // Asumir un componente de vista para texto corto
 // import { ShortTextView } from '../cognitiveTask/ShortTextView';
 
+// <<< Añadir URL base de S3 (¡Idealmente desde variables de entorno!) >>>
+const S3_BASE_URL = 'https://your-s3-bucket-name.s3.amazonaws.com/'; // <<< REEMPLAZAR con tu URL base real
+
 // <<< Añadir un componente de advertencia >>>
 const MockDataWarning: React.FC<{ message?: string }> = ({ message }) => (
     <div className="absolute top-0 left-1/2 transform -translate-x-1/2 mt-2 bg-yellow-100 border border-yellow-300 text-yellow-800 px-3 py-1 rounded-md text-xs shadow z-20">
@@ -343,36 +346,76 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
              );
         }
 
-        // <<< NUEVO CASE para cognitive_preference_test >>>
+        // <<< CASE MODIFICADO para cognitive_preference_test >>>
         case 'cognitive_preference_test': {
             if (!onStepComplete) return null;
-            const isMock = !stepConfig || !stepConfig.questionText || !Array.isArray(stepConfig.options) || stepConfig.options.length < 2;
-            const config = isMock ? { questionText: 'Test de preferencia (Prueba)?', options: ['Opción A', 'Opción B'] } : stepConfig;
+            
+            // Check for real config, specifically the files array and s3Key
+            const hasRealFiles = stepConfig && Array.isArray(stepConfig.files) && stepConfig.files.length > 0 && stepConfig.files[0].s3Key;
+            const isMock = !hasRealFiles;
+            
+            // Use mock config only if real files are missing
+            const config = isMock ? { 
+                questionText: 'Test de preferencia (Prueba)?', 
+                options: ['Opción A Placeholder', 'Opción B Placeholder'], // Placeholder text/options for mock
+                files: [] // Mock has no files
+            } : stepConfig;
 
             const title = config.title || stepName || 'Test de Preferencia';
             const description = config.description;
-            const questionText = config.questionText || (isMock ? 'Pregunta de prueba' : '');
-            const options = config.options || ['Mock A', 'Mock B']; // Asegurar al menos 2 para el layout
-
+            const questionText = config.questionText || (isMock ? '¿Cuál de estas opciones prefieres?' : '');
+            
+            // Get image URL from the first file if available
+            const imageUrl = !isMock && config.files && config.files.length > 0 && config.files[0].s3Key 
+                                ? `${S3_BASE_URL}${config.files[0].s3Key}` 
+                                : null;
+            
+            // Get device frame flag
+            const useDeviceFrame = !isMock && config.deviceFrame === true;
+            
+            // --- Renderizado --- 
             return renderStepWithWarning(
                  <div className="bg-white p-8 rounded-lg shadow-md max-w-3xl w-full">
-                     <h2 className="text-xl font-medium mb-1 text-neutral-800">{title}</h2>
-                     {description && <p className="text-sm text-neutral-500 mb-3">{description}</p>}
-                     <p className="text-neutral-600 mb-4 text-center">{questionText}</p>
-                     <p className="text-sm text-neutral-500 mb-4 text-center">(Placeholder: Elige la opción que prefieras)</p>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                         {options.slice(0, 2).map((option: any, index: number) => ( // Mostrar solo las 2 primeras como placeholder
-                             <div key={index} className="border border-neutral-200 rounded-md p-4 hover:bg-neutral-50 cursor-pointer flex flex-col items-center justify-center min-h-[150px]">
-                                 {/* Aquí podría ir una imagen (option.imageUrl) o texto (option.text) */}
-                                 <span className="text-neutral-700">{typeof option === 'string' ? option : `Opción ${index + 1}`}</span> 
+                     <h2 className="text-xl font-medium mb-1 text-neutral-800 text-center">{title}</h2>
+                     {description && <p className="text-sm text-neutral-500 mb-3 text-center">{description}</p>}
+                     <p className="text-neutral-600 mb-6 text-center">{questionText || 'Elige la opción que prefieras'}</p>
+                     
+                     {/* Área para mostrar las opciones (imágenes o mocks) */}
+                     <div className="flex justify-center items-center mb-6 min-h-[250px]"> {/* Centered container */}
+                         {isMock ? (
+                             // Mock display (e.g., text placeholders)
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+                                 {(config.options || ['Mock A', 'Mock B']).slice(0, 2).map((optionText: string, index: number) => (
+                                     <div key={index} className="border border-dashed border-neutral-300 rounded-md p-4 flex items-center justify-center min-h-[150px]">
+                                         <span className="text-neutral-500 italic">{optionText}</span> 
+                                     </div>
+                                 ))}
+                            </div>
+                         ) : imageUrl ? (
+                             // Real image display
+                             <div className={`p-2 ${useDeviceFrame ? 'border-4 border-neutral-700 rounded-lg shadow-lg' : ''}`}> {/* Optional frame */}
+                                <img 
+                                    src={imageUrl} 
+                                    alt={`Opción preferencia ${config.files[0].name || 1}`}
+                                    className="max-w-sm md:max-w-md max-h-[400px] object-contain rounded" // Adjust size as needed
+                                />
                              </div>
-                         ))}
+                         ) : (
+                             // Fallback if image URL is somehow missing despite not being mock
+                             <div className="text-neutral-500 italic">No se pudo cargar la imagen de preferencia.</div>
+                         )}
                      </div>
+                     
+                     {/* Botón Siguiente (Simulado) */}
                      <div className="flex justify-center">
-                        <button onClick={() => onStepComplete(options[0])} className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors">Siguiente</button>
+                        <button 
+                             onClick={() => onStepComplete(isMock ? config.options[0] : config.files[0]?.id || 'selected_image')} // Pass mock option or file id
+                             className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors">
+                             Siguiente
+                        </button>
                      </div>
                  </div>,
-                 isMock
+                 isMock // Pass the mock flag
              );
         }
 
