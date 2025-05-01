@@ -1,21 +1,9 @@
 import React from 'react';
 import { ParticipantFlowStep } from '../../types/flow';
-import CurrentStepRenderer from './CurrentStepRenderer'; // Renderiza el paso actual (LOGIN, WELCOME, etc.)
+import CurrentStepRenderer from './CurrentStepRenderer';
 import LoadingIndicator from '../common/LoadingIndicator';
 import ErrorDisplay from '../common/ErrorDisplay';
-import { Participant } from '../../../../shared/interfaces/participant'; // Necesaria para onLoginSuccess
-
-// Props que necesita este componente para tomar decisiones y pasar a CurrentStepRenderer
-interface FlowStepContentProps {
-    currentStep: ParticipantFlowStep;
-    researchId: string | undefined; // Puede ser undefined inicialmente
-    token: string | null;
-    error: string | null;
-    // Callbacks
-    handleLoginSuccess: (participant: Participant) => void;
-    handleStepComplete: () => void;
-    handleError: (errorMessage: string, step: ParticipantFlowStep) => void;
-}
+import { FlowStepContentProps } from './types';
 
 const FlowStepContent: React.FC<FlowStepContentProps> = ({
     currentStep,
@@ -44,11 +32,10 @@ const FlowStepContent: React.FC<FlowStepContentProps> = ({
     }
 
     // 4. Si no es carga ni error, renderizar el contenido del paso actual
-    // Pasamos todas las props necesarias a CurrentStepRenderer
     return (
         <CurrentStepRenderer 
             currentStep={currentStep}
-            researchId={researchId} // Sabemos que está definido aquí
+            researchId={researchId}
             token={token}
             onLoginSuccess={handleLoginSuccess}
             onStepComplete={handleStepComplete}
