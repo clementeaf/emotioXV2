@@ -401,12 +401,15 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       // Preparamos los datos para enviar (exactamente como en WelcomeScreen)
       const actualResearchId = researchId === 'current' ? '1234' : researchId; // Replicando WelcomeScreen
       
+      // Extraer los datos excluyendo el id, para forzar al backend a usar updateByResearchId
+      const { id, ...restFormData } = formData;
       const dataToSave = {
-        ...formData,
+        ...restFormData,
         researchId: actualResearchId // Usar el ID real, no "current"
       };
       
-      console.log('[useEyeTrackingRecruit] Guardando config con ID:', dataToSave.researchId);
+      console.log('[useEyeTrackingRecruit] Guardando config con ID de investigación:', dataToSave.researchId);
+      console.log('[useEyeTrackingRecruit] ID original de configuración eliminado:', id || 'No tenía ID');
       console.log('[useEyeTrackingRecruit] Payload completo:', JSON.stringify(dataToSave, null, 2));
       
       // Enviamos los datos al servidor (igual que WelcomeScreen)

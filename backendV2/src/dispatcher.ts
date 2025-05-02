@@ -10,7 +10,6 @@ const controllerImports = {
   'welcome-screen': () => import('./controllers/welcomeScreen.controller'),
   'thank-you-screen': () => import('./controllers/thankYouScreen.controller'),
   'eye-tracking': () => import('./controllers/eyeTracking.controller'),
-  'eye-tracking-recruit': () => import('./controllers/eyeTrackingRecruit.controller'),
   'smart-voc': () => import('./controllers/smartVocForm.controller'),
   'cognitive-task': () => import('./controllers/cognitiveTask.controller'),
   's3': () => import('./controllers/s3.controller'),

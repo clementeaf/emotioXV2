@@ -7,9 +7,10 @@ import {
 } from '../interfaces/eyeTracking';
 import alovaInstance from '@/lib/api';
 import API_CONFIG from '@/config/api.config';
+import { ApiEndpointManager } from '@/config/api-client';
 
-// Preparar los endpoints para eyeTracking
-const API_BASE = API_CONFIG.baseURL || '';
+// Crear una instancia del gestor de endpoints para usar sus funciones
+const endpointManager = new ApiEndpointManager();
 
 /**
  * API para configurar el módulo de EyeTracking usando AlovaJS
@@ -19,7 +20,9 @@ export const eyeTrackingAPI = {
    * Obtiene la configuración de EyeTracking para Build
    */
   getEyeTrackingConfig: (researchId: string) => {
-    const method = alovaInstance.Get(`${API_BASE}/eye-tracking/research/${researchId}`);
+    // Usar endpoints definidos y el gestor para obtener la URL completa
+    const url = endpointManager.getEndpoint('eyeTracking', 'GET_BY_RESEARCH', { researchId });
+    const method = alovaInstance.Get(url);
     
     // Para solucionar problemas de CORS, eliminamos headers problemáticos
     if (method.config?.headers) {
@@ -34,7 +37,9 @@ export const eyeTrackingAPI = {
    * Actualiza la configuración de EyeTracking para Build
    */
   updateEyeTrackingConfig: (researchId: string, config: EyeTrackingConfig) => {
-    const method = alovaInstance.Put(`${API_BASE}/eye-tracking/research/${researchId}`, config);
+    // Usar endpoints definidos y el gestor para obtener la URL completa
+    const url = endpointManager.getEndpoint('eyeTracking', 'UPDATE', { researchId });
+    const method = alovaInstance.Put(url, config);
     
     // Para solucionar problemas de CORS, eliminamos headers problemáticos
     if (method.config?.headers) {
@@ -49,9 +54,9 @@ export const eyeTrackingAPI = {
    * Obtiene la configuración de reclutamiento de EyeTracking
    */
   getEyeTrackingRecruitConfig: (researchId: string) => {
-    // Usar la ruta exacta del controlador que obtiene la configuración por researchId
-    const path = `${API_BASE}/eye-tracking-recruit/research/${researchId}/config`;
-    const method = alovaInstance.Get(path);
+    // Usar endpoints definidos y el gestor para obtener la URL completa
+    const url = endpointManager.getEndpoint('eyeTracking', 'RECRUIT_GET', { researchId });
+    const method = alovaInstance.Get(url);
     
     // Para solucionar problemas de CORS, eliminamos headers problemáticos
     if (method.config?.headers) {
@@ -68,39 +73,44 @@ export const eyeTrackingAPI = {
   updateEyeTrackingRecruitConfig: (request: EyeTrackingRecruitRequest) => {
     const { researchId, config } = request;
     
-    // Verificar si la configuración ya existe (tendrá un configId) o es nueva
-    if ('id' in config && config.id) {
-      // Si existe, usar la ruta de actualización de configuración existente
-      const path = `${API_BASE}/eye-tracking-recruit/config/${config.id}`;
-      const method = alovaInstance.Put(path, config);
-      
-      if (method.config?.headers) {
-        const { 'Cache-Control': _, 'Pragma': __, ...cleanHeaders } = method.config.headers as any;
-        method.config.headers = cleanHeaders;
-      }
-      
-      return method;
-    } else {
-      // Si es nueva, crear configuración para esta investigación
-      const path = `${API_BASE}/eye-tracking-recruit/research/${researchId}/config`;
-      const method = alovaInstance.Post(path, config);
-      
-      if (method.config?.headers) {
-        const { 'Cache-Control': _, 'Pragma': __, ...cleanHeaders } = method.config.headers as any;
-        method.config.headers = cleanHeaders;
-      }
-      
-      return method;
+    // Usar endpoints definidos y el gestor para obtener la URL completa
+    const url = endpointManager.getEndpoint('eyeTracking', 'RECRUIT_UPDATE', { researchId });
+    const method = alovaInstance.Put(url, config);
+    
+    if (method.config?.headers) {
+      const { 'Cache-Control': _, 'Pragma': __, ...cleanHeaders } = method.config.headers as any;
+      method.config.headers = cleanHeaders;
     }
+    
+    return method;
+  },
+
+  /**
+   * Crea una nueva configuración de reclutamiento de EyeTracking
+   */
+  createEyeTrackingRecruitConfig: (request: EyeTrackingRecruitRequest) => {
+    const { researchId, config } = request;
+    
+    // Usar endpoints definidos y el gestor para obtener la URL completa
+    const url = endpointManager.getEndpoint('eyeTracking', 'RECRUIT_CREATE', { researchId });
+    const method = alovaInstance.Post(url, config);
+    
+    if (method.config?.headers) {
+      const { 'Cache-Control': _, 'Pragma': __, ...cleanHeaders } = method.config.headers as any;
+      method.config.headers = cleanHeaders;
+    }
+    
+    return method;
   },
 
   /**
    * Obtiene las estadísticas actuales de reclutamiento
    */
   getEyeTrackingRecruitStats: (researchId: string) => {
-    // Usar la ruta exacta del controlador para obtener el resumen de investigación
-    const path = `${API_BASE}/eye-tracking-recruit/research/${researchId}/summary`;
-    const method = alovaInstance.Get(path);
+    // Construir URL para estadísticas usando la ruta base y añadiendo /summary
+    const basePath = API_CONFIG.endpoints.eyeTracking.RECRUIT_BASE_PATH;
+    const url = `${API_CONFIG.baseURL}${basePath.replace('{researchId}', researchId)}/summary`;
+    const method = alovaInstance.Get(url);
     
     if (method.config?.headers) {
       const { 'Cache-Control': _, 'Pragma': __, ...cleanHeaders } = method.config.headers as any;
@@ -114,9 +124,9 @@ export const eyeTrackingAPI = {
    * Genera un enlace de reclutamiento nuevo
    */
   generateRecruitmentLink: (configId: string) => {
-    // Usar la ruta exacta para generar un enlace de reclutamiento para una configuración específica
-    const path = `${API_BASE}/eye-tracking-recruit/config/${configId}/link`;
-    const method = alovaInstance.Post(path, {});
+    // Construir URL usando patrón consistente para configuración específica
+    const url = `${API_CONFIG.baseURL}/eye-tracking-recruit/config/${configId}/link`;
+    const method = alovaInstance.Post(url, {});
     
     if (method.config?.headers) {
       const { 'Cache-Control': _, 'Pragma': __, ...cleanHeaders } = method.config.headers as any;
@@ -130,9 +140,9 @@ export const eyeTrackingAPI = {
    * Obtiene los enlaces activos para una configuración
    */
   getActiveLinks: (configId: string) => {
-    // Usar la ruta exacta para obtener enlaces activos
-    const path = `${API_BASE}/eye-tracking-recruit/config/${configId}/links`;
-    const method = alovaInstance.Get(path);
+    // Construir URL usando patrón consistente para configuración específica
+    const url = `${API_CONFIG.baseURL}/eye-tracking-recruit/config/${configId}/links`;
+    const method = alovaInstance.Get(url);
     
     if (method.config?.headers) {
       const { 'Cache-Control': _, 'Pragma': __, ...cleanHeaders } = method.config.headers as any;
@@ -146,9 +156,9 @@ export const eyeTrackingAPI = {
    * Obtiene las estadísticas para una configuración específica
    */
   getConfigStats: (configId: string) => {
-    // Usar la ruta exacta para obtener estadísticas de una configuración
-    const path = `${API_BASE}/eye-tracking-recruit/config/${configId}/stats`;
-    const method = alovaInstance.Get(path);
+    // Construir URL usando patrón consistente para configuración específica
+    const url = `${API_CONFIG.baseURL}/eye-tracking-recruit/config/${configId}/stats`;
+    const method = alovaInstance.Get(url);
     
     if (method.config?.headers) {
       const { 'Cache-Control': _, 'Pragma': __, ...cleanHeaders } = method.config.headers as any;

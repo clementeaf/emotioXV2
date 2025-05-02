@@ -159,15 +159,11 @@ const API_CONFIG = {
       CREATE: '/research/{researchId}/eye-tracking',
       UPDATE: '/research/{researchId}/eye-tracking',
       DELETE: '/research/{researchId}/eye-tracking',
-      // Para Reclutamiento, usar la ruta específica
-      RECRUIT_BASE_PATH: '/research/{researchId}/eye-tracking-recruit',
-      RECRUIT_GET: '/research/{researchId}/eye-tracking-recruit',
-      RECRUIT_UPDATE: '/research/{researchId}/eye-tracking-recruit',
-      RECRUIT_CREATE: '/research/{researchId}/eye-tracking-recruit',
-      // Eliminar rutas _ALT que ya no son necesarias
-      // RECRUIT_GET_ALT: ...
-      // RECRUIT_UPDATE_ALT: ...
-      // RECRUIT_CREATE_ALT: ...
+      // Para Reclutamiento, usar siempre la misma estructura de ruta
+      RECRUIT_BASE_PATH: '/eye-tracking-recruit/research/{researchId}',
+      RECRUIT_GET: '/eye-tracking-recruit/research/{researchId}/config',
+      RECRUIT_UPDATE: '/eye-tracking-recruit/research/{researchId}/config',
+      RECRUIT_CREATE: '/eye-tracking-recruit/research/{researchId}/config'
     },
     
     // Tareas Cognitivas - USAR RUTAS JERÁRQUICAS

@@ -292,43 +292,61 @@ export const eyeTrackingFixedAPI = {
   /**
    * Guarda la configuración de reclutamiento para una investigación
    */
+  /*
   saveRecruitConfig: async (data: any): Promise<any> => {
     try {
       console.log('[EyeTrackingAPI] Guardando configuración de reclutamiento:', data);
       
-      // Exactamente igual a WelcomeScreen, pero usando la ruta correcta
-      const url = `/eye-tracking-recruit/research/${data.researchId}/config`;
-      const method = 'POST';
+      // La researchId siempre debe estar presente en los datos
+      if (!data || !data.researchId) {
+        throw new Error('Se requiere researchId para guardar la configuración');
+      }
 
-      console.log('[EyeTrackingAPI] Enviando petición:', { url, method, data });
+      // URL base para operaciones con la configuración (siempre la misma, basada en researchId)
+      const configUrl = `/eye-tracking-recruit/research/${data.researchId}/config`;
       
-      const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
-        method,
+      // Siempre usar PUT, siguiendo el patrón del WelcomeScreen
+      console.log(`[EyeTrackingAPI] Usando PUT para guardar configuración: ${configUrl}`);
+      console.log('[EyeTrackingAPI] Datos:', data);
+      
+      const response = await fetch(`${API_CONFIG.baseURL}${configUrl}`, {
+        method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify(data)
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('[EyeTrackingAPI] Error en respuesta:', errorData);
-        throw new Error(errorData.message || `Error al guardar configuración: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      console.log('[EyeTrackingAPI] Configuración guardada:', result);
       
-      return result.data;
+      if (!response.ok) {
+        let errorMessage = 'Error al guardar configuración';
+        
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || `${errorMessage}: ${response.status} ${response.statusText}`;
+          console.error(`[EyeTrackingAPI] Error detallado:`, errorData);
+        } catch (e) {
+          errorMessage = `${errorMessage}: ${response.status} ${response.statusText}`;
+          console.error(`[EyeTrackingAPI] Error sin detalle:`, e);
+        }
+        
+        throw new Error(errorMessage);
+      }
+      
+      const result = await response.json();
+      console.log(`[EyeTrackingAPI] Configuración guardada exitosamente:`, result);
+      return result.data || result;
+      
     } catch (error) {
       console.error('[EyeTrackingAPI] Error en saveRecruitConfig:', error);
       throw error;
     }
   },
+  */
 
   /**
    * Obtiene la configuración de reclutamiento de Eye Tracking
    * @param researchId ID de la investigación
    * @returns Respuesta de la API
    */
+  /*
   getRecruitConfig: async (researchId: string) => {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para obtener la configuración de reclutamiento');
@@ -377,4 +395,5 @@ export const eyeTrackingFixedAPI = {
       throw error;
     }
   }
+  */
 }; 
