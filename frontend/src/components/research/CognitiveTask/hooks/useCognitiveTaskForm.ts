@@ -43,6 +43,7 @@ interface ExtendedUploadedFile extends UploadedFile {
   error?: boolean;
   url: string;
   questionId?: string; // Añadir referencia a la pregunta
+  status?: 'uploaded' | 'uploading' | 'error' | 'pending-delete'; // Estado del archivo en la UI
 }
 
 // Añadir PREVIEW_COMING_SOON si no existe en SUCCESS_MESSAGES
@@ -247,6 +248,39 @@ const revertPendingDeleteFiles = (questions: Question[]): Question[] => {
   });
 };
 
+// Añadir la definición de la interfaz Window con _lastMutationTimestamp
+declare global {
+  interface Window {
+    _lastMutationTimestamp?: number;
+  }
+}
+
+// Añadir una función helper para diagnóstico
+const logFormDebugInfo = (
+  context: string, 
+  data: CognitiveTaskFormData | null, 
+  error?: any,
+  extraInfo?: Record<string, any>
+) => {
+  console.log(`[DEBUG:CognitiveTaskForm:${context}]`, {
+    timestamp: new Date().toISOString(),
+    hasData: !!data,
+    dataInfo: data ? {
+      researchId: data.researchId,
+      id: data.id,
+      questionCount: data.questions?.length || 0,
+      questionsWithFiles: data.questions?.filter(q => q.files && q.files.length > 0).length || 0
+    } : null,
+    error: error ? {
+      name: error?.name,
+      message: error?.message,
+      statusCode: error?.statusCode,
+      stack: error?.stack
+    } : null,
+    ...extraInfo
+  });
+};
+
 /**
  * Hook principal refactorizado...
  */
@@ -294,24 +328,64 @@ export const useCognitiveTaskForm = (
     queryFn: async () => {
       try {
         if (!isAuthenticated || !token || !researchId) {
+          logFormDebugInfo('queryFn-precondition-fail', null, null, {
+            isAuthenticated, 
+            hasToken: !!token, 
+            researchId
+          });
           return null; 
         }
+        
         console.log(`[useCognitiveTaskForm] Buscando config existente (fixed API): ${researchId}`);
+        logFormDebugInfo('queryFn-pre-fetch', null, null, { researchId });
+        
+        // Añadir un tiempo de espera para asegurar que el backend tenga tiempo de procesar
+        if (window._lastMutationTimestamp && Date.now() - window._lastMutationTimestamp < 1000) {
+          console.log('[useCognitiveTaskForm] Esperando brevemente antes de GET para asegurar consistencia');
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
         const response = await cognitiveTaskFixedAPI.getByResearchId(researchId);
+        
         console.log('[useCognitiveTaskForm] Respuesta de API (fixed): ', response);
+        logFormDebugInfo('queryFn-post-fetch', response);
+        
+        // Validar la integridad básica de los datos
+        if (response && (!response.researchId || !Array.isArray(response.questions))) {
+          console.warn('[useCognitiveTaskForm] ⚠️ Datos recibidos con estructura incompleta:', response);
+          logFormDebugInfo('queryFn-invalid-structure', response, new Error('Estructura de datos incompleta'));
+          // Aún así devolver los datos para que se pueda intentar trabajar con ellos
+        }
+        
         return response; 
       } catch (error: any) {
         console.error('[useCognitiveTaskForm] Error al obtener datos (fixed API):', error);
+        logFormDebugInfo('queryFn-error', null, error, { researchId });
+        
         if (error instanceof ApiError && error.statusCode === 404) {
             console.log('[useCognitiveTaskForm] Configuración no encontrada (404), tratando como null.');
             return null; // Tratar 404 como "no encontrado"
         }
+        
+        // Intentar recuperar datos del localStorage como alternativa de último recurso
+        try {
+          const localFiles = loadFilesFromLocalStorage();
+          if (localFiles && Object.keys(localFiles).length > 0) {
+            console.log('[useCognitiveTaskForm] Intentando construir estado inicial desde localStorage');
+            // No lanzar error, devolver null pero permitir que useEffect utilice localStorage
+            return null;
+          }
+        } catch (localError) {
+          console.error('[useCognitiveTaskForm] Error al intentar recuperar datos del localStorage:', localError);
+        }
+        
         console.error('[useCognitiveTaskForm] Error no manejado en queryFn, devolviendo null.', error);
         return null; // Indicar a React Query que la consulta falló pero no relanzar
       }
     },
     enabled: !!researchId && isAuthenticated,
-    retry: false, // Ajustar reintentos si es necesario
+    retry: 2, // Aumentar a 2 reintentos
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 10000), // Exponential backoff
     staleTime: 60000, 
     refetchOnWindowFocus: false
   });
@@ -328,39 +402,43 @@ export const useCognitiveTaskForm = (
         const keptFiles = q.files.filter(f => f.status !== 'pending-delete');
         // Limpiar el estado interno `status` antes de enviar al backend
         const cleanedFiles = keptFiles.map(({ status, isLoading, progress, error, questionId, ...rest }) => rest);
-        return { ...q, files: cleanedFiles }; 
+        return {
+          ...q,
+          files: cleanedFiles
+        };
       });
-      // --- Fin: Filtrar archivos --- 
 
-      // Construir payload final
-      const payload = {
+      const payload: CognitiveTaskFormData = {
         ...dataToSave,
-        questions: questionsForPayload, // Usar preguntas filtradas
-        researchId: researchId, // Asegurar que researchId va en el payload
+        questions: questionsForPayload
       };
-      
-      // Limpiar metadata interna si existe antes de enviar
-      if (payload.metadata) {
-          delete payload.metadata.version;
-          // delete payload.metadata.lastModifiedBy; // Podría ser útil mantenerlo
-      }
 
-      console.log("[DIAGNOSTICO-IMAGEN:FORM:MUTATE] Payload a enviar:", JSON.stringify(payload, null, 2));
+      // Registrar ID antes de guardar
+      logFormDebugInfo('pre-save', payload, null, { 
+        usingAPI: 'fixed',
+        method: 'save', // Método unificado - create o update
+        researchId
+      });
 
-      if (cognitiveTaskId) {
-        console.log(`[useCognitiveTaskForm] Llamando a update para researchId: ${researchId}, taskId: ${cognitiveTaskId}`);
-        // Pasar researchId, taskId y el payload completo (que incluye researchId)
-        return await cognitiveTaskFixedAPI.update(researchId, cognitiveTaskId, payload);
-      } else {
-        console.log(`[useCognitiveTaskForm] Llamando a create para researchId: ${researchId}`);
-        // Pasar researchId y el payload completo (que incluye researchId)
-        return await cognitiveTaskFixedAPI.create(researchId, payload);
+      // Guardar usando el método save (create o update)
+      try {
+        // --- REFACTORIZADO: Usar método save API que usa PUT en lugar de crear o actualizar --- 
+        const result = await cognitiveTaskFixedAPI.save(researchId, payload);
+
+        logFormDebugInfo('post-save-success', result);
+        return result;
+      } catch (error) {
+        logFormDebugInfo('post-save-error', payload, error);
+        throw error;
       }
     },
     onSuccess: (data) => {
       console.log('[useCognitiveTaskForm] Datos guardados (REAL):', data);
+      // Registrar el timestamp de la última mutación exitosa
+      window._lastMutationTimestamp = Date.now();
+      
       // <<< Guardar el ID antes de usarlo para el mensaje de toast >>>
-      const wasUpdating = !!cognitiveTaskId; 
+      const wasUpdating = !!cognitiveTaskId;
       if (data && data.id) {
         setCognitiveTaskId(data.id); // Actualizar ID si se creó uno nuevo
       }
@@ -374,7 +452,18 @@ export const useCognitiveTaskForm = (
       // Usar mensaje de éxito específico y los nombres correctos de las constantes
       // <<< Usar wasUpdating para determinar el mensaje correcto >>>
       toast.success(wasUpdating ? SUCCESS_MESSAGES.UPDATED : SUCCESS_MESSAGES.CREATED);
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.COGNITIVE_TASK, researchId] }); 
+      
+      // --- MEJORA: Asegurar que la caché se actualiza correctamente ---
+      // 1. Primero invalidamos para forzar una recarga
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.COGNITIVE_TASK, researchId] });
+      
+      // 2. También actualizamos directamente la caché con los datos recibidos para evitar inconsistencias
+      queryClient.setQueryData([QUERY_KEYS.COGNITIVE_TASK, researchId], data);
+      
+      // 3. Programar una recarga después de un breve tiempo para asegurar consistencia
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.COGNITIVE_TASK, researchId] });
+      }, 1000);
       
       // --- Inicio: Limpiar archivos pending-delete del estado local --- 
       setFormData(prevData => ({
@@ -385,6 +474,7 @@ export const useCognitiveTaskForm = (
     },
     onError: (error: any) => {
       console.error('[useCognitiveTaskForm] Error en mutación (REAL):', error);
+      logFormDebugInfo('mutateError', formData, error);
       modals.closeConfirmModal(); 
       // Usar ApiError si está disponible
       const errorMessage = error instanceof ApiError ? error.message : (error.message || 'Error desconocido al guardar');
@@ -414,8 +504,18 @@ export const useCognitiveTaskForm = (
       let finalRandomize = false;
       let finalDataFromBackend: Partial<CognitiveTaskFormData> = {};
 
+      // Log del estado actual para depuración
+      logFormDebugInfo('effectStart', 
+        cognitiveTaskData || null, 
+        null, 
+        { 
+          hasLocalStorage: !!filesFromLocalStorage,
+          localStorageKeys: filesFromLocalStorage ? Object.keys(filesFromLocalStorage) : []
+        }
+      );
+
       if (!cognitiveTaskData) {
-        console.log('[useEffect Form Data] No hay datos backend. Usando defaults y localStorage.');
+        console.log('[useEffect Form Data] No hay datos backend o hubo error. Usando defaults y localStorage.');
         // Empezar con las preguntas default
         finalQuestions = initializeDefaultQuestionsIfNeeded([]); 
         finalRandomize = false; 
@@ -440,19 +540,46 @@ export const useCognitiveTaskForm = (
         const allFilesMap = new Map<string, ExtendedUploadedFile>();
         
         // Prioridad a archivos del backend (más recientes/autoritativos)
-        backendFiles.forEach(file => allFilesMap.set(file.id, file));
+        backendFiles.forEach(file => {
+          if (file && file.id && file.name) {
+            allFilesMap.set(file.id, file);
+          } else {
+            console.warn(`[useEffect Form Data] Archivo inválido en backend para pregunta ${question.id}:`, file);
+          }
+        });
         
         // Añadir archivos de localStorage solo si no existen ya (por ID)
         localStorageFiles.forEach(file => {
-          if (!allFilesMap.has(file.id)) {
-            allFilesMap.set(file.id, file);
+          if (file && file.id && file.name) {
+            if (!allFilesMap.has(file.id)) {
+              allFilesMap.set(file.id, file);
+            }
+          } else {
+            console.warn(`[useEffect Form Data] Archivo inválido en localStorage para pregunta ${question.id}:`, file);
           }
         });
 
-        // Devolver la pregunta con la lista de archivos única
+        // Filtrar y validar los archivos para asegurar integridad
+        const validFiles = Array.from(allFilesMap.values())
+          .filter(file => {
+            const isValid = file && file.id && file.name && file.size && (file.url || file.s3Key);
+            if (!isValid) {
+              console.warn(`[useEffect Form Data] Omitiendo archivo incompleto:`, file);
+            }
+            return isValid;
+          })
+          .map(file => ({
+            ...file,
+            // Asegurar que ciertos campos obligatorios tengan valores por defecto si faltan
+            url: file.url || `https://placehold.co/300x300/gray/white?text=${encodeURIComponent(file.name)}`,
+            type: file.type || 'image/jpeg',
+            status: (file as any).status || 'uploaded'
+          }));
+
+        // Devolver la pregunta con la lista de archivos única y validada
         return {
           ...question,
-          files: Array.from(allFilesMap.values())
+          files: validFiles
         };
       });
       
@@ -466,6 +593,7 @@ export const useCognitiveTaskForm = (
       };
 
       console.log('[useEffect Form Data] Estado FINAL a devolver:', JSON.stringify(finalState.questions.find(q=>q.id==='3.8')?.files?.map(f=>f.id), null, 2));
+      logFormDebugInfo('effectEnd', finalState);
       return finalState;
     });
     

@@ -6,7 +6,7 @@ StorageBucket:
     CorsConfiguration:
       CorsRules:
         - AllowedHeaders:
-            - \'*\'
+            - '*'
           AllowedMethods:
             - GET
             - PUT
@@ -14,7 +14,8 @@ StorageBucket:
             - DELETE
             - HEAD
           AllowedOrigins:
-            - \'*\'
+            - 'http://localhost:4700'
+            - 'https://your-production-frontend-domain.com'
           MaxAge: 3000
     PublicAccessBlockConfiguration:
       BlockPublicAcls: false

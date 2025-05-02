@@ -74,18 +74,41 @@ export class CognitiveTaskController {
       if ('statusCode' in extracted) return extracted;
       researchId = extracted.researchId; // Asignar para usar en catch
 
-      structuredLog('info', `CognitiveTaskController.${context}`, 'Obteniendo datos para investigación', { researchId });
+      structuredLog('info', `CognitiveTaskController.${context}`, 'Obteniendo datos para investigación', { researchId, path: event.path });
+      console.log(`[DIAGNOSTICO-GET] Invocando cognitiveTaskService.getByResearchId('${researchId}')`);
+      
       const form = await cognitiveTaskService.getByResearchId(researchId);
       
-      // Si el servicio devuelve null pero no lanza ApiError (comportamiento inesperado)
+      console.log(`[DIAGNOSTICO-GET] Resultado: ${form ? 'Encontrado form con ID ' + form.id : 'NULL'}`);
+      
+      // Si el servicio devuelve null pero no lanza ApiError (comportamiento normal para caso "no existe")
       if (!form) {
-         structuredLog('warn', `CognitiveTaskController.${context}`, 'Servicio retornó null pero no lanzó ApiError para NOT_FOUND', { researchId });
-         return createResponse(404, { error: ERROR_MESSAGES.RESOURCE.NOT_FOUND('Formulario CognitiveTask') });
+         structuredLog('info', `CognitiveTaskController.${context}`, 'No se encontró formulario para la investigación', { researchId });
+         return createResponse(404, { 
+           error: ERROR_MESSAGES.RESOURCE.NOT_FOUND('Formulario CognitiveTask'),
+           message: `No existe un formulario Cognitive Task para la investigación con ID: ${researchId}`
+         });
+      }
+
+      // Si tiene archivos en preguntas, registrar para diagnóstico
+      if (form.questions && form.questions.length > 0) {
+        const questionsWithFiles = form.questions.filter(q => q.files && q.files.length > 0);
+        if (questionsWithFiles.length > 0) {
+          console.log(`[DIAGNOSTICO-GET-FILES] El formulario tiene ${questionsWithFiles.length} preguntas con archivos:`, 
+            JSON.stringify(questionsWithFiles.map(q => ({
+              id: q.id,
+              type: q.type,
+              fileCount: q.files?.length,
+              fileInfo: q.files?.map(f => ({id: f.id, name: f.name, hasS3Key: !!f.s3Key}))
+            })), null, 2)
+          );
+        }
       }
 
       structuredLog('info', `CognitiveTaskController.${context}`, 'Formulario encontrado', { researchId, formId: form.id });
       return createResponse(200, form);
     } catch (error) {
+      console.error(`[DIAGNOSTICO-GET] ERROR al obtener formulario para researchId=${researchId}:`, error);
       return this.handleError(error, context, { researchId }); // Pasar IDs al handleError
     }
   }
@@ -287,12 +310,43 @@ export class CognitiveTaskController {
     }
   }
 
+  /**
+   * Crea o actualiza un formulario CognitiveTask para una investigación específica.
+   * Similar a updateByResearchId en welcomeScreen - crea si no existe, actualiza si ya existe.
+   */
+  public async save(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    const context = 'save';
+    let researchId: string | undefined;
+    try {
+      const extracted = this.validateAndExtractIds(event);
+      if ('statusCode' in extracted) return extracted;
+      researchId = extracted.researchId;
+
+      // Parsear y validar el cuerpo
+      const bodyResult = parseAndValidateBody<CognitiveTaskFormData>(event, validateCognitiveTaskData);
+      if ('statusCode' in bodyResult) return bodyResult;
+      const formData = bodyResult.data;
+      
+      // Extraer userId para auditoría si está disponible en las claves del claims
+      const userId = event.requestContext.authorizer?.claims?.sub || 'system';
+      
+      structuredLog('info', `CognitiveTaskController.${context}`, 'Guardando formulario CognitiveTask', { researchId });
+      const result = await cognitiveTaskService.updateByResearchId(researchId, formData, userId);
+      
+      structuredLog('info', `CognitiveTaskController.${context}`, 'Formulario guardado exitosamente', { researchId, formId: result.id });
+      return createResponse(200, result);
+    } catch (error) {
+      return this.handleError(error, context, { researchId });
+    }
+  }
+
   public routes(): RouteMap {
     // Usar rutas relativas al basePath esperado
     return {
       '/': { // Corresponde a /research/{researchId}/cognitive-task
         'GET': this.get.bind(this),
         'POST': this.create.bind(this),
+        'PUT': this.save.bind(this), // Nueva ruta para save
       },
       '/{taskId}': { // Corresponde a /research/{researchId}/cognitive-task/{taskId}
         'PUT': this.update.bind(this),
@@ -313,6 +367,7 @@ const cognitiveTaskRouteMap: RouteMap = {
   '/{researchId}/cognitive-task': { 
     'GET': controllerInstance.get.bind(controllerInstance),
     'POST': controllerInstance.create.bind(controllerInstance),
+    'PUT': controllerInstance.save.bind(controllerInstance), // Nueva ruta para save
   },
   '/{researchId}/cognitive-task/{taskId}': {
     'PUT': controllerInstance.update.bind(controllerInstance),

@@ -213,30 +213,36 @@ export class CognitiveTaskModel {
     const command = new QueryCommand({
       TableName: this.tableName,
       IndexName: 'researchId-index',
-      KeyConditionExpression: 'researchId = :researchIdVal',
+      KeyConditionExpression: 'researchId = :rid',
       FilterExpression: 'sk = :skVal',
       ExpressionAttributeValues: {
-        ':researchIdVal': researchId,
-        ':skVal': CognitiveTaskModel.SORT_KEY_VALUE // Usar la constante para el valor de sk
-      },
-      Limit: 1 
+        ':rid': researchId,
+        ':skVal': CognitiveTaskModel.SORT_KEY_VALUE
+      }
     });
 
     try {
+      console.log(`[MODEL:getByResearchId] Consultando tabla ${this.tableName} para researchId=${researchId}`);
+      
       const result = await this.dynamoClient.send(command);
+      
+      console.log(`[MODEL:getByResearchId] Resultado: encontrados=${result.Items?.length || 0} items`);
+      
       if (!result.Items || result.Items.length === 0) {
         return null; // No encontrado
       }
+      
       // Mapear el primer (y único esperado) item encontrado
       return this.mapToRecord(result.Items[0] as CognitiveTaskDynamoItem);
     } catch (error: any) {
-      console.error(`ERROR DETALLADO de DynamoDB QueryCommand GSI (researchId-index):`, JSON.stringify(error, null, 2));
-      console.error(`Error al obtener CognitiveTask por researchId ${researchId}:`, error.message);
-       if (error.name === 'ResourceNotFoundException') {
-         console.error(`FATAL: GSI 'researchId-index' no encontrado en la tabla '${this.tableName}'. Verifica la definición en resources.yml.`);
-         throw new Error(`DATABASE_ERROR: Índice GSI 'researchId-index' no encontrado.`);
+      console.error(`[MODEL:getByResearchId] ERROR DETALLADO de DynamoDB:`, JSON.stringify(error, null, 2));
+      console.error(`[MODEL:getByResearchId] Error al obtener CognitiveTask para researchId ${researchId}:`, error.message);
+      
+      if ((error as Error).message?.includes('index')) {
+        console.error(`[MODEL:getByResearchId] Índice GSI researchId-index no encontrado o mal configurado`);
+        throw new Error(`DATABASE_ERROR: Error de configuración de base de datos: falta índice para búsqueda por researchId.`);
       }
-      // Modificar mensaje para reflejar el método Query
+      
       throw new Error(`DATABASE_ERROR: Error al consultar el formulario para researchId ${researchId}`);
     }
   }
@@ -246,82 +252,153 @@ export class CognitiveTaskModel {
    * Usa researchId como PK.
    */
   async update(researchId: string, data: Partial<CognitiveTaskFormData>): Promise<CognitiveTaskRecord> {
-    const now = new Date().toISOString();
-
-    let updateExpression = 'SET updatedAt = :updatedAt';
-    const expressionAttributeValues: Record<string, any> = { ':updatedAt': now };
-
-    if (data.questions) {
-      const questionsWithFiles = data.questions.filter(q => 
-        ['navigation_flow', 'preference_test'].includes(q.type) && q.files && q.files.length > 0
-      );
-      
-      if (questionsWithFiles.length > 0) {
-        console.log('[DIAGNOSTICO-IMAGEN:MODEL:UPDATE] Preguntas con archivos antes de actualizar:', 
-          JSON.stringify(questionsWithFiles.map(q => ({
-            id: q.id, 
-            type: q.type, 
-            files: q.files?.map(f => ({id: f.id, name: f.name, url: f.url, s3Key: f.s3Key}))
-          })), null, 2)
-        );
-      }
-      
-      data.questions.forEach(q => {
-        if (q.files && q.files.length > 0) {
-          q.files = q.files.filter(f => f && f.s3Key && f.url);
-          console.log(`[DIAGNOSTICO-IMAGEN:MODEL:UPDATE] Pregunta ${q.id} tiene ${q.files.length} archivos válidos`);
-        }
-      });
-      
-      updateExpression += ', questions = :questions';
-      expressionAttributeValues[':questions'] = JSON.stringify(data.questions);
-      
-      console.log('[DIAGNOSTICO-IMAGEN:MODEL:UPDATE] JSON de preguntas que se actualizará en DynamoDB:', 
-        expressionAttributeValues[':questions'].substring(0, 300) + 
-        (expressionAttributeValues[':questions'].length > 300 ? '...' : '')
-      );
-    }
-    
-    if (data.randomizeQuestions !== undefined) {
-      updateExpression += ', randomizeQuestions = :randomizeQuestions';
-      expressionAttributeValues[':randomizeQuestions'] = data.randomizeQuestions;
-    }
-    
-    if (data.metadata) {
-      const newMetadata = {
-        ...(data.metadata || {}),
-        updatedAt: now,
-        lastModifiedBy: data.metadata?.lastModifiedBy || 'system_update'
-      };
-      updateExpression += ', metadata = :metadata';
-      expressionAttributeValues[':metadata'] = JSON.stringify(newMetadata);
-    }
-
-    const command = new UpdateCommand({
-      TableName: this.tableName,
-      Key: {
-        researchId: researchId,
-        sk: CognitiveTaskModel.SORT_KEY_VALUE
-      },
-      UpdateExpression: updateExpression,
-      ExpressionAttributeValues: expressionAttributeValues,
-      ReturnValues: 'ALL_NEW'
-    });
+    console.log(`[MODEL:update] Iniciando actualización para researchId=${researchId}`);
     
     try {
-      const result = await this.dynamoClient.send(command);
-      if (!result.Attributes) {
-        console.warn(`UpdateCommand para researchId ${researchId} no devolvió atributos. El item podría no existir.`);
-        throw new Error(`COGNITIVE_TASK_NOT_FOUND: Formulario para researchId ${researchId} no encontrado para actualizar.`);
+      const now = new Date().toISOString();
+      let updateExpression = 'SET updatedAt = :updatedAt';
+      const expressionAttributeValues: Record<string, any> = { ':updatedAt': now };
+
+      if (data.questions) {
+        try {
+          const questionsWithFiles = data.questions.filter(q => 
+            ['navigation_flow', 'preference_test'].includes(q.type) && q.files && q.files.length > 0
+          );
+          
+          if (questionsWithFiles.length > 0) {
+            console.log('[MODEL:update] Preguntas con archivos antes de actualizar:', 
+              JSON.stringify(questionsWithFiles.map(q => ({
+                id: q.id, 
+                type: q.type, 
+                fileCount: q.files?.length,
+                fileIds: q.files?.map(f => f.id)
+              })), null, 2)
+            );
+          }
+          
+          // Mejorar la validación de archivos con verificación estricta
+          data.questions.forEach(q => {
+            if (q.files && q.files.length > 0) {
+              try {
+                // Filtrar solo archivos que tienen información completa
+                const validFiles = q.files.filter(f => {
+                  try {
+                    if (!f) {
+                      console.warn(`[MODEL:update] Archivo nulo encontrado en pregunta ${q.id}`);
+                      return false;
+                    }
+                    
+                    const isValid = f.id && f.name && f.size && f.type && f.s3Key;
+                    if (!isValid) {
+                      console.warn(`[MODEL:update] Archivo inválido en pregunta ${q.id}:`, JSON.stringify(f));
+                      
+                      // Log detallado de campos faltantes para diagnóstico
+                      if (!f.id) console.warn(`[MODEL:update] Campo faltante: id en pregunta ${q.id}`);
+                      if (!f.name) console.warn(`[MODEL:update] Campo faltante: name en pregunta ${q.id}`);
+                      if (!f.size) console.warn(`[MODEL:update] Campo faltante: size en pregunta ${q.id}`);
+                      if (!f.type) console.warn(`[MODEL:update] Campo faltante: type en pregunta ${q.id}`);
+                      if (!f.s3Key) console.warn(`[MODEL:update] Campo faltante: s3Key en pregunta ${q.id}`);
+                    }
+                    return isValid;
+                  } catch (fileError: any) {
+                    console.error(`[MODEL:update] Error procesando archivo en pregunta ${q.id}:`, fileError);
+                    return false;
+                  }
+                });
+                
+                // Guardar un snapshot de validFiles para diagnóstico
+                console.log(`[MODEL:update] Archivos válidos en pregunta ${q.id}:`, JSON.stringify(validFiles.map(f => ({id: f.id, name: f.name})), null, 2));
+                
+                // Asegurar que todos los archivos válidos tengan URL (derivar de S3 si falta)
+                q.files = validFiles.map(f => {
+                  try {
+                    // Si falta URL, construirla
+                    if (!f.url && f.s3Key) {
+                      const s3BaseUrl = process.env.S3_PUBLIC_URL || 'https://emotioxv2.s3.amazonaws.com';
+                      f.url = `${s3BaseUrl}/${f.s3Key}`;
+                      console.log(`[MODEL:update] URL generada para archivo ${f.id}: ${f.url}`);
+                    }
+                    return f;
+                  } catch (urlError: any) {
+                    console.error(`[MODEL:update] Error generando URL para archivo ${f.id}:`, urlError);
+                    return f; // Devolver el archivo sin modificar si hay error
+                  }
+                });
+                
+                console.log(`[MODEL:update] Pregunta ${q.id} tiene ${q.files.length} archivos válidos después de la validación`);
+              } catch (questionError: any) {
+                console.error(`[MODEL:update] Error grave procesando archivos de pregunta ${q.id}:`, questionError);
+                throw new Error(`Error procesando archivos de pregunta ${q.id}: ${questionError.message}`);
+              }
+            }
+          });
+          
+          updateExpression += ', questions = :questions';
+          expressionAttributeValues[':questions'] = JSON.stringify(data.questions);
+          
+          // Solo loguear un fragmento para no saturar los logs
+          console.log('[MODEL:update] JSON de preguntas que se actualizará (primeros 300 caracteres):', 
+            expressionAttributeValues[':questions'].substring(0, 300) + 
+            (expressionAttributeValues[':questions'].length > 300 ? '...' : '')
+          );
+        } catch (questionsError: any) {
+          console.error('[MODEL:update] Error preparando preguntas para actualización:', questionsError);
+          throw new Error(`Error preparando preguntas para actualización: ${questionsError.message}`);
+        }
       }
-      return this.mapToRecord(result.Attributes as CognitiveTaskDynamoItem);
-    } catch (error: any) {
-      if (error.message?.startsWith('COGNITIVE_TASK_NOT_FOUND')) {
-        throw error;
+      
+      if (data.randomizeQuestions !== undefined) {
+        updateExpression += ', randomizeQuestions = :randomizeQuestions';
+        expressionAttributeValues[':randomizeQuestions'] = data.randomizeQuestions;
       }
-      console.error('ERROR DETALLADO de DynamoDB UpdateCommand (CognitiveTask):', JSON.stringify(error, null, 2));
-      console.error(`Error al actualizar CognitiveTask para researchId ${researchId}:`, error.message);
-      throw new Error(`DATABASE_ERROR: Error al actualizar el formulario para researchId ${researchId}`);
+      
+      if (data.metadata) {
+        try {
+          const newMetadata = {
+            ...(data.metadata || {}),
+            updatedAt: now,
+            lastModifiedBy: data.metadata?.lastModifiedBy || 'system_update'
+          };
+          updateExpression += ', metadata = :metadata';
+          expressionAttributeValues[':metadata'] = JSON.stringify(newMetadata);
+        } catch (metadataError: any) {
+          console.error('[MODEL:update] Error preparando metadata para actualización:', metadataError);
+          throw new Error(`Error preparando metadata para actualización: ${metadataError.message}`);
+        }
+      }
+
+      const command = new UpdateCommand({
+        TableName: this.tableName,
+        Key: {
+          researchId: researchId,
+          sk: CognitiveTaskModel.SORT_KEY_VALUE
+        },
+        UpdateExpression: updateExpression,
+        ExpressionAttributeValues: expressionAttributeValues,
+        ReturnValues: 'ALL_NEW'
+      });
+      
+      console.log(`[MODEL:update] Ejecutando UpdateCommand con ExpressionAttributeValues keys: ${Object.keys(expressionAttributeValues).join(', ')}`);
+      
+      try {
+        const result = await this.dynamoClient.send(command);
+        if (!result.Attributes) {
+          console.warn(`[MODEL:update] UpdateCommand para researchId ${researchId} no devolvió atributos. El item podría no existir.`);
+          throw new Error(`COGNITIVE_TASK_NOT_FOUND: Formulario para researchId ${researchId} no encontrado para actualizar.`);
+        }
+        console.log(`[MODEL:update] Actualización exitosa para researchId=${researchId}`);
+        return this.mapToRecord(result.Attributes as CognitiveTaskDynamoItem);
+      } catch (dbError: any) {
+        if (dbError.message?.startsWith('COGNITIVE_TASK_NOT_FOUND')) {
+          throw dbError;
+        }
+        console.error('[MODEL:update] ERROR DETALLADO de DynamoDB UpdateCommand:', JSON.stringify(dbError, null, 2));
+        console.error(`[MODEL:update] Error al actualizar CognitiveTask para researchId ${researchId}:`, dbError.message);
+        throw new Error(`DATABASE_ERROR: Error al actualizar el formulario para researchId ${researchId}. Detalles: ${dbError.message}`);
+      }
+    } catch (outerError: any) {
+      console.error('[MODEL:update] Error en el procesamiento general del método update:', outerError);
+      throw new Error(`DATABASE_ERROR: Error en el procesamiento del método update: ${outerError.message}`);
     }
   }
 

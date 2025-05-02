@@ -108,15 +108,101 @@ export const useCognitiveTaskFileUpload = ({
           return;
       }
 
-      const filesToUpload = Array.from(files);
+      // Limpiar archivos en estado de error, uploads incompletos o duplicados antes de iniciar
+      setFormData((prevData: CognitiveTaskFormData): CognitiveTaskFormData => {
+          const updatedQuestions = prevData.questions.map(q => {
+              if (q.id === questionId && q.files && q.files.length > 0) {
+                  // Primer paso: Filtrar archivos en estado de error o uploads incompletos
+                  let cleanedFiles = q.files.filter(f => {
+                      const fileInfo = asFileInfo(f);
+                      return fileInfo.status !== 'error' && 
+                            !(fileInfo.status === 'uploading' && fileInfo.isLoading);
+                  });
+                  
+                  // Segundo paso: Eliminar duplicados (mismo nombre y tamaño)
+                  const uniqueFileMap = new Map<string, any>();
+                  cleanedFiles.forEach(f => {
+                      const fileInfo = asFileInfo(f);
+                      // Solo conservar archivos con estado 'uploaded' (no los pendientes de eliminación)
+                      if (fileInfo.status === 'uploaded') {
+                          const key = `${fileInfo.name}_${fileInfo.size}`;
+                          // Si no existe o el actual tiene URL válida, lo mantenemos
+                          if (!uniqueFileMap.has(key) || 
+                              (!uniqueFileMap.get(key).url && fileInfo.url)) {
+                              uniqueFileMap.set(key, f);
+                          }
+                      } else {
+                          // Mantener archivos que están pendientes de eliminación
+                          uniqueFileMap.set(fileInfo.id, f);
+                      }
+                  });
+                  
+                  return { ...q, files: Array.from(uniqueFileMap.values()) };
+              }
+              return q;
+          });
+          return { ...prevData, questions: updatedQuestions };
+      });
+
+      const filesToUploadInput = Array.from(files);
+      const initialFileCount = filesToUploadInput.length;
+
+      // <<< FILTRAR archivos duplicados ANTES de procesar >>>
+      let currentFilesForQuestion: FileInfo[] = [];
+      const questionIndex = formData.questions.findIndex(q => q.id === questionId);
+      if (questionIndex !== -1 && formData.questions[questionIndex].files) {
+          currentFilesForQuestion = formData.questions[questionIndex].files
+              .map(asFileInfo)
+              .filter(f => f.status !== 'pending-delete');
+          console.log(`[FileUploadHook ${questionId}] Archivos existentes (no pendientes de eliminación) para comprobación:`, 
+              currentFilesForQuestion.map(f => ({ name: f.name, size: f.size, status: f.status }))
+          );
+      } else {
+          console.log(`[FileUploadHook ${questionId}] No hay archivos existentes para esta pregunta.`);
+      }
+
+      console.log(`[FileUploadHook ${questionId}] Archivos nuevos para comprobar:`, 
+          filesToUploadInput.map(f => ({ name: f.name, size: f.size }))
+      );
+
+      const filesToProcess = filesToUploadInput.filter(newFile => {
+          const isDuplicate = currentFilesForQuestion.some(existingFile => {
+              const nameMatch = existingFile.name === newFile.name;
+              const sizeMatch = existingFile.size === newFile.size;
+              // Considerar duplicado si coincide nombre y tamaño, y el estado no es 'error' o 'pending-delete'
+              return nameMatch && sizeMatch && existingFile.status !== 'error' && existingFile.status !== 'pending-delete';
+          });
+          if (isDuplicate) {
+              console.log(`[FileUploadHook ${questionId}] Archivo duplicado detectado y omitido: ${newFile.name} (Size: ${newFile.size})`);
+          }
+          return !isDuplicate;
+      });
+      const processedFileCount = filesToProcess.length;
+      const skippedFileCount = initialFileCount - processedFileCount;
+
+      if (skippedFileCount > 0) {
+          toast(`${skippedFileCount} archivo(s) omitido(s) por ser duplicado(s).`);
+           console.log(`[FileUploadHook ${questionId}] ${skippedFileCount} de ${initialFileCount} archivos fueron omitidos por duplicación.`);
+      }
+
+      if (processedFileCount === 0) {
+           console.log(`[FileUploadHook ${questionId}] No hay archivos nuevos para procesar después del filtrado.`);
+           // Solo retornar si había archivos inicialmente pero ninguno quedó para procesar
+           if (initialFileCount > 0) { 
+             return; // Salir si no hay archivos nuevos para procesar
+           }
+      }
+      // <<< FIN FILTRADO >>>
+
+      // <<< USAR filesToProcess en lugar de filesToUpload >>>
       setIsUploading(true);
-      setTotalFiles(filesToUpload.length);
+      setTotalFiles(filesToProcess.length); // <-- Usar longitud filtrada
       setCurrentFileIndex(0);
       setUploadProgress(0);
 
-      // Crear archivos temporales para UI
+      // Crear archivos temporales para UI (solo para los filtrados)
       const tempFilesMap = new Map<string, FileInfo>();
-      filesToUpload.forEach(file => {
+      filesToProcess.forEach(file => { // <-- Usar array filtrado
         const tempFile: FileInfo = {
             id: `${questionId}_${uuidv4()}`,
             name: file.name,
@@ -144,12 +230,12 @@ export const useCognitiveTaskFileUpload = ({
           return { ...prevData, questions: updatedQuestions };
       });
 
-      // Procesar cada archivo
+      // Procesar cada archivo (filtrado)
       let successfulUploads = 0;
-      for (let i = 0; i < filesToUpload.length; i++) {
-          const file = filesToUpload[i];
+      for (let i = 0; i < filesToProcess.length; i++) { // <-- Usar array filtrado
+          const file = filesToProcess[i]; // <-- Usar array filtrado
           const tempFileId = tempFilesArray[i].id;
-          console.log(`[FileUploadHook ${questionId}] Procesando archivo ${i + 1}/${filesToUpload.length}: ${file.name} (TempID: ${tempFileId})`);
+          console.log(`[FileUploadHook ${questionId}] Procesando archivo ${i + 1}/${filesToProcess.length}: ${file.name} (TempID: ${tempFileId})`);
           setCurrentFileIndex(i + 1);
 
           let finalUploadedFile: UploadedFile | null = null; // Para guardar los datos del archivo final
@@ -157,7 +243,13 @@ export const useCognitiveTaskFileUpload = ({
 
           try {
               // 1. Obtener URL prefirmada de subida del backend
-              const getUploadUrlEndpoint = `${API_BASE_URL}/research/${researchId}/cognitive-task/upload-url`;
+              // Usar la variable de entorno correcta que apunta a la URL de AWS
+              const backendUrl = process.env.NEXT_PUBLIC_API_URL;
+              if (!backendUrl) {
+                  console.error("[FileUploadHook] Error: NEXT_PUBLIC_API_URL no está definida en las variables de entorno.");
+                  throw new Error("La URL del backend no está configurada.");
+              }
+              const getUploadUrlEndpoint = `${backendUrl}/research/${researchId}/cognitive-task/upload-url`; 
               console.log(`[FileUploadHook ${questionId}] Llamando a API: POST ${getUploadUrlEndpoint}`);
               const apiResponse = await fetch(getUploadUrlEndpoint, {
                   method: 'POST',
@@ -233,7 +325,7 @@ export const useCognitiveTaskFileUpload = ({
                 const finalFileState: FileInfo = {
                     ...asFileInfo(finalUploadedFile), // Usar datos del backend (s3Key, etc.)
                     id: tempFileId, // <<< ¡¡IMPORTANTE: Usar el ID TEMPORAL para reemplazar correctamente!!
-                    url: URL.createObjectURL(file), // Mantener URL local para preview si se desea o buscar la presigned de descarga?
+                    url: finalUploadedFile.url, // <<< CORREGIDO
                     status: 'uploaded',
                     isLoading: false,
                     progress: 100,
@@ -241,37 +333,118 @@ export const useCognitiveTaskFileUpload = ({
                 };
 
                 setFormData((prevData: CognitiveTaskFormData): CognitiveTaskFormData => {
+                    console.log(`[FileUploadHook ${questionId}] Actualizando estado para TempID: ${tempFileId}. Datos finales entrantes:`, JSON.stringify(finalFileState));
+                    console.log(`[FileUploadHook ${questionId}] Estado ANTES de reemplazar TempID ${tempFileId}:`, JSON.stringify(prevData.questions.find(q => q.id === questionId)?.files?.map(f => ({id: f.id, name: f.name, status: f.status})) || 'Pregunta no encontrada o sin archivos'));
+                    
                     const updatedQuestions = [...prevData.questions];
                     const questionIndex = updatedQuestions.findIndex(q => q.id === questionId);
+                    
                     if (questionIndex !== -1 && updatedQuestions[questionIndex].files) {
-                        const filesAsInfo: FileInfo[] = updatedQuestions[questionIndex].files.map(asFileInfo);
-                        // Reemplazar el temporal por el final usando el tempFileId
-                        updatedQuestions[questionIndex].files = filesAsInfo.map(f => 
-                            f.id === tempFileId ? finalFileState : f
-                        );
-                         console.log(`[FileUploadHook ${questionId}] Archivo ${file.name} (TempID: ${tempFileId}) actualizado a estado 'uploaded' con s3Key: ${finalFileState.s3Key}`);
-                        saveFilesToLocalStorage(updatedQuestions); // Guardar en localStorage después de cada subida exitosa
+                        // Ensure the array contains FileInfo objects before searching
+                        const currentFiles = updatedQuestions[questionIndex].files.map(asFileInfo);
+                        // Find the index of the temporary file to replace using its ID
+                        const fileIndexToReplace = currentFiles.findIndex(f => f.id === tempFileId);
+
+                        if (fileIndexToReplace !== -1) {
+                            // Create a new array with the replaced item using slice
+                            const updatedFiles = [
+                                ...currentFiles.slice(0, fileIndexToReplace),
+                                finalFileState, // Replace with the final state object
+                                ...currentFiles.slice(fileIndexToReplace + 1),
+                            ];
+                            updatedQuestions[questionIndex].files = updatedFiles;
+                            console.log(`[FileUploadHook ${questionId}] Archivo ${file.name} (TempID: ${tempFileId}) REEMPLAZADO en índice ${fileIndexToReplace}.`);
+                            saveFilesToLocalStorage(updatedQuestions); 
+                            console.log(`[FileUploadHook ${questionId}] Estado DESPUÉS de reemplazar TempID ${tempFileId}:`, JSON.stringify(updatedFiles.map(f => ({id: f.id, name: f.name, status: f.status}))));
+                        } else {
+                             console.warn(`[FileUploadHook ${questionId}] No se encontró el índice para TempID ${tempFileId} para reemplazar. Estado actual de archivos:`, JSON.stringify(currentFiles.map(f => ({id: f.id, name: f.name, status: f.status}))));
+                             // Verificar si el archivo ya existe por nombre y tamaño para evitar duplicaciones
+                             const existingFileIndex = currentFiles.findIndex(f => 
+                                 f.name === finalFileState.name && 
+                                 f.size === finalFileState.size && 
+                                 f.status === 'uploaded'
+                             );
+                             
+                             if (existingFileIndex === -1) {
+                                 // Solo si no existe un archivo idéntico, agregamos el nuevo
+                                 console.log(`[FileUploadHook ${questionId}] No se encontró archivo existente similar, agregando nuevo.`);
+                                 updatedQuestions[questionIndex].files = [...currentFiles, finalFileState];
+                             } else {
+                                 console.log(`[FileUploadHook ${questionId}] Se encontró archivo existente similar, evitando duplicación.`);
+                             }
+                        }
                     }
                     return { ...prevData, questions: updatedQuestions };
                 });
           }
           // Actualizar progreso general (incluso si hubo error en este archivo)
-          setUploadProgress(((i + 1) / filesToUpload.length) * 100); 
+          setUploadProgress(((i + 1) / filesToProcess.length) * 100); 
 
       } // Fin del bucle for
 
-      console.log(`[FileUploadHook ${questionId}] Bucle de subida finalizado. ${successfulUploads}/${filesToUpload.length} archivos exitosos.`);
+      console.log(`[FileUploadHook ${questionId}] Bucle de subida finalizado. ${successfulUploads}/${filesToProcess.length} archivos exitosos.`);
       setIsUploading(false);
-      if (successfulUploads === filesToUpload.length) {
+      
+      // Eliminación final de duplicados después de completar todas las subidas
+      if (successfulUploads > 0) {
+          setFormData((prevData: CognitiveTaskFormData): CognitiveTaskFormData => {
+              const updatedQuestions = prevData.questions.map(q => {
+                  if (q.id === questionId && q.files && q.files.length > 0) {
+                      // Crear un mapa para detectar y eliminar duplicados
+                      const uniqueFileMap = new Map<string, FileInfo>();
+                      
+                      // Ordenar para procesar primero los archivos completados
+                      const filesAsInfo = q.files.map(asFileInfo)
+                          .sort((a, b) => {
+                              // Priorizar archivos completados
+                              if (a.status === 'uploaded' && b.status !== 'uploaded') return -1;
+                              if (a.status !== 'uploaded' && b.status === 'uploaded') return 1;
+                              return 0;
+                          });
+                      
+                      // Eliminar duplicados preservando los completados
+                      filesAsInfo.forEach(file => {
+                          if (file.status === 'uploaded') {
+                              const key = `${file.name}_${file.size}`;
+                              // Solo guardar si no existe ya o si el existente no tiene URL
+                              if (!uniqueFileMap.has(key) || !uniqueFileMap.get(key)?.url) {
+                                  uniqueFileMap.set(key, file);
+                              }
+                          } else if (file.status === 'pending-delete') {
+                              // Mantener los marcados para eliminación
+                              uniqueFileMap.set(file.id, file);
+                          } else if (file.status === 'error') {
+                              // No incluir archivos con error
+                          } else {
+                              // Para otros estados (como 'uploading'), revisar si hay versión completada
+                              const key = `${file.name}_${file.size}`;
+                              if (!uniqueFileMap.has(key)) {
+                                  uniqueFileMap.set(file.id, file);
+                              }
+                          }
+                      });
+                      
+                      return { ...q, files: Array.from(uniqueFileMap.values()) };
+                  }
+                  return q;
+              });
+              
+              // Guardar estado limpio en localStorage
+              saveFilesToLocalStorage(updatedQuestions);
+              return { ...prevData, questions: updatedQuestions };
+          });
+      }
+      
+      if (successfulUploads === filesToProcess.length) {
          // toast.success(`${successfulUploads} archivo(s) subido(s) exitosamente.`); // Quizás no mostrar si todo ok?
       } else if (successfulUploads > 0) {
          // Usar toast normal con icono de advertencia
-         toast(`${successfulUploads}/${filesToUpload.length} archivos subidos. Algunos fallaron. ⚠️`);
+         toast(`${successfulUploads}/${filesToProcess.length} archivos subidos. Algunos fallaron. ⚠️`);
       } else {
          // El toast de error ya se mostró dentro del bucle
       }
 
-  }, [researchId, token, setFormData, saveFilesToLocalStorage]);
+  }, [researchId, token, formData.questions, setFormData, saveFilesToLocalStorage]);
 
   const handleMultipleFilesUpload = useCallback(async (questionId: string, files: FileList) => {
       await handleFileUpload(questionId, files);

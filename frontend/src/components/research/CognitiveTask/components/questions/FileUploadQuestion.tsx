@@ -117,7 +117,7 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
               const isPendingDelete = file.status === 'pending-delete';
               return (
                 <div 
-                  key={`${file.id}-${index}`} 
+                  key={file.id}
                   className={`flex items-center justify-between p-2 bg-white border rounded transition-opacity duration-300 ${isPendingDelete ? 'opacity-50 border-dashed border-amber-400' : ''}`}
                 >
                   <div className="flex items-center gap-2">
