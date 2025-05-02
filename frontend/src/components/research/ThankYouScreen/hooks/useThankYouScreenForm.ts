@@ -109,7 +109,11 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
 
       // Si existe un ID, actualizamos, si no, creamos
       if (thankYouScreenId) {
-        return await thankYouScreenFixedAPI.update(thankYouScreenId, data).send();
+        // Asegurarse que researchId esté en los datos para la actualización
+        return await thankYouScreenFixedAPI.update(thankYouScreenId, {
+          ...data,
+          researchId // Asegurar que el researchId está incluido
+        }).send();
       } else {
         return await thankYouScreenFixedAPI.create(data).send();
       }

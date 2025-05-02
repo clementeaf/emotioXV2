@@ -211,21 +211,27 @@ export const thankYouScreenFixedAPI = {
   
   /**
    * Actualiza un ThankYouScreen existente
-   * @param id ID del ThankYouScreen
-   * @param data Datos actualizados
+   * @param screenId ID del ThankYouScreen
+   * @param data Datos actualizados, debe incluir researchId
    * @returns Objeto con método send
    */
-  update: (id: string, data: any) => {
-    if (!id) {
+  update: (screenId: string, data: any) => {
+    if (!screenId) {
       throw new Error('Se requiere un ID para actualizar el ThankYouScreen');
     }
     
-    if (!data) {
-      throw new Error('Se requieren datos para actualizar el ThankYouScreen');
+    if (!data || !data.researchId) {
+      throw new Error('Se requieren datos completos incluyendo researchId para actualizar el ThankYouScreen');
     }
     
-    const url = API_CONFIG.endpoints.thankYouScreen.UPDATE.replace('{id}', id);
-    console.log(`[ThankYouScreenAPI] Actualizando ThankYouScreen con ID ${id}, URL: ${url}`);
+    // Obtener la plantilla de URL y reemplazar ambos parámetros
+    const urlTemplate = API_CONFIG.endpoints.thankYouScreen.UPDATE;
+    const url = urlTemplate
+      .replace('{researchId}', data.researchId)
+      .replace('{screenId}', screenId);
+    
+    console.log(`[ThankYouScreenAPI] Actualizando ThankYouScreen con ID ${screenId} para investigación ${data.researchId}`);
+    console.log(`[ThankYouScreenAPI] URL plantilla: ${urlTemplate}, URL final: ${url}`);
     console.log(`[ThankYouScreenAPI] URL completa: ${API_CONFIG.baseURL}${url}`);
     console.log('[ThankYouScreenAPI] Datos a enviar:', data);
     
@@ -253,8 +259,8 @@ export const thankYouScreenFixedAPI = {
             // Clasificar y manejar los errores
             if (response.status === 404) {
               // URL inexistente o recurso no encontrado - mostrar error
-              console.error(`[ThankYouScreenAPI] Error 404: Recurso no encontrado con ID ${id}`);
-              throw new Error(`No se encontró la pantalla de agradecimiento con ID ${id}: ${errorMessage}`);
+              console.error(`[ThankYouScreenAPI] Error 404: Recurso no encontrado con ID ${screenId}`);
+              throw new Error(`No se encontró la pantalla de agradecimiento con ID ${screenId}: ${errorMessage}`);
             } else if (response.status === 400 || response.status === 422) {
               // Datos incompatibles - mostrar error
               console.error(`[ThankYouScreenAPI] Error de datos incompatibles: ${errorMessage}`);
