@@ -184,8 +184,8 @@ function ResearchTableContent() {
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-neutral-200">
-              <thead>
-                <tr key="header-row" className="bg-neutral-50">
+              <thead className="border-b border-neutral-200">
+                <tr key="header-row">
                   <th scope="col" className="px-6 py-3 text-left text-sm font-medium text-neutral-600">Nombre</th>
                   <th scope="col" className="px-6 py-3 text-left text-sm font-medium text-neutral-600">Estado</th>
                   <th scope="col" className="px-6 py-3 text-left text-sm font-medium text-neutral-600">Fecha</th>
