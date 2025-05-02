@@ -36,7 +36,19 @@ const FlowStepContent: React.FC<FlowStepContentProps> = ({
         return <ErrorDisplay title="Error en el Flujo" message={error || 'Ocurrió un error desconocido.'} />;
     }
 
-    if (currentStepEnum !== ParticipantFlowStep.LOGIN && currentExpandedStep) {
+    if (currentStepEnum === ParticipantFlowStep.LOGIN) {
+        return (
+            <CurrentStepRenderer 
+                stepType="login"
+                researchId={researchId}
+                onLoginSuccess={handleLoginSuccess}
+                onError={handleError}
+            />
+        );
+    }
+
+    // Los pasos normales con configuración
+    if (currentExpandedStep) {
         return (
             <CurrentStepRenderer 
                 stepType={currentExpandedStep.type}
@@ -51,18 +63,7 @@ const FlowStepContent: React.FC<FlowStepContentProps> = ({
         );
     }
 
-    if (currentStepEnum === ParticipantFlowStep.LOGIN) {
-        return (
-            <CurrentStepRenderer 
-                stepType="login"
-                researchId={researchId}
-                onLoginSuccess={handleLoginSuccess}
-                onError={handleError}
-            />
-        );
-    }
-
-    console.error('[FlowStepContent] Estado inesperado: No se pudo determinar qué renderizar.', { currentStepEnum, isLoading, currentExpandedStep });
+    // Estado de fallback en caso de que no se cumpla ninguna condición anterior
     return <ErrorDisplay title="Error Inesperado" message="El estado actual de la aplicación es inconsistente." />;
 };
 
