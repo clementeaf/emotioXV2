@@ -13,6 +13,8 @@ import {
   Question,
   CognitiveTaskModel as SharedCognitiveTaskModel
 } from '../../../shared/interfaces/cognitive-task.interface';
+import { NotFoundError } from '../errors';
+import { structuredLog } from '../utils/logging.util';
 
 /**
  * Interfaz que representa el registro de CognitiveTask en la aplicación.
@@ -54,6 +56,7 @@ export class CognitiveTaskModel {
   private readonly dynamoClient: DynamoDBDocumentClient;
   private static readonly SORT_KEY_VALUE = 'COGNITIVE_TASK'; // SK constante
   private static readonly ID_INDEX_NAME = 'IdIndex'; // GSI por id (UUID)
+  private modelName = 'CognitiveTaskModel'; // Para logging
 
   constructor() {
     this.tableName = process.env.DYNAMODB_TABLE!;
@@ -210,6 +213,7 @@ export class CognitiveTaskModel {
    * Usa QueryCommand sobre el GSI 'researchId-index' (PK: researchId).
    */
   async getByResearchId(researchId: string): Promise<CognitiveTaskRecord | null> {
+    const context = 'getByResearchId';
     const command = new QueryCommand({
       TableName: this.tableName,
       IndexName: 'researchId-index',
@@ -222,24 +226,30 @@ export class CognitiveTaskModel {
     });
 
     try {
-      console.log(`[MODEL:getByResearchId] Consultando tabla ${this.tableName} para researchId=${researchId}`);
+      structuredLog('info', `${this.modelName}.${context}`, 'Consultando tabla para researchId', { researchId, tableName: this.tableName });
       
       const result = await this.dynamoClient.send(command);
       
-      console.log(`[MODEL:getByResearchId] Resultado: encontrados=${result.Items?.length || 0} items`);
+      structuredLog('debug', `${this.modelName}.${context}`, 'Resultado de consulta', { encontrados: result.Items?.length || 0, researchId });
       
       if (!result.Items || result.Items.length === 0) {
-        return null; // No encontrado
+        structuredLog('warn', `${this.modelName}.${context}`, 'No se encontró CognitiveTask', { researchId });
+        throw new NotFoundError('COGNITIVE_TASK_NOT_FOUND');
       }
       
       // Mapear el primer (y único esperado) item encontrado
-      return this.mapToRecord(result.Items[0] as CognitiveTaskDynamoItem);
+      const record = this.mapToRecord(result.Items[0] as CognitiveTaskDynamoItem);
+      structuredLog('debug', `${this.modelName}.${context}`, 'CognitiveTask encontrado por ResearchID', { researchId, id: record.id });
+      return record;
     } catch (error: any) {
-      console.error(`[MODEL:getByResearchId] ERROR DETALLADO de DynamoDB:`, JSON.stringify(error, null, 2));
-      console.error(`[MODEL:getByResearchId] Error al obtener CognitiveTask para researchId ${researchId}:`, error.message);
+      if (error instanceof NotFoundError) {
+        throw error; // Re-lanzar NotFoundError
+      }
+      
+      structuredLog('error', `${this.modelName}.${context}`, 'Error al obtener CognitiveTask por researchId (Query GSI)', { error: error, researchId });
       
       if ((error as Error).message?.includes('index')) {
-        console.error(`[MODEL:getByResearchId] Índice GSI researchId-index no encontrado o mal configurado`);
+        structuredLog('error', `${this.modelName}.${context}`, 'Índice GSI researchId-index no encontrado o mal configurado');
         throw new Error(`DATABASE_ERROR: Error de configuración de base de datos: falta índice para búsqueda por researchId.`);
       }
       
@@ -255,6 +265,12 @@ export class CognitiveTaskModel {
     console.log(`[MODEL:update] Iniciando actualización para researchId=${researchId}`);
     
     try {
+      // Primero, obtener el registro para conseguir su ID
+      const existingRecord = await this.getByResearchId(researchId);
+      if (!existingRecord) {
+        throw new NotFoundError('COGNITIVE_TASK_NOT_FOUND');
+      }
+      
       const now = new Date().toISOString();
       let updateExpression = 'SET updatedAt = :updatedAt';
       const expressionAttributeValues: Record<string, any> = { ':updatedAt': now };
@@ -370,7 +386,7 @@ export class CognitiveTaskModel {
       const command = new UpdateCommand({
         TableName: this.tableName,
         Key: {
-          researchId: researchId,
+          id: existingRecord.id,
           sk: CognitiveTaskModel.SORT_KEY_VALUE
         },
         UpdateExpression: updateExpression,
@@ -384,7 +400,7 @@ export class CognitiveTaskModel {
         const result = await this.dynamoClient.send(command);
         if (!result.Attributes) {
           console.warn(`[MODEL:update] UpdateCommand para researchId ${researchId} no devolvió atributos. El item podría no existir.`);
-          throw new Error(`COGNITIVE_TASK_NOT_FOUND: Formulario para researchId ${researchId} no encontrado para actualizar.`);
+          throw new NotFoundError('COGNITIVE_TASK_NOT_FOUND');
         }
         console.log(`[MODEL:update] Actualización exitosa para researchId=${researchId}`);
         return this.mapToRecord(result.Attributes as CognitiveTaskDynamoItem);
@@ -397,6 +413,9 @@ export class CognitiveTaskModel {
         throw new Error(`DATABASE_ERROR: Error al actualizar el formulario para researchId ${researchId}. Detalles: ${dbError.message}`);
       }
     } catch (outerError: any) {
+      if (outerError instanceof NotFoundError) {
+        throw outerError; // Re-lanzar NotFoundError
+      }
       console.error('[MODEL:update] Error en el procesamiento general del método update:', outerError);
       throw new Error(`DATABASE_ERROR: Error en el procesamiento del método update: ${outerError.message}`);
     }
@@ -422,7 +441,7 @@ export class CognitiveTaskModel {
     } catch (error: any) {
       if (error.name === 'ConditionalCheckFailedException') {
         console.warn(`DeleteCommand falló chequeo condicional para researchId ${researchId}. El item no existe.`);
-        throw new Error(`COGNITIVE_TASK_NOT_FOUND: Formulario para researchId ${researchId} no encontrado para eliminar.`);
+        throw new NotFoundError('COGNITIVE_TASK_NOT_FOUND');
       }
       console.error('ERROR DETALLADO de DynamoDB DeleteCommand (CognitiveTask):', JSON.stringify(error, null, 2));
       console.error(`Error al eliminar CognitiveTask para researchId ${researchId}:`, error.message);

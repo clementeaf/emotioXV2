@@ -715,6 +715,7 @@ export class CognitiveTaskService {
       structuredLog('info', `${this.serviceName}.${context}`, 'Actualizando/Creando formulario CognitiveTask', { researchId });
 
       let existingForm = null;
+      
       try {
         existingForm = await this.model.getByResearchId(researchId);
       } catch (error) {
@@ -730,7 +731,8 @@ export class CognitiveTaskService {
           ...data,
           metadata: {
             ...(data.metadata || {}),
-            updatedAt: new Date().toISOString(),
+            version: (existingForm.metadata?.version || '1.0'),
+            lastUpdated: new Date().toISOString(),
             lastModifiedBy: userId
           }
         });
@@ -742,6 +744,7 @@ export class CognitiveTaskService {
           ...data,
           metadata: {
             ...(data.metadata || {}),
+            version: '1.0',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             lastModifiedBy: userId

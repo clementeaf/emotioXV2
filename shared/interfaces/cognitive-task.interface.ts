@@ -107,6 +107,8 @@ export interface CognitiveTaskFormData {
     createdAt?: string;
     updatedAt?: string;
     lastModifiedBy?: string;
+    version?: string;
+    lastUpdated?: string;
   };
   id?: string;
 }
