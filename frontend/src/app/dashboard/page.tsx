@@ -72,10 +72,10 @@ DashboardStats.displayName = 'DashboardStats';
 
 const DashboardMainContent = memo(() => (
   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <div className="lg:col-span-2 bg-white rounded-lg border border-neutral-200 p-6">
+    <div className="lg:col-span-2 bg-white rounded-lg shadow-lg p-6">
       <ResearchTable />
     </div>
-    <div className="bg-white rounded-lg border border-neutral-200 p-6">
+    <div className="bg-white rounded-lg shadow-lg p-6">
       <h2 className="text-lg font-medium mb-6">Tipos de Investigación</h2>
       <ResearchTypes />
     </div>
