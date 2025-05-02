@@ -319,7 +319,6 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
           >
             <div className="flex items-center">
               <span className="text-xl font-semibold text-neutral-900">EmotioX</span>
-              <span className="text-xs ml-1 text-neutral-500">(Inicio)</span>
             </div>
           </a>
         </div>
@@ -477,7 +476,6 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
         >
           <div className="flex items-center">
             <span className="text-xl font-semibold text-neutral-900">EmotioX</span>
-            <span className="text-xs ml-1 text-neutral-500">(Inicio)</span>
           </div>
         </a>
       </div>
