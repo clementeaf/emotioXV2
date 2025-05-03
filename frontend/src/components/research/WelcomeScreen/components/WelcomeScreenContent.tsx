@@ -49,10 +49,10 @@ export const WelcomeScreenContent: React.FC<WelcomeScreenContentProps> = ({
         <Textarea
           id="message"
           value={message}
-          readOnly
-          disabled={true}
-          className={`bg-neutral-50 cursor-not-allowed resize-none ${validationErrors.message ? 'border-red-500' : ''}`}
+          onChange={(e) => onMessageChange(e.target.value)}
+          className={validationErrors.message ? 'border-red-500' : ''}
           rows={4}
+          disabled={disabled}
         />
         {validationErrors.message && (
           <p className="text-sm text-red-500">{validationErrors.message}</p>

@@ -7,7 +7,6 @@ import {
   SmartVOCQuestions,
   SmartVOCFooter,
   ErrorModal,
-  JsonPreviewModal
 } from './components';
 import { UI_TEXTS } from './constants';
 
@@ -100,41 +99,43 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
   }
   
   return (
-    <div className={`bg-white p-6 rounded-lg shadow-sm ${className}`}>
-      {/* Encabezado */}
-      <SmartVOCHeader 
-        title={UI_TEXTS.TITLE} 
-        description={UI_TEXTS.DESCRIPTION}
-      />
-      
-      {/* Indicador de estado - Solo para debugging */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mb-4 p-2 bg-gray-100 text-xs rounded">
-          <p>Estado: {smartVocId ? 'Configuración existente' : 'Nueva configuración'}</p>
-          <p>ID: {smartVocId || 'No hay ID (nueva)'}</p>
-          <p>Preguntas activas: {questions.length}</p>
-          <p>Aleatorizar: {formData.randomizeQuestions ? 'Sí' : 'No'}</p>
-          <p>Requerir respuestas: {formData.smartVocRequired ? 'Sí' : 'No'}</p>
-        </div>
-      )}
-      
-      {/* Configuración general */}
-      <SmartVOCSettings 
-        randomize={formData.randomizeQuestions}
-        onRandomizeChange={handleRandomizeChange}
-        requireAnswers={formData.smartVocRequired}
-        onRequireAnswersChange={handleRequireAnswersChange}
-        disabled={isLoading || isSaving}
-      />
-      
-      {/* Gestión de preguntas */}
-      <SmartVOCQuestions 
-        questions={questions}
-        onUpdateQuestion={updateQuestion}
-        onAddQuestion={addQuestion}
-        onRemoveQuestion={removeQuestion}
-        disabled={isLoading || isSaving}
-      />
+    <div className={className}>
+      <div className="bg-white p-6 rounded-lg shadow-sm">
+        {/* Encabezado */}
+        <SmartVOCHeader 
+          title={UI_TEXTS.TITLE} 
+          description={UI_TEXTS.DESCRIPTION}
+        />
+        
+        {/* Indicador de estado - Solo para debugging */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mb-4 p-2 bg-gray-100 text-xs rounded">
+            <p>Estado: {smartVocId ? 'Configuración existente' : 'Nueva configuración'}</p>
+            <p>ID: {smartVocId || 'No hay ID (nueva)'}</p>
+            <p>Preguntas activas: {questions.length}</p>
+            <p>Aleatorizar: {formData.randomizeQuestions ? 'Sí' : 'No'}</p>
+            <p>Requerir respuestas: {formData.smartVocRequired ? 'Sí' : 'No'}</p>
+          </div>
+        )}
+        
+        {/* Configuración general */}
+        <SmartVOCSettings 
+          randomize={formData.randomizeQuestions}
+          onRandomizeChange={handleRandomizeChange}
+          requireAnswers={formData.smartVocRequired}
+          onRequireAnswersChange={handleRequireAnswersChange}
+          disabled={isLoading || isSaving}
+        />
+        
+        {/* Gestión de preguntas */}
+        <SmartVOCQuestions 
+          questions={questions}
+          onUpdateQuestion={updateQuestion}
+          onAddQuestion={addQuestion}
+          onRemoveQuestion={removeQuestion}
+          disabled={isLoading || isSaving}
+        />
+      </div>
       
       {/* Pie de página con acciones */}
       <SmartVOCFooter 
