@@ -90,7 +90,7 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
   }
   
   return (
-    <div className={cn('bg-white p-8 rounded-lg shadow-sm ml-0', className)}>
+    <div className={cn('max-w-4xl', className)}>
       {/* Encabezado */}
       <CognitiveTaskHeader 
         title={UI_TEXTS.TITLE} 

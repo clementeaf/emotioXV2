@@ -49,10 +49,9 @@ export const WelcomeScreenContent: React.FC<WelcomeScreenContentProps> = ({
         <Textarea
           id="message"
           value={message}
-          onChange={(e) => onMessageChange(e.target.value)}
-          placeholder="Ingresa el mensaje de bienvenida"
-          disabled={disabled}
-          className={validationErrors.message ? 'border-red-500' : ''}
+          readOnly
+          disabled={true}
+          className={`bg-neutral-50 cursor-not-allowed resize-none ${validationErrors.message ? 'border-red-500' : ''}`}
           rows={4}
         />
         {validationErrors.message && (

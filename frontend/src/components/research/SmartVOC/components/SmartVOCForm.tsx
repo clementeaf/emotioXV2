@@ -49,7 +49,7 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className={cn('space-y-6', className)}>
+      <div className={cn('max-w-4xl space-y-6', className)}>
         <SmartVOCHeader 
           title={UI_TEXTS.TITLE}
           description={UI_TEXTS.DESCRIPTION}

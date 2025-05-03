@@ -85,7 +85,7 @@ export const ThankYouScreenForm: React.FC<ThankYouScreenFormProps> = ({
   }
   
   return (
-    <div className={cn('space-y-4', className)}>
+    <div className={cn('max-w-4xl space-y-4', className)}>
       {/* Toggle de habilitación */}
       <ThankYouScreenSettings 
         isEnabled={formData.isEnabled}
