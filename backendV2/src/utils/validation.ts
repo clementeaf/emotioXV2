@@ -653,20 +653,132 @@ export function validateScreenId(screenId: string | undefined): APIGatewayProxyR
 
 /**
  * Valida los datos de entrada para la configuración de eye tracking.
- * TODO: Implementar reglas de validación específicas si son necesarias.
  * @param data Los datos a validar.
  * @returns null si los datos son válidos, o un objeto APIGatewayProxyResult si hay errores.
  */
 export const validateEyeTrackingData = (data: any): APIGatewayProxyResult | null => {
-  // Por ahora, asumimos que los datos son válidos si están presentes.
-  // Se pueden añadir validaciones más específicas aquí.
   if (!data) {
     return errorResponse('Cuerpo de la solicitud vacío o inválido', 400);
   }
-  // Ejemplo: verificar un campo requerido específico
-  // if (!data.someRequiredField) {
-  //   return errorResponse('El campo someRequiredField es obligatorio', 400);
-  // }
+
+  const errors: Record<string, string> = {};
+
+  // Validar demographics questions si están presentes
+  if (data.demographicQuestions) {
+    const dq = data.demographicQuestions;
+    
+    // Verificar estructura básica para cada pregunta demográfica
+    const questionKeys = ['age', 'country', 'gender', 'educationLevel', 'householdIncome', 
+                          'employmentStatus', 'dailyHoursOnline', 'technicalProficiency'];
+    
+    questionKeys.forEach(key => {
+      if (dq[key]) {
+        if (typeof dq[key].enabled !== 'boolean') {
+          errors[`demographicQuestions.${key}.enabled`] = 'El campo enabled debe ser un valor booleano';
+        }
+        if (typeof dq[key].required !== 'boolean') {
+          errors[`demographicQuestions.${key}.required`] = 'El campo required debe ser un valor booleano';
+        }
+        if (dq[key].options && !Array.isArray(dq[key].options)) {
+          errors[`demographicQuestions.${key}.options`] = 'El campo options debe ser un array';
+        }
+      }
+    });
+  }
+
+  // Validar linkConfig si está presente
+  if (data.linkConfig) {
+    const lc = data.linkConfig;
+    
+    if (lc.allowMobile !== undefined && typeof lc.allowMobile !== 'boolean') {
+      errors['linkConfig.allowMobile'] = 'El campo allowMobile debe ser un valor booleano';
+    }
+    
+    if (lc.trackLocation !== undefined && typeof lc.trackLocation !== 'boolean') {
+      errors['linkConfig.trackLocation'] = 'El campo trackLocation debe ser un valor booleano';
+    }
+    
+    if (lc.allowMultipleAttempts !== undefined && typeof lc.allowMultipleAttempts !== 'boolean') {
+      errors['linkConfig.allowMultipleAttempts'] = 'El campo allowMultipleAttempts debe ser un valor booleano';
+    }
+  }
+
+  // Validar participantLimit si está presente
+  if (data.participantLimit) {
+    const pl = data.participantLimit;
+    
+    if (pl.enabled !== undefined && typeof pl.enabled !== 'boolean') {
+      errors['participantLimit.enabled'] = 'El campo enabled debe ser un valor booleano';
+    }
+    
+    if (pl.value !== undefined) {
+      if (typeof pl.value !== 'number') {
+        errors['participantLimit.value'] = 'El campo value debe ser un número';
+      } else if (pl.value <= 0) {
+        errors['participantLimit.value'] = 'El campo value debe ser mayor que cero';
+      }
+    }
+  }
+
+  // Validar backlinks si está presente
+  if (data.backlinks) {
+    const bl = data.backlinks;
+    
+    // Validar que las URLs sean strings
+    if (bl.complete !== undefined && typeof bl.complete !== 'string') {
+      errors['backlinks.complete'] = 'El campo complete debe ser una cadena de texto';
+    }
+    
+    if (bl.disqualified !== undefined && typeof bl.disqualified !== 'string') {
+      errors['backlinks.disqualified'] = 'El campo disqualified debe ser una cadena de texto';
+    }
+    
+    if (bl.overquota !== undefined && typeof bl.overquota !== 'string') {
+      errors['backlinks.overquota'] = 'El campo overquota debe ser una cadena de texto';
+    }
+
+    // Validar URL formato si no están vacías
+    const urlFields = ['complete', 'disqualified', 'overquota'];
+    urlFields.forEach(field => {
+      if (bl[field] && bl[field].trim() !== '') {
+        try {
+          new URL(bl[field]);
+        } catch (e) {
+          errors[`backlinks.${field}`] = `El campo ${field} debe ser una URL válida`;
+        }
+      }
+    });
+  }
+
+  // Validar researchUrl si está presente
+  if (data.researchUrl !== undefined) {
+    if (typeof data.researchUrl !== 'string') {
+      errors['researchUrl'] = 'El campo researchUrl debe ser una cadena de texto';
+    } else if (data.researchUrl.trim() !== '') {
+      try {
+        new URL(data.researchUrl);
+      } catch (e) {
+        errors['researchUrl'] = 'El campo researchUrl debe ser una URL válida';
+      }
+    }
+  }
+
+  // Validar parameterOptions si está presente
+  if (data.parameterOptions) {
+    const po = data.parameterOptions;
+    
+    const optionKeys = ['saveDeviceInfo', 'saveLocationInfo', 'saveResponseTimes', 'saveUserJourney'];
+    optionKeys.forEach(key => {
+      if (po[key] !== undefined && typeof po[key] !== 'boolean') {
+        errors[`parameterOptions.${key}`] = `El campo ${key} debe ser un valor booleano`;
+      }
+    });
+  }
+
+  if (Object.keys(errors).length > 0) {
+    return errorResponse(`Datos de eye tracking inválidos: ${JSON.stringify(errors)}`, 400);
+  }
+
   return null; // Indica que la validación fue exitosa
 };
 

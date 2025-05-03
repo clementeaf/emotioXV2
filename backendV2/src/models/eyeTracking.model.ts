@@ -11,300 +11,23 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import { structuredLog } from '../utils/logging.util';
 import { ApiError } from '../utils/errors';
+import {
+  DemographicQuestions,
+  LinkConfig,
+  ParticipantLimit,
+  Backlinks,
+  ParameterOptions,
+  EyeTrackingRecruitConfig
+} from '../../../shared/interfaces/eyeTrackingRecruit.interface';
 
 /**
- * Tipos de dispositivos de seguimiento ocular
+ * Estructura principal de la configuración de Eye Tracking
+ * (Reutilizamos EyeTrackingRecruitConfig de la interfaz compartida)
  */
-export type TrackingDeviceType = 'webcam' | 'tobii' | 'gazepoint' | 'eyetech';
-
-/**
- * Opciones para la secuencia de presentación
- */
-export type PresentationSequenceType = 'sequential' | 'random' | 'custom';
-
-/**
- * Validación básica para eye tracking
- */
-export const EYE_TRACKING_VALIDATION = {
-  samplingRate: {
-    min: 30,
-    max: 120
-  },
-  fixationThreshold: {
-    min: 50,
-    max: 200
-  },
-  saccadeVelocityThreshold: {
-    min: 20,
-    max: 100
-  },
-  durationPerStimulus: {
-    min: 1,
-    max: 60
-  }
-};
-
-/**
- * Configuración básica de eye tracking
- */
-export interface EyeTrackingConfig {
-  /**
-   * Si el eye tracking está habilitado
-   */
-  enabled: boolean;
-  
-  /**
-   * Tipo de dispositivo de seguimiento ocular
-   */
-  trackingDevice: TrackingDeviceType;
-  
-  /**
-   * Si la calibración está habilitada
-   */
-  calibration: boolean;
-  
-  /**
-   * Si la validación está habilitada
-   */
-  validation: boolean;
-  
-  /**
-   * Configuración de grabación
-   */
-  recording: {
-    /**
-     * Si la grabación de audio está habilitada
-     */
-    audio: boolean;
-    
-    /**
-     * Si la grabación de video está habilitada
-     */
-    video: boolean;
-  };
-  
-  /**
-   * Configuración de visualización
-   */
-  visualization: {
-    /**
-     * Si se muestra la mirada
-     */
-    showGaze: boolean;
-    
-    /**
-     * Si se muestran las fijaciones
-     */
-    showFixations: boolean;
-    
-    /**
-     * Si se muestran los movimientos sacádicos
-     */
-    showSaccades: boolean;
-    
-    /**
-     * Si se muestra el mapa de calor
-     */
-    showHeatmap: boolean;
-  };
-  
-  /**
-   * Parámetros de seguimiento ocular
-   */
-  parameters: {
-    /**
-     * Tasa de muestreo en Hz
-     */
-    samplingRate: number;
-    
-    /**
-     * Umbral de fijación en ms
-     */
-    fixationThreshold: number;
-    
-    /**
-     * Umbral de velocidad sacádica en grados/segundo
-     */
-    saccadeVelocityThreshold: number;
-  };
-}
-
-/**
- * Estímulo para eye tracking
- */
-export interface EyeTrackingStimulus {
-  /**
-   * ID único del estímulo
-   */
-  id: string;
-  
-  /**
-   * Nombre del archivo
-   */
-  fileName: string;
-  
-  /**
-   * Tipo de archivo (MIME)
-   */
-  fileType?: string;
-  
-  /**
-   * Tamaño del archivo en bytes
-   */
-  fileSize?: number;
-  
-  /**
-   * URL del archivo
-   */
-  fileUrl: string;
-  
-  /**
-   * Clave del archivo en S3
-   */
-  s3Key: string;
-  
-  /**
-   * Orden de presentación
-   */
-  order: number;
-  
-  /**
-   * Indicador de error
-   */
-  error?: boolean;
-  
-  /**
-   * Mensaje de error
-   */
-  errorMessage?: string;
-}
-
-/**
- * Área de interés para eye tracking
- */
-export interface EyeTrackingAreaOfInterest {
-  /**
-   * ID único del área
-   */
-  id: string;
-  
-  /**
-   * Nombre descriptivo del área
-   */
-  name: string;
-  
-  /**
-   * Región del área
-   */
-  region: {
-    /**
-     * Posición X en píxeles
-     */
-    x: number;
-    
-    /**
-     * Posición Y en píxeles
-     */
-    y: number;
-    
-    /**
-     * Ancho en píxeles
-     */
-    width: number;
-    
-    /**
-     * Alto en píxeles
-     */
-    height: number;
-  };
-  
-  /**
-   * ID del estímulo al que pertenece esta área
-   */
-  stimulusId: string;
-}
-
-/**
- * Configuración de estímulos
- */
-export interface EyeTrackingStimuliConfig {
-  /**
-   * Tipo de secuencia de presentación
-   */
-  presentationSequence: PresentationSequenceType;
-  
-  /**
-   * Duración por estímulo en segundos
-   */
-  durationPerStimulus: number;
-  
-  /**
-   * Lista de estímulos
-   */
-  items: EyeTrackingStimulus[];
-}
-
-/**
- * Configuración de áreas de interés
- */
-export interface EyeTrackingAreaOfInterestConfig {
-  /**
-   * Si las áreas de interés están habilitadas
-   */
-  enabled: boolean;
-  
-  /**
-   * Lista de áreas de interés
-   */
-  areas: EyeTrackingAreaOfInterest[];
-}
-
-/**
- * Datos del formulario de eye tracking
- */
-export interface EyeTrackingFormData {
-  /**
-   * ID de la investigación asociada
-   */
-  researchId: string;
-  
-  /**
-   * Configuración general
-   */
-  config: EyeTrackingConfig;
-  
-  /**
-   * Configuración de estímulos
-   */
-  stimuli: EyeTrackingStimuliConfig;
-  
-  /**
-   * Configuración de áreas de interés
-   */
-  areasOfInterest: EyeTrackingAreaOfInterestConfig;
-  
-  /**
-   * Si se debe mostrar el marco del dispositivo
-   */
-  deviceFrame: boolean;
-  
-  /**
-   * Metadatos opcionales
-   */
+export interface EyeTrackingFormData extends EyeTrackingRecruitConfig {
   metadata?: {
-    /**
-     * Fecha de creación
-     */
     createdAt?: string;
-    
-    /**
-     * Fecha de actualización
-     */
     updatedAt?: string;
-    
-    /**
-     * Usuario que realizó la última modificación
-     */
     lastModifiedBy?: string;
   };
 }
@@ -314,37 +37,69 @@ export interface EyeTrackingFormData {
  */
 export const DEFAULT_EYE_TRACKING_CONFIG: EyeTrackingFormData = {
   researchId: '',
-  config: {
-    enabled: true,
-    trackingDevice: 'webcam',
-    calibration: true,
-    validation: true,
-    recording: {
-      audio: false,
-      video: true
+  demographicQuestions: {
+    age: {
+      enabled: false,
+      required: false,
+      options: ['18-24', '25-34', '35-44', '45-54', '55-64', '65+']
     },
-    visualization: {
-      showGaze: true,
-      showFixations: true,
-      showSaccades: true,
-      showHeatmap: true
+    country: {
+      enabled: false,
+      required: false,
+      options: ['ES', 'MX', 'AR', 'CO', 'CL', 'PE']
     },
-    parameters: {
-      samplingRate: 60,
-      fixationThreshold: 100,
-      saccadeVelocityThreshold: 30
+    gender: {
+      enabled: false,
+      required: false,
+      options: ['M', 'F', 'O', 'P']
+    },
+    educationLevel: {
+      enabled: false,
+      required: false,
+      options: ['1', '2', '3', '4', '5', '6', '7']
+    },
+    householdIncome: {
+      enabled: false,
+      required: false,
+      options: ['1', '2', '3', '4', '5']
+    },
+    employmentStatus: {
+      enabled: false,
+      required: false,
+      options: ['employed', 'unemployed', 'student', 'retired']
+    },
+    dailyHoursOnline: {
+      enabled: false,
+      required: false,
+      options: ['0-2', '2-4', '4-6', '6-8', '8+']
+    },
+    technicalProficiency: {
+      enabled: false,
+      required: false,
+      options: ['beginner', 'intermediate', 'advanced', 'expert']
     }
   },
-  stimuli: {
-    presentationSequence: 'sequential',
-    durationPerStimulus: 5,
-    items: []
+  linkConfig: {
+    allowMobile: false,
+    trackLocation: false,
+    allowMultipleAttempts: false
   },
-  areasOfInterest: {
-    enabled: true,
-    areas: []
+  participantLimit: {
+    enabled: false,
+    value: 50
   },
-  deviceFrame: false
+  backlinks: {
+    complete: '',
+    disqualified: '',
+    overquota: ''
+  },
+  researchUrl: '',
+  parameterOptions: {
+    saveDeviceInfo: false,
+    saveLocationInfo: false,
+    saveResponseTimes: false,
+    saveUserJourney: false
+  }
 };
 
 /**
@@ -404,10 +159,12 @@ export interface EyeTrackingDynamoItem {
   id: string;        // PK (UUID)
   sk: string;        // SK (Constante)
   researchId: string; // Atributo y GSI PK
-  config: string;    // Serializado
-  stimuli: string;   // Serializado
-  areasOfInterest: string; // Serializado
-  deviceFrame: boolean;
+  demographicQuestions: string; // Serializado
+  linkConfig: string; // Serializado
+  participantLimit: string; // Serializado
+  backlinks: string; // Serializado
+  researchUrl: string;
+  parameterOptions: string; // Serializado
   metadata: string;  // Serializado
   createdAt: string; // ISO String
   updatedAt: string; // ISO String
@@ -436,18 +193,22 @@ export class EyeTrackingModel {
   }
 
   private mapToRecord(item: EyeTrackingDynamoItem): EyeTrackingRecord {
-      const config = JSON.parse(item.config || '{}') as EyeTrackingConfig;
-      const stimuli = JSON.parse(item.stimuli || '{}') as EyeTrackingStimuliConfig;
-      const areasOfInterest = JSON.parse(item.areasOfInterest || '{}') as EyeTrackingAreaOfInterestConfig;
+      const demographicQuestions = JSON.parse(item.demographicQuestions || '{}') as DemographicQuestions;
+      const linkConfig = JSON.parse(item.linkConfig || '{}') as LinkConfig;
+      const participantLimit = JSON.parse(item.participantLimit || '{}') as ParticipantLimit;
+      const backlinks = JSON.parse(item.backlinks || '{}') as Backlinks;
+      const parameterOptions = JSON.parse(item.parameterOptions || '{}') as ParameterOptions;
       const metadata = JSON.parse(item.metadata || '{}');
       
       return {
         id: item.id,
         researchId: item.researchId,
-        config,
-        stimuli,
-        areasOfInterest,
-        deviceFrame: item.deviceFrame,
+        demographicQuestions,
+        linkConfig,
+        participantLimit,
+        backlinks,
+        researchUrl: item.researchUrl,
+        parameterOptions,
         metadata,
         createdAt: new Date(item.createdAt),
         updatedAt: new Date(item.updatedAt)
@@ -469,10 +230,12 @@ export class EyeTrackingModel {
       id: eyeTrackingId,
       sk: EyeTrackingModel.SORT_KEY_VALUE,
       researchId,
-      config: JSON.stringify(data.config),
-      stimuli: JSON.stringify(data.stimuli),
-      areasOfInterest: JSON.stringify(data.areasOfInterest),
-      deviceFrame: data.deviceFrame,
+      demographicQuestions: JSON.stringify(data.demographicQuestions || DEFAULT_EYE_TRACKING_CONFIG.demographicQuestions),
+      linkConfig: JSON.stringify(data.linkConfig || DEFAULT_EYE_TRACKING_CONFIG.linkConfig),
+      participantLimit: JSON.stringify(data.participantLimit || DEFAULT_EYE_TRACKING_CONFIG.participantLimit),
+      backlinks: JSON.stringify(data.backlinks || DEFAULT_EYE_TRACKING_CONFIG.backlinks),
+      researchUrl: data.researchUrl || '',
+      parameterOptions: JSON.stringify(data.parameterOptions || DEFAULT_EYE_TRACKING_CONFIG.parameterOptions),
       metadata: JSON.stringify(data.metadata || { createdAt: now, updatedAt: now, lastModifiedBy: 'system' }),
       createdAt: now,
       updatedAt: now
@@ -518,7 +281,7 @@ export class EyeTrackingModel {
     const context = 'getByResearchId';
     const command = new QueryCommand({
         TableName: this.tableName,
-        IndexName: 'ResearchIdIndex',
+        IndexName: 'researchId-index',
         KeyConditionExpression: 'researchId = :rid',
         FilterExpression: 'sk = :skVal',
         ExpressionAttributeValues: {
@@ -536,7 +299,7 @@ export class EyeTrackingModel {
     } catch (error: any) {
         structuredLog('error', `${this.modelName}.${context}`, 'Error al obtener eye tracking por researchId (Query GSI)', { error: error, researchId });
         if ((error as Error).message?.includes('index')) {
-           structuredLog('error', `${this.modelName}.${context}`, 'Índice GSI ResearchIdIndex no encontrado o mal configurado');
+           structuredLog('error', `${this.modelName}.${context}`, 'Índice GSI researchId-index no encontrado o mal configurado');
            throw new ApiError("DATABASE_ERROR: Error de configuración de base de datos: falta índice para búsqueda.", 500);
         }
         throw new ApiError(`DATABASE_ERROR: Error al buscar configuración asociada a la investigación: ${error.message}`, 500);
@@ -557,21 +320,29 @@ export class EyeTrackingModel {
     let updateExpression = 'SET updatedAt = :updatedAt';
     const expressionAttributeValues: Record<string, any> = { ':updatedAt': now };
 
-    if (data.config !== undefined) {
-      updateExpression += ', config = :config';
-      expressionAttributeValues[':config'] = JSON.stringify(data.config);
+    if (data.demographicQuestions !== undefined) {
+      updateExpression += ', demographicQuestions = :demographicQuestions';
+      expressionAttributeValues[':demographicQuestions'] = JSON.stringify(data.demographicQuestions);
     }
-    if (data.stimuli !== undefined) {
-      updateExpression += ', stimuli = :stimuli';
-      expressionAttributeValues[':stimuli'] = JSON.stringify(data.stimuli);
+    if (data.linkConfig !== undefined) {
+      updateExpression += ', linkConfig = :linkConfig';
+      expressionAttributeValues[':linkConfig'] = JSON.stringify(data.linkConfig);
     }
-    if (data.areasOfInterest !== undefined) {
-      updateExpression += ', areasOfInterest = :areasOfInterest';
-      expressionAttributeValues[':areasOfInterest'] = JSON.stringify(data.areasOfInterest);
+    if (data.participantLimit !== undefined) {
+      updateExpression += ', participantLimit = :participantLimit';
+      expressionAttributeValues[':participantLimit'] = JSON.stringify(data.participantLimit);
     }
-    if (data.deviceFrame !== undefined) {
-      updateExpression += ', deviceFrame = :deviceFrame';
-      expressionAttributeValues[':deviceFrame'] = data.deviceFrame;
+    if (data.backlinks !== undefined) {
+      updateExpression += ', backlinks = :backlinks';
+      expressionAttributeValues[':backlinks'] = JSON.stringify(data.backlinks);
+    }
+    if (data.researchUrl !== undefined) {
+      updateExpression += ', researchUrl = :researchUrl';
+      expressionAttributeValues[':researchUrl'] = data.researchUrl;
+    }
+    if (data.parameterOptions !== undefined) {
+      updateExpression += ', parameterOptions = :parameterOptions';
+      expressionAttributeValues[':parameterOptions'] = JSON.stringify(data.parameterOptions);
     }
     
     const currentMetadataObject = currentRecord.metadata || {};

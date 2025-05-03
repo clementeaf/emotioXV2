@@ -14,7 +14,6 @@ import {
   parseAndValidateBody,
   validateEyeTrackingData
 } from '../utils/validation';
-import s3Service from '../services/s3.service';
 
 /**
  * Controlador para manejar operaciones relacionadas con eye tracking
@@ -121,52 +120,7 @@ export class EyeTrackingController {
       configData.researchId = researchId;
 
       structuredLog('info', `EyeTrackingController.${context}`, 'Actualizando configuración de eye tracking', { researchId });
-
-      const currentConfig = await eyeTrackingService.getByResearchId(researchId);
-      if (currentConfig && currentConfig.stimuli && currentConfig.stimuli.items) {
-        const s3KeysToDelete: string[] = [];
-
-        currentConfig.stimuli.items.forEach(currentStimulus => {
-          if (!currentStimulus || !currentStimulus.s3Key) return; // Asegurar que currentStimulus y s3Key existen
-
-          const updatedStimuli = configData.stimuli?.items || []; // Usar [] si no hay items
-          const isStimulusKept = updatedStimuli.some(updatedStimulus => 
-            updatedStimulus && currentStimulus && // Asegurar existencia
-            updatedStimulus.id === currentStimulus.id && 
-            updatedStimulus.s3Key === currentStimulus.s3Key
-          );
-
-          if (!isStimulusKept) {
-            s3KeysToDelete.push(currentStimulus.s3Key);
-            structuredLog('info', `EyeTrackingController.${context}.s3Delete`, 'Estímulo marcado para eliminación de S3', { researchId, stimulusId: currentStimulus.id, s3Key: currentStimulus.s3Key });
-          }
-        });
-
-        if (s3KeysToDelete.length > 0) {
-          structuredLog('info', `EyeTrackingController.${context}.s3Delete`, `Intentando eliminar ${s3KeysToDelete.length} archivos de S3`, { researchId, keys: s3KeysToDelete });
-          const deletePromises = s3KeysToDelete.map(key =>
-            s3Service.deleteObject(key).catch((err: unknown) => { // <-- Tipar err como unknown
-              let errorMessage = 'Error desconocido al eliminar de S3';
-              if (err instanceof Error) { // <-- Comprobar tipo Error
-                  errorMessage = err.message;
-              } else if (typeof err === 'string') {
-                  errorMessage = err;
-              } else {
-                  // Loguear el error original si no es Error ni string
-                  console.error('[EyeTrackingController.s3Delete] Error no estándar:', err);
-              }
-              structuredLog('error', `EyeTrackingController.${context}.s3Delete`, `Error al eliminar archivo de S3: ${key}`, { researchId, error: errorMessage });
-              // No relanzar el error aquí para permitir que la actualización de DynamoDB continúe
-            })
-          );
-          await Promise.all(deletePromises);
-        }
-      } else if (currentConfig) {
-        structuredLog('warn', `EyeTrackingController.${context}.s3Delete`, 'No se encontraron estímulos en la configuración actual para verificar archivos S3', { researchId });
-      } else {
-        structuredLog('warn', `EyeTrackingController.${context}.s3Delete`, 'No se encontró la configuración actual para verificar archivos S3', { researchId });
-      }
-
+      
       const result = await eyeTrackingService.updateByResearchId(researchId, configData, userId);
       
       structuredLog('info', `EyeTrackingController.${context}`, 'Configuración actualizada', { researchId, id: result.id });            

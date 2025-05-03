@@ -2,8 +2,7 @@ import {
   EyeTrackingModel, 
   EyeTrackingFormData,
   EyeTrackingRecord,
-  DEFAULT_EYE_TRACKING_CONFIG,
-  EYE_TRACKING_VALIDATION
+  DEFAULT_EYE_TRACKING_CONFIG
 } from '../models/eyeTracking.model';
 import { ApiError } from '../utils/errors';
 import { NotFoundError } from '../errors';
@@ -21,9 +20,7 @@ export enum EyeTrackingError {
   INVALID_DATA = 'INVALID_EYE_TRACKING_DATA',
   RESEARCH_REQUIRED = 'RESEARCH_ID_REQUIRED',
   PERMISSION_DENIED = 'PERMISSION_DENIED',
-  DATABASE_ERROR = 'DATABASE_ERROR',
-  STIMULUS_NOT_FOUND = 'STIMULUS_NOT_FOUND',
-  AREA_NOT_FOUND = 'AREA_OF_INTEREST_NOT_FOUND'
+  DATABASE_ERROR = 'DATABASE_ERROR'
 }
 
 /**
@@ -49,70 +46,39 @@ export class EyeTrackingService {
       errors.researchId = 'El ID de investigación es obligatorio';
     }
 
-    // Validar parámetros de configuración si están presentes
-    if (data.config?.parameters) {
-      // Validar tasa de muestreo
-      if (data.config.parameters.samplingRate !== undefined) {
-        if (data.config.parameters.samplingRate < EYE_TRACKING_VALIDATION.samplingRate.min) {
-          errors.samplingRate = `La tasa de muestreo debe ser al menos ${EYE_TRACKING_VALIDATION.samplingRate.min} Hz`;
-        } else if (data.config.parameters.samplingRate > EYE_TRACKING_VALIDATION.samplingRate.max) {
-          errors.samplingRate = `La tasa de muestreo no puede exceder los ${EYE_TRACKING_VALIDATION.samplingRate.max} Hz`;
-        }
-      }
+    // Validar preguntas demográficas si están presentes
+    if (data.demographicQuestions) {
+      // Validaciones específicas para preguntas demográficas si se necesitan
+    }
 
-      // Validar umbral de fijación
-      if (data.config.parameters.fixationThreshold !== undefined) {
-        if (data.config.parameters.fixationThreshold < EYE_TRACKING_VALIDATION.fixationThreshold.min) {
-          errors.fixationThreshold = `El umbral de fijación debe ser al menos ${EYE_TRACKING_VALIDATION.fixationThreshold.min} ms`;
-        } else if (data.config.parameters.fixationThreshold > EYE_TRACKING_VALIDATION.fixationThreshold.max) {
-          errors.fixationThreshold = `El umbral de fijación no puede exceder los ${EYE_TRACKING_VALIDATION.fixationThreshold.max} ms`;
-        }
-      }
+    // Validar configuración de enlaces si está presente
+    if (data.linkConfig) {
+      // Validaciones específicas para linkConfig si se necesitan
+    }
 
-      // Validar umbral de velocidad sacádica
-      if (data.config.parameters.saccadeVelocityThreshold !== undefined) {
-        if (data.config.parameters.saccadeVelocityThreshold < EYE_TRACKING_VALIDATION.saccadeVelocityThreshold.min) {
-          errors.saccadeVelocityThreshold = `El umbral de velocidad sacádica debe ser al menos ${EYE_TRACKING_VALIDATION.saccadeVelocityThreshold.min} °/s`;
-        } else if (data.config.parameters.saccadeVelocityThreshold > EYE_TRACKING_VALIDATION.saccadeVelocityThreshold.max) {
-          errors.saccadeVelocityThreshold = `El umbral de velocidad sacádica no puede exceder los ${EYE_TRACKING_VALIDATION.saccadeVelocityThreshold.max} °/s`;
-        }
+    // Validar límite de participantes si está presente
+    if (data.participantLimit) {
+      if (data.participantLimit.enabled && data.participantLimit.value <= 0) {
+        errors.participantLimitValue = 'El límite de participantes debe ser mayor que cero cuando está habilitado';
       }
     }
 
-    // Validar configuración de estímulos si está presente
-    if (data.stimuli) {
-      structuredLog('debug', `${this.serviceName}.${context}`, 'Validando stimuli', { count: data.stimuli.items?.length });
-      
-      // Validar duración por estímulo
-      if (data.stimuli.durationPerStimulus !== undefined) {
-        if (data.stimuli.durationPerStimulus < EYE_TRACKING_VALIDATION.durationPerStimulus.min) {
-          errors.durationPerStimulus = `La duración por estímulo debe ser al menos ${EYE_TRACKING_VALIDATION.durationPerStimulus.min} segundos`;
-        } else if (data.stimuli.durationPerStimulus > EYE_TRACKING_VALIDATION.durationPerStimulus.max) {
-          errors.durationPerStimulus = `La duración por estímulo no puede exceder los ${EYE_TRACKING_VALIDATION.durationPerStimulus.max} segundos`;
-        }
+    // Validar enlaces de retorno si están presentes
+    if (data.backlinks) {
+      if (data.backlinks.complete && !this.isValidUrl(data.backlinks.complete)) {
+        errors.backlinksComplete = 'La URL de retorno para completados debe ser válida';
       }
+      if (data.backlinks.disqualified && !this.isValidUrl(data.backlinks.disqualified)) {
+        errors.backlinksDisqualified = 'La URL de retorno para descalificados debe ser válida';
+      }
+      if (data.backlinks.overquota && !this.isValidUrl(data.backlinks.overquota)) {
+        errors.backlinksOverquota = 'La URL de retorno para cuota excedida debe ser válida';
+      }
+    }
 
-      // Validar estímulos individuales
-      if (data.stimuli.items && Array.isArray(data.stimuli.items)) {
-        structuredLog('debug', `${this.serviceName}.${context}`, 'Número de estímulos:', { count: data.stimuli.items.length });
-        
-        data.stimuli.items.forEach((item, index) => {
-          if (!item.fileName || item.fileName.trim() === '') {
-            errors[`items[${index}].fileName`] = 'El nombre del archivo no puede estar vacío';
-          }
-          if (!item.fileUrl || item.fileUrl.trim() === '') {
-            errors[`items[${index}].fileUrl`] = 'La URL del archivo no puede estar vacía';
-          }
-          if (!item.s3Key || item.s3Key.trim() === '') {
-            errors[`items[${index}].s3Key`] = 'La clave S3 del archivo no puede estar vacía';
-          }
-          
-          // Verificar que fileUrl y s3Key sean coherentes
-          if (item.fileUrl && item.s3Key && !item.fileUrl.includes(item.s3Key)) {
-            errors[`items[${index}].consistency`] = 'La URL del archivo debe incluir su clave S3';
-          }
-        });
-      }
+    // Validar URL de investigación si está presente
+    if (data.researchUrl && !this.isValidUrl(data.researchUrl)) {
+      errors.researchUrl = 'La URL de investigación debe ser válida';
     }
 
     // Si hay errores, lanzar excepción
@@ -126,6 +92,20 @@ export class EyeTrackingService {
     
     structuredLog('debug', `${this.serviceName}.${context}`, 'Validación exitosa');
     return true;
+  }
+
+  /**
+   * Validar si una cadena es una URL válida
+   * @param url URL a validar
+   * @returns true si es válida, false si no
+   */
+  private isValidUrl(url: string): boolean {
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   /**
@@ -264,7 +244,7 @@ export class EyeTrackingService {
       await this.getById(id);
       
       // Validar datos
-      this.validateData({ ...data /*, researchId: existing.researchId */ });
+      this.validateData(data);
       
       // Actualizar en el modelo
       const updatedConfig = await eyeTrackingModel.update(id, data);
@@ -302,16 +282,6 @@ export class EyeTrackingService {
       );
     }
     this.validateData({ ...data, researchId });
-      
-    if (data.stimuli && Array.isArray(data.stimuli.items)) {
-      data.stimuli.items.forEach((item, index) => {
-        if (!item.s3Key) {
-          structuredLog('warn', `${this.serviceName}.${context}`, `Estímulo ${index} sin s3Key`, { itemId: item.id, fileName: item.fileName });
-        }
-      });
-    } else {
-      structuredLog('warn', `${this.serviceName}.${context}`, 'No hay estímulos en los datos recibidos');
-    }
       
     let existingConfig: EyeTrackingRecord | null = null;
     try {

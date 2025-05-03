@@ -33,42 +33,42 @@ interface EyeTrackingRecruitFormData {
     age: {
       enabled: boolean;
       required: boolean;
-      options?: string[];
+      options: string[];
     };
     country: {
       enabled: boolean;
       required: boolean;
-      options?: string[];
+      options: string[];
     };
     gender: {
       enabled: boolean;
       required: boolean;
-      options?: string[];
+      options: string[];
     };
     educationLevel: {
       enabled: boolean;
       required: boolean;
-      options?: string[];
+      options: string[];
     };
     householdIncome: {
       enabled: boolean;
       required: boolean;
-      options?: string[];
+      options: string[];
     };
     employmentStatus: {
       enabled: boolean;
       required: boolean;
-      options?: string[];
+      options: string[];
     };
     dailyHoursOnline: {
       enabled: boolean;
       required: boolean;
-      options?: string[];
+      options: string[];
     };
     technicalProficiency: {
       enabled: boolean;
       required: boolean;
-      options?: string[];
+      options: string[];
     };
   };
   linkConfig: {
@@ -155,48 +155,54 @@ const DEFAULT_STATS: EyeTrackingRecruitStats = {
   }
 };
 
+// Añadir esta función auxiliar para garantizar que options sea siempre un array
+const ensureOptionsArray = (options?: string[]): string[] => {
+  return options || [];
+};
+
+// Modificar el DEFAULT_CONFIG para asegurar que todas las opciones sean arrays con valores predeterminados
 const DEFAULT_CONFIG: EyeTrackingRecruitFormData = {
   researchId: '',
   demographicQuestions: {
-    age: {
-      enabled: false,
-      required: false,
-      options: ['18-24', '25-34', '35-44', '45-54', '55-64', '65+']
+    age: { 
+      enabled: false, 
+      required: false, 
+      options: ['18-24', '25-34', '35-44', '45-54', '55-64', '65+'] 
     },
-    country: {
-      enabled: false,
-      required: false,
-      options: ['ES', 'MX', 'AR', 'CO', 'CL', 'PE']
+    country: { 
+      enabled: false, 
+      required: false, 
+      options: ['España', 'México', 'Argentina', 'Colombia', 'Chile', 'Perú', 'Otro'] 
     },
-    gender: {
-      enabled: false,
-      required: false,
-      options: ['M', 'F', 'O', 'P']
+    gender: { 
+      enabled: false, 
+      required: false, 
+      options: ['Masculino', 'Femenino', 'Otro', 'Prefiero no decir'] 
     },
-    educationLevel: {
-      enabled: false,
-      required: false,
-      options: ['1', '2', '3', '4', '5', '6', '7']
+    educationLevel: { 
+      enabled: false, 
+      required: false, 
+      options: ['Primaria', 'Secundaria', 'Bachillerato', 'Universidad', 'Posgrado', 'Otro'] 
     },
-    householdIncome: {
-      enabled: false,
-      required: false,
-      options: ['1', '2', '3', '4', '5']
+    householdIncome: { 
+      enabled: false, 
+      required: false, 
+      options: ['Menos de 15.000€', '15.000€-30.000€', '30.000€-50.000€', '50.000€-75.000€', 'Más de 75.000€'] 
     },
-    employmentStatus: {
-      enabled: false,
-      required: false,
-      options: ['employed', 'unemployed', 'student', 'retired']
+    employmentStatus: { 
+      enabled: false, 
+      required: false, 
+      options: ['Empleado', 'Desempleado', 'Estudiante', 'Jubilado', 'Otro'] 
     },
-    dailyHoursOnline: {
-      enabled: false,
-      required: false,
-      options: ['0-2', '2-4', '4-6', '6-8', '8+']
+    dailyHoursOnline: { 
+      enabled: false, 
+      required: false, 
+      options: ['0-2 horas', '2-4 horas', '4-6 horas', '6-8 horas', 'Más de 8 horas'] 
     },
-    technicalProficiency: {
-      enabled: false,
-      required: false,
-      options: ['beginner', 'intermediate', 'advanced', 'expert']
+    technicalProficiency: { 
+      enabled: false, 
+      required: false, 
+      options: ['Principiante', 'Intermedio', 'Avanzado', 'Experto'] 
     }
   },
   linkConfig: {
@@ -220,6 +226,91 @@ const DEFAULT_CONFIG: EyeTrackingRecruitFormData = {
     saveResponseTimes: false,
     saveUserJourney: false
   }
+};
+
+// Función para procesar la respuesta de la API y asegurar que todas las opciones sean arrays
+const processApiResponse = (response: any): EyeTrackingRecruitFormData => {
+  // Empezar con una configuración segura basada en los valores predeterminados
+  const safeResponse: EyeTrackingRecruitFormData = {
+    ...DEFAULT_CONFIG,
+    researchId: response?.researchId || DEFAULT_CONFIG.researchId
+  };
+
+  // Si no hay respuesta, devolver la configuración predeterminada
+  if (!response) return safeResponse;
+
+  try {
+    // ID
+    if (response.id) safeResponse.id = response.id;
+
+    // Preguntas demográficas
+    if (response.demographicQuestions) {
+      const demographicKeys: DemographicQuestionKeys[] = [
+        'age', 'country', 'gender', 'educationLevel', 
+        'householdIncome', 'employmentStatus', 
+        'dailyHoursOnline', 'technicalProficiency'
+      ];
+
+      // Procesar cada categoría demográfica
+      demographicKeys.forEach(key => {
+        if (response.demographicQuestions[key]) {
+          safeResponse.demographicQuestions[key] = {
+            enabled: response.demographicQuestions[key].enabled || false,
+            required: response.demographicQuestions[key].required || false,
+            // Usar ensureOptionsArray para garantizar que options sea un array
+            options: ensureOptionsArray(response.demographicQuestions[key].options) || 
+                     DEFAULT_CONFIG.demographicQuestions[key].options
+          };
+        }
+      });
+    }
+
+    // Configuración de enlaces
+    if (response.linkConfig) {
+      safeResponse.linkConfig = {
+        allowMobile: response.linkConfig.allowMobile || false,
+        trackLocation: response.linkConfig.trackLocation || false,
+        allowMultipleAttempts: response.linkConfig.allowMultipleAttempts || false
+      };
+    }
+
+    // Límite de participantes
+    if (response.participantLimit) {
+      safeResponse.participantLimit = {
+        enabled: response.participantLimit.enabled || false,
+        value: response.participantLimit.value || 50
+      };
+    }
+
+    // Enlaces de retorno
+    if (response.backlinks) {
+      safeResponse.backlinks = {
+        complete: response.backlinks.complete || '',
+        disqualified: response.backlinks.disqualified || '',
+        overquota: response.backlinks.overquota || ''
+      };
+    }
+
+    // URL de investigación
+    if (response.researchUrl) {
+      safeResponse.researchUrl = response.researchUrl;
+    }
+
+    // Opciones de parámetros
+    if (response.parameterOptions) {
+      safeResponse.parameterOptions = {
+        saveDeviceInfo: response.parameterOptions.saveDeviceInfo || false,
+        saveLocationInfo: response.parameterOptions.saveLocationInfo || false,
+        saveResponseTimes: response.parameterOptions.saveResponseTimes || false,
+        saveUserJourney: response.parameterOptions.saveUserJourney || false
+      };
+    }
+
+  } catch (error) {
+    console.error('[useEyeTrackingRecruit] Error procesando respuesta:', error);
+  }
+
+  return safeResponse;
 };
 
 // Hook principal
@@ -258,37 +349,47 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     queryFn: async () => {
       try {
         console.log('[useEyeTrackingRecruit] Cargando config para:', actualResearchId);
-        const data = await eyeTrackingFixedAPI.getRecruitConfig(actualResearchId);
-        console.log('[useEyeTrackingRecruit] Config cargada (respuesta API):', data);
+        const response = await eyeTrackingFixedAPI.getRecruitConfig(actualResearchId).send();
+        console.log('[useEyeTrackingRecruit] Config cargada (respuesta API):', response);
         
-        const configData = data?.config; 
-        
-        if (configData && configData.id) { 
-          console.log('[useEyeTrackingRecruit] Datos de configuración encontrados en data.config:', configData);
-          setFormData({
-            ...configData,
-            researchId: actualResearchId 
-          });
-          
-          const hasDemographics = Object.values(configData.demographicQuestions).some(
-            (q: any) => q.enabled
-          );
-          setDemographicQuestionsEnabledState(hasDemographics);
-          
-          const hasLinkConfig = Object.values(configData.linkConfig).some(value => value);
-          setLinkConfigEnabledState(hasLinkConfig);
-          
-          return configData; 
-        } else {
-          console.warn('[useEyeTrackingRecruit] La respuesta de la API no contiene configData válido:', data);
-          return null;
+        // Si no hay datos en la respuesta, crear una configuración predeterminada
+        if (!response) {
+          console.log('[useEyeTrackingRecruit] Sin respuesta, usando configuración predeterminada');
+          return createDefaultConfig(actualResearchId);
         }
-
+        
+        // Verificar si la respuesta contiene los datos necesarios
+        if (!response.id) {
+          console.log('[useEyeTrackingRecruit] Respuesta sin ID, usando configuración predeterminada');
+          return createDefaultConfig(actualResearchId);
+        }
+        
+        // Procesar la respuesta para adaptarla a nuestra estructura
+        // Si estamos usando la API de eye-tracking normal, necesitamos adaptarla
+        const configData = processApiResponse(response);
+        
+        // Asegurarnos de usar el researchId correcto
+        configData.researchId = actualResearchId;
+        
+        // Actualizar el estado del formulario
+        setFormData(configData);
+        
+        // Determinar si hay preguntas demográficas habilitadas
+        const hasDemographics = Object.values(configData.demographicQuestions).some(
+          (q: any) => q.enabled
+        );
+        setDemographicQuestionsEnabledState(hasDemographics);
+        
+        // Determinar si hay opciones de configuración de enlace habilitadas
+        const hasLinkConfig = Object.values(configData.linkConfig).some(value => value);
+        setLinkConfigEnabledState(hasLinkConfig);
+        
+        return configData;
       } catch (error: any) {
         console.log('[useEyeTrackingRecruit] Error al cargar:', error);
         if (error.statusCode === 404) {
           console.log('[useEyeTrackingRecruit] No hay configuración previa para:', actualResearchId);
-          return null;
+          return createDefaultConfig(actualResearchId);
         }
         toast.error(`Error al cargar configuración: ${error.message || 'Error desconocido'}`);
         throw error;
@@ -333,7 +434,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   // Configuración de la mutación para guardar
   const saveConfigMutation = useMutation({
     mutationFn: async (data: any) => {
-      return await eyeTrackingFixedAPI.saveRecruitConfig(data);
+      return await eyeTrackingFixedAPI.saveRecruitConfig(data).send();
     },
     onSuccess: () => {
       toast.success('Configuración guardada correctamente');
@@ -415,6 +516,9 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       // Enviamos los datos al servidor (igual que WelcomeScreen)
       const result = await saveConfigMutation.mutateAsync(dataToSave);
       console.log('[useEyeTrackingRecruit] Resultado exitoso:', result);
+      
+      // Mostrar notificación de éxito
+      toast.success('Configuración de reclutamiento guardada correctamente');
       
     } catch (error: any) {
       console.error('[useEyeTrackingRecruit] Error al guardar:', error);
@@ -699,6 +803,19 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     }
     setLinkConfigEnabledState(enabled);
   }, []);
+  
+  // Función auxiliar para crear una configuración predeterminada
+  const createDefaultConfig = (researchId: string) => {
+    const defaultConfig = {
+      ...DEFAULT_CONFIG,
+      researchId
+    };
+    
+    // Actualizar el estado del formulario
+    setFormData(defaultConfig);
+    
+    return defaultConfig;
+  };
   
   return {
     // Estados del formulario
