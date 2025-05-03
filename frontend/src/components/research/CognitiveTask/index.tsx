@@ -7,8 +7,7 @@ import {
   CognitiveTaskHeader,
   CognitiveTaskFooter,
   ErrorModal,
-  JsonPreviewModal,
-  ConfirmModal
+  JsonPreviewModal
 } from './components';
 import { UI_TEXTS } from './constants';
 import { cn } from '@/lib/utils';
@@ -56,10 +55,7 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
     closeJsonModal,
     jsonToSend,
     pendingAction,
-    continueWithAction,
-    showConfirmModal,
-    confirmAndSave,
-    cancelSave
+    continueWithAction
   } = useCognitiveTaskForm(researchId, onSave);
   
   // Registrar información importante para debugging
@@ -165,16 +161,6 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
           jsonData={jsonToSend}
           pendingAction={pendingAction}
           hasValidationErrors={!!validationErrors && Object.keys(validationErrors).length > 0}
-        />
-        
-        <ConfirmModal
-          isOpen={showConfirmModal}
-          onClose={cancelSave}
-          onConfirm={confirmAndSave}
-          title={cognitiveTaskId ? "Confirmar Actualización" : "Confirmar Guardado"}
-          description="¿Estás seguro de que deseas guardar los cambios en esta tarea cognitiva?"
-          confirmText={cognitiveTaskId ? "Actualizar" : "Guardar"}
-          isConfirming={isSaving}
         />
       </div>
     </div>

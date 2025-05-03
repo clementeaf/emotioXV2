@@ -6,7 +6,6 @@ import {
 import { 
   QUERY_KEYS, 
   SUCCESS_MESSAGES,
-  ERROR_MESSAGES,
   UI_TEXTS
 } from '../constants';
 import { Question, ValidationErrors, FileInfo } from '../types';
@@ -18,7 +17,7 @@ import type { ErrorModalData } from '../types';
 import { useCognitiveTaskValidation } from './useCognitiveTaskValidation';
 import { useCognitiveTaskFileUpload } from './useCognitiveTaskFileUpload';
 import { useCognitiveTaskState } from './useCognitiveTaskState';
-import { toast } from 'react-hot-toast';
+// import { toast } from 'react-hot-toast'; // Comentado para eliminar los toasts
 
 // Definición de QuestionType para evitar conflictos de importación
 type QuestionType = 'short_text' | 'long_text' | 'single_choice' | 'multiple_choice' | 'linear_scale' | 'ranking' | 'navigation_flow' | 'preference_test';
@@ -629,14 +628,12 @@ export const useCognitiveTaskForm = (
         const jsonData = JSON.stringify(previewData, null, 2); // Indentado para legibilidad
         modals.showJsonModal(jsonData, 'preview');
     } else {
-        // Mostrar un toast o modal si falla la validación
-        toast.error('Por favor, corrija los errores en el formulario antes de previsualizar.');
-        // Opcionalmente, usar el modal general:
-        // modals.showModal({ 
-        //     title: 'Formulario Inválido', 
-        //     message: 'Por favor, corrija los errores antes de previsualizar.', 
-        //     type: 'warning' 
-        // });
+        // Mostrar un modal con el error de validación en lugar de un toast
+        modals.showModal({
+            title: 'Formulario Inválido', 
+            message: 'Por favor, corrija los errores antes de previsualizar.', 
+            type: 'warning' 
+        });
     }
   }, [formData, validateCurrentForm, modals]);
 
@@ -650,16 +647,25 @@ export const useCognitiveTaskForm = (
     console.log('[handleSave] Errores encontrados por validateCurrentForm:', errorsFound);
     
     if (isValid) {
-        modals.showConfirmModalAction();
+        // Llamar directamente a confirmAndSave en lugar de mostrar el modal de confirmación
+        confirmAndSave();
     } else {
-        // <<< Mostrar toast específico si el único error es sobre las preguntas >>>
+        // Mostrar modal de error en lugar de toast
+        let errorMessage = 'Por favor, corrija los errores en el formulario.';
+        
+        // Si hay un error específico en las preguntas, usarlo en su lugar
         if (errorsFound && errorsFound.questions && Object.keys(errorsFound).length === 1) {
-          toast.error(errorsFound.questions); // Mostrar error específico de preguntas
-        } else {
-          toast.error('Por favor, corrija los errores en el formulario.'); // Toast genérico para otros errores
+          errorMessage = errorsFound.questions;
         }
+        
+        modals.showModal({
+            title: 'Formulario Inválido',
+            message: errorMessage,
+            type: 'warning'
+        });
     }
   };
+  
   const confirmAndSave = useCallback(() => {
       if (!formData) return; // Seguridad
       // Pasar una copia profunda para evitar mutaciones inesperadas si mutate tarda
@@ -678,6 +684,7 @@ export const useCognitiveTaskForm = (
       console.log("[ConfirmAndSave] Datos listos para mutación:", dataToSave);
       mutate(dataToSave); // Llamar a la mutación
   }, [formData, mutate]);
+  
   const cancelSave = useCallback(() => {
     modals.closeConfirmModal();
   }, [modals]);
