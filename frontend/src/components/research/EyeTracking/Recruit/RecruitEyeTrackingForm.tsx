@@ -3,7 +3,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { useEyeTrackingRecruit } from './hooks/useEyeTrackingRecruit';
-import { DemographicQuestionKeys, LinkConfigKeys, ParameterOptionKeys, BacklinkKeys } from '@/shared/interfaces/eyeTrackingRecruit.interface';
+import { DemographicQuestionKeys, ParameterOptionKeys, BacklinkKeys } from '@/shared/interfaces/eyeTrackingRecruit.interface';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { Spinner } from '@/components/ui/Spinner';
 
@@ -111,14 +111,14 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
 
   return (
     <>
-      <div className={cn("max-w-4xl mx-auto", className)}>
+      <div className={cn("max-w-4xl", className)}>
         <div className="bg-white rounded-xl border border-neutral-200/70 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.05)] overflow-hidden">
           <div className="p-6">
-            <header className="mb-8 flex items-center justify-between">
+            <header className="mb-8">
               <h1 className="text-xl font-semibold text-neutral-900">
                 Nueva investigación de comportamiento
               </h1>
-              <div className="flex gap-3">
+              <div className="flex justify-end mt-4">
                 <button
                   type="button"
                   onClick={saveForm}
@@ -362,19 +362,23 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                   
                   <div className="space-y-6">
                     <div>
-                      <h3 className="text-sm font-medium mb-3">A. Enlaces de retorno</h3>
+                      <h3 className="text-sm font-medium mb-3 flex items-center">
+                        A. Enlaces de retorno
+                        <div className="relative ml-2 group">
+                          <span className="cursor-help w-5 h-5 rounded-full bg-blue-100 text-blue-600 inline-flex items-center justify-center text-xs font-bold">i</span>
+                          <div className="absolute left-0 transform -translate-y-full top-0 w-72 bg-white p-3 rounded shadow-lg border border-neutral-200 hidden group-hover:block z-10 text-sm text-blue-700">
+                            <p><strong>¿Qué son los enlaces de retorno?</strong></p>
+                            <p className="mt-1">Son URLs a las que se redirigirá a los participantes después de completar, ser descalificados o exceder la cuota de la investigación. Por ejemplo, podrían ser redirigidos a:</p>
+                            <ul className="list-disc pl-5 mt-1">
+                              <li>Su sitio web principal</li>
+                              <li>Una página de agradecimiento</li>
+                              <li>Un panel de encuestas externo</li>
+                            </ul>
+                            <p className="mt-1">El sistema añadirá automáticamente un parámetro <code className="bg-blue-100 px-1 py-0.5 rounded">?uid=PARTICIPANT_ID</code> al final de cada URL para que pueda identificar al participante en su sistema.</p>
+                          </div>
+                        </div>
+                      </h3>
                       <p className="text-sm text-neutral-500 mb-4">Utilice parámetros uid para transmitir los ID de los participantes a su sistema</p>
-                      
-                      <div className="bg-blue-50 p-3 rounded-md mb-4 text-sm text-blue-700 border border-blue-200">
-                        <p><strong>¿Qué son los enlaces de retorno?</strong></p>
-                        <p className="mt-1">Son URLs a las que se redirigirá a los participantes después de completar, ser descalificados o exceder la cuota de la investigación. Por ejemplo, podrían ser redirigidos a:</p>
-                        <ul className="list-disc pl-5 mt-1">
-                          <li>Su sitio web principal</li>
-                          <li>Una página de agradecimiento</li>
-                          <li>Un panel de encuestas externo</li>
-                        </ul>
-                        <p className="mt-1">El sistema añadirá automáticamente un parámetro <code className="bg-blue-100 px-1 py-0.5 rounded">?uid=PARTICIPANT_ID</code> al final de cada URL para que pueda identificar al participante en su sistema.</p>
-                      </div>
                       
                       <div className="space-y-4">
                         <div>
@@ -425,19 +429,23 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                     </div>
                     
                     <div>
-                      <h3 className="text-sm font-medium mb-3">B. Enlace de investigación para compartir</h3>
+                      <h3 className="text-sm font-medium mb-3 flex items-center">
+                        B. Enlace de investigación para compartir
+                        <div className="relative ml-2 group">
+                          <span className="cursor-help w-5 h-5 rounded-full bg-green-100 text-green-600 inline-flex items-center justify-center text-xs font-bold">i</span>
+                          <div className="absolute left-0 transform -translate-y-full top-0 w-72 bg-white p-3 rounded shadow-lg border border-neutral-200 hidden group-hover:block z-10 text-sm text-green-700">
+                            <p><strong>¿Cómo funciona este enlace?</strong></p>
+                            <p className="mt-1">Esta es la URL que se debe compartir con participantes potenciales para invitarlos al estudio. Funciona así:</p>
+                            <ul className="list-disc pl-5 mt-1">
+                              <li>La URL contiene un marcador <code className="bg-green-100 px-1 py-0.5 rounded">{"participant_id"}</code> que debe ser reemplazado</li>
+                              <li>Si usa un panel externo, ellos reemplazarán este marcador con el ID único de cada participante</li>
+                              <li>Si comparte manualmente, puede reemplazarlo con cualquier identificador (ej. correo o nombre)</li>
+                            </ul>
+                            <p className="mt-1">Ejemplo: <code className="bg-green-100 px-1 py-0.5 rounded">www.useremotion.com/sysgd-jye746?respondent=123</code> donde "123" es el ID único del participante.</p>
+                          </div>
+                        </div>
+                      </h3>
                       <p className="text-sm text-neutral-500 mb-4">El sistema de invitación externo debe sustituir el parámetro [ID del participante] por el ID individual del participante.</p>
-                      
-                      <div className="bg-green-50 p-3 rounded-md mb-4 text-sm text-green-700 border border-green-200">
-                        <p><strong>¿Cómo funciona este enlace?</strong></p>
-                        <p className="mt-1">Esta es la URL que se debe compartir con participantes potenciales para invitarlos al estudio. Funciona así:</p>
-                        <ul className="list-disc pl-5 mt-1">
-                          <li>La URL contiene un marcador <code className="bg-green-100 px-1 py-0.5 rounded">{"participant_id"}</code> que debe ser reemplazado</li>
-                          <li>Si usa un panel externo, ellos reemplazarán este marcador con el ID único de cada participante</li>
-                          <li>Si comparte manualmente, puede reemplazarlo con cualquier identificador (ej. correo o nombre)</li>
-                        </ul>
-                        <p className="mt-1">Ejemplo: <code className="bg-green-100 px-1 py-0.5 rounded">www.useremotion.com/sysgd-jye746?respondent=123</code> donde "123" es el ID único del participante.</p>
-                      </div>
                       
                       <div>
                         <label className="block text-sm mb-2">URL de la investigación</label>
