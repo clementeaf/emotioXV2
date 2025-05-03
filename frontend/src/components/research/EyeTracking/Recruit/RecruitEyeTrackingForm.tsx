@@ -108,7 +108,13 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
   };
 
   if (loading) {
-    return <LoadingSkeleton variant="form" rows={8} title={true} className="max-w-4xl mx-auto" />;
+    return (
+      <>
+        <div className={cn("max-w-4xl", className)}>
+          <LoadingSkeleton variant="form" rows={8} title={true} />
+        </div>
+      </>
+    );
   }
 
   return (

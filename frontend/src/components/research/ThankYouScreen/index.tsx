@@ -10,6 +10,7 @@ import {
 } from './components';
 import { UI_TEXTS } from './constants';
 import { cn } from '@/lib/utils';
+import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 
 /**
  * Componente principal para el formulario de configuración de la pantalla de agradecimiento
@@ -63,23 +64,8 @@ export const ThankYouScreenForm: React.FC<ThankYouScreenFormProps> = ({
   // Mientras carga, mostrar un indicador de carga
   if (isLoading) {
     return (
-      <div className={cn('space-y-4 bg-white p-6 rounded-lg shadow-sm', className)}>
-        <div className="animate-pulse flex flex-col space-y-4">
-          <div className="h-6 bg-gray-200 rounded w-1/2"></div>
-          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-          <div className="flex justify-between items-center">
-            <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-            <div className="h-6 bg-gray-200 rounded-full w-12"></div>
-          </div>
-          <div className="h-32 bg-gray-200 rounded w-full"></div>
-          <div className="flex justify-between mt-4">
-            <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-            <div className="flex space-x-2">
-              <div className="h-8 bg-gray-200 rounded w-24"></div>
-              <div className="h-8 bg-blue-200 rounded w-32"></div>
-            </div>
-          </div>
-        </div>
+      <div className={cn('max-w-4xl space-y-4', className)}>
+        <LoadingSkeleton variant="form" rows={6} />
       </div>
     );
   }

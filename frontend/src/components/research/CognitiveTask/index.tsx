@@ -80,11 +80,6 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
     console.log('[CognitiveTaskForm] Estado del botón de guardar:', isSaving ? "Guardando..." : cognitiveTaskId ? "Actualizar" : "Guardar y Continuar");
   }, [cognitiveTaskId, formData.questions, isSaving]);
   
-  // Mientras carga, mostrar un esqueleto de carga
-  if (isLoading) {
-    return <LoadingSkeleton variant="form" rows={6} />;
-  }
-  
   // Estilo restrictivo para el formulario
   const containerStyle = {
     maxWidth: '768px',
@@ -100,6 +95,18 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
     maxWidth: '768px',
     boxSizing: 'border-box' as 'border-box'
   };
+  
+  // Mientras carga, mostrar un esqueleto de carga
+  if (isLoading) {
+    // Usar el mismo estilo de container para el skeleton
+    return (
+      <div style={containerStyle}>
+        <div style={innerContainerStyle}>
+          <LoadingSkeleton variant="form" rows={6} />
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div style={containerStyle}>

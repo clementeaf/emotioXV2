@@ -43,7 +43,11 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
   const confirmAction = handleSubmit; // Placeholder - llamar a handleSubmit al confirmar
 
   if (isLoading) {
-    return <WelcomeScreenSkeleton />;
+    return (
+      <div className={cn('max-w-4xl space-y-4', className)}>
+        <WelcomeScreenSkeleton />
+      </div>
+    );
   }
 
   return (
