@@ -28,7 +28,9 @@ export const ERROR_MESSAGES = {
 // Mensajes de éxito
 export const SUCCESS_MESSAGES = {
   SAVE_SUCCESS: 'Pantalla de agradecimiento guardada exitosamente',
-  PREVIEW_COMING_SOON: '¡Vista previa disponible próximamente!'
+  PREVIEW_COMING_SOON: '¡Vista previa disponible próximamente!',
+  UPDATED: 'Pantalla de agradecimiento actualizada correctamente.',
+  CREATED: 'Pantalla de agradecimiento creada correctamente.'
 };
 
 // Textos para la interfaz de usuario

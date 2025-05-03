@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import toast from 'react-hot-toast';
 import {
   ThankYouScreenFormData,
   ThankYouScreenConfig,
@@ -13,6 +12,7 @@ import { thankYouScreenFixedAPI } from '@/lib/thank-you-screen-api';
 import {
   QUERY_KEYS,
   ERROR_MESSAGES,
+  SUCCESS_MESSAGES
 } from '../constants';
 import { useAuth } from '@/providers/AuthProvider';
 import { authService } from '@/services/authService';
@@ -123,12 +123,19 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
         setThankYouScreenId(response.id);
       }
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.THANK_YOU_SCREEN, researchId] });
-      toast.success(thankYouScreenId ? 'Pantalla actualizada' : 'Pantalla creada');
+      
+      // Reemplazar toast.success por modal de éxito
+      showModal({
+        title: 'Éxito',
+        message: thankYouScreenId ? SUCCESS_MESSAGES.UPDATED : SUCCESS_MESSAGES.CREATED,
+        type: 'info'
+      });
     },
     onError: (error: any) => {
       console.error('[ThankYouScreenForm] Error:', error);
-      toast.error(error.message || 'Error al guardar');
-      setModalError({
+      
+      // Reemplazar toast.error por modal de error
+      showModal({
         title: 'Error al guardar',
         message: error.message || 'Ocurrió un error al guardar la configuración',
         type: 'error'
@@ -206,7 +213,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
     return Object.keys(errors).length === 0;
   };
 
-  // Guardar formulario (modificado para mostrar DOM modal)
+  // Guardar formulario (modificado para ejecutar directamente sin modal de confirmación)
   const handleSave = async () => {
     // Verificar si hay tokens en localStorage o sessionStorage aunque isAuthenticated sea false
     const localStorageToken = localStorage.getItem('token');
@@ -220,7 +227,11 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
       
       if (restored) {
         // Si se restauró la sesión correctamente, volver a intentar la operación
-        toast.success('Sesión restaurada correctamente', { duration: 3000 });
+        showModal({
+          title: 'Sesión restaurada',
+          message: 'Sesión restaurada correctamente. Intente guardar nuevamente.',
+          type: 'info'
+        });
         
         // Esperar un momento para que el estado se actualice
         setTimeout(() => {
@@ -285,16 +296,6 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
         type: 'error'
       });
 
-      toast.error('Por favor corrija los errores antes de guardar', {
-        duration: 5000,
-        style: {
-          background: '#FEF2F2',
-          color: '#991B1B',
-          padding: '16px',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-        },
-        icon: '⚠️'
-      });
       return;
     }
 
@@ -309,145 +310,8 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
         }
       };
 
-      // Crear modal de confirmación con DOM nativo
-      const confirmModalContainer = document.createElement('div');
-      confirmModalContainer.innerHTML = `
-        <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-auto p-6 relative">
-            <button id="closeConfirmModal" style="background: none; border: none; cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; color: #6b7280; border-radius: 50%; transition: all 0.2s; position: absolute; right: 16px; top: 16px;">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-            </button>
-            
-            <div class="mb-5">
-              <h3 class="text-lg font-bold text-gray-900 mb-2">Confirmar Acción</h3>
-              <p class="text-gray-600">¿Estás seguro que deseas guardar esta pantalla de agradecimiento?</p>
-            </div>
-            
-            <div class="text-left mb-6">
-              <p class="text-sm font-medium text-gray-700 mb-2">Resumen de la configuración:</p>
-              <ul class="pl-5 space-y-1 text-sm text-gray-600 list-disc">
-                <li><span class="font-medium">Título:</span> ${dataToSave.title}</li>
-                <li><span class="font-medium">Estado:</span> ${dataToSave.isEnabled ? 'Habilitada' : 'Deshabilitada'}</li>
-                ${dataToSave.redirectUrl ?
-          `<li><span class="font-medium">URL de redirección:</span> ${dataToSave.redirectUrl}</li>` :
-          '<li><span class="font-medium">URL de redirección:</span> <span class="italic">No configurada</span></li>'
-        }
-              </ul>
-            </div>
-            
-            <div class="flex gap-3 justify-end">
-              <button id="cancelSaveButton" class="px-4 py-2 border rounded-md text-gray-600 bg-white hover:bg-gray-50 transition-colors duration-200">
-                Cancelar
-              </button>
-              <button id="confirmSaveButton" class="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-200">
-                Guardar
-              </button>
-            </div>
-          </div>
-        </div>
-      `;
-
-      // Añadir estilos al modal
-      const style = document.createElement('style');
-      style.innerHTML = `
-        #closeConfirmModal:hover {
-          background-color: rgba(0, 0, 0, 0.05);
-        }
-      `;
-      confirmModalContainer.appendChild(style);
-
-      // Añadir el modal al DOM
-      document.body.appendChild(confirmModalContainer);
-
-      // Evento para cerrar el modal
-      document.getElementById('closeConfirmModal')?.addEventListener('click', () => {
-        document.body.removeChild(confirmModalContainer);
-      });
-
-      // Evento para cancelar
-      document.getElementById('cancelSaveButton')?.addEventListener('click', () => {
-        document.body.removeChild(confirmModalContainer);
-      });
-
-      // Evento para confirmar y guardar
-      document.getElementById('confirmSaveButton')?.addEventListener('click', () => {
-        document.body.removeChild(confirmModalContainer);
-
-        // Mostrar indicador de carga y mensaje de guardando
-        const loadingToastId = toast.loading('Guardando pantalla de agradecimiento...', {
-          duration: Infinity, // Que no desaparezca automáticamente
-          style: {
-            background: '#F0F9FF',
-            color: '#0C4A6E',
-            padding: '16px',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-          },
-          icon: '⏳'
-        });
-
-        // Ejecutar la mutación para guardar
-        mutate(dataToSave, {
-          onSuccess: (response) => {
-            // Actualizar ID si se creó un nuevo registro
-            if (response && response.id) {
-              setThankYouScreenId(response.id);
-            }
-
-            // Invalidar consulta para recargar datos
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.THANK_YOU_SCREEN, researchId] });
-
-            // Actualizar mensaje de toast a éxito
-            const toastId = toast.success(thankYouScreenId ? 'Pantalla de agradecimiento actualizada exitosamente' : 'Pantalla de agradecimiento creada exitosamente', {
-              id: loadingToastId,
-              duration: 3000,
-              style: {
-                background: '#10b981',
-                color: '#fff',
-                fontWeight: 'bold'
-              },
-              icon: '✅'
-            });
-
-            // Hacer el toast clickeable
-            const toastElement = document.getElementById(toastId);
-            if (toastElement) {
-              toastElement.style.cursor = 'pointer';
-              toastElement.onclick = () => toast.dismiss(toastId);
-            }
-          },
-          onError: (error: any) => {
-            console.error('[ThankYouScreenForm] Error en mutación:', error);
-
-            let errorMsg = 'Error al guardar la pantalla de agradecimiento';
-            if (error.message) {
-              errorMsg += `: ${error.message}`;
-            }
-
-            // Actualizar mensaje de toast a error
-            toast.error(errorMsg, {
-              id: loadingToastId,
-              duration: 5000,
-              style: {
-                background: '#FEF2F2',
-                color: '#991B1B',
-                padding: '16px',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-              },
-              icon: '❌'
-            });
-
-            // Mostrar modal de error
-            showModal({
-              title: ERROR_MESSAGES.SAVE_ERROR,
-              message: error.message || 'Ocurrió un error al guardar la configuración',
-              type: 'error'
-            });
-          }
-        });
-      });
+      // Ejecutar la mutación para guardar directamente sin mostrar toasts
+      mutate(dataToSave);
     } catch (error: any) {
       console.error('[ThankYouScreenForm] Error en preparación:', error);
       showModal({
@@ -458,7 +322,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
     }
   };
 
-  // Previsualizar formulario (también actualizado con toasts mejorados)
+  // Previsualizar formulario (también actualizado sin toasts)
   const handlePreview = () => {
     if (!validateForm()) {
       // Crear un mensaje con la lista de errores
@@ -468,17 +332,6 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
         title: ERROR_MESSAGES.PREVIEW_ERROR,
         message: errorMessageText,
         type: 'error'
-      });
-
-      toast.error('Por favor corrija los errores antes de previsualizar', {
-        duration: 5000,
-        style: {
-          background: '#FEF2F2',
-          color: '#991B1B',
-          padding: '16px',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-        },
-        icon: '⚠️'
       });
       return;
     }
@@ -652,16 +505,11 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
         previewWindow.document.write(previewHtml);
         previewWindow.document.close();
 
-        // Notificar al usuario que se ha abierto la previsualización
-        toast.success('Se ha abierto la previsualización en una nueva ventana', {
-          duration: 5000,
-          style: {
-            background: '#F0F9FF',
-            color: '#0C4A6E',
-            padding: '16px',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-          },
-          icon: '🔍'
+        // Notificar al usuario con un modal en lugar de toast
+        showModal({
+          title: 'Vista previa generada',
+          message: 'Se ha abierto la previsualización en una nueva ventana',
+          type: 'info'
         });
       } else {
         // Si no se pudo abrir la ventana (bloqueador de pop-ups, etc.)
@@ -669,17 +517,6 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
           title: 'No se pudo abrir la previsualización',
           message: 'Parece que su navegador ha bloqueado la ventana emergente. Por favor, permita las ventanas emergentes para este sitio e inténtelo de nuevo.',
           type: 'error'
-        });
-
-        toast.error('No se pudo abrir la ventana de previsualización', {
-          duration: 5000,
-          style: {
-            background: '#FEF2F2',
-            color: '#991B1B',
-            padding: '16px',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-          },
-          icon: '❌'
         });
       }
     } catch (error) {
@@ -689,17 +526,6 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
         title: ERROR_MESSAGES.PREVIEW_ERROR,
         message: 'Error al generar la previsualización. Por favor, inténtelo de nuevo.',
         type: 'error'
-      });
-
-      toast.error('Error al generar la vista previa', {
-        duration: 5000,
-        style: {
-          background: '#FEF2F2',
-          color: '#991B1B',
-          padding: '16px',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-        },
-        icon: '❌'
       });
     }
   };

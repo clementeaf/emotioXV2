@@ -18,7 +18,7 @@ import React from 'react';
 interface ErrorModalData {
   title: string;
   message: string | React.ReactNode;
-  type: 'error' | 'info' | 'success';
+  type: 'error' | 'info' | 'success' | 'warning';
 }
 
 interface UseEyeTrackingRecruitProps {
@@ -334,7 +334,6 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   // Estados para los modales
   const [modalError, setModalError] = useState<ErrorModalData | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
-  const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
   const [apiErrors, setApiErrors] = useState<{visible: boolean, title: string, message: string} | undefined>(undefined);
   
   // Nuevos estados para QR
@@ -451,7 +450,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       return await eyeTrackingFixedAPI.saveRecruitConfig(data).send();
     },
     onSuccess: () => {
-      toast.success('Configuración guardada correctamente');
+      // Eliminamos el toast de aquí para evitar duplicados
       const actualResearchId = researchId === 'current' ? '1234' : researchId;
       queryClient.invalidateQueries({ queryKey: ['eyeTrackingRecruit', actualResearchId] });
     },
@@ -482,58 +481,35 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     setModalVisible(true);
   }, []);
   
-  // Función para guardar el formulario
-  const saveForm = React.useCallback(async () => {
-    setLoading(true);
-    setApiErrors(undefined);
-    
-    try {
-      // Validamos los datos antes de enviar
-      if (checkRequiredFields()) {
-        // Mostramos la ventana de confirmación
-        setShowConfirmModal(true);
-      } else {
-        toast.error('Por favor complete todos los campos requeridos');
-      }
-    } catch (error: any) {
-      console.error('[useEyeTrackingRecruit] Error al preparar datos para guardar:', error);
-      setApiErrors({
-        visible: true,
-        title: 'Error al preparar datos',
-        message: error.message || 'Ocurrió un error inesperado al preparar los datos para guardar'
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [checkRequiredFields]);
-
-  // Función que se ejecuta cuando se confirma el guardado
+  // Función que ejecuta el guardado real
   const handleConfirmSave = React.useCallback(async () => {
     setLoading(true);
-    setShowConfirmModal(false);
     
     try {
-      // Preparamos los datos para enviar (exactamente como en WelcomeScreen)
-      const actualResearchId = researchId === 'current' ? '1234' : researchId; // Replicando WelcomeScreen
+      // Preparamos los datos para enviar
+      const actualResearchId = researchId === 'current' ? '1234' : researchId;
       
       // Extraer los datos excluyendo el id, para forzar al backend a usar updateByResearchId
       const { id, ...restFormData } = formData;
       const dataToSave = {
         ...restFormData,
-        researchId: actualResearchId // Usar el ID real, no "current"
+        researchId: actualResearchId 
       };
       
       console.log('[useEyeTrackingRecruit] Guardando config con ID de investigación:', dataToSave.researchId);
       console.log('[useEyeTrackingRecruit] ID original de configuración eliminado:', id || 'No tenía ID');
       console.log('[useEyeTrackingRecruit] Payload completo:', JSON.stringify(dataToSave, null, 2));
       
-      // Enviamos los datos al servidor (igual que WelcomeScreen)
+      // Enviamos los datos al servidor
       const result = await saveConfigMutation.mutateAsync(dataToSave);
       console.log('[useEyeTrackingRecruit] Resultado exitoso:', result);
       
-      // Mostrar notificación de éxito
-      toast.success('Configuración de reclutamiento guardada correctamente');
-      
+      // Mostrar modal de éxito (tipo info para usar azul)
+      showModal({
+        title: 'Éxito',
+        message: 'Configuración de reclutamiento guardada correctamente.',
+        type: 'info'
+      });
     } catch (error: any) {
       console.error('[useEyeTrackingRecruit] Error al guardar:', error);
       
@@ -558,7 +534,32 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     } finally {
       setLoading(false);
     }
-  }, [formData, saveConfigMutation, researchId]);
+  }, [formData, saveConfigMutation, researchId, showModal, setApiErrors]);
+
+  // Función para guardar el formulario (punto de entrada principal)
+  const saveForm = React.useCallback(async () => {
+    setLoading(true);
+    setApiErrors(undefined);
+    
+    try {
+      // Validamos los datos antes de enviar
+      if (checkRequiredFields()) {
+        // Guardar directamente sin modal de confirmación
+        await handleConfirmSave();
+      } else {
+        toast.error('Por favor complete todos los campos requeridos');
+      }
+    } catch (error: any) {
+      console.error('[useEyeTrackingRecruit] Error al preparar datos para guardar:', error);
+      setApiErrors({
+        visible: true,
+        title: 'Error al preparar datos',
+        message: error.message || 'Ocurrió un error inesperado al preparar los datos para guardar'
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [checkRequiredFields, handleConfirmSave]);
 
   // Actualizar el efecto de demographicQuestionsEnabled
   useEffect(() => {
@@ -835,7 +836,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     // Estados para los modales
     modalError,
     modalVisible,
-    showConfirmModal,
+    showConfirmModal: false,
     apiErrors,
     
     // Métodos para los modales
