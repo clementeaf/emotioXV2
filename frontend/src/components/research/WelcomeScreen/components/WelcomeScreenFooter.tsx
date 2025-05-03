@@ -29,7 +29,7 @@ export const WelcomeScreenFooter: React.FC<WelcomeScreenFooterProps> = ({
     : UI_TEXTS.BUTTONS.SAVE;
 
   return (
-    <div className="flex justify-end items-center gap-3 pt-4 border-t border-neutral-200">
+    <div className="flex justify-end items-center gap-3 pt-4">
       <Button
         variant="outline"
         onClick={onPreview}

@@ -26,7 +26,7 @@ export const WelcomeScreenContent: React.FC<WelcomeScreenContentProps> = ({
   disabled = false
 }) => {
   return (
-    <div className="space-y-6 p-4 bg-white rounded-lg border border-neutral-100">
+    <div className="space-y-6 p-4 bg-white rounded-lg border border-neutral-200 shadow-xl">
       {/* Campo de título */}
       <div className="space-y-2">
         <Label htmlFor="title">Título</Label>

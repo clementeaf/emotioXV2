@@ -18,7 +18,7 @@ export const ThankYouScreenContent: React.FC<ThankYouScreenContentProps> = ({
   disabled
 }) => {
   return (
-    <div className="space-y-4 p-4 bg-white rounded-lg border border-neutral-100">
+    <div className="space-y-4 p-4 bg-white rounded-lg border border-neutral-200 shadow-xl">
       {/* Campo de título */}
       <div className="space-y-2">
         <label htmlFor="title" className="text-sm font-medium">
