@@ -2,6 +2,7 @@ import React from 'react';
 // import { WelcomeScreenFormProps } from '../types';
 import { Button } from '@/components/ui/Button';
 import { UI_TEXTS } from '../constants';
+import { FormFooter } from '@/components/ui/FormFooter';
 
 // <<< Definir props específicas >>>
 interface WelcomeScreenFooterProps {
@@ -22,28 +23,17 @@ export const WelcomeScreenFooter: React.FC<WelcomeScreenFooterProps> = ({
   disabled,
   isUpdate
 }) => {
-  const buttonText = isSaving
-    ? UI_TEXTS.BUTTONS.SAVING
-    : isUpdate
-    ? UI_TEXTS.BUTTONS.UPDATE
-    : UI_TEXTS.BUTTONS.SAVE;
-
   return (
-    <div className="flex justify-end items-center gap-3 pt-4">
-      <Button
-        variant="outline"
-        onClick={onPreview}
-        disabled={disabled || isSaving}
-      >
-        {UI_TEXTS.BUTTONS.PREVIEW}
-      </Button>
-      <Button
-        onClick={onSave}
-        disabled={disabled || isSaving}
-        loading={isSaving}
-      >
-        {buttonText}
-      </Button>
-    </div>
+    <FormFooter
+      onSave={onSave}
+      onPreview={onPreview}
+      isSaving={isSaving}
+      isDisabled={disabled}
+      isUpdate={isUpdate}
+      saveText={UI_TEXTS.BUTTONS.SAVE}
+      updateText={UI_TEXTS.BUTTONS.UPDATE}
+      savingText={UI_TEXTS.BUTTONS.SAVING}
+      previewText={UI_TEXTS.BUTTONS.PREVIEW}
+    />
   );
 }; 

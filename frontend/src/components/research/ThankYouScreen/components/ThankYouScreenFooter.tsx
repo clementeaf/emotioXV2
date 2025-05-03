@@ -1,6 +1,7 @@
 import React from 'react';
 import { ThankYouScreenFooterProps } from '../types';
 import { UI_TEXTS } from '../constants';
+import { FormFooter } from '@/components/ui/FormFooter';
 
 /**
  * Componente para el pie de página con acciones del formulario
@@ -27,34 +28,20 @@ export const ThankYouScreenFooter: React.FC<ThankYouScreenFooterProps> = ({
       : UI_TEXTS.FOOTER.CREATE_NEW_TEXT;
   };
 
-  // Determinar el texto del botón de guardar
-  const getSaveButtonText = () => {
-    if (isSaving) {
-      return UI_TEXTS.FOOTER.SAVING_BUTTON;
-    }
-    return thankYouScreenId ? "Actualizar" : "Guardar";
-  };
-
   return (
-    <footer className="flex items-center justify-end py-4 mt-6">
-      <div className="flex space-x-2">
-        <button
-          type="button"
-          onClick={onPreview}
-          disabled={isLoading || isSaving || !isEnabled}
-          className="px-4 py-2 text-sm font-medium text-neutral-700 bg-white border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors disabled:opacity-50"
-        >
-          {UI_TEXTS.FOOTER.PREVIEW_BUTTON}
-        </button>
-        <button
-          type="button"
-          onClick={onSave}
-          disabled={isLoading || isSaving || !isEnabled}
-          className="px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-black/50 transition-colors disabled:opacity-50"
-        >
-          {getSaveButtonText()}
-        </button>
-      </div>
-    </footer>
+    <FormFooter
+      onSave={onSave}
+      onPreview={onPreview}
+      isSaving={isSaving}
+      isDisabled={isLoading || !isEnabled}
+      isUpdate={!!thankYouScreenId}
+      saveText="Guardar"
+      updateText="Actualizar"
+      savingText={UI_TEXTS.FOOTER.SAVING_BUTTON}
+      previewText={UI_TEXTS.FOOTER.PREVIEW_BUTTON}
+      statusText={getStatusText()}
+      showStatus={true}
+      className="mt-6"
+    />
   );
 }; 
