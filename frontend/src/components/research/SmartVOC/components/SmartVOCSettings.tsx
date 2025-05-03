@@ -14,7 +14,7 @@ export const SmartVOCSettings: React.FC<SmartVOCSettingsProps> = ({
   disabled
 }) => {
   return (
-    <div className="bg-white rounded-lg border border-neutral-100 p-4">
+    <div className="bg-white  py-4">
       <div className="flex items-center justify-between">
         <div className="flex gap-3 items-center">
           <h3 className="font-medium text-lg">SmartVOC</h3>

@@ -89,76 +89,94 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
     return <LoadingSkeleton variant="form" rows={6} />;
   }
   
-  return (
-    <div className={cn('max-w-4xl', className)}>
-      {/* Encabezado */}
-      <CognitiveTaskHeader 
-        title={UI_TEXTS.TITLE} 
-        description={UI_TEXTS.DESCRIPTION}
-      />
-      
-      {/* --- Información Contextual --- */}
-      <div className="mt-4 mb-6 p-3 bg-gray-50 border rounded-md text-sm text-gray-600">
-        <p><span className="font-semibold">Estado:</span> {cognitiveTaskId ? 'Configuración existente' : 'Configuración nueva'}</p>
-        {cognitiveTaskId && (
-          <p><span className="font-semibold">ID:</span> {cognitiveTaskId}</p>
-        )}
-        {/* Asegurarse de que researchId siempre tenga valor aquí */}
-        <p><span className="font-semibold">Research ID:</span> {researchId || 'No disponible'}</p> 
-      </div>
-      {/* --- Fin Información Contextual --- */}
+  // Estilo restrictivo para el formulario
+  const containerStyle = {
+    maxWidth: '768px',
+    width: '100%',
+    marginLeft: '0',
+    marginRight: '0',
+    overflowX: 'hidden' as 'hidden'
+  };
 
-      {/* Campos del formulario */}
-      <div>
-        <CognitiveTaskFields
-          questions={formData.questions}
-          randomizeQuestions={formData.randomizeQuestions}
-          onQuestionChange={handleQuestionChange}
-          onAddChoice={handleAddChoice}
-          onRemoveChoice={handleRemoveChoice}
-          onFileUpload={handleFileUpload}
-          onFileDelete={handleRemoveFile}
-          setRandomizeQuestions={setRandomizeQuestions}
-          disabled={isSaving}
-          isUploading={isUploading}
-          uploadProgress={uploadProgress}
-          validationErrors={validationErrors}
+  // Estilo para el contenedor secundario
+  const innerContainerStyle = {
+    width: '100%',
+    maxWidth: '768px',
+    boxSizing: 'border-box' as 'border-box'
+  };
+  
+  return (
+    <div style={containerStyle}>
+      <div className={cn('space-y-4', className)} style={innerContainerStyle}>
+        {/* Encabezado */}
+        <CognitiveTaskHeader 
+          title={UI_TEXTS.TITLE} 
+          description={UI_TEXTS.DESCRIPTION}
+        />
+        
+        {/* --- Información Contextual --- */}
+        <div className="mt-4 mb-6 p-3 bg-gray-50 border rounded-md text-sm text-gray-600">
+          <p><span className="font-semibold">Estado:</span> {cognitiveTaskId ? 'Configuración existente' : 'Configuración nueva'}</p>
+          {cognitiveTaskId && (
+            <p><span className="font-semibold">ID:</span> {cognitiveTaskId}</p>
+          )}
+          {/* Asegurarse de que researchId siempre tenga valor aquí */}
+          <p><span className="font-semibold">Research ID:</span> {researchId || 'No disponible'}</p> 
+        </div>
+        {/* --- Fin Información Contextual --- */}
+
+        {/* Campos del formulario */}
+        <div className="space-y-6 p-6 bg-white rounded-lg border border-neutral-100">
+          <CognitiveTaskFields
+            questions={formData.questions}
+            randomizeQuestions={formData.randomizeQuestions}
+            onQuestionChange={handleQuestionChange}
+            onAddChoice={handleAddChoice}
+            onRemoveChoice={handleRemoveChoice}
+            onFileUpload={handleFileUpload}
+            onFileDelete={handleRemoveFile}
+            setRandomizeQuestions={setRandomizeQuestions}
+            disabled={isSaving}
+            isUploading={isUploading}
+            uploadProgress={uploadProgress}
+            validationErrors={validationErrors}
+          />
+        </div>
+        
+        <CognitiveTaskFooter
+          onSave={saveForm}
+          onPreview={handlePreview}
+          isSaving={isSaving}
+          cognitiveTaskId={cognitiveTaskId}
+        />
+
+        {/* Modal para mostrar errores y mensajes */}
+        <ErrorModal 
+          isOpen={modalVisible}
+          onClose={closeModal}
+          error={modalError}
+        />
+        
+        {/* Modal para la vista previa del JSON */}
+        <JsonPreviewModal
+          isOpen={showJsonPreview}
+          onClose={closeJsonModal}
+          onContinue={continueWithAction}
+          jsonData={jsonToSend}
+          pendingAction={pendingAction}
+          hasValidationErrors={!!validationErrors && Object.keys(validationErrors).length > 0}
+        />
+        
+        <ConfirmModal
+          isOpen={showConfirmModal}
+          onClose={cancelSave}
+          onConfirm={confirmAndSave}
+          title={cognitiveTaskId ? "Confirmar Actualización" : "Confirmar Guardado"}
+          description="¿Estás seguro de que deseas guardar los cambios en esta tarea cognitiva?"
+          confirmText={cognitiveTaskId ? "Actualizar" : "Guardar"}
+          isConfirming={isSaving}
         />
       </div>
-      
-      <CognitiveTaskFooter
-        onSave={saveForm}
-        onPreview={handlePreview}
-        isSaving={isSaving}
-        cognitiveTaskId={cognitiveTaskId}
-      />
-
-      {/* Modal para mostrar errores y mensajes */}
-      <ErrorModal 
-        isOpen={modalVisible}
-        onClose={closeModal}
-        error={modalError}
-      />
-      
-      {/* Modal para la vista previa del JSON */}
-      <JsonPreviewModal
-        isOpen={showJsonPreview}
-        onClose={closeJsonModal}
-        onContinue={continueWithAction}
-        jsonData={jsonToSend}
-        pendingAction={pendingAction}
-        hasValidationErrors={!!validationErrors && Object.keys(validationErrors).length > 0}
-      />
-      
-      <ConfirmModal
-        isOpen={showConfirmModal}
-        onClose={cancelSave}
-        onConfirm={confirmAndSave}
-        title={cognitiveTaskId ? "Confirmar Actualización" : "Confirmar Guardado"}
-        description="¿Estás seguro de que deseas guardar los cambios en esta tarea cognitiva?"
-        confirmText={cognitiveTaskId ? "Actualizar" : "Guardar"}
-        isConfirming={isSaving}
-      />
     </div>
   );
 };

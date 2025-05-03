@@ -72,7 +72,7 @@ export const CognitiveTaskFields: React.FC<Props> = ({
   );
 
   return (
-    <div>
+    <div style={{ maxWidth: '100%', overflowX: 'hidden' }}>
       <div className="mb-6">
         <Label className="mb-2 block text-sm font-medium">
           <div className="flex items-center gap-2">

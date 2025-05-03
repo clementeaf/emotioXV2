@@ -98,7 +98,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
   };
 
   return (
-    <div className="mb-6 p-6 bg-white rounded-lg shadow-sm border border-gray-100">
+    <div className="mb-6 p-6 bg-white rounded-lg shadow-sm border border-gray-100" style={{ maxWidth: '100%', boxSizing: 'border-box' }}>
       <div className="mb-4 pb-3 border-b border-gray-100 flex justify-between items-center">
         <div className="flex items-center">
           <span className="font-medium text-gray-800">{question.id}</span>

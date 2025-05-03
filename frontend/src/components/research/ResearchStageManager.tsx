@@ -31,9 +31,17 @@ function ResearchStageManagerContent({ researchId }: ResearchStageManagerProps) 
       case 'welcome-screen':
         return <WelcomeScreenForm researchId={researchId} />;
       case 'smart-voc':
-        return <SmartVOCForm researchId={researchId} />;
+        return (
+          <div style={{ maxWidth: '768px', width: '100%' }}>
+            <SmartVOCForm researchId={researchId} />
+          </div>
+        );
       case 'cognitive':
-        return <CognitiveTaskForm researchId={researchId} />;
+        return (
+          <div style={{ maxWidth: '768px', width: '100%' }}>
+            <CognitiveTaskForm researchId={researchId} />
+          </div>
+        );
       case 'eye-tracking':
         return <DisabledEyeTrackingForm researchId={researchId} />;
       case 'eye-tracking-recruit':

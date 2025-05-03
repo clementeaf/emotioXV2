@@ -5,7 +5,9 @@ import {
 } from 'shared/interfaces/cognitive-task.interface';
 import { 
   QUERY_KEYS, 
-  SUCCESS_MESSAGES
+  SUCCESS_MESSAGES,
+  ERROR_MESSAGES,
+  UI_TEXTS
 } from '../constants';
 import { Question, ValidationErrors, FileInfo } from '../types';
 import { useAuth } from '@/providers/AuthProvider';
@@ -449,9 +451,13 @@ export const useCognitiveTaskForm = (
       modals.closeConfirmModal(); 
       modals.closeJsonModal();
       if (typeof onSave === 'function') { onSave(data); }
-      // Usar mensaje de éxito específico y los nombres correctos de las constantes
-      // <<< Usar wasUpdating para determinar el mensaje correcto >>>
-      toast.success(wasUpdating ? SUCCESS_MESSAGES.UPDATED : SUCCESS_MESSAGES.CREATED);
+      
+      // Mostrar modal de éxito en lugar de toast
+      modals.showModal({
+        title: UI_TEXTS.MODAL.INFO_TITLE,
+        message: wasUpdating ? SUCCESS_MESSAGES.UPDATED : SUCCESS_MESSAGES.CREATED,
+        type: 'success'
+      });
       
       // --- MEJORA: Asegurar que la caché se actualiza correctamente ---
       // 1. Primero invalidamos para forzar una recarga
@@ -714,13 +720,13 @@ export const useCognitiveTaskForm = (
     currentFileIndex, 
     totalFiles,
     // <<< Añadir propiedades faltantes para los modales >>>
-    modalError: null,
-    modalVisible: false,
-    closeModal: () => {},
-    showJsonPreview: false,
-    closeJsonModal: () => {},
-    jsonToSend: '',
-    pendingAction: null,
+    modalError: modals.modalError,
+    modalVisible: modals.modalVisible,
+    closeModal: modals.closeModal,
+    showJsonPreview: modals.showJsonPreview,
+    closeJsonModal: modals.closeJsonModal,
+    jsonToSend: modals.jsonToSend,
+    pendingAction: modals.pendingAction,
     continueWithAction,
   };
 };

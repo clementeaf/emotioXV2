@@ -286,11 +286,12 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8" style={{ maxWidth: '100%', overflow: 'hidden' }}>
       {questions.map((question, index) => (
         <div 
           key={question.id}
           className="bg-white rounded-lg border border-neutral-200 p-5 space-y-4"
+          style={{ maxWidth: '100%', boxSizing: 'border-box' }}
         >
           <div className="flex justify-between items-center mb-2">
             <h3 className="text-sm font-medium text-neutral-900">Pregunta {index + 1}: {question.type}</h3>
@@ -311,6 +312,7 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
               <input 
                 type="text" 
                 className="w-full px-3 py-2 border border-neutral-300 rounded-md"
+                style={{ maxWidth: '100%', boxSizing: 'border-box' }}
                 value={question.description}
                 onChange={(e) => onUpdateQuestion(question.id, { description: e.target.value })}
                 disabled={disabled}
@@ -323,6 +325,7 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
               </label>
               <textarea
                 className="w-full px-3 py-2 border border-neutral-300 rounded-md resize-y min-h-[80px]"
+                style={{ maxWidth: '100%', boxSizing: 'border-box' }}
                 value={question.instructions || ''}
                 onChange={(e) => onUpdateQuestion(question.id, { instructions: e.target.value })}
                 placeholder={UI_TEXTS.QUESTIONS.INSTRUCTIONS_PLACEHOLDER}
