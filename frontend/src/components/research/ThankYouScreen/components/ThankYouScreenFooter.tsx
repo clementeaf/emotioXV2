@@ -36,10 +36,7 @@ export const ThankYouScreenFooter: React.FC<ThankYouScreenFooterProps> = ({
   };
 
   return (
-    <footer className="flex items-center justify-between px-8 py-4 mt-6 bg-neutral-50 rounded-lg border border-neutral-100">
-      <p className="text-sm text-neutral-500">
-        {getStatusText()}
-      </p>
+    <footer className="flex items-center justify-end py-4 mt-6">
       <div className="flex space-x-2">
         <button
           type="button"
@@ -53,7 +50,7 @@ export const ThankYouScreenFooter: React.FC<ThankYouScreenFooterProps> = ({
           type="button"
           onClick={onSave}
           disabled={isLoading || isSaving || !isEnabled}
-          className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50"
+          className="px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-black/50 transition-colors disabled:opacity-50"
         >
           {getSaveButtonText()}
         </button>
