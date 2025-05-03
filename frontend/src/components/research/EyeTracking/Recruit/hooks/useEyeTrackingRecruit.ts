@@ -115,7 +115,6 @@ interface UseEyeTrackingRecruitResult {
   handleParamOptionChange: (key: ParameterOptionKeys, value: boolean) => void;
   setLimitParticipants: (value: boolean) => void;
   setParticipantLimit: (value: number) => void;
-  setResearchUrl: (value: string) => void;
   
   // Acciones
   saveForm: () => void;
@@ -342,6 +341,14 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   const [qrCodeData, setQrCodeData] = useState<string | null>(null);
   const [showQRModal, setShowQRModal] = useState<boolean>(false);
   
+  // Función para generar el enlace de reclutamiento
+  const generateRecruitmentLink = useCallback(() => {
+    const actualResearchId = researchId === 'current' ? '1234' : researchId;
+    // Usar el mismo formato que en ResearchSidebar para asegurar consistencia
+    const publicTestsBaseUrl = process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://useremotion.com';
+    return `${publicTestsBaseUrl}/link/${actualResearchId}`;
+  }, [researchId]);
+  
   // Cargar configuración existente
   const actualResearchId = researchId === 'current' ? '1234' : researchId;
   const { isLoading: isLoadingConfig } = useQuery({
@@ -398,12 +405,19 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     enabled: !!actualResearchId
   });
   
-  // Actualizar estado de carga cuando termina la consulta
+  // Actualizar estado de carga cuando termina la consulta y asignar URL automáticamente
   useEffect(() => {
     if (!isLoadingConfig) {
       setLoading(false);
+      
+      // Establecer automáticamente la URL de investigación al cargar
+      const generatedLink = generateRecruitmentLink();
+      setFormData(prev => ({
+        ...prev,
+        researchUrl: generatedLink
+      }));
     }
-  }, [isLoadingConfig]);
+  }, [isLoadingConfig, generateRecruitmentLink]);
   
   // Función para validar campos requeridos
   const checkRequiredFields = useCallback(() => {
@@ -658,19 +672,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     }));
   }, []);
   
-  const setResearchUrl = useCallback((value: string) => {
-    setFormData(prevData => ({
-      ...prevData,
-      researchUrl: value
-    }));
-  }, []);
-  
   // Acciones
-  const generateRecruitmentLink = useCallback(() => {
-    const actualResearchId = researchId === 'current' ? '1234' : researchId;
-    return `https://useremotion.com/link/${actualResearchId}?respondent={participant_id}`;
-  }, [researchId]);
-  
   const generateQRCode = useCallback(() => {
     const link = generateRecruitmentLink();
     
@@ -852,7 +854,6 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     handleParamOptionChange,
     setLimitParticipants,
     setParticipantLimit,
-    setResearchUrl,
     
     // Acciones
     saveForm,

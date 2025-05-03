@@ -84,7 +84,6 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
     handleParamOptionChange,
     setLimitParticipants,
     setParticipantLimit,
-    setResearchUrl,
     saveForm,
     handleConfirmSave,
     showConfirmModal,
@@ -443,14 +442,11 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                       <div>
                         <label className="block text-sm mb-2">URL de la investigación</label>
                         <div className="flex">
-                          <span className="inline-flex items-center px-3 bg-neutral-100 border border-r-0 border-neutral-300 rounded-l-md text-sm text-neutral-600">
-                            https://
-                          </span>
                           <input
                             type="text"
                             value={formData.researchUrl}
-                            onChange={(e) => setResearchUrl(e.target.value)}
-                            className="w-full px-3 py-2 border border-neutral-300 rounded-none"
+                            readOnly
+                            className="w-full px-3 py-2 border border-neutral-300 rounded-l-md bg-neutral-50 cursor-not-allowed"
                           />
                           <button 
                             type="button"
@@ -464,6 +460,9 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                               <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                             </svg>
                           </button>
+                        </div>
+                        <div className="mt-1 text-xs text-gray-500">
+                          Esta URL se genera automáticamente con la misma que aparece en "Abrir vista de participante"
                         </div>
                       </div>
                       
