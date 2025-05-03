@@ -22,8 +22,8 @@ export const ERROR_MESSAGES = {
 // Mensajes de éxito
 export const SUCCESS_MESSAGES = {
   CREATE_SUCCESS: 'SmartVOC creado exitosamente',
-  UPDATE_SUCCESS: 'SmartVOC actualizado exitosamente',
-  SAVE_SUCCESS: 'SmartVOC guardado exitosamente'
+  UPDATE_SUCCESS: 'SmartVOC guardado correctamente.',
+  SAVE_SUCCESS: 'SmartVOC guardado correctamente.'
 };
 
 // Textos de la interfaz

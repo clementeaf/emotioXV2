@@ -1,7 +1,8 @@
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
 import { ErrorModalData } from '../types';
+import { Info } from 'lucide-react';
 
 interface ErrorModalProps {
   isOpen: boolean;
@@ -15,33 +16,18 @@ interface ErrorModalProps {
 export const ErrorModal: React.FC<ErrorModalProps> = ({ isOpen, onClose, error }) => {
   if (!error) return null;
 
-  const getColorClass = () => {
-    switch (error.type) {
-      case 'error':
-        return 'text-red-500';
-      case 'warning':
-        return 'text-amber-500';
-      case 'success':
-        return 'text-green-500';
-      case 'info':
-      default:
-        return 'text-blue-500';
-    }
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className={getColorClass()}>
-            {error.title}
-          </DialogTitle>
+      <DialogContent className="bg-blue-50">
+        <DialogHeader className="flex flex-row items-center space-x-3">
+          <Info className="h-6 w-6 text-blue-600" aria-hidden="true" />
+          <DialogTitle className="text-lg font-medium text-blue-600">{error.title}</DialogTitle>
         </DialogHeader>
-        <div className="py-4">
-          <p className="text-sm text-neutral-600">{error.message}</p>
-        </div>
+        <DialogDescription className="mt-2 text-sm text-blue-600">
+          {typeof error.message === 'string' ? error.message : null}
+        </DialogDescription>
         <div className="mt-4 flex justify-end">
-          <Button onClick={onClose}>Cerrar</Button>
+          <Button variant="outline" onClick={onClose}>Cerrar</Button>
         </div>
       </DialogContent>
     </Dialog>

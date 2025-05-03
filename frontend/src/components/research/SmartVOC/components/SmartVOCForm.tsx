@@ -13,7 +13,6 @@ import { cn } from '@/lib/utils';
 import { UI_TEXTS } from '../constants';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { generateNewQuestion } from '../utils';
 
@@ -49,7 +48,7 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className={cn('max-w-4xl space-y-6', className)}>
+      <div className={cn('max-w-4xl', className)}>
         <SmartVOCHeader 
           title={UI_TEXTS.TITLE}
           description={UI_TEXTS.DESCRIPTION}

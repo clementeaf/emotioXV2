@@ -36,8 +36,10 @@ export const ERROR_MESSAGES = {
 
 // Mensajes de éxito
 export const SUCCESS_MESSAGES = {
-  SAVE_SUCCESS: 'Configuración de tareas cognitivas guardada exitosamente',
-  PREVIEW_COMING_SOON: '¡Vista previa disponible próximamente!'
+  SAVE_SUCCESS: 'CognitiveTask guardado correctamente.',
+  PREVIEW_COMING_SOON: '¡Vista previa disponible próximamente!',
+  UPDATED: 'CognitiveTask guardado correctamente.',
+  CREATED: 'CognitiveTask guardado correctamente.'
 };
 
 // Textos para la interfaz de usuario
