@@ -48,12 +48,8 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className={cn('max-w-4xl', className)}>
-        <SmartVOCHeader 
-          title={UI_TEXTS.TITLE}
-          description={UI_TEXTS.DESCRIPTION}
-        />
-
+      <div className={cn('max-w-4xl space-y-4', className)}>
+        {/* Configuración principal */}
         <SmartVOCSettings
           randomize={formData.randomizeQuestions}
           onRandomizeChange={(value) => updateSettings({ randomizeQuestions: value })}
@@ -61,17 +57,26 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
           onRequireAnswersChange={(value) => updateSettings({ smartVocRequired: value })}
           disabled={isLoading || isSaving}
         />
+        
+        {/* Contenido principal en un contenedor con bordes */}
+        <div className="space-y-6 p-6 bg-white rounded-lg border border-neutral-100">
+          <SmartVOCHeader 
+            title={UI_TEXTS.TITLE}
+            description={UI_TEXTS.DESCRIPTION}
+          />
 
-        <SmartVOCQuestions
-          questions={questions}
-          onUpdateQuestion={updateQuestion}
-          onAddQuestion={addQuestion}
-          onRemoveQuestion={removeQuestion}
-          disabled={isLoading || isSaving}
-        />
+          <SmartVOCQuestions
+            questions={questions}
+            onUpdateQuestion={updateQuestion}
+            onAddQuestion={addQuestion}
+            onRemoveQuestion={removeQuestion}
+            disabled={isLoading || isSaving}
+          />
 
-        <AddQuestionButton onClick={handleAddQuestion} />
+          <AddQuestionButton onClick={handleAddQuestion} />
+        </div>
 
+        {/* Pie de página con acciones */}
         <SmartVOCFooter
           isSaving={isSaving}
           isLoading={isLoading}
@@ -80,6 +85,7 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
           onPreview={handlePreview}
         />
 
+        {/* Modal de errores */}
         <ErrorModal
           isOpen={modalVisible}
           onClose={closeModal}
