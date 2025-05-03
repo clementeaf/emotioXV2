@@ -30,7 +30,7 @@ export const CognitiveTaskFooter: React.FC<CognitiveTaskFooterProps> = ({
   }, [isSaving, isExistingForm, cognitiveTaskId]);
   
   return (
-    <div className="flex justify-between items-center pt-6 border-t mt-8">
+    <div className="flex justify-end items-center gap-3 pt-4">
       {onPreview && (
         <Button 
           type="button" 
@@ -41,32 +41,30 @@ export const CognitiveTaskFooter: React.FC<CognitiveTaskFooterProps> = ({
           Vista previa
         </Button>
       )}
-      
-      <div className="flex ml-auto gap-4">
-        <Button 
-          type="button" 
-          onClick={onSave}
-          disabled={isSaving}
-        >
-          {isSaving ? (
-            <>
-              <span className="animate-spin mr-2">
-                <Save className="h-4 w-4" />
-              </span>
-              Guardando...
-            </>
-          ) : isExistingForm ? (
-            <>
-              <Save className="h-4 w-4 mr-2" />
-              Actualizar
-            </>
-          ) : (
-            <>
-              Guardar 
-            </>
-          )}
-        </Button>
-      </div>
+
+<Button 
+        type="button" 
+        onClick={onSave}
+        disabled={isSaving}
+      >
+        {isSaving ? (
+          <>
+            <span className="animate-spin mr-2">
+              <Save className="h-4 w-4" />
+            </span>
+            Guardando...
+          </>
+        ) : isExistingForm ? (
+          <>
+            <Save className="h-4 w-4 mr-2" />
+            Actualizar
+          </>
+        ) : (
+          <>
+            Guardar 
+          </>
+        )}
+      </Button>
     </div>
   );
 }; 
