@@ -20,7 +20,7 @@ const Checkbox = React.forwardRef<HTMLButtonElement, CheckboxProps>(
   ({ className, checked, onCheckedChange, id, ...props }, ref) => {
     // Asegurarse de que checked tenga un valor predeterminado
     const isChecked = checked || false;
-    
+
     // Función de manejador de clic mejorada
     const handleClick = () => {
       console.log('Checkbox clicked, current state:', isChecked);
@@ -28,7 +28,7 @@ const Checkbox = React.forwardRef<HTMLButtonElement, CheckboxProps>(
         onCheckedChange(!isChecked);
       }
     };
-    
+
     return (
       <button
         ref={ref}
@@ -119,35 +119,14 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
 
   return (
     <>
-      <div className={cn("max-w-4xl", className)}>
+      <div className={cn("max-w-[1600px]", className)}>
         <div className="bg-white rounded-xl border border-neutral-200/70 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.05)] overflow-hidden">
           <div className="p-6">
-            <header className="mb-8">
-              <h1 className="text-xl font-semibold text-neutral-900">
-                Nueva investigación de comportamiento
-              </h1>
-              <div className="flex justify-end mt-4">
-                <button
-                  type="button"
-                  onClick={saveForm}
-                  disabled={saving}
-                  className="px-4 py-2 rounded-lg bg-neutral-900 text-white shadow hover:bg-neutral-800 text-sm font-medium disabled:opacity-50 flex items-center justify-center min-w-[160px]"
-                >
-                  {saving ? (
-                    <div className="flex items-center gap-2">
-                      <Spinner size="sm" className="text-white" />
-                      <span>Guardando...</span>
-                    </div>
-                  ) : getSaveButtonText()}
-                </button>
-              </div>
-            </header>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="flex flex-col md:flex-row gap-8">
               <div>
                 <div className="mb-8">
                   <h2 className="text-base font-medium mb-4">Enlace de reclutamiento</h2>
-                  
+
                   <div className="space-y-4 mb-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
@@ -164,7 +143,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                       </div>
                       <span className="text-sm text-neutral-400">Por favor seleccione</span>
                     </div>
-                    
+
                     <div className={`pl-10 space-y-3 ${!demographicQuestionsEnabled ? 'opacity-60' : ''}`}>
                       <div className="flex items-center gap-2">
                         <input
@@ -180,7 +159,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                         />
                         <label htmlFor="age" className={`text-sm ${demographicQuestionsEnabled ? 'cursor-pointer' : 'cursor-not-allowed'}`}>Edad</label>
                       </div>
-                      
+
                       <div className="flex items-center gap-2">
                         <input
                           type="checkbox"
@@ -195,7 +174,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                         />
                         <label htmlFor="country" className={`text-sm ${demographicQuestionsEnabled ? 'cursor-pointer' : 'cursor-not-allowed'}`}>País</label>
                       </div>
-                      
+
                       <div className="flex items-center gap-2">
                         <input
                           type="checkbox"
@@ -207,7 +186,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                         />
                         <label htmlFor="gender" className={`text-sm ${demographicQuestionsEnabled ? 'cursor-pointer' : 'cursor-not-allowed'}`}>Género</label>
                       </div>
-                      
+
                       <div className="flex items-center gap-2">
                         <input
                           type="checkbox"
@@ -219,7 +198,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                         />
                         <label htmlFor="educationLevel" className={`text-sm ${demographicQuestionsEnabled ? 'cursor-pointer' : 'cursor-not-allowed'}`}>Nivel educativo</label>
                       </div>
-                      
+
                       <div className="flex items-center gap-2">
                         <input
                           type="checkbox"
@@ -231,7 +210,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                         />
                         <label htmlFor="householdIncome" className={`text-sm ${demographicQuestionsEnabled ? 'cursor-pointer' : 'cursor-not-allowed'}`}>Ingresos familiares anuales</label>
                       </div>
-                      
+
                       <div className="flex items-center gap-2">
                         <input
                           type="checkbox"
@@ -243,7 +222,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                         />
                         <label htmlFor="employmentStatus" className={`text-sm ${demographicQuestionsEnabled ? 'cursor-pointer' : 'cursor-not-allowed'}`}>Situación laboral</label>
                       </div>
-                      
+
                       <div className="flex items-center gap-2">
                         <input
                           type="checkbox"
@@ -255,7 +234,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                         />
                         <label htmlFor="dailyHoursOnline" className={`text-sm ${demographicQuestionsEnabled ? 'cursor-pointer' : 'cursor-not-allowed'}`}>Horas diarias en línea</label>
                       </div>
-                      
+
                       <div className="flex items-center gap-2">
                         <input
                           type="checkbox"
@@ -269,7 +248,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-4 mb-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
@@ -286,7 +265,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                       </div>
                       <span className="text-sm text-neutral-400">Por favor seleccione</span>
                     </div>
-                    
+
                     <div className={`pl-10 space-y-3 ${!linkConfigEnabled ? 'opacity-60' : ''}`}>
                       <div className="flex items-center gap-2">
                         <input
@@ -302,7 +281,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                         />
                         <label htmlFor="allowMobile" className={`text-sm ${linkConfigEnabled ? 'cursor-pointer' : 'cursor-not-allowed'}`}>Permitir que los participantes realicen la encuesta en dispositivos móviles</label>
                       </div>
-                      
+
                       <div className="flex items-center gap-2">
                         <input
                           type="checkbox"
@@ -314,7 +293,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                         />
                         <label htmlFor="trackLocation" className={`text-sm ${linkConfigEnabled ? 'cursor-pointer' : 'cursor-not-allowed'}`}>Rastrear la ubicación de los participantes</label>
                       </div>
-                      
+
                       <div className="flex items-center gap-2">
                         <input
                           type="checkbox"
@@ -328,7 +307,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
@@ -345,7 +324,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                       </div>
                       <span className="text-sm text-neutral-400">Por favor seleccione</span>
                     </div>
-                    
+
                     <div className={`pl-10 ${!formData.participantLimit.enabled ? 'opacity-60' : ''}`}>
                       <p className="text-sm mb-3">Dejar de aceptar respuestas después de este número de participantes.</p>
                       <div className="flex items-center gap-2">
@@ -362,12 +341,12 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                   </div>
                 </div>
               </div>
-              
+
               {/* Right column */}
               <div>
                 <div className="mb-8">
                   <h2 className="text-base font-medium mb-4">Configuración de la investigación</h2>
-                  
+
                   <div className="space-y-6">
                     <div>
                       <h3 className="text-sm font-medium mb-3 flex items-center">
@@ -387,7 +366,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                         </div>
                       </h3>
                       <p className="text-sm text-neutral-500 mb-4">Utilice parámetros uid para transmitir los ID de los participantes a su sistema</p>
-                      
+
                       <div className="space-y-4">
                         <div>
                           <label className="block text-sm mb-2">Enlace para entrevistas completadas</label>
@@ -403,7 +382,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                             />
                           </div>
                         </div>
-                        
+
                         <div>
                           <label className="block text-sm mb-2">Enlace para entrevistas descalificadas</label>
                           <div className="flex">
@@ -418,7 +397,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                             />
                           </div>
                         </div>
-                        
+
                         <div>
                           <label className="block text-sm mb-2">Enlace para entrevistas excedidas</label>
                           <div className="flex">
@@ -435,7 +414,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                         </div>
                       </div>
                     </div>
-                    
+
                     <div>
                       <h3 className="text-sm font-medium mb-3 flex items-center">
                         B. Enlace de investigación para compartir
@@ -454,7 +433,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                         </div>
                       </h3>
                       <p className="text-sm text-neutral-500 mb-4">El sistema de invitación externo debe sustituir el parámetro [ID del participante] por el ID individual del participante.</p>
-                      
+
                       <div>
                         <label className="block text-sm mb-2">URL de la investigación</label>
                         <div className="flex">
@@ -464,7 +443,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                             readOnly
                             className="w-full px-3 py-2 border border-neutral-300 rounded-l-md bg-neutral-50 cursor-not-allowed"
                           />
-                          <button 
+                          <button
                             type="button"
                             className="px-2 py-2 bg-neutral-100 border border-l-0 border-neutral-300 rounded-r-md text-neutral-600"
                             onClick={copyLinkToClipboard}
@@ -481,7 +460,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           Esta URL se genera automáticamente con la misma que aparece en "Abrir vista de participante"
                         </div>
                       </div>
-                      
+
                       <div className="flex mt-4 gap-4">
                         <button
                           type="button"
@@ -500,59 +479,74 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                         </button>
                       </div>
                     </div>
-                    
-                    <div>
-                      <h3 className="text-sm font-medium mb-3">C. Parámetros de investigación a guardar</h3>
-                      <p className="text-sm text-neutral-500 mb-4">Especifique los parámetros que desea guardar (claves separadas por comas)</p>
-                      
-                      <div className="flex flex-wrap gap-2">
-                        <div className="flex items-center gap-1 bg-blue-50 px-3 py-1 rounded-full">
-                          <input
-                            type="checkbox"
-                            id="saveDeviceInfo"
-                            checked={formData.parameterOptions.saveDeviceInfo}
-                            onChange={(e) => handleParamOptionChange('saveDeviceInfo' as ParameterOptionKeys, e.target.checked)}
-                            className="w-4 h-4 cursor-pointer"
-                          />
-                          <label htmlFor="saveDeviceInfo" className="text-xs text-blue-600 cursor-pointer">Guardar información del dispositivo</label>
-                        </div>
-                        
-                        <div className="flex items-center gap-1 bg-blue-50 px-3 py-1 rounded-full">
-                          <input
-                            type="checkbox"
-                            id="saveLocationInfo"
-                            checked={formData.parameterOptions.saveLocationInfo}
-                            onChange={(e) => handleParamOptionChange('saveLocationInfo' as ParameterOptionKeys, e.target.checked)}
-                            className="w-4 h-4 cursor-pointer"
-                          />
-                          <label htmlFor="saveLocationInfo" className="text-xs text-blue-600 cursor-pointer">Guardar información de ubicación</label>
-                        </div>
-                        
-                        <div className="flex items-center gap-1 bg-blue-50 px-3 py-1 rounded-full">
-                          <input
-                            type="checkbox"
-                            id="saveResponseTimes"
-                            checked={formData.parameterOptions.saveResponseTimes}
-                            onChange={(e) => handleParamOptionChange('saveResponseTimes' as ParameterOptionKeys, e.target.checked)}
-                            className="w-4 h-4 cursor-pointer"
-                          />
-                          <label htmlFor="saveResponseTimes" className="text-xs text-blue-600 cursor-pointer">Guardar tiempos de respuesta</label>
-                        </div>
-                        
-                        <div className="flex items-center gap-1 bg-blue-50 px-3 py-1 rounded-full">
-                          <input
-                            type="checkbox"
-                            id="saveUserJourney"
-                            checked={formData.parameterOptions.saveUserJourney}
-                            onChange={(e) => handleParamOptionChange('saveUserJourney' as ParameterOptionKeys, e.target.checked)}
-                            className="w-4 h-4 cursor-pointer"
-                          />
-                          <label htmlFor="saveUserJourney" className="text-xs text-blue-600 cursor-pointer">Guardar recorrido del usuario</label>
-                        </div>
-                      </div>
-                    </div>
                   </div>
                 </div>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-medium mb-3 mt-10">C. Parámetros de investigación a guardar</h3>
+                <p className="text-sm text-neutral-500 mb-4">Especifique los parámetros que desea guardar (claves separadas por comas)</p>
+
+                <div className="flex flex-wrap gap-2">
+                  <div className="flex items-center gap-1 bg-blue-50 px-3 py-1 rounded-full">
+                    <input
+                      type="checkbox"
+                      id="saveDeviceInfo"
+                      checked={formData.parameterOptions.saveDeviceInfo}
+                      onChange={(e) => handleParamOptionChange('saveDeviceInfo' as ParameterOptionKeys, e.target.checked)}
+                      className="w-4 h-4 cursor-pointer"
+                    />
+                    <label htmlFor="saveDeviceInfo" className="text-xs text-blue-600 cursor-pointer">Guardar información del dispositivo</label>
+                  </div>
+
+                  <div className="flex items-center gap-1 bg-blue-50 px-3 py-1 rounded-full">
+                    <input
+                      type="checkbox"
+                      id="saveLocationInfo"
+                      checked={formData.parameterOptions.saveLocationInfo}
+                      onChange={(e) => handleParamOptionChange('saveLocationInfo' as ParameterOptionKeys, e.target.checked)}
+                      className="w-4 h-4 cursor-pointer"
+                    />
+                    <label htmlFor="saveLocationInfo" className="text-xs text-blue-600 cursor-pointer">Guardar información de ubicación</label>
+                  </div>
+
+                  <div className="flex items-center gap-1 bg-blue-50 px-3 py-1 rounded-full">
+                    <input
+                      type="checkbox"
+                      id="saveResponseTimes"
+                      checked={formData.parameterOptions.saveResponseTimes}
+                      onChange={(e) => handleParamOptionChange('saveResponseTimes' as ParameterOptionKeys, e.target.checked)}
+                      className="w-4 h-4 cursor-pointer"
+                    />
+                    <label htmlFor="saveResponseTimes" className="text-xs text-blue-600 cursor-pointer">Guardar tiempos de respuesta</label>
+                  </div>
+
+                  <div className="flex items-center gap-1 bg-blue-50 px-3 py-1 rounded-full">
+                    <input
+                      type="checkbox"
+                      id="saveUserJourney"
+                      checked={formData.parameterOptions.saveUserJourney}
+                      onChange={(e) => handleParamOptionChange('saveUserJourney' as ParameterOptionKeys, e.target.checked)}
+                      className="w-4 h-4 cursor-pointer"
+                    />
+                    <label htmlFor="saveUserJourney" className="text-xs text-blue-600 cursor-pointer">Guardar recorrido del usuario</label>
+                  </div>
+                </div>
+                <div className="flex justify-end self-end">
+                <button
+                  type="button"
+                  onClick={saveForm}
+                  disabled={saving}
+                  className="px-4 py-2 rounded-lg bg-neutral-900 text-white shadow hover:bg-neutral-800 text-sm font-medium disabled:opacity-50 flex items-center justify-center min-w-[160px] mt-8"
+                >
+                  {saving ? (
+                    <div className="flex items-center gap-2">
+                      <Spinner size="sm" className="text-white" />
+                      <span>Guardando...</span>
+                    </div>
+                  ) : getSaveButtonText()}
+                </button>
+              </div>
               </div>
             </div>
           </div>
@@ -560,7 +554,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
       </div>
 
       {/* Modal para mostrar mensajes y errores */}
-      <ErrorModal 
+      <ErrorModal
         isOpen={modalVisible}
         onClose={closeModal}
         error={modalError}
