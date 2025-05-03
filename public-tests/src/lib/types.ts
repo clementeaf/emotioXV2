@@ -125,6 +125,56 @@ export interface ResearchFlowResponse {
   data: Step[];
 }
 
+// Interfaces para Eye Tracking
+export interface EyeTrackingFormData {
+  id?: string;
+  researchId: string;
+  config: EyeTrackingConfig;
+  stimuli: EyeTrackingStimulus[];
+  areasOfInterest: {
+    enabled: boolean;
+    areas: EyeTrackingArea[];
+  };
+}
+
+export interface EyeTrackingConfig {
+  enabled: boolean;
+  trackingDevice: string;
+  calibration: boolean;
+  validation: boolean;
+  recording: {
+    audio: boolean;
+    video: boolean;
+  };
+  visualization: {
+    showGaze: boolean;
+    showFixations: boolean;
+    showSaccades: boolean;
+    showHeatmap: boolean;
+  };
+}
+
+export interface EyeTrackingStimulus {
+  id: string;
+  name: string;
+  url: string;
+  type: string;
+  duration: number;
+  order: number;
+}
+
+export interface EyeTrackingArea {
+  id: string;
+  name: string;
+  color: string;
+  region: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+}
+
 // Mantener otras interfaces existentes
 export interface WelcomeScreenResponse {
   id: string;

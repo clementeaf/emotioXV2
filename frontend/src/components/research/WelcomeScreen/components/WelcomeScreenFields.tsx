@@ -28,46 +28,50 @@ export const WelcomeScreenFields: React.FC<WelcomeScreenFieldsProps> = ({
     <div className="space-y-4">
       {/* Campo Título */}
       <div>
-        <label htmlFor="ws-title" className="block text-sm font-medium text-neutral-700 mb-1">Título</label>
         <Input
-          id="ws-title"
+          id="welcome-screen-title"
+          name="welcome-screen-title"
+          label="Título"
           value={formData.title || ''}
           onChange={(e) => handleChange('title', e.target.value)}
           placeholder={DEFAULT_WELCOME_SCREEN_CONFIG.title}
           disabled={disabled}
           error={!!validationErrors.title}
           helperText={validationErrors.title}
+          autoComplete="off"
         />
       </div>
 
       {/* Campo Mensaje */}
       <div>
-        <label htmlFor="ws-message" className="block text-sm font-medium text-neutral-700 mb-1">Mensaje</label>
         <Textarea
-          id="ws-message"
+          id="welcome-screen-message"
+          name="welcome-screen-message"
+          label="Mensaje"
           value={formData.message || ''}
           onChange={(e) => handleChange('message', e.target.value)}
           placeholder={DEFAULT_WELCOME_SCREEN_CONFIG.message}
           rows={4}
           disabled={disabled}
           error={!!validationErrors.message}
+          helperText={validationErrors.message}
+          autoComplete="off"
         />
-        {validationErrors.message && (
-          <p className="mt-1 text-xs text-red-500">{validationErrors.message}</p>
-        )}
       </div>
       
       {/* Campo Texto Botón */}
       <div>
-        <label htmlFor="ws-button-text" className="block text-sm font-medium text-neutral-700 mb-1">Texto del Botón de Inicio</label>
         <Input
-          id="ws-button-text"
+          id="welcome-screen-button-text"
+          name="welcome-screen-button-text"
+          label="Texto del Botón de Inicio"
           value={formData.startButtonText || ''}
           onChange={(e) => handleChange('startButtonText', e.target.value)}
           placeholder={DEFAULT_WELCOME_SCREEN_CONFIG.startButtonText}
           disabled={disabled}
           error={!!validationErrors.startButtonText}
           helperText={validationErrors.startButtonText}
+          autoComplete="off"
         />
       </div>
     </div>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Textarea } from '@/components/ui/Textarea';
+import { Input } from '@/components/ui/Input';
 import { ThankYouScreenContentProps } from '../types';
 import { UI_TEXTS } from '../constants';
 import { cn } from '@/lib/utils';
@@ -21,64 +22,51 @@ export const ThankYouScreenContent: React.FC<ThankYouScreenContentProps> = ({
     <div className="space-y-4 p-4 bg-white rounded-lg border border-neutral-200 shadow-xl">
       {/* Campo de título */}
       <div className="space-y-2">
-        <label htmlFor="title" className="text-sm font-medium">
-          {UI_TEXTS.CONTENT.TITLE_LABEL} <span className="text-red-500">{UI_TEXTS.REQUIRED_FIELD}</span>
-        </label>
-        <input
-          id="title"
+        <Input
+          id="thank-you-title"
+          name="thank-you-title"
+          label={`${UI_TEXTS.CONTENT.TITLE_LABEL} `}
           value={title}
           onChange={(e) => onTitleChange(e.target.value)}
-          className={cn(
-            "w-full px-3 py-2 text-sm rounded-md border focus:outline-none focus:ring-2 focus:ring-blue-500",
-            validationErrors.title ? 'border-red-500' : 'border-neutral-200'
-          )}
           disabled={disabled}
+          error={!!validationErrors.title}
+          helperText={validationErrors.title}
+          autoComplete="off"
+          required={true}
         />
-        {validationErrors.title && (
-          <p className="text-xs text-red-500">{validationErrors.title}</p>
-        )}
       </div>
 
       {/* Campo de mensaje */}
       <div className="space-y-2">
-        <label htmlFor="message" className="text-sm font-medium">
-          {UI_TEXTS.CONTENT.MESSAGE_LABEL} <span className="text-red-500">{UI_TEXTS.REQUIRED_FIELD}</span>
-        </label>
         <Textarea
-          id="message"
+          id="thank-you-message"
+          name="thank-you-message"
+          label={`${UI_TEXTS.CONTENT.MESSAGE_LABEL} `}
           value={message}
           onChange={(e) => onMessageChange(e.target.value)}
           rows={4}
-          className={cn(
-            "w-full px-3 py-2 text-sm rounded-md border focus:outline-none focus:ring-2 focus:ring-blue-500",
-            validationErrors.message ? 'border-red-500' : 'border-neutral-200'
-          )}
           disabled={disabled}
+          error={!!validationErrors.message}
+          helperText={validationErrors.message}
+          autoComplete="off"
+          required={true}
         />
-        {validationErrors.message && (
-          <p className="text-xs text-red-500">{validationErrors.message}</p>
-        )}
       </div>
 
       {/* Campo de URL de redirección */}
       <div className="space-y-2">
-        <label htmlFor="redirectUrl" className="text-sm font-medium">
-          {UI_TEXTS.CONTENT.REDIRECT_URL_LABEL} <span className="text-neutral-500">{UI_TEXTS.CONTENT.OPTIONAL_LABEL}</span>
-        </label>
-        <input
-          id="redirectUrl"
+        <Input
+          id="thank-you-redirect-url"
+          name="thank-you-redirect-url"
+          label={`${UI_TEXTS.CONTENT.REDIRECT_URL_LABEL} `}
           value={redirectUrl}
           onChange={(e) => onRedirectUrlChange(e.target.value)}
           placeholder={UI_TEXTS.CONTENT.REDIRECT_URL_PLACEHOLDER}
-          className={cn(
-            "w-full px-3 py-2 text-sm rounded-md border focus:outline-none focus:ring-2 focus:ring-blue-500",
-            validationErrors.redirectUrl ? 'border-red-500' : 'border-neutral-200'
-          )}
           disabled={disabled}
+          error={!!validationErrors.redirectUrl}
+          helperText={validationErrors.redirectUrl}
+          autoComplete="off"
         />
-        {validationErrors.redirectUrl && (
-          <p className="text-xs text-red-500">{validationErrors.redirectUrl}</p>
-        )}
         <p className="text-xs text-neutral-500">
           {UI_TEXTS.CONTENT.REDIRECT_URL_HELP}
         </p>

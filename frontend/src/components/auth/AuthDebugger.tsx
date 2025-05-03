@@ -8,6 +8,31 @@ interface TokenInfo {
   payload?: any;
 }
 
+// Función segura para decodificar token JWT
+const parseJwt = (token: string): any | null => {
+  try {
+    // Dividir el token para obtener la parte del payload
+    const base64Url = token.split('.')[1];
+    if (!base64Url) return null;
+    
+    // Reemplazar caracteres para Base64 estándar y crear el buffer
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    
+    // Usar método seguro para decodificación
+    const jsonPayload = decodeURIComponent(
+      window.atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    console.error('Error al decodificar token:', e);
+    return null;
+  }
+};
+
 export function AuthDebugger() {
   const { token, user, logout } = useAuth();
   const [localToken, setLocalToken] = useState<string | null>(null);
@@ -35,13 +60,12 @@ export function AuthDebugger() {
           return;
         }
 
-        const base64Url = parts[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-
-        const payload = JSON.parse(jsonPayload);
+        const payload = parseJwt(tokenToAnalyze);
+        
+        if (!payload) {
+          setTokenInfo({ isValid: false });
+          return;
+        }
         
         // Verificar expiración
         let expiresAt: Date | undefined = undefined;

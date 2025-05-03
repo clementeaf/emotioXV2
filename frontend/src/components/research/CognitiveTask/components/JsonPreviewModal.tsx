@@ -306,6 +306,34 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
                   color: #ef4444;
                   margin-left: 0.25rem;
                 }
+                /* Estilos para campos de formulario */
+                .form-field {
+                  margin-top: 1rem;
+                }
+                .sr-only {
+                  position: absolute;
+                  width: 1px;
+                  height: 1px;
+                  padding: 0;
+                  margin: -1px;
+                  overflow: hidden;
+                  clip: rect(0, 0, 0, 0);
+                  white-space: nowrap;
+                  border-width: 0;
+                }
+                .input-text, .textarea {
+                  width: 100%;
+                  padding: 0.75rem;
+                  border: 1px solid #cbd5e1;
+                  border-radius: 4px;
+                  font-size: 1rem;
+                }
+                /* Estilos para grupos de opciones */
+                .choices-container {
+                  border: none;
+                  padding: 0;
+                  margin: 0;
+                }
                 .choices {
                   display: flex;
                   flex-direction: column;
@@ -313,17 +341,48 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
                   margin-top: 1rem;
                 }
                 .choice {
+                  margin: 0;
+                }
+                .choice-label {
                   display: flex;
                   align-items: center;
                   gap: 0.5rem;
+                  cursor: pointer;
                 }
-                .choice input {
-                  margin: 0;
-                }
-                .choice label {
+                .choice-text {
                   font-size: 1rem;
                   color: #334155;
                 }
+                /* Estilos para escalas */
+                .scale-container {
+                  border: none;
+                  padding: 0;
+                  margin: 0;
+                }
+                .linear-scale {
+                  display: grid;
+                  grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
+                  gap: 0.5rem;
+                  margin-top: 1rem;
+                }
+                .scale-option {
+                  text-align: center;
+                }
+                .scale-label {
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  cursor: pointer;
+                }
+                .scale-text {
+                  font-size: 0.875rem;
+                  color: #64748b;
+                  margin-top: 0.25rem;
+                }
+                .radio-input, .checkbox-input, .scale-input {
+                  margin: 0;
+                }
+                /* Otros estilos existentes */
                 .submit-btn {
                   margin-top: 2rem;
                   padding: 0.75rem 1.5rem;
@@ -338,33 +397,6 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
                 }
                 .submit-btn:hover {
                   background-color: #1d4ed8;
-                }
-                textarea, input[type="text"] {
-                  width: 100%;
-                  padding: 0.75rem;
-                  border: 1px solid #cbd5e1;
-                  border-radius: 4px;
-                  font-size: 1rem;
-                  margin-top: 0.5rem;
-                }
-                .linear-scale {
-                  display: grid;
-                  grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
-                  gap: 0.5rem;
-                  margin-top: 1rem;
-                }
-                .scale-label {
-                  display: flex;
-                  flex-direction: column;
-                  align-items: center;
-                  text-align: center;
-                }
-                .scale-label input {
-                  margin-bottom: 0.25rem;
-                }
-                .scale-label span {
-                  font-size: 0.875rem;
-                  color: #64748b;
                 }
                 .ranking-item {
                   display: flex;
@@ -414,45 +446,70 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
                     
                     switch(q.type) {
                       case 'short_text':
-                        questionContent = `<input type="text" placeholder="Tu respuesta">`;
+                        questionContent = `
+                          <div class="form-field">
+                            <label class="sr-only">Respuesta de texto corto</label>
+                            <input type="text" name="question-${q.id}" placeholder="Tu respuesta" class="input-text">
+                          </div>
+                        `;
                         break;
                       case 'long_text':
-                        questionContent = `<textarea rows="4" placeholder="Tu respuesta"></textarea>`;
+                        questionContent = `
+                          <div class="form-field">
+                            <label class="sr-only">Respuesta de texto largo</label>
+                            <textarea name="question-${q.id}" rows="4" placeholder="Tu respuesta" class="textarea"></textarea>
+                          </div>
+                        `;
                         break;
                       case 'single_choice':
                         questionContent = `
-                          <div class="choices">
-                            ${q.choices?.map((choice: any, choiceIndex: number) => `
-                              <div class="choice">
-                                <input type="radio" id="choice-${q.id}-${choiceIndex}" name="question-${q.id}">
-                                <label for="choice-${q.id}-${choiceIndex}">${choice.text || `Opción ${choiceIndex + 1}`}</label>
-                              </div>
-                            `).join('') || '<p>No hay opciones disponibles</p>'}
-                          </div>
+                          <fieldset class="choices-container">
+                            <legend class="sr-only">Seleccione una opción</legend>
+                            <div class="choices">
+                              ${q.choices?.map((choice: any, choiceIndex: number) => `
+                                <div class="choice">
+                                  <label class="choice-label">
+                                    <input type="radio" name="question-${q.id}" value="${choiceIndex}" class="radio-input">
+                                    <span class="choice-text">${choice.text || `Opción ${choiceIndex + 1}`}</span>
+                                  </label>
+                                </div>
+                              `).join('') || '<p>No hay opciones disponibles</p>'}
+                            </div>
+                          </fieldset>
                         `;
                         break;
                       case 'multiple_choice':
                         questionContent = `
-                          <div class="choices">
-                            ${q.choices?.map((choice: any, choiceIndex: number) => `
-                              <div class="choice">
-                                <input type="checkbox" id="choice-${q.id}-${choiceIndex}" name="question-${q.id}">
-                                <label for="choice-${q.id}-${choiceIndex}">${choice.text || `Opción ${choiceIndex + 1}`}</label>
-                              </div>
-                            `).join('') || '<p>No hay opciones disponibles</p>'}
-                          </div>
+                          <fieldset class="choices-container">
+                            <legend class="sr-only">Seleccione una o más opciones</legend>
+                            <div class="choices">
+                              ${q.choices?.map((choice: any, choiceIndex: number) => `
+                                <div class="choice">
+                                  <label class="choice-label">
+                                    <input type="checkbox" name="question-${q.id}" value="${choiceIndex}" class="checkbox-input">
+                                    <span class="choice-text">${choice.text || `Opción ${choiceIndex + 1}`}</span>
+                                  </label>
+                                </div>
+                              `).join('') || '<p>No hay opciones disponibles</p>'}
+                            </div>
+                          </fieldset>
                         `;
                         break;
                       case 'linear_scale':
                         questionContent = `
-                          <div class="linear-scale">
-                            ${Array.from({ length: 5 }, (_, i) => `
-                              <div class="scale-label">
-                                <input type="radio" id="scale-${q.id}-${i+1}" name="question-${q.id}">
-                                <label for="scale-${q.id}-${i+1}">${i+1}</label>
-                              </div>
-                            `).join('')}
-                          </div>
+                          <fieldset class="scale-container">
+                            <legend class="sr-only">Seleccione un valor en la escala</legend>
+                            <div class="linear-scale">
+                              ${Array.from({ length: 5 }, (_, i) => `
+                                <div class="scale-option">
+                                  <label class="scale-label">
+                                    <input type="radio" name="question-${q.id}" value="${i+1}" class="scale-input">
+                                    <span class="scale-text">${i+1}</span>
+                                  </label>
+                                </div>
+                              `).join('')}
+                            </div>
+                          </fieldset>
                         `;
                         break;
                       case 'ranking':

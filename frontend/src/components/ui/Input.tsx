@@ -34,8 +34,11 @@ export interface InputProps
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, variant, fullWidth, error, label, helperText, ...props }, ref) => {
-    const id = React.useId();
+  ({ className, variant, fullWidth, error, label, helperText, name: nameProp, ...props }, ref) => {
+    const uniqueId = React.useId();
+    // Usar el nombre proporcionado o generar uno basado en el ID único
+    const id = props.id || uniqueId;
+    const name = nameProp || id;
 
     return (
       <div className="space-y-2">
@@ -49,6 +52,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         )}
         <input
           id={id}
+          name={name}
           className={cn(
             inputVariants({
               variant: error ? 'error' : variant,
@@ -58,6 +62,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           )}
           ref={ref}
           {...props}
+          autoComplete={props.autoComplete || 'off'}
         />
         {helperText && (
           <p className={cn('text-sm', error ? 'text-red-500' : 'text-neutral-500')}>

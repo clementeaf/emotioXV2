@@ -4,6 +4,7 @@ import {
   SmartVOCFormData,
   CognitiveTaskFormData,
   ThankYouScreenFormData,
+  EyeTrackingFormData,
 } from './types';
 
 // Estados de respuesta de la API
@@ -236,6 +237,44 @@ export class ApiClient {
     this.validateResearchId(researchId);
     const response = await this.request<{ data: ThankYouScreenFormData }>(`/research/${researchId}/thank-you-screen`);
     return { ...response, data: response.data?.data || null };
+  }
+
+  /**
+   * Obtiene la configuración de Eye Tracking para una investigación específica
+   * @param researchId ID de la investigación
+   * @returns Configuración de Eye Tracking
+   */
+  async getEyeTracking(researchId: string): Promise<APIResponse<EyeTrackingFormData>> {
+    this.validateResearchId(researchId);
+    
+    // Usar el endpoint para obtener configuración de Eye Tracking
+    const response = await this.request<{ data: EyeTrackingFormData }>(`/research/${researchId}/eye-tracking`);
+    
+    console.log(`[ApiClient] Respuesta de getEyeTracking para ${researchId}:`, response);
+    
+    return { 
+      ...response, 
+      data: response.data?.data || null 
+    };
+  }
+
+  /**
+   * Obtiene la configuración de reclutamiento de Eye Tracking para una investigación
+   * @param researchId ID de la investigación
+   * @returns Configuración de reclutamiento
+   */
+  async getEyeTrackingRecruit(researchId: string): Promise<APIResponse<any>> {
+    this.validateResearchId(researchId);
+    
+    // Endpoint específico para la configuración de reclutamiento
+    const response = await this.request<{ data: any }>(`/research/${researchId}/eye-tracking/recruit`);
+    
+    console.log(`[ApiClient] Respuesta de getEyeTrackingRecruit para ${researchId}:`, response);
+    
+    return { 
+      ...response, 
+      data: response.data?.data || null 
+    };
   }
 
   async getResearchFlow(researchId: string): Promise<APIResponse<Step[]>> {

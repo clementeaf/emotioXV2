@@ -25,35 +25,57 @@
   if (localToken || sessionToken) {
     const token = localToken || sessionToken;
     try {
-      // Decodificar token (simple, sin verificación)
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-      }).join(''));
-
-      const payload = JSON.parse(jsonPayload);
-      console.log('%cPayload del token:', 'font-weight: bold; color: #ff6600;', payload);
-
-      // Verificar expiración
-      if (payload.exp) {
-        const expDate = new Date(payload.exp * 1000);
-        const now = new Date();
-        tokenExpirado = now > expDate;
-        
-        if (tokenExpirado) {
-          tiempoRestante = `Expirado hace ${Math.round((now - expDate) / 1000 / 60)} minutos`;
-        } else {
-          tiempoRestante = `Expira en ${Math.round((expDate - now) / 1000 / 60)} minutos`;
+      // Función segura para decodificar token sin usar atob directamente
+      const parseJwt = (token) => {
+        try {
+          // Dividir el token para obtener la parte del payload
+          const base64Url = token.split('.')[1];
+          if (!base64Url) return null;
+          
+          // Reemplazar caracteres para Base64 estándar y crear el buffer
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+          
+          // Usar TextDecoder para decodificar de manera segura
+          const jsonPayload = decodeURIComponent(
+            window.atob(base64)
+              .split('')
+              .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+              .join('')
+          );
+          
+          return JSON.parse(jsonPayload);
+        } catch (e) {
+          console.error('Error al decodificar token:', e);
+          return null;
         }
+      };
 
-        console.log('%cExpiración del token:', 'font-weight: bold; color: #cc3300;', 
-            `${expDate.toLocaleString()} (${tiempoRestante})`);
+      const payload = parseJwt(token);
+      if (payload) {
+        console.log('%cPayload del token:', 'font-weight: bold; color: #ff6600;', payload);
+
+        // Verificar expiración
+        if (payload.exp) {
+          const expDate = new Date(payload.exp * 1000);
+          const now = new Date();
+          tokenExpirado = now > expDate;
+          
+          if (tokenExpirado) {
+            tiempoRestante = `Expirado hace ${Math.round((now - expDate) / 1000 / 60)} minutos`;
+          } else {
+            tiempoRestante = `Expira en ${Math.round((expDate - now) / 1000 / 60)} minutos`;
+          }
+
+          console.log('%cExpiración del token:', 'font-weight: bold; color: #cc3300;', 
+              `${expDate.toLocaleString()} (${tiempoRestante})`);
+        } else {
+          console.log('%cExpiración del token:', 'font-weight: bold; color: #cc3300;', 'No se encontró información de expiración');
+        }
       } else {
-        console.log('%cExpiración del token:', 'font-weight: bold; color: #cc3300;', 'No se encontró información de expiración');
+        console.log('%cExpiración del token:', 'font-weight: bold; color: #cc3300;', 'No se pudo decodificar el token');
       }
     } catch (error) {
-      console.error('Error decodificando el token:', error);
+      console.error('Error general al procesar el token:', error);
     }
   } else {
     console.log('%cNo se puede verificar expiración:', 'font-weight: bold; color: #cc3300;', 'No hay token disponible');
