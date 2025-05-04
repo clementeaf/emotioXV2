@@ -81,6 +81,172 @@ interface CurrentStepRendererProps {
     onError: (errorMessage: string, stepType: string) => void;
 }
 
+// Componente separado para el paso Demographic para evitar errores con los hooks
+const DemographicStep: React.FC<{
+    researchId: string;
+    token?: string | null;
+    stepConfig?: any;
+    onStepComplete?: (answer?: any) => void;
+    onError: (errorMessage: string, stepType: string) => void;
+}> = ({ researchId, token, stepConfig, onStepComplete, onError }) => {
+    const [loading, setLoading] = useState(false);
+    const [demographicResponses, setDemographicResponses] = useState<DemographicResponses>({});
+    const [demographicsConfig, setDemographicsConfig] = useState(DEFAULT_DEMOGRAPHICS_CONFIG);
+    
+    // Añadir consulta a la API de eye-tracking cuando se renderizan las preguntas demográficas
+    useEffect(() => {
+        console.log(`[CurrentStepRenderer] Realizando consulta a la API de eye-tracking, researchId: ${researchId}, token: ${token ? 'disponible' : 'no disponible'}`);
+        
+        if (researchId && token) {
+            // Realizar la consulta real a la API de eye-tracking
+            eyeTrackingService.getEyeTrackingConfig(researchId, token)
+                .then(response => {
+                    console.log('[CurrentStepRenderer] Respuesta de la API de eye-tracking:', response);
+                    
+                    // Si tenemos datos de preguntas demográficas, las procesamos
+                    const extendedData = response.data as ExtendedEyeTrackingData;
+                    if (extendedData?.demographicQuestions) {
+                        const apiQuestions = extendedData.demographicQuestions;
+                        console.log('[CurrentStepRenderer] Preguntas demográficas de la API:', apiQuestions);
+                        
+                        // Creamos un nuevo objeto de configuración basado en la respuesta de la API
+                        const updatedConfig = {...DEFAULT_DEMOGRAPHICS_CONFIG};
+                        
+                        // Primero deshabilitamos todas las preguntas
+                        Object.keys(updatedConfig.questions).forEach(key => {
+                            const typedKey = key as keyof typeof updatedConfig.questions;
+                            updatedConfig.questions[typedKey].enabled = false;
+                        });
+                        
+                        // Ahora habilitamos TODAS las preguntas que estén habilitadas en la API
+                        
+                        // 1. Edad (Age)
+                        if (apiQuestions.age) {
+                            updatedConfig.questions.age = {
+                                id: 'age',
+                                enabled: apiQuestions.age.enabled,
+                                required: apiQuestions.age.required,
+                                title: 'Edad'
+                            };
+                        }
+                        
+                        // 2. Género (Gender)
+                        if (apiQuestions.gender) {
+                            updatedConfig.questions.gender = {
+                                id: 'gender',
+                                enabled: apiQuestions.gender.enabled,
+                                required: apiQuestions.gender.required,
+                                title: 'Género'
+                            };
+                        }
+                        
+                        // 3. País (Country) -> Location
+                        if (apiQuestions.country) {
+                            updatedConfig.questions.location = {
+                                id: 'location',
+                                enabled: apiQuestions.country.enabled,
+                                required: apiQuestions.country.required,
+                                title: 'País'
+                            };
+                        }
+                        
+                        // 4. Nivel educativo (educationLevel)
+                        if (apiQuestions.educationLevel) {
+                            updatedConfig.questions.education = {
+                                id: 'education',
+                                enabled: apiQuestions.educationLevel.enabled,
+                                required: apiQuestions.educationLevel.required,
+                                title: 'Nivel educativo'
+                            };
+                        }
+                        
+                        // 5. Ingresos familiares (householdIncome)
+                        if (apiQuestions.householdIncome) {
+                            updatedConfig.questions.income = {
+                                id: 'income',
+                                enabled: apiQuestions.householdIncome.enabled,
+                                required: apiQuestions.householdIncome.required,
+                                title: 'Ingresos familiares anuales'
+                            };
+                        }
+                        
+                        // 6. Situación laboral (employmentStatus)
+                        if (apiQuestions.employmentStatus) {
+                            updatedConfig.questions.occupation = {
+                                id: 'occupation',
+                                enabled: apiQuestions.employmentStatus.enabled,
+                                required: apiQuestions.employmentStatus.required,
+                                title: 'Situación laboral'
+                            };
+                        }
+                        
+                        // 7. Horas diarias en línea (dailyHoursOnline)
+                        // Este no tiene un campo directo en nuestro formulario, así que usamos language (que está deshabilitado)
+                        if (apiQuestions.dailyHoursOnline) {
+                            updatedConfig.questions.language = {
+                                id: 'language', // Reutilizamos este campo
+                                enabled: apiQuestions.dailyHoursOnline.enabled,
+                                required: apiQuestions.dailyHoursOnline.required,
+                                title: 'Horas diarias en línea'
+                            };
+                        }
+                        
+                        // 8. Competencia técnica (technicalProficiency)
+                        // Este no tiene un campo directo en nuestro formulario, así que usamos ethnicity (que está deshabilitado)
+                        if (apiQuestions.technicalProficiency) {
+                            updatedConfig.questions.ethnicity = {
+                                id: 'ethnicity', // Reutilizamos este campo
+                                enabled: apiQuestions.technicalProficiency.enabled,
+                                required: apiQuestions.technicalProficiency.required,
+                                title: 'Competencia técnica'
+                            };
+                        }
+                        
+                        console.log('[CurrentStepRenderer] Configuración final de preguntas demográficas:', updatedConfig);
+                        setDemographicsConfig(updatedConfig);
+                    }
+                })
+                .catch(error => {
+                    console.error('[CurrentStepRenderer] Error al consultar la API de eye-tracking:', error);
+                });
+        }
+    }, [researchId, token]);
+    
+    const handleDemographicSubmit = async (responses: DemographicResponses) => {
+        setLoading(true);
+        try {
+            // Si tienes un ID de participante, lo puedes usar para guardar las respuestas
+            // Por ahora solo simulamos la acción y continuamos
+            console.log('[CurrentStepRenderer] Respuestas demográficas:', responses);
+            
+            // En una implementación real, guardaríamos las respuestas:
+            // await demographicsService.saveDemographicResponses(researchId, participantId, responses, token);
+            
+            // Continuar al siguiente paso con las respuestas
+            if (onStepComplete) {
+                onStepComplete(responses);
+            }
+        } catch (error) {
+            console.error('[CurrentStepRenderer] Error guardando respuestas demográficas:', error);
+            if (onError) {
+                // Pasar el tipo de paso y el mensaje de error
+                onError('Error al guardar las respuestas demográficas. Por favor, intenta nuevamente.', 'demographic');
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+    
+    return (
+        <DemographicsForm
+            config={stepConfig?.demographicsConfig || demographicsConfig}
+            initialValues={demographicResponses}
+            onSubmit={handleDemographicSubmit}
+            isLoading={loading}
+        />
+    );
+};
+
 const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
     stepType,
     stepConfig,
@@ -692,159 +858,13 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
                 } 
 
             case 'demographic': {
-                const [demographicResponses, setDemographicResponses] = useState<DemographicResponses>({});
-                const [demographicsConfig, setDemographicsConfig] = useState(DEFAULT_DEMOGRAPHICS_CONFIG);
-                
-                // Añadir consulta a la API de eye-tracking cuando se renderizan las preguntas demográficas
-                useEffect(() => {
-                    console.log(`[CurrentStepRenderer] Realizando consulta a la API de eye-tracking, researchId: ${researchId}, token: ${token ? 'disponible' : 'no disponible'}`);
-                    
-                    if (researchId && token) {
-                        // Realizar la consulta real a la API de eye-tracking
-                        eyeTrackingService.getEyeTrackingConfig(researchId, token)
-                            .then(response => {
-                                console.log('[CurrentStepRenderer] Respuesta de la API de eye-tracking:', response);
-                                
-                                // Si tenemos datos de preguntas demográficas, las procesamos
-                                const extendedData = response.data as ExtendedEyeTrackingData;
-                                if (extendedData?.demographicQuestions) {
-                                    const apiQuestions = extendedData.demographicQuestions;
-                                    console.log('[CurrentStepRenderer] Preguntas demográficas de la API:', apiQuestions);
-                                    
-                                    // Creamos un nuevo objeto de configuración basado en la respuesta de la API
-                                    const updatedConfig = {...DEFAULT_DEMOGRAPHICS_CONFIG};
-                                    
-                                    // Primero deshabilitamos todas las preguntas
-                                    Object.keys(updatedConfig.questions).forEach(key => {
-                                        const typedKey = key as keyof typeof updatedConfig.questions;
-                                        updatedConfig.questions[typedKey].enabled = false;
-                                    });
-                                    
-                                    // Ahora habilitamos TODAS las preguntas que estén habilitadas en la API
-                                    
-                                    // 1. Edad (Age)
-                                    if (apiQuestions.age) {
-                                        updatedConfig.questions.age = {
-                                            id: 'age',
-                                            enabled: apiQuestions.age.enabled,
-                                            required: apiQuestions.age.required,
-                                            title: 'Edad'
-                                        };
-                                    }
-                                    
-                                    // 2. Género (Gender)
-                                    if (apiQuestions.gender) {
-                                        updatedConfig.questions.gender = {
-                                            id: 'gender',
-                                            enabled: apiQuestions.gender.enabled,
-                                            required: apiQuestions.gender.required,
-                                            title: 'Género'
-                                        };
-                                    }
-                                    
-                                    // 3. País (Country) -> Location
-                                    if (apiQuestions.country) {
-                                        updatedConfig.questions.location = {
-                                            id: 'location',
-                                            enabled: apiQuestions.country.enabled,
-                                            required: apiQuestions.country.required,
-                                            title: 'País'
-                                        };
-                                    }
-                                    
-                                    // 4. Nivel educativo (educationLevel)
-                                    if (apiQuestions.educationLevel) {
-                                        updatedConfig.questions.education = {
-                                            id: 'education',
-                                            enabled: apiQuestions.educationLevel.enabled,
-                                            required: apiQuestions.educationLevel.required,
-                                            title: 'Nivel educativo'
-                                        };
-                                    }
-                                    
-                                    // 5. Ingresos familiares (householdIncome)
-                                    if (apiQuestions.householdIncome) {
-                                        updatedConfig.questions.income = {
-                                            id: 'income',
-                                            enabled: apiQuestions.householdIncome.enabled,
-                                            required: apiQuestions.householdIncome.required,
-                                            title: 'Ingresos familiares anuales'
-                                        };
-                                    }
-                                    
-                                    // 6. Situación laboral (employmentStatus)
-                                    if (apiQuestions.employmentStatus) {
-                                        updatedConfig.questions.occupation = {
-                                            id: 'occupation',
-                                            enabled: apiQuestions.employmentStatus.enabled,
-                                            required: apiQuestions.employmentStatus.required,
-                                            title: 'Situación laboral'
-                                        };
-                                    }
-                                    
-                                    // 7. Horas diarias en línea (dailyHoursOnline)
-                                    // Este no tiene un campo directo en nuestro formulario, así que usamos language (que está deshabilitado)
-                                    if (apiQuestions.dailyHoursOnline) {
-                                        updatedConfig.questions.language = {
-                                            id: 'language', // Reutilizamos este campo
-                                            enabled: apiQuestions.dailyHoursOnline.enabled,
-                                            required: apiQuestions.dailyHoursOnline.required,
-                                            title: 'Horas diarias en línea'
-                                        };
-                                    }
-                                    
-                                    // 8. Competencia técnica (technicalProficiency)
-                                    // Este no tiene un campo directo en nuestro formulario, así que usamos ethnicity (que está deshabilitado)
-                                    if (apiQuestions.technicalProficiency) {
-                                        updatedConfig.questions.ethnicity = {
-                                            id: 'ethnicity', // Reutilizamos este campo
-                                            enabled: apiQuestions.technicalProficiency.enabled,
-                                            required: apiQuestions.technicalProficiency.required,
-                                            title: 'Competencia técnica'
-                                        };
-                                    }
-                                    
-                                    console.log('[CurrentStepRenderer] Configuración final de preguntas demográficas:', updatedConfig);
-                                    setDemographicsConfig(updatedConfig);
-                                }
-                            })
-                            .catch(error => {
-                                console.error('[CurrentStepRenderer] Error al consultar la API de eye-tracking:', error);
-                            });
-                    }
-                }, [researchId, token]);
-                
-                const handleDemographicSubmit = async (responses: DemographicResponses) => {
-                    setLoading(true);
-                    try {
-                        // Si tienes un ID de participante, lo puedes usar para guardar las respuestas
-                        // Por ahora solo simulamos la acción y continuamos
-                        console.log('[CurrentStepRenderer] Respuestas demográficas:', responses);
-                        
-                        // En una implementación real, guardaríamos las respuestas:
-                        // await demographicsService.saveDemographicResponses(researchId, participantId, responses, token);
-                        
-                        // Continuar al siguiente paso con las respuestas
-                        if (onStepComplete) {
-                            onStepComplete(responses);
-                        }
-                    } catch (error) {
-                        console.error('[CurrentStepRenderer] Error guardando respuestas demográficas:', error);
-                        if (onError) {
-                            // Pasar el tipo de paso y el mensaje de error
-                            onError('Error al guardar las respuestas demográficas. Por favor, intenta nuevamente.', 'demographic');
-                        }
-                    } finally {
-                        setLoading(false);
-                    }
-                };
-                
                 return (
-                    <DemographicsForm
-                        config={stepConfig?.demographicsConfig || demographicsConfig}
-                        initialValues={demographicResponses}
-                        onSubmit={handleDemographicSubmit}
-                        isLoading={loading}
+                    <DemographicStep
+                        researchId={researchId}
+                        token={token}
+                        stepConfig={stepConfig}
+                        onStepComplete={onStepComplete}
+                        onError={onError}
                     />
                 );
             }
