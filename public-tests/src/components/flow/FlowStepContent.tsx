@@ -4,11 +4,13 @@ import CurrentStepRenderer from './CurrentStepRenderer';
 import LoadingIndicator from '../common/LoadingIndicator';
 import ErrorDisplay from '../common/ErrorDisplay';
 import { FlowStepContentProps as OldFlowStepContentProps } from './types';
+import { ResponsesData } from '../../hooks/useParticipantFlow';
 
 interface FlowStepContentProps extends Omit<OldFlowStepContentProps, 'currentStep'> {
     currentStepEnum: ParticipantFlowStep;
     currentExpandedStep: ExpandedStep | null;
     isLoading: boolean;
+    responsesData?: ResponsesData; // Datos de respuestas para el visor final
 }
 
 const FlowStepContent: React.FC<FlowStepContentProps> = ({
@@ -21,6 +23,7 @@ const FlowStepContent: React.FC<FlowStepContentProps> = ({
     handleLoginSuccess,
     handleStepComplete,
     handleError,
+    responsesData,
 }) => {
     console.log('[FlowStepContent] Estado global:', ParticipantFlowStep[currentStepEnum], 'Cargando:', isLoading, 'Paso actual:', currentExpandedStep?.id);
 
@@ -49,10 +52,13 @@ const FlowStepContent: React.FC<FlowStepContentProps> = ({
 
     // Los pasos normales con configuración
     if (currentExpandedStep) {
+        // Verificar si es el paso de agradecimiento para pasar los datos de respuestas
+        const isThankYouStep = currentExpandedStep.type === 'thankyou' || currentStepEnum === ParticipantFlowStep.DONE;
+        
         return (
             <CurrentStepRenderer 
                 stepType={currentExpandedStep.type}
-                stepConfig={currentExpandedStep.config}
+                stepConfig={isThankYouStep && responsesData ? { ...currentExpandedStep.config, responsesData } : currentExpandedStep.config}
                 stepId={currentExpandedStep.id}
                 stepName={currentExpandedStep.name}
                 researchId={researchId}

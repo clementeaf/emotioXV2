@@ -21,6 +21,7 @@ const ParticipantFlow: React.FC = () => {
         navigateToStep,
         completedRelevantSteps,
         totalRelevantSteps,
+        responsesData,
     } = useParticipantFlow(researchId);
 
     const currentExpandedStep = expandedSteps && expandedSteps.length > currentStepIndex 
@@ -31,6 +32,8 @@ const ParticipantFlow: React.FC = () => {
         currentStep !== ParticipantFlowStep.LOGIN && 
         currentStep !== ParticipantFlowStep.LOADING_SESSION &&
         currentStep !== ParticipantFlowStep.ERROR;
+
+    const isThankYouStep = currentExpandedStep?.type === 'thankyou' || currentStep === ParticipantFlowStep.DONE;
 
     if (!showMainLayout) {
         return (
@@ -45,6 +48,7 @@ const ParticipantFlow: React.FC = () => {
                     handleLoginSuccess={handleLoginSuccess}
                     handleStepComplete={handleStepComplete}
                     handleError={handleError}
+                    responsesData={isThankYouStep ? responsesData : undefined}
                 />
             </div>
         );
@@ -71,6 +75,7 @@ const ParticipantFlow: React.FC = () => {
                     handleLoginSuccess={handleLoginSuccess}
                     handleStepComplete={handleStepComplete}
                     handleError={handleError}
+                    responsesData={isThankYouStep ? responsesData : undefined}
                 />
             </main>
          </div>

@@ -679,9 +679,13 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
                     ? { title: '¡Gracias! (Prueba)', message: 'Mensaje de agradecimiento de prueba.'}
                     : stepConfig;
                 
+                 // Verificar si tenemos datos de respuestas en la configuración
+                 const responsesData = stepConfig?.responsesData;
+                
                  return renderStepWithWarning(
                      <ThankYouView
                          onContinue={() => console.log("Acción final desde ThankYou")}
+                         responsesData={responsesData}
                      />,
                      isThankYouMock
                  );
@@ -820,7 +824,7 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
                         // En una implementación real, guardaríamos las respuestas:
                         // await demographicsService.saveDemographicResponses(researchId, participantId, responses, token);
                         
-                        // Continuar al siguiente paso
+                        // Continuar al siguiente paso con las respuestas
                         if (onStepComplete) {
                             onStepComplete(responses);
                         }

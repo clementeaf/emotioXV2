@@ -27,6 +27,30 @@ const smartVOCTypeMap: { [key: string]: string } = {
     'NEV': 'smartvoc_nev',   // Necesita case 'smartvoc_nev' en Renderer
     'VOC': 'smartvoc_feedback', // Mapea a 'smartvoc_feedback' que ya existe
 };
+
+// Estructura para almacenar respuestas de cada módulo
+export interface ModuleResponse {
+    stepId: string;
+    stepType: string;
+    stepName?: string;
+    question?: string;
+    answer?: any;
+    timestamp: number;
+}
+
+// Estructura para el JSON completo de respuestas
+export interface ResponsesData {
+    participantId?: string;
+    researchId: string;
+    startTime: number;
+    endTime?: number;
+    modules: {
+        demographic?: ModuleResponse;
+        cognitive_task: ModuleResponse[];
+        smartvoc: ModuleResponse[];
+        [key: string]: ModuleResponse | ModuleResponse[] | undefined;
+    };
+}
 // ----------------------------------------------------
 
 // Definir un tipo más específico para los pasos expandidos
@@ -40,6 +64,16 @@ export const useParticipantFlow = (researchId: string | undefined) => {
     const [expandedSteps, setExpandedSteps] = useState<ExpandedStep[]>([]);
     const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
     const [isFlowLoading, setIsFlowLoading] = useState<boolean>(true);
+    
+    // Estado para almacenar todas las respuestas
+    const [responsesData, setResponsesData] = useState<ResponsesData>({
+        researchId: researchId || '',
+        startTime: Date.now(),
+        modules: {
+            cognitive_task: [],
+            smartvoc: []
+        }
+    });
 
     // --- Lógica de Error --- 
     // useCallback para que la referencia sea estable
@@ -172,6 +206,16 @@ export const useParticipantFlow = (researchId: string | undefined) => {
             setExpandedSteps([]);
             setCurrentStepIndex(0);
             setIsFlowLoading(true);
+            
+            // Inicializar el objeto de respuestas con el researchId
+            setResponsesData({
+                researchId: researchId,
+                startTime: Date.now(),
+                modules: {
+                    cognitive_task: [],
+                    smartvoc: []
+                }
+            });
 
             const storedToken = localStorage.getItem('participantToken');
             if (storedToken) {
@@ -198,6 +242,13 @@ export const useParticipantFlow = (researchId: string | undefined) => {
             setError(null);
             setIsFlowLoading(true);
             setCurrentStep(ParticipantFlowStep.LOADING_SESSION);
+            
+            // Actualizar el participantId en el objeto de respuestas
+            setResponsesData(prev => ({
+                ...prev,
+                participantId: (participant as any).id || 'unknown'
+            }));
+            
             buildExpandedSteps(researchId, storedToken); // Llamar directamente
         } else {
             handleError("Error interno post-login: Falta token o ID.", ParticipantFlowStep.LOGIN);
@@ -205,8 +256,84 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         }
     }, [researchId, buildExpandedSteps]); // Mantener dependencia de buildExpandedSteps
 
-    const goToNextStep = useCallback(() => {
+    // Función para guardar respuesta del paso actual
+    const saveStepResponse = useCallback((answer: any) => {
+        if (currentStepIndex >= 0 && currentStepIndex < expandedSteps.length) {
+            const currentStepInfo = expandedSteps[currentStepIndex];
+            const { id: stepId, type: stepType, name: stepName, config } = currentStepInfo;
+            
+            // Excluir los pasos de Bienvenida y Agradecimiento
+            if (stepType === 'welcome' || stepType === 'thankyou') {
+                console.log(`[useParticipantFlow] Paso ${stepType} excluido del JSON de respuestas.`);
+                
+                // Para el paso thankyou, actualizamos el tiempo de finalización pero no guardamos la respuesta
+                if (stepType === 'thankyou') {
+                    setResponsesData(prev => {
+                        const finalData = {
+                            ...prev,
+                            endTime: Date.now()
+                        };
+                        
+                        // Mostrar todo el JSON de respuestas en la consola cuando se llega al paso de Agradecimiento
+                        console.log('==========================================');
+                        console.log('JSON COMPLETO DE RESPUESTAS:');
+                        console.log(JSON.stringify(finalData, null, 2));
+                        console.log('==========================================');
+                        
+                        return finalData;
+                    });
+                }
+                
+                return;
+            }
+            
+            // Crear objeto de respuesta para este paso
+            const moduleResponse: ModuleResponse = {
+                stepId,
+                stepType,
+                stepName,
+                question: config?.questionText || config?.title || stepName,
+                answer,
+                timestamp: Date.now()
+            };
+            
+            // Actualizar el estado con esta respuesta
+            setResponsesData(prev => {
+                const updatedData = { ...prev };
+                
+                // Dependiendo del tipo de paso, guardar en la sección correspondiente
+                if (stepType === 'demographic') {
+                    updatedData.modules.demographic = moduleResponse;
+                } else if (stepType.startsWith('cognitive_')) {
+                    // Es una tarea cognitiva
+                    updatedData.modules.cognitive_task.push(moduleResponse);
+                } else if (stepType.startsWith('smartvoc_')) {
+                    // Es una pregunta de SmartVOC
+                    updatedData.modules.smartvoc.push(moduleResponse);
+                }
+                
+                // Guardar JSON en localStorage para persistencia local
+                try {
+                    localStorage.setItem('participantResponses', JSON.stringify(updatedData));
+                } catch (e) {
+                    console.error('[useParticipantFlow] Error guardando respuestas en localStorage:', e);
+                }
+                
+                console.log('[useParticipantFlow] Respuesta guardada:', moduleResponse);
+                console.log('[useParticipantFlow] JSON de respuestas actualizado:', updatedData);
+                
+                return updatedData;
+            });
+        }
+    }, [currentStepIndex, expandedSteps]);
+
+    const goToNextStep = useCallback((answer?: any) => {
         if (!isFlowLoading && currentStepIndex < expandedSteps.length - 1) {
+            // Guardar la respuesta antes de avanzar
+            if (answer !== undefined) {
+                saveStepResponse(answer);
+            }
+            
             const nextIndex = currentStepIndex + 1;
             const nextStepInfo = expandedSteps[nextIndex];
             console.log(`[useParticipantFlow] Avanzando a paso ${nextIndex} (${nextStepInfo?.id}).`);
@@ -215,9 +342,33 @@ export const useParticipantFlow = (researchId: string | undefined) => {
             setError(null); 
         } else if (!isFlowLoading) {
              console.log(`[useParticipantFlow] Último paso (${expandedSteps[currentStepIndex]?.id}) completado.`);
+             
+             // Guardar la respuesta final
+             if (answer !== undefined) {
+                saveStepResponse(answer);
+             }
+             
+             // Finalizar flujo y enviar respuestas
              setCurrentStep(ParticipantFlowStep.DONE);
+             setResponsesData(prev => {
+                 const finalData = { 
+                     ...prev,
+                     endTime: Date.now()
+                 };
+                 
+                 // Mostrar completo el JSON final
+                 console.log('==========================================');
+                 console.log('JSON FINAL DEL FLUJO COMPLETO:');
+                 console.log(JSON.stringify(finalData, null, 2));
+                 console.log('==========================================');
+                 
+                 // Enviar el JSON completo al servidor
+                 console.log('[useParticipantFlow] JSON FINAL de todas las respuestas:', finalData);
+                 
+                 return finalData;
+             });
         }
-    }, [currentStepIndex, expandedSteps, isFlowLoading]);
+    }, [currentStepIndex, expandedSteps, isFlowLoading, saveStepResponse]);
 
     // <<< NUEVO navigateToStep >>>
     const navigateToStep = useCallback((targetIndex: number) => {
@@ -261,6 +412,11 @@ export const useParticipantFlow = (researchId: string | undefined) => {
     if (currentStep === ParticipantFlowStep.DONE) {
         completedRelevantSteps = totalRelevantSteps;
     }
+    
+    // Función para obtener el JSON de respuestas actual
+    const getResponsesJson = useCallback(() => {
+        return JSON.stringify(responsesData, null, 2);
+    }, [responsesData]);
 
     // --- Valor de Retorno (ACTUALIZADO) --- 
     return {
@@ -276,5 +432,7 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         navigateToStep, 
         completedRelevantSteps, // <<< Exponer pasos completados
         totalRelevantSteps,     // <<< Exponer pasos totales
+        responsesData,          // <<< Exponer datos de respuestas
+        getResponsesJson        // <<< Función para obtener JSON
     };
 }; 
