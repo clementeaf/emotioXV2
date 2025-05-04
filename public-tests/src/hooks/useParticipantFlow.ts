@@ -4,6 +4,7 @@ import { Participant } from '../../../shared/interfaces/participant';
 // Quitar flowSequence si ya no se usa
 // import { flowSequence } from '../utils/utils'; 
 import { Step as SidebarStep } from '../components/layout/ProgressSidebar';
+import { DEFAULT_DEMOGRAPHICS_CONFIG } from '../types/demographics';
 
 // --- Constantes y Tipos (Ajustar según sea necesario) ---
 const API_BASE_URL = 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev'; // O desde config/env
@@ -57,10 +58,17 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         const finalSteps: ExpandedStep[] = [];
 
         try {
-            // 1. Añadir Bienvenida
+            // 1. Añadir Preguntas demográficas
+            finalSteps.push({ id: 'demographic', name: 'Preguntas demográficas', type: 'demographic', config: { 
+                title: 'Preguntas demográficas', 
+                description: 'Por favor, responde a unas breves preguntas demográficas antes de comenzar.',
+                demographicsConfig: DEFAULT_DEMOGRAPHICS_CONFIG
+            } });
+            
+            // 2. Añadir Bienvenida
             finalSteps.push({ id: 'welcome', name: 'Bienvenida', type: 'welcome', config: { title: '¡Bienvenido!', message: 'Gracias por tu tiempo.' } });
-
-            // 2. Procesar Cognitive Task
+            
+            // 3. Procesar Cognitive Task
             try {
                 const url = `${API_BASE_URL}/research/${currentResearchId}/cognitive-task`;
                 console.log(`[useParticipantFlow] Fetching Cognitive Task: ${url}`);
@@ -94,7 +102,7 @@ export const useParticipantFlow = (researchId: string | undefined) => {
                 return;
             }
 
-            // 3. Procesar SmartVOC
+            // 4. Procesar SmartVOC
             try {
                 const url = `${API_BASE_URL}/research/${currentResearchId}/smart-voc`;
                 console.log(`[useParticipantFlow] Fetching SmartVOC: ${url}`);
@@ -131,7 +139,7 @@ export const useParticipantFlow = (researchId: string | undefined) => {
                  // return;
             }
 
-            // 4. Añadir Agradecimiento
+            // 5. Añadir Agradecimiento
             finalSteps.push({ id: 'thankyou', name: 'Agradecimiento', type: 'thankyou', config: { title: '¡Muchas Gracias!', message: 'Hemos recibido tus respuestas.' } });
             
             // --- Finalizar construcción ---

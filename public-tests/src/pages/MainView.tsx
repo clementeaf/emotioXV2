@@ -29,12 +29,18 @@ const ScreenerView = () => {
 // de la configuración del flujo y los detalles de las preguntas.
 const placeholderExpandedSteps: (SidebarStep & { type: string, config?: any })[] = [
   { id: 'welcome', name: 'Bienvenida', type: 'welcome', config: { title: '¡Hola!', message: 'Gracias por participar en esta investigación.'} },
-  { id: 'cog_instr', name: 'Instrucciones Tarea', type: 'instruction', config: { title: 'Instrucciones', text: 'A continuación, responderás algunas preguntas breves.' } },
-  { id: 'cog_q1', name: 'Pregunta 1', type: 'cognitive_short_text', config: { questionText: '¿Cuál es tu color favorito?' } },
-  { id: 'cog_q2', name: 'Pregunta 2', type: 'cognitive_short_text', config: { questionText: '¿Cuál es la capital de España?' } },
-  { id: 'sv_instr', name: 'Instrucciones Feedback', type: 'instruction', config: { title: 'Feedback', text: 'Ahora, danos tu opinión sobre la experiencia.'} },
-  { id: 'sv_q1', name: 'Satisfacción', type: 'smartvoc_csat', config: { questionText: 'En una escala de 1 a 5, ¿qué tan satisfecho estás?' , scaleSize: 5} },
-  { id: 'sv_q2', name: 'Comentarios', type: 'smartvoc_feedback', config: { questionText: '¿Tienes algún comentario adicional?' } },
+  { id: 'demographic', name: 'Preguntas demográficas', type: 'instruction', config: { title: 'Preguntas demográficas', text: 'Por favor, responde a unas breves preguntas demográficas antes de comenzar.' } },
+  { id: 'module_feedback', name: 'Que te ha parecido el módulo?', type: 'cognitive_short_text', config: { questionText: '¿Qué te ha parecido el módulo?' } },
+  { id: 'cog_q1', name: 'Cognitiva: long_text', type: 'cognitive_short_text', config: { questionText: 'Pregunta con respuesta de texto largo' } },
+  { id: 'cog_q2', name: 'Cognitiva: single_choice', type: 'cognitive_short_text', config: { questionText: 'Pregunta de selección única' } },
+  { id: 'cog_q3', name: 'Cognitiva: multiple_choice', type: 'cognitive_short_text', config: { questionText: 'Pregunta de selección múltiple' } },
+  { id: 'cog_q4', name: 'Cognitiva: linear_scale', type: 'cognitive_short_text', config: { questionText: 'Pregunta con escala lineal' } },
+  { id: 'cog_q5', name: 'Cognitiva: ranking', type: 'cognitive_short_text', config: { questionText: 'Pregunta tipo ranking' } },
+  { id: 'cog_q6', name: 'Cognitiva: navigation_flow', type: 'cognitive_short_text', config: { questionText: 'Pregunta de navegación' } },
+  { id: 'image_question', name: 'Que te parece esta imagen?', type: 'cognitive_short_text', config: { questionText: '¿Qué te parece esta imagen?' } },
+  { id: 'csat', name: 'Customer Satisfaction Score (CSAT)', type: 'smartvoc_csat', config: { questionText: 'En una escala de 1 a 5, ¿qué tan satisfecho estás?' , scaleSize: 5} },
+  { id: 'ces', name: 'Customer Effort Score (CES)', type: 'smartvoc_csat', config: { questionText: '¿Cuánto esfuerzo te costó utilizar este servicio?' , scaleSize: 7} },
+  { id: 'cv', name: 'Cognitive Value (CV)', type: 'smartvoc_feedback', config: { questionText: '¿Qué valor te aporta este producto?' } },
   { id: 'thankyou', name: 'Agradecimiento', type: 'thankyou', config: { title: '¡Gracias!', message: 'Hemos recibido tus respuestas.' } },
 ];
 // ----------------------------------------------------------------------
