@@ -1,35 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ParticipantFlowStep, ExpandedStep } from '../types/flow';
 import { Participant } from '../../../shared/interfaces/participant';
-// Quitar flowSequence si ya no se usa
-// import { flowSequence } from '../utils/utils'; 
-// Comentar la importación y la constante no usadas
-// import { Step as SidebarStep } from '../components/layout/ProgressSidebar';
 import { DEFAULT_DEMOGRAPHICS_CONFIG } from '../types/demographics';
 
-// --- Constantes y Tipos (Ajustar según sea necesario) ---
-const API_BASE_URL = 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev'; // O desde config/env
+const API_BASE_URL = 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev';
 
-// Comentar la importación y la constante no usadas
-// const flowModuleSequence = ['welcome', 'cognitive_task', 'smartvoc', 'thankyou'];
-
-// Tipos de preguntas esperadas para cada módulo complejo (Para generar mocks si faltan)
-// <<< ¡IMPORTANTE: Asegúrate que estos strings coincidan con los `type` de las preguntas en la API! >>>
-// const expectedCognitiveTypes = ['short_text', 'long_text']; // Añade todos los tipos cognitivos que esperas
-// const expectedSmartVOCTypes = ['CSAT', 'CES', 'CV', 'NPS', 'NEV', 'VOC']; // Tipos de la API SmartVOC
-
-// Mapeo de tipos API SmartVOC a tipos usados en el frontend renderer (CurrentStepRenderer)
-// <<< ¡IMPORTANTE: Asegúrate que las claves coincidan con expectedSmartVOCTypes y los valores con los `case` en CurrentStepRenderer! >>>
 const smartVOCTypeMap: { [key: string]: string } = {
     'CSAT': 'smartvoc_csat',
-    'CES': 'smartvoc_ces',   // Necesita case 'smartvoc_ces' en Renderer
-    'CV': 'smartvoc_cv',     // Necesita case 'smartvoc_cv' en Renderer
-    'NPS': 'smartvoc_nps',   // Necesita case 'smartvoc_nps' en Renderer
-    'NEV': 'smartvoc_nev',   // Necesita case 'smartvoc_nev' en Renderer
-    'VOC': 'smartvoc_feedback', // Mapea a 'smartvoc_feedback' que ya existe
+    'CES': 'smartvoc_ces',
+    'CV': 'smartvoc_cv',
+    'NPS': 'smartvoc_nps',
+    'NEV': 'smartvoc_nev',
+    'VOC': 'smartvoc_feedback',
 };
 
-// Estructura para almacenar respuestas de cada módulo
 export interface ModuleResponse {
     stepId: string;
     stepType: string;
@@ -39,7 +23,6 @@ export interface ModuleResponse {
     timestamp: number;
 }
 
-// Estructura para el JSON completo de respuestas
 export interface ResponsesData {
     participantId?: string;
     researchId: string;
@@ -47,21 +30,15 @@ export interface ResponsesData {
     endTime?: number;
     modules: {
         demographic?: ModuleResponse;
-        feedback?: ModuleResponse; // Para "Que te ha parecido el módulo?"
-        welcome?: ModuleResponse; // Para "Bienvenida" (aunque normalmente no tiene respuesta)
-        // Las siguientes son las categorías estructurales obligatorias
+        feedback?: ModuleResponse;
+        welcome?: ModuleResponse;
         cognitive_task: ModuleResponse[];
         smartvoc: ModuleResponse[];
-        all_steps: ModuleResponse[]; // TODOS los pasos se guardan aquí
+        all_steps: ModuleResponse[];
         [key: string]: ModuleResponse | ModuleResponse[] | undefined;
     };
 }
-// ----------------------------------------------------
 
-// Definir un tipo más específico para los pasos expandidos
-// type ExpandedStep = SidebarStep & { type: string; config?: any }; // <<< MOVER a types/flow.ts (asumido hecho)
-
-// El hook recibe el researchId como argumento (si es null/undefined, no debería hacer nada)
 export const useParticipantFlow = (researchId: string | undefined) => {
     const [token, setToken] = useState<string | null>(null);
     const [currentStep, setCurrentStep] = useState<ParticipantFlowStep>(ParticipantFlowStep.LOADING_SESSION);
@@ -69,22 +46,18 @@ export const useParticipantFlow = (researchId: string | undefined) => {
     const [expandedSteps, setExpandedSteps] = useState<ExpandedStep[]>([]);
     const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
     const [isFlowLoading, setIsFlowLoading] = useState<boolean>(true);
-    // NUEVO: Registro del índice más alto al que ha llegado el usuario
     const [maxVisitedIndex, setMaxVisitedIndex] = useState<number>(0);
     
-    // Estado para almacenar todas las respuestas
     const [responsesData, setResponsesData] = useState<ResponsesData>({
         researchId: researchId || '',
         startTime: Date.now(),
         modules: {
             cognitive_task: [],
             smartvoc: [],
-            all_steps: [] // Mantener para compatibilidad
+            all_steps: []
         }
     });
 
-    // --- Lógica de Error --- 
-    // useCallback para que la referencia sea estable
     const handleError = useCallback((errorMessage: string, step: ParticipantFlowStep | string) => {
         const stepName = typeof step === 'string' ? step : ParticipantFlowStep[step];
         console.error(`[useParticipantFlow] Error en ${stepName}:`, errorMessage);
@@ -93,14 +66,12 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         setIsFlowLoading(false); 
     }, []);
 
-    // --- Función para Construir Pasos Expandidos (CORREGIDA) ---
     const buildExpandedSteps = useCallback(async (currentResearchId: string, currentToken: string) => {
         console.log("[useParticipantFlow] Iniciando construcción de pasos expandidos (Iterando API real)...");
         setIsFlowLoading(true);
         const finalSteps: ExpandedStep[] = [];
 
         try {
-            // 1. Añadir Preguntas demográficas
             finalSteps.push({ id: 'demographic', name: 'Preguntas demográficas', type: 'demographic', config: { 
                 title: 'Preguntas demográficas', 
                 description: 'Por favor, responde a unas breves preguntas demográficas antes de comenzar.',
@@ -399,11 +370,18 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         }));
     };
 
-    // CORREGIDO: Función para guardar respuesta del paso actual - PERSISTIR ABSOLUTAMENTE TODO
+    // CORREGIDO: Función para guardar respuesta del paso actual - FORZAR persistencia para cognitive y smartvoc
     const saveStepResponse = useCallback((answer: any) => {
         if (currentStepIndex >= 0 && currentStepIndex < expandedSteps.length) {
             const currentStepInfo = expandedSteps[currentStepIndex];
             const { id: stepId, type: stepType, name: stepName, config } = currentStepInfo;
+            
+            // NUEVO - Logging detallado para depuración
+            console.log(`[useParticipantFlow] INTENTO DE GUARDAR: Paso ${stepType} (${stepName})`, {
+                id: stepId,
+                respuesta: answer,
+                config: config
+            });
             
             // Único caso a excluir: los pasos que no requieren respuesta del usuario
             // IMPORTANTE: Solo excluir Welcome/Thankyou si no tienen respuesta
@@ -431,6 +409,17 @@ export const useParticipantFlow = (researchId: string | undefined) => {
                 return;
             }
             
+            // IMPORTANTE: Para pasos cognitive y smartvoc, nunca ignorar aunque answer parezca vacío
+            const isCognitive = stepType.startsWith('cognitive_');
+            const isSmartVOC = stepType.startsWith('smartvoc_');
+            
+            // Si answer es undefined pero es un paso cognitive o smartvoc, crear un objeto vacío
+            // para garantizar que se guarde algo
+            if (answer === undefined && (isCognitive || isSmartVOC)) {
+                console.log(`[useParticipantFlow] ALERTA: Respuesta undefined para ${stepType}, usando objeto vacío`);
+                answer = isCognitive ? { text: "" } : { value: 0 };
+            }
+            
             // Crear objeto de respuesta para este paso
             const moduleResponse: ModuleResponse = {
                 stepId,
@@ -442,7 +431,7 @@ export const useParticipantFlow = (researchId: string | undefined) => {
             };
             
             // NUEVO: Registrar que estamos guardando la respuesta
-            console.log(`[useParticipantFlow] ✓ Guardando respuesta para paso ${stepType} (${stepName})`);
+            console.log(`[useParticipantFlow] ✓ Guardando respuesta para paso ${stepType} (${stepName})`, answer);
             
             // Sanear la respuesta para asegurar que sea serializable
             try {
@@ -452,6 +441,19 @@ export const useParticipantFlow = (researchId: string | undefined) => {
                 console.warn('[useParticipantFlow] Error sanitizando respuesta:', sanitizeError);
                 // En caso de error, convertir a string simple para asegurar compatibilidad
                 moduleResponse.answer = String(moduleResponse.answer);
+            }
+            
+            // NUEVO: Verificar que la respuesta no se haya perdido en el proceso de sanitización
+            if (moduleResponse.answer === undefined || moduleResponse.answer === null) {
+                console.warn('[useParticipantFlow] ALERTA: Respuesta perdida después de sanitizar');
+                // Asignar un valor default según el tipo
+                if (isCognitive) {
+                    moduleResponse.answer = { text: "Respuesta no capturada correctamente" };
+                } else if (isSmartVOC) {
+                    moduleResponse.answer = { value: 0 };
+                } else {
+                    moduleResponse.answer = "Respuesta no capturada correctamente";
+                }
             }
             
             // Actualizar el estado con esta respuesta
@@ -473,19 +475,47 @@ export const useParticipantFlow = (researchId: string | undefined) => {
                     // Caso especial: bienvenida (solo si tiene respuesta)
                     updatedData.modules.welcome = moduleResponse;
                 }
-                else if (stepType.startsWith('cognitive_')) {
-                    // Tareas cognitivas: en array cognitive_task
+                else if (isCognitive) {
+                    // MODIFICADO: Garantizar que se guarde siempre en cognitive_task
                     if (!updatedData.modules.cognitive_task) {
                         updatedData.modules.cognitive_task = [];
                     }
-                    updatedData.modules.cognitive_task.push(moduleResponse);
+                    
+                    // Verificar si ya existe una respuesta para este stepId
+                    const existingIndex = updatedData.modules.cognitive_task.findIndex(
+                        resp => resp.stepId === stepId
+                    );
+                    
+                    if (existingIndex >= 0) {
+                        // Actualizar respuesta existente
+                        updatedData.modules.cognitive_task[existingIndex] = moduleResponse;
+                    } else {
+                        // Añadir nueva respuesta
+                        updatedData.modules.cognitive_task.push(moduleResponse);
+                    }
+                    
+                    console.log(`[useParticipantFlow] Guardado en cognitive_task, total: ${updatedData.modules.cognitive_task.length}`);
                 }
-                else if (stepType.startsWith('smartvoc_')) {
-                    // SmartVOC: en array smartvoc
+                else if (isSmartVOC) {
+                    // MODIFICADO: Garantizar que se guarde siempre en smartvoc
                     if (!updatedData.modules.smartvoc) {
                         updatedData.modules.smartvoc = [];
                     }
-                    updatedData.modules.smartvoc.push(moduleResponse);
+                    
+                    // Verificar si ya existe una respuesta para este stepId
+                    const existingIndex = updatedData.modules.smartvoc.findIndex(
+                        resp => resp.stepId === stepId
+                    );
+                    
+                    if (existingIndex >= 0) {
+                        // Actualizar respuesta existente
+                        updatedData.modules.smartvoc[existingIndex] = moduleResponse;
+                    } else {
+                        // Añadir nueva respuesta
+                        updatedData.modules.smartvoc.push(moduleResponse);
+                    }
+                    
+                    console.log(`[useParticipantFlow] Guardado en smartvoc, total: ${updatedData.modules.smartvoc.length}`);
                 }
                 else {
                     // Cualquier otro tipo: crear array dinámico por tipo
@@ -507,7 +537,19 @@ export const useParticipantFlow = (researchId: string | undefined) => {
                 if (!updatedData.modules.all_steps) {
                     updatedData.modules.all_steps = [];
                 }
-                updatedData.modules.all_steps.push(moduleResponse);
+                
+                // Verificar si ya existe en all_steps
+                const allStepsIndex = updatedData.modules.all_steps.findIndex(
+                    resp => resp.stepId === stepId
+                );
+                
+                if (allStepsIndex >= 0) {
+                    // Actualizar respuesta existente
+                    updatedData.modules.all_steps[allStepsIndex] = moduleResponse;
+                } else {
+                    // Añadir nueva respuesta
+                    updatedData.modules.all_steps.push(moduleResponse);
+                }
                 
                 // Guardar JSON en localStorage para persistencia local
                 try {
@@ -518,7 +560,6 @@ export const useParticipantFlow = (researchId: string | undefined) => {
                     console.error('[useParticipantFlow] Error guardando respuestas en localStorage:', e);
                 }
                 
-                console.log('[useParticipantFlow] Respuesta guardada:', moduleResponse);
                 console.log('[useParticipantFlow] Total respuestas guardadas:', 
                     updatedData.modules.all_steps.length);
                 
@@ -617,17 +658,30 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         return null;
     }, [expandedSteps, responsesData]);
 
-    // MODIFICAR goToNextStep para guardar TODAS las respuestas
+    // MODIFICADO: goToNextStep para forzar persistencia en cognitive y smartvoc
     const goToNextStep = useCallback((answer?: any) => {
         if (!isFlowLoading && currentStepIndex < expandedSteps.length - 1) {
+            const currentStepInfo = expandedSteps[currentStepIndex];
+            const { type: stepType } = currentStepInfo;
+            
+            // VERIFICAR si es un paso de tipo cognitive o smartvoc para garantizar que siempre se guarde
+            const isCognitive = stepType.startsWith('cognitive_');
+            const isSmartVOC = stepType.startsWith('smartvoc_');
+            
+            // Comprobar si debemos forzar un valor por defecto
+            if (answer === undefined && (isCognitive || isSmartVOC)) {
+                console.log(`[useParticipantFlow] ALERTA: Forzando valor por defecto para ${stepType}`);
+                // Asignar valor por defecto según el tipo
+                answer = isCognitive ? 
+                    { text: "Respuesta vacía", isEmpty: true } : 
+                    { value: 0, isEmpty: true };
+            }
+            
             // Guardar la respuesta antes de avanzar - SIEMPRE guardar si hay respuesta
             if (answer !== undefined) {
                 saveStepResponse(answer);
                 
                 // Actualizar también la configuración del paso actual para mantener las respuestas
-                const currentStepInfo = expandedSteps[currentStepIndex];
-                
-                // Guardar las respuestas en la configuración del paso actual
                 currentStepInfo.config = {
                     ...currentStepInfo.config,
                     savedResponses: answer
@@ -676,8 +730,10 @@ export const useParticipantFlow = (researchId: string | undefined) => {
                  console.log('==========================================');
                  
                  // Enviar el JSON completo al servidor
-                 console.log('[useParticipantFlow] Total respuestas guardadas:', 
-                    finalData.modules.all_steps?.length || 'N/A');
+                 console.log('[useParticipantFlow] Módulos guardados:');
+                 console.log(' - cognitive_task:', finalData.modules.cognitive_task?.length || 0);
+                 console.log(' - smartvoc:', finalData.modules.smartvoc?.length || 0);
+                 console.log(' - all_steps:', finalData.modules.all_steps?.length || 0);
                  
                  return finalData;
              });
