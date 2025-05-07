@@ -11,6 +11,7 @@ interface FlowStepContentProps extends Omit<OldFlowStepContentProps, 'currentSte
     currentExpandedStep: ExpandedStep | null;
     isLoading: boolean;
     responsesData?: ResponsesData; // Datos de respuestas para el visor final
+    handleError: (errorMessage: string, step: ParticipantFlowStep | string) => void; // La firma real de useParticipantFlow
 }
 
 const FlowStepContent: React.FC<FlowStepContentProps> = ({
@@ -39,13 +40,18 @@ const FlowStepContent: React.FC<FlowStepContentProps> = ({
         return <ErrorDisplay title="Error en el Flujo" message={error || 'Ocurrió un error desconocido.'} />;
     }
 
+    // Wrapper para onError
+    const handleRendererError = (errorMessage: string, stepType: string) => {
+        handleError(errorMessage, stepType); // Llamar a la función original
+    };
+
     if (currentStepEnum === ParticipantFlowStep.LOGIN) {
         return (
             <CurrentStepRenderer 
                 stepType="login"
                 researchId={researchId}
                 onLoginSuccess={handleLoginSuccess}
-                onError={handleError}
+                onError={handleRendererError}
             />
         );
     }
@@ -64,7 +70,7 @@ const FlowStepContent: React.FC<FlowStepContentProps> = ({
                 researchId={researchId}
                 token={token}
                 onStepComplete={handleStepComplete}
-                onError={handleError}
+                onError={handleRendererError}
             />
         );
     }

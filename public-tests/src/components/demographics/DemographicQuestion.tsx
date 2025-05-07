@@ -16,10 +16,6 @@ export const DemographicQuestion: React.FC<DemographicQuestionProps> = ({
   // Si la pregunta no está habilitada, no mostrar nada
   if (!config.enabled) return null;
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    onChange(config.id, e.target.value);
-  };
-
   // Renderizar el tipo de input según el ID de la pregunta
   switch (config.id) {
     case 'age':

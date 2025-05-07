@@ -1,5 +1,6 @@
-import React from 'react';
+// import { useState } from 'react'; // No se usa
 import { Link, useLocation } from 'react-router-dom';
+// import { ChevronLeft, ChevronRight } from 'lucide-react'; // No se usa
 import { cn } from '../../lib/utils';
 import {
   LayoutDashboard,

@@ -3,13 +3,13 @@ import React, { useState, useCallback } from 'react';
 import { 
     SmartVOCFormData, 
     SmartVOCQuestion, 
-    ConfigScale, 
-    ConfigCSAT, 
-    ConfigNEV, 
-    ConfigVOC 
-} from '../../../shared/interfaces/smart-voc.interface';
-// Quitar la importación de interfaces definidas localmente antes
-// export { SmartVOCQuestion, ConfigScale, ConfigCSAT, ConfigNEV, ConfigVOC }; 
+    CSATConfig as ConfigCSAT, 
+    NEVConfig as ConfigNEV, 
+    VOCConfig as ConfigVOC, 
+    CESConfig 
+} from '../../../../shared/interfaces/smart-voc.interface';
+// --- Exportar Interfaces para componentes hijos --- 
+export type { SmartVOCQuestion, ConfigCSAT, ConfigNEV, ConfigVOC, CESConfig };
 
 // --- Interfaz de Props Actualizada --- 
 interface SmartVOCRouterProps {
@@ -112,8 +112,9 @@ export const SmartVOCRouter: React.FC<SmartVOCRouterProps> = ({
       {/* Iterar y renderizar cada pregunta de questionsToRender */}
       <div className="space-y-8">
           {questionsToRender.map((question, index) => {
-              // ... (lógica del switch para QuestionComponent sin cambios, asume que las interfaces importadas son compatibles)
-              let QuestionComponent;
+              // Definir tipo explícito para QuestionComponent
+              let QuestionComponent: React.FC<any>; // Usar any aquí temporalmente
+              
               switch (question.type) {
                   case 'CSAT':
                       QuestionComponent = CSATQuestion;
@@ -121,7 +122,6 @@ export const SmartVOCRouter: React.FC<SmartVOCRouterProps> = ({
                   case 'CES':
                   case 'CV':
                   case 'NPS': 
-                      // Asegurarnos de que el componente ScaleQuestion es compatible con SmartVOCQuestion
                       QuestionComponent = ScaleQuestion; 
                       break;
                   case 'NEV': 
@@ -141,10 +141,10 @@ export const SmartVOCRouter: React.FC<SmartVOCRouterProps> = ({
 
               return (
                   <div key={question.id || index} className={`p-4 border rounded-lg shadow-sm ${errors[question.id] ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}>
+                      {/* Quitar @ts-ignore */}
                       <QuestionComponent 
-                          // Pasar la question completa como questionConfig al componente hijo
-                          questionConfig={question as any} // Usar 'as any' temporalmente si hay incompatibilidad leve
-                          value={answers[question.id]} 
+                          questionConfig={question as any} 
+                          value={answers[question.id] as number | undefined} 
                           onChange={handleAnswerChange}
                       />
                       {errors[question.id] && <p className="text-xs text-red-600 mt-1">{errors[question.id]}</p>}

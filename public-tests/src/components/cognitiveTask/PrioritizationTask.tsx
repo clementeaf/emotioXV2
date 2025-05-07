@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 interface PrioritizationTaskProps {
   onContinue: () => void;
@@ -46,7 +46,7 @@ const PrioritizationTask = ({
         </h2>
         
         <div className="w-full space-y-4 mb-8">
-          {options.map((option, index) => (
+          {options.map((_option, index) => (
             <div key={index} className="flex items-center gap-3">
               <span className="text-lg font-medium text-neutral-700 w-6 text-center">
                 {index + 1}

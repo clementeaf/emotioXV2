@@ -1,4 +1,6 @@
+// @ts-ignore - Ignorando temporalmente falta de tipos para endpoints.js
 import endpoints from './endpoints.js'; // Importar los endpoints exportados
+// import { z } from 'zod'; // No se usa
 
 // Función auxiliar para obtener la URL base de la API
 function getApiUrl(): string {

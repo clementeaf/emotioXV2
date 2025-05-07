@@ -1,4 +1,5 @@
-import React, { HTMLAttributes } from 'react';
+import { HTMLAttributes } from 'react';
+// import { cva, type VariantProps } from 'class-variance-authority'; // No se usa
 import { cn } from '../../lib/utils';
 import { AlertTriangle, CheckCircle, Info, XCircle } from 'lucide-react';
 

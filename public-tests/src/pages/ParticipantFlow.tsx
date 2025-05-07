@@ -22,11 +22,14 @@ const ParticipantFlow: React.FC = () => {
         completedRelevantSteps,
         totalRelevantSteps,
         responsesData,
+        getAnsweredStepIndices
     } = useParticipantFlow(researchId);
 
     const currentExpandedStep = expandedSteps && expandedSteps.length > currentStepIndex 
                                 ? expandedSteps[currentStepIndex] 
                                 : null;
+
+    const answeredStepIndices = getAnsweredStepIndices();
 
     const showMainLayout = 
         currentStep !== ParticipantFlowStep.LOGIN && 
@@ -62,6 +65,7 @@ const ParticipantFlow: React.FC = () => {
                 onNavigateToStep={navigateToStep}
                 completedSteps={completedRelevantSteps}
                 totalSteps={totalRelevantSteps}
+                answeredStepIndices={answeredStepIndices}
             />
 
             <main className="flex-1 overflow-y-auto bg-white flex flex-col items-center justify-center">

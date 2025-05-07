@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { 
-    CognitiveTaskFormData, 
-    Question as CognitiveQuestion // Renombrar si es necesario
+    CognitiveTaskFormData,
 } from '../../../../shared/interfaces/cognitive-task.interface';
 import { TASKS } from './tasks';
 import ThankYouView from './ThankYouView';

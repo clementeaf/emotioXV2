@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface FeedbackViewProps {
   questionText: string;
   instructions?: string;
   placeholder?: string; // Placeholder para el textarea
+  initialValue?: string; // NUEVO: Valor inicial
+  onChange?: (value: string) => void; // NUEVO: Callback para cambios
   onNext: (feedback: string) => void;
 }
 
@@ -11,9 +13,23 @@ const FeedbackView: React.FC<FeedbackViewProps> = ({
   questionText,
   instructions,
   placeholder = "Escribe tu respuesta aquí...", // Placeholder genérico
+  initialValue = '', // NUEVO: Usar valor inicial
+  onChange, // NUEVO
   onNext
 }) => {
-  const [feedback, setFeedback] = useState("");
+  const [feedback, setFeedback] = useState<string>(initialValue);
+
+  useEffect(() => {
+    setFeedback(initialValue);
+  }, [initialValue]);
+
+  const handleFeedbackChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newValue = e.target.value;
+    setFeedback(newValue);
+    if (onChange) {
+      onChange(newValue);
+    }
+  };
 
   const handleNextClick = () => {
     // Se podría validar si el feedback es vacío si fuera requerido
@@ -37,12 +53,13 @@ const FeedbackView: React.FC<FeedbackViewProps> = ({
           className="w-full h-32 p-4 border border-neutral-300 rounded-lg resize-none focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 mb-8" // Añadir margen inferior
           placeholder={placeholder}
           value={feedback}
-          onChange={(e) => setFeedback(e.target.value)}
+          onChange={handleFeedbackChange}
         />
         
         <button
-          className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-8 rounded-md w-fit transition-colors shadow-sm" // Botón siempre habilitado por defecto
+          className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-8 rounded-md w-fit transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={handleNextClick}
+          disabled={!feedback.trim()}
         >
           Siguiente
         </button>

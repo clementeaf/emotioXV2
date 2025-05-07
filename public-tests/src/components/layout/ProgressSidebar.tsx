@@ -1,5 +1,6 @@
-import React from 'react';
-import { cn } from '../../lib/utils'; 
+// import { CheckCircle, Circle, Loader } from 'lucide-react'; // No se usan aquí directamente
+// import { Step } from './types'; // Definido localmente
+import { cn } from '../../lib/utils'; // Corregir ruta
 
 // Interfaz para definir la estructura de un paso en la barra de progreso
 export interface Step {
@@ -14,6 +15,7 @@ interface ProgressSidebarProps {
   onNavigateToStep?: (index: number) => void; // Añadir prop para callback de navegación
   completedSteps?: number; // <<< Prop opcional para pasos completados
   totalSteps?: number;     // <<< Prop opcional para pasos totales
+  answeredStepIndices?: number[]; // <<< NUEVO: Array de índices de los pasos que tienen respuestas
   // Podríamos añadir un array de booleanos si el flujo permite saltos o necesita marcar completados de forma no secuencial
   // completedSteps?: boolean[]; 
 }
@@ -23,11 +25,14 @@ const colors = {
   completed: 'bg-primary-500', // Punto de paso completado
   current: 'bg-primary-700', // Punto de paso actual (puede tener anillo también)
   pending: 'bg-neutral-300', // Punto de paso pendiente
+  answered: 'bg-green-500', // NUEVO: Punto de paso que tiene respuesta
   lineCompleted: 'bg-primary-500', // Línea conectora para pasos completados
   linePending: 'bg-neutral-300', // Línea conectora para pasos pendientes
+  lineAnswered: 'bg-green-500', // NUEVO: Línea conectora después de un paso respondido
   ringCurrent: 'ring-primary-500', // Anillo alrededor del punto actual
   textCurrent: 'text-primary-700', // Color de texto para el paso actual
   textCompleted: 'text-neutral-500 line-through', // Color de texto para pasos completados (opcional: tachado)
+  textAnswered: 'text-green-700', // NUEVO: Color de texto para pasos respondidos
   textPending: 'text-neutral-600', // Color de texto para pasos pendientes
 };
 
@@ -36,7 +41,8 @@ export function ProgressSidebar({
     currentStepIndex, 
     onNavigateToStep, 
     completedSteps, 
-    totalSteps      
+    totalSteps,
+    answeredStepIndices = []
 }: ProgressSidebarProps) {
   console.log("[ProgressSidebar] Steps recibidos:", steps);
 
@@ -70,13 +76,30 @@ export function ProgressSidebar({
                 // Determinar el estado de cada paso
                 const isCompleted = index < currentStepIndex;
                 const isCurrent = index === currentStepIndex;
-                const isPending = index > currentStepIndex;
-                const isClickable = isCompleted && !!onNavigateToStep;
+                // const _isPending = index > currentStepIndex; // Eliminado, no se usa
+                // MODIFICADO: Usar los índices reales de pasos respondidos
+                const isAnswered = answeredStepIndices.includes(index);
+                // MODIFICADO: Permitir click en todos los pasos respondidos o visitados (en verde)
+                // además de los pasos completados y el paso actual
+                const isClickable = (isCompleted || isCurrent || isAnswered) && !!onNavigateToStep;
 
                 // Seleccionar colores y estilos basados en el estado
-                const dotColor = isCompleted ? colors.completed : isCurrent ? colors.current : colors.pending;
-                const lineColor = isCompleted ? colors.lineCompleted : colors.linePending;
-                const textColor = isCurrent ? colors.textCurrent : isCompleted ? colors.textCompleted : colors.textPending;
+                // MODIFICADO: Usar color de respondido si aplica
+                const dotColor = isAnswered ? colors.answered : 
+                                 isCompleted ? colors.completed : 
+                                 isCurrent ? colors.current : 
+                                 colors.pending;
+                
+                // MODIFICADO: Usar color de línea respondida si el paso actual está respondido
+                const lineColor = isAnswered ? colors.lineAnswered : 
+                                  isCompleted ? colors.lineCompleted : 
+                                  colors.linePending;
+                
+                // MODIFICADO: Usar color de texto respondido cuando aplique
+                const textColor = isAnswered ? colors.textAnswered : 
+                                  isCurrent ? colors.textCurrent : 
+                                  isCompleted ? colors.textCompleted : 
+                                  colors.textPending;
                 
                 return (
                     <div

@@ -107,7 +107,7 @@ export const testGetAllParticipants = async (): Promise<void> => {
 export const testDeleteParticipant = async (id: string): Promise<void> => {
   console.log(`🧪 Probando eliminar participante ${id}...`);
   try {
-    const response = await fetchWithAuth<void>(`/participants/${id}`, {
+    await fetchWithAuth<void>(`/participants/${id}`, {
       method: 'DELETE',
     });
     console.log('✅ Participante eliminado');

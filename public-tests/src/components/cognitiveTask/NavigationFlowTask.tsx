@@ -10,7 +10,6 @@ interface NavigationFlowTaskProps {
 
 const NavigationFlowTask = ({ 
   onContinue, 
-  title = 'Navegación de flujo - Desktop',
   question = '¿En cuál de las siguientes pantallas encuentras X objetivo?',
   instructions = 'Haz clic en una opción para ver en detalle',
   footerText = 'Revisa todas las pantallas antes de elegir una únicamente'

@@ -3,14 +3,15 @@ import { ParticipantFlowStep, ExpandedStep } from '../types/flow';
 import { Participant } from '../../../shared/interfaces/participant';
 // Quitar flowSequence si ya no se usa
 // import { flowSequence } from '../utils/utils'; 
-import { Step as SidebarStep } from '../components/layout/ProgressSidebar';
+// Comentar la importación y la constante no usadas
+// import { Step as SidebarStep } from '../components/layout/ProgressSidebar';
 import { DEFAULT_DEMOGRAPHICS_CONFIG } from '../types/demographics';
 
 // --- Constantes y Tipos (Ajustar según sea necesario) ---
 const API_BASE_URL = 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev'; // O desde config/env
 
-// Secuencia principal de módulos (Define el orden general)
-const flowModuleSequence = ['welcome', 'cognitive_task', 'smartvoc', 'thankyou'];
+// Comentar la importación y la constante no usadas
+// const flowModuleSequence = ['welcome', 'cognitive_task', 'smartvoc', 'thankyou'];
 
 // Tipos de preguntas esperadas para cada módulo complejo (Para generar mocks si faltan)
 // <<< ¡IMPORTANTE: Asegúrate que estos strings coincidan con los `type` de las preguntas en la API! >>>
@@ -46,8 +47,12 @@ export interface ResponsesData {
     endTime?: number;
     modules: {
         demographic?: ModuleResponse;
+        feedback?: ModuleResponse; // Para "Que te ha parecido el módulo?"
+        welcome?: ModuleResponse; // Para "Bienvenida" (aunque normalmente no tiene respuesta)
+        // Las siguientes son las categorías estructurales obligatorias
         cognitive_task: ModuleResponse[];
         smartvoc: ModuleResponse[];
+        all_steps: ModuleResponse[]; // TODOS los pasos se guardan aquí
         [key: string]: ModuleResponse | ModuleResponse[] | undefined;
     };
 }
@@ -64,6 +69,8 @@ export const useParticipantFlow = (researchId: string | undefined) => {
     const [expandedSteps, setExpandedSteps] = useState<ExpandedStep[]>([]);
     const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
     const [isFlowLoading, setIsFlowLoading] = useState<boolean>(true);
+    // NUEVO: Registro del índice más alto al que ha llegado el usuario
+    const [maxVisitedIndex, setMaxVisitedIndex] = useState<number>(0);
     
     // Estado para almacenar todas las respuestas
     const [responsesData, setResponsesData] = useState<ResponsesData>({
@@ -71,7 +78,8 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         startTime: Date.now(),
         modules: {
             cognitive_task: [],
-            smartvoc: []
+            smartvoc: [],
+            all_steps: [] // Mantener para compatibilidad
         }
     });
 
@@ -102,7 +110,31 @@ export const useParticipantFlow = (researchId: string | undefined) => {
             // 2. Añadir Bienvenida
             finalSteps.push({ id: 'welcome', name: 'Bienvenida', type: 'welcome', config: { title: '¡Bienvenido!', message: 'Gracias por tu tiempo.' } });
             
-            // 3. Procesar Cognitive Task
+            // 3. Obtener estructura de flujo completo (todos los módulos)
+            try {
+                const flowUrl = `${API_BASE_URL}/research/${currentResearchId}/flow`;
+                console.log(`[useParticipantFlow] Fetching Research Flow: ${flowUrl}`);
+                const flowResponse = await fetch(flowUrl, { headers: { 'Authorization': `Bearer ${currentToken}` } });
+                
+                if (flowResponse.ok) {
+                    const flowData = await flowResponse.json();
+                    const moduleSteps = flowData?.data || [];
+                    console.log(`[useParticipantFlow] Estructura de flujo recibida: ${moduleSteps.length} módulos encontrados`);
+                    
+                    // Procesar cada módulo según su tipo
+                    for (const step of moduleSteps) {
+                        console.log(`[useParticipantFlow] Procesando módulo: ${step.type}`);
+                        
+                        // Añadir lógica para procesar otros tipos de módulos aquí
+                        // ...
+                    }
+                }
+            } catch (flowError: any) {
+                console.error('[useParticipantFlow] Error obteniendo estructura de flujo:', flowError);
+                // Continuar con los módulos conocidos sin detener por error
+            }
+            
+            // 4. Procesar Cognitive Task (mantener por compatibilidad)
             try {
                 const url = `${API_BASE_URL}/research/${currentResearchId}/cognitive-task`;
                 console.log(`[useParticipantFlow] Fetching Cognitive Task: ${url}`);
@@ -136,7 +168,7 @@ export const useParticipantFlow = (researchId: string | undefined) => {
                 return;
             }
 
-            // 4. Procesar SmartVOC
+            // 5. Procesar SmartVOC (mantener por compatibilidad)
             try {
                 const url = `${API_BASE_URL}/research/${currentResearchId}/smart-voc`;
                 console.log(`[useParticipantFlow] Fetching SmartVOC: ${url}`);
@@ -173,7 +205,70 @@ export const useParticipantFlow = (researchId: string | undefined) => {
                  // return;
             }
 
-            // 5. Añadir Agradecimiento
+            // 6. Obtener y procesar otros módulos potenciales genéricamente
+            try {
+                // Endpoint para obtener lista de todos los módulos disponibles
+                const modulesUrl = `${API_BASE_URL}/research/${currentResearchId}/modules`;
+                console.log(`[useParticipantFlow] Fetching Modules List: ${modulesUrl}`);
+                const modulesResponse = await fetch(modulesUrl, { 
+                    headers: { 'Authorization': `Bearer ${currentToken}` },
+                    // Usar método HEAD para verificar si el endpoint existe
+                    method: 'HEAD'
+                });
+                
+                // Solo proceder si el endpoint existe
+                if (modulesResponse.ok) {
+                    const modulesListResponse = await fetch(modulesUrl, { 
+                        headers: { 'Authorization': `Bearer ${currentToken}` }
+                    });
+                    
+                    if (modulesListResponse.ok) {
+                        const modulesList = await modulesListResponse.json();
+                        const modules = modulesList?.modules || [];
+                        
+                        // Procesar cada módulo de la lista
+                        for (const module of modules) {
+                            // Evitar procesar módulos ya manejados anteriormente
+                            if (['cognitive_task', 'smartvoc'].includes(module.type)) {
+                                continue;
+                            }
+                            
+                            // Obtener preguntas para este módulo específico
+                            try {
+                                const moduleUrl = `${API_BASE_URL}/research/${currentResearchId}/${module.type}`;
+                                console.log(`[useParticipantFlow] Fetching Module ${module.type}: ${moduleUrl}`);
+                                const moduleResponse = await fetch(moduleUrl, { 
+                                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                                });
+                                
+                                if (moduleResponse.ok) {
+                                    const moduleData = await moduleResponse.json();
+                                    const questions = moduleData?.questions || [];
+                                    
+                                    // Procesar preguntas del módulo
+                                    for (const question of questions) {
+                                        const frontendType = `${module.type}_${question.type || 'question'}`;
+                                        finalSteps.push({
+                                            id: question.id || `${frontendType}_${finalSteps.length}`,
+                                            name: question.title || `${module.name}: ${question.type || 'Pregunta'}`,
+                                            type: frontendType,
+                                            config: question
+                                        });
+                                    }
+                                }
+                            } catch (moduleError) {
+                                console.error(`[useParticipantFlow] Error obteniendo módulo ${module.type}:`, moduleError);
+                                // Continuar con otros módulos
+                            }
+                        }
+                    }
+                }
+            } catch (modulesError) {
+                console.error('[useParticipantFlow] Error obteniendo lista de módulos:', modulesError);
+                // Continuar con el flujo normal
+            }
+
+            // 7. Añadir Agradecimiento
             finalSteps.push({ id: 'thankyou', name: 'Agradecimiento', type: 'thankyou', config: { title: '¡Muchas Gracias!', message: 'Hemos recibido tus respuestas.' } });
             
             // --- Finalizar construcción ---
@@ -205,6 +300,7 @@ export const useParticipantFlow = (researchId: string | undefined) => {
             setError(null);
             setExpandedSteps([]);
             setCurrentStepIndex(0);
+            setMaxVisitedIndex(0); // Valor predeterminado
             setIsFlowLoading(true);
             
             // Inicializar el objeto de respuestas con el researchId
@@ -213,11 +309,26 @@ export const useParticipantFlow = (researchId: string | undefined) => {
                 startTime: Date.now(),
                 modules: {
                     cognitive_task: [],
-                    smartvoc: []
+                    smartvoc: [],
+                    all_steps: [] // Mantener para compatibilidad
                 }
             });
 
             const storedToken = localStorage.getItem('participantToken');
+            // Recuperar el índice máximo visitado de localStorage
+            try {
+                const storedMaxIndex = localStorage.getItem(`maxVisitedIndex_${researchId}`);
+                if (storedMaxIndex) {
+                    const maxIndex = parseInt(storedMaxIndex, 10);
+                    if (!isNaN(maxIndex) && maxIndex >= 0) {
+                        console.log(`[useParticipantFlow] Recuperado maxVisitedIndex: ${maxIndex}`);
+                        setMaxVisitedIndex(maxIndex);
+                    }
+                }
+            } catch (e) {
+                console.error('[useParticipantFlow] Error recuperando maxVisitedIndex:', e);
+            }
+            
             if (storedToken) {
                 console.log("[useParticipantFlow] Token encontrado. Construyendo flujo...");
                 setToken(storedToken);
@@ -256,15 +367,48 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         }
     }, [researchId, buildExpandedSteps]); // Mantener dependencia de buildExpandedSteps
 
-    // Función para guardar respuesta del paso actual
+    // Función auxiliar para sanear objetos antes de JSON.stringify
+    // Elimina referencias circulares y elementos DOM que no pueden ser serializados
+    const sanitizeForJSON = (obj: any): any => {
+        if (!obj) return obj;
+        
+        const seen = new WeakSet();
+        return JSON.parse(JSON.stringify(obj, (key, value) => {
+            // Ignorar propiedades que empiezan con "__react" (internas de React)
+            if (key.startsWith('__react')) return undefined;
+            
+            // Manejar posibles referencias circulares
+            if (typeof value === 'object' && value !== null) {
+                if (seen.has(value)) {
+                    return '[Referencia Circular]';
+                }
+                seen.add(value);
+                
+                // Eliminar propiedades específicas que causan problemas
+                if (value instanceof Element || value instanceof HTMLElement) {
+                    return '[Elemento DOM]';
+                }
+                
+                // Si es un objeto con la propiedad "current" (posible React ref)
+                if ('current' in value && (value.current instanceof Element || value.current instanceof HTMLElement)) {
+                    return '[React Ref]';
+                }
+            }
+            
+            return value;
+        }));
+    };
+
+    // CORREGIDO: Función para guardar respuesta del paso actual - PERSISTIR ABSOLUTAMENTE TODO
     const saveStepResponse = useCallback((answer: any) => {
         if (currentStepIndex >= 0 && currentStepIndex < expandedSteps.length) {
             const currentStepInfo = expandedSteps[currentStepIndex];
             const { id: stepId, type: stepType, name: stepName, config } = currentStepInfo;
             
-            // Excluir los pasos de Bienvenida y Agradecimiento
-            if (stepType === 'welcome' || stepType === 'thankyou') {
-                console.log(`[useParticipantFlow] Paso ${stepType} excluido del JSON de respuestas.`);
+            // Único caso a excluir: los pasos que no requieren respuesta del usuario
+            // IMPORTANTE: Solo excluir Welcome/Thankyou si no tienen respuesta
+            if ((stepType === 'welcome' || stepType === 'thankyou') && answer === undefined) {
+                console.log(`[useParticipantFlow] Paso ${stepType} sin respuesta, excluido del JSON.`);
                 
                 // Para el paso thankyou, actualizamos el tiempo de finalización pero no guardamos la respuesta
                 if (stepType === 'thankyou') {
@@ -297,53 +441,222 @@ export const useParticipantFlow = (researchId: string | undefined) => {
                 timestamp: Date.now()
             };
             
+            // NUEVO: Registrar que estamos guardando la respuesta
+            console.log(`[useParticipantFlow] ✓ Guardando respuesta para paso ${stepType} (${stepName})`);
+            
+            // Sanear la respuesta para asegurar que sea serializable
+            try {
+                // Solo sanitizar el answer que puede contener referencias a DOM
+                moduleResponse.answer = sanitizeForJSON(moduleResponse.answer);
+            } catch (sanitizeError) {
+                console.warn('[useParticipantFlow] Error sanitizando respuesta:', sanitizeError);
+                // En caso de error, convertir a string simple para asegurar compatibilidad
+                moduleResponse.answer = String(moduleResponse.answer);
+            }
+            
             // Actualizar el estado con esta respuesta
             setResponsesData(prev => {
                 const updatedData = { ...prev };
                 
-                // Dependiendo del tipo de paso, guardar en la sección correspondiente
+                // ENFOQUE COMPLETO: Guardar en categoría específica Y en all_steps
+                
+                // 1. GUARDAR EN CATEGORÍA ESPECÍFICA
                 if (stepType === 'demographic') {
+                    // Caso especial: demographic es un objeto único
                     updatedData.modules.demographic = moduleResponse;
-                } else if (stepType.startsWith('cognitive_')) {
-                    // Es una tarea cognitiva
+                } 
+                else if (stepName?.includes('Que te ha parecido el módulo')) {
+                    // Caso especial: feedback sobre el módulo
+                    updatedData.modules.feedback = moduleResponse;
+                }
+                else if (stepType === 'welcome' && answer !== undefined) {
+                    // Caso especial: bienvenida (solo si tiene respuesta)
+                    updatedData.modules.welcome = moduleResponse;
+                }
+                else if (stepType.startsWith('cognitive_')) {
+                    // Tareas cognitivas: en array cognitive_task
+                    if (!updatedData.modules.cognitive_task) {
+                        updatedData.modules.cognitive_task = [];
+                    }
                     updatedData.modules.cognitive_task.push(moduleResponse);
-                } else if (stepType.startsWith('smartvoc_')) {
-                    // Es una pregunta de SmartVOC
+                }
+                else if (stepType.startsWith('smartvoc_')) {
+                    // SmartVOC: en array smartvoc
+                    if (!updatedData.modules.smartvoc) {
+                        updatedData.modules.smartvoc = [];
+                    }
                     updatedData.modules.smartvoc.push(moduleResponse);
                 }
+                else {
+                    // Cualquier otro tipo: crear array dinámico por tipo
+                    const moduleCategory = stepType.split('_')[0] || 'other';
+                    if (!updatedData.modules[moduleCategory]) {
+                        updatedData.modules[moduleCategory] = [];
+                    }
+                    
+                    // Asegurar que es un array
+                    if (!Array.isArray(updatedData.modules[moduleCategory])) {
+                        updatedData.modules[moduleCategory] = [updatedData.modules[moduleCategory] as ModuleResponse];
+                    }
+                    
+                    // Añadir respuesta
+                    (updatedData.modules[moduleCategory] as ModuleResponse[]).push(moduleResponse);
+                }
+                
+                // 2. GUARDAR EN ARRAY UNIVERSAL all_steps (SIEMPRE)
+                if (!updatedData.modules.all_steps) {
+                    updatedData.modules.all_steps = [];
+                }
+                updatedData.modules.all_steps.push(moduleResponse);
                 
                 // Guardar JSON en localStorage para persistencia local
                 try {
-                    localStorage.setItem('participantResponses', JSON.stringify(updatedData));
+                    // Usar el sanitizador para asegurar que todo el objeto sea serializable
+                    const safeJsonString = JSON.stringify(sanitizeForJSON(updatedData));
+                    localStorage.setItem('participantResponses', safeJsonString);
                 } catch (e) {
                     console.error('[useParticipantFlow] Error guardando respuestas en localStorage:', e);
                 }
                 
                 console.log('[useParticipantFlow] Respuesta guardada:', moduleResponse);
-                console.log('[useParticipantFlow] JSON de respuestas actualizado:', updatedData);
+                console.log('[useParticipantFlow] Total respuestas guardadas:', 
+                    updatedData.modules.all_steps.length);
                 
                 return updatedData;
             });
         }
     }, [currentStepIndex, expandedSteps]);
 
+    // CORREGIDO: Función para verificar si un paso específico tiene respuesta guardada
+    const hasStepBeenAnswered = useCallback((stepIndex: number): boolean => {
+        if (stepIndex < 0 || stepIndex >= expandedSteps.length) return false;
+        
+        const step = expandedSteps[stepIndex];
+        const { id: stepId, type: stepType } = step;
+        
+        // Excluir welcome/thankyou que no necesitan respuesta
+        if (stepType === 'welcome' || stepType === 'thankyou') return true;
+        
+        // MÉTODO MÁS DIRECTO: Buscar primero en all_steps
+        if (responsesData.modules.all_steps && Array.isArray(responsesData.modules.all_steps)) {
+            if (responsesData.modules.all_steps.some(resp => resp.stepId === stepId)) {
+                return true;
+            }
+        }
+        
+        // MÉTODO DE RESPALDO: Buscar en categorías específicas
+        if (stepType === 'demographic' && responsesData.modules.demographic) {
+            return responsesData.modules.demographic.stepId === stepId;
+        } 
+        else if (step.name?.includes('Que te ha parecido el módulo') && responsesData.modules.feedback) {
+            return responsesData.modules.feedback.stepId === stepId;
+        }
+        else if (stepType.startsWith('cognitive_') && Array.isArray(responsesData.modules.cognitive_task)) {
+            return responsesData.modules.cognitive_task.some(resp => resp.stepId === stepId);
+        }
+        else if (stepType.startsWith('smartvoc_') && Array.isArray(responsesData.modules.smartvoc)) {
+            return responsesData.modules.smartvoc.some(resp => resp.stepId === stepId);
+        }
+        else {
+            // Buscar en categoría dinámica
+            const moduleCategory = stepType.split('_')[0] || 'other';
+            const moduleResponses = responsesData.modules[moduleCategory];
+            
+            if (Array.isArray(moduleResponses)) {
+                return moduleResponses.some(resp => resp.stepId === stepId);
+            }
+        }
+        
+        return false;
+    }, [expandedSteps, responsesData]);
+
+    // CORREGIDO: Función para obtener la respuesta de un paso específico
+    const getStepResponse = useCallback((stepIndex: number): any => {
+        if (stepIndex < 0 || stepIndex >= expandedSteps.length) return null;
+        
+        const step = expandedSteps[stepIndex];
+        const { id: stepId, type: stepType } = step;
+        
+        // No hay respuestas para welcome/thankyou normalmente
+        if (stepType === 'welcome' || stepType === 'thankyou') return null;
+        
+        // MÉTODO MÁS DIRECTO: Buscar primero en all_steps
+        if (responsesData.modules.all_steps && Array.isArray(responsesData.modules.all_steps)) {
+            const response = responsesData.modules.all_steps.find(resp => resp.stepId === stepId);
+            if (response) return response.answer;
+        }
+        
+        // MÉTODO DE RESPALDO: Buscar en categorías específicas
+        if (stepType === 'demographic' && responsesData.modules.demographic) {
+            return responsesData.modules.demographic.stepId === stepId ? 
+                responsesData.modules.demographic.answer : null;
+        } 
+        else if (step.name?.includes('Que te ha parecido el módulo') && responsesData.modules.feedback) {
+            return responsesData.modules.feedback.stepId === stepId ? 
+                responsesData.modules.feedback.answer : null;
+        }
+        else if (stepType.startsWith('cognitive_') && Array.isArray(responsesData.modules.cognitive_task)) {
+            const response = responsesData.modules.cognitive_task.find(resp => resp.stepId === stepId);
+            return response ? response.answer : null;
+        }
+        else if (stepType.startsWith('smartvoc_') && Array.isArray(responsesData.modules.smartvoc)) {
+            const response = responsesData.modules.smartvoc.find(resp => resp.stepId === stepId);
+            return response ? response.answer : null;
+        }
+        else {
+            // Buscar en categoría dinámica
+            const moduleCategory = stepType.split('_')[0] || 'other';
+            const moduleResponses = responsesData.modules[moduleCategory];
+            
+            if (Array.isArray(moduleResponses)) {
+                const response = moduleResponses.find(resp => resp.stepId === stepId);
+                return response ? response.answer : null;
+            }
+        }
+        
+        return null;
+    }, [expandedSteps, responsesData]);
+
+    // MODIFICAR goToNextStep para guardar TODAS las respuestas
     const goToNextStep = useCallback((answer?: any) => {
         if (!isFlowLoading && currentStepIndex < expandedSteps.length - 1) {
-            // Guardar la respuesta antes de avanzar
+            // Guardar la respuesta antes de avanzar - SIEMPRE guardar si hay respuesta
             if (answer !== undefined) {
                 saveStepResponse(answer);
+                
+                // Actualizar también la configuración del paso actual para mantener las respuestas
+                const currentStepInfo = expandedSteps[currentStepIndex];
+                
+                // Guardar las respuestas en la configuración del paso actual
+                currentStepInfo.config = {
+                    ...currentStepInfo.config,
+                    savedResponses: answer
+                };
+                console.log(`[useParticipantFlow] Guardando respuestas para ${currentStepInfo.type} en config:`, answer);
             }
             
             const nextIndex = currentStepIndex + 1;
             const nextStepInfo = expandedSteps[nextIndex];
             console.log(`[useParticipantFlow] Avanzando a paso ${nextIndex} (${nextStepInfo?.id}).`);
+            
+            // Actualizar el índice máximo visitado si estamos avanzando a un paso nuevo
+            if (nextIndex > maxVisitedIndex) {
+                setMaxVisitedIndex(nextIndex);
+                // Guardar en localStorage para persistencia
+                try {
+                    localStorage.setItem(`maxVisitedIndex_${researchId}`, nextIndex.toString());
+                } catch (e) {
+                    console.error('[useParticipantFlow] Error guardando maxVisitedIndex en localStorage:', e);
+                }
+                console.log(`[useParticipantFlow] Nuevo índice máximo visitado: ${nextIndex}`);
+            }
+            
             setCurrentStepIndex(nextIndex);
-            // No actualizar currentStep (enum)
             setError(null); 
         } else if (!isFlowLoading) {
              console.log(`[useParticipantFlow] Último paso (${expandedSteps[currentStepIndex]?.id}) completado.`);
              
-             // Guardar la respuesta final
+             // Guardar la respuesta final - SIEMPRE si hay respuesta
              if (answer !== undefined) {
                 saveStepResponse(answer);
              }
@@ -363,35 +676,124 @@ export const useParticipantFlow = (researchId: string | undefined) => {
                  console.log('==========================================');
                  
                  // Enviar el JSON completo al servidor
-                 console.log('[useParticipantFlow] JSON FINAL de todas las respuestas:', finalData);
+                 console.log('[useParticipantFlow] Total respuestas guardadas:', 
+                    finalData.modules.all_steps?.length || 'N/A');
                  
                  return finalData;
              });
         }
-    }, [currentStepIndex, expandedSteps, isFlowLoading, saveStepResponse]);
+    }, [currentStepIndex, expandedSteps, isFlowLoading, saveStepResponse, maxVisitedIndex, researchId]);
 
-    // <<< NUEVO navigateToStep >>>
+    // CORREGIDO: Función para obtener los índices de todos los pasos que tienen respuestas
+    const getAnsweredStepIndices = useCallback((): number[] => {
+        // Crear un Set para rastrear los índices de pasos completados o visitados
+        const completedStepIndices = new Set<number>();
+        
+        // Recorrer todos los pasos expandidos
+        expandedSteps.forEach((step, index) => {
+            const { id: stepId, type: stepType } = step;
+            
+            // Welcome/thankyou siempre se consideran completados
+            if (stepType === 'welcome' || stepType === 'thankyou') {
+                completedStepIndices.add(index);
+                return;
+            }
+            
+            // MÉTODO DIRECTO: Verificar en all_steps primero
+            if (responsesData.modules.all_steps && Array.isArray(responsesData.modules.all_steps)) {
+                if (responsesData.modules.all_steps.some(resp => resp.stepId === stepId)) {
+                    completedStepIndices.add(index);
+                    return; // Encontrado, no seguir buscando
+                }
+            }
+            
+            // RESPALDO: Verificar en categorías específicas
+            if (stepType === 'demographic' && responsesData.modules.demographic) {
+                if (responsesData.modules.demographic.stepId === stepId) {
+                    completedStepIndices.add(index);
+                }
+            } 
+            else if (step.name?.includes('Que te ha parecido el módulo') && responsesData.modules.feedback) {
+                if (responsesData.modules.feedback.stepId === stepId) {
+                    completedStepIndices.add(index);
+                }
+            }
+            else if (stepType.startsWith('cognitive_') && Array.isArray(responsesData.modules.cognitive_task)) {
+                if (responsesData.modules.cognitive_task.some(resp => resp.stepId === stepId)) {
+                    completedStepIndices.add(index);
+                }
+            }
+            else if (stepType.startsWith('smartvoc_') && Array.isArray(responsesData.modules.smartvoc)) {
+                if (responsesData.modules.smartvoc.some(resp => resp.stepId === stepId)) {
+                    completedStepIndices.add(index);
+                }
+            }
+            else {
+                // Buscar en categoría dinámica
+                const moduleCategory = stepType.split('_')[0] || 'other';
+                const moduleResponses = responsesData.modules[moduleCategory];
+                
+                if (Array.isArray(moduleResponses)) {
+                    if (moduleResponses.some(resp => resp.stepId === stepId)) {
+                        completedStepIndices.add(index);
+                    }
+                }
+            }
+        });
+        
+        // Marcar como completados todos los pasos que el usuario ha visitado (hasta maxVisitedIndex)
+        // Esto garantiza que todos los pasos por los que el usuario ha pasado aparezcan como completados
+        for (let i = 0; i <= maxVisitedIndex; i++) {
+            completedStepIndices.add(i);
+        }
+        
+        return Array.from(completedStepIndices).sort((a, b) => a - b);
+    }, [expandedSteps, responsesData, maxVisitedIndex]);
+
+    // RESTAURAR: Función navigateToStep correcta para permitir navegar a cualquier paso ya visitado
+    // IMPORTANTE: Mover esta definición DESPUÉS de getStepResponse y getAnsweredStepIndices para mantener el orden de los hooks
     const navigateToStep = useCallback((targetIndex: number) => {
-        // Permitir navegación solo a pasos anteriores y si el flujo está cargado
-        if (!isFlowLoading && targetIndex >= 0 && targetIndex < currentStepIndex) {
-            const targetStepInfo = expandedSteps[targetIndex];
-            console.log(`[useParticipantFlow] Navegando atrás al paso ${targetIndex} (${targetStepInfo?.id}).`);
+        const answeredSteps = getAnsweredStepIndices();
+        const isAnsweredStep = answeredSteps.includes(targetIndex);
+        
+        if (!isFlowLoading && targetIndex >= 0 && (targetIndex <= maxVisitedIndex || isAnsweredStep)) {
+            console.log(`[useParticipantFlow] Navegando al paso ${targetIndex} (${expandedSteps[targetIndex]?.id}).`);
+
+            // Intentar recuperar la respuesta guardada para el paso de destino
+            const savedResponse = getStepResponse(targetIndex);
+
+            // Solo actualizar el estado si encontramos una respuesta guardada
+            if (savedResponse !== null && savedResponse !== undefined) {
+                setExpandedSteps(prevSteps => {
+                    const newSteps = [...prevSteps]; // Crear copia del array
+                    const targetStep = newSteps[targetIndex];
+                    if (targetStep) {
+                        // Solo actualizar si la respuesta guardada es diferente a la que ya tiene
+                        if (targetStep.config?.savedResponses !== savedResponse) {
+                            console.log(`[useParticipantFlow] Cargando respuesta guardada para ${targetStep.type}`);
+                            // Crear una nueva config para el paso
+                            targetStep.config = {
+                                ...targetStep.config,
+                                savedResponses: savedResponse
+                            };
+                        } else {
+                            console.log(`[useParticipantFlow] La respuesta guardada ya está en config para ${targetStep.type}`);
+                        }
+                    }
+                    return newSteps; // Devolver el nuevo array
+                });
+            }
+            
+            // IMPORTANTE: Establecer el índice del paso actual al paso seleccionado
             setCurrentStepIndex(targetIndex);
-            // No actualizar currentStep (enum), ya no se usa para pasos individuales
             setError(null); 
         } else if (targetIndex === currentStepIndex) {
-             console.log("[useParticipantFlow] Clic en el paso actual, no se navega.");
+            console.log("[useParticipantFlow] Clic en el paso actual, no se navega.");
         } else {
-             console.warn(`[useParticipantFlow] Navegación bloqueada al índice ${targetIndex} (inválido o futuro).`);
+            console.warn(`[useParticipantFlow] Navegación bloqueada al índice ${targetIndex}.`);
         }
-    }, [currentStepIndex, expandedSteps, isFlowLoading]);
-
-    // Eliminar handleStepComplete y handleNavigation si ya no se usan
-    /*
-    const handleStepComplete = useCallback(() => { ... });
-    const handleNavigation = useCallback((targetStep: ParticipantFlowStep) => { ... });
-    */
-
+    }, [currentStepIndex, expandedSteps, isFlowLoading, getStepResponse, maxVisitedIndex, getAnsweredStepIndices]);
+    
     // <<< NUEVO: Calcular pasos relevantes >>>
     const totalRelevantSteps = Math.max(0, expandedSteps.length - 2); // Total sin Welcome/Thankyou
     // El índice actual (currentStepIndex) representa el paso EN EL QUE ESTÁ el usuario.
@@ -429,10 +831,14 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         expandedSteps,
         currentStepIndex,
         isFlowLoading,
-        navigateToStep, 
-        completedRelevantSteps, // <<< Exponer pasos completados
-        totalRelevantSteps,     // <<< Exponer pasos totales
-        responsesData,          // <<< Exponer datos de respuestas
-        getResponsesJson        // <<< Función para obtener JSON
+        navigateToStep, // Usar la función navigateToStep real
+        completedRelevantSteps,
+        totalRelevantSteps,
+        responsesData,
+        getResponsesJson,
+        hasStepBeenAnswered,
+        getAnsweredStepIndices,
+        getStepResponse,
+        maxVisitedIndex
     };
 }; 

@@ -1,8 +1,8 @@
 import React from 'react';
-import { SmartVOCQuestion, ConfigScale } from '../SmartVOCRouter'; // Importar tipos definidos en el padre
+import { SmartVOCQuestion, CESConfig } from '../SmartVOCRouter'; // Importar tipos definidos en el padre
 
 interface ScaleQuestionProps {
-  questionConfig: SmartVOCQuestion & { config: ConfigScale }; // Asegura que config es ConfigScale
+  questionConfig: SmartVOCQuestion & { config: CESConfig }; // Usar CESConfig
   value: number | undefined; // El valor numérico seleccionado
   onChange: (questionId: string, value: number) => void;
 }

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
   DemographicsSection, 
-  DemographicConfig, 
   DemographicResponses,
   DEFAULT_DEMOGRAPHICS_CONFIG
 } from '../../types/demographics';

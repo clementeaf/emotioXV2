@@ -4,9 +4,12 @@ import WelcomeScreenHandler from './WelcomeScreenHandler';
 import { Participant } from '../../../../shared/interfaces/participant';
 import { CSATView, FeedbackView, ThankYouView } from '../smartVoc';
 import { DemographicsForm } from '../demographics/DemographicsForm';
-import { DemographicResponses, DEFAULT_DEMOGRAPHICS_CONFIG, GENDER_OPTIONS, EDUCATION_OPTIONS } from '../../types/demographics';
-import { demographicsService } from '../../services/demographics.service';
+import { DemographicResponses, DEFAULT_DEMOGRAPHICS_CONFIG } from '../../types/demographics';
 import { eyeTrackingService } from '../../services/eyeTracking.service';
+
+// === IMPORTAR COMPONENTES EXTRAÍDOS ===
+import { ShortTextQuestion as ShortTextQuestionComponent } from './questions/ShortTextQuestion';
+// ... (Importar los otros componentes cuando se muevan)
 
 // Interfaz para las preguntas demográficas de la API de eye-tracking
 interface ApiDemographicQuestion {
@@ -81,45 +84,55 @@ interface CurrentStepRendererProps {
     onError: (errorMessage: string, stepType: string) => void;
 }
 
-// Componente separado para el paso Demographic para evitar errores con los hooks
-const DemographicStep: React.FC<{
+// Interfaz para las props de DemographicStep (para claridad)
+interface DemographicStepProps {
     researchId: string;
     token?: string | null;
     stepConfig?: any;
     onStepComplete?: (answer?: any) => void;
     onError: (errorMessage: string, stepType: string) => void;
-}> = ({ researchId, token, stepConfig, onStepComplete, onError }) => {
-    const [loading, setLoading] = useState(false);
-    const [demographicResponses, setDemographicResponses] = useState<DemographicResponses>({});
-    const [demographicsConfig, setDemographicsConfig] = useState(DEFAULT_DEMOGRAPHICS_CONFIG);
+}
+
+// === COMPONENTE DemographicStep MOVIDO FUERA ===
+const DemographicStep: React.FC<DemographicStepProps> = ({ 
+    researchId, 
+    token, 
+    stepConfig, 
+    onStepComplete, 
+    onError 
+}) => {
+    const [loading, setLoading] = useState(false); // Loading para el submit
+    const [configLoading, setConfigLoading] = useState(true); // NUEVO: Loading para la configuración
+    const savedResponses = stepConfig?.savedResponses || {};
+    const [demographicResponses, setDemographicResponses] = useState<DemographicResponses>(savedResponses); 
+    const [demographicsConfig, setDemographicsConfig] = useState(DEFAULT_DEMOGRAPHICS_CONFIG); 
     
-    // Añadir consulta a la API de eye-tracking cuando se renderizan las preguntas demográficas
     useEffect(() => {
-        console.log(`[CurrentStepRenderer] Realizando consulta a la API de eye-tracking, researchId: ${researchId}, token: ${token ? 'disponible' : 'no disponible'}`);
+        if (stepConfig?.savedResponses) {
+            console.log('[DemographicStep] Cargando respuestas guardadas:', stepConfig.savedResponses);
+            setDemographicResponses(stepConfig.savedResponses);
+        }
+    }, [stepConfig?.savedResponses]);
+    
+    useEffect(() => {
+        console.log(`[DemographicStep] Realizando consulta a la API de eye-tracking, researchId: ${researchId}, token: ${token ? 'disponible' : 'no disponible'}`);
+        console.log('[DemographicStep] Valores iniciales actuales:', demographicResponses);
+        setConfigLoading(true);
         
         if (researchId && token) {
-            // Realizar la consulta real a la API de eye-tracking
             eyeTrackingService.getEyeTrackingConfig(researchId, token)
                 .then(response => {
-                    console.log('[CurrentStepRenderer] Respuesta de la API de eye-tracking:', response);
-                    
-                    // Si tenemos datos de preguntas demográficas, las procesamos
+                    console.log('[DemographicStep] Respuesta de la API de eye-tracking:', response);
                     const extendedData = response.data as ExtendedEyeTrackingData;
                     if (extendedData?.demographicQuestions) {
                         const apiQuestions = extendedData.demographicQuestions;
-                        console.log('[CurrentStepRenderer] Preguntas demográficas de la API:', apiQuestions);
-                        
-                        // Creamos un nuevo objeto de configuración basado en la respuesta de la API
+                        console.log('[DemographicStep] Preguntas demográficas de la API:', apiQuestions);
                         const updatedConfig = {...DEFAULT_DEMOGRAPHICS_CONFIG};
-                        
-                        // Primero deshabilitamos todas las preguntas
                         Object.keys(updatedConfig.questions).forEach(key => {
                             const typedKey = key as keyof typeof updatedConfig.questions;
                             updatedConfig.questions[typedKey].enabled = false;
                         });
-                        
-                        // Ahora habilitamos TODAS las preguntas que estén habilitadas en la API
-                        
+                        // ... (resto del mapeo de preguntas API a config)
                         // 1. Edad (Age)
                         if (apiQuestions.age) {
                             updatedConfig.questions.age = {
@@ -129,7 +142,6 @@ const DemographicStep: React.FC<{
                                 title: 'Edad'
                             };
                         }
-                        
                         // 2. Género (Gender)
                         if (apiQuestions.gender) {
                             updatedConfig.questions.gender = {
@@ -139,7 +151,6 @@ const DemographicStep: React.FC<{
                                 title: 'Género'
                             };
                         }
-                        
                         // 3. País (Country) -> Location
                         if (apiQuestions.country) {
                             updatedConfig.questions.location = {
@@ -149,7 +160,6 @@ const DemographicStep: React.FC<{
                                 title: 'País'
                             };
                         }
-                        
                         // 4. Nivel educativo (educationLevel)
                         if (apiQuestions.educationLevel) {
                             updatedConfig.questions.education = {
@@ -159,7 +169,6 @@ const DemographicStep: React.FC<{
                                 title: 'Nivel educativo'
                             };
                         }
-                        
                         // 5. Ingresos familiares (householdIncome)
                         if (apiQuestions.householdIncome) {
                             updatedConfig.questions.income = {
@@ -169,7 +178,6 @@ const DemographicStep: React.FC<{
                                 title: 'Ingresos familiares anuales'
                             };
                         }
-                        
                         // 6. Situación laboral (employmentStatus)
                         if (apiQuestions.employmentStatus) {
                             updatedConfig.questions.occupation = {
@@ -179,123 +187,303 @@ const DemographicStep: React.FC<{
                                 title: 'Situación laboral'
                             };
                         }
-                        
                         // 7. Horas diarias en línea (dailyHoursOnline)
-                        // Este no tiene un campo directo en nuestro formulario, así que usamos language (que está deshabilitado)
                         if (apiQuestions.dailyHoursOnline) {
                             updatedConfig.questions.language = {
-                                id: 'language', // Reutilizamos este campo
+                                id: 'language',
                                 enabled: apiQuestions.dailyHoursOnline.enabled,
                                 required: apiQuestions.dailyHoursOnline.required,
                                 title: 'Horas diarias en línea'
                             };
                         }
-                        
                         // 8. Competencia técnica (technicalProficiency)
-                        // Este no tiene un campo directo en nuestro formulario, así que usamos ethnicity (que está deshabilitado)
                         if (apiQuestions.technicalProficiency) {
                             updatedConfig.questions.ethnicity = {
-                                id: 'ethnicity', // Reutilizamos este campo
+                                id: 'ethnicity',
                                 enabled: apiQuestions.technicalProficiency.enabled,
                                 required: apiQuestions.technicalProficiency.required,
                                 title: 'Competencia técnica'
                             };
                         }
-                        
-                        console.log('[CurrentStepRenderer] Configuración final de preguntas demográficas:', updatedConfig);
+                        // --- Fin Mapeo --- 
+                        console.log('[DemographicStep] Configuración final de preguntas demográficas:', updatedConfig);
                         setDemographicsConfig(updatedConfig);
+                    } else {
+                         console.warn('[DemographicStep] No demographicQuestions found in API response.');
                     }
                 })
                 .catch(error => {
-                    console.error('[CurrentStepRenderer] Error al consultar la API de eye-tracking:', error);
+                    console.error('[DemographicStep] Error al consultar la API de eye-tracking:', error);
+                })
+                .finally(() => {
+                    setConfigLoading(false);
+                    console.log('[DemographicStep] Carga de configuración finalizada.');
                 });
+        } else {
+            setConfigLoading(false);
+            console.warn('[DemographicStep] No se pudo cargar config de API (faltan ID/Token). Usando config por defecto.');
         }
-    }, [researchId, token]);
+    }, [researchId, token]); // Quitar demographicResponses de aquí si no se usa directamente
     
     const handleDemographicSubmit = async (responses: DemographicResponses) => {
         setLoading(true);
         try {
-            // Si tienes un ID de participante, lo puedes usar para guardar las respuestas
-            // Por ahora solo simulamos la acción y continuamos
-            console.log('[CurrentStepRenderer] Respuestas demográficas:', responses);
-            
-            // En una implementación real, guardaríamos las respuestas:
-            // await demographicsService.saveDemographicResponses(researchId, participantId, responses, token);
-            
-            // Continuar al siguiente paso con las respuestas
+            console.log('[DemographicStep] Respuestas demográficas:', responses);
             if (onStepComplete) {
                 onStepComplete(responses);
             }
         } catch (error) {
-            console.error('[CurrentStepRenderer] Error guardando respuestas demográficas:', error);
+            console.error('[DemographicStep] Error guardando respuestas demográficas:', error);
             if (onError) {
-                // Pasar el tipo de paso y el mensaje de error
-                onError('Error al guardar las respuestas demográficas. Por favor, intenta nuevamente.', 'demographic');
+                onError('Error al guardar las respuestas demográficas.', 'demographic');
             }
         } finally {
             setLoading(false);
         }
     };
     
+    if (configLoading) {
+        return (
+            <div className="w-full max-w-lg mx-auto bg-white p-6 rounded-lg shadow-md text-center">
+                <h2 className="text-2xl font-bold text-gray-800 mb-4">Preguntas demográficas</h2>
+                <p className="text-gray-600">Cargando preguntas...</p>
+            </div>
+        );
+    }
+    
     return (
         <DemographicsForm
             config={stepConfig?.demographicsConfig || demographicsConfig}
-            initialValues={demographicResponses}
+            initialValues={demographicResponses} // Pasar las respuestas actuales
             onSubmit={handleDemographicSubmit}
             isLoading={loading}
         />
     );
 };
+// === FIN COMPONENTE DemographicStep MOVIDO ===
 
-const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
-    stepType,
-    stepConfig,
-    stepId,
-    stepName,
-    researchId,
-    token,
-    onLoginSuccess,
-    onStepComplete,
-    onError,
-}) => {
-    // Hooks deben estar siempre al inicio del componente
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+// === COMPONENTES ELIMINADOS QUE YA ESTÁN IMPORTADOS ===
+
+// Componente para texto largo
+const LongTextQuestion: React.FC<{
+    config: any; 
+    stepName?: string;
+    onStepComplete: (answer: any) => void;
+}> = ({ config, stepName, onStepComplete }) => {
+    const savedResponse = config.savedResponses || '';
+    const [currentResponse, setCurrentResponse] = useState(savedResponse);
+
+    return (
+        <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full">
+            <h2 className="text-xl font-medium mb-3 text-neutral-700">{stepName || 'Pregunta'}</h2>
+            <p className="text-neutral-600 mb-4">{config.questionText}</p>
+            <textarea
+                className="border border-neutral-300 p-2 rounded-md w-full mb-4 h-32 resize-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                placeholder={config.placeholder}
+                value={currentResponse}
+                onChange={(e) => setCurrentResponse(e.target.value)}
+            />
+            <button
+                onClick={() => onStepComplete(currentResponse || savedResponse || "Respuesta larga placeholder...")}
+                className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
+            >
+                Siguiente
+            </button>
+        </div>
+    );
+};
+
+// Componente para Single Choice
+const SingleChoiceQuestion: React.FC<{
+    config: any; 
+    stepId?: string;
+    stepName?: string;
+    onStepComplete: (answer: any) => void;
+    isMock: boolean;
+}> = ({ config, stepId, stepName, onStepComplete, isMock }) => {
+    const title = config.title || stepName || 'Selecciona una opción';
+    const description = config.description;
+    const questionText = config.questionText || (isMock ? 'Pregunta de prueba' : '');
+    const options = config.options || [];
     
-    // Hooks para cognitive_preference_test - ahora al nivel principal del componente
+    const savedResponse = config.savedResponses;
+    const [selectedOption, setSelectedOption] = useState<string | undefined>(savedResponse);
+
+    return (
+        <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full">
+            <h2 className="text-xl font-medium mb-1 text-neutral-800">{title}</h2>
+            {description && <p className="text-sm text-neutral-500 mb-3">{description}</p>}
+            <p className="text-neutral-600 mb-4">{questionText}</p>
+            <div className="space-y-3 mb-6">
+                {options.map((option: string, index: number) => (
+                    <label key={index} className="flex items-center space-x-3 p-3 border border-neutral-200 rounded-md hover:bg-neutral-50 cursor-pointer">
+                        <input 
+                            type="radio" 
+                            name={`single-choice-${stepId}`} 
+                            value={option} 
+                            className="form-radio h-4 w-4 text-primary-600 border-neutral-300 focus:ring-primary-500" 
+                            checked={selectedOption === option}
+                            onChange={() => setSelectedOption(option)}
+                        />
+                        <span className="text-neutral-700">{option}</span>
+                    </label>
+                ))}
+            </div>
+            <button
+                onClick={() => onStepComplete(selectedOption)}
+                disabled={!selectedOption}
+                className={`bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors ${!selectedOption ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+                Siguiente
+            </button>
+        </div>
+    );
+};
+
+// Componente para Multiple Choice
+const MultipleChoiceQuestion: React.FC<{
+    config: any; 
+    stepId?: string;
+    stepName?: string;
+    onStepComplete: (answer: any) => void;
+    isMock: boolean;
+}> = ({ config, stepId, stepName, onStepComplete, isMock }) => {
+    const title = config.title || stepName || 'Selecciona una o más opciones';
+    const description = config.description;
+    const questionText = config.questionText || (isMock ? 'Pregunta de prueba' : '');
+    const options = config.options || [];
+    
+    const savedResponses = config.savedResponses || [];
+    const [selectedOptions, setSelectedOptions] = useState<string[]>(Array.isArray(savedResponses) ? savedResponses : []);
+
+    const handleCheckboxChange = (option: string) => {
+        setSelectedOptions(prev => 
+            prev.includes(option)
+                ? prev.filter(item => item !== option)
+                : [...prev, option]
+        );
+    };
+
+    return (
+        <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full">
+            <h2 className="text-xl font-medium mb-1 text-neutral-800">{title}</h2>
+            {description && <p className="text-sm text-neutral-500 mb-3">{description}</p>}
+            <p className="text-neutral-600 mb-4">{questionText}</p>
+            <div className="space-y-3 mb-6">
+                {options.map((option: string, index: number) => (
+                    <label key={index} className="flex items-center space-x-3 p-3 border border-neutral-200 rounded-md hover:bg-neutral-50 cursor-pointer">
+                        <input 
+                            type="checkbox" 
+                            name={`multiple-choice-${stepId}-${index}`} 
+                            value={option} 
+                            className="form-checkbox h-4 w-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500" 
+                            checked={selectedOptions.includes(option)}
+                            onChange={() => handleCheckboxChange(option)}
+                        />
+                        <span className="text-neutral-700">{option}</span>
+                    </label>
+                ))}
+            </div>
+            <button
+                onClick={() => onStepComplete(selectedOptions)}
+                disabled={selectedOptions.length === 0}
+                className={`bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors ${selectedOptions.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+                Siguiente
+            </button>
+        </div>
+    );
+};
+
+// Componente para Linear Scale
+const LinearScaleQuestion: React.FC<{
+    config: any; 
+    stepName?: string;
+    onStepComplete: (answer: any) => void;
+    isMock: boolean;
+}> = ({ config, stepName, onStepComplete, isMock }) => {
+    const title = config.title || stepName || 'Valora en la escala';
+    const description = config.description;
+    const questionText = config.questionText || (isMock ? 'Pregunta de prueba' : '');
+    
+    const savedResponse = config.savedResponses;
+    const [selectedValue, setSelectedValue] = useState<number | null>(savedResponse !== undefined ? Number(savedResponse) : null);
+
+    return (
+        <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full">
+            <h2 className="text-xl font-medium mb-1 text-neutral-800">{title}</h2>
+            {description && <p className="text-sm text-neutral-500 mb-3">{description}</p>}
+            <p className="text-neutral-600 mb-4">{questionText}</p>
+            <div className="flex justify-between text-xs text-neutral-500 mb-1">
+                <span>{config.leftLabel}</span>
+                <span>{config.rightLabel}</span>
+            </div>
+            <div className="flex justify-between space-x-2 mb-4">
+                {[...Array(config.scaleSize)].map((_, i) => {
+                    const value = i + 1;
+                    return (
+                        <button 
+                            key={i} 
+                            className={`w-8 h-8 border border-neutral-300 rounded-full hover:bg-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                                selectedValue === value ? 'bg-primary-600 text-white' : ''
+                            }`}
+                            onClick={() => setSelectedValue(value)}
+                        >
+                            {value}
+                        </button>
+                    );
+                })}
+            </div>
+            <button 
+                onClick={() => onStepComplete(selectedValue)}
+                disabled={selectedValue === null}
+                className={`bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors ${selectedValue === null ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+                Siguiente
+            </button>
+        </div>
+    );
+};
+
+// Componente para SmartVOC Feedback
+const SmartVocFeedbackQuestion: React.FC<{
+    config: any; 
+    onStepComplete: (answer: any) => void;
+}> = ({ config, onStepComplete }) => {
+    const savedResponse = config.savedResponses || '';
+    const [currentResponse, setCurrentResponse] = useState(savedResponse);
+
+    return (
+        <FeedbackView
+            questionText={config.questionText}
+            placeholder={config.placeholder} 
+            initialValue={currentResponse}
+            onChange={(value) => setCurrentResponse(value)}
+            onNext={() => onStepComplete(currentResponse || savedResponse)}
+        />
+    );
+};
+
+// Componente para Cognitive Preference Test
+const CognitivePreferenceTestQuestion: React.FC<{
+    config: any; 
+    stepName?: string;
+    token?: string | null;
+    onStepComplete: (answer: any) => void;
+    isMock: boolean;
+}> = ({ config, stepName, token, onStepComplete, isMock }) => {
     const [presignedUrl, setPresignedUrl] = useState<string | null>(null);
     const [isUrlLoading, setIsUrlLoading] = useState<boolean>(false);
     const [urlError, setUrlError] = useState<string | null>(null);
+    
+    const title = config.title || stepName || 'Test de Preferencia';
+    const description = config.description;
+    const questionText = config.questionText || (isMock ? '¿Cuál de estas opciones prefieres?' : '');
+    const useDeviceFrame = !isMock && config.deviceFrame === true;
+    const fileId = !isMock ? config.files[0]?.id : null;
+    const s3Key = !isMock ? config.files[0]?.s3Key : null;
 
-    // Wrapper general para aplicar advertencia si es necesario
-    const renderStepWithWarning = useCallback(
-        (content: React.ReactNode, isMock: boolean, warningMessage?: string) => (
-            <div className="relative w-full flex flex-col items-center justify-center min-h-full p-4 sm:p-8">
-                {isMock && <MockDataWarning message={warningMessage} />}
-                {content}
-            </div>
-        ),
-        []
-    );
-
-    // Manejo unificado de errores
-    const handleError = useCallback((message: string) => {
-        setError(message);
-        if (onError) {
-            onError(message, stepType);
-        }
-    }, [onError, stepType]);
-
-    // useEffect para cognitive_preference_test - aquí en el nivel principal 
     useEffect(() => {
-        // Solo ejecutar este efecto si estamos en el caso cognitive_preference_test
-        if (stepType !== 'cognitive_preference_test') return;
-
-        // Determinar si es mock (basado en la falta de config real de archivos)
-        const hasRealFiles = stepConfig && Array.isArray(stepConfig.files) && stepConfig.files.length > 0 && stepConfig.files[0].s3Key;
-        const isMock = !hasRealFiles;
-        const s3Key = !isMock ? stepConfig.files[0].s3Key : null;
-
         if (s3Key && token) {
             const fetchPresignedUrl = async () => {
                 console.log(`[PreferenceTest] Fetching presigned URL for key: ${s3Key}`);
@@ -308,9 +496,7 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
                     
                     const response = await fetch(url, {
                         method: 'GET',
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        }
+                        headers: { 'Authorization': `Bearer ${token}` }
                     });
 
                     if (response.ok) {
@@ -336,20 +522,105 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
                     setIsUrlLoading(false);
                 }
             };
-
             fetchPresignedUrl();
         } else if (!isMock && !token) {
             console.warn("[PreferenceTest] Missing token to fetch presigned URL.");
             setUrlError("Se requiere autenticación para ver la imagen.");
             setIsUrlLoading(false);
         }
-        // Cleanup o reseteo si es necesario al desmontar o cambiar s3Key/token
         return () => {
            setIsUrlLoading(false); 
            setPresignedUrl(null);
            setUrlError(null);
         }
-    }, [stepType, stepConfig, token]); // Dependencias: stepType, stepConfig, token
+    }, [s3Key, token, isMock]);
+
+    return (
+        <div className="bg-white p-8 rounded-lg shadow-md max-w-3xl w-full">
+            <h2 className="text-xl font-medium mb-1 text-neutral-800 text-center">{title}</h2>
+            {description && <p className="text-sm text-neutral-500 mb-3 text-center">{description}</p>}
+            <p className="text-neutral-600 mb-6 text-center">{questionText}</p>
+            
+            <div className="flex justify-center items-center mb-6 min-h-[250px]">
+                {isMock ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+                        {(config.options || ['Mock A', 'Mock B']).slice(0, 2).map((optionText: string, index: number) => (
+                            <div key={index} className="border border-dashed border-neutral-300 rounded-md p-4 flex items-center justify-center min-h-[150px]">
+                                <span className="text-neutral-500 italic">{optionText}</span> 
+                            </div>
+                        ))}
+                    </div>
+                ) : isUrlLoading ? (
+                    <div className="flex flex-col items-center text-neutral-500">
+                        <svg className="animate-spin h-8 w-8 text-primary-600 mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Cargando imagen...</span>
+                    </div>
+                ) : urlError ? (
+                     <div className="border border-dashed border-red-300 bg-red-50 rounded-md p-4 flex flex-col items-center justify-center min-h-[150px] text-red-700">
+                        <span className="font-medium">Error al cargar imagen</span>
+                        <span className="text-sm">{urlError}</span> 
+                    </div>
+                ) : presignedUrl ? (
+                    <div className={`p-2 ${useDeviceFrame ? 'border-4 border-neutral-700 rounded-lg shadow-lg' : ''}`}> 
+                       <img 
+                           src={presignedUrl} 
+                           alt={`Opción preferencia ${config.files[0]?.name || 1}`}
+                           className="max-w-sm md:max-w-md max-h-[400px] object-contain rounded"
+                       />
+                    </div>
+                ) : (
+                    <div className="text-neutral-500 italic">No hay imagen disponible.</div>
+                )}
+            </div>
+            
+            <div className="flex justify-center">
+               <button 
+                    onClick={() => onStepComplete(fileId || (isMock ? config.options[0] : 'selected_image_no_id'))} 
+                    disabled={isUrlLoading || !!urlError} 
+                    className={`bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors ${isUrlLoading || urlError ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                    Siguiente
+               </button>
+            </div>
+        </div>
+    );
+};
+
+const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
+    stepType,
+    stepConfig,
+    stepId,
+    stepName,
+    researchId,
+    token,
+    onLoginSuccess,
+    onStepComplete,
+    onError,
+}) => {
+    // Hooks deben estar siempre al inicio del componente
+    const [_loading, _setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    
+    // Wrapper general para aplicar advertencia si es necesario
+    const renderStepWithWarning = useCallback(
+        (content: React.ReactNode, isMock: boolean, warningMessage?: string) => (
+            <div className="relative w-full flex flex-col items-center justify-center min-h-full p-4 sm:p-8">
+                {isMock && <MockDataWarning message={warningMessage} />}
+                {content}
+            </div>
+        ),
+        []
+    );
+
+    // Manejo unificado de errores
+    const handleError = useCallback((message: string) => {
+        setError(message);
+        if (onError) {
+            onError(message, stepType);
+        }
+    }, [onError, stepType]);
 
     // Función para renderizar el contenido basado en el tipo de paso
     const renderContent = useCallback(() => {
@@ -357,7 +628,7 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
             return <div className="p-6 text-center text-red-500">Error: {error}</div>;
         }
 
-        if (loading) {
+        if (_loading) {
             return <div className="p-6 text-center">Cargando...</div>;
         }
 
@@ -408,31 +679,13 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
                     ? { questionText: 'Pregunta de texto corto (Prueba)?' }
                     : stepConfig;
                 
-                // Usar los campos específicos si existen en la config real
-                const title = config.title || stepName || 'Pregunta'; // Usar title si existe
-                const description = config.description; // Usar description si existe
-                const questionText = config.questionText || (isMock ? 'Pregunta de prueba' : '');
-                const placeholder = config.answerPlaceholder || 'Escribe tu respuesta...';
-     
-                // Placeholder - Reemplazar con componente real si existe
-                // return renderStepWithWarning(<ShortTextView config={config} onNext={onStepComplete} isMock={isMock}/>, isMock);
                  return renderStepWithWarning(
-                     <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full">
-                        <h2 className="text-xl font-medium mb-1 text-neutral-800">{title}</h2>
-                        {description && <p className="text-sm text-neutral-500 mb-3">{description}</p>} {/* Mostrar descripción si existe */}
-                        <p className="text-neutral-600 mb-4">{questionText}</p> {/* Mostrar texto principal */} 
-                        <input
-                            type="text"
-                            className="border border-neutral-300 p-2 rounded-md w-full mb-4 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                            placeholder={placeholder} // <<< Usar placeholder de config
-                        />
-                        <button
-                            onClick={() => onStepComplete("Respuesta placeholder...")}
-                            className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
-                        >
-                            Siguiente
-                        </button>
-                    </div>,
+                     <ShortTextQuestionComponent
+                         config={config}
+                         stepName={stepName}
+                         onStepComplete={onStepComplete}
+                         isMock={isMock}
+                     />,
                      isMock // Pasar el flag de mock
                  );
                 } 
@@ -443,24 +696,13 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
                 const cogLongTextConfig = isCogLongTextMock
                     ? { questionText: 'Pregunta de texto largo (Prueba)?', placeholder: 'Escribe tu respuesta detallada...' }
                     : stepConfig;
-
-                // Placeholder - Reemplazar con componente real LongTextView si existe
-                // return renderStepWithWarning(<LongTextView config={cogLongTextConfig} onNext={onStepComplete} isMock={isCogLongTextMock}/>, isCogLongTextMock);
-                 return renderStepWithWarning(
-                     <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full">
-                        <h2 className="text-xl font-medium mb-3 text-neutral-700">{stepName || 'Pregunta'}</h2>
-                        <p className="text-neutral-600 mb-4">{cogLongTextConfig.questionText}</p>
-                        <textarea
-                            className="border border-neutral-300 p-2 rounded-md w-full mb-4 h-32 resize-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                            placeholder={cogLongTextConfig.placeholder}
-                        />
-                        <button
-                            onClick={() => onStepComplete("Respuesta larga placeholder...")}
-                            className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
-                        >
-                            Siguiente
-                        </button>
-                    </div>,
+                
+                return renderStepWithWarning(
+                    <LongTextQuestion
+                        config={cogLongTextConfig}
+                        stepName={stepName}
+                        onStepComplete={onStepComplete}
+                    />,
                      isCogLongTextMock
                  );
                 } 
@@ -472,33 +714,14 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
                     ? { questionText: 'Pregunta de opción única (Prueba)?', options: ['Opción A', 'Opción B', 'Opción C'] }
                     : stepConfig;
                 
-                const title = config.title || stepName || 'Selecciona una opción';
-                const description = config.description;
-                const questionText = config.questionText || (isMock ? 'Pregunta de prueba' : '');
-                const options = config.options || [];
-
-                // Placeholder - Reemplazar con componente real SingleChoiceView si existe
-                // return renderStepWithWarning(<SingleChoiceView config={config} onNext={onStepComplete} isMock={isMock}/>, isMock);
-                 return renderStepWithWarning(
-                     <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full">
-                        <h2 className="text-xl font-medium mb-1 text-neutral-800">{title}</h2>
-                        {description && <p className="text-sm text-neutral-500 mb-3">{description}</p>}
-                        <p className="text-neutral-600 mb-4">{questionText}</p>
-                        <div className="space-y-3 mb-6">
-                            {options.map((option: string, index: number) => (
-                                <label key={index} className="flex items-center space-x-3 p-3 border border-neutral-200 rounded-md hover:bg-neutral-50 cursor-pointer">
-                                    <input type="radio" name={`single-choice-${stepId}`} value={option} className="form-radio h-4 w-4 text-primary-600 border-neutral-300 focus:ring-primary-500" />
-                                    <span className="text-neutral-700">{option}</span>
-                                </label>
-                            ))}
-                        </div>
-                        <button
-                            onClick={() => onStepComplete(options[0])} // Simular selección de la primera opción
-                            className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
-                        >
-                            Siguiente
-                        </button>
-                    </div>,
+                return renderStepWithWarning(
+                    <SingleChoiceQuestion
+                        config={config}
+                        stepId={stepId}
+                        stepName={stepName}
+                        onStepComplete={onStepComplete}
+                        isMock={isMock}
+                    />,
                      isMock // Pasar el flag de mock
                  );
                 } 
@@ -511,32 +734,14 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
                     ? { questionText: 'Pregunta de opción múltiple (Prueba)?', options: ['Opción 1', 'Opción 2', 'Opción 3'] }
                     : stepConfig;
                 
-                const title = config.title || stepName || 'Selecciona una o más opciones';
-                const description = config.description;
-                const questionText = config.questionText || (isMock ? 'Pregunta de prueba' : '');
-                const options = config.options || [];
-
-                // Placeholder - Reemplazar con componente real MultipleChoiceView
                  return renderStepWithWarning(
-                     <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full">
-                        <h2 className="text-xl font-medium mb-1 text-neutral-800">{title}</h2>
-                        {description && <p className="text-sm text-neutral-500 mb-3">{description}</p>}
-                        <p className="text-neutral-600 mb-4">{questionText}</p>
-                        <div className="space-y-3 mb-6">
-                            {options.map((option: string, index: number) => (
-                                <label key={index} className="flex items-center space-x-3 p-3 border border-neutral-200 rounded-md hover:bg-neutral-50 cursor-pointer">
-                                    <input type="checkbox" name={`multiple-choice-${stepId}-${index}`} value={option} className="form-checkbox h-4 w-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500" />
-                                    <span className="text-neutral-700">{option}</span>
-                                </label>
-                            ))}
-                        </div>
-                        <button
-                            onClick={() => onStepComplete([options[0]])} // Simular selección de la primera opción
-                            className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
-                        >
-                            Siguiente
-                        </button>
-                    </div>,
+                     <MultipleChoiceQuestion
+                        config={config}
+                        stepId={stepId}
+                        stepName={stepName}
+                        onStepComplete={onStepComplete}
+                        isMock={isMock}
+                    />,
                      isMock
                  );
                 } 
@@ -546,29 +751,16 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
                  if (!onStepComplete) return null;
                  const isMock = !stepConfig || !stepConfig.questionText || !stepConfig.scaleSize;
                  const config = isMock
-                    ? { questionText: 'Pregunta escala lineal (Prueba)?', scaleSize: 5, leftLabel: 'Izquierda', rightLabel: 'Derecha' }
+                    ? { questionText: 'Pregunta escala lineal (Prueba)?', scaleSize: 5, leftLabel: 'Izquierda', rightLabel: 'Derecha' } 
                     : stepConfig;
 
-                const title = config.title || stepName || 'Valora en la escala';
-                const description = config.description;
-                const questionText = config.questionText || (isMock ? 'Pregunta de prueba' : '');
-
                  return renderStepWithWarning(
-                     <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full">
-                         <h2 className="text-xl font-medium mb-1 text-neutral-800">{title}</h2>
-                        {description && <p className="text-sm text-neutral-500 mb-3">{description}</p>}
-                        <p className="text-neutral-600 mb-4">{questionText}</p>
-                         <div className="flex justify-between text-xs text-neutral-500 mb-1">
-                             <span>{config.leftLabel}</span>
-                             <span>{config.rightLabel}</span>
-                         </div>
-                         <div className="flex justify-between space-x-2 mb-4">
-                             {[...Array(config.scaleSize)].map((_, i) => (
-                                 <button key={i} className="w-8 h-8 border border-neutral-300 rounded-full hover:bg-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500">{i + 1}</button>
-                             ))}
-                         </div>
-                         <button onClick={() => onStepComplete(3)} className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors">Siguiente</button>
-                     </div>,
+                     <LinearScaleQuestion
+                        config={config}
+                        stepName={stepName}
+                        onStepComplete={onStepComplete}
+                        isMock={isMock}
+                    />,
                      isMock
                  );
                 } 
@@ -632,82 +824,24 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
             case 'cognitive_preference_test': {
                 if (!onStepComplete) return null;
                 
-                // Determinar si es mock (basado en la falta de config real de archivos)
                 const hasRealFiles = stepConfig && Array.isArray(stepConfig.files) && stepConfig.files.length > 0 && stepConfig.files[0].s3Key;
                 const isMock = !hasRealFiles;
                 
-                // Usar config mock solo si no hay archivos reales
                 const config = isMock ? { 
                     questionText: 'Test de preferencia (Prueba)?', 
                     options: ['Opción A Placeholder', 'Opción B Placeholder'], 
                     files: [] 
                 } : stepConfig;
 
-                const title = config.title || stepName || 'Test de Preferencia';
-                const description = config.description;
-                const questionText = config.questionText || (isMock ? '¿Cuál de estas opciones prefieres?' : '');
-                const useDeviceFrame = !isMock && config.deviceFrame === true;
-                const fileId = !isMock ? config.files[0]?.id : null;
-
-                // --- Renderizado --- 
                 return renderStepWithWarning(
-                     <div className="bg-white p-8 rounded-lg shadow-md max-w-3xl w-full">
-                         <h2 className="text-xl font-medium mb-1 text-neutral-800 text-center">{title}</h2>
-                         {description && <p className="text-sm text-neutral-500 mb-3 text-center">{description}</p>}
-                         <p className="text-neutral-600 mb-6 text-center">{questionText || 'Elige la opción que prefieras'}</p>
-                         
-                         {/* Área para mostrar las opciones (imagen real, carga, error o mocks) */}
-                         <div className="flex justify-center items-center mb-6 min-h-[250px]">
-                             {isMock ? (
-                                 // Mock display
-                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-                                     {(config.options || ['Mock A', 'Mock B']).slice(0, 2).map((optionText: string, index: number) => (
-                                         <div key={index} className="border border-dashed border-neutral-300 rounded-md p-4 flex items-center justify-center min-h-[150px]">
-                                             <span className="text-neutral-500 italic">{optionText}</span> 
-                                         </div>
-                                     ))}
-                                 </div>
-                             ) : isUrlLoading ? (
-                                 // Loading indicator
-                                 <div className="flex flex-col items-center text-neutral-500">
-                                     <svg className="animate-spin h-8 w-8 text-primary-600 mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                     </svg>
-                                     <span>Cargando imagen...</span>
-                                 </div>
-                             ) : urlError ? (
-                                 // Error display
-                                  <div className="border border-dashed border-red-300 bg-red-50 rounded-md p-4 flex flex-col items-center justify-center min-h-[150px] text-red-700">
-                                     <span className="font-medium">Error al cargar imagen</span>
-                                     <span className="text-sm">{urlError}</span> 
-                                 </div>
-                             ) : presignedUrl ? (
-                                 // Real image display with presigned URL
-                                 <div className={`p-2 ${useDeviceFrame ? 'border-4 border-neutral-700 rounded-lg shadow-lg' : ''}`}> 
-                                    <img 
-                                        src={presignedUrl} 
-                                        alt={`Opción preferencia ${config.files[0]?.name || 1}`}
-                                        className="max-w-sm md:max-w-md max-h-[400px] object-contain rounded"
-                                    />
-                                 </div>
-                             ) : (
-                                 // Fallback if URL is null after loading without error (should not happen often)
-                                 <div className="text-neutral-500 italic">No hay imagen disponible.</div>
-                             )}
-                         </div>
-                         
-                         {/* Botón Siguiente (deshabilitado mientras carga o si hay error?) */}
-                         <div className="flex justify-center">
-                            <button 
-                                 onClick={() => onStepComplete(fileId || (isMock ? config.options[0] : 'selected_image_no_id'))} // Pasar fileId si existe
-                                 disabled={isUrlLoading || !!urlError} // Deshabilitar si carga o hay error
-                                 className={`bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors ${isUrlLoading || urlError ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                                 Siguiente
-                            </button>
-                         </div>
-                     </div>,
-                     isMock // Pasar el flag de mock original
+                     <CognitivePreferenceTestQuestion
+                        config={config}
+                        stepName={stepName}
+                        token={token}
+                        onStepComplete={onStepComplete}
+                        isMock={isMock}
+                    />,
+                     isMock
                  );
             }
 
@@ -791,12 +925,11 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
                  const feedbackConfig = isFeedbackMock
                     ? { questionText: 'Pregunta Feedback (Prueba)?', placeholder: 'Escribe aquí...' }
                     : stepConfig;
-
+                 
                  return renderStepWithWarning(
-                     <FeedbackView
-                        questionText={feedbackConfig.questionText}
-                        placeholder={feedbackConfig.placeholder} 
-                        onNext={onStepComplete}
+                     <SmartVocFeedbackQuestion
+                        config={feedbackConfig}
+                        onStepComplete={onStepComplete}
                     />,
                      isFeedbackMock
                  );
@@ -841,9 +974,10 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
 
             case 'thankyou': {
                 const isThankYouMock = !stepConfig; // Asumir que necesita config para mensajes
-                 const thankYouConfig = isThankYouMock
-                    ? { title: '¡Gracias! (Prueba)', message: 'Mensaje de agradecimiento de prueba.'}
-                    : stepConfig;
+                 // Eliminar _thankYouConfig ya que no se usa después
+                 // const _thankYouConfig = isThankYouMock
+                 //    ? { title: '¡Gracias! (Prueba)', message: 'Mensaje de agradecimiento de prueba.'}
+                 //    : stepConfig;
                 
                  // Verificar si tenemos datos de respuestas en la configuración
                  const responsesData = stepConfig?.responsesData;
@@ -851,7 +985,7 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
                  return renderStepWithWarning(
                      <ThankYouView
                          onContinue={() => console.log("Acción final desde ThankYou")}
-                         responsesData={responsesData}
+                         responsesData={responsesData} // responsesData se pasa aquí
                      />,
                      isThankYouMock
                  );
@@ -893,7 +1027,7 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
                       </div>
                  );
         }
-    }, [stepType, stepConfig, stepId, stepName, researchId, token, onLoginSuccess, onStepComplete, error, loading, handleError, renderStepWithWarning, presignedUrl, isUrlLoading, urlError]);
+    }, [stepType, stepConfig, stepId, stepName, researchId, token, onLoginSuccess, onStepComplete, error, _loading, handleError, renderStepWithWarning]);
 
     return renderContent();
 };

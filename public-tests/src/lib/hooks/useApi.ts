@@ -1,48 +1,52 @@
 import { useQuery, useMutation, UseQueryOptions, UseMutationOptions } from '@tanstack/react-query';
-import { apiClient } from '../api';
+import { ApiClient } from '../api';
 import { APIResponse } from '../types';
 
-// Hook para peticiones GET
-export function useApiQuery<T>(
-  endpoint: string,
-  options?: UseQueryOptions<APIResponse<T>, Error>
+// Crear una instancia de ApiClient
+const apiClient = new ApiClient();
+
+// Hook para obtener pantalla de bienvenida
+export function useWelcomeScreen(
+  researchId: string,
+  options?: UseQueryOptions<APIResponse<any>, Error>
 ) {
   return useQuery({
-    queryKey: [endpoint],
-    queryFn: () => apiClient.get<T>(endpoint),
+    queryKey: ['welcomeScreen', researchId],
+    queryFn: () => apiClient.getWelcomeScreen(researchId),
     ...options,
   });
 }
 
-// Hook para peticiones POST
-export function useApiMutation<T, V>(
-  endpoint: string,
-  options?: UseMutationOptions<APIResponse<T>, Error, V>
+// Hook para obtener SmartVOC
+export function useSmartVOC(
+  researchId: string,
+  options?: UseQueryOptions<APIResponse<any>, Error>
 ) {
-  return useMutation({
-    mutationFn: (variables: V) => apiClient.post<T>(endpoint, variables),
+  return useQuery({
+    queryKey: ['smartVOC', researchId],
+    queryFn: () => apiClient.getSmartVOC(researchId),
     ...options,
   });
 }
 
-// Hook para peticiones PUT
-export function useApiPut<T, V>(
-  endpoint: string,
-  options?: UseMutationOptions<APIResponse<T>, Error, V>
+// Hook para obtener tareas cognitivas
+export function useCognitiveTask(
+  researchId: string,
+  options?: UseQueryOptions<APIResponse<any>, Error>
 ) {
-  return useMutation({
-    mutationFn: (variables: V) => apiClient.put<T>(endpoint, variables),
+  return useQuery({
+    queryKey: ['cognitiveTask', researchId],
+    queryFn: () => apiClient.getCognitiveTask(researchId),
     ...options,
   });
 }
 
-// Hook para peticiones DELETE
-export function useApiDelete<T>(
-  endpoint: string,
-  options?: UseMutationOptions<APIResponse<T>, Error, void>
+// Hook para registrar participante
+export function useRegisterParticipant(
+  options?: UseMutationOptions<APIResponse<{ token: string }>, Error, any>
 ) {
   return useMutation({
-    mutationFn: () => apiClient.delete<T>(endpoint),
+    mutationFn: (data) => apiClient.registerParticipant(data),
     ...options,
   });
 } 

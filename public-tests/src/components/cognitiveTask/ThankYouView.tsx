@@ -12,7 +12,6 @@ interface ThankYouViewProps {
  * Componente que muestra una pantalla de agradecimiento al finalizar las tareas cognitivas
  */
 const ThankYouView: React.FC<ThankYouViewProps> = ({
-  onComplete,
   title = 'Thank you so much!',
   message = 'You have been invited to participate in a survey to improve the future experience of our customers, so we need your help to make this the best experience possible.',
   imageSrc = '/couple-thank-you.jpg' // URL relativa a la imagen de la pareja
