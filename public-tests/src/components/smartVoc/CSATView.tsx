@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 // import StarRating from './StarRating'; // Ya no se usa
 
 interface CSATViewProps {
@@ -7,6 +7,9 @@ interface CSATViewProps {
   companyName?: string; // Para posible inserción en el texto
   scaleSize?: number; // Cuántos números mostrar (e.g., 5, 7, 10)
   onNext: (selectedValue: number) => void; // Callback con el valor seleccionado
+  // Props para localStorage
+  stepId?: string;
+  stepType?: string; // Generalmente será 'smartvoc_csat'
 }
 
 const CSATView: React.FC<CSATViewProps> = ({
@@ -14,9 +17,28 @@ const CSATView: React.FC<CSATViewProps> = ({
   instructions,
   companyName,
   scaleSize = 5, // Valor por defecto 5 si no se provee
-  onNext
+  onNext,
+  stepId,
+  stepType
 }) => {
-  const [selectedValue, setSelectedValue] = useState<number | null>(null);
+  const localStorageKey = `form-${stepType || 'csat'}-${stepId || 'default'}`;
+
+  const [selectedValue, setSelectedValue] = useState<number | null>(() => {
+    try {
+      const saved = localStorage.getItem(localStorageKey);
+      if (saved !== null) {
+        const parsed = JSON.parse(saved);
+        return typeof parsed === 'number' ? parsed : null;
+      }
+    } catch (e) { console.error("Error reading CSAT from localStorage", e); }
+    return null; // No hay valor inicial por defecto si no está en localStorage
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(localStorageKey, JSON.stringify(selectedValue));
+    } catch (e) { console.error("Error saving CSAT to localStorage", e); }
+  }, [selectedValue, localStorageKey]);
 
   // Generar los botones numéricos
   const scaleButtons = Array.from({ length: scaleSize }, (_, i) => i + 1); // Crea [1, 2, 3, 4, 5]
@@ -28,6 +50,7 @@ const CSATView: React.FC<CSATViewProps> = ({
   const handleNextClick = () => {
     if (selectedValue !== null) {
       onNext(selectedValue);
+      // Opcional: localStorage.removeItem(localStorageKey);
     }
   };
 
@@ -72,6 +95,13 @@ const CSATView: React.FC<CSATViewProps> = ({
         >
           Siguiente
         </button>
+        {/* DEBUG: Mostrar datos de localStorage */}
+        <details className="mt-4 text-xs">
+            <summary className="cursor-pointer font-medium">localStorage Data ({localStorageKey})</summary>
+            <pre className="mt-1 bg-gray-100 p-2 rounded text-gray-700 overflow-auto text-xs">
+                {JSON.stringify(JSON.parse(localStorage.getItem(localStorageKey) || 'null'), null, 2)}
+            </pre>
+        </details>
       </div>
     </div>
   );

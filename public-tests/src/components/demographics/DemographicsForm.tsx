@@ -21,8 +21,29 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
   onCancel,
   isLoading = false,
 }) => {
-  const [responses, setResponses] = useState<DemographicResponses>(initialValues);
+  const localStorageKey = `demographicsForm-${config.title?.replace(/\s+/g, '_') || 'default'}`;
+
+  const [responses, setResponses] = useState<DemographicResponses>(() => {
+    try {
+      const savedResponses = localStorage.getItem(localStorageKey);
+      if (savedResponses) {
+        return JSON.parse(savedResponses);
+      }
+    } catch (error) {
+      console.error("Error reading from localStorage", error);
+    }
+    return initialValues;
+  });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  // Efecto para guardar las respuestas en localStorage cada vez que cambian
+  useEffect(() => {
+    try {
+      localStorage.setItem(localStorageKey, JSON.stringify(responses));
+    } catch (error) {
+      console.error("Error saving to localStorage", error);
+    }
+  }, [responses, localStorageKey]);
 
   // Si la configuración cambia, actualizar las respuestas para mantener solo campos relevantes
   useEffect(() => {
@@ -40,7 +61,11 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
 
   // Función para manejar cambios en las respuestas
   const handleChange = (id: string, value: any) => {
-    setResponses(prev => ({ ...prev, [id]: value }));
+    setResponses(prev => {
+      const newResponses = { ...prev, [id]: value };
+      // No es necesario llamar a localStorage.setItem aquí, ya que el useEffect [responses] lo hará.
+      return newResponses;
+    });
     
     // Limpiar error si el campo ahora tiene valor
     if (value && formErrors[id]) {
@@ -73,6 +98,12 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
     
     if (validateForm()) {
       onSubmit(responses);
+      // Opcional: Limpiar localStorage después de un envío exitoso
+      // try {
+      //   localStorage.removeItem(localStorageKey);
+      // } catch (error) {
+      //   console.error("Error removing from localStorage", error);
+      // }
     }
   };
 
@@ -134,6 +165,13 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
           </button>
         </div>
       </form>
+      {/* DEBUG: Mostrar datos de localStorage */}
+      <details className="mt-4 text-xs">
+        <summary className="cursor-pointer font-medium">localStorage Data ({localStorageKey})</summary>
+        <pre className="mt-1 bg-gray-100 p-2 rounded text-gray-700 overflow-auto text-xs">
+          {JSON.stringify(JSON.parse(localStorage.getItem(localStorageKey) || '{}'), null, 2)}
+        </pre>
+      </details>
     </div>
   );
 }; 

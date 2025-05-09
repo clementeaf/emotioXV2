@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface NPSViewProps {
   questionText: string;
@@ -7,6 +7,9 @@ interface NPSViewProps {
   leftLabel?: string; // Etiqueta izquierda (NPS)
   rightLabel?: string; // Etiqueta derecha (NPS)
   onNext: (selectedValue: number) => void; // Callback con el valor 0-10
+  // Props para localStorage
+  stepId?: string;
+  stepType?: string; // Generalmente será 'smartvoc_nps'
 }
 
 const NPSView: React.FC<NPSViewProps> = ({
@@ -15,9 +18,28 @@ const NPSView: React.FC<NPSViewProps> = ({
   companyName,
   leftLabel = "Not at all likely", // Valor por defecto NPS
   rightLabel = "Extremely likely", // Valor por defecto NPS
-  onNext
+  onNext,
+  stepId,
+  stepType
 }) => {
-  const [selectedValue, setSelectedValue] = useState<number | null>(null);
+  const localStorageKey = `form-${stepType || 'nps'}-${stepId || 'default'}`;
+
+  const [selectedValue, setSelectedValue] = useState<number | null>(() => {
+    try {
+      const saved = localStorage.getItem(localStorageKey);
+      if (saved !== null) {
+        const parsed = JSON.parse(saved);
+        return typeof parsed === 'number' ? parsed : null;
+      }
+    } catch (e) { console.error("Error reading NPS from localStorage", e); }
+    return null; 
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(localStorageKey, JSON.stringify(selectedValue));
+    } catch (e) { console.error("Error saving NPS to localStorage", e); }
+  }, [selectedValue, localStorageKey]);
 
   // Generar los botones numéricos 0-10
   const scaleButtons = Array.from({ length: 11 }, (_, i) => i); // Crea [0, 1, ..., 10]
@@ -29,6 +51,7 @@ const NPSView: React.FC<NPSViewProps> = ({
   const handleNextClick = () => {
     if (selectedValue !== null) {
       onNext(selectedValue);
+      // Opcional: localStorage.removeItem(localStorageKey);
     }
   };
 
@@ -81,6 +104,13 @@ const NPSView: React.FC<NPSViewProps> = ({
         >
           Siguiente
         </button>
+        {/* DEBUG: Mostrar datos de localStorage */}
+        <details className="mt-4 text-xs">
+            <summary className="cursor-pointer font-medium">localStorage Data ({localStorageKey})</summary>
+            <pre className="mt-1 bg-gray-100 p-2 rounded text-gray-700 overflow-auto text-xs">
+                {JSON.stringify(JSON.parse(localStorage.getItem(localStorageKey) || 'null'), null, 2)}
+            </pre>
+        </details>
       </div>
     </div>
   );
