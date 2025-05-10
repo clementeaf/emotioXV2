@@ -3,45 +3,40 @@ import React, { useState, useEffect } from 'react';
 interface DifficultyScaleViewProps {
   questionText: string;
   instructions?: string;
-  scaleSize?: number; // Para CES suele ser 7
-  leftLabel?: string; // Etiqueta izquierda
-  rightLabel?: string; // Etiqueta derecha
-  onNext: (selectedValue: number) => void;
-  // Props para localStorage
+  companyName?: string;
+  leftLabel?: string; // Etiqueta izquierda (CES)
+  rightLabel?: string; // Etiqueta derecha (CES)
+  onNext: (selectedValue: number) => void; // Callback con el valor 1-7
   stepId?: string;
-  stepType?: string; // Generalmente será 'smartvoc_ces'
+  stepType?: string;
+  initialValue?: number | null; // Valor inicial que viene de props (en lugar de localStorage)
+  config?: any; // Configuración adicional si necesaria
 }
 
 const DifficultyScaleView: React.FC<DifficultyScaleViewProps> = ({
   questionText,
   instructions,
-  scaleSize = 7, // Defecto 7 para CES
-  leftLabel = "Muy difícil", // Defecto en español
-  rightLabel = "Muy fácil", // Defecto en español
+  companyName,
+  leftLabel = "Muy fácil", // Valor por defecto CES
+  rightLabel = "Muy difícil", // Valor por defecto CES
   onNext,
   stepId,
-  stepType
+  stepType,
+  initialValue = null,
+  config
 }) => {
-  const localStorageKey = `form-${stepType || 'ces'}-${stepId || 'default'}`;
+  // Usar el valor inicial proporcionado por el padre
+  const [selectedValue, setSelectedValue] = useState<number | null>(initialValue);
 
-  const [selectedValue, setSelectedValue] = useState<number | null>(() => {
-    try {
-      const saved = localStorage.getItem(localStorageKey);
-      if (saved !== null) {
-        const parsed = JSON.parse(saved);
-        return typeof parsed === 'number' ? parsed : null;
-      }
-    } catch (e) { console.error("Error reading CES from localStorage", e); }
-    return null; 
-  });
-
+  // Efecto para actualizar el valor seleccionado si cambia initialValue
   useEffect(() => {
-    try {
-      localStorage.setItem(localStorageKey, JSON.stringify(selectedValue));
-    } catch (e) { console.error("Error saving CES to localStorage", e); }
-  }, [selectedValue, localStorageKey]);
+    if (initialValue !== null) {
+      setSelectedValue(initialValue);
+    }
+  }, [initialValue]);
 
-  const scaleButtons = Array.from({ length: scaleSize }, (_, i) => i + 1); // [1, ..., scaleSize]
+  // Generar los botones de dificultad 1-7
+  const scaleButtons = Array.from({ length: 7 }, (_, i) => i + 1); // Crea [1, 2, ..., 7]
 
   const handleSelect = (value: number) => {
     setSelectedValue(value);
@@ -50,15 +45,19 @@ const DifficultyScaleView: React.FC<DifficultyScaleViewProps> = ({
   const handleNextClick = () => {
     if (selectedValue !== null) {
       onNext(selectedValue);
-      // Opcional: localStorage.removeItem(localStorageKey);
     }
   };
+
+  // Formatear el texto de la pregunta (reemplazo simple)
+  const formattedQuestionText = companyName
+    ? questionText.replace(/\[company\]|\[empresa\]/gi, companyName)
+    : questionText;
 
   return (
     <div className="flex flex-col items-center justify-center w-full h-full bg-white p-8">
       <div className="max-w-xl w-full flex flex-col items-center">
         <h2 className="text-xl font-medium text-center text-neutral-800 mb-4">
-          {questionText}
+          {formattedQuestionText}
         </h2>
 
         {instructions && (
@@ -67,14 +66,16 @@ const DifficultyScaleView: React.FC<DifficultyScaleViewProps> = ({
           </p>
         )}
 
-        <div className="flex space-x-4 justify-center w-full mb-4">
+        {/* Contenedor para los botones numéricos 1-7 */}
+        <div className="flex justify-center gap-2 mb-4">
           {scaleButtons.map((value) => (
             <button
               key={value}
               onClick={() => handleSelect(value)}
-              className={`w-10 h-10 rounded-full border flex items-center justify-center font-medium transition-colors ${selectedValue === value
-                ? 'bg-indigo-600 text-white border-indigo-600'
-                : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-100'
+              className={`w-9 h-9 rounded-full border flex items-center justify-center font-medium transition-colors ${
+                selectedValue === value
+                  ? 'bg-indigo-600 text-white border-indigo-600'
+                  : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-100'
               }`}
             >
               {value}
@@ -82,25 +83,19 @@ const DifficultyScaleView: React.FC<DifficultyScaleViewProps> = ({
           ))}
         </div>
 
+        {/* Etiquetas de los extremos */}
         <div className="flex justify-between w-full mt-2 px-1">
-          <span className="text-sm text-neutral-500">{leftLabel}</span>
-          <span className="text-sm text-neutral-500">{rightLabel}</span>
+          <span className="text-xs text-neutral-500">{leftLabel}</span>
+          <span className="text-xs text-neutral-500">{rightLabel}</span>
         </div>
 
         <button
-          className="mt-12 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-8 rounded-md w-fit transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          className="mt-12 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-10 rounded-md w-fit transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={handleNextClick}
           disabled={selectedValue === null}
         >
           Siguiente
         </button>
-        {/* DEBUG: Mostrar datos de localStorage */}
-        <details className="mt-4 text-xs">
-            <summary className="cursor-pointer font-medium">localStorage Data ({localStorageKey})</summary>
-            <pre className="mt-1 bg-gray-100 p-2 rounded text-gray-700 overflow-auto text-xs">
-                {JSON.stringify(JSON.parse(localStorage.getItem(localStorageKey) || 'null'), null, 2)}
-            </pre>
-        </details>
       </div>
     </div>
   );

@@ -1,7 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { ParticipantFlowStep, ExpandedStep } from '../types/flow';
 import { Participant } from '../../../shared/interfaces/participant';
 import { DEFAULT_DEMOGRAPHICS_CONFIG } from '../types/demographics';
+import { useParticipantStore } from '../stores/participantStore';
+import { apiClient } from '../lib/api';
+import { useResponseAPI } from './useResponseAPI';
 
 const API_BASE_URL = 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev';
 
@@ -14,6 +17,7 @@ const smartVOCTypeMap: { [key: string]: string } = {
     'VOC': 'smartvoc_feedback',
 };
 
+// Interfaz para las respuestas de módulos
 export interface ModuleResponse {
     stepId: string;
     stepType: string;
@@ -23,6 +27,7 @@ export interface ModuleResponse {
     timestamp: number;
 }
 
+// Interfaz para el JSON completo de respuestas
 export interface ResponsesData {
     participantId?: string;
     researchId: string;
@@ -38,6 +43,52 @@ export interface ResponsesData {
         [key: string]: ModuleResponse | ModuleResponse[] | undefined;
     };
 }
+
+// Estados de la carga de investigación
+export enum ResearchLoadStatus {
+    NOT_STARTED = 'not_started',
+    LOADING = 'loading',
+    LOADED = 'loaded',
+    ERROR = 'error'
+}
+
+const DEFAULT_RESPONSES_DATA: ResponsesData = {
+    researchId: '',
+    startTime: Date.now(),
+    modules: {
+        cognitive_task: [],
+        smartvoc: [],
+        all_steps: []
+    }
+};
+
+const sanitizeForJSON = (obj: any): any => {
+    if (!obj) return obj;
+    
+    const seen = new WeakSet();
+    return JSON.parse(JSON.stringify(obj, (key, value) => {
+        if (key.startsWith('__react')) return undefined;
+        
+        if (typeof value === 'object' && value !== null) {
+            if (seen.has(value)) {
+                return '[Referencia Circular]';
+            }
+            seen.add(value);
+            
+            if (typeof window !== 'undefined' && 
+                (value instanceof Element || value instanceof HTMLElement)) {
+                return '[Elemento DOM]';
+            }
+            
+            if ('current' in value && typeof window !== 'undefined' && 
+                (value.current instanceof Element || value.current instanceof HTMLElement)) {
+                return '[React Ref]';
+            }
+        }
+        
+        return value;
+    }));
+};
 
 export const useParticipantFlow = (researchId: string | undefined) => {
     const [token, setToken] = useState<string | null>(null);
@@ -57,6 +108,21 @@ export const useParticipantFlow = (researchId: string | undefined) => {
             all_steps: []
         }
     });
+
+    // Para almacenar el estado del participante
+    const {
+        participantId,
+        token: participantToken,
+        setCurrentStep: setParticipantStep,
+    } = useParticipantStore();
+
+    // Inicializar el hook de API para respuestas
+    const responseAPI = useResponseAPI({
+        researchId: researchId || '',
+        participantId: participantId || ''
+    });
+
+    const initialResponsesLoadedRef = useRef<boolean>(false);
 
     const handleError = useCallback((errorMessage: string, step: ParticipantFlowStep | string) => {
         const stepName = typeof step === 'string' ? step : ParticipantFlowStep[step];
@@ -271,7 +337,7 @@ export const useParticipantFlow = (researchId: string | undefined) => {
             setError(null);
             setExpandedSteps([]);
             setCurrentStepIndex(0);
-            setMaxVisitedIndex(0); // Valor predeterminado
+            setMaxVisitedIndex(0); // Valor predeterminado, no recuperar de localStorage
             setIsFlowLoading(true);
             
             // Inicializar el objeto de respuestas con el researchId
@@ -286,19 +352,6 @@ export const useParticipantFlow = (researchId: string | undefined) => {
             });
 
             const storedToken = localStorage.getItem('participantToken');
-            // Recuperar el índice máximo visitado de localStorage
-            try {
-                const storedMaxIndex = localStorage.getItem(`maxVisitedIndex_${researchId}`);
-                if (storedMaxIndex) {
-                    const maxIndex = parseInt(storedMaxIndex, 10);
-                    if (!isNaN(maxIndex) && maxIndex >= 0) {
-                        console.log(`[useParticipantFlow] Recuperado maxVisitedIndex: ${maxIndex}`);
-                        setMaxVisitedIndex(maxIndex);
-                    }
-                }
-            } catch (e) {
-                console.error('[useParticipantFlow] Error recuperando maxVisitedIndex:', e);
-            }
             
             if (storedToken) {
                 console.log("[useParticipantFlow] Token encontrado. Construyendo flujo...");
@@ -331,6 +384,9 @@ export const useParticipantFlow = (researchId: string | undefined) => {
                 participantId: (participant as any).id || 'unknown'
             }));
             
+            // NUEVO: Cargar respuestas existentes desde el API
+            loadExistingResponses((participant as any).id);
+            
             buildExpandedSteps(researchId, storedToken); // Llamar directamente
         } else {
             handleError("Error interno post-login: Falta token o ID.", ParticipantFlowStep.LOGIN);
@@ -338,40 +394,113 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         }
     }, [researchId, buildExpandedSteps]); // Mantener dependencia de buildExpandedSteps
 
-    // Función auxiliar para sanear objetos antes de JSON.stringify
-    // Elimina referencias circulares y elementos DOM que no pueden ser serializados
-    const sanitizeForJSON = (obj: any): any => {
-        if (!obj) return obj;
+    // NUEVO: Función para cargar respuestas existentes desde el API
+    const loadExistingResponses = useCallback(async (participantId: string) => {
+        if (!researchId || !participantId) {
+            console.warn('[useParticipantFlow] No se pueden cargar respuestas sin researchId o participantId');
+            return;
+        }
         
-        const seen = new WeakSet();
-        return JSON.parse(JSON.stringify(obj, (key, value) => {
-            // Ignorar propiedades que empiezan con "__react" (internas de React)
-            if (key.startsWith('__react')) return undefined;
+        console.log(`[useParticipantFlow] Cargando respuestas existentes para participante: ${participantId}`);
+        
+        try {
+            // Actualizar el participantId en la instancia de responseAPI
+            const responses = await responseAPI.getResponses();
             
-            // Manejar posibles referencias circulares
-            if (typeof value === 'object' && value !== null) {
-                if (seen.has(value)) {
-                    return '[Referencia Circular]';
-                }
-                seen.add(value);
-                
-                // Eliminar propiedades específicas que causan problemas
-                if (value instanceof Element || value instanceof HTMLElement) {
-                    return '[Elemento DOM]';
-                }
-                
-                // Si es un objeto con la propiedad "current" (posible React ref)
-                if ('current' in value && (value.current instanceof Element || value.current instanceof HTMLElement)) {
-                    return '[React Ref]';
-                }
+            if (!responses) {
+                console.log('[useParticipantFlow] No se encontraron respuestas previas.');
+                return;
             }
             
-            return value;
-        }));
-    };
+            console.log('[useParticipantFlow] Respuestas cargadas del servidor:', responses);
+            
+            // Integrar respuestas existentes en el estado
+            setResponsesData(prev => {
+                const updatedData = { ...prev, participantId };
+                
+                // Si el backend devuelve una estructura de respuestas completa,
+                // podemos actualizarla directamente
+                if (responses.modules) {
+                    updatedData.modules = responses.modules;
+                } 
+                // Si devuelve un array plano de respuestas, hay que organizarlas
+                else if (Array.isArray(responses)) {
+                    // Inicializar categorías necesarias
+                    if (!updatedData.modules.all_steps) {
+                        updatedData.modules.all_steps = [];
+                    }
+                    if (!updatedData.modules.cognitive_task) {
+                        updatedData.modules.cognitive_task = [];
+                    }
+                    if (!updatedData.modules.smartvoc) {
+                        updatedData.modules.smartvoc = [];
+                    }
+                    
+                    // Procesar cada respuesta
+                    responses.forEach(response => {
+                        const { stepId, stepType, stepName } = response;
+                        
+                        // Añadir a all_steps siempre
+                        const allStepsIndex = updatedData.modules.all_steps.findIndex(r => r.stepId === stepId);
+                        if (allStepsIndex >= 0) {
+                            updatedData.modules.all_steps[allStepsIndex] = response;
+                        } else {
+                            updatedData.modules.all_steps.push(response);
+                        }
+                        
+                        // Añadir a categoría específica
+                        if (stepType === 'demographic') {
+                            updatedData.modules.demographic = response;
+                        } 
+                        else if (stepName?.includes('Que te ha parecido el módulo')) {
+                            updatedData.modules.feedback = response;
+                        }
+                        else if (stepType === 'welcome') {
+                            updatedData.modules.welcome = response;
+                        }
+                        else if (stepType.startsWith('cognitive_')) {
+                            const existingIndex = updatedData.modules.cognitive_task.findIndex(r => r.stepId === stepId);
+                            if (existingIndex >= 0) {
+                                updatedData.modules.cognitive_task[existingIndex] = response;
+                            } else {
+                                updatedData.modules.cognitive_task.push(response);
+                            }
+                        }
+                        else if (stepType.startsWith('smartvoc_')) {
+                            const existingIndex = updatedData.modules.smartvoc.findIndex(r => r.stepId === stepId);
+                            if (existingIndex >= 0) {
+                                updatedData.modules.smartvoc[existingIndex] = response;
+                            } else {
+                                updatedData.modules.smartvoc.push(response);
+                            }
+                        }
+                        else {
+                            // Categoría dinámica por tipo
+                            const moduleCategory = stepType.split('_')[0] || 'other';
+                            if (!updatedData.modules[moduleCategory]) {
+                                updatedData.modules[moduleCategory] = [];
+                            }
+                            if (!Array.isArray(updatedData.modules[moduleCategory])) {
+                                updatedData.modules[moduleCategory] = [updatedData.modules[moduleCategory] as ModuleResponse];
+                            }
+                            (updatedData.modules[moduleCategory] as ModuleResponse[]).push(response);
+                        }
+                    });
+                }
+                
+                console.log('[useParticipantFlow] Estado actualizado con respuestas existentes, total:', 
+                    updatedData.modules.all_steps?.length || 0);
+                return updatedData;
+            });
+            
+        } catch (error) {
+            console.error('[useParticipantFlow] Error cargando respuestas existentes:', error);
+            // Continuar con el flujo a pesar del error
+        }
+    }, [researchId, responseAPI]);
 
-    // CORREGIDO: Función para guardar respuesta del paso actual - FORZAR persistencia para cognitive y smartvoc
-    const saveStepResponse = useCallback((answer: any) => {
+    // MODIFICADO: Función para guardar respuesta del paso actual - usando el nuevo endpoint
+    const saveStepResponse = useCallback(async (answer: any) => {
         if (currentStepIndex >= 0 && currentStepIndex < expandedSteps.length) {
             const currentStepInfo = expandedSteps[currentStepIndex];
             const { id: stepId, type: stepType, name: stepName, config } = currentStepInfo;
@@ -456,7 +585,31 @@ export const useParticipantFlow = (researchId: string | undefined) => {
                 }
             }
             
-            // Actualizar el estado con esta respuesta
+            // NUEVO: Usar el API para guardar la respuesta mediante el endpoint
+            try {
+                // Buscar si ya existe una respuesta para este paso (para actualización)
+                const existingResponseId = findExistingResponseId(stepId);
+                
+                // Guardar o actualizar respuesta usando el endpoint
+                const apiResult = await responseAPI.saveOrUpdateResponse(
+                    stepId,
+                    stepType,
+                    stepName || '',
+                    moduleResponse.answer,
+                    existingResponseId
+                );
+                
+                if (apiResult) {
+                    console.log(`[useParticipantFlow] Respuesta guardada correctamente en API, ID: ${apiResult.id || 'N/A'}`);
+                } else {
+                    console.warn('[useParticipantFlow] No se recibió confirmación del API al guardar respuesta');
+                }
+            } catch (apiError) {
+                console.error('[useParticipantFlow] Error guardando respuesta en API:', apiError);
+                // Continuar con almacenamiento local a pesar del error en API
+            }
+            
+            // Actualizar el estado con esta respuesta (mantener estado local además del API)
             setResponsesData(prev => {
                 const updatedData = { ...prev };
                 
@@ -551,22 +704,25 @@ export const useParticipantFlow = (researchId: string | undefined) => {
                     updatedData.modules.all_steps.push(moduleResponse);
                 }
                 
-                // Guardar JSON en localStorage para persistencia local
-                try {
-                    // Usar el sanitizador para asegurar que todo el objeto sea serializable
-                    const safeJsonString = JSON.stringify(sanitizeForJSON(updatedData));
-                    localStorage.setItem('participantResponses', safeJsonString);
-                } catch (e) {
-                    console.error('[useParticipantFlow] Error guardando respuestas en localStorage:', e);
-                }
-                
-                console.log('[useParticipantFlow] Total respuestas guardadas:', 
+                console.log('[useParticipantFlow] Total respuestas guardadas en estado:', 
                     updatedData.modules.all_steps.length);
                 
                 return updatedData;
             });
         }
-    }, [currentStepIndex, expandedSteps]);
+    }, [currentStepIndex, expandedSteps, responseAPI]);
+    
+    // Función auxiliar para buscar ID de respuesta existente
+    const findExistingResponseId = useCallback((stepId: string): string | undefined => {
+        // Buscar en todas las respuestas guardadas si hay alguna para este stepId
+        if (responsesData.modules.all_steps) {
+            const existing = responsesData.modules.all_steps.find(resp => resp.stepId === stepId);
+            if (existing && 'id' in existing) {
+                return existing.id as string;
+            }
+        }
+        return undefined;
+    }, [responsesData.modules.all_steps]);
 
     // CORREGIDO: Función para verificar si un paso específico tiene respuesta guardada
     const hasStepBeenAnswered = useCallback((stepIndex: number): boolean => {
@@ -658,8 +814,8 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         return null;
     }, [expandedSteps, responsesData]);
 
-    // MODIFICADO: goToNextStep para forzar persistencia en cognitive y smartvoc
-    const goToNextStep = useCallback((answer?: any) => {
+    // MODIFICADO: goToNextStep para forzar persistencia en cognitive y smartvoc - sin localStorage
+    const goToNextStep = useCallback(async (answer?: any) => {
         if (!isFlowLoading && currentStepIndex < expandedSteps.length - 1) {
             const currentStepInfo = expandedSteps[currentStepIndex];
             const { type: stepType } = currentStepInfo;
@@ -679,7 +835,7 @@ export const useParticipantFlow = (researchId: string | undefined) => {
             
             // Guardar la respuesta antes de avanzar - SIEMPRE guardar si hay respuesta
             if (answer !== undefined) {
-                saveStepResponse(answer);
+                await saveStepResponse(answer);
                 
                 // Actualizar también la configuración del paso actual para mantener las respuestas
                 currentStepInfo.config = {
@@ -696,12 +852,7 @@ export const useParticipantFlow = (researchId: string | undefined) => {
             // Actualizar el índice máximo visitado si estamos avanzando a un paso nuevo
             if (nextIndex > maxVisitedIndex) {
                 setMaxVisitedIndex(nextIndex);
-                // Guardar en localStorage para persistencia
-                try {
-                    localStorage.setItem(`maxVisitedIndex_${researchId}`, nextIndex.toString());
-                } catch (e) {
-                    console.error('[useParticipantFlow] Error guardando maxVisitedIndex en localStorage:', e);
-                }
+                // Ya no guardamos en localStorage, solo en el estado de React
                 console.log(`[useParticipantFlow] Nuevo índice máximo visitado: ${nextIndex}`);
             }
             
@@ -712,7 +863,7 @@ export const useParticipantFlow = (researchId: string | undefined) => {
              
              // Guardar la respuesta final - SIEMPRE si hay respuesta
              if (answer !== undefined) {
-                saveStepResponse(answer);
+                await saveStepResponse(answer);
              }
              
              // Finalizar flujo y enviar respuestas
@@ -737,8 +888,22 @@ export const useParticipantFlow = (researchId: string | undefined) => {
                  
                  return finalData;
              });
+
+             // NUEVO: Marcar respuestas como completadas en el API
+             try {
+                console.log('[useParticipantFlow] Marcando respuestas como completadas en el API...');
+                const result = await responseAPI.markAsCompleted();
+                if (result) {
+                    console.log('[useParticipantFlow] Respuestas marcadas como completadas con éxito.');
+                } else {
+                    console.warn('[useParticipantFlow] No se recibió confirmación al marcar respuestas como completadas.');
+                }
+             } catch (error) {
+                console.error('[useParticipantFlow] Error marcando respuestas como completadas:', error);
+                // Continuar a pesar del error
+             }
         }
-    }, [currentStepIndex, expandedSteps, isFlowLoading, saveStepResponse, maxVisitedIndex, researchId]);
+    }, [currentStepIndex, expandedSteps, isFlowLoading, saveStepResponse, maxVisitedIndex, researchId, responseAPI]);
 
     // CORREGIDO: Función para obtener los índices de todos los pasos que tienen respuestas
     const getAnsweredStepIndices = useCallback((): number[] => {

@@ -6,6 +6,8 @@ import { CSATView, FeedbackView, ThankYouView, DifficultyScaleView, NPSView } fr
 import { DemographicsForm } from '../demographics/DemographicsForm';
 import { DemographicResponses, DEFAULT_DEMOGRAPHICS_CONFIG } from '../../types/demographics';
 import { eyeTrackingService } from '../../services/eyeTracking.service';
+import { demographicsService } from '../../services/demographics.service';
+import { useParticipantStore } from '../../stores/participantStore';
 
 // === IMPORTAR COMPONENTES EXTRAÍDOS ===
 import { ShortTextQuestion as ShortTextQuestionComponent } from './questions/ShortTextQuestion';
@@ -106,6 +108,7 @@ const DemographicStep: React.FC<DemographicStepProps> = ({
     const savedResponses = stepConfig?.savedResponses || {};
     const [demographicResponses, setDemographicResponses] = useState<DemographicResponses>(savedResponses); 
     const [demographicsConfig, setDemographicsConfig] = useState(DEFAULT_DEMOGRAPHICS_CONFIG); 
+    const participantId = useParticipantStore(state => state.participantId);
     
     useEffect(() => {
         if (stepConfig?.savedResponses) {
@@ -229,14 +232,36 @@ const DemographicStep: React.FC<DemographicStepProps> = ({
         setLoading(true);
         try {
             console.log('[DemographicStep] Respuestas demográficas:', responses);
-            if (onStepComplete) {
-                onStepComplete(responses);
+            
+            // Enviar datos al API si tenemos toda la información necesaria
+            if (researchId && participantId && token) {
+                console.log(`[DemographicStep] Enviando datos al servidor para research: ${researchId}, participant: ${participantId}`);
+                const apiResult = await demographicsService.saveDemographicResponses(
+                    researchId, 
+                    participantId, 
+                    responses, 
+                    token
+                );
+                
+                if (apiResult.error) {
+                    console.error('[DemographicStep] Error guardando datos en API:', apiResult.message);
+                    onError('Error al guardar las respuestas demográficas en el servidor.', 'demographic');
+                    setLoading(false);
+                    return; // No continuar con el flujo si hay error
+                } else {
+                    console.log('[DemographicStep] Datos guardados correctamente en API');
+                    // Continuar con el flujo
+                    if (onStepComplete) {
+                        onStepComplete(responses);
+                    }
+                }
+            } else {
+                console.error('[DemographicStep] No se pueden enviar datos al servidor (faltan datos necesarios)');
+                onError('Faltan datos necesarios para guardar respuestas (ID research, ID participante o token).', 'demographic');
             }
         } catch (error) {
             console.error('[DemographicStep] Error guardando respuestas demográficas:', error);
-            if (onError) {
-                onError('Error al guardar las respuestas demográficas.', 'demographic');
-            }
+            onError('Error al guardar las respuestas demográficas.', 'demographic');
         } finally {
             setLoading(false);
         }
@@ -272,34 +297,35 @@ const LongTextQuestion: React.FC<{
     stepType: string;
     onStepComplete: (answer: any) => void;
 }> = ({ config, stepName, stepId, stepType, onStepComplete }) => {
-    const localStorageKey = `form-${stepType}-${stepId || stepName?.replace(/\s+/g, '_') || 'defaultLongText'}`;
+    const title = config.title || stepName || 'Pregunta';
+    const description = config.description;
+    const questionText = config.questionText;
+    const placeholder = config.answerPlaceholder || 'Escribe tu respuesta...';
     
+    // Inicializar con respuestas guardadas o string vacío
     const [currentResponse, setCurrentResponse] = useState(() => {
-        try {
-            const saved = localStorage.getItem(localStorageKey);
-            if (saved !== null && saved !== "undefined") return JSON.parse(saved);
-        } catch (e) { console.error("Error reading from localStorage", e); }
         return config.savedResponses || '';
     });
 
+    // Si cambian las respuestas guardadas en config, actualizar el estado
     useEffect(() => {
-        try {
-            localStorage.setItem(localStorageKey, JSON.stringify(currentResponse));
-        } catch (e) { console.error("Error saving to localStorage", e); }
-    }, [currentResponse, localStorageKey]);
+        if (config.savedResponses !== undefined) {
+            setCurrentResponse(config.savedResponses);
+        }
+    }, [config.savedResponses]);
 
     const handleSubmit = () => {
         onStepComplete(currentResponse);
-        // Opcional: localStorage.removeItem(localStorageKey);
     };
 
     return (
         <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full">
-            <h2 className="text-xl font-medium mb-3 text-neutral-700">{stepName || 'Pregunta'}</h2>
-            <p className="text-neutral-600 mb-4">{config.questionText}</p>
+            <h2 className="text-xl font-medium mb-1 text-neutral-800">{title}</h2>
+            {description && <p className="text-sm text-neutral-500 mb-3">{description}</p>}
+            <p className="text-neutral-600 mb-4">{questionText}</p>
             <textarea
-                className="border border-neutral-300 p-2 rounded-md w-full mb-4 h-32 resize-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                placeholder={config.placeholder}
+                className="border border-neutral-300 p-2 rounded-md w-full mb-4 h-32 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                placeholder={placeholder}
                 value={currentResponse}
                 onChange={(e) => setCurrentResponse(e.target.value)}
             />
@@ -309,23 +335,6 @@ const LongTextQuestion: React.FC<{
             >
                 Siguiente
             </button>
-            {/* DEBUG: Mostrar datos de localStorage */}
-            <details className="mt-2 text-xs w-full">
-                <summary className="cursor-pointer font-medium">localStorage Data ({localStorageKey})</summary>
-                <pre className="mt-1 bg-gray-100 p-2 rounded text-gray-700 overflow-auto text-xs">
-                    {JSON.stringify(
-                      (() => {
-                        try {
-                          const item = localStorage.getItem(localStorageKey);
-                          return item ? JSON.parse(item) : null;
-                        } catch (e) {
-                          return null;
-                        }
-                      })(), 
-                      null, 2
-                    )}
-                </pre>
-            </details>
         </div>
     );
 };
@@ -339,29 +348,27 @@ const SingleChoiceQuestion: React.FC<{
     onStepComplete: (answer: any) => void;
     isMock: boolean;
 }> = ({ config, stepId, stepName, stepType, onStepComplete, isMock }) => {
-    const localStorageKey = `form-${stepType}-${stepId || stepName?.replace(/\s+/g, '_') || 'defaultSingleChoice'}`;
-    const title = config.title || stepName || 'Selecciona una opción';
+    const title = config.title || stepName || 'Pregunta de opción única';
     const description = config.description;
     const questionText = config.questionText || (isMock ? 'Pregunta de prueba' : '');
-    const options = config.options || [];
+    const options = config.options || (isMock ? ['Opción 1', 'Opción 2', 'Opción 3'] : []);
     
-    const [selectedOption, setSelectedOption] = useState<string | undefined>(() => {
-        try {
-            const saved = localStorage.getItem(localStorageKey);
-            if (saved !== null && saved !== "undefined") return JSON.parse(saved);
-        } catch (e) { console.error("Error reading from localStorage", e); }
-        return config.savedResponses;
+    // Inicializar con respuestas guardadas o null
+    const [selectedOption, setSelectedOption] = useState<string | null>(() => {
+        return config.savedResponses || null;
     });
-
+    
+    // Si cambian las respuestas guardadas en config, actualizar el estado
     useEffect(() => {
-        try {
-            localStorage.setItem(localStorageKey, JSON.stringify(selectedOption));
-        } catch (e) { console.error("Error saving to localStorage", e); }
-    }, [selectedOption, localStorageKey]);
+        if (config.savedResponses !== undefined) {
+            setSelectedOption(config.savedResponses);
+        }
+    }, [config.savedResponses]);
 
     const handleSubmit = () => {
-        onStepComplete(selectedOption);
-        // Opcional: localStorage.removeItem(localStorageKey);
+        if (selectedOption) {
+            onStepComplete(selectedOption);
+        }
     };
 
     return (
@@ -369,45 +376,28 @@ const SingleChoiceQuestion: React.FC<{
             <h2 className="text-xl font-medium mb-1 text-neutral-800">{title}</h2>
             {description && <p className="text-sm text-neutral-500 mb-3">{description}</p>}
             <p className="text-neutral-600 mb-4">{questionText}</p>
-            <div className="space-y-3 mb-6">
+            <div className="flex flex-col gap-2 mb-4">
                 {options.map((option: string, index: number) => (
-                    <label key={index} className="flex items-center space-x-3 p-3 border border-neutral-200 rounded-md hover:bg-neutral-50 cursor-pointer">
-                        <input 
-                            type="radio" 
-                            name={`single-choice-${stepId}`} 
-                            value={option} 
-                            className="form-radio h-4 w-4 text-primary-600 border-neutral-300 focus:ring-primary-500" 
-                            checked={selectedOption === option}
-                            onChange={() => setSelectedOption(option)}
-                        />
-                        <span className="text-neutral-700">{option}</span>
-                    </label>
+                    <button
+                        key={index}
+                        onClick={() => setSelectedOption(option)}
+                        className={`p-3 border rounded-md text-left transition-colors ${
+                            selectedOption === option 
+                                ? 'bg-primary-100 border-primary-300 text-primary-700'
+                                : 'border-neutral-300 text-neutral-700 hover:bg-gray-50'
+                        }`}
+                    >
+                        {option}
+                    </button>
                 ))}
             </div>
             <button
                 onClick={handleSubmit}
                 disabled={!selectedOption}
-                className={`bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors ${!selectedOption ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors disabled:bg-neutral-300 disabled:cursor-not-allowed"
             >
                 Siguiente
             </button>
-            {/* DEBUG: Mostrar datos de localStorage */}
-            <details className="mt-2 text-xs w-full">
-                <summary className="cursor-pointer font-medium">localStorage Data ({localStorageKey})</summary>
-                <pre className="mt-1 bg-gray-100 p-2 rounded text-gray-700 overflow-auto text-xs">
-                    {JSON.stringify(
-                      (() => {
-                        try {
-                          const item = localStorage.getItem(localStorageKey);
-                          return item ? JSON.parse(item) : null;
-                        } catch (e) {
-                          return null;
-                        }
-                      })(), 
-                      null, 2
-                    )}
-                </pre>
-            </details>
         </div>
     );
 };
@@ -421,41 +411,37 @@ const MultipleChoiceQuestion: React.FC<{
     onStepComplete: (answer: any) => void;
     isMock: boolean;
 }> = ({ config, stepId, stepName, stepType, onStepComplete, isMock }) => {
-    const localStorageKey = `form-${stepType}-${stepId || stepName?.replace(/\s+/g, '_') || 'defaultMultipleChoice'}`;
-    const title = config.title || stepName || 'Selecciona una o más opciones';
+    const title = config.title || stepName || 'Pregunta de opciones múltiples';
     const description = config.description;
-    const questionText = config.questionText || (isMock ? 'Pregunta de prueba' : '');
-    const options = config.options || [];
+    const questionText = config.questionText || (isMock ? 'Selecciona todas las opciones que apliquen' : '');
+    const options = config.options || (isMock ? ['Opción 1', 'Opción 2', 'Opción 3', 'Opción 4'] : []);
+    const minSelections = config.minSelections || 0;
+    const maxSelections = config.maxSelections || options.length;
     
+    // Inicializar con respuestas guardadas o array vacío
     const [selectedOptions, setSelectedOptions] = useState<string[]>(() => {
-        try {
-            const saved = localStorage.getItem(localStorageKey);
-            if (saved !== null && saved !== "undefined") {
-                const parsed = JSON.parse(saved);
-                return Array.isArray(parsed) ? parsed : [];
-            }
-        } catch (e) { console.error("Error reading from localStorage", e); }
-        const initialSaved = config.savedResponses || [];
-        return Array.isArray(initialSaved) ? initialSaved : [];
+        return config.savedResponses || [];
     });
-
+    
+    // Si cambian las respuestas guardadas en config, actualizar el estado
     useEffect(() => {
-        try {
-            localStorage.setItem(localStorageKey, JSON.stringify(selectedOptions));
-        } catch (e) { console.error("Error saving to localStorage", e); }
-    }, [selectedOptions, localStorageKey]);
+        if (config.savedResponses !== undefined) {
+            setSelectedOptions(config.savedResponses);
+        }
+    }, [config.savedResponses]);
 
     const handleCheckboxChange = (option: string) => {
-        setSelectedOptions(prev => 
-            prev.includes(option)
-                ? prev.filter(item => item !== option)
-                : [...prev, option]
-        );
+        setSelectedOptions(prev => {
+            return prev.includes(option)
+                ? prev.filter(item => item !== option) // Quitar si ya está seleccionado
+                : (prev.length < maxSelections ? [...prev, option] : prev); // Añadir si no excede el máximo
+        });
     };
 
     const handleSubmit = () => {
-        onStepComplete(selectedOptions);
-        // Opcional: localStorage.removeItem(localStorageKey);
+        if (selectedOptions.length >= minSelections) {
+            onStepComplete(selectedOptions);
+        }
     };
 
     return (
@@ -463,45 +449,31 @@ const MultipleChoiceQuestion: React.FC<{
             <h2 className="text-xl font-medium mb-1 text-neutral-800">{title}</h2>
             {description && <p className="text-sm text-neutral-500 mb-3">{description}</p>}
             <p className="text-neutral-600 mb-4">{questionText}</p>
-            <div className="space-y-3 mb-6">
+            <div className="flex flex-col gap-2 mb-4">
                 {options.map((option: string, index: number) => (
-                    <label key={index} className="flex items-center space-x-3 p-3 border border-neutral-200 rounded-md hover:bg-neutral-50 cursor-pointer">
-                        <input 
-                            type="checkbox" 
-                            name={`multiple-choice-${stepId}-${index}`} 
-                            value={option} 
-                            className="form-checkbox h-4 w-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500" 
+                    <label key={index} className="flex items-center gap-2 p-3 border rounded-md cursor-pointer hover:bg-gray-50">
+                        <input
+                            type="checkbox"
                             checked={selectedOptions.includes(option)}
                             onChange={() => handleCheckboxChange(option)}
+                            className="h-5 w-5 text-primary-600 focus:ring-primary-500"
                         />
                         <span className="text-neutral-700">{option}</span>
                     </label>
                 ))}
             </div>
+            <div className="text-sm text-neutral-500 mb-4">
+                {minSelections > 0 && `Selecciona al menos ${minSelections} opciones. `}
+                {maxSelections < options.length && `Puedes seleccionar hasta ${maxSelections} opciones. `}
+                Seleccionadas: {selectedOptions.length}
+            </div>
             <button
                 onClick={handleSubmit}
-                disabled={selectedOptions.length === 0}
-                className={`bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors ${selectedOptions.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={selectedOptions.length < minSelections}
+                className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors disabled:bg-neutral-300 disabled:cursor-not-allowed"
             >
                 Siguiente
             </button>
-            {/* DEBUG: Mostrar datos de localStorage */}
-            <details className="mt-2 text-xs w-full">
-                <summary className="cursor-pointer font-medium">localStorage Data ({localStorageKey})</summary>
-                <pre className="mt-1 bg-gray-100 p-2 rounded text-gray-700 overflow-auto text-xs">
-                    {JSON.stringify(
-                      (() => {
-                        try {
-                          const item = localStorage.getItem(localStorageKey);
-                          return item ? JSON.parse(item) : null;
-                        } catch (e) {
-                          return null;
-                        }
-                      })(), 
-                      null, 2
-                    )}
-                </pre>
-            </details>
         </div>
     );
 };
@@ -515,83 +487,71 @@ const LinearScaleQuestion: React.FC<{
     onStepComplete: (answer: any) => void;
     isMock: boolean;
 }> = ({ config, stepName, stepId, stepType, onStepComplete, isMock }) => {
-    const localStorageKey = `form-${stepType}-${stepId || stepName?.replace(/\s+/g, '_') || 'defaultLinearScale'}`;
-    const title = config.title || stepName || 'Valora en la escala';
+    const title = config.title || stepName || 'Pregunta de escala';
     const description = config.description;
-    const questionText = config.questionText || (isMock ? 'Pregunta de prueba' : '');
+    const questionText = config.questionText || (isMock ? 'Valora en una escala del 1 al 5' : '');
+    const minValue = config.minValue || 1;
+    const maxValue = config.maxValue || 5;
+    const minLabel = config.minLabel || 'Mínimo';
+    const maxLabel = config.maxLabel || 'Máximo';
     
+    // Inicializar con respuestas guardadas o null
     const [selectedValue, setSelectedValue] = useState<number | null>(() => {
-        try {
-            const saved = localStorage.getItem(localStorageKey);
-            if (saved !== null && saved !== "undefined") {
-                 const parsed = JSON.parse(saved);
-                 return typeof parsed === 'number' ? parsed : null;
-            }
-        } catch (e) { console.error("Error reading from localStorage", e); }
-        const initialSaved = config.savedResponses;
-        return initialSaved !== undefined && typeof initialSaved === 'number' ? Number(initialSaved) : null;
+        return config.savedResponses || null;
     });
-
+    
+    // Si cambian las respuestas guardadas en config, actualizar el estado
     useEffect(() => {
-        try {
-            localStorage.setItem(localStorageKey, JSON.stringify(selectedValue));
-        } catch (e) { console.error("Error saving to localStorage", e); }
-    }, [selectedValue, localStorageKey]);
+        if (config.savedResponses !== undefined) {
+            setSelectedValue(config.savedResponses);
+        }
+    }, [config.savedResponses]);
 
     const handleSubmit = () => {
-        onStepComplete(selectedValue);
-        // Opcional: localStorage.removeItem(localStorageKey);
+        if (selectedValue !== null) {
+            onStepComplete(selectedValue);
+        }
     };
+
+    // Crear array de los valores para la escala
+    const scaleValues = Array.from(
+        { length: maxValue - minValue + 1 }, 
+        (_, i) => minValue + i
+    );
 
     return (
         <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full">
             <h2 className="text-xl font-medium mb-1 text-neutral-800">{title}</h2>
             {description && <p className="text-sm text-neutral-500 mb-3">{description}</p>}
             <p className="text-neutral-600 mb-4">{questionText}</p>
-            <div className="flex justify-between text-xs text-neutral-500 mb-1">
-                <span>{config.leftLabel}</span>
-                <span>{config.rightLabel}</span>
-            </div>
-            <div className="flex justify-between space-x-2 mb-4">
-                {[...Array(config.scaleSize)].map((_, i) => {
-                    const value = i + 1;
-                    return (
-                        <button 
-                            key={i} 
-                            className={`w-8 h-8 border border-neutral-300 rounded-full hover:bg-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                                selectedValue === value ? 'bg-primary-600 text-white' : ''
-                            }`}
+            <div className="mb-8">
+                <div className="flex justify-between mb-2">
+                    <span className="text-sm text-neutral-500">{minLabel}</span>
+                    <span className="text-sm text-neutral-500">{maxLabel}</span>
+                </div>
+                <div className="flex justify-between">
+                    {scaleValues.map(value => (
+                        <button
+                            key={value}
                             onClick={() => setSelectedValue(value)}
+                            className={`w-10 h-10 rounded-full border flex items-center justify-center ${
+                                selectedValue === value
+                                    ? 'bg-primary-600 text-white border-primary-600'
+                                    : 'bg-white text-neutral-700 border-neutral-300 hover:bg-gray-50'
+                            }`}
                         >
                             {value}
                         </button>
-                    );
-                })}
+                    ))}
+                </div>
             </div>
-            <button 
+            <button
                 onClick={handleSubmit}
                 disabled={selectedValue === null}
-                className={`bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors ${selectedValue === null ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors disabled:bg-neutral-300 disabled:cursor-not-allowed"
             >
                 Siguiente
             </button>
-            {/* DEBUG: Mostrar datos de localStorage */}
-            <details className="mt-2 text-xs w-full">
-                <summary className="cursor-pointer font-medium">localStorage Data ({localStorageKey})</summary>
-                <pre className="mt-1 bg-gray-100 p-2 rounded text-gray-700 overflow-auto text-xs">
-                    {JSON.stringify(
-                      (() => {
-                        try {
-                          const item = localStorage.getItem(localStorageKey);
-                          return item ? JSON.parse(item) : null;
-                        } catch (e) {
-                          return null;
-                        }
-                      })(), 
-                      null, 2
-                    )}
-                </pre>
-            </details>
         </div>
     );
 };
@@ -603,35 +563,134 @@ const SmartVocFeedbackQuestion: React.FC<{
     stepType: string;
     onStepComplete: (answer: any) => void;
 }> = ({ config, stepId, stepType, onStepComplete }) => {
-    const localStorageKey = `form-${stepType}-${stepId || 'defaultFeedback'}`;
+    const title = config.title || 'Cuéntanos más';
+    const questionText = config.questionText || '¿Hay algo más que quieras contarnos?';
+    const placeholder = config.placeholder || 'Escribe tu respuesta aquí...';
     
+    // Inicializar con respuestas guardadas o string vacío
     const [currentResponse, setCurrentResponse] = useState(() => {
-        try {
-            const saved = localStorage.getItem(localStorageKey);
-            if (saved !== null && saved !== "undefined") return JSON.parse(saved);
-        } catch (e) { console.error("Error reading from localStorage", e); }
         return config.savedResponses || '';
     });
-
-    useEffect(() => {
-        try {
-            localStorage.setItem(localStorageKey, JSON.stringify(currentResponse));
-        } catch (e) { console.error("Error saving to localStorage", e); }
-    }, [currentResponse, localStorageKey]);
     
+    // Si cambian las respuestas guardadas en config, actualizar el estado
+    useEffect(() => {
+        if (config.savedResponses !== undefined) {
+            setCurrentResponse(config.savedResponses);
+        }
+    }, [config.savedResponses]);
+
     const handleNext = () => {
         onStepComplete(currentResponse);
-        // Opcional: localStorage.removeItem(localStorageKey);
     };
 
     return (
-        <FeedbackView
-            questionText={config.questionText}
-            placeholder={config.placeholder} 
-            initialValue={currentResponse}
-            onChange={(value) => setCurrentResponse(value)}
-            onNext={handleNext}
-        />
+        <div className="w-full">
+            <h2 className="text-xl font-medium text-center mb-4">{title}</h2>
+            <p className="text-center mb-6">{questionText}</p>
+            <textarea
+                className="w-full h-32 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-400 focus:border-primary-400 mb-6"
+                placeholder={placeholder}
+                value={currentResponse}
+                onChange={(e) => setCurrentResponse(e.target.value)}
+            />
+            <div className="flex justify-center">
+                <button
+                    onClick={handleNext}
+                    className="px-8 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600"
+                >
+                    Siguiente
+                </button>
+            </div>
+        </div>
+    );
+};
+
+// Componente para Ranking
+const RankingQuestion: React.FC<{
+    config: any; 
+    stepId?: string;
+    stepName?: string;
+    stepType: string;
+    onStepComplete: (answer: any) => void;
+    isMock: boolean;
+}> = ({ config, stepId, stepName, stepType, onStepComplete, isMock }) => {
+    const title = config.title || stepName || 'Pregunta de ranking';
+    const description = config.description;
+    const questionText = config.questionText || (isMock ? 'Ordena las siguientes opciones por preferencia' : '');
+    const itemsToRank = config.items || (isMock ? ['Elemento 1', 'Elemento 2', 'Elemento 3', 'Elemento 4'] : []);
+    
+    // Inicializar con respuestas guardadas o el array original de items
+    const [rankedItems, setRankedItems] = useState<string[]>(() => {
+        return config.savedResponses || [...itemsToRank];
+    });
+    
+    // Si cambian las respuestas guardadas en config, actualizar el estado
+    useEffect(() => {
+        if (config.savedResponses !== undefined) {
+            setRankedItems(config.savedResponses);
+        } else if (config.items) {
+            setRankedItems([...config.items]);
+        }
+    }, [config.savedResponses, config.items]);
+
+    const handleSubmit = () => {
+        onStepComplete(rankedItems);
+    };
+
+    const moveItemUp = (index: number) => {
+        if (index > 0) {
+            const newRankedItems = [...rankedItems];
+            [newRankedItems[index - 1], newRankedItems[index]] = [newRankedItems[index], newRankedItems[index - 1]];
+            setRankedItems(newRankedItems);
+        }
+    };
+
+    const moveItemDown = (index: number) => {
+        if (index < rankedItems.length - 1) {
+            const newRankedItems = [...rankedItems];
+            [newRankedItems[index], newRankedItems[index + 1]] = [newRankedItems[index + 1], newRankedItems[index]];
+            setRankedItems(newRankedItems);
+        }
+    };
+
+    return (
+        <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full">
+            <h2 className="text-xl font-medium mb-1 text-neutral-800">{title}</h2>
+            {description && <p className="text-sm text-neutral-500 mb-3">{description}</p>}
+            <p className="text-neutral-600 mb-4">{questionText}</p>
+            <div className="mb-4">
+                {rankedItems.map((item, index) => (
+                    <div key={index} className="flex items-center border rounded-md p-3 mb-2">
+                        <span className="w-8 h-8 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-medium mr-3">
+                            {index + 1}
+                        </span>
+                        <span className="flex-grow">{item}</span>
+                        <div className="flex space-x-1">
+                            <button 
+                                onClick={() => moveItemUp(index)}
+                                disabled={index === 0}
+                                className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent"
+                            >
+                                ▲
+                            </button>
+                            <button 
+                                onClick={() => moveItemDown(index)}
+                                disabled={index === rankedItems.length - 1}
+                                className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent"
+                            >
+                                ▼
+                            </button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+            <button
+                onClick={handleSubmit}
+                className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
+            >
+                Siguiente
+            </button>
+        </div>
     );
 };
 
@@ -645,7 +704,7 @@ const CognitivePreferenceTestQuestion: React.FC<{
     onStepComplete: (answer: any) => void;
     isMock: boolean;
 }> = ({ config, stepName, stepId, stepType, token, onStepComplete, isMock }) => {
-    const [_presignedUrl, setPresignedUrl] = useState<string | null>(null);
+    const [presignedUrl, setPresignedUrl] = useState<string | null>(null);
     const [isUrlLoading, setIsUrlLoading] = useState<boolean>(false);
     const [urlError, setUrlError] = useState<string | null>(null);
     
@@ -736,10 +795,10 @@ const CognitivePreferenceTestQuestion: React.FC<{
                         <span className="font-medium">Error al cargar imagen</span>
                         <span className="text-sm">{urlError}</span> 
                     </div>
-                ) : _presignedUrl ? (
+                ) : presignedUrl ? (
                     <div className={`p-2 ${useDeviceFrame ? 'border-4 border-neutral-700 rounded-lg shadow-lg' : ''}`}> 
                        <img 
-                           src={_presignedUrl} 
+                           src={presignedUrl} 
                            alt={`Opción preferencia ${config.files[0]?.name || 1}`}
                            className="max-w-sm md:max-w-md max-h-[400px] object-contain rounded"
                        />
@@ -750,85 +809,13 @@ const CognitivePreferenceTestQuestion: React.FC<{
             </div>
             
             <div className="flex justify-center">
-               <button 
+                <button
                     onClick={() => onStepComplete(fileId || (isMock ? config.options[0] : 'selected_image_no_id'))} 
-                    disabled={isUrlLoading || !!urlError || !_presignedUrl} 
-                    className={`bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors ${isUrlLoading || urlError || !_presignedUrl ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                    disabled={isUrlLoading || !!urlError || !presignedUrl} 
+                    className={`bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors ${isUrlLoading || urlError || !presignedUrl ? 'opacity-50 cursor-not-allowed' : ''}`}>
                     Siguiente
-               </button>
+                </button>
             </div>
-        </div>
-    );
-};
-
-// Componente para Ranking
-const RankingQuestion: React.FC<{
-    config: any; 
-    stepId?: string;
-    stepName?: string;
-    stepType: string;
-    onStepComplete: (answer: any) => void;
-    isMock: boolean;
-}> = ({ config, stepId, stepName, stepType, onStepComplete, isMock }) => {
-    const localStorageKey = `form-${stepType}-${stepId || stepName?.replace(/\s+/g, '_') || 'defaultRanking'}`;
-    
-    const title = config.title || stepName || 'Ordena los elementos';
-    const description = config.description;
-    const questionText = config.questionText || (isMock ? 'Pregunta de prueba' : '');
-    
-    const [rankedItems, setRankedItems] = useState<string[]>(() => {
-        try {
-            const saved = localStorage.getItem(localStorageKey);
-            if (saved !== null && saved !== "undefined") {
-                const parsed = JSON.parse(saved);
-                return Array.isArray(parsed) ? parsed : (config.items || []);
-            }
-        } catch (e) { console.error("Error reading from localStorage for ranking", e); }
-        return config.items || [];
-    });
-
-    useEffect(() => {
-        // Aquí iría la lógica para actualizar `rankedItems` si se implementa drag and drop.
-        // Por ahora, guardamos el estado inicial o cargado.
-        try {
-            localStorage.setItem(localStorageKey, JSON.stringify(rankedItems));
-        } catch (e) { console.error("Error saving to localStorage for ranking", e); }
-    }, [rankedItems, localStorageKey]);
-    
-    const handleSubmit = () => {
-        onStepComplete(rankedItems); // En una implementación real, `rankedItems` se actualizaría con el orden del usuario.
-        // Opcional: localStorage.removeItem(localStorageKey);
-    };
-
-    return (
-        <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full">
-            <h2 className="text-xl font-medium mb-1 text-neutral-800">{title}</h2>
-            {description && <p className="text-sm text-neutral-500 mb-3">{description}</p>}
-            <p className="text-neutral-600 mb-4">{questionText}</p>
-            <p className="text-sm text-neutral-500 mb-4">(Placeholder: Arrastra y suelta para ordenar)</p>
-            <div className="space-y-2 border border-dashed border-neutral-300 p-4 rounded-md mb-6 min-h-[100px]">
-                {rankedItems.map((item: string, index: number) => (
-                    <div key={index} className="bg-neutral-100 p-2 rounded border border-neutral-200 cursor-grab">{item}</div>
-                ))}
-            </div>
-            <button onClick={handleSubmit} className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors">Siguiente</button>
-            {/* DEBUG: Mostrar datos de localStorage */}
-            <details className="mt-2 text-xs w-full">
-                <summary className="cursor-pointer font-medium">localStorage Data ({localStorageKey})</summary>
-                <pre className="mt-1 bg-gray-100 p-2 rounded text-gray-700 overflow-auto text-xs">
-                    {JSON.stringify(
-                      (() => {
-                        try {
-                          const item = localStorage.getItem(localStorageKey);
-                          return item ? JSON.parse(item) : null;
-                        } catch (e) {
-                          return null;
-                        }
-                      })(), 
-                      null, 2
-                    )}
-                </pre>
-            </details>
         </div>
     );
 };
@@ -1093,18 +1080,28 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
 
             case 'smartvoc_csat': { 
                  if (!onStepComplete) return null;
-                 const isCsatMock = !stepConfig || !stepConfig.questionText || !stepConfig.scaleSize;
+                 const isCsatMock = !stepConfig || !stepConfig.questionText;
                  const csatConfig = isCsatMock
-                    ? { questionText: 'Pregunta CSAT (Prueba)?', scaleSize: 5 }
-                    : stepConfig;
+                    ? { 
+                        questionText: 'Pregunta CSAT (Prueba)?', 
+                        instructions: 'Por favor, califique su nivel de satisfacción.',
+                        initialValue: null
+                     }
+                    : {
+                        ...stepConfig,
+                        initialValue: stepConfig.savedResponses
+                     };
 
                  return renderStepWithWarning(
                      <CSATView
                         questionText={csatConfig.questionText}
-                        scaleSize={csatConfig.scaleSize}
+                        instructions={csatConfig.instructions}
+                        companyName={csatConfig.companyName}
+                        initialValue={csatConfig.initialValue}
                         onNext={onStepComplete}
                         stepId={stepId}
                         stepType={stepType}
+                        config={csatConfig}
                     />,
                      isCsatMock
                  );
@@ -1172,11 +1169,11 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
                  const isFeedbackMock = !stepConfig || !stepConfig.questionText;
                  const feedbackConfig = isFeedbackMock
                     ? { questionText: 'Pregunta Feedback (Prueba)?', placeholder: 'Escribe aquí...' }
-                    : stepConfig;
+                    : {
+                        ...stepConfig,
+                        savedResponses: stepConfig.savedResponses
+                     };
                  
-                 // Clave para debug, debe coincidir con la usada en SmartVocFeedbackQuestion
-                 const debugLocalStorageKey = `form-${stepType}-${stepId || 'defaultFeedback'}`;
-
                  return renderStepWithWarning(
                     <div className="w-full max-w-xl"> {/* Wrapper div */}
                         <SmartVocFeedbackQuestion
@@ -1185,23 +1182,6 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
                             stepType={stepType}
                             onStepComplete={onStepComplete}
                         />
-                        {/* DEBUG: Mostrar datos de localStorage */}
-                        <details className="mt-2 text-xs w-full">
-                            <summary className="cursor-pointer font-medium">localStorage Data ({debugLocalStorageKey})</summary>
-                            <pre className="mt-1 bg-gray-100 p-2 rounded text-gray-700 overflow-auto text-xs">
-                                {JSON.stringify(
-                                  (() => {
-                                    try {
-                                      const item = localStorage.getItem(debugLocalStorageKey);
-                                      return item ? JSON.parse(item) : null;
-                                    } catch (e) {
-                                      return null;
-                                    }
-                                  })(), 
-                                  null, 2
-                                )}
-                            </pre>
-                        </details>
                     </div>,
                     isFeedbackMock
                  );
@@ -1209,26 +1189,31 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
 
             case 'smartvoc_ces': { 
                  if (!onStepComplete) return null;
-                 const isCesMock = !stepConfig || !stepConfig.questionText || !stepConfig.scaleSize;
+                 const isCesMock = !stepConfig || !stepConfig.questionText;
                  const cesConfig = isCesMock
                     ? { 
                         questionText: 'Pregunta CES (Prueba)?', 
-                        scaleSize: 7, 
                         leftLabel: 'Muy Difícil', 
-                        rightLabel: 'Muy Fácil' 
+                        rightLabel: 'Muy Fácil',
+                        initialValue: null
                       } 
-                    : stepConfig;
+                    : {
+                        ...stepConfig,
+                        initialValue: stepConfig.savedResponses
+                     };
 
                  return renderStepWithWarning(
                      <DifficultyScaleView
                         questionText={cesConfig.questionText}
                         instructions={cesConfig.instructions}
-                        scaleSize={cesConfig.scaleSize}
                         leftLabel={cesConfig.leftLabel}
                         rightLabel={cesConfig.rightLabel}
+                        companyName={cesConfig.companyName}
+                        initialValue={cesConfig.initialValue}
                         onNext={onStepComplete}
                         stepId={stepId}
                         stepType={stepType}
+                        config={cesConfig}
                     />,
                      isCesMock
                  );

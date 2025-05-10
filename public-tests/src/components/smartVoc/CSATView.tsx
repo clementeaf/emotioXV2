@@ -5,43 +5,41 @@ interface CSATViewProps {
   questionText: string;
   instructions?: string;
   companyName?: string; // Para posible inserción en el texto
-  scaleSize?: number; // Cuántos números mostrar (e.g., 5, 7, 10)
-  onNext: (selectedValue: number) => void; // Callback con el valor seleccionado
-  // Props para localStorage
+  onNext: (selectedValue: number) => void; // Callback con el valor 1-5
   stepId?: string;
   stepType?: string; // Generalmente será 'smartvoc_csat'
+  initialValue?: number | null; // Valor inicial que viene de props (en lugar de localStorage)
+  config?: any; // Configuración adicional si necesaria
 }
 
 const CSATView: React.FC<CSATViewProps> = ({
   questionText,
   instructions,
   companyName,
-  scaleSize = 5, // Valor por defecto 5 si no se provee
   onNext,
   stepId,
-  stepType
+  stepType,
+  initialValue = null,
+  config
 }) => {
-  const localStorageKey = `form-${stepType || 'csat'}-${stepId || 'default'}`;
-
-  const [selectedValue, setSelectedValue] = useState<number | null>(() => {
-    try {
-      const saved = localStorage.getItem(localStorageKey);
-      if (saved !== null) {
-        const parsed = JSON.parse(saved);
-        return typeof parsed === 'number' ? parsed : null;
-      }
-    } catch (e) { console.error("Error reading CSAT from localStorage", e); }
-    return null; // No hay valor inicial por defecto si no está en localStorage
-  });
-
+  // Usar el valor inicial proporcionado por el padre
+  const [selectedValue, setSelectedValue] = useState<number | null>(initialValue);
+  
+  // Efecto para actualizar el valor seleccionado si cambia initialValue
   useEffect(() => {
-    try {
-      localStorage.setItem(localStorageKey, JSON.stringify(selectedValue));
-    } catch (e) { console.error("Error saving CSAT to localStorage", e); }
-  }, [selectedValue, localStorageKey]);
+    if (initialValue !== null) {
+      setSelectedValue(initialValue);
+    }
+  }, [initialValue]);
 
-  // Generar los botones numéricos
-  const scaleButtons = Array.from({ length: scaleSize }, (_, i) => i + 1); // Crea [1, 2, 3, 4, 5]
+  // Generar los botones de satisfacción 1-5
+  const satisfactionLevels = [
+    { value: 1, label: 'Muy insatisfecho' },
+    { value: 2, label: 'Insatisfecho' },
+    { value: 3, label: 'Neutral' },
+    { value: 4, label: 'Satisfecho' },
+    { value: 5, label: 'Muy satisfecho' }
+  ];
 
   const handleSelect = (value: number) => {
     setSelectedValue(value);
@@ -50,7 +48,6 @@ const CSATView: React.FC<CSATViewProps> = ({
   const handleNextClick = () => {
     if (selectedValue !== null) {
       onNext(selectedValue);
-      // Opcional: localStorage.removeItem(localStorageKey);
     }
   };
 
@@ -61,7 +58,7 @@ const CSATView: React.FC<CSATViewProps> = ({
 
   return (
     <div className="flex flex-col items-center justify-center w-full h-full bg-white p-8">
-      <div className="max-w-md w-full flex flex-col items-center">
+      <div className="max-w-2xl w-full flex flex-col items-center">
         <h2 className="text-xl font-medium text-center text-neutral-800 mb-4">
           {formattedQuestionText}
         </h2>
@@ -72,36 +69,31 @@ const CSATView: React.FC<CSATViewProps> = ({
           </p>
         )}
 
-        {/* Contenedor para los botones numéricos */}
-        <div className="flex space-x-2 mb-8">
-          {scaleButtons.map((value) => (
+        {/* Contenedor para los botones de satisfacción */}
+        <div className="flex flex-col sm:flex-row justify-center gap-2 mb-8 w-full">
+          {satisfactionLevels.map((level) => (
             <button
-              key={value}
-              onClick={() => handleSelect(value)}
-              className={`w-10 h-10 rounded-full border flex items-center justify-center font-medium transition-colors ${selectedValue === value
-                ? 'bg-indigo-600 text-white border-indigo-600'
-                : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-100'
+              key={level.value}
+              onClick={() => handleSelect(level.value)}
+              className={`px-4 py-3 rounded-md border flex flex-col items-center justify-center transition-colors ${
+                selectedValue === level.value
+                  ? 'bg-indigo-600 text-white border-indigo-600'
+                  : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-100'
               }`}
             >
-              {value}
+              <span className="font-medium">{level.value}</span>
+              <span className="text-xs mt-1">{level.label}</span>
             </button>
           ))}
         </div>
 
         <button
-          className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-10 rounded-md w-fit transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-10 rounded-md w-fit transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={handleNextClick}
           disabled={selectedValue === null}
         >
           Siguiente
         </button>
-        {/* DEBUG: Mostrar datos de localStorage */}
-        <details className="mt-4 text-xs">
-            <summary className="cursor-pointer font-medium">localStorage Data ({localStorageKey})</summary>
-            <pre className="mt-1 bg-gray-100 p-2 rounded text-gray-700 overflow-auto text-xs">
-                {JSON.stringify(JSON.parse(localStorage.getItem(localStorageKey) || 'null'), null, 2)}
-            </pre>
-        </details>
       </div>
     </div>
   );

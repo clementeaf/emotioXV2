@@ -17,29 +17,25 @@ export const ShortTextQuestion: React.FC<ShortTextQuestionProps> = ({
     onStepComplete, 
     isMock 
 }) => {
-    const localStorageKey = `form-${stepType}-${stepId || stepName?.replace(/\s+/g, '_') || 'defaultShortText'}`;
     const title = config.title || stepName || 'Pregunta';
     const description = config.description;
     const questionText = config.questionText || (isMock ? 'Pregunta de prueba' : '');
     const placeholder = config.answerPlaceholder || 'Escribe tu respuesta...';
     
+    // Inicializar con respuestas guardadas o string vacío
     const [currentResponse, setCurrentResponse] = useState(() => {
-        try {
-            const saved = localStorage.getItem(localStorageKey);
-            if (saved !== null) return JSON.parse(saved);
-        } catch (e) { console.error("Error reading from localStorage in ShortTextQuestion", e); }
         return config.savedResponses || '';
     });
 
+    // Si cambian las respuestas guardadas en config, actualizar el estado
     useEffect(() => {
-        try {
-            localStorage.setItem(localStorageKey, JSON.stringify(currentResponse));
-        } catch (e) { console.error("Error saving to localStorage in ShortTextQuestion", e); }
-    }, [currentResponse, localStorageKey]);
+        if (config.savedResponses !== undefined) {
+            setCurrentResponse(config.savedResponses);
+        }
+    }, [config.savedResponses]);
 
     const handleSubmit = () => {
         onStepComplete(currentResponse);
-        // Opcional: localStorage.removeItem(localStorageKey);
     };
 
     return (
@@ -60,13 +56,6 @@ export const ShortTextQuestion: React.FC<ShortTextQuestionProps> = ({
             >
                 Siguiente
             </button>
-            {/* DEBUG: Mostrar datos de localStorage */}
-            <details className="mt-4 text-xs">
-                <summary className="cursor-pointer font-medium">localStorage Data ({localStorageKey})</summary>
-                <pre className="mt-1 bg-gray-100 p-2 rounded text-gray-700 overflow-auto text-xs">
-                    {JSON.stringify(JSON.parse(localStorage.getItem(localStorageKey) || 'null'), null, 2)}
-                </pre>
-            </details>
         </div>
     );
 }; 

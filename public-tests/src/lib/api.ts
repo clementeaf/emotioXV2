@@ -249,40 +249,109 @@ export class ApiClient {
     
     // Usar el endpoint para obtener configuración de Eye Tracking
     const response = await this.request<{ data: EyeTrackingFormData }>(`/research/${researchId}/eye-tracking`);
-    
-    console.log(`[ApiClient] Respuesta de getEyeTracking para ${researchId}:`, response);
-    
-    return { 
-      ...response, 
-      data: response.data?.data || null 
-    };
+    return { ...response, data: response.data?.data || null };
   }
-
-  /**
-   * Obtiene la configuración de reclutamiento de Eye Tracking para una investigación
-   * @param researchId ID de la investigación
-   * @returns Configuración de reclutamiento
-   */
+  
   async getEyeTrackingRecruit(researchId: string): Promise<APIResponse<any>> {
     this.validateResearchId(researchId);
     
-    // Endpoint específico para la configuración de reclutamiento
-    const response = await this.request<{ data: any }>(`/research/${researchId}/eye-tracking/recruit`);
-    
-    console.log(`[ApiClient] Respuesta de getEyeTrackingRecruit para ${researchId}:`, response);
-    
-    return { 
-      ...response, 
-      data: response.data?.data || null 
-    };
+    // Usar el endpoint para obtener configuración de Eye Tracking Recruit
+    const response = await this.request<any>(`/eye-tracking-recruit/research/${researchId}`);
+    return response;
   }
-
+  
   async getResearchFlow(researchId: string): Promise<APIResponse<Step[]>> {
     this.validateResearchId(researchId);
-    const response = await this.request<{ data: Step[] }>(`/research/${researchId}/flow`);
+    
+    // Obtener el flujo de la investigación (pasos)
+    const response = await this.request<{ data: Step[] }>(`/research/${researchId}/forms`);
     return { ...response, data: response.data?.data || null };
+  }
+
+  /**
+   * Obtiene las respuestas de un participante para una investigación
+   * @param researchId ID de la investigación
+   * @param participantId ID del participante
+   * @returns Respuestas del participante
+   */
+  async getModuleResponses(researchId: string, participantId: string): Promise<APIResponse<any>> {
+    this.validateResearchId(researchId);
+    if (!participantId) throw new Error('ID de participante inválido');
+    
+    // Obtener las respuestas del participante
+    const response = await this.request<any>(
+      `/module-responses?researchId=${researchId}&participantId=${participantId}`
+    );
+    return response;
+  }
+
+  /**
+   * Guarda una nueva respuesta de módulo
+   * @param moduleResponse Datos de la respuesta
+   * @returns Respuesta guardada
+   */
+  async saveModuleResponse(moduleResponse: any): Promise<APIResponse<any>> {
+    if (!moduleResponse || !moduleResponse.researchId || !moduleResponse.participantId) {
+      throw new Error('Datos de respuesta inválidos');
+    }
+    
+    // Guardar la respuesta del módulo
+    const response = await this.request<any>('/module-responses', {
+      method: 'POST',
+      body: JSON.stringify(moduleResponse)
+    });
+    return response;
+  }
+
+  /**
+   * Actualiza una respuesta de módulo existente
+   * @param responseId ID de la respuesta a actualizar
+   * @param researchId ID de la investigación
+   * @param participantId ID del participante
+   * @param moduleResponse Datos actualizados de la respuesta
+   * @returns Respuesta actualizada
+   */
+  async updateModuleResponse(
+    responseId: string,
+    researchId: string,
+    participantId: string,
+    moduleResponse: any
+  ): Promise<APIResponse<any>> {
+    this.validateResearchId(researchId);
+    if (!responseId || !participantId) {
+      throw new Error('IDs inválidos para actualizar respuesta');
+    }
+    
+    // Actualizar la respuesta del módulo
+    const response = await this.request<any>(
+      `/module-responses/${responseId}?researchId=${researchId}&participantId=${participantId}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(moduleResponse)
+      }
+    );
+    return response;
+  }
+
+  /**
+   * Marca las respuestas como completadas
+   * @param researchId ID de la investigación
+   * @param participantId ID del participante
+   * @returns Confirmación de completado
+   */
+  async markResponsesAsCompleted(researchId: string, participantId: string): Promise<APIResponse<any>> {
+    this.validateResearchId(researchId);
+    if (!participantId) throw new Error('ID de participante inválido');
+    
+    // Marcar las respuestas como completadas
+    const response = await this.request<any>(
+      `/module-responses/complete?researchId=${researchId}&participantId=${participantId}`,
+      {
+        method: 'POST'
+      }
+    );
+    return response;
   }
 }
 
-// Exportar una instancia por defecto
-export const api = new ApiClient(); 
+export const apiClient = new ApiClient(); 

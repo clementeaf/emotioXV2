@@ -7,9 +7,10 @@ interface NPSViewProps {
   leftLabel?: string; // Etiqueta izquierda (NPS)
   rightLabel?: string; // Etiqueta derecha (NPS)
   onNext: (selectedValue: number) => void; // Callback con el valor 0-10
-  // Props para localStorage
   stepId?: string;
-  stepType?: string; // Generalmente será 'smartvoc_nps'
+  stepType?: string; 
+  initialValue?: number | null; // Valor inicial que viene de props (en lugar de localStorage)
+  config?: any; // Configuración adicional si necesaria
 }
 
 const NPSView: React.FC<NPSViewProps> = ({
@@ -20,26 +21,19 @@ const NPSView: React.FC<NPSViewProps> = ({
   rightLabel = "Extremely likely", // Valor por defecto NPS
   onNext,
   stepId,
-  stepType
+  stepType,
+  initialValue = null,
+  config
 }) => {
-  const localStorageKey = `form-${stepType || 'nps'}-${stepId || 'default'}`;
-
-  const [selectedValue, setSelectedValue] = useState<number | null>(() => {
-    try {
-      const saved = localStorage.getItem(localStorageKey);
-      if (saved !== null) {
-        const parsed = JSON.parse(saved);
-        return typeof parsed === 'number' ? parsed : null;
-      }
-    } catch (e) { console.error("Error reading NPS from localStorage", e); }
-    return null; 
-  });
-
+  // Usar el valor inicial proporcionado por el padre
+  const [selectedValue, setSelectedValue] = useState<number | null>(initialValue);
+  
+  // Efecto para actualizar el valor seleccionado si cambia initialValue
   useEffect(() => {
-    try {
-      localStorage.setItem(localStorageKey, JSON.stringify(selectedValue));
-    } catch (e) { console.error("Error saving NPS to localStorage", e); }
-  }, [selectedValue, localStorageKey]);
+    if (initialValue !== null) {
+      setSelectedValue(initialValue);
+    }
+  }, [initialValue]);
 
   // Generar los botones numéricos 0-10
   const scaleButtons = Array.from({ length: 11 }, (_, i) => i); // Crea [0, 1, ..., 10]
@@ -51,7 +45,6 @@ const NPSView: React.FC<NPSViewProps> = ({
   const handleNextClick = () => {
     if (selectedValue !== null) {
       onNext(selectedValue);
-      // Opcional: localStorage.removeItem(localStorageKey);
     }
   };
 
@@ -104,13 +97,6 @@ const NPSView: React.FC<NPSViewProps> = ({
         >
           Siguiente
         </button>
-        {/* DEBUG: Mostrar datos de localStorage */}
-        <details className="mt-4 text-xs">
-            <summary className="cursor-pointer font-medium">localStorage Data ({localStorageKey})</summary>
-            <pre className="mt-1 bg-gray-100 p-2 rounded text-gray-700 overflow-auto text-xs">
-                {JSON.stringify(JSON.parse(localStorage.getItem(localStorageKey) || 'null'), null, 2)}
-            </pre>
-        </details>
       </div>
     </div>
   );
