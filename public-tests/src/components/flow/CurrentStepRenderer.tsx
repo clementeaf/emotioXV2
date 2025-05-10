@@ -277,7 +277,7 @@ const LongTextQuestion: React.FC<{
     const [currentResponse, setCurrentResponse] = useState(() => {
         try {
             const saved = localStorage.getItem(localStorageKey);
-            if (saved !== null) return JSON.parse(saved);
+            if (saved !== null && saved !== "undefined") return JSON.parse(saved);
         } catch (e) { console.error("Error reading from localStorage", e); }
         return config.savedResponses || '';
     });
@@ -313,7 +313,17 @@ const LongTextQuestion: React.FC<{
             <details className="mt-2 text-xs w-full">
                 <summary className="cursor-pointer font-medium">localStorage Data ({localStorageKey})</summary>
                 <pre className="mt-1 bg-gray-100 p-2 rounded text-gray-700 overflow-auto text-xs">
-                    {JSON.stringify(JSON.parse(localStorage.getItem(localStorageKey) || 'null'), null, 2)}
+                    {JSON.stringify(
+                      (() => {
+                        try {
+                          const item = localStorage.getItem(localStorageKey);
+                          return item ? JSON.parse(item) : null;
+                        } catch (e) {
+                          return null;
+                        }
+                      })(), 
+                      null, 2
+                    )}
                 </pre>
             </details>
         </div>
@@ -338,7 +348,7 @@ const SingleChoiceQuestion: React.FC<{
     const [selectedOption, setSelectedOption] = useState<string | undefined>(() => {
         try {
             const saved = localStorage.getItem(localStorageKey);
-            if (saved !== null) return JSON.parse(saved);
+            if (saved !== null && saved !== "undefined") return JSON.parse(saved);
         } catch (e) { console.error("Error reading from localStorage", e); }
         return config.savedResponses;
     });
@@ -385,7 +395,17 @@ const SingleChoiceQuestion: React.FC<{
             <details className="mt-2 text-xs w-full">
                 <summary className="cursor-pointer font-medium">localStorage Data ({localStorageKey})</summary>
                 <pre className="mt-1 bg-gray-100 p-2 rounded text-gray-700 overflow-auto text-xs">
-                    {JSON.stringify(JSON.parse(localStorage.getItem(localStorageKey) || 'null'), null, 2)}
+                    {JSON.stringify(
+                      (() => {
+                        try {
+                          const item = localStorage.getItem(localStorageKey);
+                          return item ? JSON.parse(item) : null;
+                        } catch (e) {
+                          return null;
+                        }
+                      })(), 
+                      null, 2
+                    )}
                 </pre>
             </details>
         </div>
@@ -410,7 +430,7 @@ const MultipleChoiceQuestion: React.FC<{
     const [selectedOptions, setSelectedOptions] = useState<string[]>(() => {
         try {
             const saved = localStorage.getItem(localStorageKey);
-            if (saved !== null) {
+            if (saved !== null && saved !== "undefined") {
                 const parsed = JSON.parse(saved);
                 return Array.isArray(parsed) ? parsed : [];
             }
@@ -469,7 +489,17 @@ const MultipleChoiceQuestion: React.FC<{
             <details className="mt-2 text-xs w-full">
                 <summary className="cursor-pointer font-medium">localStorage Data ({localStorageKey})</summary>
                 <pre className="mt-1 bg-gray-100 p-2 rounded text-gray-700 overflow-auto text-xs">
-                    {JSON.stringify(JSON.parse(localStorage.getItem(localStorageKey) || '[]'), null, 2)} 
+                    {JSON.stringify(
+                      (() => {
+                        try {
+                          const item = localStorage.getItem(localStorageKey);
+                          return item ? JSON.parse(item) : null;
+                        } catch (e) {
+                          return null;
+                        }
+                      })(), 
+                      null, 2
+                    )}
                 </pre>
             </details>
         </div>
@@ -493,7 +523,7 @@ const LinearScaleQuestion: React.FC<{
     const [selectedValue, setSelectedValue] = useState<number | null>(() => {
         try {
             const saved = localStorage.getItem(localStorageKey);
-            if (saved !== null) {
+            if (saved !== null && saved !== "undefined") {
                  const parsed = JSON.parse(saved);
                  return typeof parsed === 'number' ? parsed : null;
             }
@@ -549,7 +579,17 @@ const LinearScaleQuestion: React.FC<{
             <details className="mt-2 text-xs w-full">
                 <summary className="cursor-pointer font-medium">localStorage Data ({localStorageKey})</summary>
                 <pre className="mt-1 bg-gray-100 p-2 rounded text-gray-700 overflow-auto text-xs">
-                    {JSON.stringify(JSON.parse(localStorage.getItem(localStorageKey) || 'null'), null, 2)}
+                    {JSON.stringify(
+                      (() => {
+                        try {
+                          const item = localStorage.getItem(localStorageKey);
+                          return item ? JSON.parse(item) : null;
+                        } catch (e) {
+                          return null;
+                        }
+                      })(), 
+                      null, 2
+                    )}
                 </pre>
             </details>
         </div>
@@ -568,7 +608,7 @@ const SmartVocFeedbackQuestion: React.FC<{
     const [currentResponse, setCurrentResponse] = useState(() => {
         try {
             const saved = localStorage.getItem(localStorageKey);
-            if (saved !== null) return JSON.parse(saved);
+            if (saved !== null && saved !== "undefined") return JSON.parse(saved);
         } catch (e) { console.error("Error reading from localStorage", e); }
         return config.savedResponses || '';
     });
@@ -717,6 +757,78 @@ const CognitivePreferenceTestQuestion: React.FC<{
                     Siguiente
                </button>
             </div>
+        </div>
+    );
+};
+
+// Componente para Ranking
+const RankingQuestion: React.FC<{
+    config: any; 
+    stepId?: string;
+    stepName?: string;
+    stepType: string;
+    onStepComplete: (answer: any) => void;
+    isMock: boolean;
+}> = ({ config, stepId, stepName, stepType, onStepComplete, isMock }) => {
+    const localStorageKey = `form-${stepType}-${stepId || stepName?.replace(/\s+/g, '_') || 'defaultRanking'}`;
+    
+    const title = config.title || stepName || 'Ordena los elementos';
+    const description = config.description;
+    const questionText = config.questionText || (isMock ? 'Pregunta de prueba' : '');
+    
+    const [rankedItems, setRankedItems] = useState<string[]>(() => {
+        try {
+            const saved = localStorage.getItem(localStorageKey);
+            if (saved !== null && saved !== "undefined") {
+                const parsed = JSON.parse(saved);
+                return Array.isArray(parsed) ? parsed : (config.items || []);
+            }
+        } catch (e) { console.error("Error reading from localStorage for ranking", e); }
+        return config.items || [];
+    });
+
+    useEffect(() => {
+        // Aquí iría la lógica para actualizar `rankedItems` si se implementa drag and drop.
+        // Por ahora, guardamos el estado inicial o cargado.
+        try {
+            localStorage.setItem(localStorageKey, JSON.stringify(rankedItems));
+        } catch (e) { console.error("Error saving to localStorage for ranking", e); }
+    }, [rankedItems, localStorageKey]);
+    
+    const handleSubmit = () => {
+        onStepComplete(rankedItems); // En una implementación real, `rankedItems` se actualizaría con el orden del usuario.
+        // Opcional: localStorage.removeItem(localStorageKey);
+    };
+
+    return (
+        <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full">
+            <h2 className="text-xl font-medium mb-1 text-neutral-800">{title}</h2>
+            {description && <p className="text-sm text-neutral-500 mb-3">{description}</p>}
+            <p className="text-neutral-600 mb-4">{questionText}</p>
+            <p className="text-sm text-neutral-500 mb-4">(Placeholder: Arrastra y suelta para ordenar)</p>
+            <div className="space-y-2 border border-dashed border-neutral-300 p-4 rounded-md mb-6 min-h-[100px]">
+                {rankedItems.map((item: string, index: number) => (
+                    <div key={index} className="bg-neutral-100 p-2 rounded border border-neutral-200 cursor-grab">{item}</div>
+                ))}
+            </div>
+            <button onClick={handleSubmit} className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors">Siguiente</button>
+            {/* DEBUG: Mostrar datos de localStorage */}
+            <details className="mt-2 text-xs w-full">
+                <summary className="cursor-pointer font-medium">localStorage Data ({localStorageKey})</summary>
+                <pre className="mt-1 bg-gray-100 p-2 rounded text-gray-700 overflow-auto text-xs">
+                    {JSON.stringify(
+                      (() => {
+                        try {
+                          const item = localStorage.getItem(localStorageKey);
+                          return item ? JSON.parse(item) : null;
+                        } catch (e) {
+                          return null;
+                        }
+                      })(), 
+                      null, 2
+                    )}
+                </pre>
+            </details>
         </div>
     );
 };
@@ -906,68 +1018,24 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
                  );
                 } 
             
-            // <<< NUEVO CASE para cognitive_ranking >>>
+            // <<< CASE para cognitive_ranking reemplazado >>>
             case 'cognitive_ranking': {
                 if (!onStepComplete) return null;
-                const localStorageKey = `form-${stepType}-${stepId || stepName?.replace(/\s+/g, '_') || 'defaultRanking'}`;
                 const isMock = !stepConfig || !stepConfig.questionText || !Array.isArray(stepConfig.items) || stepConfig.items.length === 0;
                 const config = isMock
                     ? { questionText: 'Pregunta de ranking (Prueba)?', items: ['Item 1', 'Item 2', 'Item 3'] }
                     : stepConfig;
 
-                const title = config.title || stepName || 'Ordena los elementos';
-                const description = config.description;
-                const questionText = config.questionText || (isMock ? 'Pregunta de prueba' : '');
-                
-                const [rankedItems, setRankedItems] = useState<string[]>(() => {
-                    try {
-                        const saved = localStorage.getItem(localStorageKey);
-                        if (saved !== null) {
-                            const parsed = JSON.parse(saved);
-                            return Array.isArray(parsed) ? parsed : (config.items || []);
-                        }
-                    } catch (e) { console.error("Error reading from localStorage for ranking", e); }
-                    return config.items || [];
-                });
-
-                useEffect(() => {
-                    // Aquí iría la lógica para actualizar `rankedItems` si se implementa drag and drop.
-                    // Por ahora, guardamos el estado inicial o cargado.
-                    try {
-                        localStorage.setItem(localStorageKey, JSON.stringify(rankedItems));
-                    } catch (e) { console.error("Error saving to localStorage for ranking", e); }
-                }, [rankedItems, localStorageKey]);
-                
-                const handleSubmit = () => {
-                    onStepComplete(rankedItems); // En una implementación real, `rankedItems` se actualizaría con el orden del usuario.
-                    // Opcional: localStorage.removeItem(localStorageKey);
-                };
-
-                // Placeholder para la funcionalidad de drag and drop
-                // En una implementación real, se usaría una librería como react-beautiful-dnd
-                // y `setRankedItems` se llamaría en onDragEnd.
-
                 return renderStepWithWarning(
-                     <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full">
-                         <h2 className="text-xl font-medium mb-1 text-neutral-800">{title}</h2>
-                         {description && <p className="text-sm text-neutral-500 mb-3">{description}</p>}
-                         <p className="text-neutral-600 mb-4">{questionText}</p>
-                         <p className="text-sm text-neutral-500 mb-4">(Placeholder: Arrastra y suelta para ordenar)</p>
-                         <div className="space-y-2 border border-dashed border-neutral-300 p-4 rounded-md mb-6 min-h-[100px]">
-                             {rankedItems.map((item: string, index: number) => (
-                                 <div key={index} className="bg-neutral-100 p-2 rounded border border-neutral-200 cursor-grab">{item}</div>
-                             ))}
-                         </div>
-                         <button onClick={handleSubmit} className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors">Siguiente</button>
-                         {/* DEBUG: Mostrar datos de localStorage */}
-                         <details className="mt-2 text-xs w-full">
-                             <summary className="cursor-pointer font-medium">localStorage Data ({localStorageKey})</summary>
-                             <pre className="mt-1 bg-gray-100 p-2 rounded text-gray-700 overflow-auto text-xs">
-                                 {JSON.stringify(JSON.parse(localStorage.getItem(localStorageKey) || '[]'), null, 2)}
-                             </pre>
-                         </details>
-                     </div>,
-                     isMock
+                    <RankingQuestion
+                        config={config}
+                        stepId={stepId}
+                        stepName={stepName}
+                        stepType={stepType}
+                        onStepComplete={onStepComplete}
+                        isMock={isMock}
+                    />,
+                    isMock
                 );
             }
 
@@ -1121,7 +1189,17 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
                         <details className="mt-2 text-xs w-full">
                             <summary className="cursor-pointer font-medium">localStorage Data ({debugLocalStorageKey})</summary>
                             <pre className="mt-1 bg-gray-100 p-2 rounded text-gray-700 overflow-auto text-xs">
-                                {JSON.stringify(JSON.parse(localStorage.getItem(debugLocalStorageKey) || 'null'), null, 2)}
+                                {JSON.stringify(
+                                  (() => {
+                                    try {
+                                      const item = localStorage.getItem(debugLocalStorageKey);
+                                      return item ? JSON.parse(item) : null;
+                                    } catch (e) {
+                                      return null;
+                                    }
+                                  })(), 
+                                  null, 2
+                                )}
                             </pre>
                         </details>
                     </div>,
