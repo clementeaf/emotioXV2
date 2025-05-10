@@ -11,5 +11,6 @@ export * from './smartVocForm.model';
 export * from './thankYouScreen.model';
 export * from './eyeTracking.model';
 export * from './cognitiveTask.model';
+export * from './moduleResponse.model';
 
 // Otros modelos serán exportados aquí a medida que se creen 

@@ -27,6 +27,8 @@ const controllerImports = {
   'participants': () => import('./controllers/participant.controller'),
   // Añadir controlador para formularios de investigación
   'researchForms': () => import('./controllers/getResearchAvailableForms'),
+  // Añadir controlador para respuestas de módulos
+  'module-responses': () => import('./controllers/moduleResponse.controller'),
   // Añadir otros controladores aquí si es necesario
 };
 
