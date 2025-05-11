@@ -8,6 +8,8 @@ import { DemographicResponses, DEFAULT_DEMOGRAPHICS_CONFIG } from '../../types/d
 import { eyeTrackingService } from '../../services/eyeTracking.service';
 import { demographicsService } from '../../services/demographics.service';
 import { useParticipantStore } from '../../stores/participantStore';
+import { useResponseAPI } from '../../hooks/useResponseAPI';
+import { ApiClient, APIStatus } from '../../lib/api';
 
 // === IMPORTAR COMPONENTES EXTRAÍDOS ===
 import { ShortTextQuestion as ShortTextQuestionComponent } from './questions/ShortTextQuestion';
@@ -281,45 +283,188 @@ const LongTextQuestion: React.FC<{
     stepId?: string;
     stepType: string;
     onStepComplete: (answer: any) => void;
-}> = ({ config, stepName, stepId, stepType, onStepComplete }) => {
-    const title = config.title || stepName || 'Pregunta';
+}> = ({ config, stepName: stepNameFromProps, stepId: stepIdFromProps, stepType, onStepComplete }) => {
+    const title = config.title || stepNameFromProps || 'Pregunta de Texto Largo';
     const description = config.description;
     const questionText = config.questionText;
     const placeholder = config.answerPlaceholder || 'Escribe tu respuesta...';
     
-    // Inicializar con respuestas guardadas o string vacío
-    const [currentResponse, setCurrentResponse] = useState(() => {
-        return config.savedResponses || '';
+    const [currentResponse, setCurrentResponse] = useState<string>('');
+
+    // Estados para la API y carga de datos
+    const [apiError, setApiError] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [dataLoading, setDataLoading] = useState(true);
+    const [dataExisted, setDataExisted] = useState(false);
+    const [documentId, setDocumentId] = useState<string | null>(null);
+    const [moduleResponseId, setModuleResponseId] = useState<string | null>(null);
+
+    const researchId = useParticipantStore(state => state.researchId);
+    const participantId = useParticipantStore(state => state.participantId);
+
+    const {
+        saveResponse,
+        updateResponse,
+        isLoading: isApiLoading,
+        error: apiHookError,
+    } = useResponseAPI({ 
+        researchId: researchId || '', 
+        participantId: participantId || '' 
     });
 
-    // Si cambian las respuestas guardadas en config, actualizar el estado
+    // useEffect para cargar datos existentes
     useEffect(() => {
-        if (config.savedResponses !== undefined) {
-            setCurrentResponse(config.savedResponses);
+        if (!researchId || !participantId || !stepType) {
+            setDataLoading(false);
+            console.warn('[LongTextQuestion] Faltan researchId, participantId o stepType para cargar datos.');
+            return;
         }
-    }, [config.savedResponses]);
 
-    const handleSubmit = () => {
-        onStepComplete(currentResponse);
+        const apiClient = new ApiClient();
+        setDataLoading(true);
+        setApiError(null);
+
+        apiClient.getModuleResponses(researchId, participantId)
+            .then(apiResponse => {
+                if (apiResponse.error || !apiResponse.data?.data) {
+                    console.log('[LongTextQuestion] No se encontraron respuestas previas o hubo un error al cargar.', apiResponse.message);
+                    setDataExisted(false);
+                    setDocumentId(null);
+                    setModuleResponseId(null);
+                    setCurrentResponse('');
+                    if (apiResponse.apiStatus === APIStatus.NOT_FOUND) {
+                        setApiError(null);
+                    } else {
+                        setApiError(apiResponse.message || 'Error cargando datos del módulo.');
+                    }
+                    return;
+                }
+
+                const fullDocument = apiResponse.data.data as { id: string, responses: Array<{id: string, stepType: string, response: any}> };
+                setDocumentId(fullDocument.id);
+                const foundStepData = fullDocument.responses.find(item => item.stepType === stepType);
+
+                if (foundStepData) {
+                    console.log(`[LongTextQuestion] Datos encontrados para stepType '${stepType}':`, foundStepData);
+                    setCurrentResponse(typeof foundStepData.response === 'string' ? foundStepData.response : '');
+                    setModuleResponseId(foundStepData.id || null);
+                    setDataExisted(true);
+                } else {
+                    console.log(`[LongTextQuestion] No se encontraron datos específicos para stepType '${stepType}'.`);
+                    setCurrentResponse('');
+                    setModuleResponseId(null);
+                    setDataExisted(false);
+                }
+            })
+            .catch(error => {
+                console.error('[LongTextQuestion] Excepción al cargar datos:', error);
+                setApiError(error.message || 'Excepción desconocida al cargar datos.');
+                setDataExisted(false);
+                setModuleResponseId(null);
+                setCurrentResponse('');
+            })
+            .finally(() => {
+                setDataLoading(false);
+            });
+    }, [researchId, participantId, stepType]);
+
+    const handleSaveAndProceed = async () => {
+        if (!researchId || !participantId) {
+            setApiError("Faltan researchId o participantId para guardar.");
+            return;
+        }
+        
+        const currentStepId = stepIdFromProps || stepType;
+        const currentStepName = title; // Usamos el título del componente como stepName para el DTO
+
+        setIsSaving(true);
+        setApiError(null);
+
+        try {
+            let success = false;
+            if (dataExisted && moduleResponseId) {
+                console.log(`[LongTextQuestion] Actualizando (PUT) para moduleResponseId: ${moduleResponseId}`);
+                const result = await updateResponse(moduleResponseId, currentStepId, stepType, currentStepName, currentResponse);
+                if (apiHookError) { 
+                    setApiError(apiHookError);
+                } else if ((result && result.id) || (result && result.success === true) || !apiHookError) { 
+                    success = true;
+                }
+            } else {
+                console.log(`[LongTextQuestion] Creando (POST) para stepType: ${stepType}`);
+                const result = await saveResponse(currentStepId, stepType, currentStepName, currentResponse);
+                 if (apiHookError) {
+                    setApiError(apiHookError);
+                } else if (result && result.id) {
+                    setModuleResponseId(result.id); 
+                    setDataExisted(true); 
+                    success = true;
+                }
+            }
+
+            if (success) {
+                console.log('[LongTextQuestion] Guardado exitoso. Llamando a onStepComplete.');
+                if (onStepComplete) {
+                    onStepComplete(currentResponse);
+                }
+            } else if (!apiHookError && !apiError) {
+                 setApiError('La operación de guardado no parece haber tenido éxito.');
+            }
+        } catch (error: any) {
+            console.error('[LongTextQuestion] Excepción al guardar:', error);
+            setApiError(error.message || 'Error desconocido durante el guardado.');
+        } finally {
+            setIsSaving(false);
+        }
     };
+
+    if (dataLoading) {
+        return (
+            <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full text-center">
+                <p className="text-gray-600">Cargando...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full">
             <h2 className="text-xl font-medium mb-1 text-neutral-800">{title}</h2>
             {description && <p className="text-sm text-neutral-500 mb-3">{description}</p>}
             <p className="text-neutral-600 mb-4">{questionText}</p>
+
+            {(apiError || apiHookError) && (
+              <div className="bg-red-50 border border-red-200 text-sm text-red-700 px-4 py-3 rounded mb-4" role="alert">
+                <strong className="font-bold">Error: </strong>
+                <span>{apiError || apiHookError}</span>
+              </div>
+            )}
+
             <textarea
                 className="border border-neutral-300 p-2 rounded-md w-full mb-4 h-32 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 placeholder={placeholder}
                 value={currentResponse}
                 onChange={(e) => setCurrentResponse(e.target.value)}
+                disabled={isSaving || isApiLoading}
             />
             <button
-                onClick={handleSubmit}
-                className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
+                onClick={handleSaveAndProceed}
+                disabled={isSaving || isApiLoading || !researchId || !participantId}
+                className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-                Siguiente
+                {(isSaving || isApiLoading) ? 'Guardando...' : 'Siguiente'}
             </button>
+            {process.env.NODE_ENV === 'development' && (
+                <div className="mt-4 p-2 bg-gray-50 text-xs text-gray-500 border rounded">
+                    <p className="font-semibold">[Debug LongTextQuestion]</p>
+                    <p>Research ID: {researchId || 'N/A'}, Participant ID: {participantId || 'N/A'}</p>
+                    <p>StepType: {stepType}, StepIdProp: {stepIdFromProps || 'N/A'}, StepNameProp: {stepNameFromProps || 'N/A'}</p>
+                    <p>Data Loading: {dataLoading.toString()}, Data Existed: {dataExisted.toString()}</p>
+                    <p>Document ID: {documentId || 'N/A'}, ModuleResponse ID: {moduleResponseId || 'N/A'}</p>
+                    <p>API Saving: {isSaving.toString()}, API Hook Loading: {isApiLoading.toString()}</p>
+                    <p>API Error (Form): {apiError || 'No'}, API Error (Hook): {apiHookError || 'No'}</p>
+                    <div>Response: <pre>{JSON.stringify(currentResponse, null, 2)}</pre></div>
+                </div>
+            )}
         </div>
     );
 };
@@ -545,47 +690,252 @@ const LinearScaleQuestion: React.FC<{
 const SmartVocFeedbackQuestion: React.FC<{
     config: any; 
     stepId?: string;
+    stepName?: string;
     stepType: string;
     onStepComplete: (answer: any) => void;
-}> = ({ config, stepId, stepType, onStepComplete }) => {
-    const title = config.title || 'Cuéntanos más';
+}> = ({ config, stepId: stepIdFromProps, stepName: stepNameFromProps, stepType, onStepComplete }) => {
+    const title = config.title || stepNameFromProps || 'Cuéntanos más';
     const questionText = config.questionText || '¿Hay algo más que quieras contarnos?';
     const placeholder = config.placeholder || 'Escribe tu respuesta aquí...';
     
-    // Inicializar con respuestas guardadas o string vacío
-    const [currentResponse, setCurrentResponse] = useState(() => {
-        return config.savedResponses || '';
-    });
+    const [currentResponse, setCurrentResponse] = useState<string>('');
     
-    // Si cambian las respuestas guardadas en config, actualizar el estado
-    useEffect(() => {
-        if (config.savedResponses !== undefined) {
-            setCurrentResponse(config.savedResponses);
-        }
-    }, [config.savedResponses]);
+    // Estados para la API y carga de datos
+    const [apiError, setApiError] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [dataLoading, setDataLoading] = useState(true);
+    const [dataExisted, setDataExisted] = useState(false);
+    const [documentId, setDocumentId] = useState<string | null>(null); // ID del documento de respuestas general
+    const [moduleResponseId, setModuleResponseId] = useState<string | null>(null); // ID específico de esta respuesta de módulo
 
-    const handleNext = () => {
-        onStepComplete(currentResponse);
+    const researchId = useParticipantStore(state => state.researchId);
+    const participantId = useParticipantStore(state => state.participantId);
+
+    const {
+        saveResponse,
+        updateResponse,
+        isLoading: isApiLoading,
+        error: apiHookError,
+    } = useResponseAPI({ 
+        researchId: researchId || '',
+        participantId: participantId || ''
+    });
+
+    // Texto dinámico para el botón
+    let buttonText = 'Siguiente';
+    if (isSaving || isApiLoading) {
+        buttonText = 'Guardando...';
+    } else if (dataExisted && moduleResponseId) {
+        buttonText = 'Actualizar y continuar';
+    } else {
+        buttonText = 'Guardar y continuar';
+    }
+
+    // useEffect para cargar datos existentes
+    useEffect(() => {
+        if (!researchId || !participantId || !stepType) {
+            setDataLoading(false);
+            console.warn('[SmartVocFeedbackQuestion] Carga de datos OMITIDA: Faltan researchId, participantId o stepType.');
+            return;
+        }
+
+        console.log(`[SmartVocFeedbackQuestion] Iniciando carga de datos para research: ${researchId}, participant: ${participantId}, stepType: ${stepType}`);
+        const apiClient = new ApiClient();
+        setDataLoading(true);
+        setApiError(null);
+        setCurrentResponse(''); // Limpiar respuesta previa al iniciar la carga
+        setDocumentId(null);
+        setModuleResponseId(null);
+        setDataExisted(false);
+
+        apiClient.getModuleResponses(researchId, participantId)
+            .then(apiResponse => {
+                console.log('[SmartVocFeedbackQuestion] Respuesta completa de apiClient.getModuleResponses:', JSON.stringify(apiResponse, null, 2));
+
+                if (apiResponse.error || !apiResponse.data?.data) {
+                    console.warn(`[SmartVocFeedbackQuestion] No se encontraron respuestas previas o hubo un error al cargar. Mensaje: ${apiResponse.message || 'No message'}. API Status: ${apiResponse.apiStatus}`);
+                    setDataExisted(false);
+                    setDocumentId(null);
+                    setModuleResponseId(null);
+                    setCurrentResponse('');
+                    if (apiResponse.apiStatus === APIStatus.NOT_FOUND) {
+                        console.log('[SmartVocFeedbackQuestion] API Status es NOT_FOUND, se considera normal si no hay datos previos.');
+                        setApiError(null);
+                    } else {
+                        setApiError(apiResponse.message || 'Error cargando datos del módulo.');
+                    }
+                    return;
+                }
+
+                const fullDocument = apiResponse.data.data as { id: string, responses: Array<{id: string, stepType: string, stepTitle?: string, response: any, createdAt?: string, updatedAt?: string }> };
+                console.log('[SmartVocFeedbackQuestion] Documento completo obtenido:', JSON.stringify(fullDocument, null, 2));
+                setDocumentId(fullDocument.id);
+
+                const foundStepData = fullDocument.responses.find(item => item.stepType === stepType);
+
+                if (foundStepData) {
+                    console.log(`[SmartVocFeedbackQuestion] Datos específicos ENCONTRADOS para stepType '${stepType}':`, JSON.stringify(foundStepData, null, 2));
+                    setCurrentResponse(typeof foundStepData.response === 'string' ? foundStepData.response : '');
+                    setModuleResponseId(foundStepData.id || null);
+                    setDataExisted(true);
+                    console.log(`[SmartVocFeedbackQuestion] Estado actualizado: currentResponse='${typeof foundStepData.response === 'string' ? foundStepData.response : ''}', moduleResponseId='${foundStepData.id || null}', dataExisted=true`);
+                } else {
+                    console.log(`[SmartVocFeedbackQuestion] No se encontraron datos específicos para stepType '${stepType}' en el documento. Documento ID: ${fullDocument.id}.`);
+                    setCurrentResponse('');
+                    setModuleResponseId(null);
+                    setDataExisted(false); // Aunque el documento exista, el módulo específico no tiene respuesta.
+                     // DocumentId se mantiene porque el documento general sí existe.
+                    console.log(`[SmartVocFeedbackQuestion] Estado actualizado: currentResponse='', moduleResponseId=null, dataExisted=false`);
+                }
+            })
+            .catch(error => {
+                console.error('[SmartVocFeedbackQuestion] EXCEPCIÓN al cargar datos:', error);
+                setApiError(error.message || 'Excepción desconocida al cargar datos.');
+                setDataExisted(false);
+                setModuleResponseId(null);
+                setCurrentResponse('');
+            })
+            .finally(() => {
+                setDataLoading(false);
+                console.log('[SmartVocFeedbackQuestion] Carga de datos finalizada.');
+            });
+
+    }, [researchId, participantId, stepType]); // Dependencias clave para recargar
+
+
+    const handleSaveAndProceed = async () => {
+        if (!researchId || !participantId) {
+            setApiError("Faltan researchId o participantId para guardar.");
+            console.error("[SmartVocFeedbackQuestion] Guardado OMITIDO: Faltan researchId o participantId.");
+            return;
+        }
+        
+        const currentStepIdToSave = stepIdFromProps || stepType; 
+        const currentStepNameToSave = title; 
+
+        setIsSaving(true);
+        setApiError(null);
+        console.log(`[SmartVocFeedbackQuestion] Iniciando guardado. DataExisted: ${dataExisted}, ModuleResponseId: ${moduleResponseId}`);
+        console.log(`[SmartVocFeedbackQuestion] Payload a guardar: stepId='${currentStepIdToSave}', stepType='${stepType}', stepName='${currentStepNameToSave}', response='${currentResponse}'`);
+
+        try {
+            let success = false;
+            let operationType = '';
+            let resultFromHook: any = null;
+
+            if (dataExisted && moduleResponseId) {
+                operationType = 'Actualización (PUT)';
+                console.log(`[SmartVocFeedbackQuestion] Intentando ${operationType} para moduleResponseId: ${moduleResponseId}`);
+                resultFromHook = await updateResponse(moduleResponseId, currentStepIdToSave, stepType, currentStepNameToSave, currentResponse);
+            } else {
+                operationType = dataExisted ? 'Creación (POST) porque moduleResponseId falta pero documento existe' : 'Creación (POST)';
+                console.log(`[SmartVocFeedbackQuestion] Intentando ${operationType} para stepType: ${stepType}`);
+                resultFromHook = await saveResponse(currentStepIdToSave, stepType, currentStepNameToSave, currentResponse);
+            }
+            
+            console.log(`[SmartVocFeedbackQuestion] Respuesta del hook useResponseAPI (${operationType}):`, JSON.stringify(resultFromHook, null, 2));
+
+            if (apiHookError) {
+                console.error(`[SmartVocFeedbackQuestion] Error desde useResponseAPI durante ${operationType}:`, apiHookError);
+                setApiError(apiHookError);
+            } else if (resultFromHook && (resultFromHook.id || resultFromHook.success === true || (operationType === 'Actualización (PUT)' && !resultFromHook))) { // Para PUT, un 200 OK sin contenido es éxito
+                success = true;
+                console.log(`[SmartVocFeedbackQuestion] ${operationType} considerada exitosa.`);
+                if (operationType.includes('Creación (POST)') && resultFromHook && resultFromHook.id) {
+                    setModuleResponseId(resultFromHook.id); 
+                    setDataExisted(true); 
+                    console.log(`[SmartVocFeedbackQuestion] POST exitoso. Nuevo moduleResponseId: ${resultFromHook.id}. DataExisted: true`);
+                }
+            } else {
+                 console.warn(`[SmartVocFeedbackQuestion] ${operationType} no confirmó éxito explícito y no hubo error del hook. Resultado:`, resultFromHook);
+                 // No necesariamente un error, podría ser una respuesta inesperada.
+                 // Si es un POST y no hay ID, es un problema. Si es PUT y no hay error, podría estar bien.
+                 if (operationType.includes('Creación (POST)') && (!resultFromHook || !resultFromHook.id)){
+                    setApiError(`Error en ${operationType}: No se recibió ID para la nueva respuesta.`);
+                 } else {
+                    // Para PUT, si no hay error explícito, lo consideramos éxito por ahora.
+                    // Podríamos necesitar una lógica más robusta si el backend siempre debe devolver algo.
+                    success = true; 
+                    console.log(`[SmartVocFeedbackQuestion] ${operationType} (PUT sin contenido/id esperado) asumido como éxito al no haber error del hook.`);
+                 }
+            }
+
+
+            if (success) {
+                console.log('[SmartVocFeedbackQuestion] Operación con servidor exitosa. Llamando a onStepComplete.');
+                if (onStepComplete) {
+                    onStepComplete(currentResponse);
+                }
+            } else if (!apiHookError && !apiError) { 
+                 console.error('[SmartVocFeedbackQuestion] La operación de guardado no tuvo éxito y no se establecieron errores específicos.');
+                 setApiError('La operación de guardado no parece haber tenido éxito o la respuesta no fue la esperada.');
+            }
+
+        } catch (error: any) {
+            console.error('[SmartVocFeedbackQuestion] EXCEPCIÓN al guardar/actualizar:', error);
+            setApiError(error.message || 'Error desconocido durante el guardado/actualización.');
+        } finally {
+            setIsSaving(false);
+            console.log('[SmartVocFeedbackQuestion] Proceso de guardado finalizado.');
+        }
     };
 
+    if (dataLoading) {
+        return (
+            <div className="w-full p-6 text-center">
+                <p className="text-gray-600">Cargando...</p>
+            </div>
+        );
+    }
+
     return (
-        <div className="w-full">
+        <div className="w-full"> {/* Asegúrate que este div tenga el max-width deseado si es necesario, como en el 'case' original */}
             <h2 className="text-xl font-medium text-center mb-4">{title}</h2>
             <p className="text-center mb-6">{questionText}</p>
+            
+            {(apiError || apiHookError) && (
+              <div className="bg-red-50 border border-red-200 text-sm text-red-700 px-4 py-3 rounded mb-4" role="alert">
+                <strong className="font-bold">Error: </strong>
+                <span>{apiError || apiHookError}</span>
+              </div>
+            )}
+
             <textarea
                 className="w-full h-32 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-400 focus:border-primary-400 mb-6"
                 placeholder={placeholder}
                 value={currentResponse}
                 onChange={(e) => setCurrentResponse(e.target.value)}
+                disabled={isSaving || isApiLoading}
             />
             <div className="flex justify-center">
                 <button
-                    onClick={handleNext}
-                    className="px-8 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600"
+                    onClick={handleSaveAndProceed}
+                    disabled={isSaving || isApiLoading || !researchId || !participantId || dataLoading}
+                    className="px-8 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    Siguiente
+                    {buttonText}
                 </button>
             </div>
+             {/* Sección de Debug (opcional, como en DemographicsForm) */}
+             {process.env.NODE_ENV === 'development' && (
+                <div className="mt-4 p-2 bg-gray-50 text-xs text-gray-500 border rounded">
+                    <p className="font-semibold">[Debug SmartVocFeedbackQuestion]</p>
+                    <p>Research ID: {researchId || 'N/A'}, Participant ID: {participantId || 'N/A'}</p>
+                    <p>StepType Prop: {stepType}, StepId Prop: {stepIdFromProps || 'N/A'}, StepName Prop: {stepNameFromProps || 'N/A'}</p>
+                    <p>Data Loading: {dataLoading.toString()}</p>
+                    <p>Data Existed (este módulo específico): {dataExisted.toString()}</p>
+                    <p>Document ID (general): {documentId || 'N/A / No cargado'}</p>
+                    <p>ModuleResponse ID (este módulo): {moduleResponseId || 'N/A / No cargado'}</p>
+                    <hr className="my-1" />
+                    <p>API Error (Formulario): {apiError || 'No'}</p>
+                    <p>API Hook Error (useResponseAPI): {apiHookError || 'No'}</p>
+                    <p>Guardando (Formulario): {isSaving.toString()}</p>
+                    <p>Cargando (Hook useResponseAPI): {isApiLoading.toString()}</p>
+                    <p>Método a usar (al guardar): {(dataExisted && moduleResponseId) ? 'PUT (actualizar)' : 'POST (crear)'}</p>
+                    <hr className="my-1" />
+                    <div>Respuesta actual en estado: <pre className="whitespace-pre-wrap">{JSON.stringify(currentResponse, null, 2)}</pre></div>
+                </div>
+            )}
         </div>
     );
 };
@@ -817,6 +1167,7 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
     onError,
 }) => {
     // Hooks deben estar siempre al inicio del componente
+    console.log(`[CurrentStepRenderer] Props recibidas: stepType='${stepType}', stepId='${stepId}', stepName='${stepName}', stepConfig:`, stepConfig);
     const [_loading, _setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     
@@ -890,24 +1241,25 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
                 } // <<< Fin bloque
 
             case 'cognitive_short_text': { 
-                if (!onStepComplete) return null;
+                if (!onStepComplete || !stepType) return null;
                 const isMock = !stepConfig; // Es mock si no hay config real
-                const config = isMock
-                    ? { questionText: 'Pregunta de texto corto (Prueba)?' }
+                const configToUse = isMock
+                    ? { questionText: 'Pregunta de texto corto (Prueba)?', placeholder: 'Escribe aquí...' }
                     : stepConfig;
                 
                  return renderStepWithWarning(
-                     <ShortTextQuestionComponent
-                         config={config}
-                         stepId={stepId}
-                         stepName={stepName}
-                         stepType={stepType}
-                         onStepComplete={onStepComplete}
-                         isMock={isMock}
-                     />,
-                     isMock // Pasar el flag de mock
+                    <div className="w-full max-w-xl"> {/* Asegurar consistencia con el case smartvoc_feedback */}
+                        <SmartVocFeedbackQuestion
+                            config={configToUse}
+                            stepId={stepId}
+                            stepName={stepName}
+                            stepType={stepType} // Se pasará 'cognitive_short_text'
+                            onStepComplete={onStepComplete}
+                        />
+                    </div>,
+                     isMock
                  );
-                } 
+            } 
 
             case 'cognitive_long_text': { 
                 if (!onStepComplete) return null;
@@ -1150,22 +1502,21 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
                 } 
 
             case 'smartvoc_feedback': {
-                 if (!onStepComplete) return null;
+                 if (!onStepComplete || !stepType) return null; // Asegurar que stepType también esté
                  const isFeedbackMock = !stepConfig || !stepConfig.questionText;
                  const feedbackConfig = isFeedbackMock
                     ? { questionText: 'Pregunta Feedback (Prueba)?', placeholder: 'Escribe aquí...' }
-                    : {
-                        ...stepConfig,
-                        savedResponses: stepConfig.savedResponses
-                     };
+                    : stepConfig; // Ya no pasamos savedResponses desde aquí
                  
                  return renderStepWithWarning(
-                    <div className="w-full max-w-xl"> {/* Wrapper div */}
+                    <div className="w-full max-w-xl">
                         <SmartVocFeedbackQuestion
                             config={feedbackConfig}
-                            stepId={stepId}
-                            stepType={stepType}
+                            stepId={stepId} // stepId del flujo
+                            stepName={stepName} // stepName del flujo (opcional, usado para el título por defecto)
+                            stepType={stepType} // ej. 'smartvoc_feedback'
                             onStepComplete={onStepComplete}
+                            // researchId y participantId se obtienen del store dentro del componente
                         />
                     </div>,
                     isFeedbackMock
