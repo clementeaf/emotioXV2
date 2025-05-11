@@ -298,6 +298,7 @@ const LongTextQuestion: React.FC<{
     const [dataExisted, setDataExisted] = useState(false);
     const [documentId, setDocumentId] = useState<string | null>(null);
     const [moduleResponseId, setModuleResponseId] = useState<string | null>(null);
+    const [isNavigating, setIsNavigating] = useState(false); // Nuevo estado
 
     const researchId = useParticipantStore(state => state.researchId);
     const participantId = useParticipantStore(state => state.participantId);
@@ -368,6 +369,18 @@ const LongTextQuestion: React.FC<{
             });
     }, [researchId, participantId, stepType]);
 
+    // Texto dinámico para el botón
+    let buttonText = 'Siguiente'; // Valor por defecto
+    if (isNavigating) {
+        buttonText = 'Pasando al siguiente módulo...';
+    } else if (isSaving || isApiLoading) {
+        buttonText = 'Guardando...';
+    } else if (dataExisted && moduleResponseId) {
+        buttonText = 'Actualizar y continuar';
+    } else {
+        buttonText = 'Guardar y continuar';
+    }
+
     const handleSaveAndProceed = async () => {
         if (!researchId || !participantId) {
             setApiError("Faltan researchId o participantId para guardar.");
@@ -382,17 +395,23 @@ const LongTextQuestion: React.FC<{
 
         try {
             let success = false;
+            const payload = { response: currentResponse }; // Mover payload aquí para claridad
+
             if (dataExisted && moduleResponseId) {
                 console.log(`[LongTextQuestion] Actualizando (PUT) para moduleResponseId: ${moduleResponseId}`);
-                const result = await updateResponse(moduleResponseId, currentStepId, stepType, currentStepName, currentResponse);
+                // const result = await updateResponse(moduleResponseId, currentStepId, stepType, currentStepName, currentResponse);
+                // Pasar el payload directamente
+                await updateResponse(moduleResponseId, currentStepId, stepType, currentStepName, payload.response);
                 if (apiHookError) { 
                     setApiError(apiHookError);
-                } else if ((result && result.id) || (result && result.success === true) || !apiHookError) { 
+                } else { // Asumir éxito si no hay error del hook para PUT, ya que puede no devolver contenido
                     success = true;
                 }
             } else {
                 console.log(`[LongTextQuestion] Creando (POST) para stepType: ${stepType}`);
-                const result = await saveResponse(currentStepId, stepType, currentStepName, currentResponse);
+                // const result = await saveResponse(currentStepId, stepType, currentStepName, currentResponse);
+                // Pasar el payload directamente
+                const result = await saveResponse(currentStepId, stepType, currentStepName, payload.response);
                  if (apiHookError) {
                     setApiError(apiHookError);
                 } else if (result && result.id) {
@@ -403,10 +422,13 @@ const LongTextQuestion: React.FC<{
             }
 
             if (success) {
-                console.log('[LongTextQuestion] Guardado exitoso. Llamando a onStepComplete.');
-                if (onStepComplete) {
-                    onStepComplete(currentResponse);
-                }
+                console.log('[LongTextQuestion] Operación con servidor exitosa. Preparando para navegar.');
+                setIsNavigating(true);
+                setTimeout(() => {
+                    if (onStepComplete) {
+                        onStepComplete(currentResponse);
+                    }
+                }, 500); // Retardo para mostrar mensaje
             } else if (!apiHookError && !apiError) {
                  setApiError('La operación de guardado no parece haber tenido éxito.');
             }
@@ -448,10 +470,10 @@ const LongTextQuestion: React.FC<{
             />
             <button
                 onClick={handleSaveAndProceed}
-                disabled={isSaving || isApiLoading || !researchId || !participantId}
+                disabled={isSaving || isApiLoading || !researchId || !participantId || dataLoading || isNavigating} // Añadir dataLoading y isNavigating
                 className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-                {(isSaving || isApiLoading) ? 'Guardando...' : 'Siguiente'}
+                {buttonText} {/* Usar buttonText dinámico */}
             </button>
             {process.env.NODE_ENV === 'development' && (
                 <div className="mt-4 p-2 bg-gray-50 text-xs text-gray-500 border rounded">
@@ -472,62 +494,247 @@ const LongTextQuestion: React.FC<{
 // Componente para Single Choice
 const SingleChoiceQuestion: React.FC<{
     config: any; 
-    stepId?: string;
-    stepName?: string;
+    stepId?: string; // Renombrado de stepId a stepIdFromProps para claridad interna
+    stepName?: string; // Renombrado de stepName a stepNameFromProps para claridad interna
     stepType: string;
     onStepComplete: (answer: any) => void;
-    isMock: boolean;
-}> = ({ config, stepId, stepName, stepType, onStepComplete, isMock }) => {
-    const title = config.title || stepName || 'Pregunta de opción única';
-    const description = config.description;
-    const questionText = config.questionText || (isMock ? 'Pregunta de prueba' : '');
-    const options = config.options || (isMock ? ['Opción 1', 'Opción 2', 'Opción 3'] : []);
+    isMock: boolean; // Se mantiene para la lógica de datos de prueba si no hay config
+}> = ({ config: initialConfig, stepId: stepIdFromProps, stepName: stepNameFromProps, stepType, onStepComplete, isMock }) => {
+    const componentTitle = initialConfig.title || stepNameFromProps || 'Pregunta de opción única';
+    const description = initialConfig.description;
+    const questionText = initialConfig.questionText || (isMock ? 'Pregunta de prueba' : '');
+    const options = initialConfig.options || (isMock ? ['Opción 1', 'Opción 2', 'Opción 3'] : []);
     
-    // Inicializar con respuestas guardadas o null
-    const [selectedOption, setSelectedOption] = useState<string | null>(() => {
-        return config.savedResponses || null;
-    });
-    
-    // Si cambian las respuestas guardadas en config, actualizar el estado
-    useEffect(() => {
-        if (config.savedResponses !== undefined) {
-            setSelectedOption(config.savedResponses);
-        }
-    }, [config.savedResponses]);
+    const [currentResponse, setCurrentResponse] = useState<string | null>(null); // Respuesta seleccionada
 
-    const handleSubmit = () => {
-        if (selectedOption) {
-            onStepComplete(selectedOption);
+    // Estados para la API y carga de datos
+    const [apiError, setApiError] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [dataLoading, setDataLoading] = useState(true);
+    const [dataExisted, setDataExisted] = useState(false);
+    const [documentId, setDocumentId] = useState<string | null>(null);
+    const [moduleResponseId, setModuleResponseId] = useState<string | null>(null);
+    const [isNavigating, setIsNavigating] = useState(false);
+
+    const researchId = useParticipantStore(state => state.researchId);
+    const participantId = useParticipantStore(state => state.participantId);
+
+    const {
+        saveResponse,
+        updateResponse,
+        isLoading: isApiLoading,
+        error: apiHookError,
+    } = useResponseAPI({ 
+        researchId: researchId || '', 
+        participantId: participantId || '' 
+    });
+
+    // useEffect para cargar datos existentes
+    useEffect(() => {
+        // Si es un mock, usar los datos de config y no hacer llamada API
+        if (isMock) {
+            setDataLoading(false);
+            setCurrentResponse(initialConfig.savedResponses || null);
+            console.log('[SingleChoiceQuestion] Modo Mock: Usando savedResponses de initialConfig:', initialConfig.savedResponses || null);
+            return;
+        }
+
+        // Si no es mock pero faltan datos para la API, no cargar e indicar estado
+        if (!researchId || !participantId || !stepType) {
+            setDataLoading(false);
+            setCurrentResponse(null);
+            setDataExisted(false);
+            setModuleResponseId(null);
+            setDocumentId(null);
+            console.warn('[SingleChoiceQuestion] Carga OMITIDA: Faltan researchId, participantId o stepType para cargar datos reales.');
+            return;
+        }
+
+        // Proceder con la carga de datos reales desde la API
+        const apiClient = new ApiClient();
+        setDataLoading(true);
+        setApiError(null);
+        // Resetear estados antes de la carga
+        setCurrentResponse(null);
+        setDataExisted(false);
+        setModuleResponseId(null);
+        setDocumentId(null);
+
+        console.log(`[SingleChoiceQuestion] Iniciando carga de datos para research: ${researchId}, participant: ${participantId}, stepType: ${stepType}`);
+
+        apiClient.getModuleResponses(researchId, participantId)
+            .then(apiResponse => {
+                if (apiResponse.error || !apiResponse.data?.data) {
+                    console.log('[SingleChoiceQuestion] No se encontraron respuestas previas o hubo un error al cargar.', apiResponse.message);
+                    setDataExisted(false);
+                    setDocumentId(null);
+                    setModuleResponseId(null);
+                    setCurrentResponse(null);
+                    if (apiResponse.apiStatus === APIStatus.NOT_FOUND) {
+                        setApiError(null);
+                    } else {
+                        setApiError(apiResponse.message || 'Error cargando datos del módulo.');
+                    }
+                    return;
+                }
+
+                const fullDocument = apiResponse.data.data as { id: string, responses: Array<{id: string, stepType: string, response: any}> };
+                setDocumentId(fullDocument.id);
+                const foundStepData = fullDocument.responses.find(item => item.stepType === stepType);
+
+                if (foundStepData) {
+                    console.log(`[SingleChoiceQuestion] Datos encontrados para stepType '${stepType}':`, foundStepData);
+                    setCurrentResponse(typeof foundStepData.response === 'string' ? foundStepData.response : null);
+                    setModuleResponseId(foundStepData.id || null);
+                    setDataExisted(true);
+                } else {
+                    console.log(`[SingleChoiceQuestion] No se encontraron datos específicos para stepType '${stepType}'.`);
+                    setCurrentResponse(null);
+                    setModuleResponseId(null);
+                    setDataExisted(false);
+                }
+            })
+            .catch(error => {
+                console.error('[SingleChoiceQuestion] Excepción al cargar datos:', error);
+                setApiError(error.message || 'Excepción desconocida al cargar datos.');
+                setDataExisted(false);
+                setModuleResponseId(null);
+                setCurrentResponse(null);
+            })
+            .finally(() => {
+                setDataLoading(false);
+            });
+    // Quitar initialConfig.savedResponses de las dependencias.
+    // Mantener isMock para la lógica de carga inicial.
+    }, [researchId, participantId, stepType, isMock]); // initialConfig.savedResponses eliminado
+
+
+    // Texto dinámico para el botón
+    let buttonText = 'Siguiente';
+    if (isNavigating) {
+        buttonText = 'Pasando al siguiente módulo...';
+    } else if (isSaving || isApiLoading) {
+        buttonText = 'Guardando...';
+    } else if (dataExisted && moduleResponseId) {
+        buttonText = 'Actualizar y continuar';
+    } else {
+        buttonText = 'Guardar y continuar';
+    }
+
+    const handleSaveAndProceed = async () => {
+        if (!currentResponse && initialConfig.required !== false) { // Asumir requerido si no se especifica lo contrario
+            setApiError("Por favor, selecciona una opción.");
+            return;
+        }
+        if (!researchId || !participantId) {
+            setApiError("Faltan researchId o participantId para guardar.");
+            return;
+        }
+        
+        const currentStepIdForApi = stepIdFromProps || stepType;
+        const currentStepNameForApi = componentTitle;
+
+        setIsSaving(true);
+        setApiError(null);
+
+        try {
+            let success = false;
+            const payload = { response: currentResponse };
+
+            if (dataExisted && moduleResponseId) {
+                console.log(`[SingleChoiceQuestion] Actualizando (PUT) para moduleResponseId: ${moduleResponseId}`);
+                await updateResponse(moduleResponseId, currentStepIdForApi, stepType, currentStepNameForApi, payload.response);
+                if (apiHookError) { 
+                    setApiError(apiHookError);
+                } else { 
+                    success = true;
+                }
+            } else {
+                console.log(`[SingleChoiceQuestion] Creando (POST) para stepType: ${stepType}`);
+                const result = await saveResponse(currentStepIdForApi, stepType, currentStepNameForApi, payload.response);
+                 if (apiHookError) {
+                    setApiError(apiHookError);
+                } else if (result && result.id) {
+                    setModuleResponseId(result.id); 
+                    setDataExisted(true); 
+                    success = true;
+                }
+            }
+
+            if (success) {
+                console.log('[SingleChoiceQuestion] Operación con servidor exitosa. Preparando para navegar.');
+                setIsNavigating(true);
+                setTimeout(() => {
+                    onStepComplete(currentResponse);
+                }, 500);
+            } else if (!apiHookError && !apiError) {
+                 setApiError('La operación de guardado no parece haber tenido éxito.');
+            }
+        } catch (error: any) {
+            console.error('[SingleChoiceQuestion] Excepción al guardar:', error);
+            setApiError(error.message || 'Error desconocido durante el guardado.');
+        } finally {
+            setIsSaving(false);
         }
     };
 
+    if (dataLoading && !isMock) { // Solo mostrar cargando si no es mock y está cargando datos reales
+        return (
+            <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full text-center">
+                <p className="text-gray-600">Cargando...</p>
+            </div>
+        );
+    }
+
     return (
         <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full">
-            <h2 className="text-xl font-medium mb-1 text-neutral-800">{title}</h2>
+            <h2 className="text-xl font-medium mb-1 text-neutral-800">{componentTitle}</h2>
             {description && <p className="text-sm text-neutral-500 mb-3">{description}</p>}
             <p className="text-neutral-600 mb-4">{questionText}</p>
+
+            {(apiError || apiHookError) && (
+              <div className="bg-red-50 border border-red-200 text-sm text-red-700 px-4 py-3 rounded mb-4" role="alert">
+                <strong className="font-bold">Error: </strong>
+                <span>{apiError || apiHookError}</span>
+              </div>
+            )}
+
             <div className="flex flex-col gap-2 mb-4">
                 {options.map((option: string, index: number) => (
                     <button
                         key={index}
-                        onClick={() => setSelectedOption(option)}
-                        className={`p-3 border rounded-md text-left transition-colors ${
-                            selectedOption === option 
+                        onClick={() => setCurrentResponse(option)} // Actualizar currentResponse
+                        disabled={isSaving || isApiLoading || dataLoading || isNavigating}
+                        className={`p-3 border rounded-md text-left transition-colors disabled:opacity-70 ${
+                            currentResponse === option 
                                 ? 'bg-primary-100 border-primary-300 text-primary-700'
                                 : 'border-neutral-300 text-neutral-700 hover:bg-gray-50'
-                        }`}
+                        } ${ (isSaving || isApiLoading || dataLoading || isNavigating) ? 'cursor-not-allowed' : '' }`}
                     >
                         {option}
                     </button>
                 ))}
             </div>
             <button
-                onClick={handleSubmit}
-                disabled={!selectedOption}
+                onClick={handleSaveAndProceed}
+                disabled={!currentResponse || isSaving || isApiLoading || dataLoading || isNavigating || (isMock && !currentResponse)}
                 className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors disabled:bg-neutral-300 disabled:cursor-not-allowed"
             >
-                Siguiente
+                {buttonText}
             </button>
+            {process.env.NODE_ENV === 'development' && !isMock && (
+                <div className="mt-4 p-2 bg-gray-50 text-xs text-gray-500 border rounded">
+                    <p className="font-semibold">[Debug SingleChoiceQuestion]</p>
+                    <p>Research ID: {researchId || 'N/A'}, Participant ID: {participantId || 'N/A'}</p>
+                    <p>StepType: {stepType}, StepIdProp: {stepIdFromProps || 'N/A'}, StepNameProp: {stepNameFromProps || 'N/A'}</p>
+                    <p>Data Loading: {dataLoading.toString()}, Data Existed: {dataExisted.toString()}</p>
+                    <p>Document ID: {documentId || 'N/A'}, ModuleResponse ID: {moduleResponseId || 'N/A'}</p>
+                    <p>API Saving: {isSaving.toString()}, API Hook Loading: {isApiLoading.toString()}</p>
+                    <p>API Error (Form): {apiError || 'No'}, API Error (Hook): {apiHookError || 'No'}</p>
+                    <p>Is Navigating: {isNavigating.toString()}</p>
+                    <div>Response: <pre>{JSON.stringify(currentResponse, null, 2)}</pre></div>
+                </div>
+            )}
         </div>
     );
 };
@@ -535,58 +742,256 @@ const SingleChoiceQuestion: React.FC<{
 // Componente para Multiple Choice
 const MultipleChoiceQuestion: React.FC<{
     config: any; 
-    stepId?: string;
-    stepName?: string;
-    stepType: string;
-    onStepComplete: (answer: any) => void;
-    isMock: boolean;
-}> = ({ config, stepId, stepName, stepType, onStepComplete, isMock }) => {
-    const title = config.title || stepName || 'Pregunta de opciones múltiples';
-    const description = config.description;
-    const questionText = config.questionText || (isMock ? 'Selecciona todas las opciones que apliquen' : '');
-    const options = config.options || (isMock ? ['Opción 1', 'Opción 2', 'Opción 3', 'Opción 4'] : []);
-    const minSelections = config.minSelections || 0;
-    const maxSelections = config.maxSelections || options.length;
+    stepId?: string;    // stepId de la configuración del flujo
+    stepName?: string;  // stepName de la configuración del flujo
+    stepType: string;   // ej. cognitive_multiple_choice
+    onStepComplete: (answer: any) => void; // Se llamará DESPUÉS de un guardado exitoso
+    isMock: boolean;    // Determinado por CurrentStepRenderer basado en la validez de config
+}> = ({ config: initialConfig, stepId: stepIdFromProps, stepName: stepNameFromProps, stepType, onStepComplete, isMock }) => {
+    const componentTitle = initialConfig.title || stepNameFromProps || 'Pregunta de opciones múltiples';
+    const description = initialConfig.description;
+    const questionText = initialConfig.questionText || (isMock ? 'Selecciona todas las opciones que apliquen (Prueba)' : 'Pregunta sin texto');
+    const optionsFromConfig = initialConfig.options || (isMock ? ['Opción Múltiple A', 'Opción Múltiple B', 'Opción Múltiple C'] : []);
+    const minSelections = initialConfig.minSelections || 0;
+    const maxSelections = initialConfig.maxSelections || optionsFromConfig.length;
     
-    // Inicializar con respuestas guardadas o array vacío
-    const [selectedOptions, setSelectedOptions] = useState<string[]>(() => {
-        return config.savedResponses || [];
+    const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
+
+    // Estados para la API y carga/guardado de datos
+    const [apiError, setApiError] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [dataLoading, setDataLoading] = useState(true); // Inicia en true si no es mock
+    const [dataExisted, setDataExisted] = useState(false);
+    const [documentId, setDocumentId] = useState<string | null>(null);
+    const [moduleResponseId, setModuleResponseId] = useState<string | null>(null);
+    const [isNavigating, setIsNavigating] = useState(false);
+
+    const researchId = useParticipantStore(state => state.researchId);
+    const participantId = useParticipantStore(state => state.participantId);
+
+    const {
+        saveResponse,
+        updateResponse,
+        isLoading: isApiLoading, // Loading del hook useResponseAPI
+        error: apiHookError,
+    } = useResponseAPI({ 
+        researchId: researchId || '', 
+        participantId: participantId || '' 
     });
-    
-    // Si cambian las respuestas guardadas en config, actualizar el estado
+
+    // useEffect para cargar datos existentes o inicializar desde config.savedResponses
     useEffect(() => {
-        if (config.savedResponses !== undefined) {
-            setSelectedOptions(config.savedResponses);
+        console.log(`[MultipleChoiceQuestion] useEffect de carga. isMock: ${isMock}, initialConfig.savedResponses:`, initialConfig.savedResponses);
+        if (isMock) {
+            setSelectedOptions(initialConfig.savedResponses || []);
+            setDataLoading(false);
+            console.log('[MultipleChoiceQuestion] Modo Mock: Usando savedResponses de initialConfig:', initialConfig.savedResponses || []);
+            return;
         }
-    }, [config.savedResponses]);
+
+        if (!researchId || !participantId || !stepType) {
+            setDataLoading(false);
+            setSelectedOptions([]); // Reiniciar por si acaso
+            setDataExisted(false);
+            setModuleResponseId(null);
+            setDocumentId(null);
+            console.warn('[MultipleChoiceQuestion] Carga OMITIDA: Faltan researchId, participantId o stepType para cargar datos reales.');
+            return;
+        }
+
+        const apiClient = new ApiClient();
+        setDataLoading(true);
+        setApiError(null);
+        setSelectedOptions([]); // Resetear antes de la carga
+        setDataExisted(false);
+        setModuleResponseId(null);
+        setDocumentId(null);
+
+        console.log(`[MultipleChoiceQuestion] Iniciando carga de datos para research: ${researchId}, participant: ${participantId}, stepType: ${stepType}`);
+
+        apiClient.getModuleResponses(researchId, participantId)
+            .then(apiResponse => {
+                if (apiResponse.error || !apiResponse.data?.data) {
+                    console.log('[MultipleChoiceQuestion] No se encontraron respuestas previas o hubo un error al cargar.', apiResponse.message);
+                    setDataExisted(false);
+                    // No limpiar selectedOptions aquí, podría haber un savedResponses en initialConfig si la API falla pero el config es válido
+                    // setSelectedOptions(initialConfig.savedResponses || []); 
+                    if (initialConfig.savedResponses && Array.isArray(initialConfig.savedResponses)) {
+                         setSelectedOptions(initialConfig.savedResponses);
+                         console.log('[MultipleChoiceQuestion] API falló/sin datos, pero usando savedResponses de initialConfig:', initialConfig.savedResponses);
+                    } else {
+                        setSelectedOptions([]);
+                    }
+
+                    if (apiResponse.apiStatus === APIStatus.NOT_FOUND) {
+                        setApiError(null);
+                    } else {
+                        setApiError(apiResponse.message || 'Error cargando datos del módulo.');
+                    }
+                    return;
+                }
+
+                const fullDocument = apiResponse.data.data as { id: string, responses: Array<{id: string, stepType: string, response: any}> };
+                setDocumentId(fullDocument.id);
+                const foundStepData = fullDocument.responses.find(item => item.stepType === stepType);
+
+                if (foundStepData && Array.isArray(foundStepData.response)) {
+                    console.log(`[MultipleChoiceQuestion] Datos encontrados para stepType '${stepType}':`, foundStepData);
+                    setSelectedOptions(foundStepData.response);
+                    setModuleResponseId(foundStepData.id || null);
+                    setDataExisted(true);
+                } else {
+                    console.log(`[MultipleChoiceQuestion] No se encontraron datos específicos (o no es array) para stepType '${stepType}'. Usando initialConfig.savedResponses si existe.`);
+                    // Si no hay datos de API, pero initialConfig (que es el config real si no es mock) tiene savedResponses, usar eso.
+                    if (initialConfig.savedResponses && Array.isArray(initialConfig.savedResponses)) {
+                         setSelectedOptions(initialConfig.savedResponses);
+                         console.log('[MultipleChoiceQuestion] Usando savedResponses de initialConfig porque API no devolvió datos específicos:', initialConfig.savedResponses);
+                    } else {
+                        setSelectedOptions([]);
+                    }
+                    setModuleResponseId(null);
+                    setDataExisted(false);
+                }
+            })
+            .catch(error => {
+                console.error('[MultipleChoiceQuestion] Excepción al cargar datos:', error);
+                setApiError(error.message || 'Excepción desconocida al cargar datos.');
+                setDataExisted(false);
+                setModuleResponseId(null);
+                // setSelectedOptions(initialConfig.savedResponses || []);
+                 if (initialConfig.savedResponses && Array.isArray(initialConfig.savedResponses)) {
+                         setSelectedOptions(initialConfig.savedResponses);
+                    } else {
+                        setSelectedOptions([]);
+                    }
+            })
+            .finally(() => {
+                setDataLoading(false);
+            });
+    }, [researchId, participantId, stepType, isMock, initialConfig.savedResponses]); // Añadir initialConfig.savedResponses como dependencia
 
     const handleCheckboxChange = (option: string) => {
         setSelectedOptions(prev => {
-            return prev.includes(option)
-                ? prev.filter(item => item !== option) // Quitar si ya está seleccionado
-                : (prev.length < maxSelections ? [...prev, option] : prev); // Añadir si no excede el máximo
+            const newSelection = prev.includes(option)
+                ? prev.filter(item => item !== option)
+                : [...prev, option];
+            
+            if (newSelection.length > maxSelections) {
+                return prev; // No permitir exceder el máximo
+            }
+            return newSelection;
         });
     };
 
-    const handleSubmit = () => {
-        if (selectedOptions.length >= minSelections) {
-            onStepComplete(selectedOptions);
+    // Texto dinámico para el botón
+    let buttonText = 'Siguiente';
+    if (isNavigating) {
+        buttonText = 'Pasando al siguiente módulo...';
+    } else if (isSaving || isApiLoading) {
+        buttonText = 'Guardando...';
+    } else if (!isMock && dataExisted && moduleResponseId) {
+        buttonText = 'Actualizar y continuar';
+    } else if (!isMock) {
+        buttonText = 'Guardar y continuar';
+    }
+    // Si es mock, el botón siempre dirá Siguiente (o el default que tenga el componente original)
+
+    const handleSaveAndProceed = async () => {
+        if (isMock) { // Si es mock, simplemente llamar a onStepComplete
+            if (selectedOptions.length >= minSelections) {
+                console.log('[MultipleChoiceQuestion] Modo Mock: Completando paso con:', selectedOptions);
+                onStepComplete(selectedOptions);
+            }
+            return;
+        }
+
+        if (selectedOptions.length < minSelections && initialConfig.required !== false) {
+            setApiError(`Por favor, selecciona al menos ${minSelections} opciones.`);
+            return;
+        }
+        if (!researchId || !participantId) {
+            setApiError("Faltan researchId o participantId para guardar.");
+            return;
+        }
+        
+        const currentStepIdForApi = stepIdFromProps || stepType;
+        const currentStepNameForApi = componentTitle;
+
+        setIsSaving(true);
+        setApiError(null);
+
+        try {
+            let success = false;
+            const payload = { response: selectedOptions }; // La respuesta es un array de strings
+
+            if (dataExisted && moduleResponseId) {
+                console.log(`[MultipleChoiceQuestion] Actualizando (PUT) para moduleResponseId: ${moduleResponseId}`);
+                await updateResponse(moduleResponseId, currentStepIdForApi, stepType, currentStepNameForApi, payload.response);
+                if (apiHookError) { 
+                    setApiError(apiHookError);
+                } else { 
+                    success = true;
+                }
+            } else {
+                console.log(`[MultipleChoiceQuestion] Creando (POST) para stepType: ${stepType}`);
+                const result = await saveResponse(currentStepIdForApi, stepType, currentStepNameForApi, payload.response);
+                 if (apiHookError) {
+                    setApiError(apiHookError);
+                } else if (result && result.id) {
+                    setModuleResponseId(result.id); 
+                    setDataExisted(true); 
+                    success = true;
+                }
+            }
+
+            if (success) {
+                console.log('[MultipleChoiceQuestion] Operación con servidor exitosa. Preparando para navegar.');
+                setIsNavigating(true);
+                setTimeout(() => {
+                    onStepComplete(selectedOptions);
+                }, 500);
+            } else if (!apiHookError && !apiError) {
+                 setApiError('La operación de guardado no parece haber tenido éxito.');
+            }
+        } catch (error: any) {
+            console.error('[MultipleChoiceQuestion] Excepción al guardar:', error);
+            setApiError(error.message || 'Error desconocido durante el guardado.');
+        } finally {
+            setIsSaving(false);
         }
     };
 
+    if (dataLoading && !isMock) {
+        return (
+            <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full text-center">
+                <p className="text-gray-600">Cargando opciones...</p>
+            </div>
+        );
+    }
+
     return (
         <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full">
-            <h2 className="text-xl font-medium mb-1 text-neutral-800">{title}</h2>
+             {/* Quitar el MockDataWarning de aquí, ya lo maneja renderStepWithWarning */}
+            <h2 className="text-xl font-medium mb-1 text-neutral-800">{componentTitle}</h2>
             {description && <p className="text-sm text-neutral-500 mb-3">{description}</p>}
             <p className="text-neutral-600 mb-4">{questionText}</p>
+
+            {(apiError || apiHookError) && (
+              <div className="bg-red-50 border border-red-200 text-sm text-red-700 px-4 py-3 rounded mb-4" role="alert">
+                <strong className="font-bold">Error: </strong>
+                <span>{apiError || apiHookError}</span>
+              </div>
+            )}
+
             <div className="flex flex-col gap-2 mb-4">
-                {options.map((option: string, index: number) => (
-                    <label key={index} className="flex items-center gap-2 p-3 border rounded-md cursor-pointer hover:bg-gray-50">
+                {optionsFromConfig.map((option: string, index: number) => (
+                    <label key={index} className="flex items-center gap-2 p-3 border rounded-md cursor-pointer hover:bg-gray-50 transition-colors">
                         <input
                             type="checkbox"
                             checked={selectedOptions.includes(option)}
                             onChange={() => handleCheckboxChange(option)}
-                            className="h-5 w-5 text-primary-600 focus:ring-primary-500"
+                            disabled={isSaving || isApiLoading || dataLoading || isNavigating}
+                            className="h-5 w-5 text-primary-600 focus:ring-primary-500 disabled:opacity-70 disabled:cursor-not-allowed"
                         />
                         <span className="text-neutral-700">{option}</span>
                     </label>
@@ -594,16 +999,32 @@ const MultipleChoiceQuestion: React.FC<{
             </div>
             <div className="text-sm text-neutral-500 mb-4">
                 {minSelections > 0 && `Selecciona al menos ${minSelections} opciones. `}
-                {maxSelections < options.length && `Puedes seleccionar hasta ${maxSelections} opciones. `}
+                {maxSelections < optionsFromConfig.length && `Puedes seleccionar hasta ${maxSelections} opciones. `}
                 Seleccionadas: {selectedOptions.length}
             </div>
             <button
-                onClick={handleSubmit}
-                disabled={selectedOptions.length < minSelections}
+                onClick={handleSaveAndProceed} // Cambiado de handleSubmit a handleSaveAndProceed
+                disabled={selectedOptions.length < minSelections || isSaving || isApiLoading || dataLoading || isNavigating || (isMock && selectedOptions.length < minSelections) }
                 className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors disabled:bg-neutral-300 disabled:cursor-not-allowed"
             >
-                Siguiente
+                {buttonText} {/* Usar el texto dinámico del botón */}
             </button>
+             {process.env.NODE_ENV === 'development' && !isMock && (
+                <div className="mt-4 p-2 bg-gray-50 text-xs text-gray-500 border rounded">
+                    <p className="font-semibold">[Debug MultipleChoiceQuestion]</p>
+                    <p>Research ID: {researchId || 'N/A'}, Participant ID: {participantId || 'N/A'}</p>
+                    <p>StepType: {stepType}, StepIdProp: {stepIdFromProps || 'N/A'}, StepNameProp: {stepNameFromProps || 'N/A'}</p>
+                    <p>IsMock Flag: {isMock.toString()}</p>
+                    <p>Data Loading: {dataLoading.toString()}, Data Existed: {dataExisted.toString()}</p>
+                    <p>Document ID: {documentId || 'N/A'}, ModuleResponse ID: {moduleResponseId || 'N/A'}</p>
+                    <p>API Saving: {isSaving.toString()}, API Hook Loading: {isApiLoading.toString()}</p>
+                    <p>API Error (Form): {apiError || 'No'}, API Error (Hook): {apiHookError || 'No'}</p>
+                    <p>Is Navigating: {isNavigating.toString()}</p>
+                    <div>Selected Options: <pre>{JSON.stringify(selectedOptions, null, 2)}</pre></div>
+                    <div>Initial Config Options: <pre>{JSON.stringify(optionsFromConfig, null, 2)}</pre></div>
+                    <div>Initial Config Saved: <pre>{JSON.stringify(initialConfig.savedResponses, null, 2)}</pre></div>
+                </div>
+            )}
         </div>
     );
 };
@@ -611,49 +1032,221 @@ const MultipleChoiceQuestion: React.FC<{
 // Componente para Linear Scale
 const LinearScaleQuestion: React.FC<{
     config: any; 
-    stepName?: string;
-    stepId?: string;
+    stepId?: string;    // stepId del flujo
+    stepName?: string;  // stepName del flujo
     stepType: string;
-    onStepComplete: (answer: any) => void;
-    isMock: boolean;
-}> = ({ config, stepName, stepId, stepType, onStepComplete, isMock }) => {
-    const title = config.title || stepName || 'Pregunta de escala';
-    const description = config.description;
-    const questionText = config.questionText || (isMock ? 'Valora en una escala del 1 al 5' : '');
-    const minValue = config.minValue || 1;
-    const maxValue = config.maxValue || 5;
-    const minLabel = config.minLabel || 'Mínimo';
-    const maxLabel = config.maxLabel || 'Máximo';
+    onStepComplete: (answer: any) => void; // Se llamará DESPUÉS de un guardado exitoso
+    isMock: boolean;    // Determinado por CurrentStepRenderer
+}> = ({ config: initialConfig, stepId: stepIdFromProps, stepName: stepNameFromProps, stepType, onStepComplete, isMock }) => {
+    const componentTitle = initialConfig.title || stepNameFromProps || 'Pregunta de escala lineal';
+    const description = initialConfig.description;
+    const questionText = initialConfig.questionText || (isMock ? 'Valora en una escala (Prueba)' : 'Pregunta de escala sin texto');
+    const minValue = initialConfig.minValue || 1;
+    const maxValue = initialConfig.maxValue || 5;
+    const minLabel = initialConfig.minLabel || 'Mínimo';
+    const maxLabel = initialConfig.maxLabel || 'Máximo';
     
-    // Inicializar con respuestas guardadas o null
-    const [selectedValue, setSelectedValue] = useState<number | null>(() => {
-        return config.savedResponses || null;
-    });
-    
-    // Si cambian las respuestas guardadas en config, actualizar el estado
-    useEffect(() => {
-        if (config.savedResponses !== undefined) {
-            setSelectedValue(config.savedResponses);
-        }
-    }, [config.savedResponses]);
+    const [selectedValue, setSelectedValue] = useState<number | null>(null);
 
-    const handleSubmit = () => {
-        if (selectedValue !== null) {
-            onStepComplete(selectedValue);
+    // Estados para la API y carga/guardado de datos
+    const [apiError, setApiError] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [dataLoading, setDataLoading] = useState(true);
+    const [dataExisted, setDataExisted] = useState(false);
+    const [documentId, setDocumentId] = useState<string | null>(null);
+    const [moduleResponseId, setModuleResponseId] = useState<string | null>(null);
+    const [isNavigating, setIsNavigating] = useState(false);
+
+    const researchId = useParticipantStore(state => state.researchId);
+    const participantId = useParticipantStore(state => state.participantId);
+
+    const {
+        saveResponse,
+        updateResponse,
+        isLoading: isApiLoading,
+        error: apiHookError,
+    } = useResponseAPI({ 
+        researchId: researchId || '', 
+        participantId: participantId || '' 
+    });
+
+    // useEffect para cargar datos existentes o inicializar desde config.savedResponses
+    useEffect(() => {
+        console.log(`[LinearScaleQuestion] useEffect de carga. isMock: ${isMock}, initialConfig.savedResponses:`, initialConfig.savedResponses);
+        if (isMock) {
+            const mockSavedValue = initialConfig.savedResponses;
+            setSelectedValue(typeof mockSavedValue === 'number' ? mockSavedValue : null);
+            setDataLoading(false);
+            console.log('[LinearScaleQuestion] Modo Mock: Usando savedResponses de initialConfig:', typeof mockSavedValue === 'number' ? mockSavedValue : null);
+            return;
+        }
+
+        if (!researchId || !participantId || !stepType) {
+            setDataLoading(false);
+            setSelectedValue(null); 
+            setDataExisted(false);
+            setModuleResponseId(null);
+            setDocumentId(null);
+            console.warn('[LinearScaleQuestion] Carga OMITIDA: Faltan researchId, participantId o stepType para cargar datos reales.');
+            return;
+        }
+
+        const apiClient = new ApiClient();
+        setDataLoading(true);
+        setApiError(null);
+        setSelectedValue(null); 
+        setDataExisted(false);
+        setModuleResponseId(null);
+        setDocumentId(null);
+
+        console.log(`[LinearScaleQuestion] Iniciando carga de datos para research: ${researchId}, participant: ${participantId}, stepType: ${stepType}`);
+
+        apiClient.getModuleResponses(researchId, participantId)
+            .then(apiResponse => {
+                let valueToSet: number | null = null;
+                if (!apiResponse.error && apiResponse.data?.data) {
+                    const fullDocument = apiResponse.data.data as { id: string, responses: Array<{id: string, stepType: string, response: any}> };
+                    setDocumentId(fullDocument.id);
+                    const foundStepData = fullDocument.responses.find(item => item.stepType === stepType);
+
+                    if (foundStepData && typeof foundStepData.response === 'number') {
+                        console.log(`[LinearScaleQuestion] Datos encontrados en API para stepType '${stepType}':`, foundStepData);
+                        valueToSet = foundStepData.response;
+                        setModuleResponseId(foundStepData.id || null);
+                        setDataExisted(true);
+                    } else {
+                        console.log(`[LinearScaleQuestion] No se encontraron datos específicos (o no es número) en API para stepType '${stepType}'.`);
+                        setDataExisted(false);
+                        setModuleResponseId(null);
+                    }
+                } else {
+                     console.log('[LinearScaleQuestion] No se encontraron respuestas previas o hubo un error al cargar desde API.', apiResponse.message);
+                     if (apiResponse.apiStatus !== APIStatus.NOT_FOUND) {
+                        setApiError(apiResponse.message || 'Error cargando datos del módulo.');
+                    }
+                }
+
+                if (valueToSet === null && initialConfig.savedResponses !== undefined && typeof initialConfig.savedResponses === 'number') {
+                    console.log('[LinearScaleQuestion] Usando savedResponses de initialConfig como fallback:', initialConfig.savedResponses);
+                    valueToSet = initialConfig.savedResponses;
+                }
+                setSelectedValue(valueToSet);
+            })
+            .catch(error => {
+                console.error('[LinearScaleQuestion] Excepción al cargar datos:', error);
+                setApiError(error.message || 'Excepción desconocida al cargar datos.');
+                setDataExisted(false);
+                setModuleResponseId(null);
+                const fallbackSavedValue = initialConfig.savedResponses;
+                setSelectedValue(typeof fallbackSavedValue === 'number' ? fallbackSavedValue : null);
+            })
+            .finally(() => {
+                setDataLoading(false);
+            });
+    }, [researchId, participantId, stepType, isMock, initialConfig.savedResponses]);
+
+    // Texto dinámico para el botón
+    let buttonText = 'Siguiente';
+    if (isNavigating) {
+        buttonText = 'Pasando al siguiente módulo...';
+    } else if (isSaving || isApiLoading) {
+        buttonText = 'Guardando...';
+    } else if (!isMock && dataExisted && moduleResponseId) {
+        buttonText = 'Actualizar y continuar';
+    } else if (!isMock) {
+        buttonText = 'Guardar y continuar';
+    }
+
+    const handleSaveAndProceed = async () => {
+        if (isMock) {
+            if (selectedValue !== null) {
+                onStepComplete(selectedValue);
+            }
+            return;
+        }
+
+        if (selectedValue === null && initialConfig.required !== false) { 
+            setApiError("Por favor, selecciona un valor en la escala.");
+            return;
+        }
+        if (!researchId || !participantId) {
+            setApiError("Faltan researchId o participantId para guardar.");
+            return;
+        }
+        
+        const currentStepIdForApi = stepIdFromProps || stepType;
+        const currentStepNameForApi = componentTitle;
+
+        setIsSaving(true);
+        setApiError(null);
+
+        try {
+            let success = false;
+            const payload = { response: selectedValue }; 
+
+            if (dataExisted && moduleResponseId) {
+                console.log(`[LinearScaleQuestion] Actualizando (PUT) para moduleResponseId: ${moduleResponseId}`);
+                await updateResponse(moduleResponseId, currentStepIdForApi, stepType, currentStepNameForApi, payload.response);
+                if (apiHookError) { 
+                    setApiError(apiHookError);
+                } else { 
+                    success = true;
+                }
+            } else {
+                console.log(`[LinearScaleQuestion] Creando (POST) para stepType: ${stepType}`);
+                const result = await saveResponse(currentStepIdForApi, stepType, currentStepNameForApi, payload.response);
+                 if (apiHookError) {
+                    setApiError(apiHookError);
+                } else if (result && result.id) {
+                    setModuleResponseId(result.id); 
+                    setDataExisted(true); 
+                    success = true;
+                }
+            }
+
+            if (success) {
+                console.log('[LinearScaleQuestion] Operación con servidor exitosa. Preparando para navegar.');
+                setIsNavigating(true);
+                setTimeout(() => {
+                    onStepComplete(selectedValue);
+                }, 500);
+            } else if (!apiHookError && !apiError) {
+                 setApiError('La operación de guardado no parece haber tenido éxito.');
+            }
+        } catch (error: any) {
+            console.error('[LinearScaleQuestion] Excepción al guardar:', error);
+            setApiError(error.message || 'Error desconocido durante el guardado.');
+        } finally {
+            setIsSaving(false);
         }
     };
 
-    // Crear array de los valores para la escala
     const scaleValues = Array.from(
         { length: maxValue - minValue + 1 }, 
         (_, i) => minValue + i
     );
 
+    if (dataLoading && !isMock) {
+        return (
+            <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full text-center">
+                <p className="text-gray-600">Cargando escala...</p>
+            </div>
+        );
+    }
+
     return (
         <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full">
-            <h2 className="text-xl font-medium mb-1 text-neutral-800">{title}</h2>
+            <h2 className="text-xl font-medium mb-1 text-neutral-800">{componentTitle}</h2>
             {description && <p className="text-sm text-neutral-500 mb-3">{description}</p>}
             <p className="text-neutral-600 mb-4">{questionText}</p>
+
+            {(apiError || apiHookError) && (
+              <div className="bg-red-50 border border-red-200 text-sm text-red-700 px-4 py-3 rounded mb-4" role="alert">
+                <strong className="font-bold">Error: </strong>
+                <span>{apiError || apiHookError}</span>
+              </div>
+            )}
+
             <div className="mb-8">
                 <div className="flex justify-between mb-2">
                     <span className="text-sm text-neutral-500">{minLabel}</span>
@@ -664,7 +1257,8 @@ const LinearScaleQuestion: React.FC<{
                         <button
                             key={value}
                             onClick={() => setSelectedValue(value)}
-                            className={`w-10 h-10 rounded-full border flex items-center justify-center ${
+                            disabled={isSaving || isApiLoading || dataLoading || isNavigating}
+                            className={`w-10 h-10 rounded-full border flex items-center justify-center transition-colors disabled:opacity-70 disabled:cursor-not-allowed ${
                                 selectedValue === value
                                     ? 'bg-primary-600 text-white border-primary-600'
                                     : 'bg-white text-neutral-700 border-neutral-300 hover:bg-gray-50'
@@ -676,12 +1270,27 @@ const LinearScaleQuestion: React.FC<{
                 </div>
             </div>
             <button
-                onClick={handleSubmit}
-                disabled={selectedValue === null}
+                onClick={handleSaveAndProceed}
+                disabled={selectedValue === null || isSaving || isApiLoading || dataLoading || isNavigating || (isMock && selectedValue === null)}
                 className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors disabled:bg-neutral-300 disabled:cursor-not-allowed"
             >
-                Siguiente
+                {buttonText}
             </button>
+            {process.env.NODE_ENV === 'development' && !isMock && (
+                <div className="mt-4 p-2 bg-gray-50 text-xs text-gray-500 border rounded">
+                    <p className="font-semibold">[Debug LinearScaleQuestion]</p>
+                    <p>Research ID: {researchId || 'N/A'}, Participant ID: {participantId || 'N/A'}</p>
+                    <p>StepType: {stepType}, StepIdProp: {stepIdFromProps || 'N/A'}, StepNameProp: {stepNameFromProps || 'N/A'}</p>
+                    <p>IsMock Flag: {isMock.toString()}</p>
+                    <p>Data Loading: {dataLoading.toString()}, Data Existed: {dataExisted.toString()}</p>
+                    <p>Document ID: {documentId || 'N/A'}, ModuleResponse ID: {moduleResponseId || 'N/A'}</p>
+                    <p>API Saving: {isSaving.toString()}, API Hook Loading: {isApiLoading.toString()}</p>
+                    <p>API Error (Form): {apiError || 'No'}, API Error (Hook): {apiHookError || 'No'}</p>
+                    <p>Is Navigating: {isNavigating.toString()}</p>
+                    <div>Selected Value: <pre>{JSON.stringify(selectedValue, null, 2)}</pre></div>
+                    <div>Initial Config: <pre>{JSON.stringify(initialConfig, null, 2)}</pre></div>
+                </div>
+            )}
         </div>
     );
 };
@@ -694,19 +1303,15 @@ const SmartVocFeedbackQuestion: React.FC<{
     stepType: string;
     onStepComplete: (answer: any) => void;
 }> = ({ config, stepId: stepIdFromProps, stepName: stepNameFromProps, stepType, onStepComplete }) => {
-    const title = config.title || stepNameFromProps || 'Cuéntanos más';
-    const questionText = config.questionText || '¿Hay algo más que quieras contarnos?';
-    const placeholder = config.placeholder || 'Escribe tu respuesta aquí...';
-    
-    const [currentResponse, setCurrentResponse] = useState<string>('');
-    
-    // Estados para la API y carga de datos
-    const [apiError, setApiError] = useState<string | null>(null);
-    const [isSaving, setIsSaving] = useState(false);
+    // Estados para el componente SmartVocFeedbackQuestion
+    const [currentResponse, setCurrentResponse] = useState('');
+    const [isSaving, setIsSaving] = useState(false); // Para el guardado local antes de la navegación
     const [dataLoading, setDataLoading] = useState(true);
+    const [apiError, setApiError] = useState<string | null>(null);
+    const [documentId, setDocumentId] = useState<string | null>(null); // ID del documento general de ModuleResponse
+    const [moduleResponseId, setModuleResponseId] = useState<string | null>(null); // ID específico de este módulo si ya existe
     const [dataExisted, setDataExisted] = useState(false);
-    const [documentId, setDocumentId] = useState<string | null>(null); // ID del documento de respuestas general
-    const [moduleResponseId, setModuleResponseId] = useState<string | null>(null); // ID específico de esta respuesta de módulo
+    const [isNavigating, setIsNavigating] = useState(false); // Nuevo estado para la navegación
 
     const researchId = useParticipantStore(state => state.researchId);
     const participantId = useParticipantStore(state => state.participantId);
@@ -722,8 +1327,10 @@ const SmartVocFeedbackQuestion: React.FC<{
     });
 
     // Texto dinámico para el botón
-    let buttonText = 'Siguiente';
-    if (isSaving || isApiLoading) {
+    let buttonText = 'Siguiente'; // Valor por defecto, podría ser 'Enviar' o 'Continuar'
+    if (isNavigating) {
+        buttonText = 'Pasando al siguiente módulo...';
+    } else if (isSaving || isApiLoading) {
         buttonText = 'Guardando...';
     } else if (dataExisted && moduleResponseId) {
         buttonText = 'Actualizar y continuar';
@@ -804,79 +1411,62 @@ const SmartVocFeedbackQuestion: React.FC<{
 
 
     const handleSaveAndProceed = async () => {
+        console.log('[SmartVocFeedbackQuestion] Iniciando handleSaveAndProceed. Respuesta actual:', currentResponse);
         if (!researchId || !participantId) {
-            setApiError("Faltan researchId o participantId para guardar.");
-            console.error("[SmartVocFeedbackQuestion] Guardado OMITIDO: Faltan researchId o participantId.");
+            console.error('[SmartVocFeedbackQuestion] Faltan researchId o participantId');
+            setApiError('Faltan researchId o participantId.');
             return;
         }
-        
-        const currentStepIdToSave = stepIdFromProps || stepType; 
-        const currentStepNameToSave = title; 
+        if (!currentResponse && config.required) {
+            setApiError('Por favor, ingresa una respuesta.');
+            return;
+        }
 
         setIsSaving(true);
         setApiError(null);
-        console.log(`[SmartVocFeedbackQuestion] Iniciando guardado. DataExisted: ${dataExisted}, ModuleResponseId: ${moduleResponseId}`);
-        console.log(`[SmartVocFeedbackQuestion] Payload a guardar: stepId='${currentStepIdToSave}', stepType='${stepType}', stepName='${currentStepNameToSave}', response='${currentResponse}'`);
+
+        const payload = { response: currentResponse };
+        let success = false;
 
         try {
-            let success = false;
-            let operationType = '';
-            let resultFromHook: any = null;
-
             if (dataExisted && moduleResponseId) {
-                operationType = 'Actualización (PUT)';
-                console.log(`[SmartVocFeedbackQuestion] Intentando ${operationType} para moduleResponseId: ${moduleResponseId}`);
-                resultFromHook = await updateResponse(moduleResponseId, currentStepIdToSave, stepType, currentStepNameToSave, currentResponse);
-            } else {
-                operationType = dataExisted ? 'Creación (POST) porque moduleResponseId falta pero documento existe' : 'Creación (POST)';
-                console.log(`[SmartVocFeedbackQuestion] Intentando ${operationType} para stepType: ${stepType}`);
-                resultFromHook = await saveResponse(currentStepIdToSave, stepType, currentStepNameToSave, currentResponse);
-            }
-            
-            console.log(`[SmartVocFeedbackQuestion] Respuesta del hook useResponseAPI (${operationType}):`, JSON.stringify(resultFromHook, null, 2));
-
-            if (apiHookError) {
-                console.error(`[SmartVocFeedbackQuestion] Error desde useResponseAPI durante ${operationType}:`, apiHookError);
-                setApiError(apiHookError);
-            } else if (resultFromHook && (resultFromHook.id || resultFromHook.success === true || (operationType === 'Actualización (PUT)' && !resultFromHook))) { // Para PUT, un 200 OK sin contenido es éxito
+                console.log(`[SmartVocFeedbackQuestion] Actualizando (PUT) para moduleResponseId: ${moduleResponseId}, stepId: ${stepIdFromProps}`);
+                await updateResponse(moduleResponseId, stepIdFromProps || '', stepType, stepNameFromProps || 'Feedback Corto', payload);
+                if (apiHookError) throw new Error(apiHookError);
+                console.log('[SmartVocFeedbackQuestion] Actualización exitosa.');
                 success = true;
-                console.log(`[SmartVocFeedbackQuestion] ${operationType} considerada exitosa.`);
-                if (operationType.includes('Creación (POST)') && resultFromHook && resultFromHook.id) {
-                    setModuleResponseId(resultFromHook.id); 
-                    setDataExisted(true); 
-                    console.log(`[SmartVocFeedbackQuestion] POST exitoso. Nuevo moduleResponseId: ${resultFromHook.id}. DataExisted: true`);
-                }
             } else {
-                 console.warn(`[SmartVocFeedbackQuestion] ${operationType} no confirmó éxito explícito y no hubo error del hook. Resultado:`, resultFromHook);
-                 // No necesariamente un error, podría ser una respuesta inesperada.
-                 // Si es un POST y no hay ID, es un problema. Si es PUT y no hay error, podría estar bien.
-                 if (operationType.includes('Creación (POST)') && (!resultFromHook || !resultFromHook.id)){
-                    setApiError(`Error en ${operationType}: No se recibió ID para la nueva respuesta.`);
-                 } else {
-                    // Para PUT, si no hay error explícito, lo consideramos éxito por ahora.
-                    // Podríamos necesitar una lógica más robusta si el backend siempre debe devolver algo.
-                    success = true; 
-                    console.log(`[SmartVocFeedbackQuestion] ${operationType} (PUT sin contenido/id esperado) asumido como éxito al no haber error del hook.`);
-                 }
-            }
-
-
-            if (success) {
-                console.log('[SmartVocFeedbackQuestion] Operación con servidor exitosa. Llamando a onStepComplete.');
-                if (onStepComplete) {
-                    onStepComplete(currentResponse);
+                console.log(`[SmartVocFeedbackQuestion] Guardando (POST) nuevo para stepId: ${stepIdFromProps}`);
+                const result = await saveResponse(stepIdFromProps || '', stepType, stepNameFromProps || 'Feedback Corto', payload);
+                if (apiHookError) throw new Error(apiHookError);
+                console.log('[SmartVocFeedbackQuestion] Guardado exitoso. Resultado:', result);
+                // Actualizar estados si es un nuevo guardado exitoso
+                if (result && result.id) {
+                    // El result.id aquí es el ID del NUEVO ModuleResponse específico creado.
+                    // Si el documento principal ya existía, documentId no cambia.
+                    // Si el documento principal NO existía, se habrá creado uno nuevo,
+                    // pero el hook no devuelve el ID del documento principal directamente.
+                    // Se infiere que el documento existe (dataExisted=true) y se establece el nuevo moduleResponseId.
+                    setDataExisted(true);
+                    setModuleResponseId(result.id);
+                    // No actualizamos documentId aquí, se obtiene al cargar.
                 }
-            } else if (!apiHookError && !apiError) { 
-                 console.error('[SmartVocFeedbackQuestion] La operación de guardado no tuvo éxito y no se establecieron errores específicos.');
-                 setApiError('La operación de guardado no parece haber tenido éxito o la respuesta no fue la esperada.');
+                success = true;
             }
-
         } catch (error: any) {
-            console.error('[SmartVocFeedbackQuestion] EXCEPCIÓN al guardar/actualizar:', error);
-            setApiError(error.message || 'Error desconocido durante el guardado/actualización.');
+            console.error('[SmartVocFeedbackQuestion] Error en operación de guardado/actualización:', error);
+            setApiError(error.message || 'Error al guardar la respuesta.');
+            success = false;
         } finally {
-            setIsSaving(false);
-            console.log('[SmartVocFeedbackQuestion] Proceso de guardado finalizado.');
+            setIsSaving(false); // Termina el estado de guardado del botón
+        }
+
+        if (success) {
+            console.log('[SmartVocFeedbackQuestion] Operación exitosa. Preparando para navegar.');
+            setIsNavigating(true);
+            setTimeout(() => {
+                onStepComplete(currentResponse);
+            }, 500); // Retardo para mostrar el mensaje de navegación
         }
     };
 
@@ -890,8 +1480,8 @@ const SmartVocFeedbackQuestion: React.FC<{
 
     return (
         <div className="w-full"> {/* Asegúrate que este div tenga el max-width deseado si es necesario, como en el 'case' original */}
-            <h2 className="text-xl font-medium text-center mb-4">{title}</h2>
-            <p className="text-center mb-6">{questionText}</p>
+            <h2 className="text-xl font-medium text-center mb-4">{stepNameFromProps || 'Feedback'}</h2>
+            <p className="text-center mb-6">{stepType === 'smartvoc_feedback' ? 'Por favor, cuéntanos más sobre tu experiencia.' : 'Por favor, escribe tu respuesta aquí...'}</p>
             
             {(apiError || apiHookError) && (
               <div className="bg-red-50 border border-red-200 text-sm text-red-700 px-4 py-3 rounded mb-4" role="alert">
@@ -902,7 +1492,7 @@ const SmartVocFeedbackQuestion: React.FC<{
 
             <textarea
                 className="w-full h-32 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-400 focus:border-primary-400 mb-6"
-                placeholder={placeholder}
+                placeholder={stepType === 'smartvoc_feedback' ? 'Por favor, cuéntanos más sobre tu experiencia...' : 'Por favor, escribe tu respuesta aquí...'}
                 value={currentResponse}
                 onChange={(e) => setCurrentResponse(e.target.value)}
                 disabled={isSaving || isApiLoading}
@@ -910,8 +1500,8 @@ const SmartVocFeedbackQuestion: React.FC<{
             <div className="flex justify-center">
                 <button
                     onClick={handleSaveAndProceed}
-                    disabled={isSaving || isApiLoading || !researchId || !participantId || dataLoading}
-                    className="px-8 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={isSaving || isApiLoading || dataLoading || isNavigating} // Deshabilitar también con dataLoading y isNavigating
+                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {buttonText}
                 </button>
@@ -943,35 +1533,209 @@ const SmartVocFeedbackQuestion: React.FC<{
 // Componente para Ranking
 const RankingQuestion: React.FC<{
     config: any; 
-    stepId?: string;
-    stepName?: string;
+    stepId?: string;    // stepId del flujo
+    stepName?: string;  // stepName del flujo
     stepType: string;
-    onStepComplete: (answer: any) => void;
-    isMock: boolean;
-}> = ({ config, stepId, stepName, stepType, onStepComplete, isMock }) => {
-    const title = config.title || stepName || 'Pregunta de ranking';
-    const description = config.description;
-    const questionText = config.questionText || (isMock ? 'Ordena las siguientes opciones por preferencia' : '');
-    const itemsToRank = config.items || (isMock ? ['Elemento 1', 'Elemento 2', 'Elemento 3', 'Elemento 4'] : []);
+    onStepComplete: (answer: any) => void; // Se llamará DESPUÉS de un guardado exitoso
+    isMock: boolean;    // Determinado por CurrentStepRenderer
+}> = ({ config: initialConfig, stepId: stepIdFromProps, stepName: stepNameFromProps, stepType, onStepComplete, isMock }) => {
+    const componentTitle = initialConfig.title || stepNameFromProps || 'Pregunta de ranking';
+    const description = initialConfig.description;
+    const questionText = initialConfig.questionText || (isMock ? 'Ordena las siguientes opciones por preferencia (Prueba)' : 'Pregunta de ranking sin texto');
+    // initialConfig.items ya debería ser un array de strings gracias a la preparación en CurrentStepRenderer
+    const itemsFromConfig = initialConfig.items || (isMock ? ['Item Mock 1', 'Item Mock 2', 'Item Mock 3'] : []);
     
-    // Inicializar con respuestas guardadas o el array original de items
-    const [rankedItems, setRankedItems] = useState<string[]>(() => {
-        return config.savedResponses || [...itemsToRank];
+    // El estado rankedItems almacenará el orden actual de los strings de los items.
+    const [rankedItems, setRankedItems] = useState<string[]>([]); 
+
+    // Estados para la API y carga/guardado de datos
+    const [apiError, setApiError] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [dataLoading, setDataLoading] = useState(true);
+    const [dataExisted, setDataExisted] = useState(false);
+    const [documentId, setDocumentId] = useState<string | null>(null);
+    const [moduleResponseId, setModuleResponseId] = useState<string | null>(null);
+    const [isNavigating, setIsNavigating] = useState(false);
+
+    const researchId = useParticipantStore(state => state.researchId);
+    const participantId = useParticipantStore(state => state.participantId);
+
+    const {
+        saveResponse,
+        updateResponse,
+        isLoading: isApiLoading,
+        error: apiHookError,
+    } = useResponseAPI({ 
+        researchId: researchId || '', 
+        participantId: participantId || '' 
     });
-    
-    // Si cambian las respuestas guardadas en config, actualizar el estado
+
+    // useEffect para cargar datos existentes o inicializar desde config
     useEffect(() => {
-        if (config.savedResponses !== undefined) {
-            setRankedItems(config.savedResponses);
-        } else if (config.items) {
-            setRankedItems([...config.items]);
+        console.log(`[RankingQuestion] useEffect carga. isMock: ${isMock}, initialConfig.savedResponses:`, initialConfig.savedResponses, "itemsFromConfig:", itemsFromConfig);
+        if (isMock) {
+            // Si es mock, usar el orden de itemsFromConfig o el savedResponses del mock
+            const mockSavedOrder = initialConfig.savedResponses;
+            setRankedItems(Array.isArray(mockSavedOrder) && mockSavedOrder.length > 0 ? mockSavedOrder : [...itemsFromConfig]);
+            setDataLoading(false);
+            console.log('[RankingQuestion] Modo Mock: Usando orden inicial/guardado del mock:', Array.isArray(mockSavedOrder) && mockSavedOrder.length > 0 ? mockSavedOrder : [...itemsFromConfig]);
+            return;
         }
-    }, [config.savedResponses, config.items]);
 
-    const handleSubmit = () => {
-        onStepComplete(rankedItems);
+        if (!researchId || !participantId || !stepType) {
+            setDataLoading(false);
+            setRankedItems([...itemsFromConfig]); // Fallback al orden original de config
+            setDataExisted(false);
+            setModuleResponseId(null);
+            setDocumentId(null);
+            console.warn('[RankingQuestion] Carga OMITIDA: Faltan researchId, participantId o stepType para cargar datos reales.');
+            return;
+        }
+
+        const apiClient = new ApiClient();
+        setDataLoading(true);
+        setApiError(null);
+        setRankedItems([]); // Resetear antes de la carga
+        setDataExisted(false);
+        setModuleResponseId(null);
+        setDocumentId(null);
+
+        console.log(`[RankingQuestion] Iniciando carga de datos para research: ${researchId}, participant: ${participantId}, stepType: ${stepType}`);
+
+        apiClient.getModuleResponses(researchId, participantId)
+            .then(apiResponse => {
+                let finalOrderToSet: string[] = [...itemsFromConfig]; // Por defecto, el orden de la config original
+
+                if (!apiResponse.error && apiResponse.data?.data) {
+                    const fullDocument = apiResponse.data.data as { id: string, responses: Array<{id: string, stepType: string, response: any}> };
+                    setDocumentId(fullDocument.id);
+                    const foundStepData = fullDocument.responses.find(item => item.stepType === stepType);
+
+                    if (foundStepData && Array.isArray(foundStepData.response) && foundStepData.response.length > 0) {
+                        // Validar que los items guardados sean un subconjunto de los items actuales y no haya duplicados
+                        const savedOrder = foundStepData.response as string[];
+                        const currentItemSet = new Set(itemsFromConfig);
+                        const isValidSavedOrder = savedOrder.every(item => currentItemSet.has(item)) && new Set(savedOrder).size === savedOrder.length;
+                        
+                        if (isValidSavedOrder && savedOrder.length === itemsFromConfig.length) { // Asegurar que tengan la misma cantidad de items
+                           console.log(`[RankingQuestion] Datos encontrados en API para stepType '${stepType}':`, savedOrder);
+                           finalOrderToSet = savedOrder; // Usar el orden guardado
+                           setModuleResponseId(foundStepData.id || null);
+                           setDataExisted(true);
+                        } else {
+                            console.warn('[RankingQuestion] Orden guardado en API no es válido o no coincide con items actuales. Usando orden de config.', {savedOrder, itemsFromConfig});
+                            setDataExisted(false); 
+                            setModuleResponseId(null);
+                        }
+                    } else {
+                        console.log(`[RankingQuestion] No se encontraron datos específicos (o no es array válido) en API para stepType '${stepType}'.`);
+                        setDataExisted(false); 
+                        setModuleResponseId(null);
+                    }
+                } else {
+                     console.log('[RankingQuestion] No se encontraron respuestas previas o hubo un error al cargar desde API.', apiResponse.message);
+                     if (apiResponse.apiStatus !== APIStatus.NOT_FOUND) {
+                        setApiError(apiResponse.message || 'Error cargando datos del módulo.');
+                    }
+                }
+                
+                // Fallback a initialConfig.savedResponses si no se cargó nada de la API y este existe y es válido
+                if (!dataExisted && Array.isArray(initialConfig.savedResponses) && initialConfig.savedResponses.length > 0) {
+                    const configSavedOrder = initialConfig.savedResponses as string[];
+                     const currentItemSet = new Set(itemsFromConfig);
+                     const isValidConfigSavedOrder = configSavedOrder.every(item => currentItemSet.has(item)) && new Set(configSavedOrder).size === configSavedOrder.length;
+                    if (isValidConfigSavedOrder && configSavedOrder.length === itemsFromConfig.length) {
+                        console.log('[RankingQuestion] Usando savedResponses de initialConfig como fallback:', configSavedOrder);
+                        finalOrderToSet = configSavedOrder;
+                    }
+                }
+                setRankedItems(finalOrderToSet);
+            })
+            .catch(error => {
+                console.error('[RankingQuestion] Excepción al cargar datos:', error);
+                setApiError(error.message || 'Excepción desconocida al cargar datos.');
+                setDataExisted(false);
+                setModuleResponseId(null);
+                const fallbackSavedOrder = initialConfig.savedResponses;
+                setRankedItems(Array.isArray(fallbackSavedOrder) && fallbackSavedOrder.length > 0 ? fallbackSavedOrder : [...itemsFromConfig]);
+            })
+            .finally(() => {
+                setDataLoading(false);
+            });
+    // Dependencias: initialConfig.savedResponses y JSON.stringify(itemsFromConfig) para reaccionar si los items base cambian
+    }, [researchId, participantId, stepType, isMock, initialConfig.savedResponses, JSON.stringify(itemsFromConfig)]);
+
+    // Texto dinámico para el botón
+    let buttonText = 'Siguiente';
+    if (isNavigating) {
+        buttonText = 'Pasando al siguiente módulo...';
+    } else if (isSaving || isApiLoading) {
+        buttonText = 'Guardando...';
+    } else if (!isMock && dataExisted && moduleResponseId) {
+        buttonText = 'Actualizar y continuar';
+    } else if (!isMock) {
+        buttonText = 'Guardar y continuar';
+    }
+
+    const handleSaveAndProceed = async () => {
+        if (isMock) {
+            onStepComplete(rankedItems); // En modo mock, solo se completa con el estado actual
+            return;
+        }
+
+        // Aquí no hay validación de mínimo/máximo, se guarda el orden actual.
+        if (!researchId || !participantId) {
+            setApiError("Faltan researchId o participantId para guardar.");
+            return;
+        }
+        
+        const currentStepIdForApi = stepIdFromProps || stepType;
+        const currentStepNameForApi = componentTitle;
+
+        setIsSaving(true);
+        setApiError(null);
+
+        try {
+            let success = false;
+            const payload = { response: rankedItems }; // La respuesta es el array ordenado de strings
+
+            if (dataExisted && moduleResponseId) {
+                console.log(`[RankingQuestion] Actualizando (PUT) para moduleResponseId: ${moduleResponseId}`);
+                await updateResponse(moduleResponseId, currentStepIdForApi, stepType, currentStepNameForApi, payload.response);
+                if (apiHookError) { 
+                    setApiError(apiHookError);
+                } else { 
+                    success = true;
+                }
+            } else {
+                console.log(`[RankingQuestion] Creando (POST) para stepType: ${stepType}`);
+                const result = await saveResponse(currentStepIdForApi, stepType, currentStepNameForApi, payload.response);
+                 if (apiHookError) {
+                    setApiError(apiHookError);
+                } else if (result && result.id) {
+                    setModuleResponseId(result.id); 
+                    setDataExisted(true); 
+                    success = true;
+                }
+            }
+
+            if (success) {
+                console.log('[RankingQuestion] Operación con servidor exitosa. Preparando para navegar.');
+                setIsNavigating(true);
+                setTimeout(() => {
+                    onStepComplete(rankedItems);
+                }, 500);
+            } else if (!apiHookError && !apiError) {
+                 setApiError('La operación de guardado no parece haber tenido éxito.');
+            }
+        } catch (error: any) {
+            console.error('[RankingQuestion] Excepción al guardar:', error);
+            setApiError(error.message || 'Error desconocido durante el guardado.');
+        } finally {
+            setIsSaving(false);
+        }
     };
-
+    
     const moveItemUp = (index: number) => {
         if (index > 0) {
             const newRankedItems = [...rankedItems];
@@ -987,31 +1751,49 @@ const RankingQuestion: React.FC<{
             setRankedItems(newRankedItems);
         }
     };
+    
+    if (dataLoading && !isMock) {
+        return (
+            <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full text-center">
+                <p className="text-gray-600">Cargando ítems...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full">
-            <h2 className="text-xl font-medium mb-1 text-neutral-800">{title}</h2>
+            <h2 className="text-xl font-medium mb-1 text-neutral-800">{componentTitle}</h2>
             {description && <p className="text-sm text-neutral-500 mb-3">{description}</p>}
             <p className="text-neutral-600 mb-4">{questionText}</p>
+
+            {(apiError || apiHookError) && (
+              <div className="bg-red-50 border border-red-200 text-sm text-red-700 px-4 py-3 rounded mb-4" role="alert">
+                <strong className="font-bold">Error: </strong>
+                <span>{apiError || apiHookError}</span>
+              </div>
+            )}
+
             <div className="mb-4">
                 {rankedItems.map((item, index) => (
-                    <div key={index} className="flex items-center border rounded-md p-3 mb-2">
-                        <span className="w-8 h-8 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-medium mr-3">
+                    <div key={item} className="flex items-center border rounded-md p-3 mb-2 bg-white shadow-sm">
+                        <span className="w-8 h-8 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-medium mr-3 select-none">
                             {index + 1}
                         </span>
-                        <span className="flex-grow">{item}</span>
+                        <span className="flex-grow text-neutral-700 select-none">{item}</span>
                         <div className="flex space-x-1">
                             <button 
                                 onClick={() => moveItemUp(index)}
-                                disabled={index === 0}
-                                className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent"
+                                disabled={index === 0 || isSaving || isApiLoading || dataLoading || isNavigating}
+                                className="p-1 rounded hover:bg-gray-200 disabled:opacity-40 disabled:hover:bg-transparent text-lg text-neutral-600 disabled:text-neutral-400 transition-colors"
+                                aria-label={`Mover ${item} hacia arriba`}
                             >
                                 ▲
                             </button>
                             <button 
                                 onClick={() => moveItemDown(index)}
-                                disabled={index === rankedItems.length - 1}
-                                className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent"
+                                disabled={index === rankedItems.length - 1 || isSaving || isApiLoading || dataLoading || isNavigating}
+                                className="p-1 rounded hover:bg-gray-200 disabled:opacity-40 disabled:hover:bg-transparent text-lg text-neutral-600 disabled:text-neutral-400 transition-colors"
+                                aria-label={`Mover ${item} hacia abajo`}
                             >
                                 ▼
                             </button>
@@ -1020,11 +1802,29 @@ const RankingQuestion: React.FC<{
                 ))}
             </div>
             <button
-                onClick={handleSubmit}
-                className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
+                onClick={handleSaveAndProceed} // Cambiado de handleSubmit
+                // Para ranking, siempre se puede proceder si no está guardando/cargando y no es mock (o si es mock).
+                disabled={isSaving || isApiLoading || dataLoading || isNavigating}
+                className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors disabled:bg-neutral-300 disabled:cursor-not-allowed"
             >
-                Siguiente
+                {buttonText}
             </button>
+            {process.env.NODE_ENV === 'development' && !isMock && (
+                <div className="mt-4 p-2 bg-gray-50 text-xs text-gray-500 border rounded">
+                    <p className="font-semibold">[Debug RankingQuestion]</p>
+                    <p>Research ID: {researchId || 'N/A'}, Participant ID: {participantId || 'N/A'}</p>
+                    <p>StepType: {stepType}, StepIdProp: {stepIdFromProps || 'N/A'}, StepNameProp: {stepNameFromProps || 'N/A'}</p>
+                    <p>IsMock Flag: {isMock.toString()}</p>
+                    <p>Data Loading: {dataLoading.toString()}, Data Existed: {dataExisted.toString()}</p>
+                    <p>Document ID: {documentId || 'N/A'}, ModuleResponse ID: {moduleResponseId || 'N/A'}</p>
+                    <p>API Saving: {isSaving.toString()}, API Hook Loading: {isApiLoading.toString()}</p>
+                    <p>API Error (Form): {apiError || 'No'}, API Error (Hook): {apiHookError || 'No'}</p>
+                    <p>Is Navigating: {isNavigating.toString()}</p>
+                    <div>Items from Config (initialConfig.items): <pre>{JSON.stringify(itemsFromConfig, null, 2)}</pre></div>
+                    <div>Ranked Items (current state): <pre>{JSON.stringify(rankedItems, null, 2)}</pre></div>
+                    <div>InitialConfig SavedResponses: <pre>{JSON.stringify(initialConfig.savedResponses, null, 2)}</pre></div>
+                </div>
+            )}
         </div>
     );
 };
@@ -1282,84 +2082,248 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
 
             case 'cognitive_single_choice': { 
                 if (!onStepComplete) return null;
-                const isMock = !stepConfig || !stepConfig.questionText || !Array.isArray(stepConfig.options) || stepConfig.options.length === 0;
-                const config = isMock
-                    ? { questionText: 'Pregunta de opción única (Prueba)?', options: ['Opción A', 'Opción B', 'Opción C'] }
-                    : stepConfig;
+                
+                console.log('[CurrentStepRenderer] cognitive_single_choice - stepConfig RECIBIDO:', JSON.stringify(stepConfig, null, 2));
+                
+                // <<< INICIO CAMBIOS >>>
+                // Evaluar si el stepConfig tiene la estructura mínima necesaria, aunque el contenido esté vacío.
+                const hasValidQuestionSource = stepConfig && (typeof stepConfig.questionText === 'string' || typeof stepConfig.title === 'string');
+                const hasValidOptionsSource = stepConfig && 
+                                           ( (Array.isArray(stepConfig.options) && stepConfig.options.every((opt: string) => typeof opt === 'string')) ||  // <<< Añadido (opt: string)
+                                             (Array.isArray(stepConfig.choices) && stepConfig.choices.every((choice: { id?: string; text: string }) => choice && typeof choice.text === 'string')) ); // <<< Añadido tipo para choice
+                
+                // isMock será true si no hay stepConfig, o si falta una fuente válida para la pregunta o las opciones.
+                const isMockBasedOnStructure = !stepConfig || !hasValidQuestionSource || !hasValidOptionsSource;
+
+                let configForQuestion;
+                if (isMockBasedOnStructure) {
+                    configForQuestion = { 
+                        questionText: 'Pregunta de opción única (Prueba)?', 
+                        options: ['Opción A', 'Opción B', 'Opción C'],
+                        title: 'Pregunta de opción única (Prueba)?', // Mantener consistencia para el mock
+                        savedResponses: null // Para el mock, no hay respuestas guardadas inicialmente
+                    };
+                } else {
+                    // Transformar el stepConfig recibido al formato que espera SingleChoiceQuestion
+                    const questionText = stepConfig.questionText || stepConfig.title || 'Pregunta sin texto'; // Usar title si questionText no existe
+                    const options = stepConfig.options || 
+                                    (stepConfig.choices ? 
+                                        stepConfig.choices.map((choice: { id?: string; text: string }, index: number) => choice.text || `Opción ${choice.id || index + 1}`) // <<< Añadido tipo para choice
+                                        : []);
+                    configForQuestion = {
+                        ...stepConfig, // Mantener otras propiedades del stepConfig original
+                        questionText: questionText,
+                        options: options,
+                        // savedResponses ya debería estar en stepConfig si existe (como vimos en el log)
+                    };
+                }
+                console.log('[CurrentStepRenderer] cognitive_single_choice - isMockBasedOnStructure:', isMockBasedOnStructure);
+                console.log('[CurrentStepRenderer] cognitive_single_choice - configForQuestion:', JSON.stringify(configForQuestion, null, 2));
+                // <<< FIN CAMBIOS >>>
                 
                 return renderStepWithWarning(
                     <SingleChoiceQuestion
-                        config={config}
+                        config={configForQuestion} // Usar el config transformado/mock
                         stepId={stepId}
                         stepName={stepName}
                         stepType={stepType}
                         onStepComplete={onStepComplete}
-                        isMock={isMock}
+                        isMock={isMockBasedOnStructure} // Usar el nuevo flag de mock
                     />,
-                     isMock // Pasar el flag de mock
+                     isMockBasedOnStructure // Usar el nuevo flag de mock para el warning general
                  );
                 } 
 
             // <<< NUEVO CASE para cognitive_multiple_choice >>>
             case 'cognitive_multiple_choice': { 
                 if (!onStepComplete) return null;
-                const isMock = !stepConfig || !stepConfig.questionText || !Array.isArray(stepConfig.options) || stepConfig.options.length === 0;
-                const config = isMock
-                    ? { questionText: 'Pregunta de opción múltiple (Prueba)?', options: ['Opción 1', 'Opción 2', 'Opción 3'] }
-                    : stepConfig;
+
+                console.log('[CurrentStepRenderer] cognitive_multiple_choice - stepConfig RECIBIDO:', JSON.stringify(stepConfig, null, 2));
+
+                const hasValidQuestionSource = stepConfig && (typeof stepConfig.questionText === 'string' || typeof stepConfig.title === 'string');
+                const hasValidOptionsSource = stepConfig && 
+                                           ( (Array.isArray(stepConfig.options) && stepConfig.options.every((opt: string) => typeof opt === 'string')) || 
+                                             (Array.isArray(stepConfig.choices) && stepConfig.choices.every((choice: { id?: string; text: string }) => choice && typeof choice.text === 'string')) );
+                
+                const isMockBasedOnStructure = !stepConfig || !hasValidQuestionSource || !hasValidOptionsSource;
+
+                let configForQuestion;
+                if (isMockBasedOnStructure) {
+                    configForQuestion = { 
+                        questionText: 'Pregunta de opción múltiple (Prueba)?', 
+                        options: ['Opción Múltiple 1', 'Opción Múltiple 2', 'Opción Múltiple 3'],
+                        title: 'Pregunta de opción múltiple (Prueba)?',
+                        savedResponses: [] // Para múltiple choice, es un array
+                    };
+                } else {
+                    const questionText = stepConfig.questionText || stepConfig.title || 'Pregunta múltiple sin texto';
+                    const options = stepConfig.options || 
+                                    (stepConfig.choices ? 
+                                        stepConfig.choices.map((choice: { id?: string; text: string }, index: number) => choice.text || `Opción ${choice.id || index + 1}`) 
+                                        : []);
+                    configForQuestion = {
+                        ...stepConfig,
+                        questionText: questionText,
+                        options: options,
+                        // savedResponses (array) ya debería estar en stepConfig si existe
+                    };
+                }
+                console.log('[CurrentStepRenderer] cognitive_multiple_choice - isMockBasedOnStructure:', isMockBasedOnStructure);
+                console.log('[CurrentStepRenderer] cognitive_multiple_choice - configForQuestion:', JSON.stringify(configForQuestion, null, 2));
                 
                  return renderStepWithWarning(
                      <MultipleChoiceQuestion
-                        config={config}
+                        config={configForQuestion}
                         stepId={stepId}
                         stepName={stepName}
                         stepType={stepType}
-                        onStepComplete={onStepComplete}
-                        isMock={isMock}
+                        onStepComplete={onStepComplete} // Esto se cambiará cuando refactoricemos MultipleChoiceQuestion
+                        isMock={isMockBasedOnStructure} // MultipleChoiceQuestion usará esto para decidir si carga datos API
                     />,
-                     isMock
+                     isMockBasedOnStructure
                  );
                 } 
 
-            // <<< NUEVO CASE para cognitive_linear_scale >>>
             case 'cognitive_linear_scale': { 
                  if (!onStepComplete) return null;
-                 const isMock = !stepConfig || !stepConfig.questionText || !stepConfig.scaleSize;
-                 const config = isMock
-                    ? { questionText: 'Pregunta escala lineal (Prueba)?', scaleSize: 5, leftLabel: 'Izquierda', rightLabel: 'Derecha' } 
-                    : stepConfig;
+
+                console.log('[CurrentStepRenderer] cognitive_linear_scale - stepConfig RECIBIDO:', JSON.stringify(stepConfig, null, 2));
+
+                const hasValidQuestionSource = stepConfig && (typeof stepConfig.questionText === 'string' || typeof stepConfig.title === 'string');
+                
+                // <<< INICIO AJUSTE PARA LEER DESDE scaleConfig >>>
+                const scaleConfig = stepConfig?.scaleConfig;
+                const hasValidScaleDefinition = stepConfig && 
+                                                ( (typeof stepConfig.minValue === 'number' && typeof stepConfig.maxValue === 'number') || // Legado
+                                                  (scaleConfig && typeof scaleConfig.startValue === 'number' && typeof scaleConfig.endValue === 'number') || // Nuevo desde scaleConfig
+                                                  typeof stepConfig.scaleSize === 'number' ||
+                                                  (Array.isArray(stepConfig.scaleValues) && stepConfig.scaleValues.length > 0) );
+                // <<< FIN AJUSTE PARA LEER DESDE scaleConfig >>>
+
+                const isMockBasedOnStructure = !stepConfig || !hasValidQuestionSource || !hasValidScaleDefinition;
+
+                let configForQuestion;
+                if (isMockBasedOnStructure) {
+                    configForQuestion = { 
+                        questionText: 'Pregunta de escala lineal (Prueba)?', 
+                        title: 'Pregunta de escala lineal (Prueba)?',
+                        minValue: 1, 
+                        maxValue: 5, 
+                        minLabel: 'Mín (Prueba)', 
+                        maxLabel: 'Máx (Prueba)',
+                        savedResponses: null
+                    }; 
+                } else {
+                    const questionText = stepConfig.questionText || stepConfig.title || 'Pregunta de escala sin texto';
+                    // <<< INICIO AJUSTE PARA USAR scaleConfig SI EXISTE >>>
+                    const minValue = scaleConfig?.startValue ?? stepConfig.minValue ?? 1;
+                    const maxValue = scaleConfig?.endValue ?? stepConfig.maxValue ?? stepConfig.scaleSize ?? 5;
+                    const minLabel = scaleConfig?.startLabel ?? stepConfig.minLabel ?? stepConfig.leftLabel ?? 'Mínimo';
+                    const maxLabel = scaleConfig?.endLabel ?? stepConfig.maxLabel ?? stepConfig.rightLabel ?? 'Máximo';
+                    // <<< FIN AJUSTE PARA USAR scaleConfig SI EXISTE >>>
+                    
+                    configForQuestion = {
+                        ...stepConfig, // Propagar todo el stepConfig original
+                        questionText: questionText,
+                        title: questionText, // Asegurar que title también se popule si se usa como fuente
+                        minValue: minValue,
+                        maxValue: maxValue,
+                        minLabel: minLabel,
+                        maxLabel: maxLabel,
+                        // savedResponses ya está en stepConfig (ej. stepConfig.savedResponses)
+                    };
+                }
+                console.log('[CurrentStepRenderer] cognitive_linear_scale - isMockBasedOnStructure:', isMockBasedOnStructure);
+                console.log('[CurrentStepRenderer] cognitive_linear_scale - configForQuestion PASSED TO COMPONENT:', JSON.stringify(configForQuestion, null, 2));
 
                  return renderStepWithWarning(
                      <LinearScaleQuestion
-                        config={config}
+                        config={configForQuestion}
                         stepId={stepId}
                         stepName={stepName}
                         stepType={stepType}
                         onStepComplete={onStepComplete}
-                        isMock={isMock}
+                        isMock={isMockBasedOnStructure}
                     />,
-                     isMock
+                     isMockBasedOnStructure
                  );
-                } 
+            } 
             
             // <<< CASE para cognitive_ranking reemplazado >>>
             case 'cognitive_ranking': {
                 if (!onStepComplete) return null;
-                const isMock = !stepConfig || !stepConfig.questionText || !Array.isArray(stepConfig.items) || stepConfig.items.length === 0;
-                const config = isMock
-                    ? { questionText: 'Pregunta de ranking (Prueba)?', items: ['Item 1', 'Item 2', 'Item 3'] }
-                    : stepConfig;
+
+                console.log('[CurrentStepRenderer] cognitive_ranking - stepConfig RECIBIDO:', JSON.stringify(stepConfig, null, 2));
+
+                const hasValidQuestionSource = stepConfig && (typeof stepConfig.questionText === 'string' || typeof stepConfig.title === 'string');
+                // Para ranking, necesitamos una lista de items/options/choices para ordenar.
+                const hasValidItems = stepConfig && 
+                                      ( (Array.isArray(stepConfig.items) && stepConfig.items.length > 0 && stepConfig.items.every((item: any) => typeof item === 'string' || (typeof item === 'object' && typeof item.text === 'string'))) ||
+                                        (Array.isArray(stepConfig.options) && stepConfig.options.length > 0 && stepConfig.options.every((opt: any) => typeof opt === 'string' || (typeof opt === 'object' && typeof opt.text === 'string'))) ||
+                                        (Array.isArray(stepConfig.choices) && stepConfig.choices.length > 0 && stepConfig.choices.every((choice: any) => choice && (typeof choice.text === 'string' && choice.text.trim() !== '' ) )) ); // <<< AÑADIDO SOPORTE PARA CHOICES CON TEXTO
+
+                const isMockBasedOnStructure = !stepConfig || !hasValidQuestionSource || !hasValidItems;
+
+                let configForQuestion;
+                if (isMockBasedOnStructure) {
+                    console.log('[CurrentStepRenderer] cognitive_ranking - DETECTADO MOCK');
+                    configForQuestion = { 
+                        questionText: 'Pregunta de ranking (Prueba)?', 
+                        title: 'Pregunta de ranking (Prueba)?',
+                        items: ['Item de Prueba Mock 1', 'Item de Prueba Mock 2', 'Item de Prueba Mock 3'], // Items para el mock
+                        savedResponses: [] // En mock, empezamos sin orden guardado o con un orden mock específico si se desea
+                    };
+                } else {
+                    console.log('[CurrentStepRenderer] cognitive_ranking - DETECTADO REAL (NO MOCK)');
+                    const questionText = stepConfig.questionText || stepConfig.title || 'Pregunta de ranking sin texto';
+                    
+                    let itemsToRank: string[] = [];
+                    if (Array.isArray(stepConfig.items) && stepConfig.items.every((item: any) => typeof item === 'string')) {
+                        itemsToRank = stepConfig.items;
+                    } else if (Array.isArray(stepConfig.items)) { // Array de objetos {text: ...}
+                        itemsToRank = stepConfig.items.map((item: any) => item.text || 'Item sin texto').filter((text: string) => text !== 'Item sin texto');
+                    } else if (Array.isArray(stepConfig.options) && stepConfig.options.every((opt: any) => typeof opt === 'string')) {
+                        itemsToRank = stepConfig.options;
+                    } else if (Array.isArray(stepConfig.options)) { // Array de objetos {text: ...}
+                        itemsToRank = stepConfig.options.map((opt: any) => opt.text || 'Opción sin texto').filter((text: string) => text !== 'Opción sin texto');
+                    } else if (Array.isArray(stepConfig.choices)) { // <<< AÑADIDO MANEJO DE CHOICES
+                        itemsToRank = stepConfig.choices
+                            .map((choice: any) => choice.text || 'Choice sin texto')
+                            .filter((text: string) => text.trim() !== '' && text !== 'Choice sin texto');
+                    }
+                    
+                    // Si después de todo, itemsToRank está vacío pero savedResponses tiene algo, es una inconsistencia.
+                    // Por ahora, priorizamos los items definidos en la pregunta.
+                    // Si itemsToRank está vacío aquí, es un problema de configuración del flujo.
+                    if(itemsToRank.length === 0) {
+                         console.warn('[CurrentStepRenderer] cognitive_ranking - No se pudieron extraer items válidos de items, options o choices. Esto puede ser un error de configuración del flujo.');
+                         // Forzar mock si no hay items válidos para rankear, incluso si otras condiciones de mock no se cumplieron.
+                         // Esto evita pasar un array vacío de items a RankingQuestion si se espera data real.
+                         // OJO: Esto significa que isMockBasedOnStructure podría necesitar reevaluarse aquí, o que RankingQuestion necesita manejar items vacíos.
+                         // Por ahora, vamos a dejar que RankingQuestion reciba items vacíos y muestre un mensaje apropiado si es necesario.
+                    }
+
+                    configForQuestion = {
+                        ...stepConfig, // Propagar el stepConfig original
+                        questionText: questionText,
+                        title: questionText,
+                        items: itemsToRank, // Usar la lista normalizada de strings
+                        // savedResponses (array de strings ordenado) se pasa tal cual desde stepConfig
+                    };
+                }
+                console.log('[CurrentStepRenderer] cognitive_ranking - isMockBasedOnStructure:', isMockBasedOnStructure);
+                console.log('[CurrentStepRenderer] cognitive_ranking - configForQuestion PASSED TO COMPONENT:', JSON.stringify(configForQuestion, null, 2));
 
                 return renderStepWithWarning(
                     <RankingQuestion
-                        config={config}
+                        config={configForQuestion}
                         stepId={stepId}
                         stepName={stepName}
                         stepType={stepType}
                         onStepComplete={onStepComplete}
-                        isMock={isMock}
+                        isMock={isMockBasedOnStructure} 
                     />,
-                    isMock
+                    isMockBasedOnStructure
                 );
             }
 

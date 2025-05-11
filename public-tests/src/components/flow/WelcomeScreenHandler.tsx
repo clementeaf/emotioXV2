@@ -26,6 +26,7 @@ const WelcomeScreenHandler: React.FC<WelcomeScreenHandlerProps> = ({
 }) => {
     const [config, setConfig] = useState<WelcomeScreenConfig | null | undefined>(undefined); // undefined: loading, null: not found, object: found
     const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [isNavigating, setIsNavigating] = useState<boolean>(false); // Nuevo estado
 
     const fetchConfig = useCallback(async () => {
         console.log(`[WelcomeHandler] Obteniendo config para researchId: ${researchId}`);
@@ -93,10 +94,16 @@ const WelcomeScreenHandler: React.FC<WelcomeScreenHandlerProps> = ({
                 <h2 className="text-xl font-semibold mb-4">{config.title || 'Bienvenida'}</h2>
                 <p className="mb-4">{config.message || 'Por favor, lee la información y continúa.'}</p>
                 <button
-                    onClick={onComplete} // Llama a onComplete cuando el usuario hace clic
-                    className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
+                    onClick={() => {
+                        setIsNavigating(true);
+                        setTimeout(() => {
+                            onComplete();
+                        }, 500); // Retardo para mostrar el mensaje
+                    }}
+                    disabled={isNavigating} // Deshabilitar si está navegando
+                    className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    {config.startButtonText || 'Continuar'}
+                    {isNavigating ? 'Pasando al siguiente módulo...' : (config.startButtonText || 'Continuar')}
                 </button>
             </div>
         );

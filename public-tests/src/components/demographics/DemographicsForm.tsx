@@ -50,6 +50,19 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
   const credentialsReady = !!(researchIdFromStore && participantIdFromStore);
   const [responses, setResponses] = useState<DemographicResponses>(initialValues);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  // Texto dinámico para el botón
+  let buttonText = 'Continuar';
+  if (isNavigating) {
+    buttonText = 'Pasando al siguiente módulo...';
+  } else if (isSaving || isApiLoading) {
+      buttonText = 'Guardando...';
+  } else if (dataExisted && demographicModuleResponseId) {
+      buttonText = 'Actualizar y continuar';
+  } else {
+      buttonText = 'Guardar y continuar';
+  }
 
   useEffect(() => {
     const fetchExistingResponses = async () => {
@@ -215,10 +228,15 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
+    
     const serverSaveSuccess = await saveToServer(responses);
+    
     if (serverSaveSuccess) {
-      console.log('[DemographicsForm] Datos enviados al servidor via useResponseAPI. Llamando a onSubmit().');
-      onSubmit(responses);
+      console.log('[DemographicsForm] Datos enviados al servidor via useResponseAPI. Preparando para navegar.');
+      setIsNavigating(true);
+      setTimeout(() => {
+        onSubmit(responses);
+      }, 500);
     } else {
       if (!apiError && !apiHookError) {
         setApiError("No se pudo completar el formulario debido a un error desconocido.");
@@ -267,9 +285,9 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
               Cancelar
             </button>
           )}
-          <button type="submit" disabled={isSaving || isLoading || isApiLoading || !credentialsReady} 
+          <button type="submit" disabled={isSaving || isLoading || isApiLoading || !credentialsReady || dataLoading || isNavigating} 
             className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
-            {(isSaving || isApiLoading) ? 'Guardando...' : 'Continuar'}
+            {buttonText}
           </button>
         </div>
       </form>
