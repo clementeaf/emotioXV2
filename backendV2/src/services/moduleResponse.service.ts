@@ -229,9 +229,9 @@ export class ModuleResponseService {
     
     // Actualizar sólo el campo 'response' y el timestamp
     const updateExpression = `SET 
-      #responses[${responseIndex}].response = :newResponse, 
-      #responses[${responseIndex}].updatedAt = :updatedAt,
-      #docUpdatedAt = :updatedAt`;
+      #responses[${responseIndex}].#nestedResponse = :newResponse, 
+      #responses[${responseIndex}].#nestedUpdatedAt = :updatedAtTimestamp, 
+      #docUpdatedAt = :updatedAtTimestamp`;
     
     const command = new UpdateCommand({
       TableName: this.tableName,
@@ -239,11 +239,13 @@ export class ModuleResponseService {
       UpdateExpression: updateExpression,
       ExpressionAttributeNames: {
         '#responses': 'responses',
-        '#docUpdatedAt': 'updatedAt'
+        '#nestedResponse': 'response', // Alias para el campo 'response' anidado
+        '#nestedUpdatedAt': 'updatedAt', // Alias para el campo 'updatedAt' anidado
+        '#docUpdatedAt': 'updatedAt' // Para el 'updatedAt' del documento principal
       },
       ExpressionAttributeValues: {
         ':newResponse': updateDto.response,
-        ':updatedAt': now
+        ':updatedAtTimestamp': now // Usar un nombre de placeholder diferente para evitar colisión con el nombre de atributo
       },
       ReturnValues: 'ALL_NEW'
     });

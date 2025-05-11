@@ -1,6 +1,6 @@
 import { DemographicsSection, DEFAULT_DEMOGRAPHICS_CONFIG, DemographicResponses } from '../types/demographics';
 import { APIResponse } from '../lib/types';
-import { APIStatus } from '../lib/api';
+import { APIStatus, ApiClient } from '../lib/api';
 
 /**
  * Interfaz para definir la estructura de un 'step' dentro de all_steps.
@@ -8,20 +8,21 @@ import { APIStatus } from '../lib/api';
 interface StepDefinition {
   stepType?: string;
   type?: string;
-  responses?: any;
-  answer?: any;
+  response?: any;
+  id?: string;
   // Añade aquí otras propiedades que pueda tener un 'step' si son conocidas
 }
 
 /**
  * URL base de la API
  */
-const API_BASE_URL = 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev';
+// const API_BASE_URL = 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev'; // Ya no se usa directamente aquí
 
 // Nuevo tipo para la respuesta de getDemographicResponses
 interface DemographicDataPayload {
   responses: DemographicResponses;
   documentId: string | null;
+  demographicModuleResponseId: string | null;
 }
 
 /**
@@ -45,8 +46,9 @@ export const demographicsService = {
     }
 
     try {
+      const API_BASE_URL_CONFIG = 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev'; // Mantener para esta función específica
       const url = `/research/${researchId}/demographics`;
-      console.log(`[DemographicsService] Obteniendo configuración con researchId ${researchId}, URL: ${API_BASE_URL}${url}`);
+      console.log(`[DemographicsService] Obteniendo configuración con researchId ${researchId}, URL: ${API_BASE_URL_CONFIG}${url}`);
       
       const headers: Record<string, string> = {
         'Content-Type': 'application/json'
@@ -56,13 +58,11 @@ export const demographicsService = {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const response = await fetch(`${API_BASE_URL}${url}`, {
+      const response = await fetch(`${API_BASE_URL_CONFIG}${url}`, {
         method: 'GET',
         headers
       });
 
-      // Si obtenemos un error 404, devolvemos la configuración por defecto
-      // En un entorno real, podríamos verificar si realmente queremos este fallback
       if (response.status === 404) {
         console.log('[DemographicsService] No se encontró configuración, utilizando valores por defecto');
         return {
@@ -80,7 +80,7 @@ export const demographicsService = {
       } catch (e) {
         console.error(`[DemographicsService] Error parseando JSON:`, e);
         return {
-          data: DEFAULT_DEMOGRAPHICS_CONFIG, // Usar configuración por defecto como fallback
+          data: DEFAULT_DEMOGRAPHICS_CONFIG,
           status: 200,
           apiStatus: APIStatus.SUCCESS
         };
@@ -96,7 +96,6 @@ export const demographicsService = {
         };
       }
 
-      // Si hay datos en la respuesta, asegurarnos de que la estructura sea correcta
       const data = responseData?.data || responseData;
       
       if (!data || !data.questions) {
@@ -117,8 +116,6 @@ export const demographicsService = {
       };
     } catch (error) {
       console.error('[DemographicsService] Error:', error);
-      
-      // En caso de error, devolvemos la configuración por defecto para no bloquear el flujo
       return {
         data: DEFAULT_DEMOGRAPHICS_CONFIG,
         status: 200,
@@ -131,268 +128,86 @@ export const demographicsService = {
    * Obtiene las respuestas demográficas de un participante
    * @param researchId ID de la investigación
    * @param participantId ID del participante
-   * @param token Token de autenticación
    * @returns Promesa con las respuestas demográficas
    */
   async getDemographicResponses(
     researchId: string,
-    participantId: string,
-    token: string
+    participantId: string
   ): Promise<APIResponse<DemographicDataPayload>> {
     if (!researchId || !participantId) {
       return {
-        // @ts-ignore // Temporal para ajustar la estructura gradualmente
-        data: { responses: {}, documentId: null }, 
+        data: { responses: {}, documentId: null, demographicModuleResponseId: null }, 
         error: true,
         apiStatus: APIStatus.ERROR,
         message: 'Se requiere el ID de investigación y el ID del participante'
       };
     }
 
+    const apiClient = new ApiClient();
+
     try {
-      const url = `/research/${researchId}/participants/${participantId}/responses`;
-      console.log(`[DemographicsService] Iniciando consulta GET para researchId: ${researchId}, participantId: ${participantId}`);
-      console.log(`[DemographicsService] Obteniendo respuestas de participante, URL: ${API_BASE_URL}${url}`);
-      
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
-      };
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
+      console.log(`[DemographicsService] Solicitando ModuleResponses para research: ${researchId}, participant: ${participantId}`);
+      const apiResponse = await apiClient.getModuleResponses(researchId, participantId);
+      console.log('[ModuleResponse] Respuesta completa recibida en DemographicsService (de apiClient.getModuleResponses):', JSON.stringify(apiResponse, null, 2));
 
-      const response = await fetch(`${API_BASE_URL}${url}`, {
-        method: 'GET',
-        headers
-      });
+      if (apiResponse.error || apiResponse.apiStatus !== APIStatus.SUCCESS || !apiResponse.data || !apiResponse.data.data) {
+        let message = apiResponse.message || 'No se encontraron respuestas o ocurrió un error.';
+        const anidatedData = apiResponse.data as any;
+        const statusErrorCode = anidatedData?.status || apiResponse.status || (apiResponse.apiStatus === APIStatus.NOT_FOUND ? 404 : 500);
 
-      let responseData = null;
-      try {
-        if (response.headers.get('content-length') !== '0') {
-          responseData = await response.json();
+        if (apiResponse.apiStatus === APIStatus.NOT_FOUND || (anidatedData?.status === 404)) {
+          message = 'No existen respuestas previas para este participante.';
         }
-      } catch (e) {
-        console.error(`[DemographicsService] Error parseando JSON:`, e);
         return {
-          data: { responses: {}, documentId: null }, 
-          error: true, 
-          apiStatus: APIStatus.ERROR, 
-          message: 'Error al procesar la respuesta del servidor'
+          data: { responses: {}, documentId: null, demographicModuleResponseId: null },
+          error: apiResponse.error ?? true,
+          status: statusErrorCode,
+          apiStatus: apiResponse.apiStatus || APIStatus.ERROR,
+          message
         };
       }
 
-      if (!response.ok) {
-        if (response.status === 404) {
-          console.log('[DemographicsService] No se encontraron respuestas guardadas (404).');
-          return {
-            data: { responses: {}, documentId: null }, 
-            status: 200, 
-            apiStatus: APIStatus.SUCCESS 
-          };
-        }
-        return { 
-          // @ts-ignore
-          data: { responses: null, documentId: null }, 
-          error: true, 
-          status: response.status, 
-          apiStatus: APIStatus.ERROR, 
-          message: responseData?.message || `Error HTTP: ${response.status}` 
-        };
-      }
+      const fullDocument = apiResponse.data.data as { id: string, responses: StepDefinition[], [key: string]: any };
 
-      const allResponses = responseData?.data || responseData;
-      console.log('[DemographicsService] Todas las respuestas obtenidas del backend:', allResponses);
-      
       let demographicDataToReturn: DemographicResponses = {};
       let foundDocumentId: string | null = null;
+      let foundDemographicModuleResponseId: string | null = null;
 
-      if (typeof allResponses === 'object' && allResponses !== null && Array.isArray(allResponses.responses)) {
-        console.log('[DemographicsService] Documento principal de respuestas encontrado. ID del Documento:', allResponses.id);
-        foundDocumentId = allResponses.id; // Guardar el ID del documento principal
+      if (typeof fullDocument === 'object' && fullDocument !== null && Array.isArray(fullDocument.responses)) {
+        console.log('[DemographicsService] Documento ModuleResponses encontrado. ID:', fullDocument.id);
+        foundDocumentId = fullDocument.id;
 
-        const demographicStepData = allResponses.responses.find((step: StepDefinition) => 
-          step.stepType === 'demographic'
+        const demographicStepData = fullDocument.responses.find(
+          (step: StepDefinition & { id?: string }) => step.stepType === 'demographic' 
         );
 
-        if (demographicStepData) {
-          console.log('[DemographicsService] Encontrado step demográfico en el array responses:', demographicStepData);
-          console.log('[DemographicsService] Contenido de demographicStepData.response:', demographicStepData.response);
-          demographicDataToReturn = demographicStepData.response || {}; 
+        if (demographicStepData && typeof demographicStepData.response === 'object' && demographicStepData.response !== null) {
+          console.log('[DemographicsService] Step demográfico encontrado en ModuleResponses:', demographicStepData);
+          demographicDataToReturn = demographicStepData.response as DemographicResponses;
+          foundDemographicModuleResponseId = demographicStepData.id || null;
         } else {
-          console.log('[DemographicsService] No se encontró step demográfico en el array responses.');
+          console.log('[DemographicsService] No se encontró step demográfico o su contenido "response" no es un objeto:', demographicStepData);
         }
       } else {
-        console.log('[DemographicsService] La estructura de allResponses no es la esperada (documento con array responses). Datos recibidos:', allResponses);
+        console.warn('[DemographicsService] Estructura de fullDocument (apiResponse.data.data) NO es la esperada o no contiene un array \'responses\'. \'fullDocument\' actual:', JSON.stringify(fullDocument, null, 2));
       }
       
-      console.log('[DemographicsService] Datos demográficos finales a devolver:', demographicDataToReturn, 'ID Documento:', foundDocumentId);
+      console.log('[DemographicsService] Datos demográficos extraídos:', demographicDataToReturn, 'ID Documento:', foundDocumentId);
 
       return {
-        data: { responses: demographicDataToReturn, documentId: foundDocumentId },
-        status: response.status,
+        data: { responses: demographicDataToReturn, documentId: foundDocumentId, demographicModuleResponseId: foundDemographicModuleResponseId },
+        status: apiResponse.status || 200,
         apiStatus: APIStatus.SUCCESS
       };
     } catch (error) {
-      console.error('[DemographicsService] Error obteniendo respuestas demográficas:', error);
+      console.error('[DemographicsService] Error interno obteniendo/procesando respuestas demográficas:', error);
       return { 
-        data: { responses: {}, documentId: null }, 
+        data: { responses: {}, documentId: null, demographicModuleResponseId: null }, 
         error: true, 
+        status: 500,
         apiStatus: APIStatus.ERROR, 
-        message: error instanceof Error ? error.message : 'Error desconocido' 
+        message: error instanceof Error ? error.message : 'Error desconocido al procesar respuestas demográficas.' 
       };
     }
   },
-
-  /**
-   * Guarda las respuestas demográficas del participante
-   * @param researchId ID de la investigación
-   * @param participantId ID del participante
-   * @param responses Respuestas a las preguntas demográficas
-   * @param token Token de autenticación
-   * @returns Promesa con el resultado de la operación
-   */
-  async saveDemographicResponses(
-    researchId: string,
-    participantId: string,
-    responses: any,
-    token: string
-  ): Promise<APIResponse<any>> {
-    if (!researchId || !participantId) {
-      return {
-        data: null,
-        error: true,
-        apiStatus: APIStatus.ERROR,
-        message: 'Se requiere el ID de investigación y el ID del participante'
-      };
-    }
-
-    try {
-      const url = `/research/${researchId}/participants/${participantId}/demographics`;
-      
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
-      };
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const response = await fetch(`${API_BASE_URL}${url}`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(responses)
-      });
-
-      let responseData = null;
-      try {
-        if (response.headers.get('content-length') !== '0') {
-          responseData = await response.json();
-        }
-      } catch (e) {
-        console.error(`[DemographicsService] Error parseando JSON:`, e);
-      }
-
-      if (!response.ok) {
-        return {
-          data: null,
-          error: true,
-          status: response.status,
-          apiStatus: APIStatus.ERROR,
-          message: responseData?.message || `Error HTTP: ${response.status}`
-        };
-      }
-
-      return {
-        data: responseData?.data || responseData,
-        status: response.status,
-        apiStatus: APIStatus.SUCCESS
-      };
-    } catch (error) {
-      console.error('[DemographicsService] Error:', error);
-      
-      return {
-        data: null,
-        error: true,
-        apiStatus: APIStatus.ERROR,
-        message: error instanceof Error ? error.message : 'Error desconocido'
-      };
-    }
-  },
-
-  /**
-   * Actualiza las respuestas demográficas existentes de un participante
-   * @param researchId ID de la investigación
-   * @param participantId ID del participante
-   * @param responses Respuestas actualizadas a las preguntas demográficas
-   * @param token Token de autenticación
-   * @returns Promesa con el resultado de la operación
-   */
-  async updateDemographicResponses(
-    researchId: string,
-    participantId: string,
-    responses: any,
-    token: string
-  ): Promise<APIResponse<any>> {
-    if (!researchId || !participantId) {
-      return {
-        data: null,
-        error: true,
-        apiStatus: APIStatus.ERROR,
-        message: 'Se requiere el ID de investigación y el ID del participante'
-      };
-    }
-
-    try {
-      const url = `/research/${researchId}/participants/${participantId}/demographics`;
-      
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
-      };
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const response = await fetch(`${API_BASE_URL}${url}`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify(responses)
-      });
-
-      let responseData = null;
-      try {
-        if (response.headers.get('content-length') !== '0') {
-          responseData = await response.json();
-        }
-      } catch (e) {
-        console.error(`[DemographicsService] Error parseando JSON de actualización:`, e);
-      }
-
-      if (!response.ok) {
-        return {
-          data: null,
-          error: true,
-          status: response.status,
-          apiStatus: APIStatus.ERROR,
-          message: responseData?.message || `Error HTTP: ${response.status}`
-        };
-      }
-
-      return {
-        data: responseData?.data || responseData,
-        status: response.status,
-        apiStatus: APIStatus.SUCCESS
-      };
-    } catch (error) {
-      console.error('[DemographicsService] Error en actualización:', error);
-      
-      return {
-        data: null,
-        error: true,
-        apiStatus: APIStatus.ERROR,
-        message: error instanceof Error ? error.message : 'Error desconocido en actualización'
-      };
-    }
-  }
 }; 

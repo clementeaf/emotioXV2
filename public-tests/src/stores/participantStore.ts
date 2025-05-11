@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { ParticipantFlowStep } from '../types/flow';
-import { Participant } from '../../../shared/interfaces/participant';
 
 // Interfaz para las respuestas de módulos
 export interface ModuleResponse {

@@ -274,17 +274,36 @@ export class ApiClient {
   /**
    * Actualiza una respuesta de módulo existente
    * @param responseId ID de la respuesta a actualizar
+   * @param researchId ID de la investigación
+   * @param participantId ID del participante
    * @param payload Datos actualizados de la respuesta
    * @returns Respuesta actualizada
    */
   async updateModuleResponse(
     responseId: string,
+    researchId: string,
+    participantId: string,
     payload: { response: any }
   ): Promise<APIResponse<any>> {
-    return this.request<any>(`/module-responses/${responseId}`, { 
+    if (!responseId || !researchId || !participantId || !payload) {
+      console.error('[ApiClient] Faltan IDs o payload para updateModuleResponse');
+      return {
+        data: null,
+        error: true,
+        apiStatus: APIStatus.VALIDATION_ERROR,
+        message: 'Faltan IDs o payload para actualizar la respuesta.'
+      };
+    }
+
+    // Construir el endpoint con researchId y participantId como query parameters
+    const endpoint = `/module-responses/${encodeURIComponent(responseId)}?researchId=${encodeURIComponent(researchId)}&participantId=${encodeURIComponent(participantId)}`;
+    console.log(`[ApiClient] Actualizando ModuleResponse. Endpoint: ${endpoint}, Payload:`, payload);
+
+    const response = await this.request<any>(endpoint, {
       method: 'PUT',
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
+    return response;
   }
 
   /**
