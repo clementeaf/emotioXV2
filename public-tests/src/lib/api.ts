@@ -6,6 +6,7 @@ import {
   ThankYouScreenFormData,
   EyeTrackingFormData,
 } from './types';
+import { useParticipantStore } from '../stores/participantStore';
 
 // Estados de respuesta de la API
 export enum APIStatus {
@@ -39,27 +40,8 @@ interface Step {
 
 // Clase para manejar las peticiones a la API
 export class ApiClient {
-  private token: string | null = null;
-
   constructor() {
-    // Intentar recuperar el token almacenado al inicializar
-    if (typeof window !== 'undefined') {
-      this.token = localStorage.getItem('participantToken');
-    }
-  }
-
-  setToken(token: string) {
-    this.token = token;
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('participantToken', token);
-    }
-  }
-
-  clearToken() {
-    this.token = null;
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('participantToken');
-    }
+    // El constructor ya no necesita cargar el token aquí.
   }
 
   private getHeaders(): Record<string, string> {
@@ -67,10 +49,11 @@ export class ApiClient {
       'Content-Type': 'application/json',
     };
 
-    if (this.token) {
-      (headers as any)['Authorization'] = `Bearer ${this.token}`;
-    }
+    const token = useParticipantStore.getState().token;
 
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
     return headers;
   }
 
@@ -83,22 +66,21 @@ export class ApiClient {
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<APIResponse<T>> {
     try {
-      // Cast headers to a record to safely access Authorization
-      const headers = options.headers as Record<string, string> | undefined;
-      if (!this.token && !headers?.['Authorization']) { // Check using the casted variable
-        console.warn(`[ApiClient] Llamada a ${endpoint} sin token.`);
+      const requestHeaders = this.getHeaders();
+
+      if (!requestHeaders['Authorization']) {
+        console.warn(`[ApiClient] Llamada a ${endpoint} sin token (obtenido del store).`);
         return {
           data: null,
           error: true,
           apiStatus: APIStatus.UNAUTHORIZED,
-          message: 'No hay token de participante para esta solicitud'
+          message: 'No hay token de participante para esta solicitud (desde store)'
         };
       }
 
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        method: 'GET',
-        headers: this.getHeaders(),
         ...options,
+        headers: requestHeaders,
       });
 
       let responseData: any = null;
@@ -121,7 +103,6 @@ export class ApiClient {
 
       if (!response.ok) {
         if (response.status === 401) {
-          this.clearToken();
           return {
             data: null,
             error: true,
@@ -196,9 +177,6 @@ export class ApiClient {
           message: responseData.message || 'Error al registrar participante'
         };
       }
-
-      // Almacenar el token
-      this.setToken(responseData.token);
 
       return {
         data: { token: responseData.token },
@@ -276,61 +254,37 @@ export class ApiClient {
    */
   async getModuleResponses(researchId: string, participantId: string): Promise<APIResponse<any>> {
     this.validateResearchId(researchId);
-    if (!participantId) throw new Error('ID de participante inválido');
-    
-    // Obtener las respuestas del participante
-    const response = await this.request<any>(
-      `/module-responses?researchId=${researchId}&participantId=${participantId}`
-    );
-    return response;
+    if (!participantId) throw new Error('ID de participante inválido para getModuleResponses');
+    // Endpoint de backendV2: GET /module-responses con query params
+    return this.request<any>(`/module-responses?researchId=${researchId}&participantId=${participantId}`);
   }
 
   /**
    * Guarda una nueva respuesta de módulo
-   * @param moduleResponse Datos de la respuesta
+   * @param payload Datos de la respuesta
    * @returns Respuesta guardada
    */
-  async saveModuleResponse(moduleResponse: any): Promise<APIResponse<any>> {
-    if (!moduleResponse || !moduleResponse.researchId || !moduleResponse.participantId) {
-      throw new Error('Datos de respuesta inválidos');
-    }
-    
-    // Guardar la respuesta del módulo
-    const response = await this.request<any>('/module-responses', {
+  async saveModuleResponse(payload: { researchId: string, participantId: string, stepType: string, stepTitle: string, response: any }): Promise<APIResponse<any>> {
+    return this.request<any>('/module-responses', { 
       method: 'POST',
-      body: JSON.stringify(moduleResponse)
+      body: JSON.stringify(payload)
     });
-    return response;
   }
 
   /**
    * Actualiza una respuesta de módulo existente
    * @param responseId ID de la respuesta a actualizar
-   * @param researchId ID de la investigación
-   * @param participantId ID del participante
-   * @param moduleResponse Datos actualizados de la respuesta
+   * @param payload Datos actualizados de la respuesta
    * @returns Respuesta actualizada
    */
   async updateModuleResponse(
     responseId: string,
-    researchId: string,
-    participantId: string,
-    moduleResponse: any
+    payload: { response: any }
   ): Promise<APIResponse<any>> {
-    this.validateResearchId(researchId);
-    if (!responseId || !participantId) {
-      throw new Error('IDs inválidos para actualizar respuesta');
-    }
-    
-    // Actualizar la respuesta del módulo
-    const response = await this.request<any>(
-      `/module-responses/${responseId}?researchId=${researchId}&participantId=${participantId}`,
-      {
-        method: 'PUT',
-        body: JSON.stringify(moduleResponse)
-      }
-    );
-    return response;
+    return this.request<any>(`/module-responses/${responseId}`, { 
+      method: 'PUT',
+      body: JSON.stringify(payload)
+    });
   }
 
   /**
@@ -343,14 +297,9 @@ export class ApiClient {
     this.validateResearchId(researchId);
     if (!participantId) throw new Error('ID de participante inválido');
     
-    // Marcar las respuestas como completadas
-    const response = await this.request<any>(
-      `/module-responses/complete?researchId=${researchId}&participantId=${participantId}`,
-      {
-        method: 'POST'
-      }
-    );
-    return response;
+    return this.request<any>(`/module-responses/complete?researchId=${researchId}&participantId=${participantId}`, { 
+        method: 'POST',
+    });
   }
 }
 

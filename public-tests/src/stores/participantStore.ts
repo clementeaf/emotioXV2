@@ -48,7 +48,7 @@ interface ParticipantInfo {
 }
 
 // Interfaz para el estado de la tienda del participante
-interface ParticipantState {
+export interface ParticipantState {
   // Estado general
   researchId: string | null;
   token: string | null;

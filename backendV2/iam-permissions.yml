@@ -14,13 +14,23 @@ role:
         - dynamodb:DescribeTable
       Resource:
         # ARN para TODAS las tablas de este servicio/etapa usando comodín '*'. Usamos Fn::Sub aquí.
+        # Esto cubrirá las tablas cuyos nombres son como: emotioxv2-backend-<nombretabla>-dev
         - Fn::Sub: arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${self:service}-*-${self:provider.stage}
         # ARN para TODOS los índices de esas tablas
         - Fn::Sub: arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${self:service}-*-${self:provider.stage}/index/*
-        # CORREGIR/AÑADIR ARN explícito para la tabla principal y su GSI researchId-gsi (NOMBRE DE TABLA CORREGIDO)
-        # (Reemplazar researchId-gsi con el nombre real del GSI si es diferente)
+        
+        # Las líneas explícitas para "ModuleResponses" literal se eliminan ya que ahora usamos una variable de entorno 
+        # y la tabla se crea con un nombre basado en el servicio y la etapa.
+        # La regla genérica de arriba debería cubrir la nueva tabla ${self:provider.environment.MODULE_RESPONSES_TABLE}
+        # si sigue el patrón ${self:service}-<algo>-${self:provider.stage}, 
+        # que es el caso con ${self:service}-module-responses-${self:provider.stage}.
+
+        # Las siguientes entradas parecen ser para una tabla diferente que NO sigue el patrón ${self:service}-*-${self:provider.stage}
+        # Si 'emotioxv2-backend-table-dev' es el nombre literal de la tabla definida por ${self:provider.environment.DYNAMODB_TABLE}
+        # y esta NO es igual a ${self:service}-table-${self:provider.stage}, entonces estas líneas explícitas son necesarias para ella.
+        # Por consistencia, sería mejor que DYNAMODB_TABLE también siga el patrón ${self:service}-table-${self:provider.stage}
+        # o usar Fn::GetAtt si es la tabla principal definida en resources.yml con un nombre lógico.
         - Fn::Sub: arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/emotioxv2-backend-table-dev
-        # Nombre de Índice Corregido
         - Fn::Sub: arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/emotioxv2-backend-table-dev/index/researchId-index
 
     # Permisos para el bucket S3

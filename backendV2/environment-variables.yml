@@ -19,6 +19,7 @@ WEBSOCKET_ENDPOINT:
 USER_TABLE: ${self:custom.usersTableName}
 DYNAMODB_TABLE: ${self:service}-table-${self:provider.stage}
 PARTICIPANT_TABLE: ${self:service}-participants-${self:provider.stage}
+MODULE_RESPONSES_TABLE: ${self:service}-module-responses-${self:provider.stage}
 JWT_SECRET: ${env:JWT_SECRET, 'mi-clave-secreta-para-firmar-tokens'}
 TOKEN_EXPIRATION: '604800'
 S3_BUCKET_NAME: ${self:custom.s3BucketName}

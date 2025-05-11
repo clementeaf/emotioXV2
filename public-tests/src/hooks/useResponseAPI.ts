@@ -51,22 +51,13 @@ export const useResponseAPI = ({ researchId, participantId }: UseResponseAPIProp
     setError(null);
 
     try {
-      // Crear objeto de respuesta
-      const moduleResponse: ModuleResponse = {
-        stepId,
-        stepType,
-        stepName,
-        answer,
-        timestamp: Date.now()
-      };
-
-      // Preparar payload
+      // Preparar payload según CreateModuleResponseDtoSchema
       const payload = {
         researchId,
         participantId,
-        stepId,
         stepType,
-        response: moduleResponse
+        stepTitle: stepName,
+        response: answer
       };
 
       const response = await apiClient.saveModuleResponse(payload);
@@ -98,25 +89,17 @@ export const useResponseAPI = ({ researchId, participantId }: UseResponseAPIProp
     setError(null);
 
     try {
-      // Crear objeto de respuesta
-      const moduleResponse: ModuleResponse = {
-        stepId,
-        stepType,
-        stepName,
-        answer,
-        timestamp: Date.now()
-      };
-
-      // Preparar payload
+      // Para actualizar, el backend (UpdateModuleResponseDtoSchema) solo espera el campo 'response' con el nuevo valor.
+      // Los identificadores (researchId, participantId, responseId) se pasan por otros medios (query params o path params en el backend).
       const payload = {
-        researchId,
-        participantId,
-        stepId,
-        stepType,
-        response: moduleResponse
+        response: answer // El valor de la respuesta a actualizar
       };
 
-      const response = await apiClient.updateModuleResponse(responseId, researchId, participantId, payload);
+      // apiClient.updateModuleResponse internamente debe construir la URL correcta con researchId y participantId si son necesarios
+      // como query parameters para el endpoint de actualización. La firma del método en apiClient solo necesita responseId y el payload.
+      // El controlador del backend para PUT /module-responses/{id} espera researchId y participantId como query params, y responseId en el path.
+      // La función apiClient.updateModuleResponse debe estar construyendo esa URL correctamente.
+      const response = await apiClient.updateModuleResponse(responseId, payload);
       
       if (response.error || !response.data) {
         console.error('Error actualizando respuesta:', response);

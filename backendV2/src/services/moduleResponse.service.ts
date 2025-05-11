@@ -101,11 +101,19 @@ export class ModuleResponseService {
     });
 
     try {
+      console.log(`[ModuleResponseService.findByResearchAndParticipant] Querying DDB: Table=${this.tableName}, Index=${RESEARCH_PARTICIPANT_INDEX}, researchId=${researchId}, participantId=${participantId}`);
       const result = await this.dynamoClient.send(command);
+      console.log(`[ModuleResponseService.findByResearchAndParticipant] Query result items count: ${result.Items?.length || 0}`);
       return (result.Items?.[0] as ParticipantResponsesDocument) || null;
     } catch (error: any) {
-      console.error('[ModuleResponseService.findByResearchAndParticipant] Error:', error);
-      throw new ApiError(`Database Error: Could not find response document - ${error.message}`, 500);
+      console.error('[ModuleResponseService.findByResearchAndParticipant] Full DDB Error object:', JSON.stringify(error, null, 2));
+      console.error('[ModuleResponseService.findByResearchAndParticipant] DDB Error Name:', error.name);
+      console.error('[ModuleResponseService.findByResearchAndParticipant] DDB Error Message:', error.message);
+      // Propagar un error más detallado, sin pasar el objeto error original al constructor si no lo soporta.
+      throw new ApiError(
+        `Database Query Failed in findByResearchAndParticipant: ${error.name} - ${error.message}`,
+        500
+      );
     }
   }
 
@@ -119,14 +127,11 @@ export class ModuleResponseService {
   ): Promise<ModuleResponse> {
     const { researchId, participantId, stepType, stepTitle, response } = createDto;
     
-    // Buscar si ya existe un documento para este research y participante
     const existingDocument = await this.findByResearchAndParticipant(researchId, participantId);
     
-    // Generar ID único para la respuesta individual
     const responseId = uuidv4();
     const now = new Date().toISOString();
     
-    // Crear objeto de respuesta individual
     const moduleResponse: ModuleResponse = {
       id: responseId,
       stepType,
@@ -135,13 +140,11 @@ export class ModuleResponseService {
       createdAt: now
     };
 
-    // Si no existe documento, crear uno nuevo con esta respuesta
     if (!existingDocument) {
       await this.createNewDocument(researchId, participantId, moduleResponse);
       return moduleResponse;
     }
     
-    // Si existe documento, buscar si ya hay una respuesta para este stepType
     const existingResponseIndex = existingDocument.responses.findIndex(
       r => r.stepType === stepType
     );
@@ -149,26 +152,27 @@ export class ModuleResponseService {
     let updateExpression: string;
     let expressionAttributeNames: Record<string, string> = {
       '#responses': 'responses',
-      '#updatedAt': 'updatedAt'
+      '#updatedAt': 'updatedAt' // Para el updatedAt del documento principal
     };
     let expressionAttributeValues: Record<string, any> = {
-      ':updatedAt': now
+      ':updatedAt': now // Para el updatedAt del documento principal
     };
     
-    // Si ya existe una respuesta de este tipo, actualizarla
     if (existingResponseIndex >= 0) {
-      // Actualizar la respuesta existente
+      expressionAttributeNames['#nestedResponse'] = 'response'; // Alias para el campo 'response' anidado
+      expressionAttributeNames['#nestedUpdatedAt'] = 'updatedAt'; // Alias para el campo 'updatedAt' anidado
+
       updateExpression = `SET 
-        #responses[${existingResponseIndex}].response = :response, 
-        #responses[${existingResponseIndex}].updatedAt = :responseUpdatedAt,
-        #updatedAt = :updatedAt`;
+        #responses[${existingResponseIndex}].#nestedResponse = :responseValue, 
+        #responses[${existingResponseIndex}].#nestedUpdatedAt = :responseNestedUpdatedAt, 
+        #updatedAt = :updatedAt`; // #updatedAt aquí es el del documento principal
       
-      expressionAttributeValues[':response'] = response;
-      expressionAttributeValues[':responseUpdatedAt'] = now;
+      expressionAttributeValues[':responseValue'] = response;
+      expressionAttributeValues[':responseNestedUpdatedAt'] = now; // Valor para el updatedAt anidado
     } else {
-      // Agregar nueva respuesta al array
-      updateExpression = 'SET #responses = list_append(#responses, :newResponse), #updatedAt = :updatedAt';
+      updateExpression = 'SET #responses = list_append(if_not_exists(#responses, :empty_list), :newResponse), #updatedAt = :updatedAt';
       expressionAttributeValues[':newResponse'] = [moduleResponse];
+      expressionAttributeValues[':empty_list'] = []; // Necesario para if_not_exists en list_append la primera vez
     }
     
     const command = new UpdateCommand({
@@ -184,15 +188,17 @@ export class ModuleResponseService {
       const result = await this.dynamoClient.send(command);
       const updatedDocument = result.Attributes as ParticipantResponsesDocument;
       
-      // Devolver la respuesta actualizada/agregada
       if (existingResponseIndex >= 0) {
         return updatedDocument.responses[existingResponseIndex];
       } else {
+        // Devolver la última respuesta añadida, que es la que acabamos de insertar
         return updatedDocument.responses[updatedDocument.responses.length - 1];
       }
     } catch (error: any) {
-      console.error('[ModuleResponseService.saveModuleResponse] Error:', error);
-      throw new ApiError(`Database Error: Could not save module response - ${error.message}`, 500);
+      console.error('[ModuleResponseService.saveModuleResponse] Error DDB Object:', JSON.stringify(error, null, 2));
+      console.error('[ModuleResponseService.saveModuleResponse] Error Name:', error.name);
+      console.error('[ModuleResponseService.saveModuleResponse] Error Message:', error.message);
+      throw new ApiError(`Database Error: Could not save module response - ${error.name}: ${error.message}`, 500);
     }
   }
 

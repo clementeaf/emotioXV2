@@ -18,6 +18,12 @@ interface StepDefinition {
  */
 const API_BASE_URL = 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev';
 
+// Nuevo tipo para la respuesta de getDemographicResponses
+interface DemographicDataPayload {
+  responses: DemographicResponses;
+  documentId: string | null;
+}
+
 /**
  * Servicio para manejar las preguntas demográficas
  */
@@ -132,10 +138,11 @@ export const demographicsService = {
     researchId: string,
     participantId: string,
     token: string
-  ): Promise<APIResponse<DemographicResponses>> {
+  ): Promise<APIResponse<DemographicDataPayload>> {
     if (!researchId || !participantId) {
       return {
-        data: null,
+        // @ts-ignore // Temporal para ajustar la estructura gradualmente
+        data: { responses: {}, documentId: null }, 
         error: true,
         apiStatus: APIStatus.ERROR,
         message: 'Se requiere el ID de investigación y el ID del participante'
@@ -144,6 +151,7 @@ export const demographicsService = {
 
     try {
       const url = `/research/${researchId}/participants/${participantId}/responses`;
+      console.log(`[DemographicsService] Iniciando consulta GET para researchId: ${researchId}, participantId: ${participantId}`);
       console.log(`[DemographicsService] Obteniendo respuestas de participante, URL: ${API_BASE_URL}${url}`);
       
       const headers: Record<string, string> = {
@@ -167,110 +175,71 @@ export const demographicsService = {
       } catch (e) {
         console.error(`[DemographicsService] Error parseando JSON:`, e);
         return {
-          data: {},
-          error: true,
-          apiStatus: APIStatus.ERROR,
+          data: { responses: {}, documentId: null }, 
+          error: true, 
+          apiStatus: APIStatus.ERROR, 
           message: 'Error al procesar la respuesta del servidor'
         };
       }
 
       if (!response.ok) {
-        // Si es 404, simplemente no hay datos guardados aún
         if (response.status === 404) {
-          console.log('[DemographicsService] No se encontraron respuestas guardadas');
+          console.log('[DemographicsService] No se encontraron respuestas guardadas (404).');
           return {
-            data: {},
-            status: 200,
-            apiStatus: APIStatus.SUCCESS
+            data: { responses: {}, documentId: null }, 
+            status: 200, 
+            apiStatus: APIStatus.SUCCESS 
           };
         }
-        
-        return {
-          data: null,
-          error: true,
-          status: response.status,
-          apiStatus: APIStatus.ERROR,
-          message: responseData?.message || `Error HTTP: ${response.status}`
+        return { 
+          // @ts-ignore
+          data: { responses: null, documentId: null }, 
+          error: true, 
+          status: response.status, 
+          apiStatus: APIStatus.ERROR, 
+          message: responseData?.message || `Error HTTP: ${response.status}` 
         };
       }
 
-      // Extrayendo los datos de respuesta
       const allResponses = responseData?.data || responseData;
-      console.log('[DemographicsService] Todas las respuestas obtenidas:', allResponses);
+      console.log('[DemographicsService] Todas las respuestas obtenidas del backend:', allResponses);
       
-      // Buscar específicamente el formulario demográfico
-      let demographicData = {};
-      
-      // Si la respuesta es un array, buscar por tipo
-      if (Array.isArray(allResponses)) {
-        console.log('[DemographicsService] Respuesta es un array, buscando formulario demográfico...');
-        const demographicForm = allResponses.find(form => 
-          form.type === 'demographic' || 
-          form.stepType === 'demographic' ||
-          form.formType === 'demographic'
+      let demographicDataToReturn: DemographicResponses = {};
+      let foundDocumentId: string | null = null;
+
+      if (typeof allResponses === 'object' && allResponses !== null && Array.isArray(allResponses.responses)) {
+        console.log('[DemographicsService] Documento principal de respuestas encontrado. ID del Documento:', allResponses.id);
+        foundDocumentId = allResponses.id; // Guardar el ID del documento principal
+
+        const demographicStepData = allResponses.responses.find((step: StepDefinition) => 
+          step.stepType === 'demographic'
         );
-        
-        if (demographicForm) {
-          console.log('[DemographicsService] Encontrado formulario demográfico:', demographicForm);
-          demographicData = demographicForm.responses || demographicForm.answer || demographicForm;
+
+        if (demographicStepData) {
+          console.log('[DemographicsService] Encontrado step demográfico en el array responses:', demographicStepData);
+          console.log('[DemographicsService] Contenido de demographicStepData.response:', demographicStepData.response);
+          demographicDataToReturn = demographicStepData.response || {}; 
+        } else {
+          console.log('[DemographicsService] No se encontró step demográfico en el array responses.');
         }
-      } 
-      // Si la respuesta tiene una propiedad 'modules' (estructura común en la aplicación)
-      else if (allResponses && allResponses.modules) {
-        console.log('[DemographicsService] Respuesta tiene estructura de módulos');
-        
-        // Buscar en la estructura de módulos
-        if (allResponses.modules.demographic) {
-          demographicData = allResponses.modules.demographic.responses || 
-                            allResponses.modules.demographic.answer || 
-                            allResponses.modules.demographic;
-        } 
-        // Buscar en all_steps si existe
-        else if (Array.isArray(allResponses.modules.all_steps)) {
-          const demographicStep = allResponses.modules.all_steps.find((step: StepDefinition) => 
-            step.stepType === 'demographic' || 
-            step.type === 'demographic'
-          );
-          
-          if (demographicStep) {
-            demographicData = demographicStep.responses || demographicStep.answer || demographicStep;
-          }
-        }
-      }
-      // Si directamente tiene la estructura del formulario demográfico
-      else if (allResponses && (
-        allResponses.type === 'demographic' || 
-        allResponses.stepType === 'demographic' ||
-        allResponses.formType === 'demographic'
-      )) {
-        demographicData = allResponses.responses || allResponses.answer || allResponses;
+      } else {
+        console.log('[DemographicsService] La estructura de allResponses no es la esperada (documento con array responses). Datos recibidos:', allResponses);
       }
       
-      // Verificar si encontramos datos demográficos
-      if (Object.keys(demographicData).length === 0) {
-        console.log('[DemographicsService] No se encontraron respuestas demográficas específicas');
-        return {
-          data: {},
-          status: 200,
-          apiStatus: APIStatus.SUCCESS
-        };
-      }
-      
-      console.log('[DemographicsService] Respuestas demográficas extraídas:', demographicData);
-      
+      console.log('[DemographicsService] Datos demográficos finales a devolver:', demographicDataToReturn, 'ID Documento:', foundDocumentId);
+
       return {
-        data: demographicData || {},
+        data: { responses: demographicDataToReturn, documentId: foundDocumentId },
         status: response.status,
         apiStatus: APIStatus.SUCCESS
       };
     } catch (error) {
       console.error('[DemographicsService] Error obteniendo respuestas demográficas:', error);
-      
-      return {
-        data: null,
-        error: true,
-        apiStatus: APIStatus.ERROR,
-        message: error instanceof Error ? error.message : 'Error desconocido'
+      return { 
+        data: { responses: {}, documentId: null }, 
+        error: true, 
+        apiStatus: APIStatus.ERROR, 
+        message: error instanceof Error ? error.message : 'Error desconocido' 
       };
     }
   },

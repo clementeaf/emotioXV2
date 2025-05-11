@@ -90,7 +90,65 @@ const sanitizeForJSON = (obj: any): any => {
     }));
 };
 
+// Función para cargar manualmente desde localStorage (replicada de useParticipantStore)
+const loadFromLocalStorage = (key: string): any => {
+  try {
+    const serializedData = localStorage.getItem(key);
+    if (serializedData === null) {
+      console.log(`[useParticipantFlow] No hay datos en localStorage para la clave (${key})`);
+      return null;
+    }
+    const data = JSON.parse(serializedData);
+    console.log(`[useParticipantFlow] Datos cargados desde localStorage (${key}): ${serializedData.length} caracteres`);
+    return data;
+  } catch (error) {
+    console.error(`[useParticipantFlow] Error cargando desde localStorage (${key}):`, error);
+    return null;
+  }
+};
+
+// NUEVO: Función para cargar respuestas existentes desde el API (MOVIDA AQUÍ)
+const loadExistingResponses = async (researchId: string, participantId: string, responseAPI: any, setResponsesData: Function) => {
+    if (!researchId || !participantId) {
+        console.warn('[useParticipantFlow] No se pueden cargar respuestas sin researchId o participantId');
+        return;
+    }
+    
+    console.log(`[useParticipantFlow] Cargando respuestas existentes para participante: ${participantId}`);
+    
+    try {
+        const responses = await responseAPI.getResponses(); // Asume que responseAPI ya tiene el participantId configurado
+        
+        if (!responses) {
+            console.log('[useParticipantFlow] No se encontraron respuestas previas.');
+            return;
+        }
+        
+        console.log('[useParticipantFlow] Respuestas cargadas del servidor:', responses);
+        
+        setResponsesData((prev: ResponsesData) => {
+            const updatedData = { ...prev, participantId };
+            if (responses.modules) {
+                updatedData.modules = { ...prev.modules, ...responses.modules };
+            } else if (Array.isArray(responses)) {
+                // Lógica para organizar respuestas planas si es necesario (simplificada por ahora)
+                // Esto necesitaría una implementación más robusta si el backend devuelve un array plano
+                console.warn("[useParticipantFlow] La API devolvió un array plano de respuestas, se requiere lógica de parseo adicional.");
+            }
+            console.log('[useParticipantFlow] Estado actualizado con respuestas existentes.');
+            return updatedData;
+        });
+        
+    } catch (error) {
+        console.error('[useParticipantFlow] Error cargando respuestas existentes:', error);
+    }
+};
+
 export const useParticipantFlow = (researchId: string | undefined) => {
+    const storeSetResearchId = useParticipantStore(state => state.setResearchId); // Obtener la acción del store
+    const storeSetToken = useParticipantStore(state => state.setToken); // Para limpiar el token al cambiar de research
+    const storeReset = useParticipantStore(state => state.resetStore); // Para resetear al cambiar de research
+
     const [token, setToken] = useState<string | null>(null);
     const [currentStep, setCurrentStep] = useState<ParticipantFlowStep>(ParticipantFlowStep.LOADING_SESSION);
     const [error, setError] = useState<string | null>(null); 
@@ -332,7 +390,13 @@ export const useParticipantFlow = (researchId: string | undefined) => {
     useEffect(() => {
         if (researchId) {
             console.log(`[useParticipantFlow] useEffect init. researchId: ${researchId}`);
-            setToken(null);
+            
+            // Resetear el store y establecer el nuevo researchId
+            storeReset(); // Resetea todo el estado del store, incluyendo participantId y token
+            storeSetResearchId(researchId); // Establecer el nuevo researchId en el store global
+            
+            // Los estados locales del hook también deben resetearse o inicializarse
+            setToken(null); // Limpiar token local ya que el store fue reseteado
             setCurrentStep(ParticipantFlowStep.LOADING_SESSION);
             setError(null);
             setExpandedSteps([]);
@@ -340,7 +404,7 @@ export const useParticipantFlow = (researchId: string | undefined) => {
             setMaxVisitedIndex(0); // Valor predeterminado, no recuperar de localStorage
             setIsFlowLoading(true);
             
-            // Inicializar el objeto de respuestas con el researchId
+            // Inicializar el objeto de respuestas con el researchId (estado local del hook)
             setResponsesData({
                 researchId: researchId,
                 startTime: Date.now(),
@@ -352,13 +416,25 @@ export const useParticipantFlow = (researchId: string | undefined) => {
             });
 
             const storedToken = localStorage.getItem('participantToken');
+            const storedParticipantInfo = loadFromLocalStorage('participantInfo'); // Asumiendo que tienes una función loadFromLocalStorage
             
-            if (storedToken) {
-                console.log("[useParticipantFlow] Token encontrado. Construyendo flujo...");
-                setToken(storedToken);
-                buildExpandedSteps(researchId, storedToken); // Llamar directamente a la función useCallback
+            // Verificar si el token y la info del participante guardados corresponden al researchId actual
+            if (storedToken && storedParticipantInfo && storedParticipantInfo.researchId === researchId) {
+                console.log("[useParticipantFlow] Token e info de participante válidos encontrados para este research. Reconstruyendo sesión...");
+                storeSetToken(storedToken); // Restaurar token en el store
+                // Restaurar participantId en el store (setParticipant también actualiza responsesData y localStorage)
+                useParticipantStore.getState().setParticipant({ id: storedParticipantInfo.id, name: storedParticipantInfo.name, email: storedParticipantInfo.email }); 
+                setToken(storedToken); // Establecer token local del hook
+                // Los datos de respuestas previas se cargarán a través del DemographicsForm o similar
+                buildExpandedSteps(researchId, storedToken); 
             } else {
-                console.log("[useParticipantFlow] No hay token. Pasando a Login.");
+                console.log("[useParticipantFlow] No hay token/info válida para este research. Pasando a Login.");
+                // Limpiar cualquier token o info de participante residual de otro research
+                localStorage.removeItem('participantToken');
+                localStorage.removeItem('participantInfo');
+                localStorage.removeItem('participantResponses'); // Limpiar respuestas también
+                // storeReset() ya fue llamado, así que el store está limpio.
+                // setToken(null) ya fue llamado.
                 setCurrentStep(ParticipantFlowStep.LOGIN);
                 setIsFlowLoading(false);
             }
@@ -369,135 +445,50 @@ export const useParticipantFlow = (researchId: string | undefined) => {
     }, [researchId]); // buildExpandedSteps se llama desde aquí, no necesita ser dependencia directa si se usa useCallback bien.
 
     // --- Lógica de Transiciones (ajustada) ---
-    const handleLoginSuccess = useCallback((participant: Participant) => {
-        console.log("[useParticipantFlow] Login exitoso. Construyendo flujo...");
+    const handleLoginSuccess = useCallback((participant: Participant & { id: string }) => { // Asegurar que participant tenga id
+        console.log("[useParticipantFlow] Login exitoso. Procesando...");
         const storedToken = localStorage.getItem('participantToken');
-        if (storedToken && researchId) {
+        const currentGlobalResearchId = useParticipantStore.getState().researchId;
+
+        if (storedToken && currentGlobalResearchId && participant.id) { // Verificar participant.id
+            // 1. Establecer en el store global
+            useParticipantStore.getState().setToken(storedToken);
+            // Asegurarse de que el objeto pasado a setParticipant cumpla con ParticipantInfo
+            useParticipantStore.getState().setParticipant({ 
+                id: participant.id, 
+                name: participant.name, 
+                email: participant.email 
+            });
+
+            // 2. Establecer en el estado local del hook
             setToken(storedToken);
+            
+            // 3. Continuar con la lógica del flujo
             setError(null);
             setIsFlowLoading(true);
-            setCurrentStep(ParticipantFlowStep.LOADING_SESSION);
+            setCurrentStep(ParticipantFlowStep.LOADING_SESSION); 
             
-            // Actualizar el participantId en el objeto de respuestas
-            setResponsesData(prev => ({
+            // Llamar a loadExistingResponses ANTES de setResponsesData para que los datos se carguen primero
+            // Y pasar las dependencias necesarias a loadExistingResponses
+            loadExistingResponses(currentGlobalResearchId, participant.id, responseAPI, setResponsesData);
+
+            setResponsesData(prev => ({ 
                 ...prev,
-                participantId: (participant as any).id || 'unknown'
+                participantId: participant.id,
+                researchId: currentGlobalResearchId
             }));
             
-            // NUEVO: Cargar respuestas existentes desde el API
-            loadExistingResponses((participant as any).id);
-            
-            buildExpandedSteps(researchId, storedToken); // Llamar directamente
+            buildExpandedSteps(currentGlobalResearchId, storedToken);
         } else {
-            handleError("Error interno post-login: Falta token o ID.", ParticipantFlowStep.LOGIN);
+            let errorMsg = "Error interno post-login: Faltan datos cruciales.";
+            if (!storedToken) errorMsg += " No se encontró el token.";
+            if (!currentGlobalResearchId) errorMsg += " No se encontró researchId en el store global.";
+            if (!participant.id) errorMsg += " No se encontró participant.id en la respuesta del login.";
+            console.error("[useParticipantFlow] handleLoginSuccess check failed:", { storedToken, currentGlobalResearchId, participantId: participant.id });
+            handleError(errorMsg, ParticipantFlowStep.LOGIN);
             setIsFlowLoading(false);
         }
-    }, [researchId, buildExpandedSteps]); // Mantener dependencia de buildExpandedSteps
-
-    // NUEVO: Función para cargar respuestas existentes desde el API
-    const loadExistingResponses = useCallback(async (participantId: string) => {
-        if (!researchId || !participantId) {
-            console.warn('[useParticipantFlow] No se pueden cargar respuestas sin researchId o participantId');
-            return;
-        }
-        
-        console.log(`[useParticipantFlow] Cargando respuestas existentes para participante: ${participantId}`);
-        
-        try {
-            // Actualizar el participantId en la instancia de responseAPI
-            const responses = await responseAPI.getResponses();
-            
-            if (!responses) {
-                console.log('[useParticipantFlow] No se encontraron respuestas previas.');
-                return;
-            }
-            
-            console.log('[useParticipantFlow] Respuestas cargadas del servidor:', responses);
-            
-            // Integrar respuestas existentes en el estado
-            setResponsesData(prev => {
-                const updatedData = { ...prev, participantId };
-                
-                // Si el backend devuelve una estructura de respuestas completa,
-                // podemos actualizarla directamente
-                if (responses.modules) {
-                    updatedData.modules = responses.modules;
-                } 
-                // Si devuelve un array plano de respuestas, hay que organizarlas
-                else if (Array.isArray(responses)) {
-                    // Inicializar categorías necesarias
-                    if (!updatedData.modules.all_steps) {
-                        updatedData.modules.all_steps = [];
-                    }
-                    if (!updatedData.modules.cognitive_task) {
-                        updatedData.modules.cognitive_task = [];
-                    }
-                    if (!updatedData.modules.smartvoc) {
-                        updatedData.modules.smartvoc = [];
-                    }
-                    
-                    // Procesar cada respuesta
-                    responses.forEach(response => {
-                        const { stepId, stepType, stepName } = response;
-                        
-                        // Añadir a all_steps siempre
-                        const allStepsIndex = updatedData.modules.all_steps.findIndex(r => r.stepId === stepId);
-                        if (allStepsIndex >= 0) {
-                            updatedData.modules.all_steps[allStepsIndex] = response;
-                        } else {
-                            updatedData.modules.all_steps.push(response);
-                        }
-                        
-                        // Añadir a categoría específica
-                        if (stepType === 'demographic') {
-                            updatedData.modules.demographic = response;
-                        } 
-                        else if (stepName?.includes('Que te ha parecido el módulo')) {
-                            updatedData.modules.feedback = response;
-                        }
-                        else if (stepType === 'welcome') {
-                            updatedData.modules.welcome = response;
-                        }
-                        else if (stepType.startsWith('cognitive_')) {
-                            const existingIndex = updatedData.modules.cognitive_task.findIndex(r => r.stepId === stepId);
-                            if (existingIndex >= 0) {
-                                updatedData.modules.cognitive_task[existingIndex] = response;
-                            } else {
-                                updatedData.modules.cognitive_task.push(response);
-                            }
-                        }
-                        else if (stepType.startsWith('smartvoc_')) {
-                            const existingIndex = updatedData.modules.smartvoc.findIndex(r => r.stepId === stepId);
-                            if (existingIndex >= 0) {
-                                updatedData.modules.smartvoc[existingIndex] = response;
-                            } else {
-                                updatedData.modules.smartvoc.push(response);
-                            }
-                        }
-                        else {
-                            // Categoría dinámica por tipo
-                            const moduleCategory = stepType.split('_')[0] || 'other';
-                            if (!updatedData.modules[moduleCategory]) {
-                                updatedData.modules[moduleCategory] = [];
-                            }
-                            if (!Array.isArray(updatedData.modules[moduleCategory])) {
-                                updatedData.modules[moduleCategory] = [updatedData.modules[moduleCategory] as ModuleResponse];
-                            }
-                            (updatedData.modules[moduleCategory] as ModuleResponse[]).push(response);
-                        }
-                    });
-                }
-                
-                console.log('[useParticipantFlow] Estado actualizado con respuestas existentes, total:', 
-                    updatedData.modules.all_steps?.length || 0);
-                return updatedData;
-            });
-            
-        } catch (error) {
-            console.error('[useParticipantFlow] Error cargando respuestas existentes:', error);
-            // Continuar con el flujo a pesar del error
-        }
-    }, [researchId, responseAPI]);
+    }, [buildExpandedSteps, handleError, responseAPI]); // Quitar loadExistingResponses de aquí, se llama directamente
 
     // MODIFICADO: Función para guardar respuesta del paso actual - usando el nuevo endpoint
     const saveStepResponse = useCallback(async (answer: any) => {

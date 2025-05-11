@@ -252,5 +252,41 @@ ParticipantTable:
     StreamSpecification:
       StreamViewType: NEW_AND_OLD_IMAGES
 
+# Tabla para las Respuestas de Módulos
+ModuleResponsesTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    TableName: ${self:provider.environment.MODULE_RESPONSES_TABLE} # Usa la variable de entorno
+    BillingMode: PAY_PER_REQUEST
+    AttributeDefinitions:
+      - AttributeName: id            # Clave primaria de la tabla (ej. UUID para el documento de respuestas del participante)
+        AttributeType: S
+      - AttributeName: researchId    # Para el GSI ResearchParticipantIndex y ResearchIndex (Clave de Partición)
+        AttributeType: S
+      - AttributeName: participantId # Para el GSI ResearchParticipantIndex (Clave de Ordenación)
+        AttributeType: S
+    KeySchema:
+      - AttributeName: id
+        KeyType: HASH
+    GlobalSecondaryIndexes:
+      - IndexName: ResearchParticipantIndex # El índice que estás usando en findByResearchAndParticipant
+        KeySchema:
+          - AttributeName: researchId
+            KeyType: HASH
+          - AttributeName: participantId
+            KeyType: RANGE
+        Projection:
+          ProjectionType: ALL # Proyecta todos los atributos al índice
+      - IndexName: ResearchIndex # El índice que usas en getResponsesByResearch
+        KeySchema:
+          - AttributeName: researchId
+            KeyType: HASH
+        Projection:
+          ProjectionType: ALL
+    PointInTimeRecoverySpecification:
+      PointInTimeRecoveryEnabled: true
+    SSESpecification:
+      SSEEnabled: true
+
 # --- Fin de las definiciones de Recursos --- 
 # La sección Outputs se movió de nuevo a serverless.yml 

@@ -244,7 +244,6 @@ export class ParticipantController {
       const data = JSON.parse(event.body);
       const validatedData = LoginSchema.parse(data);
 
-      // --- Validación de Research ID --- 
       const researchData = await this.researchServiceInstance.getResearchById(validatedData.researchId, 'public-check');
       if (!researchData) {
         console.warn(`[ParticipantController.login] Intento de login para investigación inexistente: ${validatedData.researchId}`);
@@ -254,15 +253,29 @@ export class ParticipantController {
           body: JSON.stringify({ error: 'La investigación especificada no existe.', status: 404 })
         };
       }
-      // --- Fin Validación --- 
 
       let participant = await participantService.findByEmail(validatedData.email);
       
-      if (!participant) {
+      if (participant) {
+        if (participant.name !== validatedData.name) {
+          console.warn(`[ParticipantController.login] Conflicto de nombre para email existente. Email: ${validatedData.email}, Nombre Guardado: ${participant.name}, Nombre Solicitado: ${validatedData.name}`);
+          return {
+            statusCode: 409,
+            headers: getCorsHeaders(event),
+            body: JSON.stringify({
+              error: `El email '${validatedData.email}' ya está registrado con un nombre diferente. Por favor, verifica los datos ingresados.`,
+              status: 409
+            })
+          };
+        }
+        console.log(`[ParticipantController.login] Participante existente encontrado por email: ${validatedData.email}, ID: ${participant.id}`);
+      } else {
+        console.log(`[ParticipantController.login] Creando nuevo participante para email: ${validatedData.email}`);
         participant = await participantService.create({
           name: validatedData.name,
           email: validatedData.email
         });
+        console.log(`[ParticipantController.login] Nuevo participante creado. ID: ${participant.id}`);
       }
 
       const token = jwt.sign(
@@ -281,14 +294,18 @@ export class ParticipantController {
         headers: getCorsHeaders(event),
         body: JSON.stringify({
           data: {
-            participant: participant,
+            participant: {
+              id: participant.id,
+              name: participant.name,
+              email: participant.email
+            },
             token: token          
           },
           status: 200
         })
       };
     } catch (error: any) {
-      console.error('Error en login de participante:', error);
+      console.error('[ParticipantController.login] Error en login de participante:', error);
       if (error instanceof z.ZodError) {
         return {
           statusCode: 400,
@@ -296,21 +313,19 @@ export class ParticipantController {
           body: JSON.stringify({ error: error.errors, status: 400 })
         };
       }
-      // Añadir chequeo para errores con statusCode 403 (Forbidden)
       if (error?.statusCode === 403) {
         return {
-            statusCode: 403,
-            headers: getCorsHeaders(event),
-            body: JSON.stringify({ error: error.message || 'No tienes permiso para esta acción', status: 403 })
+          statusCode: 403,
+          headers: getCorsHeaders(event),
+          body: JSON.stringify({ error: error.message || 'No tienes permiso para esta acción', status: 403 })
         };
       }
-      // Manejar otros errores como 500 genérico
       return {
-        statusCode: 500,
+        statusCode: error.statusCode || 500,
         headers: getCorsHeaders(event),
         body: JSON.stringify({
           error: error.message || 'Error interno en el login',
-          status: 500
+          status: error.statusCode || 500
         })
       };
     }

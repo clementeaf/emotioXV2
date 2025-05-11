@@ -1,6 +1,8 @@
-import { useState, useCallback } from 'react';
+import { useState, ChangeEvent, FormEvent } from 'react';
 import { Participant } from '../../../shared/interfaces/participant';
-import { config } from '../config/env';
+import { useParticipantStore, ParticipantState } from '../stores/participantStore';
+
+const API_BASE_URL = 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev';
 
 // Argumentos que necesita el hook
 interface UseParticipantLoginProps {
@@ -16,6 +18,7 @@ interface FormErrors {
   name: string;
   email: string;
   submit: string;
+  researchId?: string;
 }
 
 export const useParticipantLogin = ({ researchId, onLogin }: UseParticipantLoginProps) => {
@@ -27,28 +30,32 @@ export const useParticipantLogin = ({ researchId, onLogin }: UseParticipantLogin
   const [errors, setErrors] = useState<FormErrors>({
     name: '',
     email: '',
-    submit: ''
+    submit: '',
+    researchId: ''
   });
 
   const [isLoading, setIsLoading] = useState(false);
 
+  // Obtener la función para setear researchId en el store global
+  const setResearchIdInStore = useParticipantStore((state: ParticipantState) => state.setResearchId);
+
   // Función para manejar cambios en los inputs
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setParticipant(prev => ({ ...prev, [name]: value }));
     // Limpiar error específico del campo al escribir
-    if (errors[name as keyof Omit<FormErrors, 'submit'>]) {
+    if (errors[name as keyof Omit<FormErrors, 'submit' | 'researchId'>]) {
         setErrors(prev => ({...prev, [name]: ''}));
     }
     // Limpiar error de submit al empezar a corregir
      if (errors.submit) {
         setErrors(prev => ({...prev, submit: ''}));
     }
-  }, [errors]); // Depende de errors para limpiar
+  };
 
   // Función de validación interna
-  const validateForm = useCallback((): boolean => {
-    const newErrors: FormErrors = { name: '', email: '', submit: '' };
+  const validate = (): boolean => {
+    const newErrors: FormErrors = { name: '', email: '', submit: '', researchId: '' };
     let isValid = true;
 
     if (!participant.name.trim()) {
@@ -67,55 +74,69 @@ export const useParticipantLogin = ({ researchId, onLogin }: UseParticipantLogin
        isValid = false;
     }
 
+    if (!researchId) {
+      newErrors.researchId = 'El ID de investigación es requerido (error de configuración)';
+      isValid = false;
+    }
+
     setErrors(newErrors);
     return isValid;
-  }, [participant]); // Depende del estado del participante
+  };
 
   // Función de submit (lógica de API)
-  const handleSubmit = useCallback(async (e?: React.FormEvent) => {
-    e?.preventDefault(); // Permitir llamar sin evento si es necesario
-    setErrors(prev => ({ ...prev, submit: '' })); // Limpiar error submit previo
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!validate()) return;
 
-    if (validateForm()) {
-      setIsLoading(true);
-      try {
-        const payload = {
-          name: participant.name,
-          email: participant.email,
-          researchId: researchId
-        };
-        
-        const loginResponse = await fetch(`${config.apiUrl}/participants/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+    setIsLoading(true);
+    setErrors(prev => ({ ...prev, submit: '' }));
 
-        const loginResult = await loginResponse.json();
+    try {
+      const response = await fetch(`${API_BASE_URL}/participants/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          name: participant.name, 
+          email: participant.email, 
+          researchId 
+        }),
+      });
 
-        if (!loginResponse.ok) {
-          throw new Error(loginResult.error || 'Error al iniciar sesión desde el servidor.');
-        }
+      const responseData = await response.json();
 
-        if (loginResult.data?.token && loginResult.data?.participant) {
-          // Guardar token en localStorage (responsabilidad del login)
-          localStorage.setItem('participantToken', loginResult.data.token);
-          // Llamar al callback onLogin pasado como prop
-          onLogin(loginResult.data.participant);
-        } else {
-          throw new Error('Respuesta inesperada del servidor (faltan datos).');
-        }
-      } catch (error: any) {
-        console.error("[useParticipantLogin] Error en handleSubmit:", error);
-        setErrors(prev => ({ 
-          ...prev, 
-          submit: error.message || 'Error al iniciar sesión. Intenta nuevamente.' 
-        }));
-      } finally {
+      if (!response.ok) {
+        const errorMessage = responseData.error || `Error ${response.status} al iniciar sesión.`;
+        console.error('[useParticipantLogin] Login API Error:', responseData);
+        setErrors(prev => ({ ...prev, submit: errorMessage }));
         setIsLoading(false);
+        return;
       }
+
+      const apiParticipant = responseData.data.participant as Participant;
+      const apiToken = responseData.data.token as string;
+
+      if (!apiParticipant || !apiToken) {
+        console.error('[useParticipantLogin] Respuesta de login incompleta:', responseData);
+        setErrors(prev => ({ ...prev, submit: 'Respuesta inesperada del servidor después del login.' }));
+        setIsLoading(false);
+        return;
+      }
+
+      localStorage.setItem('participantToken', apiToken);
+      console.log('[useParticipantLogin] Token guardado en localStorage.');
+
+      setResearchIdInStore(researchId);
+      console.log(`[useParticipantLogin] Research ID (${researchId}) seteado en el store global.`);
+
+      onLogin(apiParticipant);
+      console.log('[useParticipantLogin] onLogin (handleLoginSuccess) llamado con:', apiParticipant);
+      
+    } catch (error) {
+      console.error('[useParticipantLogin] Excepción en handleSubmit:', error);
+      setErrors(prev => ({ ...prev, submit: 'Ocurrió un error inesperado. Por favor, intenta de nuevo.' }));
+      setIsLoading(false);
     }
-  }, [participant, researchId, onLogin, validateForm]); // Dependencias clave
+  };
 
   // Devolver estados y funciones para la UI
   return {
