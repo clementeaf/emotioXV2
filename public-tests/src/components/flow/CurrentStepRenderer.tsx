@@ -231,37 +231,22 @@ const DemographicStep: React.FC<DemographicStepProps> = ({
     const handleDemographicSubmit = async (responses: DemographicResponses) => {
         setLoading(true);
         try {
-            console.log('[DemographicStep] Respuestas demográficas:', responses);
+            console.log('[DemographicStep] Respuestas demográficas recibidas en CurrentStepRenderer:', responses);
             
-            // Enviar datos al API si tenemos toda la información necesaria
-            if (researchId && participantId && token) {
-                console.log(`[DemographicStep] Enviando datos al servidor para research: ${researchId}, participant: ${participantId}`);
-                const apiResult = await demographicsService.saveDemographicResponses(
-                    researchId, 
-                    participantId, 
-                    responses, 
-                    token
-                );
-                
-                if (apiResult.error) {
-                    console.error('[DemographicStep] Error guardando datos en API:', apiResult.message);
-                    onError('Error al guardar las respuestas demográficas en el servidor.', 'demographic');
-                    setLoading(false);
-                    return; // No continuar con el flujo si hay error
-                } else {
-                    console.log('[DemographicStep] Datos guardados correctamente en API');
-                    // Continuar con el flujo
-                    if (onStepComplete) {
-                        onStepComplete(responses);
-                    }
-                }
-            } else {
-                console.error('[DemographicStep] No se pueden enviar datos al servidor (faltan datos necesarios)');
-                onError('Faltan datos necesarios para guardar respuestas (ID research, ID participante o token).', 'demographic');
+            // La lógica de guardado/actualización ahora es manejada internamente por DemographicsForm usando useResponseAPI.
+            // Ya no necesitamos llamar a demographicsService.saveDemographicResponses aquí.
+            // DemographicsForm llamará a esta función (handleDemographicSubmit) a través de su prop onSubmit
+            // SOLO DESPUÉS de que el guardado en el servidor haya sido exitoso.
+
+            if (onStepComplete) {
+                console.log('[DemographicStep] Guardado gestionado por DemographicsForm. Procediendo con onStepComplete.');
+                onStepComplete(responses); // Llama a onStepComplete para avanzar al siguiente paso
             }
         } catch (error) {
-            console.error('[DemographicStep] Error guardando respuestas demográficas:', error);
-            onError('Error al guardar las respuestas demográficas.', 'demographic');
+            // Este catch es por si ocurre algún error inesperado en la lógica de handleDemographicSubmit,
+            // no por errores de guardado de API (esos los maneja DemographicsForm).
+            console.error('[DemographicStep] Error inesperado en handleDemographicSubmit:', error);
+            onError(error instanceof Error ? error.message : 'Error procesando el paso demográfico.', 'demographic');
         } finally {
             setLoading(false);
         }

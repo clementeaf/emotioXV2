@@ -217,7 +217,8 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
     if (!validateForm()) return;
     const serverSaveSuccess = await saveToServer(responses);
     if (serverSaveSuccess) {
-      console.log('[DemographicsForm] Datos enviados al servidor via useResponseAPI. Navegación onSubmit() COMENTADA.');
+      console.log('[DemographicsForm] Datos enviados al servidor via useResponseAPI. Llamando a onSubmit().');
+      onSubmit(responses);
     } else {
       if (!apiError && !apiHookError) {
         setApiError("No se pudo completar el formulario debido a un error desconocido.");
