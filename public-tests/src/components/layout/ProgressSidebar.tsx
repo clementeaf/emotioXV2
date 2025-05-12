@@ -1,6 +1,7 @@
 // import { CheckCircle, Circle, Loader } from 'lucide-react'; // No se usan aquí directamente
 // import { Step } from './types'; // Definido localmente
 import { cn } from '../../lib/utils'; // Corregir ruta
+import { ModuleResponse } from '../../stores/participantStore'; // <<< IMPORTAR TIPO >>>
 
 // Interfaz para definir la estructura de un paso en la barra de progreso
 export interface Step {
@@ -18,6 +19,8 @@ interface ProgressSidebarProps {
   answeredStepIndices?: number[]; // <<< NUEVO: Array de índices de los pasos que tienen respuestas
   // Podríamos añadir un array de booleanos si el flujo permite saltos o necesita marcar completados de forma no secuencial
   // completedSteps?: boolean[]; 
+  // <<< AÑADIR PROP PARA RESPUESTAS CARGADAS >>>
+  loadedApiResponses?: ModuleResponse[]; 
 }
 
 // Paleta de colores para los distintos estados de los pasos (ajustar al tema de la aplicación)
@@ -42,9 +45,13 @@ export function ProgressSidebar({
     onNavigateToStep, 
     completedSteps, 
     totalSteps,
-    answeredStepIndices = []
+    answeredStepIndices = [],
+    // <<< RECIBIR PROP >>>
+    loadedApiResponses = [] 
 }: ProgressSidebarProps) {
   console.log("[ProgressSidebar] Steps recibidos:", steps);
+  // <<< LOG PARA VERIFICAR DATOS RECIBIDOS >>>
+  console.log("[ProgressSidebar] Respuestas API recibidas:", loadedApiResponses);
 
   // Determinar si mostrar el contador y calcular porcentaje
   const showCounter = typeof completedSteps === 'number' && typeof totalSteps === 'number' && completedSteps >= 0 && totalSteps >= 0;
@@ -73,33 +80,44 @@ export function ProgressSidebar({
         {/* Contenedor principal para los pasos, relativo para posicionar las líneas */}
         <div className="relative flex-grow overflow-y-auto -mr-4 pr-4 md:-mr-6 md:pr-6"> {/* Permitir scroll si hay muchos pasos */}
             {steps.map((step, index) => {
-                // Determinar el estado de cada paso
+                const hasApiResponse = loadedApiResponses.some(apiResponse => apiResponse.stepTitle === step.name);
+                console.log(`[ProgressSidebar] Step '${step.name}' (ID: ${step.id}, Index: ${index}): Tiene respuesta API? ${hasApiResponse}`);
+
                 const isCompleted = index < currentStepIndex;
                 const isCurrent = index === currentStepIndex;
-                // const _isPending = index > currentStepIndex; // Eliminado, no se usa
-                // MODIFICADO: Usar los índices reales de pasos respondidos
-                const isAnswered = answeredStepIndices.includes(index);
-                // MODIFICADO: Permitir click en todos los pasos respondidos o visitados (en verde)
-                // además de los pasos completados y el paso actual
-                const isClickable = (isCompleted || isCurrent || isAnswered) && !!onNavigateToStep;
 
-                // Seleccionar colores y estilos basados en el estado
-                // MODIFICADO: Usar color de respondido si aplica
-                const dotColor = isAnswered ? colors.answered : 
-                                 isCompleted ? colors.completed : 
-                                 isCurrent ? colors.current : 
-                                 colors.pending;
-                
-                // MODIFICADO: Usar color de línea respondida si el paso actual está respondido
-                const lineColor = isAnswered ? colors.lineAnswered : 
-                                  isCompleted ? colors.lineCompleted : 
-                                  colors.linePending;
-                
-                // MODIFICADO: Usar color de texto respondido cuando aplique
-                const textColor = isAnswered ? colors.textAnswered : 
-                                  isCurrent ? colors.textCurrent : 
-                                  isCompleted ? colors.textCompleted : 
-                                  colors.textPending;
+                // <<< LÓGICA DE CLICABILIDAD ACTUALIZADA >>>
+                const isClickable = (isCurrent || isCompleted || hasApiResponse) && !!onNavigateToStep;
+
+                // <<< LÓGICA DE COLOR ACTUALIZADA >>>
+                let finalDotColor;
+                let finalLineColor;
+                let finalTextColor;
+
+                if (isCurrent) {
+                    finalDotColor = colors.current;
+                    finalTextColor = colors.textCurrent;
+                    // La línea que sale del paso actual ('index') depende de si este ya tiene respuesta o está completado (si no es el primero)
+                    if (hasApiResponse) {
+                        finalLineColor = colors.lineAnswered;
+                    } else if (isCompleted) { // True si currentStepIndex > 0
+                        finalLineColor = colors.lineCompleted;
+                    } else {
+                        finalLineColor = colors.linePending;
+                    }
+                } else if (hasApiResponse) {
+                    finalDotColor = colors.answered;
+                    finalLineColor = colors.lineAnswered;
+                    finalTextColor = colors.textAnswered;
+                } else if (isCompleted) {
+                    finalDotColor = colors.completed;
+                    finalLineColor = colors.lineCompleted;
+                    finalTextColor = colors.textCompleted;
+                } else { // Pendiente y no respondido
+                    finalDotColor = colors.pending;
+                    finalLineColor = colors.linePending;
+                    finalTextColor = colors.textPending;
+                }
                 
                 return (
                     <div
@@ -117,9 +135,8 @@ export function ProgressSidebar({
                         {index < steps.length - 1 && (
                             <div 
                                 className={cn(
-                                    // Posicionamiento absoluto, centrado con el punto, altura calculada
-                                    "absolute left-[7px] top-[22px] bottom-[-22px] w-0.5", // Ajustar left/top/bottom si cambia tamaño del punto/espaciado
-                                    lineColor
+                                    "absolute left-[7px] top-[22px] bottom-[-22px] w-0.5",
+                                    finalLineColor // Usar finalLineColor
                                 )} 
                                 aria-hidden="true"
                             />
@@ -130,13 +147,10 @@ export function ProgressSidebar({
                              <div 
                                 className={cn(
                                     "w-4 h-4 rounded-full transition-colors duration-300", 
-                                    dotColor,
-                                    // Añadir anillo para el paso actual
+                                    finalDotColor, // Usar finalDotColor
                                     isCurrent && `ring-2 ring-offset-2 ${colors.ringCurrent} ${colors.current}`,
-                                    // Efecto hover en el punto si es clickable
                                     isClickable && "group-hover:ring-2 group-hover:ring-offset-2 group-hover:ring-primary-300"
                                 )}
-                                // Atributo ARIA para accesibilidad
                                 aria-current={isCurrent ? 'step' : undefined}
                              />
                         </div>
@@ -146,8 +160,7 @@ export function ProgressSidebar({
                             <span 
                                 className={cn(
                                     "text-sm font-medium transition-colors duration-300", 
-                                    textColor,
-                                    // Efecto hover en texto si es clickable
+                                    finalTextColor, // Usar finalTextColor
                                     isClickable && "group-hover:text-primary-600"
                                 )}
                             >

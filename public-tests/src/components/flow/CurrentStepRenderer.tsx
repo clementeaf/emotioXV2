@@ -2,20 +2,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { ParticipantLogin } from '../auth/ParticipantLogin';
 import WelcomeScreenHandler from './WelcomeScreenHandler';
 import { Participant } from '../../../../shared/interfaces/participant';
-import { CSATView, FeedbackView, ThankYouView, DifficultyScaleView, NPSView } from '../smartVoc';
+import { CSATView, ThankYouView, DifficultyScaleView, NPSView } from '../smartVoc';
 import { DemographicsForm } from '../demographics/DemographicsForm';
 import { DemographicResponses, DEFAULT_DEMOGRAPHICS_CONFIG } from '../../types/demographics';
 import { eyeTrackingService } from '../../services/eyeTracking.service';
-import { demographicsService } from '../../services/demographics.service';
 import { useParticipantStore } from '../../stores/participantStore';
 import { useResponseAPI } from '../../hooks/useResponseAPI';
 import { ApiClient, APIStatus } from '../../lib/api';
 
-// === IMPORTAR COMPONENTES EXTRAÍDOS ===
-import { ShortTextQuestion as ShortTextQuestionComponent } from './questions/ShortTextQuestion';
-// ... (Importar los otros componentes cuando se muevan)
-
-// Interfaz para las preguntas demográficas de la API de eye-tracking
 interface ApiDemographicQuestion {
   enabled: boolean;
   required: boolean;
@@ -114,24 +108,19 @@ const DemographicStep: React.FC<DemographicStepProps> = ({
     
     useEffect(() => {
         if (stepConfig?.savedResponses) {
-            console.log('[DemographicStep] Cargando respuestas guardadas:', stepConfig.savedResponses);
             setDemographicResponses(stepConfig.savedResponses);
         }
     }, [stepConfig?.savedResponses]);
     
     useEffect(() => {
-        console.log(`[DemographicStep] Realizando consulta a la API de eye-tracking, researchId: ${researchId}, token: ${token ? 'disponible' : 'no disponible'}`);
-        console.log('[DemographicStep] Valores iniciales actuales:', demographicResponses);
         setConfigLoading(true);
         
         if (researchId && token) {
             eyeTrackingService.getEyeTrackingConfig(researchId, token)
                 .then(response => {
-                    console.log('[DemographicStep] Respuesta de la API de eye-tracking:', response);
                     const extendedData = response.data as ExtendedEyeTrackingData;
                     if (extendedData?.demographicQuestions) {
                         const apiQuestions = extendedData.demographicQuestions;
-                        console.log('[DemographicStep] Preguntas demográficas de la API:', apiQuestions);
                         const updatedConfig = {...DEFAULT_DEMOGRAPHICS_CONFIG};
                         Object.keys(updatedConfig.questions).forEach(key => {
                             const typedKey = key as keyof typeof updatedConfig.questions;
@@ -211,7 +200,6 @@ const DemographicStep: React.FC<DemographicStepProps> = ({
                             };
                         }
                         // --- Fin Mapeo --- 
-                        console.log('[DemographicStep] Configuración final de preguntas demográficas:', updatedConfig);
                         setDemographicsConfig(updatedConfig);
                     } else {
                          console.warn('[DemographicStep] No demographicQuestions found in API response.');
@@ -222,7 +210,6 @@ const DemographicStep: React.FC<DemographicStepProps> = ({
                 })
                 .finally(() => {
                     setConfigLoading(false);
-                    console.log('[DemographicStep] Carga de configuración finalizada.');
                 });
         } else {
             setConfigLoading(false);
@@ -233,15 +220,7 @@ const DemographicStep: React.FC<DemographicStepProps> = ({
     const handleDemographicSubmit = async (responses: DemographicResponses) => {
         setLoading(true);
         try {
-            console.log('[DemographicStep] Respuestas demográficas recibidas en CurrentStepRenderer:', responses);
-            
-            // La lógica de guardado/actualización ahora es manejada internamente por DemographicsForm usando useResponseAPI.
-            // Ya no necesitamos llamar a demographicsService.saveDemographicResponses aquí.
-            // DemographicsForm llamará a esta función (handleDemographicSubmit) a través de su prop onSubmit
-            // SOLO DESPUÉS de que el guardado en el servidor haya sido exitoso.
-
             if (onStepComplete) {
-                console.log('[DemographicStep] Guardado gestionado por DemographicsForm. Procediendo con onStepComplete.');
                 onStepComplete(responses); // Llama a onStepComplete para avanzar al siguiente paso
             }
         } catch (error) {
@@ -328,7 +307,6 @@ const LongTextQuestion: React.FC<{
         apiClient.getModuleResponses(researchId, participantId)
             .then(apiResponse => {
                 if (apiResponse.error || !apiResponse.data?.data) {
-                    console.log('[LongTextQuestion] No se encontraron respuestas previas o hubo un error al cargar.', apiResponse.message);
                     setDataExisted(false);
                     setDocumentId(null);
                     setModuleResponseId(null);
@@ -346,12 +324,10 @@ const LongTextQuestion: React.FC<{
                 const foundStepData = fullDocument.responses.find(item => item.stepType === stepType);
 
                 if (foundStepData) {
-                    console.log(`[LongTextQuestion] Datos encontrados para stepType '${stepType}':`, foundStepData);
                     setCurrentResponse(typeof foundStepData.response === 'string' ? foundStepData.response : '');
                     setModuleResponseId(foundStepData.id || null);
                     setDataExisted(true);
                 } else {
-                    console.log(`[LongTextQuestion] No se encontraron datos específicos para stepType '${stepType}'.`);
                     setCurrentResponse('');
                     setModuleResponseId(null);
                     setDataExisted(false);
@@ -398,9 +374,6 @@ const LongTextQuestion: React.FC<{
             const payload = { response: currentResponse }; // Mover payload aquí para claridad
 
             if (dataExisted && moduleResponseId) {
-                console.log(`[LongTextQuestion] Actualizando (PUT) para moduleResponseId: ${moduleResponseId}`);
-                // const result = await updateResponse(moduleResponseId, currentStepId, stepType, currentStepName, currentResponse);
-                // Pasar el payload directamente
                 await updateResponse(moduleResponseId, currentStepId, stepType, currentStepName, payload.response);
                 if (apiHookError) { 
                     setApiError(apiHookError);
@@ -408,9 +381,6 @@ const LongTextQuestion: React.FC<{
                     success = true;
                 }
             } else {
-                console.log(`[LongTextQuestion] Creando (POST) para stepType: ${stepType}`);
-                // const result = await saveResponse(currentStepId, stepType, currentStepName, currentResponse);
-                // Pasar el payload directamente
                 const result = await saveResponse(currentStepId, stepType, currentStepName, payload.response);
                  if (apiHookError) {
                     setApiError(apiHookError);
@@ -422,7 +392,6 @@ const LongTextQuestion: React.FC<{
             }
 
             if (success) {
-                console.log('[LongTextQuestion] Operación con servidor exitosa. Preparando para navegar.');
                 setIsNavigating(true);
                 setTimeout(() => {
                     if (onStepComplete) {
@@ -535,7 +504,6 @@ const SingleChoiceQuestion: React.FC<{
         if (isMock) {
             setDataLoading(false);
             setCurrentResponse(initialConfig.savedResponses || null);
-            console.log('[SingleChoiceQuestion] Modo Mock: Usando savedResponses de initialConfig:', initialConfig.savedResponses || null);
             return;
         }
 
@@ -560,12 +528,9 @@ const SingleChoiceQuestion: React.FC<{
         setModuleResponseId(null);
         setDocumentId(null);
 
-        console.log(`[SingleChoiceQuestion] Iniciando carga de datos para research: ${researchId}, participant: ${participantId}, stepType: ${stepType}`);
-
         apiClient.getModuleResponses(researchId, participantId)
             .then(apiResponse => {
                 if (apiResponse.error || !apiResponse.data?.data) {
-                    console.log('[SingleChoiceQuestion] No se encontraron respuestas previas o hubo un error al cargar.', apiResponse.message);
                     setDataExisted(false);
                     setDocumentId(null);
                     setModuleResponseId(null);
@@ -583,12 +548,10 @@ const SingleChoiceQuestion: React.FC<{
                 const foundStepData = fullDocument.responses.find(item => item.stepType === stepType);
 
                 if (foundStepData) {
-                    console.log(`[SingleChoiceQuestion] Datos encontrados para stepType '${stepType}':`, foundStepData);
                     setCurrentResponse(typeof foundStepData.response === 'string' ? foundStepData.response : null);
                     setModuleResponseId(foundStepData.id || null);
                     setDataExisted(true);
                 } else {
-                    console.log(`[SingleChoiceQuestion] No se encontraron datos específicos para stepType '${stepType}'.`);
                     setCurrentResponse(null);
                     setModuleResponseId(null);
                     setDataExisted(false);
@@ -642,7 +605,6 @@ const SingleChoiceQuestion: React.FC<{
             const payload = { response: currentResponse };
 
             if (dataExisted && moduleResponseId) {
-                console.log(`[SingleChoiceQuestion] Actualizando (PUT) para moduleResponseId: ${moduleResponseId}`);
                 await updateResponse(moduleResponseId, currentStepIdForApi, stepType, currentStepNameForApi, payload.response);
                 if (apiHookError) { 
                     setApiError(apiHookError);
@@ -650,7 +612,6 @@ const SingleChoiceQuestion: React.FC<{
                     success = true;
                 }
             } else {
-                console.log(`[SingleChoiceQuestion] Creando (POST) para stepType: ${stepType}`);
                 const result = await saveResponse(currentStepIdForApi, stepType, currentStepNameForApi, payload.response);
                  if (apiHookError) {
                     setApiError(apiHookError);
@@ -662,7 +623,6 @@ const SingleChoiceQuestion: React.FC<{
             }
 
             if (success) {
-                console.log('[SingleChoiceQuestion] Operación con servidor exitosa. Preparando para navegar.');
                 setIsNavigating(true);
                 setTimeout(() => {
                     onStepComplete(currentResponse);
@@ -781,11 +741,9 @@ const MultipleChoiceQuestion: React.FC<{
 
     // useEffect para cargar datos existentes o inicializar desde config.savedResponses
     useEffect(() => {
-        console.log(`[MultipleChoiceQuestion] useEffect de carga. isMock: ${isMock}, initialConfig.savedResponses:`, initialConfig.savedResponses);
         if (isMock) {
             setSelectedOptions(initialConfig.savedResponses || []);
             setDataLoading(false);
-            console.log('[MultipleChoiceQuestion] Modo Mock: Usando savedResponses de initialConfig:', initialConfig.savedResponses || []);
             return;
         }
 
@@ -807,18 +765,12 @@ const MultipleChoiceQuestion: React.FC<{
         setModuleResponseId(null);
         setDocumentId(null);
 
-        console.log(`[MultipleChoiceQuestion] Iniciando carga de datos para research: ${researchId}, participant: ${participantId}, stepType: ${stepType}`);
-
         apiClient.getModuleResponses(researchId, participantId)
             .then(apiResponse => {
                 if (apiResponse.error || !apiResponse.data?.data) {
-                    console.log('[MultipleChoiceQuestion] No se encontraron respuestas previas o hubo un error al cargar.', apiResponse.message);
                     setDataExisted(false);
-                    // No limpiar selectedOptions aquí, podría haber un savedResponses en initialConfig si la API falla pero el config es válido
-                    // setSelectedOptions(initialConfig.savedResponses || []); 
                     if (initialConfig.savedResponses && Array.isArray(initialConfig.savedResponses)) {
                          setSelectedOptions(initialConfig.savedResponses);
-                         console.log('[MultipleChoiceQuestion] API falló/sin datos, pero usando savedResponses de initialConfig:', initialConfig.savedResponses);
                     } else {
                         setSelectedOptions([]);
                     }
@@ -836,16 +788,16 @@ const MultipleChoiceQuestion: React.FC<{
                 const foundStepData = fullDocument.responses.find(item => item.stepType === stepType);
 
                 if (foundStepData && Array.isArray(foundStepData.response)) {
-                    console.log(`[MultipleChoiceQuestion] Datos encontrados para stepType '${stepType}':`, foundStepData);
+
                     setSelectedOptions(foundStepData.response);
                     setModuleResponseId(foundStepData.id || null);
                     setDataExisted(true);
                 } else {
-                    console.log(`[MultipleChoiceQuestion] No se encontraron datos específicos (o no es array) para stepType '${stepType}'. Usando initialConfig.savedResponses si existe.`);
+
                     // Si no hay datos de API, pero initialConfig (que es el config real si no es mock) tiene savedResponses, usar eso.
                     if (initialConfig.savedResponses && Array.isArray(initialConfig.savedResponses)) {
                          setSelectedOptions(initialConfig.savedResponses);
-                         console.log('[MultipleChoiceQuestion] Usando savedResponses de initialConfig porque API no devolvió datos específicos:', initialConfig.savedResponses);
+
                     } else {
                         setSelectedOptions([]);
                     }
@@ -899,7 +851,7 @@ const MultipleChoiceQuestion: React.FC<{
     const handleSaveAndProceed = async () => {
         if (isMock) { // Si es mock, simplemente llamar a onStepComplete
             if (selectedOptions.length >= minSelections) {
-                console.log('[MultipleChoiceQuestion] Modo Mock: Completando paso con:', selectedOptions);
+
                 onStepComplete(selectedOptions);
             }
             return;
@@ -925,7 +877,7 @@ const MultipleChoiceQuestion: React.FC<{
             const payload = { response: selectedOptions }; // La respuesta es un array de strings
 
             if (dataExisted && moduleResponseId) {
-                console.log(`[MultipleChoiceQuestion] Actualizando (PUT) para moduleResponseId: ${moduleResponseId}`);
+
                 await updateResponse(moduleResponseId, currentStepIdForApi, stepType, currentStepNameForApi, payload.response);
                 if (apiHookError) { 
                     setApiError(apiHookError);
@@ -933,7 +885,7 @@ const MultipleChoiceQuestion: React.FC<{
                     success = true;
                 }
             } else {
-                console.log(`[MultipleChoiceQuestion] Creando (POST) para stepType: ${stepType}`);
+
                 const result = await saveResponse(currentStepIdForApi, stepType, currentStepNameForApi, payload.response);
                  if (apiHookError) {
                     setApiError(apiHookError);
@@ -945,7 +897,6 @@ const MultipleChoiceQuestion: React.FC<{
             }
 
             if (success) {
-                console.log('[MultipleChoiceQuestion] Operación con servidor exitosa. Preparando para navegar.');
                 setIsNavigating(true);
                 setTimeout(() => {
                     onStepComplete(selectedOptions);
@@ -1072,12 +1023,10 @@ const LinearScaleQuestion: React.FC<{
 
     // useEffect para cargar datos existentes o inicializar desde config.savedResponses
     useEffect(() => {
-        console.log(`[LinearScaleQuestion] useEffect de carga. isMock: ${isMock}, initialConfig.savedResponses:`, initialConfig.savedResponses);
         if (isMock) {
             const mockSavedValue = initialConfig.savedResponses;
             setSelectedValue(typeof mockSavedValue === 'number' ? mockSavedValue : null);
             setDataLoading(false);
-            console.log('[LinearScaleQuestion] Modo Mock: Usando savedResponses de initialConfig:', typeof mockSavedValue === 'number' ? mockSavedValue : null);
             return;
         }
 
@@ -1099,8 +1048,6 @@ const LinearScaleQuestion: React.FC<{
         setModuleResponseId(null);
         setDocumentId(null);
 
-        console.log(`[LinearScaleQuestion] Iniciando carga de datos para research: ${researchId}, participant: ${participantId}, stepType: ${stepType}`);
-
         apiClient.getModuleResponses(researchId, participantId)
             .then(apiResponse => {
                 let valueToSet: number | null = null;
@@ -1110,24 +1057,21 @@ const LinearScaleQuestion: React.FC<{
                     const foundStepData = fullDocument.responses.find(item => item.stepType === stepType);
 
                     if (foundStepData && typeof foundStepData.response === 'number') {
-                        console.log(`[LinearScaleQuestion] Datos encontrados en API para stepType '${stepType}':`, foundStepData);
                         valueToSet = foundStepData.response;
                         setModuleResponseId(foundStepData.id || null);
                         setDataExisted(true);
                     } else {
-                        console.log(`[LinearScaleQuestion] No se encontraron datos específicos (o no es número) en API para stepType '${stepType}'.`);
                         setDataExisted(false);
                         setModuleResponseId(null);
                     }
                 } else {
-                     console.log('[LinearScaleQuestion] No se encontraron respuestas previas o hubo un error al cargar desde API.', apiResponse.message);
                      if (apiResponse.apiStatus !== APIStatus.NOT_FOUND) {
                         setApiError(apiResponse.message || 'Error cargando datos del módulo.');
                     }
                 }
 
                 if (valueToSet === null && initialConfig.savedResponses !== undefined && typeof initialConfig.savedResponses === 'number') {
-                    console.log('[LinearScaleQuestion] Usando savedResponses de initialConfig como fallback:', initialConfig.savedResponses);
+                    
                     valueToSet = initialConfig.savedResponses;
                 }
                 setSelectedValue(valueToSet);
@@ -1185,7 +1129,7 @@ const LinearScaleQuestion: React.FC<{
             const payload = { response: selectedValue }; 
 
             if (dataExisted && moduleResponseId) {
-                console.log(`[LinearScaleQuestion] Actualizando (PUT) para moduleResponseId: ${moduleResponseId}`);
+            
                 await updateResponse(moduleResponseId, currentStepIdForApi, stepType, currentStepNameForApi, payload.response);
                 if (apiHookError) { 
                     setApiError(apiHookError);
@@ -1193,7 +1137,7 @@ const LinearScaleQuestion: React.FC<{
                     success = true;
                 }
             } else {
-                console.log(`[LinearScaleQuestion] Creando (POST) para stepType: ${stepType}`);
+            
                 const result = await saveResponse(currentStepIdForApi, stepType, currentStepNameForApi, payload.response);
                  if (apiHookError) {
                     setApiError(apiHookError);
@@ -1205,7 +1149,7 @@ const LinearScaleQuestion: React.FC<{
             }
 
             if (success) {
-                console.log('[LinearScaleQuestion] Operación con servidor exitosa. Preparando para navegar.');
+            
                 setIsNavigating(true);
                 setTimeout(() => {
                     onStepComplete(selectedValue);
@@ -1346,7 +1290,7 @@ const SmartVocFeedbackQuestion: React.FC<{
             return;
         }
 
-        console.log(`[SmartVocFeedbackQuestion] Iniciando carga de datos para research: ${researchId}, participant: ${participantId}, stepType: ${stepType}`);
+    
         const apiClient = new ApiClient();
         setDataLoading(true);
         setApiError(null);
@@ -1357,7 +1301,7 @@ const SmartVocFeedbackQuestion: React.FC<{
 
         apiClient.getModuleResponses(researchId, participantId)
             .then(apiResponse => {
-                console.log('[SmartVocFeedbackQuestion] Respuesta completa de apiClient.getModuleResponses:', JSON.stringify(apiResponse, null, 2));
+
 
                 if (apiResponse.error || !apiResponse.data?.data) {
                     console.warn(`[SmartVocFeedbackQuestion] No se encontraron respuestas previas o hubo un error al cargar. Mensaje: ${apiResponse.message || 'No message'}. API Status: ${apiResponse.apiStatus}`);
@@ -1366,7 +1310,6 @@ const SmartVocFeedbackQuestion: React.FC<{
                     setModuleResponseId(null);
                     setCurrentResponse('');
                     if (apiResponse.apiStatus === APIStatus.NOT_FOUND) {
-                        console.log('[SmartVocFeedbackQuestion] API Status es NOT_FOUND, se considera normal si no hay datos previos.');
                         setApiError(null);
                     } else {
                         setApiError(apiResponse.message || 'Error cargando datos del módulo.');
@@ -1375,24 +1318,23 @@ const SmartVocFeedbackQuestion: React.FC<{
                 }
 
                 const fullDocument = apiResponse.data.data as { id: string, responses: Array<{id: string, stepType: string, stepTitle?: string, response: any, createdAt?: string, updatedAt?: string }> };
-                console.log('[SmartVocFeedbackQuestion] Documento completo obtenido:', JSON.stringify(fullDocument, null, 2));
                 setDocumentId(fullDocument.id);
 
                 const foundStepData = fullDocument.responses.find(item => item.stepType === stepType);
 
                 if (foundStepData) {
-                    console.log(`[SmartVocFeedbackQuestion] Datos específicos ENCONTRADOS para stepType '${stepType}':`, JSON.stringify(foundStepData, null, 2));
+                  
                     setCurrentResponse(typeof foundStepData.response === 'string' ? foundStepData.response : '');
                     setModuleResponseId(foundStepData.id || null);
                     setDataExisted(true);
-                    console.log(`[SmartVocFeedbackQuestion] Estado actualizado: currentResponse='${typeof foundStepData.response === 'string' ? foundStepData.response : ''}', moduleResponseId='${foundStepData.id || null}', dataExisted=true`);
+                  
                 } else {
-                    console.log(`[SmartVocFeedbackQuestion] No se encontraron datos específicos para stepType '${stepType}' en el documento. Documento ID: ${fullDocument.id}.`);
+                  
                     setCurrentResponse('');
                     setModuleResponseId(null);
                     setDataExisted(false); // Aunque el documento exista, el módulo específico no tiene respuesta.
                      // DocumentId se mantiene porque el documento general sí existe.
-                    console.log(`[SmartVocFeedbackQuestion] Estado actualizado: currentResponse='', moduleResponseId=null, dataExisted=false`);
+                  
                 }
             })
             .catch(error => {
@@ -1404,14 +1346,14 @@ const SmartVocFeedbackQuestion: React.FC<{
             })
             .finally(() => {
                 setDataLoading(false);
-                console.log('[SmartVocFeedbackQuestion] Carga de datos finalizada.');
+
             });
 
     }, [researchId, participantId, stepType]); // Dependencias clave para recargar
 
 
     const handleSaveAndProceed = async () => {
-        console.log('[SmartVocFeedbackQuestion] Iniciando handleSaveAndProceed. Respuesta actual:', currentResponse);
+
         if (!researchId || !participantId) {
             console.error('[SmartVocFeedbackQuestion] Faltan researchId o participantId');
             setApiError('Faltan researchId o participantId.');
@@ -1430,26 +1372,20 @@ const SmartVocFeedbackQuestion: React.FC<{
 
         try {
             if (dataExisted && moduleResponseId) {
-                console.log(`[SmartVocFeedbackQuestion] Actualizando (PUT) para moduleResponseId: ${moduleResponseId}, stepId: ${stepIdFromProps}`);
+
                 await updateResponse(moduleResponseId, stepIdFromProps || '', stepType, stepNameFromProps || 'Feedback Corto', payload);
                 if (apiHookError) throw new Error(apiHookError);
-                console.log('[SmartVocFeedbackQuestion] Actualización exitosa.');
+
                 success = true;
             } else {
-                console.log(`[SmartVocFeedbackQuestion] Guardando (POST) nuevo para stepId: ${stepIdFromProps}`);
+
                 const result = await saveResponse(stepIdFromProps || '', stepType, stepNameFromProps || 'Feedback Corto', payload);
                 if (apiHookError) throw new Error(apiHookError);
-                console.log('[SmartVocFeedbackQuestion] Guardado exitoso. Resultado:', result);
-                // Actualizar estados si es un nuevo guardado exitoso
+
                 if (result && result.id) {
-                    // El result.id aquí es el ID del NUEVO ModuleResponse específico creado.
-                    // Si el documento principal ya existía, documentId no cambia.
-                    // Si el documento principal NO existía, se habrá creado uno nuevo,
-                    // pero el hook no devuelve el ID del documento principal directamente.
-                    // Se infiere que el documento existe (dataExisted=true) y se establece el nuevo moduleResponseId.
                     setDataExisted(true);
                     setModuleResponseId(result.id);
-                    // No actualizamos documentId aquí, se obtiene al cargar.
+
                 }
                 success = true;
             }
@@ -1462,7 +1398,7 @@ const SmartVocFeedbackQuestion: React.FC<{
         }
 
         if (success) {
-            console.log('[SmartVocFeedbackQuestion] Operación exitosa. Preparando para navegar.');
+
             setIsNavigating(true);
             setTimeout(() => {
                 onStepComplete(currentResponse);
@@ -1572,13 +1508,12 @@ const RankingQuestion: React.FC<{
 
     // useEffect para cargar datos existentes o inicializar desde config
     useEffect(() => {
-        console.log(`[RankingQuestion] useEffect carga. isMock: ${isMock}, initialConfig.savedResponses:`, initialConfig.savedResponses, "itemsFromConfig:", itemsFromConfig);
+
         if (isMock) {
             // Si es mock, usar el orden de itemsFromConfig o el savedResponses del mock
             const mockSavedOrder = initialConfig.savedResponses;
             setRankedItems(Array.isArray(mockSavedOrder) && mockSavedOrder.length > 0 ? mockSavedOrder : [...itemsFromConfig]);
             setDataLoading(false);
-            console.log('[RankingQuestion] Modo Mock: Usando orden inicial/guardado del mock:', Array.isArray(mockSavedOrder) && mockSavedOrder.length > 0 ? mockSavedOrder : [...itemsFromConfig]);
             return;
         }
 
@@ -1600,8 +1535,6 @@ const RankingQuestion: React.FC<{
         setModuleResponseId(null);
         setDocumentId(null);
 
-        console.log(`[RankingQuestion] Iniciando carga de datos para research: ${researchId}, participant: ${participantId}, stepType: ${stepType}`);
-
         apiClient.getModuleResponses(researchId, participantId)
             .then(apiResponse => {
                 let finalOrderToSet: string[] = [...itemsFromConfig]; // Por defecto, el orden de la config original
@@ -1618,7 +1551,7 @@ const RankingQuestion: React.FC<{
                         const isValidSavedOrder = savedOrder.every(item => currentItemSet.has(item)) && new Set(savedOrder).size === savedOrder.length;
                         
                         if (isValidSavedOrder && savedOrder.length === itemsFromConfig.length) { // Asegurar que tengan la misma cantidad de items
-                           console.log(`[RankingQuestion] Datos encontrados en API para stepType '${stepType}':`, savedOrder);
+
                            finalOrderToSet = savedOrder; // Usar el orden guardado
                            setModuleResponseId(foundStepData.id || null);
                            setDataExisted(true);
@@ -1628,12 +1561,12 @@ const RankingQuestion: React.FC<{
                             setModuleResponseId(null);
                         }
                     } else {
-                        console.log(`[RankingQuestion] No se encontraron datos específicos (o no es array válido) en API para stepType '${stepType}'.`);
+
                         setDataExisted(false); 
                         setModuleResponseId(null);
                     }
                 } else {
-                     console.log('[RankingQuestion] No se encontraron respuestas previas o hubo un error al cargar desde API.', apiResponse.message);
+
                      if (apiResponse.apiStatus !== APIStatus.NOT_FOUND) {
                         setApiError(apiResponse.message || 'Error cargando datos del módulo.');
                     }
@@ -1645,7 +1578,7 @@ const RankingQuestion: React.FC<{
                      const currentItemSet = new Set(itemsFromConfig);
                      const isValidConfigSavedOrder = configSavedOrder.every(item => currentItemSet.has(item)) && new Set(configSavedOrder).size === configSavedOrder.length;
                     if (isValidConfigSavedOrder && configSavedOrder.length === itemsFromConfig.length) {
-                        console.log('[RankingQuestion] Usando savedResponses de initialConfig como fallback:', configSavedOrder);
+
                         finalOrderToSet = configSavedOrder;
                     }
                 }
@@ -1700,7 +1633,7 @@ const RankingQuestion: React.FC<{
             const payload = { response: rankedItems }; // La respuesta es el array ordenado de strings
 
             if (dataExisted && moduleResponseId) {
-                console.log(`[RankingQuestion] Actualizando (PUT) para moduleResponseId: ${moduleResponseId}`);
+
                 await updateResponse(moduleResponseId, currentStepIdForApi, stepType, currentStepNameForApi, payload.response);
                 if (apiHookError) { 
                     setApiError(apiHookError);
@@ -1708,7 +1641,7 @@ const RankingQuestion: React.FC<{
                     success = true;
                 }
             } else {
-                console.log(`[RankingQuestion] Creando (POST) para stepType: ${stepType}`);
+
                 const result = await saveResponse(currentStepIdForApi, stepType, currentStepNameForApi, payload.response);
                  if (apiHookError) {
                     setApiError(apiHookError);
@@ -1720,7 +1653,7 @@ const RankingQuestion: React.FC<{
             }
 
             if (success) {
-                console.log('[RankingQuestion] Operación con servidor exitosa. Preparando para navegar.');
+
                 setIsNavigating(true);
                 setTimeout(() => {
                     onStepComplete(rankedItems);
@@ -1853,7 +1786,6 @@ const CognitivePreferenceTestQuestion: React.FC<{
     useEffect(() => {
         if (s3Key && token) {
             const fetchPresignedUrl = async () => {
-                console.log(`[PreferenceTest] Fetching presigned URL for key: ${s3Key}`);
                 setIsUrlLoading(true);
                 setPresignedUrl(null);
                 setUrlError(null);
@@ -1869,7 +1801,7 @@ const CognitivePreferenceTestQuestion: React.FC<{
                     if (response.ok) {
                         const result = await response.json();
                         if (result.success && result.data?.downloadUrl) {
-                            console.log("[PreferenceTest] Presigned URL received.");
+
                             setPresignedUrl(result.data.downloadUrl);
                         } else {
                             console.error("[PreferenceTest] Invalid response structure from backend:", result);
@@ -1966,8 +1898,6 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
     onStepComplete,
     onError,
 }) => {
-    // Hooks deben estar siempre al inicio del componente
-    console.log(`[CurrentStepRenderer] Props recibidas: stepType='${stepType}', stepId='${stepId}', stepName='${stepName}', stepConfig:`, stepConfig);
     const [_loading, _setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     
@@ -2083,7 +2013,6 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
             case 'cognitive_single_choice': { 
                 if (!onStepComplete) return null;
                 
-                console.log('[CurrentStepRenderer] cognitive_single_choice - stepConfig RECIBIDO:', JSON.stringify(stepConfig, null, 2));
                 
                 // <<< INICIO CAMBIOS >>>
                 // Evaluar si el stepConfig tiene la estructura mínima necesaria, aunque el contenido esté vacío.
@@ -2117,9 +2046,6 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
                         // savedResponses ya debería estar en stepConfig si existe (como vimos en el log)
                     };
                 }
-                console.log('[CurrentStepRenderer] cognitive_single_choice - isMockBasedOnStructure:', isMockBasedOnStructure);
-                console.log('[CurrentStepRenderer] cognitive_single_choice - configForQuestion:', JSON.stringify(configForQuestion, null, 2));
-                // <<< FIN CAMBIOS >>>
                 
                 return renderStepWithWarning(
                     <SingleChoiceQuestion
@@ -2138,7 +2064,6 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
             case 'cognitive_multiple_choice': { 
                 if (!onStepComplete) return null;
 
-                console.log('[CurrentStepRenderer] cognitive_multiple_choice - stepConfig RECIBIDO:', JSON.stringify(stepConfig, null, 2));
 
                 const hasValidQuestionSource = stepConfig && (typeof stepConfig.questionText === 'string' || typeof stepConfig.title === 'string');
                 const hasValidOptionsSource = stepConfig && 
@@ -2168,8 +2093,6 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
                         // savedResponses (array) ya debería estar en stepConfig si existe
                     };
                 }
-                console.log('[CurrentStepRenderer] cognitive_multiple_choice - isMockBasedOnStructure:', isMockBasedOnStructure);
-                console.log('[CurrentStepRenderer] cognitive_multiple_choice - configForQuestion:', JSON.stringify(configForQuestion, null, 2));
                 
                  return renderStepWithWarning(
                      <MultipleChoiceQuestion
@@ -2186,8 +2109,6 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
 
             case 'cognitive_linear_scale': { 
                  if (!onStepComplete) return null;
-
-                console.log('[CurrentStepRenderer] cognitive_linear_scale - stepConfig RECIBIDO:', JSON.stringify(stepConfig, null, 2));
 
                 const hasValidQuestionSource = stepConfig && (typeof stepConfig.questionText === 'string' || typeof stepConfig.title === 'string');
                 
@@ -2233,8 +2154,6 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
                         // savedResponses ya está en stepConfig (ej. stepConfig.savedResponses)
                     };
                 }
-                console.log('[CurrentStepRenderer] cognitive_linear_scale - isMockBasedOnStructure:', isMockBasedOnStructure);
-                console.log('[CurrentStepRenderer] cognitive_linear_scale - configForQuestion PASSED TO COMPONENT:', JSON.stringify(configForQuestion, null, 2));
 
                  return renderStepWithWarning(
                      <LinearScaleQuestion
@@ -2253,8 +2172,6 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
             case 'cognitive_ranking': {
                 if (!onStepComplete) return null;
 
-                console.log('[CurrentStepRenderer] cognitive_ranking - stepConfig RECIBIDO:', JSON.stringify(stepConfig, null, 2));
-
                 const hasValidQuestionSource = stepConfig && (typeof stepConfig.questionText === 'string' || typeof stepConfig.title === 'string');
                 // Para ranking, necesitamos una lista de items/options/choices para ordenar.
                 const hasValidItems = stepConfig && 
@@ -2266,7 +2183,7 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
 
                 let configForQuestion;
                 if (isMockBasedOnStructure) {
-                    console.log('[CurrentStepRenderer] cognitive_ranking - DETECTADO MOCK');
+
                     configForQuestion = { 
                         questionText: 'Pregunta de ranking (Prueba)?', 
                         title: 'Pregunta de ranking (Prueba)?',
@@ -2274,7 +2191,6 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
                         savedResponses: [] // En mock, empezamos sin orden guardado o con un orden mock específico si se desea
                     };
                 } else {
-                    console.log('[CurrentStepRenderer] cognitive_ranking - DETECTADO REAL (NO MOCK)');
                     const questionText = stepConfig.questionText || stepConfig.title || 'Pregunta de ranking sin texto';
                     
                     let itemsToRank: string[] = [];
@@ -2311,9 +2227,6 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
                         // savedResponses (array de strings ordenado) se pasa tal cual desde stepConfig
                     };
                 }
-                console.log('[CurrentStepRenderer] cognitive_ranking - isMockBasedOnStructure:', isMockBasedOnStructure);
-                console.log('[CurrentStepRenderer] cognitive_ranking - configForQuestion PASSED TO COMPONENT:', JSON.stringify(configForQuestion, null, 2));
-
                 return renderStepWithWarning(
                     <RankingQuestion
                         config={configForQuestion}
@@ -2549,17 +2462,6 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
                     />
                 );
             }
-
-            // Eliminar casos antiguos basados en Enum si ya no son necesarios
-            /*
-            case ParticipantFlowStep.DONE:
-                return (...);
-            case ParticipantFlowStep.LOADING_SESSION:
-                return (...);
-            case ParticipantFlowStep.ERROR:
-                return (...);
-            */
-            
             default:
                  // Manejar tipos no reconocidos
                  console.warn(`[CurrentStepRenderer] Tipo de paso no manejado en switch: ${stepType}`);

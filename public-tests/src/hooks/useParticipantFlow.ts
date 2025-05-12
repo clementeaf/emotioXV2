@@ -90,54 +90,38 @@ const sanitizeForJSON = (obj: any): any => {
     }));
 };
 
-// Función para cargar manualmente desde localStorage (replicada de useParticipantStore)
-const loadFromLocalStorage = (key: string): any => {
-  try {
-    const serializedData = localStorage.getItem(key);
-    if (serializedData === null) {
-      console.log(`[useParticipantFlow] No hay datos en localStorage para la clave (${key})`);
-      return null;
-    }
-    const data = JSON.parse(serializedData);
-    console.log(`[useParticipantFlow] Datos cargados desde localStorage (${key}): ${serializedData.length} caracteres`);
-    return data;
-  } catch (error) {
-    console.error(`[useParticipantFlow] Error cargando desde localStorage (${key}):`, error);
-    return null;
-  }
-};
+// <<< OBTENER ACCIÓN DEL STORE >>>
+const useStoreSetLoadedResponses = () => useParticipantStore(state => state.setLoadedResponses);
 
 // NUEVO: Función para cargar respuestas existentes desde el API (MOVIDA AQUÍ)
-const loadExistingResponses = async (researchId: string, participantId: string, responseAPI: any, setResponsesData: Function) => {
+// MODIFICADO: Ya no necesita setResponsesData, usará la acción del store
+const loadExistingResponses = async (researchId: string, participantId: string, responseAPI: any, storeSetLoadedResponses: Function) => {
     if (!researchId || !participantId) {
         console.warn('[useParticipantFlow] No se pueden cargar respuestas sin researchId o participantId');
         return;
     }
     
-    console.log(`[useParticipantFlow] Cargando respuestas existentes para participante: ${participantId}`);
-    
     try {
-        const responses = await responseAPI.getResponses(); // Asume que responseAPI ya tiene el participantId configurado
+        const responses = await responseAPI.getResponses();
+        console.log('Responses cargadas:', responses);
         
         if (!responses) {
-            console.log('[useParticipantFlow] No se encontraron respuestas previas.');
             return;
         }
         
-        console.log('[useParticipantFlow] Respuestas cargadas del servidor:', responses);
-        
-        setResponsesData((prev: ResponsesData) => {
-            const updatedData = { ...prev, participantId };
-            if (responses.modules) {
-                updatedData.modules = { ...prev.modules, ...responses.modules };
-            } else if (Array.isArray(responses)) {
-                // Lógica para organizar respuestas planas si es necesario (simplificada por ahora)
-                // Esto necesitaría una implementación más robusta si el backend devuelve un array plano
-                console.warn("[useParticipantFlow] La API devolvió un array plano de respuestas, se requiere lógica de parseo adicional.");
+        const actualResponsesArray = responses?.responses;
+
+        if (Array.isArray(actualResponsesArray)) {
+             storeSetLoadedResponses(actualResponsesArray); // Pasar el array de respuestas al store
+        } else {
+            // Manejar el caso donde la estructura no es la esperada o no hay 'responses'
+            if (responses && typeof responses === 'object' && !actualResponsesArray) {
+                 storeSetLoadedResponses([]);
+            } else {
+                 console.warn('[useParticipantFlow] Formato de respuesta inesperado o vacío al cargar:', responses);
+                 storeSetLoadedResponses([]); // Pasar array vacío en caso de formato inesperado
             }
-            console.log('[useParticipantFlow] Estado actualizado con respuestas existentes.');
-            return updatedData;
-        });
+        }
         
     } catch (error) {
         console.error('[useParticipantFlow] Error cargando respuestas existentes:', error);
@@ -145,9 +129,8 @@ const loadExistingResponses = async (researchId: string, participantId: string, 
 };
 
 export const useParticipantFlow = (researchId: string | undefined) => {
-    const storeSetResearchId = useParticipantStore(state => state.setResearchId); // Obtener la acción del store
-    const storeSetToken = useParticipantStore(state => state.setToken); // Para limpiar el token al cambiar de research
-    const storeReset = useParticipantStore(state => state.resetStore); // Para resetear al cambiar de research
+    const storeSetResearchId = useParticipantStore(state => state.setResearchId);
+    const storeSetLoadedResponses = useStoreSetLoadedResponses(); 
 
     const [token, setToken] = useState<string | null>(null);
     const [currentStep, setCurrentStep] = useState<ParticipantFlowStep>(ParticipantFlowStep.LOADING_SESSION);
@@ -167,14 +150,11 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         }
     });
 
-    // Para almacenar el estado del participante
-    const {
-        participantId,
-        token: participantToken,
-        setCurrentStep: setParticipantStep,
-    } = useParticipantStore();
+    // MODIFICADO: Seleccionar directamente el valor primitivo
+    const participantId = useParticipantStore(state => state.participantId);
+    // <<< SELECCIONAR all_steps DIRECTAMENTE >>>
+    const loadedApiResponses = useParticipantStore(state => state.responsesData.modules.all_steps);
 
-    // Inicializar el hook de API para respuestas
     const responseAPI = useResponseAPI({
         researchId: researchId || '',
         participantId: participantId || ''
@@ -191,7 +171,6 @@ export const useParticipantFlow = (researchId: string | undefined) => {
     }, []);
 
     const buildExpandedSteps = useCallback(async (currentResearchId: string, currentToken: string) => {
-        console.log("[useParticipantFlow] Iniciando construcción de pasos expandidos (Iterando API real)...");
         setIsFlowLoading(true);
         const finalSteps: ExpandedStep[] = [];
 
@@ -208,21 +187,12 @@ export const useParticipantFlow = (researchId: string | undefined) => {
             // 3. Obtener estructura de flujo completo (todos los módulos)
             try {
                 const flowUrl = `${API_BASE_URL}/research/${currentResearchId}/flow`;
-                console.log(`[useParticipantFlow] Fetching Research Flow: ${flowUrl}`);
                 const flowResponse = await fetch(flowUrl, { headers: { 'Authorization': `Bearer ${currentToken}` } });
                 
                 if (flowResponse.ok) {
                     const flowData = await flowResponse.json();
                     const moduleSteps = flowData?.data || [];
-                    console.log(`[useParticipantFlow] Estructura de flujo recibida: ${moduleSteps.length} módulos encontrados`);
                     
-                    // Procesar cada módulo según su tipo
-                    for (const step of moduleSteps) {
-                        console.log(`[useParticipantFlow] Procesando módulo: ${step.type}`);
-                        
-                        // Añadir lógica para procesar otros tipos de módulos aquí
-                        // ...
-                    }
                 }
             } catch (flowError: any) {
                 console.error('[useParticipantFlow] Error obteniendo estructura de flujo:', flowError);
@@ -232,12 +202,10 @@ export const useParticipantFlow = (researchId: string | undefined) => {
             // 4. Procesar Cognitive Task (mantener por compatibilidad)
             try {
                 const url = `${API_BASE_URL}/research/${currentResearchId}/cognitive-task`;
-                console.log(`[useParticipantFlow] Fetching Cognitive Task: ${url}`);
                 const response = await fetch(url, { headers: { 'Authorization': `Bearer ${currentToken}` } });
                 if (response.ok) {
                     const data = await response.json();
                     const realCognitiveQuestions = data?.questions || [];
-                    console.log(`[useParticipantFlow] Cognitive Task: ${realCognitiveQuestions.length} preguntas recibidas.`);
                     
                     // <<< ITERAR SOBRE PREGUNTAS REALES COGNITIVAS >>>
                     for (const question of realCognitiveQuestions) {
@@ -266,12 +234,10 @@ export const useParticipantFlow = (researchId: string | undefined) => {
             // 5. Procesar SmartVOC (mantener por compatibilidad)
             try {
                 const url = `${API_BASE_URL}/research/${currentResearchId}/smart-voc`;
-                console.log(`[useParticipantFlow] Fetching SmartVOC: ${url}`);
                 const response = await fetch(url, { headers: { 'Authorization': `Bearer ${currentToken}` } });
                  if (response.ok) {
                     const data = await response.json();
                     const realSmartVOCQuestions = data?.data?.questions || data?.questions || [];
-                    console.log(`[useParticipantFlow] SmartVOC: ${realSmartVOCQuestions.length} preguntas recibidas.`);
 
                     // <<< ITERAR SOBRE PREGUNTAS REALES SMARTVOC >>>
                     for (const question of realSmartVOCQuestions) {
@@ -304,7 +270,6 @@ export const useParticipantFlow = (researchId: string | undefined) => {
             try {
                 // Endpoint para obtener lista de todos los módulos disponibles
                 const modulesUrl = `${API_BASE_URL}/research/${currentResearchId}/modules`;
-                console.log(`[useParticipantFlow] Fetching Modules List: ${modulesUrl}`);
                 const modulesResponse = await fetch(modulesUrl, { 
                     headers: { 'Authorization': `Bearer ${currentToken}` },
                     // Usar método HEAD para verificar si el endpoint existe
@@ -331,7 +296,6 @@ export const useParticipantFlow = (researchId: string | undefined) => {
                             // Obtener preguntas para este módulo específico
                             try {
                                 const moduleUrl = `${API_BASE_URL}/research/${currentResearchId}/${module.type}`;
-                                console.log(`[useParticipantFlow] Fetching Module ${module.type}: ${moduleUrl}`);
                                 const moduleResponse = await fetch(moduleUrl, { 
                                     headers: { 'Authorization': `Bearer ${currentToken}` }
                                 });
@@ -374,7 +338,6 @@ export const useParticipantFlow = (researchId: string | undefined) => {
                  // return; 
              }
 
-            console.log(`[useParticipantFlow] Construcción finalizada. ${finalSteps.length} pasos totales.`);
             setExpandedSteps(finalSteps);
             setCurrentStepIndex(0);
             setCurrentStep(ParticipantFlowStep.WELCOME); 
@@ -388,65 +351,60 @@ export const useParticipantFlow = (researchId: string | undefined) => {
 
     // --- Lógica de Inicialización (ajustada) ---
     useEffect(() => {
-        if (researchId) {
-            console.log(`[useParticipantFlow] useEffect init. researchId: ${researchId}`);
-            
-            // Resetear el store y establecer el nuevo researchId
-            storeReset(); // Resetea todo el estado del store, incluyendo participantId y token
-            storeSetResearchId(researchId); // Establecer el nuevo researchId en el store global
-            
-            // Los estados locales del hook también deben resetearse o inicializarse
-            setToken(null); // Limpiar token local ya que el store fue reseteado
-            setCurrentStep(ParticipantFlowStep.LOADING_SESSION);
-            setError(null);
-            setExpandedSteps([]);
-            setCurrentStepIndex(0);
-            setMaxVisitedIndex(0); // Valor predeterminado, no recuperar de localStorage
-            setIsFlowLoading(true);
-            
-            // Inicializar el objeto de respuestas con el researchId (estado local del hook)
-            setResponsesData({
-                researchId: researchId,
-                startTime: Date.now(),
-                modules: {
-                    cognitive_task: [],
-                    smartvoc: [],
-                    all_steps: [] // Mantener para compatibilidad
-                }
-            });
+        if (!researchId) {
+            console.warn("[useParticipantFlow] Research ID no definido en useEffect inicial.");
+            handleError("ID de investigación no encontrado.", "Initialization");
+            return;
+        }
 
+        setIsFlowLoading(true);
+        storeSetResearchId(researchId); // Actualizar researchId en el store
+
+        const initializeFlow = async () => {
+            // 1. Recuperar sesión si existe
             const storedToken = localStorage.getItem('participantToken');
-            const storedParticipantInfo = loadFromLocalStorage('participantInfo'); // Asumiendo que tienes una función loadFromLocalStorage
+            const storedParticipantId = localStorage.getItem('participantId'); // Ajustar clave si es diferente
             
-            // Verificar si el token y la info del participante guardados corresponden al researchId actual
-            if (storedToken && storedParticipantInfo && storedParticipantInfo.researchId === researchId) {
-                console.log("[useParticipantFlow] Token e info de participante válidos encontrados para este research. Reconstruyendo sesión...");
-                storeSetToken(storedToken); // Restaurar token en el store
-                // Restaurar participantId en el store (setParticipant también actualiza responsesData y localStorage)
-                useParticipantStore.getState().setParticipant({ id: storedParticipantInfo.id, name: storedParticipantInfo.name, email: storedParticipantInfo.email }); 
-                setToken(storedToken); // Establecer token local del hook
-                // Los datos de respuestas previas se cargarán a través del DemographicsForm o similar
-                buildExpandedSteps(researchId, storedToken); 
+            if (storedToken && storedParticipantId) {
+                setToken(storedToken);
+                // No llamar a handleLoginSuccess aquí todavía, necesitamos construir los pasos primero
+                
+                // 2. Construir pasos expandidos
+                await buildExpandedSteps(researchId, storedToken);
+                
+                // 3. Cargar respuestas existentes (AHORA DESPUÉS DE TENER PARTICIPANT ID)
+                if (!initialResponsesLoadedRef.current) {
+                     // MODIFICADO: Pasar la acción del store
+                     await loadExistingResponses(researchId, storedParticipantId, responseAPI, storeSetLoadedResponses);
+                     initialResponsesLoadedRef.current = true;
+                 }
+
+                // 4. Navegar al último paso visitado (si existe)
+                const storedMaxIndex = parseInt(localStorage.getItem('maxVisitedIndex') || '0', 10);
+                const storedCurrentIndex = parseInt(localStorage.getItem('currentStepIndex') || '0', 10);
+                const targetIndex = Math.min(storedCurrentIndex, storedMaxIndex);
+                
+                if (targetIndex > 0 && targetIndex < expandedSteps.length) {
+                    setCurrentStepIndex(targetIndex);
+                    setMaxVisitedIndex(storedMaxIndex);
+                    setCurrentStep(ParticipantFlowStep.WELCOME); 
+                } else {
+                    setCurrentStep(ParticipantFlowStep.LOGIN); // Si no hay sesión válida o índice guardado, ir a Login
+                }
+                setIsFlowLoading(false);
+                
             } else {
-                console.log("[useParticipantFlow] No hay token/info válida para este research. Pasando a Login.");
-                // Limpiar cualquier token o info de participante residual de otro research
-                localStorage.removeItem('participantToken');
-                localStorage.removeItem('participantInfo');
-                localStorage.removeItem('participantResponses'); // Limpiar respuestas también
-                // storeReset() ya fue llamado, así que el store está limpio.
-                // setToken(null) ya fue llamado.
                 setCurrentStep(ParticipantFlowStep.LOGIN);
                 setIsFlowLoading(false);
             }
-        } else {
-             handleError('No se proporcionó ID de investigación.', ParticipantFlowStep.LOADING_SESSION);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [researchId]); // buildExpandedSteps se llama desde aquí, no necesita ser dependencia directa si se usa useCallback bien.
+        };
+
+        initializeFlow();
+
+    }, [researchId]); // Dependencia principal
 
     // --- Lógica de Transiciones (ajustada) ---
     const handleLoginSuccess = useCallback((participant: Participant & { id: string }) => { // Asegurar que participant tenga id
-        console.log("[useParticipantFlow] Login exitoso. Procesando...");
         const storedToken = localStorage.getItem('participantToken');
         const currentGlobalResearchId = useParticipantStore.getState().researchId;
 
@@ -470,7 +428,7 @@ export const useParticipantFlow = (researchId: string | undefined) => {
             
             // Llamar a loadExistingResponses ANTES de setResponsesData para que los datos se carguen primero
             // Y pasar las dependencias necesarias a loadExistingResponses
-            loadExistingResponses(currentGlobalResearchId, participant.id, responseAPI, setResponsesData);
+            loadExistingResponses(currentGlobalResearchId, participant.id, responseAPI, storeSetLoadedResponses);
 
             setResponsesData(prev => ({ 
                 ...prev,
@@ -496,17 +454,10 @@ export const useParticipantFlow = (researchId: string | undefined) => {
             const currentStepInfo = expandedSteps[currentStepIndex];
             const { id: stepId, type: stepType, name: stepName, config } = currentStepInfo;
             
-            // NUEVO - Logging detallado para depuración
-            console.log(`[useParticipantFlow] INTENTO DE GUARDAR: Paso ${stepType} (${stepName})`, {
-                id: stepId,
-                respuesta: answer,
-                config: config
-            });
             
             // Único caso a excluir: los pasos que no requieren respuesta del usuario
             // IMPORTANTE: Solo excluir Welcome/Thankyou si no tienen respuesta
             if ((stepType === 'welcome' || stepType === 'thankyou') && answer === undefined) {
-                console.log(`[useParticipantFlow] Paso ${stepType} sin respuesta, excluido del JSON.`);
                 
                 // Para el paso thankyou, actualizamos el tiempo de finalización pero no guardamos la respuesta
                 if (stepType === 'thankyou') {
@@ -515,12 +466,6 @@ export const useParticipantFlow = (researchId: string | undefined) => {
                             ...prev,
                             endTime: Date.now()
                         };
-                        
-                        // Mostrar todo el JSON de respuestas en la consola cuando se llega al paso de Agradecimiento
-                        console.log('==========================================');
-                        console.log('JSON COMPLETO DE RESPUESTAS:');
-                        console.log(JSON.stringify(finalData, null, 2));
-                        console.log('==========================================');
                         
                         return finalData;
                     });
@@ -536,7 +481,6 @@ export const useParticipantFlow = (researchId: string | undefined) => {
             // Si answer es undefined pero es un paso cognitive o smartvoc, crear un objeto vacío
             // para garantizar que se guarde algo
             if (answer === undefined && (isCognitive || isSmartVOC)) {
-                console.log(`[useParticipantFlow] ALERTA: Respuesta undefined para ${stepType}, usando objeto vacío`);
                 answer = isCognitive ? { text: "" } : { value: 0 };
             }
             
@@ -549,9 +493,6 @@ export const useParticipantFlow = (researchId: string | undefined) => {
                 answer,
                 timestamp: Date.now()
             };
-            
-            // NUEVO: Registrar que estamos guardando la respuesta
-            console.log(`[useParticipantFlow] ✓ Guardando respuesta para paso ${stepType} (${stepName})`, answer);
             
             // Sanear la respuesta para asegurar que sea serializable
             try {
@@ -591,7 +532,6 @@ export const useParticipantFlow = (researchId: string | undefined) => {
                 );
                 
                 if (apiResult) {
-                    console.log(`[useParticipantFlow] Respuesta guardada correctamente en API, ID: ${apiResult.id || 'N/A'}`);
                 } else {
                     console.warn('[useParticipantFlow] No se recibió confirmación del API al guardar respuesta');
                 }
@@ -638,7 +578,6 @@ export const useParticipantFlow = (researchId: string | undefined) => {
                         updatedData.modules.cognitive_task.push(moduleResponse);
                     }
                     
-                    console.log(`[useParticipantFlow] Guardado en cognitive_task, total: ${updatedData.modules.cognitive_task.length}`);
                 }
                 else if (isSmartVOC) {
                     // MODIFICADO: Garantizar que se guarde siempre en smartvoc
@@ -659,7 +598,6 @@ export const useParticipantFlow = (researchId: string | undefined) => {
                         updatedData.modules.smartvoc.push(moduleResponse);
                     }
                     
-                    console.log(`[useParticipantFlow] Guardado en smartvoc, total: ${updatedData.modules.smartvoc.length}`);
                 }
                 else {
                     // Cualquier otro tipo: crear array dinámico por tipo
@@ -694,9 +632,6 @@ export const useParticipantFlow = (researchId: string | undefined) => {
                     // Añadir nueva respuesta
                     updatedData.modules.all_steps.push(moduleResponse);
                 }
-                
-                console.log('[useParticipantFlow] Total respuestas guardadas en estado:', 
-                    updatedData.modules.all_steps.length);
                 
                 return updatedData;
             });
@@ -817,7 +752,6 @@ export const useParticipantFlow = (researchId: string | undefined) => {
             
             // Comprobar si debemos forzar un valor por defecto
             if (answer === undefined && (isCognitive || isSmartVOC)) {
-                console.log(`[useParticipantFlow] ALERTA: Forzando valor por defecto para ${stepType}`);
                 // Asignar valor por defecto según el tipo
                 answer = isCognitive ? 
                     { text: "Respuesta vacía", isEmpty: true } : 
@@ -833,24 +767,20 @@ export const useParticipantFlow = (researchId: string | undefined) => {
                     ...currentStepInfo.config,
                     savedResponses: answer
                 };
-                console.log(`[useParticipantFlow] Guardando respuestas para ${currentStepInfo.type} en config:`, answer);
             }
             
             const nextIndex = currentStepIndex + 1;
             const nextStepInfo = expandedSteps[nextIndex];
-            console.log(`[useParticipantFlow] Avanzando a paso ${nextIndex} (${nextStepInfo?.id}).`);
             
             // Actualizar el índice máximo visitado si estamos avanzando a un paso nuevo
             if (nextIndex > maxVisitedIndex) {
                 setMaxVisitedIndex(nextIndex);
                 // Ya no guardamos en localStorage, solo en el estado de React
-                console.log(`[useParticipantFlow] Nuevo índice máximo visitado: ${nextIndex}`);
             }
             
             setCurrentStepIndex(nextIndex);
             setError(null); 
         } else if (!isFlowLoading) {
-             console.log(`[useParticipantFlow] Último paso (${expandedSteps[currentStepIndex]?.id}) completado.`);
              
              // Guardar la respuesta final - SIEMPRE si hay respuesta
              if (answer !== undefined) {
@@ -865,27 +795,13 @@ export const useParticipantFlow = (researchId: string | undefined) => {
                      endTime: Date.now()
                  };
                  
-                 // Mostrar completo el JSON final
-                 console.log('==========================================');
-                 console.log('JSON FINAL DEL FLUJO COMPLETO:');
-                 console.log(JSON.stringify(finalData, null, 2));
-                 console.log('==========================================');
-                 
-                 // Enviar el JSON completo al servidor
-                 console.log('[useParticipantFlow] Módulos guardados:');
-                 console.log(' - cognitive_task:', finalData.modules.cognitive_task?.length || 0);
-                 console.log(' - smartvoc:', finalData.modules.smartvoc?.length || 0);
-                 console.log(' - all_steps:', finalData.modules.all_steps?.length || 0);
-                 
                  return finalData;
              });
 
              // NUEVO: Marcar respuestas como completadas en el API
              try {
-                console.log('[useParticipantFlow] Marcando respuestas como completadas en el API...');
                 const result = await responseAPI.markAsCompleted();
                 if (result) {
-                    console.log('[useParticipantFlow] Respuestas marcadas como completadas con éxito.');
                 } else {
                     console.warn('[useParticipantFlow] No se recibió confirmación al marcar respuestas como completadas.');
                 }
@@ -969,7 +885,6 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         const isAnsweredStep = answeredSteps.includes(targetIndex);
         
         if (!isFlowLoading && targetIndex >= 0 && (targetIndex <= maxVisitedIndex || isAnsweredStep)) {
-            console.log(`[useParticipantFlow] Navegando al paso ${targetIndex} (${expandedSteps[targetIndex]?.id}).`);
 
             // Intentar recuperar la respuesta guardada para el paso de destino
             const savedResponse = getStepResponse(targetIndex);
@@ -982,14 +897,12 @@ export const useParticipantFlow = (researchId: string | undefined) => {
                     if (targetStep) {
                         // Solo actualizar si la respuesta guardada es diferente a la que ya tiene
                         if (targetStep.config?.savedResponses !== savedResponse) {
-                            console.log(`[useParticipantFlow] Cargando respuesta guardada para ${targetStep.type}`);
                             // Crear una nueva config para el paso
                             targetStep.config = {
                                 ...targetStep.config,
                                 savedResponses: savedResponse
                             };
                         } else {
-                            console.log(`[useParticipantFlow] La respuesta guardada ya está en config para ${targetStep.type}`);
                         }
                     }
                     return newSteps; // Devolver el nuevo array
@@ -1000,19 +913,12 @@ export const useParticipantFlow = (researchId: string | undefined) => {
             setCurrentStepIndex(targetIndex);
             setError(null); 
         } else if (targetIndex === currentStepIndex) {
-            console.log("[useParticipantFlow] Clic en el paso actual, no se navega.");
         } else {
             console.warn(`[useParticipantFlow] Navegación bloqueada al índice ${targetIndex}.`);
         }
     }, [currentStepIndex, expandedSteps, isFlowLoading, getStepResponse, maxVisitedIndex, getAnsweredStepIndices]);
     
-    // <<< NUEVO: Calcular pasos relevantes >>>
-    const totalRelevantSteps = Math.max(0, expandedSteps.length - 2); // Total sin Welcome/Thankyou
-    // El índice actual (currentStepIndex) representa el paso EN EL QUE ESTÁ el usuario.
-    // Si está en índice 0 (Welcome), no ha completado ningún paso relevante.
-    // Si está en índice 1 (primera pregunta), ha completado 0 pasos relevantes.
-    // Si está en índice N (última pregunta), ha completado N-1 pasos relevantes.
-    // Si está en el índice final (Thankyou), ha completado todos los pasos relevantes.
+    const totalRelevantSteps = Math.max(0, expandedSteps.length - 2);
     let completedRelevantSteps = 0;
     if (currentStepIndex > 0 && expandedSteps.length > 2) {
         // Si el índice es mayor que 0 (no estamos en Welcome) y hay pasos relevantes
@@ -1051,6 +957,8 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         hasStepBeenAnswered,
         getAnsweredStepIndices,
         getStepResponse,
-        maxVisitedIndex
+        maxVisitedIndex,
+        // <<< DEVOLVER all_steps >>>
+        loadedApiResponses 
     };
 }; 

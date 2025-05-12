@@ -26,7 +26,6 @@ const FlowStepContent: React.FC<FlowStepContentProps> = ({
     handleError,
     responsesData,
 }) => {
-    console.log('[FlowStepContent] Estado global:', ParticipantFlowStep[currentStepEnum], 'Cargando:', isLoading, 'Paso actual:', currentExpandedStep?.id);
 
     if (!researchId) {
         return <ErrorDisplay title="Error Crítico" message="ID de investigación no encontrado en la URL." />;

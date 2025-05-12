@@ -4,12 +4,15 @@ import { ParticipantFlowStep } from '../types/flow';
 
 // Interfaz para las respuestas de módulos
 export interface ModuleResponse {
-  stepId: string;
-  stepType: string;
-  stepName?: string;
-  question?: string;
-  answer?: any;
-  timestamp: number;
+  id: string; // ID de la respuesta específica
+  createdAt: string; // Fecha de creación (ISO string)
+  updatedAt: string; // Fecha de actualización (ISO string)
+  stepTitle: string; // Título del paso (usado para comparación)
+  stepType: string; // Tipo del paso (e.g., 'demographic', 'cognitive_linear_scale')
+  response: any; // La respuesta dada por el participante
+  // Opcionalmente, podríamos añadir campos que a veces vienen
+  participantId?: string; 
+  researchId?: string;
 }
 
 // Interfaz para el JSON completo de respuestas
@@ -87,6 +90,9 @@ export interface ParticipantState {
   getAnsweredStepIndices: () => number[];
   getResponsesJson: () => string;
   
+  // <<< NUEVA ACCIÓN >>>
+  setLoadedResponses: (loadedModules: ResponsesData['modules']) => void;
+  
   // Persistencia forzada
   forceSaveToLocalStorage: () => void;
   
@@ -133,7 +139,6 @@ const saveToLocalStorage = (key: string, data: any): void => {
   try {
     const serializedData = JSON.stringify(sanitizeForJSON(data));
     localStorage.setItem(key, serializedData);
-    console.log(`[ParticipantStore] Datos guardados en localStorage (${key}): ${serializedData.length} caracteres`);
   } catch (error) {
     console.error(`[ParticipantStore] Error guardando en localStorage (${key}):`, error);
   }
@@ -144,11 +149,9 @@ const loadFromLocalStorage = (key: string): any => {
   try {
     const serializedData = localStorage.getItem(key);
     if (serializedData === null) {
-      console.log(`[ParticipantStore] No hay datos en localStorage para la clave (${key})`);
       return null;
     }
     const data = JSON.parse(serializedData);
-    console.log(`[ParticipantStore] Datos cargados desde localStorage (${key}): ${serializedData.length} caracteres`);
     return data;
   } catch (error) {
     console.error(`[ParticipantStore] Error cargando desde localStorage (${key}):`, error);
@@ -229,6 +232,36 @@ export const useParticipantStore = create(
         });
       },
       
+      // <<< NUEVA ACCIÓN >>>
+      setLoadedResponses: (loadedModules) => set((state) => {
+        // Crear una copia profunda para evitar mutaciones inesperadas
+        const newResponsesData = JSON.parse(JSON.stringify(state.responsesData));
+
+        // Actualizar participantId si está presente en el estado actual
+        newResponsesData.participantId = state.participantId || newResponsesData.participantId;
+
+        // << MODIFICADO: Esperar un array de respuestas (como el de la API) >>
+        if (Array.isArray(loadedModules)) {
+          // Sobrescribir/fusionar all_steps con las respuestas cargadas
+          const existingSteps = newResponsesData.modules.all_steps || [];
+          const combinedSteps = [...existingSteps, ...loadedModules];
+          
+          // Eliminar duplicados basados en el ID de la respuesta (el 'id' dentro del objeto respuesta)
+          const uniqueSteps = combinedSteps.filter((response, index, self) => 
+             response.id && index === self.findIndex((r) => r.id === response.id)
+          );
+          
+          newResponsesData.modules = {
+            ...newResponsesData.modules, // Mantener otros módulos existentes
+            all_steps: uniqueSteps, // Usar el array único
+          };
+        } else {
+           console.warn("[ParticipantStore] setLoadedResponses esperaba un array pero recibió:", loadedModules);
+        }
+        
+        return { responsesData: newResponsesData };
+      }),
+      
       // Método para manejar el login exitoso
       handleLoginSuccess: (participant) => {
         const { researchId } = get();
@@ -272,7 +305,7 @@ export const useParticipantStore = create(
       
       // Método para guardar una respuesta
       saveStepResponse: (stepIndex, answer) => {
-        const { expandedSteps, responsesData } = get();
+        const { expandedSteps } = get();
         
         if (stepIndex < 0 || stepIndex >= expandedSteps.length) return;
         
@@ -281,7 +314,6 @@ export const useParticipantStore = create(
         
         // Ignorar welcome/thankyou si no tienen respuesta
         if ((stepType === 'welcome' || stepType === 'thankyou') && answer === undefined) {
-          console.log(`[ParticipantStore] Paso ${stepType} sin respuesta, excluido del JSON.`);
           return;
         }
         
@@ -291,24 +323,25 @@ export const useParticipantStore = create(
         const isEyeTracking = stepType.startsWith('eye_tracking_');
         
         if (answer === undefined && (isCognitive || isSmartVOC || isEyeTracking)) {
-          console.log(`[ParticipantStore] ALERTA: Respuesta undefined para ${stepType}, usando objeto vacío`);
           answer = isCognitive ? { text: "" } : isSmartVOC ? { value: 0 } : isEyeTracking ? { data: [] } : { value: null };
         }
         
         // Crear objeto de respuesta
         const moduleResponse: ModuleResponse = {
-          stepId,
+          id: stepId,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          stepTitle: stepName || '',
           stepType,
-          stepName,
-          question: config?.questionText || config?.title || stepName,
-          answer: sanitizeForJSON(answer),
-          timestamp: Date.now()
+          response: sanitizeForJSON(answer),
+          participantId: get().participantId ?? undefined,
+          researchId: get().researchId ?? undefined
         };
         
         // Verificar sanitización
-        if (moduleResponse.answer === undefined || moduleResponse.answer === null) {
+        if (moduleResponse.response === undefined || moduleResponse.response === null) {
           console.warn('[ParticipantStore] ALERTA: Respuesta perdida después de sanitizar');
-          moduleResponse.answer = isCognitive 
+          moduleResponse.response = isCognitive 
             ? { text: "Respuesta no capturada correctamente" } 
             : isSmartVOC 
               ? { value: 0 } 
@@ -338,7 +371,7 @@ export const useParticipantStore = create(
             
             // Verificar si ya existe
             const existingIndex = updatedData.modules.cognitive_task.findIndex(
-              resp => resp.stepId === stepId
+              resp => resp.id === stepId
             );
             
             if (existingIndex >= 0) {
@@ -354,7 +387,7 @@ export const useParticipantStore = create(
             
             // Verificar si ya existe
             const existingIndex = updatedData.modules.smartvoc.findIndex(
-              resp => resp.stepId === stepId
+              resp => resp.id === stepId
             );
             
             if (existingIndex >= 0) {
@@ -370,7 +403,7 @@ export const useParticipantStore = create(
             
             // Verificar si ya existe
             const existingIndex = updatedData.modules.eye_tracking.findIndex(
-              resp => resp.stepId === stepId
+              resp => resp.id === stepId
             );
             
             if (existingIndex >= 0) {
@@ -401,7 +434,7 @@ export const useParticipantStore = create(
           
           // Verificar si ya existe
           const allStepsIndex = updatedData.modules.all_steps.findIndex(
-            resp => resp.stepId === stepId
+            resp => resp.id === stepId
           );
           
           if (allStepsIndex >= 0) {
@@ -469,8 +502,6 @@ export const useParticipantStore = create(
               }
             }));
             
-            // Guardar estado final en localStorage
-            console.log('[ParticipantStore] Flujo completado. Guardando JSON final...');
             const finalData = {
               ...get().responsesData,
               endTime: Date.now()
@@ -530,17 +561,12 @@ export const useParticipantStore = create(
             (targetIndex > maxVisitedIndex && !isAnsweredStep)) {
           
           if (targetIndex === currentStepIndex) {
-            console.log("[ParticipantStore] Clic en el paso actual, no se navega.");
           } else {
             console.warn(`[ParticipantStore] Navegación bloqueada al índice ${targetIndex}.`);
           }
           return;
         }
-        
-        // Navegación válida
-        console.log(`[ParticipantStore] Navegando al paso ${targetIndex} (${expandedSteps[targetIndex]?.id}).`);
-        
-        // Recuperar respuesta guardada
+
         const savedResponse = get().getStepResponse(targetIndex);
         
         // Actualizar config con la respuesta guardada
@@ -550,7 +576,6 @@ export const useParticipantStore = create(
             const targetStep = newSteps[targetIndex];
             
             if (targetStep && targetStep.config?.savedResponses !== savedResponse) {
-              console.log(`[ParticipantStore] Cargando respuesta guardada para ${targetStep.type}`);
               targetStep.config = {
                 ...targetStep.config,
                 savedResponses: savedResponse
@@ -572,6 +597,52 @@ export const useParticipantStore = create(
         get().forceSaveToLocalStorage();
       },
       
+      // Obtener índices de pasos respondidos
+      getAnsweredStepIndices: () => {
+        const { expandedSteps, responsesData, maxVisitedIndex } = get();
+        const completedStepIndices = new Set<number>();
+        
+        // Asegurarse que all_steps existe y es un array
+        const allApiResponses = responsesData.modules.all_steps || [];
+        if (!Array.isArray(allApiResponses)) {
+            console.warn("[getAnsweredStepIndices] responsesData.modules.all_steps no es un array válido.");
+            // Devolver solo los visitados si no hay respuestas válidas
+            for (let i = 0; i <= maxVisitedIndex; i++) { completedStepIndices.add(i); }
+            return Array.from(completedStepIndices).sort((a, b) => a - b);
+        }
+
+        expandedSteps.forEach((step, index) => {
+          const { id: stepId, type: stepType } = step; // Mantenemos stepId por si localStorage lo usa
+          
+          if (stepType === 'welcome' || stepType === 'thankyou') {
+            completedStepIndices.add(index);
+            return;
+          }
+          
+          // Verificar directamente en localStorage (opcional, mantener si se usa)
+          const directResponse = loadFromLocalStorage(`response_${stepId}`);
+          if (directResponse) {
+            completedStepIndices.add(index);
+            return;
+          }
+          
+          // <<< MODIFICADO: Buscar en allApiResponses usando stepType >>>
+          if (allApiResponses.some(resp => resp.stepType === stepType)) {
+            completedStepIndices.add(index);
+            // OJO: Si hay múltiples pasos con el mismo stepType, todos se marcarán.
+            // No podemos retornar aquí si queremos marcar múltiples instancias.
+          }
+          // Ya no necesitamos buscar en categorías específicas, all_steps debería tener todo
+        });
+        
+        // Marcar todos los pasos hasta maxVisitedIndex como completados
+        for (let i = 0; i <= maxVisitedIndex; i++) {
+          completedStepIndices.add(i);
+        }
+        
+        return Array.from(completedStepIndices).sort((a, b) => a - b);
+      },
+      
       // Obtener respuesta de un paso
       getStepResponse: (stepIndex) => {
         const { expandedSteps, responsesData } = get();
@@ -583,51 +654,24 @@ export const useParticipantStore = create(
         
         if (stepType === 'welcome' || stepType === 'thankyou') return null;
         
-        // Primero, intentar cargar directamente de localStorage para ese paso específico
+        // Intentar cargar directamente de localStorage primero
         const directResponse = loadFromLocalStorage(`response_${stepId}`);
-        if (directResponse && directResponse.answer) {
-          return directResponse.answer;
+        if (directResponse && directResponse.response) {
+          return directResponse.response;
         }
         
-        // Buscar en all_steps primero
-        if (responsesData.modules.all_steps && Array.isArray(responsesData.modules.all_steps)) {
-          const response = responsesData.modules.all_steps.find(resp => resp.stepId === stepId);
-          if (response) return response.answer;
+        // Asegurarse que all_steps existe y es un array
+        const allApiResponses = responsesData.modules.all_steps || [];
+        if (!Array.isArray(allApiResponses)) {
+            console.warn("[getStepResponse] responsesData.modules.all_steps no es un array válido.");
+            return null;
         }
         
-        // Buscar en categorías específicas
-        if (stepType === 'demographic' && responsesData.modules.demographic) {
-          return responsesData.modules.demographic.stepId === stepId ? 
-            responsesData.modules.demographic.answer : null;
-        } 
-        else if (step.name?.includes('Que te ha parecido el módulo') && responsesData.modules.feedback) {
-          return responsesData.modules.feedback.stepId === stepId ? 
-            responsesData.modules.feedback.answer : null;
-        }
-        else if (stepType.startsWith('cognitive_') && Array.isArray(responsesData.modules.cognitive_task)) {
-          const response = responsesData.modules.cognitive_task.find(resp => resp.stepId === stepId);
-          return response ? response.answer : null;
-        }
-        else if (stepType.startsWith('smartvoc_') && Array.isArray(responsesData.modules.smartvoc)) {
-          const response = responsesData.modules.smartvoc.find(resp => resp.stepId === stepId);
-          return response ? response.answer : null;
-        }
-        else if (stepType.startsWith('eye_tracking_') && Array.isArray(responsesData.modules.eye_tracking)) {
-          const response = responsesData.modules.eye_tracking.find(resp => resp.stepId === stepId);
-          return response ? response.answer : null;
-        }
-        else {
-          // Buscar en categoría dinámica
-          const moduleCategory = stepType.split('_')[0] || 'other';
-          const moduleResponses = responsesData.modules[moduleCategory];
-          
-          if (Array.isArray(moduleResponses)) {
-            const response = moduleResponses.find(resp => resp.stepId === stepId);
-            return response ? response.answer : null;
-          }
-        }
-        
-        return null;
+        // <<< MODIFICADO: Buscar en allApiResponses usando stepType >>>
+        // Encuentra la *primera* respuesta que coincida con el stepType.
+        // Puede no ser la correcta si hay múltiples pasos con el mismo tipo.
+        const response = allApiResponses.find(resp => resp.stepType === stepType);
+        return response ? response.response : null;
       },
       
       // Verificar si un paso ha sido respondido
@@ -641,123 +685,21 @@ export const useParticipantStore = create(
         
         if (stepType === 'welcome' || stepType === 'thankyou') return true;
         
-        // Primero, verificar directamente en localStorage
+        // Verificar directamente en localStorage
         const directResponse = loadFromLocalStorage(`response_${stepId}`);
         if (directResponse) {
           return true;
         }
         
-        // Buscar en all_steps primero
-        if (responsesData.modules.all_steps && Array.isArray(responsesData.modules.all_steps)) {
-          if (responsesData.modules.all_steps.some(resp => resp.stepId === stepId)) {
-            return true;
-          }
+        // Asegurarse que all_steps existe y es un array
+        const allApiResponses = responsesData.modules.all_steps || [];
+        if (!Array.isArray(allApiResponses)) {
+            console.warn("[hasStepBeenAnswered] responsesData.modules.all_steps no es un array válido.");
+            return false;
         }
-        
-        // Buscar en categorías específicas
-        if (stepType === 'demographic' && responsesData.modules.demographic) {
-          return responsesData.modules.demographic.stepId === stepId;
-        } 
-        else if (step.name?.includes('Que te ha parecido el módulo') && responsesData.modules.feedback) {
-          return responsesData.modules.feedback.stepId === stepId;
-        }
-        else if (stepType.startsWith('cognitive_') && Array.isArray(responsesData.modules.cognitive_task)) {
-          return responsesData.modules.cognitive_task.some(resp => resp.stepId === stepId);
-        }
-        else if (stepType.startsWith('smartvoc_') && Array.isArray(responsesData.modules.smartvoc)) {
-          return responsesData.modules.smartvoc.some(resp => resp.stepId === stepId);
-        }
-        else if (stepType.startsWith('eye_tracking_') && Array.isArray(responsesData.modules.eye_tracking)) {
-          return responsesData.modules.eye_tracking.some(resp => resp.stepId === stepId);
-        }
-        else {
-          // Buscar en categoría dinámica
-          const moduleCategory = stepType.split('_')[0] || 'other';
-          const moduleResponses = responsesData.modules[moduleCategory];
-          
-          if (Array.isArray(moduleResponses)) {
-            return moduleResponses.some(resp => resp.stepId === stepId);
-          }
-        }
-        
-        return false;
-      },
-      
-      // Obtener índices de pasos respondidos
-      getAnsweredStepIndices: () => {
-        const { expandedSteps, responsesData, maxVisitedIndex } = get();
-        const completedStepIndices = new Set<number>();
-        
-        // Recorrer todos los pasos expandidos
-        expandedSteps.forEach((step, index) => {
-          const { id: stepId, type: stepType } = step;
-          
-          // Welcome/thankyou siempre se consideran completados
-          if (stepType === 'welcome' || stepType === 'thankyou') {
-            completedStepIndices.add(index);
-            return;
-          }
-          
-          // Verificar directamente en localStorage
-          const directResponse = loadFromLocalStorage(`response_${stepId}`);
-          if (directResponse) {
-            completedStepIndices.add(index);
-            return;
-          }
-          
-          // Buscar en all_steps primero
-          if (responsesData.modules.all_steps && Array.isArray(responsesData.modules.all_steps)) {
-            if (responsesData.modules.all_steps.some(resp => resp.stepId === stepId)) {
-              completedStepIndices.add(index);
-              return;
-            }
-          }
-          
-          // Buscar en categorías específicas
-          if (stepType === 'demographic' && responsesData.modules.demographic) {
-            if (responsesData.modules.demographic.stepId === stepId) {
-              completedStepIndices.add(index);
-            }
-          } 
-          else if (step.name?.includes('Que te ha parecido el módulo') && responsesData.modules.feedback) {
-            if (responsesData.modules.feedback.stepId === stepId) {
-              completedStepIndices.add(index);
-            }
-          }
-          else if (stepType.startsWith('cognitive_') && Array.isArray(responsesData.modules.cognitive_task)) {
-            if (responsesData.modules.cognitive_task.some(resp => resp.stepId === stepId)) {
-              completedStepIndices.add(index);
-            }
-          }
-          else if (stepType.startsWith('smartvoc_') && Array.isArray(responsesData.modules.smartvoc)) {
-            if (responsesData.modules.smartvoc.some(resp => resp.stepId === stepId)) {
-              completedStepIndices.add(index);
-            }
-          }
-          else if (stepType.startsWith('eye_tracking_') && Array.isArray(responsesData.modules.eye_tracking)) {
-            if (responsesData.modules.eye_tracking.some(resp => resp.stepId === stepId)) {
-              completedStepIndices.add(index);
-            }
-          }
-          else {
-            // Buscar en categoría dinámica
-            const moduleCategory = stepType.split('_')[0] || 'other';
-            const moduleResponses = responsesData.modules[moduleCategory];
-            
-            if (Array.isArray(moduleResponses)) {
-              if (moduleResponses.some(resp => resp.stepId === stepId)) {
-                completedStepIndices.add(index);
-              }
-            }
-          }
-        });
-        
-        // Marcar todos los pasos hasta maxVisitedIndex como completados
-        for (let i = 0; i <= maxVisitedIndex; i++) {
-          completedStepIndices.add(i);
-        }
-        
-        return Array.from(completedStepIndices).sort((a, b) => a - b);
+
+        // <<< MODIFICADO: Buscar en allApiResponses usando stepType >>>
+        return allApiResponses.some(resp => resp.stepType === stepType);
       },
       
       // Obtener JSON de respuestas
@@ -821,13 +763,10 @@ export const useParticipantStore = create(
             }
           }
           keysToRemove.forEach(key => localStorage.removeItem(key));
-          
-          console.log('[ParticipantStore] localStorage limpiado correctamente');
         } catch (e) {
           console.error('[ParticipantStore] Error limpiando localStorage:', e);
         }
         
-        // Resetear estado
         set({
           token: null,
           participantId: null,
@@ -864,18 +803,16 @@ export const useParticipantStore = create(
       },
       // Mayor frecuencia de almacenamiento
       version: 1,
-      onRehydrateStorage: (state) => {
+      onRehydrateStorage: () => {
         return (restoredState, error) => {
           if (error) {
             console.error('[ParticipantStore] Error recargando estado de Zustand:', error);
           }
           
           if (restoredState) {
-            // Intentar cargar datos adicionales de localStorage
             try {
               const storedResponses = loadFromLocalStorage('participantResponses');
               if (storedResponses && Object.keys(storedResponses).length > 0) {
-                console.log('[ParticipantStore] Respuestas encontradas en localStorage, restaurando...');
                 
                 // Combinar con estado recuperado
                 if (restoredState.responsesData && storedResponses) {
@@ -892,8 +829,6 @@ export const useParticipantStore = create(
             } catch (e) {
               console.error('[ParticipantStore] Error cargando datos adicionales:', e);
             }
-            
-            console.log('[ParticipantStore] Estado recargado correctamente:', restoredState);
           }
         };
       }

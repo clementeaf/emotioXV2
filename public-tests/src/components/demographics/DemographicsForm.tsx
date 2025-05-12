@@ -77,7 +77,6 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
       }
       setDataLoading(true);
       try {
-        console.log(`[DemographicsForm] Obteniendo respuestas guardadas para research: ${researchIdFromStore}, participant: ${participantIdFromStore}`);
         const result = await demographicsService.getDemographicResponses(
           researchIdFromStore as string,
           participantIdFromStore as string
@@ -93,16 +92,12 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
           setDataExisted(false);
           setDocumentId(null);
           setDemographicModuleResponseId(null);
-          console.log('[DemographicsForm] Datos NO obtenidos del backend (error en servicio).');
         } else if (actualResponses && Object.keys(actualResponses).length > 0) {
-          console.log('[DemographicsForm] Datos OBTENIDOS del backend. ID Documento:', fetchedDocumentId, "ID Modulo Demo:", fetchedDemographicModuleResponseId);
-          console.log('[DemographicsForm] Respuestas demográficas obtenidas:', actualResponses);
           setDataExisted(true);
           setDocumentId(fetchedDocumentId);
           setDemographicModuleResponseId(fetchedDemographicModuleResponseId);
           setResponses(actualResponses);
         } else {
-          console.log('[DemographicsForm] Datos NO obtenidos del backend (sin datos previos o estructura vacía). ID Documento (si existe):', fetchedDocumentId);
           setDataExisted(false);
           setDocumentId(fetchedDocumentId);
           setDemographicModuleResponseId(null);
@@ -113,18 +108,15 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
         setDataExisted(false);
         setDocumentId(null);
         setDemographicModuleResponseId(null);
-        console.log('[DemographicsForm] Datos NO obtenidos del backend (excepción en fetch).');
       } finally {
         setDataLoading(false);
       }
     };
 
     if (credentialsReady) {
-      console.log('[DemographicsForm] Credenciales listas. Intentando fetchExistingResponses.');
       fetchExistingResponses();
     } else {
       if (!dataLoading) { 
-        console.log('[DemographicsForm] Credenciales no listas (y no estamos en dataLoading). Asumiendo no datos existentes.');
         setDataExisted(false);
         setDocumentId(null);
         setDemographicModuleResponseId(null);
@@ -177,7 +169,6 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
       let resultFromHook: any = null;
 
       if (dataExisted && demographicModuleResponseId) {
-        console.log(`[DemographicsForm] Actualizando (PUT) datos via useResponseAPI. ModuleResponse ID: ${demographicModuleResponseId}`);
         resultFromHook = await updateResponse(
           demographicModuleResponseId,
           stepId,
@@ -194,7 +185,6 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
           responseData
         );
       } else {
-        console.log(`[DemographicsForm] Creando (POST) datos via useResponseAPI.`);
         resultFromHook = await saveResponse(
           stepId,
           stepType,
@@ -209,10 +199,8 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
         return false;
       }
       
-      console.log(`[DemographicsForm] Datos ${dataExisted ? 'actualizados' : 'guardados'} correctamente via useResponseAPI. Respuesta del hook:`, resultFromHook);
       
       if (!dataExisted && resultFromHook && resultFromHook.id) {
-        console.log("[DemographicsForm] POST exitoso. Nuevo documentId se obtendrá en la siguiente carga si es necesario.");
         setDataExisted(true);
       }
       return true;
@@ -232,7 +220,6 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
     const serverSaveSuccess = await saveToServer(responses);
     
     if (serverSaveSuccess) {
-      console.log('[DemographicsForm] Datos enviados al servidor via useResponseAPI. Preparando para navegar.');
       setIsNavigating(true);
       setTimeout(() => {
         onSubmit(responses);

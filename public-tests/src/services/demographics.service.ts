@@ -48,7 +48,6 @@ export const demographicsService = {
     try {
       const API_BASE_URL_CONFIG = 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev'; // Mantener para esta función específica
       const url = `/research/${researchId}/demographics`;
-      console.log(`[DemographicsService] Obteniendo configuración con researchId ${researchId}, URL: ${API_BASE_URL_CONFIG}${url}`);
       
       const headers: Record<string, string> = {
         'Content-Type': 'application/json'
@@ -64,7 +63,6 @@ export const demographicsService = {
       });
 
       if (response.status === 404) {
-        console.log('[DemographicsService] No se encontró configuración, utilizando valores por defecto');
         return {
           data: DEFAULT_DEMOGRAPHICS_CONFIG,
           status: 200,
@@ -99,15 +97,12 @@ export const demographicsService = {
       const data = responseData?.data || responseData;
       
       if (!data || !data.questions) {
-        console.log('[DemographicsService] Datos de respuesta inválidos, utilizando valores por defecto');
         return {
           data: DEFAULT_DEMOGRAPHICS_CONFIG,
           status: 200,
           apiStatus: APIStatus.SUCCESS
         };
       }
-      
-      console.log('[DemographicsService] Datos obtenidos:', data);
       
       return {
         data,
@@ -146,9 +141,7 @@ export const demographicsService = {
     const apiClient = new ApiClient();
 
     try {
-      console.log(`[DemographicsService] Solicitando ModuleResponses para research: ${researchId}, participant: ${participantId}`);
       const apiResponse = await apiClient.getModuleResponses(researchId, participantId);
-      console.log('[ModuleResponse] Respuesta completa recibida en DemographicsService (de apiClient.getModuleResponses):', JSON.stringify(apiResponse, null, 2));
 
       if (apiResponse.error || apiResponse.apiStatus !== APIStatus.SUCCESS || !apiResponse.data || !apiResponse.data.data) {
         let message = apiResponse.message || 'No se encontraron respuestas o ocurrió un error.';
@@ -174,7 +167,6 @@ export const demographicsService = {
       let foundDemographicModuleResponseId: string | null = null;
 
       if (typeof fullDocument === 'object' && fullDocument !== null && Array.isArray(fullDocument.responses)) {
-        console.log('[DemographicsService] Documento ModuleResponses encontrado. ID:', fullDocument.id);
         foundDocumentId = fullDocument.id;
 
         const demographicStepData = fullDocument.responses.find(
@@ -182,17 +174,12 @@ export const demographicsService = {
         );
 
         if (demographicStepData && typeof demographicStepData.response === 'object' && demographicStepData.response !== null) {
-          console.log('[DemographicsService] Step demográfico encontrado en ModuleResponses:', demographicStepData);
           demographicDataToReturn = demographicStepData.response as DemographicResponses;
           foundDemographicModuleResponseId = demographicStepData.id || null;
-        } else {
-          console.log('[DemographicsService] No se encontró step demográfico o su contenido "response" no es un objeto:', demographicStepData);
         }
       } else {
         console.warn('[DemographicsService] Estructura de fullDocument (apiResponse.data.data) NO es la esperada o no contiene un array \'responses\'. \'fullDocument\' actual:', JSON.stringify(fullDocument, null, 2));
       }
-      
-      console.log('[DemographicsService] Datos demográficos extraídos:', demographicDataToReturn, 'ID Documento:', foundDocumentId);
 
       return {
         data: { responses: demographicDataToReturn, documentId: foundDocumentId, demographicModuleResponseId: foundDemographicModuleResponseId },

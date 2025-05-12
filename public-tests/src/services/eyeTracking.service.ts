@@ -29,7 +29,6 @@ export const eyeTrackingService = {
 
     try {
       const url = `/research/${researchId}/eye-tracking`;
-      console.log(`[EyeTrackingService] Obteniendo configuración con researchId ${researchId}, URL: ${API_BASE_URL}${url}`);
       
       const headers: Record<string, string> = {
         'Content-Type': 'application/json'
@@ -81,9 +80,7 @@ export const eyeTrackingService = {
         };
       }
 
-      // Si hay datos en la respuesta, los extraemos del campo data si existe
       const data = responseData?.data || responseData;
-      console.log('[EyeTrackingService] Datos obtenidos:', data);
       
       return {
         data,

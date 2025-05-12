@@ -22,7 +22,8 @@ const ParticipantFlow: React.FC = () => {
         completedRelevantSteps,
         totalRelevantSteps,
         responsesData,
-        getAnsweredStepIndices
+        getAnsweredStepIndices,
+        loadedApiResponses
     } = useParticipantFlow(researchId);
 
     const currentExpandedStep = expandedSteps && expandedSteps.length > currentStepIndex 
@@ -66,6 +67,7 @@ const ParticipantFlow: React.FC = () => {
                 completedSteps={completedRelevantSteps}
                 totalSteps={totalRelevantSteps}
                 answeredStepIndices={answeredStepIndices}
+                loadedApiResponses={loadedApiResponses}
             />
 
             <main className="flex-1 overflow-y-auto bg-white flex flex-col items-center justify-center">

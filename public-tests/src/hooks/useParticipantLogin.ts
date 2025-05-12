@@ -123,13 +123,10 @@ export const useParticipantLogin = ({ researchId, onLogin }: UseParticipantLogin
       }
 
       localStorage.setItem('participantToken', apiToken);
-      console.log('[useParticipantLogin] Token guardado en localStorage.');
 
       setResearchIdInStore(researchId);
-      console.log(`[useParticipantLogin] Research ID (${researchId}) seteado en el store global.`);
 
       onLogin(apiParticipant);
-      console.log('[useParticipantLogin] onLogin (handleLoginSuccess) llamado con:', apiParticipant);
       
     } catch (error) {
       console.error('[useParticipantLogin] Excepción en handleSubmit:', error);

@@ -29,7 +29,6 @@ const WelcomeScreenHandler: React.FC<WelcomeScreenHandlerProps> = ({
     const [isNavigating, setIsNavigating] = useState<boolean>(false); // Nuevo estado
 
     const fetchConfig = useCallback(async () => {
-        console.log(`[WelcomeHandler] Obteniendo config para researchId: ${researchId}`);
         setIsLoading(true);
         setConfig(undefined);
 
@@ -44,7 +43,6 @@ const WelcomeScreenHandler: React.FC<WelcomeScreenHandlerProps> = ({
             if (response.ok) {
                 const result = await response.json();
                 const configData = result.data || result;
-                console.log('[WelcomeHandler] Config obtenida:', configData);
                 if (configData && typeof configData === 'object') {
                     setConfig(configData as WelcomeScreenConfig);
                 } else {
@@ -53,7 +51,6 @@ const WelcomeScreenHandler: React.FC<WelcomeScreenHandlerProps> = ({
                     onComplete(); // Considerar completado si el formato es inválido pero la llamada fue OK? O llamar onError? Decidimos onComplete por ahora.
                 }
             } else if (response.status === 404) {
-                console.log('[WelcomeHandler] No se encontró config (404).');
                 setConfig(null);
                 onComplete(); // No es un error del flujo, simplemente no existe
             } else {
