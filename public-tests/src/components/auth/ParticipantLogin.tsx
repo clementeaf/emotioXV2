@@ -6,18 +6,18 @@ import { AuthSubmitButton } from './AuthSubmitButton';
 import { AuthLegalText } from './AuthLegalText';
 
 interface ParticipantLoginProps {
-  onLogin: (participant: Participant) => void;
+  onLoginSuccess: (participant: Participant) => void;
   researchId: string;
 }
 
-export const ParticipantLogin = ({ onLogin, researchId }: ParticipantLoginProps) => {
+export const ParticipantLogin = ({ onLoginSuccess, researchId }: ParticipantLoginProps) => {
   const {
     participant,      
     errors,           
     isLoading,        
     handleInputChange,
     handleSubmit,     
-  } = useParticipantLogin({ researchId, onLogin });
+  } = useParticipantLogin({ researchId, onLogin: onLoginSuccess });
 
   return (
     <div className="w-screen h-screen flex items-center justify-center bg-neutral-50">

@@ -9,6 +9,18 @@ export interface CognitiveTaskHandlerProps {
     onError: (message: string) => void; 
 }
 
+export interface CurrentStepProps {
+    stepType: string;
+    stepConfig?: any;
+    stepId?: string;
+    stepName?: string;
+    researchId: string;
+    token?: string | null;
+    onLoginSuccess?: (participant: Participant) => void;
+    onStepComplete?: (answer?: any) => void;
+    onError: (errorMessage: string, stepType: string) => void;
+}
+
 // Props que necesita este componente para funcionar
 export interface CurrentStepRendererProps {
     currentStep: ParticipantFlowStep;

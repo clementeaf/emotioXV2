@@ -11,10 +11,20 @@ export const SingleChoiceQuestion: React.FC<{
     onStepComplete: (answer: any) => void;
     isMock: boolean; // Se mantiene para la lógica de datos de prueba si no hay config
 }> = ({ config: initialConfig, stepId: stepIdFromProps, stepName: stepNameFromProps, stepType, onStepComplete, isMock }) => {
-    const componentTitle = initialConfig.title || stepNameFromProps || 'Pregunta de opción única';
-    const description = initialConfig.description;
-    const questionText = initialConfig.questionText || (isMock ? 'Pregunta de prueba' : '');
-    const options = initialConfig.options || (isMock ? ['Opción 1', 'Opción 2', 'Opción 3'] : []);
+    const componentTitle = initialConfig?.title ?? stepNameFromProps ?? 'Pregunta de opción única';
+    const description = initialConfig?.description;
+    const questionText = initialConfig?.questionText ?? (isMock ? 'Pregunta de prueba' : 'Por favor, selecciona una opción.');
+    
+    // MODIFICADO: Leer de 'choices' y mapear a un array de strings (textos de las opciones)
+    // También nos aseguramos de que sea un array y que los textos existan
+    const options = Array.isArray(initialConfig?.choices) 
+        ? initialConfig.choices.map((choice: any) => choice?.text || '').filter((text: string) => text !== '')
+        : (isMock ? ['Opción 1 Mock', 'Opción 2 Mock', 'Opción 3 Mock'] : []);
+    
+    // Si después de mapear no quedan opciones (porque todos los textos estaban vacíos) y no es mock, usar un array de placeholders
+    const displayOptions = (options.length === 0 && !isMock)
+        ? ['Opción A (sin texto)', 'Opción B (sin texto)', 'Opción C (sin texto)'] // Placeholders si los textos originales están vacíos
+        : options;
 
     const [currentResponse, setCurrentResponse] = useState<string | null>(null); // Respuesta seleccionada
 
@@ -202,7 +212,7 @@ export const SingleChoiceQuestion: React.FC<{
             )}
 
             <div className="flex flex-col gap-2 mb-4">
-                {options.map((option: string, index: number) => (
+                {displayOptions.map((option: string, index: number) => (
                     <button
                         key={index}
                         onClick={() => setCurrentResponse(option)} // Actualizar currentResponse

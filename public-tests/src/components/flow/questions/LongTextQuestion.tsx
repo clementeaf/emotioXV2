@@ -10,10 +10,10 @@ export const LongTextQuestion: React.FC<{
     stepType: string;
     onStepComplete: (answer: any) => void;
 }> = ({ config, stepName: stepNameFromProps, stepId: stepIdFromProps, stepType, onStepComplete }) => {
-    const title = config.title || stepNameFromProps || 'Pregunta de Texto Largo';
-    const description = config.description;
-    const questionText = config.questionText;
-    const placeholder = config.answerPlaceholder || 'Escribe tu respuesta...';
+    const title = config?.title ?? stepNameFromProps ?? 'Pregunta de Texto Largo';
+    const description = config?.description;
+    const questionText = config?.questionText ?? 'Por favor, responde a la siguiente pregunta.';
+    const placeholder = config?.answerPlaceholder ?? 'Escribe tu respuesta...';
 
     const [currentResponse, setCurrentResponse] = useState<string>('');
 

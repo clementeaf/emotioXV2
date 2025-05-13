@@ -26,6 +26,9 @@ const ParticipantFlow: React.FC = () => {
         loadedApiResponses
     } = useParticipantFlow(researchId);
 
+    // DEBUG: Verificar tipo de handleLoginSuccess
+    console.log('[ParticipantFlow] Tipo de handleLoginSuccess al obtenerla del hook:', typeof handleLoginSuccess, handleLoginSuccess);
+
     const currentExpandedStep = expandedSteps && expandedSteps.length > currentStepIndex 
                                 ? expandedSteps[currentStepIndex] 
                                 : null;

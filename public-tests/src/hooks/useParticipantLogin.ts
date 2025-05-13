@@ -7,7 +7,7 @@ const API_BASE_URL = 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev
 // Argumentos que necesita el hook
 interface UseParticipantLoginProps {
   researchId: string;
-  onLogin: (participant: Participant) => void;
+  onLogin?: (participant: Participant) => void;
 }
 
 // Tipo para el estado del participante dentro del hook
@@ -126,7 +126,11 @@ export const useParticipantLogin = ({ researchId, onLogin }: UseParticipantLogin
 
       setResearchIdInStore(researchId);
 
-      onLogin(apiParticipant);
+      if (typeof onLogin === 'function') {
+        onLogin(apiParticipant);
+      } else {
+        console.error('[useParticipantLogin] onLogin no es una función. No se pudo notificar el login.');
+      }
       
     } catch (error) {
       console.error('[useParticipantLogin] Excepción en handleSubmit:', error);

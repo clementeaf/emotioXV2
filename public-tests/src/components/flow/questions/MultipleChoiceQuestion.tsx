@@ -11,12 +11,25 @@ export const MultipleChoiceQuestion: React.FC<{
     onStepComplete: (answer: any) => void; // Se llamará DESPUÉS de un guardado exitoso
     isMock: boolean;    // Determinado por CurrentStepRenderer basado en la validez de config
 }> = ({ config: initialConfig, stepId: stepIdFromProps, stepName: stepNameFromProps, stepType, onStepComplete, isMock }) => {
-    const componentTitle = initialConfig.title || stepNameFromProps || 'Pregunta de opciones múltiples';
-    const description = initialConfig.description;
-    const questionText = initialConfig.questionText || (isMock ? 'Selecciona todas las opciones que apliquen (Prueba)' : 'Pregunta sin texto');
-    const optionsFromConfig = initialConfig.options || (isMock ? ['Opción Múltiple A', 'Opción Múltiple B', 'Opción Múltiple C'] : []);
-    const minSelections = initialConfig.minSelections || 0;
-    const maxSelections = initialConfig.maxSelections || optionsFromConfig.length;
+    // DEBUG: ¿Qué es initialConfig REALMENTE aquí?
+    console.log('[MultipleChoiceQuestion] Received initialConfig:', JSON.stringify(initialConfig, null, 2));
+    console.log('[MultipleChoiceQuestion] Received stepNameFromProps:', stepNameFromProps);
+    console.log('[MultipleChoiceQuestion] Received isMock:', isMock);
+
+    const componentTitle = initialConfig?.title ?? stepNameFromProps ?? 'Pregunta de opciones múltiples';
+    const description = initialConfig?.description;
+    const questionText = initialConfig?.questionText ?? (isMock ? 'Selecciona todas las opciones que apliquen (Prueba)' : 'Por favor, selecciona una o más opciones.');
+    
+    const options = Array.isArray(initialConfig?.choices)
+        ? initialConfig.choices.map((choice: any) => choice?.text || '').filter((text: string) => text !== '')
+        : (isMock ? ['Opción Múltiple Mock A', 'Opción Múltiple Mock B', 'Opción Múltiple Mock C'] : []);
+
+    const displayOptions = (options.length === 0 && !isMock)
+        ? ['Opción Múltiple A (sin texto)', 'Opción Múltiple B (sin texto)', 'Opción Múltiple C (sin texto)']
+        : options;
+
+    const minSelections = initialConfig?.minSelections ?? 0;
+    const maxSelections = initialConfig?.maxSelections > 0 ? initialConfig.maxSelections : displayOptions.length;
 
     const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
 
@@ -238,7 +251,7 @@ export const MultipleChoiceQuestion: React.FC<{
             )}
 
             <div className="flex flex-col gap-2 mb-4">
-                {optionsFromConfig.map((option: string, index: number) => (
+                {displayOptions.map((option: string, index: number) => (
                     <label key={index} className="flex items-center gap-2 p-3 border rounded-md cursor-pointer hover:bg-gray-50 transition-colors">
                         <input
                             type="checkbox"
@@ -253,7 +266,7 @@ export const MultipleChoiceQuestion: React.FC<{
             </div>
             <div className="text-sm text-neutral-500 mb-4">
                 {minSelections > 0 && `Selecciona al menos ${minSelections} opciones. `}
-                {maxSelections < optionsFromConfig.length && `Puedes seleccionar hasta ${maxSelections} opciones. `}
+                {maxSelections < displayOptions.length && `Puedes seleccionar hasta ${maxSelections} opciones. `}
                 Seleccionadas: {selectedOptions.length}
             </div>
             <button
@@ -275,7 +288,7 @@ export const MultipleChoiceQuestion: React.FC<{
                     <p>API Error (Form): {apiError || 'No'}, API Error (Hook): {apiHookError || 'No'}</p>
                     <p>Is Navigating: {isNavigating.toString()}</p>
                     <div>Selected Options: <pre>{JSON.stringify(selectedOptions, null, 2)}</pre></div>
-                    <div>Initial Config Options: <pre>{JSON.stringify(optionsFromConfig, null, 2)}</pre></div>
+                    <div>Initial Config Options: <pre>{JSON.stringify(displayOptions, null, 2)}</pre></div>
                     <div>Initial Config Saved: <pre>{JSON.stringify(initialConfig.savedResponses, null, 2)}</pre></div>
                 </div>
             )}

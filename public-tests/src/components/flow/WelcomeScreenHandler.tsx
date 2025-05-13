@@ -14,14 +14,14 @@ interface WelcomeScreenConfig {
 interface WelcomeScreenHandlerProps {
     researchId: string;
     token: string;
-    onComplete: () => void; // Llamado cuando se completa con éxito (o no existe)
+    onStepComplete: () => void; // MODIFICADO: Cambiar nombre de prop a onStepComplete
     onError: (message: string) => void; // Llamado si hay un error de carga
 }
 
 const WelcomeScreenHandler: React.FC<WelcomeScreenHandlerProps> = ({
     researchId,
     token,
-    onComplete,
+    onStepComplete, // MODIFICADO: Usar onStepComplete
     onError,
 }) => {
     const [config, setConfig] = useState<WelcomeScreenConfig | null | undefined>(undefined); // undefined: loading, null: not found, object: found
@@ -48,11 +48,11 @@ const WelcomeScreenHandler: React.FC<WelcomeScreenHandlerProps> = ({
                 } else {
                     console.warn('[WelcomeHandler] Respuesta OK pero formato inesperado', configData);
                     setConfig(null); // Tratar como no encontrado
-                    onComplete(); // Considerar completado si el formato es inválido pero la llamada fue OK? O llamar onError? Decidimos onComplete por ahora.
+                    onStepComplete(); // Considerar completado si el formato es inválido pero la llamada fue OK? O llamar onError? Decidimos onStepComplete por ahora.
                 }
             } else if (response.status === 404) {
                 setConfig(null);
-                onComplete(); // No es un error del flujo, simplemente no existe
+                onStepComplete(); // No es un error del flujo, simplemente no existe
             } else {
                 const errorText = await response.text();
                 console.error(`[WelcomeHandler] Error ${response.status}: ${errorText}`);
@@ -65,7 +65,7 @@ const WelcomeScreenHandler: React.FC<WelcomeScreenHandlerProps> = ({
         } finally {
             setIsLoading(false);
         }
-    }, [researchId, token, onComplete, onError]);
+    }, [researchId, token, onStepComplete, onError]);
 
     useEffect(() => {
         if (token && researchId) {
@@ -80,7 +80,7 @@ const WelcomeScreenHandler: React.FC<WelcomeScreenHandlerProps> = ({
         return <div className="p-6 text-center">Cargando bienvenida...</div>;
     }
 
-    // Si no está cargando y config es null (404 o formato inválido), ya se llamó a onComplete, no renderizar nada aquí.
+    // Si no está cargando y config es null (404 o formato inválido), ya se llamó a onStepComplete, no renderizar nada aquí.
     // El padre (ParticipantFlow) decidirá qué hacer (pasar al siguiente paso).
     // Sin embargo, podríamos mostrar un mensaje opcional si es null, pero el flujo principal lo maneja mejor.
 
@@ -94,7 +94,7 @@ const WelcomeScreenHandler: React.FC<WelcomeScreenHandlerProps> = ({
                     onClick={() => {
                         setIsNavigating(true);
                         setTimeout(() => {
-                            onComplete();
+                            onStepComplete(); // MODIFICADO: Llamar a onStepComplete
                         }, 500); // Retardo para mostrar el mensaje
                     }}
                     disabled={isNavigating} // Deshabilitar si está navegando
