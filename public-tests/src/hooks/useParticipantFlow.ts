@@ -329,7 +329,7 @@ export const useParticipantFlow = (researchId: string | undefined) => {
 
             setExpandedSteps(finalSteps);
             setCurrentStepIndex(0);
-            setCurrentStep(ParticipantFlowStep.WELCOME); 
+            setCurrentStep(ParticipantFlowStep.WELCOME);
 
         } catch (error: any) { // Catch errores inesperados en la lógica del bucle principal
             handleError(error.message || 'Error construyendo los pasos del flujo.', ParticipantFlowStep.LOADING_SESSION);
@@ -538,98 +538,70 @@ export const useParticipantFlow = (researchId: string | undefined) => {
             
             // Actualizar el estado con esta respuesta (mantener estado local además del API)
             setResponsesData(prev => {
-                const updatedData = { ...prev };
-                
-                // ENFOQUE COMPLETO: Guardar en categoría específica Y en all_steps
-                
+                // Clona profundamente el estado previo para evitar mutaciones directas
+                // y para facilitar la comparación posterior.
+                const newUpdatedData = JSON.parse(JSON.stringify(prev));
+
                 // 1. GUARDAR EN CATEGORÍA ESPECÍFICA
                 if (stepType === 'demographic') {
-                    // Caso especial: demographic es un objeto único
-                    updatedData.modules.demographic = moduleResponse;
+                    newUpdatedData.modules.demographic = moduleResponse;
                 } 
                 else if (stepName?.includes('Que te ha parecido el módulo')) {
-                    // Caso especial: feedback sobre el módulo
-                    updatedData.modules.feedback = moduleResponse;
+                    newUpdatedData.modules.feedback = moduleResponse;
                 }
                 else if (stepType === 'welcome' && answer !== undefined) {
-                    // Caso especial: bienvenida (solo si tiene respuesta)
-                    updatedData.modules.welcome = moduleResponse;
+                    newUpdatedData.modules.welcome = moduleResponse;
                 }
                 else if (isCognitive) {
-                    // MODIFICADO: Garantizar que se guarde siempre en cognitive_task
-                    if (!updatedData.modules.cognitive_task) {
-                        updatedData.modules.cognitive_task = [];
+                    if (!newUpdatedData.modules.cognitive_task) {
+                        newUpdatedData.modules.cognitive_task = [];
                     }
-                    
-                    // Verificar si ya existe una respuesta para este stepId
-                    const existingIndex = updatedData.modules.cognitive_task.findIndex(
-                        resp => resp.stepId === stepId
+                    const existingIndexCognitive = newUpdatedData.modules.cognitive_task.findIndex(
+                        (resp: ModuleResponse) => resp.stepId === stepId
                     );
-                    
-                    if (existingIndex >= 0) {
-                        // Actualizar respuesta existente
-                        updatedData.modules.cognitive_task[existingIndex] = moduleResponse;
+                    if (existingIndexCognitive >= 0) {
+                        newUpdatedData.modules.cognitive_task[existingIndexCognitive] = moduleResponse;
                     } else {
-                        // Añadir nueva respuesta
-                        updatedData.modules.cognitive_task.push(moduleResponse);
+                        newUpdatedData.modules.cognitive_task.push(moduleResponse);
                     }
-                    
                 }
                 else if (isSmartVOC) {
-                    // MODIFICADO: Garantizar que se guarde siempre en smartvoc
-                    if (!updatedData.modules.smartvoc) {
-                        updatedData.modules.smartvoc = [];
+                    if (!newUpdatedData.modules.smartvoc) {
+                        newUpdatedData.modules.smartvoc = [];
                     }
-                    
-                    // Verificar si ya existe una respuesta para este stepId
-                    const existingIndex = updatedData.modules.smartvoc.findIndex(
-                        resp => resp.stepId === stepId
+                    const existingIndexSmartVOC = newUpdatedData.modules.smartvoc.findIndex(
+                        (resp: ModuleResponse) => resp.stepId === stepId
                     );
-                    
-                    if (existingIndex >= 0) {
-                        // Actualizar respuesta existente
-                        updatedData.modules.smartvoc[existingIndex] = moduleResponse;
+                    if (existingIndexSmartVOC >= 0) {
+                        newUpdatedData.modules.smartvoc[existingIndexSmartVOC] = moduleResponse;
                     } else {
-                        // Añadir nueva respuesta
-                        updatedData.modules.smartvoc.push(moduleResponse);
+                        newUpdatedData.modules.smartvoc.push(moduleResponse);
                     }
-                    
                 }
                 else {
-                    // Cualquier otro tipo: crear array dinámico por tipo
                     const moduleCategory = stepType.split('_')[0] || 'other';
-                    if (!updatedData.modules[moduleCategory]) {
-                        updatedData.modules[moduleCategory] = [];
+                    if (!newUpdatedData.modules[moduleCategory]) {
+                        newUpdatedData.modules[moduleCategory] = [];
                     }
-                    
-                    // Asegurar que es un array
-                    if (!Array.isArray(updatedData.modules[moduleCategory])) {
-                        updatedData.modules[moduleCategory] = [updatedData.modules[moduleCategory] as ModuleResponse];
+                    if (!Array.isArray(newUpdatedData.modules[moduleCategory])) {
+                        newUpdatedData.modules[moduleCategory] = [newUpdatedData.modules[moduleCategory] as ModuleResponse];
                     }
-                    
-                    // Añadir respuesta
-                    (updatedData.modules[moduleCategory] as ModuleResponse[]).push(moduleResponse);
+                    (newUpdatedData.modules[moduleCategory] as ModuleResponse[]).push(moduleResponse);
                 }
                 
                 // 2. GUARDAR EN ARRAY UNIVERSAL all_steps (SIEMPRE)
-                if (!updatedData.modules.all_steps) {
-                    updatedData.modules.all_steps = [];
+                if (!newUpdatedData.modules.all_steps) {
+                    newUpdatedData.modules.all_steps = [];
                 }
-                
-                // Verificar si ya existe en all_steps
-                const allStepsIndex = updatedData.modules.all_steps.findIndex(
-                    resp => resp.stepId === stepId
+                const allStepsIndex = newUpdatedData.modules.all_steps.findIndex(
+                    (resp: ModuleResponse) => resp.stepId === stepId
                 );
-                
                 if (allStepsIndex >= 0) {
-                    // Actualizar respuesta existente
-                    updatedData.modules.all_steps[allStepsIndex] = moduleResponse;
+                    newUpdatedData.modules.all_steps[allStepsIndex] = moduleResponse;
                 } else {
-                    // Añadir nueva respuesta
-                    updatedData.modules.all_steps.push(moduleResponse);
+                    newUpdatedData.modules.all_steps.push(moduleResponse);
                 }
-                
-                return updatedData;
+                return newUpdatedData; // REVERTIDO
             });
         }
     }, [currentStepIndex, expandedSteps, responseAPI, storeSetLoadedResponses, researchId, participantId]);
@@ -881,7 +853,7 @@ export const useParticipantFlow = (researchId: string | undefined) => {
 
             if (savedResponse !== null && savedResponse !== undefined) {
                 setExpandedSteps(prevSteps => {
-                    const newSteps = [...prevSteps];
+                    const newSteps = JSON.parse(JSON.stringify(prevSteps)); // Clonar para modificar
                     const targetStep = newSteps[targetIndex];
                     if (targetStep) {
                         if (targetStep.config?.savedResponses !== savedResponse) {
@@ -890,9 +862,10 @@ export const useParticipantFlow = (researchId: string | undefined) => {
                                 savedResponses: savedResponse
                             };
                         } else {
+                            // No es necesario hacer nada si savedResponses ya es el mismo
                         }
                     }
-                    return newSteps; // Devolver el nuevo array
+                    return newSteps; // REVERTIDO
                 });
             }
             

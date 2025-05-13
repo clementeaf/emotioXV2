@@ -11,13 +11,14 @@ export const RankingQuestion: React.FC<{
     stepType: string;
     onStepComplete: (answer: any) => void; // Se llamará DESPUÉS de un guardado exitoso
     isApiDisabled: boolean; // <<< CAMBIADO de isMock a isApiDisabled
-}> = ({ config: initialConfig, stepId: stepIdFromProps, stepName: stepNameFromProps, stepType, onStepComplete, isApiDisabled }) => {
-    const componentTitle = initialConfig.title || stepNameFromProps || 'Pregunta de ranking';
-    const description = initialConfig.description;
+}> = ({ config: initialConfig, stepId: stepIdFromProps, stepName: stepNameFromProps, stepType, onStepComplete, isApiDisabled = false }) => {
+    console.log(`[RankingQuestion Start Render] Received isApiDisabled (after default): ${isApiDisabled}, type: ${typeof isApiDisabled}`);
+    const componentTitle = initialConfig?.title || stepNameFromProps || 'Pregunta de ranking';
+    const description = initialConfig?.description;
     // Ajustar el texto de la pregunta para reflejar el estado de isApiDisabled o la validez de los items
-    const itemsAreEffectivelyMock = isApiDisabled || !initialConfig.items || initialConfig.items.length === 0 || initialConfig.items.every((item: string) => item.trim() === '');
-    const questionText = initialConfig.questionText || (itemsAreEffectivelyMock ? 'Ordena las siguientes opciones por preferencia (Prueba)' : 'Pregunta de ranking sin texto');
-    const itemsFromConfig = initialConfig.items || (itemsAreEffectivelyMock ? ['Item de Prueba A', 'Item de Prueba B', 'Item de Prueba C'] : []);
+    const itemsAreEffectivelyMock = isApiDisabled || !initialConfig?.items || initialConfig?.items.length === 0 || initialConfig?.items.every((item: string) => item.trim() === '');
+    const questionText = initialConfig?.questionText || (itemsAreEffectivelyMock ? 'Ordena las siguientes opciones por preferencia (Prueba)' : 'Pregunta de ranking sin texto');
+    const itemsFromConfig = initialConfig?.items || (itemsAreEffectivelyMock ? ['Item de Prueba A', 'Item de Prueba B', 'Item de Prueba C'] : []);
     
     // El estado rankedItems almacenará el orden actual de los strings de los items.
     const [rankedItems, setRankedItems] = useState<string[]>([]); 
@@ -91,36 +92,49 @@ export const RankingQuestion: React.FC<{
                     
                     console.log('[RankingQuestion Load] Found step data from API:', foundStepData);
 
-                    // Check if API provided a non-empty array for the response
                     if (foundStepData && Array.isArray(foundStepData.response) && foundStepData.response.length > 0) {
-                        const savedOrder = foundStepData.response as string[];
+                        const savedOrderFromApi = foundStepData.response as string[];
 
-                        // Basic sanity check: are saved items strings and is length > 0?
-                        if (savedOrder.every(item => typeof item === 'string') && savedOrder.length > 0) {
-                            
-                            // **NEW APPROACH:** If API provides seemingly valid data, prioritize it,
-                            // even if it doesn't perfectly match the potentially broken itemsFromConfig.
-                            // Log a warning if there's a mismatch, but still use savedOrder.
-                            
-                            const currentItemSet = new Set(itemsFromConfig);
-                            const orderMatchesConfig = savedOrder.length === itemsFromConfig.length &&
-                                                       savedOrder.every(item => currentItemSet.has(item)) &&
-                                                       new Set(savedOrder).size === savedOrder.length;
+                        if (savedOrderFromApi.every(item => typeof item === 'string') && savedOrderFromApi.length > 0) {
+                            console.log('[RankingQuestion Load] API provided saved order:', savedOrderFromApi);
+                            console.log('[RankingQuestion Load] Items from current config:', itemsFromConfig);
 
-                            if (!orderMatchesConfig) {
-                                 console.warn('[RankingQuestion Load] Saved order from API DOES NOT perfectly match items from current config. PRIORITIZING saved order from API.', { savedOrder, itemsFromConfig });
-                                 // Could indicate config changed OR config had errors (placeholders/mocks were passed down).
-                            } else {
-                                console.log('[RankingQuestion Load] Using valid saved order from API (matches config).');
+                            // Reconciliar savedOrderFromApi con itemsFromConfig
+                            const currentConfigItemsSet = new Set(itemsFromConfig);
+                            let reconciledOrder: string[] = [];
+
+                            // Añadir ítems de savedOrderFromApi que todavía existen en la config actual, en su orden guardado
+                            for (const savedItem of savedOrderFromApi) {
+                                if (currentConfigItemsSet.has(savedItem)) {
+                                    reconciledOrder.push(savedItem);
+                                }
+                            }
+                            
+                            // Guardar una copia de los ítems que vinieron de la API y se mantuvieron
+                            const effectivelyUsedApiItems = [...reconciledOrder];
+
+                            // Añadir ítems de la config actual que no estaban en el savedOrder (nuevos ítems)
+                            for (const configItem of itemsFromConfig) {
+                                if (!reconciledOrder.includes(configItem)) {
+                                    reconciledOrder.push(configItem);
+                                }
+                            }
+                            
+                            const commonItemsFound = effectivelyUsedApiItems.length > 0;
+
+                            if (!commonItemsFound && savedOrderFromApi.length > 0 && itemsFromConfig.length > 0) {
+                                console.warn(`[RankingQuestion Load] Saved order from API contained items completely different from current config. Using current configuration's items. API items were: ${JSON.stringify(savedOrderFromApi)}, Config items are: ${JSON.stringify(itemsFromConfig)}`);
+                            } else if (commonItemsFound && JSON.stringify(reconciledOrder) !== JSON.stringify(savedOrderFromApi)) {
+                                console.warn(`[RankingQuestion Load] Reconciled order differs from API saved order (e.g., new items added from config, or API items removed as they no longer exist in config). Reconciled: ${JSON.stringify(reconciledOrder)}, API Was: ${JSON.stringify(savedOrderFromApi)}`);
                             }
 
-                            finalOrderToSet = savedOrder; // Use the saved order regardless of perfect match
+                            finalOrderToSet = reconciledOrder;
                             setModuleResponseId(foundStepData.id || null);
-                            setDataExisted(true);
+                            setDataExisted(true); // Los datos de la API se usaron (incluso si se reconciliaron)
                             usedApiData = true;
 
                         } else {
-                             console.log('[RankingQuestion Load] API response for step exists, but response format is invalid (not array of strings or empty). Using order from config.');
+                             console.log('[RankingQuestion Load] API response for step exists, but response format is invalid. Using order from config.');
                              // Fallback to itemsFromConfig (already default)
                              setDataExisted(false);
                              setModuleResponseId(null);
@@ -345,7 +359,7 @@ ${rankedItemsString}`);
                     <p className="font-semibold">[Debug RankingQuestion]</p>
                     <p>Research ID: {researchId || 'N/A'}, Participant ID: {participantId || 'N/A'}</p>
                     <p>StepType: {stepType}, StepIdProp: {stepIdFromProps || 'N/A'}, StepNameProp: {componentTitle}</p>
-                    <p>IsApiDisabled Flag: {isApiDisabled.toString()}</p>
+                    <p>IsApiDisabled Flag: {String(isApiDisabled)}</p>
                     <p>Data Loading: {dataLoading.toString()}, Data Existed: {dataExisted.toString()}</p>
                     <p>Document ID: {documentId || 'N/A'}, ModuleResponse ID: {moduleResponseId || 'N/A'}</p>
                     <p>API Saving: {isSaving.toString()}, API Hook Loading: {isApiLoading.toString()}</p>

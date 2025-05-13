@@ -1,4 +1,4 @@
-import React, { useState, useCallback, Suspense } from 'react';
+import React, { useState, useCallback, Suspense, useMemo } from 'react';
 import { RenderError } from './RenderError';
 import { MockDataWarning } from './MockDataWarning';
 import { CurrentStepProps } from './types';
@@ -35,6 +35,24 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
         }
     }, [onError, stepType]);
 
+    // Memoizamos mappedProps para estabilizar las props pasadas a ComponentToRender
+    const mappedProps = useMemo(() => {
+        const isGenerallyMock = !!(!stepConfig);
+        console.log(`[CurrentStepRenderer useMemo] stepType: ${stepType}, stepConfig exists: ${!!stepConfig}, isGenerallyMock: ${isGenerallyMock}`);
+        return {
+            stepType,
+            stepConfig,
+            stepId,
+            stepName,
+            researchId,
+            token,
+            onLoginSuccess,
+            onStepComplete: onStepComplete || (() => {}),
+            onError: handleError,
+            isMock: isGenerallyMock,
+        };
+    }, [stepType, stepConfig, stepId, stepName, researchId, token, onLoginSuccess, onStepComplete, handleError]);
+
     const renderContent = useCallback(() => {
         if (error) {
             return <div className="p-6 text-center text-red-500">Error: {error}</div>;
@@ -42,45 +60,35 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
 
         // DEBUG: Inspeccionar stepConfig para cognitive_single_choice
         if (stepType === 'cognitive_single_choice') {
-            console.log('[CurrentStepRenderer] cognitive_single_choice - stepConfig:', JSON.stringify(stepConfig, null, 2));
-            console.log('[CurrentStepRenderer] cognitive_single_choice - stepName:', stepName);
+            console.log('[CurrentStepRenderer] cognitive_single_choice - stepConfig (inside renderContent):', JSON.stringify(stepConfig, null, 2));
+            console.log('[CurrentStepRenderer] cognitive_single_choice - stepName (inside renderContent):', stepName);
         }
         // DEBUG: Inspeccionar stepConfig para cognitive_multiple_choice
         if (stepType === 'cognitive_multiple_choice') {
-            console.log('[CurrentStepRenderer] cognitive_multiple_choice - stepConfig:', JSON.stringify(stepConfig, null, 2));
-            console.log('[CurrentStepRenderer] cognitive_multiple_choice - stepName:', stepName);
+            console.log('[CurrentStepRenderer] cognitive_multiple_choice - stepConfig (inside renderContent):', JSON.stringify(mappedProps.stepConfig, null, 2));
+            console.log('[CurrentStepRenderer] cognitive_multiple_choice - stepName (inside renderContent):', mappedProps.stepName);
+        }
+        // DEBUG: Inspeccionar stepConfig para cognitive_linear_scale
+        if (stepType === 'cognitive_linear_scale') {
+            console.log('[CurrentStepRenderer] cognitive_linear_scale - stepConfig (inside renderContent):', JSON.stringify(mappedProps.stepConfig, null, 2));
+            console.log('[CurrentStepRenderer] cognitive_linear_scale - stepName (inside renderContent):', mappedProps.stepName);
         }
 
         const ComponentToRender = stepComponentMap[stepType];
 
         if (ComponentToRender) {
-            const isGenerallyMock = !stepConfig;
-
-            const mappedProps: MappedStepComponentProps & { isMock?: boolean } = {
-                stepType,
-                stepConfig,
-                stepId,
-                stepName,
-                researchId,
-                token,
-                onLoginSuccess,
-                onStepComplete: onStepComplete || (() => {}),
-                onError: handleError,
-                isMock: isGenerallyMock,
-            };
-
-            const warningMessage = isGenerallyMock ? `Configuración para '${stepType}' podría estar incompleta o usando datos de prueba.` : undefined;
+            const warningMessage = mappedProps.isMock ? `Configuración para '${stepType}' podría estar incompleta o usando datos de prueba.` : undefined;
 
             return renderStepWithWarning(
                 <ComponentToRender {...mappedProps} />,
-                isGenerallyMock,
+                mappedProps.isMock,
                 warningMessage
             );
         } else {
             console.warn(`[CurrentStepRenderer] Tipo de paso no manejado: ${stepType}`);
             return <RenderError stepType={stepType} />;
         }
-    }, [stepType, stepConfig, stepId, stepName, researchId, token, onLoginSuccess, onStepComplete, onError, error, renderStepWithWarning, handleError]);
+    }, [error, stepType, mappedProps, renderStepWithWarning]);
 
     return (
         <Suspense fallback={<div className="w-full h-full flex items-center justify-center p-6 text-center text-neutral-500">Cargando módulo...</div>}>

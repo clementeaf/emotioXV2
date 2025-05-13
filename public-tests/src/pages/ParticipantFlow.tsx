@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { ParticipantFlowStep } from '../types/flow';
 import { useParticipantFlow } from '../hooks/useParticipantFlow';
@@ -29,13 +29,20 @@ const ParticipantFlow: React.FC = () => {
     // DEBUG: Verificar tipo de handleLoginSuccess
     console.log('[ParticipantFlow] Tipo de handleLoginSuccess al obtenerla del hook:', typeof handleLoginSuccess, handleLoginSuccess);
 
-    const currentExpandedStep = expandedSteps && expandedSteps.length > currentStepIndex 
-                                ? expandedSteps[currentStepIndex] 
-                                : null;
+    // Memoizar currentExpandedStep
+    const memoizedCurrentExpandedStep = useMemo(() => {
+        return expandedSteps && expandedSteps.length > currentStepIndex 
+               ? expandedSteps[currentStepIndex] 
+               : null;
+    }, [expandedSteps, currentStepIndex]);
 
     const answeredStepIndices = getAnsweredStepIndices();
 
-    const isThankYouStep = currentExpandedStep?.type === 'thankyou' || currentStep === ParticipantFlowStep.DONE;
+    // Memoizar la prop responsesData tal como se pasará
+    const memoizedResponsesDataProp = useMemo(() => {
+        const isThankYou = memoizedCurrentExpandedStep?.type === 'thankyou' || currentStep === ParticipantFlowStep.DONE;
+        return isThankYou ? responsesData : undefined;
+    }, [memoizedCurrentExpandedStep, currentStep, responsesData]);
     
     // Determina si se debe mostrar la barra lateral
     const showSidebar = ![
@@ -44,11 +51,25 @@ const ParticipantFlow: React.FC = () => {
         ParticipantFlowStep.ERROR
     ].includes(currentStep);
 
+    // Memoizar la prop currentExpandedStep tal como se pasará
+    const memoizedCurrentExpandedStepProp = useMemo(() => {
+        return currentStep === ParticipantFlowStep.LOGIN || 
+               currentStep === ParticipantFlowStep.LOADING_SESSION || 
+               currentStep === ParticipantFlowStep.ERROR 
+               ? null 
+               : memoizedCurrentExpandedStep;
+    }, [currentStep, memoizedCurrentExpandedStep]);
+
+    // Memoizar la prop steps para ProgressSidebar
+    const memoizedSidebarSteps = useMemo(() => {
+        return (expandedSteps || []).map((step) => ({ id: step.id, name: step.name }));
+    }, [expandedSteps]); // Solo se recalcula si expandedSteps cambia
+
     return (
          <div className="flex h-screen w-screen overflow-hidden bg-neutral-100">
             {showSidebar && (
                 <ProgressSidebar 
-                    steps={(expandedSteps || []).map((step) => ({ id: step.id, name: step.name }))}
+                    steps={memoizedSidebarSteps}
                     currentStepIndex={currentStepIndex} 
                     onNavigateToStep={navigateToStep}
                     completedSteps={completedRelevantSteps}
@@ -61,7 +82,7 @@ const ParticipantFlow: React.FC = () => {
             <main className={`flex-1 overflow-y-auto bg-white flex flex-col items-center justify-center ${!showSidebar ? 'w-full' : ''}`}>
                  <FlowStepContent
                     currentStepEnum={currentStep}
-                    currentExpandedStep={currentStep === ParticipantFlowStep.LOGIN || currentStep === ParticipantFlowStep.LOADING_SESSION || currentStep === ParticipantFlowStep.ERROR ? null : currentExpandedStep}
+                    currentExpandedStep={memoizedCurrentExpandedStepProp}
                     isLoading={isFlowLoading}
                     researchId={researchId}
                     token={token}
@@ -69,7 +90,7 @@ const ParticipantFlow: React.FC = () => {
                     handleLoginSuccess={handleLoginSuccess}
                     handleStepComplete={handleStepComplete}
                     handleError={handleError}
-                    responsesData={isThankYouStep ? responsesData : undefined}
+                    responsesData={memoizedResponsesDataProp}
                 />
             </main>
          </div>

@@ -16,7 +16,7 @@ export interface CurrentStepProps {
     stepName?: string;
     researchId: string;
     token?: string | null;
-    onLoginSuccess?: (participant: Participant) => void;
+    onLoginSuccess?: (participant: Participant & { id: string }) => void;
     onStepComplete?: (answer?: any) => void;
     onError: (errorMessage: string, stepType: string) => void;
 }

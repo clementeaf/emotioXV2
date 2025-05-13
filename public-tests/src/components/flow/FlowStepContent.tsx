@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ParticipantFlowStep, ExpandedStep } from '../../types/flow';
 import CurrentStepRenderer from './CurrentStepRenderer';
 import LoadingIndicator from '../common/LoadingIndicator';
@@ -44,6 +44,18 @@ const FlowStepContent: React.FC<FlowStepContentProps> = ({
         handleError(errorMessage, stepType); // Llamar a la función original
     };
 
+    // MODIFICADO: Memoizar la lógica de stepConfig
+    const memoizedStepConfig = useMemo(() => {
+        if (!currentExpandedStep) {
+            return undefined; // o null, según lo que espere CurrentStepRenderer
+        }
+        const isThankYouStep = currentExpandedStep.type === 'thankyou' || currentStepEnum === ParticipantFlowStep.DONE;
+        if (isThankYouStep && responsesData) {
+            return { ...currentExpandedStep.config, responsesData };
+        }
+        return currentExpandedStep.config;
+    }, [currentExpandedStep, currentStepEnum, responsesData]);
+
     if (currentStepEnum === ParticipantFlowStep.LOGIN) {
         return (
             <CurrentStepRenderer 
@@ -58,12 +70,12 @@ const FlowStepContent: React.FC<FlowStepContentProps> = ({
     // Los pasos normales con configuración
     if (currentExpandedStep) {
         // Verificar si es el paso de agradecimiento para pasar los datos de respuestas
-        const isThankYouStep = currentExpandedStep.type === 'thankyou' || currentStepEnum === ParticipantFlowStep.DONE;
+        // const isThankYouStep = currentExpandedStep.type === 'thankyou' || currentStepEnum === ParticipantFlowStep.DONE; // Lógica movida a useMemo
         
         return (
             <CurrentStepRenderer 
                 stepType={currentExpandedStep.type}
-                stepConfig={isThankYouStep && responsesData ? { ...currentExpandedStep.config, responsesData } : currentExpandedStep.config}
+                stepConfig={memoizedStepConfig} // Usar la config memoizada
                 stepId={currentExpandedStep.id}
                 stepName={currentExpandedStep.name}
                 researchId={researchId}

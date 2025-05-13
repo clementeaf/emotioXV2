@@ -3,22 +3,34 @@ import { useParticipantStore } from '../../../stores/participantStore';
 import { useResponseAPI } from '../../../hooks/useResponseAPI';
 import { ApiClient, APIStatus } from '../../../lib/api';
 
-// Componente para Linear Scale
-export const LinearScaleQuestion: React.FC<{
-    config: any;
-    stepId?: string;    // stepId del flujo
-    stepName?: string;  // stepName del flujo
+// MODIFICADO: Definir interfaz para props
+interface LinearScaleQuestionProps {
+    stepConfig?: any;
+    stepId?: string;
+    stepName?: string;
     stepType: string;
-    onStepComplete: (answer: any) => void; // Se llamará DESPUÉS de un guardado exitoso
-    isMock: boolean;    // Determinado por CurrentStepRenderer
-}> = ({ config: initialConfig, stepId: stepIdFromProps, stepName: stepNameFromProps, stepType, onStepComplete, isMock }) => {
-    const componentTitle = initialConfig.title || stepNameFromProps || 'Pregunta de escala lineal';
-    const description = initialConfig.description;
-    const questionText = initialConfig.questionText || (isMock ? 'Valora en una escala (Prueba)' : 'Pregunta de escala sin texto');
-    const minValue = initialConfig.minValue || 1;
-    const maxValue = initialConfig.maxValue || 5;
-    const minLabel = initialConfig.minLabel || 'Mínimo';
-    const maxLabel = initialConfig.maxLabel || 'Máximo';
+    onStepComplete: (answer: any) => void;
+    isMock: boolean;
+}
+
+// Componente para Linear Scale
+export const LinearScaleQuestion: React.FC<LinearScaleQuestionProps> = ({ 
+    stepConfig: initialConfig, // Mapea stepConfig a initialConfig
+    stepId: stepIdFromProps, 
+    stepName: stepNameFromProps, 
+    stepType, 
+    onStepComplete, 
+    isMock 
+}) => {
+    // MODIFICADO: Acceso seguro a initialConfig y valores por defecto
+    console.log('[LinearScaleQuestion] Received initialConfig (from stepConfig):', JSON.stringify(initialConfig, null, 2)); // DEBUG
+    const componentTitle = initialConfig?.title ?? stepNameFromProps ?? 'Pregunta de escala lineal';
+    const description = initialConfig?.description;
+    const questionText = initialConfig?.questionText ?? (isMock ? 'Valora en una escala (Prueba)' : 'Por favor, indica tu valoración.');
+    const minValue = initialConfig?.minValue ?? 1;
+    const maxValue = initialConfig?.maxValue ?? 5;
+    const minLabel = initialConfig?.minLabel ?? (isMock ? 'Mín' : 'Muy insatisfecho');
+    const maxLabel = initialConfig?.maxLabel ?? (isMock ? 'Máx' : 'Muy satisfecho');
 
     const [selectedValue, setSelectedValue] = useState<number | null>(null);
 
@@ -47,7 +59,7 @@ export const LinearScaleQuestion: React.FC<{
     // useEffect para cargar datos existentes o inicializar desde config.savedResponses
     useEffect(() => {
         if (isMock) {
-            const mockSavedValue = initialConfig.savedResponses;
+            const mockSavedValue = initialConfig?.savedResponses; // Optional chaining
             setSelectedValue(typeof mockSavedValue === 'number' ? mockSavedValue : null);
             setDataLoading(false);
             return;
@@ -93,8 +105,8 @@ export const LinearScaleQuestion: React.FC<{
                     }
                 }
 
-                if (valueToSet === null && initialConfig.savedResponses !== undefined && typeof initialConfig.savedResponses === 'number') {
-
+                // MODIFICADO: Optional chaining para initialConfig.savedResponses
+                if (valueToSet === null && initialConfig?.savedResponses !== undefined && typeof initialConfig.savedResponses === 'number') {
                     valueToSet = initialConfig.savedResponses;
                 }
                 setSelectedValue(valueToSet);
@@ -104,13 +116,13 @@ export const LinearScaleQuestion: React.FC<{
                 setApiError(error.message || 'Excepción desconocida al cargar datos.');
                 setDataExisted(false);
                 setModuleResponseId(null);
-                const fallbackSavedValue = initialConfig.savedResponses;
+                const fallbackSavedValue = initialConfig?.savedResponses; // Optional chaining
                 setSelectedValue(typeof fallbackSavedValue === 'number' ? fallbackSavedValue : null);
             })
             .finally(() => {
                 setDataLoading(false);
             });
-    }, [researchId, participantId, stepType, isMock, initialConfig.savedResponses]);
+    }, [researchId, participantId, stepType, isMock, initialConfig]); // MODIFICADO: Dependencia initialConfig
 
     // Texto dinámico para el botón
     let buttonText = 'Siguiente';
