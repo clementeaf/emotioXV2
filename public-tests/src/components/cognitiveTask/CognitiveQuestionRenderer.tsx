@@ -1,8 +1,5 @@
 import React from 'react';
-// Importar la interfaz de pregunta desde el hook ahora
 import { CognitiveQuestion } from '../../hooks/useCognitiveTask'; 
-
-// Importar todas las vistas de preguntas específicas
 import { ShortTextView } from './questions/ShortTextView';
 import { LongTextView } from './questions/LongTextView';
 import { SingleChoiceView } from './questions/SingleChoiceView';
@@ -10,9 +7,9 @@ import { MultiChoiceView } from './questions/MultiChoiceView';
 import { LinearScaleView } from './questions/LinearScaleView';
 
 interface CognitiveQuestionRendererProps {
-    question: CognitiveQuestion; // La pregunta actual a renderizar
-    answer: any; // La respuesta actual para esta pregunta
-    onChange: (questionId: string, value: any) => void; // Callback para cambios
+    question: CognitiveQuestion;
+    answer: any;
+    onChange: (questionId: string, value: any) => void;
 }
 
 const CognitiveQuestionRenderer: React.FC<CognitiveQuestionRendererProps> = ({
@@ -22,8 +19,7 @@ const CognitiveQuestionRenderer: React.FC<CognitiveQuestionRendererProps> = ({
 }) => {
     console.log('[CognitiveQuestionRenderer] Renderizando pregunta:', question.id, 'Tipo:', question.type);
 
-    // El switch que estaba en CognitiveTaskHandler
-    switch (question.type.toUpperCase()) { // Normalizar a mayúsculas
+    switch (question.type.toUpperCase()) {
         case 'SHORT_TEXT':
         case 'TEXTO_CORTO': 
             return (

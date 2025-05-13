@@ -2,7 +2,7 @@ import React, { useState, useCallback, Suspense, useMemo } from 'react';
 import { RenderError } from './RenderError';
 import { MockDataWarning } from './MockDataWarning';
 import { CurrentStepProps } from './types';
-import { stepComponentMap, MappedStepComponentProps } from './steps';
+import { stepComponentMap } from './steps';
 
 const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
     stepType,
@@ -58,7 +58,6 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
             return <div className="p-6 text-center text-red-500">Error: {error}</div>;
         }
 
-        // DEBUG: Inspeccionar stepConfig para cognitive_single_choice
         if (stepType === 'cognitive_single_choice') {
             console.log('[CurrentStepRenderer] cognitive_single_choice - stepConfig (inside renderContent):', JSON.stringify(stepConfig, null, 2));
             console.log('[CurrentStepRenderer] cognitive_single_choice - stepName (inside renderContent):', stepName);

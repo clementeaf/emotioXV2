@@ -46,6 +46,8 @@ export const useResponseAPI = ({ researchId, participantId }: UseResponseAPIProp
     answer: any,
     onPostSuccess?: () => void 
   ) => {
+    console.log('[useResponseAPI] saveResponse - Args recibidos:', { researchId, participantId, stepId, stepType, stepName, answer });
+
     if (!researchId || !participantId || !stepId) {
       setError('Datos inválidos para guardar respuesta');
       return null;
@@ -86,6 +88,8 @@ export const useResponseAPI = ({ researchId, participantId }: UseResponseAPIProp
   }, [researchId, participantId]);
 
   const updateResponse = useCallback(async (responseId: string, stepId: string, _stepType: string, stepName: string, answer: any) => {
+    console.log('[useResponseAPI] updateResponse - Args recibidos:', { researchId, participantId, responseId, stepId, _stepType, stepName, answer });
+    
     if (!researchId || !participantId || !responseId || !stepId) {
       setError('Datos inválidos para actualizar respuesta');
       return null;
@@ -165,6 +169,7 @@ export const useResponseAPI = ({ researchId, participantId }: UseResponseAPIProp
   return {
     isLoading,
     error,
+    setError,
     getResponses,
     saveResponse,
     updateResponse,

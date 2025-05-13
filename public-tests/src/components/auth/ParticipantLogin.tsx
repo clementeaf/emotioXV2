@@ -5,9 +5,10 @@ import FormField from '../common/FormField';
 import { AuthSubmitButton } from './AuthSubmitButton';
 import { AuthLegalText } from './AuthLegalText';
 
-interface ParticipantLoginProps {
-  onLoginSuccess: (participant: Participant) => void;
+export interface ParticipantLoginProps {
   researchId: string;
+  onLogin: (participantData: Participant) => void;
+  onLoginSuccess: (participant: Participant) => void;
 }
 
 export const ParticipantLogin = ({ onLoginSuccess, researchId }: ParticipantLoginProps) => {

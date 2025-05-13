@@ -96,6 +96,9 @@ export interface Question {
     operator: 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'greater_than' | 'less_than';
     value: string | number | boolean;
   }[];
+  key?: string;
+  moduleResponseId?: string;
+  [key: string]: any;
 }
 
 // Datos completos del formulario de tareas cognitivas
@@ -111,6 +114,8 @@ export interface CognitiveTaskFormData {
     lastUpdated?: string;
   };
   id?: string;
+  title?: string;
+  description?: string;
 }
 
 // Modelo de tareas cognitivas para almacenamiento en BD (extiende los datos del formulario con ID)

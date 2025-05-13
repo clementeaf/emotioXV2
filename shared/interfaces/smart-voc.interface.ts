@@ -142,6 +142,11 @@ export interface SmartVOCQuestion {
    * Configuration specific to the question type
    */
   config: QuestionConfig;
+  
+  /**
+   * Optional module response ID
+   */
+  moduleResponseId?: string;
 }
 
 /**
