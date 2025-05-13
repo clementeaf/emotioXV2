@@ -95,55 +95,21 @@ export const RankingQuestion: React.FC<{
                     if (foundStepData && Array.isArray(foundStepData.response) && foundStepData.response.length > 0) {
                         const savedOrderFromApi = foundStepData.response as string[];
 
-                        if (savedOrderFromApi.every(item => typeof item === 'string') && savedOrderFromApi.length > 0) {
-                            console.log('[RankingQuestion Load] API provided saved order:', savedOrderFromApi);
-                            console.log('[RankingQuestion Load] Items from current config:', itemsFromConfig);
-
-                            // Reconciliar savedOrderFromApi con itemsFromConfig
-                            const currentConfigItemsSet = new Set(itemsFromConfig);
-                            let reconciledOrder: string[] = [];
-
-                            // Añadir ítems de savedOrderFromApi que todavía existen en la config actual, en su orden guardado
-                            for (const savedItem of savedOrderFromApi) {
-                                if (currentConfigItemsSet.has(savedItem)) {
-                                    reconciledOrder.push(savedItem);
-                                }
-                            }
-                            
-                            // Guardar una copia de los ítems que vinieron de la API y se mantuvieron
-                            const effectivelyUsedApiItems = [...reconciledOrder];
-
-                            // Añadir ítems de la config actual que no estaban en el savedOrder (nuevos ítems)
-                            for (const configItem of itemsFromConfig) {
-                                if (!reconciledOrder.includes(configItem)) {
-                                    reconciledOrder.push(configItem);
-                                }
-                            }
-                            
-                            const commonItemsFound = effectivelyUsedApiItems.length > 0;
-
-                            if (!commonItemsFound && savedOrderFromApi.length > 0 && itemsFromConfig.length > 0) {
-                                console.warn(`[RankingQuestion Load] Saved order from API contained items completely different from current config. Using current configuration's items. API items were: ${JSON.stringify(savedOrderFromApi)}, Config items are: ${JSON.stringify(itemsFromConfig)}`);
-                            } else if (commonItemsFound && JSON.stringify(reconciledOrder) !== JSON.stringify(savedOrderFromApi)) {
-                                console.warn(`[RankingQuestion Load] Reconciled order differs from API saved order (e.g., new items added from config, or API items removed as they no longer exist in config). Reconciled: ${JSON.stringify(reconciledOrder)}, API Was: ${JSON.stringify(savedOrderFromApi)}`);
-                            }
-
-                            finalOrderToSet = reconciledOrder;
+                        if (savedOrderFromApi.every(item => typeof item === 'string')) {
+                            console.log('[RankingQuestion Load] API provided valid saved order. Using it directly:', savedOrderFromApi);
+                            finalOrderToSet = savedOrderFromApi;
                             setModuleResponseId(foundStepData.id || null);
-                            setDataExisted(true); // Los datos de la API se usaron (incluso si se reconciliaron)
+                            setDataExisted(true);
                             usedApiData = true;
-
                         } else {
-                             console.log('[RankingQuestion Load] API response for step exists, but response format is invalid. Using order from config.');
-                             // Fallback to itemsFromConfig (already default)
+                             console.warn('[RankingQuestion Load] API response for step exists, but response format is invalid (not array of strings). Using order from config as fallback.');
                              setDataExisted(false);
                              setModuleResponseId(null);
                         }
                     } else {
-                        console.log('[RankingQuestion Load] No step data found in API response for this stepType. Using order from config.');
-                         // Fallback to itemsFromConfig (already default)
-                         setDataExisted(false);
-                         setModuleResponseId(null);
+                        console.log('[RankingQuestion Load] No step data found in API response for this stepType (or response was empty). Using order from config.');
+                        setDataExisted(false);
+                        setModuleResponseId(null);
                     }
                 } else {
                     console.log('[RankingQuestion Load] API response error or no data.data field. Using order from config.');

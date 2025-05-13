@@ -1,4 +1,5 @@
 import React from 'react';
+import imageUrl from '../../../assets/nav_flow_img.png';
 
 const ParticipantLogin = React.lazy(() => import('../../auth/ParticipantLogin').then(module => ({ default: module.ParticipantLogin })));
 const WelcomeScreenHandler = React.lazy(() => import('../WelcomeScreenHandler'));
@@ -47,19 +48,21 @@ const InstructionStep: React.FC<MappedStepComponentProps> = ({ stepConfig, onSte
 const CognitiveNavigationFlowStep: React.FC<MappedStepComponentProps> = ({ stepConfig, stepName, onStepComplete }) => {
     const hasQuestion = stepConfig && typeof stepConfig.questionText === 'string' && stepConfig.questionText.trim() !== '';
     const description = stepConfig?.description;
-    const imageUrl = stepConfig?.imageUrl;
     const deviceFrame = stepConfig?.deviceFrame;
     const isMock = !hasQuestion;
     const title = stepConfig?.title || stepName || (isMock ? 'Flujo de Navegación (Prueba)' : 'Flujo de Navegación');
     const questionToDisplay = hasQuestion ? stepConfig.questionText : 'Realice la siguiente tarea de navegación (Prueba).';
     return (
         <div className="bg-white p-8 rounded-lg shadow-md max-w-2xl w-full">
-            <h2 className="text-xl font-medium mb-1 text-neutral-800">{title}</h2>
-            {description && <p className="text-sm text-neutral-500 mb-3">{description}</p>}
-            <p className="text-neutral-600 mb-4">{questionToDisplay}</p>
-            <div className={`mb-6 border rounded-md ${imageUrl ? '' : 'border-dashed border-neutral-300 min-h-[200px] flex items-center justify-center text-neutral-400'} ${deviceFrame ? 'bg-gray-200 p-2 sm:p-4' : ''}`}>
+            <h2 className="text-xl font-medium mb-1 text-neutral-800">A continuación, verás las pantallas de la nueva APP, porfavor, navega por las imágenes y completa el proceso de darte de alta. Tus datos son simulados.</h2>
+            <p className="text-sm text-neutral-500 mb-3">Da clic en la imagen para realizar las instrucciones o completar la prueba</p>
+            <div className={`mb-6 border rounded-md ${imageUrl ? '' : 'flex items-center justify-center text-neutral-400'} ${deviceFrame ? 'bg-gray-200' : ''}`}>
                 {imageUrl ? (
-                    <img src={imageUrl} alt="Simulación de navegación" className={`w-full h-auto object-contain ${deviceFrame ? 'rounded-md shadow-lg' : ''}`} />
+                    <img 
+                        src={imageUrl} 
+                        alt="Simulación de navegación" 
+                        className={`object-contain ${deviceFrame ? 'rounded-md shadow-lg' : ''}`}
+                    />
                 ) : (
                     <p>Simulación de Navegación (Imagen no configurada)</p>
                 )}
