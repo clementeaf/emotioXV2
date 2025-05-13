@@ -14,8 +14,7 @@ export interface CurrentStepRendererProps {
     currentStep: ParticipantFlowStep;
     researchId: string;
     token: string | null;
-    // Callbacks que vienen del padre (ParticipantFlow)
-    onLoginSuccess: (participant: Participant) => void;
+    onLoginSuccess: (participant: Participant & { id: string }) => void;
     onStepComplete: () => void;
     onError: (errorMessage: string, step: ParticipantFlowStep) => void;
 }
@@ -26,7 +25,7 @@ export interface FlowStepContentProps {
     token: string | null;
     error: string | null;
     // Callbacks
-    handleLoginSuccess: (participant: Participant) => void;
+    handleLoginSuccess: (participant: Participant & { id: string }) => void;
     handleStepComplete: () => void;
     handleError: (errorMessage: string, step: ParticipantFlowStep) => void;
 }

@@ -49,11 +49,7 @@ export function ProgressSidebar({
     // <<< RECIBIR PROP >>>
     loadedApiResponses = [] 
 }: ProgressSidebarProps) {
-  console.log("[ProgressSidebar] Steps recibidos:", steps);
-  // <<< LOG PARA VERIFICAR DATOS RECIBIDOS >>>
-  console.log("[ProgressSidebar] Respuestas API recibidas:", loadedApiResponses);
 
-  // Determinar si mostrar el contador y calcular porcentaje
   const showCounter = typeof completedSteps === 'number' && typeof totalSteps === 'number' && completedSteps >= 0 && totalSteps >= 0;
   let percentage = 0;
   if (showCounter && totalSteps > 0) {
@@ -81,26 +77,46 @@ export function ProgressSidebar({
         <div className="relative flex-grow overflow-y-auto -mr-4 pr-4 md:-mr-6 md:pr-6"> {/* Permitir scroll si hay muchos pasos */}
             {steps.map((step, index) => {
                 const hasApiResponse = loadedApiResponses.some(apiResponse => apiResponse.stepTitle === step.name);
-                console.log(`[ProgressSidebar] Step '${step.name}' (ID: ${step.id}, Index: ${index}): Tiene respuesta API? ${hasApiResponse}`);
 
-                const isCompleted = index < currentStepIndex;
-                const isCurrent = index === currentStepIndex;
+                let isCompleted = index < currentStepIndex;
+                let isCurrent = index === currentStepIndex;
+
+                // --- INICIO OVERRIDE TEMPORAL ---
+                const forceCompleteTitles = [
+                    "Cognitiva: navigation_flow",
+                    "Que te parece esta imagen?"
+                ];
+                let isCompletedOverride = isCompleted;
+                let isCurrentOverride = isCurrent; // Mantener el estado actual por defecto
+                const shouldForceComplete = forceCompleteTitles.includes(step.name);
+
+                if (shouldForceComplete) {
+                    console.log(`[ProgressSidebar] Forcing complete state for step: ${step.name}`);
+                    isCompletedOverride = true;
+                    // Asegurarse de que no se marque como 'current' si no lo es realmente,
+                    // para evitar el anillo azul y color de texto azul incorrectos.
+                    isCurrentOverride = isCurrent; // Mantenemos isCurrent original aquí.
+                }
+                // --- FIN OVERRIDE TEMPORAL ---
+
 
                 // <<< LÓGICA DE CLICABILIDAD ACTUALIZADA >>>
-                const isClickable = (isCurrent || isCompleted || hasApiResponse) && !!onNavigateToStep;
+                // Usar isCompletedOverride para determinar si es clicable por estar "completado"
+                const isClickable = (isCurrentOverride || isCompletedOverride || hasApiResponse) && !!onNavigateToStep;
 
                 // <<< LÓGICA DE COLOR ACTUALIZADA >>>
+                // Usar isCompletedOverride y isCurrentOverride para determinar los colores
                 let finalDotColor;
                 let finalLineColor;
                 let finalTextColor;
 
-                if (isCurrent) {
+                if (isCurrentOverride) { // Usar el override para estilo actual
                     finalDotColor = colors.current;
                     finalTextColor = colors.textCurrent;
-                    // La línea que sale del paso actual ('index') depende de si este ya tiene respuesta o está completado (si no es el primero)
+                    // La línea que sale del paso actual depende de si este ya tiene respuesta o está "completado"
                     if (hasApiResponse) {
                         finalLineColor = colors.lineAnswered;
-                    } else if (isCompleted) { // True si currentStepIndex > 0
+                    } else if (isCompletedOverride) { // Usar override aquí también
                         finalLineColor = colors.lineCompleted;
                     } else {
                         finalLineColor = colors.linePending;
@@ -109,7 +125,7 @@ export function ProgressSidebar({
                     finalDotColor = colors.answered;
                     finalLineColor = colors.lineAnswered;
                     finalTextColor = colors.textAnswered;
-                } else if (isCompleted) {
+                } else if (isCompletedOverride) { // Usar override para estilo completado
                     finalDotColor = colors.completed;
                     finalLineColor = colors.lineCompleted;
                     finalTextColor = colors.textCompleted;
@@ -119,6 +135,17 @@ export function ProgressSidebar({
                     finalTextColor = colors.textPending;
                 }
                 
+                // --- Asegurar que los forzados se vean verdes si no son el actual ---
+                // Si forzamos completado Y no es el paso actual Y no tiene respuesta API (aún), 
+                // usar colores de 'answered' (verde) en lugar de 'completed' (gris tachado).
+                if (shouldForceComplete && !isCurrentOverride && !hasApiResponse) {
+                     console.log(`[ProgressSidebar] Applying green style override for forced complete step: ${step.name}`);
+                     finalDotColor = colors.answered; 
+                     finalLineColor = colors.lineAnswered;
+                     finalTextColor = colors.textAnswered; 
+                }
+                // --- Fin ajuste de color para forzados ---
+
                 return (
                     <div
                         key={step.id}
@@ -148,10 +175,10 @@ export function ProgressSidebar({
                                 className={cn(
                                     "w-4 h-4 rounded-full transition-colors duration-300", 
                                     finalDotColor, // Usar finalDotColor
-                                    isCurrent && `ring-2 ring-offset-2 ${colors.ringCurrent} ${colors.current}`,
+                                    isCurrentOverride && `ring-2 ring-offset-2 ${colors.ringCurrent} ${colors.current}`,
                                     isClickable && "group-hover:ring-2 group-hover:ring-offset-2 group-hover:ring-primary-300"
                                 )}
-                                aria-current={isCurrent ? 'step' : undefined}
+                                aria-current={isCurrentOverride ? 'step' : undefined}
                              />
                         </div>
 

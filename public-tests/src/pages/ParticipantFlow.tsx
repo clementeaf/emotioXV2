@@ -32,48 +32,33 @@ const ParticipantFlow: React.FC = () => {
 
     const answeredStepIndices = getAnsweredStepIndices();
 
-    const showMainLayout = 
-        currentStep !== ParticipantFlowStep.LOGIN && 
-        currentStep !== ParticipantFlowStep.LOADING_SESSION &&
-        currentStep !== ParticipantFlowStep.ERROR;
-
     const isThankYouStep = currentExpandedStep?.type === 'thankyou' || currentStep === ParticipantFlowStep.DONE;
-
-    if (!showMainLayout) {
-        return (
-             <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center">
-                 <FlowStepContent
-                    currentStepEnum={currentStep}
-                    currentExpandedStep={null}
-                    isLoading={isFlowLoading}
-                    researchId={researchId}
-                    token={token}
-                    error={error}
-                    handleLoginSuccess={handleLoginSuccess}
-                    handleStepComplete={handleStepComplete}
-                    handleError={handleError}
-                    responsesData={isThankYouStep ? responsesData : undefined}
-                />
-            </div>
-        );
-    }
+    
+    // Determina si se debe mostrar la barra lateral
+    const showSidebar = ![
+        ParticipantFlowStep.LOGIN, 
+        ParticipantFlowStep.LOADING_SESSION, 
+        ParticipantFlowStep.ERROR
+    ].includes(currentStep);
 
     return (
          <div className="flex h-screen w-screen overflow-hidden bg-neutral-100">
-            <ProgressSidebar 
-                steps={(expandedSteps || []).map((step) => ({ id: step.id, name: step.name }))}
-                currentStepIndex={currentStepIndex} 
-                onNavigateToStep={navigateToStep}
-                completedSteps={completedRelevantSteps}
-                totalSteps={totalRelevantSteps}
-                answeredStepIndices={answeredStepIndices}
-                loadedApiResponses={loadedApiResponses}
-            />
+            {showSidebar && (
+                <ProgressSidebar 
+                    steps={(expandedSteps || []).map((step) => ({ id: step.id, name: step.name }))}
+                    currentStepIndex={currentStepIndex} 
+                    onNavigateToStep={navigateToStep}
+                    completedSteps={completedRelevantSteps}
+                    totalSteps={totalRelevantSteps}
+                    answeredStepIndices={answeredStepIndices}
+                    loadedApiResponses={loadedApiResponses}
+                />
+            )}
 
-            <main className="flex-1 overflow-y-auto bg-white flex flex-col items-center justify-center">
+            <main className={`flex-1 overflow-y-auto bg-white flex flex-col items-center justify-center ${!showSidebar ? 'w-full' : ''}`}>
                  <FlowStepContent
                     currentStepEnum={currentStep}
-                    currentExpandedStep={currentExpandedStep}
+                    currentExpandedStep={currentStep === ParticipantFlowStep.LOGIN || currentStep === ParticipantFlowStep.LOADING_SESSION || currentStep === ParticipantFlowStep.ERROR ? null : currentExpandedStep}
                     isLoading={isFlowLoading}
                     researchId={researchId}
                     token={token}

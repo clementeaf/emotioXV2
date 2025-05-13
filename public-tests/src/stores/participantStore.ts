@@ -602,40 +602,29 @@ export const useParticipantStore = create(
         const { expandedSteps, responsesData, maxVisitedIndex } = get();
         const completedStepIndices = new Set<number>();
         
-        // Asegurarse que all_steps existe y es un array
         const allApiResponses = responsesData.modules.all_steps || [];
         if (!Array.isArray(allApiResponses)) {
             console.warn("[getAnsweredStepIndices] responsesData.modules.all_steps no es un array válido.");
-            // Devolver solo los visitados si no hay respuestas válidas
             for (let i = 0; i <= maxVisitedIndex; i++) { completedStepIndices.add(i); }
             return Array.from(completedStepIndices).sort((a, b) => a - b);
         }
 
         expandedSteps.forEach((step, index) => {
-          const { id: stepId, type: stepType } = step; // Mantenemos stepId por si localStorage lo usa
+          // <<< Usar step.name para comparar con apiResponse.stepTitle >>>
+          const { id: stepId, type: stepType, name: stepName } = step; 
           
           if (stepType === 'welcome' || stepType === 'thankyou') {
             completedStepIndices.add(index);
             return;
           }
           
-          // Verificar directamente en localStorage (opcional, mantener si se usa)
-          const directResponse = loadFromLocalStorage(`response_${stepId}`);
-          if (directResponse) {
+          // <<< MODIFICADO: Buscar en allApiResponses usando stepName/stepTitle >>>
+          if (allApiResponses.some(resp => resp.stepTitle === stepName)) {
             completedStepIndices.add(index);
-            return;
           }
-          
-          // <<< MODIFICADO: Buscar en allApiResponses usando stepType >>>
-          if (allApiResponses.some(resp => resp.stepType === stepType)) {
-            completedStepIndices.add(index);
-            // OJO: Si hay múltiples pasos con el mismo stepType, todos se marcarán.
-            // No podemos retornar aquí si queremos marcar múltiples instancias.
-          }
-          // Ya no necesitamos buscar en categorías específicas, all_steps debería tener todo
         });
         
-        // Marcar todos los pasos hasta maxVisitedIndex como completados
+        // Marcar todos los pasos hasta maxVisitedIndex como completados/visitados
         for (let i = 0; i <= maxVisitedIndex; i++) {
           completedStepIndices.add(i);
         }
@@ -650,27 +639,25 @@ export const useParticipantStore = create(
         if (stepIndex < 0 || stepIndex >= expandedSteps.length) return null;
         
         const step = expandedSteps[stepIndex];
-        const { id: stepId, type: stepType } = step;
+        // <<< Usar step.name para comparar con apiResponse.stepTitle >>>
+        const { id: stepId, type: stepType, name: stepName } = step;
         
         if (stepType === 'welcome' || stepType === 'thankyou') return null;
         
-        // Intentar cargar directamente de localStorage primero
-        const directResponse = loadFromLocalStorage(`response_${stepId}`);
-        if (directResponse && directResponse.response) {
-          return directResponse.response;
-        }
+        // Intentar cargar directamente de localStorage primero (si aún se usa)
+        // const directResponse = loadFromLocalStorage(`response_${stepId}`);
+        // if (directResponse && directResponse.response) {
+        //   return directResponse.response;
+        // }
         
-        // Asegurarse que all_steps existe y es un array
         const allApiResponses = responsesData.modules.all_steps || [];
         if (!Array.isArray(allApiResponses)) {
             console.warn("[getStepResponse] responsesData.modules.all_steps no es un array válido.");
             return null;
         }
         
-        // <<< MODIFICADO: Buscar en allApiResponses usando stepType >>>
-        // Encuentra la *primera* respuesta que coincida con el stepType.
-        // Puede no ser la correcta si hay múltiples pasos con el mismo tipo.
-        const response = allApiResponses.find(resp => resp.stepType === stepType);
+        // <<< MODIFICADO: Buscar en allApiResponses usando stepName/stepTitle >>>
+        const response = allApiResponses.find(resp => resp.stepTitle === stepName);
         return response ? response.response : null;
       },
       
@@ -681,25 +668,25 @@ export const useParticipantStore = create(
         if (stepIndex < 0 || stepIndex >= expandedSteps.length) return false;
         
         const step = expandedSteps[stepIndex];
-        const { id: stepId, type: stepType } = step;
+        // <<< Usar step.name para comparar con apiResponse.stepTitle >>>
+        const { id: stepId, type: stepType, name: stepName } = step;
         
         if (stepType === 'welcome' || stepType === 'thankyou') return true;
         
-        // Verificar directamente en localStorage
-        const directResponse = loadFromLocalStorage(`response_${stepId}`);
-        if (directResponse) {
-          return true;
-        }
+        // Verificar directamente en localStorage (si aún se usa)
+        // const directResponse = loadFromLocalStorage(`response_${stepId}`);
+        // if (directResponse) {
+        //   return true;
+        // }
         
-        // Asegurarse que all_steps existe y es un array
         const allApiResponses = responsesData.modules.all_steps || [];
         if (!Array.isArray(allApiResponses)) {
             console.warn("[hasStepBeenAnswered] responsesData.modules.all_steps no es un array válido.");
             return false;
         }
 
-        // <<< MODIFICADO: Buscar en allApiResponses usando stepType >>>
-        return allApiResponses.some(resp => resp.stepType === stepType);
+        // <<< MODIFICADO: Buscar en allApiResponses usando stepName/stepTitle >>>
+        return allApiResponses.some(resp => resp.stepTitle === stepName);
       },
       
       // Obtener JSON de respuestas

@@ -39,7 +39,13 @@ export const useResponseAPI = ({ researchId, participantId }: UseResponseAPIProp
   }, [researchId, participantId]);
 
   // Función para guardar una nueva respuesta
-  const saveResponse = useCallback(async (stepId: string, stepType: string, stepName: string, answer: any) => {
+  const saveResponse = useCallback(async (
+    stepId: string, 
+    stepType: string, 
+    stepName: string, 
+    answer: any,
+    onPostSuccess?: () => void 
+  ) => {
     if (!researchId || !participantId || !stepId) {
       setError('Datos inválidos para guardar respuesta');
       return null;
@@ -63,6 +69,10 @@ export const useResponseAPI = ({ researchId, participantId }: UseResponseAPIProp
         console.error('Error guardando respuesta:', response);
         setError(response.message || 'Error guardando respuesta');
         return null;
+      }
+      
+      if (onPostSuccess) {
+        onPostSuccess();
       }
       
       return response.data.data;
@@ -142,12 +152,13 @@ export const useResponseAPI = ({ researchId, participantId }: UseResponseAPIProp
     stepType: string, 
     stepName: string, 
     answer: any, 
-    existingResponseId?: string
+    existingResponseId?: string,
+    onPostSuccess?: () => void 
   ) => {
     if (existingResponseId) {
       return updateResponse(existingResponseId, stepId, stepType, stepName, answer);
     } else {
-      return saveResponse(stepId, stepType, stepName, answer);
+      return saveResponse(stepId, stepType, stepName, answer, onPostSuccess);
     }
   }, [saveResponse, updateResponse]);
 

@@ -3,7 +3,6 @@ import { ParticipantFlowStep, ExpandedStep } from '../types/flow';
 import { Participant } from '../../../shared/interfaces/participant';
 import { DEFAULT_DEMOGRAPHICS_CONFIG } from '../types/demographics';
 import { useParticipantStore } from '../stores/participantStore';
-import { apiClient } from '../lib/api';
 import { useResponseAPI } from './useResponseAPI';
 
 const API_BASE_URL = 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev';
@@ -52,16 +51,6 @@ export enum ResearchLoadStatus {
     ERROR = 'error'
 }
 
-const DEFAULT_RESPONSES_DATA: ResponsesData = {
-    researchId: '',
-    startTime: Date.now(),
-    modules: {
-        cognitive_task: [],
-        smartvoc: [],
-        all_steps: []
-    }
-};
-
 const sanitizeForJSON = (obj: any): any => {
     if (!obj) return obj;
     
@@ -103,7 +92,6 @@ const loadExistingResponses = async (researchId: string, participantId: string, 
     
     try {
         const responses = await responseAPI.getResponses();
-        console.log('Responses cargadas:', responses);
         
         if (!responses) {
             return;
@@ -138,7 +126,6 @@ export const useParticipantFlow = (researchId: string | undefined) => {
     const [expandedSteps, setExpandedSteps] = useState<ExpandedStep[]>([]);
     const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
     const [isFlowLoading, setIsFlowLoading] = useState<boolean>(true);
-    const [maxVisitedIndex, setMaxVisitedIndex] = useState<number>(0);
     
     const [responsesData, setResponsesData] = useState<ResponsesData>({
         researchId: researchId || '',
@@ -154,6 +141,8 @@ export const useParticipantFlow = (researchId: string | undefined) => {
     const participantId = useParticipantStore(state => state.participantId);
     // <<< SELECCIONAR all_steps DIRECTAMENTE >>>
     const loadedApiResponses = useParticipantStore(state => state.responsesData.modules.all_steps);
+    // <<< RE-AÑADIR SELECCIÓN maxVisitedIndex >>>
+    const maxVisitedIndex = useParticipantStore(state => state.maxVisitedIndex);
 
     const responseAPI = useResponseAPI({
         researchId: researchId || '',
@@ -351,6 +340,7 @@ export const useParticipantFlow = (researchId: string | undefined) => {
 
     // --- Lógica de Inicialización (ajustada) ---
     useEffect(() => {
+
         if (!researchId) {
             console.warn("[useParticipantFlow] Research ID no definido en useEffect inicial.");
             handleError("ID de investigación no encontrado.", "Initialization");
@@ -371,13 +361,6 @@ export const useParticipantFlow = (researchId: string | undefined) => {
                 
                 // 2. Construir pasos expandidos
                 await buildExpandedSteps(researchId, storedToken);
-                
-                // 3. Cargar respuestas existentes (AHORA DESPUÉS DE TENER PARTICIPANT ID)
-                if (!initialResponsesLoadedRef.current) {
-                     // MODIFICADO: Pasar la acción del store
-                     await loadExistingResponses(researchId, storedParticipantId, responseAPI, storeSetLoadedResponses);
-                     initialResponsesLoadedRef.current = true;
-                 }
 
                 // 4. Navegar al último paso visitado (si existe)
                 const storedMaxIndex = parseInt(localStorage.getItem('maxVisitedIndex') || '0', 10);
@@ -386,7 +369,7 @@ export const useParticipantFlow = (researchId: string | undefined) => {
                 
                 if (targetIndex > 0 && targetIndex < expandedSteps.length) {
                     setCurrentStepIndex(targetIndex);
-                    setMaxVisitedIndex(storedMaxIndex);
+                    // NO llamar a setMaxVisitedIndex aquí, el valor se carga del store/localStorage
                     setCurrentStep(ParticipantFlowStep.WELCOME); 
                 } else {
                     setCurrentStep(ParticipantFlowStep.LOGIN); // Si no hay sesión válida o índice guardado, ir a Login
@@ -401,6 +384,10 @@ export const useParticipantFlow = (researchId: string | undefined) => {
 
         initializeFlow();
 
+        // <<< AÑADIR FUNCIÓN DE LIMPIEZA >>>
+        return () => {
+            // console.warn('[useParticipantFlow] CLEANUP useEffect principal. ¿Componente desmontado o researchId cambiado?'); // Eliminado
+        };
     }, [researchId]); // Dependencia principal
 
     // --- Lógica de Transiciones (ajustada) ---
@@ -528,7 +515,16 @@ export const useParticipantFlow = (researchId: string | undefined) => {
                     stepType,
                     stepName || '',
                     moduleResponse.answer,
-                    existingResponseId
+                    existingResponseId,
+                    () => {
+                        console.log(`[useParticipantFlow] POST exitoso para stepId ${stepId}, recargando respuestas...`);
+                        // Asegurarse de tener researchId y participantId actuales
+                        if(researchId && participantId) {
+                           loadExistingResponses(researchId, participantId, responseAPI, storeSetLoadedResponses);
+                        } else {
+                           console.warn("[useParticipantFlow] No se pudo recargar respuestas post-POST: falta researchId o participantId.");
+                        }
+                    }
                 );
                 
                 if (apiResult) {
@@ -636,7 +632,7 @@ export const useParticipantFlow = (researchId: string | undefined) => {
                 return updatedData;
             });
         }
-    }, [currentStepIndex, expandedSteps, responseAPI]);
+    }, [currentStepIndex, expandedSteps, responseAPI, storeSetLoadedResponses, researchId, participantId]);
     
     // Función auxiliar para buscar ID de respuesta existente
     const findExistingResponseId = useCallback((stepId: string): string | undefined => {
@@ -772,12 +768,6 @@ export const useParticipantFlow = (researchId: string | undefined) => {
             const nextIndex = currentStepIndex + 1;
             const nextStepInfo = expandedSteps[nextIndex];
             
-            // Actualizar el índice máximo visitado si estamos avanzando a un paso nuevo
-            if (nextIndex > maxVisitedIndex) {
-                setMaxVisitedIndex(nextIndex);
-                // Ya no guardamos en localStorage, solo en el estado de React
-            }
-            
             setCurrentStepIndex(nextIndex);
             setError(null); 
         } else if (!isFlowLoading) {
@@ -810,7 +800,7 @@ export const useParticipantFlow = (researchId: string | undefined) => {
                 // Continuar a pesar del error
              }
         }
-    }, [currentStepIndex, expandedSteps, isFlowLoading, saveStepResponse, maxVisitedIndex, researchId, responseAPI]);
+    }, [currentStepIndex, expandedSteps, isFlowLoading, saveStepResponse, researchId, responseAPI]);
 
     // CORREGIDO: Función para obtener los índices de todos los pasos que tienen respuestas
     const getAnsweredStepIndices = useCallback((): number[] => {
@@ -878,26 +868,23 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         return Array.from(completedStepIndices).sort((a, b) => a - b);
     }, [expandedSteps, responsesData, maxVisitedIndex]);
 
-    // RESTAURAR: Función navigateToStep correcta para permitir navegar a cualquier paso ya visitado
-    // IMPORTANTE: Mover esta definición DESPUÉS de getStepResponse y getAnsweredStepIndices para mantener el orden de los hooks
     const navigateToStep = useCallback((targetIndex: number) => {
-        const answeredSteps = getAnsweredStepIndices();
-        const isAnsweredStep = answeredSteps.includes(targetIndex);
+        let stepHasApiResponse = false;
+        if (targetIndex >= 0 && targetIndex < expandedSteps.length) {
+            const targetStepName = expandedSteps[targetIndex].name;
+            stepHasApiResponse = loadedApiResponses.some(resp => resp.stepTitle === targetStepName);
+        }
         
-        if (!isFlowLoading && targetIndex >= 0 && (targetIndex <= maxVisitedIndex || isAnsweredStep)) {
+        if (!isFlowLoading && targetIndex >= 0 && (targetIndex <= maxVisitedIndex || stepHasApiResponse)) {
 
-            // Intentar recuperar la respuesta guardada para el paso de destino
             const savedResponse = getStepResponse(targetIndex);
 
-            // Solo actualizar el estado si encontramos una respuesta guardada
             if (savedResponse !== null && savedResponse !== undefined) {
                 setExpandedSteps(prevSteps => {
-                    const newSteps = [...prevSteps]; // Crear copia del array
+                    const newSteps = [...prevSteps];
                     const targetStep = newSteps[targetIndex];
                     if (targetStep) {
-                        // Solo actualizar si la respuesta guardada es diferente a la que ya tiene
                         if (targetStep.config?.savedResponses !== savedResponse) {
-                            // Crear una nueva config para el paso
                             targetStep.config = {
                                 ...targetStep.config,
                                 savedResponses: savedResponse
@@ -913,10 +900,13 @@ export const useParticipantFlow = (researchId: string | undefined) => {
             setCurrentStepIndex(targetIndex);
             setError(null); 
         } else if (targetIndex === currentStepIndex) {
+             // No hacer nada si se hace clic en el paso actual
         } else {
-            console.warn(`[useParticipantFlow] Navegación bloqueada al índice ${targetIndex}.`);
+            // <<< LOG DE BLOQUEO ACTUALIZADO >>>
+            console.warn(`[useParticipantFlow] Navegación bloqueada al índice ${targetIndex}. MaxVisitado: ${maxVisitedIndex}, TieneRespuestaAPI: ${stepHasApiResponse}`);
         }
-    }, [currentStepIndex, expandedSteps, isFlowLoading, getStepResponse, maxVisitedIndex, getAnsweredStepIndices]);
+    // <<< ACTUALIZAR DEPENDENCIAS de navigateToStep >>>
+    }, [isFlowLoading, expandedSteps, loadedApiResponses, maxVisitedIndex, getStepResponse, setCurrentStepIndex, setError]); // Asegúrate que setExpandedSteps, setCurrentStepIndex, setError se obtienen del store/context si es necesario
     
     const totalRelevantSteps = Math.max(0, expandedSteps.length - 2);
     let completedRelevantSteps = 0;
