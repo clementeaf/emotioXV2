@@ -125,19 +125,6 @@ const CognitivePreferenceTestStep: React.FC<MappedStepComponentProps> = ({ stepC
     );
 };
 
-const SmartVocCvStep: React.FC<MappedStepComponentProps> = ({ stepConfig, stepName, onStepComplete }) => {
-    const isMock = !stepConfig || !stepConfig.questionText;
-    const config = isMock ? { questionText: 'Pregunta Customer Value (Prueba)?' } : stepConfig;
-    return (
-        <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full text-center">
-            <h2 className="text-xl font-medium mb-3 text-neutral-700">{stepName || 'Valor Percibido'}</h2>
-            <p className="text-neutral-600 mb-4">{config.questionText}</p>
-            <p className="text-sm text-neutral-500">(Placeholder: Vista para Customer Value)</p>
-            <button type="button" onClick={() => onStepComplete?.({})} className="mt-4 bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors">Siguiente</button>
-        </div>
-    );
-};
-
 type StepComponentType = React.LazyExoticComponent<React.ComponentType<any>> | React.FC<MappedStepComponentProps>; // Usamos 'any' temporalmente para LazyExoticComponent
 
 interface StepComponentMap {
