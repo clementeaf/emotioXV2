@@ -23,8 +23,7 @@ interface SmartVOCRouterProps {
 }
 
 // --- Componentes de Preguntas (Importaciones) ---
-import { ScaleQuestion } from './questions/ScaleQuestion'; 
-// Eliminar: import { CSATQuestion } from './questions/CSATQuestion'; 
+// Eliminar: import { ScaleQuestion } from './questions/ScaleQuestion'; 
 import CSATView from './CSATView'; // <<< IMPORTAR CSATView directamente
 import { NEVQuestion } from './questions/NEVQuestion'; 
 import { VOCTextQuestion } from './questions/VOCTextQuestion'; 
@@ -32,6 +31,9 @@ import { useResponseAPI } from '../../hooks/useResponseAPI';
 // <<< IMPORTAR useParticipantStore >>>
 import { useParticipantStore } from '../../stores/participantStore'; // Ajusta la ruta si es diferente
 import { ApiClient, APIStatus } from '../../lib/api'; // <<< AÑADIR ApiClient y APIStatus
+import { CESQuestion } from './questions/CESQuestion'; // <<< AÑADIR
+import { CVQuestion } from './questions/CVQuestion';   // <<< AÑADIR
+import { NPSQuestion } from './questions/NPSQuestion';  // <<< AÑADIR
 
 // --- Componente Principal SmartVOCRouter --- 
 
@@ -244,66 +246,98 @@ export const SmartVOCRouter: React.FC<SmartVOCRouterProps> = ({
 
               switch (question.type) {
                   case 'CSAT':
-                      QuestionComponent = CSATView; 
-                      const csatInitialValue = answers[question.id];
-                      const csatModuleResponseId = moduleResponseIds[question.id];
+                      QuestionComponent = CSATView;
+                      // const csatInitialValue = answers[question.id]; // No es necesario si CSATView carga lo suyo
+                      // const csatModuleResponseId = moduleResponseIds[question.id]; // No es necesario si CSATView carga lo suyo
 
-                      // <<< INICIO DEL CONSOLE.LOG AÑADIDO >>>
-                      console.log(`[SmartVOCRouter - Pre-render CSATView] Para question.id: ${question.id}`, {
-                          questionType: question.type,
-                          researchId: researchId,
-                          stepIdForCSAT: question.id, // Este es el stepId que CSATView usará
-                          generalStepIdForModule: generalStepId, // ID del módulo SmartVOCRouter
-                          titleForCSAT: question.title || question.id,
-                          initialValueToPass: csatInitialValue,
-                          moduleResponseIdToPass: csatModuleResponseId,
-                          fullAnswersState: answers,
-                          fullModuleResponseIdsState: moduleResponseIds
-                      });
-                      // <<< FIN DEL CONSOLE.LOG AÑADIDO >>>
-
+                      // console.log(`[SmartVOCRouter - Pre-render CSATView] ...`); // Puede eliminarse o ajustarse
+                      
                       questionProps = {
                           ...questionProps,
                           researchId: researchId,
-                          token: tokenFromStore, 
-                          stepId: question.id, // ID de la pregunta CSAT individual
+                          // token: tokenFromStore, // CSATView usa useParticipantStore
+                          stepId: question.id, 
                           stepName: question.title || question.id,
                           stepType: question.type, 
                           questionText: question.title || 'Por favor, califica tu satisfacción.',
                           instructions: question.description, 
                           companyName: question.config?.companyName,
-                          initialValue: csatInitialValue, 
-                          config: { ...(question.config || {}), moduleResponseId: csatModuleResponseId }, 
-                          onStepComplete: (dataFromCSAT?: { success: boolean, data?: any, value?: any }) => {
+                          // initialValue: csatInitialValue, // CSATView maneja su valor inicial
+                          config: { 
+                            ...(question.config || {}), 
+                            moduleId: generalStepId // Pasar moduleId para que CSATView lo use
+                          }, 
+                          onStepComplete: (dataFromCSAT?: { success: boolean, data?: { id?: string, value?: any }, value?: any }) => {
                               console.log(`[SmartVOCRouter] CSAT Question ${question.id} completed:`, dataFromCSAT);
-                              if (dataFromCSAT?.success) {
-                                  const answervalue = dataFromCSAT.data?.value !== undefined ? dataFromCSAT.data.value : dataFromCSAT.value;
-                                  if (answervalue !== undefined) {
-                                      setAnswers(prevAnswers => ({
-                                          ...prevAnswers,
-                                          [question.id]: answervalue
-                                      }));
-                                  }
-                                  if (dataFromCSAT.data?.id) { // Asumiendo que data.id es el moduleResponseId actualizado/creado
-                                      setModuleResponseIds(prev => ({ ...prev, [question.id]: dataFromCSAT.data.id }));
-                                  }
+                              if (dataFromCSAT?.success && dataFromCSAT.value !== undefined) {
+                                  setAnswers(prevAnswers => ({
+                                      ...prevAnswers,
+                                      [question.id]: dataFromCSAT.value
+                                  }));
                               }
+                              if (dataFromCSAT?.data && typeof dataFromCSAT.data.id === 'string') { 
+                                  setModuleResponseIds(prev => ({ ...prev, [question.id]: dataFromCSAT.data!.id! }));
+                              }
+                              if (apiError) setApiError(null); 
                           },
                       };
-                      // console.log(`[SmartVOCRouter] Para CSAT question ${question.id}, props a enviar A CSATVIEW (sin participantId directo):`,
-                      //             { researchId: questionProps.researchId, stepId: questionProps.stepId });
                       break;
+
                   case 'CES':
-                  case 'CV':
-                  case 'NPS': 
-                      QuestionComponent = ScaleQuestion; 
+                      QuestionComponent = CESQuestion; // <<< USAR CESQuestion
                       questionProps = {
                           ...questionProps,
                           questionConfig: question,
-                          value: answers[question.id],
-                          onChange: (answerValue: any) => handleAnswerChange(question, answerValue)
+                          researchId: researchId,
+                          moduleId: generalStepId, // Pasar el ID del SmartVOCRouter como moduleId
+                          onSaveSuccess: (qId: string, val: number, modRespId: string | null) => {
+                              setAnswers(prev => ({ ...prev, [qId]: val }));
+                              if (modRespId) {
+                                  setModuleResponseIds(prev => ({ ...prev, [qId]: modRespId }));
+                              }
+                              console.log(`[SmartVOCRouter] CESQuestion (${qId}) onSaveSuccess: Value: ${val}, ModuleResponseID: ${modRespId}`);
+                              if (apiError) setApiError(null); // Limpiar error general si un hijo guardó bien
+                          }
+                          // Ya no se pasa 'value' ni 'onChange' para el manejo directo del valor
                       };
                       break;
+
+                  case 'CV':
+                      QuestionComponent = CVQuestion; // <<< USAR CVQuestion
+                      questionProps = {
+                          ...questionProps,
+                          questionConfig: question,
+                          researchId: researchId,
+                          moduleId: generalStepId,
+                          onSaveSuccess: (qId: string, val: number, modRespId: string | null) => {
+                              setAnswers(prev => ({ ...prev, [qId]: val }));
+                              if (modRespId) {
+                                  setModuleResponseIds(prev => ({ ...prev, [qId]: modRespId }));
+                              }
+                              console.log(`[SmartVOCRouter] CVQuestion (${qId}) onSaveSuccess: Value: ${val}, ModuleResponseID: ${modRespId}`);
+                              if (apiError) setApiError(null);
+                          }
+                      };
+                      break;
+
+                  case 'NPS': 
+                      QuestionComponent = NPSQuestion; // <<< USAR NPSQuestion
+                      questionProps = {
+                          ...questionProps,
+                          questionConfig: question,
+                          researchId: researchId,
+                          moduleId: generalStepId,
+                          onSaveSuccess: (qId: string, val: number, modRespId: string | null) => {
+                              setAnswers(prev => ({ ...prev, [qId]: val }));
+                              if (modRespId) {
+                                  setModuleResponseIds(prev => ({ ...prev, [qId]: modRespId }));
+                              }
+                              console.log(`[SmartVOCRouter] NPSQuestion (${qId}) onSaveSuccess: Value: ${val}, ModuleResponseID: ${modRespId}`);
+                              if (apiError) setApiError(null);
+                          }
+                      };
+                      break;
+
                   case 'NEV': 
                       QuestionComponent = NEVQuestion;
                       questionProps = {
