@@ -119,6 +119,8 @@ const CSATView: React.FC<CSATViewProps> = ({
     }
 
     const responseData = { value: selectedValue };
+    const moduleIdForApi = config?.moduleId;
+
     const apiCallParams = {
       researchId,
       participantId: participantIdFromStore,
@@ -126,7 +128,8 @@ const CSATView: React.FC<CSATViewProps> = ({
       stepType,
       stepName,
       responseData,
-      existingResponseId: internalModuleResponseId || undefined
+      existingResponseId: internalModuleResponseId || undefined,
+      moduleId: moduleIdForApi
     };
     newLogs.push(`Llamando a saveOrUpdateResponse con: ${JSON.stringify(apiCallParams, null, 2)}`);
 
@@ -135,7 +138,8 @@ const CSATView: React.FC<CSATViewProps> = ({
       stepType,
       stepName,
       responseData,
-      internalModuleResponseId || undefined
+      internalModuleResponseId || undefined,
+      moduleIdForApi
     );
     newLogs.push(`Resultado de saveOrUpdateResponse: ${JSON.stringify(result, null, 2)}`);
 

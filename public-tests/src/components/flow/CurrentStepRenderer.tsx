@@ -129,15 +129,11 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
         const isGenerallyMock = !!(!stepConfig);
         let currentConfigToUse = stepConfig;
 
-        if ((stepType === SMART_VOC_ROUTER_STEP_TYPE || stepType === DEMOGRAPHIC_STEP_TYPE) && enrichedStepConfig) {
+        if (stepType === DEMOGRAPHIC_STEP_TYPE && enrichedStepConfig) {
             currentConfigToUse = enrichedStepConfig;
         }
 
-        if (stepType === SMART_VOC_ROUTER_STEP_TYPE || stepType === DEMOGRAPHIC_STEP_TYPE) {
-            console.log(`[CurrentStepRenderer useMemo for ${stepType}] Using config:`, currentConfigToUse === enrichedStepConfig && enrichedStepConfig !== stepConfig ? "Enriched" : "Original/Not Loaded/Error", { original: stepConfig, enriched: enrichedStepConfig, final: currentConfigToUse });
-        }
-
-        return {
+        const baseProps = {
             stepType,
             stepConfig: currentConfigToUse,
             stepId,
@@ -149,6 +145,21 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
             onError: handleError,
             isMock: isGenerallyMock,
         };
+
+        if (stepType === 'smartvoc_csat' || stepType === 'smartvoc_ces' || stepType === 'smartvoc_nps') {
+            return {
+                ...baseProps,
+                questionText: stepConfig?.questionText || stepName || 'Pregunta SmartVOC',
+                instructions: stepConfig?.instructions,
+                companyName: stepConfig?.companyName,
+                stepId: stepId,
+                moduleId: stepId,
+                onNext: baseProps.onStepComplete,
+                config: currentConfigToUse
+            };
+        }
+        
+        return baseProps;
     }, [stepType, stepConfig, stepId, stepName, researchId, token, onLoginSuccess, onStepComplete, handleError, enrichedStepConfig]);
 
     const renderContent = useCallback(() => {
@@ -179,7 +190,7 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
             const warningMessage = finalMappedProps.isMock ? `Configuración para '${stepType}' podría estar incompleta o usando datos de prueba.` : undefined;
 
             return renderStepWithWarning(
-                <ComponentToRender {...finalMappedProps} />,
+                <ComponentToRender {...finalMappedProps} key={stepId} />,
                 finalMappedProps.isMock,
                 warningMessage
             );
@@ -187,7 +198,7 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
             console.warn(`[CurrentStepRenderer] Tipo de paso no manejado: ${stepType}`);
             return <RenderError stepType={stepType} />;
         }
-    }, [error, stepType, finalMappedProps, renderStepWithWarning, isLoadingResponses]);
+    }, [error, stepType, finalMappedProps, renderStepWithWarning, isLoadingResponses, stepId]);
 
     return (
         <Suspense fallback={<div className="w-full h-full flex items-center justify-center p-6 text-center text-neutral-500">Cargando módulo...</div>}>

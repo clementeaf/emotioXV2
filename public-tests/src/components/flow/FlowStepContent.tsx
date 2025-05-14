@@ -67,10 +67,7 @@ const FlowStepContent: React.FC<FlowStepContentProps> = ({
         );
     }
 
-    // Los pasos normales con configuración
     if (currentExpandedStep) {
-        // Verificar si es el paso de agradecimiento para pasar los datos de respuestas
-        // const isThankYouStep = currentExpandedStep.type === 'thankyou' || currentStepEnum === ParticipantFlowStep.DONE; // Lógica movida a useMemo
         
         return (
             <CurrentStepRenderer 
