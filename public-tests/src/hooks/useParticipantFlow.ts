@@ -59,7 +59,6 @@ export const useParticipantFlow = (researchId: string | undefined) => {
 
     const {
         responsesData,
-        setResponsesData, 
         loadExistingResponses,
         saveStepResponse,
         getStepResponse,

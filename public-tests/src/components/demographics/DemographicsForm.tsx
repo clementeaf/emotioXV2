@@ -66,7 +66,6 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
 
   useEffect(() => {
     const fetchExistingResponses = async () => {
-      // <--- MODIFICACIÓN: El chequeo de token aquí ya no es necesario
       if (!researchIdFromStore || !participantIdFromStore) {
         console.warn('[DemographicsForm] fetchExistingResponses llamado sin researchId o participantId. Saliendo.');
         setDataExisted(false);
@@ -80,7 +79,6 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
         const result = await demographicsService.getDemographicResponses(
           researchIdFromStore as string,
           participantIdFromStore as string
-          // tokenForDemographicsService as string // <--- MODIFICACIÓN: Argumento token eliminado
         );
 
         const actualResponses = result.data?.responses;
@@ -88,7 +86,8 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
         const fetchedDemographicModuleResponseId = result.data?.demographicModuleResponseId ?? null;
 
         if (result.error) {
-          console.error('[DemographicsForm] Error obteniendo datos del backend:', result.message);
+          // Solo loguear como error si el servicio explícitamente devuelve un error
+          console.error('[DemographicsForm] Error del servicio al obtener respuestas demográficas:', result.message, result.data);
           setDataExisted(false);
           setDocumentId(null);
           setDemographicModuleResponseId(null);
@@ -98,8 +97,10 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
           setDemographicModuleResponseId(fetchedDemographicModuleResponseId);
           setResponses(actualResponses);
         } else {
+          // No se encontraron datos, pero no es un error del servicio
+          console.info('[DemographicsForm] No se encontraron respuestas demográficas existentes para el participante.');
           setDataExisted(false);
-          setDocumentId(fetchedDocumentId);
+          setDocumentId(fetchedDocumentId); // Aún podría haber un documentId si el documento existe pero está vacío
           setDemographicModuleResponseId(null);
           setResponses(initialValues);
         }
@@ -171,9 +172,6 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
       if (dataExisted && demographicModuleResponseId) {
         resultFromHook = await updateResponse(
           demographicModuleResponseId,
-          stepId,
-          stepType,
-          stepName,
           responseData
         );
       } else if (dataExisted && !demographicModuleResponseId) {

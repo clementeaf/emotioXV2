@@ -40,6 +40,7 @@ const processSmartVocQuestions = (
             const originalQuestionType = question.type;
             const upperQuestionType = originalQuestionType?.toUpperCase();
             const frontendType = smartVOCTypeMap[upperQuestionType];
+            
             if (frontendType) {
                 steps.push({
                     id: question.id || `${frontendType}_${steps.length + Date.now()}`,
@@ -47,6 +48,8 @@ const processSmartVocQuestions = (
                     type: frontendType,
                     config: question
                 });
+            } else {
+                console.warn(`[useFlowBuilder processSmartVocQuestions] No mapeado: tipo "${upperQuestionType}" (Q ID ${question.id})`);
             }
         }
     }
@@ -69,6 +72,8 @@ const processCognitiveTaskQuestions = (
                     type: frontendType,
                     config: question
                 });
+            } else {
+                console.warn(`[useFlowBuilder processCognitiveTaskQuestions] No se pudo generar frontendType para tipo: "${originalQuestionType}" (Q ID ${question.id})`);
             }
         }
     }
