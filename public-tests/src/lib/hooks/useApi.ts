@@ -24,7 +24,10 @@ export function useSmartVOC(
 ) {
   return useQuery({
     queryKey: ['smartVOC', researchId],
-    queryFn: () => apiClient.getSmartVOC(researchId),
+    queryFn: () => 
+      apiClient.getSmartVOC(researchId).then(response => {
+        return response; // Importante retornar la respuesta original para React Query
+      }),
     ...options,
   });
 }
@@ -36,7 +39,25 @@ export function useCognitiveTask(
 ) {
   return useQuery({
     queryKey: ['cognitiveTask', researchId],
-    queryFn: () => apiClient.getCognitiveTask(researchId),
+    queryFn: () => 
+      apiClient.getCognitiveTask(researchId).then(response => {
+        return response; // Importante retornar la respuesta original para React Query
+      }),
+    ...options,
+  });
+}
+
+// Hook para obtener el flujo completo de una investigación (todos los formularios/pasos)
+export function useResearchFlow(
+  researchId: string,
+  options?: UseQueryOptions<APIResponse<any>, Error> // Idealmente, any sería Step[] o un tipo más específico
+) {
+  return useQuery({
+    queryKey: ['researchFlow', researchId],
+    queryFn: () => 
+      apiClient.getResearchFlow(researchId).then(response => {
+        return response; // Importante retornar la respuesta original para React Query
+      }),
     ...options,
   });
 }

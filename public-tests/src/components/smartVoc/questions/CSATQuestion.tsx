@@ -1,9 +1,22 @@
 import React from 'react';
-import { SmartVOCQuestion, ConfigCSAT } from '../SmartVOCRouter'; // Importar tipos
+
+// Definiciones de tipo locales para SmartVOCQuestion y ConfigCSAT
+interface ConfigCSAT {
+  type?: 'stars' | 'numbers';
+  companyName?: string;
+  // Podrías añadir aquí más propiedades si son necesarias para ConfigCSAT
+}
+
+interface SmartVOCQuestion {
+  id: string;
+  description: string;
+  config: ConfigCSAT;
+  // Podrías añadir aquí más propiedades si son necesarias para SmartVOCQuestion
+}
 
 interface CSATQuestionProps {
-  questionConfig: SmartVOCQuestion & { config: ConfigCSAT }; // Asegura config es ConfigCSAT
-  value: number | string | undefined; // Puede ser número (escala) o string (si usamos iconos)
+  questionConfig: SmartVOCQuestion; // Ahora usa el tipo local SmartVOCQuestion
+  value: number | string | undefined;
   onChange: (questionId: string, value: number | string) => void;
 }
 

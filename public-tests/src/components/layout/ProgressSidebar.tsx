@@ -91,7 +91,6 @@ export function ProgressSidebar({
                 const shouldForceComplete = forceCompleteTitles.includes(step.name);
 
                 if (shouldForceComplete) {
-                    console.log(`[ProgressSidebar] Forcing complete state for step: ${step.name}`);
                     isCompletedOverride = true;
                     // Asegurarse de que no se marque como 'current' si no lo es realmente,
                     // para evitar el anillo azul y color de texto azul incorrectos.
@@ -139,7 +138,6 @@ export function ProgressSidebar({
                 // Si forzamos completado Y no es el paso actual Y no tiene respuesta API (aún), 
                 // usar colores de 'answered' (verde) en lugar de 'completed' (gris tachado).
                 if (shouldForceComplete && !isCurrentOverride && !hasApiResponse) {
-                     console.log(`[ProgressSidebar] Applying green style override for forced complete step: ${step.name}`);
                      finalDotColor = colors.answered; 
                      finalLineColor = colors.lineAnswered;
                      finalTextColor = colors.textAnswered; 

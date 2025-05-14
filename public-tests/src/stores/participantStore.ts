@@ -2,20 +2,17 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { ParticipantFlowStep } from '../types/flow';
 
-// Interfaz para las respuestas de módulos
 export interface ModuleResponse {
-  id: string; // ID de la respuesta específica
-  createdAt: string; // Fecha de creación (ISO string)
-  updatedAt: string; // Fecha de actualización (ISO string)
-  stepTitle: string; // Título del paso (usado para comparación)
-  stepType: string; // Tipo del paso (e.g., 'demographic', 'cognitive_linear_scale')
-  response: any; // La respuesta dada por el participante
-  // Opcionalmente, podríamos añadir campos que a veces vienen
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  stepTitle: string;
+  stepType: string;
+  response: any;
   participantId?: string; 
   researchId?: string;
 }
 
-// Interfaz para el JSON completo de respuestas
 export interface ResponsesData {
   participantId?: string;
   researchId: string;
@@ -33,7 +30,6 @@ export interface ResponsesData {
   };
 }
 
-// Interfaz para un paso expandido
 export interface ExpandedStep {
   id: string;
   name: string;
@@ -41,7 +37,6 @@ export interface ExpandedStep {
   config?: any;
 }
 
-// Interfaz para el participante (adaptada de la interfaz compartida)
 interface ParticipantInfo {
   id: string;
   name?: string;
@@ -49,27 +44,19 @@ interface ParticipantInfo {
   [key: string]: any;
 }
 
-// Interfaz para el estado de la tienda del participante
 export interface ParticipantState {
-  // Estado general
   researchId: string | null;
   token: string | null;
   participantId: string | null;
   error: string | null;
   isFlowLoading: boolean;
-  
-  // Flujo y pasos
   currentStep: ParticipantFlowStep;
   expandedSteps: ExpandedStep[];
   currentStepIndex: number;
   maxVisitedIndex: number;
-  completedRelevantSteps: number; // Para la barra de progreso
-  totalRelevantSteps: number;     // Para la barra de progreso
-  
-  // Datos de respuestas
+  completedRelevantSteps: number;
+  totalRelevantSteps: number;
   responsesData: ResponsesData;
-  
-  // Acciones
   setResearchId: (id: string | null) => void;
   setToken: (token: string | null) => void;
   setParticipant: (participant: ParticipantInfo) => void;
@@ -774,10 +761,9 @@ export const useParticipantStore = create(
       }
     }),
     {
-      name: 'participant-storage', // Nombre del espacio de almacenamiento
+      name: 'participant-storage',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => {
-        // Solo persistir lo necesario para recuperar la sesión
         const persistedState = {
           token: state.token,
           researchId: state.researchId,
@@ -785,10 +771,8 @@ export const useParticipantStore = create(
           maxVisitedIndex: state.maxVisitedIndex,
           responsesData: state.responsesData
         };
-        // Usar type assertion para evitar errores de tipado
         return persistedState as unknown as ParticipantState;
       },
-      // Mayor frecuencia de almacenamiento
       version: 1,
       onRehydrateStorage: () => {
         return (restoredState, error) => {
@@ -801,7 +785,6 @@ export const useParticipantStore = create(
               const storedResponses = loadFromLocalStorage('participantResponses');
               if (storedResponses && Object.keys(storedResponses).length > 0) {
                 
-                // Combinar con estado recuperado
                 if (restoredState.responsesData && storedResponses) {
                   restoredState.responsesData = {
                     ...restoredState.responsesData,

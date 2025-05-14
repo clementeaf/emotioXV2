@@ -36,6 +36,7 @@ export const useSmartVOCData = (researchId?: string, token?: string): UseSmartVO
                 method: 'GET',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
             });
+            console.log('[useSmartVOCData] Response:', response);
 
             if (response.ok) {
                 const result = await response.json();

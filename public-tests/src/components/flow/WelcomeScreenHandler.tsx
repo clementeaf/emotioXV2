@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+// import { useSmartVOC, useCognitiveTask } from '../../lib/hooks/useApi'; // Ya no se usan individualmente
+import { useResearchFlow } from '../../lib/hooks/useApi'; // Importar el nuevo hook
 
 // Reutilizar la interfaz temporal (o idealmente importar la real)
 interface WelcomeScreenConfig {
@@ -27,6 +29,7 @@ const WelcomeScreenHandler: React.FC<WelcomeScreenHandlerProps> = ({
     const [config, setConfig] = useState<WelcomeScreenConfig | null | undefined>(undefined); // undefined: loading, null: not found, object: found
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [isNavigating, setIsNavigating] = useState<boolean>(false); // Nuevo estado
+    useResearchFlow(researchId);
 
     const fetchConfig = useCallback(async () => {
         setIsLoading(true);
@@ -94,10 +97,10 @@ const WelcomeScreenHandler: React.FC<WelcomeScreenHandlerProps> = ({
                     onClick={() => {
                         setIsNavigating(true);
                         setTimeout(() => {
-                            onStepComplete(); // MODIFICADO: Llamar a onStepComplete
-                        }, 500); // Retardo para mostrar el mensaje
+                            onStepComplete();
+                        }, 500);
                     }}
-                    disabled={isNavigating} // Deshabilitar si está navegando
+                    disabled={isNavigating}
                     className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {isNavigating ? 'Pasando al siguiente módulo...' : (config.startButtonText || 'Continuar')}
@@ -105,10 +108,6 @@ const WelcomeScreenHandler: React.FC<WelcomeScreenHandlerProps> = ({
             </div>
         );
     }
-
-    // Si no está cargando, no hay config (y no es null), probablemente hubo un error que ya llamó a onError.
-    // Podríamos mostrar un fallback, pero ParticipantFlow manejará el estado de error.
-    // Devolver null aquí para que el padre controle el renderizado en caso de error.
     return null;
 };
 

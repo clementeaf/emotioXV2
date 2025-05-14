@@ -14,49 +14,75 @@ const AWS_REGION = process.env.AWS_REGION || 'us-east-1';
 const client = new DynamoDBClient({ region: AWS_REGION });
 const docClient = DynamoDBDocumentClient.from(client);
 
+// Interfaz para los ítems de DynamoDB (simplificada)
+interface DynamoDBItem {
+  id?: string; // Asumiendo que los ítems tienen un id
+  stepOrder?: number;
+  order?: number;
+  questions?: any; // Puede ser string o ya parseado
+  metadata?: any;  // Puede ser string o ya parseado
+  config?: any;    // Puede ser string o ya parseado
+  parameterOptions?: any; // Puede ser string o ya parseado
+  backlinks?: any; // Puede ser string o ya parseado
+  [key: string]: any; // Para otras propiedades
+}
+
 /**
  * Función interna para buscar ítems asociados a un researchId en DynamoDB.
  * @param researchId El ID de la investigación.
  * @returns Una promesa que resuelve a un array de ítems (formularios, etc.).
  * @throws Un error si la consulta a DynamoDB falla.
  */
-async function fetchItemsByResearchId(researchId: string): Promise<any[]> { // Renombrado para claridad
-  console.log(`[fetchItemsByResearchId] Buscando ítems para researchId: ${researchId} en tabla ${MAIN_TABLE_NAME} usando índice ${RESEARCH_ID_GSI_NAME}`);
+async function fetchItemsByResearchId(researchId: string): Promise<DynamoDBItem[]> {
+  console.log(`[fetchItemsByResearchId] Buscando ítems para researchId: ${researchId}`);
 
   const params: QueryCommandInput = {
-    TableName: MAIN_TABLE_NAME, // Usar la tabla principal
-    IndexName: RESEARCH_ID_GSI_NAME, // Usar el índice GSI por researchId
-    KeyConditionExpression: 'researchId = :rid', // Asumiendo que la clave del GSI se llama 'researchId'
-    ExpressionAttributeValues: {
-      ':rid': researchId,
-    },
-    // AÑADIR FILTRO OPCIONALMENTE AQUÍ para seleccionar solo formularios si es necesario
-    // FilterExpression: 'EntityType = :entityType',
-    // ExpressionAttributeValues: { ':rid': researchId, ':entityType': 'FORM_CONFIG' }, 
-    // ProjectionExpression: 'id, stepType, config, stepOrder', // Opcional
+    TableName: MAIN_TABLE_NAME,
+    IndexName: RESEARCH_ID_GSI_NAME,
+    KeyConditionExpression: 'researchId = :rid',
+    ExpressionAttributeValues: { ':rid': researchId },
   };
 
   try {
-    console.log('[fetchItemsByResearchId] Ejecutando QueryCommand con params:', JSON.stringify(params));
     const command = new QueryCommand(params);
     const result = await docClient.send(command);
-    console.log('[fetchItemsByResearchId] Respuesta de DynamoDB:', JSON.stringify(result));
+    const items: DynamoDBItem[] = (result.Items || []) as DynamoDBItem[];
 
-    const items = result.Items || []; // Renombrado de forms a items
+    // Parsear campos JSON y procesar items
+    const processedItems: DynamoDBItem[] = items.map((item: DynamoDBItem) => {
+      const newItem = { ...item }; 
 
-    // Ordenar los items si existe un atributo de orden (ej: 'stepOrder' o 'order')
-    if (items.length > 0) {
-        if (items[0].hasOwnProperty('stepOrder')) {
-            items.sort((a, b) => (a.stepOrder || 0) - (b.stepOrder || 0));
-            console.log('[fetchItemsByResearchId] Ítems ordenados por "stepOrder".');
-        } else if (items[0].hasOwnProperty('order')) {
-            items.sort((a, b) => (a.order || 0) - (b.order || 0));
-            console.log('[fetchItemsByResearchId] Ítems ordenados por "order".');
+      for (const key of ['questions', 'metadata', 'config', 'parameterOptions', 'backlinks', 'demographicQuestions', 'areasOfInterest', 'stimuli', 'participantLimit', 'linkConfig']) {
+        if (typeof newItem[key] === 'string') {
+          try {
+            newItem[key] = JSON.parse(newItem[key]);
+          } catch (e) {
+            console.warn(`[fetchItemsByResearchId] Error parseando JSON para la clave '${key}' en el ítem con id '${newItem.id || 'unknown'}':`, e);
+          }
         }
+      }
+      return newItem;
+    });
+
+    // Ordenar los items procesados
+    if (processedItems.length > 0) {
+      // Verificar si el primer ítem tiene stepOrder para decidir la clave de ordenación
+      const sortByStepOrder = processedItems[0].hasOwnProperty('stepOrder');
+      const sortByOrder = processedItems[0].hasOwnProperty('order');
+
+      if (sortByStepOrder) {
+        processedItems.sort((a: DynamoDBItem, b: DynamoDBItem) => (a.stepOrder ?? Infinity) - (b.stepOrder ?? Infinity));
+        console.log('[fetchItemsByResearchId] Ítems procesados y ordenados por "stepOrder".');
+      } else if (sortByOrder) {
+        processedItems.sort((a: DynamoDBItem, b: DynamoDBItem) => (a.order ?? Infinity) - (b.order ?? Infinity));
+        console.log('[fetchItemsByResearchId] Ítems procesados y ordenados por "order".');
+      } else {
+        console.log("[fetchItemsByResearchId] Ítems procesados. No se encontró clave de orden explícita ('stepOrder' u 'order').");
+      }
     }
 
-    console.log(`[fetchItemsByResearchId] Ítems encontrados: ${items.length}`);
-    return items;
+    console.log(`[fetchItemsByResearchId] Ítems procesados encontrados: ${processedItems.length}`);
+    return processedItems;
 
   } catch (error: any) {
     console.error('[fetchItemsByResearchId] Error al consultar DynamoDB:', error);

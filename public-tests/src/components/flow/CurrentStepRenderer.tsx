@@ -35,8 +35,6 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
             setEnrichedStepConfig(null);
             setError(null);
 
-            console.log(`[CurrentStepRenderer] Detected stepType: ${stepType}. Fetching module responses for research: ${researchId}, participant: ${participantIdFromStore}, module/step ID: ${stepId}`);
-
             apiClient.getModuleResponses(researchId, participantIdFromStore)
                 .then(response => {
                     const newEnrichedConfig = JSON.parse(JSON.stringify(stepConfig));
@@ -44,8 +42,6 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
                     if (response.data?.data && !response.error) {
                         const allParticipantResponsesDoc = response.data.data;
                         const actualResponsesArray = allParticipantResponsesDoc.responses;
-
-                        console.log('[CurrentStepRenderer] Successfully fetched module responses document:', { documentId: allParticipantResponsesDoc.id, responsesArray: actualResponsesArray });
 
                         if (Array.isArray(actualResponsesArray)) {
                             if (stepType === SMART_VOC_ROUTER_STEP_TYPE) {
@@ -56,7 +52,6 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
                                         );
 
                                         if (savedResponseItem) {
-                                            console.log(`[CurrentStepRenderer - ${SMART_VOC_ROUTER_STEP_TYPE}] Found saved response for question type ${question.type} (moduleId: ${stepId}):`, savedResponseItem);
                                             return {
                                                 ...question,
                                                 savedResponseData: {
@@ -74,7 +69,6 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
                                     (r: any) => r.stepId === stepId || r.stepType === DEMOGRAPHIC_STEP_TYPE
                                 );
                                 if (demographicResponseItem) {
-                                    console.log(`[CurrentStepRenderer - ${DEMOGRAPHIC_STEP_TYPE}] Found saved response for step ${stepId} (or type ${DEMOGRAPHIC_STEP_TYPE}):`, demographicResponseItem);
                                     newEnrichedConfig.savedResponses = demographicResponseItem.response || {};
                                 } else {
                                     console.warn(`[CurrentStepRenderer - ${DEMOGRAPHIC_STEP_TYPE}] No saved response found for step ${stepId} (or type ${DEMOGRAPHIC_STEP_TYPE})`);
@@ -87,8 +81,6 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
                         if (response.apiStatus !== APIStatus.NOT_FOUND && response.message) {
                             console.error("[CurrentStepRenderer] Error fetching module responses:", response.message, response);
                             setError(response.message);
-                        } else {
-                            console.log("[CurrentStepRenderer] No prior responses found or API error handled (e.g., 404). Using original config.");
                         }
                         setEnrichedStepConfig(newEnrichedConfig);
                     }
@@ -176,19 +168,6 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
 
         if ((stepType === SMART_VOC_ROUTER_STEP_TYPE || stepType === DEMOGRAPHIC_STEP_TYPE) && isLoadingResponses) {
             return <div className="w-full h-full flex items-center justify-center p-6 text-center text-neutral-500">Cargando datos previos...</div>;
-        }
-
-        if (stepType === 'cognitive_single_choice') {
-            console.log('[CurrentStepRenderer] cognitive_single_choice - stepConfig (inside renderContent):', JSON.stringify(stepConfig, null, 2));
-            console.log('[CurrentStepRenderer] cognitive_single_choice - stepName (inside renderContent):', stepName);
-        }
-        if (stepType === 'cognitive_multiple_choice') {
-            console.log('[CurrentStepRenderer] cognitive_multiple_choice - stepConfig (inside renderContent):', JSON.stringify(finalMappedProps.stepConfig, null, 2));
-            console.log('[CurrentStepRenderer] cognitive_multiple_choice - stepName (inside renderContent):', finalMappedProps.stepName);
-        }
-        if (stepType === 'cognitive_linear_scale') {
-            console.log('[CurrentStepRenderer] cognitive_linear_scale - stepConfig (inside renderContent):', JSON.stringify(finalMappedProps.stepConfig, null, 2));
-            console.log('[CurrentStepRenderer] cognitive_linear_scale - stepName (inside renderContent):', finalMappedProps.stepName);
         }
 
         const ComponentToRender = stepComponentMap[stepType];
