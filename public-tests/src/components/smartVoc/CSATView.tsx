@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useResponseAPI } from '../../hooks/useResponseAPI';
 import { useParticipantStore } from '../../stores/participantStore';
 import { useModuleResponses } from '../../hooks/useModuleResponses';

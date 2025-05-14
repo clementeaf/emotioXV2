@@ -17,11 +17,17 @@ export const CVQuestion: React.FC<CVQuestionProps> = ({ // Renombrado
   moduleId,
   onSaveSuccess 
 }) => {
-  const { id: questionId, description, type: questionType, title: questionTitle, config } = questionConfig;
-  // Asumir que CVConfig también tiene scaleRange, startLabel, endLabel
-  const { scaleRange, startLabel, endLabel } = config; 
+  const { id: questionId, description, type: questionType, title: questionTitleFromConfig, config: specificConfig } = questionConfig;
+  // Usar description o title de questionConfig como texto principal, o un default
+  const mainQuestionText = description || questionTitleFromConfig || '¿Cómo calificarías el valor recibido?';
 
-  const participantId = useParticipantStore(state => state.participantId);
+  // Obtener scaleRange, startLabel, endLabel de specificConfig (el CVConfig)
+  // Establecer defaults apropiados para CV si no se proporcionan en la config
+  const scaleRange = specificConfig?.scaleRange || { start: 1, end: 7 }; // Ejemplo: default 1-7, ajustar según necesidad para CV
+  const leftLabel = specificConfig?.startLabel || "Poco valor";
+  const rightLabel = specificConfig?.endLabel || "Mucho valor";
+
+  const participantIdFromStore = useParticipantStore(state => state.participantId);
 
   const [selectedValue, setSelectedValue] = useState<number | null>(null);
   const [internalModuleResponseId, setInternalModuleResponseId] = useState<string | null>(null);
@@ -33,8 +39,8 @@ export const CVQuestion: React.FC<CVQuestionProps> = ({ // Renombrado
     error: loadingError
   } = useModuleResponses({
     researchId,
-    participantId: participantId || undefined,
-    autoFetch: !!(researchId && participantId)
+    participantId: participantIdFromStore || undefined,
+    autoFetch: !!(researchId && participantIdFromStore)
   });
 
   const {
@@ -42,17 +48,19 @@ export const CVQuestion: React.FC<CVQuestionProps> = ({ // Renombrado
     isLoading: isSubmitting,
     error: submissionError,
     setError: setSubmissionError
-  } = useResponseAPI({ researchId, participantId: participantId || '' });
+  } = useResponseAPI({ researchId, participantId: participantIdFromStore || '' });
 
   useEffect(() => {
-    const log = (msg: string, data?: any) => setDebugLogs(prev => [...prev, data ? `[CVQuestion] ${msg}: ${JSON.stringify(data)}` : `[CVQuestion] ${msg}`]);
-    log(`useEffect [moduleResponsesArray] for Q_ID: ${questionId}, Mod_ID: ${moduleId}`);
-    // ... (resto de la lógica del useEffect igual a CESQuestion, solo cambia el prefijo del log)
+    const log = (msg: string, data?: any) => setDebugLogs(prev => [...prev, data ? `[CVQuestion-${questionId}] ${msg}: ${JSON.stringify(data)}` : `[CVQuestion-${questionId}] ${msg}`]);
+    log(`useEffect [moduleResponsesArray] Mod_ID: ${moduleId}`);
+    log(`isLoadingInitialData: ${isLoadingInitialData}, loadingError: ${loadingError}, moduleResponsesArray exists: ${!!moduleResponsesArray}`);
+
     if (!isLoadingInitialData && !loadingError && moduleResponsesArray && Array.isArray(moduleResponsesArray)) {
       log('Datos de API recibidos', moduleResponsesArray);
       const foundResponse = moduleResponsesArray.find((r: any) => 
         r.stepId === questionId && r.moduleId === moduleId
       );
+
       if (foundResponse) {
         log('Respuesta encontrada', foundResponse);
         let value = null;
@@ -61,6 +69,7 @@ export const CVQuestion: React.FC<CVQuestionProps> = ({ // Renombrado
         } else if (foundResponse.response?.value !== undefined && typeof foundResponse.response.value === 'number') {
           value = foundResponse.response.value;
         }
+        
         if (value !== null) {
           setSelectedValue(value);
           log(`SelectedValue seteado a: ${value}`);
@@ -75,57 +84,93 @@ export const CVQuestion: React.FC<CVQuestionProps> = ({ // Renombrado
     }
   }, [moduleResponsesArray, isLoadingInitialData, loadingError, questionId, moduleId]);
 
-  const handleScaleSelection = (valueToSelect: number) => {
-    setSelectedValue(valueToSelect);
+  const handleSelect = (value: number) => {
+    setSelectedValue(value);
     if (submissionError) setSubmissionError(null);
-    setDebugLogs(prev => [...prev, `[CVQuestion] Valor seleccionado (sin guardar aún): ${valueToSelect}`]);
+    setDebugLogs(prev => [...prev, `[CVQuestion-${questionId}] Valor seleccionado (sin guardar aún): ${value}`]);
   };
 
   const handleSaveOrUpdateClick = async () => {
-    // ... (lógica igual a CESQuestion, solo cambia el prefijo del log)
-    if (selectedValue === null) {
-      setSubmissionError("Por favor, selecciona un valor en la escala.");
-      setDebugLogs(prev => [...prev, "[CVQuestion] Intento de submit sin valor seleccionado."]);
-      return;
-    }
-    const log = (msg: string, data?: any) => setDebugLogs(prev => [...prev, data ? `[CVQuestion] ${msg}: ${JSON.stringify(data)}` : `[CVQuestion] ${msg}`]);
-    log(`--- handleSaveOrUpdateClick (Q_ID: ${questionId}) ---`, { selectedValue });
-    if (!participantId) {
-      const errorMsg = "Error: Participant ID no disponible.";
+    const newLogs: string[] = [];
+    newLogs.push(`--- handleSubmit iniciado (CVQuestion: ${questionId}) ---`);
+
+    if (!participantIdFromStore || participantIdFromStore.trim() === '') {
+      const errorMsg = "Error: participantIdFromStore vacío.";
       setSubmissionError(errorMsg);
-      log(errorMsg);
+      newLogs.push(errorMsg);
+      setDebugLogs(prev => [...prev, ...newLogs]);
       return;
     }
-    const result = await saveOrUpdateResponse(
-      questionId, 
-      questionType, 
-      questionTitle || description || questionId, 
-      selectedValue,
-      internalModuleResponseId === null ? undefined : internalModuleResponseId
-    );
-    log('Resultado de saveOrUpdateResponse', result);
-    if (result && !submissionError) {
-      log('Respuesta enviada/actualizada.');
-      const newModuleResponseId = result.id || null;
-      if (newModuleResponseId && newModuleResponseId !== internalModuleResponseId) {
-        setInternalModuleResponseId(newModuleResponseId);
-        log(`Nuevo internalModuleResponseId seteado a: ${newModuleResponseId}`);
-      }
-      onSaveSuccess(questionId, selectedValue, newModuleResponseId);
-    } else if (!result && !submissionError) {
-      log('Error: Ocurrió un error desconocido (resultado nulo sin error de API).');
-      setSubmissionError("Ocurrió un error desconocido al guardar.");
+    if (selectedValue === null) {
+      setSubmissionError("Por favor, selecciona una opción.");
+      newLogs.push('Error: Ninguna opción seleccionada.');
+      setDebugLogs(prev => [...prev, ...newLogs]);
+      return;
     }
+
+    const responseData = { value: selectedValue };
+    const stepNameForApi = questionTitleFromConfig || description || questionId; // Usar título o descripción de questionConfig
+
+    const apiCallParams = {
+      researchId,
+      participantId: participantIdFromStore,
+      stepId: questionId, 
+      stepType: questionType, // Este es el tipo de la pregunta CV, ej. 'smartvoc_cv'
+      stepName: stepNameForApi,
+      responseData,
+      existingResponseId: internalModuleResponseId || undefined,
+      moduleId: moduleId // Este es el ID del módulo padre SmartVOCRouter
+    };
+    newLogs.push(`Llamando a saveOrUpdateResponse con (apiCallParams): ${JSON.stringify(apiCallParams, null, 2)}`);
+    
+    const payloadParaPost = {
+        researchId: apiCallParams.researchId,
+        participantId: apiCallParams.participantId,
+        stepId: apiCallParams.stepId,
+        stepType: apiCallParams.stepType,
+        stepTitle: apiCallParams.stepName,
+        response: apiCallParams.responseData,
+        moduleId: apiCallParams.moduleId
+      };
+    newLogs.push(`Payload que se construiría para POST en useResponseAPI: ${JSON.stringify(payloadParaPost, null, 2)}`);
+
+    setDebugLogs(prev => [...prev, ...newLogs]);
+
+    const result = await saveOrUpdateResponse(
+      questionId,
+      questionType, 
+      stepNameForApi, 
+      responseData,
+      internalModuleResponseId || undefined,
+      moduleId 
+    );
+    
+    const finalNewLogs: string[] = [];
+    finalNewLogs.push(`Resultado de saveOrUpdateResponse: ${JSON.stringify(result, null, 2)}`);
+
+    if (result && !submissionError) {
+      finalNewLogs.push('Respuesta enviada/actualizada correctamente por CVQuestion.');
+      if (result.id && !internalModuleResponseId) {
+        setInternalModuleResponseId(result.id);
+        finalNewLogs.push(`Nuevo internalModuleResponseId seteado a: ${result.id}`);
+      }
+      onSaveSuccess(questionId, selectedValue, result.id || internalModuleResponseId || null);
+    } else if (!result && !submissionError) {
+      finalNewLogs.push('Error desde CVQuestion: Ocurrió un error desconocido al guardar.');
+      setSubmissionError("Ocurrió un error desconocido al guardar la respuesta (CVQuestion).");
+    } else if (submissionError) {
+      finalNewLogs.push(`Error reportado por useResponseAPI: ${submissionError}`);
+    }
+    finalNewLogs.push(`--- handleSubmit finalizado (CVQuestion: ${questionId}) ---`);
+    setDebugLogs(prev => [...prev, ...finalNewLogs]);
   };
 
   const scaleOptions: number[] = [];
-  if (scaleRange && typeof scaleRange.start === 'number' && typeof scaleRange.end === 'number') {
-    for (let i = scaleRange.start; i <= scaleRange.end; i++) {
-      scaleOptions.push(i);
-    }
-  } else {
-    // Fallback para CV, ajustar si es diferente (ej. 1-5 o 1-10)
-    console.warn(`[CVQuestion] scaleRange no definido correctamente para ${questionId}, usando 1-7 por defecto.`);
+  for (let i = scaleRange.start; i <= scaleRange.end; i++) {
+    scaleOptions.push(i);
+  }
+  if (scaleOptions.length === 0) { // Fallback si scaleRange no generó opciones válidas
+    console.warn(`[CVQuestion] scaleOptions vacío para ${questionId}, usando 1-7 por defecto.`);
     for (let i = 1; i <= 7; i++) { scaleOptions.push(i); }
   }
   
@@ -139,71 +184,68 @@ export const CVQuestion: React.FC<CVQuestionProps> = ({ // Renombrado
   }
 
   if (isLoadingInitialData && !moduleResponsesArray) {
-    return <div className="p-4 text-center text-gray-500">Cargando pregunta CV...</div>;
+    return (
+      <div className="flex flex-col items-center justify-center w-full h-full bg-white p-8">
+        <p>Cargando pregunta CV...</p>
+      </div>
+    );
   }
 
   return (
-    // ... (JSX igual a CESQuestion, solo cambia el prefijo del log en el bloque de debug)
-    <div className="space-y-4 flex flex-col items-center">
-      <p className="text-base md:text-lg font-medium text-gray-800 text-center">{description || questionTitle || 'Califica el valor'}</p>
-      
-      {(submissionError || loadingError) && (
-          <p className="text-sm text-red-600 my-2 text-center">Error: {submissionError || loadingError}</p>
-      )}
-
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full max-w-md">
-        {startLabel && <span className="text-sm text-gray-600">{startLabel}</span>}
+    <div className="flex flex-col items-center justify-center w-full h-full bg-white p-8">
+      <div className="max-w-xl w-full flex flex-col items-center">
+        <h2 className="text-xl font-medium text-center text-neutral-800 mb-4">
+          {mainQuestionText} {/* Usar mainQuestionText */}
+        </h2>
         
-        <div className="flex flex-wrap justify-center gap-2 p-2">
-          {scaleOptions.map((optionValue) => (
-            <label 
-              key={optionValue}
-              className={`relative flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full cursor-pointer transition-colors duration-150 ease-in-out 
-                ${selectedValue === optionValue 
-                  ? 'bg-blue-600 text-white shadow-md scale-105' 
-                  : 'bg-white text-gray-700 hover:bg-blue-100 border border-gray-300'
-                } ${isSubmitting || isLoadingInitialData ? 'opacity-50 cursor-not-allowed' : ''}`}
+        {(submissionError || loadingError) && (
+          <p className="text-sm text-red-600 my-2 text-center">Error: {submissionError || loadingError}</p>
+        )}
+
+        <div className="flex justify-center gap-2 mb-4">
+          {scaleOptions.map((value) => (
+            <button
+              key={value}
+              onClick={() => handleSelect(value)}
+              disabled={isSubmitting || isLoadingInitialData}
+              className={`w-9 h-9 rounded-full border flex items-center justify-center font-medium transition-colors ${ 
+                selectedValue === value
+                  ? 'bg-indigo-600 text-white border-indigo-600'
+                  : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-100'
+              } ${(isSubmitting || isLoadingInitialData) ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              <input
-                type="radio"
-                name={`scale-${questionId}`}
-                value={optionValue}
-                checked={selectedValue === optionValue}
-                onChange={() => handleScaleSelection(optionValue)}
-                disabled={isSubmitting || isLoadingInitialData}
-                className="absolute opacity-0 w-0 h-0"
-              />
-              <span className="text-sm md:text-base font-medium">{optionValue}</span>
-            </label>
+              {value}
+            </button>
           ))}
         </div>
 
-        {endLabel && <span className="text-sm text-gray-600">{endLabel}</span>}
-      </div>
-      
-      <button
-        onClick={handleSaveOrUpdateClick}
-        disabled={selectedValue === null || isSubmitting || isLoadingInitialData}
-        className="mt-6 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-10 rounded-md w-fit transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {buttonText}
-      </button>
+        <div className="flex justify-between w-full mt-2 px-1 max-w-xs sm:max-w-sm">
+          <span className="text-xs text-neutral-500">{leftLabel}</span>
+          <span className="text-xs text-neutral-500">{rightLabel}</span>
+        </div>
 
-      {(startLabel || endLabel) && (
-           <div className="w-full flex justify-between text-xs text-gray-500 sm:hidden mt-2 max-w-md">
-               <span>{startLabel || ''}</span>
-               <span>{endLabel || ''}</span>
-           </div>
-       )}
+        <button
+          className="mt-12 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-10 rounded-md w-fit transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={handleSaveOrUpdateClick}
+          disabled={selectedValue === null || isSubmitting || isLoadingInitialData}
+        >
+          {buttonText}
+        </button>
+      </div>
 
       {process.env.NODE_ENV === 'development' && (
-        <div className="mt-2 p-2 bg-gray-50 text-xs text-gray-400 border rounded max-h-32 overflow-y-auto w-full max-w-md">
-          <h5 className="font-semibold">[Debug CVQuestion - {questionId}]</h5>
-          <p>ModID: {moduleId}, SelVal: {selectedValue === null ? 'N/A' : selectedValue}, RespID: {internalModuleResponseId || 'N/A'}</p>
-          <p>LoadState: InitLoad: {isLoadingInitialData.toString()}, SubmitLoad: {isSubmitting.toString()}</p>
-          <p>Errors: LoadErr: {loadingError || 'No'}, SubmitErr: {submissionError || 'No'}</p>
-          <p>Logs:</p>
-          <pre className="whitespace-pre-wrap break-all">{debugLogs.slice(-5).join('\n')}</pre>
+        <div className="mt-6 p-4 border rounded bg-gray-50 text-xs text-gray-700 w-full max-w-xl">
+          <h5 className="font-semibold mb-2">[Debug CVQuestion - {questionId}]</h5>
+          <p>ResearchID: {researchId}, ParticipantID: {participantIdFromStore}</p>
+          <p>ModuleID (prop): {moduleId}, StepType (prop): {questionType} (de qConfig)</p> {/* Usar questionType de qConfig */}
+          <p>Hook isLoading: {isLoadingInitialData.toString()}, Hook Error: {loadingError || 'No'}</p>
+          <p>InternalModuleResponseID (state): {internalModuleResponseId || 'N/A'}</p>
+          <p>Selected Value (state): {selectedValue === null ? 'N/A' : selectedValue}</p>
+          <p>Submit isLoading: {isSubmitting.toString()}, Submit Error: {submissionError || 'No'}</p>
+          <h5 className="font-semibold mt-2 mb-1">Logs:</h5>
+          <pre className="whitespace-pre-wrap break-all max-h-48 overflow-y-auto">
+            {debugLogs.slice(-10).join('\n')}
+          </pre>
         </div>
       )}
     </div>

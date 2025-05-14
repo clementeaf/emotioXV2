@@ -135,7 +135,6 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
 
         const baseProps = {
             stepType,
-            stepConfig: currentConfigToUse,
             stepId,
             stepName,
             researchId,
@@ -146,19 +145,26 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
             isMock: isGenerallyMock,
         };
 
-        if (stepType === 'smartvoc_csat' || stepType === 'smartvoc_ces' || stepType === 'smartvoc_nps') {
+        if (stepType === 'smartvoc_csat' || stepType === 'smartvoc_ces' || stepType === 'smartvoc_nps' || stepType === 'smartvoc_cv') {
             return {
                 ...baseProps,
-                questionText: stepConfig?.questionText || stepName || 'Pregunta SmartVOC',
-                instructions: stepConfig?.instructions,
-                companyName: stepConfig?.companyName,
-                stepId: stepId,
+                questionConfig: currentConfigToUse || {},
+                questionText: currentConfigToUse?.questionText || stepName || 'Pregunta SmartVOC',
+                instructions: currentConfigToUse?.instructions,
+                companyName: currentConfigToUse?.companyName,
                 moduleId: stepId,
-                onNext: baseProps.onStepComplete,
-                config: currentConfigToUse
+                ...(stepType === 'smartvoc_csat' ? { onStepComplete: baseProps.onStepComplete } : { onNext: baseProps.onStepComplete }),
             };
         }
         
+        if (stepComponentMap[stepType]) {
+            const componentSpecificProps: any = { ...baseProps };
+            if (stepType !== 'smartvoc_csat' && stepType !== 'smartvoc_ces' && stepType !== 'smartvoc_nps') {
+                componentSpecificProps.stepConfig = currentConfigToUse;
+            }
+            return componentSpecificProps;
+        }
+
         return baseProps;
     }, [stepType, stepConfig, stepId, stepName, researchId, token, onLoginSuccess, onStepComplete, handleError, enrichedStepConfig]);
 

@@ -135,7 +135,7 @@ export const stepComponentMap: StepComponentMap = {
     'cognitive_ranking': RankingQuestion,
     'cognitive_navigation_flow': CognitiveNavigationFlowStep,
     'smartvoc_csat': CSATView,
-    'smartvoc_cv': SmartVocCvStep,
+    'smartvoc_cv': DifficultyScaleView,
     'smartvoc_nps': NPSView,
     'smartvoc_nev': SmartVocNevStep,
     'smartvoc_feedback': SmartVocFeedbackQuestion,

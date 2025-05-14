@@ -7,7 +7,7 @@ import { useResponseAPI } from './useResponseAPI';
 
 const API_BASE_URL = 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev';
 
-const smartVOCTypeMap: { [key: string]: string } = {
+export const smartVOCTypeMap: { [key: string]: string } = {
     'CSAT': 'smartvoc_csat',
     'CES': 'smartvoc_ces',
     'CV': 'smartvoc_cv',
@@ -506,19 +506,18 @@ export const useParticipantFlow = (researchId: string | undefined) => {
             
             // NUEVO: Usar el API para guardar la respuesta mediante el endpoint
             try {
-                // Buscar si ya existe una respuesta para este paso (para actualización)
                 const existingResponseId = findExistingResponseId(stepId);
-                
-                // Guardar o actualizar respuesta usando el endpoint
+                const moduleIdForSave = stepId;
+
                 const apiResult = await responseAPI.saveOrUpdateResponse(
                     stepId,
                     stepType,
                     stepName || '',
                     moduleResponse.answer,
                     existingResponseId,
-                    () => {
+                    moduleIdForSave, // <<< Pasar moduleIdForSave (que es stepId aquí) como 6to argumento
+                    () => {          // <<< Callback onPostSuccess es el 7mo argumento
                         console.log(`[useParticipantFlow] POST exitoso para stepId ${stepId}, recargando respuestas...`);
-                        // Asegurarse de tener researchId y participantId actuales
                         if(researchId && participantId) {
                            loadExistingResponses(researchId, participantId, responseAPI, storeSetLoadedResponses);
                         } else {
