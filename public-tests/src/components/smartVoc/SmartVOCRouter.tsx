@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 // --- Importar Interfaces Compartidas --- 
 import { 
     SmartVOCFormData, 
@@ -31,6 +31,7 @@ import { VOCTextQuestion } from './questions/VOCTextQuestion';
 import { useResponseAPI } from '../../hooks/useResponseAPI';
 // <<< IMPORTAR useParticipantStore >>>
 import { useParticipantStore } from '../../stores/participantStore'; // Ajusta la ruta si es diferente
+import { ApiClient, APIStatus } from '../../lib/api'; // <<< AÑADIR ApiClient y APIStatus
 
 // --- Componente Principal SmartVOCRouter --- 
 
@@ -46,49 +47,93 @@ export const SmartVOCRouter: React.FC<SmartVOCRouterProps> = ({
 
   const participantIdFromStore = useParticipantStore(state => state.participantId);
   const tokenFromStore = useParticipantStore(state => state.token); 
+  const apiClient = useMemo(() => new ApiClient(), []); // <<< AÑADIR instancia de ApiClient
+
+  // <<< ESTADO PARA CARGA DE DATOS PROPIOS >>>
+  const [isLoadingInitialData, setIsLoadingInitialData] = useState<boolean>(true);
 
   if (!participantIdFromStore) {
-    return <div className="p-6 text-center text-gray-600">Cargando información del participante...</div>;
+    return <div className="p-6 text-center text-gray-600">Cargando información del participante... (SmartVOCRouter)</div>;
   }
-  // <<< FIN DE CAMBIO >>>
-
-  console.log('[SmartVOCRouter] Received Props & Store State (participantId available):', { researchId, participantId: participantIdFromStore, generalStepId, title, instructions, stepConfig });
 
   const [answers, setAnswers] = useState<Record<string, any>>({}); 
   const [errors, setErrors] = useState<Record<string, string>>({}); 
   // Almacenar los IDs de las respuestas de la API para cada pregunta, para PUT subsecuentes
   const [moduleResponseIds, setModuleResponseIds] = useState<Record<string, string>>({});
 
-  // <<< NUEVO useEffect para inicializar answers y moduleResponseIds >>>
+  // <<< useEffect MODIFICADO para cargar datos directamente >>>
   useEffect(() => {
-    if (stepConfig && Array.isArray(stepConfig.questions)) {
-      const initialAnswers: Record<string, any> = {};
-      const initialModuleResponseIds: Record<string, string> = {};
-      let foundInitialData = false;
+    if (!researchId || !participantIdFromStore || !stepConfig?.questions || stepConfig.questions.length === 0) {
+      setIsLoadingInitialData(false);
+      console.warn('[SmartVOCRouter] No se cargaron datos iniciales: faltan researchId, participantId o preguntas en stepConfig.');
+      return;
+    }
 
-      stepConfig.questions.forEach(question => {
-        // ASUNCIÓN: `question` ahora tiene una propiedad `savedResponseData` (nombre de ejemplo)
-        // que contiene el objeto de respuesta individual de la API module-responses para esta pregunta.
-        const savedResponse = (question as any).savedResponseData; // Usar `as any` temporalmente hasta actualizar interfaces
+    setIsLoadingInitialData(true);
+    console.log('[SmartVOCRouter] Iniciando carga de datos iniciales desde API...');
 
-        if (savedResponse && savedResponse.id) { // 'id' del nivel superior del objeto de respuesta es el moduleResponseId
-          initialModuleResponseIds[question.id] = savedResponse.id;
-          foundInitialData = true;
-          
-          // Acceder al valor de la respuesta anidado
-          if (savedResponse.response?.data?.response?.value !== undefined) {
-            initialAnswers[question.id] = savedResponse.response.data.response.value;
+    apiClient.getModuleResponses(researchId, participantIdFromStore)
+      .then(apiResponse => {
+        const initialAnswers: Record<string, any> = {};
+        const initialModuleResponseIds: Record<string, string> = {};
+        let foundInitialData = false;
+
+        if (apiResponse.data?.data && Array.isArray(apiResponse.data.data.responses)) {
+          const allSavedResponses = apiResponse.data.data.responses;
+          console.log('[SmartVOCRouter] Respuestas obtenidas de API:', allSavedResponses);
+
+          stepConfig.questions.forEach(question => {
+            // Intenta encontrar la respuesta guardada para esta pregunta.
+            // Asumimos que `question.id` es el `stepId` usado al guardar la respuesta individual.
+            // O que `question.type` (ej. 'smartvoc_csat') es el `stepType` y `generalStepId` es el `moduleId`.
+            const savedResponse = allSavedResponses.find(
+              (r: any) => (r.stepType === question.type && r.moduleId === generalStepId) || // Preferido si hay moduleId
+                           (r.stepId === question.id) // Fallback si no hay moduleId y stepId es el ID de la pregunta
+            );
+
+            if (savedResponse && savedResponse.id) { 
+              initialModuleResponseIds[question.id] = savedResponse.id;
+              foundInitialData = true;
+              
+              let valueToSet;
+              if (question.type === 'CSAT' && savedResponse.response?.data?.response?.value !== undefined) {
+                valueToSet = savedResponse.response.data.response.value;
+              } else if (savedResponse.response?.value !== undefined) { // Intento genérico para otros tipos
+                valueToSet = savedResponse.response.value;
+              } else if (typeof savedResponse.response === 'string' || typeof savedResponse.response === 'number' || Array.isArray(savedResponse.response)) {
+                valueToSet = savedResponse.response; // Si la respuesta es el valor mismo
+              }
+
+              if (valueToSet !== undefined) {
+                initialAnswers[question.id] = valueToSet;
+                console.log(`[SmartVOCRouter] Pregunta ${question.id} (${question.type}): Valor inicial seteado a`, valueToSet, `desde responseId: ${savedResponse.id}`);
+              } else {
+                console.warn(`[SmartVOCRouter] Pregunta ${question.id} (${question.type}): Se encontró respuesta (id: ${savedResponse.id}) pero no se pudo extraer el valor.`);
+              }
+            }
+          });
+        } else {
+          if (apiResponse.apiStatus !== APIStatus.NOT_FOUND) {
+            console.error('[SmartVOCRouter] Error obteniendo respuestas de API o formato inesperado:', apiResponse.message);
+            // Considerar setear un error global para el router si es necesario.
           }
         }
+
+        if (foundInitialData) {
+          console.log('[SmartVOCRouter] Datos iniciales procesados:', { initialAnswers, initialModuleResponseIds });
+          setAnswers(prevAnswers => ({ ...prevAnswers, ...initialAnswers }));
+          setModuleResponseIds(prevModuleResponseIds => ({ ...prevModuleResponseIds, ...initialModuleResponseIds }));
+        }
+      })
+      .catch(err => {
+        console.error('[SmartVOCRouter] Excepción cargando datos iniciales:', err);
+      })
+      .finally(() => {
+        setIsLoadingInitialData(false);
+        console.log('[SmartVOCRouter] Carga de datos iniciales finalizada.');
       });
 
-      if (foundInitialData) {
-        console.log('[SmartVOCRouter] Initializing with SAVED RESPONSE data from stepConfig questions:', { initialAnswers, initialModuleResponseIds });
-        setAnswers(prevAnswers => ({ ...prevAnswers, ...initialAnswers }));
-        setModuleResponseIds(prevModuleResponseIds => ({ ...prevModuleResponseIds, ...initialModuleResponseIds }));
-      }
-    }
-  }, [stepConfig]);
+  }, [researchId, participantIdFromStore, stepConfig.questions, apiClient, generalStepId]); // generalStepId añadido
 
   const {
     saveOrUpdateResponse,
@@ -96,10 +141,11 @@ export const SmartVOCRouter: React.FC<SmartVOCRouterProps> = ({
     error: apiError,        
     setError: setApiError   
   } = useResponseAPI({ 
-      researchId, 
-      participantId: participantIdFromStore as string 
+      researchId,
+      // Asegurarse que participantIdFromStore no sea null/undefined aquí. Si lo es, el hook podría fallar.
+      // El if de participantIdFromStore al inicio del componente debería prevenir esto para renderizado, pero no para la inicialización del hook.
+      participantId: participantIdFromStore || '' // O manejar de otra forma si es null al inicio
   });
-
 
   const handleAnswerChange = useCallback(async (question: SmartVOCQuestion, answer: any) => {
     setAnswers(prevAnswers => ({
@@ -179,6 +225,11 @@ export const SmartVOCRouter: React.FC<SmartVOCRouterProps> = ({
 
   const questionsToRender = stepConfig.questions;
 
+  // <<< ESTADO DE CARGA PARA LA UI >>>
+  if (isLoadingInitialData) {
+    return <div className="p-6 text-center text-gray-600">Cargando datos del formulario SmartVOC...</div>;
+  }
+
   return (
     <div className="p-4 md:p-6 border rounded shadow-md w-full max-w-3xl flex flex-col space-y-6">
       <div>
@@ -194,18 +245,35 @@ export const SmartVOCRouter: React.FC<SmartVOCRouterProps> = ({
               switch (question.type) {
                   case 'CSAT':
                       QuestionComponent = CSATView; 
+                      const csatInitialValue = answers[question.id];
+                      const csatModuleResponseId = moduleResponseIds[question.id];
+
+                      // <<< INICIO DEL CONSOLE.LOG AÑADIDO >>>
+                      console.log(`[SmartVOCRouter - Pre-render CSATView] Para question.id: ${question.id}`, {
+                          questionType: question.type,
+                          researchId: researchId,
+                          stepIdForCSAT: question.id, // Este es el stepId que CSATView usará
+                          generalStepIdForModule: generalStepId, // ID del módulo SmartVOCRouter
+                          titleForCSAT: question.title || question.id,
+                          initialValueToPass: csatInitialValue,
+                          moduleResponseIdToPass: csatModuleResponseId,
+                          fullAnswersState: answers,
+                          fullModuleResponseIdsState: moduleResponseIds
+                      });
+                      // <<< FIN DEL CONSOLE.LOG AÑADIDO >>>
+
                       questionProps = {
                           ...questionProps,
                           researchId: researchId,
                           token: tokenFromStore, 
-                          stepId: question.id,
+                          stepId: question.id, // ID de la pregunta CSAT individual
                           stepName: question.title || question.id,
                           stepType: question.type, 
                           questionText: question.title || 'Por favor, califica tu satisfacción.',
                           instructions: question.description, 
                           companyName: question.config?.companyName,
-                          initialValue: answers[question.id], 
-                          config: question.config, 
+                          initialValue: csatInitialValue, 
+                          config: { ...(question.config || {}), moduleResponseId: csatModuleResponseId }, 
                           onStepComplete: (dataFromCSAT?: { success: boolean, data?: any, value?: any }) => {
                               console.log(`[SmartVOCRouter] CSAT Question ${question.id} completed:`, dataFromCSAT);
                               if (dataFromCSAT?.success) {
@@ -216,14 +284,14 @@ export const SmartVOCRouter: React.FC<SmartVOCRouterProps> = ({
                                           [question.id]: answervalue
                                       }));
                                   }
-                                  if (dataFromCSAT.data?.id) {
+                                  if (dataFromCSAT.data?.id) { // Asumiendo que data.id es el moduleResponseId actualizado/creado
                                       setModuleResponseIds(prev => ({ ...prev, [question.id]: dataFromCSAT.data.id }));
                                   }
                               }
                           },
                       };
-                      console.log(`[SmartVOCRouter] Para CSAT question ${question.id}, props a enviar A CSATVIEW (sin participantId directo):`, 
-                                  { researchId: questionProps.researchId, stepId: questionProps.stepId });
+                      // console.log(`[SmartVOCRouter] Para CSAT question ${question.id}, props a enviar A CSATVIEW (sin participantId directo):`,
+                      //             { researchId: questionProps.researchId, stepId: questionProps.stepId });
                       break;
                   case 'CES':
                   case 'CV':
@@ -264,9 +332,11 @@ export const SmartVOCRouter: React.FC<SmartVOCRouterProps> = ({
               }
 
               return (
-                  <div className={`p-4 border rounded-lg shadow-sm ${errors[question.id] || (apiError && question.type !== 'CSAT' && moduleResponseIds[question.id] === undefined) ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}>
+                  <div className={`p-4 border rounded-lg shadow-sm ${errors[question.id] || (apiError && question.type !== 'CSAT' /*&& moduleResponseIds[question.id] === undefined*/) ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}>
                       <QuestionComponent {...questionProps} />
                       {errors[question.id] && <p className="text-xs text-red-600 mt-1">{errors[question.id]}</p>}
+                      {/* Mostrar error de API general para preguntas no CSAT si aplica */}
+                      {apiError && question.type !== 'CSAT' && <p className="text-xs text-red-600 mt-1">Error API: {apiError}</p>}
                   </div>
               );
           })}
@@ -276,9 +346,9 @@ export const SmartVOCRouter: React.FC<SmartVOCRouterProps> = ({
           <button 
             onClick={handleCompleteClick} 
             className={`px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 ${
-                (isApiLoading && Object.values(answers).some(ans => ans !== undefined)) ? 'opacity-50 cursor-not-allowed' : '' // Deshabilitar si el hook general está ocupado Y hay alguna respuesta pendiente (evita deshabilitar si es CSATView el que está ocupado)
+                (isApiLoading && Object.values(answers).some(ans => ans !== undefined)) ? 'opacity-50 cursor-not-allowed' : ''
             }`}
-            disabled={isApiLoading && Object.values(answers).some(ans => ans !== undefined) && stepConfig.questions.some(q => q.type !== 'CSAT')} // Más preciso
+            disabled={isApiLoading && Object.values(answers).some(ans => ans !== undefined) && stepConfig.questions.some(q => q.type !== 'CSAT')} 
           >
             {isApiLoading && stepConfig.questions.some(q => q.type !== 'CSAT') ? 'Guardando...' : 'Siguiente'}
           </button>

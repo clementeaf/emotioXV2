@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useResponseAPI } from '../../hooks/useResponseAPI';
 import { useParticipantStore } from '../../stores/participantStore';
+import { useModuleResponses } from '../../hooks/useModuleResponses';
 // import StarRating from './StarRating'; // Ya no se usa
 
 interface CSATViewProps {
@@ -13,9 +14,8 @@ interface CSATViewProps {
   onStepComplete: (data?: any) => void;
   instructions?: string;
   companyName?: string;
-  initialValue?: number | null;
   config?: {
-    moduleResponseId?: string;
+    moduleId?: string;
     [key: string]: any; 
   };
   scaleSize?: number;
@@ -31,30 +31,60 @@ const CSATView: React.FC<CSATViewProps> = ({
   onStepComplete,
   instructions,
   companyName,
-  initialValue = null,
   config,
-  scaleSize
 }) => {
   
   const participantIdFromStore = useParticipantStore(state => state.participantId);
-  
-  console.log('[CSATView] Renderizando con props.researchId:', researchId, 'participantIdFromStore:', participantIdFromStore);
-
-  const [selectedValue, setSelectedValue] = useState<number | null>(initialValue);
+  const [selectedValue, setSelectedValue] = useState<number | null>(null);
+  const [internalModuleResponseId, setInternalModuleResponseId] = useState<string | null>(null);
   const {
     saveOrUpdateResponse,
     isLoading: isSubmitting,
-    error: apiError,
-    setError: setApiError
-  } = useResponseAPI({ researchId, participantId: participantIdFromStore as string });
+    error: submissionError,
+    setError: setSubmissionError
+  } = useResponseAPI({ researchId, participantId: participantIdFromStore || '' });
+  const {
+    data: moduleResponsesArray,
+    isLoading: isLoadingInitialData,
+    error: loadingError
+  } = useModuleResponses({
+    researchId,
+    participantId: participantIdFromStore || undefined,
+    autoFetch: true
+  });
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
 
   useEffect(() => {
-    console.log('[CSATView] useEffect - researchId:', researchId, 'participantIdFromStore:', participantIdFromStore);
-    if (initialValue !== null) {
-      setSelectedValue(initialValue);
+    setDebugLogs(prev => [...prev, `CSATView useEffect [moduleResponsesArray]: isLoadingInitialData=${isLoadingInitialData}, loadingError=${loadingError}, moduleResponsesArray exists: ${!!moduleResponsesArray}`]);
+    if (!isLoadingInitialData && !loadingError && moduleResponsesArray && Array.isArray(moduleResponsesArray)) {
+      setDebugLogs(prev => [...prev, `Datos de API recibidos en CSATView: ${JSON.stringify(moduleResponsesArray)}`]);
+      const foundResponse = moduleResponsesArray.find((r: any) => 
+        (r.stepType === stepType && r.moduleId === config?.moduleId) ||
+        (r.stepId === stepId)
+      );
+
+      if (foundResponse) {
+        setDebugLogs(prev => [...prev, `Respuesta encontrada para CSAT (${stepId}/${stepType}): ${JSON.stringify(foundResponse)}`]);
+        let value = null;
+        if (foundResponse.response?.data?.response?.value !== undefined) {
+          value = foundResponse.response.data.response.value;
+        } else if (foundResponse.response?.value !== undefined) {
+          value = foundResponse.response.value;
+        }
+        
+        if (typeof value === 'number') {
+          setSelectedValue(value);
+          setDebugLogs(prev => [...prev, `SelectedValue seteado a: ${value}`]);
+        }
+        setInternalModuleResponseId(foundResponse.id || null);
+        setDebugLogs(prev => [...prev, `InternalModuleResponseId seteado a: ${foundResponse.id}`]);
+      } else {
+        setDebugLogs(prev => [...prev, `No se encontró respuesta para CSAT (${stepId}/${stepType}) en moduleResponsesArray.`]);
+        setSelectedValue(null);
+        setInternalModuleResponseId(null);
+      }
     }
-  }, [initialValue, researchId, participantIdFromStore]);
+  }, [moduleResponsesArray, isLoadingInitialData, loadingError, stepId, stepType, config?.moduleId]);
 
   const satisfactionLevels = [
     { value: 1, label: 'Muy insatisfecho' },
@@ -66,33 +96,29 @@ const CSATView: React.FC<CSATViewProps> = ({
 
   const handleSelect = (value: number) => {
     setSelectedValue(value);
-    if (apiError) setApiError(null);
+    if (submissionError) setSubmissionError(null);
     setDebugLogs(prev => [...prev, `Seleccionado: ${value}`]);
   };
 
   const handleSubmit = async () => {
     const newLogs: string[] = [];
-    newLogs.push('--- handleSubmit iniciado ---');
+    newLogs.push('--- handleSubmit iniciado (CSATView self-managed) ---');
 
     if (!participantIdFromStore || participantIdFromStore.trim() === '') {
-      const errorMsg = "Error: participantIdFromStore está vacío en CSATView al intentar enviar. No se puede enviar.";
-      setApiError(errorMsg);
+      const errorMsg = "Error: participantIdFromStore vacío.";
+      setSubmissionError(errorMsg);
       newLogs.push(errorMsg);
-      console.error('[CSATView] handleSubmit ERROR:', errorMsg, 'Valor de participantIdFromStore:', participantIdFromStore);
       setDebugLogs(prev => [...prev, ...newLogs]);
       return;
     }
-
     if (selectedValue === null) {
-      setApiError("Por favor, selecciona una opción.");
+      setSubmissionError("Por favor, selecciona una opción.");
       newLogs.push('Error: Ninguna opción seleccionada.');
       setDebugLogs(prev => [...prev, ...newLogs]);
       return;
     }
 
     const responseData = { value: selectedValue };
-    const existingResponseId = config?.moduleResponseId;
-    
     const apiCallParams = {
       researchId,
       participantId: participantIdFromStore,
@@ -100,27 +126,29 @@ const CSATView: React.FC<CSATViewProps> = ({
       stepType,
       stepName,
       responseData,
-      existingResponseId
+      existingResponseId: internalModuleResponseId || undefined
     };
     newLogs.push(`Llamando a saveOrUpdateResponse con: ${JSON.stringify(apiCallParams, null, 2)}`);
-    console.log('[CSATView] handleSubmit - Llamando a saveOrUpdateResponse con:', apiCallParams);
 
     const result = await saveOrUpdateResponse(
       stepId,
       stepType,
       stepName,
       responseData,
-      existingResponseId
+      internalModuleResponseId || undefined
     );
     newLogs.push(`Resultado de saveOrUpdateResponse: ${JSON.stringify(result, null, 2)}`);
 
-    if (result && !apiError) {
-      newLogs.push('Respuesta enviada/actualizada correctamente.');
-      console.log('[CSATView] Respuesta enviada/actualizada correctamente:', result);
-      onStepComplete({ success: true, data: result });
-    } else if (!result && !apiError) {
-      newLogs.push('Error: Ocurrió un error desconocido al guardar la respuesta (resultado nulo sin error de API).');
-      setApiError("Ocurrió un error desconocido al guardar la respuesta.");
+    if (result && !submissionError) {
+      newLogs.push('Respuesta enviada/actualizada.');
+      if (result.id && !internalModuleResponseId) {
+        setInternalModuleResponseId(result.id);
+        newLogs.push(`Nuevo internalModuleResponseId seteado a: ${result.id}`);
+      }
+      onStepComplete({ success: true, data: result, value: selectedValue });
+    } else if (!result && !submissionError) {
+      newLogs.push('Error: Ocurrió un error desconocido (resultado nulo sin error de API).');
+      setSubmissionError("Ocurrió un error desconocido al guardar.");
     }
     newLogs.push('--- handleSubmit finalizado ---');
     setDebugLogs(prev => [...prev, ...newLogs]);
@@ -130,14 +158,21 @@ const CSATView: React.FC<CSATViewProps> = ({
     ? questionText.replace(/\[company\]|\[empresa\]/gi, companyName)
     : questionText;
 
-  const currentExistingResponseId = config?.moduleResponseId;
   let buttonText = 'Siguiente';
   if (isSubmitting) {
     buttonText = 'Enviando...';
-  } else if (currentExistingResponseId) {
+  } else if (internalModuleResponseId) {
     buttonText = 'Actualizar y continuar';
   } else {
     buttonText = 'Guardar y continuar';
+  }
+
+  if (isLoadingInitialData) {
+    return (
+      <div className="flex flex-col items-center justify-center w-full h-full bg-white p-8">
+        <p>Cargando datos de CSAT...</p>
+      </div>
+    );
   }
 
   return (
@@ -171,14 +206,16 @@ const CSATView: React.FC<CSATViewProps> = ({
           ))}
         </div>
 
-        {apiError && (
-          <p className="text-sm text-red-600 mb-4 text-center">Error: {apiError}</p>
+        {(submissionError || loadingError) && (
+          <p className="text-sm text-red-600 mb-4 text-center">
+            Error: {submissionError || loadingError}
+          </p>
         )}
 
         <button
           className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-10 rounded-md w-fit transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={handleSubmit}
-          disabled={selectedValue === null || isSubmitting}
+          disabled={selectedValue === null || isSubmitting || isLoadingInitialData}
         >
           {buttonText}
         </button>
@@ -186,15 +223,14 @@ const CSATView: React.FC<CSATViewProps> = ({
 
       {process.env.NODE_ENV === 'development' && (
         <div className="mt-6 p-4 border rounded bg-gray-50 text-xs text-gray-700 w-full max-w-2xl">
-          <h4 className="font-semibold mb-2">[Debug CSATView]</h4>
-          <p>Research ID: {researchId}</p>
-          <p>Participant ID (from Store): {participantIdFromStore}</p>
-          <p>Step ID: {stepId}, Step Name: {stepName}, Step Type: {stepType}</p>
-          <p>Existing ModuleResponseID (config): {config?.moduleResponseId || 'N/A'}</p>
-          <p>Selected Value: {selectedValue === null ? 'N/A' : selectedValue}</p>
-          <p>Is Submitting: {isSubmitting.toString()}</p>
-          <p>API Error (Hook): {apiError || 'No'}</p>
-          <h5 className="font-semibold mt-2 mb-1">Logs de Eventos:</h5>
+          <h4 className="font-semibold mb-2">[Debug CSATView - Self-Managed Data]</h4>
+          <p>Research ID: {researchId}, Participant ID: {participantIdFromStore}</p>
+          <p>Step ID: {stepId}, Step Name: {stepName}, Step Type: {stepType}, ModuleID (from config): {config?.moduleId || 'N/A'}</p>
+          <p>Hook isLoading: {isLoadingInitialData.toString()}, Hook Error: {loadingError || 'No'}</p>
+          <p>InternalModuleResponseID (state): {internalModuleResponseId || 'N/A'}</p>
+          <p>Selected Value (state): {selectedValue === null ? 'N/A' : selectedValue}</p>
+          <p>Submit isLoading: {isSubmitting.toString()}, Submit Error: {submissionError || 'No'}</p>
+          <h5 className="font-semibold mt-2 mb-1">Logs de Eventos (CSATView):</h5>
           <pre className="whitespace-pre-wrap break-all max-h-48 overflow-y-auto">
             {debugLogs.join('\n')}
           </pre>
