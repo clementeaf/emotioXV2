@@ -32,6 +32,40 @@ export interface MappedStepComponentProps {
     // ... otras props que puedan ser comunes o necesarias para los adaptadores
 }
 
+// NUEVO: Adaptador para DifficultyScaleView
+const DifficultyScaleAdapter: React.FC<MappedStepComponentProps> = (props) => {
+  const { stepConfig, researchId, stepType, stepId, onStepComplete, stepName } = props;
+
+  if (!stepConfig) {
+    console.error(`[DifficultyScaleAdapter] stepConfig no está definido para el paso. StepID: ${stepId || 'N/A'}, Type: ${stepType}, Name: ${stepName || 'N/A'}`);
+    return (
+      <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full text-center">
+        <h2 className="text-xl font-medium mb-3 text-neutral-700">Error de Configuración</h2>
+        <p className="text-neutral-600 mb-4">
+          La configuración para este paso ({stepName || stepType}) no se pudo cargar.
+        </p>
+        <p className="text-sm text-neutral-500">Por favor, revisa la configuración de la investigación o contacta al soporte.</p>
+      </div>
+    );
+  }
+
+  const moduleTypeParts = stepType.split('_');
+  // Extrae 'ces', 'nps', 'cv', 'nev' de stepType 'smartvoc_ces', etc.
+  // Si stepType no sigue el patrón 'smartvoc_XXX', usa stepId o un valor por defecto.
+  const moduleIdForComponent = moduleTypeParts.length > 1 && moduleTypeParts[0] === 'smartvoc' 
+    ? moduleTypeParts[1] 
+    : stepId || 'unknown_module';
+
+  return (
+    <DifficultyScaleView
+      questionConfig={stepConfig as any} // Asumimos que stepConfig es compatible con SmartVOCQuestion
+      researchId={researchId || ''}
+      moduleId={moduleIdForComponent}
+      onNext={(data) => onStepComplete(data)}
+    />
+  );
+};
+
 const InstructionStep: React.FC<MappedStepComponentProps> = ({ stepConfig, onStepComplete, isInstructionMock }) => {
     const config = isInstructionMock ? { title: 'Instrucciones (Prueba)', text: 'Texto de instrucciones de prueba.' } : stepConfig;
     return (
@@ -104,19 +138,6 @@ const SmartVocCvStep: React.FC<MappedStepComponentProps> = ({ stepConfig, stepNa
     );
 };
 
-const SmartVocNevStep: React.FC<MappedStepComponentProps> = ({ stepConfig, stepName, onStepComplete }) => {
-    const isMock = !stepConfig || !stepConfig.questionText;
-    const config = isMock ? { questionText: 'Pregunta NEV (Prueba)?' } : stepConfig;
-    return (
-        <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full text-center">
-            <h2 className="text-xl font-medium mb-3 text-neutral-700">{stepName || 'Valor Emocional Neto'}</h2>
-            <p className="text-neutral-600 mb-4">{config.questionText}</p>
-            <p className="text-sm text-neutral-500">(Placeholder: Vista para NEV)</p>
-            <button type="button" onClick={() => onStepComplete?.({})} className="mt-4 bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors">Siguiente</button>
-        </div>
-    );
-};
-
 type StepComponentType = React.LazyExoticComponent<React.ComponentType<any>> | React.FC<MappedStepComponentProps>; // Usamos 'any' temporalmente para LazyExoticComponent
 
 interface StepComponentMap {
@@ -135,11 +156,11 @@ export const stepComponentMap: StepComponentMap = {
     'cognitive_ranking': RankingQuestion,
     'cognitive_navigation_flow': CognitiveNavigationFlowStep,
     'smartvoc_csat': CSATView,
-    'smartvoc_cv': DifficultyScaleView,
-    'smartvoc_nps': NPSView,
-    'smartvoc_nev': SmartVocNevStep,
+    'smartvoc_cv': DifficultyScaleAdapter,
+    'smartvoc_nps': DifficultyScaleAdapter,
+    'smartvoc_nev': DifficultyScaleAdapter,
     'smartvoc_feedback': SmartVocFeedbackQuestion,
-    'smartvoc_ces': DifficultyScaleView,
+    'smartvoc_ces': DifficultyScaleAdapter,
     'thankyou': ThankYouView,
     'demographic': DemographicStep,
     'cognitive_preference_test': CognitivePreferenceTestStep,
@@ -162,6 +183,4 @@ export {
     InstructionStep,
     CognitiveNavigationFlowStep,
     CognitivePreferenceTestStep,
-    SmartVocCvStep,
-    SmartVocNevStep
 }; 

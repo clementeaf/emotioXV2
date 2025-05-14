@@ -145,9 +145,10 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
             isMock: isGenerallyMock,
         };
 
-        if (stepType === 'smartvoc_csat' || stepType === 'smartvoc_ces' || stepType === 'smartvoc_nps' || stepType === 'smartvoc_cv') {
+        if (stepType === 'smartvoc_csat' || stepType === 'smartvoc_ces' || stepType === 'smartvoc_nps' || stepType === 'smartvoc_cv' || stepType === 'smartvoc_nev') {
             return {
                 ...baseProps,
+                stepConfig: currentConfigToUse,
                 questionConfig: currentConfigToUse || {},
                 questionText: currentConfigToUse?.questionText || stepName || 'Pregunta SmartVOC',
                 instructions: currentConfigToUse?.instructions,
