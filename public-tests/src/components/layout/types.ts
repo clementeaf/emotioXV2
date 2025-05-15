@@ -7,3 +7,17 @@ export interface AppLayoutProps {
 export interface HeaderProps {
   openMobileSidebar: () => void;
 }
+
+export interface Step {
+  id: string;
+  name: string;
+}
+
+export interface ProgressSidebarProps {
+  steps: Step[];
+  currentStepIndex: number;
+  onNavigateToStep?: (index: number) => void;
+  answeredStepIndices?: number[];
+  completedSteps?: number; 
+  totalSteps?: number;     
+}

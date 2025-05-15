@@ -87,3 +87,14 @@ export interface SmartVOCHandlerProps {
     onComplete: () => void; // Llamado cuando se completa con éxito (o no existe)
     onError: (message: string) => void; // Llamado si hay un error de carga
 }
+
+export interface WelcomeStepConfig {
+    title?: string;
+    message?: string;
+    startButtonText?: string;
+}
+
+export interface WelcomeScreenHandlerProps {
+    stepConfig?: WelcomeStepConfig; 
+    onStepComplete: () => void;
+}

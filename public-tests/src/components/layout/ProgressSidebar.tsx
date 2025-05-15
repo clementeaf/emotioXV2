@@ -1,53 +1,14 @@
-// import { CheckCircle, Circle, Loader } from 'lucide-react'; // No se usan aquí directamente
-// import { Step } from './types'; // Definido localmente
-import { cn } from '../../lib/utils'; // Corregir ruta
-import { ModuleResponse } from '../../stores/participantStore'; // <<< IMPORTAR TIPO >>>
-
-// Interfaz para definir la estructura de un paso en la barra de progreso
-export interface Step {
-  id: string; // Identificador único del paso (puede ser el 'sk' o un UUID)
-  name: string; // Nombre descriptivo del paso a mostrar
-}
-
-// Props que el componente ProgressSidebar espera recibir
-interface ProgressSidebarProps {
-  steps: Step[]; // Array de todos los pasos del flujo
-  currentStepIndex: number; // Índice del paso actual en el array 'steps'
-  onNavigateToStep?: (index: number) => void; // Añadir prop para callback de navegación
-  completedSteps?: number; // <<< Prop opcional para pasos completados
-  totalSteps?: number;     // <<< Prop opcional para pasos totales
-  answeredStepIndices?: number[]; // <<< NUEVO: Array de índices de los pasos que tienen respuestas
-  // Podríamos añadir un array de booleanos si el flujo permite saltos o necesita marcar completados de forma no secuencial
-  // completedSteps?: boolean[]; 
-  // <<< AÑADIR PROP PARA RESPUESTAS CARGADAS >>>
-  loadedApiResponses?: ModuleResponse[]; 
-}
-
-// Paleta de colores para los distintos estados de los pasos (ajustar al tema de la aplicación)
-const colors = {
-  completed: 'bg-primary-500', // Punto de paso completado
-  current: 'bg-primary-700', // Punto de paso actual (puede tener anillo también)
-  pending: 'bg-neutral-300', // Punto de paso pendiente
-  answered: 'bg-green-500', // NUEVO: Punto de paso que tiene respuesta
-  lineCompleted: 'bg-primary-500', // Línea conectora para pasos completados
-  linePending: 'bg-neutral-300', // Línea conectora para pasos pendientes
-  lineAnswered: 'bg-green-500', // NUEVO: Línea conectora después de un paso respondido
-  ringCurrent: 'ring-primary-500', // Anillo alrededor del punto actual
-  textCurrent: 'text-primary-700', // Color de texto para el paso actual
-  textCompleted: 'text-neutral-500 line-through', // Color de texto para pasos completados (opcional: tachado)
-  textAnswered: 'text-green-700', // NUEVO: Color de texto para pasos respondidos
-  textPending: 'text-neutral-600', // Color de texto para pasos pendientes
-};
+import { cn } from '../../lib/utils';
+import { ProgressSidebarProps } from './types';
+import { colors } from './utils';
 
 export function ProgressSidebar({ 
     steps, 
     currentStepIndex, 
-    onNavigateToStep, 
+    onNavigateToStep,
+    answeredStepIndices = [],
     completedSteps, 
     totalSteps,
-    answeredStepIndices = [],
-    // <<< RECIBIR PROP >>>
-    loadedApiResponses = [] 
 }: ProgressSidebarProps) {
 
   const showCounter = typeof completedSteps === 'number' && typeof totalSteps === 'number' && completedSteps >= 0 && totalSteps >= 0;
@@ -58,92 +19,40 @@ export function ProgressSidebar({
 
   return (
     <nav 
-      aria-label="Progreso del estudio" 
-      // Estilos base: ancho fijo, altura completa, fondo, padding, borde derecho, flex column, sticky
+      aria-label="Progreso del estudio"
       className="w-56 md:w-64 h-screen bg-neutral-50 p-4 md:p-6 border-r border-neutral-200 flex flex-col sticky top-0 shrink-0"
     >
-        {/* Contenedor para el título y el contador/porcentaje */}
         <div className="flex justify-between items-center mb-6">
              <h2 className="text-lg font-semibold text-neutral-800">Progreso</h2> 
-             {/* Mostrar contador y porcentaje si los datos son válidos */}
              {showCounter && (
                  <span className="text-sm font-medium text-neutral-600 bg-neutral-200 px-2 py-0.5 rounded-md whitespace-nowrap">
-                     {completedSteps}/{totalSteps} ({percentage}%)
+                     {completedSteps}/{totalSteps} ({percentage}%) 
                  </span>
              )}
         </div>
         
-        {/* Contenedor principal para los pasos, relativo para posicionar las líneas */}
-        <div className="relative flex-grow overflow-y-auto -mr-4 pr-4 md:-mr-6 md:pr-6"> {/* Permitir scroll si hay muchos pasos */}
+        <div className="relative flex-grow overflow-y-auto -mr-4 pr-4 md:-mr-6 md:pr-6">
             {steps.map((step, index) => {
-                const hasApiResponse = loadedApiResponses.some(apiResponse => apiResponse.stepTitle === step.name);
+                const isCurrent = index === currentStepIndex;
+                const isAnswered = answeredStepIndices.includes(index);
+                const isClickable = (isCurrent || isAnswered || index < currentStepIndex) && !!onNavigateToStep;
 
-                let isCompleted = index < currentStepIndex;
-                let isCurrent = index === currentStepIndex;
+                let dotColor, lineColor, textColor;
 
-                // --- INICIO OVERRIDE TEMPORAL ---
-                const forceCompleteTitles = [
-                    "Cognitiva: navigation_flow",
-                    "Que te parece esta imagen?"
-                ];
-                let isCompletedOverride = isCompleted;
-                let isCurrentOverride = isCurrent; // Mantener el estado actual por defecto
-                const shouldForceComplete = forceCompleteTitles.includes(step.name);
-
-                if (shouldForceComplete) {
-                    isCompletedOverride = true;
-                    // Asegurarse de que no se marque como 'current' si no lo es realmente,
-                    // para evitar el anillo azul y color de texto azul incorrectos.
-                    isCurrentOverride = isCurrent; // Mantenemos isCurrent original aquí.
-                }
-                // --- FIN OVERRIDE TEMPORAL ---
-
-
-                // <<< LÓGICA DE CLICABILIDAD ACTUALIZADA >>>
-                // Usar isCompletedOverride para determinar si es clicable por estar "completado"
-                const isClickable = (isCurrentOverride || isCompletedOverride || hasApiResponse) && !!onNavigateToStep;
-
-                // <<< LÓGICA DE COLOR ACTUALIZADA >>>
-                // Usar isCompletedOverride y isCurrentOverride para determinar los colores
-                let finalDotColor;
-                let finalLineColor;
-                let finalTextColor;
-
-                if (isCurrentOverride) { // Usar el override para estilo actual
-                    finalDotColor = colors.current;
-                    finalTextColor = colors.textCurrent;
-                    // La línea que sale del paso actual depende de si este ya tiene respuesta o está "completado"
-                    if (hasApiResponse) {
-                        finalLineColor = colors.lineAnswered;
-                    } else if (isCompletedOverride) { // Usar override aquí también
-                        finalLineColor = colors.lineCompleted;
-                    } else {
-                        finalLineColor = colors.linePending;
-                    }
-                } else if (hasApiResponse) {
-                    finalDotColor = colors.answered;
-                    finalLineColor = colors.lineAnswered;
-                    finalTextColor = colors.textAnswered;
-                } else if (isCompletedOverride) { // Usar override para estilo completado
-                    finalDotColor = colors.completed;
-                    finalLineColor = colors.lineCompleted;
-                    finalTextColor = colors.textCompleted;
-                } else { // Pendiente y no respondido
-                    finalDotColor = colors.pending;
-                    finalLineColor = colors.linePending;
-                    finalTextColor = colors.textPending;
+                if (isCurrent) {
+                    dotColor = colors.current;
+                    textColor = colors.textCurrent;
+                    lineColor = isAnswered ? colors.lineAnswered : colors.linePending;
+                } else if (isAnswered) {
+                    dotColor = colors.answered;
+                    textColor = colors.textAnswered;
+                    lineColor = colors.lineAnswered;
+                } else {
+                    dotColor = colors.pending;
+                    textColor = colors.textPending;
+                    lineColor = colors.linePending;
                 }
                 
-                // --- Asegurar que los forzados se vean verdes si no son el actual ---
-                // Si forzamos completado Y no es el paso actual Y no tiene respuesta API (aún), 
-                // usar colores de 'answered' (verde) en lugar de 'completed' (gris tachado).
-                if (shouldForceComplete && !isCurrentOverride && !hasApiResponse) {
-                     finalDotColor = colors.answered; 
-                     finalLineColor = colors.lineAnswered;
-                     finalTextColor = colors.textAnswered; 
-                }
-                // --- Fin ajuste de color para forzados ---
-
                 return (
                     <div
                         key={step.id}
@@ -156,36 +65,31 @@ export function ProgressSidebar({
                         role={isClickable ? "button" : undefined}
                         tabIndex={isClickable ? 0 : undefined}
                     >
-                        {/* Línea vertical conectora (no se muestra para el último paso) */}
                         {index < steps.length - 1 && (
                             <div 
                                 className={cn(
                                     "absolute left-[7px] top-[22px] bottom-[-22px] w-0.5",
-                                    finalLineColor // Usar finalLineColor
+                                    lineColor
                                 )} 
                                 aria-hidden="true"
                             />
                         )}
-
-                        {/* Punto indicador del paso */}
                         <div className="flex-shrink-0 relative z-10">
                              <div 
                                 className={cn(
                                     "w-4 h-4 rounded-full transition-colors duration-300", 
-                                    finalDotColor, // Usar finalDotColor
-                                    isCurrentOverride && `ring-2 ring-offset-2 ${colors.ringCurrent} ${colors.current}`,
+                                    dotColor, 
+                                    isCurrent && `ring-2 ring-offset-2 ${colors.ringCurrent} ${colors.current}`,
                                     isClickable && "group-hover:ring-2 group-hover:ring-offset-2 group-hover:ring-primary-300"
                                 )}
-                                aria-current={isCurrentOverride ? 'step' : undefined}
+                                aria-current={isCurrent ? 'step' : undefined}
                              />
                         </div>
-
-                        {/* Nombre del paso */}
                         <div className="ml-3 md:ml-4">
                             <span 
                                 className={cn(
                                     "text-sm font-medium transition-colors duration-300", 
-                                    finalTextColor, // Usar finalTextColor
+                                    textColor, 
                                     isClickable && "group-hover:text-primary-600"
                                 )}
                             >
