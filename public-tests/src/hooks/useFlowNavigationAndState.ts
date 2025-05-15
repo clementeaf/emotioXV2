@@ -67,7 +67,7 @@ export const useFlowNavigationAndState = ({
             setCurrentStep(ParticipantFlowStep.WELCOME);
             setIsFlowLoading(false);
         }
-    }, [expandedSteps, isFlowLoading, currentStep, maxVisitedIndexFromStore, researchId, loadExistingResponses, participantId]);
+    }, [expandedSteps, isFlowLoading, currentStep, maxVisitedIndexFromStore, researchId, loadExistingResponses, participantId, setCurrentStepIndex, setCurrentStep]);
 
     const goToNextStep = useCallback(async (answer?: any) => {
         if (!isFlowLoading && currentStepIndex < expandedSteps.length - 1) {
@@ -97,20 +97,21 @@ export const useFlowNavigationAndState = ({
                 await saveStepResponse(answer);
              }
              setCurrentStep(ParticipantFlowStep.DONE);
-             // setResponsesData para endTime se haría en useResponseManager si es posible o pasado de alguna forma
              await markResponsesAsCompleted();
         }
-    }, [currentStepIndex, expandedSteps, isFlowLoading, saveStepResponse, markResponsesAsCompleted, setExternalExpandedSteps]);
+    }, [currentStepIndex, expandedSteps, isFlowLoading, saveStepResponse, markResponsesAsCompleted, setExternalExpandedSteps, setCurrentStepIndex, setError, setCurrentStep]);
 
     const navigateToStep = useCallback((targetIndex: number) => {
         let stepHasApiResponse = false;
         if (targetIndex >= 0 && targetIndex < expandedSteps.length) {
             const targetStepInfo = expandedSteps[targetIndex];
-            if(targetStepInfo) {
-                stepHasApiResponse = loadedApiResponsesFromStore.some(resp => resp.stepName === targetStepInfo.name); // Asumiendo stepName en ModuleResponse
+            if(targetStepInfo && targetStepInfo.name) {
+                stepHasApiResponse = loadedApiResponsesFromStore.some(resp => 
+                    (resp.stepTitle && resp.stepTitle === targetStepInfo.name)
+                );
             }
         }
-        if (!isFlowLoading && targetIndex >= 0 && (targetIndex <= (maxVisitedIndexFromStore || 0) || stepHasApiResponse)) {
+        if (!isFlowLoading && targetIndex >= 0 && targetIndex < expandedSteps.length && (targetIndex <= (maxVisitedIndexFromStore || 0) || stepHasApiResponse)) {
             const savedResponse = getStepResponse(targetIndex);
             if (savedResponse !== null && savedResponse !== undefined && setExternalExpandedSteps) {
                  setExternalExpandedSteps(prevSteps => prevSteps.map((step, index) => 
@@ -119,11 +120,8 @@ export const useFlowNavigationAndState = ({
             }
             setCurrentStepIndex(targetIndex);
             setError(null); 
-        } else if (targetIndex === currentStepIndex) {
-        } else {
-            console.warn(`[useFlowNavigation] Navegación bloqueada al índice ${targetIndex}. MaxVisitado: ${maxVisitedIndexFromStore}, TieneRespuestaAPI: ${stepHasApiResponse}`);
         }
-    }, [isFlowLoading, expandedSteps, loadedApiResponsesFromStore, maxVisitedIndexFromStore, getStepResponse, setExternalExpandedSteps]);
+    }, [isFlowLoading, expandedSteps, loadedApiResponsesFromStore, maxVisitedIndexFromStore, getStepResponse, setExternalExpandedSteps, setCurrentStepIndex, setError]);
     
     const totalRelevantSteps = Math.max(0, expandedSteps ? expandedSteps.length - 2 : 0);
     let completedRelevantSteps = 0;

@@ -1,15 +1,49 @@
 import { cn } from '../../lib/utils';
 import { ProgressSidebarProps } from './types';
 import { colors } from './utils';
+import { useModuleResponses } from '../../hooks/useModuleResponses';
+import { useParticipantStore } from '../../stores/participantStore';
+import { useMemo } from 'react';
 
 export function ProgressSidebar({ 
     steps, 
     currentStepIndex, 
     onNavigateToStep,
-    answeredStepIndices = [],
-    completedSteps, 
-    totalSteps,
 }: ProgressSidebarProps) {
+
+  const researchId = useParticipantStore(state => state.researchId);
+  const participantId = useParticipantStore(state => state.participantId);
+
+  const { data: moduleResponsesData } = useModuleResponses({
+    researchId: researchId || undefined,
+    participantId: participantId || undefined,
+    autoFetch: !!(researchId && participantId),
+  });
+
+  const totalSteps = steps.length;
+  const answeredStepIds = useMemo(() => {
+    if (!moduleResponsesData || !Array.isArray(moduleResponsesData) || !steps) return [];
+    const ids = new Set<string>();
+    moduleResponsesData.forEach((response, respIdx) => {
+        if (response && typeof response.stepTitle === 'string') {
+            const matchedStep = steps.find(s => s.name === response.stepTitle);
+            if (matchedStep) {
+                if (!ids.has(matchedStep.id)) {
+                    ids.add(matchedStep.id);
+                    console.log(`[ProgressSidebar] Matched: response.stepTitle "${response.stepTitle}" (from resp ${respIdx}) with step.name "${matchedStep.name}" (stepId: ${matchedStep.id}). Added to answeredStepIds.`);
+                }
+            } else {
+                console.log(`[ProgressSidebar] No match: response.stepTitle "${response.stepTitle}" (from resp ${respIdx}) found no step with matching name.`);
+            }
+        } else {
+             console.log(`[ProgressSidebar] Skipped response ${respIdx}: no stepTitle or not a string. Title:`, response?.stepTitle);
+        }
+    });
+    console.log('[ProgressSidebar] Final answeredStepIds:', Array.from(ids));
+    return Array.from(ids);
+  }, [moduleResponsesData, steps]);
+  
+  const completedSteps = answeredStepIds.length;
 
   const showCounter = typeof completedSteps === 'number' && typeof totalSteps === 'number' && completedSteps >= 0 && totalSteps >= 0;
   let percentage = 0;
@@ -34,7 +68,7 @@ export function ProgressSidebar({
         <div className="relative flex-grow overflow-y-auto -mr-4 pr-4 md:-mr-6 md:pr-6">
             {steps.map((step, index) => {
                 const isCurrent = index === currentStepIndex;
-                const isAnswered = answeredStepIndices.includes(index);
+                const isAnswered = answeredStepIds.includes(step.id);
                 const isClickable = (isCurrent || isAnswered || index < currentStepIndex) && !!onNavigateToStep;
 
                 let dotColor, lineColor, textColor;

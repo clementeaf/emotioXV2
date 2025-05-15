@@ -20,14 +20,13 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
     onStepComplete,
     isMock
 }) => {
-    console.log(`[MCQ Start Render] stepType: ${stepType}, isMock: ${isMock}, Received initialConfig: ${JSON.stringify(initialConfig)}`);
+    console.log(`[MCQ Start Render] stepType: ${stepType}, stepNameFromProps: ${stepNameFromProps}, isMock: ${isMock}, Received initialConfig: ${JSON.stringify(initialConfig)}`);
 
-    const componentTitle = initialConfig?.title ?? stepNameFromProps ?? 'Pregunta de opciones múltiples';
+    const componentTitle = stepNameFromProps || initialConfig?.title || 'Pregunta de opciones múltiples';
     const description = initialConfig?.description;
     const questionText = initialConfig?.questionText ?? (isMock ? 'Selecciona todas las opciones que apliquen (Prueba)' : 'Por favor, selecciona una o más opciones.');
 
     const displayOptions = useMemo(() => {
-        console.log(`[MCQ useMemo displayOptions] Recalculando. isMock: ${isMock}, initialConfig?.choices: ${JSON.stringify(initialConfig?.choices)}`);
         const choicesFromConfig = initialConfig?.choices;
         const calculatedOptions = Array.isArray(choicesFromConfig)
             ? choicesFromConfig.map((choice: any) => choice?.text || '').filter((text: string) => text !== '')
@@ -72,13 +71,10 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
         }
     }, [isMock, researchId, participantId, stepType, initialConfig?.savedResponses, displayOptions]);
 
-    useEffect(() => {
-        console.log(`[MCQ useEffect 2 (API Load)] Running. researchId: ${researchId}, participantId: ${participantId}, stepType: ${stepType}, isMock: ${isMock}`);
+    useEffect(() => { 
         if (isMock || !researchId || !participantId || !stepType) {
-            if (!isMock) console.log('[MCQ useEffect 2] Skipping API load due to missing researchId, participantId, or stepType.');
             return;
         }
-        console.log('[MCQ useEffect 2] Iniciando carga de API para stepType:', stepType);
         setDataLoading(true);
         setApiError(null);
         setDataExisted(false);
@@ -177,7 +173,7 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
             let success = false;
             const payload = { response: selectedOptions };
             if (dataExisted && moduleResponseId) {
-                await updateResponse(moduleResponseId, currentStepIdForApi, stepType, currentStepNameForApi, payload.response);
+                await updateResponse(moduleResponseId, payload.response);
                 if (apiHookError) setApiError(apiHookError); else success = true;
             } else {
                 const result = await saveResponse(currentStepIdForApi, stepType, currentStepNameForApi, payload.response);
@@ -250,15 +246,6 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
             >
                 {buttonText}
             </button>
-            {process.env.NODE_ENV === 'development' && !isMock && (
-                 <div className="mt-4 p-2 bg-gray-50 text-xs text-gray-500 border rounded">
-                    <p className="font-semibold">[Debug MultipleChoiceQuestion]</p>
-                    <div>Initial Config (Full JSON): <pre>{JSON.stringify(initialConfig, null, 2)}</pre></div>
-                    <div>Display Options (JSON): <pre>{JSON.stringify(displayOptions, null, 2)}</pre></div>
-                    <div>Selected Options (JSON): <pre>{JSON.stringify(selectedOptions, null, 2)}</pre></div>
-                    <p>Data Loading: {dataLoading.toString()}, Data Existed: {dataExisted.toString()}, Is Saving: {isSaving.toString()}, API Hook Loading: {isApiLoading.toString()}</p>
-                 </div>
-            )}
         </div>
     );
 };

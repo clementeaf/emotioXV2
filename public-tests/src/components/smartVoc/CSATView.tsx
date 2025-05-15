@@ -24,7 +24,6 @@ interface CSATViewProps {
 const CSATView: React.FC<CSATViewProps> = ({
   questionText,
   researchId,
-  token,
   stepId,
   stepName,
   stepType,
@@ -52,6 +51,7 @@ const CSATView: React.FC<CSATViewProps> = ({
     participantId: participantIdFromStore || undefined,
     autoFetch: true
   });
+
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
 
   useEffect(() => {
@@ -224,20 +224,13 @@ const CSATView: React.FC<CSATViewProps> = ({
           {buttonText}
         </button>
       </div>
-
       {process.env.NODE_ENV === 'development' && (
-        <div className="mt-6 p-4 border rounded bg-gray-50 text-xs text-gray-700 w-full max-w-2xl">
-          <h4 className="font-semibold mb-2">[Debug CSATView - Self-Managed Data]</h4>
-          <p>Research ID: {researchId}, Participant ID: {participantIdFromStore}</p>
-          <p>Step ID: {stepId}, Step Name: {stepName}, Step Type: {stepType}, ModuleID (from config): {config?.moduleId || 'N/A'}</p>
-          <p>Hook isLoading: {isLoadingInitialData.toString()}, Hook Error: {loadingError || 'No'}</p>
-          <p>InternalModuleResponseID (state): {internalModuleResponseId || 'N/A'}</p>
-          <p>Selected Value (state): {selectedValue === null ? 'N/A' : selectedValue}</p>
-          <p>Submit isLoading: {isSubmitting.toString()}, Submit Error: {submissionError || 'No'}</p>
-          <h5 className="font-semibold mt-2 mb-1">Logs de Eventos (CSATView):</h5>
-          <pre className="whitespace-pre-wrap break-all max-h-48 overflow-y-auto">
-            {debugLogs.join('\n')}
-          </pre>
+        <div className="mt-6 p-4 border rounded bg-gray-50 text-xs text-gray-700 w-full max-w-xl">
+          <h5 className="font-semibold mb-2">[Debug CSATView - {stepId}]</h5>
+          <p>P_ID: {participantIdFromStore}, R_ID: {researchId}, StepType: {stepType}</p>
+          <p>Load: {isLoadingInitialData.toString()}, ErrL: {loadingError || 'No'} | Submit: {isSubmitting.toString()}, ErrS: {submissionError || 'No'}</p>
+          <p>RespID: {internalModuleResponseId || 'N/A'}, SelVal: {selectedValue === null ? 'N/A' : selectedValue}</p>
+          <pre className="whitespace-pre-wrap break-all max-h-48 overflow-y-auto">{debugLogs.slice(-7).join('\n')}</pre>
         </div>
       )}
     </div>

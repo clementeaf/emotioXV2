@@ -105,14 +105,23 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
     .filter(([_, questionConfig]) => questionConfig.enabled)
     .sort(([_, a], [__, b]) => (a.order !== undefined && b.order !== undefined ? a.order - b.order : 0))
     .map(([key, questionConfigFromFile]) => {
-      let finalOptions = questionConfigFromFile.options;
-      if (!finalOptions || finalOptions.length === 0) {
-        if (key === 'gender') finalOptions = GENDER_OPTIONS;
-        if (key === 'educationLevel' || key === 'education') finalOptions = EDUCATION_OPTIONS;
+      let finalOptions;
+
+      if (key === 'gender') {
+        finalOptions = GENDER_OPTIONS;
+      } else if (key === 'educationLevel' || key === 'education') {
+        finalOptions = EDUCATION_OPTIONS;
+      } else {
+        finalOptions = questionConfigFromFile.options;
       }
+
       return {
         key, 
-        config: { ...questionConfigFromFile, id: questionConfigFromFile.id || key, options: finalOptions }
+        config: { 
+          ...questionConfigFromFile, 
+          id: questionConfigFromFile.id || key,
+          options: finalOptions
+        } 
       };
     });
 

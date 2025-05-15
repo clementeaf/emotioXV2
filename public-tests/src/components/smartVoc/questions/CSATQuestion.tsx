@@ -86,9 +86,6 @@ export const CSATQuestion: React.FC<CSATQuestionProps> = ({ questionConfig, valu
              onChange={(rating) => onChange(id, rating)} 
           />
       )}
-
-      {/* Podríamos añadir el companyName aquí si fuera necesario en el texto */}
-      {/* {config.companyName && <p className="text-xs text-gray-500 text-center mt-2">Empresa: {config.companyName}</p>} */}
     </div>
   );
 }; 

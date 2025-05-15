@@ -48,16 +48,13 @@ export const useModuleResponses = (props?: UseModuleResponsesProps): UseModuleRe
       const apiResponse = await apiClient.getModuleResponses(currentResearchId, currentParticipantId);
 
       if (apiResponse.data?.data && !apiResponse.error) {
-        // apiResponse.data.data es el objeto que contiene { id: string, responses: Array<...> }
-        setData(apiResponse.data.data.responses || []); // El array de respuestas individuales
-        setDocumentId(apiResponse.data.data.id || null); // El ID del documento general
-        console.log('[useModuleResponses] Data fetched successfully:', apiResponse.data.data);
+        setData(apiResponse.data.data.responses || []);
+        setDocumentId(apiResponse.data.data.id || null);
       } else {
         setData(null);
         setDocumentId(null);
         if (apiResponse.apiStatus === APIStatus.NOT_FOUND) {
-          setError(null); // 404 no es un error, solo no hay datos
-          console.log('[useModuleResponses] No responses found (404).');
+          setError(null);
         } else {
           setError(apiResponse.message || 'Error cargando las respuestas del módulo.');
           console.error('[useModuleResponses] Error fetching responses:', apiResponse.message);

@@ -23,8 +23,8 @@ export const LinearScaleQuestion: React.FC<LinearScaleQuestionProps> = ({
     isMock 
 }) => {
     // MODIFICADO: Acceso seguro a initialConfig y valores por defecto
-    console.log('[LinearScaleQuestion] Received initialConfig (from stepConfig):', JSON.stringify(initialConfig, null, 2)); // DEBUG
-    const componentTitle = initialConfig?.title ?? stepNameFromProps ?? 'Pregunta de escala lineal';
+    console.log(`[LinearScaleQuestion] Received stepNameFromProps: ${stepNameFromProps}, initialConfig (from stepConfig):`, JSON.stringify(initialConfig, null, 2)); // DEBUG
+    const componentTitle = stepNameFromProps || initialConfig?.title || 'Pregunta de escala lineal';
     const description = initialConfig?.description;
     const questionText = initialConfig?.questionText ?? (isMock ? 'Valora en una escala (Prueba)' : 'Por favor, indica tu valoración.');
     const minValue = initialConfig?.minValue ?? 1;
@@ -165,7 +165,7 @@ export const LinearScaleQuestion: React.FC<LinearScaleQuestionProps> = ({
 
             if (dataExisted && moduleResponseId) {
 
-                await updateResponse(moduleResponseId, currentStepIdForApi, stepType, currentStepNameForApi, payload.response);
+                await updateResponse(moduleResponseId, payload.response);
                 if (apiHookError) {
                     setApiError(apiHookError);
                 } else {

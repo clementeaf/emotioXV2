@@ -7,7 +7,7 @@ import { useLoadResearchFormsConfig } from './useResearchForms';
 import { useFlowBuilder } from './useFlowBuilder';
 import { useResponseManager } from './useResponseManager';
 import { useFlowNavigationAndState } from './useFlowNavigationAndState';
-import { ResponsesData, ModuleResponse as HooksModuleResponse } from './types';
+import { ModuleResponse as HooksModuleResponse } from './types';
 import { useParticipantSession } from './useParticipantSession';
 
 const useStoreSetLoadedResponses = () => useParticipantStore(state => state.setLoadedResponses);
@@ -87,7 +87,7 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         expandedSteps,
         currentStepIndex,
         responseAPI,
-        storeSetLoadedResponses: storeSetLoadedResponsesFromStore as unknown as (modules: ResponsesData['modules']) => void
+        storeSetLoadedResponses: storeSetLoadedResponsesFromStore
     });
 
     const {

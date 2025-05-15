@@ -17,7 +17,4 @@ export interface ProgressSidebarProps {
   steps: Step[];
   currentStepIndex: number;
   onNavigateToStep?: (index: number) => void;
-  answeredStepIndices?: number[];
-  completedSteps?: number; 
-  totalSteps?: number;     
 }

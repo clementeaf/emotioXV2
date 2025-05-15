@@ -78,7 +78,7 @@ export interface ParticipantState {
   getResponsesJson: () => string;
   
   // <<< NUEVA ACCIÓN >>>
-  setLoadedResponses: (loadedModules: ResponsesData['modules']) => void;
+  setLoadedResponses: (loadedStepResponses: ModuleResponse[]) => void;
   
   // Persistencia forzada
   forceSaveToLocalStorage: () => void;
@@ -198,7 +198,10 @@ export const useParticipantStore = create(
       },
       setError: (error) => set({ error }),
       setCurrentStep: (step) => set({ currentStep: step }),
-      setCurrentStepIndex: (index) => set({ currentStepIndex: index }),
+      setCurrentStepIndex: (index) => set((state) => ({ 
+        currentStepIndex: index,
+        maxVisitedIndex: Math.max(state.maxVisitedIndex, index) 
+      })),
       setExpandedSteps: (steps) => {
         set({ expandedSteps: steps });
         
@@ -220,30 +223,24 @@ export const useParticipantStore = create(
       },
       
       // <<< NUEVA ACCIÓN >>>
-      setLoadedResponses: (loadedModules) => set((state) => {
-        // Crear una copia profunda para evitar mutaciones inesperadas
+      setLoadedResponses: (loadedStepResponses) => set((state) => {
         const newResponsesData = JSON.parse(JSON.stringify(state.responsesData));
-
-        // Actualizar participantId si está presente en el estado actual
         newResponsesData.participantId = state.participantId || newResponsesData.participantId;
 
-        // << MODIFICADO: Esperar un array de respuestas (como el de la API) >>
-        if (Array.isArray(loadedModules)) {
-          // Sobrescribir/fusionar all_steps con las respuestas cargadas
+        if (Array.isArray(loadedStepResponses)) {
           const existingSteps = newResponsesData.modules.all_steps || [];
-          const combinedSteps = [...existingSteps, ...loadedModules];
+          const combinedSteps = [...existingSteps, ...loadedStepResponses];
           
-          // Eliminar duplicados basados en el ID de la respuesta (el 'id' dentro del objeto respuesta)
           const uniqueSteps = combinedSteps.filter((response, index, self) => 
              response.id && index === self.findIndex((r) => r.id === response.id)
           );
           
           newResponsesData.modules = {
-            ...newResponsesData.modules, // Mantener otros módulos existentes
-            all_steps: uniqueSteps, // Usar el array único
+            ...newResponsesData.modules,
+            all_steps: uniqueSteps,
           };
         } else {
-           console.warn("[ParticipantStore] setLoadedResponses esperaba un array pero recibió:", loadedModules);
+           console.warn("[ParticipantStore] setLoadedResponses esperaba un array pero recibió:", loadedStepResponses);
         }
         
         return { responsesData: newResponsesData };

@@ -1,14 +1,7 @@
-// Interfaz para las respuestas de módulos
-export interface ModuleResponse {
-    stepId: string;
-    stepType: string;
-    stepName?: string;
-    question?: string;
-    answer?: any;
-    timestamp: number;
-}
+import { ModuleResponse as StoreModuleResponse } from '../stores/participantStore';
 
-// Interfaz para el JSON completo de respuestas
+export type ModuleResponse = StoreModuleResponse;
+
 export interface ResponsesData {
     participantId?: string;
     researchId: string;
@@ -25,7 +18,6 @@ export interface ResponsesData {
     };
 }
 
-// Estados de la carga de investigación
 export enum ResearchLoadStatus {
     NOT_STARTED = 'not_started',
     LOADING = 'loading',

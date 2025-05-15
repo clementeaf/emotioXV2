@@ -23,7 +23,7 @@ interface UseResponseManagerProps {
     expandedSteps: ExpandedStep[];
     currentStepIndex: number;
     responseAPI: any;
-    storeSetLoadedResponses: (loadedModules: ResponsesData['modules']) => void;
+    storeSetLoadedResponses: (loadedStepResponses: ModuleResponse[]) => void;
 }
 
 export const useResponseManager = ({
@@ -48,31 +48,36 @@ export const useResponseManager = ({
         if (!researchId || !participantId) return;
         try {
             const apiResponse = await responseAPI.getResponses();
-            if (!apiResponse) return;
+            if (!apiResponse || !apiResponse.responses) {
+                console.warn('[useResponseManager] No se obtuvo apiResponse.responses. Enviando array vacío a setLoadedResponses.');
+                storeSetLoadedResponses([]);
+                return;
+            }
             
-            const modulesDataFromApi = apiResponse?.responses; 
+            const modulesDataFromApi = apiResponse.responses;
 
-            if (modulesDataFromApi && typeof modulesDataFromApi === 'object' && !Array.isArray(modulesDataFromApi)) {
-                storeSetLoadedResponses(modulesDataFromApi as ResponsesData['modules']);
+            if (modulesDataFromApi && 
+                typeof modulesDataFromApi === 'object' && 
+                !Array.isArray(modulesDataFromApi) && 
+                Array.isArray(modulesDataFromApi.all_steps)
+            ) {
+                storeSetLoadedResponses(modulesDataFromApi.all_steps);
+            } else if (Array.isArray(modulesDataFromApi)) {
+                storeSetLoadedResponses(modulesDataFromApi);
             } else {
-                storeSetLoadedResponses({
-                    cognitive_task: [],
-                    smartvoc: [],
-                    all_steps: []
-                });
+                console.warn('[useResponseManager] modulesDataFromApi no tiene el formato esperado o all_steps no es un array. Enviando array vacío a setLoadedResponses. Recibido:', modulesDataFromApi);
+                storeSetLoadedResponses([]);
             }
         } catch (error) {
             console.error('[useResponseManager] Error cargando respuestas existentes:', error);
-            storeSetLoadedResponses({ cognitive_task: [], smartvoc: [], all_steps: [] });
+            storeSetLoadedResponses([]);
         }
     }, [researchId, participantId, responseAPI, storeSetLoadedResponses]);
 
     const findExistingResponseIdInternal = useCallback((stepId: string): string | undefined => {
         if (responsesData.modules.all_steps) {
-            const existing = responsesData.modules.all_steps.find(resp => resp.stepId === stepId);
-            if (existing && 'id' in existing) {
-                return (existing as any).id as string;
-            }
+            const existing = responsesData.modules.all_steps.find(resp => resp.id === stepId);
+            if (existing) return existing.id;
         }
         return undefined;
     }, [responsesData.modules.all_steps]);
@@ -83,7 +88,7 @@ export const useResponseManager = ({
         const currentStepInfo = expandedSteps[currentStepIndex];
         if (!currentStepInfo) return;
 
-        const { id: stepId, type: stepType, name: stepName, config } = currentStepInfo;
+        const { id: stepId, type: stepType, name: stepName } = currentStepInfo;
 
         if ((stepType === 'welcome' || stepType === 'thankyou') && answer === undefined) {
             if (stepType === 'thankyou') {
@@ -100,36 +105,39 @@ export const useResponseManager = ({
             effectiveAnswer = isCognitive ? { text: "" } : { value: 0 };
         }
 
+        const now = new Date().toISOString();
         const moduleResponse: ModuleResponse = {
-            stepId,
-            stepType,
-            stepName,
-            question: config?.questionText || config?.title || stepName,
-            answer: effectiveAnswer,
-            timestamp: Date.now()
+            id: stepId,
+            stepType: stepType,
+            stepTitle: stepName || '',
+            response: effectiveAnswer,
+            createdAt: now,
+            updatedAt: now,
         };
 
         try {
-            moduleResponse.answer = sanitizeForJSON(moduleResponse.answer);
+            moduleResponse.response = sanitizeForJSON(moduleResponse.response);
         } catch (sanitizeError) {
-            moduleResponse.answer = String(moduleResponse.answer);
+            moduleResponse.response = String(moduleResponse.response);
         }
 
-        if (moduleResponse.answer === undefined || moduleResponse.answer === null) {
-            if (isCognitive) moduleResponse.answer = { text: "Respuesta no capturada" };
-            else if (isSmartVOC) moduleResponse.answer = { value: 0 };
-            else moduleResponse.answer = "Respuesta no capturada";
+        if (moduleResponse.response === undefined || moduleResponse.response === null) {
+            const fallbackText = "Respuesta no capturada";
+            if (isCognitive) moduleResponse.response = { text: fallbackText };
+            else if (isSmartVOC) moduleResponse.response = { value: 0, note: fallbackText };
+            else moduleResponse.response = fallbackText;
         }
 
         try {
-            const existingResponseId = findExistingResponseIdInternal(stepId);
+            const firestoreResponseDocumentId = findExistingResponseIdInternal(stepId);
+            
             await responseAPI.saveOrUpdateResponse(
                 stepId,
                 stepType,
                 stepName || '',
-                moduleResponse.answer,
-                existingResponseId,
-                stepId, 
+                moduleResponse.response,
+                firestoreResponseDocumentId,
+                stepId,
                 () => {
                     if (researchId && participantId) {
                         loadExistingResponsesInternal();
@@ -142,39 +150,44 @@ export const useResponseManager = ({
 
         setResponsesData(prev => {
             const newUpdatedData = JSON.parse(JSON.stringify(prev));
+
+            const findAndReplaceOrAdd = (arr: ModuleResponse[], newItem: ModuleResponse) => {
+                const idx = arr.findIndex(r => r.id === newItem.id);
+                if (idx >= 0) arr[idx] = newItem; else arr.push(newItem);
+            };
+
             if (stepType === 'demographic') newUpdatedData.modules.demographic = moduleResponse;
             else if (stepName?.includes('Que te ha parecido el módulo')) newUpdatedData.modules.feedback = moduleResponse;
             else if (stepType === 'welcome' && effectiveAnswer !== undefined) newUpdatedData.modules.welcome = moduleResponse;
             else if (isCognitive) {
                 if (!newUpdatedData.modules.cognitive_task) newUpdatedData.modules.cognitive_task = [];
-                const idx = newUpdatedData.modules.cognitive_task.findIndex((r: { stepId: string; }) => r.stepId === stepId);
-                if (idx >= 0) newUpdatedData.modules.cognitive_task[idx] = moduleResponse; else newUpdatedData.modules.cognitive_task.push(moduleResponse);
+                findAndReplaceOrAdd(newUpdatedData.modules.cognitive_task, moduleResponse);
             } else if (isSmartVOC) {
                 if (!newUpdatedData.modules.smartvoc) newUpdatedData.modules.smartvoc = [];
-                const idx = newUpdatedData.modules.smartvoc.findIndex((r: { stepId: string; }) => r.stepId === stepId);
-                if (idx >= 0) newUpdatedData.modules.smartvoc[idx] = moduleResponse; else newUpdatedData.modules.smartvoc.push(moduleResponse);
+                findAndReplaceOrAdd(newUpdatedData.modules.smartvoc, moduleResponse);
             } else {
                 const category = stepType.split('_')[0] || 'other';
                 if (!newUpdatedData.modules[category]) newUpdatedData.modules[category] = [];
                 if (!Array.isArray(newUpdatedData.modules[category])) newUpdatedData.modules[category] = [newUpdatedData.modules[category] as ModuleResponse];
-                (newUpdatedData.modules[category] as ModuleResponse[]).push(moduleResponse);
+                findAndReplaceOrAdd(newUpdatedData.modules[category] as ModuleResponse[], moduleResponse);
             }
+
             if (!newUpdatedData.modules.all_steps) newUpdatedData.modules.all_steps = [];
-            const allIdx = newUpdatedData.modules.all_steps.findIndex((r: { stepId: string; }) => r.stepId === stepId);
-            if (allIdx >= 0) newUpdatedData.modules.all_steps[allIdx] = moduleResponse; else newUpdatedData.modules.all_steps.push(moduleResponse);
+            findAndReplaceOrAdd(newUpdatedData.modules.all_steps, moduleResponse);
+            
             return newUpdatedData;
         });
-    }, [currentStepIndex, expandedSteps, researchId, participantId, responseAPI, storeSetLoadedResponses, findExistingResponseIdInternal, loadExistingResponsesInternal]);
+    }, [currentStepIndex, expandedSteps, researchId, participantId, responseAPI, storeSetLoadedResponses, loadExistingResponsesInternal, findExistingResponseIdInternal]);
 
     const getStepResponseInternal = useCallback((stepIndexForResponse: number): any => {
         if (stepIndexForResponse < 0 || stepIndexForResponse >= expandedSteps.length) return null;
         const step = expandedSteps[stepIndexForResponse];
         if (!step) return null;
-        const { id: stepId, type: stepType } = step;
+        const { id: stepIdToFind, type: stepType } = step;
         if (stepType === 'welcome' || stepType === 'thankyou') return null;
         if (responsesData.modules.all_steps && Array.isArray(responsesData.modules.all_steps)) {
-            const response = responsesData.modules.all_steps.find(resp => resp.stepId === stepId);
-            if (response) return response.answer;
+            const foundResponse = responsesData.modules.all_steps.find(resp => resp.id === stepIdToFind);
+            if (foundResponse) return foundResponse.response;
         }
         return null; 
     }, [expandedSteps, responsesData.modules.all_steps]);
@@ -183,10 +196,10 @@ export const useResponseManager = ({
         if (stepIndexForCheck < 0 || stepIndexForCheck >= expandedSteps.length) return false;
         const step = expandedSteps[stepIndexForCheck];
         if (!step) return false;
-        const { id: stepId, type: stepType } = step;
+        const { id: stepIdToFind, type: stepType } = step;
         if (stepType === 'welcome' || stepType === 'thankyou') return true;
         if (responsesData.modules.all_steps && Array.isArray(responsesData.modules.all_steps)) {
-            return responsesData.modules.all_steps.some(resp => resp.stepId === stepId);
+            return responsesData.modules.all_steps.some(resp => resp.id === stepIdToFind);
         }
         return false;
     }, [expandedSteps, responsesData.modules.all_steps]);
