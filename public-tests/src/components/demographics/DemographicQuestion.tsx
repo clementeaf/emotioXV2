@@ -1,5 +1,6 @@
 import React from 'react';
-import { DemographicConfig, SelectOption, GENDER_OPTIONS, EDUCATION_OPTIONS } from '../../types/demographics';
+import { DemographicConfig, /*SelectOption,*/ GENDER_OPTIONS, EDUCATION_OPTIONS } from '../../types/demographics'; // SelectOption ya no se usa aquí directamente si GenericSelectQuestion la importa
+import { GenericSelectQuestion } from './GenericSelectQuestion'; // Importar el nuevo componente
 
 interface DemographicQuestionProps {
   config: DemographicConfig;
@@ -23,18 +24,35 @@ export const DemographicQuestion: React.FC<DemographicQuestionProps> = ({
     case 'gender':
       return <GenderQuestion config={config} value={value} onChange={onChange} />;
     case 'education':
+    case 'educationLevel':
       return <EducationQuestion config={config} value={value} onChange={onChange} />;
     case 'occupation':
       return <TextQuestion config={config} value={value} onChange={onChange} />;
     case 'income':
-      return <IncomeQuestion config={config} value={value} onChange={onChange} />;
+    case 'householdIncome':
+      if (config.id === 'income') {
+        return <IncomeQuestion config={config} value={value} onChange={onChange} />;
+      }
+      if (Array.isArray(config.options) && config.options.length > 0) {
+        return <GenericSelectQuestion config={config} value={value} onChange={onChange} />;
+      }
+      return <TextQuestion config={config} value={value} onChange={onChange} />;
     case 'location':
-      return <TextQuestion config={config} value={value} onChange={onChange} />;
     case 'ethnicity':
-      return <TextQuestion config={config} value={value} onChange={onChange} />;
     case 'language':
+    case 'country':
+    case 'employmentStatus':
+    case 'dailyHoursOnline':
+    case 'technicalProficiency':
+      if (Array.isArray(config.options) && config.options.length > 0) {
+        return <GenericSelectQuestion config={config} value={value} onChange={onChange} />;
+      }
       return <TextQuestion config={config} value={value} onChange={onChange} />;
     default:
+      console.warn(`Pregunta demográfica con id no reconocido: '${config.id}'.`);
+      if (Array.isArray(config.options) && config.options.length > 0) {
+        return <GenericSelectQuestion config={config} value={value} onChange={onChange} />;
+      }
       return <TextQuestion config={config} value={value} onChange={onChange} />;
   }
 };

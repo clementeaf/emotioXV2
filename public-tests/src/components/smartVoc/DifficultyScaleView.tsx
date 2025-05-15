@@ -3,7 +3,7 @@ import { useParticipantStore } from '../../stores/participantStore';
 import { useModuleResponses } from '../../hooks/useModuleResponses';
 import { useResponseAPI } from '../../hooks/useResponseAPI';
 import { SmartVOCQuestion, BaseScaleConfig } from '../../types/smart-voc.interface';
-import { smartVOCTypeMap } from '../../hooks/useParticipantFlow';
+import { smartVOCTypeMap } from '../../hooks/utils';
 
 interface DifficultyScaleViewProps {
   questionConfig: SmartVOCQuestion;

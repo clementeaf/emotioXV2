@@ -53,6 +53,7 @@ export interface DemographicStepProps {
     researchId: string;
     token?: string | null;
     stepConfig?: any;
+    stepId?: string;
     onStepComplete?: (answer?: any) => void;
     onError: (errorMessage: string, stepType: string) => void;
 }

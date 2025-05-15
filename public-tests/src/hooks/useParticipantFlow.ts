@@ -3,7 +3,7 @@ import { ParticipantFlowStep, ExpandedStep } from '../types/flow';
 import { Participant } from '../../../shared/interfaces/participant';
 import { useParticipantStore } from '../stores/participantStore';
 import { useResponseAPI } from './useResponseAPI';
-import { useResearchFlow } from '../lib/hooks/useApi';
+import { useLoadResearchFormsConfig } from './useResearchForms';
 import { useFlowBuilder } from './useFlowBuilder';
 import { useResponseManager } from './useResponseManager';
 import { useFlowNavigationAndState } from './useFlowNavigationAndState';
@@ -38,16 +38,32 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         isLoading: isResearchFlowHookLoading, 
         isError: isResearchFlowError,
         error: researchFlowErrorObject 
-    } = useResearchFlow(researchId || '', {
-        queryKey: ['researchFlow', researchId || ''],
+    } = useLoadResearchFormsConfig(researchId || '', {
         enabled: !!researchId && !!localToken,
     });
+
+    let allSk: string[] = [];
+    let demographicQuestionsFound: any[] = [];
+
+    if (researchFlowApiData && researchFlowApiData.data && Array.isArray(researchFlowApiData.data)) {
+        allSk = researchFlowApiData.data.map(p => p.originalSk);
+
+        for (const processedModule of researchFlowApiData.data) {
+            if (processedModule.originalSk === 'EYE_TRACKING_CONFIG') {
+                if (processedModule.config && typeof processedModule.config.demographicQuestions === 'object' && processedModule.config.demographicQuestions !== null) {
+                    demographicQuestionsFound.push(processedModule.config.demographicQuestions);
+                } else if (Array.isArray(processedModule.config.demographicQuestions)) {
+                    demographicQuestionsFound.push(...processedModule.config.demographicQuestions);
+                }
+            }
+        }
+    }
 
     const builtExpandedSteps = useFlowBuilder({ researchFlowApiData });
     const [expandedSteps, setExpandedSteps] = useState<ExpandedStep[]>([]);
 
     useEffect(() => {
-        if (builtExpandedSteps) {
+        if (builtExpandedSteps && builtExpandedSteps.length > 0) { 
             setExpandedSteps(builtExpandedSteps);
         }
     }, [builtExpandedSteps]);

@@ -43,7 +43,6 @@ export const useModuleResponses = (props?: UseModuleResponsesProps): UseModuleRe
     setError(null);
     setData(null);
     setDocumentId(null);
-    console.log(`[useModuleResponses] Fetching responses for R:${currentResearchId}, P:${currentParticipantId}`);
 
     try {
       const apiResponse = await apiClient.getModuleResponses(currentResearchId, currentParticipantId);

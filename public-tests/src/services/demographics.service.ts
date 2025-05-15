@@ -1,4 +1,4 @@
-import { DemographicsSection, DEFAULT_DEMOGRAPHICS_CONFIG, DemographicResponses } from '../types/demographics';
+import { DemographicsSection, DemographicResponses } from '../types/demographics';
 import { APIResponse } from '../lib/types';
 import { APIStatus, ApiClient } from '../lib/api';
 
@@ -35,7 +35,7 @@ export const demographicsService = {
    * @param token Token de autenticación del participante
    * @returns Promesa con la configuración de preguntas demográficas
    */
-  async getDemographicsConfig(researchId: string, token: string): Promise<APIResponse<DemographicsSection>> {
+  async getDemographicsConfig(researchId: string, token: string): Promise<APIResponse<DemographicsSection | null>> {
     if (!researchId) {
       return {
         data: null,
@@ -46,27 +46,20 @@ export const demographicsService = {
     }
 
     try {
-      const API_BASE_URL_CONFIG = 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev'; // Mantener para esta función específica
+      const API_BASE_URL_CONFIG = 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev';
       const url = `/research/${researchId}/demographics`;
-      
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
-      };
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) { headers['Authorization'] = `Bearer ${token}`; }
 
-      const response = await fetch(`${API_BASE_URL_CONFIG}${url}`, {
-        method: 'GET',
-        headers
-      });
+      const response = await fetch(`${API_BASE_URL_CONFIG}${url}`, { method: 'GET', headers });
 
       if (response.status === 404) {
-        return {
-          data: DEFAULT_DEMOGRAPHICS_CONFIG,
-          status: 200,
-          apiStatus: APIStatus.SUCCESS
+        return { // Configuración no encontrada
+          data: null,
+          error: true, // Considerar esto un error o un caso especial
+          status: 404,
+          apiStatus: APIStatus.NOT_FOUND,
+          message: 'Configuración demográfica no encontrada para este estudio.'
         };
       }
 
@@ -76,11 +69,12 @@ export const demographicsService = {
           responseData = await response.json();
         }
       } catch (e) {
-        console.error(`[DemographicsService] Error parseando JSON:`, e);
-        return {
-          data: DEFAULT_DEMOGRAPHICS_CONFIG,
-          status: 200,
-          apiStatus: APIStatus.SUCCESS
+        return { // Error de parseo, no se puede usar la respuesta
+          data: null,
+          error: true,
+          status: response.status, // O un código de error genérico si response.status no es relevante aquí
+          apiStatus: APIStatus.ERROR,
+          message: `Error parseando JSON de respuesta demográfica: ${e instanceof Error ? e.message : String(e)}`
         };
       }
 
@@ -90,31 +84,36 @@ export const demographicsService = {
           error: true,
           status: response.status,
           apiStatus: APIStatus.ERROR,
-          message: responseData?.message || `Error HTTP: ${response.status}`
+          message: responseData?.message || `Error HTTP obteniendo configuración demográfica: ${response.status}`
         };
       }
 
-      const data = responseData?.data || responseData;
+      const data = responseData?.data || responseData; // El backend podría envolver la data en una prop 'data'
       
-      if (!data || !data.questions) {
-        return {
-          data: DEFAULT_DEMOGRAPHICS_CONFIG,
-          status: 200,
-          apiStatus: APIStatus.SUCCESS
+      // Validar que la data obtenida tenga la estructura esperada (al menos la prop 'questions')
+      if (!data || typeof data.questions !== 'object' || data.questions === null) {
+        return { // Estructura de datos inesperada desde el backend
+          data: null,
+          error: true,
+          status: response.status, // O un código de error de validación
+          apiStatus: APIStatus.ERROR,
+          message: 'La configuración demográfica recibida del backend no tiene la estructura esperada (falta questions).'
         };
       }
       
+      // Asumimos que 'data' es ahora del tipo DemographicsSection
       return {
-        data,
+        data: data as DemographicsSection,
         status: response.status,
         apiStatus: APIStatus.SUCCESS
       };
     } catch (error) {
-      console.error('[DemographicsService] Error:', error);
-      return {
-        data: DEFAULT_DEMOGRAPHICS_CONFIG,
-        status: 200,
-        apiStatus: APIStatus.SUCCESS
+      return { // Error de red u otro error inesperado
+        data: null,
+        error: true,
+        status: 500, // Error genérico del servidor o de cliente
+        apiStatus: APIStatus.ERROR,
+        message: error instanceof Error ? error.message : 'Error desconocido al obtener configuración demográfica.'
       };
     }
   },

@@ -1,0 +1,59 @@
+import React from 'react';
+import { DemographicConfig, SelectOption } from '../../types/demographics'; // Asumiendo que SelectOption es { value: string; label: string; }
+
+interface GenericSelectQuestionProps {
+  config: DemographicConfig; // DemographicConfig ahora tiene options?: SelectOption[]
+  value: any;
+  onChange: (id: string, value: any) => void;
+}
+
+export const GenericSelectQuestion: React.FC<GenericSelectQuestionProps> = ({
+  config,
+  value,
+  onChange,
+}) => {
+  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    onChange(config.id, e.target.value);
+  };
+
+  // Usar un título de fallback si config.title no está definido
+  const title = config.title || config.id; // Como fallback, usa el id de la pregunta
+
+  return (
+    <div className="mb-4">
+      <label htmlFor={config.id} className="block text-sm font-medium text-gray-700 mb-1">
+        {title} {config.required && <span className="text-red-500">*</span>}
+      </label>
+      <select
+        id={config.id}
+        value={value || ''}
+        onChange={handleChange}
+        className="w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+        required={config.required}
+      >
+        <option value="">Selecciona una opción</option>
+        {/* Iterar sobre config.options si existen y son un array */}
+        {Array.isArray(config.options) && config.options.map((option: SelectOption | string, index: number) => {
+          if (typeof option === 'string') {
+            // Caso: option es un string (ej. para technicalProficiency)
+            return (
+              <option key={`${option}-${index}`} value={option}>
+                {option}
+              </option>
+            );
+          } else {
+            // Caso: option es un objeto SelectOption (con value y label)
+            return (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            );
+          }
+        })}
+      </select>
+      {config.description && (
+        <p className="mt-1 text-xs text-gray-500">{config.description}</p>
+      )}
+    </div>
+  );
+}; 

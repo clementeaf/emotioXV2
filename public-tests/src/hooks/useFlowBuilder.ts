@@ -1,28 +1,35 @@
 import { useCallback, useMemo } from 'react';
 import { ExpandedStep } from '../types/flow'; 
-import { DEFAULT_DEMOGRAPHICS_CONFIG } from '../types/demographics'; 
 import { smartVOCTypeMap } from './utils'; 
 import { UseFlowBuilderProps } from './types';
+import { ProcessedResearchFormConfig } from './useResearchForms';
 
-const extractCoreStepConfigs = (flowDataModules: any[] | undefined) => {
+const extractCoreStepConfigs = (flowDataModules: ProcessedResearchFormConfig[] | undefined) => {
     let demographicsQuestions: any = null;
     let welcomeConfig: any = null;
     let thankyouConfig: any = null;
 
     if (Array.isArray(flowDataModules)) {
-        for (const module of flowDataModules) {
-            const moduleSK = module?.sk;
+        for (const processedModule of flowDataModules) {
+            const moduleData = processedModule.config;
+            if (!moduleData) continue;
+
+            const moduleSK = moduleData.sk;
             switch (moduleSK) {
                 case 'EYE_TRACKING_CONFIG':
-                    if (module.demographicQuestions) {
-                        demographicsQuestions = module.demographicQuestions;
+                    if (moduleData.demographicQuestions) {
+                        demographicsQuestions = {
+                            questions: moduleData.demographicQuestions,
+                            title: moduleData.title,
+                            description: moduleData.description
+                        };
                     }
                     break;
                 case 'WELCOME_SCREEN':
-                    welcomeConfig = { ...module };
+                    welcomeConfig = { ...moduleData };
                     break;
                 case 'THANK_YOU_SCREEN':
-                    thankyouConfig = { ...module };
+                    thankyouConfig = { ...moduleData };
                     break;
             }
         }
@@ -107,36 +114,36 @@ export const useFlowBuilder = ({ researchFlowApiData }: UseFlowBuilderProps): Ex
         const flowDataModules = researchFlowApiData?.data;
 
         if (!(Array.isArray(flowDataModules) && flowDataModules.length > 0)) {
+            console.warn('[useFlowBuilder] No hay flowDataModules válidos para construir pasos.');
             return [
-                { id: 'demographic', name: 'Preguntas demográficas', type: 'demographic', config: { title: 'Preguntas demográficas', description: 'Configuración demográfica por defecto.', demographicsConfig: DEFAULT_DEMOGRAPHICS_CONFIG } },
-                { id: 'welcome', name: 'Bienvenida', type: 'welcome', config: { title: '¡Bienvenido!', message: 'Configuración de bienvenida por defecto.'} },
-                { id: 'thankyou', name: 'Agradecimiento', type: 'thankyou', config: { title: '¡Muchas Gracias!', message: 'Configuración de agradecimiento por defecto.'} }
+                { id: 'welcome', name: 'Bienvenida', type: 'welcome', config: { title: '¡Bienvenido!', message: 'Iniciando...'} },
+                { id: 'thankyou', name: 'Agradecimiento', type: 'thankyou', config: { title: '¡Muchas Gracias!', message: 'Fin.'} }
             ];
         }
         
         const finalSteps: ExpandedStep[] = [];
         const { 
-            demographicsQuestions: demographicsQuestionsFromBackend, 
+            demographicsQuestions: demographicsConfigFromBackend,
             welcomeConfig: welcomeConfigFromBackend, 
             thankyouConfig: thankyouConfigFromBackend 
         } = extractCoreStepConfigs(flowDataModules);
 
-        const currentDemographicsQuestions = demographicsQuestionsFromBackend || DEFAULT_DEMOGRAPHICS_CONFIG.questions;
-        finalSteps.push({
-            id: 'demographic',
-            name: (demographicsQuestionsFromBackend as any)?.title || DEFAULT_DEMOGRAPHICS_CONFIG.title || 'Preguntas demográficas',
-            type: 'demographic',
-            config: {
-                title: (demographicsQuestionsFromBackend as any)?.title || DEFAULT_DEMOGRAPHICS_CONFIG.title || 'Preguntas demográficas',
-                description: (demographicsQuestionsFromBackend as any)?.description || DEFAULT_DEMOGRAPHICS_CONFIG.description || 'Por favor, responde...',
-                demographicsConfig: {
-                    ...DEFAULT_DEMOGRAPHICS_CONFIG,
-                    questions: currentDemographicsQuestions
+        if (demographicsConfigFromBackend && demographicsConfigFromBackend.questions) {
+            finalSteps.push({
+                id: 'demographic',
+                name: demographicsConfigFromBackend.title || 'Preguntas Demográficas',
+                type: 'demographic',
+                config: { 
+                    title: demographicsConfigFromBackend.title || 'Preguntas Demográficas',
+                    description: demographicsConfigFromBackend.description || 'Por favor, complete lo siguiente:',
+                    demographicsConfig: demographicsConfigFromBackend 
                 }
-            }
-        });
+            });
+        } else {
+            console.warn('[useFlowBuilder] No se encontró configuración demográfica en el backend (EYE_TRACKING_CONFIG.demographicQuestions). No se añadirá el paso demográfico.');
+        }
 
-        const resolvedWelcomeConfig = welcomeConfigFromBackend || { title: '¡Bienvenido!', message: 'Gracias por tu tiempo.' };
+        const resolvedWelcomeConfig = welcomeConfigFromBackend || { title: 'Bienvenida', message: 'Gracias por participar.' };
         finalSteps.push({ 
             id: 'welcome', 
             name: resolvedWelcomeConfig.title, 
@@ -144,14 +151,17 @@ export const useFlowBuilder = ({ researchFlowApiData }: UseFlowBuilderProps): Ex
             config: resolvedWelcomeConfig 
         });
         
-        for (const module of flowDataModules) {
-            const moduleSK = module?.sk;
-            const moduleSpecificQuestions = (module as any)?.questions || [];
-            const moduleTitleFromBackend = (module as any)?.title || (module as any)?.name;
+        for (const processedModule of flowDataModules) {
+            const moduleData = processedModule.config;
+            if (!moduleData) continue;
+
+            const moduleSK = moduleData.sk;
+            const moduleSpecificQuestions = moduleData.questions || [];
+            const moduleTitleFromBackend = moduleData.title || moduleData.name;
 
             switch (moduleSK) {
                 case 'EYE_TRACKING_CONFIG':
-                case 'WELCOME_SCREEN':
+                case 'WELCOME_SCREEN':     
                 case 'THANK_YOU_SCREEN':
                     break;
                 case 'SMART_VOC_FORM':
@@ -166,7 +176,7 @@ export const useFlowBuilder = ({ researchFlowApiData }: UseFlowBuilderProps): Ex
             }
         }
 
-        const resolvedThankYouConfig = thankyouConfigFromBackend || { title: '¡Muchas Gracias!', message: 'Hemos recibido tus respuestas.' };
+        const resolvedThankYouConfig = thankyouConfigFromBackend || { title: 'Fin', message: 'Gracias por completar el estudio.' };
         finalSteps.push({ 
             id: 'thankyou', 
             name: resolvedThankYouConfig.title, 

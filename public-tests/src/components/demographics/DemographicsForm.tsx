@@ -2,12 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { 
   DemographicsSection, 
   DemographicResponses,
-  DEFAULT_DEMOGRAPHICS_CONFIG
 } from '../../types/demographics';
 import { DemographicQuestion } from './DemographicQuestion';
-import { demographicsService } from '../../services/demographics.service';
 import { useParticipantStore } from '../../stores/participantStore';
 import { useResponseAPI } from '../../hooks/useResponseAPI';
+import { useModuleResponses } from '../../hooks/useModuleResponses';
 
 interface DemographicsFormProps {
   config?: DemographicsSection;
@@ -19,122 +18,101 @@ interface DemographicsFormProps {
 }
 
 export const DemographicsForm: React.FC<DemographicsFormProps> = ({
-  config = DEFAULT_DEMOGRAPHICS_CONFIG,
+  config,
   initialValues = {},
   onSubmit,
   onCancel,
   isLoading = false,
   stepId = 'demographics_step',
 }) => {
+
   const [apiError, setApiError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [dataLoading, setDataLoading] = useState(true);
-  const [dataExisted, setDataExisted] = useState(false);
-  const [documentId, setDocumentId] = useState<string | null>(null);
-  const [demographicModuleResponseId, setDemographicModuleResponseId] = useState<string | null>(null);
   const researchIdFromStore = useParticipantStore(state => state.researchId);
   const participantIdFromStore = useParticipantStore(state => state.participantId);
-  // const tokenForDemographicsService = useParticipantStore(state => state.token); // <--- MODIFICACIÓN: Comentado o eliminado
 
   const {
     saveResponse,
     updateResponse,
-    isLoading: isApiLoading,
+    isLoading: isApiSavingLoading,
     error: apiHookError,
   } = useResponseAPI({ 
     researchId: researchIdFromStore as string,
     participantId: participantIdFromStore as string
   });
 
-  // <--- MODIFICACIÓN: credentialsReady ya no depende del token aquí directamente
+  console.log('StepId:', stepId);
+
+  const {
+    data: allModuleResponses,
+    documentId: responsesDocumentId,
+    isLoading: isModuleResponsesLoading,
+    error: moduleResponsesError,
+  } = useModuleResponses({
+    researchId: researchIdFromStore || undefined,
+    participantId: participantIdFromStore || undefined
+  });
+
+  console.log('[DemographicsForm] allModuleResponses:', allModuleResponses);
+
   const credentialsReady = !!(researchIdFromStore && participantIdFromStore);
   const [responses, setResponses] = useState<DemographicResponses>(initialValues);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [isNavigating, setIsNavigating] = useState(false);
+  const [demographicModuleResponseId, setDemographicModuleResponseId] = useState<string | null>(null);
 
-  // Texto dinámico para el botón
+  useEffect(() => {
+    if (isModuleResponsesLoading) return;
+
+    if (moduleResponsesError) {
+      console.error("[DemographicsForm] Error cargando respuestas de módulos:", moduleResponsesError);
+      setApiError("Error al cargar respuestas previas.");
+      setResponses(initialValues);
+      setDemographicModuleResponseId(null);
+      return;
+    }
+
+    if (allModuleResponses) {
+      const specificDemographicResponse = allModuleResponses.find(
+        (r: any) => r.stepId === stepId || r.stepType === 'demographic'
+      );
+
+      if (specificDemographicResponse && specificDemographicResponse.response) {
+        console.log('[DemographicsForm] Respuestas demográficas existentes encontradas:', specificDemographicResponse.response);
+        setResponses(specificDemographicResponse.response);
+        setDemographicModuleResponseId(specificDemographicResponse.id || null);
+      } else {
+        console.info('[DemographicsForm] No se encontraron respuestas demográficas existentes para este paso.');
+        setResponses(initialValues);
+        setDemographicModuleResponseId(null);
+      }
+    } else {
+      console.info('[DemographicsForm] No hay array de moduleResponses (podría ser 404 o primera carga).');
+      setResponses(initialValues);
+      setDemographicModuleResponseId(null);
+    }
+  }, [allModuleResponses, isModuleResponsesLoading, moduleResponsesError, stepId, initialValues]);
+
   let buttonText = 'Continuar';
   if (isNavigating) {
     buttonText = 'Pasando al siguiente módulo...';
-  } else if (isSaving || isApiLoading) {
+  } else if (isSaving || isApiSavingLoading) {
       buttonText = 'Guardando...';
-  } else if (dataExisted && demographicModuleResponseId) {
+  } else if (demographicModuleResponseId) {
       buttonText = 'Actualizar y continuar';
   } else {
       buttonText = 'Guardar y continuar';
   }
 
-  useEffect(() => {
-    const fetchExistingResponses = async () => {
-      if (!researchIdFromStore || !participantIdFromStore) {
-        console.warn('[DemographicsForm] fetchExistingResponses llamado sin researchId o participantId. Saliendo.');
-        setDataExisted(false);
-        setDocumentId(null);
-        setDemographicModuleResponseId(null);
-        setDataLoading(false);
-        return;
-      }
-      setDataLoading(true);
-      try {
-        const result = await demographicsService.getDemographicResponses(
-          researchIdFromStore as string,
-          participantIdFromStore as string
-        );
-
-        const actualResponses = result.data?.responses;
-        const fetchedDocumentId = result.data?.documentId ?? null;
-        const fetchedDemographicModuleResponseId = result.data?.demographicModuleResponseId ?? null;
-
-        if (result.error) {
-          // Solo loguear como error si el servicio explícitamente devuelve un error
-          console.error('[DemographicsForm] Error del servicio al obtener respuestas demográficas:', result.message, result.data);
-          setDataExisted(false);
-          setDocumentId(null);
-          setDemographicModuleResponseId(null);
-        } else if (actualResponses && Object.keys(actualResponses).length > 0) {
-          setDataExisted(true);
-          setDocumentId(fetchedDocumentId);
-          setDemographicModuleResponseId(fetchedDemographicModuleResponseId);
-          setResponses(actualResponses);
-        } else {
-          // No se encontraron datos, pero no es un error del servicio
-          console.info('[DemographicsForm] No se encontraron respuestas demográficas existentes para el participante.');
-          setDataExisted(false);
-          setDocumentId(fetchedDocumentId); // Aún podría haber un documentId si el documento existe pero está vacío
-          setDemographicModuleResponseId(null);
-          setResponses(initialValues);
-        }
-      } catch (error) {
-        console.error('[DemographicsForm] Excepción al obtener datos:', error);
-        setDataExisted(false);
-        setDocumentId(null);
-        setDemographicModuleResponseId(null);
-      } finally {
-        setDataLoading(false);
-      }
-    };
-
-    if (credentialsReady) {
-      fetchExistingResponses();
-    } else {
-      if (!dataLoading) { 
-        setDataExisted(false);
-        setDocumentId(null);
-        setDemographicModuleResponseId(null);
-      }
-    }
-    // <--- MODIFICACIÓN: tokenForDemographicsService eliminado de las dependencias
-  }, [credentialsReady, initialValues, researchIdFromStore, participantIdFromStore]);
-
-  useEffect(() => {
-    const updatedResponses: DemographicResponses = {};
-    Object.entries(config.questions).forEach(([key, questionConfig]) => {
-      if (questionConfig.enabled && responses[key] !== undefined) {
-        updatedResponses[key] = responses[key];
-      }
-    });
-    setResponses(updatedResponses);
-  }, [config]);
+  if (!config || !config.questions) {
+    console.warn('[DemographicsForm] Configuración no válida o faltante.');
+    return (
+      <div className="w-full max-w-lg mx-auto bg-white p-6 rounded-lg shadow-md text-center">
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">Error de Configuración</h2>
+        <p className="text-gray-600">No se pudo cargar la configuración.</p>
+      </div>
+    );
+  }
 
   const handleChange = (id: string, value: any) => {
     setResponses(prev => ({ ...prev, [id]: value }));
@@ -145,6 +123,7 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
 
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
+    if (!config || !config.questions) return false;
     Object.entries(config.questions).forEach(([key, questionConfig]) => {
       if (questionConfig.enabled && questionConfig.required && !responses[key]) {
         errors[key] = `El campo ${questionConfig.title || key} es obligatorio.`;
@@ -156,7 +135,7 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
 
   const saveToServer = async (responseData: DemographicResponses): Promise<boolean> => {
     if (!researchIdFromStore || !participantIdFromStore) {
-        console.error("Faltan researchId o participantId para guardar/actualizar con useResponseAPI.");
+        console.error("Faltan researchId o participantId para guardar/actualizar.");
         setApiError("Faltan researchId o participantId.");
         return false;
     }
@@ -165,21 +144,13 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
     setApiError(null);
     try {
       const stepType = "demographic";
-      const stepName = config.title || "Preguntas Demográficas";
+      const stepName = config?.title || "Preguntas Demográficas";
 
       let resultFromHook: any = null;
 
-      if (dataExisted && demographicModuleResponseId) {
+      if (demographicModuleResponseId) {
         resultFromHook = await updateResponse(
           demographicModuleResponseId,
-          responseData
-        );
-      } else if (dataExisted && !demographicModuleResponseId) {
-        console.warn(`[DemographicsForm] Datos existían (documentId: ${documentId}) pero no demographicModuleResponseId. Intentando POST.`);
-        resultFromHook = await saveResponse(
-          stepId,
-          stepType,
-          stepName,
           responseData
         );
       } else {
@@ -192,19 +163,18 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
       }
       
       if (apiHookError) {
-        console.error(`[DemographicsForm] Error desde useResponseAPI ${dataExisted ? 'actualizando' : 'guardando'} datos:`, apiHookError);
-        setApiError(apiHookError || `Error ${dataExisted ? 'actualizando' : 'guardando'} datos.`);
+        console.error(`[DemographicsForm] Error desde useResponseAPI ${demographicModuleResponseId ? 'actualizando' : 'guardando'} datos:`, apiHookError);
+        setApiError(apiHookError || `Error ${demographicModuleResponseId ? 'actualizando' : 'guardando'} datos.`);
         return false;
       }
       
-      
-      if (!dataExisted && resultFromHook && resultFromHook.id) {
-        setDataExisted(true);
+      if (!demographicModuleResponseId && resultFromHook && resultFromHook.id) {
+        setDemographicModuleResponseId(resultFromHook.id);
       }
       return true;
     } catch (error) {
-      console.error(`[DemographicsForm] Excepción ${dataExisted ? 'actualizando' : 'guardando'} datos con useResponseAPI:`, error);
-      setApiError(error instanceof Error ? error.message : "Error desconocido durante la operación con useResponseAPI.");
+      console.error(`[DemographicsForm] Excepción ${demographicModuleResponseId ? 'actualizando' : 'guardando'} datos:`, error);
+      setApiError(error instanceof Error ? error.message : "Error desconocido.");
       return false;
     } finally {
       setIsSaving(false);
@@ -221,21 +191,20 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
       setIsNavigating(true);
       setTimeout(() => {
         onSubmit(responses);
+        setIsNavigating(false);
       }, 500);
     } else {
       if (!apiError && !apiHookError) {
-        setApiError("No se pudo completar el formulario debido a un error desconocido.");
+        setApiError("No se pudo completar el formulario.");
       }
     }
   };
 
-  if (!config.enabled) return null;
-
-  if (dataLoading) {
+  if (isModuleResponsesLoading && !allModuleResponses) {
     return (
       <div className="w-full max-w-lg mx-auto bg-white p-6 rounded-lg shadow-md text-center">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">{config.title}</h2>
-        <p className="text-gray-600">Cargando datos del servidor...</p>
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">{config?.title || 'Preguntas Demográficas'}</h2>
+        <p className="text-gray-600">Cargando respuestas previas...</p>
       </div>
     );
   }
@@ -243,34 +212,40 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
   const enabledQuestions = Object.entries(config.questions)
     .filter(([_, questionConfig]) => questionConfig.enabled)
     .sort(([_, a], [__, b]) => (a.order !== undefined && b.order !== undefined ? a.order - b.order : 0))
-    .map(([key, questionConfig]) => ({ key, config: questionConfig }));
+    .map(([key, questionConfigFromFile]) => ({
+      key, 
+      config: { 
+        ...questionConfigFromFile, 
+        id: questionConfigFromFile.id || key
+      } 
+    }));
 
   return (
     <div className="w-full max-w-lg mx-auto bg-white p-6 rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold text-center text-gray-800 mb-4">{config.title}</h2>
-      {config.description && (
+      <h2 className="text-2xl font-bold text-center text-gray-800 mb-4">{config?.title || 'Preguntas Demográficas'}</h2>
+      {config?.description && (
         <p className="text-gray-600 text-center mb-6">{config.description}</p>
       )}
-      {(apiError || apiHookError) && (
+      {(apiError || moduleResponsesError) && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
-          <p className="text-sm">Error: {apiError || apiHookError}</p>
+          <p className="text-sm">Error: {apiError || moduleResponsesError}</p>
         </div>
       )}
       <form onSubmit={handleSubmit}>
-        {enabledQuestions.map(({ key, config: questionConfig }) => (
+        {enabledQuestions.map(({ key, config: adaptedQuestionConfig }) => (
           <div key={key} className={formErrors[key] ? 'has-error' : ''}>
-            <DemographicQuestion config={questionConfig} value={responses[key]} onChange={handleChange} />
+            <DemographicQuestion config={adaptedQuestionConfig} value={responses[key]} onChange={handleChange} />
             {formErrors[key] && <p className="text-red-500 text-xs mt-1">{formErrors[key]}</p>}
           </div>
         ))}
         <div className="flex justify-between mt-8">
           {onCancel && (
-            <button type="button" onClick={onCancel} disabled={isSaving || isLoading || isApiLoading}
+            <button type="button" onClick={onCancel} disabled={isSaving || isApiSavingLoading || isModuleResponsesLoading || isNavigating}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50">
               Cancelar
             </button>
           )}
-          <button type="submit" disabled={isSaving || isLoading || isApiLoading || !credentialsReady || dataLoading || isNavigating} 
+          <button type="submit" disabled={isSaving || isApiSavingLoading || isModuleResponsesLoading || !credentialsReady || isNavigating} 
             className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
             {buttonText}
           </button>
@@ -278,18 +253,16 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
       </form>
       {process.env.NODE_ENV === 'development' && (
         <div className="mt-4 p-2 bg-gray-50 text-xs text-gray-500 border rounded">
-          <p className="font-semibold">Estado de la API (Debug):</p>
-          <p>Estado API Form: {apiError ? 'Error Form' : (isSaving ? 'Guardando Form' : (dataLoading ? 'Cargando Datos' : 'Ok Form'))}</p>
-          <p>Estado API Hook: {apiHookError ? `Error Hook: ${apiHookError}` : (isApiLoading ? 'Hook Ocupado' : 'Hook Ok')}</p>
-          <p>Método a usar: {dataExisted ? 'PUT (actualizar)' : 'POST (crear)'}</p>
-          <p>Datos cargados del Backend: {dataExisted ? 'Sí' : 'No (o eran vacíos)'}</p> 
-          <p>ID Documento Backend: {documentId || 'No disponible / No cargado'}</p> 
-          <p>ID Módulo Demográfico: {demographicModuleResponseId || 'No disponible / No cargado'}</p>
-          <p>Research ID: {researchIdFromStore || 'No disponible'}</p>
-          <p>Participant ID: {participantIdFromStore || 'No disponible'}</p>
-          <p>Token (para demographicsService): {/* tokenForDemographicsService ? 'Sí' : 'No' */}</p>
-          <p>Credenciales listas: {credentialsReady ? 'Sí' : 'No'}</p>
-          <div>Datos actuales en Formulario: <pre>{JSON.stringify(responses, null, 2)}</pre></div>
+          <p>Debug Info (DemographicsForm):</p>
+          <p>isLoading(Responses): {isModuleResponsesLoading ? 'Sí' : 'No'}</p>
+          <p>moduleResponsesError: {moduleResponsesError || 'No'}</p>
+          <p>allModuleResponses count: {allModuleResponses?.length ?? 'N/A'}</p>
+          <p>responsesDocumentId: {responsesDocumentId || 'N/A'}</p>
+          <p>demographicModuleResponseId (para PUT): {demographicModuleResponseId || 'N/A (hará POST)'}</p>
+          <p>isSaving(API): {isApiSavingLoading ? 'Sí' : 'No'}</p>
+          <p>apiHookError(Save/Update): {apiHookError || 'No'}</p>
+          <p>apiError(Form): {apiError || 'No'}</p>
+          <div>Datos actuales en Formulario (estado 'responses'): <pre>{JSON.stringify(responses, null, 2)}</pre></div>
         </div>
       )}
     </div>

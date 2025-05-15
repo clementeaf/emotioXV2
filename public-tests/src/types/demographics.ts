@@ -6,6 +6,7 @@ export interface DemographicConfig {
   order?: number;
   title?: string;
   description?: string;
+  options?: SelectOption[];
 }
 
 // Configuración específica para cada tipo de pregunta demográfica
@@ -68,20 +69,3 @@ export const EDUCATION_OPTIONS: SelectOption[] = [
   { value: 'doctorate', label: 'Doctorado' },
   { value: 'other', label: 'Otro' }
 ];
-
-// Ejemplo de configuración por defecto
-export const DEFAULT_DEMOGRAPHICS_CONFIG: DemographicsSection = {
-  enabled: true,
-  title: 'Preguntas demográficas',
-  description: 'Por favor, responde a las siguientes preguntas para ayudarnos a entender mejor a nuestros usuarios.',
-  questions: {
-    age: { id: 'age', enabled: true, required: true, title: 'Edad' },
-    gender: { id: 'gender', enabled: true, required: true, title: 'Género' },
-    education: { id: 'education', enabled: true, required: false, title: 'Nivel educativo' },
-    occupation: { id: 'occupation', enabled: false, required: false, title: 'Ocupación' },
-    income: { id: 'income', enabled: false, required: false, title: 'Nivel de ingresos' },
-    location: { id: 'location', enabled: true, required: false, title: 'Ubicación' },
-    ethnicity: { id: 'ethnicity', enabled: false, required: false, title: 'Etnia' },
-    language: { id: 'language', enabled: true, required: false, title: 'Idioma principal' }
-  }
-}; 

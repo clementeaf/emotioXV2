@@ -35,6 +35,7 @@ export const useFlowNavigationAndState = ({
     currentStepIndexState,
     setCurrentStepIndexFunc
 }: UseFlowNavigationAndStateProps) => {
+
     const [currentStep, setCurrentStep] = useState<ParticipantFlowStep>(ParticipantFlowStep.LOADING_SESSION);
     const [error, setError] = useState<string | null>(null);
     const [isFlowLoading, setIsFlowLoading] = useState<boolean>(true);
