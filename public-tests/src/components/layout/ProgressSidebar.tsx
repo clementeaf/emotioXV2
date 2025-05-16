@@ -4,7 +4,6 @@ import { colors } from './utils';
 import { useModuleResponses } from '../../hooks/useModuleResponses';
 import { useParticipantStore } from '../../stores/participantStore';
 import { useMemo } from 'react';
-import { useLoadResearchFormsConfig } from '../../hooks/useResearchForms';
 
 export function ProgressSidebar({ 
     steps, 
@@ -15,46 +14,30 @@ export function ProgressSidebar({
   const researchId = useParticipantStore(state => state.researchId);
   const participantId = useParticipantStore(state => state.participantId);
 
-  const researchFormsConfig = useLoadResearchFormsConfig(researchId || '');
-
   const { data: moduleResponsesData } = useModuleResponses({
     researchId: researchId || undefined,
     participantId: participantId || undefined,
     autoFetch: !!(researchId && participantId),
   });
-  console.log('moduleResponsesData: ', moduleResponsesData);
+
   const totalSteps = steps.length;
   const answeredStepIds = useMemo(() => {
-    if (!moduleResponsesData || !Array.isArray(moduleResponsesData) || !steps || !researchFormsConfig?.data?.data) return [];
+    if (!moduleResponsesData || !Array.isArray(moduleResponsesData) || !steps) return [];
     const ids = new Set<string>();
-    const modulesConfig = researchFormsConfig.data.data;
 
     moduleResponsesData.forEach((response) => {
-      // Buscar el módulo correspondiente en la config
-      const moduleConfig = modulesConfig.find(
-        mod => mod.originalSk === response.sk
-      );
-      if (!moduleConfig || !Array.isArray(moduleConfig.config?.questions)) return;
-
-      // Buscar la pregunta correspondiente
-      // Preferimos por id, pero si no existe, por type
-      const question = moduleConfig.config.questions.find(
-        (q: any) => q.id === response.questionId || q.type?.toLowerCase() === response.type?.toLowerCase()
-      );
-      if (!question) return;
-
-      // Buscar el step visual correspondiente en el sidebar
       const matchedStep = steps.find(
         s =>
-          s.responseKey === moduleConfig.id &&
-          (s.config?.id === question.id || s.config?.type?.toLowerCase() === question.type?.toLowerCase())
+          (s.type === response.stepType) ||
+          (s.name === response.stepTitle)
       );
       if (matchedStep) {
         ids.add(matchedStep.id);
       }
     });
+
     return Array.from(ids);
-  }, [moduleResponsesData, steps, researchFormsConfig]);
+  }, [moduleResponsesData, steps]);
   
   const completedSteps = answeredStepIds.length;
 
