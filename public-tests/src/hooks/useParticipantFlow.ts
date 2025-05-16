@@ -22,11 +22,6 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         handleLoginSuccess: handleLoginSuccessFromSession,
     } = useParticipantSession();
 
-    const [localToken, setLocalToken] = useState<string | null>(token);
-    useEffect(() => {
-        setLocalToken(token);
-    }, [token]);
-
     const participantId = participantIdFromStore;
     const loadedApiResponsesFromStore = useParticipantStore(state => state.responsesData.modules.all_steps);
     const maxVisitedIndexFromStore = useParticipantStore(state => state.maxVisitedIndex);
@@ -39,7 +34,7 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         isError: isResearchFlowError,
         error: researchFlowErrorObject 
     } = useLoadResearchFormsConfig(researchId || '', {
-        enabled: !!researchId && !!localToken,
+        enabled: !!researchId && !!token,
     });
 
     let allSk: string[] = [];
@@ -95,8 +90,8 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         setCurrentStep,
         error: navigationError,
         setError: setNavigationError, 
-        isFlowLoading: navigationIsFlowLoading,
-        setIsFlowLoading: setNavigationIsFlowLoading, 
+        isFlowLoading: navigationIsLoading,
+        setIsFlowLoading: setNavigationIsLoading, 
         goToNextStep,
         navigateToStep,
         completedRelevantSteps,
@@ -123,36 +118,36 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         console.error(`[useParticipantFlow] Error en ${stepName}:`, errorMessage);
         setNavigationError(errorMessage);
         setCurrentStep(ParticipantFlowStep.ERROR);
-        setNavigationIsFlowLoading(false);
-    }, [setNavigationError, setCurrentStep, setNavigationIsFlowLoading]);
+        setNavigationIsLoading(false);
+    }, [setNavigationError, setCurrentStep, setNavigationIsLoading]);
 
     useEffect(() => {
-        setNavigationIsFlowLoading(isResearchFlowHookLoading);
+        setNavigationIsLoading(isResearchFlowHookLoading);
         if (!researchId) {
             handleError("ID de investigación no encontrado.", "Initialization");
             return;
         }
-        if (!localToken && currentStep !== ParticipantFlowStep.LOGIN && currentStep !== ParticipantFlowStep.ERROR) {
+        if (!token && currentStep !== ParticipantFlowStep.LOGIN && currentStep !== ParticipantFlowStep.ERROR) {
             setCurrentStep(ParticipantFlowStep.LOGIN);
             return;
         }
-        if (researchId && localToken && !isResearchFlowHookLoading) {
+        if (researchId && token && !isResearchFlowHookLoading) {
             storeSetResearchId(researchId);
             if (isResearchFlowError) {
                 handleError(researchFlowErrorObject?.message || "Error al cargar la configuración del estudio.", "ResearchFlowInit");
                 return;
             }
-        } else if (researchId && !localToken && currentStep !== ParticipantFlowStep.LOGIN && currentStep !== ParticipantFlowStep.ERROR) {
+        } else if (researchId && !token && currentStep !== ParticipantFlowStep.LOGIN && currentStep !== ParticipantFlowStep.ERROR) {
             setCurrentStep(ParticipantFlowStep.LOGIN);
         }
     }, [
-        researchId, localToken, storeSetResearchId, handleError, 
+        researchId, token, storeSetResearchId, handleError, 
         isResearchFlowHookLoading, isResearchFlowError, researchFlowApiData, researchFlowErrorObject,
-        currentStep, setCurrentStep, setNavigationIsFlowLoading 
+        currentStep, setCurrentStep, setNavigationIsLoading 
     ]);
 
     useEffect(() => {
-        if (expandedSteps && expandedSteps.length > 0 && !navigationIsFlowLoading && currentStep === ParticipantFlowStep.LOADING_SESSION) {
+        if (expandedSteps && expandedSteps.length > 0 && !navigationIsLoading && currentStep === ParticipantFlowStep.LOADING_SESSION) {
             const storedMaxIndex = parseInt(localStorage.getItem('maxVisitedIndex') || '0', 10);
             const effectiveMaxIndex = Math.max(storedMaxIndex, maxVisitedIndexFromStore || 0);
             const storedCurrentIndex = parseInt(localStorage.getItem('currentStepIndex') || '0', 10);
@@ -167,15 +162,15 @@ export const useParticipantFlow = (researchId: string | undefined) => {
             if (researchId && participantId) {
                 loadExistingResponses(); 
             }
-            setNavigationIsFlowLoading(false);
-        } else if (expandedSteps && expandedSteps.length === 0 && !navigationIsFlowLoading && currentStep === ParticipantFlowStep.LOADING_SESSION && researchId && !isResearchFlowError) {
+            setNavigationIsLoading(false);
+        } else if (expandedSteps && expandedSteps.length === 0 && !navigationIsLoading && currentStep === ParticipantFlowStep.LOADING_SESSION && researchId && !isResearchFlowError) {
             setCurrentStep(ParticipantFlowStep.WELCOME); 
-            setNavigationIsFlowLoading(false);
+            setNavigationIsLoading(false);
         }
     }, [
-        expandedSteps, navigationIsFlowLoading, currentStep, maxVisitedIndexFromStore, researchId, 
+        expandedSteps, navigationIsLoading, currentStep, maxVisitedIndexFromStore, researchId, 
         loadExistingResponses, participantId, isResearchFlowError, setCurrentStepIndex, setCurrentStep, 
-        setNavigationIsFlowLoading
+        setNavigationIsLoading
     ]);
 
     useEffect(() => {
@@ -187,11 +182,11 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         handleLoginSuccessFromSession(participant);
         setNavigationError(null);
         setCurrentStep(ParticipantFlowStep.LOADING_SESSION);
-        setNavigationIsFlowLoading(true);
+        setNavigationIsLoading(true);
         if (researchId && participant.id) {
             loadExistingResponses(); 
         }
-    }, [handleLoginSuccessFromSession, setNavigationError, setCurrentStep, setNavigationIsFlowLoading, researchId, loadExistingResponses]);
+    }, [handleLoginSuccessFromSession, setNavigationError, setCurrentStep, setNavigationIsLoading, researchId, loadExistingResponses]);
 
     const getAnsweredStepIndices = useCallback((): number[] => {
         const completedStepIndices = new Set<number>();
@@ -213,14 +208,14 @@ export const useParticipantFlow = (researchId: string | undefined) => {
     
     return {
         currentStep,
-        token: localToken,
+        token: token,
         error: navigationError,
         handleLoginSuccess,
         handleStepComplete: goToNextStep,
         handleError,
         expandedSteps,
         currentStepIndex,
-        isFlowLoading: navigationIsFlowLoading,
+        isFlowLoading: navigationIsLoading,
         navigateToStep,
         completedRelevantSteps,
         totalRelevantSteps,

@@ -107,7 +107,7 @@ export const useFlowNavigationAndState = ({
             const targetStepInfo = expandedSteps[targetIndex];
             if(targetStepInfo && targetStepInfo.name) {
                 stepHasApiResponse = loadedApiResponsesFromStore.some(resp => 
-                    (resp.stepTitle && resp.stepTitle === targetStepInfo.name)
+                    (resp.stepTitle && targetStepInfo.responseKey && resp.stepTitle === targetStepInfo.responseKey)
                 );
             }
         }

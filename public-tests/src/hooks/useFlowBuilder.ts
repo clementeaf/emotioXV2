@@ -39,7 +39,8 @@ const extractCoreStepConfigs = (flowDataModules: ProcessedResearchFormConfig[] |
 
 const processSmartVocQuestions = (
     moduleSpecificQuestions: any[],
-    _moduleTitleFromBackend: string | undefined
+    _moduleTitleFromBackend: string | undefined,
+    parentModuleResponseKey: string
 ): ExpandedStep[] => {
     const steps: ExpandedStep[] = [];
     if (Array.isArray(moduleSpecificQuestions) && moduleSpecificQuestions.length > 0) {
@@ -53,7 +54,8 @@ const processSmartVocQuestions = (
                     id: question.id || `${frontendType}_${steps.length + Date.now()}`,
                     name: question.title || `Feedback: ${originalQuestionType || 'Desconocido'}`,
                     type: frontendType,
-                    config: question
+                    config: question,
+                    responseKey: parentModuleResponseKey
                 });
             } else {
                 console.warn(`[useFlowBuilder processSmartVocQuestions] No mapeado: tipo "${upperQuestionType}" (Q ID ${question.id})`);
@@ -65,7 +67,8 @@ const processSmartVocQuestions = (
 
 const processCognitiveTaskQuestions = (
     moduleSpecificQuestions: any[],
-    moduleTitleFromBackend: string | undefined
+    moduleTitleFromBackend: string | undefined,
+    parentModuleResponseKey: string
 ): ExpandedStep[] => {
     const steps: ExpandedStep[] = [];
     if (Array.isArray(moduleSpecificQuestions) && moduleSpecificQuestions.length > 0) {
@@ -77,7 +80,8 @@ const processCognitiveTaskQuestions = (
                     id: question.id || `${frontendType}_${steps.length + Date.now()}`,
                     name: question.title || `${moduleTitleFromBackend || 'Tarea Cognitiva'}: ${originalQuestionType || 'Desconocido'}`,
                     type: frontendType,
-                    config: question
+                    config: question,
+                    responseKey: parentModuleResponseKey
                 });
             } else {
                 console.warn(`[useFlowBuilder processCognitiveTaskQuestions] No se pudo generar frontendType para tipo: "${originalQuestionType}" (Q ID ${question.id})`);
@@ -90,7 +94,8 @@ const processCognitiveTaskQuestions = (
 const processDefaultModuleQuestions = (
     moduleSpecificQuestions: any[],
     moduleTitleFromBackend: string | undefined,
-    moduleSK: string | undefined
+    moduleSK: string | undefined,
+    parentModuleResponseKey: string
 ): ExpandedStep[] => {
     const steps: ExpandedStep[] = [];
     if (Array.isArray(moduleSpecificQuestions) && moduleSpecificQuestions.length > 0) {
@@ -101,7 +106,8 @@ const processDefaultModuleQuestions = (
                 id: question.id || `${frontendType}_${steps.length + Date.now()}`,
                 name: question.title || `${moduleTitleFromBackend || moduleSK || 'Módulo Desconocido'}: ${originalQuestionType || 'Pregunta'}`,
                 type: frontendType,
-                config: question
+                config: question,
+                responseKey: parentModuleResponseKey
             });
         }
     }
@@ -116,8 +122,8 @@ export const useFlowBuilder = ({ researchFlowApiData }: UseFlowBuilderProps): Ex
         if (!(Array.isArray(flowDataModules) && flowDataModules.length > 0)) {
             console.warn('[useFlowBuilder] No hay flowDataModules válidos para construir pasos.');
             return [
-                { id: 'welcome', name: 'Bienvenida', type: 'welcome', config: { title: '¡Bienvenido!', message: 'Iniciando...'} },
-                { id: 'thankyou', name: 'Agradecimiento', type: 'thankyou', config: { title: '¡Muchas Gracias!', message: 'Fin.'} }
+                { id: 'welcome', name: 'Bienvenida', type: 'welcome', config: { title: '¡Bienvenido!', message: 'Iniciando...'}, responseKey: 'welcome' },
+                { id: 'thankyou', name: 'Agradecimiento', type: 'thankyou', config: { title: '¡Muchas Gracias!', message: 'Fin.'}, responseKey: 'thankyou' }
             ];
         }
         
@@ -137,7 +143,8 @@ export const useFlowBuilder = ({ researchFlowApiData }: UseFlowBuilderProps): Ex
                     title: demographicsConfigFromBackend.title || 'Preguntas Demográficas',
                     description: demographicsConfigFromBackend.description || 'Por favor, complete lo siguiente:',
                     demographicsConfig: demographicsConfigFromBackend 
-                }
+                },
+                responseKey: 'demographic'
             });
         } else {
             console.warn('[useFlowBuilder] No se encontró configuración demográfica en el backend (EYE_TRACKING_CONFIG.demographicQuestions). No se añadirá el paso demográfico.');
@@ -148,7 +155,8 @@ export const useFlowBuilder = ({ researchFlowApiData }: UseFlowBuilderProps): Ex
             id: 'welcome', 
             name: resolvedWelcomeConfig.title, 
             type: 'welcome', 
-            config: resolvedWelcomeConfig 
+            config: resolvedWelcomeConfig,
+            responseKey: 'welcome'
         });
         
         for (const processedModule of flowDataModules) {
@@ -158,6 +166,7 @@ export const useFlowBuilder = ({ researchFlowApiData }: UseFlowBuilderProps): Ex
             const moduleSK = moduleData.sk;
             const moduleSpecificQuestions = moduleData.questions || [];
             const moduleTitleFromBackend = moduleData.title || moduleData.name;
+            const moduleResponseKey = processedModule.id;
 
             switch (moduleSK) {
                 case 'EYE_TRACKING_CONFIG':
@@ -165,13 +174,13 @@ export const useFlowBuilder = ({ researchFlowApiData }: UseFlowBuilderProps): Ex
                 case 'THANK_YOU_SCREEN':
                     break;
                 case 'SMART_VOC_FORM':
-                    finalSteps.push(...processSmartVocQuestions(moduleSpecificQuestions, moduleTitleFromBackend));
+                    finalSteps.push(...processSmartVocQuestions(moduleSpecificQuestions, moduleTitleFromBackend, moduleResponseKey));
                     break;
                 case 'COGNITIVE_TASK':
-                    finalSteps.push(...processCognitiveTaskQuestions(moduleSpecificQuestions, moduleTitleFromBackend));
+                    finalSteps.push(...processCognitiveTaskQuestions(moduleSpecificQuestions, moduleTitleFromBackend, moduleResponseKey));
                     break;
                 default:
-                    finalSteps.push(...processDefaultModuleQuestions(moduleSpecificQuestions, moduleTitleFromBackend, moduleSK));
+                    finalSteps.push(...processDefaultModuleQuestions(moduleSpecificQuestions, moduleTitleFromBackend, moduleSK, moduleResponseKey));
                     break;
             }
         }
@@ -181,7 +190,8 @@ export const useFlowBuilder = ({ researchFlowApiData }: UseFlowBuilderProps): Ex
             id: 'thankyou', 
             name: resolvedThankYouConfig.title, 
             type: 'thankyou', 
-            config: resolvedThankYouConfig 
+            config: resolvedThankYouConfig,
+            responseKey: 'thankyou'
         });
 
         return finalSteps;

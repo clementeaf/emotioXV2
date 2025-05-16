@@ -4,6 +4,7 @@ import { colors } from './utils';
 import { useModuleResponses } from '../../hooks/useModuleResponses';
 import { useParticipantStore } from '../../stores/participantStore';
 import { useMemo } from 'react';
+import { useLoadResearchFormsConfig } from '../../hooks/useResearchForms';
 
 export function ProgressSidebar({ 
     steps, 
@@ -14,32 +15,29 @@ export function ProgressSidebar({
   const researchId = useParticipantStore(state => state.researchId);
   const participantId = useParticipantStore(state => state.participantId);
 
+  const researchFormsConfig = useLoadResearchFormsConfig(researchId || '');
+  console.log('[ProgressSidebar] Resultado de useLoadResearchFormsConfig:', researchFormsConfig?.data?.data);
+
   const { data: moduleResponsesData } = useModuleResponses({
     researchId: researchId || undefined,
     participantId: participantId || undefined,
     autoFetch: !!(researchId && participantId),
   });
-
+  console.log('Steps: ', steps);
   const totalSteps = steps.length;
   const answeredStepIds = useMemo(() => {
     if (!moduleResponsesData || !Array.isArray(moduleResponsesData) || !steps) return [];
     const ids = new Set<string>();
-    moduleResponsesData.forEach((response, respIdx) => {
+    moduleResponsesData.forEach((response, _respIdx) => {
         if (response && typeof response.stepTitle === 'string') {
-            const matchedStep = steps.find(s => s.name === response.stepTitle);
+            const matchedStep = steps.find(s => s.responseKey === response.stepTitle);
             if (matchedStep) {
                 if (!ids.has(matchedStep.id)) {
                     ids.add(matchedStep.id);
-                    console.log(`[ProgressSidebar] Matched: response.stepTitle "${response.stepTitle}" (from resp ${respIdx}) with step.name "${matchedStep.name}" (stepId: ${matchedStep.id}). Added to answeredStepIds.`);
                 }
-            } else {
-                console.log(`[ProgressSidebar] No match: response.stepTitle "${response.stepTitle}" (from resp ${respIdx}) found no step with matching name.`);
             }
-        } else {
-             console.log(`[ProgressSidebar] Skipped response ${respIdx}: no stepTitle or not a string. Title:`, response?.stepTitle);
         }
     });
-    console.log('[ProgressSidebar] Final answeredStepIds:', Array.from(ids));
     return Array.from(ids);
   }, [moduleResponsesData, steps]);
   

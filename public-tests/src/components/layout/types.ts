@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { ExpandedStep } from '../../types/flow';
 
 export interface AppLayoutProps {
   children: ReactNode;
@@ -14,7 +15,7 @@ export interface Step {
 }
 
 export interface ProgressSidebarProps {
-  steps: Step[];
+  steps: ExpandedStep[];
   currentStepIndex: number;
   onNavigateToStep?: (index: number) => void;
 }

@@ -47,15 +47,11 @@ const ParticipantFlow: React.FC = () => {
                : memoizedCurrentExpandedStep;
     }, [currentStep, memoizedCurrentExpandedStep]);
 
-    const memoizedSidebarSteps = useMemo(() => {
-        return (expandedSteps || []).map((step) => ({ id: step.id, name: step.name }));
-    }, [expandedSteps]);
-
     return (
          <div className="flex h-screen w-screen overflow-hidden bg-neutral-100">
-            {showSidebar && (
+            {showSidebar && expandedSteps && (
                 <ProgressSidebar 
-                    steps={memoizedSidebarSteps}
+                    steps={expandedSteps}
                     currentStepIndex={currentStepIndex} 
                     onNavigateToStep={navigateToStep}
                 />
