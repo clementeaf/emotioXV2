@@ -82,16 +82,13 @@ export function useStepResponseManager<TResponseData = any>({
       );
 
       if (specificResponse && specificResponse.response) {
-        console.log(`[useStepResponseManager - ${stepId}] Respuesta existente encontrada:`, specificResponse);
         setResponseData(specificResponse.response as TResponseData);
         setResponseSpecificId(specificResponse.id || null);
       } else {
-        console.log(`[useStepResponseManager - ${stepId}] No se encontró respuesta existente.`);
         setResponseData(initialData);
         setResponseSpecificId(null);
       }
     } else {
-      console.log(`[useStepResponseManager - ${stepId}] No hay array allModuleResponses.`);
       setResponseData(initialData);
       setResponseSpecificId(null);
     }
@@ -118,11 +115,9 @@ export function useStepResponseManager<TResponseData = any>({
       let result: any;
       const effectiveStepName = stepName || stepId;
 
-      if (responseSpecificId) { 
-        console.log(`[useStepResponseManager - ${stepId}] Actualizando respuesta (ID: ${responseSpecificId}):`, dataToSave);
+      if (responseSpecificId) { ;
         result = await updateResponse(responseSpecificId, dataToSave);
       } else { 
-        console.log(`[useStepResponseManager - ${stepId}] Creando nueva respuesta:`, dataToSave);
         result = await saveResponse(stepId, stepType, effectiveStepName, dataToSave);
       }
 
@@ -136,7 +131,6 @@ export function useStepResponseManager<TResponseData = any>({
         setResponseSpecificId(result.id);
       }
       
-      console.log(`[useStepResponseManager - ${stepId}] Respuesta guardada/actualizada. Resultado API:`, result);
       return { success: true, id: result?.id || responseSpecificId };
 
     } catch (e: any) {

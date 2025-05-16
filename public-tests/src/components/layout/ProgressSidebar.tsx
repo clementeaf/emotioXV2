@@ -16,30 +16,45 @@ export function ProgressSidebar({
   const participantId = useParticipantStore(state => state.participantId);
 
   const researchFormsConfig = useLoadResearchFormsConfig(researchId || '');
-  console.log('[ProgressSidebar] Resultado de useLoadResearchFormsConfig:', researchFormsConfig?.data?.data);
 
   const { data: moduleResponsesData } = useModuleResponses({
     researchId: researchId || undefined,
     participantId: participantId || undefined,
     autoFetch: !!(researchId && participantId),
   });
-  console.log('Steps: ', steps);
+  console.log('moduleResponsesData: ', moduleResponsesData);
   const totalSteps = steps.length;
   const answeredStepIds = useMemo(() => {
-    if (!moduleResponsesData || !Array.isArray(moduleResponsesData) || !steps) return [];
+    if (!moduleResponsesData || !Array.isArray(moduleResponsesData) || !steps || !researchFormsConfig?.data?.data) return [];
     const ids = new Set<string>();
-    moduleResponsesData.forEach((response, _respIdx) => {
-        if (response && typeof response.stepTitle === 'string') {
-            const matchedStep = steps.find(s => s.responseKey === response.stepTitle);
-            if (matchedStep) {
-                if (!ids.has(matchedStep.id)) {
-                    ids.add(matchedStep.id);
-                }
-            }
-        }
+    const modulesConfig = researchFormsConfig.data.data;
+
+    moduleResponsesData.forEach((response) => {
+      // Buscar el módulo correspondiente en la config
+      const moduleConfig = modulesConfig.find(
+        mod => mod.originalSk === response.sk
+      );
+      if (!moduleConfig || !Array.isArray(moduleConfig.config?.questions)) return;
+
+      // Buscar la pregunta correspondiente
+      // Preferimos por id, pero si no existe, por type
+      const question = moduleConfig.config.questions.find(
+        (q: any) => q.id === response.questionId || q.type?.toLowerCase() === response.type?.toLowerCase()
+      );
+      if (!question) return;
+
+      // Buscar el step visual correspondiente en el sidebar
+      const matchedStep = steps.find(
+        s =>
+          s.responseKey === moduleConfig.id &&
+          (s.config?.id === question.id || s.config?.type?.toLowerCase() === question.type?.toLowerCase())
+      );
+      if (matchedStep) {
+        ids.add(matchedStep.id);
+      }
     });
     return Array.from(ids);
-  }, [moduleResponsesData, steps]);
+  }, [moduleResponsesData, steps, researchFormsConfig]);
   
   const completedSteps = answeredStepIds.length;
 

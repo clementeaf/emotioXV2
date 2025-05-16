@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { ApiClient, APIStatus } from '../lib/api'; // Ajusta la ruta si es necesario
 import { useParticipantStore } from '../stores/participantStore'; // Para obtener IDs si no se pasan
 
@@ -29,6 +29,9 @@ export const useModuleResponses = (props?: UseModuleResponsesProps): UseModuleRe
   const [error, setError] = useState<string | null>(null);
 
   const apiClient = useMemo(() => new ApiClient(), []);
+
+  // Guardar los últimos IDs usados para evitar llamadas duplicadas
+  const lastIdsRef = useRef<{ researchId?: string; participantId?: string }>({});
 
   const fetchData = async (currentResearchId: string, currentParticipantId: string) => {
     if (!currentResearchId || !currentParticipantId) {
@@ -74,18 +77,18 @@ export const useModuleResponses = (props?: UseModuleResponsesProps): UseModuleRe
     const finalResearchId = initialResearchId || researchIdFromStore;
     const finalParticipantId = initialParticipantId || participantIdFromStore;
 
-    if (autoFetch && finalResearchId && finalParticipantId) {
+    // Solo dispara la petición si ambos IDs existen y han cambiado
+    if (
+      autoFetch &&
+      finalResearchId &&
+      finalParticipantId &&
+      (lastIdsRef.current.researchId !== finalResearchId || lastIdsRef.current.participantId !== finalParticipantId)
+    ) {
+      lastIdsRef.current = { researchId: finalResearchId, participantId: finalParticipantId };
       fetchData(finalResearchId, finalParticipantId);
-    } else if (autoFetch) {
-      // Si autoFetch es true pero faltan IDs, resetea el estado o indica que no se puede cargar.
-      setData(null);
-      setDocumentId(null);
-      setError(null); // O un mensaje específico
-      setIsLoading(false);
     }
-    // No incluir fetchData en las dependencias para evitar re-creación constante si no se usa useCallback
-    // La re-ejecución se controla por el cambio en los IDs y autoFetch.
-  }, [initialResearchId, initialParticipantId, researchIdFromStore, participantIdFromStore, autoFetch, apiClient]); // apiClient es estable por useMemo
+    // No resetea el estado si faltan IDs, así evita flashes de null
+  }, [initialResearchId, initialParticipantId, researchIdFromStore, participantIdFromStore, autoFetch, apiClient]);
 
   // Función para permitir la recarga manual si es necesario
   const fetchResponses = (rId: string, pId: string) => {
