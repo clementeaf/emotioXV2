@@ -4,14 +4,13 @@ import CurrentStepRenderer from './CurrentStepRenderer';
 import LoadingIndicator from '../common/LoadingIndicator';
 import ErrorDisplay from '../common/ErrorDisplay';
 import { FlowStepContentProps as OldFlowStepContentProps } from './types';
-import { ResponsesData } from '../../hooks/useParticipantFlow';
 
 interface FlowStepContentProps extends Omit<OldFlowStepContentProps, 'currentStep'> {
     currentStepEnum: ParticipantFlowStep;
     currentExpandedStep: ExpandedStep | null;
     isLoading: boolean;
-    responsesData?: ResponsesData; // Datos de respuestas para el visor final
-    handleError: (errorMessage: string, step: ParticipantFlowStep | string) => void; // La firma real de useParticipantFlow
+    responsesData?: any;
+    handleError: (errorMessage: string, step: ParticipantFlowStep | string) => void;
 }
 
 const FlowStepContent: React.FC<FlowStepContentProps> = ({

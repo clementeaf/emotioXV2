@@ -80,13 +80,6 @@ const DifficultyScaleView: React.FC<DifficultyScaleViewProps> = ({
         }
       } else {
         console.log(`[DifficultyScaleView Effect - ${frontendStepType}] No matching response found for '${frontendStepType}' in moduleResponsesArray.`);
-        if (moduleId && internalModuleResponseId !== null) {
-          // Podríamos ser más específicos aquí, por ejemplo, si el tipo de módulo actual realmente ya no tiene una respuesta.
-          // Por ahora, una limpieza simple si no hay matchingResponse y antes sí lo había para este módulo (identificado por internalModuleResponseId)
-          // setSelectedValue(null);
-          // setInternalModuleResponseId(null);
-          // console.log(`[DifficultyScaleView Effect - ${frontendStepType}] States potentially cleared as no matching response found for ${moduleId}.`);
-        }
       }
     }
   }, [moduleResponsesArray, frontendStepType, internalModuleResponseId, moduleId]);
@@ -186,15 +179,6 @@ const DifficultyScaleView: React.FC<DifficultyScaleViewProps> = ({
           {buttonText}
         </button>
       </div>
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mt-6 p-4 border rounded bg-gray-50 text-xs text-gray-700 w-full max-w-xl">
-          <h5 className="font-semibold mb-2">[Debug DifficultyScaleView - {actualStepId}]</h5>
-          <p>P_ID: {participantIdFromStore}, R_ID: {researchId}, Mod_ID: {moduleId}, StepType: {actualStepType}</p>
-          <p>Load: {isLoadingInitialData.toString()}, ErrL: {loadingError || 'No'} | Submit: {isSubmitting.toString()}, ErrS: {submissionError || 'No'}</p>
-          <p>RespID: {internalModuleResponseId || 'N/A'}, SelVal: {selectedValue === null ? 'N/A' : selectedValue}</p>
-          <pre className="whitespace-pre-wrap break-all max-h-48 overflow-y-auto">{debugLogs.slice(-7).join('\n')}</pre>
-        </div>
-      )}
     </div>
   );
 };

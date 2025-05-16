@@ -114,12 +114,12 @@ const processDefaultModuleQuestions = (
     return steps;
 };
 
-export const useFlowBuilder = ({ researchFlowApiData }: UseFlowBuilderProps): ExpandedStep[] => {
+export const useFlowBuilder = ({ researchFlowApiData, isLoading }: UseFlowBuilderProps & { isLoading?: boolean }): ExpandedStep[] => {
     
     const buildStepsInternal = useCallback(() => {
         const flowDataModules = researchFlowApiData?.data;
 
-        if (!(Array.isArray(flowDataModules) && flowDataModules.length > 0)) {
+        if (!isLoading && !(Array.isArray(flowDataModules) && flowDataModules.length > 0)) {
             console.warn('[useFlowBuilder] No hay flowDataModules válidos para construir pasos.');
             return [
                 { id: 'welcome', name: 'Bienvenida', type: 'welcome', config: { title: '¡Bienvenido!', message: 'Iniciando...'}, responseKey: 'welcome' },
@@ -159,7 +159,9 @@ export const useFlowBuilder = ({ researchFlowApiData }: UseFlowBuilderProps): Ex
             responseKey: 'welcome'
         });
         
-        for (const processedModule of flowDataModules) {
+        // Proteger la iteración para evitar TypeError si flowDataModules no es iterable
+        const safeFlowDataModules = Array.isArray(flowDataModules) ? flowDataModules : [];
+        for (const processedModule of safeFlowDataModules) {
             const moduleData = processedModule.config;
             if (!moduleData) continue;
 
@@ -195,7 +197,7 @@ export const useFlowBuilder = ({ researchFlowApiData }: UseFlowBuilderProps): Ex
         });
 
         return finalSteps;
-    }, [researchFlowApiData]);
+    }, [researchFlowApiData, isLoading]);
 
     const expandedSteps = useMemo(() => buildStepsInternal(), [buildStepsInternal]);
 

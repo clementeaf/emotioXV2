@@ -54,7 +54,7 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         }
     }
 
-    const builtExpandedSteps = useFlowBuilder({ researchFlowApiData });
+    const builtExpandedSteps = useFlowBuilder({ researchFlowApiData, isLoading: isResearchFlowHookLoading });
     const [expandedSteps, setExpandedSteps] = useState<ExpandedStep[]>([]);
 
     useEffect(() => {

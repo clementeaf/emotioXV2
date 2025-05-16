@@ -1,29 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { SmartVOCQuestion, /*CVConfig*/ CESConfig as CVConfig } from '../SmartVOCRouter'; // Usar CVConfig si existe, sino adaptar
 import { useParticipantStore } from '../../../stores/participantStore';
 import { useModuleResponses } from '../../../hooks/useModuleResponses';
 import { useResponseAPI } from '../../../hooks/useResponseAPI';
 
-interface CVQuestionProps { // Renombrado
-  questionConfig: SmartVOCQuestion & { config: CVConfig }; // Usar CVConfig
+interface CVConfig {
+  scaleRange?: { start: number; end: number };
+  startLabel?: string;
+  endLabel?: string;
+}
+
+interface CVQuestionConfig {
+  id: string;
+  title?: string;
+  description?: string;
+  type: string;
+  config: CVConfig;
+}
+
+interface CVQuestionProps {
+  questionConfig: CVQuestionConfig;
   researchId: string;
   moduleId: string;
   onSaveSuccess: (questionId: string, responseValue: number, moduleResponseId: string | null) => void;
 }
 
-export const CVQuestion: React.FC<CVQuestionProps> = ({ // Renombrado
+export const CVQuestion: React.FC<CVQuestionProps> = ({
   questionConfig, 
   researchId,
   moduleId,
   onSaveSuccess 
 }) => {
   const { id: questionId, description, type: questionType, title: questionTitleFromConfig, config: specificConfig } = questionConfig;
-  // Usar description o title de questionConfig como texto principal, o un default
   const mainQuestionText = description || questionTitleFromConfig || '¿Cómo calificarías el valor recibido?';
 
-  // Obtener scaleRange, startLabel, endLabel de specificConfig (el CVConfig)
-  // Establecer defaults apropiados para CV si no se proporcionan en la config
-  const scaleRange = specificConfig?.scaleRange || { start: 1, end: 7 }; // Ejemplo: default 1-7, ajustar según necesidad para CV
+  const scaleRange = specificConfig?.scaleRange || { start: 1, end: 7 };
   const leftLabel = specificConfig?.startLabel || "Poco valor";
   const rightLabel = specificConfig?.endLabel || "Mucho valor";
 
@@ -109,17 +119,17 @@ export const CVQuestion: React.FC<CVQuestionProps> = ({ // Renombrado
     }
 
     const responseData = { value: selectedValue };
-    const stepNameForApi = questionTitleFromConfig || description || questionId; // Usar título o descripción de questionConfig
+    const stepNameForApi = questionTitleFromConfig || description || questionId;
 
     const apiCallParams = {
       researchId,
       participantId: participantIdFromStore,
       stepId: questionId, 
-      stepType: questionType, // Este es el tipo de la pregunta CV, ej. 'smartvoc_cv'
+      stepType: questionType,
       stepName: stepNameForApi,
       responseData,
       existingResponseId: internalModuleResponseId || undefined,
-      moduleId: moduleId // Este es el ID del módulo padre SmartVOCRouter
+      moduleId: moduleId
     };
     newLogs.push(`Llamando a saveOrUpdateResponse con (apiCallParams): ${JSON.stringify(apiCallParams, null, 2)}`);
     
@@ -169,7 +179,7 @@ export const CVQuestion: React.FC<CVQuestionProps> = ({ // Renombrado
   for (let i = scaleRange.start; i <= scaleRange.end; i++) {
     scaleOptions.push(i);
   }
-  if (scaleOptions.length === 0) { // Fallback si scaleRange no generó opciones válidas
+  if (scaleOptions.length === 0) {
     console.warn(`[CVQuestion] scaleOptions vacío para ${questionId}, usando 1-7 por defecto.`);
     for (let i = 1; i <= 7; i++) { scaleOptions.push(i); }
   }
@@ -195,7 +205,7 @@ export const CVQuestion: React.FC<CVQuestionProps> = ({ // Renombrado
     <div className="flex flex-col items-center justify-center w-full h-full bg-white p-8">
       <div className="max-w-xl w-full flex flex-col items-center">
         <h2 className="text-xl font-medium text-center text-neutral-800 mb-4">
-          {mainQuestionText} {/* Usar mainQuestionText */}
+          {mainQuestionText}
         </h2>
         
         {(submissionError || loadingError) && (
@@ -232,22 +242,6 @@ export const CVQuestion: React.FC<CVQuestionProps> = ({ // Renombrado
           {buttonText}
         </button>
       </div>
-
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mt-6 p-4 border rounded bg-gray-50 text-xs text-gray-700 w-full max-w-xl">
-          <h5 className="font-semibold mb-2">[Debug CVQuestion - {questionId}]</h5>
-          <p>ResearchID: {researchId}, ParticipantID: {participantIdFromStore}</p>
-          <p>ModuleID (prop): {moduleId}, StepType (prop): {questionType} (de qConfig)</p> {/* Usar questionType de qConfig */}
-          <p>Hook isLoading: {isLoadingInitialData.toString()}, Hook Error: {loadingError || 'No'}</p>
-          <p>InternalModuleResponseID (state): {internalModuleResponseId || 'N/A'}</p>
-          <p>Selected Value (state): {selectedValue === null ? 'N/A' : selectedValue}</p>
-          <p>Submit isLoading: {isSubmitting.toString()}, Submit Error: {submissionError || 'No'}</p>
-          <h5 className="font-semibold mt-2 mb-1">Logs:</h5>
-          <pre className="whitespace-pre-wrap break-all max-h-48 overflow-y-auto">
-            {debugLogs.slice(-10).join('\n')}
-          </pre>
-        </div>
-      )}
     </div>
   );
 }; 

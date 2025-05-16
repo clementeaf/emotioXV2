@@ -12,27 +12,23 @@ const SmartVocFeedbackQuestion = React.lazy(() => import('../questions/SmartVocF
 const LinearScaleQuestion = React.lazy(() => import('../questions/LineaScaleQuestion').then(module => ({ default: module.LinearScaleQuestion })));
 const MultipleChoiceQuestion = React.lazy(() => import('../questions/MultipleChoiceQuestion').then(module => ({ default: module.MultipleChoiceQuestion })));
 const SingleChoiceQuestion = React.lazy(() => import('../questions/SingleChoiceQuestion').then(module => ({ default: module.SingleChoiceQuestion })));
-const LongTextQuestion = React.lazy(() => import('../questions/LongTextQuestion').then(module => ({ default: module.LongTextQuestion })));
 const DemographicStep = React.lazy(() => import('../questions/DemographicStep').then(module => ({ default: module.DemographicStep })));
 
 export interface MappedStepComponentProps {
-    stepConfig?: any; // Configuración específica del paso, puede variar
-    stepId?: string; // ID único del paso actual
-    stepName?: string; // Nombre descriptivo del paso
-    stepType: string; // Tipo de paso (ej. 'instruction', 'cognitive_short_text')
-    researchId?: string; // ID de la investigación
-    token?: string | null; // MODIFICADO: Permitir null para token
-    onStepComplete: (data?: any) => void; // Función a llamar cuando el paso se completa
-    onLoginSuccess?: (participant: any) => void; // MODIFICADO: Ajustar firma para coincidir con uso real
-    onError?: (message: string, stepType?: string) => void; // Para reportar errores
-    // Podríamos añadir más props comunes si es necesario, ej. participantId
+    stepConfig?: any;
+    stepId?: string;
+    stepName?: string;
+    stepType: string;
+    researchId?: string;
+    token?: string | null;
+    onStepComplete: (data?: any) => void;
+    onLoginSuccess?: (participant: any) => void;
+    onError?: (message: string, stepType?: string) => void;
     isInstructionMock?: boolean;
     isWelcomeMock?: boolean;
     isApiDisabled?: boolean;
-    // ... otras props que puedan ser comunes o necesarias para los adaptadores
 }
 
-// NUEVO: Adaptador para DifficultyScaleView
 const DifficultyScaleAdapter: React.FC<MappedStepComponentProps> = (props) => {
   const { stepConfig, researchId, stepType, stepId, onStepComplete, stepName } = props;
 
@@ -50,15 +46,13 @@ const DifficultyScaleAdapter: React.FC<MappedStepComponentProps> = (props) => {
   }
 
   const moduleTypeParts = stepType.split('_');
-  // Extrae 'ces', 'nps', 'cv', 'nev' de stepType 'smartvoc_ces', etc.
-  // Si stepType no sigue el patrón 'smartvoc_XXX', usa stepId o un valor por defecto.
   const moduleIdForComponent = moduleTypeParts.length > 1 && moduleTypeParts[0] === 'smartvoc' 
     ? moduleTypeParts[1] 
     : stepId || 'unknown_module';
 
   return (
     <DifficultyScaleView
-      questionConfig={stepConfig as any} // Asumimos que stepConfig es compatible con SmartVOCQuestion
+      questionConfig={stepConfig as any}
       researchId={researchId || ''}
       moduleId={moduleIdForComponent}
       onNext={(data) => onStepComplete(data)}
@@ -136,7 +130,6 @@ export const stepComponentMap: StepComponentMap = {
     'welcome': WelcomeScreenHandler,
     'instruction': InstructionStep,
     'cognitive_short_text': SmartVocFeedbackQuestion,
-    'cognitive_long_text': LongTextQuestion,
     'cognitive_single_choice': SingleChoiceQuestion,
     'cognitive_multiple_choice': MultipleChoiceQuestion,
     'cognitive_linear_scale': LinearScaleQuestion,
@@ -165,7 +158,6 @@ export {
     LinearScaleQuestion,
     MultipleChoiceQuestion,
     SingleChoiceQuestion,
-    LongTextQuestion,
     DemographicStep,
     InstructionStep,
     CognitiveNavigationFlowStep,

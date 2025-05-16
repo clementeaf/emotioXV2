@@ -4,6 +4,7 @@ import { ParticipantFlowStep } from '../types/flow';
 import { useParticipantFlow } from '../hooks/useParticipantFlow';
 import FlowStepContent from '../components/flow/FlowStepContent';
 import { ProgressSidebar } from '../components/layout/ProgressSidebar';
+import LoadingIndicator from '../components/common/LoadingIndicator';
 
 const ParticipantFlow: React.FC = () => {
     const { researchId } = useParams<{ researchId: string }>();
@@ -47,32 +48,40 @@ const ParticipantFlow: React.FC = () => {
                : memoizedCurrentExpandedStep;
     }, [currentStep, memoizedCurrentExpandedStep]);
 
-    return (
-         <div className="flex h-screen w-screen overflow-hidden bg-neutral-100">
-            {showSidebar && expandedSteps && (
-                <ProgressSidebar 
-                    steps={expandedSteps}
-                    currentStepIndex={currentStepIndex} 
-                    onNavigateToStep={navigateToStep}
-                />
-            )}
+    // Usar variable para decidir qué renderizar, no return temprano
+    let content;
+    if (isFlowLoading) {
+        content = <LoadingIndicator message="Cargando configuración del estudio..." />;
+    } else {
+        content = (
+            <div className="flex h-screen w-screen overflow-hidden bg-neutral-100">
+                {showSidebar && expandedSteps && (
+                    <ProgressSidebar 
+                        steps={expandedSteps}
+                        currentStepIndex={currentStepIndex} 
+                        onNavigateToStep={navigateToStep}
+                    />
+                )}
 
-            <main className={`flex-1 overflow-y-auto bg-white flex flex-col items-center justify-center ${!showSidebar ? 'w-full' : ''}`}>
-                 <FlowStepContent
-                    currentStepEnum={currentStep}
-                    currentExpandedStep={memoizedCurrentExpandedStepProp}
-                    isLoading={isFlowLoading}
-                    researchId={researchId}
-                    token={token}
-                    error={error}
-                    handleLoginSuccess={handleLoginSuccess}
-                    handleStepComplete={handleStepComplete}
-                    handleError={handleError}
-                    responsesData={memoizedResponsesDataProp}
-                />
-            </main>
-         </div>
-    );
+                <main className={`flex-1 overflow-y-auto bg-white flex flex-col items-center justify-center ${!showSidebar ? 'w-full' : ''}`}>
+                     <FlowStepContent
+                        currentStepEnum={currentStep}
+                        currentExpandedStep={memoizedCurrentExpandedStepProp}
+                        isLoading={isFlowLoading}
+                        researchId={researchId}
+                        token={token}
+                        error={error}
+                        handleLoginSuccess={handleLoginSuccess}
+                        handleStepComplete={handleStepComplete}
+                        handleError={handleError}
+                        responsesData={memoizedResponsesDataProp}
+                    />
+                </main>
+            </div>
+        );
+    }
+
+    return content;
 };
 
 export default ParticipantFlow;

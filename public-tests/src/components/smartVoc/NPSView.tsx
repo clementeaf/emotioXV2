@@ -17,25 +17,19 @@ const NPSView: React.FC<NPSViewProps> = ({
   questionText,
   instructions,
   companyName,
-  leftLabel = "Not at all likely", // Valor por defecto NPS
-  rightLabel = "Extremely likely", // Valor por defecto NPS
+  leftLabel = "Not at all likely",
+  rightLabel = "Extremely likely",
   onNext,
-  stepId,
-  stepType,
   initialValue = null,
-  config
 }) => {
-  // Usar el valor inicial proporcionado por el padre
   const [selectedValue, setSelectedValue] = useState<number | null>(initialValue);
   
-  // Efecto para actualizar el valor seleccionado si cambia initialValue
   useEffect(() => {
     if (initialValue !== null) {
       setSelectedValue(initialValue);
     }
   }, [initialValue]);
 
-  // Generar los botones numéricos 0-10
   const scaleButtons = Array.from({ length: 11 }, (_, i) => i); // Crea [0, 1, ..., 10]
 
   const handleSelect = (value: number) => {

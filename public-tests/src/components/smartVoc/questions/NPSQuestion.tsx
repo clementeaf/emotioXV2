@@ -1,24 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { SmartVOCQuestion, /*NPSConfig*/ CESConfig as NPSConfig } from '../SmartVOCRouter'; // Usar NPSConfig si existe
 import { useParticipantStore } from '../../../stores/participantStore';
 import { useModuleResponses } from '../../../hooks/useModuleResponses';
 import { useResponseAPI } from '../../../hooks/useResponseAPI';
 
-interface NPSQuestionProps { // Renombrado
-  questionConfig: SmartVOCQuestion & { config: NPSConfig }; // Usar NPSConfig
+interface NPSConfig {
+  scaleRange?: { start: number; end: number };
+  startLabel?: string;
+  endLabel?: string;
+}
+
+interface NPSQuestionProps {
+  questionConfig: { id: string; description?: string; type: string; title?: string; config: NPSConfig };
   researchId: string;
   moduleId: string;
   onSaveSuccess: (questionId: string, responseValue: number, moduleResponseId: string | null) => void;
 }
 
-export const NPSQuestion: React.FC<NPSQuestionProps> = ({ // Renombrado
+export const NPSQuestion: React.FC<NPSQuestionProps> = ({
   questionConfig, 
   researchId,
   moduleId,
   onSaveSuccess 
 }) => {
   const { id: questionId, description, type: questionType, title: questionTitle, config } = questionConfig;
-  // Asumir que NPSConfig también tiene scaleRange, startLabel, endLabel
   const { scaleRange, startLabel, endLabel } = config; 
 
   const participantId = useParticipantStore(state => state.participantId);
@@ -47,7 +51,6 @@ export const NPSQuestion: React.FC<NPSQuestionProps> = ({ // Renombrado
   useEffect(() => {
     const log = (msg: string, data?: any) => setDebugLogs(prev => [...prev, data ? `[NPSQuestion] ${msg}: ${JSON.stringify(data)}` : `[NPSQuestion] ${msg}`]);
     log(`useEffect [moduleResponsesArray] for Q_ID: ${questionId}, Mod_ID: ${moduleId}`);
-    // ... (lógica del useEffect igual, solo cambia el prefijo del log)
     if (!isLoadingInitialData && !loadingError && moduleResponsesArray && Array.isArray(moduleResponsesArray)) {
       log('Datos de API recibidos', moduleResponsesArray);
       const foundResponse = moduleResponsesArray.find((r: any) => 
@@ -82,7 +85,6 @@ export const NPSQuestion: React.FC<NPSQuestionProps> = ({ // Renombrado
   };
 
   const handleSaveOrUpdateClick = async () => {
-    // ... (lógica igual, solo cambia el prefijo del log)
     if (selectedValue === null) {
       setSubmissionError("Por favor, selecciona un valor en la escala.");
       setDebugLogs(prev => [...prev, "[NPSQuestion] Intento de submit sin valor seleccionado."]);
@@ -119,7 +121,6 @@ export const NPSQuestion: React.FC<NPSQuestionProps> = ({ // Renombrado
   };
 
   const scaleOptions: number[] = [];
-  // NPS suele ser de 0 a 10
   const defaultNPSScale = { start: 0, end: 10 };
   const currentScaleRange = (scaleRange && typeof scaleRange.start === 'number' && typeof scaleRange.end === 'number') 
                             ? scaleRange 
@@ -146,18 +147,17 @@ export const NPSQuestion: React.FC<NPSQuestionProps> = ({ // Renombrado
   }
 
   return (
-    // ... (JSX igual a CESQuestion, solo cambia el prefijo del log en el bloque de debug y el texto descriptivo)
     <div className="space-y-4 flex flex-col items-center">
-      <p className="text-base md:text-lg font-medium text-gray-800 text-center">{description || questionTitle || '¿Qué tan probable es que recomiendes...?'}</p>
+      <p className="text-base md:text-lg font-medium text-gray-800 text-center">{description || questionTitle || '¿Qué tan probable es que recomiendes...?'} </p>
       
       {(submissionError || loadingError) && (
           <p className="text-sm text-red-600 my-2 text-center">Error: {submissionError || loadingError}</p>
       )}
 
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full max-w-lg"> {/* Max-width un poco mayor para NPS */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full max-w-lg">
         {startLabel && <span className="text-sm text-gray-600">{startLabel}</span>}
         
-        <div className="flex flex-wrap justify-center gap-1 p-1 md:gap-2 md:p-2"> {/* Menos gap para más números */}
+        <div className="flex flex-wrap justify-center gap-1 p-1 md:gap-2 md:p-2">
           {scaleOptions.map((optionValue) => (
             <label 
               key={optionValue}
@@ -176,7 +176,7 @@ export const NPSQuestion: React.FC<NPSQuestionProps> = ({ // Renombrado
                 disabled={isSubmitting || isLoadingInitialData}
                 className="absolute opacity-0 w-0 h-0"
               />
-              <span className="text-xs md:text-sm font-medium">{optionValue}</span> {/* Tamaño de fuente más pequeño */}
+              <span className="text-xs md:text-sm font-medium">{optionValue}</span>
             </label>
           ))}
         </div>
@@ -198,17 +198,6 @@ export const NPSQuestion: React.FC<NPSQuestionProps> = ({ // Renombrado
                <span>{endLabel || ''}</span>
            </div>
        )}
-
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mt-2 p-2 bg-gray-50 text-xs text-gray-400 border rounded max-h-32 overflow-y-auto w-full max-w-lg">
-          <h5 className="font-semibold">[Debug NPSQuestion - {questionId}]</h5>
-          <p>ModID: {moduleId}, SelVal: {selectedValue === null ? 'N/A' : selectedValue}, RespID: {internalModuleResponseId || 'N/A'}</p>
-          <p>LoadState: InitLoad: {isLoadingInitialData.toString()}, SubmitLoad: {isSubmitting.toString()}</p>
-          <p>Errors: LoadErr: {loadingError || 'No'}, SubmitErr: {submissionError || 'No'}</p>
-          <p>Logs:</p>
-          <pre className="whitespace-pre-wrap break-all">{debugLogs.slice(-5).join('\n')}</pre>
-        </div>
-      )}
     </div>
   );
 }; 

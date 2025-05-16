@@ -224,15 +224,6 @@ const CSATView: React.FC<CSATViewProps> = ({
           {buttonText}
         </button>
       </div>
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mt-6 p-4 border rounded bg-gray-50 text-xs text-gray-700 w-full max-w-xl">
-          <h5 className="font-semibold mb-2">[Debug CSATView - {stepId}]</h5>
-          <p>P_ID: {participantIdFromStore}, R_ID: {researchId}, StepType: {stepType}</p>
-          <p>Load: {isLoadingInitialData.toString()}, ErrL: {loadingError || 'No'} | Submit: {isSubmitting.toString()}, ErrS: {submissionError || 'No'}</p>
-          <p>RespID: {internalModuleResponseId || 'N/A'}, SelVal: {selectedValue === null ? 'N/A' : selectedValue}</p>
-          <pre className="whitespace-pre-wrap break-all max-h-48 overflow-y-auto">{debugLogs.slice(-7).join('\n')}</pre>
-        </div>
-      )}
     </div>
   );
 };
