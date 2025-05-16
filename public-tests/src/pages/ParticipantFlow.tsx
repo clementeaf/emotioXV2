@@ -48,8 +48,6 @@ const ParticipantFlow: React.FC = () => {
             </div>
         );
     } else {
-        // Log para depuración de navegación
-        console.log('Renderizando paso', currentStepIndex, expandedSteps[currentStepIndex]);
         content = (
             <div className="flex h-screen w-screen overflow-hidden bg-neutral-100">
                 {showSidebar && expandedSteps && (

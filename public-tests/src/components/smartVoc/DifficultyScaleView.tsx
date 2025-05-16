@@ -51,35 +51,23 @@ const DifficultyScaleView: React.FC<DifficultyScaleViewProps> = ({
     autoFetch: !!(researchId && participantIdFromStore)
   });
 
-  console.log('moduleResponsesArray', moduleResponsesArray);
-  console.log('moduleId', moduleId);
+  const apiKey = moduleId.toUpperCase();
 
-  const apiKey = moduleId.toUpperCase(); // Esto resultará en "CES"
-
-  // Usar la clave en mayúsculas para buscar en el mapa
   const frontendStepType = smartVOCTypeMap[apiKey];
 
   useEffect(() => {
-    if (frontendStepType) {
-      console.log(`[DifficultyScaleView Effect Check] moduleId: '${moduleId}', frontendStepType: '${frontendStepType}'`);
-    }
-
     if (frontendStepType && moduleResponsesArray && moduleResponsesArray.length > 0) {
       const matchingResponseFromEffect = moduleResponsesArray.find(
         (response: { stepType: string; id: string; response?: { value?: number } }) => response && response.stepType === frontendStepType
       );
 
       if (matchingResponseFromEffect) {
-        console.log(`[DifficultyScaleView Effect - ${frontendStepType}] Matching response found:`, matchingResponseFromEffect);
         if (matchingResponseFromEffect.response && typeof matchingResponseFromEffect.response.value === 'number') {
           if (internalModuleResponseId === null || internalModuleResponseId !== matchingResponseFromEffect.id) {
             setSelectedValue(matchingResponseFromEffect.response.value);
             setInternalModuleResponseId(matchingResponseFromEffect.id);
-            console.log(`[DifficultyScaleView Effect - ${frontendStepType}] selectedValue set to ${matchingResponseFromEffect.response.value}, internalModuleResponseId set to ${matchingResponseFromEffect.id}`);
           }
         }
-      } else {
-        console.log(`[DifficultyScaleView Effect - ${frontendStepType}] No matching response found for '${frontendStepType}' in moduleResponsesArray.`);
       }
     }
   }, [moduleResponsesArray, frontendStepType, internalModuleResponseId, moduleId]);
