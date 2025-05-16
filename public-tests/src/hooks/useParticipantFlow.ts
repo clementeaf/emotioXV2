@@ -26,7 +26,8 @@ export const useParticipantFlow = (researchId: string | undefined) => {
     const loadedApiResponsesFromStore = useParticipantStore(state => state.responsesData.modules.all_steps);
     const maxVisitedIndexFromStore = useParticipantStore(state => state.maxVisitedIndex);
     
-    const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
+    const currentStepIndex = useParticipantStore(state => state.currentStepIndex);
+    const setCurrentStepIndex = useParticipantStore(state => state.setCurrentStepIndex);
 
     const { 
         data: researchFlowApiData, 
@@ -55,13 +56,7 @@ export const useParticipantFlow = (researchId: string | undefined) => {
     }
 
     const builtExpandedSteps = useFlowBuilder({ researchFlowApiData, isLoading: isResearchFlowHookLoading });
-    const [expandedSteps, setExpandedSteps] = useState<ExpandedStep[]>([]);
-
-    useEffect(() => {
-        if (builtExpandedSteps && builtExpandedSteps.length > 0) { 
-            setExpandedSteps(builtExpandedSteps);
-        }
-    }, [builtExpandedSteps]);
+    const expandedSteps = builtExpandedSteps;
 
     const responseAPI = useResponseAPI({
         researchId: researchId || '',
@@ -108,7 +103,7 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         getStepResponse: getStepResponse,
         loadExistingResponses: loadExistingResponses,
         handleErrorProp: (errMsg, errStep) => handleError(errMsg, errStep),
-        setExternalExpandedSteps: setExpandedSteps,
+        setExternalExpandedSteps: expandedSteps,
         currentStepIndexState: currentStepIndex,
         setCurrentStepIndexFunc: setCurrentStepIndex 
     });

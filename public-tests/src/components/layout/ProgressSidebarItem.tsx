@@ -1,5 +1,6 @@
 import { cn } from "../../lib/utils";
 import { colors } from "./utils";
+import { useParticipantStore } from '../../stores/participantStore';
 
 export function ProgressSidebarItem({ step, index, isCurrent, isAnswered, isClickable, onNavigateToStep, totalSteps }: {
     step: any;
@@ -27,7 +28,7 @@ export function ProgressSidebarItem({ step, index, isCurrent, isAnswered, isClic
     }
 
     // Solo permitir click si el paso está completado (verde) y no es el actual
-    const canClick = isAnswered && !isCurrent && !!onNavigateToStep;
+    const canClick = isAnswered && !isCurrent;
 
     return (
       <div
@@ -37,7 +38,10 @@ export function ProgressSidebarItem({ step, index, isCurrent, isAnswered, isClic
           canClick && "cursor-pointer group hover:bg-green-50",
           !canClick && "cursor-default"
         )}
-        onClick={canClick ? () => onNavigateToStep && onNavigateToStep(index) : undefined}
+        onClick={canClick ? () => { 
+          console.log('[ProgressSidebarItem] Navegar a step', index); 
+          useParticipantStore.getState().setCurrentStepIndex(index);
+        } : undefined}
         role={canClick ? "button" : undefined}
         tabIndex={canClick ? 0 : undefined}
         aria-disabled={!canClick}

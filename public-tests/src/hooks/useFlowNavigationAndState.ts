@@ -17,6 +17,7 @@ interface UseFlowNavigationAndStateProps {
     setExternalExpandedSteps?: (updater: (prevSteps: ExpandedStep[]) => ExpandedStep[]) => void; 
     currentStepIndexState: number;
     setCurrentStepIndexFunc: React.Dispatch<React.SetStateAction<number>>;
+    getAnsweredStepIndices?: () => number[];
 }
 
 export const useFlowNavigationAndState = ({
@@ -33,7 +34,8 @@ export const useFlowNavigationAndState = ({
 
     setExternalExpandedSteps,
     currentStepIndexState,
-    setCurrentStepIndexFunc
+    setCurrentStepIndexFunc,
+    getAnsweredStepIndices
 }: UseFlowNavigationAndStateProps) => {
 
     const [currentStep, setCurrentStep] = useState<ParticipantFlowStep>(ParticipantFlowStep.LOADING_SESSION);
@@ -111,7 +113,11 @@ export const useFlowNavigationAndState = ({
                 );
             }
         }
-        if (!isFlowLoading && targetIndex >= 0 && targetIndex < expandedSteps.length && (targetIndex <= (maxVisitedIndexFromStore || 0) || stepHasApiResponse)) {
+        // Obtener pasos respondidos
+        const answeredSteps = getAnsweredStepIndices ? getAnsweredStepIndices() : [];
+        const isAnsweredStep = answeredSteps.includes(targetIndex);
+        // Permitir navegación si el paso está contestado (verde)
+        if (!isFlowLoading && targetIndex >= 0 && targetIndex < expandedSteps.length && (isAnsweredStep || stepHasApiResponse)) {
             const savedResponse = getStepResponse(targetIndex);
             if (savedResponse !== null && savedResponse !== undefined && setExternalExpandedSteps) {
                  setExternalExpandedSteps(prevSteps => prevSteps.map((step, index) => 
@@ -121,7 +127,7 @@ export const useFlowNavigationAndState = ({
             setCurrentStepIndex(targetIndex);
             setError(null); 
         }
-    }, [isFlowLoading, expandedSteps, loadedApiResponsesFromStore, maxVisitedIndexFromStore, getStepResponse, setExternalExpandedSteps, setCurrentStepIndex, setError]);
+    }, [isFlowLoading, expandedSteps, loadedApiResponsesFromStore, getStepResponse, setExternalExpandedSteps, setCurrentStepIndex, setError, getAnsweredStepIndices]);
     
     const totalRelevantSteps = Math.max(0, expandedSteps ? expandedSteps.length - 2 : 0);
     let completedRelevantSteps = 0;

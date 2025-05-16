@@ -40,14 +40,6 @@ const ParticipantFlow: React.FC = () => {
         ParticipantFlowStep.ERROR
     ].includes(currentStep);
 
-    const memoizedCurrentExpandedStepProp = useMemo(() => {
-        return currentStep === ParticipantFlowStep.LOGIN || 
-               currentStep === ParticipantFlowStep.LOADING_SESSION || 
-               currentStep === ParticipantFlowStep.ERROR 
-               ? null 
-               : memoizedCurrentExpandedStep;
-    }, [currentStep, memoizedCurrentExpandedStep]);
-
     let content;
     if (isFlowLoading) {
         content = (
@@ -56,6 +48,8 @@ const ParticipantFlow: React.FC = () => {
             </div>
         );
     } else {
+        // Log para depuración de navegación
+        console.log('Renderizando paso', currentStepIndex, expandedSteps[currentStepIndex]);
         content = (
             <div className="flex h-screen w-screen overflow-hidden bg-neutral-100">
                 {showSidebar && expandedSteps && (
@@ -69,7 +63,7 @@ const ParticipantFlow: React.FC = () => {
                 <main className={`flex-1 overflow-y-auto bg-white flex flex-col items-center justify-center ${!showSidebar ? 'w-full' : ''}`}>
                      <FlowStepContent
                         currentStepEnum={currentStep}
-                        currentExpandedStep={memoizedCurrentExpandedStepProp}
+                        currentExpandedStep={memoizedCurrentExpandedStep}
                         isLoading={isFlowLoading}
                         researchId={researchId}
                         token={token}
