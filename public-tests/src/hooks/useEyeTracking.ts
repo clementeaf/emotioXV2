@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { api, APIStatus } from '../lib/api';
+import { apiClient, APIStatus } from '../lib/api';
 import { EyeTrackingFormData } from '../lib/types';
 
 interface UseEyeTrackingResult {
@@ -33,7 +33,7 @@ export function useEyeTracking(researchId: string): UseEyeTrackingResult {
       
       console.log(`[useEyeTracking] Cargando datos para investigación ${researchId}`);
       
-      const response = await api.getEyeTracking(researchId);
+      const response = await apiClient.getEyeTracking(researchId);
       
       if (response.error || response.apiStatus !== APIStatus.SUCCESS) {
         const errorMessage = response.message || 'Error desconocido al cargar datos de Eye Tracking';
@@ -90,7 +90,7 @@ export function useEyeTrackingRecruit(researchId: string) {
       
       console.log(`[useEyeTrackingRecruit] Cargando datos para investigación ${researchId}`);
       
-      const response = await api.getEyeTrackingRecruit(researchId);
+      const response = await apiClient.getEyeTrackingRecruit(researchId);
       
       if (response.error || response.apiStatus !== APIStatus.SUCCESS) {
         const errorMessage = response.message || 'Error desconocido al cargar datos de reclutamiento';

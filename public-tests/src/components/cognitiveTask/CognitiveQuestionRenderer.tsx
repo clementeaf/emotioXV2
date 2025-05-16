@@ -17,7 +17,6 @@ const CognitiveQuestionRenderer: React.FC<CognitiveQuestionRendererProps> = ({
     answer,
     onChange,
 }) => {
-    console.log('[CognitiveQuestionRenderer] Renderizando pregunta:', question.id, 'Tipo:', question.type);
 
     switch (question.type.toUpperCase()) {
         case 'SHORT_TEXT':

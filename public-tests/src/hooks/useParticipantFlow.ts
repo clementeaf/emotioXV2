@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { ParticipantFlowStep, ExpandedStep } from '../types/flow';
+import { useEffect, useCallback } from 'react';
+import { ParticipantFlowStep } from '../types/flow';
 import { Participant } from '../../../shared/interfaces/participant';
 import { useParticipantStore } from '../stores/participantStore';
 import { useResponseAPI } from './useResponseAPI';
@@ -103,9 +103,16 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         getStepResponse: getStepResponse,
         loadExistingResponses: loadExistingResponses,
         handleErrorProp: (errMsg, errStep) => handleError(errMsg, errStep),
-        setExternalExpandedSteps: expandedSteps,
+        setExternalExpandedSteps: () => expandedSteps,
         currentStepIndexState: currentStepIndex,
-        setCurrentStepIndexFunc: setCurrentStepIndex 
+        setCurrentStepIndexFunc: (value) => {
+          if (typeof value === 'function') {
+            const next = value(currentStepIndex);
+            setCurrentStepIndex(next);
+          } else {
+            setCurrentStepIndex(value);
+          }
+        }
     });
 
     const handleError = useCallback((errorMessage: string, step: ParticipantFlowStep | string) => {

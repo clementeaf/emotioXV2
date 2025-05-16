@@ -27,7 +27,6 @@ export function ProgressSidebarItem({ step, index, isCurrent, isAnswered, isClic
       lineColor = colors.linePending;
     }
 
-    // Solo permitir click si el paso está completado (verde) y no es el actual
     const canClick = isAnswered && !isCurrent;
 
     return (
@@ -39,7 +38,6 @@ export function ProgressSidebarItem({ step, index, isCurrent, isAnswered, isClic
           !canClick && "cursor-default"
         )}
         onClick={canClick ? () => { 
-          console.log('[ProgressSidebarItem] Navegar a step', index); 
           useParticipantStore.getState().setCurrentStepIndex(index);
         } : undefined}
         role={canClick ? "button" : undefined}

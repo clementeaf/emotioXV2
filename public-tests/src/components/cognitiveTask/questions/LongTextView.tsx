@@ -1,101 +1,170 @@
 import React, { useState, useEffect } from 'react';
 import QuestionHeader from '../common/QuestionHeader';
 import TextAreaField from '../../common/TextAreaField';
+import { useResponseAPI } from '../../../hooks/useResponseAPI';
+import { useParticipantStore } from '../../../stores/participantStore';
+import { useModuleResponses } from '../../../hooks/useModuleResponses';
 
 interface LongTextViewProps {
   config: any;
-  value: string | undefined;
+  value?: string;
   onChange: (questionId: string, value: string) => void;
   onStepComplete?: (answer: any) => void;
-  isLoading?: boolean;
-  error?: string | null;
 }
 
-export const LongTextView: React.FC<LongTextViewProps> = ({ config, value, onChange, onStepComplete, isLoading = false, error = null }) => {
+export const LongTextView: React.FC<LongTextViewProps> = ({ config, value: valueProp, onChange, onStepComplete }) => {
   const id = config?.id;
   const title = config?.title;
   const description = config?.description;
   const answerPlaceholder = config?.answerPlaceholder;
   const required = config?.required;
+  const type = config?.type || 'long_text';
+  const moduleId = config?.moduleId;
 
-  // Estado local para la respuesta
-  const [currentResponse, setCurrentResponse] = useState<string>(value || '');
+  const researchId = useParticipantStore(state => state.researchId) || '';
+  const participantId = useParticipantStore(state => state.participantId) || '';
+
+  // Cargar respuesta previa
+  const { data: moduleResponsesArray, isLoading: isLoadingInitialData, error: loadingError } = useModuleResponses({
+    researchId,
+    participantId,
+    autoFetch: true
+  });
+
+  const [textValue, setTextValue] = useState<string>('');
+  const [internalModuleResponseId, setInternalModuleResponseId] = useState<string | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [logs, setLogs] = useState<string[]>([]);
 
-  // Sincronizar valor externo (por ejemplo, si se carga una respuesta previa)
+  const {
+    saveOrUpdateResponse,
+    isLoading: isSubmitting,
+    error: submissionError,
+    setError: setSubmissionError
+  } = useResponseAPI({ researchId, participantId });
+
+  // Cargar respuesta previa al montar
   useEffect(() => {
-    setCurrentResponse(value || '');
-  }, [value]);
+    if (!isLoadingInitialData && Array.isArray(moduleResponsesArray)) {
+      const found = moduleResponsesArray.find((r: any) => r.stepId === id);
+      let value = '';
+      if (found) {
+        if (found.response?.data?.response?.value !== undefined) {
+          value = found.response.data.response.value;
+        } else if (found.response?.value !== undefined) {
+          value = found.response.value;
+        } else if (typeof found.response === 'string') {
+          value = found.response;
+        }
+        setTextValue(value);
+        setInternalModuleResponseId(found.id || null);
+      } else {
+        setTextValue('');
+        setInternalModuleResponseId(null);
+      }
+    }
+  }, [isLoadingInitialData, moduleResponsesArray, id]);
 
-  if (!id) {
-    console.error('[LongTextView] Configuración inválida (sin ID):', config);
-    return <div className="p-4 text-red-600">Error: Pregunta mal configurada.</div>;
-  }
+  // Sincronizar con prop externa si cambia
+  useEffect(() => {
+    if (valueProp !== undefined) setTextValue(valueProp);
+  }, [valueProp]);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setCurrentResponse(e.target.value);
+    setTextValue(e.target.value);
     setLocalError(null);
+    if (submissionError) setSubmissionError(null);
     onChange(id, e.target.value);
   };
 
-  const handleSubmit = () => {
-    setLogs(prev => [...prev, '[LongTextView] handleSubmit ejecutado.']);
-    if (required && !currentResponse.trim()) {
-      setLocalError('Por favor, escribe una respuesta.');
-      setLogs(prev => [...prev, 'Validación fallida: respuesta vacía.']);
+  const handleSubmit = async () => {
+    setLocalError(null);
+    if (!participantId || participantId.trim() === '') {
+      setLocalError('Error: participantId vacío.');
       return;
     }
-    setIsSubmitting(true);
-    setLogs(prev => [...prev, `Guardando respuesta: ${currentResponse}`]);
-    if (onStepComplete) {
-      onStepComplete(currentResponse);
+    if (required && !textValue.trim()) {
+      setLocalError('Por favor, escribe una respuesta.');
+      return;
     }
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setLogs(prev => [...prev, 'Respuesta guardada y submit finalizado.']);
-    }, 500);
+    const responseData = { value: textValue };
+    const moduleIdForApi = moduleId;
+    let result;
+    if (internalModuleResponseId) {
+      // Actualizar (PUT)
+      result = await saveOrUpdateResponse(
+        id,
+        type,
+        title || id,
+        responseData,
+        internalModuleResponseId,
+        moduleIdForApi
+      );
+    } else {
+      // Crear (POST)
+      result = await saveOrUpdateResponse(
+        id,
+        type,
+        title || id,
+        responseData,
+        undefined,
+        moduleIdForApi
+      );
+    }
+    if (result && result.id) {
+      setInternalModuleResponseId(result.id);
+      if (onStepComplete) onStepComplete({ success: true, data: result, value: textValue });
+    } else if (!result && !submissionError) {
+      setLocalError('Ocurrió un error desconocido al guardar.');
+    }
   };
 
+  let buttonText = 'Siguiente';
+  if (isSubmitting) {
+    buttonText = 'Enviando...';
+  } else if (internalModuleResponseId) {
+    buttonText = 'Actualizar y continuar';
+  } else {
+    buttonText = 'Guardar y continuar';
+  }
+
+  if (isLoadingInitialData) {
+    return (
+      <div className="flex flex-col items-center justify-center w-full h-full bg-white p-8">
+        <p>Cargando datos de la pregunta...</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full">
-      <QuestionHeader
-        title={title}
-        description={description}
-        required={required}
-      />
-      <TextAreaField
-        id={`long-text-${id}`}
-        label={title || description || 'Respuesta de texto largo'}
-        value={currentResponse}
-        onChange={handleChange}
-        placeholder={answerPlaceholder || 'Escribe tu respuesta detallada aquí...'}
-        required={required}
-        disabled={isSubmitting || isLoading}
-      />
-      {(localError || error) && (
-        <div className="bg-red-50 border border-red-200 text-sm text-red-700 px-4 py-3 rounded mb-4 mt-2" role="alert">
-          <strong className="font-bold">Error: </strong>
-          <span>{localError || error}</span>
-        </div>
-      )}
-      <button
-        onClick={handleSubmit}
-        className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors mt-4"
-        disabled={isSubmitting || isLoading}
-      >
-        {isSubmitting || isLoading ? 'Guardando...' : 'Guardar y continuar'}
-      </button>
-      {/* Logs de depuración */}
-      {logs.length > 0 && (
-        <div className="mt-4 text-xs text-gray-400">
-          <div className="font-bold mb-1">[Debug logs]</div>
-          <ul className="list-disc pl-4">
-            {logs.map((log, idx) => <li key={idx}>{log}</li>)}
-          </ul>
-        </div>
-      )}
+    <div className="flex flex-col items-center justify-center w-full h-full bg-white p-8">
+      <div className="max-w-2xl w-full flex flex-col items-center">
+        <QuestionHeader
+          title={title}
+          description={description}
+          required={required}
+        />
+        <TextAreaField
+          id={`long-text-${id}`}
+          label={title || description || 'Respuesta de texto largo'}
+          value={textValue}
+          onChange={handleChange}
+          placeholder={answerPlaceholder || 'Escribe tu respuesta detallada aquí...'}
+          required={required}
+          disabled={isSubmitting || isLoadingInitialData}
+        />
+        {(localError || submissionError || loadingError) && (
+          <p className="text-sm text-red-600 mb-4 text-center">
+            Error: {localError || submissionError || loadingError}
+          </p>
+        )}
+        <button
+          className="mt-4 bg-primary-600 hover:bg-primary-700 text-white font-medium py-2.5 px-10 rounded-md w-fit transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={handleSubmit}
+          disabled={isSubmitting || isLoadingInitialData}
+        >
+          {buttonText}
+        </button>
+      </div>
     </div>
   );
 }; 

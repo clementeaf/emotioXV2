@@ -1,7 +1,6 @@
 import { useEffect, useCallback } from 'react';
 import { useParticipantStore } from '../stores/participantStore';
 import { ParticipantFlowStep, ExpandedStep } from '../types/flow';
-import { DEFAULT_DEMOGRAPHICS_CONFIG } from '../types/demographics';
 
 // API URL constante
 const API_BASE_URL = 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev';
@@ -79,8 +78,7 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
         type: 'demographic', 
         config: { 
           title: 'Preguntas demográficas', 
-          description: 'Por favor, responde a unas breves preguntas demográficas antes de comenzar.',
-          demographicsConfig: DEFAULT_DEMOGRAPHICS_CONFIG
+          description: 'Por favor, responde a unas breves preguntas demográficas antes de comenzar.'
         } 
       });
       

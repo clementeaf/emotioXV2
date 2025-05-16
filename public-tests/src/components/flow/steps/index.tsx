@@ -129,13 +129,6 @@ const CognitiveLongTextAdapter: React.FC<MappedStepComponentProps> = ({ stepConf
     setValue(initialValue);
   }, [initialValue, stepId]);
 
-  // Guardado automático: llama a onStepComplete cada vez que cambia el valor
-  React.useEffect(() => {
-    if (typeof onStepComplete === 'function' && stepConfig?.id) {
-      onStepComplete({ questionId: stepConfig.id, value });
-    }
-  }, [value, onStepComplete, stepConfig]);
-
   const handleChange = (_: string, newValue: string) => {
     setValue(newValue);
   };
@@ -145,6 +138,7 @@ const CognitiveLongTextAdapter: React.FC<MappedStepComponentProps> = ({ stepConf
       config={stepConfig}
       value={value}
       onChange={handleChange}
+      onStepComplete={onStepComplete}
     />
   );
 };
