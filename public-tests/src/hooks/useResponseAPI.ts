@@ -22,6 +22,11 @@ export const useResponseAPI = ({ researchId, participantId }: UseResponseAPIProp
     try {
       const response = await apiClient.getModuleResponses(researchId, participantId);
       
+      if ((response.status === 404 || response.notFound === true)) {
+        setError(null);
+        return {};
+      }
+      
       if (response.error || !response.data) {
         console.error('Error obteniendo respuestas:', response);
         setError(response.message || 'Error obteniendo respuestas');

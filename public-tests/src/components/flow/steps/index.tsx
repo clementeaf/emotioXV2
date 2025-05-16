@@ -1,5 +1,6 @@
 import React from 'react';
 import imageUrl from '../../../assets/nav_flow_img.png';
+import { LongTextView } from '../../cognitiveTask/questions/LongTextView';
 
 const ParticipantLogin = React.lazy(() => import('../../auth/ParticipantLogin').then(module => ({ default: module.ParticipantLogin })));
 const WelcomeScreenHandler = React.lazy(() => import('../WelcomeScreenHandler'));
@@ -119,6 +120,35 @@ const CognitivePreferenceTestStep: React.FC<MappedStepComponentProps> = ({ stepC
     );
 };
 
+// Adaptador para preguntas de texto largo
+const CognitiveLongTextAdapter: React.FC<MappedStepComponentProps> = ({ stepConfig, stepId, onStepComplete }) => {
+  const initialValue = stepConfig?.savedResponses || '';
+  const [value, setValue] = React.useState<string>(initialValue);
+
+  React.useEffect(() => {
+    setValue(initialValue);
+  }, [initialValue, stepId]);
+
+  // Guardado automático: llama a onStepComplete cada vez que cambia el valor
+  React.useEffect(() => {
+    if (typeof onStepComplete === 'function' && stepConfig?.id) {
+      onStepComplete({ questionId: stepConfig.id, value });
+    }
+  }, [value, onStepComplete, stepConfig]);
+
+  const handleChange = (_: string, newValue: string) => {
+    setValue(newValue);
+  };
+
+  return (
+    <LongTextView
+      config={stepConfig}
+      value={value}
+      onChange={handleChange}
+    />
+  );
+};
+
 type StepComponentType = React.LazyExoticComponent<React.ComponentType<any>> | React.FC<MappedStepComponentProps>; // Usamos 'any' temporalmente para LazyExoticComponent
 
 interface StepComponentMap {
@@ -130,6 +160,7 @@ export const stepComponentMap: StepComponentMap = {
     'welcome': WelcomeScreenHandler,
     'instruction': InstructionStep,
     'cognitive_short_text': SmartVocFeedbackQuestion,
+    'cognitive_long_text': CognitiveLongTextAdapter,
     'cognitive_single_choice': SingleChoiceQuestion,
     'cognitive_multiple_choice': MultipleChoiceQuestion,
     'cognitive_linear_scale': LinearScaleQuestion,
