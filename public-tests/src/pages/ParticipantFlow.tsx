@@ -48,10 +48,13 @@ const ParticipantFlow: React.FC = () => {
                : memoizedCurrentExpandedStep;
     }, [currentStep, memoizedCurrentExpandedStep]);
 
-    // Usar variable para decidir qué renderizar, no return temprano
     let content;
     if (isFlowLoading) {
-        content = <LoadingIndicator message="Cargando configuración del estudio..." />;
+        content = (
+            <div className="flex items-center justify-center min-h-screen w-full bg-neutral-100">
+                <LoadingIndicator message="Cargando configuración del estudio..." />
+            </div>
+        );
     } else {
         content = (
             <div className="flex h-screen w-screen overflow-hidden bg-neutral-100">
