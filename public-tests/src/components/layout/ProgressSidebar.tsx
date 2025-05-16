@@ -3,6 +3,7 @@ import { useModuleResponses } from '../../hooks/useModuleResponses';
 import { useParticipantStore } from '../../stores/participantStore';
 import { useAnsweredStepIds } from './useAnsweredStepIds';
 import { ProgressSidebarItem } from './ProgressSidebarItem';
+import LoadingIndicator from '../common/LoadingIndicator';
 
 export function ProgressSidebar({ 
   steps, 
@@ -12,7 +13,7 @@ export function ProgressSidebar({
   const researchId = useParticipantStore(state => state.researchId);
   const participantId = useParticipantStore(state => state.participantId);
 
-  const { data: moduleResponsesData } = useModuleResponses({
+  const { data: moduleResponsesData, isLoading: isResponsesLoading } = useModuleResponses({
     researchId: researchId || undefined,
     participantId: participantId || undefined,
     autoFetch: !!(researchId && participantId),
@@ -42,20 +43,26 @@ export function ProgressSidebar({
         )}
       </div>
       <div className="relative flex-grow overflow-y-auto -mr-4 pr-4 md:-mr-6 md:pr-6">
-        {steps.map((step, index) => (
-          <ProgressSidebarItem
-            key={step.id}
-            step={step}
-            index={index}
-            isCurrent={index === currentStepIndex}
-            isAnswered={answeredStepIds.includes(step.id)}
-            isClickable={
-              (index === currentStepIndex || answeredStepIds.includes(step.id) || index < currentStepIndex) && !!onNavigateToStep
-            }
-            onNavigateToStep={onNavigateToStep}
-            totalSteps={steps.length}
-          />
-        ))}
+        {isResponsesLoading ? (
+          <div className="flex flex-col items-center justify-center h-full py-10">
+            <LoadingIndicator message="Revisando respuestas guardadas..." />
+          </div>
+        ) : (
+          steps.map((step, index) => (
+            <ProgressSidebarItem
+              key={step.id}
+              step={step}
+              index={index}
+              isCurrent={index === currentStepIndex}
+              isAnswered={answeredStepIds.includes(step.id)}
+              isClickable={
+                (index === currentStepIndex || answeredStepIds.includes(step.id) || index < currentStepIndex) && !!onNavigateToStep
+              }
+              onNavigateToStep={onNavigateToStep}
+              totalSteps={steps.length}
+            />
+          ))
+        )}
       </div>
     </nav>
   );

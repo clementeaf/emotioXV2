@@ -25,18 +25,22 @@ export function ProgressSidebarItem({ step, index, isCurrent, isAnswered, isClic
       textColor = colors.textPending;
       lineColor = colors.linePending;
     }
-  
+
+    // Solo permitir click si el paso está completado (verde) y no es el actual
+    const canClick = isAnswered && !isCurrent && !!onNavigateToStep;
+
     return (
       <div
         key={step.id}
         className={cn(
           "relative flex items-start w-full text-left mb-4 pb-4 last:mb-0 last:pb-0",
-          isClickable && "cursor-pointer group",
-          !isClickable && "cursor-default"
+          canClick && "cursor-pointer group hover:bg-green-50",
+          !canClick && "cursor-default"
         )}
-        onClick={isClickable ? () => onNavigateToStep && onNavigateToStep(index) : undefined}
-        role={isClickable ? "button" : undefined}
-        tabIndex={isClickable ? 0 : undefined}
+        onClick={canClick ? () => onNavigateToStep && onNavigateToStep(index) : undefined}
+        role={canClick ? "button" : undefined}
+        tabIndex={canClick ? 0 : undefined}
+        aria-disabled={!canClick}
       >
         {index < totalSteps - 1 && (
           <div
@@ -53,7 +57,7 @@ export function ProgressSidebarItem({ step, index, isCurrent, isAnswered, isClic
               "w-4 h-4 rounded-full transition-colors duration-300",
               dotColor,
               isCurrent && `ring-2 ring-offset-2 ${colors.ringCurrent} ${colors.current}`,
-              isClickable && "group-hover:ring-2 group-hover:ring-offset-2 group-hover:ring-primary-300"
+              canClick && "group-hover:ring-2 group-hover:ring-offset-2 group-hover:ring-green-300"
             )}
             aria-current={isCurrent ? 'step' : undefined}
           />
@@ -63,7 +67,7 @@ export function ProgressSidebarItem({ step, index, isCurrent, isAnswered, isClic
             className={cn(
               "text-sm font-medium transition-colors duration-300",
               textColor,
-              isClickable && "group-hover:text-primary-600"
+              canClick && "group-hover:text-green-700"
             )}
           >
             {step.name}
