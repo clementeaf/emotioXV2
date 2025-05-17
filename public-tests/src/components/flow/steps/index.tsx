@@ -121,24 +121,12 @@ const CognitivePreferenceTestStep: React.FC<MappedStepComponentProps> = ({ stepC
 };
 
 // Adaptador para preguntas de texto largo
-const CognitiveLongTextAdapter: React.FC<MappedStepComponentProps> = ({ stepConfig, stepId, onStepComplete }) => {
-  const initialValue = stepConfig?.savedResponses || '';
-  const [value, setValue] = React.useState<string>(initialValue);
-
-  React.useEffect(() => {
-    setValue(initialValue);
-  }, [initialValue, stepId]);
-
-  const handleChange = (_: string, newValue: string) => {
-    setValue(newValue);
-  };
-
+const CognitiveLongTextAdapter: React.FC<MappedStepComponentProps> = ({ stepConfig, onStepComplete }) => {
   return (
     <LongTextView
       config={stepConfig}
-      value={value}
-      onChange={handleChange}
       onStepComplete={onStepComplete}
+      onChange={() => {}}
     />
   );
 };

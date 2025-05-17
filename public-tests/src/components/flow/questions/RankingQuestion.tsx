@@ -183,7 +183,7 @@ ${rankedItemsString}`);
 
             if (dataExisted && moduleResponseId) {
                 console.log('[RankingQuestion Save] Attempting UPDATE with:', payload);
-                operationResult = await updateResponse(moduleResponseId, currentStepIdForApi, stepType, currentStepNameForApi, payload.response);
+                operationResult = await updateResponse(moduleResponseId, payload.response);
                 console.log('[RankingQuestion Save] UPDATE result:', operationResult);
             } else {
                  console.log('[RankingQuestion Save] Attempting SAVE with:', payload);
@@ -320,22 +320,6 @@ ${rankedItemsString}`);
             >
                 {buttonText}
             </button>
-            {process.env.NODE_ENV === 'development' && (
-                <div className="mt-4 p-2 bg-gray-50 text-xs text-gray-500 border rounded">
-                    <p className="font-semibold">[Debug RankingQuestion]</p>
-                    <p>Research ID: {researchId || 'N/A'}, Participant ID: {participantId || 'N/A'}</p>
-                    <p>StepType: {stepType}, StepIdProp: {stepIdFromProps || 'N/A'}, StepNameProp: {componentTitle}</p>
-                    <p>IsApiDisabled Flag: {String(isApiDisabled)}</p>
-                    <p>Data Loading: {dataLoading.toString()}, Data Existed: {dataExisted.toString()}</p>
-                    <p>Document ID: {documentId || 'N/A'}, ModuleResponse ID: {moduleResponseId || 'N/A'}</p>
-                    <p>API Saving: {isSaving.toString()}, API Hook Loading: {isApiLoading.toString()}</p>
-                    <p>API Error (Form): {apiError || 'No'}, API Error (Hook): {apiHookError || 'No'}</p>
-                    <p>Is Navigating: {isNavigating.toString()}</p>
-                    <div>Items from Config (initialConfig.items): <pre>{JSON.stringify(initialConfig?.items || 'N/A', null, 2)}</pre></div>
-                    <div>Items to Use (derived): <pre>{JSON.stringify(itemsFromConfig, null, 2)}</pre></div>
-                    <div>Ranked Items (current state): <pre>{JSON.stringify(rankedItems, null, 2)}</pre></div>
-                </div>
-            )}
         </div>
     );
 };

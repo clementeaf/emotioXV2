@@ -157,7 +157,7 @@ export const SingleChoiceQuestion: React.FC<{
             const payload = { response: currentResponse };
 
             if (dataExisted && moduleResponseId) {
-                await updateResponse(moduleResponseId, currentStepIdForApi, stepType, currentStepNameForApi, payload.response);
+                await updateResponse(moduleResponseId, payload.response);
                 if (apiHookError) {
                     setApiError(apiHookError);
                 } else {
@@ -233,19 +233,6 @@ export const SingleChoiceQuestion: React.FC<{
             >
                 {buttonText}
             </button>
-            {process.env.NODE_ENV === 'development' && !isMock && (
-                <div className="mt-4 p-2 bg-gray-50 text-xs text-gray-500 border rounded">
-                    <p className="font-semibold">[Debug SingleChoiceQuestion]</p>
-                    <p>Research ID: {researchId || 'N/A'}, Participant ID: {participantId || 'N/A'}</p>
-                    <p>StepType: {stepType}, StepIdProp: {stepIdFromProps || 'N/A'}, StepNameProp: {stepNameFromProps || 'N/A'}</p>
-                    <p>Data Loading: {dataLoading.toString()}, Data Existed: {dataExisted.toString()}</p>
-                    <p>Document ID: {documentId || 'N/A'}, ModuleResponse ID: {moduleResponseId || 'N/A'}</p>
-                    <p>API Saving: {isSaving.toString()}, API Hook Loading: {isApiLoading.toString()}</p>
-                    <p>API Error (Form): {apiError || 'No'}, API Error (Hook): {apiHookError || 'No'}</p>
-                    <p>Is Navigating: {isNavigating.toString()}</p>
-                    <div>Response: <pre>{JSON.stringify(currentResponse, null, 2)}</pre></div>
-                </div>
-            )}
         </div>
     );
 };

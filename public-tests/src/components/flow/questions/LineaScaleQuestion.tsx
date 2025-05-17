@@ -254,21 +254,6 @@ export const LinearScaleQuestion: React.FC<LinearScaleQuestionProps> = ({
             >
                 {buttonText}
             </button>
-            {process.env.NODE_ENV === 'development' && !isMock && (
-                <div className="mt-4 p-2 bg-gray-50 text-xs text-gray-500 border rounded">
-                    <p className="font-semibold">[Debug LinearScaleQuestion]</p>
-                    <p>Research ID: {researchId || 'N/A'}, Participant ID: {participantId || 'N/A'}</p>
-                    <p>StepType: {stepType}, StepIdProp: {stepIdFromProps || 'N/A'}, StepNameProp: {stepNameFromProps || 'N/A'}</p>
-                    <p>IsMock Flag: {isMock.toString()}</p>
-                    <p>Data Loading: {dataLoading.toString()}, Data Existed: {dataExisted.toString()}</p>
-                    <p>Document ID: {documentId || 'N/A'}, ModuleResponse ID: {moduleResponseId || 'N/A'}</p>
-                    <p>API Saving: {isSaving.toString()}, API Hook Loading: {isApiLoading.toString()}</p>
-                    <p>API Error (Form): {apiError || 'No'}, API Error (Hook): {apiHookError || 'No'}</p>
-                    <p>Is Navigating: {isNavigating.toString()}</p>
-                    <div>Selected Value: <pre>{JSON.stringify(selectedValue, null, 2)}</pre></div>
-                    <div>Initial Config: <pre>{JSON.stringify(initialConfig, null, 2)}</pre></div>
-                </div>
-            )}
         </div>
     );
 };

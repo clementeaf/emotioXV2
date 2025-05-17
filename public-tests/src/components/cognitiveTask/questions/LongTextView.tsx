@@ -7,164 +7,122 @@ import { useModuleResponses } from '../../../hooks/useModuleResponses';
 
 interface LongTextViewProps {
   config: any;
-  value?: string;
-  onChange: (questionId: string, value: string) => void;
-  onStepComplete?: (answer: any) => void;
+  onStepComplete?: (answer?: any) => void;
 }
 
-export const LongTextView: React.FC<LongTextViewProps> = ({ config, value: valueProp, onChange, onStepComplete }) => {
+export const LongTextView: React.FC<LongTextViewProps> = ({ config, onStepComplete }) => {
   const id = config?.id;
-  const title = config?.title;
-  const description = config?.description;
-  const answerPlaceholder = config?.answerPlaceholder;
-  const required = config?.required;
   const type = config?.type || 'long_text';
-  const moduleId = config?.moduleId;
+  const title = config?.title || 'Pregunta';
+  const description = config?.description;
+  const answerPlaceholder = config?.answerPlaceholder || 'Escribe tu respuesta detallada aquí...';
+  const required = config?.required;
 
+  // IDs globales
   const researchId = useParticipantStore(state => state.researchId) || '';
   const participantId = useParticipantStore(state => state.participantId) || '';
 
-  // Cargar respuesta previa
-  const { data: moduleResponsesArray, isLoading: isLoadingInitialData, error: loadingError } = useModuleResponses({
-    researchId,
-    participantId,
-    autoFetch: true
-  });
+  // Cargar todas las respuestas previas
+  const { data: moduleResponsesArray, isLoading } = useModuleResponses({ researchId, participantId, autoFetch: true });
+  console.log('moduleResponsesArray:', moduleResponsesArray); 
 
-  const [textValue, setTextValue] = useState<string>('');
-  const [internalModuleResponseId, setInternalModuleResponseId] = useState<string | null>(null);
-  const [localError, setLocalError] = useState<string | null>(null);
+  // Buscar la respuesta previa para este step (más robusto)
+  const previousResponseObj = Array.isArray(moduleResponsesArray)
+    ? moduleResponsesArray.find(
+        (r: any) =>
+          (r.stepType === config.type || r.stepType === config.stepType) &&
+          (r.response?.questionId === id || r.stepId === id || r.stepTitle === title)
+      )
+    : undefined;
 
-  const {
-    saveOrUpdateResponse,
-    isLoading: isSubmitting,
-    error: submissionError,
-    setError: setSubmissionError
-  } = useResponseAPI({ researchId, participantId });
+  const previousValue = previousResponseObj?.response?.value ?? '';
 
-  // Cargar respuesta previa al montar
+  // Estado local del textarea
+  const [value, setValue] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Solo setear si el usuario no ha escrito nada
   useEffect(() => {
-    if (!isLoadingInitialData && Array.isArray(moduleResponsesArray)) {
-      const found = moduleResponsesArray.find((r: any) => r.stepId === id);
-      let value = '';
-      if (found) {
-        if (found.response?.data?.response?.value !== undefined) {
-          value = found.response.data.response.value;
-        } else if (found.response?.value !== undefined) {
-          value = found.response.value;
-        } else if (typeof found.response === 'string') {
-          value = found.response;
-        }
-        setTextValue(value);
-        setInternalModuleResponseId(found.id || null);
-      } else {
-        setTextValue('');
-        setInternalModuleResponseId(null);
-      }
+    if (previousValue && value === '') {
+      setValue(previousValue);
     }
-  }, [isLoadingInitialData, moduleResponsesArray, id]);
+    // eslint-disable-next-line
+  }, [previousValue, id]);
 
-  // Sincronizar con prop externa si cambia
+  // Logs para depuración
   useEffect(() => {
-    if (valueProp !== undefined) setTextValue(valueProp);
-  }, [valueProp]);
+    console.log('[LongTextView] moduleResponsesArray:', moduleResponsesArray, 'id:', id, 'title:', title, 'type:', config.type, 'previousValue:', previousValue);
+  }, [moduleResponsesArray, id, title, config.type, previousValue]);
+
+  // API para guardar/actualizar
+  const { saveOrUpdateResponse } = useResponseAPI({ researchId, participantId });
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setTextValue(e.target.value);
-    setLocalError(null);
-    if (submissionError) setSubmissionError(null);
-    onChange(id, e.target.value);
+    setValue(e.target.value);
+    setError(null);
   };
 
   const handleSubmit = async () => {
-    setLocalError(null);
-    if (!participantId || participantId.trim() === '') {
-      setLocalError('Error: participantId vacío.');
+    if (required && !value.trim()) {
+      setError('Por favor, escribe una respuesta.');
       return;
     }
-    if (required && !textValue.trim()) {
-      setLocalError('Por favor, escribe una respuesta.');
-      return;
-    }
-    const responseData = { value: textValue };
-    const moduleIdForApi = moduleId;
-    let result;
-    if (internalModuleResponseId) {
-      // Actualizar (PUT)
-      result = await saveOrUpdateResponse(
-        id,
-        type,
-        title || id,
-        responseData,
-        internalModuleResponseId,
-        moduleIdForApi
-      );
-    } else {
-      // Crear (POST)
-      result = await saveOrUpdateResponse(
-        id,
-        type,
-        title || id,
-        responseData,
-        undefined,
-        moduleIdForApi
-      );
-    }
-    if (result && result.id) {
-      setInternalModuleResponseId(result.id);
-      if (onStepComplete) onStepComplete({ success: true, data: result, value: textValue });
-    } else if (!result && !submissionError) {
-      setLocalError('Ocurrió un error desconocido al guardar.');
+    setIsSubmitting(true);
+    try {
+      let result;
+      if (previousResponseObj?.id) {
+        // Actualizar respuesta existente
+        result = await saveOrUpdateResponse(
+          id,
+          type,
+          title,
+          { value, questionId: id },
+          previousResponseObj.id
+        );
+      } else {
+        // Crear nueva respuesta
+        result = await saveOrUpdateResponse(
+          id,
+          type,
+          title,
+          { value, questionId: id }
+        );
+      }
+      setIsSubmitting(false);
+      if (result && !result.error) {
+        onStepComplete?.(result);
+      } else {
+        setError('Error guardando la respuesta. Intenta nuevamente.');
+      }
+    } catch (err) {
+      setIsSubmitting(false);
+      setError('Error guardando la respuesta. Intenta nuevamente.');
     }
   };
 
-  let buttonText = 'Siguiente';
-  if (isSubmitting) {
-    buttonText = 'Enviando...';
-  } else if (internalModuleResponseId) {
-    buttonText = 'Actualizar y continuar';
-  } else {
-    buttonText = 'Guardar y continuar';
-  }
-
-  if (isLoadingInitialData) {
-    return (
-      <div className="flex flex-col items-center justify-center w-full h-full bg-white p-8">
-        <p>Cargando datos de la pregunta...</p>
-      </div>
-    );
+  if (isLoading) {
+    return <div className="text-center py-8">Cargando respuesta previa...</div>;
   }
 
   return (
-    <div className="flex flex-col items-center justify-center w-full h-full bg-white p-8">
-      <div className="max-w-2xl w-full flex flex-col items-center">
-        <QuestionHeader
-          title={title}
-          description={description}
-          required={required}
-        />
-        <TextAreaField
-          id={`long-text-${id}`}
-          label={title || description || 'Respuesta de texto largo'}
-          value={textValue}
-          onChange={handleChange}
-          placeholder={answerPlaceholder || 'Escribe tu respuesta detallada aquí...'}
-          required={required}
-          disabled={isSubmitting || isLoadingInitialData}
-        />
-        {(localError || submissionError || loadingError) && (
-          <p className="text-sm text-red-600 mb-4 text-center">
-            Error: {localError || submissionError || loadingError}
-          </p>
-        )}
-        <button
-          className="mt-4 bg-primary-600 hover:bg-primary-700 text-white font-medium py-2.5 px-10 rounded-md w-fit transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-          onClick={handleSubmit}
-          disabled={isSubmitting || isLoadingInitialData}
-        >
-          {buttonText}
-        </button>
-      </div>
+    <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full mx-auto">
+      <QuestionHeader title={title} description={description} required={required} />
+      <TextAreaField
+        id={`long-text-${id}`}
+        value={value}
+        onChange={handleChange}
+        placeholder={answerPlaceholder}
+        disabled={isSubmitting}
+      />
+      {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
+      <button
+        className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg mt-4"
+        onClick={handleSubmit}
+        disabled={isSubmitting}
+      >
+        {previousResponseObj?.id ? 'Actualizar y continuar' : 'Guardar y continuar'}
+      </button>
     </div>
   );
 }; 

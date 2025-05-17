@@ -35,8 +35,6 @@ const CognitiveQuestionRenderer: React.FC<CognitiveQuestionRendererProps> = ({
                 <LongTextView
                     key={question.id}
                     config={question}
-                    value={answer || ''}
-                    onChange={onChange}
                 />
             );
         case 'SINGLE_CHOICE':
