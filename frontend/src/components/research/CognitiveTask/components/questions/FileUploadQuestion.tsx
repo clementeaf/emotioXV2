@@ -73,8 +73,8 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
   const openHitzoneEditor = async (file: FileInfo) => {
     console.log('[HITZONE] Intentando abrir editor para archivo:', file);
     alert('[HITZONE] Intentando abrir editor para archivo:\n' + JSON.stringify(file, null, 2));
-    let url = file.url;
-    if ((!url || url.startsWith('blob:')) && file.s3Key) {
+    let url = '';
+    if (file.s3Key) {
       try {
         url = await s3Service.getDownloadUrl(file.s3Key);
         console.log('[HITZONE] URL prefirmada obtenida:', url);
@@ -84,6 +84,8 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
         alert('[HITZONE] Error obteniendo URL prefirmada:\n' + (e instanceof Error ? e.message : String(e)));
         url = '';
       }
+    } else if (file.url?.startsWith('blob:')) {
+      url = file.url;
     }
     setHitzoneFile({ ...file, url });
     setHitzoneModalOpen(true);
@@ -206,7 +208,8 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
                       size="sm"
                       className="text-blue-600 border-blue-200 hover:bg-blue-50"
                       onClick={() => openHitzoneEditor(file)}
-                      disabled={disabled}
+                      disabled={disabled || (!file.s3Key && !file.url?.startsWith('blob:'))}
+                      title={file.s3Key || (file.url?.startsWith('blob:')) ? undefined : 'Primero sube o selecciona un archivo de imagen'}
                     >
                       Edit hitzones
                     </Button>
