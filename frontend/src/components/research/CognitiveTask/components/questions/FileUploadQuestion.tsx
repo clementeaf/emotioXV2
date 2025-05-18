@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/Button';
 import { Upload, Trash2, Clock } from 'lucide-react';
 import { FileUploadQuestionProps, FileInfo } from '../../types';
 import { Switch } from '@/components/ui/Switch';
+import { SvgHitzoneEditor } from './SvgHitzoneEditor';
+import ReactDOM from 'react-dom';
+import s3Service from '@/services/s3Service';
 
 const DEFAULT_TEXTS = {
   QUESTION_TITLE_PLACEHOLDER: 'Añadir pregunta',
@@ -38,6 +41,10 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Estado para el modal de hitzones
+  const [hitzoneModalOpen, setHitzoneModalOpen] = React.useState(false);
+  const [hitzoneFile, setHitzoneFile] = React.useState<FileInfo | null>(null);
+
   const titleError = validationErrors ? validationErrors['title'] : null;
   const descriptionError = validationErrors ? validationErrors['description'] : null;
   const filesError = validationErrors ? validationErrors['files'] : null;
@@ -57,6 +64,19 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
       onFileUpload(e.target.files);
       e.target.value = '';
     }
+  };
+
+  const openHitzoneEditor = async (file: FileInfo) => {
+    let url = file.url;
+    if ((!url || url.startsWith('blob:')) && file.s3Key) {
+      try {
+        url = await s3Service.getDownloadUrl(file.s3Key);
+      } catch (e) {
+        url = '';
+      }
+    }
+    setHitzoneFile({ ...file, url });
+    setHitzoneModalOpen(true);
   };
 
   return (
@@ -169,6 +189,18 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
                   >
                     <Trash2 size={18} />
                   </button>
+                  {file.type?.startsWith('image/') && !isPendingDelete && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                      onClick={() => openHitzoneEditor(file)}
+                      disabled={disabled}
+                    >
+                      Edit hitzones
+                    </Button>
+                  )}
                 </div>
               );
             })}
@@ -235,6 +267,33 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
              </div>
            </div>
       </div>
+
+      {/* Modal de edición de hitzones */}
+      {hitzoneModalOpen && hitzoneFile && (typeof window !== 'undefined' ? ReactDOM.createPortal(
+        <div className="fixed inset-0 w-screen h-screen top-0 left-0 z-50 flex items-center justify-center bg-black bg-opacity-40 m-0 p-0">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-2xl w-full relative flex flex-col items-center">
+            <h2 className="text-lg font-semibold mb-4 text-center">Editar hitzones para: {hitzoneFile.name}</h2>
+            <SvgHitzoneEditor
+              imageUrl={hitzoneFile.url}
+              areas={hitzoneFile.hitzones || []}
+              setAreas={(newAreas) => {
+                hitzoneFile.hitzones = newAreas;
+              }}
+              selectedAreaIdx={null}
+              setSelectedAreaIdx={() => {}}
+            />
+            <div className="flex justify-end mt-4 w-full">
+              <button
+                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                onClick={() => setHitzoneModalOpen(false)}
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body as Element
+      ) : null)}
     </div>
   );
 }; 

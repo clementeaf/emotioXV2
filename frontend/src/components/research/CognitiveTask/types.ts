@@ -5,6 +5,14 @@ export interface Choice {
   isDisqualify?: boolean;
 }
 
+export interface HitzoneArea {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export interface FileInfo {
   id: string;
   name: string;
@@ -17,6 +25,7 @@ export interface FileInfo {
   error?: boolean;
   status?: 'uploading' | 'uploaded' | 'pending-delete' | 'error';
   questionId?: string;
+  hitzones?: HitzoneArea[];
 }
 
 export interface ScaleConfig {
