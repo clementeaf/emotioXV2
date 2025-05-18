@@ -16,15 +16,17 @@ interface SvgHitzoneEditorProps {
   setSelectedAreaIdx: (idx: number | null) => void;
 }
 
-const CANVAS_WIDTH = 500;
-const CANVAS_HEIGHT = 500;
+const CANVAS_WIDTH = 575;
+const CANVAS_HEIGHT = 575;
 
-export const SvgHitzoneEditor: React.FC<SvgHitzoneEditorProps> = ({
+export const SvgHitzoneEditor: React.FC<SvgHitzoneEditorProps & { onClose?: () => void; onSave?: (areas: Area[]) => void; }> = ({
   imageUrl,
   areas,
   setAreas,
   selectedAreaIdx,
-  setSelectedAreaIdx
+  setSelectedAreaIdx,
+  onClose,
+  onSave
 }) => {
   const [drawing, setDrawing] = useState(false);
   const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(null);
@@ -34,6 +36,7 @@ export const SvgHitzoneEditor: React.FC<SvgHitzoneEditorProps> = ({
   // Estado para drag y resize
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number } | null>(null);
   const [resizing, setResizing] = useState<null | { corner: string }> (null);
+  const [showTest, setShowTest] = useState(false);
 
   // Iniciar dibujo
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -164,25 +167,46 @@ export const SvgHitzoneEditor: React.FC<SvgHitzoneEditorProps> = ({
   if (!imageUrl || imageUrl.trim() === '') {
     return <div style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', borderRadius: 8 }}>
       <span className="text-neutral-500">No se puede mostrar la imagen. Vuelve a subir el archivo.</span>
+      {onClose && (
+        <button onClick={onClose} style={{ position: 'absolute', top: 16, right: 16, zIndex: 20 }} className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Cerrar</button>
+      )}
     </div>;
   }
 
   return (
-    <div style={{ position: 'relative', width: CANVAS_WIDTH, height: CANVAS_HEIGHT }}>
+    <div style={{ position: 'relative', width: 'min(90vw, 575px)', height: 'min(80vh, 575px)', background: '#fff', borderRadius: 8, boxShadow: '0 2px 16px #0002' }}>
+      {/* Botón cerrar */}
+      {onClose && (
+        <button onClick={onClose} style={{ position: 'absolute', top: 16, right: 16, zIndex: 20 }} className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Cerrar</button>
+      )}
+      {/* Instrucciones */}
+      <div style={{ position: 'absolute', top: 16, left: 16, zIndex: 20, background: '#f8fafc', borderRadius: 6, padding: '8px 16px', fontSize: 13, color: '#333', boxShadow: '0 1px 4px #0001' }}>
+        <b>Instrucciones:</b> Dibuja una zona arrastrando con el mouse. Haz clic en una zona para seleccionarla. Arrastra para mover. Usa los círculos para redimensionar. Pulsa "Eliminar zona" para borrar la seleccionada.
+      </div>
+      {/* Botones de acción */}
+      <div style={{ position: 'absolute', bottom: 16, left: 16, zIndex: 20, display: 'flex', gap: 8 }}>
+        <button onClick={() => onSave && onSave(areas)} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Guardar zonas</button>
+        <button onClick={() => setShowTest(v => !v)} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">{showTest ? 'Ocultar prueba' : 'Probar hitzones'}</button>
+        {selectedAreaIdx !== null && (
+          <button onClick={handleDelete} className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Eliminar zona</button>
+        )}
+      </div>
+      {/* Imagen base */}
       <img
         src={imageUrl}
         alt="Imagen base"
-        style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT, display: 'block', borderRadius: 8, objectFit: 'contain', background: '#f8fafc' }}
+        style={{ width: '100%', height: '100%', display: 'block', borderRadius: 8, objectFit: 'contain', background: '#f8fafc' }}
         draggable={false}
         onError={(e) => {
-          e.currentTarget.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="500" height="500"><rect width="500" height="500" fill="%23f8fafc"/><text x="250" y="250" font-family="Arial" font-size="24" text-anchor="middle" dominant-baseline="middle" fill="%23999">Error</text></svg>';
+          e.currentTarget.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="575" height="575"><rect width="575" height="575" fill="%23f8fafc"/><text x="287" y="287" font-family="Arial" font-size="24" text-anchor="middle" dominant-baseline="middle" fill="%23999">Error</text></svg>';
         }}
       />
+      {/* SVG de zonas */}
       <svg
         ref={svgRef}
         width={CANVAS_WIDTH}
         height={CANVAS_HEIGHT}
-        style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'auto' }}
+        style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'auto', width: '100%', height: '100%' }}
         onMouseDown={handleMouseDown}
         onMouseMove={(e) => { handleMouseMove(e); handleSvgMouseMove(e); }}
         onMouseUp={handleSvgMouseUp}
@@ -194,15 +218,21 @@ export const SvgHitzoneEditor: React.FC<SvgHitzoneEditorProps> = ({
               y={area.y}
               width={area.width}
               height={area.height}
-              fill={idx === selectedAreaIdx ? 'rgba(0,123,255,0.3)' : 'rgba(0,123,255,0.15)'}
+              fill={
+                showTest
+                  ? 'rgba(40,167,69,0.25)'
+                  : idx === selectedAreaIdx
+                  ? 'rgba(0,123,255,0.3)'
+                  : 'rgba(0,123,255,0.15)'
+              }
               stroke={idx === selectedAreaIdx ? '#007bff' : '#007bff'}
               strokeWidth={idx === selectedAreaIdx ? 2 : 1}
               onClick={(e) => handleRectClick(idx, e)}
               onMouseDown={(e) => idx === selectedAreaIdx ? handleRectMouseDown(idx, e) : undefined}
-              style={{ cursor: idx === selectedAreaIdx ? 'move' : 'pointer' }}
+              style={{ cursor: idx === selectedAreaIdx ? 'move' : 'pointer', filter: showTest ? 'drop-shadow(0 0 8px #28a745)' : undefined }}
             />
             {/* Handles para redimensionar solo si está seleccionada */}
-            {idx === selectedAreaIdx && [
+            {idx === selectedAreaIdx && !showTest && [
               { corner: 'nw', cx: area.x, cy: area.y },
               { corner: 'ne', cx: area.x + area.width, cy: area.y },
               { corner: 'sw', cx: area.x, cy: area.y + area.height },
@@ -220,9 +250,13 @@ export const SvgHitzoneEditor: React.FC<SvgHitzoneEditorProps> = ({
                 style={{ cursor: `${h.corner}-resize` }}
               />
             ))}
+            {/* Tooltip de prueba */}
+            {showTest && (
+              <title>Zona interactiva #{idx + 1}</title>
+            )}
           </g>
         ))}
-        {currentRect && (
+        {currentRect && !showTest && (
           <rect
             x={currentRect.x}
             y={currentRect.y}
@@ -234,14 +268,6 @@ export const SvgHitzoneEditor: React.FC<SvgHitzoneEditorProps> = ({
           />
         )}
       </svg>
-      {selectedAreaIdx !== null && (
-        <button
-          style={{ position: 'absolute', top: 8, right: 8, zIndex: 10 }}
-          onClick={handleDelete}
-        >
-          Eliminar zona
-        </button>
-      )}
     </div>
   );
 }; 

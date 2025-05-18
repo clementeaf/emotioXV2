@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/Switch';
 import { SvgHitzoneEditor } from './SvgHitzoneEditor';
 import ReactDOM from 'react-dom';
 import s3Service from '@/services/s3Service';
+import toast from 'react-hot-toast';
 
 const DEFAULT_TEXTS = {
   QUESTION_TITLE_PLACEHOLDER: 'Añadir pregunta',
@@ -52,6 +53,9 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
   const isThisQuestionUploading = isUploading && 
     question.files?.some(file => file.isLoading);
 
+  // Filtrar archivos con status 'error' antes de renderizar
+  const validFiles = question.files ? question.files.filter(f => f.status !== 'error') : [];
+
   const handleButtonClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
@@ -67,11 +71,17 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
   };
 
   const openHitzoneEditor = async (file: FileInfo) => {
+    console.log('[HITZONE] Intentando abrir editor para archivo:', file);
+    alert('[HITZONE] Intentando abrir editor para archivo:\n' + JSON.stringify(file, null, 2));
     let url = file.url;
     if ((!url || url.startsWith('blob:')) && file.s3Key) {
       try {
         url = await s3Service.getDownloadUrl(file.s3Key);
+        console.log('[HITZONE] URL prefirmada obtenida:', url);
+        alert('[HITZONE] URL prefirmada obtenida:\n' + url);
       } catch (e) {
+        console.error('[HITZONE] Error obteniendo URL prefirmada:', e);
+        alert('[HITZONE] Error obteniendo URL prefirmada:\n' + (e instanceof Error ? e.message : String(e)));
         url = '';
       }
     }
@@ -131,13 +141,13 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
             </div>
             <p className="text-xs text-neutral-500">{uploadProgress || 0}{DEFAULT_TEXTS.PERCENTAGE_COMPLETE}</p>
           </div>
-        ) : question.files && question.files.length > 0 ? (
+        ) : validFiles.length > 0 ? (
           <div className="w-full space-y-3">
-            {question.files.map((file: FileInfo, index) => {
+            {validFiles.map((file: FileInfo, index) => {
               const isPendingDelete = file.status === 'pending-delete';
               return (
                 <div 
-                  key={file.id}
+                  key={`${file.id}_${index}`}
                   className={`flex items-center justify-between p-2 bg-white border rounded transition-opacity duration-300 ${isPendingDelete ? 'opacity-50 border-dashed border-amber-400' : ''}`}
                 >
                   <div className="flex items-center gap-2">
@@ -281,6 +291,13 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
               }}
               selectedAreaIdx={null}
               setSelectedAreaIdx={() => {}}
+              onClose={() => setHitzoneModalOpen(false)}
+              onSave={(newAreas) => {
+                hitzoneFile.hitzones = newAreas;
+                setHitzoneModalOpen(false);
+                onQuestionChange({ files: question.files?.map(f => f.id === hitzoneFile.id ? { ...f, hitzones: newAreas } : f) });
+                toast.success('¡Zonas guardadas correctamente!');
+              }}
             />
             <div className="flex justify-end mt-4 w-full">
               <button

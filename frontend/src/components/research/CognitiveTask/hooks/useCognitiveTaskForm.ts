@@ -219,6 +219,16 @@ const DEFAULT_QUESTIONS: Question[] = [
   }
 ];
 
+// Helper para limpieza profunda de archivos en error
+const cleanupErrorFiles = (questions: Question[]): Question[] => {
+  return questions.map(q => {
+    if (!q.files) return q;
+    // Filtrar archivos que NO están en error
+    const keptFiles = q.files.filter(f => f.status !== 'error');
+    return { ...q, files: keptFiles };
+  });
+};
+
 // Helper para limpieza profunda de archivos pendientes de eliminación
 const cleanupPendingDeleteFiles = (questions: Question[]): Question[] => {
   return questions.map(q => {
@@ -435,47 +445,49 @@ export const useCognitiveTaskForm = (
     },
     onSuccess: (data) => {
       console.log('[useCognitiveTaskForm] Datos guardados (REAL):', data);
-      // Registrar el timestamp de la última mutación exitosa
       window._lastMutationTimestamp = Date.now();
-      
-      // <<< Guardar el ID antes de usarlo para el mensaje de toast >>>
       const wasUpdating = !!cognitiveTaskId;
       if (data && data.id) {
-        setCognitiveTaskId(data.id); // Actualizar ID si se creó uno nuevo
+        setCognitiveTaskId(data.id);
       }
       if (researchId) {
-        localStorage.removeItem(`cognitive_task_temp_files_${researchId}`);
-        console.log('[useCognitiveTaskForm] Limpiando archivos temporales');
+        // Limpiar solo archivos eliminados del localStorage
+        const storageKey = `cognitive_task_temp_files_${researchId}`;
+        const savedFilesJson = localStorage.getItem(storageKey);
+        if (savedFilesJson) {
+          const savedFiles = JSON.parse(savedFilesJson);
+          if (Array.isArray(data.questions)) {
+            data.questions.forEach((q: any) => {
+              if (Array.isArray(q.files)) {
+                // Mantener solo los archivos que NO están pending-delete
+                const validIds = q.files.map((f: any) => f.id);
+                if (Array.isArray(savedFiles[q.id])) {
+                  savedFiles[q.id] = savedFiles[q.id].filter((f: any) => validIds.includes(f.id));
+                }
+              }
+            });
+          }
+          localStorage.setItem(storageKey, JSON.stringify(savedFiles));
+          console.log('[useCognitiveTaskForm] Limpiando archivos eliminados del localStorage');
+        }
       }
       modals.closeConfirmModal(); 
       modals.closeJsonModal();
       if (typeof onSave === 'function') { onSave(data); }
-      
-      // Mostrar modal de éxito en lugar de toast
       modals.showModal({
         title: UI_TEXTS.MODAL.INFO_TITLE,
         message: wasUpdating ? SUCCESS_MESSAGES.UPDATED : SUCCESS_MESSAGES.CREATED,
         type: 'success'
       });
-      
-      // --- MEJORA: Asegurar que la caché se actualiza correctamente ---
-      // 1. Primero invalidamos para forzar una recarga
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.COGNITIVE_TASK, researchId] });
-      
-      // 2. También actualizamos directamente la caché con los datos recibidos para evitar inconsistencias
       queryClient.setQueryData([QUERY_KEYS.COGNITIVE_TASK, researchId], data);
-      
-      // 3. Programar una recarga después de un breve tiempo para asegurar consistencia
       setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.COGNITIVE_TASK, researchId] });
       }, 1000);
-      
-      // --- Inicio: Limpiar archivos pending-delete del estado local --- 
       setFormData(prevData => ({
         ...prevData,
-        questions: cleanupPendingDeleteFiles(prevData.questions)
+        questions: cleanupErrorFiles(prevData.questions)
       }));
-      // --- Fin: Limpiar archivos --- 
     },
     onError: (error: any) => {
       console.error('[useCognitiveTaskForm] Error en mutación (REAL):', error);
@@ -488,7 +500,7 @@ export const useCognitiveTaskForm = (
       // --- Inicio: Revertir estado pending-delete en error --- 
       setFormData(prevData => ({
         ...prevData,
-        questions: revertPendingDeleteFiles(prevData.questions)
+        questions: cleanupErrorFiles(prevData.questions)
       }));
       // --- Fin: Revertir estado --- 
     }
@@ -599,6 +611,7 @@ export const useCognitiveTaskForm = (
 
       console.log('[useEffect Form Data] Estado FINAL a devolver:', JSON.stringify(finalState.questions.find(q=>q.id==='3.8')?.files?.map(f=>f.id), null, 2));
       logFormDebugInfo('effectEnd', finalState);
+      finalState.questions = cleanupErrorFiles(finalState.questions);
       return finalState;
     });
     
