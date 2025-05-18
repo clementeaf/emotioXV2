@@ -16,7 +16,7 @@ export interface CognitiveQuestion {
 
 // Interfaz para las respuestas
 export interface CognitiveAnswers {
-  [questionId: string]: any; 
+  [questionId: string]: unknown;
 }
 // <<< FIN INTERFACES MOVIDAS >>>
 
@@ -71,9 +71,10 @@ export const useCognitiveTask = ({ researchId, token, onComplete, onError }: Use
                     const questionsArray = configData.questions;
                     
                     // 1. Añadir tipo explícito a 'q'
-                    const validQuestions = questionsArray.filter((q: any) => { 
-                        const question = q as any; 
-                        return question && typeof question.id === 'string' && typeof question.type === 'string';
+                    const validQuestions = questionsArray.filter((q: unknown) => { 
+                        if (typeof q !== 'object' || q === null) return false;
+                        const question = q as { id?: unknown; type?: unknown };
+                        return typeof question.id === 'string' && typeof question.type === 'string';
                     });
                                         
                     if (validQuestions.length > 0) {
@@ -95,9 +96,13 @@ export const useCognitiveTask = ({ researchId, token, onComplete, onError }: Use
                  const errorText = await response.text();
                  throw new Error(`Error ${response.status}: ${errorText}`);
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
              console.error('[useCognitiveTask] Exception fetching config:', err);
-             onError(err.message || 'Error loading cognitive task configuration.');
+             if (typeof err === 'object' && err !== null && 'message' in err && typeof (err as { message?: unknown }).message === 'string') {
+                 onError((err as { message: string }).message);
+             } else {
+                 onError('Error loading cognitive task configuration.');
+             }
         } finally {
             setIsLoading(false);
         }
@@ -109,7 +114,7 @@ export const useCognitiveTask = ({ researchId, token, onComplete, onError }: Use
     }, [fetchConfig]); // fetchConfig ya incluye sus dependencias
 
     // --- Lógica de Interacción --- 
-    const handleAnswerChange = useCallback((questionId: string, value: any) => {
+    const handleAnswerChange = useCallback((questionId: string, value: unknown) => {
         setAnswers(prevAnswers => ({
             ...prevAnswers,
             [questionId]: value

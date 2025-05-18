@@ -71,9 +71,12 @@ export const useSmartVOCData = (researchId?: string, token?: string): UseSmartVO
                 console.error(`[useSmartVOCData] Error ${response.status}: ${errorText}`);
                 throw new Error(`Error ${response.status} al cargar SmartVOC.`);
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('[useSmartVOCData] Excepción en fetchConfig:', err);
-            setError(err.message || 'Error desconocido al cargar la configuración de SmartVOC.');
+            const errorMsg = (err && typeof err === 'object' && 'message' in err)
+                ? (err as { message?: string }).message
+                : 'Error desconocido al cargar la configuración de SmartVOC.';
+            setError(errorMsg ?? 'Error desconocido al cargar la configuración de SmartVOC.');
             setQuestions([]);
             setConfig(null);
         } finally {

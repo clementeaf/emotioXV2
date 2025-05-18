@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParticipantStore } from '../../stores/participantStore';
+import { useResponseAPI } from '../../hooks/useResponseAPI';
+import { useModuleResponses } from '../../hooks/useModuleResponses';
 
 interface AgreementScaleViewProps {
   questionText: string;
@@ -6,7 +9,11 @@ interface AgreementScaleViewProps {
   scaleSize?: number; // Típicamente 5 o 7 para Likert
   leftLabel?: string; // Etiqueta izquierda (e.g., "No en absoluto")
   rightLabel?: string; // Etiqueta derecha (e.g., "Totalmente")
-  onNext: (selectedValue: number) => void;
+  researchId: string;
+  stepId: string;
+  stepName: string;
+  stepType: string;
+  onStepComplete: (data?: unknown) => void;
 }
 
 const AgreementScaleView: React.FC<AgreementScaleViewProps> = ({
@@ -15,21 +22,118 @@ const AgreementScaleView: React.FC<AgreementScaleViewProps> = ({
   scaleSize = 7, // Defecto 7 según la imagen
   leftLabel = "No en absoluto", // Defecto en español
   rightLabel = "Totalmente", // Defecto en español
-  onNext
+  researchId,
+  stepId,
+  stepName,
+  stepType,
+  onStepComplete
 }) => {
-  const [selectedValue, setSelectedValue] = useState<number | null>(null); // Iniciar en null
+  const participantIdFromStore = useParticipantStore(state => state.participantId);
+  const [selectedValue, setSelectedValue] = useState<number | null>(null);
+  const [internalModuleResponseId, setInternalModuleResponseId] = useState<string | null>(null);
+
+  const {
+    saveOrUpdateResponse,
+    isLoading: isSubmitting,
+    error: submissionError,
+    setError: setSubmissionError
+  } = useResponseAPI({ researchId, participantId: participantIdFromStore || '' });
+
+  const {
+    data: moduleResponsesArray,
+    isLoading: isLoadingInitialData,
+    error: loadingError
+  } = useModuleResponses({
+    researchId,
+    participantId: participantIdFromStore || undefined,
+    autoFetch: !!(researchId && participantIdFromStore)
+  });
+
+  // Cargar valor inicial desde la API
+  useEffect(() => {
+    if (!isLoadingInitialData && !loadingError && moduleResponsesArray && Array.isArray(moduleResponsesArray)) {
+      // Type guard robusto para evitar any
+      const foundResponse = moduleResponsesArray.find((r: unknown) => {
+        if (typeof r !== 'object' || r === null) return false;
+        const resp = r as { stepType?: unknown; stepId?: unknown };
+        return resp.stepType === stepType && resp.stepId === stepId;
+      });
+      if (
+        foundResponse &&
+        typeof foundResponse === 'object' &&
+        foundResponse !== null &&
+        'response' in foundResponse &&
+        typeof (foundResponse as { response?: unknown }).response === 'object' &&
+        (foundResponse as { response?: { value?: unknown } }).response !== null &&
+        typeof (foundResponse as { response?: { value?: unknown } }).response?.value === 'number'
+      ) {
+        setSelectedValue((foundResponse as { response: { value: number } }).response.value);
+        setInternalModuleResponseId(
+          'id' in foundResponse && typeof (foundResponse as { id?: unknown }).id === 'string'
+            ? (foundResponse as { id: string }).id
+            : null
+        );
+      } else {
+        setSelectedValue(null);
+        setInternalModuleResponseId(null);
+      }
+    }
+  }, [moduleResponsesArray, isLoadingInitialData, loadingError, stepId, stepType]);
 
   const scaleButtons = Array.from({ length: scaleSize }, (_, i) => i + 1); // [1, ..., scaleSize]
 
   const handleSelect = (value: number) => {
     setSelectedValue(value);
+    if (submissionError) setSubmissionError(null);
   };
 
-  const handleNextClick = () => {
-    if (selectedValue !== null) {
-      onNext(selectedValue);
+  const handleSubmit = async () => {
+    if (!participantIdFromStore || participantIdFromStore.trim() === '') {
+      setSubmissionError("Error: participantIdFromStore vacío.");
+      return;
+    }
+    if (selectedValue === null) {
+      setSubmissionError("Por favor, selecciona una opción.");
+      return;
+    }
+
+    const responseData = { value: selectedValue };
+    const result = await saveOrUpdateResponse(
+      stepId,
+      stepType,
+      stepName,
+      responseData,
+      internalModuleResponseId || undefined
+    );
+
+    if (result && !submissionError) {
+      if (typeof result === 'object' && result !== null && 'id' in result && typeof (result as { id?: unknown }).id === 'string' && !internalModuleResponseId) {
+        setInternalModuleResponseId((result as { id: string }).id);
+        onStepComplete({ success: true, data: result, value: selectedValue });
+      } else {
+        onStepComplete({ success: true, data: result, value: selectedValue });
+      }
+    } else if (!result && !submissionError) {
+      setSubmissionError("Ocurrió un error desconocido al guardar.");
     }
   };
+
+  let buttonText = 'Siguiente';
+  if (isSubmitting) {
+    buttonText = 'Enviando...';
+  } else if (internalModuleResponseId) {
+    buttonText = 'Actualizar y continuar';
+  } else {
+    buttonText = 'Guardar y continuar';
+  }
+
+  if (isLoadingInitialData) {
+    return (
+      <div className="flex flex-col items-center justify-center w-full h-full bg-white p-8">
+        <p>Cargando datos...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center justify-center w-full h-full bg-white p-8">
@@ -53,6 +157,7 @@ const AgreementScaleView: React.FC<AgreementScaleViewProps> = ({
                 ? 'bg-indigo-600 text-white border-indigo-600'
                 : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-100'
               }`}
+              disabled={isSubmitting}
             >
               {value}
             </button>
@@ -64,12 +169,16 @@ const AgreementScaleView: React.FC<AgreementScaleViewProps> = ({
           <span className="text-sm text-neutral-500">{rightLabel}</span>
         </div>
         
+        {(submissionError || loadingError) && (
+          <p className="text-sm text-red-600 my-2 text-center">Error: {submissionError || loadingError}</p>
+        )}
+        
         <button
           className="mt-12 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-8 rounded-md w-fit transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-          onClick={handleNextClick}
-          disabled={selectedValue === null} // Deshabilitar si no hay selección
+          onClick={handleSubmit}
+          disabled={selectedValue === null || isSubmitting}
         >
-          Siguiente
+          {buttonText}
         </button>
       </div>
     </div>

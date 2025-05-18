@@ -1,7 +1,13 @@
 import React, { useState } from 'react';
 
+interface Participant {
+  id: string;
+  email: string;
+  name: string;
+}
+
 interface LoginFormProps {
-  onLoginSuccess: (participant: any) => void;
+  onLoginSuccess: (participant: Participant) => void;
   researchId?: string;
 }
 
@@ -41,7 +47,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, researchId }) => 
       localStorage.setItem('participantToken', token);
       
       // Crear objeto de participante
-      const participant = {
+      const participant: Participant = {
         id: participantId,
         email,
         name: email.split('@')[0]
@@ -50,9 +56,13 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, researchId }) => 
       // Llamar al callback de éxito
       onLoginSuccess(participant);
       
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[LoginForm] Error en login:', err);
-      setError(err.message || 'Error al iniciar sesión');
+      if (typeof err === 'object' && err !== null && 'message' in err && typeof (err as { message?: unknown }).message === 'string') {
+        setError((err as { message: string }).message);
+      } else {
+        setError('Error al iniciar sesión');
+      }
     } finally {
       setIsLoading(false);
     }

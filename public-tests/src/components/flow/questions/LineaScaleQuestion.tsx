@@ -4,17 +4,17 @@ import { useResponseAPI } from '../../../hooks/useResponseAPI';
 import { ApiClient, APIStatus } from '../../../lib/api';
 
 // MODIFICADO: Definir interfaz para props
-interface LinearScaleQuestionProps {
-    stepConfig?: any;
+interface LineaScaleQuestionProps {
+    stepConfig?: unknown;
     stepId?: string;
     stepName?: string;
     stepType: string;
-    onStepComplete: (answer: any) => void;
+    onStepComplete: (answer: unknown) => void;
     isMock: boolean;
 }
 
 // Componente para Linear Scale
-export const LinearScaleQuestion: React.FC<LinearScaleQuestionProps> = ({ 
+export const LinearScaleQuestion: React.FC<LineaScaleQuestionProps> = ({ 
     stepConfig: initialConfig, // Mapea stepConfig a initialConfig
     stepId: stepIdFromProps, 
     stepName: stepNameFromProps, 
@@ -22,15 +22,30 @@ export const LinearScaleQuestion: React.FC<LinearScaleQuestionProps> = ({
     onStepComplete, 
     isMock 
 }) => {
-    // MODIFICADO: Acceso seguro a initialConfig y valores por defecto
-    console.log(`[LinearScaleQuestion] Received stepNameFromProps: ${stepNameFromProps}, initialConfig (from stepConfig):`, JSON.stringify(initialConfig, null, 2)); // DEBUG
-    const componentTitle = stepNameFromProps || initialConfig?.title || 'Pregunta de escala lineal';
-    const description = initialConfig?.description;
-    const questionText = initialConfig?.questionText ?? (isMock ? 'Valora en una escala (Prueba)' : 'Por favor, indica tu valoración.');
-    const minValue = initialConfig?.minValue ?? 1;
-    const maxValue = initialConfig?.maxValue ?? 5;
-    const minLabel = initialConfig?.minLabel ?? (isMock ? 'Mín' : 'Muy insatisfecho');
-    const maxLabel = initialConfig?.maxLabel ?? (isMock ? 'Máx' : 'Muy satisfecho');
+    // Unificar todas las props de config en un solo objeto seguro
+    const cfg = (typeof initialConfig === 'object' && initialConfig !== null)
+      ? initialConfig as {
+          title?: string;
+          description?: string;
+          questionText?: string;
+          minValue?: number;
+          maxValue?: number;
+          minLabel?: string;
+          maxLabel?: string;
+          savedResponses?: number;
+          required?: boolean;
+        }
+      : {};
+
+    const componentTitle = stepNameFromProps || cfg.title || 'Pregunta de escala lineal';
+    const description = cfg.description;
+    const questionText = cfg.questionText ?? (isMock ? 'Valora en una escala (Prueba)' : 'Por favor, indica tu valoración.');
+    const minValue = typeof cfg.minValue === 'number' ? cfg.minValue : 1;
+    const maxValue = typeof cfg.maxValue === 'number' ? cfg.maxValue : 5;
+    const minLabel = typeof cfg.minLabel === 'string' ? cfg.minLabel : (isMock ? 'Mín' : 'Muy insatisfecho');
+    const maxLabel = typeof cfg.maxLabel === 'string' ? cfg.maxLabel : (isMock ? 'Máx' : 'Muy satisfecho');
+    const savedResponses = typeof cfg.savedResponses === 'number' ? cfg.savedResponses : undefined;
+    const required = typeof cfg.required === 'boolean' ? cfg.required : true;
 
     const [selectedValue, setSelectedValue] = useState<number | null>(null);
 
@@ -39,7 +54,6 @@ export const LinearScaleQuestion: React.FC<LinearScaleQuestionProps> = ({
     const [isSaving, setIsSaving] = useState(false);
     const [dataLoading, setDataLoading] = useState(true);
     const [dataExisted, setDataExisted] = useState(false);
-    const [documentId, setDocumentId] = useState<string | null>(null);
     const [moduleResponseId, setModuleResponseId] = useState<string | null>(null);
     const [isNavigating, setIsNavigating] = useState(false);
 
@@ -59,8 +73,7 @@ export const LinearScaleQuestion: React.FC<LinearScaleQuestionProps> = ({
     // useEffect para cargar datos existentes o inicializar desde config.savedResponses
     useEffect(() => {
         if (isMock) {
-            const mockSavedValue = initialConfig?.savedResponses; // Optional chaining
-            setSelectedValue(typeof mockSavedValue === 'number' ? mockSavedValue : null);
+            setSelectedValue(savedResponses ?? null);
             setDataLoading(false);
             return;
         }
@@ -70,8 +83,6 @@ export const LinearScaleQuestion: React.FC<LinearScaleQuestionProps> = ({
             setSelectedValue(null);
             setDataExisted(false);
             setModuleResponseId(null);
-            setDocumentId(null);
-            console.warn('[LinearScaleQuestion] Carga OMITIDA: Faltan researchId, participantId o stepType para cargar datos reales.');
             return;
         }
 
@@ -81,14 +92,18 @@ export const LinearScaleQuestion: React.FC<LinearScaleQuestionProps> = ({
         setSelectedValue(null);
         setDataExisted(false);
         setModuleResponseId(null);
-        setDocumentId(null);
 
         apiClient.getModuleResponses(researchId, participantId)
             .then(apiResponse => {
                 let valueToSet: number | null = null;
-                if (!apiResponse.error && apiResponse.data?.data) {
-                    const fullDocument = apiResponse.data.data as { id: string, responses: Array<{ id: string, stepType: string, response: any }> };
-                    setDocumentId(fullDocument.id);
+                if (
+                  !apiResponse.error &&
+                  typeof apiResponse.data === 'object' && apiResponse.data !== null &&
+                  'data' in apiResponse.data &&
+                  typeof (apiResponse.data as { data?: unknown }).data === 'object' &&
+                  (apiResponse.data as { data?: unknown }).data !== null
+                ) {
+                    const fullDocument = (apiResponse.data as { data: { id: string, responses: Array<{ id: string, stepType: string, response: unknown }> } }).data;
                     const foundStepData = fullDocument.responses.find(item => item.stepType === stepType);
 
                     if (foundStepData && typeof foundStepData.response === 'number') {
@@ -105,24 +120,21 @@ export const LinearScaleQuestion: React.FC<LinearScaleQuestionProps> = ({
                     }
                 }
 
-                // MODIFICADO: Optional chaining para initialConfig.savedResponses
-                if (valueToSet === null && initialConfig?.savedResponses !== undefined && typeof initialConfig.savedResponses === 'number') {
-                    valueToSet = initialConfig.savedResponses;
+                if (valueToSet === null && savedResponses !== undefined) {
+                    valueToSet = savedResponses;
                 }
                 setSelectedValue(valueToSet);
             })
             .catch(error => {
-                console.error('[LinearScaleQuestion] Excepción al cargar datos:', error);
                 setApiError(error.message || 'Excepción desconocida al cargar datos.');
                 setDataExisted(false);
                 setModuleResponseId(null);
-                const fallbackSavedValue = initialConfig?.savedResponses; // Optional chaining
-                setSelectedValue(typeof fallbackSavedValue === 'number' ? fallbackSavedValue : null);
+                setSelectedValue(savedResponses ?? null);
             })
             .finally(() => {
                 setDataLoading(false);
             });
-    }, [researchId, participantId, stepType, isMock, initialConfig]); // MODIFICADO: Dependencia initialConfig
+    }, [researchId, participantId, stepType, isMock, savedResponses]);
 
     // Texto dinámico para el botón
     let buttonText = 'Siguiente';
@@ -144,7 +156,7 @@ export const LinearScaleQuestion: React.FC<LinearScaleQuestionProps> = ({
             return;
         }
 
-        if (selectedValue === null && initialConfig.required !== false) {
+        if (selectedValue === null && required) {
             setApiError("Por favor, selecciona un valor en la escala.");
             return;
         }
@@ -164,7 +176,6 @@ export const LinearScaleQuestion: React.FC<LinearScaleQuestionProps> = ({
             const payload = { response: selectedValue };
 
             if (dataExisted && moduleResponseId) {
-
                 await updateResponse(moduleResponseId, payload.response);
                 if (apiHookError) {
                     setApiError(apiHookError);
@@ -172,19 +183,23 @@ export const LinearScaleQuestion: React.FC<LinearScaleQuestionProps> = ({
                     success = true;
                 }
             } else {
-
                 const result = await saveResponse(currentStepIdForApi, stepType, currentStepNameForApi, payload.response);
                 if (apiHookError) {
                     setApiError(apiHookError);
-                } else if (result && result.id) {
-                    setModuleResponseId(result.id);
+                } else if (
+                  result &&
+                  typeof result === 'object' &&
+                  result !== null &&
+                  'id' in result &&
+                  typeof (result as { id?: unknown }).id === 'string'
+                ) {
+                    setModuleResponseId((result as { id: string }).id);
                     setDataExisted(true);
                     success = true;
                 }
             }
 
             if (success) {
-
                 setIsNavigating(true);
                 setTimeout(() => {
                     onStepComplete(selectedValue);
@@ -192,9 +207,12 @@ export const LinearScaleQuestion: React.FC<LinearScaleQuestionProps> = ({
             } else if (!apiHookError && !apiError) {
                 setApiError('La operación de guardado no parece haber tenido éxito.');
             }
-        } catch (error: any) {
-            console.error('[LinearScaleQuestion] Excepción al guardar:', error);
-            setApiError(error.message || 'Error desconocido durante el guardado.');
+        } catch (error: unknown) {
+            if (typeof error === 'object' && error !== null && 'message' in error && typeof (error as { message?: unknown }).message === 'string') {
+                setApiError((error as { message: string }).message);
+            } else {
+                setApiError('Error desconocido durante el guardado.');
+            }
         } finally {
             setIsSaving(false);
         }

@@ -52,8 +52,8 @@ export interface ExtendedEyeTrackingData {
 export interface DemographicStepProps {
     researchId: string;
     token?: string | null;
-    stepConfig?: any;
+    stepConfig?: unknown;
     stepId?: string;
-    onStepComplete?: (answer?: any) => void;
+    onStepComplete?: (answer?: unknown) => void;
     onError: (errorMessage: string, stepType: string) => void;
 }

@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ExpandedStep } from '../stores/participantStore';
 import { useParticipantStore } from '../stores/participantStore';
 
 interface CognitiveTaskQuestionProps {
   question: ExpandedStep;
-  onComplete: (answer: any) => void;
+  onComplete: (answer: unknown) => void;
   isAnswered?: boolean;
 }
 
@@ -15,8 +15,11 @@ const CognitiveTaskQuestion: React.FC<CognitiveTaskQuestionProps> = ({
 }) => {
   const [answer, setAnswer] = useState<string>('');
   const [selected, setSelected] = useState<string>('');
-  const [timeLeft, setTimeLeft] = useState<number>(question.config?.timeLimit || 60);
-  const [isTimerActive, setIsTimerActive] = useState<boolean>(false);
+  const [timeLeft] = useState<number>(
+    typeof question.config === 'object' && question.config !== null && 'timeLimit' in question.config && typeof (question.config as { timeLimit?: unknown }).timeLimit === 'number'
+      ? (question.config as { timeLimit: number }).timeLimit
+      : 60
+  );
   
   // Acceder a la función para forzar guardado
   const forceSaveToLocalStorage = useParticipantStore(state => state.forceSaveToLocalStorage);
@@ -31,59 +34,9 @@ const CognitiveTaskQuestion: React.FC<CognitiveTaskQuestionProps> = ({
     return 'Tarea cognitiva';
   };
   
-  // Manejar temporizador
-  useEffect(() => {
-    if (!isTimerActive || isAnswered) return;
-    
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          setIsTimerActive(false);
-          // Auto-enviar al acabar el tiempo
-          handleSubmit();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    
-    return () => clearInterval(timer);
-  }, [isTimerActive, isAnswered]);
-  
-  // Iniciar temporizador al montar
-  useEffect(() => {
-    if (!isAnswered && !isTimerActive && question.config?.timeLimit) {
-      setIsTimerActive(true);
-    }
-    
-    // Forzar guardado al montar componente
-    forceSaveToLocalStorage();
-  }, []);
-  
-  // Cargar respuestas guardadas
-  useEffect(() => {
-    if (isAnswered && question.config?.savedResponses) {
-      const savedAnswer = question.config.savedResponses;
-      if (typeof savedAnswer === 'object' && savedAnswer.text) {
-        setAnswer(savedAnswer.text);
-      } else if (typeof savedAnswer === 'object' && savedAnswer.option) {
-        setSelected(savedAnswer.option);
-      } else if (typeof savedAnswer === 'string') {
-        setAnswer(savedAnswer);
-      }
-      
-      // Forzar guardado cuando se carga una respuesta guardada
-      forceSaveToLocalStorage();
-      
-      console.log(`[CognitiveTask] Cargada respuesta guardada para ${question.id}`);
-    }
-  }, [isAnswered, question.config, forceSaveToLocalStorage, question.id]);
-  
   // Manejar cambios en la respuesta de texto
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setAnswer(e.target.value);
-    
     // Guardar automáticamente con cada cambio si es texto largo
     if (e.target.value.length > 50 && question.type.includes('text')) {
       // Guardar temporalmente durante la edición
@@ -99,11 +52,10 @@ const CognitiveTaskQuestion: React.FC<CognitiveTaskQuestionProps> = ({
       }
     }
   };
-  
+
   // Manejar selección de opción
   const handleOptionSelect = (option: string) => {
     setSelected(option);
-    
     // Guardar temporalmente durante la selección
     try {
       localStorage.setItem(`temp_response_${question.id}`, JSON.stringify({
@@ -118,27 +70,25 @@ const CognitiveTaskQuestion: React.FC<CognitiveTaskQuestionProps> = ({
   };
   
   // Enviar respuesta
-  const handleSubmit = () => {
-    let result: any = {};
-    
+  const handleSubmit = useCallback(() => {
+    let result: unknown;
     if (question.type.includes('multiplechoice')) {
       result = { option: selected, timeLeft };
     } else {
       result = { text: answer, timeLeft };
     }
-    
     // Añadir metadatos para la persistencia
-    result.timestamp = Date.now();
-    result.questionId = question.id;
-    result.questionType = question.type;
-    
+    if (typeof result === 'object' && result !== null) {
+      (result as Record<string, unknown>).timestamp = Date.now();
+      (result as Record<string, unknown>).questionId = question.id;
+      (result as Record<string, unknown>).questionType = question.type;
+    }
     // Limpiar respuesta temporal
     try {
       localStorage.removeItem(`temp_response_${question.id}`);
     } catch (err) {
       console.error("[CognitiveTask] Error limpiando respuesta temporal:", err);
     }
-    
     // Guardar directamente en localStorage como respaldo
     try {
       localStorage.setItem(`cognitive_response_${question.id}`, JSON.stringify({
@@ -151,12 +101,10 @@ const CognitiveTaskQuestion: React.FC<CognitiveTaskQuestionProps> = ({
     } catch (err) {
       console.error("[CognitiveTask] Error en guardado directo:", err);
     }
-    
     onComplete(result);
-    
     // Forzar guardado completo después de completar
     setTimeout(() => forceSaveToLocalStorage(), 100);
-  };
+  }, [answer, selected, timeLeft, question, onComplete, forceSaveToLocalStorage]);
   
   // Comprobar si hay respuesta temporal guardada para recuperar
   useEffect(() => {
@@ -183,8 +131,10 @@ const CognitiveTaskQuestion: React.FC<CognitiveTaskQuestionProps> = ({
   
   // Renderizar opciones múltiples
   const renderMultipleChoice = () => {
-    const options = question.config?.options || ['Opción 1', 'Opción 2', 'Opción 3'];
-    
+    let options: string[] = ['Opción 1', 'Opción 2', 'Opción 3'];
+    if (question.config && typeof question.config === 'object' && 'options' in question.config && Array.isArray((question.config as { options?: unknown }).options)) {
+      options = (question.config as { options: unknown[] }).options.filter((opt): opt is string => typeof opt === 'string');
+    }
     return (
       <div className="options-container" style={{ marginBottom: '1.5rem' }}>
         {options.map((option: string, index: number) => (
@@ -210,8 +160,7 @@ const CognitiveTaskQuestion: React.FC<CognitiveTaskQuestionProps> = ({
   
   // Renderizar entrada de texto
   const renderTextInput = () => {
-    const isMultiline = question.config?.multiline || false;
-    
+    const isMultiline = question.config && typeof question.config === 'object' && 'multiline' in question.config && Boolean((question.config as { multiline?: unknown }).multiline);
     return isMultiline ? (
       <textarea
         value={answer}
@@ -292,7 +241,7 @@ const CognitiveTaskQuestion: React.FC<CognitiveTaskQuestionProps> = ({
         <h2>{question.name || getCognitiveType()}</h2>
         
         {/* Mostrar temporizador si está activo */}
-        {question.config?.timeLimit && (
+        {question.config && typeof question.config === 'object' && 'timeLimit' in question.config && (
           <div className="timer" style={{
             backgroundColor: timeLeft < 10 ? '#ffebee' : '#f5f5f5',
             color: timeLeft < 10 ? '#c62828' : '#333',
@@ -306,11 +255,15 @@ const CognitiveTaskQuestion: React.FC<CognitiveTaskQuestionProps> = ({
       </div>
       
       {/* Imagen si existe */}
-      {question.config?.imageUrl && (
+      {question.config && typeof question.config === 'object' && 'imageUrl' in question.config && (
         <div className="image-container" style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
           <img 
-            src={question.config.imageUrl} 
-            alt={question.config.imageAlt || "Estímulo visual"} 
+            src={(question.config as { imageUrl: string }).imageUrl} 
+            alt={
+              'imageAlt' in question.config && typeof (question.config as { imageAlt?: unknown }).imageAlt === 'string'
+                ? (question.config as { imageAlt: string }).imageAlt
+                : "Estímulo visual"
+            } 
             style={{ maxWidth: '100%', maxHeight: '400px', border: '1px solid #eee' }} 
           />
         </div>
@@ -320,11 +273,13 @@ const CognitiveTaskQuestion: React.FC<CognitiveTaskQuestionProps> = ({
       <div className="question-text" style={{ 
         fontSize: '1.1rem', 
         marginBottom: '1.5rem',
-        fontWeight: question.config?.highlight ? 'bold' : 'normal',
-        backgroundColor: question.config?.highlight ? '#fffde7' : 'transparent',
-        padding: question.config?.highlight ? '1rem' : '0'
+        fontWeight: question.config && typeof question.config === 'object' && 'highlight' in question.config && Boolean((question.config as { highlight?: unknown }).highlight) ? 'bold' : 'normal',
+        backgroundColor: question.config && typeof question.config === 'object' && 'highlight' in question.config && Boolean((question.config as { highlight?: unknown }).highlight) ? '#fffde7' : 'transparent',
+        padding: question.config && typeof question.config === 'object' && 'highlight' in question.config && Boolean((question.config as { highlight?: unknown }).highlight) ? '1rem' : '0'
       }}>
-        {question.config?.questionText || "¿Cuál es tu respuesta?"}
+        {question.config && typeof question.config === 'object' && 'questionText' in question.config && typeof (question.config as { questionText?: unknown }).questionText === 'string'
+          ? (question.config as { questionText: string }).questionText
+          : "¿Cuál es tu respuesta?"}
       </div>
       
       {/* Respuestas */}

@@ -8,7 +8,7 @@ export interface ModuleResponse {
   updatedAt: string;
   stepTitle: string;
   stepType: string;
-  response: any;
+  response: unknown;
   participantId?: string; 
   researchId?: string;
 }
@@ -34,14 +34,14 @@ export interface ExpandedStep {
   id: string;
   name: string;
   type: string;
-  config?: any;
+  config?: { [key: string]: unknown };
 }
 
-interface ParticipantInfo {
+export interface ParticipantInfo {
   id: string;
   name?: string;
   email?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface ParticipantState {
@@ -67,12 +67,12 @@ export interface ParticipantState {
   
   // Métodos de flujo
   handleLoginSuccess: (participant: ParticipantInfo) => void;
-  goToNextStep: (answer?: any) => void;
+  goToNextStep: (answer?: unknown) => void;
   navigateToStep: (targetIndex: number) => void;
   
   // Métodos de respuestas
-  saveStepResponse: (stepIndex: number, answer: any) => void;
-  getStepResponse: (stepIndex: number) => any;
+  saveStepResponse: (stepIndex: number, answer: unknown) => void;
+  getStepResponse: (stepIndex: number) => unknown;
   hasStepBeenAnswered: (stepIndex: number) => boolean;
   getAnsweredStepIndices: () => number[];
   getResponsesJson: () => string;
@@ -89,7 +89,7 @@ export interface ParticipantState {
 }
 
 // Función auxiliar para sanear objetos antes de JSON.stringify
-const sanitizeForJSON = (obj: any): any => {
+const sanitizeForJSON = (obj: unknown): unknown => {
   if (!obj) return obj;
   
   const seen = new WeakSet();
@@ -122,7 +122,7 @@ const sanitizeForJSON = (obj: any): any => {
 };
 
 // Función para guardar manualmente en localStorage
-const saveToLocalStorage = (key: string, data: any): void => {
+const saveToLocalStorage = (key: string, data: unknown): void => {
   try {
     const serializedData = JSON.stringify(sanitizeForJSON(data));
     localStorage.setItem(key, serializedData);
@@ -132,7 +132,7 @@ const saveToLocalStorage = (key: string, data: any): void => {
 };
 
 // Función para cargar manualmente desde localStorage
-const loadFromLocalStorage = (key: string): any => {
+const loadFromLocalStorage = (key: string): unknown => {
   try {
     const serializedData = localStorage.getItem(key);
     if (serializedData === null) {
@@ -294,7 +294,8 @@ export const useParticipantStore = create(
         if (stepIndex < 0 || stepIndex >= expandedSteps.length) return;
         
         const stepInfo = expandedSteps[stepIndex];
-        const { id: stepId, type: stepType, name: stepName, config } = stepInfo;
+        const { type: stepType, name: stepName } = stepInfo;
+        const id = stepInfo.id;
         
         // Ignorar welcome/thankyou si no tienen respuesta
         if ((stepType === 'welcome' || stepType === 'thankyou') && answer === undefined) {
@@ -312,7 +313,7 @@ export const useParticipantStore = create(
         
         // Crear objeto de respuesta
         const moduleResponse: ModuleResponse = {
-          id: stepId,
+          id,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           stepTitle: stepName || '',
@@ -355,7 +356,7 @@ export const useParticipantStore = create(
             
             // Verificar si ya existe
             const existingIndex = updatedData.modules.cognitive_task.findIndex(
-              resp => resp.id === stepId
+              resp => resp.id === id
             );
             
             if (existingIndex >= 0) {
@@ -371,7 +372,7 @@ export const useParticipantStore = create(
             
             // Verificar si ya existe
             const existingIndex = updatedData.modules.smartvoc.findIndex(
-              resp => resp.id === stepId
+              resp => resp.id === id
             );
             
             if (existingIndex >= 0) {
@@ -387,7 +388,7 @@ export const useParticipantStore = create(
             
             // Verificar si ya existe
             const existingIndex = updatedData.modules.eye_tracking.findIndex(
-              resp => resp.id === stepId
+              resp => resp.id === id
             );
             
             if (existingIndex >= 0) {
@@ -418,7 +419,7 @@ export const useParticipantStore = create(
           
           // Verificar si ya existe
           const allStepsIndex = updatedData.modules.all_steps.findIndex(
-            resp => resp.id === stepId
+            resp => resp.id === id
           );
           
           if (allStepsIndex >= 0) {
@@ -429,7 +430,7 @@ export const useParticipantStore = create(
           
           // Guardar en localStorage de forma independiente
           saveToLocalStorage('participantResponses', updatedData);
-          saveToLocalStorage(`response_${stepId}`, moduleResponse);
+          saveToLocalStorage(`response_${id}`, moduleResponse);
           
           return { responsesData: updatedData };
         });
@@ -441,7 +442,7 @@ export const useParticipantStore = create(
           
           if (targetStep) {
             targetStep.config = {
-              ...targetStep.config,
+              ...(typeof targetStep.config === 'object' && targetStep.config !== null ? targetStep.config : {}),
               savedResponses: answer
             };
             
@@ -460,7 +461,7 @@ export const useParticipantStore = create(
       },
       
       // Avanzar al siguiente paso
-      goToNextStep: (answer?: any) => {
+      goToNextStep: (answer?: unknown) => {
         const { 
           currentStepIndex, 
           expandedSteps, 
@@ -544,8 +545,8 @@ export const useParticipantStore = create(
             targetIndex >= expandedSteps.length || 
             (targetIndex > maxVisitedIndex && !isAnsweredStep)) {
           
-          if (targetIndex === currentStepIndex) {
-          } else {
+          // No-op si el índice es el actual
+          if (targetIndex !== currentStepIndex) {
             console.warn(`[ParticipantStore] Navegación bloqueada al índice ${targetIndex}.`);
           }
           return;
@@ -559,9 +560,14 @@ export const useParticipantStore = create(
             const newSteps = [...state.expandedSteps];
             const targetStep = newSteps[targetIndex];
             
-            if (targetStep && targetStep.config?.savedResponses !== savedResponse) {
+            if (
+              targetStep &&
+              typeof targetStep.config === 'object' &&
+              targetStep.config !== null &&
+              (targetStep.config as { savedResponses?: unknown }).savedResponses !== savedResponse
+            ) {
               targetStep.config = {
-                ...targetStep.config,
+                ...(typeof targetStep.config === 'object' && targetStep.config !== null ? targetStep.config : {}),
                 savedResponses: savedResponse
               };
               return { expandedSteps: newSteps };
@@ -595,7 +601,7 @@ export const useParticipantStore = create(
 
         expandedSteps.forEach((step, index) => {
           // <<< Usar step.name para comparar con apiResponse.stepTitle >>>
-          const { id: stepId, type: stepType, name: stepName } = step; 
+          const { type: stepType, name: stepName } = step; 
           
           if (stepType === 'welcome' || stepType === 'thankyou') {
             completedStepIndices.add(index);
@@ -624,7 +630,7 @@ export const useParticipantStore = create(
         
         const step = expandedSteps[stepIndex];
         // <<< Usar step.name para comparar con apiResponse.stepTitle >>>
-        const { id: stepId, type: stepType, name: stepName } = step;
+        const { type: stepType, name: stepName } = step;
         
         if (stepType === 'welcome' || stepType === 'thankyou') return null;
         
@@ -653,7 +659,7 @@ export const useParticipantStore = create(
         
         const step = expandedSteps[stepIndex];
         // <<< Usar step.name para comparar con apiResponse.stepTitle >>>
-        const { id: stepId, type: stepType, name: stepName } = step;
+        const { type: stepType, name: stepName } = step;
         
         if (stepType === 'welcome' || stepType === 'thankyou') return true;
         
@@ -681,7 +687,14 @@ export const useParticipantStore = create(
         
         // Combinar lo almacenado con el estado actual
         const mergedResponses = storedResponses 
-          ? { ...current, ...storedResponses, modules: { ...current.modules, ...storedResponses.modules } }
+          ? { ...current, ...storedResponses, modules: {
+              eye_tracking: [],
+              cognitive_task: [],
+              smartvoc: [],
+              all_steps: [],
+              ...((typeof current === 'object' && current !== null && 'modules' in current && typeof (current as { modules?: unknown }).modules === 'object' && (current as { modules?: unknown }).modules !== null && !Array.isArray((current as { modules: unknown }).modules)) ? (current as { modules: Record<string, unknown> }).modules : {}),
+              ...((typeof storedResponses === 'object' && storedResponses !== null && 'modules' in storedResponses && typeof (storedResponses as { modules?: unknown }).modules === 'object' && (storedResponses as { modules?: unknown }).modules !== null && !Array.isArray((storedResponses as { modules: unknown }).modules)) ? (storedResponses as { modules: Record<string, unknown> }).modules : {})
+            } }
           : current;
         
         return JSON.stringify(mergedResponses, null, 2);
@@ -787,8 +800,12 @@ export const useParticipantStore = create(
                     ...restoredState.responsesData,
                     ...storedResponses,
                     modules: {
-                      ...restoredState.responsesData.modules,
-                      ...storedResponses.modules
+                      eye_tracking: [],
+                      cognitive_task: [],
+                      smartvoc: [],
+                      all_steps: [],
+                      ...((typeof restoredState.responsesData === 'object' && restoredState.responsesData !== null && 'modules' in restoredState.responsesData && typeof (restoredState.responsesData as { modules?: unknown }).modules === 'object' && (restoredState.responsesData as { modules?: unknown }).modules !== null && !Array.isArray((restoredState.responsesData as { modules: unknown }).modules)) ? (restoredState.responsesData as { modules: Record<string, unknown> }).modules : {}),
+                      ...((typeof storedResponses === 'object' && storedResponses !== null && 'modules' in storedResponses && typeof (storedResponses as { modules?: unknown }).modules === 'object' && (storedResponses as { modules?: unknown }).modules !== null && !Array.isArray((storedResponses as { modules: unknown }).modules)) ? (storedResponses as { modules: Record<string, unknown> }).modules : {})
                     }
                   };
                 }

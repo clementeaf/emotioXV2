@@ -1,6 +1,7 @@
 import { useEffect, useCallback } from 'react';
 import { useParticipantStore } from '../stores/participantStore';
 import { ParticipantFlowStep, ExpandedStep } from '../types/flow';
+import type { ParticipantInfo } from '../stores/participantStore';
 
 // API URL constante
 const API_BASE_URL = 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev';
@@ -43,7 +44,6 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
     isFlowLoading,
     setResearchId,
     maxVisitedIndex,
-    saveStepResponse,
     goToNextStep,
     navigateToStep,
     getStepResponse,
@@ -108,7 +108,7 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
         } else {
           console.warn(`[useParticipantFlowWithStore] Fetch Eye Tracking falló (${eyeTrackingResponse.status}), continuando con el flujo.`);
         }
-      } catch (eyeTrackingError: any) {
+      } catch (eyeTrackingError: unknown) {
         console.error('[useParticipantFlowWithStore] Error obteniendo datos de eye-tracking:', eyeTrackingError);
         // No detenemos el flujo por este error
       }
@@ -141,7 +141,7 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
             // Añadir lógica para procesar otros tipos de módulos aquí
           }
         }
-      } catch (flowError: any) {
+      } catch (flowError: unknown) {
         console.error('[useParticipantFlowWithStore] Error obteniendo estructura de flujo:', flowError);
         // Continuar con los módulos conocidos sin detener por error
       }
@@ -171,9 +171,12 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
           // Mostrar error pero no detener el flujo
           console.warn(`Error al cargar tareas cognitivas (${response.status})`);
         }
-      } catch (fetchError: any) {
+      } catch (fetchError: unknown) {
         console.error('[useParticipantFlowWithStore] Excepción fetching Cognitive Task:', fetchError);
-        console.warn(fetchError.message || 'Error de red cargando tareas cognitivas');
+        const errorMsg = (fetchError && typeof fetchError === 'object' && 'message' in fetchError)
+          ? (fetchError as { message?: string }).message
+          : 'Error de red cargando tareas cognitivas';
+        console.warn(errorMsg);
       }
 
       // 6. CUARTO: Procesar SmartVOC (después de cognitive-task)
@@ -203,7 +206,7 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
         } else {
           console.error(`[useParticipantFlowWithStore] Fetch SmartVOC falló (${response.status} ${response.statusText}).`);
         }
-      } catch (fetchError: any) {
+      } catch (fetchError: unknown) {
         console.error('[useParticipantFlowWithStore] Excepción fetching SmartVOC:', fetchError);
       }
 
@@ -258,13 +261,13 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
                     });
                   }
                 }
-              } catch (moduleError) {
+              } catch (moduleError: unknown) {
                 console.error(`[useParticipantFlowWithStore] Error obteniendo módulo ${module.type}:`, moduleError);
               }
             }
           }
         }
-      } catch (modulesError) {
+      } catch (modulesError: unknown) {
         console.error('[useParticipantFlowWithStore] Error obteniendo lista de módulos:', modulesError);
       }
 
@@ -327,20 +330,23 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
       }
 
       console.log(`[useParticipantFlowWithStore] Construcción finalizada. ${finalSteps.length} pasos totales.`);
-      setExpandedSteps(finalSteps);
+      setExpandedSteps(finalSteps as import('../stores/participantStore').ExpandedStep[]);
       setCurrentStepIndex(0);
       setCurrentStep(ParticipantFlowStep.WELCOME);
       
       return finalSteps;
-    } catch (error: any) {
-      handleError(error.message || 'Error construyendo los pasos del flujo.', ParticipantFlowStep.LOADING_SESSION);
+    } catch (error: unknown) {
+      const errorMsg = (error && typeof error === 'object' && 'message' in error)
+        ? (error as { message?: string }).message
+        : 'Error construyendo los pasos del flujo.';
+      handleError(errorMsg ?? 'Error construyendo los pasos del flujo.', ParticipantFlowStep.LOADING_SESSION);
       return [];
     }
   }, [handleError, setExpandedSteps, setCurrentStepIndex, setCurrentStep]);
 
   // Adaptador para handleLoginSuccess
-  const handleLoginSuccess = useCallback((participant: any) => {
-    storeHandleLoginSuccess(participant);
+  const handleLoginSuccess = useCallback((participant: unknown) => {
+    storeHandleLoginSuccess(participant as ParticipantInfo);
     
     // Construir pasos expandidos después del login
     const storedToken = localStorage.getItem('participantToken');
@@ -350,7 +356,7 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
   }, [storeHandleLoginSuccess, researchId, buildExpandedSteps]);
 
   // Guardar la respuesta del paso actual (adaptador)
-  const handleStepComplete = useCallback((answer: any) => {
+  const handleStepComplete = useCallback((answer: unknown) => {
     // Llamar a goToNextStep que internamente guarda la respuesta
     goToNextStep(answer);
   }, [goToNextStep]);

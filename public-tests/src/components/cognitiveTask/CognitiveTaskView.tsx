@@ -11,16 +11,12 @@ import { useResponseAPI } from '../../hooks/useResponseAPI';
 interface CognitiveTaskViewProps {
   researchId: string;
   participantId: string;
-  token: string | null;
-  stepId: string;
-  title?: string;
-  instructions?: string;
   stepConfig: CognitiveTaskFormData;
   onComplete: () => void;
   onError: (error: string) => void;
 }
 
-const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, participantId, token, stepId, title, instructions, stepConfig, onComplete, onError }) => {
+const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, participantId, stepConfig, onComplete, onError }) => {
   const [currentTaskIndex, setCurrentTaskIndex] = useState(0);
   const [showThankYou, setShowThankYou] = useState(false);
 
@@ -31,19 +27,18 @@ const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, parti
     setError: setApiError
   } = useResponseAPI({ researchId, participantId });
 
-  const handleTaskComplete = async (responseData?: any, subTaskDefinition?: TaskDefinition) => {
+  const handleTaskComplete = async (responseData?: unknown, subTaskDefinition?: TaskDefinition) => {
     if (apiError) setApiError(null);
-
     if (responseData && subTaskDefinition && subTaskDefinition.id) {
       const questionConfig = stepConfig.questions.find(
         (q: CognitiveQuestion) => q.id === subTaskDefinition.id || q.key === subTaskDefinition.id
       );
       const existingResponseId = questionConfig?.moduleResponseId;
-
       const subTaskId = subTaskDefinition.id;
-      const subTaskType = subTaskDefinition.props?.stepType || subTaskDefinition.id;
+      const subTaskType = typeof subTaskDefinition.props?.stepType === 'string'
+        ? subTaskDefinition.props.stepType
+        : subTaskDefinition.id;
       const subTaskName = subTaskDefinition.title;
-
       const result = await saveOrUpdateResponse(
         subTaskId,
         subTaskType,
@@ -51,7 +46,6 @@ const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, parti
         responseData,
         existingResponseId
       );
-
       if (result && !apiError) {
         console.log(`[CognitiveTaskView] Respuesta para subtarea ${subTaskId} enviada/actualizada correctamente:`, result);
       } else if (!result && !apiError) {
@@ -59,13 +53,11 @@ const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, parti
         onError("Ocurrió un error desconocido al guardar la respuesta de la tarea.");
         return;
       }
-
       if (apiError) {
         onError(apiError);
         return;
       }
     }
-
     const nextTaskIndex = currentTaskIndex + 1;
     const totalRealTasks = TASKS.length;
     if (nextTaskIndex < totalRealTasks) {
@@ -126,7 +118,7 @@ const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, parti
       )}
       <CurrentTaskComponent 
         {...taskProps}
-        onContinue={(responseData?: any) => handleTaskComplete(responseData, currentTaskDefinition)}
+        onContinue={(responseData?: unknown) => handleTaskComplete(responseData, currentTaskDefinition)}
         isSubmitting={isSubmittingTask}
       />
     </div>

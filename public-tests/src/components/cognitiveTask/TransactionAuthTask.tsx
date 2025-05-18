@@ -46,7 +46,7 @@ const TransactionAuthTask: React.FC<TransactionAuthTaskProps> = ({
 
   const handleContinue = () => {
     setError(null); // Limpiar error al intentar continuar
-    let dataToSend: any = {}; // Objeto para recolectar la data
+    let dataToSend: Record<string, unknown> = {}; // Objeto para recolectar la data
 
     switch (viewFormat) {
       case 'desktop-image':

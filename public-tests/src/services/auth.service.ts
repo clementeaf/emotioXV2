@@ -15,7 +15,7 @@ export const registerParticipant = async (participant: Participant): Promise<API
 
     const data = await response.json();
     return data;
-  } catch (error) {
+  } catch {
     return {
       data: null,
       error: 'Error al registrar participante',

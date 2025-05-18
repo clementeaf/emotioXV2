@@ -1,6 +1,7 @@
 import React from 'react';
 import QuestionHeader from '../common/QuestionHeader'; // Importar QuestionHeader
 import RadioButtonGroup from '../../common/RadioButtonGroup'; // Importar el nuevo componente
+import { CognitiveQuestion } from '../../../hooks/useCognitiveTask';
 
 // Interfaz para las opciones (reutilizable)
 interface ChoiceOption {
@@ -9,17 +10,17 @@ interface ChoiceOption {
 }
 
 interface SingleChoiceViewProps {
-  config: any; // FIXME: Usar tipo CognitiveQuestion real (que incluya options)
+  config: CognitiveQuestion & { options?: ChoiceOption[] };
   value: string | undefined; // El ID de la opción seleccionada
   onChange: (questionId: string, selectedOptionId: string) => void;
 }
 
 export const SingleChoiceView: React.FC<SingleChoiceViewProps> = ({ config, value, onChange }) => {
-  const id = config?.id;
-  const title = config?.title;
-  const description = config?.description;
-  const options = config?.options as ChoiceOption[] | undefined;
-  const required = config?.required;
+  const id = config.id;
+  const title = config.title;
+  const description = config.description;
+  const options = config.options;
+  const required = config.required;
 
   if (!id || !options || !Array.isArray(options)) {
     console.error('[SingleChoiceView] Configuración inválida (sin ID u opciones):', config);

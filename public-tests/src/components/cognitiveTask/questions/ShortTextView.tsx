@@ -2,22 +2,23 @@ import React from 'react';
 // Importar subcomponentes reutilizables
 import QuestionHeader from '../common/QuestionHeader';
 import FormField from '../../common/FormField'; // Ruta corregida (subir dos niveles)
+import { CognitiveQuestion } from '../../../hooks/useCognitiveTask';
 // FIXME: La importación de la interfaz compartida falla. Usando 'any' temporalmente.
 // import { CognitiveQuestion } from '../../../../shared/interfaces/cognitive-task.interface'; 
 
 interface ShortTextViewProps {
-  config: any; // FIXME: Usar tipo CognitiveQuestion real
+  config: CognitiveQuestion;
   value: string | undefined;
   onChange: (questionId: string, value: string) => void;
 }
 
 export const ShortTextView: React.FC<ShortTextViewProps> = ({ config, value, onChange }) => {
   // Extracción de datos
-  const id = config?.id;
-  const title = config?.title;
-  const description = config?.description;
-  const answerPlaceholder = config?.answerPlaceholder;
-  const required = config?.required;
+  const id = config.id;
+  const title = config.title;
+  const description = config.description;
+  const answerPlaceholder = config.answerPlaceholder;
+  const required = config.required;
 
   if (!id) {
     console.error('[ShortTextView] Configuración inválida (sin ID):', config);

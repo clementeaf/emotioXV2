@@ -26,7 +26,7 @@ export enum ResearchLoadStatus {
 }
 
 export interface UseFlowBuilderProps {
-    researchFlowApiData: any; 
+    researchFlowApiData: unknown;
 }
 
 export interface UseStepResponseManagerProps<TResponseData> {

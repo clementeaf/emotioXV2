@@ -41,7 +41,6 @@ export const CVQuestion: React.FC<CVQuestionProps> = ({
 
   const [selectedValue, setSelectedValue] = useState<number | null>(null);
   const [internalModuleResponseId, setInternalModuleResponseId] = useState<string | null>(null);
-  const [debugLogs, setDebugLogs] = useState<string[]>([]);
 
   const {
     data: moduleResponsesArray,
@@ -61,33 +60,35 @@ export const CVQuestion: React.FC<CVQuestionProps> = ({
   } = useResponseAPI({ researchId, participantId: participantIdFromStore || '' });
 
   useEffect(() => {
-    const log = (msg: string, data?: any) => setDebugLogs(prev => [...prev, data ? `[CVQuestion-${questionId}] ${msg}: ${JSON.stringify(data)}` : `[CVQuestion-${questionId}] ${msg}`]);
-    log(`useEffect [moduleResponsesArray] Mod_ID: ${moduleId}`);
-    log(`isLoadingInitialData: ${isLoadingInitialData}, loadingError: ${loadingError}, moduleResponsesArray exists: ${!!moduleResponsesArray}`);
-
     if (!isLoadingInitialData && !loadingError && moduleResponsesArray && Array.isArray(moduleResponsesArray)) {
-      log('Datos de API recibidos', moduleResponsesArray);
-      const foundResponse = moduleResponsesArray.find((r: any) => 
-        r.stepId === questionId && r.moduleId === moduleId
-      );
+      const foundResponse = moduleResponsesArray.find((r: unknown) => {
+        if (typeof r !== 'object' || r === null) return false;
+        const resp = r as { stepId?: unknown; moduleId?: unknown };
+        return resp.stepId === questionId && resp.moduleId === moduleId;
+      });
 
-      if (foundResponse) {
-        log('Respuesta encontrada', foundResponse);
-        let value = null;
-        if (typeof foundResponse.response === 'number') {
-          value = foundResponse.response;
-        } else if (foundResponse.response?.value !== undefined && typeof foundResponse.response.value === 'number') {
-          value = foundResponse.response.value;
+      if (foundResponse && typeof foundResponse === 'object' && foundResponse !== null) {
+        let value: number | null = null;
+        if (
+          typeof (foundResponse as { response?: unknown }).response === 'number'
+        ) {
+          value = (foundResponse as { response: number }).response;
+        } else if (
+          typeof (foundResponse as { response?: unknown }).response === 'object' &&
+          (foundResponse as { response?: { value?: unknown } }).response !== null &&
+          typeof (foundResponse as { response?: { value?: unknown } }).response?.value === 'number'
+        ) {
+          value = (foundResponse as { response: { value: number } }).response?.value;
         }
-        
         if (value !== null) {
           setSelectedValue(value);
-          log(`SelectedValue seteado a: ${value}`);
         }
-        setInternalModuleResponseId(foundResponse.id || null);
-        log(`InternalModuleResponseId seteado a: ${foundResponse.id}`);
+        setInternalModuleResponseId(
+          'id' in foundResponse && typeof (foundResponse as { id?: unknown }).id === 'string'
+            ? (foundResponse as { id: string }).id
+            : null
+        );
       } else {
-        log('No se encontró respuesta para esta pregunta CV.');
         setSelectedValue(null);
         setInternalModuleResponseId(null);
       }
@@ -97,82 +98,47 @@ export const CVQuestion: React.FC<CVQuestionProps> = ({
   const handleSelect = (value: number) => {
     setSelectedValue(value);
     if (submissionError) setSubmissionError(null);
-    setDebugLogs(prev => [...prev, `[CVQuestion-${questionId}] Valor seleccionado (sin guardar aún): ${value}`]);
   };
 
   const handleSaveOrUpdateClick = async () => {
-    const newLogs: string[] = [];
-    newLogs.push(`--- handleSubmit iniciado (CVQuestion: ${questionId}) ---`);
-
     if (!participantIdFromStore || participantIdFromStore.trim() === '') {
-      const errorMsg = "Error: participantIdFromStore vacío.";
-      setSubmissionError(errorMsg);
-      newLogs.push(errorMsg);
-      setDebugLogs(prev => [...prev, ...newLogs]);
+      setSubmissionError("Error: participantIdFromStore vacío.");
       return;
     }
     if (selectedValue === null) {
       setSubmissionError("Por favor, selecciona una opción.");
-      newLogs.push('Error: Ninguna opción seleccionada.');
-      setDebugLogs(prev => [...prev, ...newLogs]);
       return;
     }
 
     const responseData = { value: selectedValue };
     const stepNameForApi = questionTitleFromConfig || description || questionId;
 
-    const apiCallParams = {
-      researchId,
-      participantId: participantIdFromStore,
-      stepId: questionId, 
-      stepType: questionType,
-      stepName: stepNameForApi,
-      responseData,
-      existingResponseId: internalModuleResponseId || undefined,
-      moduleId: moduleId
-    };
-    newLogs.push(`Llamando a saveOrUpdateResponse con (apiCallParams): ${JSON.stringify(apiCallParams, null, 2)}`);
-    
-    const payloadParaPost = {
-        researchId: apiCallParams.researchId,
-        participantId: apiCallParams.participantId,
-        stepId: apiCallParams.stepId,
-        stepType: apiCallParams.stepType,
-        stepTitle: apiCallParams.stepName,
-        response: apiCallParams.responseData,
-        moduleId: apiCallParams.moduleId
-      };
-    newLogs.push(`Payload que se construiría para POST en useResponseAPI: ${JSON.stringify(payloadParaPost, null, 2)}`);
-
-    setDebugLogs(prev => [...prev, ...newLogs]);
-
     const result = await saveOrUpdateResponse(
       questionId,
-      questionType, 
-      stepNameForApi, 
+      questionType,
+      stepNameForApi,
       responseData,
       internalModuleResponseId || undefined,
-      moduleId 
+      moduleId
     );
-    
-    const finalNewLogs: string[] = [];
-    finalNewLogs.push(`Resultado de saveOrUpdateResponse: ${JSON.stringify(result, null, 2)}`);
 
     if (result && !submissionError) {
-      finalNewLogs.push('Respuesta enviada/actualizada correctamente por CVQuestion.');
-      if (result.id && !internalModuleResponseId) {
-        setInternalModuleResponseId(result.id);
-        finalNewLogs.push(`Nuevo internalModuleResponseId seteado a: ${result.id}`);
+      let newId: string | null = null;
+      if (
+        typeof result === 'object' &&
+        result !== null &&
+        'id' in result &&
+        typeof (result as { id?: unknown }).id === 'string'
+      ) {
+        newId = (result as { id: string }).id;
+        if (!internalModuleResponseId) {
+          setInternalModuleResponseId(newId);
+        }
       }
-      onSaveSuccess(questionId, selectedValue, result.id || internalModuleResponseId || null);
+      onSaveSuccess(questionId, selectedValue, newId || internalModuleResponseId || null);
     } else if (!result && !submissionError) {
-      finalNewLogs.push('Error desde CVQuestion: Ocurrió un error desconocido al guardar.');
       setSubmissionError("Ocurrió un error desconocido al guardar la respuesta (CVQuestion).");
-    } else if (submissionError) {
-      finalNewLogs.push(`Error reportado por useResponseAPI: ${submissionError}`);
     }
-    finalNewLogs.push(`--- handleSubmit finalizado (CVQuestion: ${questionId}) ---`);
-    setDebugLogs(prev => [...prev, ...finalNewLogs]);
   };
 
   const scaleOptions: number[] = [];

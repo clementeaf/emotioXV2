@@ -29,7 +29,6 @@ export const NPSQuestion: React.FC<NPSQuestionProps> = ({
 
   const [selectedValue, setSelectedValue] = useState<number | null>(null);
   const [internalModuleResponseId, setInternalModuleResponseId] = useState<string | null>(null);
-  const [debugLogs, setDebugLogs] = useState<string[]>([]);
 
   const {
     data: moduleResponsesArray,
@@ -49,29 +48,34 @@ export const NPSQuestion: React.FC<NPSQuestionProps> = ({
   } = useResponseAPI({ researchId, participantId: participantId || '' });
 
   useEffect(() => {
-    const log = (msg: string, data?: any) => setDebugLogs(prev => [...prev, data ? `[NPSQuestion] ${msg}: ${JSON.stringify(data)}` : `[NPSQuestion] ${msg}`]);
-    log(`useEffect [moduleResponsesArray] for Q_ID: ${questionId}, Mod_ID: ${moduleId}`);
     if (!isLoadingInitialData && !loadingError && moduleResponsesArray && Array.isArray(moduleResponsesArray)) {
-      log('Datos de API recibidos', moduleResponsesArray);
-      const foundResponse = moduleResponsesArray.find((r: any) => 
-        r.stepId === questionId && r.moduleId === moduleId
-      );
-      if (foundResponse) {
-        log('Respuesta encontrada', foundResponse);
-        let value = null;
-        if (typeof foundResponse.response === 'number') {
-          value = foundResponse.response;
-        } else if (foundResponse.response?.value !== undefined && typeof foundResponse.response.value === 'number') {
-          value = foundResponse.response.value;
+      const foundResponse = moduleResponsesArray.find((r: unknown) => {
+        if (typeof r !== 'object' || r === null) return false;
+        const resp = r as { stepId?: unknown; moduleId?: unknown };
+        return resp.stepId === questionId && resp.moduleId === moduleId;
+      });
+      if (foundResponse && typeof foundResponse === 'object' && foundResponse !== null) {
+        let value: number | null = null;
+        if (
+          typeof (foundResponse as { response?: unknown }).response === 'number'
+        ) {
+          value = (foundResponse as { response: number }).response;
+        } else if (
+          typeof (foundResponse as { response?: unknown }).response === 'object' &&
+          (foundResponse as { response?: { value?: unknown } }).response !== null &&
+          typeof (foundResponse as { response?: { value?: unknown } }).response?.value === 'number'
+        ) {
+          value = (foundResponse as { response: { value: number } }).response?.value;
         }
         if (value !== null) {
           setSelectedValue(value);
-          log(`SelectedValue seteado a: ${value}`);
         }
-        setInternalModuleResponseId(foundResponse.id || null);
-        log(`InternalModuleResponseId seteado a: ${foundResponse.id}`);
+        setInternalModuleResponseId(
+          'id' in foundResponse && typeof (foundResponse as { id?: unknown }).id === 'string'
+            ? (foundResponse as { id: string }).id
+            : null
+        );
       } else {
-        log('No se encontró respuesta para esta pregunta NPS.');
         setSelectedValue(null);
         setInternalModuleResponseId(null);
       }
@@ -81,41 +85,40 @@ export const NPSQuestion: React.FC<NPSQuestionProps> = ({
   const handleScaleSelection = (valueToSelect: number) => {
     setSelectedValue(valueToSelect);
     if (submissionError) setSubmissionError(null);
-    setDebugLogs(prev => [...prev, `[NPSQuestion] Valor seleccionado (sin guardar aún): ${valueToSelect}`]);
   };
 
   const handleSaveOrUpdateClick = async () => {
     if (selectedValue === null) {
       setSubmissionError("Por favor, selecciona un valor en la escala.");
-      setDebugLogs(prev => [...prev, "[NPSQuestion] Intento de submit sin valor seleccionado."]);
       return;
     }
-    const log = (msg: string, data?: any) => setDebugLogs(prev => [...prev, data ? `[NPSQuestion] ${msg}: ${JSON.stringify(data)}` : `[NPSQuestion] ${msg}`]);
-    log(`--- handleSaveOrUpdateClick (Q_ID: ${questionId}) ---`, { selectedValue });
     if (!participantId) {
-      const errorMsg = "Error: Participant ID no disponible.";
-      setSubmissionError(errorMsg);
-      log(errorMsg);
+      setSubmissionError("Error: Participant ID no disponible.");
       return;
     }
+    const responseData = { value: selectedValue };
     const result = await saveOrUpdateResponse(
       questionId, 
       questionType, 
       questionTitle || description || questionId, 
-      selectedValue,
+      responseData,
       internalModuleResponseId === null ? undefined : internalModuleResponseId
     );
-    log('Resultado de saveOrUpdateResponse', result);
     if (result && !submissionError) {
-      log('Respuesta enviada/actualizada.');
-      const newModuleResponseId = result.id || null;
-      if (newModuleResponseId && newModuleResponseId !== internalModuleResponseId) {
-        setInternalModuleResponseId(newModuleResponseId);
-        log(`Nuevo internalModuleResponseId seteado a: ${newModuleResponseId}`);
+      let newModuleResponseId: string | null = null;
+      if (
+        typeof result === 'object' &&
+        result !== null &&
+        'id' in result &&
+        typeof (result as { id?: unknown }).id === 'string'
+      ) {
+        newModuleResponseId = (result as { id: string }).id;
+        if (newModuleResponseId !== internalModuleResponseId) {
+          setInternalModuleResponseId(newModuleResponseId);
+        }
       }
       onSaveSuccess(questionId, selectedValue, newModuleResponseId);
     } else if (!result && !submissionError) {
-      log('Error: Ocurrió un error desconocido (resultado nulo sin error de API).');
       setSubmissionError("Ocurrió un error desconocido al guardar.");
     }
   };

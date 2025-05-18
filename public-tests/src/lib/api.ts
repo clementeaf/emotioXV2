@@ -25,7 +25,7 @@ export enum APIStatus {
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev';
 
 // Interfaz para el registro de participante
-interface ParticipantRegistration {
+export interface ParticipantRegistration {
   name: string;
   email: string;
   researchId: string;
@@ -35,7 +35,7 @@ interface ParticipantRegistration {
 interface Step {
   id: string;
   type: string;
-  config?: any;
+  config?: Record<string, unknown>;
 }
 
 // Clase para manejar las peticiones a la API
@@ -83,7 +83,7 @@ export class ApiClient {
         headers: requestHeaders,
       });
 
-      let responseData: any = null;
+      let responseData: unknown = null;
       try {
         if (response.headers.get('content-length') !== '0') {
           responseData = await response.json();
@@ -112,13 +112,18 @@ export class ApiClient {
           };
         }
 
+        let message = `Error HTTP: ${response.status}`;
+        if (responseData && typeof responseData === 'object' && responseData !== null && 'message' in responseData) {
+          message = (responseData as { message?: string }).message || message;
+        }
+
         if (response.status === 404) {
           return {
             data: null,
             notFound: true,
             status: response.status,
             apiStatus: APIStatus.NOT_FOUND,
-            message: responseData?.message || 'Recurso no encontrado'
+            message: message || 'Recurso no encontrado'
           };
         }
 
@@ -127,7 +132,7 @@ export class ApiClient {
           error: true,
           status: response.status,
           apiStatus: APIStatus.ERROR,
-          message: responseData?.message || `Error HTTP: ${response.status}`
+          message
         };
       }
 
@@ -230,11 +235,11 @@ export class ApiClient {
     return { ...response, data: response.data?.data || null };
   }
   
-  async getEyeTrackingRecruit(researchId: string): Promise<APIResponse<any>> {
+  async getEyeTrackingRecruit(researchId: string): Promise<APIResponse<unknown>> {
     this.validateResearchId(researchId);
     
     // Usar el endpoint para obtener configuración de Eye Tracking Recruit
-    const response = await this.request<any>(`/eye-tracking-recruit/research/${researchId}`);
+    const response = await this.request<unknown>(`/eye-tracking-recruit/research/${researchId}`);
     return response;
   }
   
@@ -252,11 +257,11 @@ export class ApiClient {
    * @param participantId ID del participante
    * @returns Respuestas del participante
    */
-  async getModuleResponses(researchId: string, participantId: string): Promise<APIResponse<any>> {
+  async getModuleResponses(researchId: string, participantId: string): Promise<APIResponse<unknown>> {
     this.validateResearchId(researchId);
     if (!participantId) throw new Error('ID de participante inválido para getModuleResponses');
     // Endpoint de backendV2: GET /module-responses con query params
-    return this.request<any>(`/module-responses?researchId=${researchId}&participantId=${participantId}`);
+    return this.request<unknown>(`/module-responses?researchId=${researchId}&participantId=${participantId}`);
   }
 
   /**
@@ -264,8 +269,8 @@ export class ApiClient {
    * @param payload Datos de la respuesta
    * @returns Respuesta guardada
    */
-  async saveModuleResponse(payload: { researchId: string, participantId: string, stepType: string, stepTitle: string, response: any }): Promise<APIResponse<any>> {
-    return this.request<any>('/module-responses', { 
+  async saveModuleResponse(payload: { researchId: string, participantId: string, stepType: string, stepTitle: string, response: unknown }): Promise<APIResponse<unknown>> {
+    return this.request<unknown>('/module-responses', { 
       method: 'POST',
       body: JSON.stringify(payload)
     });
@@ -283,8 +288,8 @@ export class ApiClient {
     responseId: string,
     researchId: string,
     participantId: string,
-    payload: { response: any }
-  ): Promise<APIResponse<any>> {
+    payload: { response: unknown }
+  ): Promise<APIResponse<unknown>> {
     if (!responseId || !researchId || !participantId || !payload) {
       console.error('[ApiClient] Faltan IDs o payload para updateModuleResponse');
       return {
@@ -297,9 +302,8 @@ export class ApiClient {
 
     // Construir el endpoint con researchId y participantId como query parameters
     const endpoint = `/module-responses/${encodeURIComponent(responseId)}?researchId=${encodeURIComponent(researchId)}&participantId=${encodeURIComponent(participantId)}`;
-    console.log(`[ApiClient] Actualizando ModuleResponse. Endpoint: ${endpoint}, Payload:`, payload);
 
-    const response = await this.request<any>(endpoint, {
+    const response = await this.request<unknown>(endpoint, {
       method: 'PUT',
       body: JSON.stringify(payload),
     });
@@ -312,11 +316,11 @@ export class ApiClient {
    * @param participantId ID del participante
    * @returns Confirmación de completado
    */
-  async markResponsesAsCompleted(researchId: string, participantId: string): Promise<APIResponse<any>> {
+  async markResponsesAsCompleted(researchId: string, participantId: string): Promise<APIResponse<unknown>> {
     this.validateResearchId(researchId);
     if (!participantId) throw new Error('ID de participante inválido');
     
-    return this.request<any>(`/module-responses/complete?researchId=${researchId}&participantId=${participantId}`, { 
+    return this.request<unknown>(`/module-responses/complete?researchId=${researchId}&participantId=${participantId}`, { 
         method: 'POST',
     });
   }

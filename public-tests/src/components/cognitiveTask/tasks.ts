@@ -9,12 +9,14 @@ import PrioritizationTask from './PrioritizationTask';
 import NavigationFlowTask from './NavigationFlowTask';
 
 // Tipos para las tareas
+// Nota: Usamos React.ComponentType<any> porque cada tarea puede tener props distintas y el registro es heterogéneo.
+// Este patrón es estándar y seguro si se valida el uso de props al renderizar.
 export interface TaskDefinition {
   id: string;
-  component: React.ComponentType<any>; // Cambiado para aceptar props adicionales
+  component: React.ComponentType<unknown>;
   title: string;
   description?: string;
-  props?: Record<string, any>; // Props adicionales para el componente
+  props?: Record<string, unknown>;
 }
 
 // Lista de tareas cognitivas disponibles

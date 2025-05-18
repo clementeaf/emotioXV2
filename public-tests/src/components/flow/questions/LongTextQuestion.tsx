@@ -1,43 +1,59 @@
 import React, { useState, useEffect } from 'react';
 
 interface LongTextQuestionProps {
-    config: any;
+    config: unknown;
     stepName?: string;
     stepId?: string;
     stepType: string;
-    onStepComplete: (answer: any) => void;
+    onStepComplete: (answer: unknown) => void;
     isMock: boolean;
 }
 
 export const LongTextQuestion: React.FC<LongTextQuestionProps> = ({ 
     config, 
-    stepName, 
-    stepId, 
-    stepType, 
+    stepName,
     onStepComplete, 
     isMock 
 }) => {
-    const title = config.title || stepName || 'Pregunta';
-    const description = config.description;
-    const questionText = config.questionText || (isMock ? 'Pregunta de prueba' : '');
-    const placeholder = config.answerPlaceholder || 'Escribe tu respuesta detallada aquí...';
-    
+    // Unificar todas las props de config en un solo objeto seguro
+    const cfg = (typeof config === 'object' && config !== null)
+      ? config as {
+          prompt?: string;
+          placeholder?: string;
+          minLength?: number;
+          maxLength?: number;
+          required?: boolean;
+          title?: string;
+          description?: string;
+          questionText?: string;
+          answerPlaceholder?: string;
+          savedResponses?: string;
+        }
+      : {};
+
+    const title = cfg.title || stepName || 'Pregunta';
+    const description = cfg.description;
+    const questionText = cfg.questionText || (isMock ? 'Pregunta de prueba' : '');
+    const answerPlaceholder = cfg.answerPlaceholder || 'Escribe tu respuesta detallada aquí...';
+    const savedResponses = cfg.savedResponses;
+
     // Inicializar con respuestas guardadas o string vacío
     const [currentResponse, setCurrentResponse] = useState(() => {
-        return config.savedResponses || '';
+        return savedResponses || '';
     });
 
     // Si cambian las respuestas guardadas en config, actualizar el estado
     useEffect(() => {
-        if (config.savedResponses !== undefined) {
-            setCurrentResponse(config.savedResponses);
+        if (savedResponses !== undefined) {
+            setCurrentResponse(savedResponses);
         }
-    }, [config.savedResponses]);
+    }, [savedResponses]);
 
     const handleSubmit = () => {
         console.log('[LongTextQuestion] Guardando respuesta:', currentResponse);
         onStepComplete(currentResponse);
     };
+
 
     return (
         <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full">
@@ -46,7 +62,7 @@ export const LongTextQuestion: React.FC<LongTextQuestionProps> = ({
             <p className="text-neutral-600 mb-4">{questionText}</p>
             <textarea
                 className="border border-neutral-300 p-2 rounded-md w-full mb-4 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                placeholder={placeholder}
+                placeholder={answerPlaceholder}
                 value={currentResponse}
                 onChange={(e) => setCurrentResponse(e.target.value)}
                 rows={5}

@@ -2,8 +2,8 @@ import { DemographicConfig, DemographicResponses, DemographicsSection } from "..
 
 export interface DemographicQuestionProps {
   config: DemographicConfig;
-  value: any;
-  onChange: (id: string, value: any) => void;
+  value: string | number | boolean | undefined;
+  onChange: (id: string, value: string | number | boolean | undefined) => void;
 }
 
 export interface DemographicsFormProps {

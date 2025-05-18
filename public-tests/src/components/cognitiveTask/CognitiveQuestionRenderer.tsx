@@ -8,8 +8,8 @@ import { LinearScaleView } from './questions/LinearScaleView';
 
 interface CognitiveQuestionRendererProps {
     question: CognitiveQuestion;
-    answer: any;
-    onChange: (questionId: string, value: any) => void;
+    answer: unknown;
+    onChange: (questionId: string, value: unknown) => void;
 }
 
 const CognitiveQuestionRenderer: React.FC<CognitiveQuestionRendererProps> = ({
@@ -25,8 +25,8 @@ const CognitiveQuestionRenderer: React.FC<CognitiveQuestionRendererProps> = ({
                 <ShortTextView
                     key={question.id}
                     config={question}
-                    value={answer || ''} 
-                    onChange={onChange}
+                    value={typeof answer === 'string' ? answer : ''}
+                    onChange={onChange as (questionId: string, value: string) => void}
                 />
             );
         case 'LONG_TEXT':
@@ -43,8 +43,8 @@ const CognitiveQuestionRenderer: React.FC<CognitiveQuestionRendererProps> = ({
                 <SingleChoiceView
                     key={question.id}
                     config={question}
-                    value={answer}
-                    onChange={onChange}
+                    value={typeof answer === 'string' ? answer : undefined}
+                    onChange={onChange as (questionId: string, selectedOptionId: string) => void}
                 />
             );
         case 'MULTI_CHOICE':
@@ -53,8 +53,8 @@ const CognitiveQuestionRenderer: React.FC<CognitiveQuestionRendererProps> = ({
                 <MultiChoiceView
                     key={question.id}
                     config={question}
-                    value={answer || []} 
-                    onChange={onChange}
+                    value={Array.isArray(answer) ? answer as string[] : []}
+                    onChange={onChange as (questionId: string, selectedOptionIds: string[]) => void}
                 />
             );
         case 'LINEAR_SCALE':
@@ -63,8 +63,8 @@ const CognitiveQuestionRenderer: React.FC<CognitiveQuestionRendererProps> = ({
                 <LinearScaleView
                     key={question.id}
                     config={question}
-                    value={answer}
-                    onChange={onChange}
+                    value={typeof answer === 'number' ? answer : undefined}
+                    onChange={onChange as (questionId: string, selectedValue: number) => void}
                 />
             );
         default:

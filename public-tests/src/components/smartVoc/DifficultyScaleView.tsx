@@ -19,7 +19,6 @@ const DifficultyScaleView: React.FC<DifficultyScaleViewProps> = ({
   onNext,
 }) => {
   const actualStepId = questionConfig.id;
-  const actualStepType = questionConfig.type;
   const actualDescription = questionConfig.description || questionConfig.title || 'Califica tu experiencia';
   const specificConfig = questionConfig.config as BaseScaleConfig || {};
   const {
@@ -32,7 +31,6 @@ const DifficultyScaleView: React.FC<DifficultyScaleViewProps> = ({
 
   const [selectedValue, setSelectedValue] = useState<number | null>(null);
   const [internalModuleResponseId, setInternalModuleResponseId] = useState<string | null>(null);
-  const [debugLogs, setDebugLogs] = useState<string[]>([]);
 
   const {
     saveOrUpdateResponse,
@@ -56,26 +54,46 @@ const DifficultyScaleView: React.FC<DifficultyScaleViewProps> = ({
   const frontendStepType = smartVOCTypeMap[apiKey];
 
   useEffect(() => {
-    if (frontendStepType && moduleResponsesArray && moduleResponsesArray.length > 0) {
-      const matchingResponseFromEffect = moduleResponsesArray.find(
-        (response: { stepType: string; id: string; response?: { value?: number } }) => response && response.stepType === frontendStepType
-      );
+    if (!isLoadingInitialData && !loadingError && moduleResponsesArray && Array.isArray(moduleResponsesArray)) {
+      const foundResponse = moduleResponsesArray.find((r: unknown) => {
+        if (typeof r !== 'object' || r === null) return false;
+        return 'stepType' in r && (r as { stepType?: string }).stepType === frontendStepType;
+      });
 
-      if (matchingResponseFromEffect) {
-        if (matchingResponseFromEffect.response && typeof matchingResponseFromEffect.response.value === 'number') {
-          if (internalModuleResponseId === null || internalModuleResponseId !== matchingResponseFromEffect.id) {
-            setSelectedValue(matchingResponseFromEffect.response.value);
-            setInternalModuleResponseId(matchingResponseFromEffect.id);
-          }
+      if (foundResponse) {
+        let value = null;
+        if (foundResponse.response?.data?.response?.value !== undefined) {
+          value = foundResponse.response.data.response.value;
+        } else if (foundResponse.response?.value !== undefined) {
+          value = foundResponse.response.value;
         }
+        if (typeof value === 'number') {
+          setSelectedValue(value);
+        }
+        setInternalModuleResponseId(foundResponse.id || null);
+      } else {
+        setSelectedValue(null);
+        setInternalModuleResponseId(null);
       }
     }
-  }, [moduleResponsesArray, frontendStepType, internalModuleResponseId, moduleId]);
+  }, [moduleResponsesArray, isLoadingInitialData, loadingError, frontendStepType]);
+
+  useEffect(() => {
+    if (submissionError) {
+      // Loguea el error de envío
+       
+      console.error('[DifficultyScaleView] submissionError:', submissionError);
+    }
+    if (loadingError) {
+      // Loguea el error de carga
+       
+      console.error('[DifficultyScaleView] loadingError:', loadingError);
+    }
+  }, [submissionError, loadingError]);
 
   const handleSelect = (value: number) => {
     setSelectedValue(value);
     if (submissionError) setSubmissionError(null);
-    setDebugLogs(prev => [...prev, `[DifficultyScale-${actualStepId}] Valor seleccionado: ${value}`]);
   };
 
   const handleSaveOrUpdateClick = async () => {
@@ -86,13 +104,11 @@ const DifficultyScaleView: React.FC<DifficultyScaleViewProps> = ({
       const errorMsg = "Error: participantIdFromStore vacío.";
       setSubmissionError(errorMsg);
       newLogs.push(errorMsg);
-      setDebugLogs(prev => [...prev, ...newLogs]);
       return;
     }
     if (selectedValue === null) {
       setSubmissionError("Por favor, selecciona una opción.");
       newLogs.push('Error: Ninguna opción seleccionada.');
-      setDebugLogs(prev => [...prev, ...newLogs]);
       return;
     }
 
@@ -103,7 +119,6 @@ const DifficultyScaleView: React.FC<DifficultyScaleViewProps> = ({
     newLogs.push(`Llamando saveOrUpdateResponse con: ${JSON.stringify(apiCallParams, null, 2)}`);
     const payloadParaPost = { researchId, participantId: participantIdFromStore, stepId: actualStepId, stepType: frontendStepType, stepTitle: stepNameForApi, response: responseData, moduleId };
     newLogs.push(`Payload POST: ${JSON.stringify(payloadParaPost, null, 2)}`);
-    setDebugLogs(prev => [...prev, ...newLogs]);
 
     const result = await saveOrUpdateResponse(
       actualStepId,
@@ -118,16 +133,25 @@ const DifficultyScaleView: React.FC<DifficultyScaleViewProps> = ({
     finalNewLogs.push(`Resultado: ${JSON.stringify(result, null, 2)}`);
     if (result && !submissionError) {
       finalNewLogs.push('Éxito.');
-      if (result.id && !internalModuleResponseId) setInternalModuleResponseId(result.id);
-      onNext({ value: selectedValue, moduleResponseId: result.id || internalModuleResponseId || null });
+      let newId: string | null = null;
+      if (typeof result === 'object' && result !== null && 'id' in result && typeof (result as { id?: unknown }).id === 'string') {
+        newId = (result as { id: string }).id;
+        if (!internalModuleResponseId) setInternalModuleResponseId(newId);
+      }
+      onNext({ value: selectedValue, moduleResponseId: newId || internalModuleResponseId || null });
+      // SOLO LOGUEA EN CONSOLA, NO EN EL ESTADO DE ERROR
+       
+      console.log(finalNewLogs.join('\n'));
     } else if (!result && !submissionError) {
       finalNewLogs.push('Error desde DifficultyScaleView: Ocurrió un error desconocido al guardar (resultado nulo sin error de API explícito del hook).');
       setSubmissionError("Ocurrió un error desconocido al guardar la respuesta (DifficultyScaleView).");
     } else if (submissionError) {
       finalNewLogs.push(`Error reportado por useResponseAPI: ${submissionError}`);
+      setSubmissionError(submissionError); // Solo setea el error real
     }
     finalNewLogs.push(`--- handleSubmit fin (DifficultyScale-${actualStepId}) ---`);
-    setDebugLogs(prev => [...prev, ...finalNewLogs]);
+     
+    console.log(finalNewLogs.join('\n'));
   };
 
   const scaleOptions: number[] = [];

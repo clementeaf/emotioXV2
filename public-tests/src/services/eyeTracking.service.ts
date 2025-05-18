@@ -43,7 +43,7 @@ export const eyeTrackingService = {
         headers
       });
 
-      let responseData: any = null;
+      let responseData: unknown = null;
       try {
         if (response.headers.get('content-length') !== '0') {
           responseData = await response.json();
@@ -67,7 +67,9 @@ export const eyeTrackingService = {
             notFound: true,
             status: response.status,
             apiStatus: APIStatus.NOT_FOUND,
-            message: responseData?.message || 'Configuración de Eye Tracking no encontrada'
+            message: (responseData && typeof responseData === 'object' && responseData !== null && 'message' in responseData)
+              ? (responseData as { message?: string }).message || 'Configuración de Eye Tracking no encontrada'
+              : 'Configuración de Eye Tracking no encontrada'
           };
         }
 
@@ -76,11 +78,15 @@ export const eyeTrackingService = {
           error: true,
           status: response.status,
           apiStatus: APIStatus.ERROR,
-          message: responseData?.message || `Error HTTP: ${response.status}`
+          message: (responseData && typeof responseData === 'object' && responseData !== null && 'message' in responseData)
+            ? (responseData as { message?: string }).message || `Error HTTP: ${response.status}`
+            : `Error HTTP: ${response.status}`
         };
       }
 
-      const data = responseData?.data || responseData;
+      const data: EyeTrackingFormData | null = (responseData && typeof responseData === 'object' && responseData !== null && 'data' in responseData)
+        ? (responseData as { data: EyeTrackingFormData }).data
+        : (responseData === null ? null : responseData as EyeTrackingFormData);
       
       return {
         data,

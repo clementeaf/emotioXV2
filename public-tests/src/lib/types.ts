@@ -43,7 +43,7 @@ export interface ParticipantResponse {
   researchId: string;
   participantId: string;
   status: 'completed' | 'disqualified' | 'quota_full';
-  responses: Record<string, any>;
+  responses: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 }
@@ -60,7 +60,7 @@ export interface WelcomeScreenResponse {
 // Tipos para SmartVOC
 export interface SmartVOCFormData {
   id?: string;
-  questions: any[];
+  questions: unknown[];
   randomizeQuestions?: boolean;
   smartVocRequired?: boolean;
 }
@@ -83,7 +83,7 @@ export interface SmartVOCSettings {
 // Tipos para CognitiveTask
 export interface CognitiveTaskFormData {
   id?: string;
-  questions: any[];
+  questions: unknown[];
   randomizeQuestions?: boolean;
 }
 
@@ -117,7 +117,7 @@ export interface ThankYouScreenFormData {
 export interface Step {
   id: string;
   type: string;
-  config?: any;
+  config?: unknown;
 }
 
 // Ejemplo de uso en la respuesta del endpoint /flow
@@ -186,14 +186,14 @@ export interface WelcomeScreenResponse {
 
 export interface SmartVOCFormData {
   id?: string;
-  questions: any[];
+  questions: unknown[];
   randomizeQuestions?: boolean;
   smartVocRequired?: boolean;
 }
 
 export interface CognitiveTaskFormData {
   id?: string;
-  questions: any[];
+  questions: unknown[];
   randomizeQuestions?: boolean;
 }
 

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, UseQueryOptions, UseMutationOptions } from '@tanstack/react-query';
 import { ApiClient } from '../api';
 import { APIResponse } from '../types';
+import type { ParticipantRegistration } from '../api';
 
 // Crear una instancia de ApiClient
 const apiClient = new ApiClient();
@@ -8,7 +9,7 @@ const apiClient = new ApiClient();
 // Hook para obtener pantalla de bienvenida
 export function useWelcomeScreen(
   researchId: string,
-  options?: UseQueryOptions<APIResponse<any>, Error>
+  options?: UseQueryOptions<APIResponse<unknown>, Error>
 ) {
   return useQuery({
     queryKey: ['welcomeScreen', researchId],
@@ -20,7 +21,7 @@ export function useWelcomeScreen(
 // Hook para obtener SmartVOC
 export function useSmartVOC(
   researchId: string,
-  options?: UseQueryOptions<APIResponse<any>, Error>
+  options?: UseQueryOptions<APIResponse<unknown>, Error>
 ) {
   return useQuery({
     queryKey: ['smartVOC', researchId],
@@ -35,7 +36,7 @@ export function useSmartVOC(
 // Hook para obtener tareas cognitivas
 export function useCognitiveTask(
   researchId: string,
-  options?: UseQueryOptions<APIResponse<any>, Error>
+  options?: UseQueryOptions<APIResponse<unknown>, Error>
 ) {
   return useQuery({
     queryKey: ['cognitiveTask', researchId],
@@ -50,7 +51,7 @@ export function useCognitiveTask(
 // Hook para obtener el flujo completo de una investigación (todos los formularios/pasos)
 export function useResearchFlow(
   researchId: string,
-  options?: UseQueryOptions<APIResponse<any>, Error> // Idealmente, any sería Step[] o un tipo más específico
+  options?: UseQueryOptions<APIResponse<unknown>, Error>
 ) {
   return useQuery({
     queryKey: ['researchFlow', researchId],
@@ -64,10 +65,10 @@ export function useResearchFlow(
 
 // Hook para registrar participante
 export function useRegisterParticipant(
-  options?: UseMutationOptions<APIResponse<{ token: string }>, Error, any>
+  options?: UseMutationOptions<APIResponse<{ token: string }>, Error, unknown>
 ) {
   return useMutation({
-    mutationFn: (data) => apiClient.registerParticipant(data),
+    mutationFn: (data: unknown) => apiClient.registerParticipant(data as ParticipantRegistration),
     ...options,
   });
 } 

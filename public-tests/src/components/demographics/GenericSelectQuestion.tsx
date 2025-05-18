@@ -3,8 +3,8 @@ import { DemographicConfig, SelectOption } from '../../types/demographics'; // A
 
 interface GenericSelectQuestionProps {
   config: DemographicConfig; // DemographicConfig ahora tiene options?: SelectOption[]
-  value: any;
-  onChange: (id: string, value: any) => void;
+  value: string | number | undefined;
+  onChange: (id: string, value: string | number) => void;
 }
 
 export const GenericSelectQuestion: React.FC<GenericSelectQuestionProps> = ({

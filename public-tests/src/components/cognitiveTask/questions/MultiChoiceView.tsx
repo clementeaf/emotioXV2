@@ -1,6 +1,7 @@
 import React from 'react';
 import CheckboxGroup from '../../common/CheckboxGroup'; // Ruta corregida
 import QuestionHeader from '../common/QuestionHeader'; // Ruta corregida
+import { CognitiveQuestion } from '../../../hooks/useCognitiveTask';
 
 // Interfaz para las opciones (reutilizable)
 interface ChoiceOption {
@@ -9,17 +10,17 @@ interface ChoiceOption {
 }
 
 interface MultiChoiceViewProps {
-  config: any; // FIXME: Usar tipo CognitiveQuestion real (que incluya options)
+  config: CognitiveQuestion & { options?: ChoiceOption[] };
   value: string[] | undefined; // Array de IDs de opciones seleccionadas
   onChange: (questionId: string, selectedOptionIds: string[]) => void;
 }
 
 export const MultiChoiceView: React.FC<MultiChoiceViewProps> = ({ config, value: selectedIds = [], onChange }) => {
-  const id = config?.id;
-  const title = config?.title;
-  const description = config?.description;
-  const options = config?.options as ChoiceOption[] | undefined;
-  const required = config?.required;
+  const id = config.id;
+  const title = config.title;
+  const description = config.description;
+  const options = config.options;
+  const required = config.required;
 
   if (!id || !options || !Array.isArray(options)) {
     console.error('[MultiChoiceView] Configuración inválida (sin ID u opciones):', config);

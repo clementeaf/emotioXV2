@@ -1,4 +1,4 @@
-// @ts-ignore - Ignorando temporalmente falta de tipos para endpoints.js
+// @ts-expect-error - Ignorando temporalmente falta de tipos para endpoints.js
 import endpoints from './endpoints.js'; // Importar los endpoints exportados
 // import { z } from 'zod'; // No se usa
 
@@ -12,7 +12,7 @@ function getApiUrl(): string {
 
   // 2. Intentar desde variables de entorno (Vite)
   const envApiUrl = typeof window !== 'undefined'
-    ? (window as any).__NEXT_DATA__?.props?.env?.VITE_API_URL
+    ? (window as unknown as { __NEXT_DATA__?: { props?: { env?: { VITE_API_URL?: string } } } }).__NEXT_DATA__?.props?.env?.VITE_API_URL
     : process.env.VITE_API_URL;
 
   if (envApiUrl) {

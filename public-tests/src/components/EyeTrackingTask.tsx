@@ -1,28 +1,38 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ExpandedStep } from '../stores/participantStore';
 import { useParticipantStore } from '../stores/participantStore';
 
+interface EyeTrackingDataPoint {
+  timestamp: number;
+  x: number;
+  y: number;
+  fixation: boolean;
+  duration: number;
+}
+
 interface EyeTrackingTaskProps {
   question: ExpandedStep;
-  onComplete: (data: any) => void;
+  onComplete: (data: unknown) => void;
   isAnswered?: boolean;
 }
 
 const EyeTrackingTask: React.FC<EyeTrackingTaskProps> = ({ question, onComplete, isAnswered = false }) => {
-  const [eyeTrackingData, setEyeTrackingData] = useState<any[]>([]);
+  const [eyeTrackingData, setEyeTrackingData] = useState<EyeTrackingDataPoint[]>([]);
   const [isRecording, setIsRecording] = useState(false);
   const [elapsed, setElapsed] = useState(0);
-  const recordingDuration = question.config?.duration || 10; // Duración en segundos
+  const recordingDuration = (typeof question.config === 'object' && question.config !== null && 'duration' in question.config && typeof (question.config as { duration?: unknown }).duration === 'number')
+    ? (question.config as { duration: number }).duration
+    : 10; // Duración en segundos
   
   // Acceder a la función para forzar guardado
   const forceSaveToLocalStorage = useParticipantStore(state => state.forceSaveToLocalStorage);
   
   // Guardar directamente cada fragmento de datos
-  const saveDataChunk = (chunk: any) => {
+  const saveDataChunk = useCallback((chunk: EyeTrackingDataPoint) => {
     try {
       // Guardar en una lista de fragmentos
       const existingChunks = localStorage.getItem(`eye_tracking_chunks_${question.id}`);
-      let chunks = existingChunks ? JSON.parse(existingChunks) : [];
+      let chunks: EyeTrackingDataPoint[] = existingChunks ? JSON.parse(existingChunks) : [];
       
       // Limitar a 100 fragmentos para evitar problemas de almacenamiento
       if (chunks.length > 100) {
@@ -34,7 +44,7 @@ const EyeTrackingTask: React.FC<EyeTrackingTaskProps> = ({ question, onComplete,
     } catch (error) {
       console.error('[EyeTrackingTask] Error guardando fragmento de datos:', error);
     }
-  };
+  }, [question.id]);
   
   // Forzar guardado periódico durante la grabación
   useEffect(() => {
@@ -93,7 +103,7 @@ const EyeTrackingTask: React.FC<EyeTrackingTaskProps> = ({ question, onComplete,
       
       // Simular datos de eye-tracking cada 100ms
       if (isRecording) {
-        const newDataPoint = {
+        const newDataPoint: EyeTrackingDataPoint = {
           timestamp: Date.now(),
           x: Math.random() * window.innerWidth,
           y: Math.random() * window.innerHeight,
@@ -109,7 +119,7 @@ const EyeTrackingTask: React.FC<EyeTrackingTaskProps> = ({ question, onComplete,
     }, 100);
     
     return () => clearInterval(interval);
-  }, [isRecording, recordingDuration]);
+  }, [isRecording, recordingDuration, saveDataChunk]);
   
   // Obtener tipo específico de eye-tracking
   const getEyeTrackingType = () => {
@@ -197,14 +207,14 @@ const EyeTrackingTask: React.FC<EyeTrackingTaskProps> = ({ question, onComplete,
   
   // Cargar datos anteriores si ya se respondió
   useEffect(() => {
-    if (isAnswered && question.config?.savedResponses) {
+    if (isAnswered && question.config && typeof question.config === 'object' && 'savedResponses' in question.config) {
       // Intentar cargar desde localStorage primero (podría tener datos más completos)
       try {
         const savedDirectly = localStorage.getItem(`eye_tracking_response_${question.id}`);
         if (savedDirectly) {
           const parsed = JSON.parse(savedDirectly);
-          if (parsed.answer && parsed.answer.data && parsed.answer.data.length > 0) {
-            setEyeTrackingData(parsed.answer.data);
+          if (parsed.answer && parsed.answer.data && Array.isArray(parsed.answer.data) && parsed.answer.data.length > 0) {
+            setEyeTrackingData(parsed.answer.data as EyeTrackingDataPoint[]);
             console.log(`[EyeTrackingTask] Cargados ${parsed.answer.data.length} puntos de datos desde localStorage`);
             return;
           }
@@ -214,8 +224,11 @@ const EyeTrackingTask: React.FC<EyeTrackingTaskProps> = ({ question, onComplete,
       }
       
       // Cargar desde store si no hay datos en localStorage
-      setEyeTrackingData(question.config.savedResponses.data || []);
-      console.log(`[EyeTrackingTask] Cargados ${question.config.savedResponses.data?.length || 0} puntos de datos desde store`);
+      const savedResponses = (question.config as { savedResponses?: { data?: unknown[] } }).savedResponses;
+      if (savedResponses && Array.isArray(savedResponses.data)) {
+        setEyeTrackingData(savedResponses.data.filter((d): d is EyeTrackingDataPoint => typeof d === 'object' && d !== null && 'x' in d && 'y' in d && 'timestamp' in d && 'fixation' in d && 'duration' in d));
+        console.log(`[EyeTrackingTask] Cargados ${savedResponses.data.length} puntos de datos desde store`);
+      }
     }
   }, [isAnswered, question.config, question.id]);
   
@@ -223,15 +236,19 @@ const EyeTrackingTask: React.FC<EyeTrackingTaskProps> = ({ question, onComplete,
     <div className="eye-tracking-task">
       <h2>{question.name || getEyeTrackingType()}</h2>
       
-      {question.config?.description && (
-        <p className="description">{question.config.description}</p>
+      {question.config && typeof question.config === 'object' && 'description' in question.config && typeof (question.config as { description?: unknown }).description === 'string' && (
+        <p className="description">{(question.config as { description: string }).description}</p>
       )}
       
-      {question.config?.imageUrl && (
+      {question.config && typeof question.config === 'object' && 'imageUrl' in question.config && typeof (question.config as { imageUrl?: unknown }).imageUrl === 'string' && (
         <div className="eye-tracking-stimulus">
           <img 
-            src={question.config.imageUrl} 
-            alt={question.config.imageAlt || "Estímulo visual"} 
+            src={(question.config as { imageUrl: string }).imageUrl} 
+            alt={
+              question.config && typeof question.config === 'object' && 'imageAlt' in question.config && typeof (question.config as { imageAlt?: unknown }).imageAlt === 'string'
+                ? (question.config as { imageAlt: string }).imageAlt
+                : "Estímulo visual"
+            }
             style={{ maxWidth: '100%', border: '1px solid #ccc' }} 
           />
         </div>
@@ -273,8 +290,9 @@ const EyeTrackingTask: React.FC<EyeTrackingTaskProps> = ({ question, onComplete,
         <div className="data-summary">
           <h4>Resumen de datos</h4>
           <p>Puntos de datos: {eyeTrackingData.length}</p>
-          {question.config?.savedResponses && (
-            <p>Duración: {question.config.savedResponses.duration?.toFixed(2) || 0}s</p>
+          {question.config && typeof question.config === 'object' && 'savedResponses' in question.config && (question.config as { savedResponses?: { duration?: unknown } }).savedResponses &&
+            typeof (question.config as { savedResponses: { duration?: unknown } }).savedResponses.duration === 'number' && (
+              <p>Duración: {(question.config as { savedResponses: { duration: number } }).savedResponses.duration.toFixed(2)}s</p>
           )}
         </div>
       )}

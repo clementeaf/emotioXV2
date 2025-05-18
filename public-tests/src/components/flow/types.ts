@@ -11,13 +11,13 @@ export interface CognitiveTaskHandlerProps {
 
 export interface CurrentStepProps {
     stepType: string;
-    stepConfig?: any;
+    stepConfig?: unknown;
     stepId?: string;
     stepName?: string;
     researchId: string;
     token?: string | null;
     onLoginSuccess?: (participant: Participant & { id: string }) => void;
-    onStepComplete?: (answer?: any) => void;
+    onStepComplete?: (answer?: unknown) => void;
     onError: (errorMessage: string, stepType: string) => void;
 }
 
@@ -78,7 +78,7 @@ export interface SmartVOCConfig {
 
 // Interfaz para almacenar respuestas (simple key-value por ahora)
 export interface Answers {
-  [questionIdOrIndex: string]: any; // Usar ID de pregunta si está disponible, o índice
+  [questionIdOrIndex: string]: unknown; // Usar ID de pregunta si está disponible, o índice
 }
 
 export interface SmartVOCHandlerProps {

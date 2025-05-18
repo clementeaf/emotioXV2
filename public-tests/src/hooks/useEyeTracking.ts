@@ -72,7 +72,7 @@ export function useEyeTracking(researchId: string): UseEyeTrackingResult {
  * @returns Datos, estado de carga, errores y función para refrescar
  */
 export function useEyeTrackingRecruit(researchId: string) {
-  const [data, setData] = useState<any | null>(null);
+  const [data, setData] = useState<unknown | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 

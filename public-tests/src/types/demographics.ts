@@ -41,7 +41,7 @@ export interface DemographicResponses {
   ethnicity?: string;
   language?: string;
   // Otras respuestas
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 // Tipo para las opciones disponibles en preguntas de selección

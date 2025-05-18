@@ -9,9 +9,9 @@ interface UseFlowNavigationAndStateProps {
     participantId: string | undefined;
     maxVisitedIndexFromStore: number | undefined;
     loadedApiResponsesFromStore: ModuleResponse[];
-    saveStepResponse: (answer?: any) => Promise<void>;
+    saveStepResponse: (answer?: unknown) => Promise<void>;
     markResponsesAsCompleted: () => Promise<void>;
-    getStepResponse: (stepIndex: number) => any;
+    getStepResponse: (stepIndex: number) => unknown;
     loadExistingResponses: () => Promise<void>;
     handleErrorProp: (errorMessage: string, step: ParticipantFlowStep | string) => void;
     setExternalExpandedSteps?: (updater: (prevSteps: ExpandedStep[]) => ExpandedStep[]) => void; 
@@ -71,7 +71,7 @@ export const useFlowNavigationAndState = ({
         }
     }, [expandedSteps, isFlowLoading, currentStep, maxVisitedIndexFromStore, researchId, loadExistingResponses, participantId, setCurrentStepIndex, setCurrentStep]);
 
-    const goToNextStep = useCallback(async (answer?: any) => {
+    const goToNextStep = useCallback(async (answer?: unknown) => {
         if (!isFlowLoading && currentStepIndex < expandedSteps.length - 1) {
             const currentStepInfo = expandedSteps[currentStepIndex];
             if(!currentStepInfo) return;
@@ -86,9 +86,13 @@ export const useFlowNavigationAndState = ({
             if (answer !== undefined) {
                 await saveStepResponse(answer); 
                 if (setExternalExpandedSteps && currentStepInfo) {
-                    setExternalExpandedSteps(prevSteps => prevSteps.map((step, index) => 
-                        index === currentStepIndex ? { ...step, config: { ...step.config, savedResponses: answer } } : step
-                    ));
+                    setExternalExpandedSteps(prevSteps => prevSteps.map((step, index) => {
+                        if (index === currentStepIndex) {
+                            const prevConfig = (typeof step.config === 'object' && step.config !== null) ? step.config : {};
+                            return { ...step, config: { ...prevConfig, savedResponses: answer } };
+                        }
+                        return step;
+                    }));
                 }
             }
             const nextIndex = currentStepIndex + 1;
@@ -120,9 +124,13 @@ export const useFlowNavigationAndState = ({
         if (!isFlowLoading && targetIndex >= 0 && targetIndex < expandedSteps.length && (isAnsweredStep || stepHasApiResponse)) {
             const savedResponse = getStepResponse(targetIndex);
             if (savedResponse !== null && savedResponse !== undefined && setExternalExpandedSteps) {
-                 setExternalExpandedSteps(prevSteps => prevSteps.map((step, index) => 
-                    index === targetIndex ? { ...step, config: { ...step.config, savedResponses: savedResponse } } : step
-                ));
+                setExternalExpandedSteps(prevSteps => prevSteps.map((step, index) => {
+                    if (index === targetIndex) {
+                        const prevConfig = (typeof step.config === 'object' && step.config !== null) ? step.config : {};
+                        return { ...step, config: { ...prevConfig, savedResponses: savedResponse } };
+                    }
+                    return step;
+                }));
             }
             setCurrentStepIndex(targetIndex);
             setError(null); 

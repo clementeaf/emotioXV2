@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useResponseAPI } from '../../hooks/useResponseAPI';
 import { useParticipantStore } from '../../stores/participantStore';
 import { useModuleResponses } from '../../hooks/useModuleResponses';
-// import StarRating from './StarRating'; // Ya no se usa
 
 interface CSATViewProps {
   questionText: string;
@@ -11,13 +10,10 @@ interface CSATViewProps {
   stepId: string;
   stepName: string;
   stepType: string;
-  onStepComplete: (data?: any) => void;
+  onStepComplete: (data?: unknown) => void;
   instructions?: string;
   companyName?: string;
-  config?: {
-    moduleId?: string;
-    [key: string]: any; 
-  };
+  config?: unknown;
   scaleSize?: number;
 }
 
@@ -52,19 +48,16 @@ const CSATView: React.FC<CSATViewProps> = ({
     autoFetch: true
   });
 
-  const [debugLogs, setDebugLogs] = useState<string[]>([]);
-
   useEffect(() => {
-    setDebugLogs(prev => [...prev, `CSATView useEffect [moduleResponsesArray]: isLoadingInitialData=${isLoadingInitialData}, loadingError=${loadingError}, moduleResponsesArray exists: ${!!moduleResponsesArray}`]);
     if (!isLoadingInitialData && !loadingError && moduleResponsesArray && Array.isArray(moduleResponsesArray)) {
-      setDebugLogs(prev => [...prev, `Datos de API recibidos en CSATView: ${JSON.stringify(moduleResponsesArray)}`]);
-      const foundResponse = moduleResponsesArray.find((r: any) => 
-        (r.stepType === stepType && r.moduleId === config?.moduleId) ||
-        (r.stepId === stepId)
-      );
+      const foundResponse = moduleResponsesArray.find((r: unknown) => {
+        if (typeof r !== 'object' || r === null) return false;
+        const resp = r as { stepType?: string; moduleId?: string; stepId?: string };
+        return (resp.stepType === stepType && resp.moduleId === (typeof config === 'object' && config !== null && 'moduleId' in config ? (config as { moduleId?: string }).moduleId : undefined)) ||
+          (resp.stepId === stepId);
+      });
 
       if (foundResponse) {
-        setDebugLogs(prev => [...prev, `Respuesta encontrada para CSAT (${stepId}/${stepType}): ${JSON.stringify(foundResponse)}`]);
         let value = null;
         if (foundResponse.response?.data?.response?.value !== undefined) {
           value = foundResponse.response.data.response.value;
@@ -74,17 +67,14 @@ const CSATView: React.FC<CSATViewProps> = ({
         
         if (typeof value === 'number') {
           setSelectedValue(value);
-          setDebugLogs(prev => [...prev, `SelectedValue seteado a: ${value}`]);
         }
         setInternalModuleResponseId(foundResponse.id || null);
-        setDebugLogs(prev => [...prev, `InternalModuleResponseId seteado a: ${foundResponse.id}`]);
       } else {
-        setDebugLogs(prev => [...prev, `No se encontró respuesta para CSAT (${stepId}/${stepType}) en moduleResponsesArray.`]);
         setSelectedValue(null);
         setInternalModuleResponseId(null);
       }
     }
-  }, [moduleResponsesArray, isLoadingInitialData, loadingError, stepId, stepType, config?.moduleId]);
+  }, [moduleResponsesArray, isLoadingInitialData, loadingError, stepId, stepType, config]);
 
   const satisfactionLevels = [
     { value: 1, label: 'Muy insatisfecho' },
@@ -97,41 +87,21 @@ const CSATView: React.FC<CSATViewProps> = ({
   const handleSelect = (value: number) => {
     setSelectedValue(value);
     if (submissionError) setSubmissionError(null);
-    setDebugLogs(prev => [...prev, `Seleccionado: ${value}`]);
   };
 
   const handleSubmit = async () => {
-    const newLogs: string[] = [];
-    newLogs.push('--- handleSubmit iniciado (CSATView self-managed) ---');
-
     if (!participantIdFromStore || participantIdFromStore.trim() === '') {
       const errorMsg = "Error: participantIdFromStore vacío.";
       setSubmissionError(errorMsg);
-      newLogs.push(errorMsg);
-      setDebugLogs(prev => [...prev, ...newLogs]);
       return;
     }
     if (selectedValue === null) {
       setSubmissionError("Por favor, selecciona una opción.");
-      newLogs.push('Error: Ninguna opción seleccionada.');
-      setDebugLogs(prev => [...prev, ...newLogs]);
       return;
     }
 
     const responseData = { value: selectedValue };
-    const moduleIdForApi = config?.moduleId;
-
-    const apiCallParams = {
-      researchId,
-      participantId: participantIdFromStore,
-      stepId,
-      stepType,
-      stepName,
-      responseData,
-      existingResponseId: internalModuleResponseId || undefined,
-      moduleId: moduleIdForApi
-    };
-    newLogs.push(`Llamando a saveOrUpdateResponse con: ${JSON.stringify(apiCallParams, null, 2)}`);
+    const moduleIdForApi = (typeof config === 'object' && config !== null && 'moduleId' in config ? (config as { moduleId?: string }).moduleId : undefined);
 
     const result = await saveOrUpdateResponse(
       stepId,
@@ -141,21 +111,17 @@ const CSATView: React.FC<CSATViewProps> = ({
       internalModuleResponseId || undefined,
       moduleIdForApi
     );
-    newLogs.push(`Resultado de saveOrUpdateResponse: ${JSON.stringify(result, null, 2)}`);
 
     if (result && !submissionError) {
-      newLogs.push('Respuesta enviada/actualizada.');
-      if (result.id && !internalModuleResponseId) {
-        setInternalModuleResponseId(result.id);
-        newLogs.push(`Nuevo internalModuleResponseId seteado a: ${result.id}`);
+      if (typeof result === 'object' && result !== null && 'id' in result && typeof (result as { id?: unknown }).id === 'string' && !internalModuleResponseId) {
+        setInternalModuleResponseId((result as { id: string }).id);
+        onStepComplete({ success: true, data: result, value: selectedValue });
+      } else {
+        onStepComplete({ success: true, data: result, value: selectedValue });
       }
-      onStepComplete({ success: true, data: result, value: selectedValue });
     } else if (!result && !submissionError) {
-      newLogs.push('Error: Ocurrió un error desconocido (resultado nulo sin error de API).');
       setSubmissionError("Ocurrió un error desconocido al guardar.");
     }
-    newLogs.push('--- handleSubmit finalizado ---');
-    setDebugLogs(prev => [...prev, ...newLogs]);
   };
 
   const formattedQuestionText = companyName

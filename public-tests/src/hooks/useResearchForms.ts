@@ -7,8 +7,8 @@ const apiClient = new ApiClient();
 interface RawResearchModule {
   id?: string;
   sk: string;
-  demographicQuestions?: any[];
-  [key: string]: any;
+  demographicQuestions?: unknown[];
+  [key: string]: unknown;
 }
 
 export interface ProcessedResearchFormConfig {
@@ -37,7 +37,7 @@ export function useLoadResearchFormsConfig(
       if (!apiResponse.data || !Array.isArray(apiResponse.data)) {
         console.error("API response data is missing, not an array, or invalid.");
         return {
-          ...(apiResponse as Omit<APIResponse<any>, 'data' | 'error' | 'message'>),
+          ...(apiResponse as Omit<APIResponse<unknown>, 'data' | 'error' | 'message'>),
           error: true,
           message: apiResponse.message || "Invalid data structure: data is missing or not an array.",
           data: [] as TransformedData,

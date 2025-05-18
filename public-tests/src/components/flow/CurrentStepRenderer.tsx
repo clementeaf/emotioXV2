@@ -9,6 +9,8 @@ import { useParticipantStore } from '../../stores/participantStore';
 const SMART_VOC_ROUTER_STEP_TYPE = 'smart_voc_module';
 const DEMOGRAPHIC_STEP_TYPE = 'demographic';
 
+type EnrichedStepConfig = Record<string, unknown> | null;
+
 const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
     stepType,
     stepConfig,
@@ -20,9 +22,8 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
     onStepComplete,
     onError,
 }) => {
-    const [_loading, _setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [enrichedStepConfig, setEnrichedStepConfig] = useState<any | null>(null);
+    const [enrichedStepConfig, setEnrichedStepConfig] = useState<EnrichedStepConfig>(null);
     const [isLoadingResponses, setIsLoadingResponses] = useState<boolean>(false);
 
     const participantIdFromStore = useParticipantStore(state => state.participantId);
@@ -39,37 +40,49 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
                 .then(response => {
                     const newEnrichedConfig = JSON.parse(JSON.stringify(stepConfig));
 
-                    if (response.data?.data && !response.error) {
-                        const allParticipantResponsesDoc = response.data.data;
+                    // Type guard para response.data y response.data.data
+                    const hasDataData = (obj: unknown): obj is { data: { responses: unknown[] } } => {
+                        return (
+                            typeof obj === 'object' && obj !== null &&
+                            'data' in obj && typeof (obj as { data?: unknown }).data === 'object' && (obj as { data?: unknown }).data !== null &&
+                            'responses' in ((obj as { data: unknown }).data as Record<string, unknown>) && Array.isArray(((obj as { data: unknown }).data as { responses: unknown[] }).responses)
+                        );
+                    };
+
+                    if (hasDataData(response) && !('error' in response && response.error)) {
+                        const allParticipantResponsesDoc = response.data;
                         const actualResponsesArray = allParticipantResponsesDoc.responses;
+
+                        // Type guard para elementos del array
+                        const isRecord = (val: unknown): val is Record<string, unknown> => typeof val === 'object' && val !== null;
 
                         if (Array.isArray(actualResponsesArray)) {
                             if (stepType === SMART_VOC_ROUTER_STEP_TYPE) {
                                 if (newEnrichedConfig.questions && Array.isArray(newEnrichedConfig.questions)) {
-                                    newEnrichedConfig.questions = newEnrichedConfig.questions.map((question: any) => {
+                                    newEnrichedConfig.questions = newEnrichedConfig.questions.map((question: Record<string, unknown>) => {
                                         const savedResponseItem = actualResponsesArray.find(
-                                            (r: any) => r.stepType === question.type && r.moduleId === stepId
+                                            (r): r is Record<string, unknown> => isRecord(r) && 'stepType' in r && r.stepType === question.type && 'moduleId' in r && r.moduleId === stepId
                                         );
 
                                         if (savedResponseItem) {
                                             return {
                                                 ...question,
                                                 savedResponseData: {
-                                                    id: savedResponseItem.id,
-                                                    response: savedResponseItem.response
+                                                    id: (savedResponseItem as { id?: string }).id,
+                                                    response: (savedResponseItem as { response?: unknown }).response
                                                 }
                                             };
                                         }
-                                        console.warn(`[CurrentStepRenderer - ${SMART_VOC_ROUTER_STEP_TYPE}] No saved response found for question type ${question.type} (moduleId: ${stepId})`);
+                                        console.warn(`[CurrentStepRenderer - ${SMART_VOC_ROUTER_STEP_TYPE}] No saved response found for question type ${(question as { type?: string }).type} (moduleId: ${stepId})`);
                                         return question;
                                     });
                                 }
                             } else if (stepType === DEMOGRAPHIC_STEP_TYPE) {
                                 const demographicResponseItem = actualResponsesArray.find(
-                                    (r: any) => r.stepId === stepId || r.stepType === DEMOGRAPHIC_STEP_TYPE
+                                    (r): r is Record<string, unknown> => isRecord(r) && (('stepId' in r && r.stepId === stepId) || ('stepType' in r && r.stepType === DEMOGRAPHIC_STEP_TYPE))
                                 );
-                                if (demographicResponseItem) {
-                                    newEnrichedConfig.savedResponses = demographicResponseItem.response || {};
+                                if (demographicResponseItem && 'response' in demographicResponseItem) {
+                                    newEnrichedConfig.savedResponses = (demographicResponseItem as { response?: unknown }).response || {};
                                 } else {
                                     console.warn(`[CurrentStepRenderer - ${DEMOGRAPHIC_STEP_TYPE}] No saved response found for step ${stepId} (or type ${DEMOGRAPHIC_STEP_TYPE})`);
                                     newEnrichedConfig.savedResponses = {};
@@ -118,7 +131,7 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
     }, [onError, stepType]);
 
     const finalMappedProps = useMemo(() => {
-        const isGenerallyMock = !!(!stepConfig);
+        const isGenerallyMock = !stepConfig;
         let currentConfigToUse = stepConfig;
 
         if (stepType === DEMOGRAPHIC_STEP_TYPE && enrichedStepConfig) {
@@ -137,21 +150,29 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
             isMock: isGenerallyMock,
         };
 
+        const getStringProp = (obj: unknown, key: string): string | undefined => {
+            if (typeof obj === 'object' && obj !== null && key in obj) {
+                const val = (obj as Record<string, unknown>)[key];
+                return typeof val === 'string' ? val : undefined;
+            }
+            return undefined;
+        };
+
         if (stepType === 'smartvoc_csat' || stepType === 'smartvoc_ces' || stepType === 'smartvoc_nps' || stepType === 'smartvoc_cv' || stepType === 'smartvoc_nev') {
             return {
                 ...baseProps,
                 stepConfig: currentConfigToUse,
                 questionConfig: currentConfigToUse || {},
-                questionText: currentConfigToUse?.questionText || stepName || 'Pregunta SmartVOC',
-                instructions: currentConfigToUse?.instructions,
-                companyName: currentConfigToUse?.companyName,
+                questionText: getStringProp(currentConfigToUse, 'questionText') || stepName || 'Pregunta SmartVOC',
+                instructions: getStringProp(currentConfigToUse, 'instructions'),
+                companyName: getStringProp(currentConfigToUse, 'companyName'),
                 moduleId: stepId,
                 ...(stepType === 'smartvoc_csat' ? { onStepComplete: baseProps.onStepComplete } : { onNext: baseProps.onStepComplete }),
             };
         }
         
         if (stepComponentMap[stepType]) {
-            const componentSpecificProps: any = { ...baseProps };
+            const componentSpecificProps: Record<string, unknown> = { ...baseProps };
             if (stepType !== 'smartvoc_csat' && stepType !== 'smartvoc_ces' && stepType !== 'smartvoc_nps') {
                 componentSpecificProps.stepConfig = currentConfigToUse;
             }
@@ -173,11 +194,11 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
         const ComponentToRender = stepComponentMap[stepType];
 
         if (ComponentToRender) {
-            const warningMessage = finalMappedProps.isMock ? `Configuración para '${stepType}' podría estar incompleta o usando datos de prueba.` : undefined;
+            const warningMessage = (finalMappedProps as { isMock?: boolean }).isMock ? `Configuración para '${stepType}' podría estar incompleta o usando datos de prueba.` : undefined;
 
             return renderStepWithWarning(
-                <ComponentToRender {...finalMappedProps} key={stepId} />,
-                finalMappedProps.isMock,
+                <ComponentToRender {...(finalMappedProps as Record<string, unknown>)} key={stepId} />,
+                Boolean((finalMappedProps as { isMock?: boolean }).isMock),
                 warningMessage
             );
         } else {

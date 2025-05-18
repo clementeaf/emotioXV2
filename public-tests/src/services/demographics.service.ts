@@ -8,7 +8,7 @@ import { APIStatus, ApiClient } from '../lib/api';
 interface StepDefinition {
   stepType?: string;
   type?: string;
-  response?: any;
+  response?: unknown;
   id?: string;
   // Añade aquí otras propiedades que pueda tener un 'step' si son conocidas
 }
@@ -63,7 +63,7 @@ export const demographicsService = {
         };
       }
 
-      let responseData: any = null;
+      let responseData: unknown = null;
       try {
         if (response.headers.get('content-length') !== '0') {
           responseData = await response.json();
@@ -84,14 +84,18 @@ export const demographicsService = {
           error: true,
           status: response.status,
           apiStatus: APIStatus.ERROR,
-          message: responseData?.message || `Error HTTP obteniendo configuración demográfica: ${response.status}`
+          message: (responseData && typeof responseData === 'object' && responseData !== null && 'message' in responseData)
+            ? (responseData as { message?: string }).message || `Error HTTP obteniendo configuración demográfica: ${response.status}`
+            : `Error HTTP obteniendo configuración demográfica: ${response.status}`
         };
       }
 
-      const data = responseData?.data || responseData; // El backend podría envolver la data en una prop 'data'
+      const data = (responseData && typeof responseData === 'object' && responseData !== null && 'data' in responseData)
+        ? (responseData as { data: DemographicsSection }).data
+        : responseData;
       
       // Validar que la data obtenida tenga la estructura esperada (al menos la prop 'questions')
-      if (!data || typeof data.questions !== 'object' || data.questions === null) {
+      if (!data || typeof (data as DemographicsSection).questions !== 'object' || (data as DemographicsSection).questions === null) {
         return { // Estructura de datos inesperada desde el backend
           data: null,
           error: true,
@@ -142,9 +146,9 @@ export const demographicsService = {
     try {
       const apiResponse = await apiClient.getModuleResponses(researchId, participantId);
 
-      if (apiResponse.error || apiResponse.apiStatus !== APIStatus.SUCCESS || !apiResponse.data || !apiResponse.data.data) {
+      if (apiResponse.error || apiResponse.apiStatus !== APIStatus.SUCCESS || !apiResponse.data || (typeof apiResponse.data !== 'object') || apiResponse.data === null || !('data' in apiResponse.data)) {
         let message = apiResponse.message || 'No se encontraron respuestas o ocurrió un error.';
-        const anidatedData = apiResponse.data as any;
+        const anidatedData = apiResponse.data as { status?: number } | undefined;
         const statusErrorCode = anidatedData?.status || apiResponse.status || (apiResponse.apiStatus === APIStatus.NOT_FOUND ? 404 : 500);
 
         if (apiResponse.apiStatus === APIStatus.NOT_FOUND || (anidatedData?.status === 404)) {
@@ -159,7 +163,9 @@ export const demographicsService = {
         };
       }
 
-      const fullDocument = apiResponse.data.data as { id: string, responses: StepDefinition[], [key: string]: any };
+      const fullDocument = (typeof apiResponse.data === 'object' && apiResponse.data !== null && 'data' in apiResponse.data)
+        ? (apiResponse.data as { data: { id: string, responses: StepDefinition[], [key: string]: unknown } }).data
+        : { id: '', responses: [] };
 
       let demographicDataToReturn: DemographicResponses = {};
       let foundDocumentId: string | null = null;
@@ -169,7 +175,7 @@ export const demographicsService = {
         foundDocumentId = fullDocument.id;
 
         const demographicStepData = fullDocument.responses.find(
-          (step: StepDefinition & { id?: string }) => step.stepType === 'demographic' 
+          (step: StepDefinition) => step.stepType === 'demographic'
         );
 
         if (demographicStepData && typeof demographicStepData.response === 'object' && demographicStepData.response !== null) {

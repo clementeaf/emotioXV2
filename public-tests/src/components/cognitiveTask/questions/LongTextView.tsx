@@ -4,19 +4,20 @@ import TextAreaField from '../../common/TextAreaField';
 import { useResponseAPI } from '../../../hooks/useResponseAPI';
 import { useParticipantStore } from '../../../stores/participantStore';
 import { useModuleResponses } from '../../../hooks/useModuleResponses';
+import { ModuleResponse } from '../../../stores/participantStore';
 
 interface LongTextViewProps {
-  config: any;
-  onStepComplete?: (answer?: any) => void;
+  config: Record<string, unknown>;
+  onStepComplete?: (answer?: unknown) => void;
 }
 
 export const LongTextView: React.FC<LongTextViewProps> = ({ config, onStepComplete }) => {
-  const id = config?.id;
-  const type = config?.type || 'long_text';
-  const title = config?.title || 'Pregunta';
-  const description = config?.description;
-  const answerPlaceholder = config?.answerPlaceholder || 'Escribe tu respuesta detallada aquí...';
-  const required = config?.required;
+  const id = (config as { id?: string }).id || '';
+  const type = (config as { type?: string }).type || 'long_text';
+  const title = (config as { title?: string }).title || 'Pregunta';
+  const description = (config as { description?: string }).description;
+  const answerPlaceholder = (config as { answerPlaceholder?: string }).answerPlaceholder || 'Escribe tu respuesta detallada aquí...';
+  const required = (config as { required?: boolean }).required;
 
   // IDs globales
   const researchId = useParticipantStore(state => state.researchId) || '';
@@ -28,14 +29,18 @@ export const LongTextView: React.FC<LongTextViewProps> = ({ config, onStepComple
 
   // Buscar la respuesta previa para este step (más robusto)
   const previousResponseObj = Array.isArray(moduleResponsesArray)
-    ? moduleResponsesArray.find(
-        (r: any) =>
-          (r.stepType === config.type || r.stepType === config.stepType) &&
-          (r.response?.questionId === id || r.stepId === id || r.stepTitle === title)
+    ? (moduleResponsesArray as ModuleResponse[]).find(
+        (r: ModuleResponse) =>
+          (r.stepType === (config as { type?: string }).type || r.stepType === (config as { stepType?: string }).stepType) &&
+          ((r.response as { questionId?: string })?.questionId === id ||
+            (typeof ((r as unknown) as Record<string, unknown>).stepId === 'string' && ((r as unknown) as Record<string, unknown>).stepId === id) ||
+            r.stepTitle === title)
       )
     : undefined;
 
-  const previousValue = previousResponseObj?.response?.value ?? '';
+  const previousValue = previousResponseObj && typeof previousResponseObj.response === 'object' && previousResponseObj.response !== null && 'value' in previousResponseObj.response
+    ? (previousResponseObj.response as { value?: string }).value ?? ''
+    : '';
 
   // Estado local del textarea
   const [value, setValue] = useState<string>('');
@@ -71,7 +76,7 @@ export const LongTextView: React.FC<LongTextViewProps> = ({ config, onStepComple
     setIsSubmitting(true);
     try {
       let result;
-      if (previousResponseObj?.id) {
+      if (previousResponseObj && 'id' in previousResponseObj && typeof previousResponseObj.id === 'string') {
         // Actualizar respuesta existente
         result = await saveOrUpdateResponse(
           id,
@@ -90,12 +95,12 @@ export const LongTextView: React.FC<LongTextViewProps> = ({ config, onStepComple
         );
       }
       setIsSubmitting(false);
-      if (result && !result.error) {
+      if (result && typeof result === 'object' && result !== null && 'error' in result && !(result as { error?: unknown }).error) {
         onStepComplete?.(result);
       } else {
         setError('Error guardando la respuesta. Intenta nuevamente.');
       }
-    } catch (err) {
+    } catch {
       setIsSubmitting(false);
       setError('Error guardando la respuesta. Intenta nuevamente.');
     }
@@ -121,7 +126,7 @@ export const LongTextView: React.FC<LongTextViewProps> = ({ config, onStepComple
         onClick={handleSubmit}
         disabled={isSubmitting}
       >
-        {previousResponseObj?.id ? 'Actualizar y continuar' : 'Guardar y continuar'}
+        {previousResponseObj && 'id' in previousResponseObj && typeof previousResponseObj.id === 'string' ? 'Actualizar y continuar' : 'Guardar y continuar'}
       </button>
     </div>
   );

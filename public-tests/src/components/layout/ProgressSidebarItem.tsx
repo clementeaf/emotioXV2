@@ -2,13 +2,11 @@ import { cn } from "../../lib/utils";
 import { colors } from "./utils";
 import { useParticipantStore } from '../../stores/participantStore';
 
-export function ProgressSidebarItem({ step, index, isCurrent, isAnswered, isClickable, onNavigateToStep, totalSteps }: {
-    step: any;
+export function ProgressSidebarItem({ step, index, isCurrent, isAnswered, totalSteps }: {
+    step: unknown;
     index: number;
     isCurrent: boolean;
     isAnswered: boolean;
-    isClickable: boolean;
-    onNavigateToStep?: (index: number) => void;
     totalSteps: number;
   }) {
     let dotColor, lineColor, textColor;
@@ -29,9 +27,13 @@ export function ProgressSidebarItem({ step, index, isCurrent, isAnswered, isClic
 
     const canClick = isAnswered && !isCurrent;
 
+    if (typeof step !== 'object' || step === null || !('id' in step) || !('name' in step)) {
+      return null;
+    }
+    const stepObj = step as { id: string; name: string };
     return (
       <div
-        key={step.id}
+        key={stepObj.id}
         className={cn(
           "relative flex items-start w-full text-left mb-4 pb-4 last:mb-0 last:pb-0",
           canClick && "cursor-pointer group hover:bg-green-50",
@@ -72,7 +74,7 @@ export function ProgressSidebarItem({ step, index, isCurrent, isAnswered, isClic
               canClick && "group-hover:text-green-700"
             )}
           >
-            {step.name}
+            {stepObj.name}
           </span>
         </div>
       </div>

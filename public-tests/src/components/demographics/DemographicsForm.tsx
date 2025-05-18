@@ -58,7 +58,7 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
     );
   }
 
-  const handleChange = (id: string, value: any) => {
+  const handleChange = (id: string, value: string | number | boolean | undefined) => {
     setFormFieldResponses(prev => ({ ...prev, [id]: value }));
     if (value && formErrors[id]) {
       setFormErrors(prev => { const updated = { ...prev }; delete updated[id]; return updated; });
@@ -102,8 +102,8 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
   }
   
   const enabledQuestions = Object.entries(config.questions)
-    .filter(([_, questionConfig]) => questionConfig.enabled)
-    .sort(([_, a], [__, b]) => (a.order !== undefined && b.order !== undefined ? a.order - b.order : 0))
+    .filter(([, questionConfig]) => questionConfig.enabled)
+    .sort(([, a], [, b]) => (a.order !== undefined && b.order !== undefined ? a.order - b.order : 0))
     .map(([key, questionConfigFromFile]) => {
       let finalOptions;
 
@@ -139,7 +139,7 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
       <form onSubmit={handleSubmit}>
         {enabledQuestions.map(({ key, config: adaptedQuestionConfig }) => (
           <div key={key} className={formErrors[key] ? 'has-error' : ''}>
-            <DemographicQuestion config={adaptedQuestionConfig} value={formFieldResponses[key]} onChange={handleChange} />
+            <DemographicQuestion config={adaptedQuestionConfig} value={formFieldResponses[key] as string | number | boolean | undefined} onChange={handleChange} />
             {formErrors[key] && <p className="text-red-500 text-xs mt-1">{formErrors[key]}</p>}
           </div>
         ))}

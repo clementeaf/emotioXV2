@@ -16,7 +16,7 @@ export enum ParticipantFlowStep {
 // <<< AÑADIR Y EXPORTAR ExpandedStep >>>
 export type ExpandedStep = SidebarStep & {
   type: string;       // Tipo específico del paso/pregunta (e.g., 'welcome', 'cognitive_short_text', 'smartvoc_csat')
-  config?: any;       // Configuración específica del paso (datos de la pregunta, textos, etc.)
+  config?: unknown;   // Configuración específica del paso (datos de la pregunta, textos, etc.)
   responseKey?: string; // Identificador único del módulo para vincular respuestas
   // Podríamos añadir más campos si son necesarios para la lógica
 }; 

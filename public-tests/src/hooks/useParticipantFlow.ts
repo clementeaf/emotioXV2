@@ -38,12 +38,9 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         enabled: !!researchId && !!token,
     });
 
-    let allSk: string[] = [];
-    let demographicQuestionsFound: any[] = [];
+    const demographicQuestionsFound: unknown[] = [];
 
     if (researchFlowApiData && researchFlowApiData.data && Array.isArray(researchFlowApiData.data)) {
-        allSk = researchFlowApiData.data.map(p => p.originalSk);
-
         for (const processedModule of researchFlowApiData.data) {
             if (processedModule.originalSk === 'EYE_TRACKING_CONFIG') {
                 if (processedModule.config && typeof processedModule.config.demographicQuestions === 'object' && processedModule.config.demographicQuestions !== null) {
@@ -174,11 +171,6 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         loadExistingResponses, participantId, isResearchFlowError, setCurrentStepIndex, setCurrentStep, 
         setNavigationIsLoading
     ]);
-
-    useEffect(() => {
-        if (currentStep === ParticipantFlowStep.WELCOME) {
-        }
-    }, [currentStep, expandedSteps, researchFlowApiData]);
 
     const handleLoginSuccess = useCallback(async (participant: Participant & { id: string }) => {
         handleLoginSuccessFromSession(participant);

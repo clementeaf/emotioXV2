@@ -32,7 +32,7 @@ export const useParticipantSession = () => {
         localStorage.removeItem('participantId');
         setToken(null);
         storeGlobalSetToken(null);
-        storeGlobalSetParticipant({ id: null } as any);
+        storeGlobalSetParticipant({ id: '' });
     }, [storeGlobalSetToken, storeGlobalSetParticipant]);
 
     return {

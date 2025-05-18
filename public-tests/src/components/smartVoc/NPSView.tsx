@@ -10,7 +10,7 @@ interface NPSViewProps {
   stepId?: string;
   stepType?: string; 
   initialValue?: number | null; // Valor inicial que viene de props (en lugar de localStorage)
-  config?: any; // Configuración adicional si necesaria
+  config?: unknown; // Configuración adicional si necesaria
 }
 
 const NPSView: React.FC<NPSViewProps> = ({

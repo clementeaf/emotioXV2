@@ -1,10 +1,10 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { ApiClient, APIStatus } from '../lib/api'; // Ajusta la ruta si es necesario
 import { useParticipantStore } from '../stores/participantStore'; // Para obtener IDs si no se pasan
 
 // Define una interfaz para el valor de retorno del hook
 interface UseModuleResponsesReturn {
-  data: any | null; // Tipo de 'data.data' de apiClient.getModuleResponses
+  data: unknown | null; // Tipo de 'data.data' de apiClient.getModuleResponses
   documentId: string | null; // El ID del documento de respuestas general
   isLoading: boolean;
   error: string | null;
@@ -23,7 +23,7 @@ export const useModuleResponses = (props?: UseModuleResponsesProps): UseModuleRe
   const researchIdFromStore = useParticipantStore(state => state.researchId);
   const participantIdFromStore = useParticipantStore(state => state.participantId);
 
-  const [data, setData] = useState<any | null>(null);
+  const [data, setData] = useState<unknown | null>(null);
   const [documentId, setDocumentId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +33,7 @@ export const useModuleResponses = (props?: UseModuleResponsesProps): UseModuleRe
   // Guardar los últimos IDs usados para evitar llamadas duplicadas
   const lastIdsRef = useRef<{ researchId?: string; participantId?: string }>({});
 
-  const fetchData = async (currentResearchId: string, currentParticipantId: string) => {
+  const fetchData = useCallback(async (currentResearchId: string, currentParticipantId: string) => {
     if (!currentResearchId || !currentParticipantId) {
       setError("Research ID o Participant ID no proporcionados para cargar respuestas.");
       setData(null);
@@ -50,9 +50,17 @@ export const useModuleResponses = (props?: UseModuleResponsesProps): UseModuleRe
     try {
       const apiResponse = await apiClient.getModuleResponses(currentResearchId, currentParticipantId);
 
-      if (apiResponse.data?.data && !apiResponse.error) {
-        setData(apiResponse.data.data.responses || []);
-        setDocumentId(apiResponse.data.data.id || null);
+      if (
+        apiResponse.data &&
+        typeof apiResponse.data === 'object' &&
+        apiResponse.data !== null &&
+        'data' in apiResponse.data &&
+        (apiResponse.data as { data?: unknown }).data &&
+        !apiResponse.error
+      ) {
+        const innerData = (apiResponse.data as { data?: { responses?: unknown; id?: string } }).data;
+        setData(innerData?.responses || []);
+        setDocumentId(innerData?.id || null);
       } else {
         setData(null);
         setDocumentId(null);
@@ -63,15 +71,15 @@ export const useModuleResponses = (props?: UseModuleResponsesProps): UseModuleRe
           console.error('[useModuleResponses] Error fetching responses:', apiResponse.message);
         }
       }
-    } catch (e: any) {
+    } catch (e) {
       console.error('[useModuleResponses] Exception fetching responses:', e);
-      setError(e.message || 'Excepción desconocida al cargar respuestas.');
+      setError(e instanceof Error ? e.message : 'Excepción desconocida al cargar respuestas.');
       setData(null);
       setDocumentId(null);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [apiClient]);
 
   useEffect(() => {
     const finalResearchId = initialResearchId || researchIdFromStore;
@@ -88,7 +96,7 @@ export const useModuleResponses = (props?: UseModuleResponsesProps): UseModuleRe
       fetchData(finalResearchId, finalParticipantId);
     }
     // No resetea el estado si faltan IDs, así evita flashes de null
-  }, [initialResearchId, initialParticipantId, researchIdFromStore, participantIdFromStore, autoFetch, apiClient]);
+  }, [initialResearchId, initialParticipantId, researchIdFromStore, participantIdFromStore, autoFetch, apiClient, fetchData]);
 
   // Función para permitir la recarga manual si es necesario
   const fetchResponses = (rId: string, pId: string) => {

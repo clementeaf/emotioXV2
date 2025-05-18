@@ -4,11 +4,11 @@ import { useResponseAPI } from "../../../hooks/useResponseAPI";
 import { ApiClient, APIStatus } from "../../../lib/api";
 
 interface MultipleChoiceQuestionProps {
-    stepConfig?: any;
+    stepConfig?: unknown;
     stepId?: string;
     stepName?: string;
     stepType: string;
-    onStepComplete: (answer: any) => void;
+    onStepComplete: (answer: unknown) => void;
     isMock: boolean;
 }
 
@@ -20,33 +20,40 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
     onStepComplete,
     isMock
 }) => {
-    console.log(`[MCQ Start Render] stepType: ${stepType}, stepNameFromProps: ${stepNameFromProps}, isMock: ${isMock}, Received initialConfig: ${JSON.stringify(initialConfig)}`);
+    // Unificar todas las props de config en un solo objeto seguro
+    const cfg = (typeof initialConfig === 'object' && initialConfig !== null)
+      ? initialConfig as {
+          title?: string;
+          description?: string;
+          questionText?: string;
+          choices?: unknown[];
+          minSelections?: number;
+          maxSelections?: number;
+          savedResponses?: unknown[];
+          required?: boolean;
+        }
+      : {};
 
-    const componentTitle = stepNameFromProps || initialConfig?.title || 'Pregunta de opciones múltiples';
-    const description = initialConfig?.description;
-    const questionText = initialConfig?.questionText ?? (isMock ? 'Selecciona todas las opciones que apliquen (Prueba)' : 'Por favor, selecciona una o más opciones.');
-
+    const componentTitle = stepNameFromProps || cfg.title || 'Pregunta de opciones múltiples';
+    const description = cfg.description;
+    const questionText = cfg.questionText ?? (isMock ? 'Selecciona todas las opciones que apliquen (Prueba)' : 'Por favor, selecciona una o más opciones.');
+    const choicesFromConfig = useMemo(() => Array.isArray(cfg.choices) ? cfg.choices : [], [cfg.choices]);
+    const savedResponses = useMemo(() => Array.isArray(cfg.savedResponses) ? cfg.savedResponses : [], [cfg.savedResponses]);
     const displayOptions = useMemo(() => {
-        const choicesFromConfig = initialConfig?.choices;
-        const calculatedOptions = Array.isArray(choicesFromConfig)
-            ? choicesFromConfig.map((choice: any) => choice?.text || '').filter((text: string) => text !== '')
-            : (isMock ? ['Opción Múltiple Mock A', 'Opción Múltiple Mock B', 'Opción Múltiple Mock C'] : []);
-
-        if (calculatedOptions.length === 0 && !isMock) {
+        if (choicesFromConfig.length === 0 && !isMock) {
             return ['Opción Múltiple A (sin texto)', 'Opción Múltiple B (sin texto)', 'Opción Múltiple C (sin texto)'];
         }
-        return calculatedOptions;
-    }, [initialConfig?.choices, isMock]);
+        return choicesFromConfig.length > 0 ? choicesFromConfig : (isMock ? ['Opción Múltiple Mock A', 'Opción Múltiple Mock B', 'Opción Múltiple Mock C'] : []);
+    }, [choicesFromConfig, isMock]);
+    const minSelections = typeof cfg.minSelections === 'number' ? cfg.minSelections : 0;
+    const maxSelections = typeof cfg.maxSelections === 'number' && cfg.maxSelections > 0 ? cfg.maxSelections : displayOptions.length;
+    const required = typeof cfg.required === 'boolean' ? cfg.required : true;
 
-    const minSelections = initialConfig?.minSelections ?? 0;
-    const maxSelections = initialConfig?.maxSelections > 0 ? initialConfig.maxSelections : displayOptions.length;
-
-    const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
+    const [selectedOptions, setSelectedOptions] = useState<unknown[]>([]);
     const [apiError, setApiError] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [dataLoading, setDataLoading] = useState(!isMock);
     const [dataExisted, setDataExisted] = useState(false);
-    const [documentId, setDocumentId] = useState<string | null>(null);
     const [moduleResponseId, setModuleResponseId] = useState<string | null>(null);
     const [isNavigating, setIsNavigating] = useState(false);
 
@@ -59,17 +66,14 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
     });
     
     useEffect(() => {
-        console.log(`[MCQ useEffect 1 (Mock/Initial)] Running. isMock: ${isMock}, researchId: ${researchId}, participantId: ${participantId}, stepType: ${stepType}, initialConfig?.savedResponses: ${JSON.stringify(initialConfig?.savedResponses)}, displayOptions: ${JSON.stringify(displayOptions)}`);
         if (isMock) {
-            const mockSaved = initialConfig?.savedResponses || [];
-            setSelectedOptions(Array.isArray(mockSaved) ? mockSaved.filter(opt => displayOptions.includes(opt)) : []);
+            setSelectedOptions(savedResponses.filter(opt => displayOptions.includes(opt)));
             setDataLoading(false);
         } else if (!researchId || !participantId || !stepType) {
-            console.warn('[MCQ useEffect 1] Carga OMITIDA por falta de IDs/stepType en modo no-mock.');
             setDataLoading(false);
             setSelectedOptions([]);
         }
-    }, [isMock, researchId, participantId, stepType, initialConfig?.savedResponses, displayOptions]);
+    }, [isMock, researchId, participantId, stepType, savedResponses, displayOptions]);
 
     useEffect(() => { 
         if (isMock || !researchId || !participantId || !stepType) {
@@ -79,15 +83,19 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
         setApiError(null);
         setDataExisted(false);
         setModuleResponseId(null);
-        setDocumentId(null);
 
         const apiClient = new ApiClient();
         apiClient.getModuleResponses(researchId, participantId)
             .then(apiResponse => {
-                let loadedApiResponsesRaw: string[] = [];
-                if (!apiResponse.error && apiResponse.data?.data) {
-                    const fullDocument = apiResponse.data.data as { id: string, responses: Array<{ id: string, stepType: string, response: any }> };
-                    setDocumentId(fullDocument.id);
+                let loadedApiResponsesRaw: unknown[] = [];
+                if (
+                  !apiResponse.error &&
+                  typeof apiResponse.data === 'object' && apiResponse.data !== null &&
+                  'data' in apiResponse.data &&
+                  typeof (apiResponse.data as { data?: unknown }).data === 'object' &&
+                  (apiResponse.data as { data?: unknown }).data !== null
+                ) {
+                    const fullDocument = (apiResponse.data as { data: { id: string, responses: Array<{ id: string, stepType: string, response: unknown }> } }).data;
                     const foundStepData = fullDocument.responses.find(item => item.stepType === stepType);
                     if (foundStepData && Array.isArray(foundStepData.response)) {
                         loadedApiResponsesRaw = foundStepData.response;
@@ -100,46 +108,33 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
                     }
                 }
                 let finalResponsesToProcess = loadedApiResponsesRaw;
-                if (loadedApiResponsesRaw.length === 0 && initialConfig?.savedResponses && Array.isArray(initialConfig.savedResponses)) {
-                    console.log(`[MCQ useEffect 2] Usando fallback de initialConfig.savedResponses: ${JSON.stringify(initialConfig.savedResponses)}`);
-                    finalResponsesToProcess = initialConfig.savedResponses;
+                if (loadedApiResponsesRaw.length === 0 && savedResponses.length > 0) {
+                    finalResponsesToProcess = savedResponses;
                 }
                 const validLoadedOptions = finalResponsesToProcess.filter(opt => displayOptions.includes(opt));
                 setSelectedOptions(validLoadedOptions);
-                console.log(`[MCQ useEffect 2] displayOptions: ${JSON.stringify(displayOptions)}, FinalResponsesToProcess (raw): ${JSON.stringify(finalResponsesToProcess)}, ValidLoadedOptions (set to state): ${JSON.stringify(validLoadedOptions)}`);
-                if (dataExisted && validLoadedOptions.length !== loadedApiResponsesRaw.filter(r => typeof r === 'string').length) {
-                    console.warn("[MCQ useEffect 2] Algunas respuestas cargadas de la API no eran válidas contra las displayOptions actuales. Se han filtrado.");
-                }
             })
             .catch(error => {
-                console.error('[MCQ useEffect 2] Excepción al cargar datos:', error);
                 setApiError(error.message || 'Excepción desconocida al cargar datos.');
-                const fallbackSaved = initialConfig?.savedResponses || [];
-                setSelectedOptions(Array.isArray(fallbackSaved) ? fallbackSaved.filter(opt => displayOptions.includes(opt)) : []);
+                setSelectedOptions(savedResponses.filter(opt => displayOptions.includes(opt)));
             })
             .finally(() => {
                 setDataLoading(false);
-                console.log('[MCQ useEffect 2] Carga de API finalizada para stepType:', stepType);
             });
-    }, [researchId, participantId, stepType, isMock, initialConfig?.savedResponses]);
+    }, [researchId, participantId, stepType, isMock, savedResponses, displayOptions]);
 
     useEffect(() => {
-        console.log(`[MCQ useEffect 3 (Sync)] Running. dataLoading: ${dataLoading}, isMock: ${isMock}, displayOptions: ${JSON.stringify(displayOptions)}, initialConfig?.savedResponses: ${JSON.stringify(initialConfig?.savedResponses)}`);
         if (isMock || dataLoading) return;
-        
         setSelectedOptions(prevSelected => {
             const newSelected = prevSelected.filter(opt => displayOptions.includes(opt));
-            if (JSON.stringify(newSelected) !== JSON.stringify(prevSelected)) {
-                console.log(`[MCQ useEffect 3 (Sync)] SelectedOptions cambiaron después de filtrar con nuevas displayOptions. Anterior: ${JSON.stringify(prevSelected)}, Nuevo: ${JSON.stringify(newSelected)}`);
-            }
             return newSelected;
         });
-    }, [displayOptions, initialConfig?.savedResponses, isMock, dataLoading]);
+    }, [displayOptions, savedResponses, isMock, dataLoading]);
 
-    const handleCheckboxChange = (option: string) => {
+    const handleCheckboxChange = (option: unknown) => {
         setSelectedOptions(prev => {
             const isCurrentlySelected = prev.includes(option);
-            let newSelectionCalc: string[];
+            let newSelectionCalc: unknown[];
             if (isCurrentlySelected) {
                 newSelectionCalc = prev.filter(item => item !== option);
             } else {
@@ -157,7 +152,7 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
             if (selectedOptions.length >= minSelections) onStepComplete(selectedOptions);
             return;
         }
-        if (selectedOptions.length < minSelections && initialConfig?.required !== false) {
+        if (selectedOptions.length < minSelections && required) {
             setApiError(`Por favor, selecciona al menos ${minSelections} opciones.`);
             return;
         }
@@ -178,7 +173,17 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
             } else {
                 const result = await saveResponse(currentStepIdForApi, stepType, currentStepNameForApi, payload.response);
                 if (apiHookError) setApiError(apiHookError);
-                else if (result && result.id) { setModuleResponseId(result.id); setDataExisted(true); success = true; }
+                else if (
+                  result &&
+                  typeof result === 'object' &&
+                  result !== null &&
+                  'id' in result &&
+                  typeof (result as { id?: unknown }).id === 'string'
+                ) {
+                  setModuleResponseId((result as { id: string }).id);
+                  setDataExisted(true);
+                  success = true;
+                }
             }
             if (success) {
                 setIsNavigating(true);
@@ -186,8 +191,12 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
             } else if (!apiHookError && !apiError) {
                 setApiError('La operación de guardado no parece haber tenido éxito.');
             }
-        } catch (error: any) {
-            setApiError(error.message || 'Error desconocido durante el guardado.');
+        } catch (error: unknown) {
+            if (typeof error === 'object' && error !== null && 'message' in error && typeof (error as { message?: unknown }).message === 'string') {
+                setApiError((error as { message: string }).message);
+            } else {
+                setApiError('Error desconocido durante el guardado.');
+            }
         } finally {
             setIsSaving(false);
         }
@@ -221,7 +230,7 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
             )}
 
             <div className="flex flex-col gap-2 mb-4">
-                {displayOptions.map((option: string, index: number) => (
+                {displayOptions.map((option: unknown, index: number) => (
                     <label key={index} className="flex items-center gap-2 p-3 border rounded-md cursor-pointer hover:bg-gray-50 transition-colors">
                         <input
                             type="checkbox"
@@ -230,7 +239,7 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
                             disabled={isSaving || isApiLoading || dataLoading || isNavigating}
                             className="h-5 w-5 text-primary-600 focus:ring-primary-500 disabled:opacity-70 disabled:cursor-not-allowed"
                         />
-                        <span className="text-neutral-700">{option}</span>
+                        <span className="text-neutral-700">{typeof option === 'string' ? option : ''}</span>
                     </label>
                 ))}
             </div>

@@ -1,24 +1,40 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParticipantStore } from "../../../stores/participantStore";
 import { useResponseAPI } from "../../../hooks/useResponseAPI";
 import { ApiClient, APIStatus } from "../../../lib/api";
 
 // Componente para Ranking
 export const RankingQuestion: React.FC<{
-    config: any; 
+    config: unknown; 
     stepId?: string;    // stepId del flujo
     stepName?: string;  // stepName del flujo
     stepType: string;
-    onStepComplete: (answer: any) => void; // Se llamará DESPUÉS de un guardado exitoso
+    onStepComplete: (answer: unknown) => void; // Se llamará DESPUÉS de un guardado exitoso
     isApiDisabled: boolean; // <<< CAMBIADO de isMock a isApiDisabled
 }> = ({ config: initialConfig, stepId: stepIdFromProps, stepName: stepNameFromProps, stepType, onStepComplete, isApiDisabled = false }) => {
-    console.log(`[RankingQuestion Start Render] Received isApiDisabled (after default): ${isApiDisabled}, type: ${typeof isApiDisabled}`);
-    const componentTitle = initialConfig?.title || stepNameFromProps || 'Pregunta de ranking';
-    const description = initialConfig?.description;
-    // Ajustar el texto de la pregunta para reflejar el estado de isApiDisabled o la validez de los items
-    const itemsAreEffectivelyMock = isApiDisabled || !initialConfig?.items || initialConfig?.items.length === 0 || initialConfig?.items.every((item: string) => item.trim() === '');
-    const questionText = initialConfig?.questionText || (itemsAreEffectivelyMock ? 'Ordena las siguientes opciones por preferencia (Prueba)' : 'Pregunta de ranking sin texto');
-    const itemsFromConfig = initialConfig?.items || (itemsAreEffectivelyMock ? ['Item de Prueba A', 'Item de Prueba B', 'Item de Prueba C'] : []);
+    // Unificar todas las props de config en un solo objeto seguro
+    const cfg = (typeof initialConfig === 'object' && initialConfig !== null)
+      ? initialConfig as {
+          title?: string;
+          description?: string;
+          questionText?: string;
+          options?: string[];
+          savedResponses?: string[];
+          required?: boolean;
+        }
+      : {};
+
+    const componentTitle = cfg.title || stepNameFromProps || 'Pregunta de ranking';
+    const description = cfg.description;
+    const options = Array.isArray(cfg.options) ? cfg.options : [];
+    const itemsAreEffectivelyMock = isApiDisabled || options.length === 0 || options.every((item: string) => item.trim() === '');
+    const questionText = cfg.questionText || (itemsAreEffectivelyMock ? 'Ordena las siguientes opciones por preferencia (Prueba)' : 'Pregunta de ranking sin texto');
+    const itemsFromConfig = useMemo(() => {
+        if (Array.isArray(cfg.options)) {
+            return cfg.options.filter((item): item is string => typeof item === 'string');
+        }
+        return [];
+    }, [cfg.options]);
     
     // El estado rankedItems almacenará el orden actual de los strings de los items.
     const [rankedItems, setRankedItems] = useState<string[]>([]); 
@@ -30,7 +46,6 @@ export const RankingQuestion: React.FC<{
     const [dataExisted, setDataExisted] = useState(false);
     const [documentId, setDocumentId] = useState<string | null>(null);
     const [moduleResponseId, setModuleResponseId] = useState<string | null>(null);
-    const [isNavigating, setIsNavigating] = useState(false);
 
     const researchId = useParticipantStore(state => state.researchId);
     const participantId = useParticipantStore(state => state.participantId);
@@ -85,8 +100,14 @@ export const RankingQuestion: React.FC<{
                 let finalOrderToSet: string[] = [...itemsFromConfig]; // Default: use items passed from parent
                 let usedApiData = false;
 
-                if (!apiResponse.error && apiResponse.data?.data) {
-                    const fullDocument = apiResponse.data.data as { id: string, responses: Array<{id: string, stepType: string, response: any}> };
+                if (
+                  !apiResponse.error &&
+                  typeof apiResponse.data === 'object' && apiResponse.data !== null &&
+                  'data' in apiResponse.data &&
+                  typeof (apiResponse.data as { data?: unknown }).data === 'object' &&
+                  (apiResponse.data as { data?: unknown }).data !== null
+                ) {
+                    const fullDocument = (apiResponse.data as { data: { id: string, responses: Array<{id: string, stepType: string, response: unknown}> } }).data;
                     setDocumentId(fullDocument.id);
                     const foundStepData = fullDocument.responses.find(item => item.stepType === stepType);
                     
@@ -137,13 +158,11 @@ export const RankingQuestion: React.FC<{
                 console.log('[RankingQuestion Load] useEffect API call finished.');
                 setDataLoading(false);
             });
-    }, [researchId, participantId, stepType, isApiDisabled, JSON.stringify(itemsFromConfig)]); // Quitar initialConfig.savedResponses, ya se maneja internamente
+    }, [researchId, participantId, stepType, isApiDisabled, itemsFromConfig]);
 
     // Texto dinámico para el botón
     let buttonText = 'Siguiente';
-    if (isNavigating) {
-        buttonText = 'Pasando al siguiente módulo...';
-    } else if (isSaving || isApiLoading) {
+    if (isSaving || isApiLoading) {
         buttonText = 'Guardando...';
     } else if (!isApiDisabled && dataExisted && moduleResponseId) {
         buttonText = 'Actualizar y continuar';
@@ -179,7 +198,7 @@ ${rankedItemsString}`);
             setApiError(null);
             let success = false;
             const payload = { response: rankedItems };
-            let operationResult: any; // Use 'any' for now to avoid type issues, can refine later
+            let operationResult: unknown; // Usar 'unknown' en vez de 'any' para robustecer el tipado
 
             if (dataExisted && moduleResponseId) {
                 console.log('[RankingQuestion Save] Attempting UPDATE with:', payload);
@@ -190,13 +209,13 @@ ${rankedItemsString}`);
                  operationResult = await saveResponse(currentStepIdForApi, stepType, currentStepNameForApi, payload.response);
                  console.log('[RankingQuestion Save] SAVE result:', operationResult);
                  // If save was successful and gave us IDs, update state (check common patterns for success/data)
-                 if (operationResult?.success === true) { // Assuming a 'success' boolean property
-                    if (operationResult.data?.moduleResponseId) {
-                        setModuleResponseId(operationResult.data.moduleResponseId);
+                 if (hasSuccess(operationResult) && operationResult.success === true) { // Assuming a 'success' boolean property
+                    if (hasData(operationResult) && typeof (operationResult.data as { moduleResponseId?: unknown }).moduleResponseId === 'string') {
+                        setModuleResponseId((operationResult.data as { moduleResponseId: string }).moduleResponseId);
                         setDataExisted(true);
                     }
-                    if(operationResult.data?.documentId && !documentId) {
-                        setDocumentId(operationResult.data.documentId);
+                    if (hasData(operationResult) && typeof (operationResult.data as { documentId?: unknown }).documentId === 'string' && !documentId) {
+                        setDocumentId((operationResult.data as { documentId: string }).documentId);
                     }
                  }
             }
@@ -205,7 +224,7 @@ ${rankedItemsString}`);
             if (apiHookError) {
                 console.error('[RankingQuestion Save] Hook reported error:', apiHookError);
                 // Prefer hook error message if it's a string
-                setApiError(typeof apiHookError === 'string' ? apiHookError : (operationResult?.message || 'Error en la operación de guardado.'));
+                setApiError(typeof apiHookError === 'string' ? apiHookError : (hasMessage(operationResult) ? operationResult.message : 'Error en la operación de guardado.'));
                 success = false;
             } else if (operationResult) {
                 console.log('[RankingQuestion Save] Operation seems successful (hook clear, received result).');
@@ -230,9 +249,13 @@ ${rankedItemsString}`);
                  setApiError('La operación de guardado no parece haber tenido éxito.');
             }
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('[RankingQuestion Save] EXCEPTION during save/update:', error);
-            setApiError(error.message || 'Error inesperado durante el guardado.');
+            if (typeof error === 'object' && error !== null && 'message' in error && typeof (error as { message?: unknown }).message === 'string') {
+                setApiError((error as { message: string }).message);
+            } else {
+                setApiError('Error inesperado durante el guardado.');
+            }
             // Ensure success is false if an exception occurred
             // success = false; // Not strictly needed as it defaults to false and isn't set true in catch
         } finally {
@@ -295,7 +318,7 @@ ${rankedItemsString}`);
                         <div className="flex space-x-1">
                             <button 
                                 onClick={() => moveItemUp(index)} 
-                                disabled={index === 0 || isSaving || isApiLoading || dataLoading || isNavigating}
+                                disabled={index === 0 || isSaving || isApiLoading || dataLoading}
                                 className="p-1 rounded hover:bg-gray-200 disabled:opacity-40 disabled:hover:bg-transparent text-lg text-neutral-600 disabled:text-neutral-400 transition-colors"
                                 aria-label={`Mover ${item.trim() === '' ? 'item sin texto' : item} hacia arriba`}
                             >
@@ -303,7 +326,7 @@ ${rankedItemsString}`);
                             </button>
                             <button 
                                 onClick={() => moveItemDown(index)} 
-                                disabled={index === rankedItems.length - 1 || isSaving || isApiLoading || dataLoading || isNavigating}
+                                disabled={index === rankedItems.length - 1 || isSaving || isApiLoading || dataLoading}
                                 className="p-1 rounded hover:bg-gray-200 disabled:opacity-40 disabled:hover:bg-transparent text-lg text-neutral-600 disabled:text-neutral-400 transition-colors"
                                 aria-label={`Mover ${item.trim() === '' ? 'item sin texto' : item} hacia abajo`}
                             >
@@ -315,7 +338,7 @@ ${rankedItemsString}`);
             </div>
             <button
                 onClick={handleSaveAndProceed}
-                disabled={isSaving || isApiLoading || dataLoading || isNavigating}
+                disabled={isSaving || isApiLoading || dataLoading}
                 className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors disabled:bg-neutral-300 disabled:cursor-not-allowed"
             >
                 {buttonText}
@@ -323,3 +346,8 @@ ${rankedItemsString}`);
         </div>
     );
 };
+
+// Type guard para operationResult
+const hasSuccess = (obj: unknown): obj is { success: boolean } => typeof obj === 'object' && obj !== null && 'success' in obj && typeof (obj as { success?: unknown }).success === 'boolean';
+const hasData = (obj: unknown): obj is { data: unknown } => typeof obj === 'object' && obj !== null && 'data' in obj;
+const hasMessage = (obj: unknown): obj is { message: string } => typeof obj === 'object' && obj !== null && 'message' in obj && typeof (obj as { message?: unknown }).message === 'string';

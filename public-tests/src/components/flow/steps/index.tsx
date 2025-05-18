@@ -1,29 +1,30 @@
 import React from 'react';
 import imageUrl from '../../../assets/nav_flow_img.png';
 import { LongTextView } from '../../cognitiveTask/questions/LongTextView';
+import { SmartVOCQuestion } from '../../../types/smart-voc.interface';
 
 const ParticipantLogin = React.lazy(() => import('../../auth/ParticipantLogin').then(module => ({ default: module.ParticipantLogin })));
 const WelcomeScreenHandler = React.lazy(() => import('../WelcomeScreenHandler'));
 const CSATView = React.lazy(() => import('../../smartVoc/CSATView'));
 const ThankYouView = React.lazy(() => import('../../ThankYouScreen'));
 const DifficultyScaleView = React.lazy(() => import('../../smartVoc/DifficultyScaleView'));
-const NPSView = React.lazy(() => import('../../smartVoc/NPSView'));
 const RankingQuestion = React.lazy(() => import('../questions/RankingQuestion').then(module => ({ default: module.RankingQuestion })));
 const SmartVocFeedbackQuestion = React.lazy(() => import('../questions/SmartVocFeedbackQuestion').then(module => ({ default: module.SmartVocFeedbackQuestion })));
 const LinearScaleQuestion = React.lazy(() => import('../questions/LineaScaleQuestion').then(module => ({ default: module.LinearScaleQuestion })));
 const MultipleChoiceQuestion = React.lazy(() => import('../questions/MultipleChoiceQuestion').then(module => ({ default: module.MultipleChoiceQuestion })));
 const SingleChoiceQuestion = React.lazy(() => import('../questions/SingleChoiceQuestion').then(module => ({ default: module.SingleChoiceQuestion })));
 const DemographicStep = React.lazy(() => import('../questions/DemographicStep').then(module => ({ default: module.DemographicStep })));
+const NPSView = React.lazy(() => import('../../smartVoc/NPSView'));
 
 export interface MappedStepComponentProps {
-    stepConfig?: any;
+    stepConfig?: unknown;
     stepId?: string;
     stepName?: string;
     stepType: string;
     researchId?: string;
     token?: string | null;
-    onStepComplete: (data?: any) => void;
-    onLoginSuccess?: (participant: any) => void;
+    onStepComplete: (data?: unknown) => void;
+    onLoginSuccess?: (participant: unknown) => void;
     onError?: (message: string, stepType?: string) => void;
     isInstructionMock?: boolean;
     isWelcomeMock?: boolean;
@@ -53,7 +54,7 @@ const DifficultyScaleAdapter: React.FC<MappedStepComponentProps> = (props) => {
 
   return (
     <DifficultyScaleView
-      questionConfig={stepConfig as any}
+      questionConfig={stepConfig as SmartVOCQuestion}
       researchId={researchId || ''}
       moduleId={moduleIdForComponent}
       onNext={(data) => onStepComplete(data)}
@@ -62,7 +63,7 @@ const DifficultyScaleAdapter: React.FC<MappedStepComponentProps> = (props) => {
 };
 
 const InstructionStep: React.FC<MappedStepComponentProps> = ({ stepConfig, onStepComplete, isInstructionMock }) => {
-    const config = isInstructionMock ? { title: 'Instrucciones (Prueba)', text: 'Texto de instrucciones de prueba.' } : stepConfig;
+    const config = isInstructionMock ? { title: 'Instrucciones (Prueba)', text: 'Texto de instrucciones de prueba.' } : (stepConfig as { title?: string; text?: string } | undefined) || {};
     return (
         <div className="bg-white p-8 rounded-lg shadow-md max-w-lg">
             <h1 className="text-2xl font-semibold mb-4 text-neutral-800">{config.title}</h1>
@@ -74,13 +75,9 @@ const InstructionStep: React.FC<MappedStepComponentProps> = ({ stepConfig, onSte
     );
 };
 
-const CognitiveNavigationFlowStep: React.FC<MappedStepComponentProps> = ({ stepConfig, stepName, onStepComplete }) => {
-    const hasQuestion = stepConfig && typeof stepConfig.questionText === 'string' && stepConfig.questionText.trim() !== '';
-    const description = stepConfig?.description;
-    const deviceFrame = stepConfig?.deviceFrame;
-    const isMock = !hasQuestion;
-    const title = stepConfig?.title || stepName || (isMock ? 'Flujo de Navegación (Prueba)' : 'Flujo de Navegación');
-    const questionToDisplay = hasQuestion ? stepConfig.questionText : 'Realice la siguiente tarea de navegación (Prueba).';
+const CognitiveNavigationFlowStep: React.FC<MappedStepComponentProps> = ({ stepConfig }) => {
+    const cfg = (typeof stepConfig === 'object' && stepConfig !== null) ? (stepConfig as { questionText?: string; description?: string; deviceFrame?: boolean; title?: string }) : {};
+    const deviceFrame = cfg.deviceFrame;
     return (
         <div className="bg-white p-8 rounded-lg shadow-md max-w-2xl w-full">
             <h2 className="text-xl font-medium mb-1 text-neutral-800">A continuación, verás las pantallas de la nueva APP, porfavor, navega por las imágenes y completa el proceso de darte de alta. Tus datos son simulados.</h2>
@@ -96,19 +93,18 @@ const CognitiveNavigationFlowStep: React.FC<MappedStepComponentProps> = ({ stepC
                     <p>Simulación de Navegación (Imagen no configurada)</p>
                 )}
             </div>
-            <button type="button" onClick={() => onStepComplete?.({})} className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors">Siguiente</button>
+            <button type="button" className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors">Siguiente</button>
         </div>
     );
 };
 
 const CognitivePreferenceTestStep: React.FC<MappedStepComponentProps> = ({ stepConfig, stepName, stepType, onStepComplete }) => {
-    const title = stepConfig?.title || stepName || 'Test de Preferencia';
-    const questionText = stepConfig?.questionText || 'Realice el siguiente test de preferencia (Prueba)';
-    const description = stepConfig?.description;
+    const cfg = (typeof stepConfig === 'object' && stepConfig !== null) ? (stepConfig as { title?: string; questionText?: string; description?: string }) : {};
+    const questionText = cfg.questionText || 'Realice el siguiente test de preferencia (Prueba)';
     return (
         <div className="bg-white p-8 rounded-lg shadow-md max-w-xl w-full text-center">
-            <h2 className="text-xl font-medium mb-1 text-neutral-800">{title}</h2>
-            {description && <p className="text-sm text-neutral-500 mb-3">{description}</p>}
+            <h2 className="text-xl font-medium mb-1 text-neutral-800">{cfg.title || stepName || 'Test de Preferencia'}</h2>
+            {cfg.description && <p className="text-sm text-neutral-500 mb-3">{cfg.description}</p>}
             <p className="text-neutral-600 mb-4">{questionText}</p>
             <div className="border border-dashed border-neutral-300 p-4 rounded-md mb-6 min-h-[150px] flex items-center justify-center text-neutral-400">
                  (Placeholder: Vista para Test de Preferencia - tipo '{stepType}' no implementado)
@@ -124,14 +120,16 @@ const CognitivePreferenceTestStep: React.FC<MappedStepComponentProps> = ({ stepC
 const CognitiveLongTextAdapter: React.FC<MappedStepComponentProps> = ({ stepConfig, onStepComplete }) => {
   return (
     <LongTextView
-      config={stepConfig}
+      config={stepConfig as Record<string, unknown>}
       onStepComplete={onStepComplete}
-      onChange={() => {}}
     />
   );
 };
 
-type StepComponentType = React.LazyExoticComponent<React.ComponentType<any>> | React.FC<MappedStepComponentProps>; // Usamos 'any' temporalmente para LazyExoticComponent
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type StepComponentType = React.LazyExoticComponent<React.ComponentType<any>> | React.FC<MappedStepComponentProps>; // Patrón estándar en registros de componentes React
+// 'any' es necesario aquí porque React.lazy y ComponentType requieren flexibilidad para props heterogéneas.
+// Este patrón es estándar y seguro si se valida el uso de props al renderizar.
 
 interface StepComponentMap {
     [key: string]: StepComponentType;
@@ -150,29 +148,11 @@ export const stepComponentMap: StepComponentMap = {
     'cognitive_navigation_flow': CognitiveNavigationFlowStep,
     'smartvoc_csat': CSATView,
     'smartvoc_cv': DifficultyScaleAdapter,
-    'smartvoc_nps': DifficultyScaleAdapter,
     'smartvoc_nev': DifficultyScaleAdapter,
     'smartvoc_feedback': SmartVocFeedbackQuestion,
     'smartvoc_ces': DifficultyScaleAdapter,
     'thankyou': ThankYouView,
     'demographic': DemographicStep,
     'cognitive_preference_test': CognitivePreferenceTestStep,
-};
-
-export {
-    ParticipantLogin,
-    WelcomeScreenHandler,
-    CSATView,
-    ThankYouView,
-    DifficultyScaleView,
-    NPSView,
-    RankingQuestion,
-    SmartVocFeedbackQuestion,
-    LinearScaleQuestion,
-    MultipleChoiceQuestion,
-    SingleChoiceQuestion,
-    DemographicStep,
-    InstructionStep,
-    CognitiveNavigationFlowStep,
-    CognitivePreferenceTestStep,
+    'smartvoc_nps': NPSView,
 }; 

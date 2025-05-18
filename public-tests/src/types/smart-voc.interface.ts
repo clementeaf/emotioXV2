@@ -9,20 +9,13 @@ export interface BaseScaleConfig {
 }
 
 // Configuración específica para CES (Customer Effort Score)
-export interface CESConfig extends BaseScaleConfig {
-  // CES típicamente usa escala 1-7. Los labels pueden ser "Muy fácil" / "Muy difícil".
-  // No necesita campos adicionales por ahora, pero se puede extender.
-}
+export type CESConfig = BaseScaleConfig;
 
 // Configuración específica para CV (Customer Value)
-export interface CVConfig extends BaseScaleConfig {
-  // CV puede usar diferentes escalas (ej. 1-5, 1-7, 1-10). Labels: "Poco valor" / "Mucho valor".
-}
+export type CVConfig = BaseScaleConfig;
 
 // Configuración específica para NPS (Net Promoter Score)
-export interface NPSConfig extends BaseScaleConfig {
-  // NPS típicamente usa escala 0-10. Labels: "Nada probable" / "Extremadamente probable".
-}
+export type NPSConfig = BaseScaleConfig;
 
 // Configuración específica para CSAT (Customer Satisfaction)
 // Aunque CSATView es diferente, definimos su config por consistencia si es necesario en otro lugar.
@@ -44,5 +37,5 @@ export interface SmartVOCQuestion {
   companyName?: string;       // Para CSAT, si se usa [company] en el texto
   
   // `config` contendrá la configuración específica del tipo de pregunta
-  config: CESConfig | CVConfig | NPSConfig | CSATConfig | any; // Usar 'any' como fallback temporal si hay otros tipos no definidos aquí
+  config: CESConfig | CVConfig | NPSConfig | CSATConfig | unknown;
 } 

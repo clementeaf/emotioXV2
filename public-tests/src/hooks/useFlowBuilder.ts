@@ -5,31 +5,31 @@ import { UseFlowBuilderProps } from './types';
 import { ProcessedResearchFormConfig } from './useResearchForms';
 
 const extractCoreStepConfigs = (flowDataModules: ProcessedResearchFormConfig[] | undefined) => {
-    let demographicsQuestions: any = null;
-    let welcomeConfig: any = null;
-    let thankyouConfig: any = null;
+    let demographicsQuestions: unknown = null;
+    let welcomeConfig: unknown = null;
+    let thankyouConfig: unknown = null;
 
     if (Array.isArray(flowDataModules)) {
         for (const processedModule of flowDataModules) {
             const moduleData = processedModule.config;
             if (!moduleData) continue;
 
-            const moduleSK = moduleData.sk;
+            const moduleSK = (moduleData as { sk?: string }).sk;
             switch (moduleSK) {
                 case 'EYE_TRACKING_CONFIG':
-                    if (moduleData.demographicQuestions) {
+                    if ('demographicQuestions' in moduleData && (moduleData as { demographicQuestions?: unknown }).demographicQuestions) {
                         demographicsQuestions = {
-                            questions: moduleData.demographicQuestions,
-                            title: moduleData.title,
-                            description: moduleData.description
+                            questions: (moduleData as { demographicQuestions?: unknown }).demographicQuestions,
+                            title: (moduleData as { title?: string }).title,
+                            description: (moduleData as { description?: string }).description
                         };
                     }
                     break;
                 case 'WELCOME_SCREEN':
-                    welcomeConfig = { ...moduleData };
+                    welcomeConfig = { ...(moduleData as object) };
                     break;
                 case 'THANK_YOU_SCREEN':
-                    thankyouConfig = { ...moduleData };
+                    thankyouConfig = { ...(moduleData as object) };
                     break;
             }
         }
@@ -38,27 +38,29 @@ const extractCoreStepConfigs = (flowDataModules: ProcessedResearchFormConfig[] |
 };
 
 const processSmartVocQuestions = (
-    moduleSpecificQuestions: any[],
+    moduleSpecificQuestions: unknown[],
     _moduleTitleFromBackend: string | undefined,
     parentModuleResponseKey: string
 ): ExpandedStep[] => {
     const steps: ExpandedStep[] = [];
     if (Array.isArray(moduleSpecificQuestions) && moduleSpecificQuestions.length > 0) {
         for (const question of moduleSpecificQuestions) {
-            const originalQuestionType = question.type;
-            const upperQuestionType = originalQuestionType?.toUpperCase();
-            const frontendType = smartVOCTypeMap[upperQuestionType];
+            if (typeof question !== 'object' || question === null) continue;
+            const q = question as { id?: string; title?: string; type?: string };
+            const originalQuestionType = q.type;
+            const upperQuestionType = typeof originalQuestionType === 'string' ? originalQuestionType.toUpperCase() : undefined;
+            const frontendType = upperQuestionType && smartVOCTypeMap[upperQuestionType] ? smartVOCTypeMap[upperQuestionType] : undefined;
             
             if (frontendType) {
                 steps.push({
-                    id: question.id || `${frontendType}_${steps.length + Date.now()}`,
-                    name: question.title || `Feedback: ${originalQuestionType || 'Desconocido'}`,
+                    id: q.id || `${frontendType}_${steps.length + Date.now()}`,
+                    name: q.title || `Feedback: ${originalQuestionType || 'Desconocido'}`,
                     type: frontendType,
                     config: question,
                     responseKey: parentModuleResponseKey
                 });
             } else {
-                console.warn(`[useFlowBuilder processSmartVocQuestions] No mapeado: tipo "${upperQuestionType}" (Q ID ${question.id})`);
+                console.warn(`[useFlowBuilder processSmartVocQuestions] No mapeado: tipo "${upperQuestionType}" (Q ID ${q.id})`);
             }
         }
     }
@@ -66,25 +68,27 @@ const processSmartVocQuestions = (
 };
 
 const processCognitiveTaskQuestions = (
-    moduleSpecificQuestions: any[],
+    moduleSpecificQuestions: unknown[],
     moduleTitleFromBackend: string | undefined,
     parentModuleResponseKey: string
 ): ExpandedStep[] => {
     const steps: ExpandedStep[] = [];
     if (Array.isArray(moduleSpecificQuestions) && moduleSpecificQuestions.length > 0) {
         for (const question of moduleSpecificQuestions) {
-            const originalQuestionType = question.type;
-            const frontendType = originalQuestionType ? `cognitive_${originalQuestionType.toLowerCase()}` : undefined;
+            if (typeof question !== 'object' || question === null) continue;
+            const q = question as { id?: string; title?: string; type?: string };
+            const originalQuestionType = q.type;
+            const frontendType = typeof originalQuestionType === 'string' ? `cognitive_${originalQuestionType.toLowerCase()}` : undefined;
             if (frontendType) {
                 steps.push({
-                    id: question.id || `${frontendType}_${steps.length + Date.now()}`,
-                    name: question.title || `${moduleTitleFromBackend || 'Tarea Cognitiva'}: ${originalQuestionType || 'Desconocido'}`,
+                    id: q.id || `${frontendType}_${steps.length + Date.now()}`,
+                    name: q.title || `${moduleTitleFromBackend || 'Tarea Cognitiva'}: ${originalQuestionType || 'Desconocido'}`,
                     type: frontendType,
                     config: question,
                     responseKey: parentModuleResponseKey
                 });
             } else {
-                console.warn(`[useFlowBuilder processCognitiveTaskQuestions] No se pudo generar frontendType para tipo: "${originalQuestionType}" (Q ID ${question.id})`);
+                console.warn(`[useFlowBuilder processCognitiveTaskQuestions] No se pudo generar frontendType para tipo: "${originalQuestionType}" (Q ID ${q.id})`);
             }
         }
     }
@@ -92,7 +96,7 @@ const processCognitiveTaskQuestions = (
 };
 
 const processDefaultModuleQuestions = (
-    moduleSpecificQuestions: any[],
+    moduleSpecificQuestions: unknown[],
     moduleTitleFromBackend: string | undefined,
     moduleSK: string | undefined,
     parentModuleResponseKey: string
@@ -100,11 +104,13 @@ const processDefaultModuleQuestions = (
     const steps: ExpandedStep[] = [];
     if (Array.isArray(moduleSpecificQuestions) && moduleSpecificQuestions.length > 0) {
         for (const question of moduleSpecificQuestions) {
-            const originalQuestionType = question.type;
-            const frontendType = moduleSK && originalQuestionType ? `${moduleSK.toLowerCase()}_${originalQuestionType.toLowerCase()}` : `unknown_${originalQuestionType?.toLowerCase() || 'question'}`;
+            if (typeof question !== 'object' || question === null) continue;
+            const q = question as { id?: string; title?: string; type?: string };
+            const originalQuestionType = q.type;
+            const frontendType = moduleSK && typeof originalQuestionType === 'string' ? `${moduleSK.toLowerCase()}_${originalQuestionType.toLowerCase()}` : `unknown_${typeof originalQuestionType === 'string' ? originalQuestionType.toLowerCase() : 'question'}`;
             steps.push({
-                id: question.id || `${frontendType}_${steps.length + Date.now()}`,
-                name: question.title || `${moduleTitleFromBackend || moduleSK || 'Módulo Desconocido'}: ${originalQuestionType || 'Pregunta'}`,
+                id: q.id || `${frontendType}_${steps.length + Date.now()}`,
+                name: q.title || `${moduleTitleFromBackend || moduleSK || 'Módulo Desconocido'}: ${originalQuestionType || 'Pregunta'}`,
                 type: frontendType,
                 config: question,
                 responseKey: parentModuleResponseKey
@@ -134,15 +140,16 @@ export const useFlowBuilder = ({ researchFlowApiData, isLoading }: UseFlowBuilde
             thankyouConfig: thankyouConfigFromBackend 
         } = extractCoreStepConfigs(flowDataModules);
 
-        if (demographicsConfigFromBackend && demographicsConfigFromBackend.questions) {
+        if (demographicsConfigFromBackend && typeof demographicsConfigFromBackend === 'object' && demographicsConfigFromBackend !== null && 'questions' in demographicsConfigFromBackend) {
+            const demoConfig = demographicsConfigFromBackend as { questions?: unknown; title?: string; description?: string };
             finalSteps.push({
                 id: 'demographic',
-                name: demographicsConfigFromBackend.title || 'Preguntas Demográficas',
+                name: 'title' in demoConfig && typeof demoConfig.title === 'string' ? demoConfig.title : 'Preguntas Demográficas',
                 type: 'demographic',
                 config: { 
-                    title: demographicsConfigFromBackend.title || 'Preguntas Demográficas',
-                    description: demographicsConfigFromBackend.description || 'Por favor, complete lo siguiente:',
-                    demographicsConfig: demographicsConfigFromBackend 
+                    title: 'title' in demoConfig && typeof demoConfig.title === 'string' ? demoConfig.title : 'Preguntas Demográficas',
+                    description: 'description' in demoConfig && typeof demoConfig.description === 'string' ? demoConfig.description : 'Por favor, complete lo siguiente:',
+                    demographicsConfig: demoConfig 
                 },
                 responseKey: 'demographic'
             });
@@ -150,10 +157,12 @@ export const useFlowBuilder = ({ researchFlowApiData, isLoading }: UseFlowBuilde
             console.warn('[useFlowBuilder] No se encontró configuración demográfica en el backend (EYE_TRACKING_CONFIG.demographicQuestions). No se añadirá el paso demográfico.');
         }
 
-        const resolvedWelcomeConfig = welcomeConfigFromBackend || { title: 'Bienvenida', message: 'Gracias por participar.' };
+        const resolvedWelcomeConfig = (welcomeConfigFromBackend && typeof welcomeConfigFromBackend === 'object' && welcomeConfigFromBackend !== null && 'title' in welcomeConfigFromBackend)
+            ? welcomeConfigFromBackend as { title?: string; message?: string }
+            : { title: 'Bienvenida', message: 'Gracias por participar.' };
         finalSteps.push({ 
             id: 'welcome', 
-            name: resolvedWelcomeConfig.title, 
+            name: 'title' in resolvedWelcomeConfig && typeof resolvedWelcomeConfig.title === 'string' ? resolvedWelcomeConfig.title : 'Bienvenida', 
             type: 'welcome', 
             config: resolvedWelcomeConfig,
             responseKey: 'welcome'
@@ -187,10 +196,12 @@ export const useFlowBuilder = ({ researchFlowApiData, isLoading }: UseFlowBuilde
             }
         }
 
-        const resolvedThankYouConfig = thankyouConfigFromBackend || { title: 'Fin', message: 'Gracias por completar el estudio.' };
+        const resolvedThankYouConfig = (thankyouConfigFromBackend && typeof thankyouConfigFromBackend === 'object' && thankyouConfigFromBackend !== null && 'title' in thankyouConfigFromBackend)
+            ? thankyouConfigFromBackend as { title?: string; message?: string }
+            : { title: 'Fin', message: 'Gracias por completar el estudio.' };
         finalSteps.push({ 
             id: 'thankyou', 
-            name: resolvedThankYouConfig.title, 
+            name: 'title' in resolvedThankYouConfig && typeof resolvedThankYouConfig.title === 'string' ? resolvedThankYouConfig.title : 'Fin', 
             type: 'thankyou', 
             config: resolvedThankYouConfig,
             responseKey: 'thankyou'

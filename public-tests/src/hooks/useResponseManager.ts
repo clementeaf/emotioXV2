@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { ModuleResponse, ResponsesData } from './types';
 import { ExpandedStep } from '../types/flow';
 
-const sanitizeForJSON = (obj: any): any => {
+const sanitizeForJSON = (obj: unknown): unknown => {
     if (!obj) return obj;
     const seen = new WeakSet();
     return JSON.parse(JSON.stringify(obj, (key, value) => {
@@ -22,7 +22,7 @@ interface UseResponseManagerProps {
     participantId: string | undefined;
     expandedSteps: ExpandedStep[];
     currentStepIndex: number;
-    responseAPI: any;
+    responseAPI: unknown;
     storeSetLoadedResponses: (loadedStepResponses: ModuleResponse[]) => void;
 }
 
@@ -46,22 +46,29 @@ export const useResponseManager = ({
 
     const loadExistingResponsesInternal = useCallback(async () => {
         if (!researchId || !participantId) return;
+        const api = responseAPI as {
+            getResponses: () => Promise<unknown>;
+            saveOrUpdateResponse: (...args: unknown[]) => Promise<unknown>;
+            markAsCompleted: () => Promise<void>;
+        };
         try {
-            const apiResponse = await responseAPI.getResponses();
-            if (!apiResponse || !apiResponse.responses) {
+            const apiResponse = await api.getResponses();
+            if (!apiResponse || typeof apiResponse !== 'object' || apiResponse === null || !('responses' in apiResponse)) {
                 console.warn('[useResponseManager] No se obtuvo apiResponse.responses. Enviando array vacío a setLoadedResponses.');
                 storeSetLoadedResponses([]);
                 return;
             }
             
-            const modulesDataFromApi = apiResponse.responses;
+            const modulesDataFromApi = (apiResponse as { responses: unknown }).responses;
 
-            if (modulesDataFromApi && 
-                typeof modulesDataFromApi === 'object' && 
-                !Array.isArray(modulesDataFromApi) && 
-                Array.isArray(modulesDataFromApi.all_steps)
+            if (
+                modulesDataFromApi &&
+                typeof modulesDataFromApi === 'object' &&
+                !Array.isArray(modulesDataFromApi) &&
+                'all_steps' in modulesDataFromApi &&
+                Array.isArray((modulesDataFromApi as { all_steps?: unknown }).all_steps)
             ) {
-                storeSetLoadedResponses(modulesDataFromApi.all_steps);
+                storeSetLoadedResponses((modulesDataFromApi as { all_steps: unknown[] }).all_steps as ModuleResponse[]);
             } else if (Array.isArray(modulesDataFromApi)) {
                 storeSetLoadedResponses(modulesDataFromApi);
             } else {
@@ -82,7 +89,7 @@ export const useResponseManager = ({
         return undefined;
     }, [responsesData.modules.all_steps]);
 
-    const saveStepResponseInternal = useCallback(async (answer: any) => {
+    const saveStepResponseInternal = useCallback(async (answer: unknown) => {
         if (currentStepIndex < 0 || currentStepIndex >= expandedSteps.length) return;
         
         const currentStepInfo = expandedSteps[currentStepIndex];
@@ -117,7 +124,7 @@ export const useResponseManager = ({
 
         try {
             moduleResponse.response = sanitizeForJSON(moduleResponse.response);
-        } catch (sanitizeError) {
+        } catch {
             moduleResponse.response = String(moduleResponse.response);
         }
 
@@ -131,7 +138,7 @@ export const useResponseManager = ({
         try {
             const firestoreResponseDocumentId = findExistingResponseIdInternal(stepId);
             
-            await responseAPI.saveOrUpdateResponse(
+            await (responseAPI as { saveOrUpdateResponse: (...args: unknown[]) => Promise<unknown> }).saveOrUpdateResponse(
                 stepId,
                 stepType,
                 stepName || '',
@@ -177,9 +184,9 @@ export const useResponseManager = ({
             
             return newUpdatedData;
         });
-    }, [currentStepIndex, expandedSteps, researchId, participantId, responseAPI, storeSetLoadedResponses, loadExistingResponsesInternal, findExistingResponseIdInternal]);
+    }, [currentStepIndex, expandedSteps, researchId, participantId, responseAPI, loadExistingResponsesInternal, findExistingResponseIdInternal]);
 
-    const getStepResponseInternal = useCallback((stepIndexForResponse: number): any => {
+    const getStepResponseInternal = useCallback((stepIndexForResponse: number): unknown => {
         if (stepIndexForResponse < 0 || stepIndexForResponse >= expandedSteps.length) return null;
         const step = expandedSteps[stepIndexForResponse];
         if (!step) return null;
@@ -210,7 +217,7 @@ export const useResponseManager = ({
 
     const markResponsesAsCompletedInternal = useCallback(async () => {
         try {
-            await responseAPI.markAsCompleted();
+            await (responseAPI as { markAsCompleted: () => Promise<void> }).markAsCompleted();
         } catch (error) {
             console.error('[useResponseManager] Error marcando respuestas como completadas:', error);
         }

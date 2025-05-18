@@ -10,8 +10,8 @@ import FeedbackView from '../smartVoc/FeedbackView'; // Para VOC (Texto libre)
 import { Answers, SmartVOCHandlerProps } from './types';
 import { useSmartVOCData } from '../../hooks/useSmartVOCData'; // <<< Importar el hook
 
-// --- Mapeo de Componentes de Pregunta ---
-const questionComponentsMap: { [key: string]: React.FC<any> } = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const questionComponentsMap: { [key: string]: React.ComponentType<any> } = {
     'CSAT': CSATView,
     'CES': DifficultyScaleView,
     'CV': AgreementScaleView,
@@ -49,7 +49,7 @@ const SmartVOCHandler: React.FC<SmartVOCHandlerProps> = ({
 
 
     // <<< Manejo de Respuestas y Navegación (Sin cambios) >>>
-    const handleNextQuestion = useCallback((answer: any) => {
+    const handleNextQuestion = useCallback((answer: unknown) => {
         const currentQuestion = questions[currentQuestionIndex];
         // Usar un identificador único si está disponible (ej: question.id), sino el índice
         const questionId = currentQuestion?.id || `question_${currentQuestion.type}_${currentQuestionIndex}`;
@@ -105,7 +105,7 @@ const SmartVOCHandler: React.FC<SmartVOCHandlerProps> = ({
 
         // Props específicas (basado en el switch original)
         // Extraer solo las props relevantes para evitar pasar props no deseadas
-        const specificProps: any = {};
+        const specificProps: Record<string, unknown> = {};
         if (question.companyName) specificProps.companyName = question.companyName;
         if (question.scaleSize) specificProps.scaleSize = question.scaleSize;
         if (question.leftLabel) specificProps.leftLabel = question.leftLabel;

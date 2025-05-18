@@ -24,7 +24,7 @@ const SocialMediaTask = ({ onContinue }: SocialMediaTaskProps) => {
   const handleContinue = () => {
     // Aquí podríamos procesar las redes sociales seleccionadas
     const selected = Object.entries(selectedNetworks)
-      .filter(([_, isSelected]) => isSelected)
+      .filter(([, isSelected]) => isSelected)
       .map(([network]) => network);
     
     console.log('Redes sociales seleccionadas:', selected);

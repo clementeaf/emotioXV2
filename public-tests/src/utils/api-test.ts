@@ -120,7 +120,7 @@ export const testDeleteParticipant = async (id: string): Promise<void> => {
 export const testGetWelcomeScreen = async (researchId: string): Promise<void> => {
   console.log(`🧪 Probando obtener pantalla de bienvenida para research ${researchId}...`);
   try {
-    const response = await fetchWithAuth<any>(`/welcome-screens/research/${researchId}`);
+    const response = await fetchWithAuth<unknown>(`/welcome-screens/research/${researchId}`);
     console.log('✅ Pantalla de bienvenida obtenida:', response.data);
   } catch (error) {
     console.error('❌ Error al obtener pantalla de bienvenida:', error);

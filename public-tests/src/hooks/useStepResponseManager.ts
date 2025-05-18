@@ -22,7 +22,7 @@ export interface UseStepResponseManagerReturn<TResponseData> {
   saveCurrentStepResponse: (dataToSave: TResponseData) => Promise<{ success: boolean; id?: string | null }>;
 }
 
-export function useStepResponseManager<TResponseData = any>({
+export function useStepResponseManager<TResponseData = unknown>({
   stepId,
   stepType,
   stepName,
@@ -78,12 +78,18 @@ export function useStepResponseManager<TResponseData = any>({
 
     if (allModuleResponses) {
       const specificResponse = allModuleResponses.find(
-        (r: any) => r.stepId === stepId || r.stepType === stepType 
+        (r: unknown) => {
+          if (typeof r === 'object' && r !== null && ('stepId' in r || 'stepType' in r)) {
+            const obj = r as { stepId?: string; stepType?: string };
+            return obj.stepId === stepId || obj.stepType === stepType;
+          }
+          return false;
+        }
       );
 
-      if (specificResponse && specificResponse.response) {
-        setResponseData(specificResponse.response as TResponseData);
-        setResponseSpecificId(specificResponse.id || null);
+      if (specificResponse && typeof specificResponse === 'object' && specificResponse !== null && 'response' in specificResponse) {
+        setResponseData((specificResponse as { response?: TResponseData }).response ?? initialData);
+        setResponseSpecificId((specificResponse as { id?: string }).id || null);
       } else {
         setResponseData(initialData);
         setResponseSpecificId(null);
@@ -112,30 +118,31 @@ export function useStepResponseManager<TResponseData = any>({
     setError(null); 
     
     try {
-      let result: any;
+      let result: unknown;
       const effectiveStepName = stepName || stepId;
 
-      if (responseSpecificId) { ;
+      if (responseSpecificId) {
         result = await updateResponse(responseSpecificId, dataToSave);
-      } else { 
+      } else {
         result = await saveResponse(stepId, stepType, effectiveStepName, dataToSave);
       }
 
-      if (apiSaveUpdateError) { 
+      if (apiSaveUpdateError) {
         console.error(`[useStepResponseManager - ${stepId}] Error desde useResponseAPI:`, apiSaveUpdateError);
         setError(apiSaveUpdateError);
         return { success: false };
       }
 
-      if (result && result.id && !responseSpecificId) { 
-        setResponseSpecificId(result.id);
+      if (result && typeof result === 'object' && result !== null && 'id' in result && !responseSpecificId) {
+        setResponseSpecificId((result as { id?: string }).id ?? null);
       }
-      
-      return { success: true, id: result?.id || responseSpecificId };
 
-    } catch (e: any) {
+      return { success: true, id: (result && typeof result === 'object' && result !== null && 'id' in result ? (result as { id?: string }).id ?? responseSpecificId : responseSpecificId) };
+
+    } catch (e: unknown) {
       console.error(`[useStepResponseManager - ${stepId}] Excepción al guardar/actualizar:`, e);
-      setError(e.message || "Excepción desconocida al guardar la respuesta.");
+      const errorMsg = (e && typeof e === 'object' && 'message' in e) ? (e as { message?: string }).message : "Excepción desconocida al guardar la respuesta.";
+      setError(errorMsg as string);
       return { success: false };
     }
   }, [
