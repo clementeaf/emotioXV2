@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Upload, Trash2, Clock } from 'lucide-react';
 import { FileUploadQuestionProps, FileInfo } from '../../types';
 import { Switch } from '@/components/ui/Switch';
-import { SvgHitzoneEditor } from './SvgHitzoneEditor';
+import { LocalHitzoneEditor } from './LocalHitzoneEditor';
 import ReactDOM from 'react-dom';
 import s3Service from '@/services/s3Service';
 import toast from 'react-hot-toast';
@@ -87,7 +87,9 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
     } else if (file.url?.startsWith('blob:')) {
       url = file.url;
     }
-    setHitzoneFile({ ...file, url });
+    // Copia profunda de las hitzones actuales
+    const hitzonesCopy = file.hitzones ? JSON.parse(JSON.stringify(file.hitzones)) : [];
+    setHitzoneFile({ ...file, url, hitzones: hitzonesCopy });
     setHitzoneModalOpen(true);
   };
 
@@ -286,30 +288,15 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
         <div className="fixed inset-0 w-screen h-screen top-0 left-0 z-50 flex items-center justify-center bg-black bg-opacity-40 m-0 p-0">
           <div className="bg-white rounded-lg shadow-lg p-6 max-w-2xl w-full relative flex flex-col items-center">
             <h2 className="text-lg font-semibold mb-4 text-center">Editar hitzones para: {hitzoneFile.name}</h2>
-            <SvgHitzoneEditor
+            <LocalHitzoneEditor
               imageUrl={hitzoneFile.url}
-              areas={hitzoneFile.hitzones || []}
-              setAreas={(newAreas) => {
-                hitzoneFile.hitzones = newAreas;
-              }}
-              selectedAreaIdx={null}
-              setSelectedAreaIdx={() => {}}
-              onClose={() => setHitzoneModalOpen(false)}
+              initialAreas={hitzoneFile.hitzones || []}
               onSave={(newAreas) => {
-                hitzoneFile.hitzones = newAreas;
-                setHitzoneModalOpen(false);
                 onQuestionChange({ files: question.files?.map(f => f.id === hitzoneFile.id ? { ...f, hitzones: newAreas } : f) });
-                toast.success('¡Zonas guardadas correctamente!');
+                setHitzoneModalOpen(false);
               }}
+              onClose={() => setHitzoneModalOpen(false)}
             />
-            <div className="flex justify-end mt-4 w-full">
-              <button
-                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
-                onClick={() => setHitzoneModalOpen(false)}
-              >
-                Cerrar
-              </button>
-            </div>
           </div>
         </div>,
         document.body as Element

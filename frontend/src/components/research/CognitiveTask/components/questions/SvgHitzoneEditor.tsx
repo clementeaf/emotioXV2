@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 
 interface Area {
   id: string;
@@ -22,12 +22,25 @@ const CANVAS_HEIGHT = 575;
 export const SvgHitzoneEditor: React.FC<SvgHitzoneEditorProps & { onClose?: () => void; onSave?: (areas: Area[]) => void; }> = ({
   imageUrl,
   areas,
-  setAreas,
+  setAreas: _setAreas,
   selectedAreaIdx,
-  setSelectedAreaIdx,
+  setSelectedAreaIdx: _setSelectedAreaIdx,
   onClose,
   onSave
 }) => {
+  // Estado local para las áreas, inicializado solo una vez
+  const didInit = useRef(false);
+  const [localAreas, setLocalAreas] = useState<Area[]>(areas);
+  const [localSelectedIdx, setLocalSelectedIdx] = useState<number | null>(selectedAreaIdx);
+
+  useEffect(() => {
+    if (!didInit.current) {
+      setLocalAreas(areas);
+      setLocalSelectedIdx(selectedAreaIdx);
+      didInit.current = true;
+    }
+  }, []); // Solo al montar
+
   const [drawing, setDrawing] = useState(false);
   const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(null);
   const [currentRect, setCurrentRect] = useState<Area | null>(null);
@@ -67,8 +80,8 @@ export const SvgHitzoneEditor: React.FC<SvgHitzoneEditorProps & { onClose?: () =
   // Finalizar dibujo
   const handleMouseUp = () => {
     if (drawing && currentRect && currentRect.width > 10 && currentRect.height > 10) {
-      setAreas([...areas, currentRect]);
-      setSelectedAreaIdx(areas.length);
+      setLocalAreas([...localAreas, currentRect]);
+      setLocalSelectedIdx(localAreas.length);
     }
     setDrawing(false);
     setStartPoint(null);
@@ -78,29 +91,29 @@ export const SvgHitzoneEditor: React.FC<SvgHitzoneEditorProps & { onClose?: () =
   // Seleccionar área
   const handleRectClick = (idx: number, e: React.MouseEvent) => {
     e.stopPropagation();
-    setSelectedAreaIdx(idx);
+    setLocalSelectedIdx(idx);
   };
 
   // Eliminar área seleccionada
   const handleDelete = () => {
-    if (selectedAreaIdx === null) return;
-    setAreas(areas.filter((_, idx) => idx !== selectedAreaIdx));
-    setSelectedAreaIdx(null);
+    if (localSelectedIdx === null) return;
+    setLocalAreas(localAreas.filter((_, idx) => idx !== localSelectedIdx));
+    setLocalSelectedIdx(null);
   };
 
   // Mover área seleccionada (drag)
   const handleRectDrag = (idx: number, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (selectedAreaIdx !== idx) return;
+    if (localSelectedIdx !== idx) return;
     // Implementar lógica de drag si se requiere (puede agregarse luego)
   };
 
   // Iniciar drag
   const handleRectMouseDown = (idx: number, e: React.MouseEvent) => {
     e.stopPropagation();
-    setSelectedAreaIdx(idx);
+    setLocalSelectedIdx(idx);
     if (e.shiftKey) return; // Shift para solo seleccionar
-    const area = areas[idx];
+    const area = localAreas[idx];
     setDragOffset({
       x: e.clientX - area.x,
       y: e.clientY - area.y
@@ -109,16 +122,16 @@ export const SvgHitzoneEditor: React.FC<SvgHitzoneEditorProps & { onClose?: () =
 
   // Drag
   const handleSvgMouseMove = (e: React.MouseEvent) => {
-    if (dragOffset && selectedAreaIdx !== null) {
+    if (dragOffset && localSelectedIdx !== null) {
       const rect = svgRef.current!.getBoundingClientRect();
       const x = e.clientX - rect.left - dragOffset.x;
       const y = e.clientY - rect.top - dragOffset.y;
-      setAreas(areas.map((a, idx) => idx === selectedAreaIdx ? { ...a, x, y } : a));
-    } else if (resizing && selectedAreaIdx !== null) {
+      setLocalAreas(localAreas.map((a, idx) => idx === localSelectedIdx ? { ...a, x, y } : a));
+    } else if (resizing && localSelectedIdx !== null) {
       const rect = svgRef.current!.getBoundingClientRect();
       const mouseX = e.clientX - rect.left;
       const mouseY = e.clientY - rect.top;
-      const area = areas[selectedAreaIdx];
+      const area = localAreas[localSelectedIdx];
       let { x, y, width, height } = area;
       switch (resizing.corner) {
         case 'nw':
@@ -143,7 +156,7 @@ export const SvgHitzoneEditor: React.FC<SvgHitzoneEditorProps & { onClose?: () =
           break;
       }
       if (width > 10 && height > 10) {
-        setAreas(areas.map((a, idx) => idx === selectedAreaIdx ? { ...a, x, y, width, height } : a));
+        setLocalAreas(localAreas.map((a, idx) => idx === localSelectedIdx ? { ...a, x, y, width, height } : a));
       }
     }
   };
@@ -185,9 +198,9 @@ export const SvgHitzoneEditor: React.FC<SvgHitzoneEditorProps & { onClose?: () =
       </div>
       {/* Botones de acción */}
       <div style={{ position: 'absolute', bottom: 16, left: 16, zIndex: 20, display: 'flex', gap: 8 }}>
-        <button onClick={() => onSave && onSave(areas)} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Guardar zonas</button>
+        <button onClick={() => onSave && onSave(localAreas)} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Guardar zonas</button>
         <button onClick={() => setShowTest(v => !v)} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">{showTest ? 'Ocultar prueba' : 'Probar hitzones'}</button>
-        {selectedAreaIdx !== null && (
+        {localSelectedIdx !== null && (
           <button onClick={handleDelete} className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Eliminar zona</button>
         )}
       </div>
@@ -211,7 +224,7 @@ export const SvgHitzoneEditor: React.FC<SvgHitzoneEditorProps & { onClose?: () =
         onMouseMove={(e) => { handleMouseMove(e); handleSvgMouseMove(e); }}
         onMouseUp={handleSvgMouseUp}
       >
-        {areas.map((area, idx) => (
+        {localAreas.map((area, idx) => (
           <g key={area.id}>
             <rect
               x={area.x}
@@ -221,18 +234,18 @@ export const SvgHitzoneEditor: React.FC<SvgHitzoneEditorProps & { onClose?: () =
               fill={
                 showTest
                   ? 'rgba(40,167,69,0.25)'
-                  : idx === selectedAreaIdx
+                  : idx === localSelectedIdx
                   ? 'rgba(0,123,255,0.3)'
                   : 'rgba(0,123,255,0.15)'
               }
-              stroke={idx === selectedAreaIdx ? '#007bff' : '#007bff'}
-              strokeWidth={idx === selectedAreaIdx ? 2 : 1}
+              stroke={idx === localSelectedIdx ? '#007bff' : '#007bff'}
+              strokeWidth={idx === localSelectedIdx ? 2 : 1}
               onClick={(e) => handleRectClick(idx, e)}
-              onMouseDown={(e) => idx === selectedAreaIdx ? handleRectMouseDown(idx, e) : undefined}
-              style={{ cursor: idx === selectedAreaIdx ? 'move' : 'pointer', filter: showTest ? 'drop-shadow(0 0 8px #28a745)' : undefined }}
+              onMouseDown={(e) => idx === localSelectedIdx ? handleRectMouseDown(idx, e) : undefined}
+              style={{ cursor: idx === localSelectedIdx ? 'move' : 'pointer', filter: showTest ? 'drop-shadow(0 0 8px #28a745)' : undefined }}
             />
             {/* Handles para redimensionar solo si está seleccionada */}
-            {idx === selectedAreaIdx && !showTest && [
+            {idx === localSelectedIdx && !showTest && [
               { corner: 'nw', cx: area.x, cy: area.y },
               { corner: 'ne', cx: area.x + area.width, cy: area.y },
               { corner: 'sw', cx: area.x, cy: area.y + area.height },
