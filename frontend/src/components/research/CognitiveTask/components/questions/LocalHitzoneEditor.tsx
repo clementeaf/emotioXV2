@@ -29,6 +29,7 @@ export const LocalHitzoneEditor: React.FC<LocalHitzoneEditorProps> = ({
   const [start, setStart] = useState<{ x: number; y: number } | null>(null);
   const [currentRect, setCurrentRect] = useState<Area | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const [testMode, setTestMode] = useState(false);
 
   // Iniciar dibujo
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -93,9 +94,9 @@ export const LocalHitzoneEditor: React.FC<LocalHitzoneEditorProps> = ({
         width={CANVAS_SIZE}
         height={CANVAS_SIZE}
         style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'auto' }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
+        onMouseDown={!testMode ? handleMouseDown : undefined}
+        onMouseMove={!testMode ? handleMouseMove : undefined}
+        onMouseUp={!testMode ? handleMouseUp : undefined}
       >
         {areas.map((area, idx) => (
           <rect
@@ -107,11 +108,19 @@ export const LocalHitzoneEditor: React.FC<LocalHitzoneEditorProps> = ({
             fill={idx === selectedIdx ? 'rgba(0,123,255,0.3)' : 'rgba(0,123,255,0.15)'}
             stroke="#007bff"
             strokeWidth={idx === selectedIdx ? 2 : 1}
-            onClick={(e) => handleRectClick(idx, e)}
-            style={{ cursor: 'pointer' }}
+            onClick={
+              testMode && idx === selectedIdx
+                ? () => alert(`¡Hitzone ${area.id} presionado!`)
+                : (e) => handleRectClick(idx, e)
+            }
+            style={{
+              cursor: testMode && idx === selectedIdx ? 'pointer' : 'pointer',
+              opacity: testMode && idx !== selectedIdx ? 0.5 : 1,
+              pointerEvents: testMode && idx !== selectedIdx ? 'none' : 'auto',
+            }}
           />
         ))}
-        {currentRect && (
+        {currentRect && !testMode && (
           <rect
             x={currentRect.x}
             y={currentRect.y}
@@ -124,9 +133,19 @@ export const LocalHitzoneEditor: React.FC<LocalHitzoneEditorProps> = ({
         )}
       </svg>
       <div style={{ position: 'absolute', bottom: 16, left: 16, zIndex: 20, display: 'flex', gap: 8 }}>
-        <button onClick={() => onSave(areas)} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Guardar zonas</button>
-        {selectedIdx !== null && (
-          <button onClick={handleDelete} className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Eliminar zona</button>
+        {!testMode && (
+          <>
+            <button onClick={() => onSave(areas)} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Guardar zonas</button>
+            {selectedIdx !== null && (
+              <>
+                <button onClick={handleDelete} className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Eliminar zona</button>
+                <button onClick={() => setTestMode(true)} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Probar hitzone</button>
+              </>
+            )}
+          </>
+        )}
+        {testMode && (
+          <button onClick={() => setTestMode(false)} className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600">Salir de prueba</button>
         )}
         <button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Cerrar</button>
       </div>
