@@ -267,6 +267,17 @@ const NavigationFlowTask = ({
     }
   ];
   
+  // Hitzone de prueba: cubre toda la imagen
+  const hitzones = [
+    {
+      id: 'test-hitzone',
+      x: 0,
+      y: 0,
+      width: 1,
+      height: 1,
+    }
+  ];
+  
   const handleNext = () => {
     if (currentScreenIndex < screens.length - 1) {
       setCurrentScreenIndex(currentScreenIndex + 1);
@@ -375,6 +386,35 @@ const NavigationFlowTask = ({
             </button>
           </div>
         )}
+      </div>
+      <div style={{ position: 'relative', width: '100%', maxWidth: 747, margin: '0 auto' }}>
+        <img
+          src="/src/assets/nav_flow_img.png"
+          alt="Pantalla de navegación"
+          style={{ width: '100%', display: 'block' }}
+          draggable={false}
+          id="nav-flow-img"
+        />
+        {hitzones.map(hz => (
+          <div
+            key={hz.id}
+            style={{
+              position: 'absolute',
+              left: `${hz.x * 100}%`,
+              top: `${hz.y * 100}%`,
+              width: `${hz.width * 100}%`,
+              height: `${hz.height * 100}%`,
+              border: '2px solid #22c55e',
+              background: 'rgba(34,197,94,0.35)', // Verde semitransparente para máxima visibilidad
+              cursor: 'pointer',
+              borderRadius: 8,
+              zIndex: 10,
+              pointerEvents: 'auto',
+            }}
+            onClick={() => alert('¡Presionaste el hitzone de prueba!')}
+            title="Hitzone de prueba"
+          />
+        ))}
       </div>
     </div>
   );
