@@ -43,14 +43,9 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
     handleRandomizeChange: setRandomizeQuestions,
     handleSave: saveForm,
     handlePreview,
-    validateForm,
     closeModal,
-    // Estados para carga de archivos
     isUploading,
     uploadProgress,
-    currentFileIndex,
-    totalFiles,
-    // Propiedades para el modal JSON
     showJsonPreview,
     closeJsonModal,
     jsonToSend,

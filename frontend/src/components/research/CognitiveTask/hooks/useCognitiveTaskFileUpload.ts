@@ -210,9 +210,10 @@ export const useCognitiveTaskFileUpload = ({
       // Crear archivos temporales para UI (solo para los filtrados)
       const tempFilesMap = new Map<string, FileInfo>();
       filesToProcess.forEach(file => { // <-- Usar array filtrado
+        const normalizedFileName = normalizeFileName(file.name); // <--- Normaliza aquí
         const tempFile: FileInfo = {
             id: `${questionId}_${uuidv4()}`,
-            name: file.name,
+            name: normalizedFileName, // <--- Usa el nombre normalizado
             size: file.size,
             type: file.type,
             url: URL.createObjectURL(file), // URL local para preview
@@ -233,7 +234,7 @@ export const useCognitiveTaskFileUpload = ({
           if (questionIndex === -1) return prevData;
           const existingFiles = (updatedQuestions[questionIndex].files || []).map(asFileInfo);
           updatedQuestions[questionIndex].files = [...existingFiles, ...tempFilesArray];
-          console.log(`[FileUploadHook ${questionId}] Estado actualizado con ${tempFilesArray.length} archivos temporales.`);
+          console.log(`[FileUploadHook ${questionId}] Estado actualizado con ${tempFilesArray.length} archivos temporales. Estado actual de archivos:`, updatedQuestions[questionIndex].files.map(f => ({id: f.id, name: f.name, status: f.status, isLoading: f.isLoading})));
           return { ...prevData, questions: updatedQuestions };
       });
 
@@ -243,7 +244,7 @@ export const useCognitiveTaskFileUpload = ({
           const file = filesToProcess[i]; // <-- Usar array filtrado
           const tempFileId = tempFilesArray[i].id;
           // Normalizar el nombre del archivo antes de subir
-          const normalizedFileName = normalizeFileName(file.name);
+          const normalizedFileName = tempFilesArray[i].name; // <--- Usa el nombre normalizado del tempFile
           // Crear un nuevo objeto File con el nombre normalizado
           const fileToUpload = new File([file], normalizedFileName, { type: file.type });
           console.log(`[FileUploadHook ${questionId}] Procesando archivo ${i + 1}/${filesToProcess.length}: ${file.name} (TempID: ${tempFileId})`);
@@ -345,7 +346,7 @@ export const useCognitiveTaskFileUpload = ({
 
                 setFormData((prevData: CognitiveTaskFormData): CognitiveTaskFormData => {
                     console.log(`[FileUploadHook ${questionId}] Actualizando estado para TempID: ${tempFileId}. Datos finales entrantes:`, JSON.stringify(finalFileState));
-                    console.log(`[FileUploadHook ${questionId}] Estado ANTES de reemplazar TempID ${tempFileId}:`, JSON.stringify(prevData.questions.find(q => q.id === questionId)?.files?.map(f => ({id: f.id, name: f.name, status: f.status})) || 'Pregunta no encontrada o sin archivos'));
+                    console.log(`[FileUploadHook ${questionId}] Estado ANTES de reemplazar TempID ${tempFileId}:`, JSON.stringify(prevData.questions.find(q => q.id === questionId)?.files?.map(f => ({id: f.id, name: f.name, status: f.status, isLoading: f.isLoading})) || 'Pregunta no encontrada o sin archivos'));
                     const updatedQuestions = [...prevData.questions];
                     const questionIndex = updatedQuestions.findIndex(q => q.id === questionId);
                     if (questionIndex !== -1 && updatedQuestions[questionIndex].files) {
@@ -371,9 +372,9 @@ export const useCognitiveTaskFileUpload = ({
                             updatedQuestions[questionIndex].files = updatedFiles;
                             saveFilesToLocalStorage(updatedQuestions); 
                             console.log(`[FileUploadHook ${questionId}] Archivo ${file.name} (TempID: ${tempFileId}) REEMPLAZADO en índice ${fileIndexToReplace}.`);
-                            console.log(`[FileUploadHook ${questionId}] Estado DESPUÉS de reemplazar TempID ${tempFileId}:`, JSON.stringify(updatedFiles.map(f => ({id: f.id, name: f.name, status: f.status}))));
+                            console.log(`[FileUploadHook ${questionId}] Estado DESPUÉS de reemplazar TempID ${tempFileId}:`, updatedFiles.map(f => ({id: f.id, name: f.name, status: f.status, isLoading: f.isLoading})));
                         } else {
-                             console.warn(`[FileUploadHook ${questionId}] No se encontró el índice para TempID ${tempFileId} para reemplazar. Estado actual de archivos:`, JSON.stringify(currentFiles.map(f => ({id: f.id, name: f.name, status: f.status}))));
+                             console.warn(`[FileUploadHook ${questionId}] No se encontró el índice para TempID ${tempFileId} para reemplazar. Estado actual de archivos:`, currentFiles.map(f => ({id: f.id, name: f.name, status: f.status, isLoading: f.isLoading})));
                              // Verificar si el archivo ya existe por nombre y tamaño para evitar duplicaciones
                              const existingFileIndex = currentFiles.findIndex(f => 
                                  f.name === finalFileState.name && 
@@ -407,7 +408,6 @@ export const useCognitiveTaskFileUpload = ({
                   if (q.id === questionId && q.files && q.files.length > 0) {
                       // Crear un mapa para detectar y eliminar duplicados
                       const uniqueFileMap = new Map<string, FileInfo>();
-                      
                       // Ordenar para procesar primero los archivos completados
                       const filesAsInfo = q.files.map(asFileInfo)
                           .sort((a, b) => {
@@ -416,7 +416,6 @@ export const useCognitiveTaskFileUpload = ({
                               if (a.status !== 'uploaded' && b.status === 'uploaded') return 1;
                               return 0;
                           });
-                      
                       // Eliminar duplicados preservando los completados
                       filesAsInfo.forEach(file => {
                           if (file.status === 'uploaded') {
@@ -438,12 +437,11 @@ export const useCognitiveTaskFileUpload = ({
                               }
                           }
                       });
-                      
+                      console.log(`[FileUploadHook ${questionId}] Estado después de limpieza final de duplicados:`, Array.from(uniqueFileMap.values()).map(f => ({id: f.id, name: f.name, status: f.status, isLoading: f.isLoading})));
                       return { ...q, files: Array.from(uniqueFileMap.values()) };
                   }
                   return q;
               });
-              
               // Guardar estado limpio en localStorage
               saveFilesToLocalStorage(updatedQuestions);
               return { ...prevData, questions: updatedQuestions };

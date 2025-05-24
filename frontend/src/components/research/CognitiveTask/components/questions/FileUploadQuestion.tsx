@@ -8,7 +8,6 @@ import { Switch } from '@/components/ui/Switch';
 import { LocalHitzoneEditor } from './LocalHitzoneEditor';
 import ReactDOM from 'react-dom';
 import s3Service from '@/services/s3Service';
-import toast from 'react-hot-toast';
 
 const DEFAULT_TEXTS = {
   QUESTION_TITLE_PLACEHOLDER: 'Añadir pregunta',
@@ -71,23 +70,18 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
   };
 
   const openHitzoneEditor = async (file: FileInfo) => {
-    console.log('[HITZONE] Intentando abrir editor para archivo:', file);
-    alert('[HITZONE] Intentando abrir editor para archivo:\n' + JSON.stringify(file, null, 2));
     let url = '';
     if (file.s3Key) {
       try {
         url = await s3Service.getDownloadUrl(file.s3Key);
-        console.log('[HITZONE] URL prefirmada obtenida:', url);
-        alert('[HITZONE] URL prefirmada obtenida:\n' + url);
       } catch (e) {
         console.error('[HITZONE] Error obteniendo URL prefirmada:', e);
-        alert('[HITZONE] Error obteniendo URL prefirmada:\n' + (e instanceof Error ? e.message : String(e)));
         url = '';
       }
     } else if (file.url?.startsWith('blob:')) {
       url = file.url;
     }
-    // Copia profunda de las hitzones actuales
+
     const hitzonesCopy = file.hitzones ? JSON.parse(JSON.stringify(file.hitzones)) : [];
     setHitzoneFile({ ...file, url, hitzones: hitzonesCopy });
     setHitzoneModalOpen(true);
