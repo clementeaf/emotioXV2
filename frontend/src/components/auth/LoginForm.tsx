@@ -158,7 +158,7 @@ export function LoginForm({ className }: LoginFormProps) {
   const statusMessage = getStatusMessage(status);
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-8">
+    <div className="bg-white rounded-lg shadow-sm p-8 w-full max-w-md mx-auto">
       <div className="text-center mb-6">
         <h1 className="text-2xl font-semibold text-neutral-900">Iniciar Sesión</h1>
         <p className="text-neutral-600 mt-2">Ingresa tus credenciales para acceder a tu cuenta</p>
