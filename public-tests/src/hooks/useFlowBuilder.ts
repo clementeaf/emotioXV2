@@ -141,7 +141,7 @@ export const useFlowBuilder = ({ researchFlowApiData, isLoading }: UseFlowBuilde
             demographicsQuestions: demographicsConfigFromBackend,
             welcomeConfig: welcomeConfigFromBackend, 
             thankyouConfig: thankyouConfigFromBackend 
-        } = extractCoreStepConfigs(flowDataModules);
+        } = extractCoreStepConfigs(flowDataModules as ProcessedResearchFormConfig[] | undefined);
 
         if (demographicsConfigFromBackend && typeof demographicsConfigFromBackend === 'object' && demographicsConfigFromBackend !== null && 'questions' in demographicsConfigFromBackend) {
             const demoConfig = demographicsConfigFromBackend as { questions?: unknown; title?: string; description?: string };

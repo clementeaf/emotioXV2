@@ -76,7 +76,7 @@ export function useStepResponseManager<TResponseData = unknown>({
       return;
     }
 
-    if (allModuleResponses) {
+    if (Array.isArray(allModuleResponses)) {
       const specificResponse = allModuleResponses.find(
         (r: unknown) => {
           if (typeof r === 'object' && r !== null && ('stepId' in r || 'stepType' in r)) {
