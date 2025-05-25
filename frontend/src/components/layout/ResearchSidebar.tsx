@@ -53,6 +53,8 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
 
   // Obtener URL base de public-tests desde variable de entorno
   const publicTestsBaseUrl = process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL;
+  const localPublicTestsUrl = 'http://localhost:5173'; // Cambia el puerto si es necesario
+  const isAmplify = !!publicTestsBaseUrl;
 
   // Obtener nombre de la investigación
   useEffect(() => {
@@ -127,9 +129,11 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
     router.push('/dashboard');
   };
 
-  // Construir la URL de public-tests
-  const publicTestUrl = researchId && publicTestsBaseUrl
-    ? `${publicTestsBaseUrl}/link/${researchId}`
+  // Construir la URL de public-tests según entorno
+  const publicTestUrl = researchId
+    ? isAmplify
+      ? `${publicTestsBaseUrl}?researchId=${researchId}`
+      : `${localPublicTestsUrl}?researchId=${researchId}`
     : null;
 
   return (
