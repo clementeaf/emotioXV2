@@ -181,10 +181,12 @@ export class ApiClient {
       const token = storageType === 'local'
         ? localStorage.getItem('token')
         : sessionStorage.getItem('token');
-        
+      
       if (token) {
-        console.log('🔑 [API-CLIENT] Estableciendo token faltante en cabeceras antes de petición');
         this.setAuthToken(token);
+      } else {
+        // Lanzar error si no hay token
+        throw new Error('No autenticado: No se encontró token de autorización');
       }
     }
   }
