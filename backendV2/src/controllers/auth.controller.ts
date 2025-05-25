@@ -25,7 +25,7 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
     
     // Manejar solicitudes OPTIONS (preflight CORS)
     if (method === 'OPTIONS') {
-      return createCorsResponse(200, {});
+      return createCorsResponse(200, {}, event);
     }
     
     // Extraer token de autorización para operaciones protegidas
@@ -39,18 +39,18 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
       } else if (subPath === 'login') {
         return await login(event);
       } else if (subPath === 'logout') {
-        return await logout(token);
+        return await logout(event, token);
       } else if (subPath === 'refreshToken') {
         return await refreshToken(event);
       }
     } else if (method === 'GET') {
       if (subPath === 'me') {
-        return await getProfile(token);
+        return await getProfile(event, token);
       } else if (subPath.startsWith('user/')) {
         const userId = subPath.replace('user/', '');
-        return await getUserById(token, userId);
+        return await getUserById(event, token, userId);
       } else if (subPath === 'users') {
-        return await listUsers(token);
+        return await listUsers(event, token);
       }
     } else if (method === 'PUT') {
       if (subPath === 'me') {
@@ -62,15 +62,15 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
     } else if (method === 'DELETE') {
       if (subPath.startsWith('user/')) {
         const userId = subPath.replace('user/', '');
-        return await deleteUser(token, userId);
+        return await deleteUser(event, token, userId);
       }
     }
     
     // Si no coincide con ninguna ruta conocida
-    return createResponse(404, { message: 'Ruta no encontrada' });
+    return createResponse(404, { message: 'Ruta no encontrada' }, event);
   } catch (error: any) {
     console.error('Error en authHandler:', error);
-    return createResponse(500, { message: 'Error interno del servidor', error: error.message });
+    return createResponse(500, { message: 'Error interno del servidor', error: error.message }, event);
   }
 };
 
@@ -80,7 +80,7 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
 const register = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
     if (!event.body) {
-      return createResponse(400, { message: 'Cuerpo de la solicitud vacío' });
+      return createResponse(400, { message: 'Cuerpo de la solicitud vacío' }, event);
     }
     
     const data = JSON.parse(event.body) as CreateUserDto;
@@ -91,19 +91,19 @@ const register = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyRes
       return createResponse(400, { 
         message: 'Datos de registro inválidos', 
         errors: validation.error.errors 
-      });
+      }, event);
     }
     
     // Crear usuario
     const user = await authService.createUser(data);
     
-    return createResponse(201, { message: 'Usuario registrado exitosamente', user });
+    return createResponse(201, { message: 'Usuario registrado exitosamente', user }, event);
   } catch (error: any) {
     if (error.message.includes('ya está registrado')) {
-      return createResponse(409, { message: error.message });
+      return createResponse(409, { message: error.message }, event);
     }
     console.error('Error en registro:', error);
-    return createResponse(500, { message: 'Error al registrar usuario', error: error.message });
+    return createResponse(500, { message: 'Error al registrar usuario', error: error.message }, event);
   }
 };
 
@@ -113,7 +113,7 @@ const register = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyRes
 const login = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
     if (!event.body) {
-      return createResponse(400, { message: 'Cuerpo de la solicitud vacío' });
+      return createResponse(400, { message: 'Cuerpo de la solicitud vacío' }, event);
     }
     
     const credentials = JSON.parse(event.body) as LoginCredentialsDto;
@@ -124,30 +124,30 @@ const login = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult
       return createResponse(400, { 
         message: 'Credenciales inválidas', 
         errors: validation.error.errors 
-      });
+      }, event);
     }
     
     // Realizar login
     const authResponse = await authService.login(credentials);
     
-    return createResponse(200, authResponse);
+    return createResponse(200, authResponse, event);
   } catch (error: any) {
     if (error.message.includes('Credenciales inválidas') || 
         error.message.includes('Cuenta desactivada')) {
-      return createResponse(401, { message: error.message });
+      return createResponse(401, { message: error.message }, event);
     }
     console.error('Error en login:', error);
-    return createResponse(500, { message: 'Error al iniciar sesión', error: error.message });
+    return createResponse(500, { message: 'Error al iniciar sesión', error: error.message }, event);
   }
 };
 
 /**
  * Cierra sesión de usuario
  */
-const logout = async (token: string | null): Promise<APIGatewayProxyResult> => {
+const logout = async (event: APIGatewayProxyEvent, token: string | null): Promise<APIGatewayProxyResult> => {
   try {
     if (!token) {
-      return createResponse(401, { message: 'No autorizado' });
+      return createResponse(401, { message: 'No autorizado' }, event);
     }
     
     // Validar token y obtener payload
@@ -156,23 +156,23 @@ const logout = async (token: string | null): Promise<APIGatewayProxyResult> => {
     // Invalidar token
     await authService.logout(payload.id, token);
     
-    return createResponse(200, { message: 'Sesión cerrada exitosamente' });
+    return createResponse(200, { message: 'Sesión cerrada exitosamente' }, event);
   } catch (error: any) {
     if (error.message.includes('Token inválido')) {
-      return createResponse(401, { message: 'No autorizado' });
+      return createResponse(401, { message: 'No autorizado' }, event);
     }
     console.error('Error en logout:', error);
-    return createResponse(500, { message: 'Error al cerrar sesión', error: error.message });
+    return createResponse(500, { message: 'Error al cerrar sesión', error: error.message }, event);
   }
 };
 
 /**
  * Obtiene el perfil del usuario autenticado
  */
-const getProfile = async (token: string | null): Promise<APIGatewayProxyResult> => {
+const getProfile = async (event: APIGatewayProxyEvent, token: string | null): Promise<APIGatewayProxyResult> => {
   try {
     if (!token) {
-      return createResponse(401, { message: 'No autorizado' });
+      return createResponse(401, { message: 'No autorizado' }, event);
     }
     
     // Validar token y obtener payload
@@ -181,24 +181,24 @@ const getProfile = async (token: string | null): Promise<APIGatewayProxyResult> 
     // Obtener datos del usuario
     const user = await authService.getUserById(payload.id);
     
-    return createResponse(200, { user });
+    return createResponse(200, { user }, event);
   } catch (error: any) {
     if (error.message.includes('Token inválido') || 
         error.message.includes('no encontrado')) {
-      return createResponse(401, { message: 'No autorizado' });
+      return createResponse(401, { message: 'No autorizado' }, event);
     }
     console.error('Error al obtener perfil:', error);
-    return createResponse(500, { message: 'Error al obtener perfil', error: error.message });
+    return createResponse(500, { message: 'Error al obtener perfil', error: error.message }, event);
   }
 };
 
 /**
  * Obtiene un usuario por su ID (requiere permisos de administrador)
  */
-const getUserById = async (token: string | null, userId: string): Promise<APIGatewayProxyResult> => {
+const getUserById = async (event: APIGatewayProxyEvent, token: string | null, userId: string): Promise<APIGatewayProxyResult> => {
   try {
     if (!token) {
-      return createResponse(401, { message: 'No autorizado' });
+      return createResponse(401, { message: 'No autorizado' }, event);
     }
     
     // Validar token y obtener payload
@@ -206,32 +206,32 @@ const getUserById = async (token: string | null, userId: string): Promise<APIGat
     
     // Verificar permisos (solo administradores o el propio usuario)
     if (payload.role !== 'admin' && payload.id !== userId) {
-      return createResponse(403, { message: 'Acceso denegado' });
+      return createResponse(403, { message: 'Acceso denegado' }, event);
     }
     
     // Obtener datos del usuario
     const user = await authService.getUserById(userId);
     
-    return createResponse(200, { user });
+    return createResponse(200, { user }, event);
   } catch (error: any) {
     if (error.message.includes('Token inválido')) {
-      return createResponse(401, { message: 'No autorizado' });
+      return createResponse(401, { message: 'No autorizado' }, event);
     }
     if (error.message.includes('no encontrado')) {
-      return createResponse(404, { message: 'Usuario no encontrado' });
+      return createResponse(404, { message: 'Usuario no encontrado' }, event);
     }
     console.error('Error al obtener usuario:', error);
-    return createResponse(500, { message: 'Error al obtener usuario', error: error.message });
+    return createResponse(500, { message: 'Error al obtener usuario', error: error.message }, event);
   }
 };
 
 /**
  * Lista todos los usuarios (solo administradores)
  */
-const listUsers = async (token: string | null): Promise<APIGatewayProxyResult> => {
+const listUsers = async (event: APIGatewayProxyEvent, token: string | null): Promise<APIGatewayProxyResult> => {
   try {
     if (!token) {
-      return createResponse(401, { message: 'No autorizado' });
+      return createResponse(401, { message: 'No autorizado' }, event);
     }
     
     // Validar token y obtener payload
@@ -239,7 +239,7 @@ const listUsers = async (token: string | null): Promise<APIGatewayProxyResult> =
     
     // Verificar permisos (solo administradores)
     if (payload.role !== 'admin') {
-      return createResponse(403, { message: 'Acceso denegado' });
+      return createResponse(403, { message: 'Acceso denegado' }, event);
     }
     
     // En una implementación real, aquí se listarían los usuarios desde DynamoDB
@@ -247,13 +247,13 @@ const listUsers = async (token: string | null): Promise<APIGatewayProxyResult> =
     return createResponse(200, { 
       message: 'Función no implementada completamente', 
       info: 'Esta función listará todos los usuarios registrados' 
-    });
+    }, event);
   } catch (error: any) {
     if (error.message.includes('Token inválido')) {
-      return createResponse(401, { message: 'No autorizado' });
+      return createResponse(401, { message: 'No autorizado' }, event);
     }
     console.error('Error al listar usuarios:', error);
-    return createResponse(500, { message: 'Error al listar usuarios', error: error.message });
+    return createResponse(500, { message: 'Error al listar usuarios', error: error.message }, event);
   }
 };
 
@@ -263,11 +263,11 @@ const listUsers = async (token: string | null): Promise<APIGatewayProxyResult> =
 const updateProfile = async (event: APIGatewayProxyEvent, token: string | null): Promise<APIGatewayProxyResult> => {
   try {
     if (!token) {
-      return createResponse(401, { message: 'No autorizado' });
+      return createResponse(401, { message: 'No autorizado' }, event);
     }
     
     if (!event.body) {
-      return createResponse(400, { message: 'Cuerpo de la solicitud vacío' });
+      return createResponse(400, { message: 'Cuerpo de la solicitud vacío' }, event);
     }
     
     // Validar token y obtener payload
@@ -281,19 +281,19 @@ const updateProfile = async (event: APIGatewayProxyEvent, token: string | null):
       return createResponse(400, { 
         message: 'Datos de actualización inválidos', 
         errors: validation.error.errors 
-      });
+      }, event);
     }
     
     // Actualizar usuario
     const user = await authService.updateUser(payload.id, data);
     
-    return createResponse(200, { message: 'Perfil actualizado exitosamente', user });
+    return createResponse(200, { message: 'Perfil actualizado exitosamente', user }, event);
   } catch (error: any) {
     if (error.message.includes('Token inválido')) {
-      return createResponse(401, { message: 'No autorizado' });
+      return createResponse(401, { message: 'No autorizado' }, event);
     }
     console.error('Error al actualizar perfil:', error);
-    return createResponse(500, { message: 'Error al actualizar perfil', error: error.message });
+    return createResponse(500, { message: 'Error al actualizar perfil', error: error.message }, event);
   }
 };
 
@@ -303,11 +303,11 @@ const updateProfile = async (event: APIGatewayProxyEvent, token: string | null):
 const updateUser = async (event: APIGatewayProxyEvent, token: string | null, userId: string): Promise<APIGatewayProxyResult> => {
   try {
     if (!token) {
-      return createResponse(401, { message: 'No autorizado' });
+      return createResponse(401, { message: 'No autorizado' }, event);
     }
     
     if (!event.body) {
-      return createResponse(400, { message: 'Cuerpo de la solicitud vacío' });
+      return createResponse(400, { message: 'Cuerpo de la solicitud vacío' }, event);
     }
     
     // Validar token y obtener payload
@@ -315,7 +315,7 @@ const updateUser = async (event: APIGatewayProxyEvent, token: string | null, use
     
     // Verificar permisos (solo administradores)
     if (payload.role !== 'admin') {
-      return createResponse(403, { message: 'Acceso denegado' });
+      return createResponse(403, { message: 'Acceso denegado' }, event);
     }
     
     const data = JSON.parse(event.body) as UpdateUserDto;
@@ -326,32 +326,32 @@ const updateUser = async (event: APIGatewayProxyEvent, token: string | null, use
       return createResponse(400, { 
         message: 'Datos de actualización inválidos', 
         errors: validation.error.errors 
-      });
+      }, event);
     }
     
     // Actualizar usuario
     const user = await authService.updateUser(userId, data);
     
-    return createResponse(200, { message: 'Usuario actualizado exitosamente', user });
+    return createResponse(200, { message: 'Usuario actualizado exitosamente', user }, event);
   } catch (error: any) {
     if (error.message.includes('Token inválido')) {
-      return createResponse(401, { message: 'No autorizado' });
+      return createResponse(401, { message: 'No autorizado' }, event);
     }
     if (error.message.includes('no encontrado')) {
-      return createResponse(404, { message: 'Usuario no encontrado' });
+      return createResponse(404, { message: 'Usuario no encontrado' }, event);
     }
     console.error('Error al actualizar usuario:', error);
-    return createResponse(500, { message: 'Error al actualizar usuario', error: error.message });
+    return createResponse(500, { message: 'Error al actualizar usuario', error: error.message }, event);
   }
 };
 
 /**
  * Elimina un usuario por su ID (requiere permisos de administrador)
  */
-const deleteUser = async (token: string | null, userId: string): Promise<APIGatewayProxyResult> => {
+const deleteUser = async (event: APIGatewayProxyEvent, token: string | null, userId: string): Promise<APIGatewayProxyResult> => {
   try {
     if (!token) {
-      return createResponse(401, { message: 'No autorizado' });
+      return createResponse(401, { message: 'No autorizado' }, event);
     }
     
     // Validar token y obtener payload
@@ -359,22 +359,22 @@ const deleteUser = async (token: string | null, userId: string): Promise<APIGate
     
     // Verificar permisos (solo administradores o el propio usuario)
     if (payload.role !== 'admin' && payload.id !== userId) {
-      return createResponse(403, { message: 'Acceso denegado' });
+      return createResponse(403, { message: 'Acceso denegado' }, event);
     }
     
     // Eliminar usuario
     await authService.deleteUser(userId);
     
-    return createResponse(200, { message: 'Usuario eliminado exitosamente' });
+    return createResponse(200, { message: 'Usuario eliminado exitosamente' }, event);
   } catch (error: any) {
     if (error.message.includes('Token inválido')) {
-      return createResponse(401, { message: 'No autorizado' });
+      return createResponse(401, { message: 'No autorizado' }, event);
     }
     if (error.message.includes('no encontrado')) {
-      return createResponse(404, { message: 'Usuario no encontrado' });
+      return createResponse(404, { message: 'Usuario no encontrado' }, event);
     }
     console.error('Error al eliminar usuario:', error);
-    return createResponse(500, { message: 'Error al eliminar usuario', error: error.message });
+    return createResponse(500, { message: 'Error al eliminar usuario', error: error.message }, event);
   }
 };
 
@@ -386,7 +386,7 @@ const refreshToken = async (event: APIGatewayProxyEvent): Promise<APIGatewayProx
     // Extraer el token del header
     const authHeader = event.headers.Authorization || event.headers.authorization;
     if (!authHeader) {
-      return createResponse(401, { message: 'Token de autorización no proporcionado' });
+      return createResponse(401, { message: 'Token de autorización no proporcionado' }, event);
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -401,22 +401,38 @@ const refreshToken = async (event: APIGatewayProxyEvent): Promise<APIGatewayProx
         renewed,
         expiresAt
       }
-    });
+    }, event);
   } catch (error: any) {
     console.error('Error al renovar token:', error);
-    return createResponse(401, { message: `Error al renovar token: ${error.message}` });
+    return createResponse(401, { message: `Error al renovar token: ${error.message}` }, event);
   }
 };
 
 /**
  * Crea una respuesta HTTP estandarizada
  */
-const createResponse = (statusCode: number, body: any): APIGatewayProxyResult => {
+const getAllowedOrigin = (event: APIGatewayProxyEvent) => {
+  const allowedOrigins = (process.env.ALLOWED_ORIGIN || 'http://localhost:4700').split(',').map(o => o.trim());
+  const requestOrigin = (event.headers.origin || event.headers.Origin || '') as string;
+
+  // Permitir cualquier dominio de Amplify y 'public-tests'
+  const isAmplify = /amplifyapp\.com$/.test(requestOrigin);
+  const isPublicTests = /public-tests/.test(requestOrigin);
+
+  if (isAmplify || isPublicTests) {
+    return requestOrigin;
+  }
+
+  return allowedOrigins.includes(requestOrigin) ? requestOrigin : allowedOrigins[0];
+};
+
+const createResponse = (statusCode: number, body: any, event: APIGatewayProxyEvent): APIGatewayProxyResult => {
+  const origin = getAllowedOrigin(event) || '';
   return {
     statusCode,
     headers: {
       'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': 'http://localhost:4700',
+      'Access-Control-Allow-Origin': origin,
       'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Requested-With',
       'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
       'Access-Control-Allow-Credentials': 'true'
@@ -428,11 +444,12 @@ const createResponse = (statusCode: number, body: any): APIGatewayProxyResult =>
 /**
  * Crea una respuesta específica para solicitudes CORS preflight
  */
-const createCorsResponse = (statusCode: number, body: any): APIGatewayProxyResult => {
+const createCorsResponse = (statusCode: number, body: any, event: APIGatewayProxyEvent): APIGatewayProxyResult => {
+  const origin = getAllowedOrigin(event) || '';
   return {
     statusCode,
     headers: {
-      'Access-Control-Allow-Origin': 'http://localhost:4700',
+      'Access-Control-Allow-Origin': origin,
       'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Requested-With,Accept,Cache-Control,Pragma',
       'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
       'Access-Control-Allow-Credentials': 'true',
