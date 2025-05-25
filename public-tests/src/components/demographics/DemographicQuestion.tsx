@@ -16,7 +16,7 @@ export const DemographicQuestion: React.FC<DemographicQuestionProps> = ({
     case 'education':
     case 'educationLevel':
       if (Array.isArray(config.options) && config.options.length > 0) {
-        return <GenericSelectQuestion config={config} value={value} onChange={onChange} />;
+        return <GenericSelectQuestion config={config} value={typeof value === 'boolean' ? undefined : value} onChange={onChange} />;
       }
       console.warn(`Pregunta de tipo select (id: '${config.id}') esperaba opciones pero no las encontró. Usando TextQuestion.`);
       return <TextQuestion config={config} value={value} onChange={onChange} />;
@@ -25,7 +25,7 @@ export const DemographicQuestion: React.FC<DemographicQuestionProps> = ({
     case 'income': 
     case 'householdIncome':
       if (Array.isArray(config.options) && config.options.length > 0) {
-        return <GenericSelectQuestion config={config} value={value} onChange={onChange} />;
+        return <GenericSelectQuestion config={config} value={typeof value === 'boolean' ? undefined : value} onChange={onChange} />;
       }
       console.warn(`Pregunta de ingresos (id: '${config.id}') esperaba opciones pero no las encontró. Usando TextQuestion.`);
       return <TextQuestion config={config} value={value} onChange={onChange} />;
@@ -37,13 +37,13 @@ export const DemographicQuestion: React.FC<DemographicQuestionProps> = ({
     case 'dailyHoursOnline':
     case 'technicalProficiency':
       if (Array.isArray(config.options) && config.options.length > 0) {
-        return <GenericSelectQuestion config={config} value={value} onChange={onChange} />;
+        return <GenericSelectQuestion config={config} value={typeof value === 'boolean' ? undefined : value} onChange={onChange} />;
       }
       return <TextQuestion config={config} value={value} onChange={onChange} />;
     default:
       console.warn(`Pregunta demográfica con id no reconocido: '${config.id}'.`);
       if (Array.isArray(config.options) && config.options.length > 0) {
-        return <GenericSelectQuestion config={config} value={value} onChange={onChange} />;
+        return <GenericSelectQuestion config={config} value={typeof value === 'boolean' ? undefined : value} onChange={onChange} />;
       }
       return <TextQuestion config={config} value={value} onChange={onChange} />;
   }
@@ -66,7 +66,7 @@ export const AgeQuestion: React.FC<DemographicQuestionProps> = ({
       <input
         type="number"
         id={config.id}
-        value={value || ''}
+        value={typeof value === 'boolean' ? '' : value || ''}
         onChange={handleChange}
         min="0"
         max="120"
@@ -98,7 +98,7 @@ export const TextQuestion: React.FC<DemographicQuestionProps> = ({
       <input
         type="text"
         id={config.id}
-        value={value || ''}
+        value={typeof value === 'boolean' ? '' : value || ''}
         onChange={handleChange}
         className="w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
         required={config.required}

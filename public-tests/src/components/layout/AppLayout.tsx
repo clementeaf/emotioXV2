@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Sidebar } from './Sidebar';
-import { Header } from './Header';
 import { AppLayoutProps } from './types';
 
 export function AppLayout({ children }: AppLayoutProps) {
@@ -14,7 +13,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       />
       
       <div className="flex-1 flex flex-col min-w-0">
-        <Header openMobileSidebar={() => setIsMobileSidebarOpen(true)} />
+        {/* <Header openMobileSidebar={() => setIsMobileSidebarOpen(true)} /> */}
         
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
           {children}

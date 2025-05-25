@@ -1,13 +1,13 @@
 import { cn } from "../../lib/utils";
 import { colors } from "./utils";
-import { useParticipantStore } from '../../stores/participantStore';
 
-export function ProgressSidebarItem({ step, index, isCurrent, isAnswered, totalSteps }: {
+export function ProgressSidebarItem({ step, index, isCurrent, isAnswered, totalSteps, onNavigateToStep }: {
     step: unknown;
     index: number;
     isCurrent: boolean;
     isAnswered: boolean;
     totalSteps: number;
+    onNavigateToStep?: (index: number) => void;
   }) {
     let dotColor, lineColor, textColor;
   
@@ -25,7 +25,7 @@ export function ProgressSidebarItem({ step, index, isCurrent, isAnswered, totalS
       lineColor = colors.linePending;
     }
 
-    const canClick = isAnswered && !isCurrent;
+    const canClick = isAnswered && !isCurrent && !!onNavigateToStep;
 
     if (typeof step !== 'object' || step === null || !('id' in step) || !('name' in step)) {
       return null;
@@ -40,7 +40,7 @@ export function ProgressSidebarItem({ step, index, isCurrent, isAnswered, totalS
           !canClick && "cursor-default"
         )}
         onClick={canClick ? () => { 
-          useParticipantStore.getState().setCurrentStepIndex(index);
+          if (onNavigateToStep) onNavigateToStep(index);
         } : undefined}
         role={canClick ? "button" : undefined}
         tabIndex={canClick ? 0 : undefined}

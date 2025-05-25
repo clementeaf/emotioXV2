@@ -197,7 +197,7 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
             const warningMessage = (finalMappedProps as { isMock?: boolean }).isMock ? `Configuración para '${stepType}' podría estar incompleta o usando datos de prueba.` : undefined;
 
             return renderStepWithWarning(
-                <ComponentToRender {...(finalMappedProps as Record<string, unknown>)} key={stepId} />,
+                <ComponentToRender {...(finalMappedProps as any)} key={stepId} />,
                 Boolean((finalMappedProps as { isMock?: boolean }).isMock),
                 warningMessage
             );

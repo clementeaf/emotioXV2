@@ -13,7 +13,7 @@ import NavigationFlowTask from './NavigationFlowTask';
 // Este patrón es estándar y seguro si se valida el uso de props al renderizar.
 export interface TaskDefinition {
   id: string;
-  component: React.ComponentType<unknown>;
+  component: React.ComponentType<any>;
   title: string;
   description?: string;
   props?: Record<string, unknown>;

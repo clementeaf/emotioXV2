@@ -123,7 +123,10 @@ const processDefaultModuleQuestions = (
 export const useFlowBuilder = ({ researchFlowApiData, isLoading }: UseFlowBuilderProps & { isLoading?: boolean }): ExpandedStep[] => {
     
     const buildStepsInternal = useCallback(() => {
-        const flowDataModules = researchFlowApiData?.data;
+        const flowDataModules =
+            researchFlowApiData && typeof researchFlowApiData === 'object' && researchFlowApiData !== null && 'data' in researchFlowApiData
+                ? (researchFlowApiData as { data: unknown }).data
+                : undefined;
 
         if (!isLoading && !(Array.isArray(flowDataModules) && flowDataModules.length > 0)) {
             console.warn('[useFlowBuilder] No hay flowDataModules válidos para construir pasos.');

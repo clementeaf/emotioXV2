@@ -19,7 +19,7 @@ export function ProgressSidebar({
     autoFetch: !!(researchId && participantId),
   });
 
-  const answeredStepIds = useAnsweredStepIds(steps, moduleResponsesData);
+  const answeredStepIds = useAnsweredStepIds(steps, moduleResponsesData as unknown[]);
   const totalSteps = steps.length;
   const completedSteps = answeredStepIds.length;
 
@@ -55,9 +55,6 @@ export function ProgressSidebar({
               index={index}
               isCurrent={index === currentStepIndex}
               isAnswered={answeredStepIds.includes(step.id)}
-              isClickable={
-                (index === currentStepIndex || answeredStepIds.includes(step.id) || index < currentStepIndex) && !!onNavigateToStep
-              }
               onNavigateToStep={onNavigateToStep}
               totalSteps={steps.length}
             />

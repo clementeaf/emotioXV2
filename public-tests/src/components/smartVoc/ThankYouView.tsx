@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ResponsesData } from '../../hooks/useParticipantFlow';
+import { ResponsesData } from '../../hooks/types';
 import { ResponsesViewer } from '../flow/ResponsesViewer';
 import fondoFinal from '../../assets/fondo-final.png';
 

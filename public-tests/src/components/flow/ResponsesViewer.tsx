@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ResponsesData } from '../../hooks/useParticipantFlow';
+import { ResponsesData } from '../../hooks/types';
 
 interface ResponsesViewerProps {
   data: ResponsesData;
@@ -16,18 +16,18 @@ export const ResponsesViewer: React.FC<ResponsesViewerProps> = ({ data, onClose 
     endTime: data.endTime ? new Date(data.endTime).toLocaleString() : undefined,
     modules: {
       ...data.modules,
-      // Formatear timestamps en módulos específicos
+      // Formatear fechas en módulos específicos
       demographic: data.modules.demographic ? {
         ...data.modules.demographic,
-        timestamp: new Date(data.modules.demographic.timestamp).toLocaleString(),
+        createdAt: new Date(data.modules.demographic.createdAt).toLocaleString(),
       } : undefined,
       cognitive_task: data.modules.cognitive_task.map(item => ({
         ...item,
-        timestamp: new Date(item.timestamp).toLocaleString(),
+        createdAt: new Date(item.createdAt).toLocaleString(),
       })),
       smartvoc: data.modules.smartvoc.map(item => ({
         ...item,
-        timestamp: new Date(item.timestamp).toLocaleString(),
+        createdAt: new Date(item.createdAt).toLocaleString(),
       })),
     }
   };

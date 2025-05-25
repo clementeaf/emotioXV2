@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { CognitiveQuestion } from '../../../hooks/useCognitiveTask';
 import QuestionHeader from '../common/QuestionHeader';
 import TextAreaField from '../../common/TextAreaField';
 import { useResponseAPI } from '../../../hooks/useResponseAPI';
@@ -7,17 +8,17 @@ import { useModuleResponses } from '../../../hooks/useModuleResponses';
 import { ModuleResponse } from '../../../stores/participantStore';
 
 interface LongTextViewProps {
-  config: Record<string, unknown>;
+  config: CognitiveQuestion;
   onStepComplete?: (answer?: unknown) => void;
 }
 
 export const LongTextView: React.FC<LongTextViewProps> = ({ config, onStepComplete }) => {
-  const id = (config as { id?: string }).id || '';
-  const type = (config as { type?: string }).type || 'long_text';
-  const title = (config as { title?: string }).title || 'Pregunta';
-  const description = (config as { description?: string }).description;
-  const answerPlaceholder = (config as { answerPlaceholder?: string }).answerPlaceholder || 'Escribe tu respuesta detallada aquí...';
-  const required = (config as { required?: boolean }).required;
+  const id = config.id || '';
+  const type = config.type || 'long_text';
+  const title = config.title || 'Pregunta';
+  const description = config.description;
+  const answerPlaceholder = config.answerPlaceholder || 'Escribe tu respuesta detallada aquí...';
+  const required = config.required;
 
   // IDs globales
   const researchId = useParticipantStore(state => state.researchId) || '';

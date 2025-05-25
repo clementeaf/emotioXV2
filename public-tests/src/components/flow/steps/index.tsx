@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import imageUrl from '../../../assets/nav_flow_img.png';
 import { LongTextView } from '../../cognitiveTask/questions/LongTextView';
 import { SmartVOCQuestion } from '../../../types/smart-voc.interface';
+import { CognitiveQuestion } from '../../../hooks/useCognitiveTask';
 
 const ParticipantLogin = React.lazy(() => import('../../auth/ParticipantLogin').then(module => ({ default: module.ParticipantLogin })));
 const WelcomeScreenHandler = React.lazy(() => import('../WelcomeScreenHandler'));
@@ -177,7 +178,7 @@ const CognitivePreferenceTestStep: React.FC<MappedStepComponentProps> = ({ stepC
 const CognitiveLongTextAdapter: React.FC<MappedStepComponentProps> = ({ stepConfig, onStepComplete }) => {
   return (
     <LongTextView
-      config={stepConfig as Record<string, unknown>}
+      config={stepConfig as CognitiveQuestion}
       onStepComplete={onStepComplete}
     />
   );

@@ -1,5 +1,4 @@
 import React from 'react';
-import PreviewHeader from '../layout/PreviewHeader';
 
 interface ThankYouViewProps {
   onComplete?: () => void;
@@ -18,7 +17,6 @@ const ThankYouView: React.FC<ThankYouViewProps> = ({
 }) => {
   return (
     <div className="w-full h-full flex flex-col">
-      <PreviewHeader />
       {/* Contenido principal */}
       <div className="flex-1 flex">
         {/* Sección izquierda (texto) */}

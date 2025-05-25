@@ -10,8 +10,8 @@ export const DemographicStep: React.FC<DemographicStepProps> = ({
     onError
 }) => {
     const [loading, setLoading] = useState(false);
-    const initialFormValues = stepConfig?.savedResponses || {};
-    const formConfig = stepConfig?.demographicsConfig as DemographicsSection | undefined;
+    const initialFormValues = (stepConfig as { savedResponses?: any })?.savedResponses || {};
+    const formConfig = (stepConfig as { demographicsConfig?: DemographicsSection })?.demographicsConfig as DemographicsSection | undefined;
 
     const handleDemographicSubmit = async (responses: DemographicResponses) => {
         setLoading(true);
