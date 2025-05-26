@@ -52,8 +52,8 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
   const [error, setError] = useState<string | null>(null);
 
   // Obtener URL base de public-tests desde variable de entorno
-  const publicTestsBaseUrl = process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL;
-  const localPublicTestsUrl = 'http://localhost:5173'; // Cambia el puerto si es necesario
+  const publicTestsBaseUrl = process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://main.dgsabzeqh9eea.amplifyapp.com';
+  const localPublicTestsUrl = 'http://localhost:5173';
   const isAmplify = !!publicTestsBaseUrl;
 
   // Obtener nombre de la investigación
