@@ -130,11 +130,17 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
   };
 
   // Construir la URL de public-tests según entorno
-  const publicTestUrl = researchId
-    ? isAmplify
-      ? `${publicTestsBaseUrl}?researchId=${researchId}`
-      : `${localPublicTestsUrl}?researchId=${researchId}`
-    : null;
+  let publicTestUrl: string | null = null;
+  if (researchId) {
+    if (typeof window !== 'undefined' && window.location.hostname.endsWith('.amplifyapp.com')) {
+      // Si estamos en un dominio de Amplify, usar ese dominio
+      publicTestUrl = `https://${window.location.hostname}/?researchId=${researchId}`;
+    } else if (publicTestsBaseUrl) {
+      publicTestUrl = `${publicTestsBaseUrl}?researchId=${researchId}`;
+    } else {
+      publicTestUrl = `${localPublicTestsUrl}?researchId=${researchId}`;
+    }
+  }
 
   return (
     <div className={cn('bg-white rounded-lg shadow-xl p-4 mt-4 mx-4 flex flex-col min-h-[510px] border border-neutral-200', className)}>

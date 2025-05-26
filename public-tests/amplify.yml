@@ -1,16 +1,34 @@
 version: 1
+backend:
+  phases:
+    build:
+      commands:
+        - echo "No backend to build"
 frontend:
   phases:
     preBuild:
       commands:
-        - npm ci
+        # Usando configuración estándar de Amplify
+        - cd shared
+        - npm install
+        - npm run build
+        - cd ../public-tests
+        - npm install
     build:
       commands:
+        - cd ../public-tests
         - npm run build
   artifacts:
-    baseDirectory: dist
+    # Configuración para static export
+    baseDirectory: public-tests/dist
     files:
       - '**/*'
   cache:
     paths:
-      - node_modules/**/* 
+      - public-tests/node_modules/**/*
+      - shared/node_modules/**/*
+  customHeaders:
+    - pattern: '**/*'
+      headers:
+        - key: 'Cache-Control'
+          value: 'public, max-age=0, must-revalidate' 
