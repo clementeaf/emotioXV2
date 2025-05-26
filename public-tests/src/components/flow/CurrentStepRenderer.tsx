@@ -29,6 +29,8 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
     const participantIdFromStore = useParticipantStore(state => state.participantId);
     const apiClient = useMemo(() => new ApiClient(), []);
 
+    console.log('CurrentStepRenderer props:', { stepType, stepConfig, stepId, stepName });
+
     useEffect(() => {
         if (stepConfig && researchId && participantIdFromStore && stepId &&
             (stepType === SMART_VOC_ROUTER_STEP_TYPE || stepType === DEMOGRAPHIC_STEP_TYPE)) {
