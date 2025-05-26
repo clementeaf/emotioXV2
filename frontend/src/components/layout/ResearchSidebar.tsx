@@ -132,14 +132,10 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
   // Construir la URL de public-tests según entorno
   let publicTestUrl: string | null = null;
   if (researchId) {
-    console.log('window.location.hostname', window.location.hostname);
-    if (typeof window !== 'undefined' && window.location.hostname.endsWith('.amplifyapp.com')) {
-      // Si estamos en un dominio de Amplify, usar ese dominio
-      publicTestUrl = `https://${window.location.hostname}/?researchId=${researchId}`;
-    } else if (publicTestsBaseUrl) {
-      publicTestUrl = `${publicTestsBaseUrl}?researchId=${researchId}`;
-    } else {
+    if (process.env.NODE_ENV === 'development') {
       publicTestUrl = `${localPublicTestsUrl}?researchId=${researchId}`;
+    } else {
+      publicTestUrl = `${publicTestsBaseUrl}?researchId=${researchId}`;
     }
   }
 
