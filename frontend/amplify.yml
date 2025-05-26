@@ -12,11 +12,9 @@ frontend:
         - cd shared
         - npm install
         - npm run build
-        - cd ../frontend
         - npm install
     build:
       commands:
-        - cd ../frontend
         - npm run build
   artifacts:
     # Configuración para static export

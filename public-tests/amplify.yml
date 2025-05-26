@@ -8,15 +8,12 @@ frontend:
   phases:
     preBuild:
       commands:
-        # Usando configuración estándar de Amplify
         - cd shared
         - npm install
         - npm run build
-        - cd ../public-tests
         - npm install
     build:
       commands:
-        - cd ../public-tests
         - npm run build
   artifacts:
     # Configuración para static export
