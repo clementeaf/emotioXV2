@@ -108,34 +108,104 @@ export const useFlowNavigationAndState = ({
     }, [currentStepIndex, expandedSteps, isFlowLoading, saveStepResponse, markResponsesAsCompleted, setExternalExpandedSteps, setCurrentStepIndex, setError, setCurrentStep]);
 
     const navigateToStep = useCallback((targetIndex: number) => {
-        let stepHasApiResponse = false;
-        if (targetIndex >= 0 && targetIndex < expandedSteps.length) {
-            const targetStepInfo = expandedSteps[targetIndex];
-            if(targetStepInfo && targetStepInfo.name) {
-                stepHasApiResponse = loadedApiResponsesFromStore.some(resp => 
-                    (resp.stepTitle && targetStepInfo.responseKey && resp.stepTitle === targetStepInfo.responseKey)
-                );
-            }
+        console.log(`[useFlowNavigationAndState] Intentando navegar al índice: ${targetIndex}`);
+        console.log(`[useFlowNavigationAndState] Estado actual - currentStepIndex: ${currentStepIndex}, isFlowLoading: ${isFlowLoading}`);
+        console.log(`[useFlowNavigationAndState] expandedSteps.length: ${expandedSteps.length}`);
+        
+        // Validaciones básicas
+        if (isFlowLoading) {
+            console.log('[useFlowNavigationAndState] Navegación bloqueada: flujo en carga');
+            return;
         }
+        
+        if (targetIndex < 0 || targetIndex >= expandedSteps.length) {
+            console.log('[useFlowNavigationAndState] Navegación bloqueada: índice fuera de rango');
+            return;
+        }
+        
+        if (targetIndex === currentStepIndex) {
+            console.log('[useFlowNavigationAndState] Navegación bloqueada: ya estás en este paso');
+            return;
+        }
+
+        let stepHasApiResponse = false;
+        const targetStepInfo = expandedSteps[targetIndex];
+        
+        if (targetStepInfo && targetStepInfo.name) {
+            stepHasApiResponse = loadedApiResponsesFromStore.some(resp => 
+                (resp.stepTitle && targetStepInfo.responseKey && resp.stepTitle === targetStepInfo.responseKey)
+            );
+        }
+        
         // Obtener pasos respondidos
         const answeredSteps = getAnsweredStepIndices ? getAnsweredStepIndices() : [];
         const isAnsweredStep = answeredSteps.includes(targetIndex);
-        // Permitir navegación si el paso está contestado (verde)
-        if (!isFlowLoading && targetIndex >= 0 && targetIndex < expandedSteps.length && (isAnsweredStep || stepHasApiResponse)) {
-            const savedResponse = getStepResponse(targetIndex);
-            if (savedResponse !== null && savedResponse !== undefined && setExternalExpandedSteps) {
-                setExternalExpandedSteps(prevSteps => prevSteps.map((step, index) => {
-                    if (index === targetIndex) {
-                        const prevConfig = (typeof step.config === 'object' && step.config !== null) ? step.config : {};
-                        return { ...step, config: { ...prevConfig, savedResponses: savedResponse } };
-                    }
-                    return step;
-                }));
-            }
-            setCurrentStepIndex(targetIndex);
-            setError(null); 
+        
+        // Verificar si puede navegar a este paso
+        const maxVisited = Math.max(maxVisitedIndexFromStore || 0, currentStepIndex);
+        const canNavigateToStep = (
+            isAnsweredStep || 
+            stepHasApiResponse || 
+            targetIndex <= maxVisited ||
+            targetIndex === 0 // Siempre permitir ir al paso welcome
+        );
+        
+        console.log(`[useFlowNavigationAndState] Verificaciones de navegación:`);
+        console.log(`  - isAnsweredStep: ${isAnsweredStep}`);
+        console.log(`  - stepHasApiResponse: ${stepHasApiResponse}`);
+        console.log(`  - maxVisited: ${maxVisited}, targetIndex: ${targetIndex}`);
+        console.log(`  - canNavigateToStep: ${canNavigateToStep}`);
+        
+        if (!canNavigateToStep) {
+            console.log('[useFlowNavigationAndState] Navegación bloqueada: paso no disponible');
+            return;
         }
-    }, [isFlowLoading, expandedSteps, loadedApiResponsesFromStore, getStepResponse, setExternalExpandedSteps, setCurrentStepIndex, setError, getAnsweredStepIndices]);
+
+        // Realizar la navegación
+        console.log(`[useFlowNavigationAndState] Navegando al paso ${targetIndex}: ${targetStepInfo?.name}`);
+        
+        // Cargar respuesta guardada si existe
+        const savedResponse = getStepResponse(targetIndex);
+        if (savedResponse !== null && savedResponse !== undefined && setExternalExpandedSteps) {
+            console.log(`[useFlowNavigationAndState] Cargando respuesta guardada para el paso ${targetIndex}`);
+            setExternalExpandedSteps(prevSteps => prevSteps.map((step, index) => {
+                if (index === targetIndex) {
+                    const prevConfig = (typeof step.config === 'object' && step.config !== null) ? step.config : {};
+                    return { ...step, config: { ...prevConfig, savedResponses: savedResponse } };
+                }
+                return step;
+            }));
+        }
+        
+        // Actualizar el índice del paso actual
+        setCurrentStepIndex(targetIndex);
+        
+        // Actualizar localStorage para persistir la navegación
+        localStorage.setItem('currentStepIndex', targetIndex.toString());
+        
+        // Asegurar que estamos en el estado correcto del flujo
+        if (currentStep !== ParticipantFlowStep.WELCOME && currentStep !== ParticipantFlowStep.DONE) {
+            setCurrentStep(ParticipantFlowStep.WELCOME);
+        }
+        
+        // Limpiar errores
+        setError(null);
+        
+        console.log(`[useFlowNavigationAndState] Navegación completada al paso ${targetIndex}`);
+    }, [
+        isFlowLoading, 
+        expandedSteps, 
+        currentStepIndex,
+        currentStep,
+        loadedApiResponsesFromStore, 
+        getStepResponse, 
+        setExternalExpandedSteps, 
+        setCurrentStepIndex, 
+        setCurrentStep,
+        setError, 
+        getAnsweredStepIndices,
+        maxVisitedIndexFromStore
+    ]);
     
     const totalRelevantSteps = Math.max(0, expandedSteps ? expandedSteps.length - 2 : 0);
     let completedRelevantSteps = 0;

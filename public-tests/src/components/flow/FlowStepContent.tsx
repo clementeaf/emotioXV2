@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { ParticipantFlowStep, ExpandedStep } from '../../types/flow';
 import CurrentStepRenderer from './CurrentStepRenderer';
 import LoadingIndicator from '../common/LoadingIndicator';
@@ -29,6 +29,20 @@ const FlowStepContent: React.FC<FlowStepContentProps> = (props) => {
         responsesData,
     } = props;
 
+    // Log para debugging
+    useEffect(() => {
+        console.log('[FlowStepContent] Re-renderizando con:', {
+            currentStepEnum,
+            currentExpandedStep: currentExpandedStep ? {
+                id: currentExpandedStep.id,
+                name: currentExpandedStep.name,
+                type: currentExpandedStep.type
+            } : null,
+            isLoading,
+            hasResponses: !!responsesData
+        });
+    }, [currentStepEnum, currentExpandedStep, isLoading, responsesData]);
+
     // Memoizar la lógica de stepConfig ANTES de cualquier return condicional
     const memoizedStepConfig = useMemo(() => {
         if (!currentExpandedStep) {
@@ -46,6 +60,14 @@ const FlowStepContent: React.FC<FlowStepContentProps> = (props) => {
         }
         return currentExpandedStep.config;
     }, [currentExpandedStep, currentStepEnum, responsesData]);
+
+    // Crear una key única para forzar re-renderizado cuando cambia el step
+    const stepKey = useMemo(() => {
+        if (currentExpandedStep) {
+            return `${currentExpandedStep.id}-${currentExpandedStep.type}-${Date.now()}`;
+        }
+        return `${currentStepEnum}-${Date.now()}`;
+    }, [currentExpandedStep, currentStepEnum]);
 
     if (!researchId) {
         return <ErrorDisplay title="Error Crítico" message="ID de investigación no encontrado en la URL." />;
@@ -67,6 +89,7 @@ const FlowStepContent: React.FC<FlowStepContentProps> = (props) => {
     if (currentStepEnum === ParticipantFlowStep.LOGIN) {
         return (
             <CurrentStepRenderer 
+                key={`login-${stepKey}`}
                 stepType="login"
                 researchId={researchId}
                 onLoginSuccess={handleLoginSuccess}
@@ -76,9 +99,11 @@ const FlowStepContent: React.FC<FlowStepContentProps> = (props) => {
     }
 
     if (currentExpandedStep) {
+        console.log(`[FlowStepContent] Renderizando step: ${currentExpandedStep.type} (${currentExpandedStep.name})`);
         
         return (
             <CurrentStepRenderer 
+                key={stepKey} // Usar key única para forzar re-renderizado
                 stepType={currentExpandedStep.type}
                 stepConfig={memoizedStepConfig} // Usar la config memoizada
                 stepId={currentExpandedStep.id}
