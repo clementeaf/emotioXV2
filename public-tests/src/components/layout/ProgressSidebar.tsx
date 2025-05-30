@@ -4,7 +4,7 @@ import { useParticipantStore } from '../../stores/participantStore';
 import { useAnsweredStepIds } from './useAnsweredStepIds';
 import { ProgressSidebarItem } from './ProgressSidebarItem';
 import LoadingIndicator from '../common/LoadingIndicator';
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useEffect } from 'react';
 
 export function ProgressSidebar({ 
   steps, 
@@ -14,10 +14,6 @@ export function ProgressSidebar({
   const researchId = useParticipantStore(state => state.researchId);
   const participantId = useParticipantStore(state => state.participantId);
   const responsesData = useParticipantStore(state => state.responsesData);
-  const maxVisitedIndex = useParticipantStore(state => state.maxVisitedIndex);
-  
-  // Estado para mostrar/ocultar debug info
-  const [showDebug, setShowDebug] = useState(false);
 
   const { data: moduleResponsesData, isLoading: isResponsesLoading, error: moduleResponsesError } = useModuleResponses({
     researchId: researchId || undefined,
@@ -161,87 +157,54 @@ export function ProgressSidebar({
 
   // Mejorar el handler de navegación con logging
   const handleNavigateToStep = (targetIndex: number) => {
-    console.log(`[ProgressSidebar] Solicitando navegación al índice: ${targetIndex}`);
-    console.log(`[ProgressSidebar] Paso objetivo:`, steps[targetIndex]);
+    console.log(`🚀 [ProgressSidebar] Recibida solicitud de navegación:`, {
+      targetIndex,
+      currentStepIndex,
+      targetStep: steps[targetIndex],
+      onNavigateToStepExists: !!onNavigateToStep
+    });
     
     if (onNavigateToStep) {
+      console.log(`✅ [ProgressSidebar] Ejecutando navegación al índice: ${targetIndex}`);
       onNavigateToStep(targetIndex);
     } else {
-      console.warn('[ProgressSidebar] onNavigateToStep no está disponible');
+      console.warn('❌ [ProgressSidebar] onNavigateToStep no está disponible');
     }
   };
 
   return (
     <nav 
       aria-label="Progreso del estudio"
-      className="w-56 md:w-64 h-screen bg-white border-r border-neutral-200 flex flex-col sticky top-0 shrink-0 shadow-sm"
+      className="w-64 h-full flex flex-col shrink-0"
     >
-      {/* Header con mejor diseño */}
-      <div className="px-4 md:px-6 py-4 md:py-6 border-b border-neutral-100">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-lg font-semibold text-neutral-800">Progreso</h2> 
+      {/* Header minimalista */}
+      <div className="px-6 py-6">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-medium text-neutral-600 uppercase tracking-wide">Progreso</h2> 
+            {showCounter && (
+              <span className="text-xs font-mono text-neutral-500 bg-neutral-100 px-2 py-1 rounded-md">
+                {progressInfo.completedSteps}/{progressInfo.totalSteps}
+              </span>
+            )}
+          </div>
+          
           {showCounter && (
-            <span className="text-xs font-medium text-primary-700 bg-primary-100 px-2 py-1 rounded-full whitespace-nowrap">
-              {progressInfo.completedSteps}/{progressInfo.totalSteps}
-            </span>
+            <div className="text-xs text-neutral-500 font-mono">
+              {progressInfo.percentage}% completado
+            </div>
           )}
         </div>
-        
-        {/* Barra de progreso visual */}
-        {showCounter && (
-          <div className="w-full bg-neutral-200 rounded-full h-2">
-            <div 
-              className="bg-primary-600 h-2 rounded-full transition-all duration-300 ease-out"
-              style={{ width: `${progressInfo.percentage}%` }}
-            />
-          </div>
-        )}
-        
-        {showCounter && (
-          <p className="text-xs text-neutral-600 mt-2">
-            {progressInfo.percentage}% completado
-          </p>
-        )}
       </div>
       
-      {/* Debug toggle button - solo en desarrollo */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="px-4 py-2 border-b border-neutral-100">
-          <button
-            onClick={() => setShowDebug(!showDebug)}
-            className="text-xs text-neutral-500 hover:text-neutral-700 underline"
-          >
-            {showDebug ? 'Ocultar' : 'Mostrar'} debug info
-          </button>
-        </div>
-      )}
-      
-      {/* Debug info mejorado - solo visible cuando se activa */}
-      {process.env.NODE_ENV === 'development' && showDebug && (
-        <div className="mx-4 my-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="text-xs text-blue-800 space-y-1">
-            <div className="font-medium mb-2">Estado Debug:</div>
-            <div>Paso actual: {currentStepIndex}</div>
-            <div>Máximo visitado: {maxVisitedIndex}</div>
-            <div>Pasos respondidos: {answeredStepIds.length}</div>
-            <div>Respuestas cargadas: {combinedResponsesData.length}</div>
-            <div>Total pasos: {steps.length}</div>
-            <div className="font-medium mt-2">useModuleResponses:</div>
-            <div>Loading: {isResponsesLoading ? 'Sí' : 'No'}</div>
-            <div>Error: {moduleResponsesError || 'Ninguno'}</div>
-            <div>Datos: {Array.isArray(moduleResponsesData) ? `${moduleResponsesData.length} items` : typeof moduleResponsesData}</div>
-          </div>
-        </div>
-      )}
-      
-      {/* Lista de pasos con mejor organización */}
-      <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4">
+      {/* Lista de pasos con diseño minimalista */}
+      <div className="flex-1 overflow-y-auto px-4 space-y-1">
         {isResponsesLoading ? (
           <div className="flex flex-col items-center justify-center h-32">
-            <LoadingIndicator message="Cargando progreso..." />
+            <LoadingIndicator message="Cargando..." />
           </div>
         ) : (
-          <div className="space-y-1">
+          <div className="space-y-0.5">
             {steps.map((step, index) => (
               <ProgressSidebarItem
                 key={`${step.id}-${index}`}
@@ -257,13 +220,10 @@ export function ProgressSidebar({
         )}
       </div>
       
-      {/* Footer con información adicional */}
-      <div className="px-4 md:px-6 py-3 border-t border-neutral-100 bg-neutral-50">
-        <div className="flex items-center justify-between text-xs text-neutral-600">
-          <span>Estudio: {researchId?.slice(-8) || 'N/A'}</span>
-          {participantId && (
-            <span>ID: {participantId.slice(-6)}</span>
-          )}
+      {/* Footer minimalista */}
+      <div className="px-6 py-4">
+        <div className="flex items-center justify-between text-xs font-mono text-neutral-400">
+          <span>ID: {researchId?.slice(-6) || 'N/A'}</span>
         </div>
       </div>
     </nav>

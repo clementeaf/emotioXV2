@@ -128,36 +128,20 @@ export const useFlowNavigationAndState = ({
             return;
         }
 
-        let stepHasApiResponse = false;
         const targetStepInfo = expandedSteps[targetIndex];
         
-        if (targetStepInfo && targetStepInfo.name) {
-            stepHasApiResponse = loadedApiResponsesFromStore.some(resp => 
-                (resp.stepTitle && targetStepInfo.responseKey && resp.stepTitle === targetStepInfo.responseKey)
-            );
-        }
-        
-        // Obtener pasos respondidos
-        const answeredSteps = getAnsweredStepIndices ? getAnsweredStepIndices() : [];
-        const isAnsweredStep = answeredSteps.includes(targetIndex);
-        
-        // Verificar si puede navegar a este paso
+        // Lógica simplificada: Si el sidebar permitió la navegación, confiar en esa decisión
+        // Solo bloquear navegación hacia adelante más allá del máximo visitado + 1
         const maxVisited = Math.max(maxVisitedIndexFromStore || 0, currentStepIndex);
-        const canNavigateToStep = (
-            isAnsweredStep || 
-            stepHasApiResponse || 
-            targetIndex <= maxVisited ||
-            targetIndex === 0 // Siempre permitir ir al paso welcome
-        );
+        const isForwardNavigation = targetIndex > maxVisited + 1;
         
-        console.log(`[useFlowNavigationAndState] Verificaciones de navegación:`);
-        console.log(`  - isAnsweredStep: ${isAnsweredStep}`);
-        console.log(`  - stepHasApiResponse: ${stepHasApiResponse}`);
+        console.log(`[useFlowNavigationAndState] Verificaciones simplificadas:`);
         console.log(`  - maxVisited: ${maxVisited}, targetIndex: ${targetIndex}`);
-        console.log(`  - canNavigateToStep: ${canNavigateToStep}`);
+        console.log(`  - isForwardNavigation: ${isForwardNavigation}`);
+        console.log(`  - permitirNavegacion: ${!isForwardNavigation}`);
         
-        if (!canNavigateToStep) {
-            console.log('[useFlowNavigationAndState] Navegación bloqueada: paso no disponible');
+        if (isForwardNavigation) {
+            console.log('[useFlowNavigationAndState] Navegación bloqueada: salto hacia adelante no permitido');
             return;
         }
 
@@ -197,13 +181,11 @@ export const useFlowNavigationAndState = ({
         expandedSteps, 
         currentStepIndex,
         currentStep,
-        loadedApiResponsesFromStore, 
         getStepResponse, 
         setExternalExpandedSteps, 
         setCurrentStepIndex, 
         setCurrentStep,
         setError, 
-        getAnsweredStepIndices,
         maxVisitedIndexFromStore
     ]);
     

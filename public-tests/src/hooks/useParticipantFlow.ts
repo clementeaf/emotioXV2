@@ -28,6 +28,11 @@ export const useParticipantFlow = (researchId: string | undefined) => {
     
     const currentStepIndex = useParticipantStore(state => state.currentStepIndex);
     const setCurrentStepIndex = useParticipantStore(state => state.setCurrentStepIndex);
+    const storeNavigateToStep = useParticipantStore(state => state.navigateToStep);
+    const storeGoToNextStep = useParticipantStore(state => state.goToNextStep);
+    const storeSetExpandedSteps = useParticipantStore(state => state.setExpandedSteps);
+    const storeIsFlowLoading = useParticipantStore(state => state.isFlowLoading);
+    const storeSetIsFlowLoading = useParticipantStore(state => state.setIsFlowLoading);
 
     const { 
         data: researchFlowApiData, 
@@ -199,18 +204,35 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         }
         return Array.from(completedStepIndices).sort((a, b) => a - b);
     }, [expandedSteps, maxVisitedIndexFromStore, hasStepBeenAnswered]);
-    
+
+    useEffect(() => {
+        console.log(`🔄 [useParticipantFlow] Sincronizando isFlowLoading: ${isResearchFlowHookLoading}`);
+        storeSetIsFlowLoading(isResearchFlowHookLoading);
+    }, [isResearchFlowHookLoading, storeSetIsFlowLoading]);
+
+    useEffect(() => {
+        if (expandedSteps && expandedSteps.length > 0) {
+            console.log(`🔄 [useParticipantFlow] Sincronizando ${expandedSteps.length} expandedSteps con el store`);
+            storeSetExpandedSteps(expandedSteps as import('../stores/participantStore').ExpandedStep[]);
+            
+            if (currentStep === ParticipantFlowStep.LOADING_SESSION && !navigationIsLoading) {
+                console.log(`🔄 [useParticipantFlow] Actualizando currentStep a WELCOME ya que expandedSteps están listos`);
+                setCurrentStep(ParticipantFlowStep.WELCOME);
+            }
+        }
+    }, [expandedSteps, storeSetExpandedSteps, currentStep, navigationIsLoading, setCurrentStep]);
+
     return {
         currentStep,
         token: token,
         error: navigationError,
         handleLoginSuccess,
-        handleStepComplete: goToNextStep,
+        handleStepComplete: storeGoToNextStep,
         handleError,
         expandedSteps,
         currentStepIndex,
-        isFlowLoading: navigationIsLoading,
-        navigateToStep,
+        isFlowLoading: storeIsFlowLoading,
+        navigateToStep: storeNavigateToStep,
         completedRelevantSteps,
         totalRelevantSteps,
         responsesData,

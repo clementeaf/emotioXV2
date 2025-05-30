@@ -12,27 +12,31 @@ export function ProgressSidebarItem({ step, index, isCurrent, isAnswered, totalS
     // Obtener el maxVisitedIndex del store para saber hasta dónde puede navegar
     const maxVisitedIndex = useParticipantStore(state => state.maxVisitedIndex);
     
-    let dotColor, lineColor, textColor;
+    // Estados simplificados
+    let statusColor, textColor, bgColor, lineColor;
   
     if (isCurrent) {
-      dotColor = 'bg-primary-600';
-      textColor = 'text-primary-900';
-      lineColor = isAnswered ? 'bg-green-300' : 'bg-neutral-300';
+      statusColor = 'bg-neutral-900';
+      textColor = 'text-neutral-900';
+      bgColor = 'bg-neutral-100';
+      lineColor = 'bg-neutral-300';
     } else if (isAnswered) {
-      dotColor = 'bg-green-500';
+      statusColor = 'bg-green-600';
       textColor = 'text-green-800';
+      bgColor = 'hover:bg-green-50';
       lineColor = 'bg-green-300';
     } else {
-      dotColor = 'bg-neutral-300';
-      textColor = 'text-neutral-600';
+      statusColor = 'bg-neutral-300';
+      textColor = 'text-neutral-500';
+      bgColor = 'hover:bg-neutral-50';
       lineColor = 'bg-neutral-200';
     }
 
-    // Mejorar la lógica de navegación
+    // Mejorar la lógica de navegación - Los steps completados siempre deben ser navegables
     const canNavigate = !isCurrent && !!onNavigateToStep && (
-      isAnswered || 
-      index <= (maxVisitedIndex || 0) ||
-      index === 0 // Siempre permitir ir al primer paso (welcome)
+      isAnswered ||  // Si está respondido, siempre navegable
+      index <= (maxVisitedIndex || 0) || // O si está dentro del máximo visitado
+      index === 0 // O si es el primer paso (welcome)
     );
 
     if (typeof step !== 'object' || step === null || !('id' in step) || !('name' in step)) {
@@ -41,20 +45,51 @@ export function ProgressSidebarItem({ step, index, isCurrent, isAnswered, totalS
     
     const stepObj = step as { id: string; name: string };
 
+    console.log(`🔍 [ProgressSidebarItem] Lógica de navegación para step ${index}:`, {
+      stepName: stepObj.name,
+      isCurrent,
+      isAnswered,
+      maxVisitedIndex,
+      index,
+      canNavigate,
+      conditions: {
+        notCurrent: !isCurrent,
+        hasHandler: !!onNavigateToStep,
+        isAnswered,
+        isWithinMaxVisited: index <= (maxVisitedIndex || 0),
+        isFirstStep: index === 0
+      }
+    });
+
     const handleClick = () => {
+      console.log(`🔍 [ProgressSidebarItem] Click en step ${index}:`, {
+        stepName: stepObj.name,
+        isCurrent,
+        isAnswered,
+        canNavigate,
+        maxVisitedIndex,
+        onNavigateToStepExists: !!onNavigateToStep
+      });
+      
       if (canNavigate && onNavigateToStep) {
-        console.log(`Navegando al paso ${index}: ${stepObj.name}`);
+        console.log(`✅ [ProgressSidebarItem] Navegando al paso ${index}: ${stepObj.name}`);
         onNavigateToStep(index);
+      } else {
+        console.warn(`❌ [ProgressSidebarItem] No se puede navegar al paso ${index}:`, {
+          canNavigate,
+          onNavigateToStep: !!onNavigateToStep,
+          reason: !canNavigate ? 'canNavigate es false' : 'onNavigateToStep no existe'
+        });
       }
     };
 
     return (
       <div
         className={cn(
-          "relative flex items-start w-full text-left py-3 px-3 rounded-lg transition-all duration-200",
-          canNavigate && "cursor-pointer group hover:bg-primary-50 hover:shadow-sm",
+          "group relative flex items-center w-full text-left py-3 px-4 rounded-lg transition-all duration-200",
+          canNavigate && "cursor-pointer",
           !canNavigate && "cursor-default",
-          isCurrent && "bg-primary-100 ring-1 ring-primary-200 shadow-sm"
+          bgColor
         )}
         onClick={handleClick}
         role={canNavigate ? "button" : undefined}
@@ -68,57 +103,28 @@ export function ProgressSidebarItem({ step, index, isCurrent, isAnswered, totalS
         aria-disabled={!canNavigate}
         aria-label={`${canNavigate ? 'Ir a' : ''} ${stepObj.name}${isCurrent ? ' (paso actual)' : ''}${isAnswered ? ' (completado)' : ''}`}
       >
-        {/* Línea conectora */}
+        {/* Línea conectora minimalista */}
         {index < totalSteps - 1 && (
           <div
             className={cn(
-              "absolute left-[19px] top-[40px] bottom-[-12px] w-0.5 transition-colors duration-300",
+              "absolute left-[11px] top-[32px] bottom-[-4px] w-px transition-colors duration-200",
               lineColor
             )}
             aria-hidden="true"
           />
         )}
         
-        {/* Indicador de estado */}
-        <div className="flex-shrink-0 relative z-10 mr-3">
+        {/* Indicador de estado minimalista */}
+        <div className="flex-shrink-0 relative z-10 mr-4">
           <div
             className={cn(
-              "w-4 h-4 rounded-full transition-all duration-300 flex items-center justify-center ring-2 ring-white",
-              dotColor,
-              isCurrent && "ring-4 ring-primary-200 scale-110",
-              canNavigate && "group-hover:scale-105",
-              isAnswered && "shadow-md"
+              "w-2 h-2 rounded-full transition-all duration-200",
+              statusColor,
+              isCurrent && "scale-125",
+              canNavigate && "group-hover:scale-110"
             )}
             aria-current={isCurrent ? 'step' : undefined}
-          >
-            {/* Checkmark para pasos completados */}
-            {isAnswered && !isCurrent && (
-              <svg 
-                className="w-2.5 h-2.5 text-white" 
-                fill="currentColor" 
-                viewBox="0 0 20 20"
-                aria-hidden="true"
-              >
-                <path 
-                  fillRule="evenodd" 
-                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" 
-                  clipRule="evenodd" 
-                />
-              </svg>
-            )}
-            
-            {/* Número del paso para paso actual */}
-            {isCurrent && (
-              <span className="text-xs font-bold text-white">
-                {index + 1}
-              </span>
-            )}
-            
-            {/* Punto para pasos pendientes */}
-            {!isAnswered && !isCurrent && (
-              <div className="w-1.5 h-1.5 bg-white rounded-full opacity-80" />
-            )}
-          </div>
+          />
         </div>
         
         {/* Contenido del paso */}
@@ -126,46 +132,27 @@ export function ProgressSidebarItem({ step, index, isCurrent, isAnswered, totalS
           <div className="flex items-center justify-between">
             <span
               className={cn(
-                "text-sm font-medium transition-colors duration-300 leading-tight",
+                "text-sm font-medium transition-colors duration-200 leading-relaxed",
                 textColor,
-                canNavigate && "group-hover:text-primary-700",
+                canNavigate && "group-hover:text-neutral-700",
                 isCurrent && "font-semibold"
               )}
             >
               {stepObj.name}
             </span>
             
-            {/* Badge de estado */}
+            {/* Estado actual simplificado */}
             {isCurrent && (
-              <span className="ml-2 px-2 py-0.5 bg-primary-600 text-white text-xs rounded-full font-medium">
-                Actual
-              </span>
+              <div className="w-1.5 h-1.5 bg-neutral-900 rounded-full ml-2" />
             )}
           </div>
           
-          {/* Indicadores de estado */}
-          <div className="mt-1 flex items-center">
-            {isAnswered && !isCurrent && (
-              <div className="flex items-center text-xs text-green-600 font-medium">
-                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                Completado
-              </div>
-            )}
-            
-            {canNavigate && !isCurrent && !isAnswered && (
-              <span className="text-xs text-neutral-500">
-                Click para navegar
-              </span>
-            )}
-            
-            {!canNavigate && !isCurrent && !isAnswered && (
-              <span className="text-xs text-neutral-400">
-                Pendiente
-              </span>
-            )}
-          </div>
+          {/* Status text minimalista */}
+          {isAnswered && !isCurrent && (
+            <div className="text-xs text-green-600 mt-0.5 font-medium">
+              Completado
+            </div>
+          )}
         </div>
       </div>
     );
