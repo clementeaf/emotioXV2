@@ -40,10 +40,6 @@ const ParticipantFlow: React.FC = () => {
         ParticipantFlowStep.ERROR
     ].includes(currentStep);
 
-    console.log('expandedSteps:', expandedSteps);
-    console.log('currentStepIndex:', currentStepIndex);
-    console.log('currentStep:', expandedSteps && expandedSteps[currentStepIndex]);
-
     let content;
     if (isFlowLoading) {
         content = (

@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { ParticipantFlowStep, ExpandedStep } from '../../types/flow';
 import CurrentStepRenderer from './CurrentStepRenderer';
 import LoadingIndicator from '../common/LoadingIndicator';
@@ -28,20 +28,6 @@ const FlowStepContent: React.FC<FlowStepContentProps> = (props) => {
         handleError,
         responsesData,
     } = props;
-
-    // Log para debugging
-    useEffect(() => {
-        console.log('[FlowStepContent] Re-renderizando con:', {
-            currentStepEnum,
-            currentExpandedStep: currentExpandedStep ? {
-                id: currentExpandedStep.id,
-                name: currentExpandedStep.name,
-                type: currentExpandedStep.type
-            } : null,
-            isLoading,
-            hasResponses: !!responsesData
-        });
-    }, [currentStepEnum, currentExpandedStep, isLoading, responsesData]);
 
     // Memoizar la lógica de stepConfig ANTES de cualquier return condicional
     const memoizedStepConfig = useMemo(() => {

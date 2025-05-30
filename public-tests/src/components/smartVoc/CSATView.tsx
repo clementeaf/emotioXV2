@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useResponseAPI } from '../../hooks/useResponseAPI';
 import { useParticipantStore } from '../../stores/participantStore';
-import { useModuleResponses } from '../../hooks/useModuleResponses';
 
 interface CSATViewProps {
   questionText: string;
@@ -15,6 +14,8 @@ interface CSATViewProps {
   companyName?: string;
   config?: unknown;
   scaleSize?: number;
+  savedResponse?: { id?: string; response?: unknown } | null;
+  savedResponseId?: string | null;
 }
 
 const CSATView: React.FC<CSATViewProps> = ({
@@ -27,54 +28,56 @@ const CSATView: React.FC<CSATViewProps> = ({
   instructions,
   companyName,
   config,
+  savedResponse,
+  savedResponseId,
 }) => {
   
   const participantIdFromStore = useParticipantStore(state => state.participantId);
   const [selectedValue, setSelectedValue] = useState<number | null>(null);
-  const [internalModuleResponseId, setInternalModuleResponseId] = useState<string | null>(null);
+  const [internalModuleResponseId, setInternalModuleResponseId] = useState<string | null>(savedResponseId || null);
   const {
     saveOrUpdateResponse,
     isLoading: isSubmitting,
     error: submissionError,
     setError: setSubmissionError
   } = useResponseAPI({ researchId, participantId: participantIdFromStore || '' });
-  const {
-    data: moduleResponsesArray,
-    isLoading: isLoadingInitialData,
-    error: loadingError
-  } = useModuleResponses({
-    researchId,
-    participantId: participantIdFromStore || undefined,
-    autoFetch: true
-  });
 
   useEffect(() => {
-    if (!isLoadingInitialData && !loadingError && moduleResponsesArray && Array.isArray(moduleResponsesArray)) {
-      const foundResponse = moduleResponsesArray.find((r: unknown) => {
-        if (typeof r !== 'object' || r === null) return false;
-        const resp = r as { stepType?: string; moduleId?: string; stepId?: string };
-        return (resp.stepType === stepType && resp.moduleId === (typeof config === 'object' && config !== null && 'moduleId' in config ? (config as { moduleId?: string }).moduleId : undefined)) ||
-          (resp.stepId === stepId);
-      });
-
-      if (foundResponse) {
-        let value = null;
-        if (foundResponse.response?.data?.response?.value !== undefined) {
-          value = foundResponse.response.data.response.value;
-        } else if (foundResponse.response?.value !== undefined) {
-          value = foundResponse.response.value;
+    console.log('[CSATView] Respuesta guardada recibida:', savedResponse);
+    
+    if (savedResponse?.response) {
+      let value = null;
+      const response = savedResponse.response;
+      
+      if (typeof response === 'object' && response !== null) {
+        const respObj = response as Record<string, unknown>;
+        if ('value' in respObj && typeof respObj.value === 'number') {
+          value = respObj.value;
+        } else if ('data' in respObj && typeof respObj.data === 'object' && respObj.data !== null) {
+          const dataObj = respObj.data as Record<string, unknown>;
+          if ('response' in dataObj && typeof dataObj.response === 'object' && dataObj.response !== null) {
+            const innerResp = dataObj.response as Record<string, unknown>;
+            if ('value' in innerResp && typeof innerResp.value === 'number') {
+              value = innerResp.value;
+            }
+          } else if ('value' in dataObj && typeof dataObj.value === 'number') {
+            value = dataObj.value;
+          }
         }
-        
-        if (typeof value === 'number') {
-          setSelectedValue(value);
-        }
-        setInternalModuleResponseId(foundResponse.id || null);
-      } else {
-        setSelectedValue(null);
-        setInternalModuleResponseId(null);
+      } else if (typeof response === 'number') {
+        value = response;
+      }
+      
+      if (typeof value === 'number' && value >= 1 && value <= 5) {
+        console.log('[CSATView] Valor cargado:', value);
+        setSelectedValue(value);
       }
     }
-  }, [moduleResponsesArray, isLoadingInitialData, loadingError, stepId, stepType, config]);
+    
+    if (savedResponseId) {
+      setInternalModuleResponseId(savedResponseId);
+    }
+  }, [savedResponse, savedResponseId]);
 
   const satisfactionLevels = [
     { value: 1, label: 'Muy insatisfecho' },
@@ -137,14 +140,6 @@ const CSATView: React.FC<CSATViewProps> = ({
     buttonText = 'Guardar y continuar';
   }
 
-  if (isLoadingInitialData) {
-    return (
-      <div className="flex flex-col items-center justify-center w-full h-full bg-white p-8">
-        <p>Cargando datos de CSAT...</p>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col items-center justify-center w-full h-full bg-white p-8">
       <div className="max-w-2xl w-full flex flex-col items-center">
@@ -176,16 +171,16 @@ const CSATView: React.FC<CSATViewProps> = ({
           ))}
         </div>
 
-        {(submissionError || loadingError) && (
+        {submissionError && (
           <p className="text-sm text-red-600 mb-4 text-center">
-            Error: {submissionError || loadingError}
+            Error: {submissionError}
           </p>
         )}
 
         <button
           className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-10 rounded-md w-fit transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={handleSubmit}
-          disabled={selectedValue === null || isSubmitting || isLoadingInitialData}
+          disabled={selectedValue === null || isSubmitting}
         >
           {buttonText}
         </button>

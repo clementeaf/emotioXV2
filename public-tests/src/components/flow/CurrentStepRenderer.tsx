@@ -5,6 +5,7 @@ import { CurrentStepProps } from './types';
 import { stepComponentMap } from './steps';
 import { ApiClient, APIStatus } from '../../lib/api';
 import { useParticipantStore } from '../../stores/participantStore';
+import { useModuleResponses } from '../../hooks/useModuleResponses';
 
 const SMART_VOC_ROUTER_STEP_TYPE = 'smart_voc_module';
 const DEMOGRAPHIC_STEP_TYPE = 'demographic';
@@ -27,9 +28,66 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
     const [isLoadingResponses, setIsLoadingResponses] = useState<boolean>(false);
 
     const participantIdFromStore = useParticipantStore(state => state.participantId);
+    const responsesDataFromStore = useParticipantStore(state => state.responsesData);
     const apiClient = useMemo(() => new ApiClient(), []);
 
+    // Usar useModuleResponses para obtener respuestas centralizadas
+    const { 
+        data: moduleResponsesFromAPI, 
+        isLoading: isLoadingModuleResponses,
+        error: moduleResponsesError 
+    } = useModuleResponses({
+        researchId: researchId || undefined,
+        participantId: participantIdFromStore || undefined,
+        autoFetch: !!(researchId && participantIdFromStore),
+    });
+
     console.log('CurrentStepRenderer props:', { stepType, stepConfig, stepId, stepName });
+    console.log('CurrentStepRenderer moduleResponses:', { moduleResponsesFromAPI, isLoadingModuleResponses });
+
+    // Función helper para encontrar respuesta por stepId/stepType
+    const findSavedResponse = useCallback((searchStepId: string, searchStepType: string) => {
+        // Buscar en respuestas del store local primero
+        const localResponses = responsesDataFromStore?.modules?.all_steps || [];
+        let foundResponse = localResponses.find(resp => 
+            resp.id === searchStepId || 
+            (resp.stepType === searchStepType && resp.stepTitle === stepName)
+        );
+
+        // Si no se encuentra localmente, buscar en respuestas de la API
+        if (!foundResponse && Array.isArray(moduleResponsesFromAPI)) {
+            const apiResponse = (moduleResponsesFromAPI as unknown[]).find((resp: unknown) => {
+                if (typeof resp !== 'object' || resp === null) return false;
+                const r = resp as { id?: string; stepType?: string; stepTitle?: string; stepId?: string };
+                return r.id === searchStepId || 
+                       r.stepId === searchStepId ||
+                       (r.stepType === searchStepType && r.stepTitle === stepName) ||
+                       (r.stepType === searchStepType);
+            });
+            
+            // Convertir respuesta de API al formato esperado
+            if (apiResponse && typeof apiResponse === 'object') {
+                const apiResp = apiResponse as { 
+                    id?: string; 
+                    stepType?: string; 
+                    stepTitle?: string; 
+                    response?: unknown;
+                    createdAt?: string;
+                    updatedAt?: string;
+                };
+                foundResponse = {
+                    id: apiResp.id || searchStepId,
+                    stepType: apiResp.stepType || searchStepType,
+                    stepTitle: apiResp.stepTitle || stepName || '',
+                    response: apiResp.response,
+                    createdAt: apiResp.createdAt || new Date().toISOString(),
+                    updatedAt: apiResp.updatedAt || new Date().toISOString(),
+                };
+            }
+        }
+
+        return foundResponse || null;
+    }, [responsesDataFromStore, moduleResponsesFromAPI, stepName]);
 
     useEffect(() => {
         if (stepConfig && researchId && participantIdFromStore && stepId &&
@@ -140,6 +198,10 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
             currentConfigToUse = enrichedStepConfig;
         }
 
+        // Buscar respuesta guardada para este step específico
+        const savedResponse = findSavedResponse(stepId || '', stepType);
+        console.log(`[CurrentStepRenderer] Respuesta encontrada para ${stepId} (${stepType}):`, savedResponse);
+
         const baseProps = {
             stepType,
             stepId,
@@ -150,6 +212,10 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
             onStepComplete: onStepComplete || (() => {}),
             onError: handleError,
             isMock: isGenerallyMock,
+            // Pasar respuesta guardada a todos los componentes
+            savedResponse: savedResponse || null,
+            // Pasar también el ID de respuesta para actualizaciones
+            savedResponseId: savedResponse ? savedResponse.id : null,
         };
 
         const getStringProp = (obj: unknown, key: string): string | undefined => {
@@ -160,6 +226,15 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
             return undefined;
         };
 
+        // Agregar respuesta guardada a la configuración si existe
+        if (savedResponse && currentConfigToUse) {
+            currentConfigToUse = {
+                ...currentConfigToUse,
+                savedResponses: savedResponse.response,
+                savedResponseId: savedResponse.id,
+            };
+        }
+
         if (stepType === 'smartvoc_csat' || stepType === 'smartvoc_ces' || stepType === 'smartvoc_nps' || stepType === 'smartvoc_cv' || stepType === 'smartvoc_nev') {
             return {
                 ...baseProps,
@@ -169,6 +244,8 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
                 instructions: getStringProp(currentConfigToUse, 'instructions'),
                 companyName: getStringProp(currentConfigToUse, 'companyName'),
                 moduleId: stepId,
+                // Pasar configuración específica para SmartVOC
+                config: currentConfigToUse,
                 ...(stepType === 'smartvoc_csat' ? { onStepComplete: baseProps.onStepComplete } : { onNext: baseProps.onStepComplete }),
             };
         }
@@ -178,19 +255,26 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
             if (stepType !== 'smartvoc_csat' && stepType !== 'smartvoc_ces' && stepType !== 'smartvoc_nps') {
                 componentSpecificProps.stepConfig = currentConfigToUse;
             }
+            // Asegurar que config se pasa a todos los componentes
+            componentSpecificProps.config = currentConfigToUse;
             return componentSpecificProps;
         }
 
         return baseProps;
-    }, [stepType, stepConfig, stepId, stepName, researchId, token, onLoginSuccess, onStepComplete, handleError, enrichedStepConfig]);
+    }, [stepType, stepConfig, stepId, stepName, researchId, token, onLoginSuccess, onStepComplete, handleError, enrichedStepConfig, findSavedResponse]);
 
     const renderContent = useCallback(() => {
-        if (error) {
-            return <div className="p-6 text-center text-red-500">Error al cargar datos: {error}</div>;
+        if (error || moduleResponsesError) {
+            return <div className="p-6 text-center text-red-500">Error al cargar datos: {error || moduleResponsesError}</div>;
         }
 
         if ((stepType === SMART_VOC_ROUTER_STEP_TYPE || stepType === DEMOGRAPHIC_STEP_TYPE) && isLoadingResponses) {
             return <div className="w-full h-full flex items-center justify-center p-6 text-center text-neutral-500">Cargando datos previos...</div>;
+        }
+
+        // Mostrar loading para otros tipos de step si están cargando respuestas
+        if (isLoadingModuleResponses && stepType !== SMART_VOC_ROUTER_STEP_TYPE && stepType !== DEMOGRAPHIC_STEP_TYPE) {
+            return <div className="w-full h-full flex items-center justify-center p-6 text-center text-neutral-500">Cargando respuestas...</div>;
         }
 
         const ComponentToRender = stepComponentMap[stepType];
@@ -199,7 +283,7 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
             const warningMessage = (finalMappedProps as { isMock?: boolean }).isMock ? `Configuración para '${stepType}' podría estar incompleta o usando datos de prueba.` : undefined;
 
             return renderStepWithWarning(
-                <ComponentToRender {...(finalMappedProps as any)} key={stepId} />,
+                <ComponentToRender {...(finalMappedProps as any)} key={`${stepId}-${stepType}`} />,
                 Boolean((finalMappedProps as { isMock?: boolean }).isMock),
                 warningMessage
             );
@@ -207,7 +291,7 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
             console.warn(`[CurrentStepRenderer] Tipo de paso no manejado: ${stepType}`);
             return <RenderError stepType={stepType} />;
         }
-    }, [error, stepType, finalMappedProps, renderStepWithWarning, isLoadingResponses, stepId]);
+    }, [error, moduleResponsesError, stepType, finalMappedProps, renderStepWithWarning, isLoadingResponses, isLoadingModuleResponses, stepId]);
 
     return (
         <Suspense fallback={<div className="w-full h-full flex items-center justify-center p-6 text-center text-neutral-500">Cargando módulo...</div>}>

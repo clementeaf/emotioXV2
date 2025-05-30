@@ -4,15 +4,21 @@ import QuestionHeader from '../common/QuestionHeader';
 import TextAreaField from '../../common/TextAreaField';
 import { useResponseAPI } from '../../../hooks/useResponseAPI';
 import { useParticipantStore } from '../../../stores/participantStore';
-import { useModuleResponses } from '../../../hooks/useModuleResponses';
-import { ModuleResponse } from '../../../stores/participantStore';
 
 interface LongTextViewProps {
   config: CognitiveQuestion;
   onStepComplete?: (answer?: unknown) => void;
+  // Nuevas props desde CurrentStepRenderer
+  savedResponse?: { id?: string; response?: unknown } | null;
+  savedResponseId?: string | null;
 }
 
-export const LongTextView: React.FC<LongTextViewProps> = ({ config, onStepComplete }) => {
+export const LongTextView: React.FC<LongTextViewProps> = ({ 
+  config, 
+  onStepComplete,
+  savedResponse,
+  savedResponseId,
+}) => {
   const id = config.id || '';
   const type = config.type || 'long_text';
   const title = config.title || 'Pregunta';
@@ -24,24 +30,30 @@ export const LongTextView: React.FC<LongTextViewProps> = ({ config, onStepComple
   const researchId = useParticipantStore(state => state.researchId) || '';
   const participantId = useParticipantStore(state => state.participantId) || '';
 
-  // Cargar todas las respuestas previas
-  const { data: moduleResponsesArray, isLoading } = useModuleResponses({ researchId, participantId, autoFetch: true });
-  console.log('moduleResponsesArray:', moduleResponsesArray); 
-
-  // Buscar la respuesta previa para este step (más robusto)
-  const previousResponseObj = Array.isArray(moduleResponsesArray)
-    ? (moduleResponsesArray as ModuleResponse[]).find(
-        (r: ModuleResponse) =>
-          (r.stepType === (config as { type?: string }).type || r.stepType === (config as { stepType?: string }).stepType) &&
-          ((r.response as { questionId?: string })?.questionId === id ||
-            (typeof ((r as unknown) as Record<string, unknown>).stepId === 'string' && ((r as unknown) as Record<string, unknown>).stepId === id) ||
-            r.stepTitle === title)
-      )
-    : undefined;
-
-  const previousValue = previousResponseObj && typeof previousResponseObj.response === 'object' && previousResponseObj.response !== null && 'value' in previousResponseObj.response
-    ? (previousResponseObj.response as { value?: string }).value ?? ''
-    : '';
+  // Obtener valor previo desde la respuesta pasada desde CurrentStepRenderer
+  const previousValue = React.useMemo(() => {
+    console.log('[LongTextView] Respuesta guardada recibida:', savedResponse);
+    
+    if (savedResponse?.response) {
+      const response = savedResponse.response;
+      
+      // Intentar extraer el valor de diferentes estructuras posibles
+      if (typeof response === 'object' && response !== null) {
+        const respObj = response as Record<string, unknown>;
+        if ('value' in respObj && typeof respObj.value === 'string') {
+          return respObj.value;
+        } else if ('text' in respObj && typeof respObj.text === 'string') {
+          return respObj.text;
+        } else if ('questionId' in respObj && 'value' in respObj && typeof respObj.value === 'string') {
+          return respObj.value;
+        }
+      } else if (typeof response === 'string') {
+        return response;
+      }
+    }
+    
+    return '';
+  }, [savedResponse]);
 
   // Estado local del textarea
   const [value, setValue] = useState<string>('');
@@ -51,15 +63,15 @@ export const LongTextView: React.FC<LongTextViewProps> = ({ config, onStepComple
   // Solo setear si el usuario no ha escrito nada
   useEffect(() => {
     if (previousValue && value === '') {
+      console.log('[LongTextView] Cargando valor previo:', previousValue);
       setValue(previousValue);
     }
-    // eslint-disable-next-line
-  }, [previousValue, id]);
+  }, [previousValue, value]);
 
   // Logs para depuración
   useEffect(() => {
-    console.log('[LongTextView] moduleResponsesArray:', moduleResponsesArray, 'id:', id, 'title:', title, 'type:', config.type, 'previousValue:', previousValue);
-  }, [moduleResponsesArray, id, title, config.type, previousValue]);
+    console.log('[LongTextView] id:', id, 'title:', title, 'type:', config.type, 'previousValue:', previousValue);
+  }, [id, title, config.type, previousValue]);
 
   // API para guardar/actualizar
   const { saveOrUpdateResponse } = useResponseAPI({ researchId, participantId });
@@ -77,14 +89,14 @@ export const LongTextView: React.FC<LongTextViewProps> = ({ config, onStepComple
     setIsSubmitting(true);
     try {
       let result;
-      if (previousResponseObj && 'id' in previousResponseObj && typeof previousResponseObj.id === 'string') {
+      if (savedResponseId) {
         // Actualizar respuesta existente
         result = await saveOrUpdateResponse(
           id,
           type,
           title,
           { value, questionId: id },
-          previousResponseObj.id
+          savedResponseId
         );
       } else {
         // Crear nueva respuesta
@@ -107,10 +119,6 @@ export const LongTextView: React.FC<LongTextViewProps> = ({ config, onStepComple
     }
   };
 
-  if (isLoading) {
-    return <div className="text-center py-8">Cargando respuesta previa...</div>;
-  }
-
   return (
     <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full mx-auto">
       <QuestionHeader title={title} description={description} required={required} />
@@ -127,7 +135,7 @@ export const LongTextView: React.FC<LongTextViewProps> = ({ config, onStepComple
         onClick={handleSubmit}
         disabled={isSubmitting}
       >
-        {previousResponseObj && 'id' in previousResponseObj && typeof previousResponseObj.id === 'string' ? 'Actualizar y continuar' : 'Guardar y continuar'}
+        {savedResponseId ? 'Actualizar y continuar' : 'Guardar y continuar'}
       </button>
     </div>
   );

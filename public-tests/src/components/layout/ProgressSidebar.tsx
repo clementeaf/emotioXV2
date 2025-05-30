@@ -4,7 +4,7 @@ import { useParticipantStore } from '../../stores/participantStore';
 import { useAnsweredStepIds } from './useAnsweredStepIds';
 import { ProgressSidebarItem } from './ProgressSidebarItem';
 import LoadingIndicator from '../common/LoadingIndicator';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 
 export function ProgressSidebar({ 
   steps, 
@@ -19,16 +19,84 @@ export function ProgressSidebar({
   // Estado para mostrar/ocultar debug info
   const [showDebug, setShowDebug] = useState(false);
 
-  const { data: moduleResponsesData, isLoading: isResponsesLoading } = useModuleResponses({
+  const { data: moduleResponsesData, isLoading: isResponsesLoading, error: moduleResponsesError } = useModuleResponses({
     researchId: researchId || undefined,
     participantId: participantId || undefined,
     autoFetch: !!(researchId && participantId),
   });
 
+  // Logs detallados de useModuleResponses
+  useEffect(() => {
+    console.group('🔍 [ProgressSidebar] useModuleResponses Debug');
+    console.log('📋 Parámetros de entrada:', {
+      researchId,
+      participantId,
+      autoFetch: !!(researchId && participantId),
+    });
+    console.log('⏳ Estado de carga:', {
+      isResponsesLoading,
+      moduleResponsesError: moduleResponsesError || 'Sin errores',
+    });
+    console.log('📊 Datos recibidos:', {
+      moduleResponsesData,
+      tipoDeRespuesta: typeof moduleResponsesData,
+      esArray: Array.isArray(moduleResponsesData),
+      cantidad: Array.isArray(moduleResponsesData) ? moduleResponsesData.length : 'No es array',
+    });
+    
+    if (Array.isArray(moduleResponsesData) && moduleResponsesData.length > 0) {
+      console.log('📝 Primeras 3 respuestas:', moduleResponsesData.slice(0, 3));
+      console.log('🏷️ Tipos de step encontrados:', 
+        [...new Set(moduleResponsesData.map((resp: unknown) => {
+          if (typeof resp === 'object' && resp !== null && 'stepType' in resp) {
+            return (resp as { stepType?: string }).stepType;
+          }
+          return 'tipo-desconocido';
+        }))]
+      );
+      console.log('🆔 IDs de step encontrados:', 
+        moduleResponsesData.map((resp: unknown) => {
+          if (typeof resp === 'object' && resp !== null) {
+            const r = resp as { id?: string; stepId?: string };
+            return r.id || r.stepId || 'sin-id';
+          }
+          return 'objeto-inválido';
+        }).slice(0, 10) // Solo los primeros 10
+      );
+    }
+    
+    console.log('🏪 Store local responsesData:', {
+      responsesData,
+      allSteps: responsesData?.modules?.all_steps?.length || 0,
+      cognitive: responsesData?.modules?.cognitive_task?.length || 0,
+      smartvoc: responsesData?.modules?.smartvoc?.length || 0,
+    });
+    
+    console.groupEnd();
+  }, [moduleResponsesData, isResponsesLoading, moduleResponsesError, researchId, participantId, responsesData]);
+
   // Combinar datos del store local y de la API para obtener una vista completa de los pasos respondidos
   const combinedResponsesData = useMemo(() => {
+    console.group('🔄 [ProgressSidebar] Combinando respuestas');
+    
     const localResponses = responsesData?.modules?.all_steps || [];
     const apiResponses = (moduleResponsesData as unknown[]) || [];
+    
+    console.log('📂 Respuestas locales:', {
+      cantidad: localResponses.length,
+      respuestas: localResponses.map(r => ({ id: r.id, stepType: r.stepType, stepTitle: r.stepTitle }))
+    });
+    
+    console.log('🌐 Respuestas de API:', {
+      cantidad: apiResponses.length,
+      respuestas: apiResponses.map((r: unknown) => {
+        if (typeof r === 'object' && r !== null) {
+          const resp = r as { id?: string; stepType?: string; stepTitle?: string };
+          return { id: resp.id, stepType: resp.stepType, stepTitle: resp.stepTitle };
+        }
+        return { error: 'objeto-inválido' };
+      })
+    });
     
     // Combinar y deduplicar respuestas
     const combined = [...localResponses, ...apiResponses];
@@ -41,6 +109,16 @@ export function ProgressSidebar({
       });
     });
     
+    console.log('🎯 Resultado combinado:', {
+      totalCombinadas: combined.length,
+      totalUnicas: unique.length,
+      respuestasFinales: unique.map(r => {
+        const resp = r as { id?: string; stepType?: string; stepTitle?: string };
+        return { id: resp.id, stepType: resp.stepType, stepTitle: resp.stepTitle };
+      })
+    });
+    
+    console.groupEnd();
     return unique;
   }, [responsesData?.modules?.all_steps, moduleResponsesData]);
 
@@ -63,6 +141,14 @@ export function ProgressSidebar({
     const completedRelevant = relevantAnswered.length;
     const totalRelevant = relevantSteps.length;
     const percentage = totalRelevant > 0 ? Math.round((completedRelevant / totalRelevant) * 100) : 0;
+    
+    console.log('📊 [ProgressSidebar] Cálculo de progreso:', {
+      totalSteps: steps.length,
+      relevantSteps: totalRelevant,
+      answeredStepIds: answeredStepIds.length,
+      relevantAnswered: completedRelevant,
+      percentage
+    });
     
     return {
       completedSteps: completedRelevant,
@@ -140,6 +226,10 @@ export function ProgressSidebar({
             <div>Pasos respondidos: {answeredStepIds.length}</div>
             <div>Respuestas cargadas: {combinedResponsesData.length}</div>
             <div>Total pasos: {steps.length}</div>
+            <div className="font-medium mt-2">useModuleResponses:</div>
+            <div>Loading: {isResponsesLoading ? 'Sí' : 'No'}</div>
+            <div>Error: {moduleResponsesError || 'Ninguno'}</div>
+            <div>Datos: {Array.isArray(moduleResponsesData) ? `${moduleResponsesData.length} items` : typeof moduleResponsesData}</div>
           </div>
         </div>
       )}
