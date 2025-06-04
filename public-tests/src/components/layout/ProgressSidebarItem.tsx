@@ -45,34 +45,9 @@ export function ProgressSidebarItem({ step, index, isCurrent, isAnswered, totalS
     
     const stepObj = step as { id: string; name: string };
 
-    console.log(`🔍 [ProgressSidebarItem] Lógica de navegación para step ${index}:`, {
-      stepName: stepObj.name,
-      isCurrent,
-      isAnswered,
-      maxVisitedIndex,
-      index,
-      canNavigate,
-      conditions: {
-        notCurrent: !isCurrent,
-        hasHandler: !!onNavigateToStep,
-        isAnswered,
-        isWithinMaxVisited: index <= (maxVisitedIndex || 0),
-        isFirstStep: index === 0
-      }
-    });
-
     const handleClick = () => {
-      console.log(`🔍 [ProgressSidebarItem] Click en step ${index}:`, {
-        stepName: stepObj.name,
-        isCurrent,
-        isAnswered,
-        canNavigate,
-        maxVisitedIndex,
-        onNavigateToStepExists: !!onNavigateToStep
-      });
       
       if (canNavigate && onNavigateToStep) {
-        console.log(`✅ [ProgressSidebarItem] Navegando al paso ${index}: ${stepObj.name}`);
         onNavigateToStep(index);
       } else {
         console.warn(`❌ [ProgressSidebarItem] No se puede navegar al paso ${index}:`, {

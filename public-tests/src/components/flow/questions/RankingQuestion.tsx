@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useParticipantStore } from "../../../stores/participantStore";
 import { useResponseAPI } from "../../../hooks/useResponseAPI";
 import { ApiClient, APIStatus } from "../../../lib/api";
+import { getStandardButtonText } from '../../../utils/formHelpers';
 
 // Componente para Ranking
 export const RankingQuestion: React.FC<{
@@ -62,10 +63,8 @@ export const RankingQuestion: React.FC<{
 
     // useEffect para cargar datos existentes o inicializar desde config
     useEffect(() => {
-        console.log(`[RankingQuestion Load] useEffect RUNNING. isApiDisabled: ${isApiDisabled}, researchId: ${researchId}, participantId: ${participantId}, stepType: ${stepType}`);
 
         if (isApiDisabled) {
-            console.log('[RankingQuestion Load] API is disabled. Using mock items.');
             // Usar los items que vienen en config, que serían los mocks definidos en CurrentStepRenderer
             setRankedItems([...itemsFromConfig]); 
             setDataExisted(false);
@@ -96,9 +95,7 @@ export const RankingQuestion: React.FC<{
 
         apiClient.getModuleResponses(researchId, participantId)
             .then(apiResponse => {
-                console.log('[RankingQuestion Load] API Response received:', apiResponse);
                 let finalOrderToSet: string[] = [...itemsFromConfig]; // Default: use items passed from parent
-                let usedApiData = false;
 
                 if (
                   !apiResponse.error &&
@@ -110,30 +107,24 @@ export const RankingQuestion: React.FC<{
                     const fullDocument = (apiResponse.data as { data: { id: string, responses: Array<{id: string, stepType: string, response: unknown}> } }).data;
                     setDocumentId(fullDocument.id);
                     const foundStepData = fullDocument.responses.find(item => item.stepType === stepType);
-                    
-                    console.log('[RankingQuestion Load] Found step data from API:', foundStepData);
 
                     if (foundStepData && Array.isArray(foundStepData.response) && foundStepData.response.length > 0) {
                         const savedOrderFromApi = foundStepData.response as string[];
 
                         if (savedOrderFromApi.every(item => typeof item === 'string')) {
-                            console.log('[RankingQuestion Load] API provided valid saved order. Using it directly:', savedOrderFromApi);
                             finalOrderToSet = savedOrderFromApi;
                             setModuleResponseId(foundStepData.id || null);
                             setDataExisted(true);
-                            usedApiData = true;
                         } else {
                              console.warn('[RankingQuestion Load] API response for step exists, but response format is invalid (not array of strings). Using order from config as fallback.');
                              setDataExisted(false);
                              setModuleResponseId(null);
                         }
                     } else {
-                        console.log('[RankingQuestion Load] No step data found in API response for this stepType (or response was empty). Using order from config.');
                         setDataExisted(false);
                         setModuleResponseId(null);
                     }
                 } else {
-                    console.log('[RankingQuestion Load] API response error or no data.data field. Using order from config.');
                     if (apiResponse.apiStatus !== APIStatus.NOT_FOUND) {
                         setApiError(apiResponse.message || 'Error cargando datos del módulo.');
                     }
@@ -142,7 +133,6 @@ export const RankingQuestion: React.FC<{
                      setModuleResponseId(null);
                 }
                 
-                console.log(`[RankingQuestion Load] Final order to set (API data used: ${usedApiData}):`, finalOrderToSet);
                 setRankedItems(finalOrderToSet);
             })
             .catch(error => {
@@ -151,24 +141,19 @@ export const RankingQuestion: React.FC<{
                 setDataExisted(false);
                 setModuleResponseId(null);
                 const finalFallback = [...itemsFromConfig]; // Fallback siempre a items de config en error
-                console.log('[RankingQuestion Load] Setting fallback order due to exception:', finalFallback);
                 setRankedItems(finalFallback);
             })
             .finally(() => {
-                console.log('[RankingQuestion Load] useEffect API call finished.');
                 setDataLoading(false);
             });
     }, [researchId, participantId, stepType, isApiDisabled, itemsFromConfig]);
 
     // Texto dinámico para el botón
-    let buttonText = 'Siguiente';
-    if (isSaving || isApiLoading) {
-        buttonText = 'Guardando...';
-    } else if (!isApiDisabled && dataExisted && moduleResponseId) {
-        buttonText = 'Actualizar y continuar';
-    } else { // Cubre (!isApiDisabled && !dataExisted) O (isApiDisabled)
-        buttonText = 'Guardar y continuar';
-    }
+    const buttonText = getStandardButtonText({
+        isSaving: isSaving,
+        isLoading: false,
+        hasExistingData: !!moduleResponseId && rankedItems.length > 0
+    });
 
     const handleSaveAndProceed = async () => {
         if (isApiDisabled) {
@@ -201,13 +186,9 @@ ${rankedItemsString}`);
             let operationResult: unknown; // Usar 'unknown' en vez de 'any' para robustecer el tipado
 
             if (dataExisted && moduleResponseId) {
-                console.log('[RankingQuestion Save] Attempting UPDATE with:', payload);
                 operationResult = await updateResponse(moduleResponseId, payload.response);
-                console.log('[RankingQuestion Save] UPDATE result:', operationResult);
             } else {
-                 console.log('[RankingQuestion Save] Attempting SAVE with:', payload);
                  operationResult = await saveResponse(currentStepIdForApi, stepType, currentStepNameForApi, payload.response);
-                 console.log('[RankingQuestion Save] SAVE result:', operationResult);
                  // If save was successful and gave us IDs, update state (check common patterns for success/data)
                  if (hasSuccess(operationResult) && operationResult.success === true) { // Assuming a 'success' boolean property
                     if (hasData(operationResult) && typeof (operationResult.data as { moduleResponseId?: unknown }).moduleResponseId === 'string') {
@@ -227,7 +208,6 @@ ${rankedItemsString}`);
                 setApiError(typeof apiHookError === 'string' ? apiHookError : (hasMessage(operationResult) ? operationResult.message : 'Error en la operación de guardado.'));
                 success = false;
             } else if (operationResult) {
-                console.log('[RankingQuestion Save] Operation seems successful (hook clear, received result).');
                 success = true;
                 setApiError(null); // Clear any previous form error
             } else {
@@ -240,7 +220,6 @@ ${rankedItemsString}`);
 
             // Post-operation actions
             if (success) {
-                console.log('[RankingQuestion Save] Save/Update successful. Calling onStepComplete.');
                 onStepComplete(payload.response); // Call callback with the saved data
                 // Navigation should likely be handled by the parent component reacting to onStepComplete
             } else if (!apiError) {
@@ -269,7 +248,6 @@ ${rankedItemsString}`);
             const currentItems = [...rankedItems]; // Copia actual
             const itemToMove = currentItems.splice(index, 1)[0]; // Quita el item
             currentItems.splice(index - 1, 0, itemToMove); // Insértalo en la nueva posición
-            console.log('[RankingQuestion] moveItemUp - setting new items:', currentItems);
             setRankedItems(currentItems);
         }
     };
@@ -280,15 +258,9 @@ ${rankedItemsString}`);
             const currentItems = [...rankedItems]; // Copia actual
             const itemToMove = currentItems.splice(index, 1)[0]; // Quita el item
             currentItems.splice(index + 1, 0, itemToMove); // Insértalo en la nueva posición
-             console.log('[RankingQuestion] moveItemDown - setting new items:', currentItems);
             setRankedItems(currentItems);
         }
     };
-    
-    // useEffect para observar cambios en rankedItems (ya existente y útil)
-    useEffect(() => {
-        console.log('[RankingQuestion] rankedItems state updated:', rankedItems);
-    }, [rankedItems]);
 
     if (dataLoading && !isApiDisabled) {
         return (

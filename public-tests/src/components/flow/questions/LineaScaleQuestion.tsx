@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParticipantStore } from '../../../stores/participantStore';
 import { useResponseAPI } from '../../../hooks/useResponseAPI';
 import { ApiClient, APIStatus } from '../../../lib/api';
+import { getStandardButtonText } from '../../../utils/formHelpers';
 
 // MODIFICADO: Definir interfaz para props
 interface LineaScaleQuestionProps {
@@ -136,17 +137,13 @@ export const LinearScaleQuestion: React.FC<LineaScaleQuestionProps> = ({
             });
     }, [researchId, participantId, stepType, isMock, savedResponses]);
 
-    // Texto dinámico para el botón
-    let buttonText = 'Siguiente';
-    if (isNavigating) {
-        buttonText = 'Pasando al siguiente módulo...';
-    } else if (isSaving || isApiLoading) {
-        buttonText = 'Guardando...';
-    } else if (!isMock && dataExisted && moduleResponseId) {
-        buttonText = 'Actualizar y continuar';
-    } else if (!isMock) {
-        buttonText = 'Guardar y continuar';
-    }
+    // Replace the manual button text logic (around line 139) with:
+    const buttonText = getStandardButtonText({
+        isSaving: isSaving,
+        isLoading: false,
+        hasExistingData: !!moduleResponseId && selectedValue !== null,
+        isNavigating: isNavigating
+    });
 
     const handleSaveAndProceed = async () => {
         if (isMock) {

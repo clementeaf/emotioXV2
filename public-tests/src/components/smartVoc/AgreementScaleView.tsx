@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParticipantStore } from '../../stores/participantStore';
-import { useResponseAPI } from '../../hooks/useResponseAPI';
 import { useModuleResponses } from '../../hooks/useModuleResponses';
+import { useResponseAPI } from '../../hooks/useResponseAPI';
+import { getStandardButtonText } from '../../utils/formHelpers';
 
 interface AgreementScaleViewProps {
   questionText: string;
@@ -55,9 +56,27 @@ const AgreementScaleView: React.FC<AgreementScaleViewProps> = ({
       // Type guard robusto para evitar any
       const foundResponse = moduleResponsesArray.find((r: unknown) => {
         if (typeof r !== 'object' || r === null) return false;
-        const resp = r as { stepType?: unknown; stepId?: unknown };
-        return resp.stepType === stepType && resp.stepId === stepId;
+        const resp = r as { 
+          stepType?: unknown; 
+          stepTitle?: unknown; 
+          id?: unknown;
+          stepId?: unknown; 
+          moduleId?: unknown 
+        };
+        
+        // Buscar por múltiples criterios para máxima compatibilidad
+        return (
+          // Por stepType exacto
+          (resp.stepType === stepType) ||
+          // Por stepId si coincide
+          (resp.stepId === stepId) ||
+          // Por stepTitle si contiene el stepName
+          (typeof resp.stepTitle === 'string' && resp.stepTitle.includes(stepName)) ||
+          // Por id si coincide con stepId
+          (resp.id === stepId)
+        );
       });
+      
       if (
         foundResponse &&
         typeof foundResponse === 'object' &&
@@ -67,18 +86,21 @@ const AgreementScaleView: React.FC<AgreementScaleViewProps> = ({
         (foundResponse as { response?: { value?: unknown } }).response !== null &&
         typeof (foundResponse as { response?: { value?: unknown } }).response?.value === 'number'
       ) {
-        setSelectedValue((foundResponse as { response: { value: number } }).response.value);
+        const responseValue = (foundResponse as { response: { value: number } }).response.value;
+        console.log(`[AgreementScaleView] Cargando respuesta existente para ${stepId}:`, responseValue);
+        setSelectedValue(responseValue);
         setInternalModuleResponseId(
           'id' in foundResponse && typeof (foundResponse as { id?: unknown }).id === 'string'
             ? (foundResponse as { id: string }).id
             : null
         );
       } else {
+        console.log(`[AgreementScaleView] No se encontró respuesta previa para ${stepId}`);
         setSelectedValue(null);
         setInternalModuleResponseId(null);
       }
     }
-  }, [moduleResponsesArray, isLoadingInitialData, loadingError, stepId, stepType]);
+  }, [moduleResponsesArray, isLoadingInitialData, loadingError, stepId, stepType, stepName]);
 
   const scaleButtons = Array.from({ length: scaleSize }, (_, i) => i + 1); // [1, ..., scaleSize]
 
@@ -118,14 +140,11 @@ const AgreementScaleView: React.FC<AgreementScaleViewProps> = ({
     }
   };
 
-  let buttonText = 'Siguiente';
-  if (isSubmitting) {
-    buttonText = 'Enviando...';
-  } else if (internalModuleResponseId) {
-    buttonText = 'Actualizar y continuar';
-  } else {
-    buttonText = 'Guardar y continuar';
-  }
+  const buttonText = getStandardButtonText({
+    isSaving: isSubmitting,
+    isLoading: isLoadingInitialData,
+    hasExistingData: !!internalModuleResponseId && selectedValue !== null
+  });
 
   if (isLoadingInitialData) {
     return (

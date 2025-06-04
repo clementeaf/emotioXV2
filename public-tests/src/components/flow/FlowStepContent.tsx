@@ -85,8 +85,6 @@ const FlowStepContent: React.FC<FlowStepContentProps> = (props) => {
     }
 
     if (currentExpandedStep) {
-        console.log(`[FlowStepContent] Renderizando step: ${currentExpandedStep.type} (${currentExpandedStep.name})`);
-        
         return (
             <CurrentStepRenderer 
                 key={stepKey} // Usar key única para forzar re-renderizado

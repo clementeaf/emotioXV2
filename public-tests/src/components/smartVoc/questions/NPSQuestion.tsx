@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParticipantStore } from '../../../stores/participantStore';
 import { useModuleResponses } from '../../../hooks/useModuleResponses';
 import { useResponseAPI } from '../../../hooks/useResponseAPI';
+import { getStandardButtonText } from '../../../utils/formHelpers';
 
 interface NPSConfig {
   scaleRange?: { start: number; end: number };
@@ -51,9 +52,29 @@ export const NPSQuestion: React.FC<NPSQuestionProps> = ({
     if (!isLoadingInitialData && !loadingError && moduleResponsesArray && Array.isArray(moduleResponsesArray)) {
       const foundResponse = moduleResponsesArray.find((r: unknown) => {
         if (typeof r !== 'object' || r === null) return false;
-        const resp = r as { stepId?: unknown; moduleId?: unknown };
-        return resp.stepId === questionId && resp.moduleId === moduleId;
+        const resp = r as { 
+          stepType?: unknown; 
+          stepTitle?: unknown; 
+          id?: unknown;
+          stepId?: unknown; 
+          moduleId?: unknown 
+        };
+        
+        // Buscar por múltiples criterios para máxima compatibilidad
+        return (
+          // Por stepType + moduleId (nuevo formato)
+          (resp.stepType === questionType && resp.moduleId === moduleId) ||
+          // Por stepId + moduleId (formato anterior)
+          (resp.stepId === questionId && resp.moduleId === moduleId) ||
+          // Por stepType solamente si coincide con el questionType
+          (resp.stepType === questionType) ||
+          // Por stepTitle si contiene el questionId
+          (typeof resp.stepTitle === 'string' && resp.stepTitle.includes(questionId)) ||
+          // Por id si coincide con questionId
+          (resp.id === questionId)
+        );
       });
+      
       if (foundResponse && typeof foundResponse === 'object' && foundResponse !== null) {
         let value: number | null = null;
         if (
@@ -68,6 +89,7 @@ export const NPSQuestion: React.FC<NPSQuestionProps> = ({
           value = (foundResponse as { response: { value: number } }).response?.value;
         }
         if (value !== null) {
+          console.log(`[NPSQuestion] Cargando respuesta existente para ${questionId}:`, value);
           setSelectedValue(value);
         }
         setInternalModuleResponseId(
@@ -76,11 +98,12 @@ export const NPSQuestion: React.FC<NPSQuestionProps> = ({
             : null
         );
       } else {
+        console.log(`[NPSQuestion] No se encontró respuesta previa para ${questionId}`);
         setSelectedValue(null);
         setInternalModuleResponseId(null);
       }
     }
-  }, [moduleResponsesArray, isLoadingInitialData, loadingError, questionId, moduleId]);
+  }, [moduleResponsesArray, isLoadingInitialData, loadingError, questionId, moduleId, questionType]);
 
   const handleScaleSelection = (valueToSelect: number) => {
     setSelectedValue(valueToSelect);
@@ -136,14 +159,11 @@ export const NPSQuestion: React.FC<NPSQuestionProps> = ({
       console.warn(`[NPSQuestion] scaleRange no definido correctamente para ${questionId}, usando ${defaultNPSScale.start}-${defaultNPSScale.end} por defecto.`);
   }
   
-  let buttonText = 'Siguiente';
-  if (isSubmitting) {
-    buttonText = 'Enviando...';
-  } else if (internalModuleResponseId) {
-    buttonText = 'Actualizar y continuar';
-  } else {
-    buttonText = 'Guardar y continuar';
-  }
+  const buttonText = getStandardButtonText({
+    isSaving: isSubmitting,
+    isLoading: isLoadingInitialData,
+    hasExistingData: !!internalModuleResponseId && selectedValue !== null
+  });
 
   if (isLoadingInitialData && !moduleResponsesArray) {
     return <div className="p-4 text-center text-gray-500">Cargando pregunta NPS...</div>;

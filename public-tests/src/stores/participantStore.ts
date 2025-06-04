@@ -204,7 +204,6 @@ export const useParticipantStore = create(
         maxVisitedIndex: Math.max(state.maxVisitedIndex, index) 
       })),
       setExpandedSteps: (steps) => {
-        console.log(`📦 [ParticipantStore] setExpandedSteps llamado con ${steps.length} pasos`);
         set({ 
           expandedSteps: steps,
           // Si tenemos pasos válidos, el flujo ya no está cargando
@@ -534,10 +533,6 @@ export const useParticipantStore = create(
       
       // Navegar a un paso específico
       navigateToStep: (targetIndex) => {
-        console.log(`🚀 [ParticipantStore] navigateToStep iniciado`, {
-          targetIndex,
-          parametrosRecibidos: { targetIndex }
-        });
         
         const { 
           currentStepIndex, 
@@ -546,24 +541,9 @@ export const useParticipantStore = create(
           maxVisitedIndex 
         } = get();
         
-        console.log(`📊 [ParticipantStore] Estado actual:`, {
-          currentStepIndex,
-          expandedStepsLength: expandedSteps.length,
-          isFlowLoading,
-          maxVisitedIndex,
-          targetStep: expandedSteps[targetIndex]?.name || 'step-no-encontrado'
-        });
-        
         // Obtener pasos respondidos
         const answeredSteps = get().getAnsweredStepIndices();
         const isAnsweredStep = answeredSteps.includes(targetIndex);
-        
-        console.log(`✅ [ParticipantStore] Verificación de pasos respondidos:`, {
-          answeredSteps,
-          isAnsweredStep,
-          targetIndexIncluido: answeredSteps.includes(targetIndex)
-        });
-        
         // Validaciones individuales con logs detallados
         const validaciones = {
           isFlowLoading,
@@ -574,12 +554,7 @@ export const useParticipantStore = create(
         };
         
         const condicionBloqueo = targetIndex > maxVisitedIndex && !isAnsweredStep;
-        
-        console.log(`🔍 [ParticipantStore] Análisis de validaciones:`, {
-          ...validaciones,
-          condicionBloqueoCompleta: condicionBloqueo,
-          formula: `(${targetIndex} > ${maxVisitedIndex}) && (!${isAnsweredStep}) = ${condicionBloqueo}`
-        });
+
         
         // Validar navegación
         if (isFlowLoading || 
@@ -602,12 +577,6 @@ export const useParticipantStore = create(
 
         const savedResponse = get().getStepResponse(targetIndex);
         
-        console.log(`💾 [ParticipantStore] Respuesta guardada encontrada:`, {
-          targetIndex,
-          savedResponse: savedResponse || 'ninguna',
-          tipoRespuesta: typeof savedResponse
-        });
-        
         // Actualizar config con la respuesta guardada
         if (savedResponse !== null && savedResponse !== undefined) {
           set(state => {
@@ -624,7 +593,6 @@ export const useParticipantStore = create(
                 ...(typeof targetStep.config === 'object' && targetStep.config !== null ? targetStep.config : {}),
                 savedResponses: savedResponse
               };
-              console.log(`📝 [ParticipantStore] Config actualizada con respuesta guardada para step ${targetIndex}`);
               return { expandedSteps: newSteps };
             }
             
@@ -633,7 +601,6 @@ export const useParticipantStore = create(
         }
         
         // Actualizar índice actual
-        console.log(`🎯 [ParticipantStore] Actualizando currentStepIndex de ${currentStepIndex} a ${targetIndex}`);
         set({ currentStepIndex: targetIndex, error: null });
         
         // Recalcular progreso
@@ -641,29 +608,15 @@ export const useParticipantStore = create(
         
         // Forzar guardado completo
         get().forceSaveToLocalStorage();
-        
-        console.log(`✅ [ParticipantStore] Navegación completada exitosamente al índice ${targetIndex}`);
       },
       
       // Obtener índices de pasos respondidos
       getAnsweredStepIndices: () => {
-        console.log(`🔍 [ParticipantStore] getAnsweredStepIndices iniciado`);
         
         const { expandedSteps, responsesData, maxVisitedIndex } = get();
         const completedStepIndices = new Set<number>();
         
         const allApiResponses = responsesData.modules.all_steps || [];
-        
-        console.log(`📊 [ParticipantStore] Estado para análisis de steps respondidos:`, {
-          expandedStepsLength: expandedSteps.length,
-          allApiResponsesLength: allApiResponses.length,
-          maxVisitedIndex,
-          allApiResponses: allApiResponses.map(r => ({ 
-            id: r.id, 
-            stepType: r.stepType, 
-            stepTitle: r.stepTitle 
-          }))
-        });
         
         if (!Array.isArray(allApiResponses)) {
             console.warn("[getAnsweredStepIndices] responsesData.modules.all_steps no es un array válido.");
@@ -675,16 +628,8 @@ export const useParticipantStore = create(
           // <<< Usar step.name para comparar con apiResponse.stepTitle >>>
           const { type: stepType, name: stepName } = step; 
           
-          console.log(`🔎 [ParticipantStore] Analizando step ${index}:`, {
-            index,
-            stepType,
-            stepName,
-            stepId: step.id
-          });
-          
           if (stepType === 'welcome' || stepType === 'thankyou') {
             completedStepIndices.add(index);
-            console.log(`✅ [ParticipantStore] Step ${index} marcado como completado (welcome/thankyou)`);
             return;
           }
           
@@ -692,9 +637,6 @@ export const useParticipantStore = create(
           const encontrado = allApiResponses.some(resp => resp.stepTitle === stepName);
           if (encontrado) {
             completedStepIndices.add(index);
-            console.log(`✅ [ParticipantStore] Step ${index} marcado como completado (encontrado en API responses)`);
-          } else {
-            console.log(`❌ [ParticipantStore] Step ${index} NO encontrado en API responses`);
           }
         });
         
@@ -707,15 +649,7 @@ export const useParticipantStore = create(
           completedStepIndices.add(i);
         }
         
-        console.log(`📝 [ParticipantStore] Steps adicionales marcados por maxVisitedIndex (${maxVisitedIndex}):`, stepsPorMaxVisited);
-        
         const resultado = Array.from(completedStepIndices).sort((a, b) => a - b);
-        
-        console.log(`📋 [ParticipantStore] Resultado final de getAnsweredStepIndices:`, {
-          stepsTotales: expandedSteps.length,
-          stepsRespondidos: resultado,
-          cantidad: resultado.length
-        });
         
         return resultado;
       },

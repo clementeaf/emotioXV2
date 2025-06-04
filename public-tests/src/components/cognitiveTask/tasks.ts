@@ -9,11 +9,10 @@ import PrioritizationTask from './PrioritizationTask';
 import NavigationFlowTask from './NavigationFlowTask';
 
 // Tipos para las tareas
-// Nota: Usamos React.ComponentType<any> porque cada tarea puede tener props distintas y el registro es heterogéneo.
-// Este patrón es estándar y seguro si se valida el uso de props al renderizar.
+// Usamos React.ComponentType para permitir diferentes tipos de props
 export interface TaskDefinition {
   id: string;
-  component: React.ComponentType<any>;
+  component: React.ComponentType<unknown>;
   title: string;
   description?: string;
   props?: Record<string, unknown>;
@@ -23,65 +22,65 @@ export interface TaskDefinition {
 export const TASKS: TaskDefinition[] = [
   {
     id: 'instructions',
-    component: InstructionsTask,
+    component: InstructionsTask as React.ComponentType<unknown>,
     title: 'Instrucciones',
     description: 'Instrucciones para las tareas cognitivas.'
   },
   { 
     id: 'city', 
-    component: CitySelectionTask,
+    component: CitySelectionTask as React.ComponentType<unknown>,
     title: 'Selección de Ciudad',
     description: 'Por favor, indica en qué ciudad vives actualmente.'
   },
   {
     id: 'gender',
-    component: GenderSelectionTask,
+    component: GenderSelectionTask as React.ComponentType<unknown>,
     title: 'Selección de Género',
     description: 'Por favor, indica con qué género te identificas.'
   },
   {
     id: 'social-media',
-    component: SocialMediaTask,
+    component: SocialMediaTask as React.ComponentType<unknown>,
     title: 'Redes Sociales',
     description: 'Selecciona las redes sociales donde tienes cuenta.'
   },
   {
     id: 'password-reset',
-    component: PasswordResetTask,
+    component: PasswordResetTask as React.ComponentType<unknown>,
     title: 'Recuperación de Contraseña',
     description: 'Simula una recuperación de contraseña.'
   },
   {
     id: 'transaction-text',
-    component: TransactionAuthTask,
+    component: TransactionAuthTask as React.ComponentType<unknown>,
     title: 'Autorización de Transacción (Texto Corto)',
     description: 'Pregunta de autorización de transacción en formato texto corto.',
     props: { viewFormat: 'text-only' }
   },
   {
     id: 'transaction-longtext',
-    component: TransactionAuthTask,
+    component: TransactionAuthTask as React.ComponentType<unknown>,
     title: 'Autorización de Transacción (Texto Largo)',
     description: 'Pregunta de autorización de transacción en formato texto largo.',
     props: { viewFormat: 'long-text' }
   },
   {
     id: 'transaction-desktop',
-    component: TransactionAuthTask,
+    component: TransactionAuthTask as React.ComponentType<unknown>,
     title: 'Autorización de Transacción (Desktop)',
     description: 'Pregunta de autorización de transacción con imagen de desktop.',
     props: { viewFormat: 'desktop-image' }
   },
   {
     id: 'transaction-mobile',
-    component: TransactionAuthTask,
+    component: TransactionAuthTask as React.ComponentType<unknown>,
     title: 'Autorización de Transacción (Mobile)',
     description: 'Pregunta de autorización de transacción con imagen de móvil.',
     props: { viewFormat: 'mobile-image' }
   },
   {
     id: 'prioritization',
-    component: PrioritizationTask,
+    component: PrioritizationTask as React.ComponentType<unknown>,
     title: 'Escala Lineal - Priorización',
     description: 'Prioriza las siguientes opciones según tu preferencia.',
     props: { 
@@ -91,7 +90,7 @@ export const TASKS: TaskDefinition[] = [
   },
   {
     id: 'navigation-flow',
-    component: NavigationFlowTask,
+    component: NavigationFlowTask as React.ComponentType<unknown>,
     title: 'Flujo de Navegación',
     description: 'Identifica la pantalla correcta según el objetivo indicado.',
     props: {

@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ParticipantFlowStep, ExpandedStep } from '../types/flow';
-import { ModuleResponse } from './types';
 
 interface UseFlowNavigationAndStateProps {
     expandedSteps: ExpandedStep[];
@@ -8,7 +7,6 @@ interface UseFlowNavigationAndStateProps {
     researchId: string | undefined;
     participantId: string | undefined;
     maxVisitedIndexFromStore: number | undefined;
-    loadedApiResponsesFromStore: ModuleResponse[];
     saveStepResponse: (answer?: unknown) => Promise<void>;
     markResponsesAsCompleted: () => Promise<void>;
     getStepResponse: (stepIndex: number) => unknown;
@@ -17,7 +15,6 @@ interface UseFlowNavigationAndStateProps {
     setExternalExpandedSteps?: (updater: (prevSteps: ExpandedStep[]) => ExpandedStep[]) => void; 
     currentStepIndexState: number;
     setCurrentStepIndexFunc: React.Dispatch<React.SetStateAction<number>>;
-    getAnsweredStepIndices?: () => number[];
 }
 
 export const useFlowNavigationAndState = ({
@@ -26,7 +23,6 @@ export const useFlowNavigationAndState = ({
     researchId,
     participantId,
     maxVisitedIndexFromStore,
-    loadedApiResponsesFromStore,
     saveStepResponse,
     markResponsesAsCompleted,
     getStepResponse,
@@ -35,7 +31,6 @@ export const useFlowNavigationAndState = ({
     setExternalExpandedSteps,
     currentStepIndexState,
     setCurrentStepIndexFunc,
-    getAnsweredStepIndices
 }: UseFlowNavigationAndStateProps) => {
 
     const [currentStep, setCurrentStep] = useState<ParticipantFlowStep>(ParticipantFlowStep.LOADING_SESSION);

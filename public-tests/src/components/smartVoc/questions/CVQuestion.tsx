@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParticipantStore } from '../../../stores/participantStore';
 import { useModuleResponses } from '../../../hooks/useModuleResponses';
 import { useResponseAPI } from '../../../hooks/useResponseAPI';
+import { getStandardButtonText } from '../../../utils/formHelpers';
 
 interface CVConfig {
   scaleRange?: { start: number; end: number };
@@ -63,37 +64,47 @@ export const CVQuestion: React.FC<CVQuestionProps> = ({
     if (!isLoadingInitialData && !loadingError && moduleResponsesArray && Array.isArray(moduleResponsesArray)) {
       const foundResponse = moduleResponsesArray.find((r: unknown) => {
         if (typeof r !== 'object' || r === null) return false;
-        const resp = r as { stepId?: unknown; moduleId?: unknown };
-        return resp.stepId === questionId && resp.moduleId === moduleId;
+        const resp = r as { 
+          stepType?: unknown; 
+          stepTitle?: unknown; 
+          id?: unknown;
+          stepId?: unknown; 
+          moduleId?: unknown 
+        };
+        
+        return (
+          (resp.stepType === questionType && resp.moduleId === moduleId) ||
+          (resp.stepId === questionId && resp.moduleId === moduleId) ||
+          (resp.stepType === questionType) ||
+          (typeof resp.stepTitle === 'string' && resp.stepTitle.includes(questionId)) ||
+          (resp.id === questionId)
+        );
       });
-
-      if (foundResponse && typeof foundResponse === 'object' && foundResponse !== null) {
-        let value: number | null = null;
-        if (
-          typeof (foundResponse as { response?: unknown }).response === 'number'
-        ) {
-          value = (foundResponse as { response: number }).response;
-        } else if (
-          typeof (foundResponse as { response?: unknown }).response === 'object' &&
-          (foundResponse as { response?: { value?: unknown } }).response !== null &&
-          typeof (foundResponse as { response?: { value?: unknown } }).response?.value === 'number'
-        ) {
-          value = (foundResponse as { response: { value: number } }).response?.value;
-        }
-        if (value !== null) {
-          setSelectedValue(value);
-        }
+      
+      if (
+        foundResponse &&
+        typeof foundResponse === 'object' &&
+        foundResponse !== null &&
+        'response' in foundResponse &&
+        typeof (foundResponse as { response?: unknown }).response === 'object' &&
+        (foundResponse as { response?: { value?: unknown } }).response !== null &&
+        typeof (foundResponse as { response?: { value?: unknown } }).response?.value === 'number'
+      ) {
+        const responseValue = (foundResponse as { response: { value: number } }).response.value;
+        console.log(`[CVQuestion] Cargando respuesta existente para ${questionId}:`, responseValue);
+        setSelectedValue(responseValue);
         setInternalModuleResponseId(
           'id' in foundResponse && typeof (foundResponse as { id?: unknown }).id === 'string'
             ? (foundResponse as { id: string }).id
             : null
         );
       } else {
+        console.log(`[CVQuestion] No se encontró respuesta previa para ${questionId}`);
         setSelectedValue(null);
         setInternalModuleResponseId(null);
       }
     }
-  }, [moduleResponsesArray, isLoadingInitialData, loadingError, questionId, moduleId]);
+  }, [moduleResponsesArray, isLoadingInitialData, loadingError, questionId, moduleId, questionType]);
 
   const handleSelect = (value: number) => {
     setSelectedValue(value);
@@ -150,14 +161,11 @@ export const CVQuestion: React.FC<CVQuestionProps> = ({
     for (let i = 1; i <= 7; i++) { scaleOptions.push(i); }
   }
   
-  let buttonText = 'Siguiente';
-  if (isSubmitting) {
-    buttonText = 'Enviando...';
-  } else if (internalModuleResponseId) {
-    buttonText = 'Actualizar y continuar';
-  } else {
-    buttonText = 'Guardar y continuar';
-  }
+  const buttonText = getStandardButtonText({
+    isSaving: isSubmitting,
+    isLoading: isLoadingInitialData,
+    hasExistingData: !!internalModuleResponseId && selectedValue !== null
+  });
 
   if (isLoadingInitialData && !moduleResponsesArray) {
     return (

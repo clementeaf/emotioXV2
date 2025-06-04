@@ -5,39 +5,23 @@ import { UseFlowBuilderProps } from './types';
 import { ProcessedResearchFormConfig } from './useResearchForms';
 
 const extractCoreStepConfigs = (flowDataModules: ProcessedResearchFormConfig[] | undefined) => {
-    console.log('🔍 [extractCoreStepConfigs] Iniciado con:', {
-        flowDataModules,
-        tipoFlowDataModules: typeof flowDataModules,
-        esArray: Array.isArray(flowDataModules),
-        longitud: Array.isArray(flowDataModules) ? flowDataModules.length : 'No es array'
-    });
     
     let demographicsQuestions: unknown = null;
     let welcomeConfig: unknown = null;
     let thankyouConfig: unknown = null;
 
     if (Array.isArray(flowDataModules)) {
-        console.log('📋 [extractCoreStepConfigs] Iterando módulos...');
         for (const processedModule of flowDataModules) {
-            console.log('🔎 [extractCoreStepConfigs] Analizando módulo:', {
-                processedModule,
-                tipoConfig: typeof processedModule.config,
-                configExists: !!processedModule.config
-            });
             
             const moduleData = processedModule.config;
             if (!moduleData) {
-                console.log('⚠️ [extractCoreStepConfigs] Módulo sin config, saltando');
                 continue;
             }
 
             const moduleSK = (moduleData as { sk?: string }).sk;
-            console.log(`🎯 [extractCoreStepConfigs] Procesando módulo con SK: ${moduleSK}`);
             
             switch (moduleSK) {
                 case 'EYE_TRACKING_CONFIG':
-                    console.log('👁️ [extractCoreStepConfigs] Encontrado EYE_TRACKING_CONFIG');
-                    console.log('📊 [extractCoreStepConfigs] moduleData completo:', moduleData);
                     
                     if ('demographicQuestions' in moduleData && (moduleData as { demographicQuestions?: unknown }).demographicQuestions) {
                         demographicsQuestions = {
@@ -45,22 +29,15 @@ const extractCoreStepConfigs = (flowDataModules: ProcessedResearchFormConfig[] |
                             title: (moduleData as { title?: string }).title,
                             description: (moduleData as { description?: string }).description
                         };
-                        console.log('✅ [extractCoreStepConfigs] demographicQuestions configurado:', demographicsQuestions);
-                    } else {
-                        console.log('❌ [extractCoreStepConfigs] No se encontró demographicQuestions en EYE_TRACKING_CONFIG');
-                        console.log('🔍 [extractCoreStepConfigs] Propiedades disponibles:', Object.keys(moduleData));
                     }
                     break;
                 case 'WELCOME_SCREEN':
-                    console.log('👋 [extractCoreStepConfigs] Encontrado WELCOME_SCREEN');
                     welcomeConfig = { ...(moduleData as object) };
                     break;
                 case 'THANK_YOU_SCREEN':
-                    console.log('🙏 [extractCoreStepConfigs] Encontrado THANK_YOU_SCREEN');
                     thankyouConfig = { ...(moduleData as object) };
                     break;
                 default:
-                    console.log(`🤷 [extractCoreStepConfigs] SK no reconocido: ${moduleSK}`);
                     break;
             }
         }
@@ -68,7 +45,6 @@ const extractCoreStepConfigs = (flowDataModules: ProcessedResearchFormConfig[] |
         console.warn('[extractCoreStepConfigs] flowDataModules no es un array válido');
     }
     
-    console.log('📋 [extractCoreStepConfigs] Resultado final:', { demographicsQuestions, welcomeConfig, thankyouConfig });
     return { demographicsQuestions, welcomeConfig, thankyouConfig };
 };
 
@@ -158,25 +134,11 @@ const processDefaultModuleQuestions = (
 export const useFlowBuilder = ({ researchFlowApiData, isLoading }: UseFlowBuilderProps & { isLoading?: boolean }): ExpandedStep[] => {
     
     const buildStepsInternal = useCallback(() => {
-        console.log('🔍 [useFlowBuilder] buildStepsInternal iniciado');
-        console.log('📊 [useFlowBuilder] Datos recibidos:', {
-            researchFlowApiData,
-            isLoading,
-            tipoResearchFlowApiData: typeof researchFlowApiData,
-            tieneData: researchFlowApiData && typeof researchFlowApiData === 'object' && researchFlowApiData !== null && 'data' in researchFlowApiData
-        });
         
         const flowDataModules =
             researchFlowApiData && typeof researchFlowApiData === 'object' && researchFlowApiData !== null && 'data' in researchFlowApiData
                 ? (researchFlowApiData as { data: unknown }).data
                 : undefined;
-
-        console.log('📋 [useFlowBuilder] flowDataModules extraídos:', {
-            flowDataModules,
-            tipoFlowDataModules: typeof flowDataModules,
-            esArray: Array.isArray(flowDataModules),
-            longitud: Array.isArray(flowDataModules) ? flowDataModules.length : 'No es array'
-        });
 
         if (!isLoading && !(Array.isArray(flowDataModules) && flowDataModules.length > 0)) {
             console.warn('[useFlowBuilder] No hay flowDataModules válidos para construir pasos.');
@@ -186,8 +148,6 @@ export const useFlowBuilder = ({ researchFlowApiData, isLoading }: UseFlowBuilde
             ];
         }
         
-        console.log('✅ [useFlowBuilder] Datos válidos encontrados, procediendo con construcción');
-        
         const finalSteps: ExpandedStep[] = [];
         const { 
             demographicsQuestions: demographicsConfigFromBackend,
@@ -195,11 +155,6 @@ export const useFlowBuilder = ({ researchFlowApiData, isLoading }: UseFlowBuilde
             thankyouConfig: thankyouConfigFromBackend 
         } = extractCoreStepConfigs(flowDataModules as ProcessedResearchFormConfig[] | undefined);
 
-        console.log('🎯 [useFlowBuilder] Configuraciones extraídas:', {
-            demographicsConfigFromBackend,
-            welcomeConfigFromBackend,
-            thankyouConfigFromBackend
-        });
 
         if (demographicsConfigFromBackend && typeof demographicsConfigFromBackend === 'object' && demographicsConfigFromBackend !== null && 'questions' in demographicsConfigFromBackend) {
             const demoConfig = demographicsConfigFromBackend as { questions?: unknown; title?: string; description?: string };

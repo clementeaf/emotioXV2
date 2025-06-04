@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { ParticipantFlowStep } from '../types/flow';
 import { Participant } from '../../../shared/interfaces/participant';
 import { useParticipantStore } from '../stores/participantStore';
@@ -7,7 +7,6 @@ import { useLoadResearchFormsConfig } from './useResearchForms';
 import { useFlowBuilder } from './useFlowBuilder';
 import { useResponseManager } from './useResponseManager';
 import { useFlowNavigationAndState } from './useFlowNavigationAndState';
-import { ModuleResponse as HooksModuleResponse } from './types';
 import { useParticipantSession } from './useParticipantSession';
 
 const useStoreSetLoadedResponses = () => useParticipantStore(state => state.setLoadedResponses);
@@ -89,8 +88,6 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         setError: setNavigationError, 
         isFlowLoading: navigationIsLoading,
         setIsFlowLoading: setNavigationIsLoading, 
-        goToNextStep,
-        navigateToStep,
         completedRelevantSteps,
         totalRelevantSteps,
     } = useFlowNavigationAndState({
@@ -99,7 +96,6 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         researchId,
         participantId: participantId === null ? undefined : participantId,
         maxVisitedIndexFromStore: maxVisitedIndexFromStore, 
-        loadedApiResponsesFromStore: loadedApiResponsesFromStore as unknown as HooksModuleResponse[], 
         saveStepResponse: saveStepResponse,
         markResponsesAsCompleted: markResponsesAsCompleted,
         getStepResponse: getStepResponse,
@@ -206,17 +202,14 @@ export const useParticipantFlow = (researchId: string | undefined) => {
     }, [expandedSteps, maxVisitedIndexFromStore, hasStepBeenAnswered]);
 
     useEffect(() => {
-        console.log(`🔄 [useParticipantFlow] Sincronizando isFlowLoading: ${isResearchFlowHookLoading}`);
         storeSetIsFlowLoading(isResearchFlowHookLoading);
     }, [isResearchFlowHookLoading, storeSetIsFlowLoading]);
 
     useEffect(() => {
         if (expandedSteps && expandedSteps.length > 0) {
-            console.log(`🔄 [useParticipantFlow] Sincronizando ${expandedSteps.length} expandedSteps con el store`);
             storeSetExpandedSteps(expandedSteps as import('../stores/participantStore').ExpandedStep[]);
             
             if (currentStep === ParticipantFlowStep.LOADING_SESSION && !navigationIsLoading) {
-                console.log(`🔄 [useParticipantFlow] Actualizando currentStep a WELCOME ya que expandedSteps están listos`);
                 setCurrentStep(ParticipantFlowStep.WELCOME);
             }
         }

@@ -32,6 +32,7 @@ export interface MappedStepComponentProps {
     isApiDisabled?: boolean;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 const DifficultyScaleAdapter: React.FC<MappedStepComponentProps> = (props) => {
   const { stepConfig, researchId, stepType, stepId, onStepComplete, stepName } = props;
 
@@ -63,6 +64,7 @@ const DifficultyScaleAdapter: React.FC<MappedStepComponentProps> = (props) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 const InstructionStep: React.FC<MappedStepComponentProps> = ({ stepConfig, onStepComplete, isInstructionMock }) => {
     const config = isInstructionMock ? { title: 'Instrucciones (Prueba)', text: 'Texto de instrucciones de prueba.' } : (stepConfig as { title?: string; text?: string } | undefined) || {};
     return (
@@ -76,6 +78,7 @@ const InstructionStep: React.FC<MappedStepComponentProps> = ({ stepConfig, onSte
     );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 const CognitiveNavigationFlowStep: React.FC<MappedStepComponentProps> = ({ stepConfig }) => {
     const cfg = (typeof stepConfig === 'object' && stepConfig !== null) ? (stepConfig as { questionText?: string; description?: string; deviceFrame?: boolean; title?: string }) : {};
     const deviceFrame = cfg.deviceFrame;
@@ -156,6 +159,7 @@ const CognitiveNavigationFlowStep: React.FC<MappedStepComponentProps> = ({ stepC
     );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 const CognitivePreferenceTestStep: React.FC<MappedStepComponentProps> = ({ stepConfig, stepName, stepType, onStepComplete }) => {
     const cfg = (typeof stepConfig === 'object' && stepConfig !== null) ? (stepConfig as { title?: string; questionText?: string; description?: string }) : {};
     const questionText = cfg.questionText || 'Realice el siguiente test de preferencia (Prueba)';
@@ -175,12 +179,65 @@ const CognitivePreferenceTestStep: React.FC<MappedStepComponentProps> = ({ stepC
 };
 
 // Adaptador para preguntas de texto largo
+// eslint-disable-next-line react-refresh/only-export-components
 const CognitiveLongTextAdapter: React.FC<MappedStepComponentProps> = ({ stepConfig, onStepComplete }) => {
   return (
     <LongTextView
       config={stepConfig as CognitiveQuestion}
       onStepComplete={onStepComplete}
     />
+  );
+};
+
+// eslint-disable-next-line react-refresh/only-export-components
+const CognitiveShortTextStep: React.FC<MappedStepComponentProps> = ({ stepConfig, stepId, stepName, stepType, onStepComplete }) => {
+  const [textResponse, setTextResponse] = useState('');
+  
+  const cfg = (typeof stepConfig === 'object' && stepConfig !== null) 
+    ? stepConfig as { title?: string; description?: string; questionText?: string; placeholder?: string; required?: boolean }
+    : {};
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (cfg.required && !textResponse.trim()) {
+      alert('Este campo es requerido');
+      return;
+    }
+    onStepComplete(textResponse);
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-sm">
+      <h2 className="text-xl font-medium text-neutral-800 mb-4">
+        {cfg.title || stepName || 'Pregunta de Texto'}
+      </h2>
+      
+      {cfg.description && (
+        <p className="text-neutral-600 mb-6">{cfg.description}</p>
+      )}
+      
+      <form onSubmit={handleSubmit}>
+        <div className="mb-6">
+          <textarea
+            value={textResponse}
+            onChange={(e) => setTextResponse(e.target.value)}
+            placeholder={cfg.placeholder || cfg.questionText || "Escribe tu respuesta aquí..."}
+            rows={4}
+            className="w-full p-4 border border-neutral-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            required={cfg.required}
+          />
+        </div>
+        
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+          >
+            Continuar
+          </button>
+        </div>
+      </form>
+    </div>
   );
 };
 
@@ -209,8 +266,12 @@ export const stepComponentMap: StepComponentMap = {
     'smartvoc_nev': DifficultyScaleAdapter,
     'smartvoc_feedback': SmartVocFeedbackQuestion,
     'smartvoc_ces': DifficultyScaleAdapter,
-    'thankyou': ThankYouView,
-    'demographic': DemographicStep,
-    'cognitive_preference_test': CognitivePreferenceTestStep,
     'smartvoc_nps': NPSView,
+    'multiple_choice': MultipleChoiceQuestion,
+    'single_choice': SingleChoiceQuestion,
+    'demographic': DemographicStep,
+    'thankyou': ThankYouView,
+    'feedback': SmartVocFeedbackQuestion,
+    'image_feedback': SmartVocFeedbackQuestion,
+    'cognitive_preference_test': CognitivePreferenceTestStep,
 }; 

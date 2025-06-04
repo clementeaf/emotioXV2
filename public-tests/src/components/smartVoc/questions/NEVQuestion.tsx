@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParticipantStore } from '../../../stores/participantStore';
 import { useModuleResponses } from '../../../hooks/useModuleResponses';
 import { useResponseAPI } from '../../../hooks/useResponseAPI';
+import { getStandardButtonText } from '../../../utils/formHelpers';
 
 interface NEVQuestionConfig {
   id: string;
@@ -53,9 +54,29 @@ export const NEVQuestion: React.FC<NEVQuestionProps> = ({ questionConfig, resear
     if (!isLoadingInitialData && !loadingError && moduleResponsesArray && Array.isArray(moduleResponsesArray)) {
       const foundResponse = moduleResponsesArray.find((r: unknown) => {
         if (typeof r !== 'object' || r === null) return false;
-        const resp = r as { stepId?: unknown; moduleId?: unknown };
-        return resp.stepId === questionId && resp.moduleId === moduleId;
+        const resp = r as { 
+          stepType?: unknown; 
+          stepTitle?: unknown; 
+          id?: unknown;
+          stepId?: unknown; 
+          moduleId?: unknown 
+        };
+        
+        // Buscar por múltiples criterios para máxima compatibilidad
+        return (
+          // Por stepType + moduleId (nuevo formato)
+          (resp.stepType === questionType && resp.moduleId === moduleId) ||
+          // Por stepId + moduleId (formato anterior)
+          (resp.stepId === questionId && resp.moduleId === moduleId) ||
+          // Por stepType solamente si coincide con el questionType
+          (resp.stepType === questionType) ||
+          // Por stepTitle si contiene el questionId
+          (typeof resp.stepTitle === 'string' && resp.stepTitle.includes(questionId)) ||
+          // Por id si coincide con questionId
+          (resp.id === questionId)
+        );
       });
+      
       if (
         foundResponse &&
         typeof foundResponse === 'object' &&
@@ -65,18 +86,21 @@ export const NEVQuestion: React.FC<NEVQuestionProps> = ({ questionConfig, resear
         (foundResponse as { response?: { value?: unknown } }).response !== null &&
         typeof (foundResponse as { response?: { value?: unknown } }).response?.value === 'number'
       ) {
-        setSelectedValue((foundResponse as { response: { value: number } }).response.value);
+        const responseValue = (foundResponse as { response: { value: number } }).response.value;
+        console.log(`[NEVQuestion] Cargando respuesta existente para ${questionId}:`, responseValue);
+        setSelectedValue(responseValue);
         setInternalModuleResponseId(
           'id' in foundResponse && typeof (foundResponse as { id?: unknown }).id === 'string'
             ? (foundResponse as { id: string }).id
             : null
         );
       } else {
+        console.log(`[NEVQuestion] No se encontró respuesta previa para ${questionId}`);
         setSelectedValue(null);
         setInternalModuleResponseId(null);
       }
     }
-  }, [moduleResponsesArray, isLoadingInitialData, loadingError, questionId, moduleId]);
+  }, [moduleResponsesArray, isLoadingInitialData, loadingError, questionId, moduleId, questionType]);
 
   const handleSelect = (numValue: number) => {
     setSelectedValue(numValue);
@@ -120,12 +144,11 @@ export const NEVQuestion: React.FC<NEVQuestionProps> = ({ questionConfig, resear
     }
   };
 
-  let buttonText = 'Guardar y continuar';
-  if (isSubmitting) {
-    buttonText = 'Enviando...';
-  } else if (internalModuleResponseId) {
-    buttonText = 'Actualizar y continuar';
-  }
+  const buttonText = getStandardButtonText({
+    isSaving: isSubmitting,
+    isLoading: isLoadingInitialData,
+    hasExistingData: !!internalModuleResponseId && selectedValue !== null
+  });
 
   if (!description) {
     return <div className="text-red-600">Error: Falta la descripción de la pregunta.</div>;

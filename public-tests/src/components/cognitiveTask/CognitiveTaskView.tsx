@@ -116,11 +116,13 @@ const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, parti
           Error: {apiError}
         </div>
       )}
-      <CurrentTaskComponent 
-        {...taskProps}
-        onContinue={(responseData?: unknown) => handleTaskComplete(responseData, currentTaskDefinition)}
-        isSubmitting={isSubmittingTask}
-      />
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+      {React.createElement(CurrentTaskComponent as React.ComponentType<any>, {
+        ...taskProps,
+        onContinue: (responseData?: unknown) => handleTaskComplete(responseData, currentTaskDefinition),
+        isSubmitting: isSubmittingTask,
+        config: stepConfig,
+      })}
     </div>
   );
 };

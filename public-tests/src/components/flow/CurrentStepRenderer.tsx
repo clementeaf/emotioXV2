@@ -42,9 +42,6 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
         autoFetch: !!(researchId && participantIdFromStore),
     });
 
-    console.log('CurrentStepRenderer props:', { stepType, stepConfig, stepId, stepName });
-    console.log('CurrentStepRenderer moduleResponses:', { moduleResponsesFromAPI, isLoadingModuleResponses });
-
     // Función helper para encontrar respuesta por stepId/stepType
     const findSavedResponse = useCallback((searchStepId: string, searchStepType: string) => {
         // Buscar en respuestas del store local primero
@@ -200,7 +197,6 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
 
         // Buscar respuesta guardada para este step específico
         const savedResponse = findSavedResponse(stepId || '', stepType);
-        console.log(`[CurrentStepRenderer] Respuesta encontrada para ${stepId} (${stepType}):`, savedResponse);
 
         const baseProps = {
             stepType,
@@ -283,6 +279,7 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
             const warningMessage = (finalMappedProps as { isMock?: boolean }).isMock ? `Configuración para '${stepType}' podría estar incompleta o usando datos de prueba.` : undefined;
 
             return renderStepWithWarning(
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 <ComponentToRender {...(finalMappedProps as any)} key={`${stepId}-${stepType}`} />,
                 Boolean((finalMappedProps as { isMock?: boolean }).isMock),
                 warningMessage

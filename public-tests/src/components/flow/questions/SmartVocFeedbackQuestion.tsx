@@ -1,198 +1,182 @@
-import { useEffect, useState } from "react";
-import { useParticipantStore } from "../../../stores/participantStore";
-import { useResponseAPI } from "../../../hooks/useResponseAPI";
-import { useModuleResponses } from '../../../hooks/useModuleResponses';
+import React, { useState, useEffect } from 'react';
+import { useStepResponseManager } from '../../../hooks/useStepResponseManager';
+import { createComponentLogger } from '../../../utils/logger';
+import { getStandardButtonText } from '../../../utils/formHelpers';
+
+const logger = createComponentLogger('SmartVocFeedbackQuestion');
 
 interface SmartVocFeedbackQuestionProps {
-    stepConfig: unknown;
-    stepId?: string;
-    stepName?: string;
-    stepType: string;
-    onStepComplete: (answer: unknown) => void;
+  stepConfig: unknown;
+  stepId?: string;
+  stepName?: string;
+  stepType: string;
+  onStepComplete: (answer: unknown) => void;
 }
 
-export const SmartVocFeedbackQuestion: React.FC<SmartVocFeedbackQuestionProps> = ({ stepConfig, stepId: stepIdFromProps, stepName: stepNameFromProps, stepType, onStepComplete }) => {
-    // Unificar todas las props de config en un solo objeto seguro
-    const cfg = (typeof stepConfig === 'object' && stepConfig !== null)
-      ? stepConfig as {
-          title?: string;
-          description?: string;
-          questionText?: string;
-          savedResponses?: string;
-          required?: boolean;
+export const SmartVocFeedbackQuestion: React.FC<SmartVocFeedbackQuestionProps> = ({ 
+  stepConfig, 
+  stepId: stepIdFromProps, 
+  stepName: stepNameFromProps, 
+  stepType, 
+  onStepComplete 
+}) => {
+
+  const cfg = (typeof stepConfig === 'object' && stepConfig !== null)
+    ? stepConfig as {
+        title?: string;
+        description?: string;
+        questionText?: string;
+        required?: boolean;
+        isHardcoded?: boolean;
+      }
+    : {};
+
+  const [currentResponse, setCurrentResponse] = useState('');
+  const [isSubmittingToServer, setIsSubmittingToServer] = useState(false);
+
+  const {
+    responseData,
+    isLoading,
+    isSaving,
+    error: stepResponseError,
+    saveCurrentStepResponse,
+    responseSpecificId
+  } = useStepResponseManager<string>({
+    stepId: stepIdFromProps || 'smartvoc_feedback',
+    stepType: stepType,
+    stepName: stepNameFromProps || cfg.title || 'Voice of Customer (VOC)',
+    initialData: ''
+  });
+
+  useEffect(() => { 
+    if (responseData && typeof responseData === 'string') {
+      setCurrentResponse(responseData);
+    } else if (responseData) {
+      if (typeof responseData === 'object' && responseData !== null && 'value' in responseData) {
+        const extractedValue = (responseData as { value?: unknown }).value;
+        if (typeof extractedValue === 'string') {
+          setCurrentResponse(extractedValue);
         }
-      : {};
+      }
+    }
+  }, [responseData]);
 
-    const componentTitle = cfg.title || stepNameFromProps || 'Feedback';
-    const description = cfg.description;
-    const questionText = cfg.questionText || '¿Tienes algún comentario adicional?';
-    const savedResponses = typeof cfg.savedResponses === 'string' ? cfg.savedResponses : '';
-    const required = typeof cfg.required === 'boolean' ? cfg.required : false;
 
-    const [currentResponse, setCurrentResponse] = useState(savedResponses);
-    const [isSaving, setIsSaving] = useState(false);
-    const [formApiError, setFormApiError] = useState<string | null>(null);
-    const [moduleResponseId, setModuleResponseId] = useState<string | null>(null);
-    const [dataExisted, setDataExisted] = useState(false);
-    const [isNavigating, setIsNavigating] = useState(false);
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newValue = e.target.value;
+    setCurrentResponse(newValue);
+  };
 
-    const researchId = useParticipantStore(state => state.researchId);
-    const participantId = useParticipantStore(state => state.participantId);
-
-    const {
-        data: moduleResponsesArray,
-        isLoading: isLoadingInitialData,
-        error: initialLoadingError
-      } = useModuleResponses({
-        researchId: researchId === null ? undefined : researchId,
-        participantId: participantId === null ? undefined : participantId,
-        autoFetch: !!(researchId && participantId)
-      });
-
-    const {
-        saveResponse,
-        updateResponse,
-        isLoading: isApiLoading,
-        error: apiHookError,
-    } = useResponseAPI({
-        researchId: researchId || '',
-        participantId: participantId || ''
-    });
-
-    let buttonText = 'Siguiente';
-    if (isNavigating) {
-        buttonText = 'Pasando al siguiente módulo...';
-    } else if (isSaving || isApiLoading) {
-        buttonText = 'Guardando...';
-    } else if (dataExisted && moduleResponseId) {
-        buttonText = 'Actualizar y continuar';
-    } else {
-        buttonText = 'Guardar y continuar';
+  // ✅ SIMPLIFICADO: Enviar respuesta usando useStepResponseManager
+  const handleSaveAndProceed = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!stepIdFromProps) {
+      logger.error('Missing stepId');
+      return;
     }
 
-    useEffect(() => {
-        if (isLoadingInitialData) {
-            return;
-        }
-
-        setFormApiError(null);
-
-        if (initialLoadingError) {
-            console.error('[SmartVocFeedbackQuestion] Error cargando datos con useModuleResponses:', initialLoadingError);
-            setFormApiError(typeof initialLoadingError === 'string' ? initialLoadingError : 'Error al cargar datos previos del módulo.');
-            setCurrentResponse('');
-            setModuleResponseId(null);
-            setDataExisted(false);
-            return;
-        }
-
-        if (Array.isArray(moduleResponsesArray)) {
-            type ModuleResponseItemType = { id: string; stepType: string; stepId?: string; stepTitle?: string; response: unknown; [key: string]: unknown };
-            const foundStepData = moduleResponsesArray.find((item: unknown) => {
-                if (typeof item !== 'object' || item === null) return false;
-                const it = item as ModuleResponseItemType;
-                return it.stepType === stepType && (it.stepId === stepIdFromProps || it.stepTitle === stepNameFromProps);
-            });
-            if (foundStepData && typeof (foundStepData as ModuleResponseItemType).response === 'string') {
-                setCurrentResponse((foundStepData as ModuleResponseItemType).response as string);
-            }
-        }
-    }, [moduleResponsesArray, isLoadingInitialData, initialLoadingError, stepType, stepIdFromProps, stepNameFromProps]);
-
-    const handleSaveAndProceed = async () => {
-        if (!researchId || !participantId) {
-            console.error('[SmartVocFeedbackQuestion] Faltan researchId o participantId');
-            setFormApiError('Faltan researchId o participantId.');
-            return;
-        }
-        if (!currentResponse && required) {
-            setFormApiError('Por favor, ingresa una respuesta.');
-            return;
-        }
-
-        setIsSaving(true);
-        setFormApiError(null);
-
-        const payload = { response: currentResponse };
-        let success = false;
-
-        try {
-            if (dataExisted && moduleResponseId) {
-                await updateResponse(moduleResponseId, payload);
-                if (apiHookError) throw new Error(apiHookError);
-                success = true;
-            } else {
-                const result = await saveResponse(stepIdFromProps || '', stepType, stepNameFromProps || 'Feedback Corto', payload);
-                if (apiHookError) throw new Error(apiHookError);
-                if (
-                  result &&
-                  typeof result === 'object' &&
-                  result !== null &&
-                  'id' in result &&
-                  typeof (result as { id?: unknown }).id === 'string'
-                ) {
-                    setModuleResponseId((result as { id: string }).id);
-                    setDataExisted(true);
-                    success = true;
-                }
-            }
-        } catch (error: unknown) {
-            console.error('[SmartVocFeedbackQuestion] Error en operación de guardado/actualización:', error);
-            if (typeof error === 'object' && error !== null && 'message' in error && typeof (error as { message?: unknown }).message === 'string') {
-                setFormApiError((error as { message: string }).message);
-            } else {
-                setFormApiError('Error desconocido al guardar feedback.');
-            }
-            success = false;
-        } finally {
-            setIsSaving(false);
-        }
-
-        if (success) {
-            setIsNavigating(true);
-            setTimeout(() => {
-                onStepComplete(currentResponse);
-                 setIsNavigating(false);
-            }, 500);
-        }
-    };
-
-    if (isLoadingInitialData) {
-        return (
-            <div className="w-full p-6 text-center">
-                <p className="text-gray-600">Cargando...</p>
-            </div>
-        );
+    if (!currentResponse.trim() && cfg.required) {
+      logger.warn('Respuesta requerida pero vacía');
+      return;
     }
 
+    setIsSubmittingToServer(true);
+    
+    try {
+      const { success } = await saveCurrentStepResponse(currentResponse);
+      
+      if (success) {
+        onStepComplete(currentResponse);
+      } else {
+        console.error("[SmartVocFeedbackQuestion] Falló saveCurrentStepResponse. Error debería estar en stepResponseError.");
+      }
+    } catch (error) {
+      logger.error('Error guardando respuesta', error);
+    } finally {
+      setIsSubmittingToServer(false);
+    }
+  };
+
+  const buttonText = getStandardButtonText({
+    isSaving: isSaving,
+    isLoading: isSubmittingToServer,
+    hasExistingData: !!responseSpecificId,
+    isNavigating: isSubmittingToServer,
+    customCreateText: 'Guardar y continuar',
+    customUpdateText: 'Actualizar y continuar'
+  });
+
+  if (isLoading && !responseData) {
     return (
-        <div className="w-full">
-            <h2 className="text-xl font-medium text-center mb-4">{componentTitle}</h2>
-            <p className="text-center mb-6">{description}</p>
-
-            {(formApiError || apiHookError) && (
-                <div className="bg-red-50 border border-red-200 text-sm text-red-700 px-4 py-3 rounded mb-4" role="alert">
-                    <strong className="font-bold">Error: </strong>
-                    <span>{formApiError || apiHookError}</span>
-                </div>
-            )}
-
-            <textarea
-                className="w-full h-32 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-400 focus:border-primary-400 mb-6"
-                placeholder={questionText}
-                value={currentResponse}
-                onChange={(e) => setCurrentResponse(e.target.value)}
-                disabled={isSaving || isApiLoading || isLoadingInitialData || isNavigating}
-            />
-            <div className="flex justify-center">
-                <button
-                    onClick={handleSaveAndProceed}
-                    disabled={isSaving || isApiLoading || isLoadingInitialData || isNavigating}
-                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    {buttonText}
-                </button>
-            </div>
-        </div>
+      <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-sm">
+        <h2 className="text-xl font-medium text-neutral-800 mb-4">
+          {cfg.title || stepNameFromProps || 'Voice of Customer (VOC)'}
+        </h2>
+        <p className="text-center text-gray-500">Cargando respuestas previas...</p>
+      </div>
     );
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-sm">
+      {cfg.isHardcoded && (
+        <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <svg className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-amber-800">
+                <strong>Configuración por defecto:</strong> Esta pregunta está usando contenido predeterminado. 
+                Para personalizar el contenido, configúralo en el backend del research.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      <h2 className="text-xl font-medium text-neutral-800 mb-4">
+        {cfg.title || stepNameFromProps || 'Voice of Customer (VOC)'}
+      </h2>
+      
+      {cfg.description && (
+        <p className="text-neutral-600 mb-6">
+          {cfg.description}
+        </p>
+      )}
+      
+      {stepResponseError && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+          <p className="text-sm">Error: {stepResponseError}</p>
+        </div>
+      )}
+      
+      <form onSubmit={handleSaveAndProceed}>
+        <div className="mb-6">
+          <textarea
+            value={currentResponse}
+            onChange={handleTextChange}
+            placeholder={cfg.questionText || "Comparte tu experiencia, comentarios y sugerencias aquí..."}
+            rows={6}
+            className="w-full p-4 border border-neutral-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            disabled={isSaving || isLoading || isSubmittingToServer}
+            required={cfg.required}
+          />
+        </div>
+        
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            disabled={isSaving || isLoading || isSubmittingToServer || (!currentResponse.trim() && cfg.required)}
+            className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+          >
+            {buttonText}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
 };

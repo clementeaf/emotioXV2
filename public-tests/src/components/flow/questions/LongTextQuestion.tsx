@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getStandardButtonText } from '../../../utils/formHelpers';
 
 interface LongTextQuestionProps {
     config: unknown;
@@ -54,6 +55,11 @@ export const LongTextQuestion: React.FC<LongTextQuestionProps> = ({
         onStepComplete(currentResponse);
     };
 
+    const buttonText = getStandardButtonText({
+        isSaving: false,
+        isLoading: false,
+        hasExistingData: !!savedResponses && currentResponse !== ''
+    });
 
     return (
         <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full">
@@ -71,7 +77,7 @@ export const LongTextQuestion: React.FC<LongTextQuestionProps> = ({
                 onClick={handleSubmit}
                 className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
             >
-                Guardar y continuar
+                {buttonText}
             </button>
         </div>
     );

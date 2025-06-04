@@ -271,46 +271,154 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
         console.error('[useParticipantFlowWithStore] Error obteniendo lista de módulos:', modulesError);
       }
 
-      // 8. Añadir pregunta de feedback sobre módulo (si no existe ya)
-      // Buscar si ya existe una pregunta de feedback sobre el módulo
+      // 8. y 9. Añadir preguntas de feedback (módulo e imagen)
+      // PRIMERO: Intentar obtener configuración desde el backend (una sola petición)
+      let moduleFeedbackConfig = null;
+      let imageFeedbackConfig = null;
+      let isModuleFeedbackHardcoded = false;
+      let isImageFeedbackHardcoded = false;
+      
+      try {
+        console.log(`[useParticipantFlowWithStore] Intentando obtener configuración de feedback desde backend para researchId: ${currentResearchId}`);
+        const formsUrl = `${API_BASE_URL}/research/${currentResearchId}/forms`;
+        const formsResponse = await fetch(formsUrl, { 
+          headers: { 'Authorization': `Bearer ${currentToken}` }
+        });
+        
+        if (formsResponse.ok) {
+          const formsData = await formsResponse.json();
+          console.log('[useParticipantFlowWithStore] Respuesta de forms:', formsData);
+          
+          if (formsData?.data && Array.isArray(formsData.data)) {
+            // Buscar configuración específica de feedback del módulo
+            const feedbackForm = formsData.data.find((form: any) => 
+              form.derivedType === 'feedback' || 
+              form.derivedType === 'module_feedback' ||
+              form.originalSk === 'FEEDBACK' ||
+              (form.config && (
+                form.config.type === 'feedback' || 
+                form.config.type === 'module_feedback'
+              ))
+            );
+            
+            if (feedbackForm && feedbackForm.config) {
+              console.log('[useParticipantFlowWithStore] ✅ Configuración de feedback del módulo encontrada en backend:', feedbackForm);
+              moduleFeedbackConfig = {
+                id: feedbackForm.id || 'module_feedback',
+                title: feedbackForm.config.title || '¿Qué te ha parecido el módulo?',
+                questionText: feedbackForm.config.questionText || feedbackForm.config.description || 'Por favor, comparte tu opinión sobre este módulo',
+                description: feedbackForm.config.description,
+                required: feedbackForm.config.required || false,
+                type: 'feedback'
+              };
+            }
+            
+            // Buscar configuración específica de feedback de imagen
+            const imageFeedbackForm = formsData.data.find((form: any) => 
+              form.derivedType === 'image_feedback' || 
+              form.derivedType === 'image-feedback' ||
+              form.originalSk === 'IMAGE_FEEDBACK' ||
+              (form.config && (
+                form.config.type === 'image_feedback' || 
+                form.config.type === 'image-feedback'
+              ))
+            );
+            
+            if (imageFeedbackForm && imageFeedbackForm.config) {
+              console.log('[useParticipantFlowWithStore] ✅ Configuración de feedback de imagen encontrada en backend:', imageFeedbackForm);
+              imageFeedbackConfig = {
+                id: imageFeedbackForm.id || 'image_feedback',
+                title: imageFeedbackForm.config.title || '¿Qué te parece esta imagen?',
+                questionText: imageFeedbackForm.config.questionText || imageFeedbackForm.config.description || 'Por favor, comparte tu opinión sobre esta imagen',
+                description: imageFeedbackForm.config.description,
+                imageUrl: imageFeedbackForm.config.imageUrl || 'https://via.placeholder.com/300',
+                required: imageFeedbackForm.config.required || false,
+                type: 'image_feedback'
+              };
+            }
+          }
+        } else {
+          console.log(`[useParticipantFlowWithStore] Endpoint forms no disponible (${formsResponse.status}), usando fallback`);
+        }
+      } catch (formsError: unknown) {
+        console.log('[useParticipantFlowWithStore] Error obteniendo configuración de forms, usando fallback:', formsError);
+      }
+      
+      // Configurar fallbacks hardcodeados si no se obtuvieron del backend
+      if (!moduleFeedbackConfig) {
+        console.warn('[useParticipantFlowWithStore] ⚠️ USANDO CONFIGURACIÓN HARDCODEADA para feedback del módulo - considera configurar esto en el backend');
+        isModuleFeedbackHardcoded = true;
+        moduleFeedbackConfig = {
+          id: 'module_feedback',
+          title: '¿Qué te ha parecido el módulo?',
+          questionText: 'Por favor, comparte tu opinión sobre este módulo',
+          description: 'Aquí puedes describir tu primera impresión de este módulo',
+          required: false,
+          type: 'feedback'
+        };
+      }
+      
+      if (!imageFeedbackConfig) {
+        console.warn('[useParticipantFlowWithStore] ⚠️ USANDO CONFIGURACIÓN HARDCODEADA para feedback de imagen - considera configurar esto en el backend');
+        isImageFeedbackHardcoded = true;
+        imageFeedbackConfig = {
+          id: 'image_feedback',
+          title: '¿Qué te parece esta imagen?',
+          questionText: 'Por favor, comparte tu opinión sobre esta imagen',
+          imageUrl: 'https://via.placeholder.com/300',
+          required: false,
+          type: 'image_feedback'
+        };
+      }
+      
+      // Agregar pregunta de feedback del módulo si no existe
       const hasFeedbackQuestion = finalSteps.some(step => 
         step.name?.includes('Que te ha parecido el módulo') || 
-        step.id === 'module_feedback'
+        step.id === 'module_feedback' ||
+        step.id === moduleFeedbackConfig.id
       );
       
       if (!hasFeedbackQuestion) {
-        // Añadir pregunta de feedback sobre el módulo
         finalSteps.push({
-          id: 'module_feedback',
-          name: 'Que te ha parecido el módulo?',
+          id: moduleFeedbackConfig.id,
+          name: moduleFeedbackConfig.title,
           type: 'feedback',
           config: {
-            title: '¿Qué te ha parecido el módulo?',
-            questionText: 'Por favor, comparte tu opinión sobre este módulo',
-            type: 'feedback'
+            ...moduleFeedbackConfig,
+            isHardcoded: isModuleFeedbackHardcoded
           }
         });
+        
+        if (isModuleFeedbackHardcoded) {
+          console.warn('[useParticipantFlowWithStore] ⚠️ Paso de feedback del módulo agregado con configuración HARDCODEADA');
+        } else {
+          console.log('[useParticipantFlowWithStore] ✅ Paso de feedback del módulo agregado con configuración del BACKEND');
+        }
       }
-
-      // 9. Añadir pregunta sobre imagen (si no existe ya)
+      
+      // Agregar pregunta de feedback de imagen si no existe
       const hasImageQuestion = finalSteps.some(step => 
         step.name?.includes('Que te parece esta imagen') || 
-        step.id === 'image_feedback'
+        step.id === 'image_feedback' ||
+        step.id === imageFeedbackConfig.id
       );
       
       if (!hasImageQuestion) {
-        // Añadir pregunta sobre imagen
         finalSteps.push({
-          id: 'image_feedback',
-          name: 'Que te parece esta imagen?',
+          id: imageFeedbackConfig.id,
+          name: imageFeedbackConfig.title,
           type: 'image_feedback',
           config: {
-            title: '¿Qué te parece esta imagen?',
-            questionText: 'Por favor, comparte tu opinión sobre esta imagen',
-            imageUrl: 'https://via.placeholder.com/300', // URL de placeholder
-            type: 'image_feedback'
+            ...imageFeedbackConfig,
+            isHardcoded: isImageFeedbackHardcoded
           }
         });
+        
+        if (isImageFeedbackHardcoded) {
+          console.warn('[useParticipantFlowWithStore] ⚠️ Paso de feedback de imagen agregado con configuración HARDCODEADA');
+        } else {
+          console.log('[useParticipantFlowWithStore] ✅ Paso de feedback de imagen agregado con configuración del BACKEND');
+        }
       }
 
       // 10. Añadir Agradecimiento

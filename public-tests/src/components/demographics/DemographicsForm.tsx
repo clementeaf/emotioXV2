@@ -7,6 +7,7 @@ import {
 import { DemographicQuestion } from './DemographicQuestion';
 import { useStepResponseManager } from '../../hooks/useStepResponseManager';
 import { DemographicsFormProps } from './types';
+import { getStandardButtonText } from '../../utils/formHelpers';
 
 export const DemographicsForm: React.FC<DemographicsFormProps> = ({
   config,
@@ -40,14 +41,14 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
     }
   }, [responseData]);
 
-  let buttonText = 'Guardar y continuar';
-  if (isSubmittingToServer) {
-    buttonText = 'Pasando al siguiente módulo...';
-  } else if (isSaving) {
-    buttonText = 'Guardando...';
-  } else if (useStepResponseManagerReturnedSpecificId) {
-    buttonText = 'Actualizar y continuar';
-  }
+  const buttonText = getStandardButtonText({
+    isSaving: isSaving,
+    isLoading: isSubmittingToServer,
+    hasExistingData: !!useStepResponseManagerReturnedSpecificId,
+    isNavigating: isSubmittingToServer,
+    customCreateText: 'Guardar y continuar',
+    customUpdateText: 'Actualizar y continuar'
+  });
 
   if (!config || !config.questions) {
     return (

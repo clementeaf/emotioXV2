@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useParticipantStore } from "../../../stores/participantStore";
 import { useResponseAPI } from "../../../hooks/useResponseAPI";
 import { ApiClient, APIStatus } from "../../../lib/api";
+import { getStandardButtonText } from "../../../utils/formHelpers";
 
 interface MultipleChoiceQuestionProps {
     stepConfig?: unknown;
@@ -202,11 +203,16 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
         }
     };
 
-    let buttonText = 'Siguiente';
-    if (isNavigating) buttonText = 'Pasando al siguiente módulo...';
-    else if (isSaving || isApiLoading) buttonText = 'Guardando...';
-    else if (!isMock && dataExisted && moduleResponseId) buttonText = 'Actualizar y continuar';
-    else if (!isMock) buttonText = 'Guardar y continuar';
+    // Usar sistema estandarizado para determinar texto del botón
+    const buttonText = getStandardButtonText({
+        isSaving: isSaving || isApiLoading,
+        isLoading: dataLoading,
+        hasExistingData: (!isMock && dataExisted) || selectedOptions.length > 0, // Considerar existente si hay datos cargados O opciones seleccionadas
+        isNavigating,
+        customSavingText: 'Guardando...',
+        customUpdateText: 'Actualizar y continuar',
+        customCreateText: 'Guardar y continuar'
+    });
 
     if (dataLoading && !isMock) {
         return (
