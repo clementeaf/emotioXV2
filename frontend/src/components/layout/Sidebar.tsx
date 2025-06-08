@@ -467,8 +467,8 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
 
   // Sidebar estándar para el resto de vistas
   return (
-    <div className={cn('w-56 h-[410px] bg-white shadow-lg flex flex-col mt-24 ml-4 mb-4 rounded-2xl', className)}>
-      <div className="px-4 pt-4 pb-3 border-b border-neutral-200">
+    <div className={cn('w-56 h-[410px] bg-transparent flex flex-col mt-24 ml-4 mb-4', className)}>
+      <div className="px-4 pt-4 pb-3">
         <a
           href="/dashboard"
           className="flex items-center"

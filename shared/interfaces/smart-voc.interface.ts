@@ -129,11 +129,6 @@ export interface SmartVOCQuestion {
   instructions?: string;
   
   /**
-   * Whether this question is required
-   */
-  required: boolean;
-  
-  /**
    * Whether this question should be shown conditionally
    */
   showConditionally: boolean;
@@ -256,7 +251,6 @@ export const DEFAULT_SMART_VOC_FORM: SmartVOCFormData = {
       type: 'CSAT',
       title: 'Customer Satisfaction Score (CSAT)',
       description: 'How would you rate your overall satisfaction level with [company]?',
-      required: true,
       showConditionally: false,
       instructions: '',
       config: {

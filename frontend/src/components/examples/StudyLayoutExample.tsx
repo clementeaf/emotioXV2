@@ -68,19 +68,9 @@ export function StudyLayoutExample() {
                   ¿Qué tan satisfecho estás con nuestro servicio?
                 </label>
                 <div className="space-y-2">
-                  {['Muy insatisfecho', 'Insatisfecho', 'Neutral', 'Satisfecho', 'Muy satisfecho'].map((option, index) => (
-                    <label key={index} className="flex items-center">
-                      <input
-                        type="radio"
-                        name="satisfaction"
-                        value={option}
-                        checked={formData.satisfaction === option}
-                        onChange={(e) => setFormData(prev => ({ ...prev, satisfaction: e.target.value }))}
-                        className="mr-3 text-indigo-600 focus:ring-indigo-500"
-                      />
-                      <span className="text-sm text-neutral-700">{option}</span>
-                    </label>
-                  ))}
+                  <p className="text-sm text-neutral-500 italic">
+                    Las opciones de respuesta se configuran dinámicamente según las necesidades del estudio.
+                  </p>
                 </div>
               </div>
 
@@ -89,18 +79,11 @@ export function StudyLayoutExample() {
                 <label className={`block text-sm font-medium text-neutral-700 ${formSpacing.label}`}>
                   ¿Recomendarías nuestro servicio?
                 </label>
-                <select
-                  value={formData.recommendation}
-                  onChange={(e) => setFormData(prev => ({ ...prev, recommendation: e.target.value }))}
-                  className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                >
-                  <option value="">Selecciona una opción</option>
-                  <option value="definitely">Definitivamente sí</option>
-                  <option value="probably">Probablemente sí</option>
-                  <option value="maybe">Tal vez</option>
-                  <option value="probably-not">Probablemente no</option>
-                  <option value="definitely-not">Definitivamente no</option>
-                </select>
+                <div className="w-full px-3 py-2 border border-neutral-300 rounded-md bg-neutral-50">
+                  <p className="text-sm text-neutral-500 italic">
+                    Campo dinámico - las opciones se configuran según el estudio
+                  </p>
+                </div>
               </div>
             </div>
 

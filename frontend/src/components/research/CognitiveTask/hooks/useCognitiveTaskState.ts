@@ -8,7 +8,6 @@ import { CognitiveTaskFormData } from './useCognitiveTaskForm'; // Importar o de
 // Interfaz para las props del hook de estado
 interface UseCognitiveTaskStateProps {
   initialData?: Partial<CognitiveTaskFormData>; // Permitir datos iniciales
-  defaultQuestions: Question[]; // Necesita las preguntas default
 }
 
 // Interfaz para el resultado del hook de estado
@@ -19,7 +18,6 @@ interface UseCognitiveTaskStateResult {
   handleAddChoice: (questionId: string) => void;
   handleRemoveChoice: (questionId: string, choiceId: string) => void;
   handleRandomizeChange: (checked: boolean) => void;
-  initializeDefaultQuestionsIfNeeded: (currentQuestions: Question[]) => Question[]; // Función para asegurar defaults
 }
 
 // Constante para el estado inicial por defecto
@@ -31,14 +29,11 @@ const DEFAULT_STATE: CognitiveTaskFormData = {
 
 export const useCognitiveTaskState = ({
   initialData,
-  defaultQuestions,
 }: UseCognitiveTaskStateProps): UseCognitiveTaskStateResult => {
   const [formData, setFormData] = useState<CognitiveTaskFormData>(() => ({
     ...DEFAULT_STATE,
     ...(initialData || {}),
-    questions: initialData?.questions && initialData.questions.length > 0 
-                 ? initialData.questions 
-                 : [...defaultQuestions], // Empezar con defaults si no hay iniciales
+    questions: initialData?.questions || [], // Empezar siempre con datos iniciales o array vacío
   }));
 
   // Función para manejar cambios en preguntas
@@ -92,18 +87,6 @@ export const useCognitiveTaskState = ({
     }));
   }, []);
 
-  // Función reutilizable para asegurar que las preguntas default existan
-  const initializeDefaultQuestionsIfNeeded = useCallback((currentQuestions: Question[]): Question[] => {
-    console.log('[StateHook] Asegurando exactamente 8 preguntas predeterminadas.');
-    // Crear mapa de preguntas actuales
-    const existingMap = new Map(currentQuestions.map(q => [q.id, q]));
-    // Construir SIEMPRE el array basado en las 8 defaultQuestions, usando datos existentes si coinciden por ID
-    const mergedQuestions = defaultQuestions.map(dq => existingMap.get(dq.id) || dq); 
-    
-    return mergedQuestions; // Devolver siempre las 8 (fusionadas o default)
-
-  }, [defaultQuestions]);
-
   return {
     formData,
     setFormData,
@@ -111,6 +94,5 @@ export const useCognitiveTaskState = ({
     handleAddChoice,
     handleRemoveChoice,
     handleRandomizeChange,
-    initializeDefaultQuestionsIfNeeded,
   };
 }; 

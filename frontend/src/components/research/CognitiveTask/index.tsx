@@ -38,6 +38,7 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
     handleQuestionChange,
     handleAddChoice,
     handleRemoveChoice,
+    handleAddQuestion,
     handleFileUpload,
     handleFileDelete: handleRemoveFile,
     handleRandomizeChange: setRandomizeQuestions,
@@ -131,6 +132,7 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
             onQuestionChange={handleQuestionChange}
             onAddChoice={handleAddChoice}
             onRemoveChoice={handleRemoveChoice}
+            onAddQuestion={handleAddQuestion}
             onFileUpload={handleFileUpload}
             onFileDelete={handleRemoveFile}
             setRandomizeQuestions={setRandomizeQuestions}

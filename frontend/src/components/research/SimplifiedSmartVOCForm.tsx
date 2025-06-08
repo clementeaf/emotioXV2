@@ -24,19 +24,7 @@ interface SimplifiedSmartVOCFormProps {
 }
 
 export function SimplifiedSmartVOCForm({ onSave }: SimplifiedSmartVOCFormProps) {
-  const [questions, setQuestions] = useState<Question[]>([
-    {
-      id: 'q1',
-      type: 'CSAT',
-      text: 'How would you rate your overall satisfaction level with [company]?',
-      required: true,
-      showConditionality: false,
-      config: {
-        companyName: '',
-        ratingType: 'stars'
-      }
-    }
-  ]);
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [randomizeQuestions, setRandomizeQuestions] = useState(false);
 
   const handleAddQuestion = () => {
@@ -344,18 +332,7 @@ export function SimplifiedSmartVOCForm({ onSave }: SimplifiedSmartVOCFormProps) 
                         Show conditionality
                       </label>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <input 
-                        type="checkbox" 
-                        id={`required-${question.id}`}
-                        checked={question.required || false}
-                        onChange={(e) => setQuestions(questions.map(q => q.id === question.id ? { ...q, required: e.target.checked } : q))}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      />
-                      <label htmlFor={`required-${question.id}`} className="text-sm text-neutral-600">
-                        Required
-                      </label>
-                    </div>
+
                   </div>
                 </div>
               </div>

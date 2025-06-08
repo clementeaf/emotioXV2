@@ -20,72 +20,7 @@ interface DemographicQuestion {
 }
 
 export function DemographicsForm({ className }: DemographicsFormProps) {
-  const [questions, setQuestions] = useState<DemographicQuestion[]>([
-    {
-      id: 'age',
-      label: 'Age',
-      type: 'single-choice',
-      isRequired: true,
-      enabled: true,
-      options: ['Under 18', '18-24', '25-34', '35-44', '45-54', '55-64', '65+']
-    },
-    {
-      id: 'gender',
-      label: 'Gender',
-      type: 'single-choice',
-      isRequired: true,
-      enabled: true,
-      options: ['Male', 'Female', 'Non-binary', 'Prefer not to say']
-    },
-    {
-      id: 'country',
-      label: 'Country of Residence',
-      type: 'single-choice',
-      isRequired: true,
-      enabled: true,
-      options: ['United States', 'Canada', 'United Kingdom', 'Germany', 'France', 'Spain', 'Other']
-    },
-    {
-      id: 'education',
-      label: 'Education Level',
-      type: 'single-choice',
-      isRequired: false,
-      enabled: true,
-      options: ['High School', 'Some College', 'Bachelor\'s Degree', 'Master\'s Degree', 'Doctorate', 'Other']
-    },
-    {
-      id: 'income',
-      label: 'Annual Household Income',
-      type: 'single-choice',
-      isRequired: false,
-      enabled: true,
-      options: ['Less than $25,000', '$25,000-$49,999', '$50,000-$74,999', '$75,000-$99,999', '$100,000+', 'Prefer not to say']
-    },
-    {
-      id: 'employment',
-      label: 'Employment Status',
-      type: 'single-choice',
-      isRequired: false,
-      enabled: true,
-      options: ['Full-time', 'Part-time', 'Self-employed', 'Unemployed', 'Student', 'Retired', 'Other']
-    },
-    {
-      id: 'internet_usage',
-      label: 'Daily Hours Online',
-      type: 'single-choice',
-      isRequired: false,
-      enabled: false,
-      options: ['Less than 1 hour', '1-3 hours', '4-6 hours', '7-9 hours', '10+ hours']
-    },
-    {
-      id: 'tech_proficiency',
-      label: 'Technical Proficiency',
-      type: 'single-choice',
-      isRequired: false,
-      enabled: false,
-      options: ['Beginner', 'Intermediate', 'Advanced', 'Expert']
-    }
-  ]);
+  const [questions, setQuestions] = useState<DemographicQuestion[]>([]);
 
   const toggleQuestionEnabled = (questionId: string) => {
     setQuestions(questions.map(q => 

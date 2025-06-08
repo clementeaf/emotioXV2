@@ -44,7 +44,24 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
         if (choicesFromConfig.length === 0 && !isMock) {
             return ['Opción Múltiple A (sin texto)', 'Opción Múltiple B (sin texto)', 'Opción Múltiple C (sin texto)'];
         }
-        return choicesFromConfig.length > 0 ? choicesFromConfig : (isMock ? ['Opción Múltiple Mock A', 'Opción Múltiple Mock B', 'Opción Múltiple Mock C'] : []);
+        
+        if (isMock) {
+            return ['Opción Múltiple Mock A', 'Opción Múltiple Mock B', 'Opción Múltiple Mock C'];
+        }
+        
+        if (choicesFromConfig.length > 0) {
+            // Convertir objetos a strings si es necesario
+            return choicesFromConfig.map((choice, index) => {
+                if (typeof choice === 'string') return choice;
+                if (typeof choice === 'object' && choice !== null) {
+                    const obj = choice as { text?: string; id?: string };
+                    return obj.text || `Opción Múltiple ${String.fromCharCode(65 + index)} (sin texto)`;
+                }
+                return `Opción Múltiple ${String.fromCharCode(65 + index)} (sin texto)`;
+            });
+        }
+        
+        return [];
     }, [choicesFromConfig, isMock]);
     const minSelections = typeof cfg.minSelections === 'number' ? cfg.minSelections : 0;
     const maxSelections = typeof cfg.maxSelections === 'number' && cfg.maxSelections > 0 ? cfg.maxSelections : displayOptions.length;
@@ -68,7 +85,13 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
     
     useEffect(() => {
         if (isMock) {
-            setSelectedOptions(savedResponses.filter(opt => displayOptions.includes(opt)));
+            const validSavedResponses = savedResponses.filter(opt => {
+                if (typeof opt === 'string') {
+                    return displayOptions.includes(opt);
+                }
+                return false;
+            });
+            setSelectedOptions(validSavedResponses);
             setDataLoading(false);
         } else if (!researchId || !participantId || !stepType) {
             setDataLoading(false);
@@ -112,12 +135,23 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
                 if (loadedApiResponsesRaw.length === 0 && savedResponses.length > 0) {
                     finalResponsesToProcess = savedResponses;
                 }
-                const validLoadedOptions = finalResponsesToProcess.filter(opt => displayOptions.includes(opt));
+                const validLoadedOptions = finalResponsesToProcess.filter(opt => {
+                    if (typeof opt === 'string') {
+                        return displayOptions.includes(opt);
+                    }
+                    return false;
+                });
                 setSelectedOptions(validLoadedOptions);
             })
             .catch(error => {
                 setApiError(error.message || 'Excepción desconocida al cargar datos.');
-                setSelectedOptions(savedResponses.filter(opt => displayOptions.includes(opt)));
+                const validSavedOptions = savedResponses.filter(opt => {
+                    if (typeof opt === 'string') {
+                        return displayOptions.includes(opt);
+                    }
+                    return false;
+                });
+                setSelectedOptions(validSavedOptions);
             })
             .finally(() => {
                 setDataLoading(false);
@@ -127,7 +161,12 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
     useEffect(() => {
         if (isMock || dataLoading) return;
         setSelectedOptions(prevSelected => {
-            const newSelected = prevSelected.filter(opt => displayOptions.includes(opt));
+            const newSelected = prevSelected.filter(opt => {
+                if (typeof opt === 'string') {
+                    return displayOptions.includes(opt);
+                }
+                return false;
+            });
             return newSelected;
         });
     }, [displayOptions, savedResponses, isMock, dataLoading]);
@@ -212,6 +251,25 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
         customSavingText: 'Guardando...',
         customUpdateText: 'Actualizar y continuar',
         customCreateText: 'Guardar y continuar'
+    });
+
+    // 🔍 LOGGING TEMPORAL para debugging MultipleChoiceQuestion
+    console.log('[MultipleChoiceQuestion] estado actual:', {
+        stepType,
+        stepId: stepIdFromProps,
+        selectedOptions,
+        dataExisted,
+        moduleResponseId,
+        dataLoading,
+        isSaving,
+        hasExistingData: (!isMock && dataExisted) || selectedOptions.length > 0,
+        buttonText,
+        displayOptions: displayOptions.slice(0, 3), // Solo las primeras 3 para no saturar
+        searchCriteria: {
+            stepId: stepIdFromProps || stepType,
+            stepType,
+            stepName: componentTitle
+        }
     });
 
     if (dataLoading && !isMock) {

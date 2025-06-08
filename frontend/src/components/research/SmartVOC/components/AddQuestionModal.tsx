@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
-import { QuestionType, SmartVOCQuestion, DEFAULT_QUESTIONS } from '../types';
+import { QuestionType, SmartVOCQuestion } from '../types';
 import { UI_TEXTS } from '../constants';
+import { QUESTION_TEMPLATES, getAvailableQuestionTypes, createQuestionFromTemplate } from '../templates/questionTemplates';
 
 interface AddQuestionModalProps {
   isOpen: boolean;
@@ -22,36 +23,19 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Filtrar tipos de preguntas disponibles (que no se hayan agregado ya)
-  const availableQuestionTypes = DEFAULT_QUESTIONS.filter(
-    q => !existingQuestionTypes.includes(q.type)
-  );
-
-  // Obtener el template de la pregunta seleccionada
-  const getQuestionTemplate = () => {
-    if (!selectedType) return null;
-    const template = DEFAULT_QUESTIONS.find(q => q.type === selectedType);
-    if (!template) return null;
-    
-    // Generar un ID único para la nueva pregunta
-    const uniqueId = `${selectedType.toLowerCase()}_${Date.now()}`;
-    
-    return {
-      ...template,
-      id: uniqueId,
-      instructions
-    };
-  };
+  // Obtener tipos de preguntas disponibles (que no se hayan agregado ya)
+  const availableQuestionTypes = getAvailableQuestionTypes(existingQuestionTypes);
 
   const handleAddQuestion = () => {
-    const questionTemplate = getQuestionTemplate();
-    if (questionTemplate) {
-      onAddQuestion(questionTemplate);
-      // Resetear estado
-      setSelectedType(null);
-      setInstructions('');
-      onClose();
-    }
+    if (!selectedType) return;
+    
+    const questionTemplate = createQuestionFromTemplate(selectedType, instructions);
+    onAddQuestion(questionTemplate);
+    
+    // Resetear estado
+    setSelectedType(null);
+    setInstructions('');
+    onClose();
   };
 
   return (
@@ -72,20 +56,23 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
           ) : (
             <>
               <div className="grid grid-cols-2 gap-4">
-                {availableQuestionTypes.map((question) => (
-                  <div
-                    key={question.type}
-                    onClick={() => setSelectedType(question.type)}
-                    className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                      selectedType === question.type 
-                        ? 'border-blue-500 bg-blue-50' 
-                        : 'hover:border-blue-300 hover:bg-blue-50/50'
-                    }`}
-                  >
-                    <h3 className="font-medium">{question.title}</h3>
-                    <p className="text-sm text-neutral-500 mt-1">{question.description}</p>
-                  </div>
-                ))}
+                {availableQuestionTypes.map((questionType) => {
+                  const template = QUESTION_TEMPLATES[questionType];
+                  return (
+                    <div
+                      key={questionType}
+                      onClick={() => setSelectedType(questionType)}
+                      className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                        selectedType === questionType 
+                          ? 'border-blue-500 bg-blue-50' 
+                          : 'hover:border-blue-300 hover:bg-blue-50/50'
+                      }`}
+                    >
+                      <h3 className="font-medium">{template.title}</h3>
+                      <p className="text-sm text-neutral-500 mt-1">{template.description}</p>
+                    </div>
+                  );
+                })}
               </div>
               
               {selectedType && (

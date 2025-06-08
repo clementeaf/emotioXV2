@@ -33,7 +33,7 @@ export interface SmartVOCQuestion {
   title?: string;             // Título principal/interno de la pregunta (útil para logs, nombres de API)
   description?: string;       // El texto/pregunta principal que se muestra al usuario
   instructions?: string;      // Instrucciones adicionales para el usuario
-  required?: boolean;         // Si la pregunta es obligatoria
+  required?: boolean;         // Si la pregunta es obligatoria (opcional para mantener compatibilidad)
   companyName?: string;       // Para CSAT, si se usa [company] en el texto
   
   // `config` contendrá la configuración específica del tipo de pregunta

@@ -70,19 +70,12 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
 
       try {
         const response = await researchAPI.get(researchId);
-
-        // Alova procesa la respuesta, response.data es la carga útil.
-        // Verificar si la carga útil es un array antes de tratarla como tal.
         let researchData: Research | null = null;
         if (Array.isArray(response.data) && response.data.length > 0) {
-          // Si es un array (como vimos en curl), toma el primer elemento.
           researchData = response.data[0] as Research;
         } else if (response.data && typeof response.data === 'object' && !Array.isArray(response.data)) {
-          // Si NO es un array pero es un objeto (posible estructura directa), úsalo.
           researchData = response.data as Research;
         }
-        // Si no es ni array con elementos ni un objeto, researchData permanecerá null.
-
         const nameFromApi = researchData?.name;
 
         if (nameFromApi) {
@@ -93,12 +86,12 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
             console.error('[ResearchSidebar] Falló al guardar en localStorage:', storageError);
           }
         } else {
-          fetchNameFromLocalStorage(); // Llama al fallback
+          fetchNameFromLocalStorage();
         }
       } catch (apiError: any) {
         console.error(`[ResearchSidebar] Error capturado al llamar a researchAPI.get para ${researchId}:`, apiError);
         setError(`Error al cargar datos (${apiError.message || 'detalle desconocido'})`);
-        fetchNameFromLocalStorage(); // Intenta fallback
+        fetchNameFromLocalStorage();
       } finally {
         setIsLoading(false); 
       }
@@ -140,11 +133,9 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
   }
 
   return (
-    <div className={cn('bg-white rounded-lg shadow-xl p-4 mt-4 mx-4 flex flex-col min-h-[510px] border border-neutral-200', className)}>
-      {/* Header del sidebar */}
+    <div className={cn('p-4 mt-4 mx-4 flex flex-col min-h-[510px]', className)}>
       <div className="mb-4 pb-4 border-b border-neutral-200">
         <div className="flex items-center justify-between mb-2">
-          {/* Mostrar estado de carga o nombre */}
           <h2 className="text-lg font-semibold text-neutral-900 truncate" title={researchName}>
             {isLoading ? 'Cargando nombre...' : researchName}
           </h2>

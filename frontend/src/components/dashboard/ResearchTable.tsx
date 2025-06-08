@@ -147,7 +147,7 @@ function ResearchTableContent() {
   };
 
   return (
-    <div className="bg-white rounded-lg overflow-hidden">
+    <div className="bg-white overflow-hidden">
       <div className="flex justify-between items-center p-6 border-b border-neutral-200">
         <div className="flex flex-col">
           <h2 className="text-xl font-semibold text-neutral-900">Research Projects</h2>

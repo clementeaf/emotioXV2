@@ -161,8 +161,8 @@ interface SuccessData {
 
 // Sección de creación de investigación
 const CreateSection = memo(({ onResearchCreated }: { onResearchCreated: (id: string, name: string) => void }) => (
-  <div className="flex-1 overflow-y-auto">
-    <div className="container mx-auto px-6 py-8">
+  <div className="flex-1 overflow-y-auto mt-4 ml-4 bg-white p-4 rounded-lg border border-neutral-150">
+    <div className="mx-auto px-6 py-8">
       <div className="mb-4">
         <h1 className="text-2xl mt-2 font-semibold text-neutral-900">
           Nueva Investigación
@@ -188,8 +188,8 @@ const SuccessSection = memo(({
   name: string, 
   onClose: () => void 
 }) => (
-  <div className="flex-1 overflow-y-auto">
-    <div className="container mx-auto px-6 py-8">
+  <div className="flex-1 overflow-y-auto mt-4 ml-4 bg-white p-4 rounded-lg border border-neutral-150">
+    <div className="mx-auto px-6 py-8">
       <div className="mb-8">
         <h1 className="text-2xl font-semibold text-neutral-900">
           Investigación Creada
@@ -214,8 +214,8 @@ SuccessSection.displayName = 'SuccessSection';
 
 // Sección de configuración de etapas
 const StagesSection = memo(({ id }: { id: string }) => (
-  <div className="flex-1 overflow-y-auto">
-    <div className="container mx-auto px-6 py-8">
+  <div className="flex-1 overflow-y-auto mt-4 ml-4 bg-white p-4 rounded-lg border border-neutral-150">
+    <div className="mx-auto px-6 py-8">
       <div className="mb-8">
         <h1 className="text-2xl font-semibold text-neutral-900">
           Configurar Etapas
@@ -236,8 +236,8 @@ StagesSection.displayName = 'StagesSection';
 
 // Sección de error
 const ErrorSection = memo(({ onNavigateToStart }: { onNavigateToStart: () => void }) => (
-  <div className="flex-1 overflow-y-auto">
-    <div className="container mx-auto px-6 py-8">
+  <div className="flex-1 overflow-y-auto mt-4 ml-4 bg-white p-4 rounded-lg border border-neutral-150">
+    <div className="mx-auto px-6 py-8">
       <div className="p-6 bg-red-50 rounded-lg border border-red-200">
         <h2 className="text-xl font-medium text-red-800 mb-2">Paso no válido</h2>
         <p className="text-red-700">
@@ -322,10 +322,10 @@ export default function NewResearchPage() {
   return (
     <div className="flex min-h-screen bg-neutral-50">
       <Sidebar />
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col mt-12 pr-7 pb-4">
         <Navbar />
         <ErrorBoundary>
-          <Suspense fallback={<div className="p-6 text-center">Cargando...</div>}>
+          <Suspense fallback={<div className="p-4 text-center">Cargando...</div>}>
             <NewResearchContentWithSuspense />
           </Suspense>
         </ErrorBoundary>

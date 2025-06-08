@@ -46,7 +46,18 @@ export const SingleChoiceQuestion: React.FC<SingleChoiceQuestionProps> = ({
             }
             return ['Opción A (sin texto)', 'Opción B (sin texto)', 'Opción C (sin texto)'];
         }
-        return choices;
+        
+        // Convertir objetos a strings si es necesario, pero generar nombres consistentes
+        return choices.map((choice, index) => {
+            if (typeof choice === 'string' && choice.trim() !== '') return choice;
+            if (typeof choice === 'object' && choice !== null) {
+                const obj = choice as { text?: string; id?: string };
+                if (obj.text && obj.text.trim() !== '') return obj.text;
+            }
+            // Si no hay texto válido, generar el formato que está guardado en DB
+            const letter = String.fromCharCode(65 + index); // A, B, C...
+            return `Opción ${letter} (sin texto)`;
+        });
     }, [cfg.choices, isMock]);
 
     // Props estandarizadas para el hook
@@ -67,6 +78,22 @@ export const SingleChoiceQuestion: React.FC<SingleChoiceQuestionProps> = ({
 
     const { value, isSaving, isLoading, error, hasExistingData, isDataLoaded } = state;
     const { setValue, validateAndSave } = actions;
+
+    // 🔍 LOGGING TEMPORAL para debugging SingleChoiceQuestion
+    console.log('[SingleChoiceQuestion] estado actual:', {
+        stepType,
+        stepId: stepIdFromProps,
+        value,
+        hasExistingData,
+        isLoading,
+        isDataLoaded,
+        displayOptions: displayOptions.slice(0, 3), // Solo las primeras 3 para no saturar
+        searchCriteria: {
+            stepId: stepIdFromProps || stepType,
+            stepType,
+            stepName: componentTitle
+        }
+    });
 
     // Limpiar valor si no coincide con las opciones actuales - VERSION AGRESIVA
     React.useEffect(() => {

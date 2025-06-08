@@ -79,6 +79,7 @@ interface UseCognitiveTaskFormResult {
   handleQuestionChange: (questionId: string, updates: Partial<Question>) => void;
   handleAddChoice: (questionId: string) => void;
   handleRemoveChoice: (questionId: string, choiceId: string) => void;
+  handleAddQuestion: (type: QuestionType) => void;
   handleRandomizeChange: (checked: boolean) => void;
   
   // Handlers de archivos (vienen del hook)
@@ -128,96 +129,19 @@ const QUESTION_TYPES = [
   { id: 'preference_test' as QuestionType, label: 'Prueba de Preferencia', description: 'Test A/B' }
 ];
 
-// Definición local de preguntas predeterminadas
-const DEFAULT_QUESTIONS: Question[] = [
-  {
-    id: '3.1',
-    type: 'short_text' as QuestionType,
-    title: '',
-    required: false,
-    showConditionally: false,
-    deviceFrame: false
-  },
-  {
-    id: '3.2',
-    type: 'long_text' as QuestionType,
-    title: '',
-    required: false,
-    showConditionally: false,
-    deviceFrame: false
-  },
-  {
-    id: '3.3',
-    type: 'single_choice' as QuestionType,
-    title: '',
-    required: false,
-    showConditionally: false,
-    choices: [
-      { id: '1', text: '', isQualify: false, isDisqualify: false },
-      { id: '2', text: '', isQualify: false, isDisqualify: false },
-      { id: '3', text: '', isQualify: false, isDisqualify: false }
-    ],
-    deviceFrame: false
-  },
-  {
-    id: '3.4',
-    type: 'multiple_choice' as QuestionType,
-    title: '',
-    required: false,
-    showConditionally: false,
-    choices: [
-      { id: '1', text: '', isQualify: false, isDisqualify: false },
-      { id: '2', text: '', isQualify: false, isDisqualify: false },
-      { id: '3', text: '', isQualify: false, isDisqualify: false }
-    ],
-    deviceFrame: false
-  },
-  {
-    id: '3.5',
-    type: 'linear_scale' as QuestionType,
-    title: '',
-    required: false,
-    showConditionally: false,
-    scaleConfig: {
-      startValue: 1,
-      endValue: 5,
-      startLabel: '',
-      endLabel: ''
-    },
-    deviceFrame: false
-  },
-  {
-    id: '3.6',
-    type: 'ranking' as QuestionType,
-    title: '',
-    required: false,
-    showConditionally: false,
-    choices: [
-      { id: '1', text: '', isQualify: false, isDisqualify: false },
-      { id: '2', text: '', isQualify: false, isDisqualify: false },
-      { id: '3', text: '', isQualify: false, isDisqualify: false }
-    ],
-    deviceFrame: false
-  },
-  {
-    id: '3.7',
-    type: 'navigation_flow' as QuestionType,
-    title: '',
-    required: false,
-    showConditionally: false,
-    files: [],
-    deviceFrame: true
-  },
-  {
-    id: '3.8',
-    type: 'preference_test' as QuestionType,
-    title: '',
-    required: false,
-    showConditionally: false,
-    files: [],
-    deviceFrame: true
-  }
-];
+// No usamos preguntas predeterminadas - el formulario empieza vacío
+
+// Función helper para filtrar preguntas que tienen título
+const filterQuestionsWithTitle = (formData: CognitiveTaskFormData): CognitiveTaskFormData => {
+  const questionsWithTitle = formData.questions.filter(question => 
+    question.title && question.title.trim() !== ''
+  );
+  
+  return {
+    ...formData,
+    questions: questionsWithTitle
+  };
+};
 
 // Helper para limpieza profunda de archivos en error
 const cleanupErrorFiles = (questions: Question[]): Question[] => {
@@ -305,15 +229,14 @@ export const useCognitiveTaskForm = (
   const isAuthenticated = !!user && !!token;
 
   // <<< Usar hook de estado >>>
-  const { 
-    formData, 
-    setFormData, 
-    handleQuestionChange, 
-    handleAddChoice, 
-    handleRemoveChoice, 
-    handleRandomizeChange,
-    initializeDefaultQuestionsIfNeeded
-  } = useCognitiveTaskState({ defaultQuestions: DEFAULT_QUESTIONS });
+    const {
+    formData,
+    setFormData,
+    handleQuestionChange,
+    handleAddChoice,
+    handleRemoveChoice,
+    handleRandomizeChange
+  } = useCognitiveTaskState({});
 
   // Usar hook de modales
   const modals = useCognitiveTaskModals();
@@ -532,9 +455,9 @@ export const useCognitiveTaskForm = (
       );
 
       if (!cognitiveTaskData) {
-        console.log('[useEffect Form Data] No hay datos backend o hubo error. Usando defaults y localStorage.');
-        // Empezar con las preguntas default
-        finalQuestions = initializeDefaultQuestionsIfNeeded([]); 
+        console.log('[useEffect Form Data] No hay datos backend o hubo error. Empezando con formulario vacío.');
+        // Empezar con array vacío
+        finalQuestions = []; 
         finalRandomize = false; 
         setCognitiveTaskId(null); 
       } else {
@@ -543,8 +466,8 @@ export const useCognitiveTaskForm = (
         finalDataFromBackend = existingData; // Guardar datos del backend
         finalRandomize = existingData.randomizeQuestions ?? false;
         setCognitiveTaskId(existingData.id || null);
-        // Fusionar estructura de preguntas default con datos del backend (sin archivos aún)
-        finalQuestions = initializeDefaultQuestionsIfNeeded(existingData.questions || []);
+        // Usar preguntas existentes directamente
+        finalQuestions = existingData.questions || [];
       }
 
       // <<< FUSION FINAL DE ARCHIVOS >>>
@@ -617,7 +540,37 @@ export const useCognitiveTaskForm = (
     
   // Dependencias: Ejecutar cuando cambie la carga, los datos del backend, el researchId 
   // o las funciones de los hooks hijos que usamos.
-  }, [cognitiveTaskData, researchId, isLoading, setFormData, initializeDefaultQuestionsIfNeeded, loadFilesFromLocalStorage]);
+  }, [cognitiveTaskData, researchId, isLoading, setFormData, loadFilesFromLocalStorage]);
+
+  // Función para agregar una nueva pregunta
+  const handleAddQuestion = useCallback((type: QuestionType) => {
+    const newQuestion = {
+      id: `q_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      type,
+      title: '',
+      description: '',
+      required: true,
+      showConditionally: false,
+      deviceFrame: false,
+      ...(type === 'single_choice' || type === 'multiple_choice' || type === 'ranking' ? {
+        choices: [
+          { id: '1', text: '', isQualify: false, isDisqualify: false },
+          { id: '2', text: '', isQualify: false, isDisqualify: false }
+        ]
+      } : {}),
+      ...(type === 'linear_scale' ? {
+        scaleConfig: { startValue: 1, endValue: 5 }
+      } : {}),
+      ...(type === 'navigation_flow' || type === 'preference_test' ? {
+        files: []
+      } : {})
+    };
+
+    setFormData(prev => ({
+      ...prev,
+      questions: [...prev.questions, newQuestion]
+    }));
+  }, [setFormData]);
 
   // Wrapper para validación (actualizar para que coincida)
   const validateCurrentForm = useCallback((): ValidationErrors | null => {
@@ -681,8 +634,12 @@ export const useCognitiveTaskForm = (
   
   const confirmAndSave = useCallback(() => {
       if (!formData) return; // Seguridad
+      
+      // Filtrar solo las preguntas que tienen título
+      const filteredData = filterQuestionsWithTitle(formData);
+      
       // Pasar una copia profunda para evitar mutaciones inesperadas si mutate tarda
-      const dataToSave = JSON.parse(JSON.stringify(formData));
+      const dataToSave = JSON.parse(JSON.stringify(filteredData));
       // Limpiar archivos temporales antes de guardar
       dataToSave.questions = dataToSave.questions.map((q: Question) => ({
           ...q,
@@ -694,6 +651,13 @@ export const useCognitiveTaskForm = (
               s3Key: f.s3Key, // Solo guardar lo necesario
           })) || []
       }));
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log("[ConfirmAndSave] Datos originales:", formData);
+        console.log("[ConfirmAndSave] Datos filtrados:", filteredData);
+        console.log("[ConfirmAndSave] Preguntas sin título omitidas:", formData.questions.length - filteredData.questions.length);
+      }
+      
       console.log("[ConfirmAndSave] Datos listos para mutación:", dataToSave);
       mutate(dataToSave); // Llamar a la mutación
   }, [formData, mutate]);
@@ -717,6 +681,7 @@ export const useCognitiveTaskForm = (
     handleQuestionChange,
     handleAddChoice,
     handleRemoveChoice,
+    handleAddQuestion,
     handleRandomizeChange,
     // Handlers de archivos (del hook)
     handleFileUpload, 

@@ -159,49 +159,49 @@ const ensureOptionsArray = (options?: string[]): string[] => {
   return options || [];
 };
 
-// Modificar el DEFAULT_CONFIG para asegurar que todas las opciones sean arrays con valores predeterminados
+// Configuración sin opciones hardcodeadas - el usuario debe definir sus propias opciones
 const DEFAULT_CONFIG: EyeTrackingRecruitFormData = {
   researchId: '',
   demographicQuestions: {
     age: { 
       enabled: false, 
       required: false, 
-      options: ['18-24', '25-34', '35-44', '45-54', '55-64', '65+'] 
+      options: [] 
     },
     country: { 
       enabled: false, 
       required: false, 
-      options: ['España', 'México', 'Argentina', 'Colombia', 'Chile', 'Perú', 'Otro'] 
+      options: [] 
     },
     gender: { 
       enabled: false, 
       required: false, 
-      options: ['Masculino', 'Femenino', 'Otro', 'Prefiero no decir'] 
+      options: [] 
     },
     educationLevel: { 
       enabled: false, 
       required: false, 
-      options: ['Primaria', 'Secundaria', 'Bachillerato', 'Universidad', 'Posgrado', 'Otro'] 
+      options: [] 
     },
     householdIncome: { 
       enabled: false, 
       required: false, 
-      options: ['Menos de 15.000€', '15.000€-30.000€', '30.000€-50.000€', '50.000€-75.000€', 'Más de 75.000€'] 
+      options: [] 
     },
     employmentStatus: { 
       enabled: false, 
       required: false, 
-      options: ['Empleado', 'Desempleado', 'Estudiante', 'Jubilado', 'Otro'] 
+      options: [] 
     },
     dailyHoursOnline: { 
       enabled: false, 
       required: false, 
-      options: ['0-2 horas', '2-4 horas', '4-6 horas', '6-8 horas', 'Más de 8 horas'] 
+      options: [] 
     },
     technicalProficiency: { 
       enabled: false, 
       required: false, 
-      options: ['Principiante', 'Intermedio', 'Avanzado', 'Experto'] 
+      options: [] 
     }
   },
   linkConfig: {
@@ -257,8 +257,7 @@ const processApiResponse = (response: any): EyeTrackingRecruitFormData => {
             enabled: response.demographicQuestions[key].enabled || false,
             required: response.demographicQuestions[key].required || false,
             // Usar ensureOptionsArray para garantizar que options sea un array
-            options: ensureOptionsArray(response.demographicQuestions[key].options) || 
-                     DEFAULT_CONFIG.demographicQuestions[key].options
+            options: ensureOptionsArray(response.demographicQuestions[key].options) || []
           };
         }
       });

@@ -41,7 +41,6 @@ export default function RootLayout({
       
       // Activar automáticamente el debugger en desarrollo si existe la función
       if (isDevEnv && typeof window.enableApiDebugger === 'function') {
-        console.log('🔍 [DEBUG] Activando debugger de API automáticamente en entorno de desarrollo');
         window.enableApiDebugger();
       }
       

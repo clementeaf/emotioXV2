@@ -127,55 +127,16 @@ export function useStandardizedForm<T>(
     }
 
     if (!isLoadingResponses && !loadingError && moduleResponsesArray && Array.isArray(moduleResponsesArray)) {
-      // 🔍 LOGGING TEMPORAL para debugging
-      console.log('[useStandardizedForm] Buscando respuesta:', {
-        stepType,
-        stepId,
-        moduleResponsesArrayLength: moduleResponsesArray.length,
-        firstFewResponses: moduleResponsesArray.slice(0, 3),
-        searchingFor: { stepType, stepId }
-      });
-
       const foundResponse = moduleResponsesArray.find((r: unknown) => {
         if (typeof r !== 'object' || r === null) return false;
         const response = r as { stepType?: string; stepId?: string; id?: string };
-        
-        // 🔍 LOGGING TEMPORAL para cada respuesta
-        const matches = response.stepType === stepType || response.stepId === stepId;
-        console.log('[useStandardizedForm] Comparando respuesta:', {
-          responseStepType: response.stepType,
-          responseStepId: response.stepId,
-          searchingStepType: stepType,
-          searchingStepId: stepId,
-          matches
-        });
-        
-        return matches;
-      });
-
-      console.log('[useStandardizedForm] Resultado búsqueda:', {
-        foundResponse: !!foundResponse,
-        foundResponseData: foundResponse
+        return response.stepType === stepType || response.stepId === stepId;
       });
 
       if (foundResponse) {
         const foundResp = foundResponse as { response?: unknown; id?: string };
-        console.log('[useStandardizedForm] ✅ Respuesta encontrada:', {
-          foundResp,
-          responseValue: foundResp.response,
-          responseId: foundResp.id,
-          stepType,
-          stepId
-        });
-        
         try {
           const extractedVal = extractValueFromResponse(foundResp.response);
-          console.log('[useStandardizedForm] Valor extraído:', {
-            originalResponse: foundResp.response,
-            extractedValue: extractedVal,
-            extractedType: typeof extractedVal
-          });
-          
           setValue(extractedVal);
           setResponseId(foundResp.id || null);
           setHasExistingData(true);
@@ -198,7 +159,6 @@ export function useStandardizedForm<T>(
     moduleResponsesArray, 
     stepType, 
     stepId, 
-    extractValueFromResponse, 
     initialValue
   ]);
 

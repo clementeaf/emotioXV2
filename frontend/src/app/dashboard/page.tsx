@@ -72,10 +72,10 @@ DashboardStats.displayName = 'DashboardStats';
 
 const DashboardMainContent = memo(() => (
   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <div className="lg:col-span-2 bg-white rounded-lg shadow-sm hover:shadow-lg transition-shadow duration-300 p-6">
+    <div className="lg:col-span-2 bg-white rounded-lg shadow-md border border-neutral-100 hover:shadow-lg transition-shadow duration-300 p-6 hover:cursor-pointer">
       <ResearchTable />
     </div>
-    <div className="bg-white rounded-lg shadow-sm hover:shadow-lg transition-shadow duration-300 p-6">
+    <div className="bg-white rounded-lg shadow-md border border-neutral-100 hover:shadow-lg transition-shadow duration-300 p-6 hover:cursor-pointer">
       <h2 className="text-lg font-medium mb-6">Tipos de Investigación</h2>
       <ResearchTypes />
     </div>
@@ -191,8 +191,8 @@ const DashboardContent = memo(() => {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto mt-4">
-      <div className="container mx-auto px-6 py-8">
+    <div className="flex-1 overflow-y-auto mt-4 ml-4 bg-white p-4 rounded-lg border border-neutral-150">
+      <div className="mx-auto px-6 py-8">
         <DashboardStats />
         <DashboardMainContent />
       </div>
@@ -225,7 +225,7 @@ const DashboardLayout = memo(() => {
   return (
     <div className="flex min-h-screen bg-neutral-50">
       <Sidebar />
-      <div className="flex-1 flex flex-col mt-12">
+      <div className="flex-1 flex flex-col mt-12 pr-7 pb-4">
         <Navbar />
         <ErrorBoundary>
           <Suspense fallback={<div className="p-4 text-center">Cargando...</div>}>

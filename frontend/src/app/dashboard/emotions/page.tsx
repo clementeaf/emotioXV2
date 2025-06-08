@@ -165,8 +165,8 @@ const NextStepsSection = memo(() => (
 // Componente contenido principal
 const EmotionsContent = () => {
   return (
-    <div className="flex-1 overflow-y-auto">
-      <div className="container mx-auto px-6 py-8">
+    <div className="flex-1 overflow-y-auto mt-4 ml-4 bg-white p-4 rounded-lg border border-neutral-150">
+      <div className="mx-auto px-6 py-8">
         <div className="mb-8">
           <h1 className="text-2xl font-semibold text-neutral-900">Emotion Analysis</h1>
           <p className="mt-2 text-sm text-neutral-600">
@@ -204,7 +204,7 @@ export default function EmotionsPage() {
   return (
     <div className="flex min-h-screen bg-neutral-50">
       <Sidebar />
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col mt-12 pr-7 pb-4">
         <Navbar />
         <Suspense fallback={<div className="p-4 text-center">Cargando...</div>}>
           <EmotionsContentWithSuspense />

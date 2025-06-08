@@ -179,98 +179,10 @@ export interface FileUploadQuestionProps {
   uploadProgress?: number;
 }
 
-export const DEFAULT_QUESTIONS: Question[] = [
-  {
-    id: '3.1',
-    type: 'short_text',
-    title: '',
-    required: true,
-    showConditionally: false,
-    deviceFrame: false
-  },
-  {
-    id: '3.2',
-    type: 'long_text',
-    title: '',
-    required: true,
-    showConditionally: false,
-    deviceFrame: false
-  },
-  {
-    id: '3.3',
-    type: 'single_choice',
-    title: '',
-    required: true,
-    showConditionally: false,
-    choices: [
-      { id: '1', text: '', isQualify: false, isDisqualify: false },
-      { id: '2', text: '', isQualify: false, isDisqualify: false },
-      { id: '3', text: '', isQualify: false, isDisqualify: false }
-    ],
-    deviceFrame: false
-  },
-  {
-    id: '3.4',
-    type: 'multiple_choice',
-    title: '',
-    required: true,
-    showConditionally: false,
-    choices: [
-      { id: '1', text: '', isQualify: false, isDisqualify: false },
-      { id: '2', text: '', isQualify: false, isDisqualify: false },
-      { id: '3', text: '', isQualify: false, isDisqualify: false }
-    ],
-    deviceFrame: false
-  },
-  {
-    id: '3.5',
-    type: 'linear_scale',
-    title: '',
-    required: true,
-    showConditionally: false,
-    scaleConfig: {
-      startValue: 1,
-      endValue: 5,
-      startLabel: '',
-      endLabel: ''
-    },
-    deviceFrame: false
-  },
-  {
-    id: '3.6',
-    type: 'ranking',
-    title: '',
-    required: true,
-    showConditionally: false,
-    choices: [
-      { id: '1', text: '', isQualify: false, isDisqualify: false },
-      { id: '2', text: '', isQualify: false, isDisqualify: false },
-      { id: '3', text: '', isQualify: false, isDisqualify: false }
-    ],
-    deviceFrame: false
-  },
-  {
-    id: '3.7',
-    type: 'navigation_flow',
-    title: '',
-    required: false,
-    showConditionally: false,
-    files: [],
-    deviceFrame: true
-  },
-  {
-    id: '3.8',
-    type: 'preference_test',
-    title: '',
-    required: false,
-    showConditionally: false,
-    files: [],
-    deviceFrame: true
-  }
-];
+// Formularios ahora empiezan vacíos sin preguntas predeterminadas
 
 export const DEFAULT_COGNITIVE_TASK_CONFIG: CognitiveTaskData = {
-  questions: DEFAULT_QUESTIONS,
+  questions: [],
   randomizeQuestions: false
 };
 

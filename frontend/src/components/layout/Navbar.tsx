@@ -33,7 +33,7 @@ export function Navbar({ className }: NavbarProps) {
       <div className="relative">
         <button
           onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className="flex items-center gap-2 text-neutral-700 hover:text-neutral-900 focus:outline-none bg-white rounded-full px-3 py-1.5 shadow-md hover:shadow-lg transition-shadow"
+          className="flex items-center gap-2 text-neutral-700 hover:text-neutral-900 focus:outline-none px-3 py-1.5"
         >
           <div className="w-8 h-8 rounded-full bg-neutral-100 flex items-center justify-center">
             <span className="text-sm font-medium">
@@ -60,8 +60,8 @@ export function Navbar({ className }: NavbarProps) {
         </button>
 
         {isMenuOpen && (
-          <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-neutral-200 py-1">
-            <div className="px-4 py-2 border-b border-neutral-200">
+          <div className="absolute right-0 mt-2 py-1">
+            <div className="px-4 py-2">
               <p className="text-sm font-medium text-neutral-900">{(user as User)?.name}</p>
               <p className="text-xs text-neutral-500">{(user as User)?.email}</p>
             </div>

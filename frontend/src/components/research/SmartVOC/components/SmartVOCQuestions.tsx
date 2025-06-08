@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { Switch } from '@/components/ui/Switch';
 import { SmartVOCQuestionsProps, SmartVOCQuestion } from '../types';
 import { UI_TEXTS } from '../constants';
 import { AddQuestionModal } from './AddQuestionModal';
@@ -332,6 +333,8 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
                 disabled={disabled}
               />
             </div>
+
+
             
             <div>
               {renderQuestionConfig(question)}

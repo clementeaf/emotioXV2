@@ -41,17 +41,15 @@ export const useCognitiveTaskValidation = (): UseCognitiveTaskValidationResult =
     }
     
     // Validar que haya al menos una pregunta con título
-    if (!formData.questions || formData.questions.length === 0) {
-      errors.questions = VALIDATION_ERROR_MESSAGES.QUESTIONS_REQUIRED;
-    } else {
-      const hasAnyQuestionWithTitle = formData.questions.some(q => q.title && q.title.trim() !== '');
-      if (!hasAnyQuestionWithTitle) {
-        errors.questions = "Debe haber al menos una pregunta con título";
-      }
-    }
+      // Filtrar solo preguntas con título para validación
+  const questionsWithTitle = formData.questions ? formData.questions.filter(q => q.title && q.title.trim() !== '') : [];
+  
+  if (questionsWithTitle.length === 0) {
+    errors.questions = "Debe haber al menos una pregunta con título";
+  }
 
-    // Validar cada pregunta
-    formData.questions.forEach((question, index) => {
+      // Validar cada pregunta que tenga título
+  questionsWithTitle.forEach((question, index) => {
       // Solo validar título si la pregunta está marcada como required por el usuario
       if (question.required && !question.title?.trim()) {
         errors[`question_${index}_title`] = VALIDATION_ERROR_MESSAGES.TITLE_REQUIRED;

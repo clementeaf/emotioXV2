@@ -11,7 +11,7 @@ interface StatsCardProps {
 
 function StatsCardContent({ title, value, icon }: StatsCardProps) {
   return (
-    <div className="bg-white rounded-lg shadow-sm hover:shadow-lg transition-shadow duration-300 p-6">
+    <div className="bg-white rounded-lg shadow-md border border-neutral-100 hover:shadow-lg transition-shadow duration-300 p-6">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-neutral-600">{title}</p>

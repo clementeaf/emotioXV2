@@ -26,40 +26,7 @@ export function DemographicsFormWithNewDesign({
   className, 
   researchId = "demo-research-001" 
 }: DemographicsFormWithNewDesignProps) {
-  const [questions, setQuestions] = useState<DemographicQuestion[]>([
-    {
-      id: 'age',
-      label: 'Edad',
-      type: 'single-choice',
-      isRequired: true,
-      enabled: true,
-      options: ['Menor de 18', '18-24', '25-34', '35-44', '45-54', '55-64', '65+']
-    },
-    {
-      id: 'gender',
-      label: 'Género',
-      type: 'single-choice',
-      isRequired: true,
-      enabled: true,
-      options: ['Masculino', 'Femenino', 'No binario', 'Prefiero no decir']
-    },
-    {
-      id: 'country',
-      label: 'País de Residencia',
-      type: 'single-choice',
-      isRequired: true,
-      enabled: true,
-      options: ['Estados Unidos', 'Canadá', 'Reino Unido', 'Alemania', 'Francia', 'España', 'Otro']
-    },
-    {
-      id: 'education',
-      label: 'Nivel Educativo',
-      type: 'single-choice',
-      isRequired: false,
-      enabled: true,
-      options: ['Secundaria', 'Universidad (parcial)', 'Licenciatura', 'Maestría', 'Doctorado', 'Otro']
-    }
-  ]);
+  const [questions, setQuestions] = useState<DemographicQuestion[]>([]);
 
   const [isSaving, setIsSaving] = useState(false);
 

@@ -88,30 +88,4 @@ export const UI_TEXTS = {
   }
 };
 
-// Preguntas predeterminadas
-export const DEFAULT_QUESTIONS: SmartVOCQuestion[] = [
-  {
-    id: 'csat',
-    type: 'CSAT',
-    title: 'Customer Satisfaction Score (CSAT)',
-    description: '¿Cómo calificaría su nivel general de satisfacción?',
-    required: true,
-    showConditionally: false,
-    config: {
-      type: 'stars',
-      companyName: ''
-    }
-  },
-  {
-    id: 'ces',
-    type: 'CES',
-    title: 'Customer Effort Score (CES)',
-    description: 'Fue fácil para mí resolver mi problema hoy.',
-    required: true,
-    showConditionally: false,
-    config: {
-      type: 'scale',
-      scaleRange: { start: 1, end: 7 }
-    }
-  }
-]; 
+// Las preguntas ahora se crean dinámicamente sin valores por defecto 

@@ -70,7 +70,7 @@ export interface SmartVOCQuestion {
   type: 'nps' | 'voc';
   title: string;
   description?: string;
-  required: boolean;
+  required?: boolean; // Opcional para mantener compatibilidad con cambios en frontend
   order: number;
 }
 
@@ -92,7 +92,7 @@ export interface CognitiveTask {
   type: 'choice' | 'ranking';
   title: string;
   description?: string;
-  required: boolean;
+  required?: boolean; // Opcional para mantener compatibilidad con cambios en frontend
   order: number;
   options: string[];
 }

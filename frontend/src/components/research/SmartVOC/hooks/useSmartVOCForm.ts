@@ -5,7 +5,6 @@ import { SmartVOCFormData } from 'shared/interfaces/smart-voc.interface';
 import { 
   ErrorModalData, 
   ValidationErrors, 
-  DEFAULT_QUESTIONS, 
   SmartVOCQuestion
 } from '../types';
 import { smartVocFixedAPI } from '@/lib/smart-voc-api';
@@ -15,6 +14,7 @@ import {
   SUCCESS_MESSAGES
 } from '../constants';
 import { useAuth } from '@/providers/AuthProvider';
+import { filterValidQuestions, debugQuestionsToSend } from '../utils/validateRequiredField';
 
 /**
  * Hook personalizado para gestionar la lógica del formulario SmartVOC
@@ -23,7 +23,7 @@ export const useSmartVOCForm = (researchId: string) => {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState<SmartVOCFormData>({ 
     researchId,
-    questions: [...DEFAULT_QUESTIONS],
+    questions: [],
     randomizeQuestions: false,
     smartVocRequired: true,
     metadata: {
@@ -46,29 +46,17 @@ export const useSmartVOCForm = (researchId: string) => {
     setModalVisible(true);
   }, []); // Dependencias implícitas: setModalError, setModalVisible
 
-  // Añadimos logs de depuración para la autenticación
+  // Logging solo en desarrollo
   useEffect(() => {
-    console.log('[SmartVOCForm] Estado de autenticación:', { 
-      isAuthenticated, 
-      tokenExists: !!token,
-      userExists: !!user,
-      tokenLength: token ? token.length : 0,
-      researchId,
-      authLoading
-    });
-
-    // Verificamos el token en localStorage
-    if (typeof window !== 'undefined') {
-      const localToken = localStorage.getItem('token');
-      const sessionToken = sessionStorage.getItem('token');
-      
-      console.log('[SmartVOCForm] Tokens almacenados:', {
-        localStorageToken: localToken ? `${localToken.substring(0, 15)}...` : null,
-        sessionStorageToken: sessionToken ? `${sessionToken.substring(0, 15)}...` : null,
-        contextToken: token ? `${token.substring(0, 15)}...` : null
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[SmartVOCForm] Auth state:', { 
+        isAuthenticated, 
+        hasToken: !!token,
+        researchId,
+        authLoading
       });
     }
-  }, [isAuthenticated, token, user, researchId, authLoading]);
+  }, [isAuthenticated, token, researchId, authLoading]);
 
   // Consulta para obtener datos existentes
   const { data: smartVocData, isLoading } = useQuery({
@@ -76,11 +64,6 @@ export const useSmartVOCForm = (researchId: string) => {
     queryFn: async () => {
       try {
         if (!isAuthenticated || !token) {
-          console.error('[SmartVOCForm] No hay autenticación para realizar la consulta', {
-            isAuthenticated,
-            hasToken: !!token,
-            tokenFirstChars: token ? token.substring(0, 10) : 'no-token'
-          });
           throw new Error('No autenticado');
         }
 
@@ -90,24 +73,21 @@ export const useSmartVOCForm = (researchId: string) => {
           const localStorageToken = localStorage.getItem('token');
           if (localStorageToken) {
             currentToken = localStorageToken;
-            console.log('[SmartVOCForm] Recuperado token de localStorage como último recurso');
           }
         }
 
         if (!currentToken) {
-          console.error('[SmartVOCForm] No se pudo recuperar un token válido');
           throw new Error('No se pudo recuperar un token válido');
         }
 
-        console.log(`[SmartVOCForm] Buscando configuración existente para investigación: ${researchId}`);
         const response = await smartVocFixedAPI.getByResearchId(researchId);
-        console.log('[SmartVOCForm] Respuesta de API:', response);
         return response;
       } catch (error: any) {
-        console.error('[SmartVOCForm] Error al obtener datos:', error);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[SmartVOCForm] Error al obtener datos:', error);
+        }
         
         if (error?.statusCode === 404) {
-          console.log('[SmartVOCForm] No se encontró configuración existente - esto es normal para una nueva investigación');
           return { notFound: true };
         }
         
@@ -125,32 +105,45 @@ export const useSmartVOCForm = (researchId: string) => {
         throw new Error('No autenticado');
       }
       
+      // Filtrar solo las preguntas que tienen todos los campos requeridos
+      const filteredData = filterValidQuestions(data);
+      
       // Crear una copia limpia de los datos, seleccionando solo los campos de la interfaz
       const cleanedData: SmartVOCFormData = {
-        researchId: data.researchId,
-        randomizeQuestions: data.randomizeQuestions,
-        smartVocRequired: data.smartVocRequired,
-        metadata: data.metadata, // Incluir metadata si existe
-        questions: data.questions.map((q: SmartVOCQuestion) => {
-          const { instructions, config, ...restOfQuestion } = q; 
-          const cleanedConfig = { ...config }; 
+        researchId: filteredData.researchId,
+        randomizeQuestions: filteredData.randomizeQuestions,
+        smartVocRequired: filteredData.smartVocRequired,
+        metadata: filteredData.metadata, // Incluir metadata si existe
+        questions: filteredData.questions.map((q: SmartVOCQuestion) => {
+          const cleanedConfig = { ...q.config }; 
           
           if (cleanedConfig.companyName === '') {
             delete cleanedConfig.companyName;
           }
           
-          // Mantener instructions
-          return { ...restOfQuestion, instructions, config: cleanedConfig }; 
+          // Asegurar que todos los campos necesarios se incluyan explícitamente
+          return {
+            id: q.id,
+            type: q.type,
+            title: q.title,
+            description: q.description,
+            instructions: q.instructions,
+            showConditionally: q.showConditionally,
+            config: cleanedConfig,
+            ...(q.moduleResponseId && { moduleResponseId: q.moduleResponseId }) // Solo incluir si existe
+          }; 
         })
       };
 
-      console.log('[SmartVOCForm] Datos limpios a guardar:', JSON.stringify(cleanedData, null, 2));
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[SmartVOCForm] Datos originales:', data);
+        console.log('[SmartVOCForm] Datos filtrados a guardar:', cleanedData);
+        debugQuestionsToSend(data);
+      }
       
       if (smartVocId) {
-        console.log(`[SmartVOCForm] Actualizando Smart VOC con ID: ${smartVocId}`);
         return await smartVocFixedAPI.update(smartVocId, cleanedData);
       } else {
-        console.log('[SmartVOCForm] Creando nuevo Smart VOC');
         return await smartVocFixedAPI.create(cleanedData);
       }
     },
@@ -217,7 +210,10 @@ export const useSmartVOCForm = (researchId: string) => {
         ...prev,
         ...existingData,
         researchId, // Asegurar que researchId se mantenga
-        questions: existingData.questions?.length > 0 ? existingData.questions : [...DEFAULT_QUESTIONS],
+        questions: existingData.questions?.map(q => ({
+          ...q,
+          
+        })) || [],
         metadata: {
           ...(prev.metadata || {}),
           ...(existingData.metadata || {}),
@@ -230,7 +226,7 @@ export const useSmartVOCForm = (researchId: string) => {
         // Resetear a los valores por defecto manteniendo researchId
         setFormData({
           researchId,
-          questions: [...DEFAULT_QUESTIONS],
+          questions: [],
           randomizeQuestions: false,
           smartVocRequired: true,
           metadata: {
@@ -323,12 +319,16 @@ export const useSmartVOCForm = (researchId: string) => {
       questions.forEach((q, index) => {
         questionsHtml += `
           <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #eee; border-radius: 4px;">
-            <h4>${index + 1}. ${q.title} ${q.required ? '<span style="color: red;">*</span>' : ''}</h4>
+            <h4>${index + 1}. ${q.title}</h4>
             ${q.description ? `<p style="font-size: 0.9em; color: #555;">${q.description}</p>` : ''}
-            <p><strong>Tipo:</strong> ${q.type}</p>
+            <div style="margin: 8px 0;">
+              <span style="font-weight: bold;">Tipo:</span> ${q.type}
+            </div>
             ${q.instructions ? `<p style="font-style: italic; color: #777;">Instrucciones: ${q.instructions}</p>` : ''}
-            <p><strong>Config:</strong> <pre style="font-size: 0.8em; background: #f8f8f8; padding: 5px;">${JSON.stringify(q.config, null, 2)}</pre></p>
-            {/* Aquí podrías renderizar un input/control básico según q.type */}
+            <details style="margin-top: 10px;">
+              <summary style="cursor: pointer;">Ver configuración técnica</summary>
+              <pre style="font-size: 0.8em; background: #f8f8f8; padding: 5px; margin-top: 5px;">${JSON.stringify(q.config, null, 2)}</pre>
+            </details>
           </div>
         `;
       });
