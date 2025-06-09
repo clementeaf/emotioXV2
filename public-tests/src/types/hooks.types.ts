@@ -22,21 +22,21 @@ export interface UseResponseAPIReturn {
 }
 
 export interface UseStepResponseManagerProps<TResponseData> {
-  researchId: string;
-  participantId: string;
   stepId: string;
   stepType: string;
-  stepName: string;
-  initialData?: TResponseData;
+  stepName?: string;
+  initialData?: TResponseData | null;
+  researchId?: string;
+  participantId?: string;
 }
 
 export interface UseStepResponseManagerReturn<TResponseData> {
   responseData: TResponseData | null;
   isLoading: boolean;
+  isSaving: boolean;
   error: string | null;
-  saveResponse: (data: TResponseData) => Promise<void>;
-  updateResponse: (data: Partial<TResponseData>) => Promise<void>;
-  clearResponse: () => void;
+  responseSpecificId: string | null; 
+  saveCurrentStepResponse: (dataToSave: TResponseData) => Promise<{ success: boolean; id?: string | null }>;
 }
 
 export interface UseResponseManagerProps {
@@ -118,42 +118,48 @@ export interface UseParticipantLoginReturn {
 
 // Tipos para hooks de formularios estandarizados
 export interface StandardizedFormProps {
-  questionId: string;
-  questionType: string;
-  title?: string;
-  description?: string;
+  stepId: string;
+  stepType: string;
+  stepName?: string;
+  researchId?: string;
+  participantId?: string;
+  savedResponse?: { id?: string; response?: unknown } | null;
+  savedResponseId?: string | null;
   required?: boolean;
-  config?: Record<string, unknown>;
+  isMock?: boolean;
 }
 
 export interface ValidationRule<T> {
-  validate: (value: T) => boolean | string;
-  message?: string;
+  validate: (value: T) => boolean;
+  message: string;
 }
 
 export interface StandardizedFormState<T> {
   value: T;
+  isLoading: boolean;
+  isSaving: boolean;
+  isDataLoaded: boolean;
   error: string | null;
-  touched: boolean;
-  isValid: boolean;
-  isDirty: boolean;
+  responseId: string | null;
+  hasExistingData: boolean;
 }
 
 export interface StandardizedFormActions<T> {
   setValue: (value: T) => void;
   setError: (error: string | null) => void;
-  setTouched: (touched: boolean) => void;
+  clearError: () => void;
+  saveResponse: (value?: T) => Promise<{ success: boolean; data?: unknown }>;
+  validateAndSave: (value?: T) => Promise<{ success: boolean; data?: unknown }>;
   reset: () => void;
-  validate: () => boolean;
 }
 
 export interface UseStandardizedFormOptions<T> {
   initialValue: T;
+  extractValueFromResponse: (response: unknown) => T;
   validationRules?: ValidationRule<T>[];
-  required?: boolean;
+  enableAutoSave?: boolean;
+  moduleId?: string;
 }
-
-export interface UseStandardizedFormReturn<T> extends StandardizedFormState<T>, StandardizedFormActions<T> {}
 
 // Tipos para hooks de eye tracking
 export interface UseEyeTrackingResult {

@@ -19,24 +19,7 @@ import { useStandardizedForm, StandardizedFormProps } from './useStandardizedFor
  * COMPATIBILIDAD: 100% API pública mantenida
  */
 
-// Mantener interfaces exactas para compatibilidad
-export interface UseStepResponseManagerProps<TResponseData> {
-  stepId: string;
-  stepType: string;
-  stepName?: string;
-  initialData?: TResponseData | null;
-  researchId?: string;
-  participantId?: string;
-}
-
-export interface UseStepResponseManagerReturn<TResponseData> {
-  responseData: TResponseData | null;
-  isLoading: boolean;
-  isSaving: boolean;
-  error: string | null;
-  responseSpecificId: string | null; 
-  saveCurrentStepResponse: (dataToSave: TResponseData) => Promise<{ success: boolean; id?: string | null }>;
-}
+import { UseStepResponseManagerProps, UseStepResponseManagerReturn } from '../types/hooks.types';
 
 /**
  * Hook de compatibilidad que delega toda la funcionalidad a useStandardizedForm
@@ -86,7 +69,7 @@ export function useStepResponseManager<TResponseData = unknown>({
   );
 
   // Mapear estado interno a API pública esperada
-  const responseData = state.value || null;
+  const responseData = state.value as TResponseData | null;
   const isLoading = state.isLoading;
   const isSaving = state.isSaving;
   const error = state.error;

@@ -1,9 +1,4 @@
-interface Logger {
-  debug: (message: string, ...args: unknown[]) => void;
-  info: (message: string, ...args: unknown[]) => void;
-  warn: (message: string, ...args: unknown[]) => void;
-  error: (message: string, ...args: unknown[]) => void;
-}
+import { Logger } from '../types/common.types';
 
 class ConditionalLogger implements Logger {
   private isDevelopment = process.env.NODE_ENV === 'development';

@@ -1,16 +1,10 @@
-import React from 'react';
-import { CognitiveQuestion } from '../../hooks/useCognitiveTask'; 
+import React from 'react'; 
 import { ShortTextView } from './questions/ShortTextView';
 import { LongTextView } from './questions/LongTextView';
 import { SingleChoiceView } from './questions/SingleChoiceView';
 import { MultiChoiceView } from './questions/MultiChoiceView';
 import { LinearScaleView } from './questions/LinearScaleView';
-
-interface CognitiveQuestionRendererProps {
-    question: CognitiveQuestion;
-    answer: unknown;
-    onChange: (questionId: string, value: unknown) => void;
-}
+import { CognitiveQuestionRendererProps, CognitiveQuestion } from '../../types/cognitive-task.types';
 
 const CognitiveQuestionRenderer: React.FC<CognitiveQuestionRendererProps> = ({
     question,

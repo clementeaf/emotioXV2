@@ -1,25 +1,7 @@
 import React from 'react';
+import { ResearchThankYouScreenProps, ThankYouConfig } from '../../../types/flow.types';
 
-// Interfaz para la configuración específica recibida como prop
-interface ThankYouConfig {
-  id: string;
-  sk: string;
-  title?: string;
-  message?: string;
-  showConfetti?: boolean;
-  // Otros campos...
-}
-
-// Interfaz para las props esperadas (AHORA recibe stepConfig)
-interface ThankYouScreenProps {
-  researchId: string;
-  stepId: string;
-  title?: string;
-  stepConfig: ThankYouConfig;
-  onError: (error: string) => void;
-}
-
-export const ThankYouScreen: React.FC<ThankYouScreenProps> = ({ researchId, stepId, title, stepConfig, onError }) => {
+export const ThankYouScreen: React.FC<ResearchThankYouScreenProps> = ({ researchId, stepId, title, stepConfig, onError }) => {
 
   console.log('[ThankYouScreen] Received Props:', { researchId, stepId, title, stepConfig });
 

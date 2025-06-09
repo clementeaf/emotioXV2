@@ -300,6 +300,23 @@ export interface NavLinkProps {
   onClick?: () => void;
 }
 
+// Research ThankYou Screen (diferente del ThankYouScreen común)
+export interface ThankYouConfig {
+  id: string;
+  sk: string;
+  title?: string;
+  message?: string;
+  showConfetti?: boolean;
+}
+
+export interface ResearchThankYouScreenProps {
+  researchId: string;
+  stepId: string;
+  title?: string;
+  stepConfig: ThankYouConfig;
+  onError: (error: string) => void;
+}
+
 // Thank You Screen Interface
 export interface ThankYouConfig {
   title?: string;

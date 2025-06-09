@@ -1,4 +1,4 @@
-import React, { HTMLAttributes } from 'react';
+import React, { HTMLAttributes, ButtonHTMLAttributes } from 'react';
 
 // Componentes de UI comunes
 export interface StarRatingProps {
@@ -84,12 +84,18 @@ export interface AppLayoutProps {
 }
 
 export interface HeaderProps {
-  title?: string;
+  openMobileSidebar: () => void;
 }
 
 export interface SidebarProps {
   isMobileSidebarOpen: boolean;
   setIsMobileSidebarOpen: (open: boolean) => void;
+}
+
+export interface ProgressSidebarProps {
+  steps: any[]; // ExpandedStep desde flow.types
+  currentStepIndex: number;
+  onNavigateToStep?: (index: number) => void;
 }
 
 export interface Step {
@@ -259,6 +265,14 @@ export interface CardContentProps extends HTMLAttributes<HTMLDivElement> {
 
 export interface CardFooterProps extends HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
+}
+
+// Button Component Interface
+export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'primary' | 'outline' | 'danger' | 'ghost' | 'link';
+  size?: 'sm' | 'md' | 'lg';
+  isLoading?: boolean;
+  fullWidth?: boolean;
 }
 
 // API Step Interface

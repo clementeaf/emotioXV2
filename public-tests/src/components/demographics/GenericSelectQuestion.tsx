@@ -1,6 +1,7 @@
 import React from 'react';
 import { DemographicConfig, SelectOption } from '../../types/demographics'; // Asumiendo que SelectOption es { value: string; label: string; }
 
+// Definir la interface localmente ya que es específica para este componente
 interface GenericSelectQuestionProps {
   config: DemographicConfig; // DemographicConfig ahora tiene options?: SelectOption[]
   value: string | number | undefined;

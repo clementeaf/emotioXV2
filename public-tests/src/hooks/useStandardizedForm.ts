@@ -2,51 +2,13 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParticipantStore } from '../stores/participantStore';
 import { useResponseAPI } from './useResponseAPI';
 import { useModuleResponses } from './useModuleResponses';
-
-// Tipos base para el hook estandarizado
-export interface StandardizedFormProps {
-  stepId: string;
-  stepType: string;
-  stepName?: string;
-  researchId?: string;
-  participantId?: string;
-  savedResponse?: { id?: string; response?: unknown } | null;
-  savedResponseId?: string | null;
-  required?: boolean;
-  isMock?: boolean;
-}
-
-export interface ValidationRule<T> {
-  validate: (value: T) => boolean;
-  message: string;
-}
-
-export interface StandardizedFormState<T> {
-  value: T;
-  isLoading: boolean;
-  isSaving: boolean;
-  isDataLoaded: boolean;
-  error: string | null;
-  responseId: string | null;
-  hasExistingData: boolean;
-}
-
-export interface StandardizedFormActions<T> {
-  setValue: (value: T) => void;
-  setError: (error: string | null) => void;
-  clearError: () => void;
-  saveResponse: (value?: T) => Promise<{ success: boolean; data?: unknown }>;
-  validateAndSave: (value?: T) => Promise<{ success: boolean; data?: unknown }>;
-  reset: () => void;
-}
-
-export interface UseStandardizedFormOptions<T> {
-  initialValue: T;
-  extractValueFromResponse: (response: unknown) => T;
-  validationRules?: ValidationRule<T>[];
-  enableAutoSave?: boolean;
-  moduleId?: string;
-}
+import { 
+  StandardizedFormProps, 
+  ValidationRule, 
+  StandardizedFormState, 
+  StandardizedFormActions, 
+  UseStandardizedFormOptions 
+} from '../types/hooks.types';
 
 export function useStandardizedForm<T>(
   props: StandardizedFormProps,

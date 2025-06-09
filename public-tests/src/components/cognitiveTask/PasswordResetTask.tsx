@@ -1,8 +1,5 @@
 import { useState } from 'react';
-
-interface PasswordResetTaskProps {
-  onContinue: () => void;
-}
+import { PasswordResetTaskProps } from '../../types/cognitive-task.types';
 
 // Componente para la tarea de recuperación de contraseña
 const PasswordResetTask = ({ onContinue }: PasswordResetTaskProps) => {

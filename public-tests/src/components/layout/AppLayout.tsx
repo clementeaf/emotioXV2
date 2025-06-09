@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Sidebar } from './Sidebar';
-import { AppLayoutProps } from './types';
+import { AppLayoutProps } from '../../types/common.types';
 
 export function AppLayout({ children }: AppLayoutProps) {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);

@@ -205,6 +205,22 @@ export interface CitySelectionTaskProps {
   onContinue: () => void;
 }
 
+export interface PrioritizationTaskComponentProps {
+  onContinue: () => void;
+  question?: string;
+  options?: string[];
+}
+
+export interface PasswordResetTaskProps {
+  onContinue: () => void;
+}
+
+export interface CognitiveQuestionRendererProps {
+  question: CognitiveQuestion;
+  answer: unknown;
+  onChange: (questionId: string, value: unknown) => void;
+}
+
 export interface InstructionsTaskProps {
   onContinue: () => void;
 }

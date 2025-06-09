@@ -1,16 +1,11 @@
 import { useState } from 'react';
-
-interface PrioritizationTaskProps {
-  onContinue: () => void;
-  question?: string;
-  options?: string[];
-}
+import { PrioritizationTaskComponentProps } from '../../types/cognitive-task.types';
 
 const PrioritizationTask = ({ 
   onContinue, 
   question = '¿Cómo priorizarías las siguientes opciones?',
   options = ['Opción 1', 'Opción 2', 'Opción 3']
-}: PrioritizationTaskProps) => {
+}: PrioritizationTaskComponentProps) => {
   // Estado para almacenar las respuestas del usuario (valor para cada opción)
   const [values, setValues] = useState<Array<string>>(Array(options.length).fill(''));
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +41,7 @@ const PrioritizationTask = ({
         </h2>
         
         <div className="w-full space-y-4 mb-8">
-          {options.map((_option, index) => (
+          {options.map((_option: string, index: number) => (
             <div key={index} className="flex items-center gap-3">
               <span className="text-lg font-medium text-neutral-700 w-6 text-center">
                 {index + 1}

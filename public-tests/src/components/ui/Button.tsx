@@ -2,13 +2,7 @@ import { ButtonHTMLAttributes, forwardRef } from 'react';
 // import { Slot } from '@radix-ui/react-slot'; // No se usa
 // import { cva, type VariantProps } from 'class-variance-authority'; // No se usa
 import { cn } from '../../lib/utils'; // Corregir ruta
-
-export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'outline' | 'danger' | 'ghost' | 'link';
-  size?: 'sm' | 'md' | 'lg';
-  isLoading?: boolean;
-  fullWidth?: boolean;
-}
+import { ButtonProps } from '../../types/common.types';
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ 
