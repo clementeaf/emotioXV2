@@ -31,6 +31,7 @@ interface DemographicDataPayload {
 export const demographicsService = {
   /**
    * Obtiene la configuración de preguntas demográficas para un estudio
+   * Las preguntas demográficas están almacenadas en la configuración de Eye Tracking
    * @param researchId ID de la investigación
    * @param token Token de autenticación del participante
    * @returns Promesa con la configuración de preguntas demográficas
@@ -47,7 +48,8 @@ export const demographicsService = {
 
     try {
       const API_BASE_URL_CONFIG = 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev';
-      const url = `/research/${researchId}/demographics`;
+      // Usar el endpoint de forms que ya existe y contiene la configuración de Eye Tracking
+      const url = `/research/${researchId}/forms`;
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (token) { headers['Authorization'] = `Bearer ${token}`; }
 
@@ -56,10 +58,10 @@ export const demographicsService = {
       if (response.status === 404) {
         return { // Configuración no encontrada
           data: null,
-          error: true, // Considerar esto un error o un caso especial
+          error: true,
           status: 404,
           apiStatus: APIStatus.NOT_FOUND,
-          message: 'Configuración demográfica no encontrada para este estudio.'
+          message: 'Configuración de investigación no encontrada para este estudio.'
         };
       }
 
@@ -72,9 +74,9 @@ export const demographicsService = {
         return { // Error de parseo, no se puede usar la respuesta
           data: null,
           error: true,
-          status: response.status, // O un código de error genérico si response.status no es relevante aquí
+          status: response.status,
           apiStatus: APIStatus.ERROR,
-          message: `Error parseando JSON de respuesta demográfica: ${e instanceof Error ? e.message : String(e)}`
+          message: `Error parseando JSON de respuesta de configuración: ${e instanceof Error ? e.message : String(e)}`
         };
       }
 
@@ -85,29 +87,66 @@ export const demographicsService = {
           status: response.status,
           apiStatus: APIStatus.ERROR,
           message: (responseData && typeof responseData === 'object' && responseData !== null && 'message' in responseData)
-            ? (responseData as { message?: string }).message || `Error HTTP obteniendo configuración demográfica: ${response.status}`
-            : `Error HTTP obteniendo configuración demográfica: ${response.status}`
+            ? (responseData as { message?: string }).message || `Error HTTP obteniendo configuración: ${response.status}`
+            : `Error HTTP obteniendo configuración: ${response.status}`
         };
       }
 
-      const data = (responseData && typeof responseData === 'object' && responseData !== null && 'data' in responseData)
-        ? (responseData as { data: DemographicsSection }).data
-        : responseData;
-      
-      // Validar que la data obtenida tenga la estructura esperada (al menos la prop 'questions')
-      if (!data || typeof (data as DemographicsSection).questions !== 'object' || (data as DemographicsSection).questions === null) {
-        return { // Estructura de datos inesperada desde el backend
+      // Extraer configuración demográfica de Eye Tracking Config
+      const formsData = (responseData && typeof responseData === 'object' && responseData !== null && 'data' in responseData)
+        ? (responseData as { data: any[] }).data
+        : [];
+
+      if (!Array.isArray(formsData)) {
+        return {
           data: null,
           error: true,
-          status: response.status, // O un código de error de validación
+          status: response.status,
           apiStatus: APIStatus.ERROR,
-          message: 'La configuración demográfica recibida del backend no tiene la estructura esperada (falta questions).'
+          message: 'La respuesta de configuración no tiene la estructura esperada.'
         };
       }
-      
-      // Asumimos que 'data' es ahora del tipo DemographicsSection
+
+      // Buscar la configuración de Eye Tracking
+      const eyeTrackingConfig = formsData.find(item => 
+        item.originalSk === 'EYE_TRACKING_CONFIG' || item.sk === 'EYE_TRACKING_CONFIG'
+      );
+
+      if (!eyeTrackingConfig || !eyeTrackingConfig.config?.demographicQuestions) {
+        return {
+          data: null,
+          error: true,
+          status: 404,
+          apiStatus: APIStatus.NOT_FOUND,
+          message: 'No se encontró configuración demográfica en este estudio.'
+        };
+      }
+
+             // Convertir la configuración de Eye Tracking a formato de DemographicsSection
+       const demographicQuestions = eyeTrackingConfig.config.demographicQuestions;
+       const demographicsSection: DemographicsSection = {
+         enabled: true,
+         title: 'Preguntas Demográficas',
+         description: 'Por favor, complete las siguientes preguntas demográficas.',
+         questions: {} as any // Usar any temporalmente para permitir indexación dinámica
+       };
+
+       // Mapear cada pregunta demográfica
+       Object.entries(demographicQuestions).forEach(([key, config]: [string, any]) => {
+         if (config && typeof config === 'object' && config.enabled) {
+           (demographicsSection.questions as any)[key] = {
+             id: key,
+             enabled: config.enabled,
+             required: config.required || false,
+             title: this.getDemographicQuestionTitle(key),
+             description: this.getDemographicQuestionDescription(key),
+             options: config.options || []
+           };
+         }
+       });
+
       return {
-        data: data as DemographicsSection,
+        data: demographicsSection,
         status: response.status,
         apiStatus: APIStatus.SUCCESS
       };
@@ -115,11 +154,45 @@ export const demographicsService = {
       return { // Error de red u otro error inesperado
         data: null,
         error: true,
-        status: 500, // Error genérico del servidor o de cliente
+        status: 500,
         apiStatus: APIStatus.ERROR,
         message: error instanceof Error ? error.message : 'Error desconocido al obtener configuración demográfica.'
       };
     }
+  },
+
+  /**
+   * Obtiene el título localizado para una pregunta demográfica
+   */
+  getDemographicQuestionTitle(key: string): string {
+    const titles: Record<string, string> = {
+      age: 'Edad',
+      gender: 'Género',
+      educationLevel: 'Nivel de Educación',
+      country: 'País',
+      householdIncome: 'Ingresos del Hogar',
+      employmentStatus: 'Estado de Empleo',
+      dailyHoursOnline: 'Horas Diarias en Línea',
+      technicalProficiency: 'Competencia Técnica'
+    };
+    return titles[key] || key;
+  },
+
+  /**
+   * Obtiene la descripción localizada para una pregunta demográfica
+   */
+  getDemographicQuestionDescription(key: string): string {
+    const descriptions: Record<string, string> = {
+      age: 'Seleccione su rango de edad',
+      gender: 'Seleccione su género',
+      educationLevel: 'Seleccione su nivel de educación más alto',
+      country: 'Seleccione su país de residencia',
+      householdIncome: 'Seleccione el rango de ingresos de su hogar',
+      employmentStatus: 'Seleccione su estado de empleo actual',
+      dailyHoursOnline: 'Seleccione cuántas horas pasa en línea diariamente',
+      technicalProficiency: 'Seleccione su nivel de competencia técnica'
+    };
+    return descriptions[key] || '';
   },
 
   /**

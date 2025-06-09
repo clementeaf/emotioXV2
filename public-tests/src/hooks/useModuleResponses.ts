@@ -50,6 +50,14 @@ export const useModuleResponses = (props?: UseModuleResponsesProps): UseModuleRe
     try {
       const apiResponse = await apiClient.getModuleResponses(currentResearchId, currentParticipantId);
 
+      // Manejar caso de NOT_FOUND o status 404
+      if (apiResponse.apiStatus === APIStatus.NOT_FOUND || apiResponse.status === 404) {
+        setData(null);
+        setDocumentId(null);
+        setError(null); // No es un error, simplemente no hay respuestas aún
+        return;
+      }
+
       if (
         apiResponse.data &&
         typeof apiResponse.data === 'object' &&
@@ -61,14 +69,17 @@ export const useModuleResponses = (props?: UseModuleResponsesProps): UseModuleRe
         const innerData = (apiResponse.data as { data?: { responses?: unknown; id?: string } }).data;
         setData(innerData?.responses || []);
         setDocumentId(innerData?.id || null);
+        setError(null);
       } else {
         setData(null);
         setDocumentId(null);
-        if (apiResponse.apiStatus === APIStatus.NOT_FOUND) {
-          setError(null);
-        } else {
-          setError(apiResponse.message || 'Error cargando las respuestas del módulo.');
+        // Solo loguear error si tenemos mensaje y no es undefined
+        if (apiResponse.message) {
+          setError(apiResponse.message);
           console.error('[useModuleResponses] Error fetching responses:', apiResponse.message);
+        } else {
+          setError('Error cargando las respuestas del módulo.');
+          console.error('[useModuleResponses] Error fetching responses: No message provided');
         }
       }
     } catch (e) {

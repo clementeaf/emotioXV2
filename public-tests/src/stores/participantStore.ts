@@ -84,6 +84,9 @@ export interface ParticipantState {
   // Persistencia forzada
   forceSaveToLocalStorage: () => void;
   
+  // Limpieza de datos
+  cleanupPreviousParticipantData: (currentResearchId: string, currentParticipantId: string) => void;
+  
   // Reset y utilidades
   resetStore: () => void;
   calculateProgress: () => void;
@@ -256,13 +259,23 @@ export const useParticipantStore = create(
         const { researchId } = get();
         if (!researchId) return;
         
+        // Limpiar localStorage de participantes anteriores para esta investigación
+        get().cleanupPreviousParticipantData(researchId, participant.id);
+        
         // Guardar token en localStorage
         const storedToken = localStorage.getItem('participantToken');
         if (storedToken) {
-          const updatedResponsesData = {
-            ...get().responsesData,
+          // Crear datos de respuesta limpios para el nuevo participante
+          const freshResponsesData = {
             participantId: participant.id,
-            researchId: researchId || get().responsesData.researchId,
+            researchId: researchId,
+            startTime: Date.now(),
+            modules: {
+              eye_tracking: [],
+              cognitive_task: [],
+              smartvoc: [],
+              all_steps: []
+            }
           };
           
           set({
@@ -271,11 +284,11 @@ export const useParticipantStore = create(
             error: null,
             isFlowLoading: true,
             currentStep: ParticipantFlowStep.LOADING_SESSION,
-            responsesData: updatedResponsesData
+            responsesData: freshResponsesData
           });
           
-          // Guardar en localStorage
-          saveToLocalStorage('participantResponses', updatedResponsesData);
+          // Guardar en localStorage datos limpios
+          saveToLocalStorage('participantResponses', freshResponsesData);
           saveToLocalStorage('participantInfo', {
             id: participant.id,
             researchId: researchId
@@ -289,6 +302,40 @@ export const useParticipantStore = create(
             currentStep: ParticipantFlowStep.ERROR,
             isFlowLoading: false
           });
+        }
+      },
+
+      // Función para limpiar datos de participantes anteriores
+      cleanupPreviousParticipantData: (currentResearchId: string, currentParticipantId: string) => {
+        try {
+          const storedInfo = loadFromLocalStorage('participantInfo') as { researchId?: string; id?: string } | null;
+          
+          // Si hay datos almacenados de un participante diferente, limpiarlos
+          if (storedInfo && 
+              (storedInfo.researchId !== currentResearchId || 
+               storedInfo.id !== currentParticipantId)) {
+            
+            console.log('[ParticipantStore] Limpiando datos de participante anterior');
+            
+            // Limpiar localStorage específica del participante anterior
+            localStorage.removeItem('participantResponses');
+            localStorage.removeItem('expandedSteps');
+            localStorage.removeItem('progress');
+            localStorage.removeItem('maxVisitedIndex');
+            localStorage.removeItem('currentStepIndex');
+            
+            // Buscar y eliminar todas las respuestas individuales
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+              const key = localStorage.key(i);
+              if (key && (key.startsWith('response_') || key.startsWith('maxVisitedIndex_'))) {
+                keysToRemove.push(key);
+              }
+            }
+            keysToRemove.forEach(key => localStorage.removeItem(key));
+          }
+        } catch (e) {
+          console.error('[ParticipantStore] Error limpiando datos anteriores:', e);
         }
       },
       
