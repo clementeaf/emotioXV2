@@ -1,9 +1,5 @@
 import React from 'react';
-
-interface AuthHeaderProps {
-    title: string;
-    emoji?: string;
-}
+import { AuthHeaderProps } from '../../types/flow.types';
 
 export const AuthHeader: React.FC<AuthHeaderProps> = ({ title, emoji = '😀' }) => {
     return (

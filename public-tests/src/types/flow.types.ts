@@ -269,7 +269,7 @@ export interface FlowStepContentProps extends Omit<OldFlowStepContentProps, 'cur
 // Auth Component Interfaces
 export interface AuthHeaderProps {
   title: string;
-  subtitle?: string;
+  emoji?: string;
 }
 
 export interface AuthSubmitButtonProps {

@@ -136,16 +136,17 @@ export interface FormErrors {
 
 // Eye tracking
 export interface EyeTrackingDataPoint {
+  timestamp: number;
   x: number;
   y: number;
-  timestamp: number;
-  confidence?: number;
+  fixation: boolean;
+  duration: number;
 }
 
 export interface EyeTrackingTaskProps {
-  onComplete: (data: EyeTrackingDataPoint[]) => void;
-  duration?: number;
-  instructions?: string;
+  question: any; // ExpandedStep type
+  onComplete: (data: unknown) => void;
+  isAnswered?: boolean;
 }
 
 // Component Props Interfaces
@@ -233,9 +234,8 @@ export interface Participant {
 }
 
 export interface LoginFormProps {
-  onLogin: (participant: Participant) => void;
-  isLoading?: boolean;
-  error?: string;
+  onLoginSuccess: (participant: Participant) => void;
+  researchId?: string;
 }
 
 // Card Component Interfaces

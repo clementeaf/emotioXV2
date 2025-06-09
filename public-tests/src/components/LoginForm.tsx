@@ -1,15 +1,5 @@
 import React, { useState } from 'react';
-
-interface Participant {
-  id: string;
-  email: string;
-  name: string;
-}
-
-interface LoginFormProps {
-  onLoginSuccess: (participant: Participant) => void;
-  researchId?: string;
-}
+import { Participant, LoginFormProps } from '../types/common.types';
 
 const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, researchId }) => {
   const [email, setEmail] = useState('');

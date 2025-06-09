@@ -2,19 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { ExpandedStep } from '../stores/participantStore';
 import { useParticipantStore } from '../stores/participantStore';
 
-interface EyeTrackingDataPoint {
-  timestamp: number;
-  x: number;
-  y: number;
-  fixation: boolean;
-  duration: number;
-}
-
-interface EyeTrackingTaskProps {
-  question: ExpandedStep;
-  onComplete: (data: unknown) => void;
-  isAnswered?: boolean;
-}
+import { EyeTrackingDataPoint, EyeTrackingTaskProps } from '../types/common.types';
 
 const EyeTrackingTask: React.FC<EyeTrackingTaskProps> = ({ question, onComplete, isAnswered = false }) => {
   const [eyeTrackingData, setEyeTrackingData] = useState<EyeTrackingDataPoint[]>([]);
