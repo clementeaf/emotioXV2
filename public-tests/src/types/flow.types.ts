@@ -1,4 +1,5 @@
 import React from 'react';
+import { DemographicConfig } from './demographics';
 
 // Tipos base para el flujo
 export interface ExpandedStep {
@@ -286,8 +287,9 @@ export interface AuthLegalTextProps {
 
 // Demographics Interface
 export interface GenericSelectQuestionProps {
-  question: ApiDemographicQuestion;
-  onAnswer: (questionId: string, answer: string) => void;
+  config: DemographicConfig;
+  value: string | number | undefined;
+  onChange: (id: string, value: string | number) => void;
 }
 
 // Layout Interface
@@ -336,4 +338,13 @@ export interface ThankYouScreenProps {
   onComplete?: () => void;
   participantId?: string;
   researchId?: string;
+}
+
+// FlowStepContent Props
+export interface FlowStepContentComponentProps extends Omit<OldFlowStepContentProps, 'currentStep'> {
+  currentStepEnum: ParticipantFlowStep;
+  currentExpandedStep: ExpandedStep | null;
+  isLoading: boolean;
+  responsesData?: ResponsesData;
+  handleError: (errorMessage: string, step: ParticipantFlowStep | string) => void;
 } 

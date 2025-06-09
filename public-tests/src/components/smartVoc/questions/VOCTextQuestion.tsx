@@ -1,10 +1,11 @@
 import React from 'react';
 import { SmartVOCQuestion } from '../../../types/smart-voc.interface';
+import { VOCTextQuestionComponentProps } from '../../../types/smart-voc.types';
+import { StandardizedFormProps } from '../../../types/hooks.types';
 import { 
   useStandardizedForm, 
   // valueExtractors, 
-  validationRules, 
-  StandardizedFormProps 
+  validationRules
 } from '../../../hooks/useStandardizedForm';
 import { 
   getStandardButtonText, 
@@ -34,13 +35,7 @@ interface VOCTextData {
   value: string;
 }
 
-interface VOCTextQuestionProps extends Omit<StandardizedFormProps, 'stepName'> {
-  questionConfig: SmartVOCQuestion;
-  moduleId: string;
-  onSaveSuccess: (questionId: string, value: string, moduleResponseId: string | null) => void;
-}
-
-export const VOCTextQuestion: React.FC<VOCTextQuestionProps> = ({
+export const VOCTextQuestion: React.FC<VOCTextQuestionComponentProps> = ({
   questionConfig,
   moduleId,
   onSaveSuccess,

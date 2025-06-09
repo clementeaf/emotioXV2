@@ -62,12 +62,15 @@ export interface TextAreaFieldProps {
 }
 
 export interface CheckboxGroupProps {
-  options: ChoiceOption[];
-  selectedValues: string[];
-  onChange: (selectedValues: string[]) => void;
   name: string;
+  options: ChoiceOption[];
+  selectedIds: string[];
+  onChange: (optionId: string, isChecked: boolean) => void;
   disabled?: boolean;
-  error?: string;
+  className?: string;
+  optionClassName?: string;
+  inputClassName?: string;
+  labelClassName?: string;
 }
 
 // Using the updated consolidated version below
@@ -282,4 +285,37 @@ export interface Step {
   name: string;
   config: any;
   order: number;
+}
+
+// API Interfaces
+export interface ApiParticipant {
+  id: string;
+  name: string;
+  email: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ApiResponse<T> {
+  data: T;
+  message?: string;
+  error?: string;
+}
+
+// Extended ProgressBar Props
+export interface ExtendedProgressBarProps extends Omit<ProgressBarProps, 'currentStep' | 'totalSteps'> {
+  current: number;
+  total: number;
+}
+
+// Extended TextAreaField Props
+export interface ExtendedTextAreaFieldProps extends Omit<TextAreaFieldProps, 'name'> {
+  name?: string;
+  textAreaClassName?: string;
+}
+
+// Extended CharacterCounter Props
+export interface ExtendedCharacterCounterProps extends Omit<CharacterCounterProps, 'current' | 'max'> {
+  currentLength: number;
+  maxLength: number;
 } 

@@ -1,12 +1,7 @@
 import React from 'react';
-import { ProgressBarProps } from '../types/common.types';
+import { ExtendedProgressBarProps } from '../types/common.types';
 
 // Props extendidas para este componente específico
-
-interface ExtendedProgressBarProps extends Omit<ProgressBarProps, 'currentStep' | 'totalSteps'> {
-  current: number;
-  total: number;
-}
 
 const ProgressBar: React.FC<ExtendedProgressBarProps> = ({ current, total }) => {
   // Calcular porcentaje

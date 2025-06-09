@@ -1,10 +1,11 @@
 import React from 'react';
 import { SmartVOCQuestion, BaseScaleConfig } from '../../types/smart-voc.interface';
+import { DifficultyScaleData, DifficultyScaleViewProps } from '../../types/smart-voc.types';
+import { StandardizedFormProps } from '../../types/hooks.types';
 import { 
   useStandardizedForm, 
   // valueExtractors, 
-  validationRules, 
-  StandardizedFormProps 
+  validationRules
 } from '../../hooks/useStandardizedForm';
 import { 
   getStandardButtonText, 
@@ -31,17 +32,6 @@ import LoadingScreen from '../LoadingScreen';
  * - Validación manual → validationRules
  * - Loading states múltiples → estado unificado
  */
-
-// Tipo de datos para la respuesta de escala
-interface DifficultyScaleData {
-  value: number | null;
-}
-
-interface DifficultyScaleViewProps extends Omit<StandardizedFormProps, 'stepName' | 'stepType' | 'stepId'> {
-  questionConfig: SmartVOCQuestion;
-  moduleId: string;
-  onNext: (responsePayload: { value: number, feedback?: string, moduleResponseId?: string | null }) => void;
-}
 
 const DifficultyScaleView: React.FC<DifficultyScaleViewProps> = ({
   questionConfig,

@@ -1,13 +1,5 @@
 import React from 'react';
-
-interface ScaleButtonGroupProps {
-    buttons: number[]; // Array de números a mostrar
-    selectedValue: number | undefined;
-    onSelect: (value: number) => void;
-    buttonClassName?: string; // Clases personalizadas para los botones si es necesario
-    activeButtonClassName?: string; // Clases para el botón activo
-    inactiveButtonClassName?: string; // <-- Añadir prop faltante
-}
+import { ScaleButtonGroupProps } from '../../../../types/cognitive-task.types';
 
 const ScaleButtonGroup: React.FC<ScaleButtonGroupProps> = ({
     buttons,

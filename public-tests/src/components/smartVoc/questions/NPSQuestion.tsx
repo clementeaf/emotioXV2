@@ -3,28 +3,16 @@ import { useParticipantStore } from '../../../stores/participantStore';
 import { useModuleResponses } from '../../../hooks/useModuleResponses';
 import { useResponseAPI } from '../../../hooks/useResponseAPI';
 import { getStandardButtonText } from '../../../utils/formHelpers';
+import { NPSQuestionComponentProps } from '../../../types/smart-voc.types';
 
-interface NPSConfig {
-  scaleRange?: { start: number; end: number };
-  startLabel?: string;
-  endLabel?: string;
-}
-
-interface NPSQuestionProps {
-  questionConfig: { id: string; description?: string; type: string; title?: string; config: NPSConfig };
-  researchId: string;
-  moduleId: string;
-  onSaveSuccess: (questionId: string, responseValue: number, moduleResponseId: string | null) => void;
-}
-
-export const NPSQuestion: React.FC<NPSQuestionProps> = ({
+export const NPSQuestion: React.FC<NPSQuestionComponentProps> = ({
   questionConfig, 
   researchId,
   moduleId,
   onSaveSuccess 
 }) => {
   const { id: questionId, description, type: questionType, title: questionTitle, config } = questionConfig;
-  const { scaleRange, startLabel, endLabel } = config; 
+  const { scaleRange, startLabel, endLabel } = config;
 
   const participantId = useParticipantStore(state => state.participantId);
 

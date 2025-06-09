@@ -89,4 +89,19 @@ export interface ParticipantState {
   // Reset y utilidades
   resetStore: () => void;
   calculateProgress: () => void;
+}
+
+// Tipos para Store de datos de participantes
+export interface ParticipantDataState {
+  researchId: string | null;
+  token: string | null;
+  participantId: string | null;
+  error: string | null;
+  
+  // Actions
+  setResearchId: (id: string | null) => void;
+  setToken: (token: string | null) => void;
+  setParticipant: (participant: ParticipantInfo) => void;
+  setError: (error: string | null) => void;
+  reset: () => void;
 } 

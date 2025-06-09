@@ -1,11 +1,6 @@
 import React from 'react';
 import { CharacterCounterProps } from '../../types';
-
-// Props extendidas para este componente específico
-interface ExtendedCharacterCounterProps extends Omit<CharacterCounterProps, 'current' | 'max'> {
-  currentLength: number;
-  maxLength: number;
-}
+import { ExtendedCharacterCounterProps } from '../../types/common.types';
 
 const CharacterCounter: React.FC<ExtendedCharacterCounterProps> = ({
   currentLength,

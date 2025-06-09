@@ -1,16 +1,8 @@
 import React from 'react';
 import FormField from '../../common/FormField';
+import { TextOnlyInputViewProps } from '../../../types/cognitive-task.types';
 
-// Interface específica para este componente
-interface TextOnlyInputViewComponentProps {
-  description: string; // El texto descriptivo/instrucción
-  placeholder: string;
-  value: string; // Añadir value y onChange para que el padre gestione el estado
-  onChange: (value: string) => void;
-  // error?: string | null; // Opcional: para mostrar errores
-}
-
-const TextOnlyInputView: React.FC<TextOnlyInputViewComponentProps> = ({
+const TextOnlyInputView: React.FC<TextOnlyInputViewProps> = ({
   description,
   placeholder,
   value,

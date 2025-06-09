@@ -1,21 +1,17 @@
 import React from 'react';
 import CheckboxGroup from '../../common/CheckboxGroup'; // Ruta corregida
 import QuestionHeader from '../common/QuestionHeader'; // Ruta corregida
-import { CognitiveQuestion } from '../../../hooks/useCognitiveTask';
+import { CognitiveQuestion } from '../../../types/cognitive-task.types';
+import { ChoiceOption } from '../../../types/common.types';
 
-// Interfaz para las opciones (reutilizable)
-interface ChoiceOption {
-  id: string;
-  label: string;
-}
-
-interface MultiChoiceViewProps {
+// Interface específica para este componente
+interface MultiChoiceViewComponentProps {
   config: CognitiveQuestion & { options?: ChoiceOption[] };
-  value: string[] | undefined; // Array de IDs de opciones seleccionadas
+  value: string[] | undefined;
   onChange: (questionId: string, selectedOptionIds: string[]) => void;
 }
 
-export const MultiChoiceView: React.FC<MultiChoiceViewProps> = ({ config, value: selectedIds = [], onChange }) => {
+export const MultiChoiceView: React.FC<MultiChoiceViewComponentProps> = ({ config, value: selectedIds = [], onChange }) => {
   const id = config.id;
   const title = config.title;
   const description = config.description;

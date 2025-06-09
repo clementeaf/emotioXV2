@@ -1,19 +1,5 @@
 import { config } from '../config/env';
-
-// Interfaces
-interface Participant {
-  id: string;
-  name: string;
-  email: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface ApiResponse<T> {
-  data: T;
-  message?: string;
-  error?: string;
-}
+import { ApiParticipant, ApiResponse } from '../types/common.types';
 
 // Función para obtener el token
 const getToken = (): string => {
@@ -71,7 +57,7 @@ const fetchWithAuth = async <T>(
 export const testCreateParticipant = async (name: string, email: string): Promise<void> => {
   console.log('🧪 Probando crear participante...');
   try {
-    const response = await fetchWithAuth<Participant>('/participants', {
+    const response = await fetchWithAuth<ApiParticipant>('/participants', {
       method: 'POST',
       body: JSON.stringify({ name, email }),
     });
@@ -85,7 +71,7 @@ export const testCreateParticipant = async (name: string, email: string): Promis
 export const testGetParticipant = async (id: string): Promise<void> => {
   console.log(`🧪 Probando obtener participante ${id}...`);
   try {
-    const response = await fetchWithAuth<Participant>(`/participants/${id}`);
+    const response = await fetchWithAuth<ApiParticipant>(`/participants/${id}`);
     console.log('✅ Participante obtenido:', response.data);
   } catch (error) {
     console.error('❌ Error al obtener participante:', error);
@@ -96,7 +82,7 @@ export const testGetParticipant = async (id: string): Promise<void> => {
 export const testGetAllParticipants = async (): Promise<void> => {
   console.log('🧪 Probando obtener todos los participantes...');
   try {
-    const response = await fetchWithAuth<Participant[]>('/participants');
+    const response = await fetchWithAuth<ApiParticipant[]>('/participants');
     console.log('✅ Participantes obtenidos:', response.data);
   } catch (error) {
     console.error('❌ Error al obtener participantes:', error);

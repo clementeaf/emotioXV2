@@ -1,15 +1,7 @@
 import React from 'react';
-import { useStandardizedForm, valueExtractors, StandardizedFormProps } from '../../hooks/useStandardizedForm';
+import { useStandardizedForm, valueExtractors } from '../../hooks/useStandardizedForm';
+import { CSATViewProps } from '../../types/smart-voc.types';
 import { getStandardButtonText, getButtonDisabledState, formatQuestionText, getErrorDisplayProps, formSpacing } from '../../utils/formHelpers';
-
-interface CSATViewProps extends StandardizedFormProps {
-  questionText: string;
-  instructions?: string;
-  companyName?: string;
-  config?: unknown;
-  scaleSize?: number;
-  onStepComplete: (data?: unknown) => void;
-}
 
 const CSATView: React.FC<CSATViewProps> = ({
   questionText,

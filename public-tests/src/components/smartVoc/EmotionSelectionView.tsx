@@ -1,18 +1,5 @@
 import React, { useState } from 'react';
-
-// Definición de un tipo para los emojis básicos (o podría venir de props)
-interface BasicEmoji {
-  emoji: string; // El caracter emoji
-  label: string; // Un identificador o descripción (opcional)
-}
-
-interface EmotionSelectionViewProps {
-  questionText: string;
-  instructions?: string;
-  companyName?: string;
-  // emojis?: BasicEmoji[]; // Opcionalmente recibir emojis por props
-  onNext: (selectedEmoji: string) => void; // Devuelve el emoji seleccionado
-}
+import { BasicEmoji, EmotionSelectionViewComponentProps } from '../../types/smart-voc.types';
 
 // Conjunto básico de emojis predefinido (se puede expandir o pasar por props)
 const basicEmojis: BasicEmoji[] = [
@@ -24,7 +11,7 @@ const basicEmojis: BasicEmoji[] = [
   // Añadir más si es necesario
 ];
 
-const EmotionSelectionView: React.FC<EmotionSelectionViewProps> = ({
+const EmotionSelectionView: React.FC<EmotionSelectionViewComponentProps> = ({
   questionText,
   instructions,
   companyName,

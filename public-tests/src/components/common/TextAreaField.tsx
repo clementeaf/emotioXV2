@@ -1,11 +1,6 @@
 import React from 'react';
 import { TextAreaFieldProps } from '../../types';
-
-// Props extendidas para este componente específico
-interface ExtendedTextAreaFieldProps extends Omit<TextAreaFieldProps, 'name'> {
-    name?: string; // Name puede ser útil para formularios
-    textAreaClassName?: string; // Estilos específicos para el textarea
-}
+import { ExtendedTextAreaFieldProps } from '../../types/common.types';
 
 const TextAreaField: React.FC<ExtendedTextAreaFieldProps> = ({
     id,

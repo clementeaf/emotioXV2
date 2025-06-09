@@ -1,21 +1,17 @@
 import React from 'react';
 import QuestionHeader from '../common/QuestionHeader'; // Importar QuestionHeader
 import RadioButtonGroup from '../../common/RadioButtonGroup'; // Importar el nuevo componente
-import { CognitiveQuestion } from '../../../hooks/useCognitiveTask';
+import { CognitiveQuestion } from '../../../types/cognitive-task.types';
+import { ChoiceOption } from '../../../types/common.types';
 
-// Interfaz para las opciones (reutilizable)
-interface ChoiceOption {
-  id: string;
-  label: string;
-}
-
-interface SingleChoiceViewProps {
+// Interface específica para este componente
+interface SingleChoiceViewComponentProps {
   config: CognitiveQuestion & { options?: ChoiceOption[] };
   value: string | undefined; // El ID de la opción seleccionada
   onChange: (questionId: string, selectedOptionId: string) => void;
 }
 
-export const SingleChoiceView: React.FC<SingleChoiceViewProps> = ({ config, value, onChange }) => {
+export const SingleChoiceView: React.FC<SingleChoiceViewComponentProps> = ({ config, value, onChange }) => {
   const id = config.id;
   const title = config.title;
   const description = config.description;

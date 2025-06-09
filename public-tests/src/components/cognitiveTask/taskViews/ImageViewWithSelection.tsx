@@ -1,13 +1,6 @@
 import React from 'react';
 import { ChoiceOption } from '../../../types/common.types';
-
-// Interface específica para este componente
-interface ImageViewWithSelectionComponentProps {
-  imageType: 'desktop' | 'mobile';
-  options: ChoiceOption[];
-  selectedOption: string | null;
-  onOptionSelect: (optionId: string) => void;
-}
+import { ImageViewWithSelectionComponentProps } from '../../../types/cognitive-task.types';
 
 // Componente interno para el placeholder de la imagen
 const ImagePlaceholder: React.FC<{ type: 'desktop' | 'mobile' }> = ({ type }) => {

@@ -1,17 +1,6 @@
 import React from 'react';
 import { ChoiceOption } from '../../types';
-
-interface CheckboxGroupProps {
-  name: string; // Nombre base para los inputs, ayuda con la accesibilidad y formularios
-  options: ChoiceOption[];
-  selectedIds: string[];
-  onChange: (optionId: string, isChecked: boolean) => void;
-  disabled?: boolean;
-  className?: string; // Estilos para el contenedor fieldset
-  optionClassName?: string; // Estilos para cada contenedor de opción (div)
-  inputClassName?: string; // Estilos para el input checkbox
-  labelClassName?: string; // Estilos para la etiqueta label
-}
+import { CheckboxGroupProps } from '../../types/common.types';
 
 const CheckboxGroup: React.FC<CheckboxGroupProps> = ({
   name,

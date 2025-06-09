@@ -3,21 +3,9 @@ import { useParticipantStore } from '../../stores/participantStore';
 import { useModuleResponses } from '../../hooks/useModuleResponses';
 import { useResponseAPI } from '../../hooks/useResponseAPI';
 import { getStandardButtonText } from '../../utils/formHelpers';
+import { AgreementScaleViewComponentProps } from '../../types/smart-voc.types';
 
-interface AgreementScaleViewProps {
-  questionText: string;
-  instructions?: string;
-  scaleSize?: number; // Típicamente 5 o 7 para Likert
-  leftLabel?: string; // Etiqueta izquierda (e.g., "No en absoluto")
-  rightLabel?: string; // Etiqueta derecha (e.g., "Totalmente")
-  researchId: string;
-  stepId: string;
-  stepName: string;
-  stepType: string;
-  onStepComplete: (data?: unknown) => void;
-}
-
-const AgreementScaleView: React.FC<AgreementScaleViewProps> = ({
+const AgreementScaleView: React.FC<AgreementScaleViewComponentProps> = ({
   questionText,
   instructions,
   scaleSize = 7, // Defecto 7 según la imagen

@@ -1,19 +1,20 @@
 import React from 'react';
-import { CognitiveQuestion } from '../../../hooks/useCognitiveTask';
+import { CognitiveQuestion } from '../../../types/cognitive-task.types';
 import QuestionHeader from '../common/QuestionHeader';
 import TextAreaField from '../../common/TextAreaField';
-import { useStandardizedForm, valueExtractors, StandardizedFormProps, validationRules } from '../../../hooks/useStandardizedForm';
+import { useStandardizedForm, valueExtractors, validationRules } from '../../../hooks/useStandardizedForm';
+import { StandardizedFormProps } from '../../../types/hooks.types';
 import { getStandardButtonText, getButtonDisabledState, getErrorDisplayProps, getFormContainerClass, formSpacing } from '../../../utils/formHelpers';
 
-interface LongTextViewProps {
+// Interface específica para este componente  
+interface LongTextViewComponentProps {
   config: CognitiveQuestion;
   onStepComplete?: (answer?: unknown) => void;
-  // Props from CurrentStepRenderer
   savedResponse?: { id?: string; response?: unknown } | null;
   savedResponseId?: string | null;
 }
 
-export const LongTextView: React.FC<LongTextViewProps> = ({ 
+export const LongTextView: React.FC<LongTextViewComponentProps> = ({ 
   config, 
   onStepComplete,
   savedResponse,
@@ -86,6 +87,8 @@ export const LongTextView: React.FC<LongTextViewProps> = ({
       
       <TextAreaField
         id={`long-text-${id}`}
+        name={`long-text-${id}`}
+        label={title}
         value={value}
         onChange={handleChange}
         placeholder={answerPlaceholder}

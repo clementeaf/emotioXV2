@@ -1,13 +1,5 @@
 import React, { useState, useEffect } from 'react';
-
-interface FeedbackViewProps {
-  questionText: string;
-  instructions?: string;
-  placeholder?: string; // Placeholder para el textarea
-  initialValue?: string; // NUEVO: Valor inicial
-  onChange?: (value: string) => void; // NUEVO: Callback para cambios
-  onNext: (feedback: string) => void;
-}
+import { FeedbackViewProps } from '../../types/smart-voc.types';
 
 const FeedbackView: React.FC<FeedbackViewProps> = ({
   questionText,

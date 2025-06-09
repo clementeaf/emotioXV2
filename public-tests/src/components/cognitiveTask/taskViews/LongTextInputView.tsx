@@ -1,17 +1,9 @@
 import React from 'react';
 import TextAreaField from '../../common/TextAreaField';
 import CharacterCounter from '../../common/CharacterCounter';
+import { LongTextInputViewProps } from '../../../types/cognitive-task.types';
 
-// Interface específica para este componente
-interface LongTextInputViewComponentProps {
-  description: string;
-  placeholder: string;
-  value: string;
-  onChange: (value: string) => void;
-  maxLength?: number;
-}
-
-const LongTextInputView: React.FC<LongTextInputViewComponentProps> = ({
+const LongTextInputView: React.FC<LongTextInputViewProps> = ({
   description,
   placeholder,
   value,

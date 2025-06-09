@@ -1,13 +1,8 @@
+import React from 'react';
+import { StandardizedFormProps } from './hooks.types';
+
 // Tipos específicos para SmartVOC
 
-// Base interface for standardized form props
-export interface StandardizedFormProps {
-  stepName: string;
-  stepType: string;
-  stepId: string;
-  onContinue?: (responseData?: any) => void;
-  isSubmitting?: boolean;
-}
 export interface SmartVOCQuestion {
   id: string;
   type: 'csat' | 'ces' | 'cv' | 'nev' | 'nps' | 'voc' | 'trust';
@@ -121,29 +116,31 @@ export interface EmotionSelectionViewProps {
 }
 
 export interface FeedbackViewProps {
-  onComplete: (feedback: string) => void;
+  questionText: string;
+  instructions?: string;
+  placeholder?: string;
+  initialValue?: string;
+  onChange?: (value: string) => void;
+  onNext: (feedback: string) => void;
 }
 
 export interface CSATViewProps extends StandardizedFormProps {
-  question?: string;
-  value?: number;
-  onChange?: (value: number) => void;
+  questionText: string;
+  instructions?: string;
+  companyName?: string;
+  config?: unknown;
+  scaleSize?: number;
+  onStepComplete: (data?: unknown) => void;
 }
 
 export interface DifficultyScaleData {
-  difficulty: number;
-  feedback?: string;
+  value: number | null;
 }
 
 export interface DifficultyScaleViewProps extends Omit<StandardizedFormProps, 'stepName' | 'stepType' | 'stepId'> {
-  onContinue: (responseData: DifficultyScaleData) => void;
-  config?: {
-    question?: string;
-    minLabel?: string;
-    maxLabel?: string;
-    minValue?: number;
-    maxValue?: number;
-  };
+  questionConfig: SmartVOCQuestion;
+  moduleId: string;
+  onNext: (responsePayload: { value: number, feedback?: string, moduleResponseId?: string | null }) => void;
 }
 
 export interface VOCTextData {
@@ -202,4 +199,91 @@ export interface CVQuestionProps {
   config: CVQuestionConfig;
   onComplete: (value: number) => void;
   disabled?: boolean;
+}
+
+// Interfaces adicionales para componentes SmartVOC
+export interface BasicEmoji {
+  emoji: string;
+  label: string;
+}
+
+export interface EmotionSelectionViewComponentProps {
+  questionText: string;
+  instructions?: string;
+  companyName?: string;
+  onNext: (selectedEmoji: string) => void;
+}
+
+export interface AgreementScaleViewComponentProps {
+  questionText: string;
+  instructions?: string;
+  scaleSize?: number;
+  leftLabel?: string;
+  rightLabel?: string;
+  researchId: string;
+  stepId: string;
+  stepName: string;
+  stepType: string;
+  onStepComplete: (data?: unknown) => void;
+}
+
+export interface SmartVocThankYouViewComponentProps {
+  message?: string;
+  onContinue?: () => void;
+  responsesData?: any; // ResponsesData from hooks
+}
+
+// Interfaces para preguntas específicas de SmartVOC
+export interface VOCTextQuestionComponentProps extends Omit<StandardizedFormProps, 'stepName'> {
+  questionConfig: SmartVOCQuestion;
+  moduleId: string;
+  onSaveSuccess: (questionId: string, value: string, moduleResponseId: string | null) => void;
+}
+
+export interface NEVQuestionComponentProps {
+  questionConfig: {
+    id: string;
+    title?: string;
+    description?: string;
+    required?: boolean;
+    type?: string;
+  };
+  researchId: string;
+  moduleId: string;
+  onSaveSuccess: (questionId: string, value: number, moduleResponseId: string | null) => void;
+}
+
+export interface NPSQuestionComponentProps {
+  questionConfig: { 
+    id: string; 
+    description?: string; 
+    type: string; 
+    title?: string; 
+    config: {
+      scaleRange?: { start: number; end: number };
+      startLabel?: string;
+      endLabel?: string;
+    };
+  };
+  researchId: string;
+  moduleId: string;
+  onSaveSuccess: (questionId: string, responseValue: number, moduleResponseId: string | null) => void;
+}
+
+// CV Question Props
+export interface CVQuestionComponentProps {
+  questionConfig: {
+    id: string;
+    title?: string;
+    description?: string;
+    type: string;
+    config: {
+      scaleRange?: { start: number; end: number };
+      startLabel?: string;
+      endLabel?: string;
+    };
+  };
+  researchId: string;
+  moduleId: string;
+  onSaveSuccess: (questionId: string, responseValue: number, moduleResponseId: string | null) => void;
 } 

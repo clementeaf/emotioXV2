@@ -1,10 +1,5 @@
 import React from 'react';
-
-interface ScaleLabelsProps {
-    minLabel?: string;
-    maxLabel?: string;
-    className?: string; // Para estilos adicionales del contenedor
-}
+import { ScaleLabelsProps } from '../../../../types/cognitive-task.types';
 
 const ScaleLabels: React.FC<ScaleLabelsProps> = ({
     minLabel,

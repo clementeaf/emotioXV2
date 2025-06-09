@@ -1,5 +1,6 @@
 import React from 'react';
 import { ChoiceOption } from './common.types';
+import { ExpandedStep } from './flow.types';
 
 // Interfaz principal para una pregunta cognitiva
 export interface CognitiveQuestion {
@@ -250,22 +251,25 @@ export interface CognitiveQuestionRendererProps {
 }
 
 export interface CognitiveTaskQuestionProps {
-  question: CognitiveQuestion;
-  onResponse: (response: any) => void;
-  disabled?: boolean;
+  cognitiveQuestion: ExpandedStep;
+  onComplete: (answer: unknown) => void;
+  isAnswered?: boolean;
 }
 
 // Task View Components (non-conflicting)
 export interface LongTextInputViewProps {
-  question: string;
+  description: string;
+  placeholder: string;
   value: string;
   onChange: (value: string) => void;
-  disabled?: boolean;
+  maxLength?: number;
 }
 
 export interface TextOnlyInputViewProps {
-  question: string;
-  onComplete: () => void;
+  description: string;
+  placeholder: string;
+  value: string;
+  onChange: (value: string) => void;
 }
 
 export interface ImageViewWithSelectionProps {
@@ -285,15 +289,24 @@ export interface TaskFooterProps {
 }
 
 export interface ScaleButtonGroupProps {
-  min: number;
-  max: number;
-  value?: number;
-  onChange: (value: number) => void;
-  disabled?: boolean;
+  buttons: number[];
+  selectedValue: number | undefined;
+  onSelect: (value: number) => void;
+  buttonClassName?: string;
+  activeButtonClassName?: string;
+  inactiveButtonClassName?: string;
 }
 
 export interface ScaleLabelsProps {
   minLabel: string;
   maxLabel: string;
   className?: string;
+}
+
+// ImageViewWithSelection Component Props
+export interface ImageViewWithSelectionComponentProps {
+  imageType: 'desktop' | 'mobile';
+  options: ChoiceOption[];
+  selectedOption: string | null;
+  onOptionSelect: (optionId: string) => void;
 } 

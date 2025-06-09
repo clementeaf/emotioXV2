@@ -3,21 +3,7 @@ import { useParticipantStore } from '../../../stores/participantStore';
 import { useModuleResponses } from '../../../hooks/useModuleResponses';
 import { useResponseAPI } from '../../../hooks/useResponseAPI';
 import { getStandardButtonText } from '../../../utils/formHelpers';
-
-interface NEVQuestionConfig {
-  id: string;
-  title?: string;
-  description?: string;
-  required?: boolean;
-  type?: string;
-}
-
-interface NEVQuestionProps {
-  questionConfig: NEVQuestionConfig;
-  researchId: string;
-  moduleId: string;
-  onSaveSuccess: (questionId: string, value: number, moduleResponseId: string | null) => void;
-}
+import { NEVQuestionComponentProps } from '../../../types/smart-voc.types';
 
 const emojiOptions = [
   { value: 'negative', label: '😞', numValue: -1 },
@@ -25,7 +11,7 @@ const emojiOptions = [
   { value: 'positive', label: '😊', numValue: 1 },
 ];
 
-export const NEVQuestion: React.FC<NEVQuestionProps> = ({ questionConfig, researchId, moduleId, onSaveSuccess }) => {
+export const NEVQuestion: React.FC<NEVQuestionComponentProps> = ({ questionConfig, researchId, moduleId, onSaveSuccess }) => {
   const { id: questionId, description, type: questionType, title: questionTitle } = questionConfig;
   const participantId = useParticipantStore(state => state.participantId);
 

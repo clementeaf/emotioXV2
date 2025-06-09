@@ -74,7 +74,7 @@ const CognitiveTaskQuestion: React.FC<CognitiveTaskQuestionProps> = ({
     
     // Forzar guardado en el store
     setTimeout(() => forceSaveToLocalStorage(), 100);
-  }, [answer, selected, timeLimit, cognitiveQuestion, onComplete, forceSaveToLocalStorage, clearResponse]);
+  }, [answer, selected, timeLimit, question, onComplete, forceSaveToLocalStorage, clearResponse]);
   
   // Renderizar opciones múltiples
   const renderMultipleChoice = () => {

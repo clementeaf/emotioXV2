@@ -1,16 +1,11 @@
 import React, { useState } from 'react';
 import { ResponsesData } from '../../hooks/types';
 import { ResponsesViewer } from '../flow/ResponsesViewer';
+import { SmartVocThankYouViewComponentProps } from '../../types/smart-voc.types';
 import fondoFinal from '../../assets/fondo-final.png';
 
-interface ThankYouViewProps {
-  message?: string;
-  onContinue?: () => void;
-  responsesData?: ResponsesData;
-}
-
 // Componente para la pantalla de agradecimiento final
-export const ThankYouView: React.FC<ThankYouViewProps> = ({
+export const ThankYouView: React.FC<SmartVocThankYouViewComponentProps> = ({
   message = '¡Gracias por participar en nuestro estudio!',
   onContinue,
   responsesData
