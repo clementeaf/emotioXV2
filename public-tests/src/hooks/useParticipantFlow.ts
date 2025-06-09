@@ -33,10 +33,6 @@ export const useParticipantFlow = (researchId: string | undefined) => {
     const storeIsFlowLoading = useParticipantStore(state => state.isFlowLoading);
     const storeSetIsFlowLoading = useParticipantStore(state => state.setIsFlowLoading);
 
-    console.log('[useParticipantFlow] DEBUG - researchId:', researchId);
-    console.log('[useParticipantFlow] DEBUG - token:', token);
-    console.log('[useParticipantFlow] DEBUG - enabled condition:', !!researchId && !!token);
-
     const { 
         data: researchFlowApiData, 
         isLoading: isResearchFlowHookLoading, 
@@ -77,12 +73,12 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         getResponsesJson,
         markResponsesAsCompleted,
     } = useResponseManager({
-        researchId,
+        researchId: researchId || '',
         participantId: participantId === null ? undefined : participantId,
         expandedSteps,
         currentStepIndex,
-        responseAPI,
-        storeSetLoadedResponses: storeSetLoadedResponsesFromStore
+        responseAPI: responseAPI as any,
+        storeSetLoadedResponses: storeSetLoadedResponsesFromStore as (responses: unknown[]) => void
     });
 
     const {
@@ -104,10 +100,10 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         markResponsesAsCompleted: markResponsesAsCompleted,
         getStepResponse: getStepResponse,
         loadExistingResponses: loadExistingResponses,
-        handleErrorProp: (errMsg, errStep) => handleError(errMsg, errStep),
+        handleErrorProp: (errMsg: string, errStep: any) => handleError(errMsg, errStep),
         setExternalExpandedSteps: () => expandedSteps,
         currentStepIndexState: currentStepIndex,
-        setCurrentStepIndexFunc: (value) => {
+        setCurrentStepIndexFunc: (value: any) => {
           if (typeof value === 'function') {
             const next = value(currentStepIndex);
             setCurrentStepIndex(next);
@@ -195,7 +191,7 @@ export const useParticipantFlow = (researchId: string | undefined) => {
                 completedStepIndices.add(index);
                 return;
             }
-            if (hasStepBeenAnswered(index)) {
+            if (hasStepBeenAnswered(index.toString())) {
                 completedStepIndices.add(index);
             }
         });

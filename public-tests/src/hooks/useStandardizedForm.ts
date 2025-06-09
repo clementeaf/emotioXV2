@@ -13,6 +13,43 @@ import {
 // 🚨 NUEVO: Helper para persistir user interaction entre re-mounts
 const USER_INTERACTION_KEY_PREFIX = 'user_interaction_';
 
+// 🚨 NUEVO: Sistema de invalidación de caché
+const CACHE_VERSION_KEY = 'form_cache_version';
+const CURRENT_CACHE_VERSION = '2.0.0'; // Incrementar cuando hay cambios importantes
+
+function invalidateOldCache(): void {
+  try {
+    const storedVersion = sessionStorage.getItem(CACHE_VERSION_KEY);
+    if (storedVersion !== CURRENT_CACHE_VERSION) {
+      console.log(`🧹 [useStandardizedForm] Invalidating old cache (${storedVersion} → ${CURRENT_CACHE_VERSION})`);
+      
+      // Limpiar sessionStorage de user interactions
+      const keys = Object.keys(sessionStorage);
+      keys.forEach(key => {
+        if (key.startsWith(USER_INTERACTION_KEY_PREFIX)) {
+          sessionStorage.removeItem(key);
+        }
+      });
+      
+      // Limpiar localStorage de respuestas obsoletas
+      const localKeys = Object.keys(localStorage);
+      localKeys.forEach(key => {
+        if (key.startsWith('response_') || 
+            key === 'participantResponses' || 
+            key.includes('expandedSteps')) {
+          localStorage.removeItem(key);
+        }
+      });
+      
+      // Actualizar versión del caché
+      sessionStorage.setItem(CACHE_VERSION_KEY, CURRENT_CACHE_VERSION);
+      console.log(`✅ [useStandardizedForm] Cache invalidation complete`);
+    }
+  } catch (e) {
+    console.warn('[useStandardizedForm] Error during cache invalidation:', e);
+  }
+}
+
 function getUserInteractionKey(stepId: string, stepType: string): string {
   return `${USER_INTERACTION_KEY_PREFIX}${stepId}_${stepType}`;
 }
@@ -48,6 +85,11 @@ export function useStandardizedForm<T>(
   props: StandardizedFormProps,
   options: UseStandardizedFormOptions<T>
 ): [StandardizedFormState<T>, StandardizedFormActions<T>] {
+  
+  // 🚨 CRÍTICO: Invalidar caché obsoleto al inicializar
+  useEffect(() => {
+    invalidateOldCache();
+  }, []);
   
   const {
     stepId,
@@ -373,6 +415,38 @@ export function useStandardizedForm<T>(
       if (stepId) {
         clearUserInteraction(stepId, stepType);
       }
+    },
+    // 🚨 NUEVO: Reset agresivo que fuerza recarga desde API
+    forceRefresh: () => {
+      console.log(`🔄 [useStandardizedForm] Forcing refresh for ${stepId}`);
+      
+      // Limpiar todo el estado local
+      setValue(initialValue, false);
+      setError(null);
+      setResponseId(null);
+      setHasExistingData(false);
+      setIsDataLoaded(false);
+      userHasInteracted.current = false;
+      initialLoadComplete.current = false;
+      
+      // Limpiar user interaction persistida
+      if (stepId) {
+        clearUserInteraction(stepId, stepType);
+      }
+      
+      // Limpiar localStorage específico de este step
+      try {
+        const localStorageKey = `response_${stepId}`;
+        localStorage.removeItem(localStorageKey);
+      } catch (e) {
+        console.warn('[useStandardizedForm] Error clearing localStorage:', e);
+      }
+      
+      // Forzar recarga de respuestas desde API
+      if (fetchResponses && researchId && participantId) {
+        console.log(`🔄 [useStandardizedForm] Triggering API refresh for ${stepId}`);
+        fetchResponses(researchId, participantId);
+      }
     }
   };
 
@@ -403,6 +477,51 @@ export const userInteractionUtils = {
       interactionKeys.forEach(key => sessionStorage.removeItem(key));
     } catch (e) {
       console.warn('[userInteractionUtils] Error clearing all interactions:', e);
+    }
+  },
+  // 🚨 NUEVO: Limpieza completa del sistema para resolver problemas persistentes
+  nukeAllFormData: () => {
+    try {
+      console.log('💥 [userInteractionUtils] NUKING ALL FORM DATA - Nuclear reset initiated');
+      
+      // Limpiar sessionStorage completamente
+      const sessionKeys = Object.keys(sessionStorage);
+      sessionKeys.forEach(key => {
+        if (key.startsWith(USER_INTERACTION_KEY_PREFIX) || 
+            key === CACHE_VERSION_KEY ||
+            key.includes('form_') ||
+            key.includes('response_')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+      
+      // Limpiar localStorage de respuestas y datos obsoletos
+      const localKeys = Object.keys(localStorage);
+      localKeys.forEach(key => {
+        if (key.startsWith('response_') || 
+            key === 'participantResponses' || 
+            key.includes('expandedSteps') ||
+            key.includes('form_') ||
+            key.includes('smartvoc') ||
+            key.includes('csat') ||
+            key.includes('demographic')) {
+          localStorage.removeItem(key);
+        }
+      });
+      
+      // Resetear versión de caché para forzar invalidación
+      sessionStorage.setItem(CACHE_VERSION_KEY, CURRENT_CACHE_VERSION);
+      
+      console.log('✅ [userInteractionUtils] Nuclear reset complete - All form data nuked');
+      console.log('🔄 [userInteractionUtils] Please refresh the page to start fresh');
+      
+      // Mostrar alerta al usuario
+      if (typeof window !== 'undefined') {
+        alert('🧹 Datos de formulario limpiados. Por favor, recarga la página para empezar desde cero.');
+      }
+      
+    } catch (e) {
+      console.error('[userInteractionUtils] Error during nuclear reset:', e);
     }
   }
 };

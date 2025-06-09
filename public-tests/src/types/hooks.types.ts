@@ -151,6 +151,7 @@ export interface StandardizedFormActions<T> {
   saveResponse: (value?: T) => Promise<{ success: boolean; data?: unknown }>;
   validateAndSave: (value?: T) => Promise<{ success: boolean; data?: unknown }>;
   reset: () => void;
+  forceRefresh: () => void;
 }
 
 export interface UseStandardizedFormOptions<T> {

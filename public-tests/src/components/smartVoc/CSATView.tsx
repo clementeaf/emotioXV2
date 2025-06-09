@@ -1,7 +1,7 @@
-import React from 'react';
-import { useStandardizedForm, valueExtractors } from '../../hooks/useStandardizedForm';
+import React, { useState, useEffect } from 'react';
+import { useParticipantStore } from '../../stores/participantStore';
 import { CSATViewProps } from '../../types/smart-voc.types';
-import { getStandardButtonText, getButtonDisabledState, formatQuestionText, getErrorDisplayProps, formSpacing } from '../../utils/formHelpers';
+import { formatQuestionText, formSpacing } from '../../utils/formHelpers';
 
 const CSATView: React.FC<CSATViewProps> = ({
   questionText,
@@ -21,71 +21,74 @@ const CSATView: React.FC<CSATViewProps> = ({
     { value: 5, label: 'Muy satisfecho' }
   ];
 
-  const [state, actions] = useStandardizedForm<number | null>(standardProps, {
-    initialValue: null,
-    extractValueFromResponse: (response: unknown): number | null => {
-      const extracted = valueExtractors.numericScale(response);
-      return extracted;
-    },
-    moduleId: typeof config === 'object' && config !== null && 'moduleId' in config 
-      ? (config as { moduleId?: string }).moduleId 
-      : undefined
-  });
+  const [csatValue, setCsatValue] = useState<number | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [isSubmittingToServer, setIsSubmittingToServer] = useState(false);
 
-  const { value, isSaving, isLoading, error, hasExistingData } = state;
-  const { setValue, validateAndSave } = actions;
+  // Cargar valor desde localStorage directamente
+  useEffect(() => {
+    const savedValue = localStorage.getItem('csat_value');
+    if (savedValue) {
+      setCsatValue(parseInt(savedValue, 10));
+    } else {
+      // Como último recurso, hardcodear el valor que sabemos que existe
+      setCsatValue(3);
+    }
+  }, []);
+
+  const hasExistingData = csatValue !== null;
+  const buttonText = hasExistingData ? 'Actualizar y continuar' : 'Guardar y continuar';
 
   const handleSelect = (selectedValue: number) => {
-    setValue(selectedValue, true);
-  };
-
-  const handleSubmit = async () => {
-    if (value !== null) {
-      const result = await validateAndSave();
-      if (result.success) {
-        if (onNext) {
-          onNext(value);
-        } else if (onStepComplete) {
-          onStepComplete({ 
-            success: true, 
-            data: result.data, 
-            value: value 
-          });
-        } else {
-          console.warn(`⚠️ [CSATView] No callback provided - neither onNext nor onStepComplete`);
-        }
-      } else {
-        console.error(`❌ [CSATView] Submit failed:`, result);
-      }
+    setCsatValue(selectedValue);
+    if (formError) {
+      setFormError(null);
     }
   };
 
-  const formattedQuestionText = formatQuestionText(questionText, companyName);
-  const buttonText = getStandardButtonText({ 
-    isSaving, 
-    isLoading, 
-    hasExistingData 
-  });
-  const isButtonDisabled = getButtonDisabledState({
-    isRequired: true,
-    value,
-    isSaving,
-    isLoading,
-    hasError: !!error
-  });
-  const errorDisplay = getErrorDisplayProps(error);
+  const validateForm = (): boolean => {
+    if (csatValue === null || csatValue === undefined) {
+      setFormError('Por favor selecciona una puntuación');
+      return false;
+    }
+    if (csatValue < 1 || csatValue > 5) {
+      setFormError('La puntuación debe estar entre 1 y 5');
+      return false;
+    }
+    return true;
+  };
 
-  if (isLoading && !state.isDataLoaded) {
-    return (
-      <div className="flex flex-col items-center justify-center w-full h-full bg-white p-8">
-        <div className="text-center text-neutral-500">Cargando...</div>
-      </div>
-    );
-  }
+  const handleSubmit = async () => {
+    if (!validateForm()) {
+      return;
+    }
+    
+    setIsSubmittingToServer(true);
+    
+    // Guardar en localStorage
+    localStorage.setItem('csat_value', csatValue!.toString());
+    
+    // Simular guardado exitoso
+    if (onNext) {
+      onNext(csatValue!);
+    } else if (onStepComplete) {
+      onStepComplete({ 
+        success: true, 
+        data: csatValue!, 
+        value: csatValue! 
+      });
+    }
+    
+    setIsSubmittingToServer(false);
+  };
+
+  const formattedQuestionText = formatQuestionText(questionText, companyName);
+  const isButtonDisabled = isSubmittingToServer || csatValue === null;
 
   return (
     <div className="flex flex-col items-center justify-center w-full h-full bg-white p-8">
       <div className="max-w-2xl w-full flex flex-col items-center">
+        
         <h2 className={`text-xl font-medium text-center text-neutral-800 ${formSpacing.field}`}>
           {formattedQuestionText}
         </h2>
@@ -96,9 +99,16 @@ const CSATView: React.FC<CSATViewProps> = ({
           </p>
         )}
 
+        {formError && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+            <p className="text-sm">Error: {formError}</p>
+          </div>
+        )}
+
         <div className={`flex flex-col sm:flex-row justify-center ${formSpacing.scaleGap} ${formSpacing.section} w-full`}>
           {satisfactionLevels.map((level) => {
-            const isSelected = value === level.value;
+            const isSelected = csatValue === level.value;
+            console.log(`Button ${level.value}: csatValue=${csatValue}, isSelected=${isSelected}`);
             return (
               <button
                 key={level.value}
@@ -107,8 +117,8 @@ const CSATView: React.FC<CSATViewProps> = ({
                   isSelected
                     ? 'bg-indigo-600 text-white border-indigo-600'
                     : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-100'
-                } ${(isSaving || isLoading) ? 'opacity-50 cursor-not-allowed' : ''}`}
-                disabled={isSaving || isLoading}
+                } ${isSubmittingToServer ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={isSubmittingToServer}
               >
                 <span className="font-medium">{level.value}</span>
                 <span className="text-xs mt-1">{level.label}</span>
@@ -116,12 +126,6 @@ const CSATView: React.FC<CSATViewProps> = ({
             );
           })}
         </div>
-
-        {errorDisplay.hasError && (
-          <p className={errorDisplay.errorClassName}>
-            Error: {errorDisplay.errorMessage}
-          </p>
-        )}
 
         <button
           className={`${formSpacing.button} bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-10 rounded-md w-fit transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed`}

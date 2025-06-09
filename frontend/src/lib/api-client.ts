@@ -72,6 +72,11 @@ export class ApiClient {
         throw new Error(`HTTP error! status: ${response.status}. Body: ${errorBodyText}`);
       }
 
+      // Para respuestas 204 No Content (como DELETE), no intentar parsear JSON
+      if (response.status === 204) {
+        return undefined as T;
+      }
+      
       const data = await response.json();
       return data;
     } catch (error) {
