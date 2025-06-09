@@ -1,29 +1,11 @@
-import { DemographicsSection, DemographicResponses } from '../types/demographics';
+import { DemographicsSection, DemographicResponses, StepDefinition, DemographicDataPayload } from '../types/demographics';
 import { APIResponse } from '../lib/types';
 import { APIStatus, ApiClient } from '../lib/api';
-
-/**
- * Interfaz para definir la estructura de un 'step' dentro de all_steps.
- */
-interface StepDefinition {
-  stepType?: string;
-  type?: string;
-  response?: unknown;
-  id?: string;
-  // Añade aquí otras propiedades que pueda tener un 'step' si son conocidas
-}
 
 /**
  * URL base de la API
  */
 // const API_BASE_URL = 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev'; // Ya no se usa directamente aquí
-
-// Nuevo tipo para la respuesta de getDemographicResponses
-interface DemographicDataPayload {
-  responses: DemographicResponses;
-  documentId: string | null;
-  demographicModuleResponseId: string | null;
-}
 
 /**
  * Servicio para manejar las preguntas demográficas

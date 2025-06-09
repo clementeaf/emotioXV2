@@ -203,4 +203,11 @@ export interface ThankYouScreenFormData {
   message: string;
   redirectUrl?: string;
   isEnabled: boolean;
+}
+
+// Interfaz para el registro de participante
+export interface ParticipantRegistration {
+  name: string;
+  email: string;
+  researchId: string;
 } 

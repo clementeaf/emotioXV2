@@ -98,8 +98,8 @@ export interface UseModuleResponsesReturn {
 
 // Tipos para hooks de login de participante
 export interface UseParticipantLoginProps {
-  onLoginSuccess: (participantId: string, researchId: string) => void;
-  onLoginError: (error: string) => void;
+  researchId: string;
+  onLogin?: (participant: any) => void;
 }
 
 export interface UseParticipantLoginReturn {

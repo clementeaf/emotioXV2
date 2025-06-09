@@ -69,3 +69,28 @@ export const EDUCATION_OPTIONS: SelectOption[] = [
   { value: 'doctorate', label: 'Doctorado' },
   { value: 'other', label: 'Otro' }
 ];
+
+export interface DemographicResponse {
+  value: string | string[];
+  timestamp: number;
+}
+
+export interface DemographicResponseData {
+  [questionId: string]: DemographicResponse;
+}
+
+// Interfaz para definir la estructura de un 'step' dentro de all_steps
+export interface StepDefinition {
+  stepType?: string;
+  type?: string;
+  response?: unknown;
+  id?: string;
+  // Añade aquí otras propiedades que pueda tener un 'step' si son conocidas
+}
+
+// Tipo para la respuesta de getDemographicResponses
+export interface DemographicDataPayload {
+  responses: DemographicResponseData;
+  documentId: string | null;
+  demographicModuleResponseId: string | null;
+}

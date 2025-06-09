@@ -5,6 +5,8 @@ import {
   CognitiveTaskFormData,
   ThankYouScreenFormData,
   EyeTrackingFormData,
+  ParticipantRegistration,
+  Step
 } from './types';
 import { useParticipantStore } from '../stores/participantStore';
 
@@ -23,20 +25,6 @@ export enum APIStatus {
 
 // Configuración base de la API
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev';
-
-// Interfaz para el registro de participante
-export interface ParticipantRegistration {
-  name: string;
-  email: string;
-  researchId: string;
-}
-
-// Definir Step aquí localmente
-interface Step {
-  id: string;
-  type: string;
-  config?: Record<string, unknown>;
-}
 
 // Clase para manejar las peticiones a la API
 export class ApiClient {
