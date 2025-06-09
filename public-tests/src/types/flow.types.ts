@@ -1,5 +1,6 @@
 import React from 'react';
 import { DemographicConfig } from './demographics';
+import { ParticipantFlowStep } from './flow';
 
 // Tipos base para el flujo
 export interface ExpandedStep {

@@ -3,19 +3,7 @@ import React from 'react';
 import QuestionHeader from '../common/QuestionHeader';
 import ScaleButtonGroup from './common/ScaleButtonGroup';
 import ScaleLabels from './common/ScaleLabels';
-import { CognitiveQuestion } from '../../../types/cognitive-task.types';
-
-// Interface específica para este componente
-interface LinearScaleViewComponentProps {
-  config: CognitiveQuestion & {
-    minValue?: number;
-    maxValue?: number;
-    minLabel?: string;
-    maxLabel?: string;
-  };
-  value: number | undefined;
-  onChange: (questionId: string, selectedValue: number) => void;
-}
+import { CognitiveQuestion, LinearScaleViewComponentProps } from '../../../types/cognitive-task.types';
 
 export const LinearScaleView: React.FC<LinearScaleViewComponentProps> = ({ config, value, onChange }) => {
   const id = config.id;

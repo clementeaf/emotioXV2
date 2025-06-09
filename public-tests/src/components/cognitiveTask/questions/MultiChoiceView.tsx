@@ -1,17 +1,10 @@
 import React from 'react';
-import CheckboxGroup from '../../common/CheckboxGroup'; // Ruta corregida
-import QuestionHeader from '../common/QuestionHeader'; // Ruta corregida
-import { CognitiveQuestion } from '../../../types/cognitive-task.types';
+import QuestionHeader from '../common/QuestionHeader'; // Importar QuestionHeader
+import CheckboxGroup from '../../common/CheckboxGroup'; // Importar el nuevo componente
+import { CognitiveQuestion, MultiChoiceViewComponentProps } from '../../../types/cognitive-task.types';
 import { ChoiceOption } from '../../../types/common.types';
 
-// Interface específica para este componente
-interface MultiChoiceViewComponentProps {
-  config: CognitiveQuestion & { options?: ChoiceOption[] };
-  value: string[] | undefined;
-  onChange: (questionId: string, selectedOptionIds: string[]) => void;
-}
-
-export const MultiChoiceView: React.FC<MultiChoiceViewComponentProps> = ({ config, value: selectedIds = [], onChange }) => {
+export const MultiChoiceView: React.FC<MultiChoiceViewComponentProps> = ({ config, value = [], onChange }) => {
   const id = config.id;
   const title = config.title;
   const description = config.description;
@@ -28,10 +21,10 @@ export const MultiChoiceView: React.FC<MultiChoiceViewComponentProps> = ({ confi
     let newSelectedIds: string[];
     if (isChecked) {
       // Añadir el ID si no está ya presente (importante evitar duplicados)
-      newSelectedIds = selectedIds.includes(optionId) ? selectedIds : [...selectedIds, optionId];
+      newSelectedIds = value.includes(optionId) ? value : [...value, optionId];
     } else {
       // Eliminar el ID
-      newSelectedIds = selectedIds.filter(selectedId => selectedId !== optionId);
+      newSelectedIds = value.filter(selectedId => selectedId !== optionId);
     }
     onChange(id, newSelectedIds);
   };
@@ -42,7 +35,7 @@ export const MultiChoiceView: React.FC<MultiChoiceViewComponentProps> = ({ confi
       <CheckboxGroup
         name={`question-${id}`}
         options={options}
-        selectedIds={selectedIds}
+        selectedIds={value}
         onChange={handleCheckboxChange}
       />
     </div>

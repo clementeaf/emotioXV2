@@ -3,29 +3,9 @@ import { useParticipantStore } from '../../../stores/participantStore';
 import { useModuleResponses } from '../../../hooks/useModuleResponses';
 import { useResponseAPI } from '../../../hooks/useResponseAPI';
 import { getStandardButtonText } from '../../../utils/formHelpers';
+import { CVQuestionComponentProps } from '../../../types/smart-voc.types';
 
-interface CVConfig {
-  scaleRange?: { start: number; end: number };
-  startLabel?: string;
-  endLabel?: string;
-}
-
-interface CVQuestionConfig {
-  id: string;
-  title?: string;
-  description?: string;
-  type: string;
-  config: CVConfig;
-}
-
-interface CVQuestionProps {
-  questionConfig: CVQuestionConfig;
-  researchId: string;
-  moduleId: string;
-  onSaveSuccess: (questionId: string, responseValue: number, moduleResponseId: string | null) => void;
-}
-
-export const CVQuestion: React.FC<CVQuestionProps> = ({
+export const CVQuestion: React.FC<CVQuestionComponentProps> = ({
   questionConfig, 
   researchId,
   moduleId,

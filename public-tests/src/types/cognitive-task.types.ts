@@ -309,4 +309,41 @@ export interface ImageViewWithSelectionComponentProps {
   options: ChoiceOption[];
   selectedOption: string | null;
   onOptionSelect: (optionId: string) => void;
+}
+
+export interface TransactionAuthTaskComponentProps {
+  onContinue: () => void;
+  viewFormat?: 'text-only' | 'desktop-image' | 'mobile-image' | 'long-text';
+}
+
+export interface LinearScaleViewComponentProps {
+  config: CognitiveQuestion & {
+    minValue?: number;
+    maxValue?: number;
+    minLabel?: string;
+    maxLabel?: string;
+  };
+  value: number | undefined;
+  onChange: (questionId: string, selectedValue: number) => void;
+}
+
+export interface SingleChoiceViewComponentProps {
+  config: CognitiveQuestion & { options?: ChoiceOption[] };
+  value: string | undefined;
+  onChange: (questionId: string, selectedOptionId: string) => void;
+}
+
+export interface MultiChoiceViewComponentProps {
+  config: CognitiveQuestion & { options?: ChoiceOption[] };
+  value?: string[];
+  onChange: (questionId: string, selectedOptionIds: string[]) => void;
+}
+
+export interface LongTextViewComponentProps {
+  config: CognitiveQuestion;
+  value?: string;
+  onChange: (questionId: string, value: string) => void;
+  onStepComplete?: (answer?: unknown) => void;
+  savedResponse?: { id?: string; response?: unknown } | null;
+  savedResponseId?: string | null;
 } 

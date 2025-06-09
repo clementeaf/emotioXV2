@@ -5,16 +5,9 @@ import LoadingIndicator from '../common/LoadingIndicator';
 import ErrorDisplay from '../common/ErrorDisplay';
 import { FlowStepContentProps as OldFlowStepContentProps } from './types';
 import { ResponsesData } from '../../hooks/types';
+import { FlowStepContentComponentProps } from '../../types/flow.types';
 
-interface FlowStepContentProps extends Omit<OldFlowStepContentProps, 'currentStep'> {
-    currentStepEnum: ParticipantFlowStep;
-    currentExpandedStep: ExpandedStep | null;
-    isLoading: boolean;
-    responsesData?: ResponsesData;
-    handleError: (errorMessage: string, step: ParticipantFlowStep | string) => void;
-}
-
-const FlowStepContent: React.FC<FlowStepContentProps> = (props) => {
+const FlowStepContent: React.FC<FlowStepContentComponentProps> = (props) => {
     // Declarar todas las props al inicio
     const {
         currentStepEnum,
