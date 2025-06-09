@@ -82,8 +82,10 @@ export interface CognitiveTaskFooterProps {
   isSaving: boolean;
   isLoading: boolean;
   cognitiveTaskId: string | null;
+  researchId?: string;
   onSave: () => void;
   onPreview: () => void;
+  onDelete: () => void;
 }
 
 // Props para el modal de errores
@@ -194,6 +196,7 @@ export interface UseCognitiveTaskFormResult {
   // Métodos de acción
   handleSave: () => void;
   handlePreview: () => void;
+  handleDelete: () => void;
   validateForm: () => boolean;
   closeModal: () => void;
   initializeDefaultQuestions: (defaultQuestions: Question[]) => void;

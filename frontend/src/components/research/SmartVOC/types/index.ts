@@ -152,8 +152,10 @@ export interface SmartVOCFooterProps {
   isSaving: boolean;
   isLoading: boolean;
   smartVocId: string | null;
+  researchId: string;
   onSave: () => void;
   onPreview?: () => void;
+  onDelete?: () => void;
 }
 
 /**

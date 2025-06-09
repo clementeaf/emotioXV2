@@ -166,12 +166,43 @@ export class SmartVOCFormController {
   }
 
   /**
+   * Elimina un formulario SmartVOC por ID de investigación
+   * Ruta: DELETE /research/{researchId}/smart-voc
+   */
+  public async deleteSmartVOCFormByResearchId(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    const context = 'deleteSmartVOCFormByResearchId';
+    try {
+      const userId = event.requestContext.authorizer?.claims?.sub;
+      const validationError = validateUserId(userId);
+      if (validationError) return validationError;
+      const idResult = extractResearchId(event);
+      if ('statusCode' in idResult) return idResult;
+      const { researchId } = idResult;
+
+      structuredLog('info', `SmartVOCFormController.${context}`, 'Intentando eliminar formulario por researchId', { researchId: researchId }); 
+      const deleted = await this.service.deleteByResearchId(researchId, userId);
+      
+      if (deleted) {
+        structuredLog('info', `SmartVOCFormController.${context}`, 'Formulario eliminado exitosamente', { researchId: researchId }); 
+        return createResponse(200, { message: 'Formulario SmartVOC eliminado exitosamente', researchId });
+      } else {
+        structuredLog('info', `SmartVOCFormController.${context}`, 'No se encontró formulario para eliminar', { researchId: researchId }); 
+        return createResponse(404, { error: 'No se encontró formulario SmartVOC para esta investigación', researchId });
+      }
+
+    } catch (error) {
+       return this.handleError(error, context);
+    }
+  }
+
+  /**
    * Mapa de rutas para el controlador SmartVOC
    */
   public routes(): Record<string, (event: APIGatewayProxyEvent) => Promise<APIGatewayProxyResult>> {
     return {
       'GET /research/{researchId}/smart-voc': this.getSmartVOCForm.bind(this),
       'POST /research/{researchId}/smart-voc': this.createSmartVOCForm.bind(this),
+      'DELETE /research/{researchId}/smart-voc': this.deleteSmartVOCFormByResearchId.bind(this),
       'PUT /research/{researchId}/smart-voc/{formId}': this.updateSmartVOCForm.bind(this),
       'DELETE /research/{researchId}/smart-voc/{formId}': this.deleteSmartVOCForm.bind(this)
     };
@@ -184,6 +215,7 @@ const smartVocRouteMap: RouteMap = {
   '/research/{researchId}/smart-voc': {
     'GET': controller.getSmartVOCForm.bind(controller),
     'POST': controller.createSmartVOCForm.bind(controller),
+    'DELETE': controller.deleteSmartVOCFormByResearchId.bind(controller)
   },
   '/research/{researchId}/smart-voc/{formId}': {
     'PUT': controller.updateSmartVOCForm.bind(controller),

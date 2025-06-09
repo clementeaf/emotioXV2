@@ -44,6 +44,7 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
     handleRandomizeChange: setRandomizeQuestions,
     handleSave: saveForm,
     handlePreview,
+    handleDelete,
     closeModal,
     isUploading,
     uploadProgress,
@@ -146,8 +147,10 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
         <CognitiveTaskFooter
           onSave={saveForm}
           onPreview={handlePreview}
+          onDelete={handleDelete}
           isSaving={isSaving}
           cognitiveTaskId={cognitiveTaskId}
+          researchId={researchId}
         />
 
         {/* Modal para mostrar errores y mensajes */}

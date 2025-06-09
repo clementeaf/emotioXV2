@@ -41,13 +41,24 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
     }
   }, [responseData]);
 
+  // Determinar si hay datos existentes correctamente
+  const hasExistingData = !!(responseData && Object.keys(responseData).length > 0) || !!useStepResponseManagerReturnedSpecificId;
+
   const buttonText = getStandardButtonText({
     isSaving: isSaving,
     isLoading: isSubmittingToServer,
-    hasExistingData: !!useStepResponseManagerReturnedSpecificId,
+    hasExistingData: hasExistingData,
     isNavigating: isSubmittingToServer,
     customCreateText: 'Guardar y continuar',
     customUpdateText: 'Actualizar y continuar'
+  });
+
+  console.log(`🔍 [DemographicsForm] Button text calculation:`, {
+    responseData,
+    responseDataKeys: responseData ? Object.keys(responseData) : 'no data',
+    useStepResponseManagerReturnedSpecificId,
+    hasExistingData,
+    buttonText
   });
 
   if (!config || !config.questions) {
@@ -60,7 +71,12 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
   }
 
   const handleChange = (id: string, value: string | number | boolean | undefined) => {
-    setFormFieldResponses(prev => ({ ...prev, [id]: value }));
+    console.log(`🔍 [DemographicsForm] handleChange called:`, { id, value, type: typeof value });
+    setFormFieldResponses(prev => {
+      const newResponses = { ...prev, [id]: value };
+      console.log(`📊 [DemographicsForm] Updated formFieldResponses:`, newResponses);
+      return newResponses;
+    });
     if (value && formErrors[id]) {
       setFormErrors(prev => { const updated = { ...prev }; delete updated[id]; return updated; });
     }
@@ -75,20 +91,33 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
       }
     });
     setFormErrors(errors);
+    console.log(`🔍 [DemographicsForm] validateForm result:`, { 
+      formFieldResponses, 
+      errors, 
+      isValid: Object.keys(errors).length === 0 
+    });
     return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    console.log(`🚀 [DemographicsForm] handleSubmit started with data:`, formFieldResponses);
+    
+    if (!validateForm()) {
+      console.warn(`❌ [DemographicsForm] Validation failed, aborting submit`);
+      return;
+    }
     
     setIsSubmittingToServer(true);
+    console.log(`📤 [DemographicsForm] Calling saveCurrentStepResponse with:`, formFieldResponses);
+    
     const { success } = await saveCurrentStepResponse(formFieldResponses);
     
     if (success) {
+      console.log(`✅ [DemographicsForm] Save successful, calling onSubmit with:`, formFieldResponses);
       onSubmit(formFieldResponses); 
     } else {
-      console.error("[DemographicsForm] Falló saveCurrentStepResponse. Error debería estar en stepResponseError.");
+      console.error(`❌ [DemographicsForm] Save failed. Error:`, stepResponseError);
     }
     setIsSubmittingToServer(false);
   };

@@ -91,6 +91,7 @@ interface UseCognitiveTaskFormResult {
   // Acciones principales
   handleSave: () => void;
   handlePreview: () => void;
+  handleDelete: () => void;
   
   // Validación
   validationErrors: ValidationErrors | null;
@@ -761,6 +762,46 @@ export const useCognitiveTaskForm = (
     modals.closeConfirmModal();
   }, [modals]);
 
+  // Función para eliminar datos CognitiveTasks
+  const handleDelete = useCallback(async () => {
+    if (!window.confirm('⚠️ ¿Estás seguro de que quieres eliminar TODOS los datos de Cognitive Tasks de esta investigación?\n\nEsta acción no se puede deshacer.')) {
+      return;
+    }
+
+    try {
+      if (!researchId) {
+        throw new Error('No se puede eliminar: falta research ID');
+      }
+
+      // Llamar a la API para eliminar
+      await cognitiveTaskFixedAPI.deleteByResearchId(researchId);
+      
+      // Limpiar el estado local
+      setCognitiveTaskId(null);
+      setFormData(prev => ({
+        ...prev,
+        questions: []
+      }));
+      
+      // Invalidar queries
+      queryClient.invalidateQueries({ queryKey: ['cognitive-task', researchId] });
+      
+      modals.showModal({ 
+        title: 'Éxito',
+        message: 'Datos de Cognitive Tasks eliminados correctamente',
+        type: 'success'
+      });
+      
+    } catch (error: any) {
+      console.error('[CognitiveTaskForm] Error al eliminar:', error);
+      modals.showModal({
+        title: 'Error',
+        message: error.message || 'Error al eliminar los datos de Cognitive Tasks',
+        type: 'error'
+      });
+    }
+  }, [researchId, setCognitiveTaskId, setFormData, queryClient, modals]);
+
   // --- Retorno del Hook Principal --- 
   console.log('[useCognitiveTaskForm] Estado FINAL formData (desde hook estado):', 
     JSON.stringify(formData?.questions?.map(q => ({ id: q.id, type: q.type, title: q.title?.substring(0, 20) })) || [], null, 2)
@@ -785,6 +826,7 @@ export const useCognitiveTaskForm = (
     // Acciones principales
     handleSave, 
     handlePreview, 
+    handleDelete,
     // Validación (del hook)
     validationErrors, 
     validateForm: validateCurrentForm,

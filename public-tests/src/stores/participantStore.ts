@@ -127,8 +127,21 @@ const sanitizeForJSON = (obj: unknown): unknown => {
 
 // Función para guardar manualmente en localStorage
 const saveToLocalStorage = (key: string, data: unknown): void => {
+  // ❌ COMPLETELY DISABLED - NO localStorage for responses or participant data
+  if (key.includes('response') || key === 'participantResponses' || key.includes('expandedSteps')) {
+    console.log(`🚫 [ParticipantStore] localStorage save DISABLED for key: ${key}`);
+    return;
+  }
+  
+  // Only allow specific keys like 'participantInfo', 'participantState', 'flowComplete', etc.
+  const allowedKeys = ['participantInfo', 'participantState', 'flowComplete', 'progress'];
+  if (!allowedKeys.some(allowedKey => key.includes(allowedKey))) {
+    console.log(`🚫 [ParticipantStore] localStorage save BLOCKED for unauthorized key: ${key}`);
+    return;
+  }
+
   try {
-    const serializedData = JSON.stringify(sanitizeForJSON(data));
+    const serializedData = JSON.stringify(data);
     localStorage.setItem(key, serializedData);
   } catch (error) {
     console.error(`[ParticipantStore] Error guardando en localStorage (${key}):`, error);
@@ -137,13 +150,15 @@ const saveToLocalStorage = (key: string, data: unknown): void => {
 
 // Función para cargar manualmente desde localStorage
 const loadFromLocalStorage = (key: string): unknown => {
+  // ❌ COMPLETELY DISABLED - NO localStorage for responses or participant data
+  if (key.includes('response') || key === 'participantResponses' || key.includes('expandedSteps')) {
+    console.log(`🚫 [ParticipantStore] localStorage load DISABLED for key: ${key}`);
+    return null;
+  }
+
   try {
     const serializedData = localStorage.getItem(key);
-    if (serializedData === null) {
-      return null;
-    }
-    const data = JSON.parse(serializedData);
-    return data;
+    return serializedData ? JSON.parse(serializedData) : null;
   } catch (error) {
     console.error(`[ParticipantStore] Error cargando desde localStorage (${key}):`, error);
     return null;
@@ -184,21 +199,12 @@ export const useParticipantStore = create(
       setResearchId: (id) => set({ researchId: id }),
       setToken: (token) => set({ token }),
       setParticipant: (participant) => {
+        console.log(`🔍 [ParticipantStore] setParticipant called with:`, participant);
         set({ 
           participantId: participant.id,
-          responsesData: {
-            ...get().responsesData,
-            participantId: participant.id
-          }
+          error: null 
         });
-        
-        // Guardar forzado en localStorage
-        const state = get();
-        saveToLocalStorage('participantInfo', {
-          id: participant.id,
-          researchId: state.researchId
-        });
-        get().forceSaveToLocalStorage();
+        console.log(`✅ [ParticipantStore] participantId set to:`, participant.id);
       },
       setError: (error) => set({ error }),
       setCurrentStep: (step) => set({ currentStep: step }),
@@ -213,14 +219,16 @@ export const useParticipantStore = create(
           isFlowLoading: !(steps && steps.length > 0)
         });
         
-        // Forzar persistencia de pasos
-        saveToLocalStorage('expandedSteps', steps);
+        // ❌ DISABLED - NO localStorage for expandedSteps  
+        // saveToLocalStorage('expandedSteps', steps);
+        console.log('🚫 [ParticipantStore] Skipped expandedSteps save to localStorage');
       },
       
-      // Forzar guardado en localStorage
+      // Forzar guardado en localStorage - DISABLED responses to prevent API conflicts
       forceSaveToLocalStorage: () => {
         const state = get();
-        saveToLocalStorage('participantResponses', state.responsesData);
+        // ❌ DISABLED to prevent localStorage conflicts with API data
+        // saveToLocalStorage('participantResponses', state.responsesData);
         saveToLocalStorage('participantState', {
           currentStepIndex: state.currentStepIndex,
           maxVisitedIndex: state.maxVisitedIndex,
@@ -228,9 +236,10 @@ export const useParticipantStore = create(
           participantId: state.participantId,
           token: state.token
         });
+        console.log('🚫 [ParticipantStore] Skipped participantResponses save to prevent API conflicts');
       },
       
-      // <<< NUEVA ACCIÓN >>>
+      // Set loaded responses from API and clean conflicting localStorage
       setLoadedResponses: (loadedStepResponses) => set((state) => {
         const newResponsesData = JSON.parse(JSON.stringify(state.responsesData));
         newResponsesData.participantId = state.participantId || newResponsesData.participantId;
@@ -247,6 +256,22 @@ export const useParticipantStore = create(
             ...newResponsesData.modules,
             all_steps: uniqueSteps,
           };
+
+          // 🧹 CLEAN CONFLICTING LOCALSTORAGE when API responses are loaded
+          try {
+            console.log(`🧹 [ParticipantStore] Cleaning conflicting localStorage for ${loadedStepResponses.length} API responses`);
+            loadedStepResponses.forEach((response) => {
+              if (response.id) {
+                const localKey = `response_${response.id}`;
+                if (localStorage.getItem(localKey)) {
+                  console.log(`🧹 Removing localStorage key: ${localKey}`);
+                  localStorage.removeItem(localKey);
+                }
+              }
+            });
+          } catch (error) {
+            console.warn('[ParticipantStore] Error cleaning localStorage:', error);
+          }
         } else {
            console.warn("[ParticipantStore] setLoadedResponses esperaba un array pero recibió:", loadedStepResponses);
         }
@@ -287,12 +312,14 @@ export const useParticipantStore = create(
             responsesData: freshResponsesData
           });
           
-          // Guardar en localStorage datos limpios
-          saveToLocalStorage('participantResponses', freshResponsesData);
+          // Guardar en localStorage datos limpios - DISABLED responses to prevent conflicts
+          // ❌ DISABLED to prevent localStorage conflicts with API data
+          // saveToLocalStorage('participantResponses', freshResponsesData);
           saveToLocalStorage('participantInfo', {
             id: participant.id,
             researchId: researchId
           });
+          console.log('🚫 [ParticipantStore] Skipped participantResponses save in handleLoginSuccess');
           
           // Aquí se debería llamar a la función para construir los pasos expandidos
           // Esto se implementará en el React Component que use este store
@@ -480,9 +507,10 @@ export const useParticipantStore = create(
             updatedData.modules.all_steps.push(moduleResponse);
           }
           
-          // Guardar en localStorage de forma independiente
-          saveToLocalStorage('participantResponses', updatedData);
-          saveToLocalStorage(`response_${id}`, moduleResponse);
+          // ❌ DISABLED localStorage saving to prevent conflicts with API data
+          // saveToLocalStorage('participantResponses', updatedData);
+          // saveToLocalStorage(`response_${id}`, moduleResponse);
+          console.log('🚫 [ParticipantStore] Skipped localStorage save to prevent API conflicts');
           
           return { responsesData: updatedData };
         });
@@ -499,7 +527,9 @@ export const useParticipantStore = create(
             };
             
             // Guardar pasos actualizados
-            saveToLocalStorage('expandedSteps', newSteps);
+            // ❌ DISABLED - NO localStorage for expandedSteps  
+            // saveToLocalStorage('expandedSteps', newSteps);
+            console.log('🚫 [ParticipantStore] Skipped expandedSteps save to localStorage');
           }
           
           return { expandedSteps: newSteps };
@@ -543,7 +573,8 @@ export const useParticipantStore = create(
               ...get().responsesData,
               endTime: Date.now()
             };
-            saveToLocalStorage('participantResponses', finalData);
+            // ❌ DISABLED to prevent localStorage conflicts
+            // saveToLocalStorage('participantResponses', finalData);
             saveToLocalStorage('flowComplete', { timestamp: Date.now() });
             
             // Forzar guardado completo
@@ -758,25 +789,11 @@ export const useParticipantStore = create(
         return allApiResponses.some(resp => resp.stepTitle === stepName);
       },
       
-      // Obtener JSON de respuestas
+      // Obtener JSON de respuestas - ONLY use API data, ignore localStorage
       getResponsesJson: () => {
-        // Asegurar que tenemos la versión más actualizada antes de devolver
-        const storedResponses = loadFromLocalStorage('participantResponses');
         const current = get().responsesData;
-        
-        // Combinar lo almacenado con el estado actual
-        const mergedResponses = storedResponses 
-          ? { ...current, ...storedResponses, modules: {
-              eye_tracking: [],
-              cognitive_task: [],
-              smartvoc: [],
-              all_steps: [],
-              ...((typeof current === 'object' && current !== null && 'modules' in current && typeof (current as { modules?: unknown }).modules === 'object' && (current as { modules?: unknown }).modules !== null && !Array.isArray((current as { modules: unknown }).modules)) ? (current as { modules: Record<string, unknown> }).modules : {}),
-              ...((typeof storedResponses === 'object' && storedResponses !== null && 'modules' in storedResponses && typeof (storedResponses as { modules?: unknown }).modules === 'object' && (storedResponses as { modules?: unknown }).modules !== null && !Array.isArray((storedResponses as { modules: unknown }).modules)) ? (storedResponses as { modules: Record<string, unknown> }).modules : {})
-            } }
-          : current;
-        
-        return JSON.stringify(mergedResponses, null, 2);
+        console.log('🔍 [ParticipantStore] getResponsesJson - ONLY using API data, ignoring localStorage');
+        return JSON.stringify(current, null, 2);
       },
       
       // Calcular progreso para barra de progreso
@@ -859,8 +876,10 @@ export const useParticipantStore = create(
           researchId: state.researchId,
           participantId: state.participantId,
           maxVisitedIndex: state.maxVisitedIndex,
-          responsesData: state.responsesData
+          // ❌ REMOVED - NO persisting responsesData in localStorage anymore!
+          // responsesData: state.responsesData
         };
+        console.log('🚫 [ParticipantStore] Zustand partialize - Skipping responsesData persistence');
         return persistedState as unknown as ParticipantState;
       },
       version: 1,
@@ -871,27 +890,28 @@ export const useParticipantStore = create(
           }
           
           if (restoredState) {
+            console.log('🔍 [ParticipantStore] Zustand rehydrated - ignoring localStorage responses, will use API data only');
+            // ❌ REMOVED localStorage loading - will only use API responses loaded via setLoadedResponses
+            
+            // Clean any conflicting localStorage when store rehydrates
             try {
-              const storedResponses = loadFromLocalStorage('participantResponses');
-              if (storedResponses && Object.keys(storedResponses).length > 0) {
-                
-                if (restoredState.responsesData && storedResponses) {
-                  restoredState.responsesData = {
-                    ...restoredState.responsesData,
-                    ...storedResponses,
-                    modules: {
-                      eye_tracking: [],
-                      cognitive_task: [],
-                      smartvoc: [],
-                      all_steps: [],
-                      ...((typeof restoredState.responsesData === 'object' && restoredState.responsesData !== null && 'modules' in restoredState.responsesData && typeof (restoredState.responsesData as { modules?: unknown }).modules === 'object' && (restoredState.responsesData as { modules?: unknown }).modules !== null && !Array.isArray((restoredState.responsesData as { modules: unknown }).modules)) ? (restoredState.responsesData as { modules: Record<string, unknown> }).modules : {}),
-                      ...((typeof storedResponses === 'object' && storedResponses !== null && 'modules' in storedResponses && typeof (storedResponses as { modules?: unknown }).modules === 'object' && (storedResponses as { modules?: unknown }).modules !== null && !Array.isArray((storedResponses as { modules: unknown }).modules)) ? (storedResponses as { modules: Record<string, unknown> }).modules : {})
-                    }
-                  };
+              const keysToClean = [];
+              for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && (
+                  key.startsWith('response_') ||
+                  key === 'participantResponses'
+                )) {
+                  keysToClean.push(key);
                 }
               }
-            } catch (e) {
-              console.error('[ParticipantStore] Error cargando datos adicionales:', e);
+              
+              keysToClean.forEach(key => {
+                localStorage.removeItem(key);
+                console.log(`🧹 [ParticipantStore] Cleaned conflicting localStorage: ${key}`);
+              });
+            } catch (cleanupError) {
+              console.error('[ParticipantStore] Error cleaning localStorage during rehydrate:', cleanupError);
             }
           }
         };

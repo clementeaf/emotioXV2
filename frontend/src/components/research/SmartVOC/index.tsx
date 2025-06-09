@@ -34,6 +34,7 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
     updateSettings,
     handleSave,
     handlePreview,
+    handleDelete,
     closeModal,
   } = useSmartVOCForm(researchId);
 
@@ -142,8 +143,10 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
         isSaving={isSaving}
         isLoading={isLoading}
         smartVocId={smartVocId}
+        researchId={researchId}
         onSave={handleSaveAndNotify}
         onPreview={handlePreview}
+        onDelete={handleDelete}
       />
       
       {/* Modal para mostrar errores y mensajes */}

@@ -122,6 +122,16 @@ export class CognitiveTaskFixedAPI extends ApiClient {
     // Llamar al método delete de la clase base ApiClient
     await super.delete<void>(path);
   }
+
+  /**
+   * Elimina todos los datos de tarea cognitiva por researchId
+   * @param researchId ID de la investigación
+   */
+  async deleteByResearchId(researchId: string): Promise<void> {
+    console.log(`[CognitiveTaskFixedAPI] Eliminando todos los datos cognitive task para researchId: ${researchId}`);
+    const path = `/research/${researchId}/cognitive-task`;
+    await super.delete<void>(path);
+  }
   
   /**
    * Guarda (crea o actualiza) una tarea cognitiva para una investigación.

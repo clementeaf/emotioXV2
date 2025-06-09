@@ -258,10 +258,19 @@ export class ApiClient {
    * @returns Respuesta guardada
    */
   async saveModuleResponse(payload: { researchId: string, participantId: string, stepType: string, stepTitle: string, response: unknown }): Promise<APIResponse<unknown>> {
-    return this.request<unknown>('/module-responses', { 
+    console.log(`🔍 [ApiClient] saveModuleResponse called with payload:`, {
+      ...payload,
+      responseType: typeof payload.response,
+      responseKeys: typeof payload.response === 'object' && payload.response ? Object.keys(payload.response) : 'not object'
+    });
+    
+    const result = await this.request<unknown>('/module-responses', { 
       method: 'POST',
       body: JSON.stringify(payload)
     });
+    
+    console.log(`📋 [ApiClient] saveModuleResponse result:`, result);
+    return result;
   }
 
   /**

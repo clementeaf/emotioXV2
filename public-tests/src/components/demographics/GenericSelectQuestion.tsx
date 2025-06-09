@@ -7,8 +7,23 @@ export const GenericSelectQuestion: React.FC<GenericSelectQuestionProps> = ({
   value,
   onChange,
 }) => {
+  console.log(`🔍 [GenericSelectQuestion] Rendering select for:`, {
+    id: config.id,
+    title: config.title,
+    currentValue: value,
+    options: config.options,
+    optionsType: config.options?.map(opt => typeof opt),
+    required: config.required
+  });
+
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    onChange(config.id, e.target.value);
+    const newValue = e.target.value;
+    console.log(`📝 [GenericSelectQuestion] Value changed for ${config.id}:`, {
+      oldValue: value,
+      newValue: newValue,
+      targetValue: e.target.value
+    });
+    onChange(config.id, newValue);
   };
 
   // Usar un título de fallback si config.title no está definido

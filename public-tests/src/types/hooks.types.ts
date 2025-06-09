@@ -145,7 +145,7 @@ export interface StandardizedFormState<T> {
 }
 
 export interface StandardizedFormActions<T> {
-  setValue: (value: T) => void;
+  setValue: (value: T, isUserInteraction?: boolean) => void;
   setError: (error: string | null) => void;
   clearError: () => void;
   saveResponse: (value?: T) => Promise<{ success: boolean; data?: unknown }>;

@@ -315,6 +315,53 @@ export class SmartVOCFormModel {
   }
 
   /**
+   * Elimina un formulario SmartVOC por el ID de investigación.
+   * Primero busca el formulario por researchId y luego lo elimina.
+   * @param researchId ID de la investigación.
+   * @returns true si se eliminó exitosamente, false si no se encontró el formulario.
+   * @throws Error si falla la operación en DynamoDB.
+   */
+  async deleteByResearchId(researchId: string): Promise<boolean> {
+    try {
+      console.log(`[SmartVOCFormModel.deleteByResearchId] Buscando formulario para eliminar por researchId: ${researchId}`);
+      
+      // Primero obtener el formulario por researchId para conseguir su ID
+      const form = await this.getByResearchId(researchId);
+      
+      if (!form) {
+        console.log(`[SmartVOCFormModel.deleteByResearchId] No se encontró formulario SmartVOC para researchId: ${researchId}`);
+        return false; // No existe, pero no es un error
+      }
+
+      console.log(`[SmartVOCFormModel.deleteByResearchId] Formulario encontrado con ID: ${form.id}, procediendo a eliminar`);
+      
+      // Eliminar usando el ID del formulario
+      const command = new DeleteCommand({
+        TableName: this.tableName,
+        Key: { 
+          id: form.id,
+          sk: SmartVOCFormModel.SORT_KEY_VALUE 
+        },
+        ConditionExpression: 'attribute_exists(id)' // Asegurar que existe antes de eliminar
+      });
+
+      await this.dynamoClient.send(command);
+      console.log(`[SmartVOCFormModel.deleteByResearchId] Formulario SmartVOC eliminado exitosamente para researchId: ${researchId}`);
+      return true;
+
+    } catch (error: any) {
+      if (error.name === 'ConditionalCheckFailedException') {
+        console.warn(`[SmartVOCFormModel.deleteByResearchId] El formulario ya no existe para researchId: ${researchId}`);
+        return false; // Ya fue eliminado o no existe
+      }
+      
+      console.error('[SmartVOCFormModel.deleteByResearchId] ERROR DETALLADO DynamoDB:', JSON.stringify(error, null, 2));
+      console.error(`[SmartVOCFormModel.deleteByResearchId] Error al eliminar SmartVOCForm para researchId ${researchId}:`, error.message);
+      throw new Error(`DATABASE_ERROR: Error al eliminar el formulario SmartVOC por Research ID - ${error.message}`);
+    }
+  }
+
+  /**
    * Obtiene todos los formularios SmartVOC (operación Scan, usar con precaución).
    * @returns Un array con todos los registros de formularios SmartVOC.
    * @throws Error si falla la operación en DynamoDB.

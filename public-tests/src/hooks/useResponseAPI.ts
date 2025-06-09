@@ -54,8 +54,22 @@ export const useResponseAPI = ({ researchId, participantId }: UseResponseAPIProp
     moduleId?: string     
   ) => {
 
+    console.log(`🔍 [useResponseAPI] saveResponse called with:`, {
+      stepId,
+      stepType,
+      stepName,
+      answer,
+      answerType: typeof answer,
+      answerKeys: typeof answer === 'object' && answer ? Object.keys(answer) : 'not object',
+      moduleId,
+      researchId,
+      participantId
+    });
+
     if (!researchId || !participantId || !stepId || !stepType) {
-      setError('Datos inválidos para guardar respuesta (faltan IDs/tipo)');
+      const errorMsg = 'Datos inválidos para guardar respuesta (faltan IDs/tipo)';
+      console.error(`❌ [useResponseAPI] ${errorMsg}:`, { researchId, participantId, stepId, stepType });
+      setError(errorMsg);
       return null;
     }
     setIsLoading(true);
@@ -70,21 +84,29 @@ export const useResponseAPI = ({ researchId, participantId }: UseResponseAPIProp
         response: answer,
         ...(moduleId ? { moduleId } : {})
       };
+      
+      console.log(`📤 [useResponseAPI] Calling apiClient.saveModuleResponse with payload:`, payload);
+      
       const response = await apiClient.saveModuleResponse(payload);
+      
+      console.log(`📋 [useResponseAPI] API response received:`, response);
+      
       if (response.error || !response.data) {
-        console.error('Error guardando respuesta:', response);
+        console.error('❌ [useResponseAPI] Error guardando respuesta:', response);
         setError(response.message || 'Error guardando respuesta');
         return null;
       }
       if (response && typeof response === 'object' && response !== null && 'data' in response) {
         const dataObj = (response as { data?: unknown }).data;
         if (dataObj && typeof dataObj === 'object' && dataObj !== null && 'data' in dataObj) {
+          console.log(`✅ [useResponseAPI] Successfully saved, returning data:`, (dataObj as { data?: unknown }).data);
           return (dataObj as { data?: unknown }).data;
         }
       }
+      console.warn(`⚠️ [useResponseAPI] Unexpected response structure, returning null`);
       return null;
     } catch (error) {
-      console.error('Error en saveResponse:', error);
+      console.error('💥 [useResponseAPI] Exception in saveResponse:', error);
       setError(error instanceof Error ? error.message : 'Error desconocido');
       return null;
     } finally {

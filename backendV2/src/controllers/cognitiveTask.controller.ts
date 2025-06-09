@@ -251,6 +251,34 @@ export class CognitiveTaskController {
   }
 
   /**
+   * Elimina un formulario CognitiveTask por ID de investigación
+   * Ruta: DELETE /research/{researchId}/cognitive-task
+   */
+  public async deleteCognitiveTaskByResearchId(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    const context = 'deleteCognitiveTaskByResearchId';
+    let researchId: string | undefined;
+    try {
+      const extracted = this.validateAndExtractIds(event);
+      if ('statusCode' in extracted) return extracted;
+      researchId = extracted.researchId;
+
+      structuredLog('info', `CognitiveTaskController.${context}`, 'Eliminando formulario CognitiveTask por researchId', { researchId });
+      const deleted = await cognitiveTaskService.deleteByResearchId(researchId);
+      
+      if (deleted) {
+        structuredLog('info', `CognitiveTaskController.${context}`, 'Formulario eliminado exitosamente', { researchId });
+        return createResponse(200, { message: 'Formulario CognitiveTask eliminado exitosamente', researchId });
+      } else {
+        structuredLog('info', `CognitiveTaskController.${context}`, 'No se encontró formulario para eliminar', { researchId });
+        return createResponse(404, { error: 'No se encontró formulario CognitiveTask para esta investigación', researchId });
+      }
+
+    } catch (error) {
+      return this.handleError(error, context, { researchId });
+    }
+  }
+
+  /**
    * Genera una URL prefirmada para subir un archivo asociado a una pregunta de Cognitive Task.
    * @param event Evento API Gateway
    * @returns Respuesta con URL prefirmada y datos del archivo, o error.
@@ -347,6 +375,7 @@ export class CognitiveTaskController {
         'GET': this.get.bind(this),
         'POST': this.create.bind(this),
         'PUT': this.save.bind(this), // Nueva ruta para save
+        'DELETE': this.deleteCognitiveTaskByResearchId.bind(this)
       },
       '/{taskId}': { // Corresponde a /research/{researchId}/cognitive-task/{taskId}
         'PUT': this.update.bind(this),
@@ -368,6 +397,7 @@ const cognitiveTaskRouteMap: RouteMap = {
     'GET': controllerInstance.get.bind(controllerInstance),
     'POST': controllerInstance.create.bind(controllerInstance),
     'PUT': controllerInstance.save.bind(controllerInstance), // Nueva ruta para save
+    'DELETE': controllerInstance.deleteCognitiveTaskByResearchId.bind(controllerInstance)
   },
   '/{researchId}/cognitive-task/{taskId}': {
     'PUT': controllerInstance.update.bind(controllerInstance),

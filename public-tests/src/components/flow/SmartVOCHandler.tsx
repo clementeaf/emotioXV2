@@ -95,26 +95,41 @@ const SmartVOCHandler: React.FC<SmartVOCHandlerProps> = ({
             return <div className="text-red-500 p-4">Tipo de pregunta "{question.type}" no implementado. Contacte al administrador.</div>;
         }
 
+        // Log para debugging
+        console.log(`[SmartVOCHandler] Rendering question:`, question);
+
         // Preparar props comunes
         const commonProps = {
-            key: question.id || currentQuestionIndex,
-            questionText: question.questionText,
-            instructions: question.instructions,
+            key: `smartvoc-${question.type?.toLowerCase()}`, // 🚨 Key estática por tipo de pregunta
+            questionText: (question as any).questionText || (question as any).title || `Pregunta ${question.type}`,
+            instructions: (question as any).instructions || (question as any).description || '',
             onNext: handleNextQuestion,
         };
 
         // Props específicas (basado en el switch original)
         // Extraer solo las props relevantes para evitar pasar props no deseadas
         const specificProps: Record<string, unknown> = {};
-        if (question.companyName) specificProps.companyName = question.companyName;
-        if (question.scaleSize) specificProps.scaleSize = question.scaleSize;
-        if (question.leftLabel) specificProps.leftLabel = question.leftLabel;
-        if (question.rightLabel) specificProps.rightLabel = question.rightLabel;
-        if (question.placeholder) specificProps.placeholder = question.placeholder;
+        const questionData = question as any; // Type assertion para acceso flexible
+        
+        if (questionData.companyName) specificProps.companyName = questionData.companyName;
+        if (questionData.scaleSize) specificProps.scaleSize = questionData.scaleSize;
+        if (questionData.leftLabel) specificProps.leftLabel = questionData.leftLabel;
+        if (questionData.rightLabel) specificProps.rightLabel = questionData.rightLabel;
+        if (questionData.placeholder) specificProps.placeholder = questionData.placeholder;
 
+        // Añadir props estándar para useStandardizedForm
+        const standardProps = {
+            stepId: question.id,
+            stepType: question.type,
+            stepName: (question as any).title || question.type,
+            researchId: researchId,
+            participantId: undefined, // Se obtendrá del store
+            required: question.required || false,
+            config: question.config
+        };
 
         // Renderizar el componente mapeado con sus props
-        return <QuestionComponent {...commonProps} {...specificProps} />;
+        return <QuestionComponent {...commonProps} {...specificProps} {...standardProps} />;
     };
 
     // --- Renderizado del Handler (Simplificado) ---

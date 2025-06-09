@@ -1,5 +1,5 @@
 import React from 'react';
-import { useStandardizedForm, valueExtractors, StandardizedFormProps } from '../../hooks/useStandardizedForm';
+import { useStandardizedForm } from '../../hooks/useStandardizedForm';
 import { getStandardButtonText, getButtonDisabledState, formatQuestionText, getErrorDisplayProps, formSpacing } from '../../utils/formHelpers';
 import { NPSViewProps } from '../../types/smart-voc.types';
 
@@ -16,7 +16,38 @@ const NPSView: React.FC<NPSViewProps> = ({
 
   const [state, actions] = useStandardizedForm<number | null>(standardProps, {
     initialValue: null,
-    extractValueFromResponse: valueExtractors.numericScale,
+    extractValueFromResponse: (response: unknown): number | null => {
+      console.log(`🔍 [NPSView] extractValueFromResponse called with:`, response, typeof response);
+      
+      if (typeof response === 'number') {
+        console.log(`✅ [NPSView] Direct number:`, response);
+        return response;
+      }
+      
+      if (typeof response === 'object' && response !== null && 'response' in response) {
+        const innerResponse = (response as { response: unknown }).response;
+        console.log(`🔍 [NPSView] Found nested response:`, innerResponse, typeof innerResponse);
+        if (typeof innerResponse === 'number') {
+          console.log(`✅ [NPSView] Nested number:`, innerResponse);
+          return innerResponse;
+        }
+      }
+      
+      if (typeof response === 'object' && response !== null) {
+        const obj = response as Record<string, unknown>;
+        if ('N' in obj && typeof obj.N === 'string') {
+          const parsed = parseInt(obj.N, 10);
+          console.log(`🔍 [NPSView] DynamoDB format N:`, obj.N, '→', parsed);
+          if (!isNaN(parsed)) {
+            console.log(`✅ [NPSView] DynamoDB parsed:`, parsed);
+            return parsed;
+          }
+        }
+      }
+      
+      console.log(`⚠️ [NPSView] Could not extract number from:`, response);
+      return null;
+    },
     moduleId: typeof config === 'object' && config !== null && 'moduleId' in config 
       ? (config as { moduleId?: string }).moduleId 
       : undefined
@@ -28,7 +59,8 @@ const NPSView: React.FC<NPSViewProps> = ({
   const scaleButtons = Array.from({ length: 11 }, (_, i) => i); // Crea [0, 1, ..., 10]
 
   const handleSelect = (value: number) => {
-    setValue(value);
+    console.log(`🎯 [NPSView] User selecting value:`, value);
+    setValue(value, true); // 🚨 Marcar como interacción del usuario
   };
 
   const handleNextClick = async () => {

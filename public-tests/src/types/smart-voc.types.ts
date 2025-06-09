@@ -1,4 +1,3 @@
-import React from 'react';
 import { StandardizedFormProps } from './hooks.types';
 
 // Tipos específicos para SmartVOC
@@ -130,7 +129,8 @@ export interface CSATViewProps extends StandardizedFormProps {
   companyName?: string;
   config?: unknown;
   scaleSize?: number;
-  onStepComplete: (data?: unknown) => void;
+  onNext?: (selectedValue: number) => void;
+  onStepComplete?: (data?: unknown) => void;
 }
 
 export interface DifficultyScaleData {

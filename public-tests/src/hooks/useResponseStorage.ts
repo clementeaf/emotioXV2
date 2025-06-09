@@ -13,41 +13,25 @@ export const useResponseStorage = (): UseResponseStorageReturn => {
     answer: unknown, 
     isPartial = false
   ) => {
-    try {
-      const responseData: ResponseData = {
-        stepId,
-        stepType,
-        answer,
-        timestamp: Date.now(),
-        partial: isPartial
-      };
-      
-      localStorage.setItem(`response_${stepId}`, JSON.stringify(responseData));
-    } catch (error) {
-      console.error(`[ResponseStorage] Error saving response for ${stepId}:`, error);
-    }
+    // ❌ COMPLETELY DISABLED - NO localStorage for responses
+    console.log(`🚫 [ResponseStorage] localStorage saving DISABLED for ${stepId}`);
   }, []);
 
   const loadResponse = useCallback((stepId: string): ResponseData | null => {
-    try {
-      const stored = localStorage.getItem(`response_${stepId}`);
-      return stored ? JSON.parse(stored) : null;
-    } catch (error) {
-      console.error(`[ResponseStorage] Error loading response for ${stepId}:`, error);
-      return null;
-    }
+    // ❌ COMPLETELY DISABLED - NO localStorage for responses
+    console.log(`🚫 [ResponseStorage] localStorage loading DISABLED for ${stepId}`);
+    return null;
   }, []);
 
   const clearResponse = useCallback((stepId: string) => {
-    try {
-      localStorage.removeItem(`response_${stepId}`);
-    } catch (error) {
-      console.error(`[ResponseStorage] Error clearing response for ${stepId}:`, error);
-    }
+    // ❌ COMPLETELY DISABLED - NO localStorage for responses
+    console.log(`🚫 [ResponseStorage] localStorage clearing DISABLED for ${stepId}`);
   }, []);
 
   const hasResponse = useCallback((stepId: string): boolean => {
-    return localStorage.getItem(`response_${stepId}`) !== null;
+    // ❌ COMPLETELY DISABLED - NO localStorage for responses
+    console.log(`🚫 [ResponseStorage] localStorage hasResponse DISABLED for ${stepId}`);
+    return false;
   }, []);
 
   return {

@@ -48,6 +48,13 @@ export class SmartVOCFixedAPI extends ApiClient {
      const path = `/research/${researchId}/smart-voc/${formId}`;
      await this.delete<void>(path);
   }
+
+  async deleteByResearchId(researchId: string): Promise<void> {
+    console.log(`[SmartVOCAPI] Eliminando todos los datos smart-voc para researchId: ${researchId}`);
+    // Usar endpoint directo sin formId para eliminar por researchId
+    const path = `/research/${researchId}/smart-voc`;
+    await this.delete<void>(path);
+  }
 }
 
 export const smartVocFixedAPI = new SmartVOCFixedAPI();

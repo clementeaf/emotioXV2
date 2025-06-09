@@ -275,6 +275,40 @@ export class SmartVOCFormService {
   }
 
   /**
+   * Elimina un formulario SmartVOC por el ID de investigación
+   * @param researchId ID de la investigación
+   * @param _userId ID del usuario (opcional)
+   * @returns true si se eliminó exitosamente, false si no se encontró
+   * @throws ApiError si hay error de validación o base de datos
+   */
+  async deleteByResearchId(researchId: string, _userId?: string): Promise<boolean> {
+    console.log(`[SmartVOCFormService.deleteByResearchId] Eliminando formulario para researchId: ${researchId}`);
+    
+    if (!researchId) {
+      throw new ApiError(`${SmartVOCError.RESEARCH_REQUIRED}: Se requiere ID de investigación`, 400);
+    }
+
+    try {
+      // Delegar al modelo que maneja la lógica de búsqueda y eliminación
+      const deleted = await this.model.deleteByResearchId(researchId);
+      
+      if (deleted) {
+        console.log(`[SmartVOCFormService.deleteByResearchId] Formulario eliminado exitosamente para researchId: ${researchId}`);
+      } else {
+        console.log(`[SmartVOCFormService.deleteByResearchId] No se encontró formulario para eliminar con researchId: ${researchId}`);
+      }
+      
+      return deleted;
+    } catch (error: any) {
+      console.error('[SmartVOCFormService.deleteByResearchId] Error desde el modelo:', error);
+      throw new ApiError(
+        `${SmartVOCError.DATABASE_ERROR}: Error al eliminar formulario por researchId - ${error.message}`,
+        500
+      );
+    }
+  }
+
+  /**
    * Obtiene todos los formularios SmartVOC (usar con precaución)
    * @returns Lista de todos los formularios
    * @throws ApiError si hay error de DB

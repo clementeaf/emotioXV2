@@ -5,7 +5,8 @@
   "main": "src/index.js",
   "scripts": {
     "dev": "serverless offline start --httpPort 3000 --lambdaPort 3002 --websocketPort 3001",
-    "build": "esbuild src/index.ts --platform=node --target=node18 --bundle --outfile=dist/index.js",
+    "build": "esbuild src/index.ts --platform=node --target=node18 --bundle --outfile=dist/index.js --minify --tree-shaking",
+    "build:analyze": "esbuild src/index.ts --platform=node --target=node18 --bundle --outfile=dist/index.js --analyze",
     "start": "node dist/server.local.js",
     "lint": "eslint . --ext .ts",
     "test": "jest",

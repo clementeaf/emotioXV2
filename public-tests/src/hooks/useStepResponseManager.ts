@@ -1,30 +1,7 @@
 import { useMemo } from 'react';
-import { useStandardizedForm, StandardizedFormProps } from './useStandardizedForm';
-
-/**
- * useStepResponseManager - Versión migrada usando useStandardizedForm
- * 
- * ANTES: 168 líneas, complejidad 15, duplicación masiva
- * DESPUÉS: ~50 líneas, complejidad ~3, wrapper de compatibilidad
- * 
- * MIGRACIÓN COMPLETA:
- * - useResponseAPI manual → delegado a useStandardizedForm
- * - useModuleResponses manual → delegado a useStandardizedForm  
- * - 3 useState → delegado a estado unificado
- * - useEffect complejo → delegado a valueExtractor
- * - Lógica de búsqueda manual → delegada a sistema optimizado
- * - Error handling manual → delegado a sistema estandarizado
- * - Logging manual → eliminado (sistema centralizado)
- * 
- * COMPATIBILIDAD: 100% API pública mantenida
- */
-
+import { useStandardizedForm } from './useStandardizedForm';
 import { UseStepResponseManagerProps, UseStepResponseManagerReturn } from '../types/hooks.types';
 
-/**
- * Hook de compatibilidad que delega toda la funcionalidad a useStandardizedForm
- * Mantiene API pública idéntica pero elimina toda la duplicación interna
- */
 export function useStepResponseManager<TResponseData = unknown>({
   stepId,
   stepType,
@@ -35,7 +12,7 @@ export function useStepResponseManager<TResponseData = unknown>({
 }: UseStepResponseManagerProps<TResponseData>): UseStepResponseManagerReturn<TResponseData> {
 
   // Configurar props para useStandardizedForm
-  const standardizedProps: StandardizedFormProps = useMemo(() => ({
+  const standardizedProps = useMemo(() => ({
     stepId,
     stepType,
     stepName: stepName || stepId,
@@ -44,7 +21,7 @@ export function useStepResponseManager<TResponseData = unknown>({
     required: false // Por defecto false para mantener compatibilidad
   }), [stepId, stepType, stepName, propResearchId, propParticipantId]);
 
-  // Delegar toda la lógica al hook unificado
+
   const [state, actions] = useStandardizedForm<TResponseData>(
     standardizedProps,
     {
@@ -77,11 +54,33 @@ export function useStepResponseManager<TResponseData = unknown>({
     ? state.responseId 
     : null;
 
+  // Logging para debuggear hasExistingData
+  console.log(`🔍 [useStepResponseManager] State mapping for ${stepId}:`, {
+    responseData,
+    hasResponseData: !!(responseData && typeof responseData === 'object' && Object.keys(responseData).length > 0),
+    'state.hasExistingData': state.hasExistingData,
+    'state.responseId': state.responseId,
+    responseSpecificId,
+    'state.isDataLoaded': state.isDataLoaded
+  });
+
   // Wrapper para saveCurrentStepResponse que mantiene API esperada
   const saveCurrentStepResponse = async (dataToSave: TResponseData): Promise<{ success: boolean; id?: string | null }> => {
-    // Actualizar valor y guardar usando sistema unificado
+    console.log(`🔍 [useStepResponseManager] saveCurrentStepResponse called with:`, {
+      stepId,
+      stepType,
+      stepName,
+      dataToSave,
+      dataType: typeof dataToSave,
+      dataKeys: typeof dataToSave === 'object' && dataToSave ? Object.keys(dataToSave) : 'not object'
+    });
+    
+    // Actualizar valor pero pasar directamente a validateAndSave para evitar problema de async
     actions.setValue(dataToSave);
-    const result = await actions.validateAndSave();
+    console.log(`📊 [useStepResponseManager] Value set, calling validateAndSave with dataToSave directly...`);
+    
+    const result = await actions.validateAndSave(dataToSave);
+    console.log(`📋 [useStepResponseManager] validateAndSave result:`, result);
     
     if (result.success) {
       // Extraer ID de la respuesta guardada
@@ -89,8 +88,10 @@ export function useStepResponseManager<TResponseData = unknown>({
         ? String((result.data as { id: unknown }).id)
         : null;
       
+      console.log(`✅ [useStepResponseManager] Success! Extracted ID:`, id);
       return { success: true, id };
     } else {
+      console.error(`❌ [useStepResponseManager] Failed to save:`, result);
       return { success: false };
     }
   };

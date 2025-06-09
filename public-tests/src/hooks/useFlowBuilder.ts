@@ -218,9 +218,27 @@ export const useFlowBuilder = ({ researchFlowApiData, isLoading }: UseFlowBuilde
                 console.info('[useFlowBuilder] 🧪 Modo desarrollo detectado: Creando paso demográfico de prueba');
                 const developmentDemoConfig = {
                     questions: {
-                        age: { enabled: true, required: true, options: ['18-24', '25-34', '35-44', '45-54', '55+'] },
-                        gender: { enabled: true, required: true, options: ['Masculino', 'Femenino', 'Otro', 'Prefiero no decir'] },
-                        educationLevel: { enabled: true, required: false, options: ['Primaria', 'Secundaria', 'Universitaria', 'Posgrado'] }
+                        age: { 
+                            id: 'age',
+                            enabled: true, 
+                            required: true, 
+                            title: 'Edad',
+                            options: ['18-24', '25-34', '35-44', '45-54', '55+'] 
+                        },
+                        gender: { 
+                            id: 'gender',
+                            enabled: true, 
+                            required: true, 
+                            title: 'Género',
+                            options: ['Masculino', 'Femenino', 'Otro', 'Prefiero no decir'] 
+                        },
+                        educationLevel: { 
+                            id: 'educationLevel',
+                            enabled: true, 
+                            required: false, 
+                            title: 'Nivel de Educación',
+                            options: ['Primaria', 'Secundaria', 'Universitaria', 'Posgrado'] 
+                        }
                     },
                     title: 'Preguntas Demográficas (Modo Desarrollo)',
                     description: 'Estas son preguntas de prueba para desarrollo. En producción, configúralas en el panel de administración.'

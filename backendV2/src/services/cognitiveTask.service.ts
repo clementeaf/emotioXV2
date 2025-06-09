@@ -757,6 +757,44 @@ export class CognitiveTaskService {
       throw handleDbError(error, context, this.serviceName, COGNITIVE_TASK_MODEL_ERRORS);
     }
   }
+
+  /**
+   * Elimina un formulario CognitiveTask por el ID de investigación
+   * @param researchId ID de la investigación
+   * @returns true si se eliminó exitosamente, false si no se encontró
+   * @throws ApiError si hay error de validación o base de datos
+   */
+  async deleteByResearchId(researchId: string): Promise<boolean> {
+    const context = 'deleteByResearchId';
+    try {
+      if (!researchId) {
+        throw new ApiError(
+          `${CognitiveTaskError.RESEARCH_REQUIRED}: Se requiere ID de investigación para eliminar el formulario CognitiveTask`,
+          400
+        );
+      }
+
+      structuredLog('info', `${this.serviceName}.${context}`, 'Eliminando formulario CognitiveTask por researchId', { researchId });
+      
+      // El modelo ya tiene el método delete(researchId) que usamos
+      const deleted = await this.model.delete(researchId);
+      
+      if (deleted) {
+        structuredLog('info', `${this.serviceName}.${context}`, 'Formulario eliminado exitosamente', { researchId });
+      } else {
+        structuredLog('info', `${this.serviceName}.${context}`, 'No se encontró formulario para eliminar', { researchId });
+      }
+      
+      return deleted;
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        // El formulario no existe, devolver false en lugar de error
+        structuredLog('info', `${this.serviceName}.${context}`, 'Formulario no encontrado para eliminar', { researchId });
+        return false;
+      }
+      throw handleDbError(error, context, this.serviceName, COGNITIVE_TASK_MODEL_ERRORS);
+    }
+  }
 }
 
 export const cognitiveTaskService = new CognitiveTaskService();

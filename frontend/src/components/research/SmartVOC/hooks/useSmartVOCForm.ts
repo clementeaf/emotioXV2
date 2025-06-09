@@ -275,6 +275,7 @@ export const useSmartVOCForm = (researchId: string) => {
             title: q.title,
             description: q.description,
             instructions: q.instructions,
+            required: q.type === 'VOC' ? false : true, // VOC es opcional, resto son obligatorias
             showConditionally: q.showConditionally,
             config: cleanedConfig,
             ...(q.moduleResponseId && { moduleResponseId: q.moduleResponseId }) // Solo incluir si existe
@@ -398,6 +399,51 @@ export const useSmartVOCForm = (researchId: string) => {
     mutate(formData);
   }, [formData, mutate, validateForm, showModal]);
 
+  // Función para eliminar datos SmartVOC
+  const handleDelete = useCallback(async () => {
+    if (!window.confirm('⚠️ ¿Estás seguro de que quieres eliminar TODOS los datos SmartVOC de esta investigación?\n\nEsta acción no se puede deshacer.')) {
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      
+      // Si hay un smartVocId, eliminar usando el ID específico
+      if (smartVocId) {
+        await smartVocFixedAPI.deleteSmartVOC(researchId, smartVocId);
+      } else {
+        // Si no hay ID específico, intentar eliminar por researchId
+        await smartVocFixedAPI.deleteByResearchId(researchId);
+      }
+      
+      // Limpiar el estado local
+      setSmartVocId(null);
+      setFormData(prev => ({
+        ...prev,
+        questions: []
+      }));
+      
+      // Invalidar queries
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SMART_VOC, researchId] });
+      
+      showModal({ 
+        title: 'Éxito',
+        message: 'Datos SmartVOC eliminados correctamente',
+        type: 'success'
+      });
+      
+    } catch (error: any) {
+      console.error('[SmartVOCForm] Error al eliminar:', error);
+      showModal({
+        title: 'Error',
+        message: error.message || 'Error al eliminar los datos SmartVOC',
+        type: 'error'
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  }, [smartVocId, researchId, smartVocFixedAPI, queryClient, showModal]);
+
   // Función para manejar la previsualización
   const handlePreview = useCallback(() => {
     if (!validateForm()) {
@@ -480,6 +526,7 @@ export const useSmartVOCForm = (researchId: string) => {
     removeQuestion,
     handleSave,
     handlePreview,
+    handleDelete,
     validateForm,
     closeModal,
     isExisting: !!smartVocId
