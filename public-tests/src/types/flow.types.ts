@@ -273,15 +273,15 @@ export interface AuthHeaderProps {
 }
 
 export interface AuthSubmitButtonProps {
-  text: string;
-  isLoading?: boolean;
-  disabled?: boolean;
-  onClick?: () => void;
+  isLoading: boolean;
+  loadingText?: string;
+  text?: string;
+  className?: string;
 }
 
 export interface AuthLegalTextProps {
-  text: string;
-  className?: string;
+  termsUrl?: string;
+  privacyUrl?: string;
 }
 
 // Demographics Interface
@@ -293,9 +293,11 @@ export interface GenericSelectQuestionProps {
 // Layout Interface
 export interface NavLinkProps {
   to: string;
-  children: React.ReactNode;
-  className?: string;
-  activeClassName?: string;
+  icon: React.ReactNode;
+  label: string;
+  active?: boolean;
+  hasSubMenu?: boolean;
+  onClick?: () => void;
 }
 
 // Thank You Screen Interface

@@ -12,11 +12,7 @@ import {
   LogOut,
 } from 'lucide-react';
 import { NavLink } from './NavLink'; // Importar NavLink
-
-interface SidebarProps {
-  isMobileSidebarOpen: boolean;
-  setIsMobileSidebarOpen: (open: boolean) => void;
-}
+import { SidebarProps } from '../../types/common.types';
 
 // TODO: Mover esta configuración a un archivo de constantes o recibirla como prop
 const navItems = [

@@ -2,15 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 import { ChevronDown } from 'lucide-react';
-
-interface NavLinkProps {
-  to: string;
-  icon: React.ReactNode;
-  label: string;
-  active?: boolean;
-  hasSubMenu?: boolean;
-  onClick?: () => void;
-}
+import { NavLinkProps } from '../../types/flow.types';
 
 export function NavLink({ to, icon, label, active, hasSubMenu, onClick }: NavLinkProps) {
   return (

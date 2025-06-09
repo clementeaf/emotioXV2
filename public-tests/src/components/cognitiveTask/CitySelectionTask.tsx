@@ -1,11 +1,7 @@
 import { useState } from 'react';
 import RadioButtonGroup from '../common/RadioButtonGroup';
-
-// Definir la interfaz para las opciones si no existe ya
-interface ChoiceOption {
-  id: string;
-  label: string;
-}
+import { CitySelectionTaskProps } from '../../types/cognitive-task.types';
+import { ChoiceOption } from '../../types/common.types';
 
 type CityId = 'Tallin' | 'Santiago' | 'Ciudad de México' | 'other';
 
@@ -18,7 +14,7 @@ const cityOptions: ChoiceOption[] = [
 ];
 
 // Componente para la tarea cognitiva de selección de ciudad
-const CitySelectionTask = ({ onContinue }: { onContinue: () => void }) => {
+const CitySelectionTask = ({ onContinue }: CitySelectionTaskProps) => {
   // Mantener el tipo estricto para selectedCity
   const [selectedCity, setSelectedCity] = useState<CityId>('Tallin');
   const [otherCity, setOtherCity] = useState<string>('');

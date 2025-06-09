@@ -1,8 +1,5 @@
 import { useState } from 'react';
-
-interface SocialMediaTaskProps {
-  onContinue: () => void;
-}
+import { SocialMediaTaskProps } from '../../types/cognitive-task.types';
 
 // Componente para la tarea de selección de redes sociales
 const SocialMediaTask = ({ onContinue }: SocialMediaTaskProps) => {

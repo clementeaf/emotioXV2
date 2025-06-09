@@ -88,10 +88,8 @@ export interface HeaderProps {
 }
 
 export interface SidebarProps {
-  steps: Step[];
-  currentStepIndex: number;
-  onStepClick?: (stepIndex: number) => void;
-  className?: string;
+  isMobileSidebarOpen: boolean;
+  setIsMobileSidebarOpen: (open: boolean) => void;
 }
 
 export interface Step {
@@ -240,27 +238,27 @@ export interface LoginFormProps {
 
 // Card Component Interfaces
 export interface CardProps extends HTMLAttributes<HTMLDivElement> {
-  className?: string;
+  children: React.ReactNode;
 }
 
 export interface CardHeaderProps extends HTMLAttributes<HTMLDivElement> {
-  className?: string;
+  children: React.ReactNode;
 }
 
 export interface CardTitleProps extends HTMLAttributes<HTMLHeadingElement> {
-  className?: string;
+  children: React.ReactNode;
 }
 
 export interface CardDescriptionProps extends HTMLAttributes<HTMLParagraphElement> {
-  className?: string;
+  children: React.ReactNode;
 }
 
 export interface CardContentProps extends HTMLAttributes<HTMLDivElement> {
-  className?: string;
+  children: React.ReactNode;
 }
 
 export interface CardFooterProps extends HTMLAttributes<HTMLDivElement> {
-  className?: string;
+  children: React.ReactNode;
 }
 
 // API Step Interface

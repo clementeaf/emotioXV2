@@ -1,12 +1,5 @@
 import React from 'react';
-
-interface AuthSubmitButtonProps {
-    isLoading: boolean;
-    loadingText?: string;
-    text?: string;
-    className?: string;
-    // Permitir pasar otras props de button si es necesario, como onClick (aunque onSubmit en form es mejor)
-}
+import { AuthSubmitButtonProps } from '../../types/flow.types';
 
 export const AuthSubmitButton: React.FC<AuthSubmitButtonProps> = ({
     isLoading,

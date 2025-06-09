@@ -198,12 +198,11 @@ export interface GenderSelectionTaskProps {
 }
 
 export interface SocialMediaTaskProps {
-  onComplete: (response: any) => void;
+  onContinue: () => void;
 }
 
 export interface CitySelectionTaskProps {
-  onComplete: (response: string) => void;
-  disabled?: boolean;
+  onContinue: () => void;
 }
 
 export interface InstructionsTaskProps {
