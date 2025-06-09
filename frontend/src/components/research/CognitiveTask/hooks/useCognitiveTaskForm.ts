@@ -451,9 +451,108 @@ export const useCognitiveTaskForm = (
       );
 
       if (!cognitiveTaskData) {
-        console.log('[useEffect Form Data] No hay datos backend o hubo error. Empezando con formulario vacío.');
-        // Empezar con array vacío
-        finalQuestions = []; 
+        console.log('[useEffect Form Data] No hay datos backend o hubo error. Manteniendo preguntas por defecto.');
+        // Si prev.questions está vacío, usar las preguntas originales (3.1-3.8), si no, mantener las preguntas existentes
+        const defaultQuestions = [
+          {
+            id: '3.1',
+            type: 'short_text' as QuestionType,
+            title: 'Que te ha parecido el módulo?',
+            description: 'Aqui puedes describir tu primera impresion de este módulo!',
+            required: false,
+            showConditionally: false,
+            deviceFrame: false,
+            files: [],
+            answerPlaceholder: 'Me ha parecido...'
+          },
+          {
+            id: '3.2',
+            type: 'long_text' as QuestionType,
+            title: '',
+            required: false,
+            showConditionally: false,
+            deviceFrame: false,
+            files: []
+          },
+          {
+            id: '3.3',
+            type: 'single_choice' as QuestionType,
+            title: '',
+            required: false,
+            showConditionally: false,
+            choices: [
+              { id: '1', text: '', isQualify: false, isDisqualify: false },
+              { id: '2', text: '', isQualify: false, isDisqualify: false },
+              { id: '3', text: '', isQualify: false, isDisqualify: false }
+            ],
+            deviceFrame: false,
+            files: []
+          },
+          {
+            id: '3.4',
+            type: 'multiple_choice' as QuestionType,
+            title: '',
+            required: false,
+            showConditionally: false,
+            choices: [
+              { id: '1', text: '', isQualify: false, isDisqualify: false },
+              { id: '2', text: '', isQualify: false, isDisqualify: false },
+              { id: '3', text: '', isQualify: false, isDisqualify: false }
+            ],
+            deviceFrame: false,
+            files: []
+          },
+          {
+            id: '3.5',
+            type: 'linear_scale' as QuestionType,
+            title: '',
+            required: false,
+            showConditionally: false,
+            scaleConfig: {
+              startValue: 1,
+              endValue: 5,
+              startLabel: '',
+              endLabel: ''
+            },
+            deviceFrame: false,
+            files: []
+          },
+          {
+            id: '3.6',
+            type: 'ranking' as QuestionType,
+            title: '',
+            required: false,
+            showConditionally: false,
+            choices: [
+              { id: '1', text: '', isQualify: false, isDisqualify: false },
+              { id: '2', text: '', isQualify: false, isDisqualify: false },
+              { id: '3', text: '', isQualify: false, isDisqualify: false }
+            ],
+            deviceFrame: false,
+            files: []
+          },
+          {
+            id: '3.7',
+            type: 'navigation_flow' as QuestionType,
+            title: '',
+            required: false,
+            showConditionally: false,
+            files: [],
+            deviceFrame: true
+          },
+          {
+            id: '3.8',
+            type: 'preference_test' as QuestionType,
+            title: 'Que te parece esta imagen?',
+            description: 'Describe brevemente tu primera imprensión al respecto',
+            required: false,
+            showConditionally: false,
+            files: [],
+            deviceFrame: true
+          }
+        ];
+        
+        finalQuestions = prev.questions.length > 0 ? prev.questions : defaultQuestions; 
         finalRandomize = false; 
         setCognitiveTaskId(null); 
       } else {

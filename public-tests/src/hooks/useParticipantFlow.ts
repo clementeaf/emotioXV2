@@ -33,6 +33,10 @@ export const useParticipantFlow = (researchId: string | undefined) => {
     const storeIsFlowLoading = useParticipantStore(state => state.isFlowLoading);
     const storeSetIsFlowLoading = useParticipantStore(state => state.setIsFlowLoading);
 
+    console.log('[useParticipantFlow] DEBUG - researchId:', researchId);
+    console.log('[useParticipantFlow] DEBUG - token:', token);
+    console.log('[useParticipantFlow] DEBUG - enabled condition:', !!researchId && !!token);
+
     const { 
         data: researchFlowApiData, 
         isLoading: isResearchFlowHookLoading, 

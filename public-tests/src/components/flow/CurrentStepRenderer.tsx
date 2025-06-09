@@ -148,11 +148,20 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
                         }
                         setEnrichedStepConfig(newEnrichedConfig);
                     } else {
-                        if (response.apiStatus !== APIStatus.NOT_FOUND && response.message) {
+                        // Para participantes nuevos sin respuestas previas, configurar respuesta vacía
+                        if (response.apiStatus === APIStatus.NOT_FOUND || response.status === 404) {
+                            if (stepType === DEMOGRAPHIC_STEP_TYPE) {
+                                newEnrichedConfig.savedResponses = {};
+                            }
+                            setEnrichedStepConfig(newEnrichedConfig);
+                        } else if (response.message) {
                             console.error("[CurrentStepRenderer] Error fetching module responses:", response.message, response);
                             setError(response.message);
+                            setEnrichedStepConfig(newEnrichedConfig);
+                        } else {
+                            // Sin mensaje de error específico, usar configuración base
+                            setEnrichedStepConfig(newEnrichedConfig);
                         }
-                        setEnrichedStepConfig(newEnrichedConfig);
                     }
                 })
                 .catch(err => {
@@ -260,8 +269,14 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
     }, [stepType, stepConfig, stepId, stepName, researchId, token, onLoginSuccess, onStepComplete, handleError, enrichedStepConfig, findSavedResponse]);
 
     const renderContent = useCallback(() => {
-        if (error || moduleResponsesError) {
-            return <div className="p-6 text-center text-red-500">Error al cargar datos: {error || moduleResponsesError}</div>;
+        // Solo mostrar error si hay un error real, no solo por falta de respuestas previas
+        if (error) {
+            return <div className="p-6 text-center text-red-500">Error al cargar datos: {error}</div>;
+        }
+
+        // No mostrar error de moduleResponsesError si es solo porque no hay respuestas previas
+        if (moduleResponsesError && moduleResponsesError !== 'Error cargando las respuestas del módulo.') {
+            return <div className="p-6 text-center text-red-500">Error al cargar datos: {moduleResponsesError}</div>;
         }
 
         if ((stepType === SMART_VOC_ROUTER_STEP_TYPE || stepType === DEMOGRAPHIC_STEP_TYPE) && isLoadingResponses) {

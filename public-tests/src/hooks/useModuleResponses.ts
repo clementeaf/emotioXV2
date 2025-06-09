@@ -73,13 +73,13 @@ export const useModuleResponses = (props?: UseModuleResponsesProps): UseModuleRe
       } else {
         setData(null);
         setDocumentId(null);
-        // Solo loguear error si tenemos mensaje y no es undefined
-        if (apiResponse.message) {
+        // Solo establecer error si hay indicios de un error real
+        if (apiResponse.error && apiResponse.message) {
           setError(apiResponse.message);
           console.error('[useModuleResponses] Error fetching responses:', apiResponse.message);
         } else {
-          setError('Error cargando las respuestas del módulo.');
-          console.error('[useModuleResponses] Error fetching responses: No message provided');
+          // Para casos donde simplemente no hay datos (participantes nuevos), no es un error
+          setError(null);
         }
       }
     } catch (e) {

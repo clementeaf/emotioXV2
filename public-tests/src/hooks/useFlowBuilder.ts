@@ -4,45 +4,57 @@ import { smartVOCTypeMap } from './utils';
 import { UseFlowBuilderProps } from './types';
 import { ProcessedResearchFormConfig } from './useResearchForms';
 
-const extractCoreStepConfigs = (flowDataModules: ProcessedResearchFormConfig[] | undefined) => {
+const extractCoreStepConfigs = (flowDataModules: ProcessedResearchFormConfig[]) => {
     
     let demographicsQuestions: unknown = null;
     let welcomeConfig: unknown = null;
     let thankyouConfig: unknown = null;
 
-    if (Array.isArray(flowDataModules)) {
-        for (const processedModule of flowDataModules) {
-            
-            const moduleData = processedModule.config;
-            if (!moduleData) {
-                continue;
-            }
-
-            const moduleSK = (moduleData as { sk?: string }).sk;
-            
-            switch (moduleSK) {
-                case 'EYE_TRACKING_CONFIG':
-                    
-                    if ('demographicQuestions' in moduleData && (moduleData as { demographicQuestions?: unknown }).demographicQuestions) {
-                        demographicsQuestions = {
-                            questions: (moduleData as { demographicQuestions?: unknown }).demographicQuestions,
-                            title: (moduleData as { title?: string }).title,
-                            description: (moduleData as { description?: string }).description
-                        };
-                    }
-                    break;
-                case 'WELCOME_SCREEN':
-                    welcomeConfig = { ...(moduleData as object) };
-                    break;
-                case 'THANK_YOU_SCREEN':
-                    thankyouConfig = { ...(moduleData as object) };
-                    break;
-                default:
-                    break;
-            }
+    for (const processedModule of flowDataModules) {
+        
+        const moduleData = processedModule.config;
+        if (!moduleData) {
+            continue;
         }
-    } else {
-        console.warn('[extractCoreStepConfigs] flowDataModules no es un array válido');
+
+        const moduleSK = (moduleData as { sk?: string }).sk;
+        
+        switch (moduleSK) {
+            case 'EYE_TRACKING_CONFIG':
+                
+                if ('demographicQuestions' in moduleData && (moduleData as { demographicQuestions?: unknown }).demographicQuestions) {
+                    const demoQuestionsFromApi = (moduleData as { demographicQuestions?: unknown }).demographicQuestions;
+                    
+                    // Verificar que existe y es un objeto
+                    if (demoQuestionsFromApi && typeof demoQuestionsFromApi === 'object' && demoQuestionsFromApi !== null) {
+                        // Verificar si hay al menos una pregunta habilitada
+                        const hasEnabledQuestions = Object.values(demoQuestionsFromApi).some((question: unknown) => {
+                            return question && typeof question === 'object' && question !== null && 
+                                   'enabled' in question && (question as { enabled?: boolean }).enabled === true;
+                        });
+                        
+                        if (hasEnabledQuestions) {
+                            demographicsQuestions = {
+                                questions: demoQuestionsFromApi,
+                                title: (moduleData as { title?: string }).title || 'Preguntas Demográficas',
+                                description: (moduleData as { description?: string }).description || 'Por favor, complete las siguientes preguntas:'
+                            };
+                            console.log('[extractCoreStepConfigs] ✅ Configuración demográfica encontrada con preguntas habilitadas');
+                        } else {
+                            console.warn('[extractCoreStepConfigs] Configuración demográfica encontrada pero ninguna pregunta está habilitada');
+                        }
+                    }
+                }
+                break;
+            case 'WELCOME_SCREEN':
+                welcomeConfig = { ...(moduleData as object) };
+                break;
+            case 'THANK_YOU_SCREEN':
+                thankyouConfig = { ...(moduleData as object) };
+                break;
+            default:
+                break;
+        }
     }
     
     return { demographicsQuestions, welcomeConfig, thankyouConfig };
@@ -135,13 +147,42 @@ export const useFlowBuilder = ({ researchFlowApiData, isLoading }: UseFlowBuilde
     
     const buildStepsInternal = useCallback(() => {
         
+        console.log('[useFlowBuilder] DEBUG - researchFlowApiData:', researchFlowApiData);
+        console.log('[useFlowBuilder] DEBUG - isLoading:', isLoading);
+        
         const flowDataModules =
             researchFlowApiData && typeof researchFlowApiData === 'object' && researchFlowApiData !== null && 'data' in researchFlowApiData
                 ? (researchFlowApiData as { data: unknown }).data
                 : undefined;
 
+        console.log('[useFlowBuilder] DEBUG - flowDataModules:', flowDataModules);
+        console.log('[useFlowBuilder] DEBUG - Array.isArray(flowDataModules):', Array.isArray(flowDataModules));
+        console.log('[useFlowBuilder] DEBUG - flowDataModules.length:', Array.isArray(flowDataModules) ? flowDataModules.length : 'N/A');
+        
+        // Debug adicional para ver el contenido de los módulos
+        if (Array.isArray(flowDataModules)) {
+            flowDataModules.forEach((module, index) => {
+                console.log(`[useFlowBuilder] DEBUG - Módulo ${index}:`, {
+                    id: module.id,
+                    originalSk: module.originalSk,
+                    config: module.config,
+                    hasEyeTrackingConfig: module.originalSk === 'EYE_TRACKING_CONFIG',
+                    hasDemographicQuestions: module.config && 'demographicQuestions' in module.config
+                });
+            });
+        }
+
         if (!isLoading && !(Array.isArray(flowDataModules) && flowDataModules.length > 0)) {
             console.warn('[useFlowBuilder] No hay flowDataModules válidos para construir pasos.');
+            console.warn('[useFlowBuilder] DEBUG - Razón: isLoading =', isLoading, ', Array.isArray =', Array.isArray(flowDataModules), ', length =', Array.isArray(flowDataModules) ? flowDataModules.length : 'N/A');
+            return [
+                { id: 'welcome', name: 'Bienvenida', type: 'welcome', config: { title: '¡Bienvenido!', message: 'Iniciando...'}, responseKey: 'welcome' },
+                { id: 'thankyou', name: 'Agradecimiento', type: 'thankyou', config: { title: '¡Muchas Gracias!', message: 'Fin.'}, responseKey: 'thankyou' }
+            ];
+        }
+        
+        // Solo llamar extractCoreStepConfigs cuando los datos estén válidos
+        if (!Array.isArray(flowDataModules) || flowDataModules.length === 0) {
             return [
                 { id: 'welcome', name: 'Bienvenida', type: 'welcome', config: { title: '¡Bienvenido!', message: 'Iniciando...'}, responseKey: 'welcome' },
                 { id: 'thankyou', name: 'Agradecimiento', type: 'thankyou', config: { title: '¡Muchas Gracias!', message: 'Fin.'}, responseKey: 'thankyou' }
@@ -153,8 +194,7 @@ export const useFlowBuilder = ({ researchFlowApiData, isLoading }: UseFlowBuilde
             demographicsQuestions: demographicsConfigFromBackend,
             welcomeConfig: welcomeConfigFromBackend, 
             thankyouConfig: thankyouConfigFromBackend 
-        } = extractCoreStepConfigs(flowDataModules as ProcessedResearchFormConfig[] | undefined);
-
+        } = extractCoreStepConfigs(flowDataModules as ProcessedResearchFormConfig[]);
 
         if (demographicsConfigFromBackend && typeof demographicsConfigFromBackend === 'object' && demographicsConfigFromBackend !== null && 'questions' in demographicsConfigFromBackend) {
             const demoConfig = demographicsConfigFromBackend as { questions?: unknown; title?: string; description?: string };
@@ -171,6 +211,33 @@ export const useFlowBuilder = ({ researchFlowApiData, isLoading }: UseFlowBuilde
             });
         } else {
             console.warn('[useFlowBuilder] No se encontró configuración demográfica en el backend (EYE_TRACKING_CONFIG.demographicQuestions). No se añadirá el paso demográfico.');
+            console.info('[useFlowBuilder] 💡 Para mostrar preguntas demográficas: Ve al panel de administración > Eye Tracking > Recruit, y habilita las preguntas demográficas que desees incluir.');
+            
+            // Temporal: En modo desarrollo, crear preguntas de prueba
+            if (import.meta.env?.DEV || window.location.hostname === 'localhost') {
+                console.info('[useFlowBuilder] 🧪 Modo desarrollo detectado: Creando paso demográfico de prueba');
+                const developmentDemoConfig = {
+                    questions: {
+                        age: { enabled: true, required: true, options: ['18-24', '25-34', '35-44', '45-54', '55+'] },
+                        gender: { enabled: true, required: true, options: ['Masculino', 'Femenino', 'Otro', 'Prefiero no decir'] },
+                        educationLevel: { enabled: true, required: false, options: ['Primaria', 'Secundaria', 'Universitaria', 'Posgrado'] }
+                    },
+                    title: 'Preguntas Demográficas (Modo Desarrollo)',
+                    description: 'Estas son preguntas de prueba para desarrollo. En producción, configúralas en el panel de administración.'
+                };
+                
+                finalSteps.push({
+                    id: 'demographic',
+                    name: developmentDemoConfig.title,
+                    type: 'demographic',
+                    config: { 
+                        title: developmentDemoConfig.title,
+                        description: developmentDemoConfig.description,
+                        demographicsConfig: developmentDemoConfig 
+                    },
+                    responseKey: 'demographic'
+                });
+            }
         }
 
         const resolvedWelcomeConfig = (welcomeConfigFromBackend && typeof welcomeConfigFromBackend === 'object' && welcomeConfigFromBackend !== null && 'title' in welcomeConfigFromBackend)
@@ -184,9 +251,8 @@ export const useFlowBuilder = ({ researchFlowApiData, isLoading }: UseFlowBuilde
             responseKey: 'welcome'
         });
         
-        // Proteger la iteración para evitar TypeError si flowDataModules no es iterable
-        const safeFlowDataModules = Array.isArray(flowDataModules) ? flowDataModules : [];
-        for (const processedModule of safeFlowDataModules) {
+        // Iterar sobre los módulos para crear los pasos
+        for (const processedModule of flowDataModules) {
             const moduleData = processedModule.config;
             if (!moduleData) continue;
 

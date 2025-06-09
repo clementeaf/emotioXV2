@@ -23,7 +23,112 @@ export const useSmartVOCForm = (researchId: string) => {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState<SmartVOCFormData>({ 
     researchId,
-    questions: [],
+    questions: [
+      {
+        id: 'csat-default',
+        type: 'CSAT',
+        title: 'Satisfacción del Cliente (CSAT)',
+        description: '¿Qué tan satisfecho estás con nuestro servicio?',
+        instructions: 'Selecciona una puntuación del 1 al 5',
+        showConditionally: false,
+        config: {
+          type: 'stars',
+          companyName: ''
+        }
+      },
+      {
+        id: 'ces-default',
+        type: 'CES',
+        title: 'Esfuerzo del Cliente (CES)',
+        description: '¿Qué tan fácil fue resolver tu consulta?',
+        instructions: 'Evalúa el nivel de esfuerzo requerido',
+        showConditionally: false,
+        config: {
+          type: 'scale',
+          scaleRange: {
+            start: 1,
+            end: 7
+          },
+          startLabel: 'Muy difícil',
+          endLabel: 'Muy fácil'
+        }
+      },
+      {
+        id: 'cv-default',
+        type: 'CV',
+        title: 'Valor Cognitivo (CV)',
+        description: '¿Qué tan valiosa fue la información proporcionada?',
+        instructions: 'Evalúa el valor de la información recibida',
+        showConditionally: false,
+        config: {
+          type: 'scale',
+          scaleRange: {
+            start: 1,
+            end: 5
+          },
+          startLabel: 'Sin valor',
+          endLabel: 'Muy valioso'
+        }
+      },
+      {
+        id: 'nev-default',
+        type: 'NEV',
+        title: 'Valor Emocional Neto (NEV)',
+        description: '¿Cómo te sentiste durante la experiencia?',
+        instructions: 'Describe tu estado emocional',
+        showConditionally: false,
+        config: {
+          type: 'emojis',
+          companyName: ''
+        }
+      },
+      {
+        id: 'nps-default',
+        type: 'NPS',
+        title: 'Net Promoter Score (NPS)',
+        description: '¿Qué tan probable es que recomiendes nuestro servicio?',
+        instructions: 'Puntuación del 0 al 10',
+        showConditionally: false,
+        config: {
+          type: 'scale',
+          scaleRange: {
+            start: 0,
+            end: 10
+          },
+          companyName: '',
+          startLabel: 'Nada probable',
+          endLabel: 'Muy probable'
+        }
+      },
+      {
+        id: 'voc-default',
+        type: 'VOC',
+        title: 'Voz del Cliente (VOC)',
+        description: '¿Tienes algún comentario adicional o sugerencia?',
+        instructions: 'Comparte tus comentarios (opcional)',
+        showConditionally: false,
+        config: {
+          type: 'text'
+        }
+      },
+      {
+        id: 'trust-default',
+        type: 'CSAT',
+        title: 'Nivel de Confianza',
+        description: '¿Qué tan confiable consideras nuestro servicio?',
+        instructions: 'Evalúa tu nivel de confianza',
+        showConditionally: false,
+        config: {
+          type: 'scale',
+          scaleRange: {
+            start: 1,
+            end: 5
+          },
+          startLabel: 'Nada confiable',
+          endLabel: 'Muy confiable'
+        }
+      }
+    ],
     randomizeQuestions: false,
     smartVocRequired: true,
     metadata: {
@@ -97,6 +202,48 @@ export const useSmartVOCForm = (researchId: string) => {
     enabled: !!researchId && isAuthenticated && !authLoading,
     refetchOnWindowFocus: false
   });
+
+  // Efecto para actualizar formData cuando lleguen datos de la API
+  useEffect(() => {
+    console.log('[SmartVOCForm] useEffect ejecutado:', { 
+      hasData: !!smartVocData, 
+      isNotFound: smartVocData && 'notFound' in smartVocData ? smartVocData.notFound : false,
+      dataType: typeof smartVocData,
+      questionCount: smartVocData && 'questions' in smartVocData && Array.isArray(smartVocData.questions) ? smartVocData.questions.length : 'No es array'
+    });
+    
+    if (smartVocData && !('notFound' in smartVocData) && smartVocData.questions && smartVocData.questions.length > 0) {
+      // Solo actualizar si hay preguntas reales de la API (configuración existente)
+      console.log('[SmartVOCForm] Datos cargados desde API:', smartVocData);
+      console.log('[SmartVOCForm] Preguntas encontradas:', smartVocData.questions?.length || 0);
+      
+      // Actualizar formData con los datos cargados
+      setFormData({
+        researchId: smartVocData.researchId || researchId,
+        questions: smartVocData.questions || [],
+        randomizeQuestions: smartVocData.randomizeQuestions || false,
+        smartVocRequired: smartVocData.smartVocRequired !== undefined ? smartVocData.smartVocRequired : true,
+        metadata: smartVocData.metadata || {
+          createdAt: new Date().toISOString(),
+          estimatedCompletionTime: '5-10'
+        }
+      });
+
+      console.log('[SmartVOCForm] ✅ formData actualizado con', smartVocData.questions?.length || 0, 'preguntas desde API');
+
+      // Extraer y configurar el ID si existe
+      const responseWithId = smartVocData as SmartVOCFormData & { id?: string };
+      if (responseWithId?.id) {
+        setSmartVocId(responseWithId.id);
+        console.log('[SmartVOCForm] SmartVOC ID configurado:', responseWithId.id);
+      }
+    } else if (smartVocData && 'notFound' in smartVocData && smartVocData.notFound) {
+      console.log('[SmartVOCForm] No se encontró configuración existente, manteniendo preguntas por defecto');
+      // No hacer nada - mantener las preguntas por defecto que se inicializaron en useState
+    } else {
+      console.log('[SmartVOCForm] smartVocData es null/undefined o en estado de carga, manteniendo estado actual');
+    }
+  }, [smartVocData, researchId]);
 
   // Mutación para guardar datos
   const { mutate } = useMutation({
@@ -188,55 +335,6 @@ export const useSmartVOCForm = (researchId: string) => {
       setIsSaving(false);
     }
   });
-
-  // Efecto para cargar datos existentes
-  useEffect(() => {
-    const dataFromQuery = smartVocData;
-            
-    // Asegurarse que dataFromQuery no es null/undefined y no es el objeto {notFound: true}
-    if (dataFromQuery && typeof dataFromQuery === 'object' && !('notFound' in dataFromQuery)) { 
-      // Ahora TypeScript sabe que dataFromQuery es SmartVOCFormData
-      const existingData = dataFromQuery as SmartVOCFormData;
-      console.log("[SmartVOCForm] Cargando datos existentes:", existingData);
-
-      // Intentamos setear el smartVocId si existe en los datos cargados (como propiedad 'id')
-      const dataWithId = existingData as SmartVOCFormData & { id?: string };
-      if (dataWithId.id) {
-        setSmartVocId(dataWithId.id);
-      }
-
-      // Actualizar formData con los datos existentes
-      setFormData(prev => ({
-        ...prev,
-        ...existingData,
-        researchId, // Asegurar que researchId se mantenga
-        questions: existingData.questions?.map(q => ({
-          ...q,
-          
-        })) || [],
-        metadata: {
-          ...(prev.metadata || {}),
-          ...(existingData.metadata || {}),
-          updatedAt: new Date().toISOString()
-        }
-      }));
-    } else if (!isLoading) { 
-        // Caso notFound, null, undefined o error durante la carga inicial
-        console.log("[SmartVOCForm] No se encontraron datos existentes o hubo un error, usando defaults.");
-        // Resetear a los valores por defecto manteniendo researchId
-        setFormData({
-          researchId,
-          questions: [],
-          randomizeQuestions: false,
-          smartVocRequired: true,
-          metadata: {
-            createdAt: new Date().toISOString(),
-            estimatedCompletionTime: '5-10'
-          }
-        });
-        setSmartVocId(null);
-    }
-  }, [smartVocData, researchId, isLoading]);
 
   // Función para actualizar una pregunta específica
   const updateQuestion = useCallback((id: string, updates: Partial<SmartVOCQuestion>) => {

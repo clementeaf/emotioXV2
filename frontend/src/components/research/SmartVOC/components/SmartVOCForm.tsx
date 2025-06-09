@@ -35,6 +35,9 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
     closeModal,
   } = useSmartVOCForm(researchId);
 
+  // Debug: verificar preguntas en el componente
+  console.log('[SmartVOCForm] Renderizando con', questions.length, 'preguntas:', questions);
+
   const handleAddQuestion = () => {
     const newQuestion = generateNewQuestion(questions.length);
     addQuestion(newQuestion);

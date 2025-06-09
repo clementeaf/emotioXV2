@@ -20,10 +20,107 @@ interface UseCognitiveTaskStateResult {
   handleRandomizeChange: (checked: boolean) => void;
 }
 
-// Constante para el estado inicial por defecto
+// Constante para el estado inicial por defecto con las 8 preguntas originales (3.1-3.8)
 const DEFAULT_STATE: CognitiveTaskFormData = {
   researchId: '', // El researchId vendrá de props o se establecerá después
-  questions: [],
+  questions: [
+    {
+      id: '3.1',
+      type: 'short_text',
+      title: 'Que te ha parecido el módulo?',
+      description: 'Aqui puedes describir tu primera impresion de este módulo!',
+      required: false,
+      showConditionally: false,
+      deviceFrame: false,
+      files: [],
+      answerPlaceholder: 'Me ha parecido...'
+    },
+    {
+      id: '3.2',
+      type: 'long_text',
+      title: '',
+      required: false,
+      showConditionally: false,
+      deviceFrame: false,
+      files: []
+    },
+    {
+      id: '3.3',
+      type: 'single_choice',
+      title: '',
+      required: false,
+      showConditionally: false,
+      choices: [
+        { id: '1', text: '', isQualify: false, isDisqualify: false },
+        { id: '2', text: '', isQualify: false, isDisqualify: false },
+        { id: '3', text: '', isQualify: false, isDisqualify: false }
+      ],
+      deviceFrame: false,
+      files: []
+    },
+    {
+      id: '3.4',
+      type: 'multiple_choice',
+      title: '',
+      required: false,
+      showConditionally: false,
+      choices: [
+        { id: '1', text: '', isQualify: false, isDisqualify: false },
+        { id: '2', text: '', isQualify: false, isDisqualify: false },
+        { id: '3', text: '', isQualify: false, isDisqualify: false }
+      ],
+      deviceFrame: false,
+      files: []
+    },
+    {
+      id: '3.5',
+      type: 'linear_scale',
+      title: '',
+      required: false,
+      showConditionally: false,
+      scaleConfig: {
+        startValue: 1,
+        endValue: 5,
+        startLabel: '',
+        endLabel: ''
+      },
+      deviceFrame: false,
+      files: []
+    },
+    {
+      id: '3.6',
+      type: 'ranking',
+      title: '',
+      required: false,
+      showConditionally: false,
+      choices: [
+        { id: '1', text: '', isQualify: false, isDisqualify: false },
+        { id: '2', text: '', isQualify: false, isDisqualify: false },
+        { id: '3', text: '', isQualify: false, isDisqualify: false }
+      ],
+      deviceFrame: false,
+      files: []
+    },
+    {
+      id: '3.7',
+      type: 'navigation_flow',
+      title: '',
+      required: false,
+      showConditionally: false,
+      files: [],
+      deviceFrame: true
+    },
+    {
+      id: '3.8',
+      type: 'preference_test',
+      title: 'Que te parece esta imagen?',
+      description: 'Describe brevemente tu primera imprensión al respecto',
+      required: false,
+      showConditionally: false,
+      files: [],
+      deviceFrame: true
+    }
+  ],
   randomizeQuestions: false
 };
 

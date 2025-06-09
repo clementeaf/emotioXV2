@@ -53,8 +53,27 @@ export const useResponseManager = ({
         };
         try {
             const apiResponse = await api.getResponses();
-            if (!apiResponse || typeof apiResponse !== 'object' || apiResponse === null || !('responses' in apiResponse)) {
-                console.warn('[useResponseManager] No se obtuvo apiResponse.responses. Enviando array vacío a setLoadedResponses.');
+            
+            // Si no hay respuesta o es null, es normal para participantes nuevos
+            if (!apiResponse || apiResponse === null) {
+                storeSetLoadedResponses([]);
+                return;
+            }
+            
+            // Si la respuesta no es un objeto, probablemente hay un error
+            if (typeof apiResponse !== 'object') {
+                console.warn('[useResponseManager] Respuesta de API en formato inesperado. Enviando array vacío.');
+                storeSetLoadedResponses([]);
+                return;
+            }
+            
+            // Si no tiene la propiedad 'responses', puede ser normal para nuevos participantes
+            if (!('responses' in apiResponse)) {
+                // Solo loguear si parece ser un error real (tiene otras propiedades de error)
+                const hasErrorIndicators = 'error' in apiResponse || 'message' in apiResponse;
+                if (hasErrorIndicators) {
+                    console.warn('[useResponseManager] Error en respuesta de API:', apiResponse);
+                }
                 storeSetLoadedResponses([]);
                 return;
             }
@@ -72,7 +91,10 @@ export const useResponseManager = ({
             } else if (Array.isArray(modulesDataFromApi)) {
                 storeSetLoadedResponses(modulesDataFromApi);
             } else {
-                console.warn('[useResponseManager] modulesDataFromApi no tiene el formato esperado o all_steps no es un array. Enviando array vacío a setLoadedResponses. Recibido:', modulesDataFromApi);
+                // Solo advertir si modulesDataFromApi no es null/undefined (que es esperado para nuevos participantes)
+                if (modulesDataFromApi !== null && modulesDataFromApi !== undefined) {
+                    console.warn('[useResponseManager] modulesDataFromApi no tiene el formato esperado. Recibido:', modulesDataFromApi);
+                }
                 storeSetLoadedResponses([]);
             }
         } catch (error) {
