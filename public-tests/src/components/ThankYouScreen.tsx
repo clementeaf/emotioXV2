@@ -1,8 +1,5 @@
 import React from 'react';
-
-interface ThankYouScreenProps {
-  message: string;
-}
+import { ThankYouScreenProps } from '../types';
 
 const ThankYouScreen: React.FC<ThankYouScreenProps> = ({ message }) => {
   return (

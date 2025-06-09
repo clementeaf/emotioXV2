@@ -1,115 +1,108 @@
-// Lista de tareas cognitivas disponibles para la aplicación
-import CitySelectionTask from './CitySelectionTask';
-import InstructionsTask from './InstructionsTask';
-import GenderSelectionTask from './GenderSelectionTask';
-import SocialMediaTask from './SocialMediaTask';
-import PasswordResetTask from './PasswordResetTask';
 import TransactionAuthTask from './TransactionAuthTask';
 import PrioritizationTask from './PrioritizationTask';
 import NavigationFlowTask from './NavigationFlowTask';
+import { ShortTextView } from './questions/ShortTextView';
+import { LongTextView } from './questions/LongTextView';
+import { SingleChoiceView } from './questions/SingleChoiceView';
+import { MultiChoiceView } from './questions/MultiChoiceView';
+import { LinearScaleView } from './questions/LinearScaleView';
+import { TaskDefinition } from '../../types';
 
-// Tipos para las tareas
-// Usamos React.ComponentType para permitir diferentes tipos de props
-export interface TaskDefinition {
-  id: string;
-  component: React.ComponentType<unknown>;
-  title: string;
-  description?: string;
-  props?: Record<string, unknown>;
-}
+// Mapeo dinámico de tipos de pregunta a componentes
+export const QUESTION_TYPE_COMPONENTS: Record<string, React.ComponentType<unknown>> = {
+  'short_text': ShortTextView as React.ComponentType<unknown>,
+  'long_text': LongTextView as React.ComponentType<unknown>,
+  'single_choice': SingleChoiceView as React.ComponentType<unknown>,
+  'multiple_choice': MultiChoiceView as React.ComponentType<unknown>,
+  'linear_scale': LinearScaleView as React.ComponentType<unknown>,
+  'ranking': PrioritizationTask as React.ComponentType<unknown>,
+  'navigation_flow': NavigationFlowTask as React.ComponentType<unknown>,
+  'preference_test': TransactionAuthTask as React.ComponentType<unknown>,
+};
 
-// Lista de tareas cognitivas disponibles
-export const TASKS: TaskDefinition[] = [
-  {
-    id: 'instructions',
-    component: InstructionsTask as React.ComponentType<unknown>,
-    title: 'Instrucciones',
-    description: 'Instrucciones para las tareas cognitivas.'
+// Props por defecto para cada tipo (opcional)
+export const DEFAULT_QUESTION_PROPS: Record<string, Record<string, unknown>> = {
+  'short_text': { 
+    placeholder: 'Escribe tu respuesta...',
+    maxLength: 500
   },
-  { 
-    id: 'city', 
-    component: CitySelectionTask as React.ComponentType<unknown>,
-    title: 'Selección de Ciudad',
-    description: 'Por favor, indica en qué ciudad vives actualmente.'
+  'long_text': { 
+    placeholder: 'Escribe tu respuesta detallada aquí...',
+    minLength: 50,
+    maxLength: 2000
   },
-  {
-    id: 'gender',
-    component: GenderSelectionTask as React.ComponentType<unknown>,
-    title: 'Selección de Género',
-    description: 'Por favor, indica con qué género te identificas.'
+  'single_choice': {
+    allowOther: false
   },
-  {
-    id: 'social-media',
-    component: SocialMediaTask as React.ComponentType<unknown>,
-    title: 'Redes Sociales',
-    description: 'Selecciona las redes sociales donde tienes cuenta.'
+  'multiple_choice': {
+    minSelections: 1,
+    maxSelections: null,
+    allowOther: false
   },
-  {
-    id: 'password-reset',
-    component: PasswordResetTask as React.ComponentType<unknown>,
-    title: 'Recuperación de Contraseña',
-    description: 'Simula una recuperación de contraseña.'
+  'linear_scale': { 
+    showNumbers: true,
+    showLabels: true
   },
-  {
-    id: 'transaction-text',
-    component: TransactionAuthTask as React.ComponentType<unknown>,
-    title: 'Autorización de Transacción (Texto Corto)',
-    description: 'Pregunta de autorización de transacción en formato texto corto.',
-    props: { viewFormat: 'text-only' }
+  'ranking': { 
+    enableDragAndDrop: true,
+    showNumbers: true
   },
-  {
-    id: 'transaction-longtext',
-    component: TransactionAuthTask as React.ComponentType<unknown>,
-    title: 'Autorización de Transacción (Texto Largo)',
-    description: 'Pregunta de autorización de transacción en formato texto largo.',
-    props: { viewFormat: 'long-text' }
+  'navigation_flow': {
+    instructions: 'Haz clic en una opción para ver en detalle',
+    footerText: 'Revisa todas las pantallas antes de elegir una únicamente',
+    deviceFrame: true
   },
-  {
-    id: 'transaction-desktop',
-    component: TransactionAuthTask as React.ComponentType<unknown>,
-    title: 'Autorización de Transacción (Desktop)',
-    description: 'Pregunta de autorización de transacción con imagen de desktop.',
-    props: { viewFormat: 'desktop-image' }
-  },
-  {
-    id: 'transaction-mobile',
-    component: TransactionAuthTask as React.ComponentType<unknown>,
-    title: 'Autorización de Transacción (Mobile)',
-    description: 'Pregunta de autorización de transacción con imagen de móvil.',
-    props: { viewFormat: 'mobile-image' }
-  },
-  {
-    id: 'prioritization',
-    component: PrioritizationTask as React.ComponentType<unknown>,
-    title: 'Escala Lineal - Priorización',
-    description: 'Prioriza las siguientes opciones según tu preferencia.',
-    props: { 
-      question: '¿Cómo priorizarías las siguientes opciones?',
-      options: ['Opción 1', 'Opción 2', 'Opción 3'] 
-    }
-  },
-  {
-    id: 'navigation-flow',
-    component: NavigationFlowTask as React.ComponentType<unknown>,
-    title: 'Flujo de Navegación',
-    description: 'Identifica la pantalla correcta según el objetivo indicado.',
-    props: {
-      title: 'Navegación de flujo - Desktop',
-      question: '¿En cuál de las siguientes pantallas encuentras X objetivo?',
-      instructions: 'Haz clic en una opción para ver en detalle',
-      footerText: 'Revisa todas las pantallas antes de elegir una únicamente'
-    }
-  },
-  // Aquí se pueden añadir más tareas cognitivas a medida que se desarrollen
-];
+  'preference_test': { 
+    viewFormat: 'desktop-image',
+    deviceFrame: true,
+    allowComments: true
+  }
+};
 
-// Utilidades para las tareas
-export const getTaskProgress = (currentTaskIndex: number): number => {
-  if (currentTaskIndex < 0 || !TASKS.length) return 0;
+// Función para crear TaskDefinition dinámicamente
+export const createTaskDefinition = (question: any): TaskDefinition | null => {
+  const questionType = question.type;
+  const component = QUESTION_TYPE_COMPONENTS[questionType];
   
-  // Si es la tarea de instrucciones (índice 0), mostramos 0% de progreso
+  if (!component) {
+    console.warn(`[tasks.ts] Tipo de pregunta no soportado: ${questionType}`);
+    return null;
+  }
+
+  return {
+    id: question.id,
+    component,
+    title: question.title || `Pregunta ${questionType}`,
+    description: question.description,
+    questionType,
+    props: {
+      ...DEFAULT_QUESTION_PROPS[questionType],
+      ...question.props
+    }
+  };
+};
+
+// Mantener TASKS para compatibilidad, pero generado dinámicamente
+export const TASKS: TaskDefinition[] = [];
+
+// Función para construir TASKS dinámicamente desde configuración
+export const buildTasksFromConfig = (questions: any[]): TaskDefinition[] => {
+  const tasks: TaskDefinition[] = [];
+  
+  for (const question of questions) {
+    const taskDef = createTaskDefinition(question);
+    if (taskDef) {
+      tasks.push(taskDef);
+    }
+  }
+  
+  return tasks;
+};
+
+export const getTaskProgress = (currentTaskIndex: number, totalTasks: number): number => {
+  if (currentTaskIndex < 0 || !totalTasks) return 0;
+  
   if (currentTaskIndex === 0) return 0;
   
-  // Para las demás tareas, calculamos el progreso sin contar la tarea de instrucciones
-  return Math.round(((currentTaskIndex) / (TASKS.length - 1)) * 100);
+  return Math.round(((currentTaskIndex) / (totalTasks - 1)) * 100);
 }; 

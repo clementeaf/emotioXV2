@@ -1,10 +1,6 @@
 import { useState, useCallback } from 'react';
 import { apiClient } from '../lib/api';
-
-interface UseResponseAPIProps {
-  researchId: string;
-  participantId: string;
-}
+import { UseResponseAPIProps } from '../types';
 
 export const useResponseAPI = ({ researchId, participantId }: UseResponseAPIProps) => {
   const [isLoading, setIsLoading] = useState<boolean>(false);

@@ -1,8 +1,5 @@
 import React from 'react';
-
-interface LoadingScreenProps {
-  message?: string;
-}
+import { LoadingScreenProps } from '../types/common.types';
 
 const LoadingScreen: React.FC<LoadingScreenProps> = ({ message = 'Cargando...' }) => {
   return (

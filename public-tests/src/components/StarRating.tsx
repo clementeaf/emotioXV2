@@ -1,11 +1,5 @@
 import { useState } from 'react';
-
-interface StarRatingProps {
-  initialRating?: number;
-  maxRating?: number;
-  onChange?: (rating: number) => void;
-  editable?: boolean;
-}
+import { StarRatingProps } from '../types';
 
 const StarRating = ({
   initialRating = 0,

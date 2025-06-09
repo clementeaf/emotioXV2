@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { ModuleResponse, ResponsesData } from './types';
-import { ExpandedStep } from '../types/flow';
+import { ExpandedStepType, UseResponseManagerProps, UseResponseManagerReturn, UseResponseAPIReturn } from '../types';
 
 const sanitizeForJSON = (obj: unknown): unknown => {
     if (!obj) return obj;
@@ -17,15 +17,6 @@ const sanitizeForJSON = (obj: unknown): unknown => {
     }));
 };
 
-interface UseResponseManagerProps {
-    researchId: string | undefined;
-    participantId: string | undefined;
-    expandedSteps: ExpandedStep[];
-    currentStepIndex: number;
-    responseAPI: unknown;
-    storeSetLoadedResponses: (loadedStepResponses: ModuleResponse[]) => void;
-}
-
 export const useResponseManager = ({
     researchId,
     participantId,
@@ -33,7 +24,7 @@ export const useResponseManager = ({
     currentStepIndex,
     responseAPI,
     storeSetLoadedResponses,
-}: UseResponseManagerProps) => {
+}: UseResponseManagerProps): UseResponseManagerReturn => {
     const [responsesData, setResponsesData] = useState<ResponsesData>(() => ({
         researchId: researchId || '',
         startTime: Date.now(),
@@ -44,13 +35,15 @@ export const useResponseManager = ({
         }
     }));
 
-    const loadExistingResponsesInternal = useCallback(async () => {
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const loadExistingResponses = useCallback(async () => {
         if (!researchId || !participantId) return;
-        const api = responseAPI as {
-            getResponses: () => Promise<unknown>;
-            saveOrUpdateResponse: (...args: unknown[]) => Promise<unknown>;
-            markAsCompleted: () => Promise<void>;
-        };
+        setIsLoading(true);
+        setError(null);
+        
+        const api = responseAPI as UseResponseAPIReturn;
         try {
             const apiResponse = await api.getResponses();
             
@@ -99,11 +92,14 @@ export const useResponseManager = ({
             }
         } catch (error) {
             console.error('[useResponseManager] Error cargando respuestas existentes:', error);
+            setError(error instanceof Error ? error.message : 'Error cargando respuestas');
             storeSetLoadedResponses([]);
+        } finally {
+            setIsLoading(false);
         }
     }, [researchId, participantId, responseAPI, storeSetLoadedResponses]);
 
-    const findExistingResponseIdInternal = useCallback((stepId: string): string | undefined => {
+    const findExistingResponseId = useCallback((stepId: string): string | undefined => {
         if (responsesData.modules.all_steps) {
             const existing = responsesData.modules.all_steps.find(resp => resp.id === stepId);
             if (existing) return existing.id;
@@ -111,24 +107,34 @@ export const useResponseManager = ({
         return undefined;
     }, [responsesData.modules.all_steps]);
 
-    const saveStepResponseInternal = useCallback(async (answer: unknown) => {
-        if (currentStepIndex < 0 || currentStepIndex >= expandedSteps.length) return;
-        
-        const currentStepInfo = expandedSteps[currentStepIndex];
-        if (!currentStepInfo) return;
+    const saveStepResponse = useCallback(async (
+        stepId: string,
+        responseData: unknown,
+        stepType?: string,
+        stepName?: string
+    ) => {
+        // Buscar información del paso
+        let currentStepInfo;
+        if (stepType && stepName) {
+            currentStepInfo = { id: stepId, type: stepType, name: stepName };
+        } else {
+            if (currentStepIndex < 0 || currentStepIndex >= expandedSteps.length) return;
+            currentStepInfo = expandedSteps[currentStepIndex];
+            if (!currentStepInfo) return;
+        }
 
-        const { id: stepId, type: stepType, name: stepName } = currentStepInfo;
+        const { id: currentStepId, type: currentStepType, name: currentStepName } = currentStepInfo;
 
-        if ((stepType === 'welcome' || stepType === 'thankyou') && answer === undefined) {
-            if (stepType === 'thankyou') {
+        if ((currentStepType === 'welcome' || currentStepType === 'thankyou') && responseData === undefined) {
+            if (currentStepType === 'thankyou') {
                 setResponsesData(prev => ({ ...prev, endTime: Date.now() }));
             }
             return;
         }
 
-        const isCognitive = stepType.startsWith('cognitive_');
-        const isSmartVOC = stepType.startsWith('smartvoc_');
-        let effectiveAnswer = answer;
+        const isCognitive = currentStepType.startsWith('cognitive_');
+        const isSmartVOC = currentStepType.startsWith('smartvoc_');
+        let effectiveAnswer = responseData;
 
         if (effectiveAnswer === undefined && (isCognitive || isSmartVOC)) {
             effectiveAnswer = isCognitive ? { text: "" } : { value: 0 };
@@ -136,9 +142,9 @@ export const useResponseManager = ({
 
         const now = new Date().toISOString();
         const moduleResponse: ModuleResponse = {
-            id: stepId,
-            stepType: stepType,
-            stepTitle: stepName || '',
+            id: currentStepId,
+            stepType: currentStepType,
+            stepTitle: currentStepName || '',
             response: effectiveAnswer,
             createdAt: now,
             updatedAt: now,
@@ -158,93 +164,63 @@ export const useResponseManager = ({
         }
 
         try {
-            const firestoreResponseDocumentId = findExistingResponseIdInternal(stepId);
+            const firestoreResponseDocumentId = findExistingResponseId(currentStepId);
             
-            await (responseAPI as { saveOrUpdateResponse: (...args: unknown[]) => Promise<unknown> }).saveOrUpdateResponse(
-                stepId,
-                stepType,
-                stepName || '',
+            await (responseAPI as UseResponseAPIReturn).saveOrUpdateResponse(
+                currentStepId,
+                currentStepType,
+                currentStepName || '',
                 moduleResponse.response,
-                firestoreResponseDocumentId,
-                stepId,
-                () => {
-                    if (researchId && participantId) {
-                        loadExistingResponsesInternal();
-                    }
-                }
+                firestoreResponseDocumentId
             );
         } catch (apiError) {
             console.error('[useResponseManager] Error guardando respuesta en API:', apiError);
+            setError(apiError instanceof Error ? apiError.message : 'Error guardando respuesta');
         }
 
+        // Actualizar estado local
         setResponsesData(prev => {
-            const newUpdatedData = JSON.parse(JSON.stringify(prev));
-
-            const findAndReplaceOrAdd = (arr: ModuleResponse[], newItem: ModuleResponse) => {
-                const idx = arr.findIndex(r => r.id === newItem.id);
-                if (idx >= 0) arr[idx] = newItem; else arr.push(newItem);
-            };
-
-            if (stepType === 'demographic') newUpdatedData.modules.demographic = moduleResponse;
-            else if (stepName?.includes('Que te ha parecido el módulo')) newUpdatedData.modules.feedback = moduleResponse;
-            else if (stepType === 'welcome' && effectiveAnswer !== undefined) newUpdatedData.modules.welcome = moduleResponse;
-            else if (isCognitive) {
-                if (!newUpdatedData.modules.cognitive_task) newUpdatedData.modules.cognitive_task = [];
-                findAndReplaceOrAdd(newUpdatedData.modules.cognitive_task, moduleResponse);
-            } else if (isSmartVOC) {
-                if (!newUpdatedData.modules.smartvoc) newUpdatedData.modules.smartvoc = [];
-                findAndReplaceOrAdd(newUpdatedData.modules.smartvoc, moduleResponse);
-            } else {
-                const category = stepType.split('_')[0] || 'other';
-                if (!newUpdatedData.modules[category]) newUpdatedData.modules[category] = [];
-                if (!Array.isArray(newUpdatedData.modules[category])) newUpdatedData.modules[category] = [newUpdatedData.modules[category] as ModuleResponse];
-                findAndReplaceOrAdd(newUpdatedData.modules[category] as ModuleResponse[], moduleResponse);
+            const newData = { ...prev };
+            if (!newData.modules.all_steps) {
+                newData.modules.all_steps = [];
             }
-
-            if (!newUpdatedData.modules.all_steps) newUpdatedData.modules.all_steps = [];
-            findAndReplaceOrAdd(newUpdatedData.modules.all_steps, moduleResponse);
             
-            return newUpdatedData;
+            const existingIndex = newData.modules.all_steps.findIndex(r => r.id === currentStepId);
+            if (existingIndex >= 0) {
+                newData.modules.all_steps[existingIndex] = moduleResponse;
+            } else {
+                newData.modules.all_steps.push(moduleResponse);
+            }
+            
+            return newData;
         });
-    }, [currentStepIndex, expandedSteps, researchId, participantId, responseAPI, loadExistingResponsesInternal, findExistingResponseIdInternal]);
+    }, [currentStepIndex, expandedSteps, responseAPI, findExistingResponseId]);
 
-    const getStepResponseInternal = useCallback((stepIndexForResponse: number): unknown => {
-        if (stepIndexForResponse < 0 || stepIndexForResponse >= expandedSteps.length) return null;
-        const step = expandedSteps[stepIndexForResponse];
-        if (!step) return null;
-        const { id: stepIdToFind, type: stepType } = step;
-        if (stepType === 'welcome' || stepType === 'thankyou') return null;
-        if (responsesData.modules.all_steps && Array.isArray(responsesData.modules.all_steps)) {
-            const foundResponse = responsesData.modules.all_steps.find(resp => resp.id === stepIdToFind);
-            if (foundResponse) return foundResponse.response;
+    const getStepResponse = useCallback((stepId: string): unknown => {
+        if (responsesData.modules.all_steps) {
+            const response = responsesData.modules.all_steps.find(r => r.id === stepId);
+            return response?.response;
         }
-        return null; 
-    }, [expandedSteps, responsesData.modules.all_steps]);
+        return undefined;
+    }, [responsesData.modules.all_steps]);
 
-    const hasStepBeenAnsweredInternal = useCallback((stepIndexForCheck: number): boolean => {
-        if (stepIndexForCheck < 0 || stepIndexForCheck >= expandedSteps.length) return false;
-        const step = expandedSteps[stepIndexForCheck];
-        if (!step) return false;
-        const { id: stepIdToFind, type: stepType } = step;
-        if (stepType === 'welcome' || stepType === 'thankyou') return true;
-        if (responsesData.modules.all_steps && Array.isArray(responsesData.modules.all_steps)) {
-            return responsesData.modules.all_steps.some(resp => resp.id === stepIdToFind);
-        }
-        return false;
-    }, [expandedSteps, responsesData.modules.all_steps]);
+    const hasStepBeenAnswered = useCallback((stepId: string): boolean => {
+        return getStepResponse(stepId) !== undefined;
+    }, [getStepResponse]);
 
-    const getResponsesJsonInternal = useCallback(() => {
+    const getResponsesJson = useCallback((): string => {
         return JSON.stringify(responsesData, null, 2);
     }, [responsesData]);
 
-    const markResponsesAsCompletedInternal = useCallback(async () => {
+    const markResponsesAsCompleted = useCallback(async (): Promise<void> => {
         try {
-            await (responseAPI as { markAsCompleted: () => Promise<void> }).markAsCompleted();
+            await (responseAPI as UseResponseAPIReturn).markAsCompleted();
         } catch (error) {
             console.error('[useResponseManager] Error marcando respuestas como completadas:', error);
+            setError(error instanceof Error ? error.message : 'Error marcando respuestas como completadas');
         }
     }, [responseAPI]);
-    
+
     useEffect(() => {
         if (researchId && responsesData.researchId !== researchId) {
             setResponsesData(prev => ({ ...prev, researchId }));
@@ -257,15 +233,15 @@ export const useResponseManager = ({
         }
     }, [participantId, responsesData.participantId]);
 
-
     return {
         responsesData,
-        setResponsesData,
-        loadExistingResponses: loadExistingResponsesInternal,
-        saveStepResponse: saveStepResponseInternal,
-        getStepResponse: getStepResponseInternal,
-        hasStepBeenAnswered: hasStepBeenAnsweredInternal,
-        getResponsesJson: getResponsesJsonInternal,
-        markResponsesAsCompleted: markResponsesAsCompletedInternal,
+        loadExistingResponses,
+        saveStepResponse,
+        getStepResponse,
+        hasStepBeenAnswered,
+        getResponsesJson,
+        markResponsesAsCompleted,
+        isLoading,
+        error
     };
 }; 

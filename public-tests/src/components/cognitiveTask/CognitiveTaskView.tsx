@@ -1,20 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
-    CognitiveTaskFormData,
-    Question as CognitiveQuestion,
-} from '../../../../shared/interfaces/cognitive-task.interface';
-import { TASKS, TaskDefinition } from './tasks';
+  CognitiveTaskViewProps,
+  CognitiveQuestion,
+  TaskDefinition
+} from '../../types';
+import { buildTasksFromConfig, getTaskProgress } from './tasks';
 import ThankYouView from './ThankYouView';
 import TaskProgressBar from './common/TaskProgressBar';
 import { useResponseAPI } from '../../hooks/useResponseAPI';
-
-interface CognitiveTaskViewProps {
-  researchId: string;
-  participantId: string;
-  stepConfig: CognitiveTaskFormData;
-  onComplete: () => void;
-  onError: (error: string) => void;
-}
 
 const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, participantId, stepConfig, onComplete, onError }) => {
   const [currentTaskIndex, setCurrentTaskIndex] = useState(0);
@@ -27,18 +20,38 @@ const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, parti
     setError: setApiError
   } = useResponseAPI({ researchId, participantId });
 
+  // Construir tareas dinámicamente desde la configuración
+  const dynamicTasks = useMemo(() => {
+    if (!stepConfig?.questions || !Array.isArray(stepConfig.questions)) {
+      return [];
+    }
+    return buildTasksFromConfig(stepConfig.questions);
+  }, [stepConfig]);
+
+  // Obtener la configuración de la tarea actual
+  const totalRealTasks = dynamicTasks.length;
+  const currentTaskDefinition = currentTaskIndex < totalRealTasks ? dynamicTasks[currentTaskIndex] : null;
+  
+  // Buscar la configuración específica de la pregunta usando el ID directo
+  const questionConfig = currentTaskDefinition ? stepConfig.questions.find(
+    (q: CognitiveQuestion) => q.id === currentTaskDefinition.id
+  ) : null;
+
   const handleTaskComplete = async (responseData?: unknown, subTaskDefinition?: TaskDefinition) => {
     if (apiError) setApiError(null);
     if (responseData && subTaskDefinition && subTaskDefinition.id) {
-      const questionConfig = stepConfig.questions.find(
-        (q: CognitiveQuestion) => q.id === subTaskDefinition.id || q.key === subTaskDefinition.id
-      );
       const existingResponseId = questionConfig?.moduleResponseId;
       const subTaskId = subTaskDefinition.id;
-      const subTaskType = typeof subTaskDefinition.props?.stepType === 'string'
-        ? subTaskDefinition.props.stepType
-        : subTaskDefinition.id;
-      const subTaskName = subTaskDefinition.title;
+      const subTaskType = subTaskDefinition.questionType || subTaskDefinition.id;
+      const subTaskName = questionConfig?.title || subTaskDefinition.title;
+      
+      console.log(`[CognitiveTaskView] Guardando respuesta para pregunta ${subTaskId}:`, {
+        responseData,
+        subTaskType,
+        subTaskName,
+        existingResponseId
+      });
+      
       const result = await saveOrUpdateResponse(
         subTaskId,
         subTaskType,
@@ -59,7 +72,6 @@ const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, parti
       }
     }
     const nextTaskIndex = currentTaskIndex + 1;
-    const totalRealTasks = TASKS.length;
     if (nextTaskIndex < totalRealTasks) {
       setCurrentTaskIndex(nextTaskIndex);
     } else {
@@ -80,29 +92,53 @@ const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, parti
       />
     );
   }
-  
-  const totalRealTasks = TASKS.length;
-  if (currentTaskIndex >= totalRealTasks) {
-    onError("Error interno: Índice de tarea cognitiva fuera de rango.");
-    return <div className="p-4 text-center">Error interno en Tarea Cognitiva. Por favor, recarga.</div>;
-  }
 
+  // Validaciones con las tareas dinámicas
   if (!stepConfig || !Array.isArray(stepConfig.questions)) {
      onError("Error interno: Configuración inválida o faltan preguntas para CognitiveTask.");
      return <div className="p-4 text-red-600 bg-red-100 border border-red-300 rounded">Error: Configuración de tarea cognitiva inválida.</div>;
   }
 
-  const currentTaskDefinition = TASKS[currentTaskIndex];
+  if (dynamicTasks.length === 0) {
+    onError("Error interno: No se pudieron generar tareas desde la configuración.");
+    return <div className="p-4 text-red-600 bg-red-100 border border-red-300 rounded">Error: No hay tareas válidas configuradas.</div>;
+  }
+  
+  if (currentTaskIndex >= totalRealTasks) {
+    onError("Error interno: Índice de tarea cognitiva fuera de rango.");
+    return <div className="p-4 text-center">Error interno en Tarea Cognitiva. Por favor, recarga.</div>;
+  }
+
+  if (!currentTaskDefinition) {
+    onError("Error interno: Definición de tarea no encontrada.");
+    return <div className="p-4 text-center">Error interno en Tarea Cognitiva. Por favor, recarga.</div>;
+  }
+
   const CurrentTaskComponent = currentTaskDefinition.component;
   
-  const currentTaskSpecificConfig = stepConfig.questions.find(
-    (q: CognitiveQuestion) => q.id === currentTaskDefinition.id || q.key === currentTaskDefinition.id
-  ) || {};
+  // Si no se encuentra la configuración específica, usar valores de la task definition
+  const defaultQuestionConfig = {
+    id: currentTaskDefinition.id,
+    type: currentTaskDefinition.questionType || 'short_text',
+    title: questionConfig?.title || currentTaskDefinition.title,
+    description: questionConfig?.description || currentTaskDefinition.description,
+    required: questionConfig?.required ?? false,
+    showConditionally: questionConfig?.showConditionally ?? false,
+    deviceFrame: questionConfig?.deviceFrame ?? false,
+    choices: questionConfig?.choices || [],
+    scaleConfig: questionConfig?.scaleConfig || { startValue: 1, endValue: 5 },
+    files: questionConfig?.files || [],
+    answerPlaceholder: questionConfig?.answerPlaceholder || currentTaskDefinition.props?.placeholder
+  };
 
+  // Combinar configuración del frontend con props por defecto de la tarea
   const taskProps = { 
-    ...(currentTaskDefinition.props || {}), 
-    ...currentTaskSpecificConfig,
-    config: stepConfig,
+    ...currentTaskDefinition.props,
+    config: questionConfig || defaultQuestionConfig,
+    question: questionConfig || defaultQuestionConfig,
+    stepConfig: stepConfig,
+    questionId: currentTaskDefinition.id,
+    questionType: currentTaskDefinition.questionType
   };
 
   return (

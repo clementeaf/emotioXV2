@@ -1,21 +1,13 @@
 import React from 'react';
+import { TextAreaFieldProps } from '../../types';
 
-interface TextAreaFieldProps {
-    id: string;
+// Props extendidas para este componente específico
+interface ExtendedTextAreaFieldProps extends Omit<TextAreaFieldProps, 'name'> {
     name?: string; // Name puede ser útil para formularios
-    value: string;
-    onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-    placeholder?: string;
-    label?: string; // Label principal, puede ser sr-only si es visualmente obvio
-    rows?: number;
-    required?: boolean;
-    disabled?: boolean;
-    maxLength?: number; // Añadir maxLength a las props
-    className?: string; // Estilos para el div contenedor
     textAreaClassName?: string; // Estilos específicos para el textarea
 }
 
-const TextAreaField: React.FC<TextAreaFieldProps> = ({
+const TextAreaField: React.FC<ExtendedTextAreaFieldProps> = ({
     id,
     name,
     value,

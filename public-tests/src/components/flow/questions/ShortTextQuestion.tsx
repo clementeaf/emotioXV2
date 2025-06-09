@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { ShortTextQuestionProps } from '../../../types';
 
-interface ShortTextQuestionProps {
+// Props específicas para este componente
+interface ComponentShortTextQuestionProps extends Omit<ShortTextQuestionProps, 'id' | 'title' | 'description' | 'value' | 'onChange'> {
     config: unknown;
     stepName?: string;
     onStepComplete: (answer: unknown) => void;
     isMock: boolean;
 }
 
-export const ShortTextQuestion: React.FC<ShortTextQuestionProps> = ({ 
+export const ShortTextQuestion: React.FC<ComponentShortTextQuestionProps> = ({ 
     config, 
     stepName, 
     onStepComplete, 

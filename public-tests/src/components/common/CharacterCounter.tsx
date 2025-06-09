@@ -1,12 +1,13 @@
 import React from 'react';
+import { CharacterCounterProps } from '../../types';
 
-interface CharacterCounterProps {
+// Props extendidas para este componente específico
+interface ExtendedCharacterCounterProps extends Omit<CharacterCounterProps, 'current' | 'max'> {
   currentLength: number;
   maxLength: number;
-  className?: string;
 }
 
-const CharacterCounter: React.FC<CharacterCounterProps> = ({
+const CharacterCounter: React.FC<ExtendedCharacterCounterProps> = ({
   currentLength,
   maxLength,
   className = 'text-xs text-neutral-400', // Clase original

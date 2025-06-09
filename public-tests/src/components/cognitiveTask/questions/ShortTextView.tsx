@@ -1,16 +1,7 @@
 import React from 'react';
-// Importar subcomponentes reutilizables
 import QuestionHeader from '../common/QuestionHeader';
-import FormField from '../../common/FormField'; // Ruta corregida (subir dos niveles)
-import { CognitiveQuestion } from '../../../hooks/useCognitiveTask';
-// FIXME: La importación de la interfaz compartida falla. Usando 'any' temporalmente.
-// import { CognitiveQuestion } from '../../../../shared/interfaces/cognitive-task.interface'; 
-
-interface ShortTextViewProps {
-  config: CognitiveQuestion;
-  value: string | undefined;
-  onChange: (questionId: string, value: string) => void;
-}
+import FormField from '../../common/FormField';
+import { ShortTextViewProps } from '../../../types';
 
 export const ShortTextView: React.FC<ShortTextViewProps> = ({ config, value, onChange }) => {
   // Extracción de datos

@@ -2,6 +2,7 @@ import React from 'react';
 import { useStandardizedForm, valueExtractors, StandardizedFormProps } from '../../hooks/useStandardizedForm';
 import { getStandardButtonText, getButtonDisabledState, formatQuestionText, getErrorDisplayProps, formSpacing } from '../../utils/formHelpers';
 
+// Props específicas para este componente
 interface NPSViewProps extends StandardizedFormProps {
   questionText: string;
   instructions?: string;

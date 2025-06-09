@@ -1,6 +1,7 @@
 import { useState, ChangeEvent, FormEvent } from 'react';
 import { Participant } from '../../../shared/interfaces/participant';
 import { useParticipantStore, ParticipantState } from '../stores/participantStore';
+import { FormErrors } from '../types';
 
 const API_BASE_URL = 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev';
 
@@ -12,14 +13,6 @@ interface UseParticipantLoginProps {
 
 // Tipo para el estado del participante dentro del hook
 type ParticipantInput = Omit<Participant, 'id' | 'createdAt' | 'updatedAt'>;
-
-// Tipo para los errores del formulario
-interface FormErrors {
-  name: string;
-  email: string;
-  submit: string;
-  researchId?: string;
-}
 
 export const useParticipantLogin = ({ researchId, onLogin }: UseParticipantLoginProps) => {
   const [participant, setParticipant] = useState<ParticipantInput>({

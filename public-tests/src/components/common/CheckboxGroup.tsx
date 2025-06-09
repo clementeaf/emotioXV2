@@ -1,9 +1,5 @@
 import React from 'react';
-
-interface ChoiceOption {
-  id: string;
-  label: string;
-}
+import { ChoiceOption } from '../../types';
 
 interface CheckboxGroupProps {
   name: string; // Nombre base para los inputs, ayuda con la accesibilidad y formularios

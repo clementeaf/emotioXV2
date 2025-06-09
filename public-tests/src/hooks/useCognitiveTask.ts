@@ -1,32 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-// Quitar ParticipantFlowStep si no se usa directamente en el hook para errores
-// import { ParticipantFlowStep } from '../types/flow'; 
-
-// <<< MOVER INTERFACES AQUÍ >>>
-// Interfaz para una pregunta individual (basada en la que estaba en el handler)
-export interface CognitiveQuestion {
-    id: string; 
-    type: string; 
-    title?: string;
-    description?: string;
-    answerPlaceholder?: string;
-    required?: boolean;
-    // ... otros campos específicos como 'options' para choice, etc.
-}
-
-// Interfaz para las respuestas
-export interface CognitiveAnswers {
-  [questionId: string]: unknown;
-}
-// <<< FIN INTERFACES MOVIDAS >>>
-
-// Props que necesita el hook
-interface UseCognitiveTaskProps {
-    researchId: string;
-    token: string | null; // Permitir null para la comprobación inicial
-    onComplete: () => void; 
-    onError: (message: string) => void; 
-}
+import { CognitiveQuestion, CognitiveAnswers, UseCognitiveTaskProps } from '../types';
 
 export const useCognitiveTask = ({ researchId, token, onComplete, onError }: UseCognitiveTaskProps) => {
     // --- Estados --- 
