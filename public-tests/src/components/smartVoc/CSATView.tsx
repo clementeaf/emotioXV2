@@ -24,9 +24,7 @@ const CSATView: React.FC<CSATViewProps> = ({
   const [state, actions] = useStandardizedForm<number | null>(standardProps, {
     initialValue: null,
     extractValueFromResponse: (response: unknown): number | null => {
-      console.log(`🔍 [CSATView] extractValueFromResponse called with:`, response, typeof response);
       const extracted = valueExtractors.numericScale(response);
-      console.log(`📊 [CSATView] Extracted value:`, extracted);
       return extracted;
     },
     moduleId: typeof config === 'object' && config !== null && 'moduleId' in config 
@@ -38,23 +36,16 @@ const CSATView: React.FC<CSATViewProps> = ({
   const { setValue, validateAndSave } = actions;
 
   const handleSelect = (selectedValue: number) => {
-    console.log(`🎯 [CSATView] User selecting value:`, selectedValue);
-    setValue(selectedValue, true); // 🚨 Marcar como interacción del usuario
+    setValue(selectedValue, true);
   };
 
   const handleSubmit = async () => {
-    console.log(`🚀 [CSATView] Submitting with value:`, value);
     if (value !== null) {
       const result = await validateAndSave();
       if (result.success) {
-        console.log(`✅ [CSATView] Submit successful`);
-        
-        // 🚨 Usar el callback apropiado dependiendo del contexto
         if (onNext) {
-          console.log(`📋 [CSATView] Calling onNext (SmartVOC flow) with:`, value);
           onNext(value);
         } else if (onStepComplete) {
-          console.log(`📋 [CSATView] Calling onStepComplete (individual step) with:`, { success: true, data: result.data, value });
           onStepComplete({ 
             success: true, 
             data: result.data, 
@@ -83,26 +74,6 @@ const CSATView: React.FC<CSATViewProps> = ({
     hasError: !!error
   });
   const errorDisplay = getErrorDisplayProps(error);
-
-  // 🚨 NUEVO: Log detallado de props y estado para debugging
-  console.log(`🎯 [CSATView] Rendered with props:`, {
-    stepId: standardProps.stepId,
-    stepType: standardProps.stepType, 
-    stepName: standardProps.stepName,
-    researchId: standardProps.researchId,
-    participantId: standardProps.participantId,
-    savedResponse: standardProps.savedResponse,
-    savedResponseId: standardProps.savedResponseId
-  });
-  
-  console.log(`📊 [CSATView] Current state:`, {
-    value: state.value,
-    isLoading: state.isLoading,
-    isSaving: state.isSaving,
-    isDataLoaded: state.isDataLoaded,
-    hasExistingData: state.hasExistingData,
-    error: state.error
-  });
 
   if (isLoading && !state.isDataLoaded) {
     return (

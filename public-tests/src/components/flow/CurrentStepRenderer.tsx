@@ -44,6 +44,15 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
 
     // Función helper para encontrar respuesta por stepId/stepType
     const findSavedResponse = useCallback((searchStepId: string, searchStepType: string) => {
+        // 🚨 NUEVO: Verificar si el usuario ya interactuó - Si es así, NO retornar savedResponse obsoleto
+        const hasInteracted = typeof window !== 'undefined' && window.sessionStorage && 
+            window.sessionStorage.getItem(`userInteraction_${searchStepId}_${searchStepType}`) === 'true';
+        
+        if (hasInteracted) {
+            console.log(`🚫 [CurrentStepRenderer] User interacted with ${searchStepId}, NOT returning savedResponse to prevent overwrite`);
+            return null;
+        }
+
         // Buscar en respuestas del store local primero
         const localResponses = responsesDataFromStore?.modules?.all_steps || [];
         let foundResponse = localResponses.find(resp => 

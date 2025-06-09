@@ -30,7 +30,6 @@ function setUserInteracted(stepId: string, stepType: string): void {
   try {
     const key = getUserInteractionKey(stepId, stepType);
     sessionStorage.setItem(key, 'true');
-    console.log(`🔒 [useStandardizedForm] User interaction persisted for ${stepId}`);
   } catch (e) {
     console.warn('[useStandardizedForm] Could not persist user interaction:', e);
   }
@@ -69,45 +68,25 @@ export function useStandardizedForm<T>(
     enableAutoSave = false,
     moduleId
   } = options;
-
-  // Store data
   const researchIdFromStore = useParticipantStore(state => state.researchId);
-  const participantIdFromStore = useParticipantStore(state => state.participantId);
-  
+  const participantIdFromStore = useParticipantStore(state => state.participantId);  
   const researchId = propResearchId || researchIdFromStore;
   const participantId = propParticipantId || participantIdFromStore;
-
-  // 🚨 NUEVO: Debug logging para IDs
-  console.log(`🔍 [useStandardizedForm] ID resolution for ${stepId}:`, {
-    propResearchId,
-    researchIdFromStore, 
-    finalResearchId: researchId,
-    propParticipantId,
-    participantIdFromStore,
-    finalParticipantId: participantId
-  });
-
-  // State
   const [value, setValueInternal] = useState<T>(initialValue);
   const [error, setError] = useState<string | null>(null);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [responseId, setResponseId] = useState<string | null>(savedResponseId || null);
   const [hasExistingData, setHasExistingData] = useState(false);
-  
-  // 🚨 ACTUALIZADO: Usar sessionStorage para persistir entre re-mounts
   const userHasInteracted = useRef<boolean>(hasUserInteracted(stepId, stepType));
   const initialLoadComplete = useRef<boolean>(false);
   
-  // 🚨 NUEVO: Log inicial para debugging
   useEffect(() => {
     const persistedInteraction = hasUserInteracted(stepId, stepType);
     if (persistedInteraction) {
       userHasInteracted.current = true;
-      console.log(`🔒 [useStandardizedForm] Restored user interaction state for ${stepId} from sessionStorage`);
     }
   }, [stepId, stepType]);
 
-  // API hooks
   const {
     saveOrUpdateResponse,
     isLoading: isSaving,
@@ -129,18 +108,9 @@ export function useStandardizedForm<T>(
   // Enhanced setValue with logging and user interaction tracking
   const setValue = useCallback((newValue: T, isUserInteraction: boolean = false) => {
     if (value !== newValue) {
-      console.log(`🔄 [useStandardizedForm] setValue: ${stepId}`, {
-        newValue: JSON.stringify(newValue),
-        isUserInteraction,
-        userHasInteracted: userHasInteracted.current,
-        initialLoadComplete: initialLoadComplete.current
-      });
-      
-      // 🚨 Si es interacción del usuario, marcar flag Y persistir
       if (isUserInteraction) {
         userHasInteracted.current = true;
-        setUserInteracted(stepId, stepType); // 🚨 PERSISTIR en sessionStorage
-        console.log(`👤 [useStandardizedForm] User interaction detected for ${stepId} - PERSISTED`);
+        setUserInteracted(stepId, stepType);
       }
       
       setValueInternal(newValue);
@@ -159,82 +129,21 @@ export function useStandardizedForm<T>(
     return initialValue;
   }, [savedResponse, extractValueFromResponse, initialValue]);
 
-  // Load existing response - SUPER PROTECTED VERSION with sessionStorage persistence
   useEffect(() => {
-    // 🚨 GUARD 0: Si faltan IDs esenciales, limpiar protección y permitir carga cuando estén disponibles
-    if (!researchId || !participantId) {
-      console.log(`⏳ [useStandardizedForm] Missing essential IDs for ${stepId} - researchId: ${researchId}, participantId: ${participantId}`);
-      // Si faltan IDs, limpiar la protección para permitir carga futura
-      if (userHasInteracted.current && (!researchId || !participantId)) {
-        console.log(`🧹 [useStandardizedForm] Clearing user interaction due to missing IDs`);
-        clearUserInteraction(stepId, stepType);
-        userHasInteracted.current = false;
-      }
-      return;
-    }
-    
-    // 🚨 NUEVO GUARD 0.5: Si tenemos IDs válidos Y datos para cargar, pero la protección está activa, limpiar sessionStorage
-    if (userHasInteracted.current && !isLoadingResponses && moduleResponsesArray && Array.isArray(moduleResponsesArray)) {
-      const foundResponse = moduleResponsesArray.find((r: unknown) => {
-        if (typeof r !== 'object' || r === null) return false;
-        const response = r as { stepType?: string; stepId?: string; id?: string };
-        return (
-          response.stepType === stepType ||
-          response.stepId === stepId ||
-          (response.stepType && stepType && response.stepType.includes(stepType)) ||
-          (response.stepType && stepType && stepType.includes(response.stepType)) ||
-          (response.stepId && stepId && response.stepId.includes(stepId))
-        );
-      });
-      
-      if (foundResponse) {
-        console.log(`🔓 [useStandardizedForm] Found valid data to load but user interaction is blocking. Clearing protection for ${stepId}`);
-        clearUserInteraction(stepId, stepType);
-        userHasInteracted.current = false;
-        // No return here - let it continue to load the data
-      }
-    }
-    
-    // 🚨 GUARD 1: Si el usuario ya interactuó (incluso en sesiones anteriores), NO sobrescribir NUNCA
-    if (userHasInteracted.current) {
-      console.log(`🚫 [useStandardizedForm] User has interacted with ${stepId} (persisted), REFUSING to reload data to preserve user changes`);
-      return;
-    }
-    
-    // 🚨 GUARD 2: Si ya se completó la carga inicial, NO volver a cargar
     if (initialLoadComplete.current) {
-      console.log(`🚫 [useStandardizedForm] Initial load complete for ${stepId}, skipping reload`);
       return;
     }
     
-    // 🚨 GUARD 3: Si ya se marcó como data cargada, NO recargar  
-    if (isDataLoaded) {
-      console.log(`🚫 [useStandardizedForm] Data already loaded for ${stepId}, skipping reload`);
-      return;
-    }
-    
-    // 🚨 GUARD 4: Si ya hay un valor establecido (no inicial) y el usuario interactuó, NO sobrescribir
-    if (value !== null && value !== initialValue && (userHasInteracted.current || (stepId && hasUserInteracted(stepId, stepType)))) {
-      console.log(`🚫 [useStandardizedForm] User value exists (${value}) and user interacted, PRESERVING current value`);
-      setIsDataLoaded(true);
-      setHasExistingData(true);
+    if (userHasInteracted.current && isDataLoaded && value !== initialValue) {
       initialLoadComplete.current = true;
       return;
     }
     
-    console.log(`🔍 [useStandardizedForm] Loading data for ${stepId} (${stepType}):`, {
-      isMock,
-      hasSavedResponse: !!savedResponse,
-      isLoadingResponses,
-      hasModuleResponsesArray: !!moduleResponsesArray,
-      arrayLength: Array.isArray(moduleResponsesArray) ? moduleResponsesArray.length : 'not array',
-      isDataLoaded,
-      userHasInteracted: userHasInteracted.current,
-      initialLoadComplete: initialLoadComplete.current,
-      persistedInteraction: hasUserInteracted(stepId, stepType)
-    });
+    if (isDataLoaded && value !== initialValue) {
+      initialLoadComplete.current = true;
+      return;
+    }
 
-    // Handle mock mode
     if (isMock) {
       setValue(savedResponse ? extractedValue : initialValue, false);
       setIsDataLoaded(true);
@@ -249,7 +158,6 @@ export function useStandardizedForm<T>(
       setIsDataLoaded(true);
       setHasExistingData(true);
       initialLoadComplete.current = true;
-      console.log(`✅ [useStandardizedForm] Loaded from savedResponse:`, extractedValue);
       return;
     }
 
@@ -278,26 +186,15 @@ export function useStandardizedForm<T>(
         const foundResp = foundResponse as { response?: unknown; id?: string };
         try {
           const extractedVal = extractValueFromResponse(foundResp.response);
-          console.log(`✅ [useStandardizedForm] Loaded from API (priority):`, {
-            stepId,
-            stepType,
-            rawResponse: foundResp.response,
-            extractedVal,
-            responseId: foundResp.id,
-            foundResponseStepType: (foundResponse as { stepType?: string }).stepType
-          });
-          
           setValue(extractedVal, false);
           setResponseId(foundResp.id || null);
           setHasExistingData(true);
           setIsDataLoaded(true);
           initialLoadComplete.current = true;
           
-          // 🧹 CLEAN CONFLICTING LOCALSTORAGE
           try {
             const localStorageKey = `response_${stepId}`;
             if (localStorage.getItem(localStorageKey)) {
-              console.log(`🧹 [useStandardizedForm] Cleaning conflicting localStorage: ${localStorageKey}`);
               localStorage.removeItem(localStorageKey);
             }
           } catch (e) {
@@ -310,16 +207,12 @@ export function useStandardizedForm<T>(
         }
       }
     }
-
-    // No API response found - use initial value
-    console.log(`📭 [useStandardizedForm] No API response found, using initial value:`, initialValue);
     setValue(initialValue, false);
     setHasExistingData(false);
     setIsDataLoaded(true);
     initialLoadComplete.current = true;
     
   }, [
-    // ✅ MANTENER DEPENDENCIAS MÍNIMAS PARA EVITAR RE-EJECUCIONES
     isMock, 
     savedResponse, 
     isLoadingResponses, 
@@ -363,18 +256,6 @@ export function useStandardizedForm<T>(
   const saveResponse = useCallback(async (valueToSave?: T): Promise<{ success: boolean; data?: unknown }> => {
     const finalValue = valueToSave !== undefined ? valueToSave : value;
     
-    console.log(`🔍 [useStandardizedForm] saveResponse called:`, {
-      stepId,
-      stepType,
-      stepName,
-      finalValue,
-      valueType: typeof finalValue,
-      valueKeys: typeof finalValue === 'object' && finalValue ? Object.keys(finalValue) : 'not object',
-      researchId,
-      participantId,
-      responseId
-    });
-    
     if (!researchId || !participantId) {
       const errorMsg = 'ID de investigación o participante no disponible.';
       console.error(`❌ [useStandardizedForm] Missing IDs:`, { researchId, participantId });
@@ -383,7 +264,6 @@ export function useStandardizedForm<T>(
     }
 
     if (isMock) {
-      console.log('[useStandardizedForm] Mock mode - not saving to API:', finalValue);
       return { success: true, data: { value: finalValue } };
     }
 
@@ -398,14 +278,6 @@ export function useStandardizedForm<T>(
     setApiError(null);
 
     try {
-      console.log(`📤 [useStandardizedForm] Calling saveOrUpdateResponse with:`, {
-        stepId,
-        stepType,
-        stepName: stepName || stepId,
-        finalValue,
-        responseId: responseId || undefined,
-        moduleId
-      });
       
       const result = await saveOrUpdateResponse(
         stepId,
@@ -416,8 +288,6 @@ export function useStandardizedForm<T>(
         moduleId
       );
 
-      console.log(`📋 [useStandardizedForm] saveOrUpdateResponse result:`, result);
-
       if (apiError) {
         console.error(`❌ [useStandardizedForm] API Error after save:`, apiError);
         setError(apiError);
@@ -426,21 +296,10 @@ export function useStandardizedForm<T>(
 
       if (result && typeof result === 'object' && result !== null && 'id' in result && !responseId) {
         const newId = (result as { id: string }).id;
-        console.log(`📋 [useStandardizedForm] Setting new responseId:`, newId);
         setResponseId(newId);
         setHasExistingData(true);
       }
 
-      // 🚨 DESACTIVADO: NO refrescar inmediatamente después del guardado
-      // para evitar sobrescribir el valor del usuario con datos obsoletos de la API
-      if (false && researchId && participantId && fetchResponses) {
-        console.log(`🔄 [useStandardizedForm] Refreshing module responses after successful save`);
-        fetchResponses(researchId, participantId);
-      } else {
-        console.log(`🚫 [useStandardizedForm] Skipping automatic refresh to preserve user value`);
-      }
-
-      console.log(`✅ [useStandardizedForm] Save successful!`);
       return { success: true, data: result };
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Error desconocido al guardar.';
@@ -468,19 +327,6 @@ export function useStandardizedForm<T>(
   // Validate and save
   const validateAndSave = useCallback(async (valueToSave?: T): Promise<{ success: boolean; data?: unknown }> => {
     const finalValue = valueToSave !== undefined ? valueToSave : value;
-    
-    console.log(`🔍 [useStandardizedForm] validateAndSave called with:`, {
-      valueToSave,
-      valueToSaveType: typeof valueToSave,
-      valueToSaveKeys: typeof valueToSave === 'object' && valueToSave ? Object.keys(valueToSave) : 'not object',
-      currentStateValue: value,
-      currentStateValueType: typeof value,
-      currentStateValueKeys: typeof value === 'object' && value ? Object.keys(value) : 'not object',
-      finalValue,
-      finalValueType: typeof finalValue,
-      finalValueKeys: typeof finalValue === 'object' && finalValue ? Object.keys(finalValue) : 'not object'
-    });
-    
     const validationError = validateValue(finalValue);
     
     if (validationError) {
@@ -489,7 +335,6 @@ export function useStandardizedForm<T>(
       return { success: false };
     }
     
-    console.log(`✅ [useStandardizedForm] validateAndSave validation passed, calling saveResponse with:`, finalValue);
     return saveResponse(finalValue);
   }, [value, validateValue, saveResponse]);
 
@@ -525,9 +370,9 @@ export function useStandardizedForm<T>(
       setIsDataLoaded(false);
       userHasInteracted.current = false;
       initialLoadComplete.current = false;
-      // 🚨 NUEVO: Limpiar user interaction de sessionStorage
-      clearUserInteraction(stepId, stepType);
-      console.log(`🧹 [useStandardizedForm] Reset complete for ${stepId} - user interaction cleared`);
+      if (stepId) {
+        clearUserInteraction(stepId, stepType);
+      }
     }
   };
 
@@ -556,7 +401,6 @@ export const userInteractionUtils = {
       const keys = Object.keys(sessionStorage);
       const interactionKeys = keys.filter(key => key.startsWith(USER_INTERACTION_KEY_PREFIX));
       interactionKeys.forEach(key => sessionStorage.removeItem(key));
-      console.log(`🧹 [userInteractionUtils] Cleared ${interactionKeys.length} user interaction flags`);
     } catch (e) {
       console.warn('[userInteractionUtils] Error clearing all interactions:', e);
     }

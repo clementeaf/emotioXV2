@@ -125,18 +125,13 @@ const sanitizeForJSON = (obj: unknown): unknown => {
   }));
 };
 
-// Función para guardar manualmente en localStorage
 const saveToLocalStorage = (key: string, data: unknown): void => {
-  // ❌ COMPLETELY DISABLED - NO localStorage for responses or participant data
   if (key.includes('response') || key === 'participantResponses' || key.includes('expandedSteps')) {
-    console.log(`🚫 [ParticipantStore] localStorage save DISABLED for key: ${key}`);
     return;
   }
   
-  // Only allow specific keys like 'participantInfo', 'participantState', 'flowComplete', etc.
   const allowedKeys = ['participantInfo', 'participantState', 'flowComplete', 'progress'];
   if (!allowedKeys.some(allowedKey => key.includes(allowedKey))) {
-    console.log(`🚫 [ParticipantStore] localStorage save BLOCKED for unauthorized key: ${key}`);
     return;
   }
 
@@ -148,11 +143,8 @@ const saveToLocalStorage = (key: string, data: unknown): void => {
   }
 };
 
-// Función para cargar manualmente desde localStorage
 const loadFromLocalStorage = (key: string): unknown => {
-  // ❌ COMPLETELY DISABLED - NO localStorage for responses or participant data
   if (key.includes('response') || key === 'participantResponses' || key.includes('expandedSteps')) {
-    console.log(`🚫 [ParticipantStore] localStorage load DISABLED for key: ${key}`);
     return null;
   }
 
@@ -181,7 +173,6 @@ const initialResponsesData: ResponsesData = {
 export const useParticipantStore = create(
   persist<ParticipantState>(
     (set, get) => ({
-      // Estado inicial
       researchId: null,
       token: null,
       participantId: null,
@@ -195,16 +186,13 @@ export const useParticipantStore = create(
       totalRelevantSteps: 0,
       responsesData: { ...initialResponsesData },
       
-      // Acciones básicas
       setResearchId: (id) => set({ researchId: id }),
       setToken: (token) => set({ token }),
       setParticipant: (participant) => {
-        console.log(`🔍 [ParticipantStore] setParticipant called with:`, participant);
         set({ 
           participantId: participant.id,
           error: null 
         });
-        console.log(`✅ [ParticipantStore] participantId set to:`, participant.id);
       },
       setError: (error) => set({ error }),
       setCurrentStep: (step) => set({ currentStep: step }),
@@ -215,20 +203,12 @@ export const useParticipantStore = create(
       setExpandedSteps: (steps) => {
         set({ 
           expandedSteps: steps,
-          // Si tenemos pasos válidos, el flujo ya no está cargando
           isFlowLoading: !(steps && steps.length > 0)
         });
-        
-        // ❌ DISABLED - NO localStorage for expandedSteps  
-        // saveToLocalStorage('expandedSteps', steps);
-        console.log('🚫 [ParticipantStore] Skipped expandedSteps save to localStorage');
       },
       
-      // Forzar guardado en localStorage - DISABLED responses to prevent API conflicts
       forceSaveToLocalStorage: () => {
         const state = get();
-        // ❌ DISABLED to prevent localStorage conflicts with API data
-        // saveToLocalStorage('participantResponses', state.responsesData);
         saveToLocalStorage('participantState', {
           currentStepIndex: state.currentStepIndex,
           maxVisitedIndex: state.maxVisitedIndex,
@@ -236,7 +216,6 @@ export const useParticipantStore = create(
           participantId: state.participantId,
           token: state.token
         });
-        console.log('🚫 [ParticipantStore] Skipped participantResponses save to prevent API conflicts');
       },
       
       // Set loaded responses from API and clean conflicting localStorage
@@ -257,14 +236,11 @@ export const useParticipantStore = create(
             all_steps: uniqueSteps,
           };
 
-          // 🧹 CLEAN CONFLICTING LOCALSTORAGE when API responses are loaded
           try {
-            console.log(`🧹 [ParticipantStore] Cleaning conflicting localStorage for ${loadedStepResponses.length} API responses`);
             loadedStepResponses.forEach((response) => {
               if (response.id) {
                 const localKey = `response_${response.id}`;
                 if (localStorage.getItem(localKey)) {
-                  console.log(`🧹 Removing localStorage key: ${localKey}`);
                   localStorage.removeItem(localKey);
                 }
               }
@@ -311,18 +287,10 @@ export const useParticipantStore = create(
             currentStep: ParticipantFlowStep.LOADING_SESSION,
             responsesData: freshResponsesData
           });
-          
-          // Guardar en localStorage datos limpios - DISABLED responses to prevent conflicts
-          // ❌ DISABLED to prevent localStorage conflicts with API data
-          // saveToLocalStorage('participantResponses', freshResponsesData);
           saveToLocalStorage('participantInfo', {
             id: participant.id,
             researchId: researchId
           });
-          console.log('🚫 [ParticipantStore] Skipped participantResponses save in handleLoginSuccess');
-          
-          // Aquí se debería llamar a la función para construir los pasos expandidos
-          // Esto se implementará en el React Component que use este store
         } else {
           set({
             error: "Error interno post-login: Falta token o ID.",
@@ -341,10 +309,6 @@ export const useParticipantStore = create(
           if (storedInfo && 
               (storedInfo.researchId !== currentResearchId || 
                storedInfo.id !== currentParticipantId)) {
-            
-            console.log('[ParticipantStore] Limpiando datos de participante anterior');
-            
-            // Limpiar localStorage específica del participante anterior
             localStorage.removeItem('participantResponses');
             localStorage.removeItem('expandedSteps');
             localStorage.removeItem('progress');
@@ -507,11 +471,6 @@ export const useParticipantStore = create(
             updatedData.modules.all_steps.push(moduleResponse);
           }
           
-          // ❌ DISABLED localStorage saving to prevent conflicts with API data
-          // saveToLocalStorage('participantResponses', updatedData);
-          // saveToLocalStorage(`response_${id}`, moduleResponse);
-          console.log('🚫 [ParticipantStore] Skipped localStorage save to prevent API conflicts');
-          
           return { responsesData: updatedData };
         });
         
@@ -525,11 +484,6 @@ export const useParticipantStore = create(
               ...(typeof targetStep.config === 'object' && targetStep.config !== null ? targetStep.config : {}),
               savedResponses: answer
             };
-            
-            // Guardar pasos actualizados
-            // ❌ DISABLED - NO localStorage for expandedSteps  
-            // saveToLocalStorage('expandedSteps', newSteps);
-            console.log('🚫 [ParticipantStore] Skipped expandedSteps save to localStorage');
           }
           
           return { expandedSteps: newSteps };
@@ -792,7 +746,6 @@ export const useParticipantStore = create(
       // Obtener JSON de respuestas - ONLY use API data, ignore localStorage
       getResponsesJson: () => {
         const current = get().responsesData;
-        console.log('🔍 [ParticipantStore] getResponsesJson - ONLY using API data, ignoring localStorage');
         return JSON.stringify(current, null, 2);
       },
       
@@ -876,10 +829,7 @@ export const useParticipantStore = create(
           researchId: state.researchId,
           participantId: state.participantId,
           maxVisitedIndex: state.maxVisitedIndex,
-          // ❌ REMOVED - NO persisting responsesData in localStorage anymore!
-          // responsesData: state.responsesData
         };
-        console.log('🚫 [ParticipantStore] Zustand partialize - Skipping responsesData persistence');
         return persistedState as unknown as ParticipantState;
       },
       version: 1,
@@ -890,10 +840,6 @@ export const useParticipantStore = create(
           }
           
           if (restoredState) {
-            console.log('🔍 [ParticipantStore] Zustand rehydrated - ignoring localStorage responses, will use API data only');
-            // ❌ REMOVED localStorage loading - will only use API responses loaded via setLoadedResponses
-            
-            // Clean any conflicting localStorage when store rehydrates
             try {
               const keysToClean = [];
               for (let i = 0; i < localStorage.length; i++) {
@@ -908,7 +854,6 @@ export const useParticipantStore = create(
               
               keysToClean.forEach(key => {
                 localStorage.removeItem(key);
-                console.log(`🧹 [ParticipantStore] Cleaned conflicting localStorage: ${key}`);
               });
             } catch (cleanupError) {
               console.error('[ParticipantStore] Error cleaning localStorage during rehydrate:', cleanupError);
