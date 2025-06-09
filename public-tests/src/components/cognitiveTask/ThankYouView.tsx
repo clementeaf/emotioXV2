@@ -1,11 +1,5 @@
 import React from 'react';
-
-interface ThankYouViewProps {
-  onComplete?: () => void;
-  title?: string;
-  message?: string;
-  imageSrc?: string;
-}
+import { ThankYouViewProps } from '../../types/cognitive-task.types';
 
 /**
  * Componente que muestra una pantalla de agradecimiento al finalizar las tareas cognitivas

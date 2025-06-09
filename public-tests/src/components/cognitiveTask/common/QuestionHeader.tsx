@@ -1,10 +1,5 @@
 import React from 'react';
-
-interface QuestionHeaderProps {
-    title?: string;
-    description?: string;
-    required?: boolean;
-}
+import { QuestionHeaderProps } from '../../../types/cognitive-task.types';
 
 const QuestionHeader: React.FC<QuestionHeaderProps> = ({ title, description, required }) => {
     // Si no hay título ni descripción, mostrar un texto por defecto

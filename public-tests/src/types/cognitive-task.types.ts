@@ -156,9 +156,10 @@ export interface CognitiveTaskViewProps {
 
 // Props para ThankYouView
 export interface ThankYouViewProps {
-  onComplete: () => void;
+  onComplete?: () => void;
   title?: string;
   message?: string;
+  imageSrc?: string;
 }
 
 // Props para TaskProgressBar
@@ -219,6 +220,13 @@ export interface CognitiveQuestionRendererProps {
   question: CognitiveQuestion;
   answer: unknown;
   onChange: (questionId: string, value: unknown) => void;
+}
+
+export interface CognitiveNavigationFlowStepProps {
+  onContinue: (responseData?: unknown) => void;
+  config?: {
+    questions: any[]; // CognitiveQuestion desde shared interfaces
+  };
 }
 
 export interface InstructionsTaskProps {

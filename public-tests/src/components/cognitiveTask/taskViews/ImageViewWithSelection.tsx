@@ -1,17 +1,12 @@
 import React from 'react';
+import { ChoiceOption } from '../../../types/common.types';
 
-// Interfaz para las opciones (igual que en otros componentes)
-interface ChoiceOption {
-  id: string;
-  label: string;
-}
-
-interface ImageViewWithSelectionProps {
-  imageType: 'desktop' | 'mobile'; // Para diferenciar el placeholder
+// Interface específica para este componente
+interface ImageViewWithSelectionComponentProps {
+  imageType: 'desktop' | 'mobile';
   options: ChoiceOption[];
   selectedOption: string | null;
   onOptionSelect: (optionId: string) => void;
-  // Podríamos añadir más props para el texto del placeholder si fuera necesario
 }
 
 // Componente interno para el placeholder de la imagen
@@ -44,7 +39,7 @@ const ImagePlaceholder: React.FC<{ type: 'desktop' | 'mobile' }> = ({ type }) =>
   );
 };
 
-const ImageViewWithSelection: React.FC<ImageViewWithSelectionProps> = ({
+const ImageViewWithSelection: React.FC<ImageViewWithSelectionComponentProps> = ({
   imageType,
   options,
   selectedOption,
@@ -56,7 +51,7 @@ const ImageViewWithSelection: React.FC<ImageViewWithSelectionProps> = ({
       
       {/* Grupo de Radio Buttons (estilo específico de TransactionAuthTask) */}
       <div className="w-full max-w-lg space-y-3 mb-6">
-        {options.map((option) => (
+        {options.map((option: ChoiceOption) => (
           <label 
             key={option.id}
             className={`flex items-center p-3 rounded-lg border ${

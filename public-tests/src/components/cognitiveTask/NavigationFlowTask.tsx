@@ -1,12 +1,6 @@
 import React, { useState } from 'react';
 import { Question as CognitiveQuestion } from '../../../../shared/interfaces/cognitive-task.interface';
-
-interface NavigationFlowTaskProps {
-  onContinue: (responseData?: unknown) => void;
-  config?: {
-    questions: CognitiveQuestion[];
-  };
-}
+import { NavigationFlowTaskProps } from '../../types/cognitive-task.types';
 
 // Función para convertir hitZones del backend a formato de coordenadas
 const convertHitZonesToCoordinates = (hitZones: any[]) => {

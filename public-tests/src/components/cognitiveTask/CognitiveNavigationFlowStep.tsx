@@ -1,12 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Question as CognitiveQuestion } from '../../../../shared/interfaces/cognitive-task.interface';
-
-interface CognitiveNavigationFlowStepProps {
-  onContinue: (responseData?: unknown) => void;
-  config?: {
-    questions: CognitiveQuestion[];
-  };
-}
+import { CognitiveNavigationFlowStepProps } from '../../types/cognitive-task.types';
 
 // Función para convertir hitZones del backend a formato de coordenadas
 const convertHitZonesToCoordinates = (hitZones: any[]) => {
@@ -96,7 +90,7 @@ const CognitiveNavigationFlowStep: React.FC<CognitiveNavigationFlowStepProps> = 
 
         {/* Grid de opciones */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-          {images.slice(0, 2).map((image, index) => {
+          {images.slice(0, 2).map((image: any, index: number) => {
             const isSelected = selectedImage === index;
             const availableHitzones = image.hitZones ? convertHitZonesToCoordinates(image.hitZones) : [];
             

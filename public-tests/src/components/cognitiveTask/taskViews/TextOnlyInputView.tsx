@@ -1,7 +1,8 @@
 import React from 'react';
 import FormField from '../../common/FormField';
 
-interface TextOnlyInputViewProps {
+// Interface específica para este componente
+interface TextOnlyInputViewComponentProps {
   description: string; // El texto descriptivo/instrucción
   placeholder: string;
   value: string; // Añadir value y onChange para que el padre gestione el estado
@@ -9,7 +10,7 @@ interface TextOnlyInputViewProps {
   // error?: string | null; // Opcional: para mostrar errores
 }
 
-const TextOnlyInputView: React.FC<TextOnlyInputViewProps> = ({
+const TextOnlyInputView: React.FC<TextOnlyInputViewComponentProps> = ({
   description,
   placeholder,
   value,

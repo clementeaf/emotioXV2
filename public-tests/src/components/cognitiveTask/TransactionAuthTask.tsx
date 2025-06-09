@@ -3,19 +3,15 @@ import ImageViewWithSelection from './taskViews/ImageViewWithSelection';
 import TextOnlyInputView from './taskViews/TextOnlyInputView';
 import LongTextInputView from './taskViews/LongTextInputView';
 import TaskFooter from './common/TaskFooter';
+import { ChoiceOption } from '../../types/common.types';
 
 // Tipo para los formatos de visualización
 type ViewFormat = 'text-only' | 'desktop-image' | 'mobile-image' | 'long-text';
 
-// Interfaz para las opciones
-interface ChoiceOption {
-  id: string;
-  label: string;
-}
-
-interface TransactionAuthTaskProps {
+// Interface específica para este componente
+interface TransactionAuthTaskComponentProps {
   onContinue: () => void;
-  viewFormat?: ViewFormat; // Formato opcional, por defecto será 'desktop-image'
+  viewFormat?: ViewFormat;
 }
 
 // Opciones codificadas (se mantienen aquí o podrían venir de props/config)
@@ -30,7 +26,7 @@ const TEXT_ONLY_DESCRIPTION = "No problem. Just let us know your email address a
 const LONG_TEXT_DESCRIPTION = TEXT_ONLY_DESCRIPTION; // Usan el mismo texto
 
 // Componente para la tarea de identificación de interfaz para autorizar transacciones
-const TransactionAuthTask: React.FC<TransactionAuthTaskProps> = ({
+const TransactionAuthTask: React.FC<TransactionAuthTaskComponentProps> = ({
   onContinue,
   viewFormat = 'desktop-image',
 }) => {

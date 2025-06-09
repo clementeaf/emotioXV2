@@ -2,16 +2,16 @@ import React from 'react';
 import TextAreaField from '../../common/TextAreaField';
 import CharacterCounter from '../../common/CharacterCounter';
 
-interface LongTextInputViewProps {
+// Interface específica para este componente
+interface LongTextInputViewComponentProps {
   description: string;
   placeholder: string;
   value: string;
   onChange: (value: string) => void;
   maxLength?: number;
-  // error?: string | null;
 }
 
-const LongTextInputView: React.FC<LongTextInputViewProps> = ({
+const LongTextInputView: React.FC<LongTextInputViewComponentProps> = ({
   description,
   placeholder,
   value,
