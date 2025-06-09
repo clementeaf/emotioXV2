@@ -54,7 +54,8 @@ export class CognitiveTaskFixedAPI extends ApiClient {
           console.warn(`[CognitiveTaskFixedAPI] Advertencia: Resultado con estructura incompleta`);
         }
         
-        return result;
+        // Procesar datos del backend al frontend (mapear hitZones a hitzones)
+        return result ? this.processDataFromBackend(result) : null;
       } catch (apiError) {
         // Manejar error 404 (no encontrado) de manera silenciosa
         if (apiError instanceof ApiError && apiError.statusCode === 404) {
@@ -151,54 +152,128 @@ export class CognitiveTaskFixedAPI extends ApiClient {
   }
   
   /**
-   * Sanitiza los datos para enviar al backend, eliminando campos problemáticos
+   * Mapea las estructuras de hitzones del frontend al formato esperado por el backend
+   */
+  private mapHitzoneAreasToHitZones(files: any[]): any[] {
+    return files.map(file => {
+      if (!file.hitzones || !Array.isArray(file.hitzones)) {
+        return file;
+      }
+
+      // Mapear HitzoneArea[] a HitZone[]
+      const hitZones = file.hitzones.map((area: any) => ({
+        id: area.id,
+        name: `Hitzone-${area.id}`, // Generar nombre por defecto
+        region: {
+          x: area.x,
+          y: area.y,
+          width: area.width,
+          height: area.height
+        },
+        fileId: file.id
+      }));
+
+      return {
+        ...file,
+        hitZones, // Formato backend
+        hitzones: undefined // Remover formato frontend
+      };
+    });
+  }
+
+  /**
+   * Sanitiza los datos antes de enviarlos al backend
+   * Incluye el mapeo de hitzones
    */
   private sanitizeDataForSave(data: CognitiveTaskFormData): CognitiveTaskFormData {
-    // Crear una copia profunda para no modificar los datos originales
-    const sanitized = JSON.parse(JSON.stringify(data)) as CognitiveTaskFormData;
-    
-    // Sanitizar las preguntas
-    if (sanitized.questions) {
+    const sanitized = { ...data };
+
+    if (sanitized.questions && Array.isArray(sanitized.questions)) {
       sanitized.questions = sanitized.questions.map(question => {
-        // Sanitizar archivos si existen
         if (question.files && Array.isArray(question.files)) {
-          question.files = question.files
-            // Filtrar archivos nulos o undefined
-            .filter(file => file && typeof file === 'object')
-            // Asegurarse de que cada archivo tiene los campos requeridos
-            .map(file => {
-              // Campos esenciales para un archivo
-              const essentialFields = ['id', 'name', 'size', 'type', 's3Key'];
-              
-              // Verificar que todos los campos esenciales existen
-              const hasMissingFields = essentialFields.some(field => {
-                return file[field as keyof typeof file] === undefined;
-              });
-              
-              if (hasMissingFields) {
-                console.warn(`[CognitiveTaskFixedAPI] Archivo con campos faltantes omitido:`, 
-                  JSON.stringify(file));
-                return null;
-              }
-              
-              // Crear un objeto limpio solo con los campos necesarios
-              return {
-                id: file.id,
-                name: file.name,
-                size: file.size,
-                type: file.type,
-                s3Key: file.s3Key,
-                url: file.url // Opcional pero útil
-              };
-            })
-            // Filtrar cualquier archivo que haya sido convertido a null en la etapa anterior
-            .filter(file => file !== null);
+          // Mapear hitzones y filtrar archivos válidos
+          const mappedFiles = this.mapHitzoneAreasToHitZones(question.files);
+          const validFiles = mappedFiles.filter(file => 
+            file && 
+            file.status !== 'error' && 
+            file.status !== 'pending-delete' &&
+            file.id && 
+            file.name
+          );
+
+          return {
+            ...question,
+            files: validFiles
+          };
         }
         return question;
       });
     }
-    
+
     return sanitized;
+  }
+  
+  /**
+   * Mapea las estructuras de hitzones del backend al formato del frontend
+   */
+  private mapHitZonesToHitzoneAreas(files: any[]): any[] {
+    return files.map(file => {
+      if (!file.hitZones || !Array.isArray(file.hitZones)) {
+        return file;
+      }
+
+      // Mapear HitZone[] a HitzoneArea[]
+      const hitzones = file.hitZones.map((zone: any) => ({
+        id: zone.id,
+        x: zone.region.x,
+        y: zone.region.y,
+        width: zone.region.width,
+        height: zone.region.height
+      }));
+
+      return {
+        ...file,
+        hitzones, // Formato frontend
+        hitZones: undefined // Remover formato backend
+      };
+    });
+  }
+
+  /**
+   * Procesa los datos recibidos del backend para el frontend
+   */
+  private processDataFromBackend(data: CognitiveTaskFormData): CognitiveTaskFormData {
+    const processed = { ...data };
+
+    if (processed.questions && Array.isArray(processed.questions)) {
+      processed.questions = processed.questions.map(question => {
+        if (question.files && Array.isArray(question.files)) {
+          // Mapear hitZones del backend a hitzones del frontend
+          const mappedFiles = this.mapHitZonesToHitzoneAreas(question.files);
+
+          return {
+            ...question,
+            files: mappedFiles
+          };
+        }
+        return question;
+      });
+    }
+
+    return processed;
+  }
+
+  /**
+   * Obtiene una tarea cognitiva por ID de investigación
+   * @param researchId ID de la investigación
+   */
+  async getCognitiveTask(researchId: string): Promise<CognitiveTaskFormData> {
+    console.log(`[CognitiveTaskFixedAPI] Obteniendo tarea cognitiva para researchId: ${researchId}`);
+    const path = `/research/${researchId}/cognitive-task`;
+    const data = await super.get(path) as CognitiveTaskFormData;
+    
+    // Procesar datos del backend al frontend
+    return this.processDataFromBackend(data);
   }
   
   // Mantener métodos relacionados con S3 si son necesarios y específicos

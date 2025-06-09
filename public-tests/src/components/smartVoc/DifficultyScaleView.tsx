@@ -2,7 +2,7 @@ import React from 'react';
 import { SmartVOCQuestion, BaseScaleConfig } from '../../types/smart-voc.interface';
 import { 
   useStandardizedForm, 
-  valueExtractors, 
+  // valueExtractors, 
   validationRules, 
   StandardizedFormProps 
 } from '../../hooks/useStandardizedForm';
