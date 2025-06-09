@@ -1,14 +1,5 @@
 import React from 'react';
-
-interface TaskProgressBarProps {
-  currentStep: number; // Índice base 0 del paso actual
-  totalSteps: number; // Número total de pasos
-  showProgressText?: boolean; // Mostrar texto "Tarea X de Y" y "Progreso Z%"
-  className?: string; // Clases adicionales para el contenedor principal
-  progressTextClassName?: string; // Clases para el texto de progreso
-  progressBarContainerClassName?: string; // Clases para el contenedor de la barra
-  progressBarClassName?: string; // Clases para la barra de progreso en sí
-}
+import { TaskProgressBarProps } from '../../../types/cognitive-task.types';
 
 const TaskProgressBar: React.FC<TaskProgressBarProps> = ({
   currentStep,

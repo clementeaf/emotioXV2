@@ -165,6 +165,11 @@ export interface ThankYouViewProps {
 export interface TaskProgressBarProps {
   currentStep: number;
   totalSteps: number;
+  showProgressText?: boolean;
+  className?: string;
+  progressTextClassName?: string;
+  progressBarContainerClassName?: string;
+  progressBarClassName?: string;
 }
 
 // Props para QuestionHeader
@@ -189,8 +194,7 @@ export interface UseCognitiveTaskProps {
 
 // Additional Cognitive Task Components (non-conflicting)
 export interface GenderSelectionTaskProps {
-  onComplete: (response: string) => void;
-  disabled?: boolean;
+  onContinue: () => void;
 }
 
 export interface SocialMediaTaskProps {
@@ -203,10 +207,7 @@ export interface CitySelectionTaskProps {
 }
 
 export interface InstructionsTaskProps {
-  title: string;
-  description: string;
-  onNext: () => void;
-  showNextButton?: boolean;
+  onContinue: () => void;
 }
 
 export interface PasswordResetTaskProps {
@@ -254,16 +255,10 @@ export interface ImageViewWithSelectionProps {
 
 // Common Task Components (non-conflicting)
 export interface TaskFooterProps {
-  onNext?: () => void;
-  onPrevious?: () => void;
-  onSkip?: () => void;
-  showNext?: boolean;
-  showPrevious?: boolean;
-  showSkip?: boolean;
-  nextDisabled?: boolean;
-  nextText?: string;
-  previousText?: string;
-  skipText?: string;
+  className?: string;
+  privacyPolicyUrl?: string;
+  termsUrl?: string;
+  caPrivacyNoticeUrl?: string;
 }
 
 export interface ScaleButtonGroupProps {

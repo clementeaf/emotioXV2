@@ -1,6 +1,4 @@
-interface InstructionsTaskProps {
-  onContinue: () => void;
-}
+import { InstructionsTaskProps } from '../../types/cognitive-task.types';
 
 // Componente para mostrar instrucciones iniciales en la tarea cognitiva
 const InstructionsTask = ({ onContinue }: InstructionsTaskProps) => {

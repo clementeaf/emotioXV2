@@ -1,11 +1,5 @@
 import React from 'react';
-
-interface TaskFooterProps {
-  className?: string;
-  privacyPolicyUrl?: string;
-  termsUrl?: string;
-  caPrivacyNoticeUrl?: string;
-}
+import { TaskFooterProps } from '../../../types/cognitive-task.types';
 
 const TaskFooter: React.FC<TaskFooterProps> = ({
   className = 'w-full text-xs text-neutral-500 mt-8 flex justify-between', // Clases originales

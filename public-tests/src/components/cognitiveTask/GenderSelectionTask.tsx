@@ -1,10 +1,7 @@
 import { useState } from 'react';
+import { GenderSelectionTaskProps } from '../../types/cognitive-task.types';
 
 type Gender = 'Masculino' | 'Femenino' | 'Prefiero no decirlo';
-
-interface GenderSelectionTaskProps {
-  onContinue: () => void;
-}
 
 // Componente para la tarea de selección de género
 const GenderSelectionTask = ({ onContinue }: GenderSelectionTaskProps) => {

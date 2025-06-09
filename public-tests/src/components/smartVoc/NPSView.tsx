@@ -1,17 +1,7 @@
 import React from 'react';
 import { useStandardizedForm, valueExtractors, StandardizedFormProps } from '../../hooks/useStandardizedForm';
 import { getStandardButtonText, getButtonDisabledState, formatQuestionText, getErrorDisplayProps, formSpacing } from '../../utils/formHelpers';
-
-// Props específicas para este componente
-interface NPSViewProps extends StandardizedFormProps {
-  questionText: string;
-  instructions?: string;
-  companyName?: string;
-  leftLabel?: string; // Etiqueta izquierda (NPS)
-  rightLabel?: string; // Etiqueta derecha (NPS)
-  onNext: (selectedValue: number) => void; // Callback con el valor 0-10
-  config?: unknown; // Configuración adicional si necesaria
-}
+import { NPSViewProps } from '../../types/smart-voc.types';
 
 const NPSView: React.FC<NPSViewProps> = ({
   questionText,

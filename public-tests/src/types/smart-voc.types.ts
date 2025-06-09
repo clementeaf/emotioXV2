@@ -59,15 +59,14 @@ export interface SmartVOCHandlerProps {
   onError: (error: string) => void;
 }
 
-export interface NPSViewProps {
-  question: SmartVOCQuestion;
-  value?: number;
-  onChange: (questionId: string, value: number) => void;
-  onNext?: () => void;
-  onPrev?: () => void;
-  isFirst?: boolean;
-  isLast?: boolean;
-  disabled?: boolean;
+export interface NPSViewProps extends StandardizedFormProps {
+  questionText: string;
+  instructions?: string;
+  companyName?: string;
+  leftLabel?: string;
+  rightLabel?: string;
+  onNext: (selectedValue: number) => void;
+  config?: unknown;
 }
 
 export interface SmartVocFeedbackQuestionProps {
