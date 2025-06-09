@@ -1,21 +1,5 @@
 import React from 'react';
-
-interface ChoiceOption {
-  id: string;
-  label: string;
-}
-
-interface RadioButtonGroupProps {
-  name: string; // Crucial para agrupar los radio buttons
-  options: ChoiceOption[];
-  selectedValue: string | undefined; // El ID de la opción actualmente seleccionada
-  onChange: (selectedId: string) => void;
-  disabled?: boolean;
-  className?: string; // Estilos para el contenedor fieldset
-  optionClassName?: string; // Estilos para cada contenedor de opción (div)
-  inputClassName?: string; // Estilos para el input radio
-  labelClassName?: string; // Estilos para la etiqueta label
-}
+import { ChoiceOption, RadioButtonGroupProps } from '../../types/common.types';
 
 const RadioButtonGroup: React.FC<RadioButtonGroupProps> = ({
   name,

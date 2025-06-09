@@ -80,16 +80,12 @@ export interface MappedStepComponentProps {
 
 // Tipos para preguntas específicas del flujo
 export interface MultipleChoiceQuestionProps {
-  id: string;
-  title?: string;
-  description?: string;
-  choices: Array<{ id: string; label: string; }>;
-  value?: string[];
-  onChange: (id: string, value: string[]) => void;
-  minSelections?: number;
-  maxSelections?: number;
-  required?: boolean;
-  error?: string;
+  stepConfig?: unknown;
+  stepId?: string;
+  stepName?: string;
+  stepType: string;
+  onStepComplete: (answer: unknown) => void;
+  isMock: boolean;
 }
 
 export interface SingleChoiceQuestionProps {
@@ -105,16 +101,12 @@ export interface SingleChoiceQuestionProps {
 }
 
 export interface LongTextQuestionProps {
-  id: string;
-  title?: string;
-  description?: string;
-  value?: string;
-  onChange: (id: string, value: string) => void;
-  placeholder?: string;
-  minLength?: number;
-  maxLength?: number;
-  required?: boolean;
-  error?: string;
+  config: unknown;
+  stepName?: string;
+  stepId?: string;
+  stepType: string;
+  onStepComplete: (answer: unknown) => void;
+  isMock: boolean;
 }
 
 export interface ShortTextQuestionProps {
@@ -240,7 +232,7 @@ export interface ExtendedEyeTrackingData {
 
 // Respuestas del visualizador
 export interface ResponsesViewerProps {
-  responses: ResponsesData;
+  data: ResponsesData;
   onClose?: () => void;
 }
 

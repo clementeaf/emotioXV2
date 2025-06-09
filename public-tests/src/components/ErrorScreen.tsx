@@ -1,8 +1,5 @@
 import React from 'react';
-
-interface ErrorScreenProps {
-  message: string;
-}
+import { ErrorScreenProps } from '../types/common.types';
 
 const ErrorScreen: React.FC<ErrorScreenProps> = ({ message }) => {
   return (

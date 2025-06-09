@@ -1,8 +1,5 @@
 import React from 'react';
-
-interface LoadingIndicatorProps {
-  message?: string;
-}
+import { LoadingIndicatorProps } from '../../types/common.types';
 
 const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({ message = 'Cargando...' }) => {
   return (

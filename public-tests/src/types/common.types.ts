@@ -33,16 +33,17 @@ export interface ThankYouScreenProps {
 // Formularios y campos
 export interface FormFieldProps {
   id: string;
-  name: string;
   label: string;
-  type?: 'text' | 'email' | 'password' | 'tel' | 'url' | 'number';
+  name: string;
+  type?: string;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   placeholder?: string;
-  required?: boolean;
+  error?: string | null;
   disabled?: boolean;
-  error?: string;
+  required?: boolean;
   className?: string;
+  inputClassName?: string;
 }
 
 export interface TextAreaFieldProps {
@@ -149,22 +150,24 @@ export interface EyeTrackingTaskProps {
 
 // Component Props Interfaces
 export interface WelcomeScreenProps {
-  onStart: () => void;
-  participantId?: string;
+  title: string;
+  message: string;
+  onContinue: () => void;
 }
 
 export interface ErrorDisplayProps {
-  error: string;
+  title?: string;
+  message: string | null;
 }
 
 export interface LoadingIndicatorProps {
-  size?: 'small' | 'medium' | 'large';
+  message?: string;
 }
 
 // Choice/Option Interfaces - Updated version
 export interface ChoiceOption {
-  id?: string;
-  value: string;
+  id: string;
+  value?: string;
   label: string;
   disabled?: boolean;
 }
@@ -176,10 +179,15 @@ export interface BasicEmoji {
 
 // Radio Button Group
 export interface RadioButtonGroupProps {
-  options: ChoiceOption[];
-  selectedValue?: string;
-  onChange: (value: string) => void;
   name: string;
+  options: ChoiceOption[];
+  selectedValue: string | undefined;
+  onChange: (selectedId: string) => void;
+  disabled?: boolean;
+  className?: string;
+  optionClassName?: string;
+  inputClassName?: string;
+  labelClassName?: string;
 }
 
 // API and Response Interfaces

@@ -2,20 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { ApiClient, APIStatus } from '../lib/api'; // Ajusta la ruta si es necesario
 import { useParticipantStore } from '../stores/participantStore'; // Para obtener IDs si no se pasan
 
-// Define una interfaz para el valor de retorno del hook
-interface UseModuleResponsesReturn {
-  data: unknown | null; // Tipo de 'data.data' de apiClient.getModuleResponses
-  documentId: string | null; // El ID del documento de respuestas general
-  isLoading: boolean;
-  error: string | null;
-  fetchResponses: (researchId: string, participantId: string) => void; // Función para re-disparar la carga
-}
-
-interface UseModuleResponsesProps {
-  researchId?: string;
-  participantId?: string;
-  autoFetch?: boolean; // Para controlar si se llama automáticamente al montar/cambiar IDs
-}
+import { UseModuleResponsesReturn, UseModuleResponsesProps } from '../types/hooks.types';
 
 export const useModuleResponses = (props?: UseModuleResponsesProps): UseModuleResponsesReturn => {
   const { researchId: initialResearchId, participantId: initialParticipantId, autoFetch = true } = props || {};

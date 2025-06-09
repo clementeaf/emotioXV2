@@ -1,10 +1,5 @@
 import React from 'react';
-
-interface WelcomeScreenProps {
-  title: string;
-  message: string;
-  onContinue: () => void;
-}
+import { WelcomeScreenProps } from '../types/common.types';
 
 const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ title, message, onContinue }) => {
   return (

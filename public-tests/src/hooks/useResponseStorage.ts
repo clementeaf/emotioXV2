@@ -1,19 +1,5 @@
 import { useCallback } from 'react';
-
-interface ResponseData {
-  stepId: string;
-  stepType: string;
-  answer: unknown;
-  timestamp: number;
-  partial?: boolean;
-}
-
-interface UseResponseStorageReturn {
-  saveResponse: (stepId: string, stepType: string, answer: unknown, isPartial?: boolean) => void;
-  loadResponse: (stepId: string) => ResponseData | null;
-  clearResponse: (stepId: string) => void;
-  hasResponse: (stepId: string) => boolean;
-}
+import { ResponseData, UseResponseStorageReturn } from '../types/hooks.types';
 
 /**
  * Hook unificado para manejo de respuestas en localStorage

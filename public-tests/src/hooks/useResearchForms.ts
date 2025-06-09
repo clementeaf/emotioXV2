@@ -4,12 +4,7 @@ import { APIResponse } from '../lib/types';
 
 const apiClient = new ApiClient();
 
-interface RawResearchModule {
-  id?: string;
-  sk: string;
-  demographicQuestions?: unknown[];
-  [key: string]: unknown;
-}
+import { RawResearchModule } from '../types/hooks.types';
 
 export interface ProcessedResearchFormConfig {
   id: string;        

@@ -1,7 +1,8 @@
 import React from 'react';
-import { ProgressBarProps } from '../types';
+import { ProgressBarProps } from '../types/common.types';
 
 // Props extendidas para este componente específico
+
 interface ExtendedProgressBarProps extends Omit<ProgressBarProps, 'currentStep' | 'totalSteps'> {
   current: number;
   total: number;

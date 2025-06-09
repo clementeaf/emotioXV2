@@ -1,10 +1,6 @@
 import React, { useState } from 'react';
 import { ResponsesData } from '../../hooks/types';
-
-interface ResponsesViewerProps {
-  data: ResponsesData;
-  onClose?: () => void;
-}
+import { ResponsesViewerProps } from '../../types/flow.types';
 
 export const ResponsesViewer: React.FC<ResponsesViewerProps> = ({ data, onClose }) => {
   const [copied, setCopied] = useState(false);

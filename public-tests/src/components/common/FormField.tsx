@@ -1,19 +1,5 @@
 import React from 'react';
-
-interface FormFieldProps {
-    id: string;
-    label: string;
-    name: string;
-    type?: string; // default to 'text'
-    value: string;
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    placeholder?: string;
-    error?: string | null; // Mensaje de error para mostrar
-    disabled?: boolean;
-    required?: boolean; // <-- Añadir prop requerida
-    className?: string; // Para estilos adicionales del contenedor
-    inputClassName?: string; // Para estilos adicionales del input
-}
+import { FormFieldProps } from '../../types/common.types';
 
 const FormField: React.FC<FormFieldProps> = ({
     id,

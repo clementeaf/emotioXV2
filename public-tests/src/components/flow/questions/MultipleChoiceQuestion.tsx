@@ -4,14 +4,7 @@ import { useResponseAPI } from "../../../hooks/useResponseAPI";
 import { ApiClient, APIStatus } from "../../../lib/api";
 import { getStandardButtonText } from "../../../utils/formHelpers";
 
-interface MultipleChoiceQuestionProps {
-    stepConfig?: unknown;
-    stepId?: string;
-    stepName?: string;
-    stepType: string;
-    onStepComplete: (answer: unknown) => void;
-    isMock: boolean;
-}
+import { MultipleChoiceQuestionProps } from '../../../types/flow.types';
 
 export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
     stepConfig: initialConfig,

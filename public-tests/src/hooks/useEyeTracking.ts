@@ -1,13 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiClient, APIStatus } from '../lib/api';
 import { EyeTrackingFormData } from '../lib/types';
-
-interface UseEyeTrackingResult {
-  data: EyeTrackingFormData | null;
-  isLoading: boolean;
-  error: string | null;
-  refresh: () => Promise<void>;
-}
+import { UseEyeTrackingResult } from '../types/hooks.types';
 
 /**
  * Hook para gestionar los datos de Eye Tracking

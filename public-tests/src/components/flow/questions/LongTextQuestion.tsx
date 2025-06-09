@@ -1,14 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getStandardButtonText } from '../../../utils/formHelpers';
-
-interface LongTextQuestionProps {
-    config: unknown;
-    stepName?: string;
-    stepId?: string;
-    stepType: string;
-    onStepComplete: (answer: unknown) => void;
-    isMock: boolean;
-}
+import { LongTextQuestionProps } from '../../../types/flow.types';
 
 export const LongTextQuestion: React.FC<LongTextQuestionProps> = ({ 
     config, 

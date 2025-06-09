@@ -67,32 +67,33 @@ export interface UseResponseManagerReturn {
 
 // Tipos para hooks de almacenamiento
 export interface ResponseData {
-  id: string;
+  stepId: string;
+  stepType: string;
   answer: unknown;
   timestamp: number;
-  stepType?: string;
+  partial?: boolean;
 }
 
 export interface UseResponseStorageReturn {
-  saveResponse: (stepId: string, data: ResponseData) => void;
+  saveResponse: (stepId: string, stepType: string, answer: unknown, isPartial?: boolean) => void;
   loadResponse: (stepId: string) => ResponseData | null;
   clearResponse: (stepId: string) => void;
-  clearAllResponses: () => void;
-  getAllResponses: () => Record<string, ResponseData>;
+  hasResponse: (stepId: string) => boolean;
 }
 
 // Tipos para hooks de módulos
 export interface UseModuleResponsesProps {
-  researchId: string;
-  participantId: string;
-  moduleId: string;
+  researchId?: string;
+  participantId?: string;
+  autoFetch?: boolean;
 }
 
 export interface UseModuleResponsesReturn {
-  responses: Record<string, any>;
-  addResponse: (moduleType: string, response: any) => void;
-  clearResponses: () => void;
-  getResponse: (moduleType: string) => any;
+  data: unknown | null;
+  documentId: string | null;
+  isLoading: boolean;
+  error: string | null;
+  fetchResponses: (researchId: string, participantId: string) => void;
 }
 
 // Tipos para hooks de login de participante
@@ -156,20 +157,22 @@ export interface UseStandardizedFormReturn<T> extends StandardizedFormState<T>, 
 
 // Tipos para hooks de eye tracking
 export interface UseEyeTrackingResult {
-  isTracking: boolean;
-  startTracking: () => void;
-  stopTracking: () => void;
-  dataPoints: any[];
-  error?: string;
+  data: any | null;
+  isLoading: boolean;
+  error: string | null;
+  refresh: () => Promise<void>;
 }
 
 // Tipos para hooks de investigación
 export interface RawResearchModule {
-  id: string;
-  name: string;
-  type: string;
-  config: any;
-  order: number;
+  id?: string;
+  sk: string;
+  name?: string;
+  type?: string;
+  config?: any;
+  order?: number;
+  demographicQuestions?: unknown[];
+  [key: string]: unknown;
 }
 
 export interface ProcessedResearchFormConfig {

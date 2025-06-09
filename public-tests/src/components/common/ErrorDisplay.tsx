@@ -1,9 +1,5 @@
 import React from 'react';
-
-interface ErrorDisplayProps {
-  title?: string;
-  message: string | null; // Permitir null para evitar errores si no hay mensaje
-}
+import { ErrorDisplayProps } from '../../types/common.types';
 
 const ErrorDisplay: React.FC<ErrorDisplayProps> = ({ title = 'Ocurrió un error', message }) => {
   if (!message) {
