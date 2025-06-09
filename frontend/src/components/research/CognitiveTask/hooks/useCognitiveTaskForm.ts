@@ -17,6 +17,7 @@ import type { ErrorModalData } from '../types';
 import { useCognitiveTaskValidation } from './useCognitiveTaskValidation';
 import { useCognitiveTaskFileUpload } from './useCognitiveTaskFileUpload';
 import { useCognitiveTaskState } from './useCognitiveTaskState';
+import { filterValidQuestions, debugQuestionsToSend } from '../utils/validateRequiredFields';
 // import { toast } from 'react-hot-toast'; // Comentado para eliminar los toasts
 
 // Definición de QuestionType para evitar conflictos de importación
@@ -131,16 +132,11 @@ const QUESTION_TYPES = [
 
 // No usamos preguntas predeterminadas - el formulario empieza vacío
 
-// Función helper para filtrar preguntas que tienen título
+// Función helper para filtrar preguntas que tienen título (DEPRECATED)
+// @deprecated Use filterValidQuestions from utils instead
 const filterQuestionsWithTitle = (formData: CognitiveTaskFormData): CognitiveTaskFormData => {
-  const questionsWithTitle = formData.questions.filter(question => 
-    question.title && question.title.trim() !== ''
-  );
-  
-  return {
-    ...formData,
-    questions: questionsWithTitle
-  };
+  console.warn('[DEPRECATED] filterQuestionsWithTitle is deprecated. Use filterValidQuestions instead.');
+  return filterValidQuestions(formData);
 };
 
 // Helper para limpieza profunda de archivos en error
@@ -635,8 +631,8 @@ export const useCognitiveTaskForm = (
   const confirmAndSave = useCallback(() => {
       if (!formData) return; // Seguridad
       
-      // Filtrar solo las preguntas que tienen título
-      const filteredData = filterQuestionsWithTitle(formData);
+      // Filtrar solo las preguntas que tienen todos los campos requeridos
+      const filteredData = filterValidQuestions(formData);
       
       // Pasar una copia profunda para evitar mutaciones inesperadas si mutate tarda
       const dataToSave = JSON.parse(JSON.stringify(filteredData));
@@ -655,7 +651,7 @@ export const useCognitiveTaskForm = (
       if (process.env.NODE_ENV === 'development') {
         console.log("[ConfirmAndSave] Datos originales:", formData);
         console.log("[ConfirmAndSave] Datos filtrados:", filteredData);
-        console.log("[ConfirmAndSave] Preguntas sin título omitidas:", formData.questions.length - filteredData.questions.length);
+        debugQuestionsToSend(formData);
       }
       
       console.log("[ConfirmAndSave] Datos listos para mutación:", dataToSave);
