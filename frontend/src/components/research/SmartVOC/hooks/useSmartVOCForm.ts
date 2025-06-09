@@ -25,11 +25,11 @@ export const useSmartVOCForm = (researchId: string) => {
     researchId,
     questions: [
       {
-        id: 'csat-default',
+        id: 'csat-template',
         type: 'CSAT',
         title: 'Satisfacción del Cliente (CSAT)',
-        description: '¿Qué tan satisfecho estás con nuestro servicio?',
-        instructions: 'Selecciona una puntuación del 1 al 5',
+        description: '',
+        instructions: '',
         showConditionally: false,
         config: {
           type: 'stars',
@@ -37,11 +37,11 @@ export const useSmartVOCForm = (researchId: string) => {
         }
       },
       {
-        id: 'ces-default',
+        id: 'ces-template',
         type: 'CES',
         title: 'Esfuerzo del Cliente (CES)',
-        description: '¿Qué tan fácil fue resolver tu consulta?',
-        instructions: 'Evalúa el nivel de esfuerzo requerido',
+        description: '',
+        instructions: '',
         showConditionally: false,
         config: {
           type: 'scale',
@@ -49,16 +49,16 @@ export const useSmartVOCForm = (researchId: string) => {
             start: 1,
             end: 7
           },
-          startLabel: 'Muy difícil',
-          endLabel: 'Muy fácil'
+          startLabel: '',
+          endLabel: ''
         }
       },
       {
-        id: 'cv-default',
+        id: 'cv-template',
         type: 'CV',
         title: 'Valor Cognitivo (CV)',
-        description: '¿Qué tan valiosa fue la información proporcionada?',
-        instructions: 'Evalúa el valor de la información recibida',
+        description: '',
+        instructions: '',
         showConditionally: false,
         config: {
           type: 'scale',
@@ -66,16 +66,16 @@ export const useSmartVOCForm = (researchId: string) => {
             start: 1,
             end: 5
           },
-          startLabel: 'Sin valor',
-          endLabel: 'Muy valioso'
+          startLabel: '',
+          endLabel: ''
         }
       },
       {
-        id: 'nev-default',
+        id: 'nev-template',
         type: 'NEV',
         title: 'Valor Emocional Neto (NEV)',
-        description: '¿Cómo te sentiste durante la experiencia?',
-        instructions: 'Describe tu estado emocional',
+        description: '',
+        instructions: '',
         showConditionally: false,
         config: {
           type: 'emojis',
@@ -83,11 +83,11 @@ export const useSmartVOCForm = (researchId: string) => {
         }
       },
       {
-        id: 'nps-default',
+        id: 'nps-template',
         type: 'NPS',
         title: 'Net Promoter Score (NPS)',
-        description: '¿Qué tan probable es que recomiendes nuestro servicio?',
-        instructions: 'Puntuación del 0 al 10',
+        description: '',
+        instructions: '',
         showConditionally: false,
         config: {
           type: 'scale',
@@ -96,27 +96,27 @@ export const useSmartVOCForm = (researchId: string) => {
             end: 10
           },
           companyName: '',
-          startLabel: 'Nada probable',
-          endLabel: 'Muy probable'
+          startLabel: '',
+          endLabel: ''
         }
       },
       {
-        id: 'voc-default',
+        id: 'voc-template',
         type: 'VOC',
         title: 'Voz del Cliente (VOC)',
-        description: '¿Tienes algún comentario adicional o sugerencia?',
-        instructions: 'Comparte tus comentarios (opcional)',
+        description: '',
+        instructions: '',
         showConditionally: false,
         config: {
           type: 'text'
         }
       },
       {
-        id: 'trust-default',
+        id: 'trust-template',
         type: 'CSAT',
         title: 'Nivel de Confianza',
-        description: '¿Qué tan confiable consideras nuestro servicio?',
-        instructions: 'Evalúa tu nivel de confianza',
+        description: '',
+        instructions: '',
         showConditionally: false,
         config: {
           type: 'scale',
@@ -124,11 +124,11 @@ export const useSmartVOCForm = (researchId: string) => {
             start: 1,
             end: 5
           },
-          startLabel: 'Nada confiable',
-          endLabel: 'Muy confiable'
+          startLabel: '',
+          endLabel: ''
         }
       }
-    ],
+    ], // 7 preguntas plantilla sin contenido hardcodeado
     randomizeQuestions: false,
     smartVocRequired: true,
     metadata: {
@@ -238,8 +238,8 @@ export const useSmartVOCForm = (researchId: string) => {
         console.log('[SmartVOCForm] SmartVOC ID configurado:', responseWithId.id);
       }
     } else if (smartVocData && 'notFound' in smartVocData && smartVocData.notFound) {
-      console.log('[SmartVOCForm] No se encontró configuración existente, manteniendo preguntas por defecto');
-      // No hacer nada - mantener las preguntas por defecto que se inicializaron en useState
+      console.log('[SmartVOCForm] No se encontró configuración existente, manteniendo preguntas plantilla');
+      // No hacer nada - mantener las preguntas plantilla para que el usuario pueda empezar a trabajar
     } else {
       console.log('[SmartVOCForm] smartVocData es null/undefined o en estado de carga, manteniendo estado actual');
     }
