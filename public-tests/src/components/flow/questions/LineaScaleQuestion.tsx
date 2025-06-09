@@ -1,31 +1,20 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParticipantStore } from '../../../stores/participantStore';
 import { useResponseAPI } from '../../../hooks/useResponseAPI';
 import { ApiClient, APIStatus } from '../../../lib/api';
 import { getStandardButtonText } from '../../../utils/formHelpers';
-
-// MODIFICADO: Definir interfaz para props
-interface LineaScaleQuestionProps {
-    stepConfig?: unknown;
-    stepId?: string;
-    stepName?: string;
-    stepType: string;
-    onStepComplete: (answer: unknown) => void;
-    isMock: boolean;
-}
+import { ComponentLinearScaleQuestionProps } from '../../../types/flow.types';
 
 // Componente para Linear Scale
-export const LinearScaleQuestion: React.FC<LineaScaleQuestionProps> = ({ 
-    stepConfig: initialConfig, // Mapea stepConfig a initialConfig
-    stepId: stepIdFromProps, 
-    stepName: stepNameFromProps, 
-    stepType, 
+export const LineaScaleQuestion: React.FC<ComponentLinearScaleQuestionProps> = ({ 
+    config, 
+    stepName, 
     onStepComplete, 
     isMock 
 }) => {
     // Unificar todas las props de config en un solo objeto seguro
-    const cfg = (typeof initialConfig === 'object' && initialConfig !== null)
-      ? initialConfig as {
+    const cfg = (typeof config === 'object' && config !== null)
+      ? config as {
           title?: string;
           description?: string;
           questionText?: string;
@@ -38,7 +27,7 @@ export const LinearScaleQuestion: React.FC<LineaScaleQuestionProps> = ({
         }
       : {};
 
-    const componentTitle = stepNameFromProps || cfg.title || 'Pregunta de escala lineal';
+    const componentTitle = stepName || cfg.title || 'Pregunta de escala lineal';
     const description = cfg.description;
     const questionText = cfg.questionText ?? (isMock ? 'Valora en una escala (Prueba)' : 'Por favor, indica tu valoración.');
     const minValue = typeof cfg.minValue === 'number' ? cfg.minValue : 1;
@@ -79,7 +68,7 @@ export const LinearScaleQuestion: React.FC<LineaScaleQuestionProps> = ({
             return;
         }
 
-        if (!researchId || !participantId || !stepType) {
+        if (!researchId || !participantId || !stepName) {
             setDataLoading(false);
             setSelectedValue(null);
             setDataExisted(false);
@@ -105,7 +94,7 @@ export const LinearScaleQuestion: React.FC<LineaScaleQuestionProps> = ({
                   (apiResponse.data as { data?: unknown }).data !== null
                 ) {
                     const fullDocument = (apiResponse.data as { data: { id: string, responses: Array<{ id: string, stepType: string, response: unknown }> } }).data;
-                    const foundStepData = fullDocument.responses.find(item => item.stepType === stepType);
+                    const foundStepData = fullDocument.responses.find(item => item.stepType === stepName);
 
                     if (foundStepData && typeof foundStepData.response === 'number') {
                         valueToSet = foundStepData.response;
@@ -135,7 +124,7 @@ export const LinearScaleQuestion: React.FC<LineaScaleQuestionProps> = ({
             .finally(() => {
                 setDataLoading(false);
             });
-    }, [researchId, participantId, stepType, isMock, savedResponses]);
+            }, [researchId, participantId, stepName, isMock, savedResponses]);
 
     // Replace the manual button text logic (around line 139) with:
     const buttonText = getStandardButtonText({
@@ -162,7 +151,7 @@ export const LinearScaleQuestion: React.FC<LineaScaleQuestionProps> = ({
             return;
         }
 
-        const currentStepIdForApi = stepIdFromProps || stepType;
+        const currentStepIdForApi = stepName || 'linear-scale';
         const currentStepNameForApi = componentTitle;
 
         setIsSaving(true);
@@ -180,7 +169,7 @@ export const LinearScaleQuestion: React.FC<LineaScaleQuestionProps> = ({
                     success = true;
                 }
             } else {
-                const result = await saveResponse(currentStepIdForApi, stepType, currentStepNameForApi, payload.response);
+                const result = await saveResponse(currentStepIdForApi, stepName || 'linear-scale', currentStepNameForApi, payload.response);
                 if (apiHookError) {
                     setApiError(apiHookError);
                 } else if (

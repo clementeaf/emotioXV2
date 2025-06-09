@@ -1,21 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ParticipantFlowStep, ExpandedStep } from '../types/flow';
-
-interface UseFlowNavigationAndStateProps {
-    expandedSteps: ExpandedStep[];
-    initialResearchDataLoading: boolean;
-    researchId: string | undefined;
-    participantId: string | undefined;
-    maxVisitedIndexFromStore: number | undefined;
-    saveStepResponse: (answer?: unknown) => Promise<void>;
-    markResponsesAsCompleted: () => Promise<void>;
-    getStepResponse: (stepIndex: number) => unknown;
-    loadExistingResponses: () => Promise<void>;
-    handleErrorProp: (errorMessage: string, step: ParticipantFlowStep | string) => void;
-    setExternalExpandedSteps?: (updater: (prevSteps: ExpandedStep[]) => ExpandedStep[]) => void; 
-    currentStepIndexState: number;
-    setCurrentStepIndexFunc: React.Dispatch<React.SetStateAction<number>>;
-}
+import { ParticipantFlowStep, ExpandedStep, UseFlowNavigationAndStateProps } from '../types/flow';
 
 export const useFlowNavigationAndState = ({
     expandedSteps,

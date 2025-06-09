@@ -1,28 +1,19 @@
-import React, { useMemo } from "react";
-import { useStandardizedForm, valueExtractors, StandardizedFormProps, validationRules } from "../../../hooks/useStandardizedForm";
+import React, { useMemo, useState, useEffect } from "react";
+import { useStandardizedForm, valueExtractors, validationRules } from "../../../hooks/useStandardizedForm";
+import { StandardizedFormProps } from "../../../types/hooks.types";
 import { getStandardButtonText, getButtonDisabledState, getErrorDisplayProps, getFormContainerClass, formSpacing, getMockOptions } from "../../../utils/formHelpers";
+import { ComponentSingleChoiceQuestionProps } from '../../../types/flow.types';
 
-interface SingleChoiceQuestionProps extends Partial<StandardizedFormProps> {
-    config: unknown;
-    stepId?: string;
-    stepName?: string;
-    stepType: string;
-    onStepComplete: (answer: unknown) => void;
-    isMock: boolean;
-}
-
-export const SingleChoiceQuestion: React.FC<SingleChoiceQuestionProps> = ({
-    config: initialConfig,
-    stepId: stepIdFromProps,
-    stepName: stepNameFromProps,
-    stepType,
+export const SingleChoiceQuestion: React.FC<ComponentSingleChoiceQuestionProps> = ({
+    config,
+    stepName,
     onStepComplete,
     isMock,
     ...standardProps
 }) => {
     // Unificar todas las props de config en un solo objeto seguro
-    const cfg = (typeof initialConfig === 'object' && initialConfig !== null)
-      ? initialConfig as {
+    const cfg = (typeof config === 'object' && config !== null)
+      ? config as {
           title?: string;
           description?: string;
           questionText?: string;
@@ -32,7 +23,7 @@ export const SingleChoiceQuestion: React.FC<SingleChoiceQuestionProps> = ({
         }
       : {};
 
-    const componentTitle = cfg.title ?? stepNameFromProps ?? 'Pregunta de opción única';
+    const componentTitle = cfg.title ?? stepName ?? 'Pregunta de opción única';
     const description = cfg.description;
     const questionText = cfg.questionText ?? (isMock ? 'Pregunta de prueba' : 'Por favor, selecciona una opción.');
     const required = cfg.required !== false; // Asumir requerido por defecto
@@ -62,8 +53,8 @@ export const SingleChoiceQuestion: React.FC<SingleChoiceQuestionProps> = ({
 
     // Props estandarizadas para el hook
     const formProps: StandardizedFormProps = {
-        stepId: stepIdFromProps || stepType,
-        stepType,
+        stepId: stepName || 'single-choice',
+        stepType: stepName || 'single-choice',
         stepName: componentTitle,
         required,
         isMock,
@@ -81,22 +72,22 @@ export const SingleChoiceQuestion: React.FC<SingleChoiceQuestionProps> = ({
 
     // 🔍 LOGGING TEMPORAL para debugging SingleChoiceQuestion
     console.log('[SingleChoiceQuestion] estado actual:', {
-        stepType,
-        stepId: stepIdFromProps,
+        stepType: stepName || 'single-choice',
         value,
         hasExistingData,
         isLoading,
-        isDataLoaded,
+        isSaving,
+        optionsLength: displayOptions.length,
         displayOptions: displayOptions.slice(0, 3), // Solo las primeras 3 para no saturar
         searchCriteria: {
-            stepId: stepIdFromProps || stepType,
-            stepType,
+            stepId: stepName || 'single-choice',
+            stepType: stepName || 'single-choice',
             stepName: componentTitle
         }
     });
 
     // Limpiar valor si no coincide con las opciones actuales - VERSION AGRESIVA
-    React.useEffect(() => {
+    useEffect(() => {
         
         if (value && !displayOptions.includes(value)) {
             setValue(null);
@@ -174,7 +165,7 @@ export const SingleChoiceQuestion: React.FC<SingleChoiceQuestionProps> = ({
                         >
                             <input
                                 type="radio"
-                                name={`single-choice-${stepIdFromProps || stepType}`}
+                                name={`single-choice-${stepName || 'default'}`}
                                 value={optionValue}
                                 checked={isSelected}
                                 onChange={() => handleOptionSelect(optionValue)}

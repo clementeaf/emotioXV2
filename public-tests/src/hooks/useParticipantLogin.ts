@@ -2,17 +2,12 @@ import { useState, ChangeEvent, FormEvent } from 'react';
 import { Participant } from '../../../shared/interfaces/participant';
 import { useParticipantStore, ParticipantState } from '../stores/participantStore';
 import { FormErrors } from '../types';
-
-const API_BASE_URL = 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev';
-
-// Argumentos que necesita el hook
-interface UseParticipantLoginProps {
-  researchId: string;
-  onLogin?: (participant: Participant) => void;
-}
+import { UseParticipantLoginProps } from '../types/hooks.types';
 
 // Tipo para el estado del participante dentro del hook
 type ParticipantInput = Omit<Participant, 'id' | 'createdAt' | 'updatedAt'>;
+
+const API_BASE_URL = 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev';
 
 export const useParticipantLogin = ({ researchId, onLogin }: UseParticipantLoginProps) => {
   const [participant, setParticipant] = useState<ParticipantInput>({

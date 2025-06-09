@@ -2,27 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { useStepResponseManager } from '../../../hooks/useStepResponseManager';
 import { createComponentLogger } from '../../../utils/logger';
 import { getStandardButtonText } from '../../../utils/formHelpers';
+import { ComponentSmartVocFeedbackQuestionProps } from '../../../types/flow.types';
 
 const logger = createComponentLogger('SmartVocFeedbackQuestion');
 
-interface SmartVocFeedbackQuestionProps {
-  stepConfig: unknown;
-  stepId?: string;
-  stepName?: string;
-  stepType: string;
-  onStepComplete: (answer: unknown) => void;
-}
-
-export const SmartVocFeedbackQuestion: React.FC<SmartVocFeedbackQuestionProps> = ({ 
-  stepConfig, 
-  stepId: stepIdFromProps, 
-  stepName: stepNameFromProps, 
-  stepType, 
-  onStepComplete 
+export const SmartVocFeedbackQuestion: React.FC<ComponentSmartVocFeedbackQuestionProps> = ({ 
+  config, 
+  stepName, 
+  onStepComplete, 
+  isMock 
 }) => {
 
-  const cfg = (typeof stepConfig === 'object' && stepConfig !== null)
-    ? stepConfig as {
+  const cfg = (typeof config === 'object' && config !== null)
+    ? config as {
         title?: string;
         description?: string;
         questionText?: string;
@@ -42,9 +34,9 @@ export const SmartVocFeedbackQuestion: React.FC<SmartVocFeedbackQuestionProps> =
     saveCurrentStepResponse,
     responseSpecificId
   } = useStepResponseManager<string>({
-    stepId: stepIdFromProps || 'smartvoc_feedback',
-    stepType: stepType,
-    stepName: stepNameFromProps || cfg.title || 'Voice of Customer (VOC)',
+    stepId: 'smartvoc_feedback',
+    stepType: 'smartvoc_feedback',
+    stepName: stepName || cfg.title || 'Voice of Customer (VOC)',
     initialData: ''
   });
 
@@ -71,8 +63,8 @@ export const SmartVocFeedbackQuestion: React.FC<SmartVocFeedbackQuestionProps> =
   const handleSaveAndProceed = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!stepIdFromProps) {
-      logger.error('Missing stepId');
+    if (!config) {
+      logger.error('Missing config');
       return;
     }
 
@@ -111,7 +103,7 @@ export const SmartVocFeedbackQuestion: React.FC<SmartVocFeedbackQuestionProps> =
     return (
       <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-sm">
         <h2 className="text-xl font-medium text-neutral-800 mb-4">
-          {cfg.title || stepNameFromProps || 'Voice of Customer (VOC)'}
+          {cfg.title || stepName || 'Voice of Customer (VOC)'}
         </h2>
         <p className="text-center text-gray-500">Cargando respuestas previas...</p>
       </div>
@@ -139,7 +131,7 @@ export const SmartVocFeedbackQuestion: React.FC<SmartVocFeedbackQuestionProps> =
       )}
       
       <h2 className="text-xl font-medium text-neutral-800 mb-4">
-        {cfg.title || stepNameFromProps || 'Voice of Customer (VOC)'}
+        {cfg.title || stepName || 'Voice of Customer (VOC)'}
       </h2>
       
       {cfg.description && (

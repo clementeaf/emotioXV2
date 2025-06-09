@@ -1,14 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { SmartVOCConfig, SmartVOCQuestion } from '../components/flow/types'; // Ajusta la ruta si es necesario
+import { SmartVOCConfig, SmartVOCQuestion, UseSmartVOCConfigReturn } from '../types/smart-voc.types';
 
-interface UseSmartVOCDataReturn {
-    isLoading: boolean;
-    questions: SmartVOCQuestion[];
-    error: string | null;
-    config: SmartVOCConfig | null; // Puede ser útil mantener la config si se necesita en el futuro
-}
-
-export const useSmartVOCData = (researchId?: string, token?: string): UseSmartVOCDataReturn => {
+export const useSmartVOCData = (researchId?: string, token?: string): UseSmartVOCConfigReturn => {
     const [config, setConfig] = useState<SmartVOCConfig | null>(null);
     const [questions, setQuestions] = useState<SmartVOCQuestion[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true);

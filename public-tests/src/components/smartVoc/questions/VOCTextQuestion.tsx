@@ -1,6 +1,6 @@
 import React from 'react';
 import { SmartVOCQuestion } from '../../../types/smart-voc.interface';
-import { VOCTextQuestionComponentProps } from '../../../types/smart-voc.types';
+import { VOCTextQuestionComponentProps, VOCTextData } from '../../../types/smart-voc.types';
 import { StandardizedFormProps } from '../../../types/hooks.types';
 import { 
   useStandardizedForm, 
@@ -29,11 +29,6 @@ import LoadingScreen from '../../LoadingScreen';
  * - Loading states múltiples → estado unificado
  * - Extracción de datos compleja → valueExtractor
  */
-
-// Tipo de datos para la respuesta de texto
-interface VOCTextData {
-  value: string;
-}
 
 export const VOCTextQuestion: React.FC<VOCTextQuestionComponentProps> = ({
   questionConfig,

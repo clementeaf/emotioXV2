@@ -143,13 +143,8 @@ export interface DifficultyScaleViewProps extends Omit<StandardizedFormProps, 's
   onNext: (responsePayload: { value: number, feedback?: string, moduleResponseId?: string | null }) => void;
 }
 
-export interface VOCTextData {
-  text: string;
-  additionalFeedback?: string;
-}
-
 export interface VOCTextQuestionProps extends Omit<StandardizedFormProps, 'stepName'> {
-  onContinue: (data: VOCTextData) => void;
+  onContinue: (data: { text: string; additionalFeedback?: string; }) => void;
   config?: {
     question?: string;
     placeholder?: string;
@@ -272,18 +267,21 @@ export interface NPSQuestionComponentProps {
 
 // CV Question Props
 export interface CVQuestionComponentProps {
-  questionConfig: {
-    id: string;
-    title?: string;
-    description?: string;
-    type: string;
-    config: {
-      scaleRange?: { start: number; end: number };
-      startLabel?: string;
-      endLabel?: string;
-    };
-  };
+  questionConfig: CVQuestionConfig;
   researchId: string;
   moduleId: string;
   onSaveSuccess: (questionId: string, responseValue: number, moduleResponseId: string | null) => void;
+}
+
+// Tipo de datos para respuesta de texto VOC
+export interface VOCTextData {
+  value: string;
+}
+
+// Interface para useSmartVOCData hook (diferente de UseSmartVOCDataReturn)
+export interface UseSmartVOCConfigReturn {
+  isLoading: boolean;
+  questions: SmartVOCQuestion[];
+  error: string | null;
+  config: SmartVOCConfig | null;
 } 

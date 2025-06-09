@@ -341,8 +341,6 @@ export interface MultiChoiceViewComponentProps {
 
 export interface LongTextViewComponentProps {
   config: CognitiveQuestion;
-  value?: string;
-  onChange: (questionId: string, value: string) => void;
   onStepComplete?: (answer?: unknown) => void;
   savedResponse?: { id?: string; response?: unknown } | null;
   savedResponseId?: string | null;

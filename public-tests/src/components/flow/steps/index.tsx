@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import imageUrl from '../../../assets/nav_flow_img.png';
 import { LongTextView } from '../../cognitiveTask/questions/LongTextView';
-import { SmartVOCQuestion } from '../../../types/smart-voc.interface';
-import { CognitiveQuestion } from '../../../hooks/useCognitiveTask';
+import { SmartVOCQuestion } from '../../../types/smart-voc.types';
+import { CognitiveQuestion } from '../../../types/cognitive-task.types';
+import { MappedStepComponentProps, StepComponentMap } from '../../../types/flow.types';
 
 const ParticipantLogin = React.lazy(() => import('../../auth/ParticipantLogin').then(module => ({ default: module.ParticipantLogin })));
 const WelcomeScreenHandler = React.lazy(() => import('../WelcomeScreenHandler'));
@@ -11,26 +12,11 @@ const ThankYouView = React.lazy(() => import('../../ThankYouScreen'));
 const DifficultyScaleView = React.lazy(() => import('../../smartVoc/DifficultyScaleView'));
 const RankingQuestion = React.lazy(() => import('../questions/RankingQuestion').then(module => ({ default: module.RankingQuestion })));
 const SmartVocFeedbackQuestion = React.lazy(() => import('../questions/SmartVocFeedbackQuestion').then(module => ({ default: module.SmartVocFeedbackQuestion })));
-const LinearScaleQuestion = React.lazy(() => import('../questions/LineaScaleQuestion').then(module => ({ default: module.LinearScaleQuestion })));
+const LinearScaleQuestion = React.lazy(() => import('../questions/LineaScaleQuestion').then(module => ({ default: module.LineaScaleQuestion })));
 const MultipleChoiceQuestion = React.lazy(() => import('../questions/MultipleChoiceQuestion').then(module => ({ default: module.MultipleChoiceQuestion })));
 const SingleChoiceQuestion = React.lazy(() => import('../questions/SingleChoiceQuestion').then(module => ({ default: module.SingleChoiceQuestion })));
 const DemographicStep = React.lazy(() => import('../questions/DemographicStep').then(module => ({ default: module.DemographicStep })));
 const NPSView = React.lazy(() => import('../../smartVoc/NPSView'));
-
-export interface MappedStepComponentProps {
-    stepConfig?: unknown;
-    stepId?: string;
-    stepName?: string;
-    stepType: string;
-    researchId?: string;
-    token?: string | null;
-    onStepComplete: (data?: unknown) => void;
-    onLoginSuccess?: (participant: unknown) => void;
-    onError?: (message: string, stepType?: string) => void;
-    isInstructionMock?: boolean;
-    isWelcomeMock?: boolean;
-    isApiDisabled?: boolean;
-}
 
 // eslint-disable-next-line react-refresh/only-export-components
 const DifficultyScaleAdapter: React.FC<MappedStepComponentProps> = (props) => {
@@ -241,14 +227,7 @@ const CognitiveLongTextAdapter: React.FC<MappedStepComponentProps> = ({ stepConf
 //   );
 // };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type StepComponentType = React.LazyExoticComponent<React.ComponentType<any>> | React.FC<MappedStepComponentProps>; // Patrón estándar en registros de componentes React
-// 'any' es necesario aquí porque React.lazy y ComponentType requieren flexibilidad para props heterogéneas.
-// Este patrón es estándar y seguro si se valida el uso de props al renderizar.
 
-interface StepComponentMap {
-    [key: string]: StepComponentType;
-}
 
 export const stepComponentMap: StepComponentMap = {
     'login': ParticipantLogin,

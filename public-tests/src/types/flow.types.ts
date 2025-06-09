@@ -73,11 +73,18 @@ export interface WelcomeScreenHandlerProps {
 
 // Props para componente de mapeo de pasos
 export interface MappedStepComponentProps {
-  step: ExpandedStep;
-  researchId: string;
-  participantId: string;
-  onComplete: () => void;
-  onError: (error: string) => void;
+  stepConfig?: unknown;
+  stepId?: string;
+  stepName?: string;
+  stepType: string;
+  researchId?: string;
+  token?: string | null;
+  onStepComplete: (data?: unknown) => void;
+  onLoginSuccess?: (participant: unknown) => void;
+  onError?: (message: string, stepType?: string) => void;
+  isInstructionMock?: boolean;
+  isWelcomeMock?: boolean;
+  isApiDisabled?: boolean;
 }
 
 // Tipos para preguntas específicas del flujo
@@ -167,8 +174,19 @@ export interface UseFlowBuilderProps {
 }
 
 export interface UseFlowNavigationAndStateProps {
-  researchId: string;
-  participantId: string;
+  expandedSteps: ExpandedStep[];
+  initialResearchDataLoading: boolean;
+  researchId: string | undefined;
+  participantId: string | undefined;
+  maxVisitedIndexFromStore: number | undefined;
+  saveStepResponse: (answer?: unknown) => Promise<void>;
+  markResponsesAsCompleted: () => Promise<void>;
+  getStepResponse: (stepIndex: number) => unknown;
+  loadExistingResponses: () => Promise<void>;
+  handleErrorProp: (errorMessage: string, step: ParticipantFlowStep | string) => void;
+  setExternalExpandedSteps?: (updater: (prevSteps: ExpandedStep[]) => ExpandedStep[]) => void; 
+  currentStepIndexState: number;
+  setCurrentStepIndexFunc: React.Dispatch<React.SetStateAction<number>>;
 }
 
 // Tipos demográficos específicos del flujo
@@ -251,8 +269,10 @@ export interface SmartVocFeedbackQuestionProps {
   error?: string;
 }
 
+type StepComponentType = React.LazyExoticComponent<React.ComponentType<any>> | React.FC<MappedStepComponentProps>;
+
 export interface StepComponentMap {
-  [key: string]: React.ComponentType<any>;
+  [key: string]: StepComponentType;
 }
 
 export interface OldFlowStepContentProps {
@@ -348,4 +368,33 @@ export interface FlowStepContentComponentProps extends Omit<OldFlowStepContentPr
   isLoading: boolean;
   responsesData?: ResponsesData;
   handleError: (errorMessage: string, step: ParticipantFlowStep | string) => void;
+}
+
+// Interfaces para componentes de preguntas de flow
+export interface ComponentShortTextQuestionProps extends Omit<any, 'id' | 'title' | 'description' | 'value' | 'onChange'> {
+  config: unknown;
+  stepName?: string;
+  onStepComplete: (answer: unknown) => void;
+  isMock: boolean;
+}
+
+export interface ComponentSingleChoiceQuestionProps {
+  config: unknown;
+  stepName?: string;
+  onStepComplete: (answer: unknown) => void;
+  isMock: boolean;
+}
+
+export interface ComponentSmartVocFeedbackQuestionProps {
+  config: unknown;
+  stepName?: string;
+  onStepComplete: (answer: unknown) => void;
+  isMock: boolean;
+}
+
+export interface ComponentLinearScaleQuestionProps {
+  config: unknown;
+  stepName?: string;
+  onStepComplete: (answer: unknown) => void;
+  isMock: boolean;
 } 
