@@ -88,6 +88,7 @@ export interface ParticipantState {
   cleanupPreviousParticipantData: (currentResearchId: string, currentParticipantId: string) => void;
   
   // Reset y utilidades
+  clearAllResponses: () => void;
   resetStore: () => void;
   calculateProgress: () => void;
 }
@@ -778,6 +779,41 @@ export const useParticipantStore = create(
         saveToLocalStorage('progress', { completedRelevantSteps, totalRelevantSteps });
       },
       
+      // Limpiar solo las respuestas manteniendo la sesión
+      clearAllResponses: () => {
+        // Limpiar localStorage de respuestas específicas
+        try {
+          const keysToRemove = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && (
+              key.startsWith('response_') ||
+              key === 'participantResponses' ||
+              key === 'progress'
+            )) {
+              keysToRemove.push(key);
+            }
+          }
+          keysToRemove.forEach(key => localStorage.removeItem(key));
+        } catch (e) {
+          console.error('[ParticipantStore] Error limpiando localStorage de respuestas:', e);
+        }
+
+        // Resetear solo los datos de respuestas en el store
+        const currentState = get();
+        set({
+          responsesData: {
+            ...initialResponsesData,
+            researchId: currentState.researchId || '',
+            participantId: currentState.participantId || '',
+            startTime: Date.now()
+          },
+          completedRelevantSteps: 0,
+          currentStepIndex: 0, // Volver al inicio
+          maxVisitedIndex: 0
+        });
+      },
+
       // Resetear tienda
       resetStore: () => {
         // Limpiar localStorage específica

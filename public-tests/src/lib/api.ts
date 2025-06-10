@@ -321,6 +321,15 @@ export class ApiClient {
         method: 'POST',
     });
   }
+
+  async deleteAllResponses(researchId: string, participantId: string): Promise<APIResponse<unknown>> {
+    this.validateResearchId(researchId);
+    if (!participantId) throw new Error('ID de participante inválido');
+    
+    return this.request<unknown>(`/research/${researchId}/participants/${participantId}/responses`, {
+      method: 'DELETE'
+    });
+  }
 }
 
 export const apiClient = new ApiClient(); 

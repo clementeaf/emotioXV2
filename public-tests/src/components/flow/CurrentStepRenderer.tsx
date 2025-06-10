@@ -1,6 +1,5 @@
 import React, { useState, useCallback, Suspense, useMemo, useEffect } from 'react';
 import { RenderError } from './RenderError';
-import { MockDataWarning } from './MockDataWarning';
 import { CurrentStepProps } from './types';
 import { stepComponentMap } from './steps';
 import { ApiClient, APIStatus } from '../../lib/api';
@@ -189,9 +188,8 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
     }, [stepType, stepConfig, researchId, participantIdFromStore, apiClient, stepId]);
 
     const renderStepWithWarning = useCallback(
-        (content: React.ReactNode, isMock: boolean, warningMessage?: string) => (
-            <div className="relative w-full flex flex-col items-center justify-center min-h-full p-4 sm:p-8">
-                {isMock && <MockDataWarning message={warningMessage} />}
+        (content: React.ReactNode) => (
+            <div className="w-full h-full">
                 {content}
             </div>
         ),
@@ -300,13 +298,9 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
         const ComponentToRender = stepComponentMap[stepType];
 
         if (ComponentToRender) {
-            const warningMessage = (finalMappedProps as { isMock?: boolean }).isMock ? `Configuración para '${stepType}' podría estar incompleta o usando datos de prueba.` : undefined;
-
             return renderStepWithWarning(
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 <ComponentToRender {...(finalMappedProps as any)} key={`${stepId}-${stepType}`} />,
-                Boolean((finalMappedProps as { isMock?: boolean }).isMock),
-                warningMessage
             );
         } else {
             console.warn(`[CurrentStepRenderer] Tipo de paso no manejado: ${stepType}`);

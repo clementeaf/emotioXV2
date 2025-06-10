@@ -164,7 +164,6 @@ const CognitivePreferenceTestStep: React.FC<MappedStepComponentProps> = ({ stepC
     );
 };
 
-// Adaptador para preguntas de texto largo
 // eslint-disable-next-line react-refresh/only-export-components
 const CognitiveLongTextAdapter: React.FC<MappedStepComponentProps> = ({ stepConfig, onStepComplete }) => {
   return (
@@ -174,60 +173,6 @@ const CognitiveLongTextAdapter: React.FC<MappedStepComponentProps> = ({ stepConf
     />
   );
 };
-
-// Comentado temporalmente - componente no utilizado actualmente
-// const CognitiveShortTextStep: React.FC<MappedStepComponentProps> = ({ stepConfig, stepName, onStepComplete }) => {
-//   const [textResponse, setTextResponse] = useState('');
-//   
-//   const cfg = (typeof stepConfig === 'object' && stepConfig !== null) 
-//     ? stepConfig as { title?: string; description?: string; questionText?: string; placeholder?: string; required?: boolean }
-//     : {};
-
-//   const handleSubmit = (e: React.FormEvent) => {
-//     e.preventDefault();
-//     if (cfg.required && !textResponse.trim()) {
-//       alert('Este campo es requerido');
-//       return;
-//     }
-//     onStepComplete(textResponse);
-//   };
-
-//   return (
-//     <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-sm">
-//       <h2 className="text-xl font-medium text-neutral-800 mb-4">
-//         {cfg.title || stepName || 'Pregunta de Texto'}
-//       </h2>
-//       
-//       {cfg.description && (
-//         <p className="text-neutral-600 mb-6">{cfg.description}</p>
-//       )}
-//       
-//       <form onSubmit={handleSubmit}>
-//         <div className="mb-6">
-//           <textarea
-//             value={textResponse}
-//             onChange={(e) => setTextResponse(e.target.value)}
-//             placeholder={cfg.placeholder || cfg.questionText || "Escribe tu respuesta aquí..."}
-//             rows={4}
-//             className="w-full p-4 border border-neutral-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-//             required={cfg.required}
-//           />
-//         </div>
-//         
-//         <div className="flex justify-end">
-//           <button
-//             type="submit"
-//             className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-//           >
-//             Continuar
-//           </button>
-//         </div>
-//       </form>
-//     </div>
-//   );
-// };
-
-
 
 export const stepComponentMap: StepComponentMap = {
     'login': ParticipantLogin,

@@ -1,11 +1,11 @@
-import { ProgressSidebarProps } from './types';
+import { ProgressSidebarProps } from '../../types/common.types';
 import { useModuleResponses } from '../../hooks/useModuleResponses';
 import { useParticipantStore } from '../../stores/participantStore';
 import { useAnsweredStepIds } from './useAnsweredStepIds';
 import { ProgressSidebarItem } from './ProgressSidebarItem';
 import LoadingIndicator from '../common/LoadingIndicator';
-import { useMemo, useState } from 'react';
-import { apiClient } from '../../lib/api';
+import { useMemo } from 'react';
+import { useDeleteAllResponses } from '../../lib/hooks/useApi';
 
 export function ProgressSidebar({ 
   steps, 
@@ -15,7 +15,20 @@ export function ProgressSidebar({
   const researchId = useParticipantStore(state => state.researchId);
   const participantId = useParticipantStore(state => state.participantId);
   const responsesData = useParticipantStore(state => state.responsesData);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const deleteResponsesMutation = useDeleteAllResponses({
+    onSuccess: () => {
+      // Limpiar solo las respuestas, manteniendo la sesión
+      useParticipantStore.getState().clearAllResponses();
+      
+      // Mostrar mensaje de éxito
+      alert('Respuestas eliminadas exitosamente. La página se recargará para reflejar los cambios.');
+      window.location.reload();
+    },
+    onError: (error) => {
+      console.error('Error eliminando respuestas:', error);
+      alert('Error al eliminar respuestas. Ver consola para más detalles.');
+    }
+  });
 
   const { data: moduleResponsesData, isLoading: isResponsesLoading } = useModuleResponses({
     researchId: researchId || undefined,
@@ -23,12 +36,9 @@ export function ProgressSidebar({
     autoFetch: !!(researchId && participantId),
   });
 
-  // Combinar datos del store local y de la API para obtener una vista completa de los pasos respondidos
   const combinedResponsesData = useMemo(() => {
     const localResponses = responsesData?.modules?.all_steps || [];
     const apiResponses = (moduleResponsesData as unknown[]) || [];
-    
-    // Combinar y deduplicar respuestas
     const combined = [...localResponses, ...apiResponses];
     const unique = combined.filter((response, index, self) => {
       if (!response || typeof response !== 'object') return false;
@@ -44,11 +54,9 @@ export function ProgressSidebar({
 
   const answeredStepIds = useAnsweredStepIds(steps, combinedResponsesData);
 
-  // Calcular progreso más preciso
   const progressInfo = useMemo(() => {
     if (!steps.length) return { completedSteps: 0, totalSteps: 0, percentage: 0 };
     
-    // Excluir welcome y thankyou del conteo si existen
     const relevantSteps = steps.filter(step => 
       step.type !== 'welcome' && step.type !== 'thankyou'
     );
@@ -71,15 +79,13 @@ export function ProgressSidebar({
 
   const showCounter = progressInfo.totalSteps > 0;
 
-  // Handler de navegación
   const handleNavigateToStep = (targetIndex: number) => {
     if (onNavigateToStep) {
       onNavigateToStep(targetIndex);
     }
   };
 
-  // Handler para borrar respuestas
-  const handleDeleteResponses = async () => {
+  const handleDeleteResponses = () => {
     if (!researchId || !participantId) {
       alert('No se encontraron IDs de investigación y participante');
       return;
@@ -89,23 +95,7 @@ export function ProgressSidebar({
       return;
     }
 
-    setIsDeleting(true);
-    try {
-      const url = `/research/${researchId}/participants/${participantId}/responses`;
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev'}${url}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      if (response) {
-        alert('Respuestas eliminadas exitosamente');
-        window.location.reload(); // Recargar para refrescar el estado
-      }
-    } catch (error) {
-      console.error('Error eliminando respuestas:', error);
-      alert('Error al eliminar respuestas. Ver consola para más detalles.');
-    } finally {
-      setIsDeleting(false);
-    }
+    deleteResponsesMutation.mutate({ researchId, participantId });
   };
 
   return (
@@ -133,10 +123,10 @@ export function ProgressSidebar({
           
           <button
             onClick={handleDeleteResponses}
-            disabled={isDeleting}
+            disabled={deleteResponsesMutation.isPending}
             className="mt-3 w-full px-3 py-2 text-xs bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isDeleting ? 'Borrando...' : 'Borrar respuestas'}
+            {deleteResponsesMutation.isPending ? 'Borrando...' : 'Borrar respuestas'}
           </button>
         </div>
       </div>
