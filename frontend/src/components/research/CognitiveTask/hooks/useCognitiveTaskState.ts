@@ -1,4 +1,4 @@
-import { useState, useCallback, Dispatch, SetStateAction } from 'react';
+import { Dispatch, SetStateAction, useCallback, useState } from 'react';
 import { Question } from 'shared/interfaces/cognitive-task.interface';
 import { CognitiveTaskFormData } from './useCognitiveTaskForm'; // Importar o definir localmente
 
@@ -27,13 +27,13 @@ const DEFAULT_STATE: CognitiveTaskFormData = {
     {
       id: '3.1',
       type: 'short_text',
-      title: 'Que te ha parecido el módulo?',
-      description: 'Aqui puedes describir tu primera impresion de este módulo!',
+      title: '',
+      description: '',
       required: false,
       showConditionally: false,
       deviceFrame: false,
       files: [],
-      answerPlaceholder: 'Me ha parecido...'
+      answerPlaceholder: ''
     },
     {
       id: '3.2',
@@ -113,8 +113,8 @@ const DEFAULT_STATE: CognitiveTaskFormData = {
     {
       id: '3.8',
       type: 'preference_test',
-      title: 'Que te parece esta imagen?',
-      description: 'Describe brevemente tu primera imprensión al respecto',
+      title: '',
+      description: '',
       required: false,
       showConditionally: false,
       files: [],
@@ -192,4 +192,4 @@ export const useCognitiveTaskState = ({
     handleRemoveChoice,
     handleRandomizeChange,
   };
-}; 
+};

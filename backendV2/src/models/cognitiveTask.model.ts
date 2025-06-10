@@ -208,7 +208,7 @@ export class CognitiveTaskModel {
     }
   }
 
-  /**
+    /**
    * Obtiene el formulario CognitiveTask asociado a una investigación.
    * Usa QueryCommand sobre el GSI 'researchId-index' (PK: researchId).
    */
@@ -233,8 +233,8 @@ export class CognitiveTaskModel {
       structuredLog('debug', `${this.modelName}.${context}`, 'Resultado de consulta', { encontrados: result.Items?.length || 0, researchId });
 
       if (!result.Items || result.Items.length === 0) {
-        structuredLog('warn', `${this.modelName}.${context}`, 'No se encontró CognitiveTask', { researchId });
-        throw new NotFoundError('COGNITIVE_TASK_NOT_FOUND');
+        structuredLog('info', `${this.modelName}.${context}`, 'No se encontró CognitiveTask', { researchId });
+        return null; // Cambiar a return null en lugar de throw NotFoundError
       }
 
       // Mapear el primer (y único esperado) item encontrado
@@ -429,7 +429,7 @@ export class CognitiveTaskModel {
     // Primero obtener el registro para conseguir su ID
     const existingRecord = await this.getByResearchId(researchId);
     if (!existingRecord) {
-      throw new NotFoundError('COGNITIVE_TASK_NOT_FOUND');
+      return false; // Si no existe, retornar false en lugar de error
     }
 
     const command = new DeleteCommand({

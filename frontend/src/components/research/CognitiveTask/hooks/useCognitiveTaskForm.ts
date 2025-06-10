@@ -1,24 +1,23 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
-import { 
+import { ApiError } from '@/config/api-client';
+import { cognitiveTaskFixedAPI } from '@/lib/cognitive-task-api';
+import { useAuth } from '@/providers/AuthProvider';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useState } from 'react';
+import {
   UploadedFile
 } from 'shared/interfaces/cognitive-task.interface';
-import { 
-  QUERY_KEYS, 
+import {
+  QUERY_KEYS,
   SUCCESS_MESSAGES,
   UI_TEXTS
 } from '../constants';
-import { Question, ValidationErrors, FileInfo } from '../types';
-import { useAuth } from '@/providers/AuthProvider';
-import { cognitiveTaskFixedAPI } from '@/lib/cognitive-task-api';
-import { ApiError } from '@/config/api-client';
-import { useCognitiveTaskModals } from './useCognitiveTaskModals';
 import type { ErrorModalData } from '../types';
-import { useCognitiveTaskValidation } from './useCognitiveTaskValidation';
+import { FileInfo, Question, ValidationErrors } from '../types';
+import { debugQuestionsToSend, filterValidQuestions } from '../utils/validateRequiredFields';
 import { useCognitiveTaskFileUpload } from './useCognitiveTaskFileUpload';
+import { useCognitiveTaskModals } from './useCognitiveTaskModals';
 import { useCognitiveTaskState } from './useCognitiveTaskState';
-import { filterValidQuestions, debugQuestionsToSend } from '../utils/validateRequiredFields';
-// import { toast } from 'react-hot-toast'; // Comentado para eliminar los toasts
+import { useCognitiveTaskValidation } from './useCognitiveTaskValidation';
 
 // Definición de QuestionType para evitar conflictos de importación
 type QuestionType = 'short_text' | 'long_text' | 'single_choice' | 'multiple_choice' | 'linear_scale' | 'ranking' | 'navigation_flow' | 'preference_test';
@@ -75,28 +74,28 @@ interface UseCognitiveTaskFormResult {
   isLoading: boolean;
   isSaving: boolean;
   questionTypes: { id: QuestionType; label: string; description: string }[];
-  
+
   // Handlers de estado
   handleQuestionChange: (questionId: string, updates: Partial<Question>) => void;
   handleAddChoice: (questionId: string) => void;
   handleRemoveChoice: (questionId: string, choiceId: string) => void;
   handleAddQuestion: (type: QuestionType) => void;
   handleRandomizeChange: (checked: boolean) => void;
-  
+
   // Handlers de archivos (vienen del hook)
-  handleFileUpload: (questionId: string, files: FileList) => Promise<void>; 
-  handleMultipleFilesUpload: (questionId: string, files: FileList) => Promise<void>; 
+  handleFileUpload: (questionId: string, files: FileList) => Promise<void>;
+  handleMultipleFilesUpload: (questionId: string, files: FileList) => Promise<void>;
   handleFileDelete: (questionId: string, fileId: string) => Promise<void>;
-  
+
   // Acciones principales
   handleSave: () => void;
   handlePreview: () => void;
   handleDelete: () => void;
-  
+
   // Validación
   validationErrors: ValidationErrors | null;
   validateForm: () => ValidationErrors | null;
-  
+
   // Funciones de Modal de Confirmación
   showConfirmModal: boolean;
   confirmAndSave: () => void;
@@ -107,7 +106,7 @@ interface UseCognitiveTaskFormResult {
   uploadProgress: number;
   currentFileIndex: number;
   totalFiles: number;
-  
+
   // <<< Añadir propiedades faltantes para los modales >>>
   modalError: ErrorModalData | null;
   modalVisible: boolean;
@@ -172,7 +171,7 @@ const revertPendingDeleteFiles = (questions: Question[]): Question[] => {
           return { ...restOfFile, status: 'uploaded' as const }; // Volver a uploaded
         }
         // Si no tenía s3Key (era temporal), simplemente devolver sin status
-        return restOfFile; 
+        return restOfFile;
       }
       return f;
     });
@@ -189,8 +188,8 @@ declare global {
 
 // Añadir una función helper para diagnóstico
 const logFormDebugInfo = (
-  context: string, 
-  data: CognitiveTaskFormData | null, 
+  context: string,
+  data: CognitiveTaskFormData | null,
   error?: any,
   extraInfo?: Record<string, any>
 ) => {
@@ -217,7 +216,7 @@ const logFormDebugInfo = (
  * Hook principal refactorizado...
  */
 export const useCognitiveTaskForm = (
-  researchId?: string, 
+  researchId?: string,
   onSave?: (data: any) => void
 ): UseCognitiveTaskFormResult => {
   const queryClient = useQueryClient();
@@ -242,13 +241,13 @@ export const useCognitiveTaskForm = (
   const { validationErrors, validateForm: runValidation } = useCognitiveTaskValidation();
 
   // <<< Usar hook de archivos >>>
-  const { 
-      isUploading, 
-      uploadProgress, 
-      currentFileIndex, 
-      totalFiles, 
-      handleFileUpload, 
-      handleMultipleFilesUpload, 
+  const {
+      isUploading,
+      uploadProgress,
+      currentFileIndex,
+      totalFiles,
+      handleFileUpload,
+      handleMultipleFilesUpload,
       handleFileDelete: originalHandleFileDelete,
       loadFilesFromLocalStorage
   } = useCognitiveTaskFileUpload({ researchId, formData, setFormData });
@@ -260,44 +259,44 @@ export const useCognitiveTaskForm = (
       try {
         if (!isAuthenticated || !token || !researchId) {
           logFormDebugInfo('queryFn-precondition-fail', null, null, {
-            isAuthenticated, 
-            hasToken: !!token, 
+            isAuthenticated,
+            hasToken: !!token,
             researchId
           });
-          return null; 
+          return null;
         }
-        
+
         console.log(`[useCognitiveTaskForm] Buscando config existente (fixed API): ${researchId}`);
         logFormDebugInfo('queryFn-pre-fetch', null, null, { researchId });
-        
+
         // Añadir un tiempo de espera para asegurar que el backend tenga tiempo de procesar
         if (window._lastMutationTimestamp && Date.now() - window._lastMutationTimestamp < 1000) {
           console.log('[useCognitiveTaskForm] Esperando brevemente antes de GET para asegurar consistencia');
           await new Promise(resolve => setTimeout(resolve, 500));
         }
-        
+
         const response = await cognitiveTaskFixedAPI.getByResearchId(researchId);
-        
+
         console.log('[useCognitiveTaskForm] Respuesta de API (fixed): ', response);
         logFormDebugInfo('queryFn-post-fetch', response);
-        
+
         // Validar la integridad básica de los datos
         if (response && (!response.researchId || !Array.isArray(response.questions))) {
           console.warn('[useCognitiveTaskForm] ⚠️ Datos recibidos con estructura incompleta:', response);
           logFormDebugInfo('queryFn-invalid-structure', response, new Error('Estructura de datos incompleta'));
           // Aún así devolver los datos para que se pueda intentar trabajar con ellos
         }
-        
-        return response; 
+
+        return response;
       } catch (error: any) {
         console.error('[useCognitiveTaskForm] Error al obtener datos (fixed API):', error);
         logFormDebugInfo('queryFn-error', null, error, { researchId });
-        
+
         if (error instanceof ApiError && error.statusCode === 404) {
             console.log('[useCognitiveTaskForm] Configuración no encontrada (404), tratando como null.');
             return null; // Tratar 404 como "no encontrado"
         }
-        
+
         // Intentar recuperar datos del localStorage como alternativa de último recurso
         try {
           const localFiles = loadFilesFromLocalStorage();
@@ -309,7 +308,7 @@ export const useCognitiveTaskForm = (
         } catch (localError) {
           console.error('[useCognitiveTaskForm] Error al intentar recuperar datos del localStorage:', localError);
         }
-        
+
         console.error('[useCognitiveTaskForm] Error no manejado en queryFn, devolviendo null.', error);
         return null; // Indicar a React Query que la consulta falló pero no relanzar
       }
@@ -317,7 +316,7 @@ export const useCognitiveTaskForm = (
     enabled: !!researchId && isAuthenticated,
     retry: 2, // Aumentar a 2 reintentos
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 10000), // Exponential backoff
-    staleTime: 60000, 
+    staleTime: 60000,
     refetchOnWindowFocus: false
   });
 
@@ -325,8 +324,8 @@ export const useCognitiveTaskForm = (
   const { mutate, isPending: isSaving } = useMutation({
     mutationFn: async (dataToSave: CognitiveTaskFormData): Promise<CognitiveTaskFormData> => {
       if (!researchId) throw new Error(VALIDATION_ERROR_MESSAGES.RESEARCH_ID_REQUIRED);
-      
-      // --- Inicio: Filtrar archivos pending-delete antes de enviar --- 
+
+      // --- Inicio: Filtrar archivos pending-delete antes de enviar ---
       const questionsForPayload = dataToSave.questions.map(q => {
         if (!q.files) return q;
         // Filtrar solo los archivos que NO están pendientes de eliminar
@@ -345,7 +344,7 @@ export const useCognitiveTaskForm = (
       };
 
       // Registrar ID antes de guardar
-      logFormDebugInfo('pre-save', payload, null, { 
+      logFormDebugInfo('pre-save', payload, null, {
         usingAPI: 'fixed',
         method: 'save', // Método unificado - create o update
         researchId
@@ -353,7 +352,7 @@ export const useCognitiveTaskForm = (
 
       // Guardar usando el método save (create o update)
       try {
-        // --- REFACTORIZADO: Usar método save API que usa PUT en lugar de crear o actualizar --- 
+        // --- REFACTORIZADO: Usar método save API que usa PUT en lugar de crear o actualizar ---
         const result = await cognitiveTaskFixedAPI.save(researchId, payload);
 
         logFormDebugInfo('post-save-success', result);
@@ -391,7 +390,7 @@ export const useCognitiveTaskForm = (
           console.log('[useCognitiveTaskForm] Limpiando archivos eliminados del localStorage');
         }
       }
-      modals.closeConfirmModal(); 
+      modals.closeConfirmModal();
       modals.closeJsonModal();
       if (typeof onSave === 'function') { onSave(data); }
       modals.showModal({
@@ -412,29 +411,29 @@ export const useCognitiveTaskForm = (
     onError: (error: any) => {
       console.error('[useCognitiveTaskForm] Error en mutación (REAL):', error);
       logFormDebugInfo('mutateError', formData, error);
-      modals.closeConfirmModal(); 
+      modals.closeConfirmModal();
       // Usar ApiError si está disponible
       const errorMessage = error instanceof ApiError ? error.message : (error.message || 'Error desconocido al guardar');
       modals.showModal({ title: 'Error de Guardado', message: errorMessage, type: 'error' });
-      
-      // --- Inicio: Revertir estado pending-delete en error --- 
+
+      // --- Inicio: Revertir estado pending-delete en error ---
       setFormData(prevData => ({
         ...prevData,
         questions: cleanupErrorFiles(prevData.questions)
       }));
-      // --- Fin: Revertir estado --- 
+      // --- Fin: Revertir estado ---
     }
   });
 
   // Efecto para cargar datos existentes y fusionar centralizadamente
   useEffect(() => {
-    if (isLoading) return; 
+    if (isLoading) return;
 
     // Llamar a loadFilesFromLocalStorage para obtener datos guardados
     const filesFromLocalStorage = loadFilesFromLocalStorage();
     console.log('[useEffect Form Data] Archivos cargados de localStorage:', filesFromLocalStorage);
 
-    // Usar la forma funcional de setFormData para asegurar consistencia 
+    // Usar la forma funcional de setFormData para asegurar consistencia
     // aunque en este enfoque centralizado, el `prev` es menos crítico.
     setFormData(prev => { // `prev` aquí representa el estado inicial o el anterior a la carga completa
       let finalQuestions: Question[];
@@ -442,10 +441,10 @@ export const useCognitiveTaskForm = (
       let finalDataFromBackend: Partial<CognitiveTaskFormData> = {};
 
       // Log del estado actual para depuración
-      logFormDebugInfo('effectStart', 
-        cognitiveTaskData || null, 
-        null, 
-        { 
+      logFormDebugInfo('effectStart',
+        cognitiveTaskData || null,
+        null,
+        {
           hasLocalStorage: !!filesFromLocalStorage,
           localStorageKeys: filesFromLocalStorage ? Object.keys(filesFromLocalStorage) : []
         }
@@ -458,13 +457,13 @@ export const useCognitiveTaskForm = (
           {
             id: '3.1',
             type: 'short_text' as QuestionType,
-            title: 'Que te ha parecido el módulo?',
-            description: 'Aqui puedes describir tu primera impresion de este módulo!',
+            title: '',
+            description: '',
             required: false,
             showConditionally: false,
             deviceFrame: false,
             files: [],
-            answerPlaceholder: 'Me ha parecido...'
+            answerPlaceholder: ''
           },
           {
             id: '3.2',
@@ -544,18 +543,18 @@ export const useCognitiveTaskForm = (
           {
             id: '3.8',
             type: 'preference_test' as QuestionType,
-            title: 'Que te parece esta imagen?',
-            description: 'Describe brevemente tu primera imprensión al respecto',
+            title: '',
+            description: '',
             required: false,
             showConditionally: false,
             files: [],
             deviceFrame: true
           }
         ];
-        
-        finalQuestions = prev.questions.length > 0 ? prev.questions : defaultQuestions; 
-        finalRandomize = false; 
-        setCognitiveTaskId(null); 
+
+        finalQuestions = prev.questions.length > 0 ? prev.questions : defaultQuestions;
+        finalRandomize = false;
+        setCognitiveTaskId(null);
       } else {
         console.log('[useEffect Form Data] Hay datos backend. Fusionando con defaults y localStorage.');
         const existingData = cognitiveTaskData as CognitiveTaskFormData;
@@ -571,10 +570,10 @@ export const useCognitiveTaskForm = (
       finalQuestions = finalQuestions.map(question => {
         const backendFiles = (finalDataFromBackend.questions?.find(q => q.id === question.id)?.files || []) as ExtendedUploadedFile[];
         const localStorageFiles = filesFromLocalStorage ? (filesFromLocalStorage[question.id] || []) : [];
-        
+
         // Combinar y eliminar duplicados por ID
         const allFilesMap = new Map<string, ExtendedUploadedFile>();
-        
+
         // Prioridad a archivos del backend (más recientes/autoritativos)
         backendFiles.forEach(file => {
           if (file && file.id && file.name) {
@@ -583,7 +582,7 @@ export const useCognitiveTaskForm = (
             console.warn(`[useEffect Form Data] Archivo inválido en backend para pregunta ${question.id}:`, file);
           }
         });
-        
+
         // Añadir archivos de localStorage solo si no existen ya (por ID)
         localStorageFiles.forEach(file => {
           if (file && file.id && file.name) {
@@ -618,7 +617,7 @@ export const useCognitiveTaskForm = (
           files: validFiles
         };
       });
-      
+
       // Construir el estado final a devolver
       const finalState: CognitiveTaskFormData = {
         ...(prev || {}), // Usar prev como base MUY inicial si es necesario
@@ -633,8 +632,8 @@ export const useCognitiveTaskForm = (
       finalState.questions = cleanupErrorFiles(finalState.questions);
       return finalState;
     });
-    
-  // Dependencias: Ejecutar cuando cambie la carga, los datos del backend, el researchId 
+
+  // Dependencias: Ejecutar cuando cambie la carga, los datos del backend, el researchId
   // o las funciones de los hooks hijos que usamos.
   }, [cognitiveTaskData, researchId, isLoading, setFormData, loadFilesFromLocalStorage]);
 
@@ -677,7 +676,7 @@ export const useCognitiveTaskForm = (
 
   // --- Lógica de Acciones Principales (sin cambios grandes) ---
   const continueWithAction = () => { /* ... */ };
-  
+
   // <<< Implementar handlePreview >>>
   const handlePreview = useCallback(() => {
     if (validateCurrentForm()) {
@@ -692,9 +691,9 @@ export const useCognitiveTaskForm = (
     } else {
         // Mostrar un modal con el error de validación en lugar de un toast
         modals.showModal({
-            title: 'Formulario Inválido', 
-            message: 'Por favor, corrija los errores antes de previsualizar.', 
-            type: 'warning' 
+            title: 'Formulario Inválido',
+            message: 'Por favor, corrija los errores antes de previsualizar.',
+            type: 'warning'
         });
     }
   }, [formData, validateCurrentForm, modals]);
@@ -703,23 +702,23 @@ export const useCognitiveTaskForm = (
     console.log(`[handleSave] Iniciando guardado. researchId: ${researchId}`);
     const errorsFound = validateCurrentForm(); // <<< Capturar errores o null
     const isValid = errorsFound === null; // <<< Determinar validez
-    
+
     console.log(`[handleSave] Resultado de validateCurrentForm: ${isValid}`);
     // <<< Loguear los errores encontrados INMEDIATAMENTE
     console.log('[handleSave] Errores encontrados por validateCurrentForm:', errorsFound);
-    
+
     if (isValid) {
         // Llamar directamente a confirmAndSave en lugar de mostrar el modal de confirmación
         confirmAndSave();
     } else {
         // Mostrar modal de error en lugar de toast
         let errorMessage = 'Por favor, corrija los errores en el formulario.';
-        
+
         // Si hay un error específico en las preguntas, usarlo en su lugar
         if (errorsFound && errorsFound.questions && Object.keys(errorsFound).length === 1) {
           errorMessage = errorsFound.questions;
         }
-        
+
         modals.showModal({
             title: 'Formulario Inválido',
             message: errorMessage,
@@ -727,13 +726,13 @@ export const useCognitiveTaskForm = (
         });
     }
   };
-  
+
   const confirmAndSave = useCallback(() => {
       if (!formData) return; // Seguridad
-      
+
       // Filtrar solo las preguntas que tienen todos los campos requeridos
       const filteredData = filterValidQuestions(formData);
-      
+
       // Pasar una copia profunda para evitar mutaciones inesperadas si mutate tarda
       const dataToSave = JSON.parse(JSON.stringify(filteredData));
       // Limpiar archivos temporales antes de guardar
@@ -747,17 +746,17 @@ export const useCognitiveTaskForm = (
               s3Key: f.s3Key, // Solo guardar lo necesario
           })) || []
       }));
-      
+
       if (process.env.NODE_ENV === 'development') {
         console.log("[ConfirmAndSave] Datos originales:", formData);
         console.log("[ConfirmAndSave] Datos filtrados:", filteredData);
         debugQuestionsToSend(formData);
       }
-      
+
       console.log("[ConfirmAndSave] Datos listos para mutación:", dataToSave);
       mutate(dataToSave); // Llamar a la mutación
   }, [formData, mutate]);
-  
+
   const cancelSave = useCallback(() => {
     modals.closeConfirmModal();
   }, [modals]);
@@ -775,23 +774,23 @@ export const useCognitiveTaskForm = (
 
       // Llamar a la API para eliminar
       await cognitiveTaskFixedAPI.deleteByResearchId(researchId);
-      
+
       // Limpiar el estado local
       setCognitiveTaskId(null);
       setFormData(prev => ({
         ...prev,
         questions: []
       }));
-      
+
       // Invalidar queries
       queryClient.invalidateQueries({ queryKey: ['cognitive-task', researchId] });
-      
-      modals.showModal({ 
+
+      modals.showModal({
         title: 'Éxito',
         message: 'Datos de Cognitive Tasks eliminados correctamente',
         type: 'success'
       });
-      
+
     } catch (error: any) {
       console.error('[CognitiveTaskForm] Error al eliminar:', error);
       modals.showModal({
@@ -802,15 +801,15 @@ export const useCognitiveTaskForm = (
     }
   }, [researchId, setCognitiveTaskId, setFormData, queryClient, modals]);
 
-  // --- Retorno del Hook Principal --- 
-  console.log('[useCognitiveTaskForm] Estado FINAL formData (desde hook estado):', 
+  // --- Retorno del Hook Principal ---
+  console.log('[useCognitiveTaskForm] Estado FINAL formData (desde hook estado):',
     JSON.stringify(formData?.questions?.map(q => ({ id: q.id, type: q.type, title: q.title?.substring(0, 20) })) || [], null, 2)
   );
 
   return {
-    formData, 
-    cognitiveTaskId, 
-    isLoading, 
+    formData,
+    cognitiveTaskId,
+    isLoading,
     isSaving,
     questionTypes: QUESTION_TYPES,
     // Handlers de estado
@@ -820,26 +819,26 @@ export const useCognitiveTaskForm = (
     handleAddQuestion,
     handleRandomizeChange,
     // Handlers de archivos (del hook)
-    handleFileUpload, 
-    handleMultipleFilesUpload, 
+    handleFileUpload,
+    handleMultipleFilesUpload,
     handleFileDelete: originalHandleFileDelete,
     // Acciones principales
-    handleSave, 
-    handlePreview, 
+    handleSave,
+    handlePreview,
     handleDelete,
     // Validación (del hook)
-    validationErrors, 
+    validationErrors,
     validateForm: validateCurrentForm,
-    
+
     // <<< Asegurarse que se retornan las funciones y estado del modal de confirmación >>>
     showConfirmModal: modals.showConfirmModal,
     confirmAndSave,
     cancelSave,
-    
+
     // Estado de carga (del hook)
-    isUploading, 
-    uploadProgress, 
-    currentFileIndex, 
+    isUploading,
+    uploadProgress,
+    currentFileIndex,
     totalFiles,
     // <<< Añadir propiedades faltantes para los modales >>>
     modalError: modals.modalError,

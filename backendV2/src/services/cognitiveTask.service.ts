@@ -1,10 +1,10 @@
-import { CognitiveTaskModel, CognitiveTaskRecord } from '../models/cognitiveTask.model';
-import { CognitiveTaskFormData, Question, UploadedFile, COGNITIVE_TASK_VALIDATION, ScaleConfig, Choice } from '../../../shared/interfaces/cognitive-task.interface';
-import { ApiError } from '../utils/errors';
-import { NotFoundError } from '../errors';
-import { S3Service, FileType, PresignedUrlParams } from '../services/s3.service';
 import { v4 as uuidv4 } from 'uuid';
+import { Choice, COGNITIVE_TASK_VALIDATION, CognitiveTaskFormData, Question, ScaleConfig, UploadedFile } from '../../../shared/interfaces/cognitive-task.interface';
+import { NotFoundError } from '../errors';
+import { CognitiveTaskModel, CognitiveTaskRecord } from '../models/cognitiveTask.model';
+import { FileType, PresignedUrlParams, S3Service } from '../services/s3.service';
 import { handleDbError } from '../utils/dbError.util';
+import { ApiError } from '../utils/errors';
 import { structuredLog } from '../utils/logging.util';
 
 /**
@@ -41,7 +41,7 @@ export class CognitiveTaskService {
    */
   private validateFormData(data: Partial<CognitiveTaskFormData>): void {
     console.log('[DEBUG] CognitiveTaskService.validateFormData - Datos recibidos:', JSON.stringify(data, null, 2));
-    
+
     // 1. Validar researchId (esencial)
     if (!data.researchId) {
       throw new ApiError(
@@ -76,7 +76,7 @@ export class CognitiveTaskService {
    */
   private _validateSingleQuestion(question: Question, index: number): void {
     const questionNumber = index + 1;
-    
+
     // Validar tipo de pregunta
     if (!question.type || typeof question.type !== 'string') {
       throw new ApiError(
@@ -92,7 +92,7 @@ export class CognitiveTaskService {
         400
       );
     }
-    
+
     // Validaciones específicas por tipo
     switch (question.type) {
       case 'single_choice':
@@ -183,9 +183,9 @@ export class CognitiveTaskService {
        throw new ApiError(
         `${CognitiveTaskError.INVALID_DATA}: Los archivos de la pregunta ${questionNumber} deben ser un array`,
         400
-      ); 
+      );
     }
-    
+
     // Si el array existe, validar cada archivo
     files.forEach((file, fileIndex) => {
       const fileNumber = fileIndex + 1;
@@ -195,7 +195,7 @@ export class CognitiveTaskService {
           400
         );
       }
-      
+
       // Validar campos básicos del archivo
       if (!file.id || !file.name || !file.size || !file.type) {
         throw new ApiError(
@@ -203,17 +203,17 @@ export class CognitiveTaskService {
           400
         );
       }
-      
+
       // <<< Modificar Validación: Solo requerir s3Key, no url >>>
       // La URL final se deriva de S3, no necesitamos recibirla.
-      if (!file.s3Key) { 
+      if (!file.s3Key) {
         console.log(`[VALIDACION-IMAGEN] Archivo sin s3Key: Pregunta ${questionNumber}, Archivo ${fileNumber}`, file);
         throw new ApiError(
           `${CognitiveTaskError.INVALID_DATA}: El archivo ${fileNumber} (pregunta ${questionNumber}) debe tener una s3Key`,
           400
         );
       }
-      
+
       // Validar tamaño máximo
       if (file.size > COGNITIVE_TASK_VALIDATION.files.maxSize) {
         throw new ApiError(
@@ -251,14 +251,14 @@ export class CognitiveTaskService {
           400
         );
       }
-      
+
       // Construir la ruta de la carpeta incluyendo el questionId
       const folderPath = `cognitive-task-files/${fileParams.questionId}`;
 
       // Llamar al servicio S3 para obtener la URL de subida
       const uploadUrlData = await this.s3Service.generateUploadUrl({
         // Determinar FileType del enum basado en MIME type (simplificado, podría mejorarse)
-        fileType: fileParams.fileType.startsWith('image/') ? FileType.IMAGE : 
+        fileType: fileParams.fileType.startsWith('image/') ? FileType.IMAGE :
                   fileParams.fileType.startsWith('video/') ? FileType.VIDEO :
                   FileType.DOCUMENT, // Default a document si no es imagen/video
         fileName: fileParams.fileName, // s3Service extraerá la extensión de aquí
@@ -267,7 +267,7 @@ export class CognitiveTaskService {
         researchId: fileParams.researchId,
         folder: folderPath, // <<< Pasar la carpeta con questionId
       });
-      
+
       // <<< EXTRAER el fileId REAL de la s3Key devuelta >>>
       let extractedFileId = uuidv4(); // Fallback por si falla la extracción
       try {
@@ -278,7 +278,7 @@ export class CognitiveTaskService {
               // Extraer la parte entre el último '_' (antes del UUID) y el último '.'
               // O, más simple, extraer la parte ANTES del último punto, que es el UUID
               // CORRECCIÓN: s3Service.generateUploadUrl genera ${fileId}${extension}
-              extractedFileId = fileNameWithExt.substring(0, lastDotIndex); 
+              extractedFileId = fileNameWithExt.substring(0, lastDotIndex);
               // Validar si parece UUID (opcional pero recomendado)
               if (!/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(extractedFileId)) {
                  console.warn(`[${operation}] No se pudo extraer un UUID válido de la key: ${uploadUrlData.key}. Usando fallback.`);
@@ -286,7 +286,7 @@ export class CognitiveTaskService {
               }
           } else {
               // Si no hay extensión, asumir que todo después del último / es el ID
-              extractedFileId = fileNameWithExt; 
+              extractedFileId = fileNameWithExt;
                if (!/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(extractedFileId)) {
                  console.warn(`[${operation}] No se pudo extraer un UUID válido (sin ext) de la key: ${uploadUrlData.key}. Usando fallback.`);
                  extractedFileId = uuidv4(); // Volver al fallback si no es UUID
@@ -303,10 +303,10 @@ export class CognitiveTaskService {
         name: fileParams.fileName,
         size: fileParams.fileSize,
         type: fileParams.fileType,
-        s3Key: uploadUrlData.key, 
-        url: uploadUrlData.fileUrl, 
+        s3Key: uploadUrlData.key,
+        url: uploadUrlData.fileUrl,
       };
-      
+
        console.log(`${operation} - Datos de archivo preparado (con ID extraído):`, uploadedFile);
 
       return {
@@ -363,7 +363,7 @@ export class CognitiveTaskService {
    * Obtiene un formulario CognitiveTask según el ID de investigación.
    * Llama directamente al modelo que usa researchId como PK.
    */
-  async getByResearchId(researchId: string): Promise<CognitiveTaskRecord> {
+  async getByResearchId(researchId: string): Promise<CognitiveTaskRecord | null> {
     const context = 'getByResearchId';
     try {
       if (!researchId) {
@@ -374,10 +374,10 @@ export class CognitiveTaskService {
       }
       structuredLog('info', `${this.serviceName}.${context}`, 'Buscando formulario CognitiveTask', { researchId });
       const cognitiveTask = await this.model.getByResearchId(researchId);
-      
+
       if (!cognitiveTask) {
-        structuredLog('warn', `${this.serviceName}.${context}`, 'No se encontró formulario CognitiveTask', { researchId });
-        throw new NotFoundError(CognitiveTaskError.NOT_FOUND);
+        structuredLog('info', `${this.serviceName}.${context}`, 'No se encontró formulario CognitiveTask', { researchId });
+        return null; // Cambiar para retornar null en lugar de throw error
       }
 
       structuredLog('info', `${this.serviceName}.${context}`, 'Formulario CognitiveTask encontrado', { researchId, formId: cognitiveTask.id });
@@ -400,10 +400,10 @@ export class CognitiveTaskService {
           400
         );
       }
-      
+
       this.validateFormData(data);
       structuredLog('info', `${this.serviceName}.${context}`, 'Verificando si ya existe formulario CognitiveTask', { researchId });
-      
+
       // Verificar si ya existe un formulario para este researchId
       try {
         const existingForm = await this.model.getByResearchId(researchId);
@@ -421,14 +421,14 @@ export class CognitiveTaskService {
         }
         // Normal flow continues if form doesn't exist
       }
-      
+
       // Proceder con la creación
       const formId = data.id || uuidv4();
       structuredLog('info', `${this.serviceName}.${context}`, 'Creando nuevo formulario CognitiveTask', { researchId, formId });
-      
+
       const formDataWithId = { ...data, id: formId, researchId };
       const result = await this.model.create(formDataWithId, researchId);
-      
+
       structuredLog('info', `${this.serviceName}.${context}`, 'Formulario CognitiveTask creado exitosamente', { researchId, formId: result.id });
       return result;
     } catch (error) {
@@ -446,22 +446,22 @@ export class CognitiveTaskService {
       if (!taskId) {
         throw new ApiError('Se requiere taskId (UUID) para actualizar', 400);
       }
-      
+
       this.validateFormData(data);
       structuredLog('info', `${this.serviceName}.${context}`, 'Verificando existencia del formulario', { taskId });
-      
+
       const currentRecord = await this.model.getById(taskId);
       if (!currentRecord) {
         structuredLog('warn', `${this.serviceName}.${context}`, 'No se encontró el formulario a actualizar', { taskId });
         throw new NotFoundError(CognitiveTaskError.NOT_FOUND);
       }
-      
+
       const researchId = currentRecord.researchId;
       structuredLog('info', `${this.serviceName}.${context}`, 'Actualizando formulario CognitiveTask', { taskId, researchId });
-      
+
       const { id, researchId: dataResearchId, ...updatePayload } = data;
       const result = await this.model.update(researchId, updatePayload);
-      
+
       structuredLog('info', `${this.serviceName}.${context}`, 'Formulario CognitiveTask actualizado exitosamente', { taskId, researchId });
       return result;
     } catch (error) {
@@ -505,23 +505,23 @@ export class CognitiveTaskService {
       if (existingTargetForm) {
         throw new ApiError(`${CognitiveTaskError.INVALID_DATA}: Ya existe un formulario CognitiveTask para la investigación destino con ID: ${targetResearchId}`, 400);
       }
-      const newFormId = uuidv4(); 
+      const newFormId = uuidv4();
       const clonedQuestions = await this.cloneQuestions(sourceForm.questions, targetResearchId);
       const now = new Date().toISOString();
-      
+
       const formDataToClone: CognitiveTaskFormData = {
-        id: newFormId, 
+        id: newFormId,
         researchId: targetResearchId,
         questions: clonedQuestions,
         randomizeQuestions: sourceForm.randomizeQuestions,
         metadata: {
           ...(sourceForm.metadata || {}),
-          createdAt: now, 
+          createdAt: now,
           updatedAt: now,
           lastModifiedBy: 'system_clone'
         }
       };
-      
+
       return await this.model.create(formDataToClone, targetResearchId);
     } catch (error) {
       throw handleDbError(error, context, this.serviceName, COGNITIVE_TASK_MODEL_ERRORS);
@@ -537,24 +537,24 @@ export class CognitiveTaskService {
   private async cloneQuestions(questions: Question[], targetResearchId: string): Promise<Question[]> {
     try {
       const clonedQuestions: Question[] = [];
-      
+
       for (const question of questions) {
         const clonedQuestion: Question = {
           ...question,
           id: question.id
         };
-        
+
         if (question.files && question.files.length > 0) {
           clonedQuestion.files = await this.cloneFiles(question.files, targetResearchId);
         }
-        
+
         clonedQuestions.push(clonedQuestion);
       }
-      
+
       return clonedQuestions;
     } catch (error) {
       console.error('Error al clonar preguntas:', error);
-      throw error; 
+      throw error;
     }
   }
 
@@ -566,14 +566,14 @@ export class CognitiveTaskService {
   private async cloneFiles(files: UploadedFile[], targetResearchId: string): Promise<UploadedFile[]> {
     try {
       const clonedFilesPromises = files.map(async (file) => {
-        const mimeType = file.type || 'application/octet-stream'; 
+        const mimeType = file.type || 'application/octet-stream';
         const fileSize = typeof file.size === 'string' ? parseInt(file.size, 10) : file.size;
 
         if (isNaN(fileSize) || fileSize === null || fileSize === undefined) {
             console.warn(`[CLONE_FILES] Tamaño de archivo inválido o nulo para ${file.name}, omitiendo.`);
             return null;
         }
-        
+
         const params: PresignedUrlParams = {
           fileType: FileType.IMAGE, // Ajustar según sea necesario
           fileName: file.name,
@@ -587,12 +587,12 @@ export class CognitiveTaskService {
 
         // Crear objeto de archivo clonado con la nueva metadata de S3
         const clonedFile: UploadedFile = {
-          id: presignedUrlResponse.key.split('/').pop() || uuidv4(), 
-          name: file.name, 
-          size: fileSize, 
+          id: presignedUrlResponse.key.split('/').pop() || uuidv4(),
+          name: file.name,
+          size: fileSize,
           type: mimeType,
-          url: presignedUrlResponse.fileUrl, 
-          s3Key: presignedUrlResponse.key, 
+          url: presignedUrlResponse.fileUrl,
+          s3Key: presignedUrlResponse.key,
           time: Date.now() // Usar Date.now() para timestamp numérico
         };
 
@@ -600,8 +600,8 @@ export class CognitiveTaskService {
         if (file.hitZones && file.hitZones.length > 0) {
           clonedFile.hitZones = file.hitZones.map(zone => ({
             ...zone,
-            id: uuidv4(), 
-            fileId: clonedFile.id 
+            id: uuidv4(),
+            fileId: clonedFile.id
           }));
         }
         return clonedFile;
@@ -609,7 +609,7 @@ export class CognitiveTaskService {
 
       const results = await Promise.all(clonedFilesPromises);
       return results.filter(file => file !== null) as UploadedFile[];
-      
+
     } catch (error) {
       console.error('Error al clonar archivos (generando nueva metadata S3):', error);
       if (error instanceof ApiError) throw error;
@@ -640,7 +640,7 @@ export class CognitiveTaskService {
   async batchUpdate(formIds: string[], updateData: Partial<CognitiveTaskFormData>): Promise<number> {
     try {
       let successCount = 0;
-      
+
       for (const formId of formIds) {
         try {
           await this.update(formId, updateData);
@@ -649,7 +649,7 @@ export class CognitiveTaskService {
           console.error(`[BatchUpdate] Error al actualizar formulario ${formId}:`, error);
         }
       }
-      
+
       return successCount;
     } catch (error) {
       console.error('Error general en actualización batch de formularios CognitiveTask:', error);
@@ -660,7 +660,7 @@ export class CognitiveTaskService {
     }
   }
 
-  // --- Funciones Auxiliares --- 
+  // --- Funciones Auxiliares ---
   private validateResearchId(researchId: string): void {
     if (!researchId) {
       throw new ApiError(
@@ -715,14 +715,12 @@ export class CognitiveTaskService {
       structuredLog('info', `${this.serviceName}.${context}`, 'Actualizando/Creando formulario CognitiveTask', { researchId });
 
       let existingForm = null;
-      
+
       try {
         existingForm = await this.model.getByResearchId(researchId);
       } catch (error) {
-        if (!(error instanceof NotFoundError)) {
-          throw error; // Propagar errores que no sean NotFoundError
-        }
-        // Si es NotFoundError, continuar con existingForm=null
+        // Si hay un error de base de datos real, propagarlo
+        throw error;
       }
 
       if (existingForm) {
@@ -775,16 +773,16 @@ export class CognitiveTaskService {
       }
 
       structuredLog('info', `${this.serviceName}.${context}`, 'Eliminando formulario CognitiveTask por researchId', { researchId });
-      
+
       // El modelo ya tiene el método delete(researchId) que usamos
       const deleted = await this.model.delete(researchId);
-      
+
       if (deleted) {
         structuredLog('info', `${this.serviceName}.${context}`, 'Formulario eliminado exitosamente', { researchId });
       } else {
         structuredLog('info', `${this.serviceName}.${context}`, 'No se encontró formulario para eliminar', { researchId });
       }
-      
+
       return deleted;
     } catch (error) {
       if (error instanceof NotFoundError) {
