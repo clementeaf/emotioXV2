@@ -47,6 +47,7 @@ const CognitiveTaskHandler: React.FC<CognitiveTaskHandlerProps> = ({
                        question={currentQuestion} 
                        answer={currentAnswer}
                        onChange={handleAnswerChange}
+                       onResponse={(response) => handleAnswerChange(currentQuestion.id, response)}
                    />
                 </div>
 

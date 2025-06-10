@@ -110,7 +110,8 @@ export interface Step {
 
 // Error y estados
 export interface ErrorScreenProps {
-  error: string;
+  error?: string;
+  message?: string;
   onRetry?: () => void;
 }
 

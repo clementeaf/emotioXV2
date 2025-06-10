@@ -1,8 +1,7 @@
 import React from 'react';
 import QuestionHeader from '../common/QuestionHeader'; // Importar QuestionHeader
 import CheckboxGroup from '../../common/CheckboxGroup'; // Importar el nuevo componente
-import { CognitiveQuestion, MultiChoiceViewComponentProps } from '../../../types/cognitive-task.types';
-import { ChoiceOption } from '../../../types/common.types';
+import { MultiChoiceViewComponentProps } from '../../../types/cognitive-task.types';
 
 export const MultiChoiceView: React.FC<MultiChoiceViewComponentProps> = ({ config, value = [], onChange }) => {
   const id = config.id;

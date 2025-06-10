@@ -1,5 +1,4 @@
 import React, { useState, useRef } from 'react';
-import { Question as CognitiveQuestion } from '../../../../shared/interfaces/cognitive-task.interface';
 import { CognitiveNavigationFlowStepProps } from '../../types/cognitive-task.types';
 
 // Función para convertir hitZones del backend a formato de coordenadas

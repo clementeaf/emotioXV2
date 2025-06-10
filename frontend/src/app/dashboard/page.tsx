@@ -1,17 +1,18 @@
 'use client';
 
-import { useSearchParams, useRouter } from 'next/navigation';
 import { useState, useEffect, memo, Suspense } from 'react';
-import { useAuth } from '@/providers/AuthProvider';
+import { useSearchParams, useRouter } from 'next/navigation';
+
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
+import { withSearchParams } from '@/components/common/SearchParamsWrapper';
 import { ResearchTable } from '@/components/dashboard/ResearchTable';
 import { ResearchTypes } from '@/components/dashboard/ResearchTypes';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { Navbar } from '@/components/layout/Navbar';
 import { Sidebar } from '@/components/layout/Sidebar';
-import { withSearchParams } from '@/components/common/SearchParamsWrapper';
-import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { ResearchStageManager } from '@/components/research/ResearchStageManager';
 import { cleanAllResearchFromLocalStorage } from '@/lib/cleanup/localStorageCleanup';
+import { useAuth } from '@/providers/AuthProvider';
 
 // Interfaces para tipar los datos
 interface ResearchData {
@@ -173,7 +174,7 @@ const DashboardContent = memo(() => {
           }
         }
       } catch (error) {
-        console.error('Error loading research:', error);
+        // Error loading research
         setActiveResearch({ 
           id: researchId, 
           name: 'Research Project' 
@@ -184,7 +185,7 @@ const DashboardContent = memo(() => {
       setIsAimFramework(false);
       cleanAllResearchFromLocalStorage();
     }
-  }, [researchId, searchParams, router]);
+  }, [researchId, searchParams, router, section]);
 
   if (activeResearch && (isAimFramework || section)) {
     return <ResearchStageManager researchId={activeResearch.id} />;

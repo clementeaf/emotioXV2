@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ExpandedStep } from '../stores/participantStore';
+// import { ExpandedStep } from '../stores/participantStore';
 import { useParticipantStore } from '../stores/participantStore';
 import { useResponseStorage } from '../hooks/useResponseStorage';
 import { CognitiveTaskQuestionProps } from '../types/cognitive-task.types';

@@ -386,7 +386,7 @@ export class CognitiveTaskModel {
       const command = new UpdateCommand({
         TableName: this.tableName,
         Key: {
-          id: existingRecord.id,
+          researchId: researchId,
           sk: CognitiveTaskModel.SORT_KEY_VALUE
         },
         UpdateExpression: updateExpression,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChoiceOption, RadioButtonGroupProps } from '../../types/common.types';
+import { RadioButtonGroupProps } from '../../types/common.types';
 
 const RadioButtonGroup: React.FC<RadioButtonGroupProps> = ({
   name,

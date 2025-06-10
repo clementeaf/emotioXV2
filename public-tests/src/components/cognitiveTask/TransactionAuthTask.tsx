@@ -7,7 +7,7 @@ import { ChoiceOption } from '../../types/common.types';
 import { TransactionAuthTaskComponentProps } from '../../types/cognitive-task.types';
 
 // Tipo para los formatos de visualización
-type ViewFormat = 'text-only' | 'desktop-image' | 'mobile-image' | 'long-text';
+// type ViewFormat = 'text-only' | 'desktop-image' | 'mobile-image' | 'long-text';
 
 // Opciones codificadas (se mantienen aquí o podrían venir de props/config)
 const options: ChoiceOption[] = [

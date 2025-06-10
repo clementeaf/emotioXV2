@@ -9,8 +9,8 @@ const logger = createComponentLogger('SmartVocFeedbackQuestion');
 export const SmartVocFeedbackQuestion: React.FC<ComponentSmartVocFeedbackQuestionProps> = ({ 
   config, 
   stepName, 
-  onStepComplete, 
-  isMock 
+  onStepComplete
+  // isMock 
 }) => {
 
   const cfg = (typeof config === 'object' && config !== null)

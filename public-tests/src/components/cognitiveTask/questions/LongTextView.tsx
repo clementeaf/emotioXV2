@@ -1,5 +1,5 @@
 import React from 'react';
-import { CognitiveQuestion, LongTextViewComponentProps } from '../../../types/cognitive-task.types';
+import { LongTextViewComponentProps } from '../../../types/cognitive-task.types';
 import QuestionHeader from '../common/QuestionHeader';
 import TextAreaField from '../../common/TextAreaField';
 import { useStandardizedForm, valueExtractors, validationRules } from '../../../hooks/useStandardizedForm';

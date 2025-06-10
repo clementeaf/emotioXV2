@@ -1,5 +1,5 @@
 import React from 'react';
-import { CharacterCounterProps } from '../../types';
+// import { CharacterCounterProps } from '../../types';
 import { ExtendedCharacterCounterProps } from '../../types/common.types';
 
 const CharacterCounter: React.FC<ExtendedCharacterCounterProps> = ({

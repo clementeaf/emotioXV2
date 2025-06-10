@@ -77,6 +77,7 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
           isSaving={isSaving}
           isLoading={isLoading}
           smartVocId={smartVocId}
+          researchId={researchId}
           onSave={handleSave}
           onPreview={handlePreview}
         />

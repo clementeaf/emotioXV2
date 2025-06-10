@@ -4,7 +4,8 @@ import { useParticipantStore } from '../../stores/participantStore';
 import { useAnsweredStepIds } from './useAnsweredStepIds';
 import { ProgressSidebarItem } from './ProgressSidebarItem';
 import LoadingIndicator from '../common/LoadingIndicator';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { apiClient } from '../../lib/api';
 
 export function ProgressSidebar({ 
   steps, 
@@ -14,6 +15,7 @@ export function ProgressSidebar({
   const researchId = useParticipantStore(state => state.researchId);
   const participantId = useParticipantStore(state => state.participantId);
   const responsesData = useParticipantStore(state => state.responsesData);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const { data: moduleResponsesData, isLoading: isResponsesLoading } = useModuleResponses({
     researchId: researchId || undefined,
@@ -76,6 +78,36 @@ export function ProgressSidebar({
     }
   };
 
+  // Handler para borrar respuestas
+  const handleDeleteResponses = async () => {
+    if (!researchId || !participantId) {
+      alert('No se encontraron IDs de investigación y participante');
+      return;
+    }
+
+    if (!confirm('¿Estás seguro de que quieres borrar todas las respuestas? Esta acción no se puede deshacer.')) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const url = `/research/${researchId}/participants/${participantId}/responses`;
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev'}${url}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (response) {
+        alert('Respuestas eliminadas exitosamente');
+        window.location.reload(); // Recargar para refrescar el estado
+      }
+    } catch (error) {
+      console.error('Error eliminando respuestas:', error);
+      alert('Error al eliminar respuestas. Ver consola para más detalles.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <nav 
       aria-label="Progreso del estudio"
@@ -98,6 +130,14 @@ export function ProgressSidebar({
               {progressInfo.percentage}% completado
             </div>
           )}
+          
+          <button
+            onClick={handleDeleteResponses}
+            disabled={isDeleting}
+            className="mt-3 w-full px-3 py-2 text-xs bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isDeleting ? 'Borrando...' : 'Borrar respuestas'}
+          </button>
         </div>
       </div>
       

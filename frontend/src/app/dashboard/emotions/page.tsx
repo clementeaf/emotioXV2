@@ -61,6 +61,8 @@ const EmotionBar = memo(({ emotion, value, color }: EmotionData) => (
   </div>
 ));
 
+EmotionBar.displayName = 'EmotionBar';
+
 // Componente para el elemento de análisis reciente
 const AnalysisItem = memo(({ item }: { item: AnalysisItem }) => (
   <div className="flex items-start justify-between">
@@ -77,6 +79,8 @@ const AnalysisItem = memo(({ item }: { item: AnalysisItem }) => (
   </div>
 ));
 
+AnalysisItem.displayName = 'AnalysisItem';
+
 // Componente para los elementos de lista con punto de color
 const BulletPoint = memo(({ color, text }: BulletItem) => (
   <li className="flex items-start">
@@ -84,6 +88,8 @@ const BulletPoint = memo(({ color, text }: BulletItem) => (
     <p className="text-sm text-neutral-600">{text}</p>
   </li>
 ));
+
+BulletPoint.displayName = 'BulletPoint';
 
 // Componente para la sección de distribución de emociones
 const EmotionDistribution = memo(() => (
@@ -102,6 +108,8 @@ const EmotionDistribution = memo(() => (
   </div>
 ));
 
+EmotionDistribution.displayName = 'EmotionDistribution';
+
 // Componente para la sección de análisis recientes
 const RecentAnalysis = memo(() => (
   <div className="bg-white p-6 rounded-lg border border-neutral-200">
@@ -113,6 +121,8 @@ const RecentAnalysis = memo(() => (
     </div>
   </div>
 ));
+
+RecentAnalysis.displayName = 'RecentAnalysis';
 
 // Componente para la sección de insights
 const InsightsSection = memo(() => (
@@ -130,6 +140,8 @@ const InsightsSection = memo(() => (
   </div>
 ));
 
+InsightsSection.displayName = 'InsightsSection';
+
 // Componente para la sección de recomendaciones
 const RecommendationsSection = memo(() => (
   <div className="bg-white p-6 rounded-lg border border-neutral-200">
@@ -146,6 +158,8 @@ const RecommendationsSection = memo(() => (
   </div>
 ));
 
+RecommendationsSection.displayName = 'RecommendationsSection';
+
 // Componente para la sección de próximos pasos
 const NextStepsSection = memo(() => (
   <div className="bg-white p-6 rounded-lg border border-neutral-200">
@@ -161,6 +175,8 @@ const NextStepsSection = memo(() => (
     </ul>
   </div>
 ));
+
+NextStepsSection.displayName = 'NextStepsSection';
 
 // Componente contenido principal
 const EmotionsContent = () => {

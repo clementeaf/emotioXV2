@@ -10,9 +10,10 @@ export const generateNewQuestion = (index: number): SmartVOCQuestion => {
     type: 'VOC',
     title: `Nueva Pregunta ${index + 1}`,
     description: '',
-    required: false,
     showConditionally: false,
-    config: {},
-    instructions: '' // Añadir si es parte del tipo
+    config: {
+      type: 'text'
+    },
+    instructions: ''
   };
 }; 

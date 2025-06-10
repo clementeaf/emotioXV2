@@ -1,20 +1,20 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
 import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 
 import { BenchmarkChart } from '@/components/clients/BenchmarkChart';
 import { BestPerformer } from '@/components/clients/BestPerformer';
 import { ClientSelector } from '@/components/clients/ClientSelector';
 import { ResearchList } from '@/components/clients/ResearchList';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
+import { SearchParamsWrapper } from '@/components/common/SearchParamsWrapper';
 import { Navbar } from '@/components/layout/Navbar';
 import { Sidebar } from '@/components/layout/Sidebar';
-import { SearchParamsWrapper } from '@/components/common/SearchParamsWrapper';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
-import { useQuery } from '@tanstack/react-query';
-import { researchAPI } from '@/lib/api';
 import { ClientResearch } from '@/interfaces/research';
+import { researchAPI } from '@/lib/api';
 
 // Componente para la sección de ayuda
 const HelpSection = () => (
@@ -48,8 +48,8 @@ const ClientsContent = () => {
   };
 
   // Adaptador para convertir datos de Research a ClientResearch
-  const adaptResearchData = (data: any[]): ClientResearch[] => {
-    return data.map(item => ({
+  const adaptResearchData = (data: unknown[]): ClientResearch[] => {
+    return data.map((item: any) => ({
       id: item.id,
       name: item.name || item.basic?.name || 'Untitled Research',
       status: mapStatus(item.status),
@@ -86,7 +86,7 @@ const ClientsContent = () => {
                                     item.basic?.enterprise === selectedClientId)
           : research;
       } catch (error) {
-        console.error('Error al cargar investigaciones:', error);
+        // Error al cargar investigaciones
         return [];
       }
     },
@@ -96,19 +96,23 @@ const ClientsContent = () => {
   // Adaptar datos al formato ClientResearch
   const researchData = useMemo(() => {
     return adaptResearchData(apiResearchData || []);
-  }, [apiResearchData]);
+  }, [apiResearchData, adaptResearchData]);
 
   // Calcular la mejor investigación basada en puntuación
   const bestResearch = useMemo(() => {
-    if (!apiResearchData || apiResearchData.length === 0) return null;
+    if (!apiResearchData || apiResearchData.length === 0) {
+      return null;
+    }
     
     // Ordenar por progreso como aproximación de puntuación
-    const sorted = [...apiResearchData].sort((a, b) => 
+    const sorted = [...apiResearchData].sort((a: any, b: any) => 
       (b.progress || 0) - (a.progress || 0)
     );
     
     const best = sorted[0];
-    if (!best) return null;
+    if (!best) {
+      return null;
+    }
     
     return {
       id: best.id,

@@ -4,7 +4,7 @@ import { LongTextView } from './questions/LongTextView';
 import { SingleChoiceView } from './questions/SingleChoiceView';
 import { MultiChoiceView } from './questions/MultiChoiceView';
 import { LinearScaleView } from './questions/LinearScaleView';
-import { CognitiveQuestionRendererProps, CognitiveQuestion } from '../../types/cognitive-task.types';
+import { CognitiveQuestionRendererProps } from '../../types/cognitive-task.types';
 
 const CognitiveQuestionRenderer: React.FC<CognitiveQuestionRendererProps> = ({
     question,

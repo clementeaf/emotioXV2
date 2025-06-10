@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChoiceOption } from '../../types';
+// import { ChoiceOption } from '../../types';
 import { CheckboxGroupProps } from '../../types/common.types';
 
 const CheckboxGroup: React.FC<CheckboxGroupProps> = ({

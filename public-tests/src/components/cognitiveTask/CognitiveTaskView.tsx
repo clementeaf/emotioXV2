@@ -4,7 +4,7 @@ import {
   CognitiveQuestion,
   TaskDefinition
 } from '../../types';
-import { buildTasksFromConfig, getTaskProgress } from './tasks';
+import { buildTasksFromConfig } from './tasks';
 import ThankYouView from './ThankYouView';
 import TaskProgressBar from './common/TaskProgressBar';
 import { useResponseAPI } from '../../hooks/useResponseAPI';

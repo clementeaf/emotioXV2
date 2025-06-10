@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ExpandedStep } from '../stores/participantStore';
+// import { ExpandedStep } from '../stores/participantStore';
 import { useParticipantStore } from '../stores/participantStore';
 
 import { EyeTrackingDataPoint, EyeTrackingTaskProps } from '../types/common.types';

@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
-import { ParticipantFlowStep, ExpandedStep } from '../../types/flow';
+import { ParticipantFlowStep } from '../../types/flow';
 import CurrentStepRenderer from './CurrentStepRenderer';
 import LoadingIndicator from '../common/LoadingIndicator';
 import ErrorDisplay from '../common/ErrorDisplay';
-import { FlowStepContentProps as OldFlowStepContentProps } from './types';
+// import { FlowStepContentProps as OldFlowStepContentProps } from './types';
 import { ResponsesData } from '../../hooks/types';
 import { FlowStepContentComponentProps } from '../../types/flow.types';
 

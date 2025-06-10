@@ -1,5 +1,5 @@
 import React from 'react';
-import { TextAreaFieldProps } from '../../types';
+// import { TextAreaFieldProps } from '../../types';
 import { ExtendedTextAreaFieldProps } from '../../types/common.types';
 
 const TextAreaField: React.FC<ExtendedTextAreaFieldProps> = ({

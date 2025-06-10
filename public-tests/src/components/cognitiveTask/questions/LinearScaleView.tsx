@@ -3,7 +3,7 @@ import React from 'react';
 import QuestionHeader from '../common/QuestionHeader';
 import ScaleButtonGroup from './common/ScaleButtonGroup';
 import ScaleLabels from './common/ScaleLabels';
-import { CognitiveQuestion, LinearScaleViewComponentProps } from '../../../types/cognitive-task.types';
+import { LinearScaleViewComponentProps } from '../../../types/cognitive-task.types';
 
 export const LinearScaleView: React.FC<LinearScaleViewComponentProps> = ({ config, value, onChange }) => {
   const id = config.id;

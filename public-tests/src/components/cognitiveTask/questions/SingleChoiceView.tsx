@@ -1,8 +1,7 @@
 import React from 'react';
 import QuestionHeader from '../common/QuestionHeader'; // Importar QuestionHeader
 import RadioButtonGroup from '../../common/RadioButtonGroup'; // Importar el nuevo componente
-import { CognitiveQuestion, SingleChoiceViewComponentProps } from '../../../types/cognitive-task.types';
-import { ChoiceOption } from '../../../types/common.types';
+import { SingleChoiceViewComponentProps } from '../../../types/cognitive-task.types';
 
 export const SingleChoiceView: React.FC<SingleChoiceViewComponentProps> = ({ config, value, onChange }) => {
   const id = config.id;
