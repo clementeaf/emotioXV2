@@ -56,7 +56,12 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         }
     }
 
-    const builtExpandedSteps = useFlowBuilder({ researchFlowApiData, isLoading: isResearchFlowHookLoading });
+    // Solo construir el flujo si hay token (evita warnings durante login)
+    const shouldBuildFlow = !!token;
+    const builtExpandedSteps = useFlowBuilder({ 
+        researchFlowApiData: shouldBuildFlow ? researchFlowApiData : null, 
+        isLoading: isResearchFlowHookLoading || !shouldBuildFlow 
+    });
     const expandedSteps = builtExpandedSteps;
 
     const responseAPI = useResponseAPI({

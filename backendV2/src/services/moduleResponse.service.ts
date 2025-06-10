@@ -1,20 +1,20 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import {
+  DeleteCommand,
   DynamoDBDocumentClient,
   PutCommand,
   QueryCommand,
   UpdateCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { v4 as uuidv4 } from 'uuid';
-import { 
-  ParticipantResponsesDocument, 
-  ModuleResponse, 
-  CreateModuleResponseDto, 
-  UpdateModuleResponseDto 
+import {
+  CreateModuleResponseDto,
+  ModuleResponse,
+  ParticipantResponsesDocument,
+  UpdateModuleResponseDto
 } from '../models/moduleResponse.model';
 import { ApiError } from '../utils/errors';
 
-// Nombres de los índices secundarios globales
 const RESEARCH_INDEX = 'ResearchIndex';
 const RESEARCH_PARTICIPANT_INDEX = 'ResearchParticipantIndex';
 
@@ -27,18 +27,18 @@ export class ModuleResponseService {
     if (!this.tableName) {
       throw new Error('FATAL ERROR: MODULE_RESPONSES_TABLE environment variable is not set.');
     }
-    
+
     const region: string = process.env.APP_REGION || 'us-east-1';
     const client = new DynamoDBClient({
       region,
       ...(process.env.IS_OFFLINE === 'true' && { endpoint: 'http://localhost:8000' })
     });
-    
+
     const marshallOptions = { removeUndefinedValues: true };
     const unmarshallOptions = { wrapNumbers: false };
     const translateConfig = { marshallOptions, unmarshallOptions };
     this.dynamoClient = DynamoDBDocumentClient.from(client, translateConfig);
-    
+
     console.log(`[ModuleResponseService] Initialized for table: ${this.tableName} in region: ${region}`);
   }
 
@@ -47,13 +47,13 @@ export class ModuleResponseService {
    * @param data Datos iniciales para el documento
    */
   private async createNewDocument(
-    researchId: string, 
-    participantId: string, 
+    researchId: string,
+    participantId: string,
     initialResponse: ModuleResponse
   ): Promise<ParticipantResponsesDocument> {
     const id = uuidv4();
     const now = new Date().toISOString();
-    
+
     const newDocument: ParticipantResponsesDocument = {
       id,
       researchId,
@@ -86,7 +86,7 @@ export class ModuleResponseService {
    * Encuentra un documento de respuestas por research y participante
    */
   async findByResearchAndParticipant(
-    researchId: string, 
+    researchId: string,
     participantId: string
   ): Promise<ParticipantResponsesDocument | null> {
     const command = new QueryCommand({
@@ -126,12 +126,12 @@ export class ModuleResponseService {
     createDto: CreateModuleResponseDto
   ): Promise<ModuleResponse> {
     const { researchId, participantId, stepType, stepTitle, response } = createDto;
-    
+
     const existingDocument = await this.findByResearchAndParticipant(researchId, participantId);
-    
+
     const responseId = uuidv4();
     const now = new Date().toISOString();
-    
+
     const moduleResponse: ModuleResponse = {
       id: responseId,
       stepType,
@@ -144,11 +144,11 @@ export class ModuleResponseService {
       await this.createNewDocument(researchId, participantId, moduleResponse);
       return moduleResponse;
     }
-    
+
     const existingResponseIndex = existingDocument.responses.findIndex(
       r => r.stepType === stepType
     );
-    
+
     let updateExpression: string;
     let expressionAttributeNames: Record<string, string> = {
       '#responses': 'responses',
@@ -157,16 +157,16 @@ export class ModuleResponseService {
     let expressionAttributeValues: Record<string, any> = {
       ':updatedAt': now // Para el updatedAt del documento principal
     };
-    
+
     if (existingResponseIndex >= 0) {
       expressionAttributeNames['#nestedResponse'] = 'response'; // Alias para el campo 'response' anidado
       expressionAttributeNames['#nestedUpdatedAt'] = 'updatedAt'; // Alias para el campo 'updatedAt' anidado
 
-      updateExpression = `SET 
-        #responses[${existingResponseIndex}].#nestedResponse = :responseValue, 
-        #responses[${existingResponseIndex}].#nestedUpdatedAt = :responseNestedUpdatedAt, 
+      updateExpression = `SET
+        #responses[${existingResponseIndex}].#nestedResponse = :responseValue,
+        #responses[${existingResponseIndex}].#nestedUpdatedAt = :responseNestedUpdatedAt,
         #updatedAt = :updatedAt`; // #updatedAt aquí es el del documento principal
-      
+
       expressionAttributeValues[':responseValue'] = response;
       expressionAttributeValues[':responseNestedUpdatedAt'] = now; // Valor para el updatedAt anidado
     } else {
@@ -174,7 +174,7 @@ export class ModuleResponseService {
       expressionAttributeValues[':newResponse'] = [moduleResponse];
       expressionAttributeValues[':empty_list'] = []; // Necesario para if_not_exists en list_append la primera vez
     }
-    
+
     const command = new UpdateCommand({
       TableName: this.tableName,
       Key: { id: existingDocument.id },
@@ -183,11 +183,11 @@ export class ModuleResponseService {
       ExpressionAttributeValues: expressionAttributeValues,
       ReturnValues: 'ALL_NEW'
     });
-    
+
     try {
       const result = await this.dynamoClient.send(command);
       const updatedDocument = result.Attributes as ParticipantResponsesDocument;
-      
+
       if (existingResponseIndex >= 0) {
         return updatedDocument.responses[existingResponseIndex];
       } else {
@@ -213,26 +213,26 @@ export class ModuleResponseService {
   ): Promise<ModuleResponse | null> {
     // Buscar documento existente
     const existingDocument = await this.findByResearchAndParticipant(researchId, participantId);
-    
+
     if (!existingDocument) {
       throw new ApiError('Not Found: No document exists for this research and participant.', 404);
     }
-    
+
     // Buscar índice de la respuesta en el array
     const responseIndex = existingDocument.responses.findIndex(r => r.id === responseId);
-    
+
     if (responseIndex === -1) {
       throw new ApiError('Not Found: Response ID not found in document.', 404);
     }
-    
+
     const now = new Date().toISOString();
-    
+
     // Actualizar sólo el campo 'response' y el timestamp
-    const updateExpression = `SET 
-      #responses[${responseIndex}].#nestedResponse = :newResponse, 
-      #responses[${responseIndex}].#nestedUpdatedAt = :updatedAtTimestamp, 
+    const updateExpression = `SET
+      #responses[${responseIndex}].#nestedResponse = :newResponse,
+      #responses[${responseIndex}].#nestedUpdatedAt = :updatedAtTimestamp,
       #docUpdatedAt = :updatedAtTimestamp`;
-    
+
     const command = new UpdateCommand({
       TableName: this.tableName,
       Key: { id: existingDocument.id },
@@ -249,7 +249,7 @@ export class ModuleResponseService {
       },
       ReturnValues: 'ALL_NEW'
     });
-    
+
     try {
       const result = await this.dynamoClient.send(command);
       const updatedDocument = result.Attributes as ParticipantResponsesDocument;
@@ -264,7 +264,7 @@ export class ModuleResponseService {
    * Obtiene todas las respuestas para un research y un participante
    */
   async getResponsesForParticipant(
-    researchId: string, 
+    researchId: string,
     participantId: string
   ): Promise<ParticipantResponsesDocument | null> {
     return this.findByResearchAndParticipant(researchId, participantId);
@@ -278,13 +278,13 @@ export class ModuleResponseService {
     participantId: string
   ): Promise<ParticipantResponsesDocument | null> {
     const existingDocument = await this.findByResearchAndParticipant(researchId, participantId);
-    
+
     if (!existingDocument) {
       throw new ApiError('Not Found: No document exists for this research and participant.', 404);
     }
-    
+
     const now = new Date().toISOString();
-    
+
     const command = new UpdateCommand({
       TableName: this.tableName,
       Key: { id: existingDocument.id },
@@ -299,7 +299,7 @@ export class ModuleResponseService {
       },
       ReturnValues: 'ALL_NEW'
     });
-    
+
     try {
       const result = await this.dynamoClient.send(command);
       return result.Attributes as ParticipantResponsesDocument;
@@ -330,7 +330,38 @@ export class ModuleResponseService {
       throw new ApiError(`Database Error: Could not retrieve responses by research - ${error.message}`, 500);
     }
   }
+
+  /**
+   * Elimina todas las respuestas de un participante específico en un research
+   */
+  async deleteAllResponses(
+    researchId: string,
+    participantId: string
+  ): Promise<boolean> {
+    // Buscar el documento existente
+    const existingDocument = await this.findByResearchAndParticipant(researchId, participantId);
+
+    if (!existingDocument) {
+      console.log(`[ModuleResponseService.deleteAllResponses] No document found for researchId=${researchId}, participantId=${participantId}`);
+      return false; // No hay nada que eliminar
+    }
+
+    // Eliminar completamente el documento
+    const command = new DeleteCommand({
+      TableName: this.tableName,
+      Key: { id: existingDocument.id }
+    });
+
+    try {
+      await this.dynamoClient.send(command);
+      console.log(`[ModuleResponseService.deleteAllResponses] Successfully deleted document for researchId=${researchId}, participantId=${participantId}, documentId=${existingDocument.id}`);
+      return true;
+    } catch (error: any) {
+      console.error('[ModuleResponseService.deleteAllResponses] Error:', error);
+      throw new ApiError(`Database Error: Could not delete responses - ${error.message}`, 500);
+    }
+  }
 }
 
 // Exportar una instancia del servicio para ser usada en toda la aplicación
-export const moduleResponseService = new ModuleResponseService(); 
+export const moduleResponseService = new ModuleResponseService();

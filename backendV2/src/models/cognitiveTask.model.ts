@@ -1,11 +1,11 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { 
-  DynamoDBDocumentClient, 
-  PutCommand, 
-  UpdateCommand, 
-  QueryCommand,
+import {
   DeleteCommand,
-  ScanCommand
+  DynamoDBDocumentClient,
+  PutCommand,
+  QueryCommand,
+  ScanCommand,
+  UpdateCommand
 } from '@aws-sdk/lib-dynamodb';
 import { v4 as uuidv4 } from 'uuid';
 import {
@@ -27,15 +27,15 @@ export interface CognitiveTaskRecord extends SharedCognitiveTaskModel {
 
 /**
  * Interfaz para el item DynamoDB de un formulario CognitiveTask
- * PK: researchId, SK: 'COGNITIVE_TASK'
+ * PK: id, SK: 'COGNITIVE_TASK'
  */
 export interface CognitiveTaskDynamoItem {
   // Clave primaria (PK)
-  researchId: string;
+  id: string;
   // Clave de ordenación (SK)
   sk: string;
-  // ID lógico único (UUID), no es parte de la clave
-  id: string;
+  // Research ID relacionado (para GSI)
+  researchId: string;
   // Preguntas del formulario (serializado a JSON string)
   questions: string;
   // Configuración
@@ -76,15 +76,15 @@ export class CognitiveTaskModel {
     const parsedQuestions = JSON.parse(item.questions || '[]') as Question[];
 
     // Log de diagnóstico al mapear
-    const resultQuestionsWithFiles = parsedQuestions.filter(q => 
+    const resultQuestionsWithFiles = parsedQuestions.filter(q =>
         ['navigation_flow', 'preference_test'].includes(q.type) && q.files && q.files.length > 0
       );
-      
+
     if (resultQuestionsWithFiles.length > 0) {
-      console.log('[DIAGNOSTICO-IMAGEN:MODEL:MAP_TO_RECORD] Preguntas con archivos al mapear desde DB:', 
+      console.log('[DIAGNOSTICO-IMAGEN:MODEL:MAP_TO_RECORD] Preguntas con archivos al mapear desde DB:',
         JSON.stringify(resultQuestionsWithFiles.map(q => ({
-          id: q.id, 
-          type: q.type, 
+          id: q.id,
+          type: q.type,
           files: q.files?.map(f => ({id: f.id, name: f.name, url: f.url, s3Key: f.s3Key}))
         })), null, 2)
       );
@@ -111,28 +111,28 @@ export class CognitiveTaskModel {
     const questions = data.questions || [];
 
     // Log para diagnóstico de imágenes
-    const questionsWithFiles = questions.filter(q => 
+    const questionsWithFiles = questions.filter(q =>
       ['navigation_flow', 'preference_test'].includes(q.type) && q.files && q.files.length > 0
     );
-    
+
     if (questionsWithFiles.length > 0) {
-      console.log('[DIAGNOSTICO-IMAGEN:MODEL:CREATE] Preguntas con archivos antes de guardar:', 
+      console.log('[DIAGNOSTICO-IMAGEN:MODEL:CREATE] Preguntas con archivos antes de guardar:',
         JSON.stringify(questionsWithFiles.map(q => ({
-          id: q.id, 
-          type: q.type, 
+          id: q.id,
+          type: q.type,
           files: q.files?.map(f => ({id: f.id, name: f.name, url: f.url, s3Key: f.s3Key}))
         })), null, 2)
       );
     }
-    
+
     // Asegurarse de que las referencias de imágenes estén completas (solo s3Key es vital)
     questions.forEach(q => {
       if (q.files && q.files.length > 0) {
-        q.files = q.files.filter(f => f && f.s3Key); 
+        q.files = q.files.filter(f => f && f.s3Key);
         console.log(`[DIAGNOSTICO-IMAGEN:MODEL:CREATE] Pregunta ${q.id} tiene ${q.files.length} archivos válidos (con s3Key)`);
       }
     });
-    
+
     const standardMetadata = {
       createdAt: now,
       updatedAt: now,
@@ -142,9 +142,9 @@ export class CognitiveTaskModel {
 
     // Convertir a formato para DynamoDB
     const item: CognitiveTaskDynamoItem = {
-      researchId: researchId,
-      sk: CognitiveTaskModel.SORT_KEY_VALUE,
       id: formId,
+      sk: CognitiveTaskModel.SORT_KEY_VALUE,
+      researchId: researchId,
       questions: JSON.stringify(questions),
       randomizeQuestions: data.randomizeQuestions ?? false,
       metadata: JSON.stringify(data.metadata ? { ...standardMetadata, ...data.metadata } : standardMetadata),
@@ -153,7 +153,7 @@ export class CognitiveTaskModel {
     };
 
     // Log del JSON que se guardará en la BD
-    console.log('[DIAGNOSTICO-IMAGEN:MODEL:CREATE] JSON de preguntas que se guardará en DynamoDB:', 
+    console.log('[DIAGNOSTICO-IMAGEN:MODEL:CREATE] JSON de preguntas que se guardará en DynamoDB:',
       item.questions.substring(0, 300) + (item.questions.length > 300 ? '...' : '')
     );
 
@@ -227,16 +227,16 @@ export class CognitiveTaskModel {
 
     try {
       structuredLog('info', `${this.modelName}.${context}`, 'Consultando tabla para researchId', { researchId, tableName: this.tableName });
-      
+
       const result = await this.dynamoClient.send(command);
-      
+
       structuredLog('debug', `${this.modelName}.${context}`, 'Resultado de consulta', { encontrados: result.Items?.length || 0, researchId });
-      
+
       if (!result.Items || result.Items.length === 0) {
         structuredLog('warn', `${this.modelName}.${context}`, 'No se encontró CognitiveTask', { researchId });
         throw new NotFoundError('COGNITIVE_TASK_NOT_FOUND');
       }
-      
+
       // Mapear el primer (y único esperado) item encontrado
       const record = this.mapToRecord(result.Items[0] as CognitiveTaskDynamoItem);
       structuredLog('debug', `${this.modelName}.${context}`, 'CognitiveTask encontrado por ResearchID', { researchId, id: record.id });
@@ -245,14 +245,14 @@ export class CognitiveTaskModel {
       if (error instanceof NotFoundError) {
         throw error; // Re-lanzar NotFoundError
       }
-      
+
       structuredLog('error', `${this.modelName}.${context}`, 'Error al obtener CognitiveTask por researchId (Query GSI)', { error: error, researchId });
-      
+
       if ((error as Error).message?.includes('index')) {
         structuredLog('error', `${this.modelName}.${context}`, 'Índice GSI researchId-index no encontrado o mal configurado');
         throw new Error(`DATABASE_ERROR: Error de configuración de base de datos: falta índice para búsqueda por researchId.`);
       }
-      
+
       throw new Error(`DATABASE_ERROR: Error al consultar el formulario para researchId ${researchId}`);
     }
   }
@@ -263,35 +263,35 @@ export class CognitiveTaskModel {
    */
   async update(researchId: string, data: Partial<CognitiveTaskFormData>): Promise<CognitiveTaskRecord> {
     console.log(`[MODEL:update] Iniciando actualización para researchId=${researchId}`);
-    
+
     try {
       // Primero, obtener el registro para conseguir su ID
       const existingRecord = await this.getByResearchId(researchId);
       if (!existingRecord) {
         throw new NotFoundError('COGNITIVE_TASK_NOT_FOUND');
       }
-      
+
       const now = new Date().toISOString();
       let updateExpression = 'SET updatedAt = :updatedAt';
       const expressionAttributeValues: Record<string, any> = { ':updatedAt': now };
 
       if (data.questions) {
         try {
-          const questionsWithFiles = data.questions.filter(q => 
+          const questionsWithFiles = data.questions.filter(q =>
             ['navigation_flow', 'preference_test'].includes(q.type) && q.files && q.files.length > 0
           );
-          
+
           if (questionsWithFiles.length > 0) {
-            console.log('[MODEL:update] Preguntas con archivos antes de actualizar:', 
+            console.log('[MODEL:update] Preguntas con archivos antes de actualizar:',
               JSON.stringify(questionsWithFiles.map(q => ({
-                id: q.id, 
-                type: q.type, 
+                id: q.id,
+                type: q.type,
                 fileCount: q.files?.length,
                 fileIds: q.files?.map(f => f.id)
               })), null, 2)
             );
           }
-          
+
           // Mejorar la validación de archivos con verificación estricta
           data.questions.forEach(q => {
             if (q.files && q.files.length > 0) {
@@ -303,11 +303,11 @@ export class CognitiveTaskModel {
                       console.warn(`[MODEL:update] Archivo nulo encontrado en pregunta ${q.id}`);
                       return false;
                     }
-                    
+
                     const isValid = f.id && f.name && f.size && f.type && f.s3Key;
                     if (!isValid) {
                       console.warn(`[MODEL:update] Archivo inválido en pregunta ${q.id}:`, JSON.stringify(f));
-                      
+
                       // Log detallado de campos faltantes para diagnóstico
                       if (!f.id) console.warn(`[MODEL:update] Campo faltante: id en pregunta ${q.id}`);
                       if (!f.name) console.warn(`[MODEL:update] Campo faltante: name en pregunta ${q.id}`);
@@ -321,10 +321,10 @@ export class CognitiveTaskModel {
                     return false;
                   }
                 });
-                
+
                 // Guardar un snapshot de validFiles para diagnóstico
                 console.log(`[MODEL:update] Archivos válidos en pregunta ${q.id}:`, JSON.stringify(validFiles.map(f => ({id: f.id, name: f.name})), null, 2));
-                
+
                 // Asegurar que todos los archivos válidos tengan URL (derivar de S3 si falta)
                 q.files = validFiles.map(f => {
                   try {
@@ -340,7 +340,7 @@ export class CognitiveTaskModel {
                     return f; // Devolver el archivo sin modificar si hay error
                   }
                 });
-                
+
                 console.log(`[MODEL:update] Pregunta ${q.id} tiene ${q.files.length} archivos válidos después de la validación`);
               } catch (questionError: any) {
                 console.error(`[MODEL:update] Error grave procesando archivos de pregunta ${q.id}:`, questionError);
@@ -348,13 +348,13 @@ export class CognitiveTaskModel {
               }
             }
           });
-          
+
           updateExpression += ', questions = :questions';
           expressionAttributeValues[':questions'] = JSON.stringify(data.questions);
-          
+
           // Solo loguear un fragmento para no saturar los logs
-          console.log('[MODEL:update] JSON de preguntas que se actualizará (primeros 300 caracteres):', 
-            expressionAttributeValues[':questions'].substring(0, 300) + 
+          console.log('[MODEL:update] JSON de preguntas que se actualizará (primeros 300 caracteres):',
+            expressionAttributeValues[':questions'].substring(0, 300) +
             (expressionAttributeValues[':questions'].length > 300 ? '...' : '')
           );
         } catch (questionsError: any) {
@@ -362,12 +362,12 @@ export class CognitiveTaskModel {
           throw new Error(`Error preparando preguntas para actualización: ${questionsError.message}`);
         }
       }
-      
+
       if (data.randomizeQuestions !== undefined) {
         updateExpression += ', randomizeQuestions = :randomizeQuestions';
         expressionAttributeValues[':randomizeQuestions'] = data.randomizeQuestions;
       }
-      
+
       if (data.metadata) {
         try {
           const newMetadata = {
@@ -386,16 +386,16 @@ export class CognitiveTaskModel {
       const command = new UpdateCommand({
         TableName: this.tableName,
         Key: {
-          researchId: researchId,
+          id: existingRecord.id,
           sk: CognitiveTaskModel.SORT_KEY_VALUE
         },
         UpdateExpression: updateExpression,
         ExpressionAttributeValues: expressionAttributeValues,
         ReturnValues: 'ALL_NEW'
       });
-      
+
       console.log(`[MODEL:update] Ejecutando UpdateCommand con ExpressionAttributeValues keys: ${Object.keys(expressionAttributeValues).join(', ')}`);
-      
+
       try {
         const result = await this.dynamoClient.send(command);
         if (!result.Attributes) {
@@ -426,13 +426,19 @@ export class CognitiveTaskModel {
    * Usa researchId como PK y ConditionExpression para asegurar existencia.
    */
   async delete(researchId: string): Promise<boolean> {
+    // Primero obtener el registro para conseguir su ID
+    const existingRecord = await this.getByResearchId(researchId);
+    if (!existingRecord) {
+      throw new NotFoundError('COGNITIVE_TASK_NOT_FOUND');
+    }
+
     const command = new DeleteCommand({
       TableName: this.tableName,
       Key: {
-        researchId: researchId,
+        id: existingRecord.id,
         sk: CognitiveTaskModel.SORT_KEY_VALUE
       },
-      ConditionExpression: 'attribute_exists(researchId)'
+      ConditionExpression: 'attribute_exists(id)'
     });
 
     try {
@@ -460,7 +466,7 @@ export class CognitiveTaskModel {
         ':skVal': CognitiveTaskModel.SORT_KEY_VALUE
       }
     });
-    
+
     try {
       const result = await this.dynamoClient.send(command);
       const items = result.Items || [];
@@ -474,4 +480,4 @@ export class CognitiveTaskModel {
 }
 
 // Exportar instancia
-export const cognitiveTaskModel = new CognitiveTaskModel(); 
+export const cognitiveTaskModel = new CognitiveTaskModel();

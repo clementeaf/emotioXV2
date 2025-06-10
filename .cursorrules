@@ -1,0 +1,414 @@
+# 🔒 REGLAS FUNDAMENTALES DEL ASISTENTE AI - EmotioXV2
+# Estas reglas son OBLIGATORIAS y NO NEGOCIABLES en todo el proyecto
+
+## REGLA #1: INTEGRIDAD ABSOLUTA 
+# JAMÁS NUNCA bajo ninguna circunstancia:
+# ❌ Mentir sobre el estado real de algo
+# ❌ Exagerar o inflar el progreso  
+# ❌ Afirmar algo sin certeza verificable
+# ❌ Decir "listo" sin haberlo comprobado completamente
+# ❌ Prometer más de lo que se ha verificado que funciona
+
+## REGLA #2: TRANSPARENCIA CON CHECKLIST
+# SIEMPRE sin excepción:
+# ✅ Gestionar checklist temporal visible
+# ✅ Mostrar progreso real paso a paso
+# ✅ Verificar cada ítem antes de marcarlo como ✅
+# ✅ Ser transparente sobre lo que falta
+# ✅ Confirmar cada afirmación con la Regla #1
+
+## APLICACIÓN PRÁCTICA:
+# - Nunca afirmar "TODO listo" sin verificar cada componente
+# - Siempre mostrar checklist visible antes de empezar cualquier tarea
+# - Verificar archivos/código antes de decir que existen
+# - Reportar estado real, no el deseado
+# - Ser específico sobre lo que funciona vs lo que falta
+
+## PARA DESARROLLO:
+# - Verificar que cada función Lambda existe antes de marcarla como ✅
+# - Comprobar que cada archivo de configuración es válido antes de afirmar que funciona
+# - Nunca asumir que código sin probar funciona
+# - Siempre listar qué falta por hacer
+
+## COMUNICACIÓN:
+# - Usar formato de checklist: [ ] para pendiente, [✅] para verificado
+# - Mostrar progreso en porcentajes reales
+# - Admitir errores inmediatamente cuando se descubran
+# - Nunca usar lenguaje que implique completitud sin verificación
+
+# ESTAS REGLAS SON EL CORE OPERATIVO - NO PUEDEN SER IGNORADAS 
+
+# ======================================================================
+# 📁 ESTRUCTURA DEL PROYECTO EmotioXV2
+# ======================================================================
+
+# 🏗️ ARQUITECTURA GENERAL:
+# /frontend/          - Next.js 14 (Panel de administración)
+# /backendV2/         - AWS Lambda Serverless (API)  
+# /public-tests/      - Vite React (Tests públicos)
+# /shared/            - Interfaces TypeScript compartidas
+
+# ======================================================================
+# 🎯 REGLAS ESPECÍFICAS POR COMPONENTE
+# ======================================================================
+
+## 📱 FRONTEND (Next.js 14)
+# - Usar App Router ÚNICAMENTE (no Pages Router)
+# - TypeScript estricto: "strict": true
+# - Componentes funcionales con hooks
+# - CSS Modules o Tailwind CSS solamente
+# - Nombres de archivos: kebab-case para componentes
+# - Props interfaces SIEMPRE exportadas
+# - Error boundaries obligatorios para rutas principales
+# - Loading states para todas las llamadas async
+
+## 🚀 BACKEND (AWS Lambda Serverless)
+# - Serverless Framework v3+
+# - Node.js 18+ runtime
+# - TypeScript para todas las funciones
+# - Validación de entrada con Joi/Zod
+# - Logs estructurados con winston
+# - Variables de entorno SIEMPRE tipadas
+# - Error handling centralizado
+# - CORS configurado apropiadamente
+
+## 🧪 PUBLIC-TESTS (Vite React)
+# - Vite como bundler (NO Webpack)
+# - React 18+ con hooks
+# - Variables de entorno: VITE_* prefix
+# - TanStack Query para estado remoto
+# - Zustand para estado local
+# - Componentes de test aislados y modulares
+# - Performance optimizations obligatorias
+
+## 🔗 SHARED
+# - Solo interfaces TypeScript
+# - Naming convention: PascalCase para tipos
+# - Documentación TSDoc obligatoria
+# - Versionado semántico estricto
+# - No dependencias externas
+
+# ======================================================================
+# 💻 CONVENCIONES DE CÓDIGO TypeScript
+# ======================================================================
+
+## NAMING CONVENTIONS:
+# - Variables: camelCase
+# - Funciones: camelCase  
+# - Constantes: UPPER_SNAKE_CASE
+# - Tipos/Interfaces: PascalCase
+# - Archivos: kebab-case.tsx
+# - Directorios: kebab-case
+
+## IMPORTS:
+# - React imports primero
+# - Third-party libraries segundo
+# - Relative imports último
+# - Named imports preferidos sobre default
+# - Max 80 caracteres por línea
+
+## FUNCTIONS:
+# - Arrow functions para componentes
+# - Function declarations para utilities
+# - Async/await preferido sobre Promises
+# - Error handling explícito SIEMPRE
+# - JSDoc obligatorio para funciones públicas
+
+## TYPESCRIPT:
+# - Strict mode habilitado
+# - No any permitido (usar unknown)
+# - Interfaces sobre types para objetos
+# - Utility types cuando sea apropiado
+# - Enum values explícitos SIEMPRE
+
+# ======================================================================
+# 🧩 REGLAS DE COMPONENTES REACT
+# ======================================================================
+
+## ESTRUCTURA DE COMPONENTES:
+# - Props interface ANTES del componente
+# - Export interface junto con componente
+# - forwardRef cuando sea necesario
+# - memo para componentes pesados
+# - Nombre del componente = nombre del archivo
+
+## HOOKS:
+# - Custom hooks en directorio /hooks
+# - Prefix 'use' OBLIGATORIO
+# - Return object destructurable
+# - Dependencies arrays completas
+# - Cleanup en useEffect cuando necesario
+
+## ESTADO:
+# - useState para estado local simple
+# - useReducer para estado complejo
+# - TanStack Query para estado remoto
+# - Zustand para estado global
+# - No Redux (use Zustand instead)
+
+## PERFORMANCE:
+# - useMemo para cálculos pesados
+# - useCallback para funciones en deps
+# - React.lazy para code splitting
+# - Virtualization para listas largas
+# - Image optimization obligatoria
+
+# ======================================================================
+# 🎨 REGLAS DE ESTILOS Y UI
+# ======================================================================
+
+## CSS/STYLING:
+# - Tailwind CSS como framework principal
+# - CSS Modules para estilos específicos
+# - Mobile-first responsive design
+# - Semantic HTML SIEMPRE
+# - Accessibility (a11y) obligatoria
+
+## COLORES Y TEMA:
+# - Design system consistente
+# - CSS variables para colores
+# - Dark/light mode support
+# - High contrast compliance
+# - Color blindness considerations
+
+# ======================================================================
+# 🔧 CONFIGURACIONES Y HERRAMIENTAS
+# ======================================================================
+
+## LINTING:
+# - ESLint con config estricta
+# - Prettier para formateo
+# - TypeScript compiler checks
+# - Import/export order rules
+# - No console.log en producción
+
+## TESTING:
+# - Vitest para unit tests
+# - React Testing Library para componentes
+# - MSW para API mocking
+# - Coverage mínimo: 80%
+# - Integration tests obligatorios
+
+## BUILD & DEPLOY:
+# - Vite para public-tests build
+# - Next.js build para frontend
+# - Serverless deploy para backend
+# - Environment variables validation
+# - Bundle size optimization
+
+# ======================================================================
+# 📊 REGLAS DE DATOS Y API
+# ======================================================================
+
+## API DESIGN:
+# - RESTful endpoints
+# - Consistent response format
+# - Error codes estándar HTTP
+# - Pagination para listas
+# - Versioning en URL (/v1/, /v2/)
+
+## DATA FETCHING:
+# - TanStack Query para caching
+# - Optimistic updates donde apropiado
+# - Loading states UX-friendly
+# - Error boundaries para fallos
+# - Retry logic configurado
+
+## VALIDACIÓN:
+# - Schema validation en entrada
+# - Type guards para runtime checks
+# - Sanitización de datos del usuario
+# - SQL injection protection
+# - XSS protection habilitada
+
+# ======================================================================
+# 🔐 REGLAS DE SEGURIDAD
+# ======================================================================
+
+## AUTENTICACIÓN:
+# - JWT tokens con expiración
+# - Refresh token strategy
+# - Secure cookie storage
+# - HTTPS OBLIGATORIO en producción
+# - Rate limiting implementado
+
+## AUTORIZACIÓN:
+# - Role-based access control
+# - Permission checks en cada endpoint
+# - Frontend route protection
+# - Data access validation
+# - Audit logs para acciones sensibles
+
+## DATA PROTECTION:
+# - No secrets en código
+# - Environment variables para config
+# - Encrypted data transmission
+# - PII handling compliance
+# - Backup strategy definida
+
+# ======================================================================
+# 🚨 REGLAS DE ERROR HANDLING
+# ======================================================================
+
+## ERROR BOUNDARIES:
+# - Componente ErrorBoundary en cada ruta
+# - Fallback UI apropiado
+# - Error reporting a logging service
+# - User-friendly error messages
+# - Retry mechanisms donde sea apropiado
+
+## LOGGING:
+# - Structured logging format
+# - Log levels apropiados
+# - No sensitive data en logs
+# - Correlation IDs para tracing
+# - Performance metrics incluidas
+
+## MONITORING:
+# - Health checks implementados
+# - Uptime monitoring configurado
+# - Error rate thresholds definidos
+# - Performance budgets establecidos
+# - Alerting para issues críticos
+
+# ======================================================================
+# 📋 REGLAS DE DOCUMENTACIÓN
+# ======================================================================
+
+## CODE DOCUMENTATION:
+# - JSDoc para funciones públicas
+# - README.md actualizado por componente
+# - API documentation generada
+# - Component stories en Storybook
+# - Inline comments para lógica compleja
+
+## PROJECT DOCUMENTATION:
+# - Architecture decision records (ADRs)
+# - Setup instructions actualizadas
+# - Deployment guides completas
+# - Troubleshooting guides
+# - Contributing guidelines definidas
+
+# ======================================================================
+# 🔄 REGLAS DE WORKFLOW Y GIT
+# ======================================================================
+
+## COMMITS:
+# - Conventional Commits format
+# - Descriptive commit messages
+# - Atomic commits preferidos
+# - No merge commits en feature branches
+# - Signed commits recomendados
+
+## BRANCHES:
+# - main/master para producción
+# - develop para desarrollo
+# - feature/ para nuevas features
+# - hotfix/ para fixes críticos
+# - release/ para preparar releases
+
+## PULL REQUESTS:
+# - Code review obligatorio
+# - Tests passing requerido
+# - Documentation updated
+# - Breaking changes documentados
+# - Performance impact evaluado
+
+# ======================================================================
+# ⚡ REGLAS DE PERFORMANCE
+# ======================================================================
+
+## FRONTEND PERFORMANCE:
+# - Core Web Vitals optimizados
+# - Images optimizadas y lazy loaded
+# - Code splitting implementado
+# - Bundle size < 250KB initial
+# - Critical CSS inlined
+
+## BACKEND PERFORMANCE:
+# - Response time < 200ms promedio
+# - Database queries optimizadas
+# - Caching strategy implementada
+# - Memory usage monitoreado
+# - CPU usage bajo control
+
+## NETWORKING:
+# - HTTP/2 habilitado
+# - Compression enabled
+# - CDN para assets estáticos
+# - API rate limiting configurado
+# - Connection pooling optimizado
+
+# ======================================================================
+# 🎯 CHECKLIST PRE-COMMIT OBLIGATORIO
+# ======================================================================
+
+# Antes de cada commit, verificar:
+# [ ] TypeScript compile sin errores
+# [ ] ESLint passing sin warnings
+# [ ] Prettier aplicado
+# [ ] Tests unitarios passing
+# [ ] No console.log en código
+# [ ] No secrets hardcodeados
+# [ ] Documentación actualizada
+# [ ] Performance impact evaluado
+# [ ] Accessibility checked
+# [ ] Mobile responsiveness tested
+
+# ======================================================================
+# 🏁 CHECKLIST PRE-DEPLOY OBLIGATORIO  
+# ======================================================================
+
+# Antes de deploy a producción:
+# [ ] All tests passing (unit + integration)
+# [ ] Code review completado
+# [ ] Security scan passed
+# [ ] Performance benchmarks met
+# [ ] Database migrations tested
+# [ ] Environment variables configured
+# [ ] Monitoring alerts configured
+# [ ] Rollback plan documented
+# [ ] Feature flags configured
+# [ ] Documentation updated
+
+# ======================================================================
+# ❗ REGLAS DE EMERGENCIA
+# ======================================================================
+
+## EN CASO DE BUGS CRÍTICOS:
+# 1. Stop feature development immediately
+# 2. Create hotfix branch from main
+# 3. Fix with minimal code changes
+# 4. Test thoroughly in staging
+# 5. Deploy with fast rollback ready
+# 6. Monitor closely post-deploy
+# 7. Post-mortem analysis obligatoria
+
+## NEVER DO IN PRODUCTION:
+# ❌ Direct database modifications
+# ❌ Untested code deployment
+# ❌ Configuration changes without backup
+# ❌ Dependency updates without testing
+# ❌ Feature flags changes without monitoring
+
+# ======================================================================
+# 🎓 LEARNING & IMPROVEMENT RULES
+# ======================================================================
+
+## CONTINUOUS IMPROVEMENT:
+# - Regular architecture reviews
+# - Performance audit quarterly
+# - Security assessment bi-annually
+# - Dependency updates monthly
+# - Knowledge sharing sessions weekly
+
+## KNOWLEDGE MANAGEMENT:
+# - Document lessons learned
+# - Share best practices discovered
+# - Update rules based on experience
+# - Cross-team knowledge transfer
+# - External learning encouraged
+
+# ======================================================================
+# FIN DE REGLAS - ESTAS APLICAN A TODO EL PROYECTO EmotioXV2
+# ====================================================================== 

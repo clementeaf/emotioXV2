@@ -42,7 +42,7 @@ export function useLoadResearchFormsConfig(
       const rawModules: RawResearchModule[] = apiResponse.data;
 
       const processedModules: ProcessedResearchFormConfig[] = rawModules.map((module, index) => {
-        const stepId = module.id || `${module.sk}_${index}_${Date.now()}`;
+        const stepId = module.id || `${module.sk}_${index}`;
         const derivedType = module.sk.toLowerCase(); 
 
         return {

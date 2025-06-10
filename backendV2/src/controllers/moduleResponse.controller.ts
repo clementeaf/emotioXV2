@@ -1,8 +1,8 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { moduleResponseService } from '../services/moduleResponse.service';
-import { getCorsHeaders } from '../middlewares/cors';
 import { z } from 'zod';
+import { getCorsHeaders } from '../middlewares/cors';
 import { CreateModuleResponseDtoSchema, UpdateModuleResponseDtoSchema } from '../models/moduleResponse.model';
+import { moduleResponseService } from '../services/moduleResponse.service';
 
 /**
  * Controlador para el manejo de respuestas de módulos
@@ -27,7 +27,7 @@ export class ModuleResponseController {
       }
 
       const data = JSON.parse(event.body);
-      
+
       // Validar los datos utilizando el esquema
       const validatedData = CreateModuleResponseDtoSchema.parse(data);
 
@@ -44,18 +44,18 @@ export class ModuleResponseController {
       };
     } catch (error: any) {
       console.error('Error al guardar respuesta:', error);
-      
+
       if (error instanceof z.ZodError) {
         return {
           statusCode: 400,
           headers: getCorsHeaders(event),
-          body: JSON.stringify({ 
-            error: error.errors, 
-            status: 400 
+          body: JSON.stringify({
+            error: error.errors,
+            status: 400
           })
         };
       }
-      
+
       return {
         statusCode: error.statusCode || 500,
         headers: getCorsHeaders(event),
@@ -86,7 +86,7 @@ export class ModuleResponseController {
       const responseId = event.pathParameters?.id;
       const researchId = event.queryStringParameters?.researchId;
       const participantId = event.queryStringParameters?.participantId;
-      
+
       if (!responseId || !researchId || !participantId) {
         return {
           statusCode: 400,
@@ -99,7 +99,7 @@ export class ModuleResponseController {
       }
 
       const data = JSON.parse(event.body);
-      
+
       // Validar los datos utilizando el esquema
       const validatedData = UpdateModuleResponseDtoSchema.parse(data);
 
@@ -121,18 +121,18 @@ export class ModuleResponseController {
       };
     } catch (error: any) {
       console.error('Error al actualizar respuesta:', error);
-      
+
       if (error instanceof z.ZodError) {
         return {
           statusCode: 400,
           headers: getCorsHeaders(event),
-          body: JSON.stringify({ 
-            error: error.errors, 
-            status: 400 
+          body: JSON.stringify({
+            error: error.errors,
+            status: 400
           })
         };
       }
-      
+
       return {
         statusCode: error.statusCode || 500,
         headers: getCorsHeaders(event),
@@ -151,7 +151,7 @@ export class ModuleResponseController {
     try {
       const researchId = event.queryStringParameters?.researchId;
       const participantId = event.queryStringParameters?.participantId;
-      
+
       if (!researchId || !participantId) {
         return {
           statusCode: 400,
@@ -191,7 +191,7 @@ export class ModuleResponseController {
       };
     } catch (error: any) {
       console.error('Error al obtener respuestas:', error);
-      
+
       return {
         statusCode: error.statusCode || 500,
         headers: getCorsHeaders(event),
@@ -210,7 +210,7 @@ export class ModuleResponseController {
     try {
       const researchId = event.queryStringParameters?.researchId;
       const participantId = event.queryStringParameters?.participantId;
-      
+
       if (!researchId || !participantId) {
         return {
           statusCode: 400,
@@ -238,7 +238,7 @@ export class ModuleResponseController {
       };
     } catch (error: any) {
       console.error('Error al marcar como completado:', error);
-      
+
       return {
         statusCode: error.statusCode || 500,
         headers: getCorsHeaders(event),
@@ -256,7 +256,7 @@ export class ModuleResponseController {
   async getResponsesByResearch(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
     try {
       const researchId = event.pathParameters?.id;
-      
+
       if (!researchId) {
         return {
           statusCode: 400,
@@ -281,12 +281,70 @@ export class ModuleResponseController {
       };
     } catch (error: any) {
       console.error('Error al obtener respuestas por research:', error);
-      
+
       return {
         statusCode: error.statusCode || 500,
         headers: getCorsHeaders(event),
         body: JSON.stringify({
           error: error.message || 'Error al obtener respuestas por research',
+          status: error.statusCode || 500
+        })
+      };
+    }
+  }
+
+  /**
+   * Eliminar todas las respuestas de un participante específico
+   */
+  async deleteAllResponses(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    try {
+      const researchId = event.queryStringParameters?.researchId;
+      const participantId = event.queryStringParameters?.participantId;
+
+      if (!researchId || !participantId) {
+        return {
+          statusCode: 400,
+          headers: getCorsHeaders(event),
+          body: JSON.stringify({
+            error: 'Se requieren researchId y participantId',
+            status: 400
+          })
+        };
+      }
+
+      // Eliminar todas las respuestas
+      const deleted = await moduleResponseService.deleteAllResponses(
+        researchId,
+        participantId
+      );
+
+      if (deleted) {
+        return {
+          statusCode: 200,
+          headers: getCorsHeaders(event),
+          body: JSON.stringify({
+            message: 'Respuestas eliminadas exitosamente',
+            status: 200
+          })
+        };
+      } else {
+        return {
+          statusCode: 204,
+          headers: getCorsHeaders(event),
+          body: JSON.stringify({
+            message: 'No había respuestas para eliminar',
+            status: 204
+          })
+        };
+      }
+    } catch (error: any) {
+      console.error('Error al eliminar respuestas:', error);
+
+      return {
+        statusCode: error.statusCode || 500,
+        headers: getCorsHeaders(event),
+        body: JSON.stringify({
+          error: error.message || 'Error al eliminar respuestas',
           status: error.statusCode || 500
         })
       };
@@ -316,21 +374,25 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
     if (path === '/module-responses' && method === 'POST') {
       return await controller.saveResponse(event);
     }
-    
+
     if (path === '/module-responses/{id}' && method === 'PUT') {
       return await controller.updateResponse(event);
     }
-    
+
     if (path === '/module-responses' && method === 'GET') {
       return await controller.getResponses(event);
     }
-    
+
     if (path === '/module-responses/complete' && method === 'POST') {
       return await controller.markAsCompleted(event);
     }
-    
+
     if (path === '/module-responses/research/{id}' && method === 'GET') {
       return await controller.getResponsesByResearch(event);
+    }
+
+    if (path === '/module-responses' && method === 'DELETE') {
+      return await controller.deleteAllResponses(event);
     }
 
     // Si no se encuentra la ruta
@@ -353,4 +415,4 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
       })
     };
   }
-}; 
+};

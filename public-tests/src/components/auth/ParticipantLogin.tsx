@@ -21,7 +21,7 @@ export const ParticipantLogin = ({ onLoginSuccess, researchId }: ParticipantLogi
   } = useParticipantLogin({ researchId, onLogin: onLoginSuccess });
 
   return (
-    <div className="fixed inset-0 w-full h-full flex justify-center bg-white pt-4 z-50">
+    <div className="fixed inset-0 w-full h-full flex items-center justify-center bg-white z-50">
       <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md h-fit">
         <AuthHeader title="EmotioX" />
 

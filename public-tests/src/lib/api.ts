@@ -1,14 +1,14 @@
-import {
-  APIResponse,
-  WelcomeScreenResponse,
-  SmartVOCFormData,
-  CognitiveTaskFormData,
-  ThankYouScreenFormData,
-  EyeTrackingFormData,
-  ParticipantRegistration,
-  Step
-} from './types';
 import { useParticipantStore } from '../stores/participantStore';
+import {
+    APIResponse,
+    CognitiveTaskFormData,
+    EyeTrackingFormData,
+    ParticipantRegistration,
+    SmartVOCFormData,
+    Step,
+    ThankYouScreenFormData,
+    WelcomeScreenResponse
+} from './types';
 
 // Estados de respuesta de la API
 export enum APIStatus {
@@ -217,23 +217,23 @@ export class ApiClient {
    */
   async getEyeTracking(researchId: string): Promise<APIResponse<EyeTrackingFormData>> {
     this.validateResearchId(researchId);
-    
+
     // Usar el endpoint para obtener configuración de Eye Tracking
     const response = await this.request<{ data: EyeTrackingFormData }>(`/research/${researchId}/eye-tracking`);
     return { ...response, data: response.data?.data || null };
   }
-  
+
   async getEyeTrackingRecruit(researchId: string): Promise<APIResponse<unknown>> {
     this.validateResearchId(researchId);
-    
+
     // Usar el endpoint para obtener configuración de Eye Tracking Recruit
     const response = await this.request<unknown>(`/eye-tracking-recruit/research/${researchId}`);
     return response;
   }
-  
+
   async getResearchFlow(researchId: string): Promise<APIResponse<Step[]>> {
     this.validateResearchId(researchId);
-    
+
     // Obtener el flujo de la investigación (pasos)
     const response = await this.request<{ data: Step[] }>(`/research/${researchId}/forms`);
     return { ...response, data: response.data?.data || null };
@@ -263,12 +263,12 @@ export class ApiClient {
       responseType: typeof payload.response,
       responseKeys: typeof payload.response === 'object' && payload.response ? Object.keys(payload.response) : 'not object'
     });
-    
-    const result = await this.request<unknown>('/module-responses', { 
+
+    const result = await this.request<unknown>('/module-responses', {
       method: 'POST',
       body: JSON.stringify(payload)
     });
-    
+
     console.log(`📋 [ApiClient] saveModuleResponse result:`, result);
     return result;
   }
@@ -316,8 +316,8 @@ export class ApiClient {
   async markResponsesAsCompleted(researchId: string, participantId: string): Promise<APIResponse<unknown>> {
     this.validateResearchId(researchId);
     if (!participantId) throw new Error('ID de participante inválido');
-    
-    return this.request<unknown>(`/module-responses/complete?researchId=${researchId}&participantId=${participantId}`, { 
+
+    return this.request<unknown>(`/module-responses/complete?researchId=${researchId}&participantId=${participantId}`, {
         method: 'POST',
     });
   }
@@ -325,11 +325,11 @@ export class ApiClient {
   async deleteAllResponses(researchId: string, participantId: string): Promise<APIResponse<unknown>> {
     this.validateResearchId(researchId);
     if (!participantId) throw new Error('ID de participante inválido');
-    
-    return this.request<unknown>(`/research/${researchId}/participants/${participantId}/responses`, {
+
+    return this.request<unknown>(`/module-responses?researchId=${researchId}&participantId=${participantId}`, {
       method: 'DELETE'
     });
   }
 }
 
-export const apiClient = new ApiClient(); 
+export const apiClient = new ApiClient();

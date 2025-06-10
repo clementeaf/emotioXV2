@@ -87,6 +87,14 @@ api:
           headers: [Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token]
           allowCredentials: true
           methods: [OPTIONS, GET]
+    - http:
+        path: /module-responses
+        method: DELETE
+        cors:
+          origin: ${self:provider.environment.ALLOWED_ORIGIN}
+          headers: [Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token]
+          allowCredentials: true
+          methods: [OPTIONS, DELETE]
     # Ruta específica para GET WelcomeScreen (Habilitar Caché)
     - http:
         path: /research/{researchId}/welcome-screen
@@ -100,7 +108,7 @@ api:
         #     - name: method.request.path.researchId # Incluir researchId en la clave
         #       required: true
         #     # Añadir otros parámetros si son necesarios (ej: query strings, headers)
-        #     # - name: method.request.header.Authorization 
+        #     # - name: method.request.header.Authorization
         #     # - name: method.request.querystring.myParam
         #   dataEncrypted: true # Recomendado
     # Ruta específica para GET SmartVOC (Habilitar Caché)
@@ -176,5 +184,5 @@ websocket:
         route: $default
     - websocket:
         route: message
-  environment: 
-    CONNECTION_TYPE: websocket 
+  environment:
+    CONNECTION_TYPE: websocket

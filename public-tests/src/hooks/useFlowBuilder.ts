@@ -25,9 +25,7 @@ const extractCoreStepConfigs = (flowDataModules: ProcessedResearchFormConfig[]) 
                 if ('demographicQuestions' in moduleData && (moduleData as { demographicQuestions?: unknown }).demographicQuestions) {
                     const demoQuestionsFromApi = (moduleData as { demographicQuestions?: unknown }).demographicQuestions;
                     
-                    // Verificar que existe y es un objeto
                     if (demoQuestionsFromApi && typeof demoQuestionsFromApi === 'object' && demoQuestionsFromApi !== null) {
-                        // Verificar si hay al menos una pregunta habilitada
                         const hasEnabledQuestions = Object.values(demoQuestionsFromApi).some((question: unknown) => {
                             return question && typeof question === 'object' && question !== null && 
                                    'enabled' in question && (question as { enabled?: boolean }).enabled === true;
@@ -75,7 +73,7 @@ const processSmartVocQuestions = (
             
             if (frontendType) {
                 steps.push({
-                    id: q.id || `${frontendType}_${steps.length + Date.now()}`,
+                    id: q.id || `${frontendType}_${steps.length}`,
                     name: q.title || `Feedback: ${originalQuestionType || 'Desconocido'}`,
                     type: frontendType,
                     config: question,
@@ -103,7 +101,7 @@ const processCognitiveTaskQuestions = (
             const frontendType = typeof originalQuestionType === 'string' ? `cognitive_${originalQuestionType.toLowerCase()}` : undefined;
             if (frontendType) {
                 steps.push({
-                    id: q.id || `${frontendType}_${steps.length + Date.now()}`,
+                    id: q.id || `${frontendType}_${steps.length}`,
                     name: q.title || `${moduleTitleFromBackend || 'Tarea Cognitiva'}: ${originalQuestionType || 'Desconocido'}`,
                     type: frontendType,
                     config: question,
@@ -131,7 +129,7 @@ const processDefaultModuleQuestions = (
             const originalQuestionType = q.type;
             const frontendType = moduleSK && typeof originalQuestionType === 'string' ? `${moduleSK.toLowerCase()}_${originalQuestionType.toLowerCase()}` : `unknown_${typeof originalQuestionType === 'string' ? originalQuestionType.toLowerCase() : 'question'}`;
             steps.push({
-                id: q.id || `${frontendType}_${steps.length + Date.now()}`,
+                id: q.id || `${frontendType}_${steps.length}`,
                 name: q.title || `${moduleTitleFromBackend || moduleSK || 'Módulo Desconocido'}: ${originalQuestionType || 'Pregunta'}`,
                 type: frontendType,
                 config: question,
@@ -151,16 +149,32 @@ export const useFlowBuilder = ({ researchFlowApiData, isLoading }: UseFlowBuilde
                 ? (researchFlowApiData as { data: unknown }).data
                 : undefined;
 
-        if (!isLoading && !(Array.isArray(flowDataModules) && flowDataModules.length > 0)) {
+        // Si aún está cargando, devolver pasos vacíos sin warning
+        if (isLoading) {
+            return [
+                { id: 'welcome', name: 'Bienvenida', type: 'welcome', config: { title: '¡Bienvenido!', message: 'Iniciando...'}, responseKey: 'welcome' },
+                { id: 'thankyou', name: 'Agradecimiento', type: 'thankyou', config: { title: '¡Muchas Gracias!', message: 'Fin.'}, responseKey: 'thankyou' }
+            ];
+        }
+
+        // Solo mostrar warning si ya terminó de cargar pero no hay datos válidos
+        if (!(Array.isArray(flowDataModules) && flowDataModules.length > 0)) {
             console.warn('[useFlowBuilder] No hay flowDataModules válidos para construir pasos.');
-            console.warn('[useFlowBuilder] DEBUG - Razón: isLoading =', isLoading, ', Array.isArray =', Array.isArray(flowDataModules), ', length =', Array.isArray(flowDataModules) ? flowDataModules.length : 'N/A');
+            console.warn('[useFlowBuilder] DEBUG - researchFlowApiData:', researchFlowApiData);
+            console.warn('[useFlowBuilder] DEBUG - flowDataModules:', flowDataModules);
+            console.warn('[useFlowBuilder] DEBUG - tipo de flowDataModules:', typeof flowDataModules);
+            
+            // Si hay un error en la API, mostrarlo
+            if (researchFlowApiData && typeof researchFlowApiData === 'object' && 'error' in researchFlowApiData) {
+                console.error('[useFlowBuilder] API Error:', (researchFlowApiData as { error?: unknown; message?: string }).message);
+            }
+            
             return [
                 { id: 'welcome', name: 'Bienvenida', type: 'welcome', config: { title: '¡Bienvenido!', message: 'Iniciando...'}, responseKey: 'welcome' },
                 { id: 'thankyou', name: 'Agradecimiento', type: 'thankyou', config: { title: '¡Muchas Gracias!', message: 'Fin.'}, responseKey: 'thankyou' }
             ];
         }
         
-        // Solo llamar extractCoreStepConfigs cuando los datos estén válidos
         if (!Array.isArray(flowDataModules) || flowDataModules.length === 0) {
             return [
                 { id: 'welcome', name: 'Bienvenida', type: 'welcome', config: { title: '¡Bienvenido!', message: 'Iniciando...'}, responseKey: 'welcome' },
@@ -248,7 +262,6 @@ export const useFlowBuilder = ({ researchFlowApiData, isLoading }: UseFlowBuilde
             responseKey: 'welcome'
         });
         
-        // Iterar sobre los módulos para crear los pasos
         for (const processedModule of flowDataModules) {
             const moduleData = processedModule.config;
             if (!moduleData) continue;
