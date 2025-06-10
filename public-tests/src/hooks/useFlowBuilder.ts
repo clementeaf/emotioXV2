@@ -39,7 +39,6 @@ const extractCoreStepConfigs = (flowDataModules: ProcessedResearchFormConfig[]) 
                                 title: (moduleData as { title?: string }).title || 'Preguntas Demográficas',
                                 description: (moduleData as { description?: string }).description || 'Por favor, complete las siguientes preguntas:'
                             };
-                            console.log('[extractCoreStepConfigs] ✅ Configuración demográfica encontrada con preguntas habilitadas');
                         } else {
                             console.warn('[extractCoreStepConfigs] Configuración demográfica encontrada pero ninguna pregunta está habilitada');
                         }
@@ -146,31 +145,11 @@ const processDefaultModuleQuestions = (
 export const useFlowBuilder = ({ researchFlowApiData, isLoading }: UseFlowBuilderProps & { isLoading?: boolean }): ExpandedStep[] => {
     
     const buildStepsInternal = useCallback(() => {
-        
-        console.log('[useFlowBuilder] DEBUG - researchFlowApiData:', researchFlowApiData);
-        console.log('[useFlowBuilder] DEBUG - isLoading:', isLoading);
-        
+    
         const flowDataModules =
             researchFlowApiData && typeof researchFlowApiData === 'object' && researchFlowApiData !== null && 'data' in researchFlowApiData
                 ? (researchFlowApiData as { data: unknown }).data
                 : undefined;
-
-        console.log('[useFlowBuilder] DEBUG - flowDataModules:', flowDataModules);
-        console.log('[useFlowBuilder] DEBUG - Array.isArray(flowDataModules):', Array.isArray(flowDataModules));
-        console.log('[useFlowBuilder] DEBUG - flowDataModules.length:', Array.isArray(flowDataModules) ? flowDataModules.length : 'N/A');
-        
-        // Debug adicional para ver el contenido de los módulos
-        if (Array.isArray(flowDataModules)) {
-            flowDataModules.forEach((module, index) => {
-                console.log(`[useFlowBuilder] DEBUG - Módulo ${index}:`, {
-                    id: module.id,
-                    originalSk: module.originalSk,
-                    config: module.config,
-                    hasEyeTrackingConfig: module.originalSk === 'EYE_TRACKING_CONFIG',
-                    hasDemographicQuestions: module.config && 'demographicQuestions' in module.config
-                });
-            });
-        }
 
         if (!isLoading && !(Array.isArray(flowDataModules) && flowDataModules.length > 0)) {
             console.warn('[useFlowBuilder] No hay flowDataModules válidos para construir pasos.');

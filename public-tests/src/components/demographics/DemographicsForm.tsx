@@ -53,14 +53,6 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
     customUpdateText: 'Actualizar y continuar'
   });
 
-  console.log(`🔍 [DemographicsForm] Button text calculation:`, {
-    responseData,
-    responseDataKeys: responseData ? Object.keys(responseData) : 'no data',
-    useStepResponseManagerReturnedSpecificId,
-    hasExistingData,
-    buttonText
-  });
-
   if (!config || !config.questions) {
     return (
       <div className="w-full max-w-lg mx-auto bg-white p-6 rounded-lg shadow-md text-center">
@@ -71,10 +63,8 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
   }
 
   const handleChange = (id: string, value: string | number | boolean | undefined) => {
-    console.log(`🔍 [DemographicsForm] handleChange called:`, { id, value, type: typeof value });
     setFormFieldResponses(prev => {
       const newResponses = { ...prev, [id]: value };
-      console.log(`📊 [DemographicsForm] Updated formFieldResponses:`, newResponses);
       return newResponses;
     });
     if (value && formErrors[id]) {
@@ -91,17 +81,11 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
       }
     });
     setFormErrors(errors);
-    console.log(`🔍 [DemographicsForm] validateForm result:`, { 
-      formFieldResponses, 
-      errors, 
-      isValid: Object.keys(errors).length === 0 
-    });
     return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log(`🚀 [DemographicsForm] handleSubmit started with data:`, formFieldResponses);
     
     if (!validateForm()) {
       console.warn(`❌ [DemographicsForm] Validation failed, aborting submit`);
@@ -109,12 +93,10 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
     }
     
     setIsSubmittingToServer(true);
-    console.log(`📤 [DemographicsForm] Calling saveCurrentStepResponse with:`, formFieldResponses);
     
     const { success } = await saveCurrentStepResponse(formFieldResponses);
     
     if (success) {
-      console.log(`✅ [DemographicsForm] Save successful, calling onSubmit with:`, formFieldResponses);
       onSubmit(formFieldResponses); 
     } else {
       console.error(`❌ [DemographicsForm] Save failed. Error:`, stepResponseError);

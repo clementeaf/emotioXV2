@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { useModuleResponses } from '../../hooks/useModuleResponses';
+import { useResponseAPI } from '../../hooks/useResponseAPI';
 import { useParticipantStore } from '../../stores/participantStore';
 import { CSATViewProps } from '../../types/smart-voc.types';
-import { formatQuestionText, formSpacing } from '../../utils/formHelpers';
+import { formatQuestionText, formSpacing, getStandardButtonText } from '../../utils/formHelpers';
 
 const CSATView: React.FC<CSATViewProps> = ({
   questionText,
   instructions,
   companyName,
-  config,
   onNext,
   onStepComplete,
-  ...standardProps
 }) => {
 
   const satisfactionLevels = [
@@ -22,68 +22,89 @@ const CSATView: React.FC<CSATViewProps> = ({
   ];
 
   const [csatValue, setCsatValue] = useState<number | null>(null);
-  const [formError, setFormError] = useState<string | null>(null);
   const [isSubmittingToServer, setIsSubmittingToServer] = useState(false);
+  
+  const researchId = useParticipantStore(state => state.researchId);
+  const participantId = useParticipantStore(state => state.participantId);
+  
+  const { data: moduleResponsesArray, isLoading, error: moduleError } = useModuleResponses();
+  const { saveOrUpdateResponse } = useResponseAPI({ researchId: researchId || '', participantId: participantId || '' });
 
-  // Cargar valor desde localStorage directamente
   useEffect(() => {
-    const savedValue = localStorage.getItem('csat_value');
-    if (savedValue) {
-      setCsatValue(parseInt(savedValue, 10));
-    } else {
-      // Como último recurso, hardcodear el valor que sabemos que existe
-      setCsatValue(3);
+    if (moduleResponsesArray && Array.isArray(moduleResponsesArray)) {
+      const csatResponse = moduleResponsesArray.find((r: any) => r.stepType === 'smartvoc_csat');
+      if (csatResponse && csatResponse.response !== null && csatResponse.response !== undefined) {
+        setCsatValue(csatResponse.response);
+      }
     }
-  }, []);
+  }, [moduleResponsesArray]);
 
-  const hasExistingData = csatValue !== null;
-  const buttonText = hasExistingData ? 'Actualizar y continuar' : 'Guardar y continuar';
+  const hasExistingData = !!(csatValue !== null && csatValue !== undefined);
+
+  const buttonText = getStandardButtonText({
+    isSaving: false,
+    isLoading: isSubmittingToServer,
+    hasExistingData: hasExistingData,
+    isNavigating: isSubmittingToServer,
+    customCreateText: 'Guardar y continuar',
+    customUpdateText: 'Actualizar y continuar'
+  });
 
   const handleSelect = (selectedValue: number) => {
     setCsatValue(selectedValue);
-    if (formError) {
-      setFormError(null);
-    }
   };
 
-  const validateForm = (): boolean => {
-    if (csatValue === null || csatValue === undefined) {
-      setFormError('Por favor selecciona una puntuación');
-      return false;
-    }
-    if (csatValue < 1 || csatValue > 5) {
-      setFormError('La puntuación debe estar entre 1 y 5');
-      return false;
-    }
-    return true;
-  };
-
-  const handleSubmit = async () => {
-    if (!validateForm()) {
+    const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (csatValue === null) {
       return;
     }
     
     setIsSubmittingToServer(true);
     
-    // Guardar en localStorage
-    localStorage.setItem('csat_value', csatValue!.toString());
-    
-    // Simular guardado exitoso
-    if (onNext) {
-      onNext(csatValue!);
-    } else if (onStepComplete) {
-      onStepComplete({ 
-        success: true, 
-        data: csatValue!, 
-        value: csatValue! 
-      });
+    try {
+      // Buscar si existe una respuesta previa de CSAT
+      const existingCsatResponse = moduleResponsesArray && Array.isArray(moduleResponsesArray) 
+        ? moduleResponsesArray.find((r: any) => r.stepType === 'smartvoc_csat')
+        : null;
+      
+      const result = await saveOrUpdateResponse(
+        'smartvoc_csat',
+        'smartvoc_csat', 
+        'Satisfacción del Cliente (CSAT)',
+        csatValue,
+        existingCsatResponse?.id
+      );
+      
+      if (result) {
+        if (onNext) {
+          onNext(csatValue);
+        } else if (onStepComplete) {
+          onStepComplete({ 
+            success: true, 
+            data: csatValue, 
+            value: csatValue 
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error guardando CSAT:', error);
+    } finally {
+      setIsSubmittingToServer(false);
     }
-    
-    setIsSubmittingToServer(false);
   };
 
+  if (isLoading && !moduleResponsesArray) {
+    return (
+      <div className="flex flex-col items-center justify-center w-full h-full bg-white p-8">
+        <div className="text-center text-neutral-500">Cargando respuestas previas...</div>
+      </div>
+    );
+  }
+
   const formattedQuestionText = formatQuestionText(questionText, companyName);
-  const isButtonDisabled = isSubmittingToServer || csatValue === null;
+  const isButtonDisabled = isLoading || isSubmittingToServer || csatValue === null;
 
   return (
     <div className="flex flex-col items-center justify-center w-full h-full bg-white p-8">
@@ -99,16 +120,15 @@ const CSATView: React.FC<CSATViewProps> = ({
           </p>
         )}
 
-        {formError && (
+        {moduleError && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
-            <p className="text-sm">Error: {formError}</p>
+            <p className="text-sm">Error: {moduleError}</p>
           </div>
         )}
 
         <div className={`flex flex-col sm:flex-row justify-center ${formSpacing.scaleGap} ${formSpacing.section} w-full`}>
           {satisfactionLevels.map((level) => {
             const isSelected = csatValue === level.value;
-            console.log(`Button ${level.value}: csatValue=${csatValue}, isSelected=${isSelected}`);
             return (
               <button
                 key={level.value}

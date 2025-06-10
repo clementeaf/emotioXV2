@@ -1,45 +1,15 @@
-import React from 'react';
-import { SmartVOCQuestion, BaseScaleConfig } from '../../types/smart-voc.interface';
+import React, { useState, useEffect } from 'react';
+import { useModuleResponses } from '../../hooks/useModuleResponses';
+import { useResponseAPI } from '../../hooks/useResponseAPI';
+import { useParticipantStore } from '../../stores/participantStore';
+import { BaseScaleConfig } from '../../types/smart-voc.interface';
 import { DifficultyScaleData, DifficultyScaleViewProps } from '../../types/smart-voc.types';
-import { StandardizedFormProps } from '../../types/hooks.types';
-import { 
-  useStandardizedForm, 
-  // valueExtractors, 
-  validationRules
-} from '../../hooks/useStandardizedForm';
-import { 
-  getStandardButtonText, 
-  getButtonDisabledState, 
-  getErrorDisplayProps, 
-  getFormContainerClass, 
-  formSpacing 
-} from '../../utils/formHelpers';
-import { smartVOCTypeMap } from '../../hooks/utils';
-import LoadingScreen from '../LoadingScreen';
-
-/**
- * DifficultyScaleView - Versión migrada a useStandardizedForm
- * 
- * ANTES: 202 líneas, complejidad 16, múltiples hooks manuales
- * DESPUÉS: ~90 líneas, complejidad ~6, patrón unificado
- * 
- * Migración completa de:
- * - useResponseAPI manual → auto-save integrado
- * - 2 useState → estado unificado  
- * - Múltiples useEffect → valueExtractor simple
- * - Lógica de smartVOCTypeMap → integrada
- * - Logging complejo → eliminado
- * - Validación manual → validationRules
- * - Loading states múltiples → estado unificado
- */
+import { formSpacing, getStandardButtonText } from '../../utils/formHelpers';
 
 const DifficultyScaleView: React.FC<DifficultyScaleViewProps> = ({
   questionConfig,
-  moduleId,
   onNext,
-  ...standardProps
 }) => {
-  const actualStepId = questionConfig.id;
   const actualDescription = questionConfig.description || questionConfig.title || 'Califica tu experiencia';
   const specificConfig = questionConfig.config as BaseScaleConfig || {};
   const {
@@ -48,67 +18,35 @@ const DifficultyScaleView: React.FC<DifficultyScaleViewProps> = ({
     endLabel = 'Máximo'
   } = specificConfig;
 
-  // Mapear tipo de SmartVOC
-  const apiKey = moduleId.toUpperCase();
-  const frontendStepType = smartVOCTypeMap[apiKey];
+  const [value, setValue] = useState<DifficultyScaleData>({ value: null });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Configurar props estandarizadas para el hook
-  const formProps: StandardizedFormProps = {
-    ...standardProps,
-    stepId: actualStepId,
-    stepType: frontendStepType,
-    stepName: questionConfig.title || actualDescription || actualStepId,
-    required: true
-  };
+  const researchId = useParticipantStore(state => state.researchId);
+  const participantId = useParticipantStore(state => state.participantId);
+  
+  const { data: moduleResponsesArray, isLoading, error: moduleError } = useModuleResponses();
+  const { saveOrUpdateResponse } = useResponseAPI({ researchId: researchId || '', participantId: participantId || '' });
 
-  // Hook unificado que reemplaza toda la lógica manual anterior
-  const [state, actions] = useStandardizedForm<DifficultyScaleData>(
-    formProps,
-    {
-      // Valor inicial
-      initialValue: { value: null },
-      
-      // Extractor para respuestas guardadas - reemplaza toda la lógica de useEffect
-      extractValueFromResponse: (response: unknown): DifficultyScaleData => {
-        // Manejar estructura compleja de SmartVOC
-        if (typeof response === 'object' && response !== null) {
-          let value = null;
-          
-          // Comprobar diferentes estructuras anidadas de respuesta
-          if ('data' in response && typeof (response as { data: unknown }).data === 'object') {
-            const dataObj = (response as { data: any }).data;
-            if (dataObj?.response?.value !== undefined) {
-              value = dataObj.response.value;
-            }
-          } else if ('response' in response && typeof (response as { response: unknown }).response === 'object') {
-            const responseObj = (response as { response: any }).response;
-            if (responseObj?.value !== undefined) {
-              value = responseObj.value;
-            }
-          } else if ('value' in response) {
-            value = (response as { value: unknown }).value;
-          }
-          
-          if (typeof value === 'number') {
-            return { value };
-          }
-        }
-        return { value: null };
-      },
-      
-      // Validación unificada
-      validationRules: [
-        validationRules.required('Por favor, selecciona una opción.')
-      ],
-      
-      // ID del módulo para SmartVOC
-      moduleId: moduleId
+  useEffect(() => {
+    if (moduleResponsesArray && Array.isArray(moduleResponsesArray)) {
+      const cesResponse = moduleResponsesArray.find((r: any) => r.stepType === 'smartvoc_ces');
+      if (cesResponse && cesResponse.response && cesResponse.response.value !== null && cesResponse.response.value !== undefined) {
+        setValue({ value: cesResponse.response.value });
+      }
     }
-  );
+  }, [moduleResponsesArray]);
 
-  // Extraer estado y acciones del hook unificado
-  const { value, isSaving, isLoading, error, hasExistingData, isDataLoaded } = state;
-  const { setValue, validateAndSave } = actions;
+  const hasExistingData = !!(value.value !== null && value.value !== undefined);
+
+  const buttonText = getStandardButtonText({
+    isSaving: false,
+    isLoading: isSubmitting,
+    hasExistingData: hasExistingData,
+    isNavigating: isSubmitting,
+    customCreateText: 'Guardar y continuar',
+    customUpdateText: 'Actualizar y continuar'
+  });
 
   // Generar opciones de escala
   const scaleOptions: number[] = [];
@@ -122,94 +60,102 @@ const DifficultyScaleView: React.FC<DifficultyScaleViewProps> = ({
     }
   }
 
-  // Handler simplificado para selección
   const handleSelect = (scaleValue: number) => {
     setValue({ value: scaleValue });
-  };
-
-  // Handler de guardado simplificado - toda la lógica está en el hook
-  const handleSaveOrUpdateClick = async () => {
-    const result = await validateAndSave();
-    if (result.success && value.value !== null) {
-      // Extraer ID de la respuesta guardada
-      const moduleResponseId = result.data && typeof result.data === 'object' && 'id' in result.data
-        ? String((result.data as { id: unknown }).id)
-        : null;
-      
-      onNext({ 
-        value: value.value, 
-        moduleResponseId: moduleResponseId
-      });
+    if (error) {
+      setError(null);
     }
   };
 
-  // UI helpers usando sistema estandarizado
-  const buttonText = getStandardButtonText({
-    isSaving,
-    isLoading,
-    hasExistingData: hasExistingData && value.value !== null
-  });
+  const validateForm = (): boolean => {
+    if (value.value === null || value.value === undefined) {
+      setError('Por favor, selecciona una opción');
+      return false;
+    }
+    return true;
+  };
 
-  const isButtonDisabled = getButtonDisabledState({
-    isRequired: true,
-    value: value.value,
-    isSaving,
-    isLoading,
-    hasError: !!error
-  });
+  const handleSaveOrUpdateClick = async () => {
+    if (!validateForm()) {
+      return;
+    }
 
-  const errorDisplay = getErrorDisplayProps(error);
+    setIsSubmitting(true);
 
-  // Loading screen durante carga inicial
-  if (isLoading && !isDataLoaded) {
+    try {
+      // Buscar si existe una respuesta previa de CES
+      const existingCesResponse = moduleResponsesArray && Array.isArray(moduleResponsesArray) 
+        ? moduleResponsesArray.find((r: any) => r.stepType === 'smartvoc_ces')
+        : null;
+      
+      const result = await saveOrUpdateResponse(
+        'smartvoc_ces',
+        'smartvoc_ces', 
+        'Esfuerzo del Cliente (CES)',
+        { value: value.value! },
+        existingCesResponse?.id
+      );
+      
+      if (result) {
+        onNext({ 
+          value: value.value!, 
+          moduleResponseId: null
+        });
+      }
+    } catch (error) {
+      console.error('Error guardando CES:', error);
+      setError('Error al guardar la respuesta');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (isLoading && !moduleResponsesArray) {
     return (
-      <div className={getFormContainerClass('centered')}>
-        <LoadingScreen />
+      <div className="flex flex-col items-center justify-center w-full p-8 bg-white">
+        <div className="text-center text-neutral-500">Cargando respuestas previas...</div>
       </div>
     );
   }
 
+  const isButtonDisabled = isLoading || isSubmitting || value.value === null;
+
   return (
-    <div className={getFormContainerClass('centered')}>
+    <div className="flex flex-col items-center justify-center w-full p-8 bg-white">
       <div className="max-w-xl w-full flex flex-col items-center">
-        {/* Título de la pregunta */}
         <h2 className={`text-xl font-medium text-center text-neutral-800 ${formSpacing.field}`}>
           {actualDescription}
         </h2>
         
-        {/* Mostrar errores usando sistema estandarizado */}
-        {errorDisplay.hasError && (
-          <p className={`${errorDisplay.errorClassName} ${formSpacing.error}`}>
-            {errorDisplay.errorMessage}
-          </p>
+        {(moduleError || error) && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+            <p className="text-sm">Error: {moduleError || error}</p>
+          </div>
         )}
         
-        {/* Opciones de escala */}
         <div className={`flex justify-center gap-2 ${formSpacing.section}`}>
           {scaleOptions.map((option) => (
             <button 
               key={option} 
               onClick={() => handleSelect(option)} 
-              disabled={isSaving || isLoading}
+              disabled={isSubmitting}
               className={`w-9 h-9 rounded-full border flex items-center justify-center font-medium transition-colors 
                 ${value.value === option 
                   ? 'bg-indigo-600 text-white border-indigo-600' 
                   : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-100'
                 }
-                ${(isSaving || isLoading) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               {option}
             </button>
           ))}
         </div>
         
-        {/* Etiquetas de inicio y fin */}
         <div className="flex justify-between w-full mt-2 px-1 max-w-xs sm:max-w-sm">
           <span className="text-xs text-neutral-500">{startLabel}</span>
           <span className="text-xs text-neutral-500">{endLabel}</span>
         </div>
         
-        {/* Botón de guardado con estado unificado */}
         <button 
           onClick={handleSaveOrUpdateClick} 
           disabled={isButtonDisabled}

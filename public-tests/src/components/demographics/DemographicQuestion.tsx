@@ -7,18 +7,7 @@ export const DemographicQuestion: React.FC<DemographicQuestionProps> = ({
   value, 
   onChange 
 }) => {
-  console.log(`🔍 [DemographicQuestion] Rendering question:`, {
-    id: config.id,
-    enabled: config.enabled,
-    required: config.required,
-    title: config.title,
-    currentValue: value,
-    hasOptions: !!config.options,
-    optionsCount: config.options?.length || 0
-  });
-
   if (!config.enabled) {
-    console.log(`⏭️ [DemographicQuestion] Question ${config.id} is disabled, skipping render`);
     return null;
   }
 

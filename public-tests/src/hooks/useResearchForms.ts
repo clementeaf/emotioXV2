@@ -22,9 +22,7 @@ export function useLoadResearchFormsConfig(
   return useQuery<APIResponse<TransformedData>, Error, APIResponse<TransformedData>, readonly ['researchFormsConfig', string]>({
     queryKey: ['researchFormsConfig', researchId] as const,
     queryFn: async () => {
-      console.log('[useLoadResearchFormsConfig] DEBUG - Iniciando llamada API para researchId:', researchId);
       const apiResponse = await apiClient.getResearchFlow(researchId) as unknown as APIResponse<RawResearchModule[]>;
-      console.log('[useLoadResearchFormsConfig] DEBUG - Respuesta API recibida:', apiResponse);
 
       if (apiResponse.error) {
         console.error("API explicitly returned an error:", apiResponse.error);
@@ -53,12 +51,6 @@ export function useLoadResearchFormsConfig(
           derivedType: derivedType,
           config: module, 
         };
-      });
-
-      console.log('[useLoadResearchFormsConfig] DEBUG - Módulos procesados:', processedModules);
-      console.log('[useLoadResearchFormsConfig] DEBUG - Datos finales a retornar:', {
-        ...apiResponse,
-        data: processedModules,
       });
 
       return {

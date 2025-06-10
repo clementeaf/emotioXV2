@@ -1,5 +1,5 @@
 import React from 'react';
-import { DemographicConfig, SelectOption } from '../../types/demographics';
+import { SelectOption } from '../../types/demographics';
 import { GenericSelectQuestionProps } from '../../types/flow.types';
 
 export const GenericSelectQuestion: React.FC<GenericSelectQuestionProps> = ({
@@ -7,22 +7,9 @@ export const GenericSelectQuestion: React.FC<GenericSelectQuestionProps> = ({
   value,
   onChange,
 }) => {
-  console.log(`🔍 [GenericSelectQuestion] Rendering select for:`, {
-    id: config.id,
-    title: config.title,
-    currentValue: value,
-    options: config.options,
-    optionsType: config.options?.map(opt => typeof opt),
-    required: config.required
-  });
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newValue = e.target.value;
-    console.log(`📝 [GenericSelectQuestion] Value changed for ${config.id}:`, {
-      oldValue: value,
-      newValue: newValue,
-      targetValue: e.target.value
-    });
     onChange(config.id, newValue);
   };
 

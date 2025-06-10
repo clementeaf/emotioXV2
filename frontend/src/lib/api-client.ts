@@ -58,18 +58,31 @@ export class ApiClient {
           return null as T; // Devolver null para indicar que no se encontró
         }
 
-        // Para otros errores (!response.ok y no 404), lanzar el error
-        console.error(`[ApiClient] Error HTTP ${response.status} en petición a ${url}`, {
-          status: response.status,
-          statusText: response.statusText,
-          headers: Object.fromEntries(response.headers.entries())
-        });
-        // Intentar obtener cuerpo del error para más detalles
+              // Manejo especial para errores 500 de DELETE (problemas de backend)
+      if (response.status === 500 && options.method === 'DELETE') {
+        console.error(`[ApiClient] Error 500 en DELETE ${url}. Continuando sin lanzar excepción.`);
         let errorBodyText = '';
         try {
           errorBodyText = await response.text();
+          console.error('[ApiClient] Detalles del error 500:', errorBodyText);
         } catch (textError) { /* ignorar */ }
-        throw new Error(`HTTP error! status: ${response.status}. Body: ${errorBodyText}`);
+        
+        // Para DELETE, asumimos que la operación "falló pero no es crítica"
+        return { error: true, status: 500, message: errorBodyText } as T;
+      }
+
+      // Para otros errores (!response.ok y no 404), lanzar el error
+      console.error(`[ApiClient] Error HTTP ${response.status} en petición a ${url}`, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+      // Intentar obtener cuerpo del error para más detalles
+      let errorBodyText = '';
+      try {
+        errorBodyText = await response.text();
+      } catch (textError) { /* ignorar */ }
+      throw new Error(`HTTP error! status: ${response.status}. Body: ${errorBodyText}`);
       }
 
       // Para respuestas 204 No Content (como DELETE), no intentar parsear JSON

@@ -214,14 +214,8 @@ export function useStandardizedForm<T>(
         if (typeof r !== 'object' || r === null) return false;
         const response = r as { stepType?: string; stepId?: string; id?: string };
         
-        // 🚨 ARREGLADO: Búsqueda más flexible que maneja stepTypes como 'smartvoc_csat'
-        return (
-          response.stepType === stepType ||
-          response.stepId === stepId ||
-          (response.stepType && stepType && response.stepType.includes(stepType)) ||
-          (response.stepType && stepType && stepType.includes(response.stepType)) ||
-          (response.stepId && stepId && response.stepId.includes(stepId))
-        );
+        // Buscar solo por stepType (stepId no existe en el JSON)
+        return response.stepType === stepType;
       });
 
       if (foundResponse) {
