@@ -1,10 +1,10 @@
-import React, { useState, useCallback, Suspense, useMemo, useEffect } from 'react';
-import { RenderError } from './RenderError';
-import { CurrentStepProps } from './types';
-import { stepComponentMap } from './steps';
+import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { useModuleResponses } from '../../hooks/useModuleResponses';
 import { ApiClient, APIStatus } from '../../lib/api';
 import { useParticipantStore } from '../../stores/participantStore';
-import { useModuleResponses } from '../../hooks/useModuleResponses';
+import { RenderError } from './RenderError';
+import { stepComponentMap } from './steps';
+import { CurrentStepProps } from './types';
 
 const SMART_VOC_ROUTER_STEP_TYPE = 'smart_voc_module';
 const DEMOGRAPHIC_STEP_TYPE = 'demographic';
@@ -31,10 +31,10 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
     const apiClient = useMemo(() => new ApiClient(), []);
 
     // Usar useModuleResponses para obtener respuestas centralizadas
-    const { 
-        data: moduleResponsesFromAPI, 
+    const {
+        data: moduleResponsesFromAPI,
         isLoading: isLoadingModuleResponses,
-        error: moduleResponsesError 
+        error: moduleResponsesError
     } = useModuleResponses({
         researchId: researchId || undefined,
         participantId: participantIdFromStore || undefined,
@@ -43,10 +43,18 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
 
     // Función helper para encontrar respuesta por stepId/stepType
     const findSavedResponse = useCallback((searchStepId: string, searchStepType: string) => {
+        console.log(`🔍 [CurrentStepRenderer] Buscando respuesta guardada para:`, {
+            searchStepId,
+            searchStepType,
+            stepName,
+            localResponsesCount: responsesDataFromStore?.modules?.all_steps?.length || 0,
+            apiResponsesCount: Array.isArray(moduleResponsesFromAPI) ? moduleResponsesFromAPI.length : 0
+        });
+
         // 🚨 NUEVO: Verificar si el usuario ya interactuó - Si es así, NO retornar savedResponse obsoleto
-        const hasInteracted = typeof window !== 'undefined' && window.sessionStorage && 
+        const hasInteracted = typeof window !== 'undefined' && window.sessionStorage &&
             window.sessionStorage.getItem(`userInteraction_${searchStepId}_${searchStepType}`) === 'true';
-        
+
         if (hasInteracted) {
             console.log(`🚫 [CurrentStepRenderer] User interacted with ${searchStepId}, NOT returning savedResponse to prevent overwrite`);
             return null;
@@ -54,28 +62,74 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
 
         // Buscar en respuestas del store local primero
         const localResponses = responsesDataFromStore?.modules?.all_steps || [];
-        let foundResponse = localResponses.find(resp => 
-            resp.id === searchStepId || 
-            (resp.stepType === searchStepType && resp.stepTitle === stepName)
-        );
+        console.log(`🔍 [CurrentStepRenderer] Respuestas locales disponibles:`, localResponses.map(r => ({
+            id: r.id,
+            stepType: r.stepType,
+            stepTitle: r.stepTitle,
+            responsePreview: typeof r.response === 'string' ? r.response.substring(0, 50) + '...' : typeof r.response,
+            rawResponse: r.response
+        })));
 
-        // Si no se encuentra localmente, buscar en respuestas de la API
+                let foundResponse = localResponses.find(resp => {
+            const idMatch = resp.id === searchStepId;
+            const typeAndTitleMatch = resp.stepType === searchStepType && resp.stepTitle === stepName;
+            const titleOnlyMatch = resp.stepTitle === stepName; // 🔧 NUEVA LÓGICA: Solo por título
+            console.log(`🔍 [CurrentStepRenderer] Checking local response:`, {
+                responseId: resp.id,
+                responseStepType: resp.stepType,
+                responseStepTitle: resp.stepTitle,
+                searchStepId,
+                searchStepType,
+                stepName,
+                idMatch,
+                typeAndTitleMatch,
+                titleOnlyMatch,
+                overall: idMatch || typeAndTitleMatch || titleOnlyMatch
+            });
+            return idMatch || typeAndTitleMatch || titleOnlyMatch; // 🔧 AÑADIR titleOnlyMatch
+        });
+
+        console.log(`🔍 [CurrentStepRenderer] Respuesta encontrada en store local:`, foundResponse ? {
+            id: foundResponse.id,
+            stepType: foundResponse.stepType,
+            stepTitle: foundResponse.stepTitle,
+            hasResponse: !!foundResponse.response
+        } : 'No encontrada');
+
+                // Si no se encuentra localmente, buscar en respuestas de la API
         if (!foundResponse && Array.isArray(moduleResponsesFromAPI)) {
-            const apiResponse = (moduleResponsesFromAPI as unknown[]).find((resp: unknown) => {
+            console.log(`🔍 [CurrentStepRenderer] Buscando en respuestas de API:`, moduleResponsesFromAPI.map((r: any) => ({
+                id: r?.id,
+                stepType: r?.stepType,
+                stepTitle: r?.stepTitle,
+                stepId: r?.stepId,
+                responsePreview: typeof r?.response === 'string' ? r.response.substring(0, 50) + '...' : typeof r?.response,
+                rawResponse: r?.response
+            })));
+
+                        const apiResponse = (moduleResponsesFromAPI as unknown[]).find((resp: unknown) => {
                 if (typeof resp !== 'object' || resp === null) return false;
                 const r = resp as { id?: string; stepType?: string; stepTitle?: string; stepId?: string };
-                return r.id === searchStepId || 
+                return r.id === searchStepId ||
                        r.stepId === searchStepId ||
                        (r.stepType === searchStepType && r.stepTitle === stepName) ||
-                       (r.stepType === searchStepType);
+                       (r.stepType === searchStepType) ||
+                       (r.stepTitle === stepName); // 🔧 AÑADIR: Buscar solo por título también
             });
-            
+
+            console.log(`🔍 [CurrentStepRenderer] Respuesta encontrada en API:`, apiResponse ? {
+                id: (apiResponse as any)?.id,
+                stepType: (apiResponse as any)?.stepType,
+                stepTitle: (apiResponse as any)?.stepTitle,
+                hasResponse: !!(apiResponse as any)?.response
+            } : 'No encontrada');
+
             // Convertir respuesta de API al formato esperado
             if (apiResponse && typeof apiResponse === 'object') {
-                const apiResp = apiResponse as { 
-                    id?: string; 
-                    stepType?: string; 
-                    stepTitle?: string; 
+                const apiResp = apiResponse as {
+                    id?: string;
+                    stepType?: string;
+                    stepTitle?: string;
                     response?: unknown;
                     createdAt?: string;
                     updatedAt?: string;
@@ -88,8 +142,16 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
                     createdAt: apiResp.createdAt || new Date().toISOString(),
                     updatedAt: apiResp.updatedAt || new Date().toISOString(),
                 };
+                console.log(`✅ [CurrentStepRenderer] Respuesta convertida desde API:`, foundResponse);
             }
         }
+
+        console.log(`🔍 [CurrentStepRenderer] Resultado final findSavedResponse:`, foundResponse ? {
+            id: foundResponse.id,
+            stepType: foundResponse.stepType,
+            stepTitle: foundResponse.stepTitle,
+            responsePreview: typeof foundResponse.response === 'string' ? foundResponse.response.substring(0, 50) + '...' : typeof foundResponse.response
+        } : 'No encontrada');
 
         return foundResponse || null;
     }, [responsesDataFromStore, moduleResponsesFromAPI, stepName]);
@@ -240,11 +302,29 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
 
         // Agregar respuesta guardada a la configuración si existe
         if (savedResponse && currentConfigToUse) {
+            console.log(`✅ [CurrentStepRenderer] Agregando respuesta a config:`, {
+                stepType,
+                stepName,
+                savedResponseId: savedResponse.id,
+                savedResponseData: savedResponse.response,
+                configExists: !!currentConfigToUse
+            });
             currentConfigToUse = {
                 ...currentConfigToUse,
                 savedResponses: savedResponse.response,
                 savedResponseId: savedResponse.id,
             };
+            console.log(`✅ [CurrentStepRenderer] Config actualizada:`, {
+                hasSavedResponses: !!(currentConfigToUse as any).savedResponses,
+                savedResponsesValue: (currentConfigToUse as any).savedResponses
+            });
+        } else {
+            console.log(`❌ [CurrentStepRenderer] NO se agrega respuesta a config:`, {
+                hasSavedResponse: !!savedResponse,
+                hasCurrentConfig: !!currentConfigToUse,
+                stepType,
+                stepName
+            });
         }
 
         if (stepType === 'smartvoc_csat' || stepType === 'smartvoc_ces' || stepType === 'smartvoc_nps' || stepType === 'smartvoc_cv' || stepType === 'smartvoc_nev') {
@@ -261,7 +341,7 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
                 ...(stepType === 'smartvoc_csat' ? { onStepComplete: baseProps.onStepComplete } : { onNext: baseProps.onStepComplete }),
             };
         }
-        
+
         if (stepComponentMap[stepType]) {
             const componentSpecificProps: Record<string, unknown> = { ...baseProps };
             if (stepType !== 'smartvoc_csat' && stepType !== 'smartvoc_ces' && stepType !== 'smartvoc_nps') {
@@ -315,4 +395,4 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
     );
 };
 
-export default CurrentStepRenderer; 
+export default CurrentStepRenderer;

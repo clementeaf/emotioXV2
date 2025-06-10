@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { getStandardButtonText } from '../../../utils/formHelpers';
+import React, { useEffect, useState } from 'react';
 import { LongTextQuestionProps } from '../../../types/flow.types';
+import { getStandardButtonText } from '../../../utils/formHelpers';
 
-export const LongTextQuestion: React.FC<LongTextQuestionProps> = ({ 
-    config, 
+export const LongTextQuestion: React.FC<LongTextQuestionProps> = ({
+    config,
     stepName,
-    onStepComplete, 
-    isMock 
+    onStepComplete,
+    isMock
 }) => {
     // Unificar todas las props de config en un solo objeto seguro
     const cfg = (typeof config === 'object' && config !== null)
@@ -30,6 +30,14 @@ export const LongTextQuestion: React.FC<LongTextQuestionProps> = ({
     const answerPlaceholder = cfg.answerPlaceholder || 'Escribe tu respuesta detallada aquí...';
     const savedResponses = cfg.savedResponses;
 
+    console.log(`🔍 [LongTextQuestion] Inicializando componente:`, {
+        stepName,
+        title,
+        savedResponses,
+        configCompleta: cfg,
+        hasSavedResponses: !!savedResponses
+    });
+
     // Inicializar con respuestas guardadas o string vacío
     const [currentResponse, setCurrentResponse] = useState(() => {
         return savedResponses || '';
@@ -37,7 +45,13 @@ export const LongTextQuestion: React.FC<LongTextQuestionProps> = ({
 
     // Si cambian las respuestas guardadas en config, actualizar el estado
     useEffect(() => {
+        console.log(`🔍 [LongTextQuestion] useEffect savedResponses:`, {
+            savedResponses,
+            savedResponsesType: typeof savedResponses,
+            willUpdate: savedResponses !== undefined
+        });
         if (savedResponses !== undefined) {
+            console.log(`✅ [LongTextQuestion] Actualizando currentResponse a:`, savedResponses);
             setCurrentResponse(savedResponses);
         }
     }, [savedResponses]);
@@ -73,4 +87,4 @@ export const LongTextQuestion: React.FC<LongTextQuestionProps> = ({
             </button>
         </div>
     );
-}; 
+};

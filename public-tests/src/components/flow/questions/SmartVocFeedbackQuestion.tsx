@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useStepResponseManager } from '../../../hooks/useStepResponseManager';
-import { createComponentLogger } from '../../../utils/logger';
-import { getStandardButtonText } from '../../../utils/formHelpers';
 import { ComponentSmartVocFeedbackQuestionProps } from '../../../types/flow.types';
+import { getStandardButtonText } from '../../../utils/formHelpers';
+import { createComponentLogger } from '../../../utils/logger';
 
 const logger = createComponentLogger('SmartVocFeedbackQuestion');
 
-export const SmartVocFeedbackQuestion: React.FC<ComponentSmartVocFeedbackQuestionProps> = ({ 
-  config, 
-  stepName, 
+export const SmartVocFeedbackQuestion: React.FC<ComponentSmartVocFeedbackQuestionProps> = ({
+  config,
+  stepName,
   onStepComplete
-  // isMock 
+  // isMock
 }) => {
 
   const cfg = (typeof config === 'object' && config !== null)
@@ -20,10 +20,24 @@ export const SmartVocFeedbackQuestion: React.FC<ComponentSmartVocFeedbackQuestio
         questionText?: string;
         required?: boolean;
         isHardcoded?: boolean;
+        savedResponses?: string;
+        savedResponseId?: string;
       }
     : {};
 
-  const [currentResponse, setCurrentResponse] = useState('');
+  console.log(`🔍 [SmartVocFeedbackQuestion] Inicializando componente:`, {
+    stepName,
+    title: cfg.title,
+    savedResponses: cfg.savedResponses,
+    savedResponseId: cfg.savedResponseId,
+    configCompleta: cfg,
+    hasSavedResponses: !!cfg.savedResponses
+  });
+
+  const [currentResponse, setCurrentResponse] = useState(() => {
+    // Inicializar con savedResponses si existe
+    return cfg.savedResponses || '';
+  });
   const [isSubmittingToServer, setIsSubmittingToServer] = useState(false);
 
   const {
@@ -40,7 +54,8 @@ export const SmartVocFeedbackQuestion: React.FC<ComponentSmartVocFeedbackQuestio
     initialData: ''
   });
 
-  useEffect(() => { 
+    // useEffect para respuestas del useStepResponseManager
+  useEffect(() => {
     if (responseData && typeof responseData === 'string') {
       setCurrentResponse(responseData);
     } else if (responseData) {
@@ -53,6 +68,19 @@ export const SmartVocFeedbackQuestion: React.FC<ComponentSmartVocFeedbackQuestio
     }
   }, [responseData]);
 
+  // useEffect para respuestas guardadas desde CurrentStepRenderer
+  useEffect(() => {
+    console.log(`🔍 [SmartVocFeedbackQuestion] useEffect savedResponses:`, {
+      savedResponses: cfg.savedResponses,
+      savedResponsesType: typeof cfg.savedResponses,
+      willUpdate: cfg.savedResponses !== undefined
+    });
+    if (cfg.savedResponses !== undefined) {
+      console.log(`✅ [SmartVocFeedbackQuestion] Actualizando currentResponse a:`, cfg.savedResponses);
+      setCurrentResponse(cfg.savedResponses);
+    }
+  }, [cfg.savedResponses]);
+
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
@@ -62,7 +90,7 @@ export const SmartVocFeedbackQuestion: React.FC<ComponentSmartVocFeedbackQuestio
   // ✅ SIMPLIFICADO: Enviar respuesta usando useStepResponseManager
   const handleSaveAndProceed = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!config) {
       logger.error('Missing config');
       return;
@@ -74,10 +102,10 @@ export const SmartVocFeedbackQuestion: React.FC<ComponentSmartVocFeedbackQuestio
     }
 
     setIsSubmittingToServer(true);
-    
+
     try {
       const { success } = await saveCurrentStepResponse(currentResponse);
-      
+
       if (success) {
         onStepComplete(currentResponse);
       } else {
@@ -93,7 +121,7 @@ export const SmartVocFeedbackQuestion: React.FC<ComponentSmartVocFeedbackQuestio
   const buttonText = getStandardButtonText({
     isSaving: isSaving,
     isLoading: isSubmittingToServer,
-    hasExistingData: !!responseSpecificId,
+    hasExistingData: !!responseSpecificId || !!cfg.savedResponses || currentResponse !== '',
     isNavigating: isSubmittingToServer,
     customCreateText: 'Guardar y continuar',
     customUpdateText: 'Actualizar y continuar'
@@ -122,30 +150,30 @@ export const SmartVocFeedbackQuestion: React.FC<ComponentSmartVocFeedbackQuestio
             </div>
             <div className="ml-3">
               <p className="text-sm text-amber-800">
-                <strong>Configuración por defecto:</strong> Esta pregunta está usando contenido predeterminado. 
+                <strong>Configuración por defecto:</strong> Esta pregunta está usando contenido predeterminado.
                 Para personalizar el contenido, configúralo en el backend del research.
               </p>
             </div>
           </div>
         </div>
       )}
-      
+
       <h2 className="text-xl font-medium text-neutral-800 mb-4">
         {cfg.title || stepName || 'Voice of Customer (VOC)'}
       </h2>
-      
+
       {cfg.description && (
         <p className="text-neutral-600 mb-6">
           {cfg.description}
         </p>
       )}
-      
+
       {stepResponseError && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
           <p className="text-sm">Error: {stepResponseError}</p>
         </div>
       )}
-      
+
       <form onSubmit={handleSaveAndProceed}>
         <div className="mb-6">
           <textarea
@@ -158,7 +186,7 @@ export const SmartVocFeedbackQuestion: React.FC<ComponentSmartVocFeedbackQuestio
             required={cfg.required}
           />
         </div>
-        
+
         <div className="flex justify-end">
           <button
             type="submit"
