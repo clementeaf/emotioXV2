@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { useParticipantStore } from '../../../contexts/ParticipantContext';
+import { useModuleResponses } from '../../../hooks/useModuleResponses';
 import { useStepResponseManager } from '../../../hooks/useStepResponseManager';
 import { ComponentSmartVocFeedbackQuestionProps } from '../../../types/flow.types';
 import { getStandardButtonText } from '../../../utils/formHelpers';
@@ -31,7 +33,9 @@ export const SmartVocFeedbackQuestion: React.FC<ComponentSmartVocFeedbackQuestio
     savedResponses: cfg.savedResponses,
     savedResponseId: cfg.savedResponseId,
     configCompleta: cfg,
-    hasSavedResponses: !!cfg.savedResponses
+    hasSavedResponses: !!cfg.savedResponses,
+    initialValue: cfg.savedResponses || '',
+    timestamp: new Date().toISOString()
   });
 
   const [currentResponse, setCurrentResponse] = useState(() => {
@@ -39,6 +43,14 @@ export const SmartVocFeedbackQuestion: React.FC<ComponentSmartVocFeedbackQuestio
     return cfg.savedResponses || '';
   });
   const [isSubmittingToServer, setIsSubmittingToServer] = useState(false);
+
+  // Obtener IDs para invalidar cache
+  const researchId = useParticipantStore(state => state.researchId);
+  const participantId = useParticipantStore(state => state.participantId);
+  const setLoadedResponses = useParticipantStore(state => state.setLoadedResponses);
+
+  // Hook para poder invalidar cache después de guardar
+  const { fetchResponses } = useModuleResponses({ autoFetch: false });
 
   const {
     responseData,
@@ -107,6 +119,24 @@ export const SmartVocFeedbackQuestion: React.FC<ComponentSmartVocFeedbackQuestio
       const { success } = await saveCurrentStepResponse(currentResponse);
 
       if (success) {
+        console.log(`🔄 [SmartVocFeedbackQuestion] Invalidando cache después de guardar exitosamente`);
+        
+        // Invalidar cache de module responses para obtener datos frescos
+        if (researchId && participantId) {
+          try {
+            const freshData = await fetchResponses(researchId, participantId);
+            console.log(`✅ [SmartVocFeedbackQuestion] Cache invalidado exitosamente, datos frescos:`, freshData);
+            
+            // También actualizar el store local si obtuvimos datos frescos
+            if (freshData && Array.isArray(freshData)) {
+              setLoadedResponses(freshData);
+              console.log(`✅ [SmartVocFeedbackQuestion] Store local actualizado con datos frescos`);
+            }
+          } catch (error) {
+            console.warn(`⚠️ [SmartVocFeedbackQuestion] Error invalidando cache:`, error);
+          }
+        }
+        
         onStepComplete(currentResponse);
       } else {
         console.error("[SmartVocFeedbackQuestion] Falló saveCurrentStepResponse. Error debería estar en stepResponseError.");

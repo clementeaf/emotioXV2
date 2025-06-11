@@ -67,6 +67,8 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
             stepType: r.stepType,
             stepTitle: r.stepTitle,
             responsePreview: typeof r.response === 'string' ? r.response.substring(0, 50) + '...' : typeof r.response,
+            createdAt: r.createdAt,
+            updatedAt: r.updatedAt,
             rawResponse: r.response
         })));
 
@@ -104,6 +106,8 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
                 stepTitle: r?.stepTitle,
                 stepId: r?.stepId,
                 responsePreview: typeof r?.response === 'string' ? r.response.substring(0, 50) + '...' : typeof r?.response,
+                createdAt: r?.createdAt,
+                updatedAt: r?.updatedAt,
                 rawResponse: r?.response
             })));
 
@@ -150,7 +154,10 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
             id: foundResponse.id,
             stepType: foundResponse.stepType,
             stepTitle: foundResponse.stepTitle,
-            responsePreview: typeof foundResponse.response === 'string' ? foundResponse.response.substring(0, 50) + '...' : typeof foundResponse.response
+            responsePreview: typeof foundResponse.response === 'string' ? foundResponse.response.substring(0, 50) + '...' : typeof foundResponse.response,
+            createdAt: foundResponse.createdAt,
+            updatedAt: foundResponse.updatedAt,
+            dataSource: foundResponse.createdAt ? 'API o Store con timestamps' : 'Store local'
         } : 'No encontrada');
 
         return foundResponse || null;
