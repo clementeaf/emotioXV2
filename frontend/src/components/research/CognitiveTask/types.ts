@@ -25,7 +25,7 @@ export interface FileInfo {
   error?: boolean;
   status?: 'uploading' | 'uploaded' | 'pending-delete' | 'error';
   questionId?: string;
-  hitzones?: HitzoneArea[];
+  hitZones?: HitzoneArea[];
 }
 
 export interface ScaleConfig {
@@ -195,4 +195,4 @@ export const QUESTION_TYPES = [
   { id: 'ranking', label: 'Ranking', description: 'Rank options in order' },
   { id: 'navigation_flow', label: 'Navigation Flow', description: 'Navigation flow test' },
   { id: 'preference_test', label: 'Preference Test', description: 'A/B testing' }
-]; 
+];

@@ -1,27 +1,27 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { smartVocFixedAPI } from '@/lib/smart-voc-api';
+import { useAuth } from '@/providers/AuthProvider';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { SmartVOCFormData } from 'shared/interfaces/smart-voc.interface';
-import { 
-  ErrorModalData, 
-  ValidationErrors, 
-  SmartVOCQuestion
-} from '../types';
-import { smartVocFixedAPI } from '@/lib/smart-voc-api';
-import { 
-  QUERY_KEYS, 
-  ERROR_MESSAGES, 
+import {
+  ERROR_MESSAGES,
+  QUERY_KEYS,
   SUCCESS_MESSAGES
 } from '../constants';
-import { useAuth } from '@/providers/AuthProvider';
-import { filterValidQuestions, debugQuestionsToSend } from '../utils/validateRequiredField';
+import {
+  ErrorModalData,
+  SmartVOCQuestion,
+  ValidationErrors
+} from '../types';
+import { debugQuestionsToSend, filterValidQuestions } from '../utils/validateRequiredField';
 
 /**
  * Hook personalizado para gestionar la lógica del formulario SmartVOC
  */
 export const useSmartVOCForm = (researchId: string) => {
   const queryClient = useQueryClient();
-  const [formData, setFormData] = useState<SmartVOCFormData>({ 
+  const [formData, setFormData] = useState<SmartVOCFormData>({
     researchId,
     questions: [
       {
@@ -145,7 +145,7 @@ export const useSmartVOCForm = (researchId: string) => {
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
   // Restaurar Handlers para el modal de error
-  const closeModal = useCallback(() => setModalVisible(false), []); 
+  const closeModal = useCallback(() => setModalVisible(false), []);
   const showModal = useCallback((errorData: ErrorModalData) => {
     setModalError(errorData);
     setModalVisible(true);
@@ -154,8 +154,8 @@ export const useSmartVOCForm = (researchId: string) => {
   // Logging solo en desarrollo
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
-      console.log('[SmartVOCForm] Auth state:', { 
-        isAuthenticated, 
+      console.log('[SmartVOCForm] Auth state:', {
+        isAuthenticated,
         hasToken: !!token,
         researchId,
         authLoading
@@ -191,11 +191,11 @@ export const useSmartVOCForm = (researchId: string) => {
         if (process.env.NODE_ENV === 'development') {
           console.error('[SmartVOCForm] Error al obtener datos:', error);
         }
-        
+
         if (error?.statusCode === 404) {
           return { notFound: true };
         }
-        
+
         throw error;
       }
     },
@@ -205,18 +205,18 @@ export const useSmartVOCForm = (researchId: string) => {
 
   // Efecto para actualizar formData cuando lleguen datos de la API
   useEffect(() => {
-    console.log('[SmartVOCForm] useEffect ejecutado:', { 
-      hasData: !!smartVocData, 
+    console.log('[SmartVOCForm] useEffect ejecutado:', {
+      hasData: !!smartVocData,
       isNotFound: smartVocData && 'notFound' in smartVocData ? smartVocData.notFound : false,
       dataType: typeof smartVocData,
       questionCount: smartVocData && 'questions' in smartVocData && Array.isArray(smartVocData.questions) ? smartVocData.questions.length : 'No es array'
     });
-    
+
     if (smartVocData && !('notFound' in smartVocData) && smartVocData.questions && smartVocData.questions.length > 0) {
       // Solo actualizar si hay preguntas reales de la API (configuración existente)
       console.log('[SmartVOCForm] Datos cargados desde API:', smartVocData);
       console.log('[SmartVOCForm] Preguntas encontradas:', smartVocData.questions?.length || 0);
-      
+
       // Actualizar formData con los datos cargados
       setFormData({
         researchId: smartVocData.researchId || researchId,
@@ -251,10 +251,10 @@ export const useSmartVOCForm = (researchId: string) => {
       if (!isAuthenticated || !token) {
         throw new Error('No autenticado');
       }
-      
+
       // Filtrar solo las preguntas que tienen todos los campos requeridos
       const filteredData = filterValidQuestions(data);
-      
+
       // Crear una copia limpia de los datos, seleccionando solo los campos de la interfaz
       const cleanedData: SmartVOCFormData = {
         researchId: filteredData.researchId,
@@ -262,12 +262,12 @@ export const useSmartVOCForm = (researchId: string) => {
         smartVocRequired: filteredData.smartVocRequired,
         metadata: filteredData.metadata, // Incluir metadata si existe
         questions: filteredData.questions.map((q: SmartVOCQuestion) => {
-          const cleanedConfig = { ...q.config }; 
-          
+          const cleanedConfig = { ...q.config };
+
           if (cleanedConfig.companyName === '') {
             delete cleanedConfig.companyName;
           }
-          
+
           // Asegurar que todos los campos necesarios se incluyan explícitamente
           return {
             id: q.id,
@@ -279,7 +279,7 @@ export const useSmartVOCForm = (researchId: string) => {
             showConditionally: q.showConditionally,
             config: cleanedConfig,
             ...(q.moduleResponseId && { moduleResponseId: q.moduleResponseId }) // Solo incluir si existe
-          }; 
+          };
         })
       };
 
@@ -288,7 +288,7 @@ export const useSmartVOCForm = (researchId: string) => {
         console.log('[SmartVOCForm] Datos filtrados a guardar:', cleanedData);
         debugQuestionsToSend(data);
       }
-      
+
       if (smartVocId) {
         return await smartVocFixedAPI.update(smartVocId, cleanedData);
       } else {
@@ -296,33 +296,33 @@ export const useSmartVOCForm = (researchId: string) => {
       }
     },
     onSuccess: (response: SmartVOCFormData) => {
-      const responseWithId = response as SmartVOCFormData & { id?: string }; 
+      const responseWithId = response as SmartVOCFormData & { id?: string };
       if (responseWithId?.id) {
         setSmartVocId(responseWithId.id);
       } else {
         console.warn('[SmartVOCForm] No se encontró ID en la respuesta onSuccess directa. Invalidando query.');
       }
-      
+
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SMART_VOC, researchId] });
-      
-      showModal({ 
+
+      showModal({
         title: 'Éxito',
         message: smartVocId ? SUCCESS_MESSAGES.UPDATE_SUCCESS : SUCCESS_MESSAGES.CREATE_SUCCESS,
         type: 'info'
       });
-      
+
       setIsSaving(false);
     },
     onError: (error: any, variables: SmartVOCFormData, context: any) => {
       // Log detallado del formData que causó el error
       console.error('[SmartVOCForm] Error al guardar. Datos enviados:', JSON.stringify(variables, null, 2));
-      
+
       showModal({
         title: ERROR_MESSAGES.SAVE_ERROR,
         message: error.message || 'Ocurrió un error al guardar la configuración',
         type: 'error'
       });
-      
+
       toast.error(ERROR_MESSAGES.SAVE_ERROR, {
         duration: 5000,
         style: {
@@ -332,7 +332,7 @@ export const useSmartVOCForm = (researchId: string) => {
         },
         icon: '❌'
       });
-      
+
       setIsSaving(false);
     }
   });
@@ -372,7 +372,7 @@ export const useSmartVOCForm = (researchId: string) => {
   // Función para validar el formulario
   const validateForm = useCallback((): boolean => {
     const errors: ValidationErrors = {};
-    
+
     if (!formData.questions || formData.questions.length === 0) {
       errors.questions = 'Debe incluir al menos una pregunta';
     }
@@ -407,7 +407,7 @@ export const useSmartVOCForm = (researchId: string) => {
 
     try {
       setIsSaving(true);
-      
+
       // Si hay un smartVocId, eliminar usando el ID específico
       if (smartVocId) {
         await smartVocFixedAPI.deleteSmartVOC(researchId, smartVocId);
@@ -415,23 +415,87 @@ export const useSmartVOCForm = (researchId: string) => {
         // Si no hay ID específico, intentar eliminar por researchId
         await smartVocFixedAPI.deleteByResearchId(researchId);
       }
-      
-      // Limpiar el estado local
+
+      // Limpiar el estado local y restaurar preguntas por defecto
       setSmartVocId(null);
       setFormData(prev => ({
         ...prev,
-        questions: []
+        questions: [
+          {
+            id: 'csat-template',
+            type: 'CSAT',
+            title: 'Satisfacción del Cliente (CSAT)',
+            description: '',
+            instructions: '',
+            showConditionally: false,
+            config: { type: 'stars', companyName: '' }
+          },
+          {
+            id: 'ces-template',
+            type: 'CES',
+            title: 'Esfuerzo del Cliente (CES)',
+            description: '',
+            instructions: '',
+            showConditionally: false,
+            config: { type: 'scale', scaleRange: { start: 1, end: 7 }, startLabel: '', endLabel: '' }
+          },
+          {
+            id: 'cv-template',
+            type: 'CV',
+            title: 'Valor Cognitivo (CV)',
+            description: '',
+            instructions: '',
+            showConditionally: false,
+            config: { type: 'scale', scaleRange: { start: 1, end: 5 }, startLabel: '', endLabel: '' }
+          },
+          {
+            id: 'nev-template',
+            type: 'NEV',
+            title: 'Valor Emocional Neto (NEV)',
+            description: '',
+            instructions: '',
+            showConditionally: false,
+            config: { type: 'emojis', companyName: '' }
+          },
+          {
+            id: 'nps-template',
+            type: 'NPS',
+            title: 'Net Promoter Score (NPS)',
+            description: '',
+            instructions: '',
+            showConditionally: false,
+            config: { type: 'scale', scaleRange: { start: 0, end: 10 }, companyName: '', startLabel: '', endLabel: '' }
+          },
+          {
+            id: 'voc-template',
+            type: 'VOC',
+            title: 'Voz del Cliente (VOC)',
+            description: '',
+            instructions: '',
+            showConditionally: false,
+            config: { type: 'text' }
+          },
+          {
+            id: 'trust-template',
+            type: 'CSAT',
+            title: 'Nivel de Confianza',
+            description: '',
+            instructions: '',
+            showConditionally: false,
+            config: { type: 'scale', scaleRange: { start: 1, end: 5 }, startLabel: '', endLabel: '' }
+          }
+        ]
       }));
-      
+
       // Invalidar queries
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SMART_VOC, researchId] });
-      
-      showModal({ 
+
+      showModal({
         title: 'Éxito',
         message: 'Datos SmartVOC eliminados correctamente',
         type: 'success'
       });
-      
+
     } catch (error: any) {
       console.error('[SmartVOCForm] Error al eliminar:', error);
       showModal({
@@ -531,4 +595,4 @@ export const useSmartVOCForm = (researchId: string) => {
     closeModal,
     isExisting: !!smartVocId
   };
-}; 
+};

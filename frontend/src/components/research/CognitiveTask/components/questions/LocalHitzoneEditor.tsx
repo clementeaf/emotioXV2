@@ -13,6 +13,7 @@ interface LocalHitzoneEditorProps {
   initialAreas?: Area[];
   onSave: (areas: Area[]) => void;
   onClose: () => void;
+  hitZones?: Area[];
 }
 
 const CANVAS_SIZE = 575;
@@ -151,4 +152,4 @@ export const LocalHitzoneEditor: React.FC<LocalHitzoneEditorProps> = ({
       </div>
     </div>
   );
-}; 
+};

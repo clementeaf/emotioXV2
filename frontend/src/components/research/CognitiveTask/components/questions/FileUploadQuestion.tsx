@@ -1,13 +1,13 @@
-import React, { useRef } from 'react';
-import { Input } from '@/components/ui/Input';
-import { Textarea } from '@/components/ui/Textarea';
 import { Button } from '@/components/ui/Button';
-import { Upload, Trash2, Clock } from 'lucide-react';
-import { FileUploadQuestionProps, FileInfo } from '../../types';
+import { Input } from '@/components/ui/Input';
 import { Switch } from '@/components/ui/Switch';
-import { LocalHitzoneEditor } from './LocalHitzoneEditor';
-import ReactDOM from 'react-dom';
+import { Textarea } from '@/components/ui/Textarea';
 import s3Service from '@/services/s3Service';
+import { Trash2, Upload } from 'lucide-react';
+import React, { useRef } from 'react';
+import ReactDOM from 'react-dom';
+import { FileInfo, FileUploadQuestionProps } from '../../types';
+import { LocalHitzoneEditor } from './LocalHitzoneEditor';
 
 const DEFAULT_TEXTS = {
   QUESTION_TITLE_PLACEHOLDER: 'Añadir pregunta',
@@ -49,7 +49,7 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
   const descriptionError = validationErrors ? validationErrors['description'] : null;
   const filesError = validationErrors ? validationErrors['files'] : null;
 
-  const isThisQuestionUploading = isUploading && 
+  const isThisQuestionUploading = isUploading &&
     question.files?.some(file => file.isLoading);
 
   // Filtrar archivos con status 'error' antes de renderizar
@@ -82,8 +82,8 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
       url = file.url;
     }
 
-    const hitzonesCopy = file.hitzones ? JSON.parse(JSON.stringify(file.hitzones)) : [];
-    setHitzoneFile({ ...file, url, hitzones: hitzonesCopy });
+    const hitZonesCopy = file.hitZones ? JSON.parse(JSON.stringify(file.hitZones)) : [];
+    setHitzoneFile({ ...file, url, hitZones: hitZonesCopy });
     setHitzoneModalOpen(true);
   };
 
@@ -127,13 +127,13 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
           accept="image/*,.pdf"
           data-question-id={question.id}
         />
-        
+
         {isThisQuestionUploading ? (
           <div className="flex flex-col items-center gap-3 w-full">
             <p className="text-sm text-neutral-600">{DEFAULT_TEXTS.UPLOADING_FILE_MESSAGE}</p>
             <div className="w-full bg-neutral-200 rounded-full h-2.5">
-              <div 
-                className="bg-blue-600 h-2.5 rounded-full" 
+              <div
+                className="bg-blue-600 h-2.5 rounded-full"
                 style={{ width: `${uploadProgress || 0}%` }}
               ></div>
             </div>
@@ -144,16 +144,16 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
             {validFiles.map((file: FileInfo, index) => {
               const isPendingDelete = file.status === 'pending-delete';
               return (
-                <div 
+                <div
                   key={`${file.id}_${index}`}
                   className={`flex items-center justify-between p-2 bg-white border rounded transition-opacity duration-300 ${isPendingDelete ? 'opacity-50 border-dashed border-amber-400' : ''}`}
                 >
                   <div className="flex items-center gap-2">
                     {file.type?.startsWith('image/') ? (
                       <div className="relative w-10 h-10">
-                        <img 
-                          src={file.url} 
-                          alt={file.name} 
+                        <img
+                          src={file.url}
+                          alt={file.name}
                           className={`w-10 h-10 object-cover rounded ${file.isLoading ? 'opacity-50' : ''}`}
                           onError={(e) => {
                             e.currentTarget.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><rect width="40" height="40" fill="%23f0f0f0"/><text x="20" y="20" font-family="Arial" font-size="8" text-anchor="middle" dominant-baseline="middle" fill="%23999">Error</text></svg>';
@@ -197,7 +197,7 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
                   >
                     <Trash2 size={18} />
                   </button>
-                  {file.type?.startsWith('image/') && !isPendingDelete && (
+                  {file.type?.startsWith('image/') && !isPendingDelete && question.type === 'navigation_flow' && (
                     <Button
                       type="button"
                       variant="secondary"
@@ -284,9 +284,9 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
             <h2 className="text-lg font-semibold mb-4 text-center">Editar hitzones para: {hitzoneFile.name}</h2>
             <LocalHitzoneEditor
               imageUrl={hitzoneFile.url}
-              initialAreas={hitzoneFile.hitzones || []}
+              initialAreas={hitzoneFile.hitZones || []}
               onSave={(newAreas) => {
-                onQuestionChange({ files: question.files?.map(f => f.id === hitzoneFile.id ? { ...f, hitzones: newAreas } : f) });
+                onQuestionChange({ files: question.files?.map(f => f.id === hitzoneFile.id ? { ...f, hitZones: newAreas } : f) });
                 setHitzoneModalOpen(false);
               }}
               onClose={() => setHitzoneModalOpen(false)}
@@ -297,4 +297,4 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
       ) : null)}
     </div>
   );
-}; 
+};

@@ -608,7 +608,9 @@ export const useCognitiveTaskForm = (
             // Asegurar que ciertos campos obligatorios tengan valores por defecto si faltan
             url: file.url || `https://placehold.co/300x300/gray/white?text=${encodeURIComponent(file.name)}`,
             type: file.type || 'image/jpeg',
-            status: (file as any).status || 'uploaded'
+            status: (file as any).status || 'uploaded',
+            s3Key: file.s3Key,
+            hitZones: file.hitZones
           }));
 
         // Devolver la pregunta con la lista de archivos única y validada
@@ -743,7 +745,8 @@ export const useCognitiveTaskForm = (
               name: f.name,
               size: f.size,
               type: f.type,
-              s3Key: f.s3Key, // Solo guardar lo necesario
+              s3Key: f.s3Key,
+              hitZones: f.hitZones
           })) || []
       }));
 
@@ -775,11 +778,85 @@ export const useCognitiveTaskForm = (
       // Llamar a la API para eliminar
       await cognitiveTaskFixedAPI.deleteByResearchId(researchId);
 
-      // Limpiar el estado local
+      // Limpiar el estado local y restaurar preguntas por defecto (compatibles con interfaz compartida)
       setCognitiveTaskId(null);
       setFormData(prev => ({
         ...prev,
-        questions: []
+        questions: [
+          {
+            id: 'short-text-default',
+            type: 'short_text',
+            title: 'Pregunta de texto corto',
+            required: true,
+            showConditionally: false,
+            deviceFrame: false
+          },
+          {
+            id: 'long-text-default',
+            type: 'long_text',
+            title: 'Pregunta de texto largo',
+            required: true,
+            showConditionally: false,
+            deviceFrame: false
+          },
+          {
+            id: 'single-choice-default',
+            type: 'single_choice',
+            title: 'Pregunta de opción única',
+            required: true,
+            showConditionally: false,
+            deviceFrame: false,
+            choices: [
+              { id: '1', text: 'Opción 1' },
+              { id: '2', text: 'Opción 2' },
+              { id: '3', text: 'Opción 3' }
+            ]
+          },
+          {
+            id: 'multiple-choice-default',
+            type: 'multiple_choice',
+            title: 'Pregunta de opción múltiple',
+            required: true,
+            showConditionally: false,
+            deviceFrame: false,
+            choices: [
+              { id: '1', text: 'Opción 1' },
+              { id: '2', text: 'Opción 2' },
+              { id: '3', text: 'Opción 3' }
+            ]
+          },
+          {
+            id: 'linear-scale-default',
+            type: 'linear_scale',
+            title: 'Pregunta de escala lineal',
+            required: true,
+            showConditionally: false,
+            deviceFrame: false,
+            scaleConfig: { startValue: 1, endValue: 5 }
+          },
+          {
+            id: 'ranking-default',
+            type: 'ranking',
+            title: 'Pregunta de ranking',
+            required: true,
+            showConditionally: false,
+            deviceFrame: false,
+            choices: [
+              { id: '1', text: 'Opción 1' },
+              { id: '2', text: 'Opción 2' },
+              { id: '3', text: 'Opción 3' }
+            ]
+          },
+          {
+            id: 'preference-test-default',
+            type: 'preference_test',
+            title: 'Pregunta de test de preferencia',
+            required: true,
+            showConditionally: false,
+            deviceFrame: false,
+            files: []
+          }
+        ]
       }));
 
       // Invalidar queries

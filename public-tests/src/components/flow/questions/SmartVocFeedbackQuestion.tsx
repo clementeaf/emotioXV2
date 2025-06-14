@@ -34,7 +34,6 @@ export const SmartVocFeedbackQuestion: React.FC<ComponentSmartVocFeedbackQuestio
 
   const researchId = useParticipantStore(state => state.researchId);
   const participantId = useParticipantStore(state => state.participantId);
-  const setLoadedResponses = useParticipantStore(state => state.setLoadedResponses);
 
   // Hook para poder invalidar cache después de guardar
   const { fetchResponses } = useModuleResponses({ autoFetch: false });

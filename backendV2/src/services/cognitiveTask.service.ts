@@ -222,6 +222,28 @@ export class CognitiveTaskService {
         );
       }
       // Podría añadirse validación de tipo MIME si COGNITIVE_TASK_VALIDATION.files.validTypes existe
+
+      // Validar hitZones si existen
+      if (file.hitZones !== undefined) {
+        if (!Array.isArray(file.hitZones)) {
+          throw new ApiError(
+            `${CognitiveTaskError.INVALID_DATA}: El archivo ${fileNumber} de la pregunta ${questionNumber} tiene hitZones inválido (debe ser un array)`,
+            400
+          );
+        }
+        file.hitZones.forEach((hz, hzIdx) => {
+          if (!hz || typeof hz !== 'object' || !hz.id || !hz.region || typeof hz.region.x !== 'number' || typeof hz.region.y !== 'number' || typeof hz.region.width !== 'number' || typeof hz.region.height !== 'number' || !hz.fileId) {
+            throw new ApiError(
+              `${CognitiveTaskError.INVALID_DATA}: El archivo ${fileNumber} de la pregunta ${questionNumber} tiene un hitZone inválido en la posición ${hzIdx + 1}`,
+              400
+            );
+          }
+        });
+        // Log de diagnóstico
+        if (file.hitZones.length > 0) {
+          console.log(`[HITZONES] Pregunta ${questionNumber}, archivo ${fileNumber} contiene ${file.hitZones.length} hitZones:`, JSON.stringify(file.hitZones));
+        }
+      }
     });
   }
 
