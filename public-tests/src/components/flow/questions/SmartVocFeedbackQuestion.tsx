@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { useParticipantStore } from '../../../contexts/ParticipantContext';
 import { useModuleResponses } from '../../../hooks/useModuleResponses';
 import { useStepResponseManager } from '../../../hooks/useStepResponseManager';
+import { useParticipantStore } from '../../../stores/participantStore';
 import { ComponentSmartVocFeedbackQuestionProps } from '../../../types/flow.types';
 import { getStandardButtonText } from '../../../utils/formHelpers';
 import { createComponentLogger } from '../../../utils/logger';
@@ -27,24 +27,11 @@ export const SmartVocFeedbackQuestion: React.FC<ComponentSmartVocFeedbackQuestio
       }
     : {};
 
-  console.log(`🔍 [SmartVocFeedbackQuestion] Inicializando componente:`, {
-    stepName,
-    title: cfg.title,
-    savedResponses: cfg.savedResponses,
-    savedResponseId: cfg.savedResponseId,
-    configCompleta: cfg,
-    hasSavedResponses: !!cfg.savedResponses,
-    initialValue: cfg.savedResponses || '',
-    timestamp: new Date().toISOString()
-  });
-
   const [currentResponse, setCurrentResponse] = useState(() => {
-    // Inicializar con savedResponses si existe
     return cfg.savedResponses || '';
   });
   const [isSubmittingToServer, setIsSubmittingToServer] = useState(false);
 
-  // Obtener IDs para invalidar cache
   const researchId = useParticipantStore(state => state.researchId);
   const participantId = useParticipantStore(state => state.participantId);
   const setLoadedResponses = useParticipantStore(state => state.setLoadedResponses);
@@ -120,23 +107,16 @@ export const SmartVocFeedbackQuestion: React.FC<ComponentSmartVocFeedbackQuestio
 
       if (success) {
         console.log(`🔄 [SmartVocFeedbackQuestion] Invalidando cache después de guardar exitosamente`);
-        
+
         // Invalidar cache de module responses para obtener datos frescos
         if (researchId && participantId) {
           try {
-            const freshData = await fetchResponses(researchId, participantId);
-            console.log(`✅ [SmartVocFeedbackQuestion] Cache invalidado exitosamente, datos frescos:`, freshData);
-            
-            // También actualizar el store local si obtuvimos datos frescos
-            if (freshData && Array.isArray(freshData)) {
-              setLoadedResponses(freshData);
-              console.log(`✅ [SmartVocFeedbackQuestion] Store local actualizado con datos frescos`);
-            }
+            fetchResponses(researchId, participantId);
           } catch (error) {
             console.warn(`⚠️ [SmartVocFeedbackQuestion] Error invalidando cache:`, error);
           }
         }
-        
+
         onStepComplete(currentResponse);
       } else {
         console.error("[SmartVocFeedbackQuestion] Falló saveCurrentStepResponse. Error debería estar en stepResponseError.");

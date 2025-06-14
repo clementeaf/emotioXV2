@@ -3,7 +3,6 @@ const nextConfig = {
   // Configuración optimizada para Amplify
   output: 'standalone', // Requerido para SSR en Amplify
   reactStrictMode: true,
-  swcMinify: true,
   // Desactivar verificaciones durante el build
   eslint: {
     ignoreDuringBuilds: true,
@@ -32,7 +31,7 @@ const nextConfig = {
       fs: false,
       path: false,
     };
-    
+
     return config;
   },
   // Configuración de rutas para Amplify
@@ -46,4 +45,4 @@ const nextConfig = {
   }
 }
 
-module.exports = nextConfig 
+module.exports = nextConfig

@@ -3,7 +3,6 @@ const nextConfig = {
   // Cambiar a exportación estática para Amplify
   output: 'export',
   reactStrictMode: true,
-  swcMinify: true,
   // Desactivar verificaciones durante el build
   eslint: {
     ignoreDuringBuilds: true,
@@ -32,7 +31,7 @@ const nextConfig = {
       fs: false,
       path: false,
     };
-    
+
     return config;
   }
   // Nota: Los headers se han eliminado porque no son compatibles con output: 'export'
