@@ -13,8 +13,11 @@ const convertHitZonesToCoordinates = (hitZones: any[]) => {
 };
 
 const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ onContinue, config }) => {
+  // Loggear la información recibida del backend/config
+  console.log('[NavigationFlowTask] config recibido:', config);
   // Buscar pregunta de tipo navigation_flow en la configuración
   const navigationQuestion = config?.questions?.find(q => q.type === 'navigation_flow');
+  console.log('[NavigationFlowTask] navigationQuestion:', navigationQuestion);
   const imageFiles = navigationQuestion?.files || [];
 
   // Estado para manejar la selección
