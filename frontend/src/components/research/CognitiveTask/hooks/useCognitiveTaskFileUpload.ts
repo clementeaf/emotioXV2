@@ -1,10 +1,13 @@
-import { useState, useCallback, Dispatch, SetStateAction } from 'react';
-import toast from 'react-hot-toast';
-import { v4 as uuidv4 } from 'uuid';
-import { Question, UploadedFile } from 'shared/interfaces/cognitive-task.interface';
-import { CognitiveTaskFormData } from './useCognitiveTaskForm';
-import { FileInfo } from '../types';
 import { useAuth } from '@/providers/AuthProvider';
+import { Dispatch, SetStateAction, useCallback, useState } from 'react';
+import toast from 'react-hot-toast';
+import {
+    CognitiveTaskFormData,
+    FileInfo,
+    Question,
+    UploadedFile
+} from 'shared/interfaces/cognitive-task.interface';
+import { v4 as uuidv4 } from 'uuid';
 
 // Helper para asegurar que un objeto es FileInfo
 const asFileInfo = (file: any): FileInfo => ({
@@ -60,7 +63,7 @@ export const useCognitiveTaskFileUpload = ({
   const [totalFiles, setTotalFiles] = useState<number>(0);
   const { token } = useAuth();
 
-  // --- Lógica de LocalStorage --- 
+  // --- Lógica de LocalStorage ---
   const saveFilesToLocalStorage = useCallback((questions: Question[]) => {
     if (!researchId) return;
     try {
@@ -104,11 +107,11 @@ export const useCognitiveTaskFileUpload = ({
     }
   }, [researchId]);
 
-  // --- Lógica de Carga/Eliminación de Archivos --- 
+  // --- Lógica de Carga/Eliminación de Archivos ---
 
   const handleFileUpload = useCallback(async (questionId: string, files: FileList) => {
       console.log(`[FileUploadHook] Iniciando handleFileUpload para ${questionId} con ${files.length} archivo(s).`);
-      
+
       if (!researchId || files.length === 0 || !token) {
           console.warn(`[FileUploadHook ${questionId}] Subida abortada: Faltan researchId, archivos o token.`);
           toast.error('No se pudo iniciar la subida. Falta información necesaria o autenticación.');
@@ -122,10 +125,10 @@ export const useCognitiveTaskFileUpload = ({
                   // Primer paso: Filtrar archivos en estado de error o uploads incompletos
                   let cleanedFiles = q.files.filter(f => {
                       const fileInfo = asFileInfo(f);
-                      return fileInfo.status !== 'error' && 
+                      return fileInfo.status !== 'error' &&
                             !(fileInfo.status === 'uploading' && fileInfo.isLoading);
                   });
-                  
+
                   // Segundo paso: Eliminar duplicados (mismo nombre y tamaño)
                   const uniqueFileMap = new Map<string, any>();
                   cleanedFiles.forEach(f => {
@@ -134,7 +137,7 @@ export const useCognitiveTaskFileUpload = ({
                       if (fileInfo.status === 'uploaded') {
                           const key = `${fileInfo.name}_${fileInfo.size}`;
                           // Si no existe o el actual tiene URL válida, lo mantenemos
-                          if (!uniqueFileMap.has(key) || 
+                          if (!uniqueFileMap.has(key) ||
                               (!uniqueFileMap.get(key).url && fileInfo.url)) {
                               uniqueFileMap.set(key, f);
                           }
@@ -143,7 +146,7 @@ export const useCognitiveTaskFileUpload = ({
                           uniqueFileMap.set(fileInfo.id, f);
                       }
                   });
-                  
+
                   return { ...q, files: Array.from(uniqueFileMap.values()) };
               }
               return q;
@@ -161,14 +164,14 @@ export const useCognitiveTaskFileUpload = ({
           currentFilesForQuestion = formData.questions[questionIndex].files
               .map(asFileInfo)
               .filter(f => f.status !== 'pending-delete' && f.status !== 'error');
-          console.log(`[FileUploadHook ${questionId}] Archivos existentes (no pendientes de eliminación ni error) para comprobación:`, 
+          console.log(`[FileUploadHook ${questionId}] Archivos existentes (no pendientes de eliminación ni error) para comprobación:`,
               currentFilesForQuestion.map(f => ({ name: f.name, size: f.size, status: f.status }))
           );
       } else {
           console.log(`[FileUploadHook ${questionId}] No hay archivos existentes para esta pregunta.`);
       }
 
-      console.log(`[FileUploadHook ${questionId}] Archivos nuevos para comprobar:`, 
+      console.log(`[FileUploadHook ${questionId}] Archivos nuevos para comprobar:`,
           filesToUploadInput.map(f => ({ name: f.name, size: f.size }))
       );
 
@@ -195,7 +198,7 @@ export const useCognitiveTaskFileUpload = ({
       if (processedFileCount === 0) {
           console.log(`[FileUploadHook ${questionId}] No hay archivos nuevos para procesar después del filtrado.`);
           // Solo retornar si había archivos inicialmente pero ninguno quedó para procesar
-          if (initialFileCount > 0) { 
+          if (initialFileCount > 0) {
             return; // Salir si no hay archivos nuevos para procesar
           }
       }
@@ -261,7 +264,7 @@ export const useCognitiveTaskFileUpload = ({
                   console.error("[FileUploadHook] Error: NEXT_PUBLIC_API_URL no está definida en las variables de entorno.");
                   throw new Error("La URL del backend no está configurada.");
               }
-              const getUploadUrlEndpoint = `${backendUrl}/research/${researchId}/cognitive-task/upload-url`; 
+              const getUploadUrlEndpoint = `${backendUrl}/research/${researchId}/cognitive-task/upload-url`;
               console.log(`[FileUploadHook ${questionId}] Llamando a API: POST ${getUploadUrlEndpoint}`);
               const apiResponse = await fetch(getUploadUrlEndpoint, {
                   method: 'POST',
@@ -269,7 +272,7 @@ export const useCognitiveTaskFileUpload = ({
                       'Content-Type': 'application/json',
                       'Authorization': `Bearer ${token}`
                   },
-                  body: JSON.stringify({ 
+                  body: JSON.stringify({
                       fileName: normalizedFileName,
                       fileSize: file.size,
                       fileType: file.type,
@@ -288,7 +291,7 @@ export const useCognitiveTaskFileUpload = ({
                   console.error(`[FileUploadHook ${questionId}] Respuesta inválida obteniendo URL de subida:`, result);
                   throw new Error('Respuesta inválida del servidor al obtener URL de subida.');
               }
-              
+
               const { uploadUrl, file: backendFileInfo } = result;
               finalUploadedFile = backendFileInfo; // Guardar datos finales
               console.log(`[FileUploadHook ${questionId}] URL de subida obtenida para ${file.name}. S3 Key: ${finalUploadedFile?.s3Key}`);
@@ -321,7 +324,7 @@ export const useCognitiveTaskFileUpload = ({
                   const updatedQuestions = prevData.questions.map(q => {
                       if (q.id === questionId && q.files) {
                           const filesAsInfo: FileInfo[] = q.files.map(asFileInfo);
-                          const updatedFiles = filesAsInfo.map(f => 
+                          const updatedFiles = filesAsInfo.map(f =>
                               f.id === tempFileId ? { ...f, status: 'error' as const, isLoading: false, progress: 0 } : f
                           );
                           return { ...q, files: updatedFiles };
@@ -370,15 +373,15 @@ export const useCognitiveTaskFileUpload = ({
                                 ...currentFiles.slice(fileIndexToReplace + 1),
                             ];
                             updatedQuestions[questionIndex].files = updatedFiles;
-                            saveFilesToLocalStorage(updatedQuestions); 
+                            saveFilesToLocalStorage(updatedQuestions);
                             console.log(`[FileUploadHook ${questionId}] Archivo ${file.name} (TempID: ${tempFileId}) REEMPLAZADO en índice ${fileIndexToReplace}.`);
                             console.log(`[FileUploadHook ${questionId}] Estado DESPUÉS de reemplazar TempID ${tempFileId}:`, updatedFiles.map(f => ({id: f.id, name: f.name, status: f.status, isLoading: f.isLoading})));
                         } else {
                              console.warn(`[FileUploadHook ${questionId}] No se encontró el índice para TempID ${tempFileId} para reemplazar. Estado actual de archivos:`, currentFiles.map(f => ({id: f.id, name: f.name, status: f.status, isLoading: f.isLoading})));
                              // Verificar si el archivo ya existe por nombre y tamaño para evitar duplicaciones
-                             const existingFileIndex = currentFiles.findIndex(f => 
-                                 f.name === finalFileState.name && 
-                                 f.size === finalFileState.size && 
+                             const existingFileIndex = currentFiles.findIndex(f =>
+                                 f.name === finalFileState.name &&
+                                 f.size === finalFileState.size &&
                                  f.status === 'uploaded'
                              );
                              if (existingFileIndex === -1) {
@@ -394,13 +397,13 @@ export const useCognitiveTaskFileUpload = ({
                 });
           }
           // Actualizar progreso general (incluso si hubo error en este archivo)
-          setUploadProgress(((i + 1) / filesToProcess.length) * 100); 
+          setUploadProgress(((i + 1) / filesToProcess.length) * 100);
 
       } // Fin del bucle for
 
       console.log(`[FileUploadHook ${questionId}] Bucle de subida finalizado. ${successfulUploads}/${filesToProcess.length} archivos exitosos.`);
       setIsUploading(false);
-      
+
       // Eliminación final de duplicados después de completar todas las subidas
       if (successfulUploads > 0) {
           setFormData((prevData: CognitiveTaskFormData): CognitiveTaskFormData => {
@@ -447,7 +450,7 @@ export const useCognitiveTaskFileUpload = ({
               return { ...prevData, questions: updatedQuestions };
           });
       }
-      
+
       if (successfulUploads === filesToProcess.length) {
          // toast.success(`${successfulUploads} archivo(s) subido(s) exitosamente.`); // Quizás no mostrar si todo ok?
       } else if (successfulUploads > 0) {
@@ -464,40 +467,53 @@ export const useCognitiveTaskFileUpload = ({
   }, [handleFileUpload]);
 
   const handleFileDelete = useCallback(async (questionId: string, fileId: string) => {
-      console.log(`[FileUploadHook] Solicitud para eliminar archivo ${fileId} en pregunta ${questionId}`);
-      // Encontrar el archivo en el estado actual
-      let fileToDelete: FileInfo | undefined;
-      const currentQuestion = formData.questions.find(q => q.id === questionId);
-      if (currentQuestion?.files) {
-          fileToDelete = currentQuestion.files.map(asFileInfo).find(f => f.id === fileId);
-      }
-      if (!fileToDelete) {
-          console.warn(`[FileUploadHook] No se encontró el archivo con ID ${fileId} para eliminar.`);
-          toast.error('No se pudo encontrar el archivo a eliminar.');
-          return;
-      }
-      // Revocar URL local si es blob
-      if (fileToDelete.url?.startsWith('blob:')) {
-          URL.revokeObjectURL(fileToDelete.url);
-      }
-      // Eliminar el archivo del estado local inmediatamente
-      setFormData((prevData: CognitiveTaskFormData): CognitiveTaskFormData => {
-          const updatedQuestions = prevData.questions.map(q => {
-              if (q.id === questionId && q.files) {
-                  // Filtrar solo el archivo cuyo id coincide exactamente con fileId
-                  const updatedFiles = q.files.filter(f => f.id !== fileId);
-                  return { ...q, files: updatedFiles };
-              }
-              return q;
-          });
-          saveFilesToLocalStorage(updatedQuestions); // Guardar estado sin el archivo eliminado
-          return { ...prevData, questions: updatedQuestions };
-      });
-      toast.success(`Archivo ${fileToDelete.name} eliminado de la UI. Se eliminará definitivamente al guardar.`);
+    const fileToDelete = formData.questions
+        .find((q: Question) => q.id === questionId)
+        ?.files?.find((f: FileInfo) => f.id === fileId);
 
-      // --- LIMPIEZA DE LOCALSTORAGE SOLO AL ELIMINAR DEFINITIVAMENTE ---
-      // Esta parte debe llamarse después de la eliminación real en S3 (no aquí, sino en el flujo de guardado principal)
-  }, [formData.questions, setFormData, saveFilesToLocalStorage]);
+    if (!fileToDelete) {
+        console.error(`[FileUploadHook] Archivo no encontrado para eliminar: ${fileId}`);
+        return;
+    }
+
+    // Actualizar el estado del formulario
+    setFormData((prevData: CognitiveTaskFormData): CognitiveTaskFormData => {
+        const updatedQuestions = prevData.questions.map((q: Question) => {
+            if (q.id === questionId && q.files) {
+                const updatedFiles = q.files.filter((f: FileInfo) => f.id !== fileId);
+                return { ...q, files: updatedFiles };
+            }
+            return q;
+        });
+
+        // Guardar estado sin el archivo eliminado
+        saveFilesToLocalStorage(updatedQuestions);
+
+        // Eliminar también del localStorage
+        if (researchId) {
+            const storageKey = `cognitive_task_temp_files_${researchId}`;
+            const savedFilesJson = localStorage.getItem(storageKey);
+            if (savedFilesJson) {
+                const savedFiles = JSON.parse(savedFilesJson);
+                if (savedFiles[questionId]) {
+                    savedFiles[questionId] = savedFiles[questionId].filter((f: FileInfo) => f.id !== fileId);
+                    if (savedFiles[questionId].length === 0) {
+                        delete savedFiles[questionId];
+                    }
+                    if (Object.keys(savedFiles).length === 0) {
+                        localStorage.removeItem(storageKey);
+                    } else {
+                        localStorage.setItem(storageKey, JSON.stringify(savedFiles));
+                    }
+                }
+            }
+        }
+
+        return { ...prevData, questions: updatedQuestions };
+    });
+
+    toast.success(`Archivo ${fileToDelete.name} eliminado correctamente.`);
+  }, [formData.questions, setFormData, saveFilesToLocalStorage, researchId]);
 
   return {
     isUploading,
@@ -509,4 +525,4 @@ export const useCognitiveTaskFileUpload = ({
     handleFileDelete,
     loadFilesFromLocalStorage,
   };
-}; 
+};

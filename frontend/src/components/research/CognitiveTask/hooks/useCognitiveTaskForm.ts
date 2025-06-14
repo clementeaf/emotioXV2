@@ -4,16 +4,25 @@ import { useAuth } from '@/providers/AuthProvider';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useState } from 'react';
 import {
+  CognitiveTaskFormData,
+  Question,
   UploadedFile
 } from 'shared/interfaces/cognitive-task.interface';
+import type { FileInfo } from '../../CognitiveTaskFormHelpers';
+import {
+  cleanupErrorFiles,
+  logFormDebugInfo
+} from '../../CognitiveTaskFormHelpers';
 import {
   QUERY_KEYS,
   SUCCESS_MESSAGES,
   UI_TEXTS
 } from '../constants';
 import type { ErrorModalData } from '../types';
-import { FileInfo, Question, ValidationErrors } from '../types';
-import { debugQuestionsToSend, filterValidQuestions } from '../utils/validateRequiredFields';
+import { ValidationErrors } from '../types';
+import {
+  debugQuestionsToSend, filterValidQuestions
+} from '../utils/validateRequiredFields';
 import { useCognitiveTaskFileUpload } from './useCognitiveTaskFileUpload';
 import { useCognitiveTaskModals } from './useCognitiveTaskModals';
 import { useCognitiveTaskState } from './useCognitiveTaskState';
@@ -22,19 +31,12 @@ import { useCognitiveTaskValidation } from './useCognitiveTaskValidation';
 // Definición de QuestionType para evitar conflictos de importación
 type QuestionType = 'short_text' | 'long_text' | 'single_choice' | 'multiple_choice' | 'linear_scale' | 'ranking' | 'navigation_flow' | 'preference_test';
 
-// Definir CognitiveTaskFormData localmente
-export interface CognitiveTaskFormData {
-  id?: string;
-  researchId: string;
-  questions: Question[];
-  randomizeQuestions: boolean;
-  metadata?: {
-    createdAt?: string;
-    updatedAt?: string;
-    lastModifiedBy?: string;
-    version?: string;
-  };
-  [key: string]: any;
+// Extender UploadedFile para uso interno de UI (no para requests/responses)
+interface UIUploadedFile extends UploadedFile {
+  status?: 'uploaded' | 'uploading' | 'error' | 'pending-delete';
+  isLoading?: boolean;
+  progress?: number;
+  questionId?: string;
 }
 
 // Extender UploadedFile para incluir propiedades adicionales usadas en UI
@@ -132,85 +134,12 @@ const QUESTION_TYPES = [
 
 // No usamos preguntas predeterminadas - el formulario empieza vacío
 
-// Función helper para filtrar preguntas que tienen título (DEPRECATED)
-// @deprecated Use filterValidQuestions from utils instead
-const filterQuestionsWithTitle = (formData: CognitiveTaskFormData): CognitiveTaskFormData => {
-  console.warn('[DEPRECATED] filterQuestionsWithTitle is deprecated. Use filterValidQuestions instead.');
-  return filterValidQuestions(formData);
-};
-
-// Helper para limpieza profunda de archivos en error
-const cleanupErrorFiles = (questions: Question[]): Question[] => {
-  return questions.map(q => {
-    if (!q.files) return q;
-    // Filtrar archivos que NO están en error
-    const keptFiles = q.files.filter(f => f.status !== 'error');
-    return { ...q, files: keptFiles };
-  });
-};
-
-// Helper para limpieza profunda de archivos pendientes de eliminación
-const cleanupPendingDeleteFiles = (questions: Question[]): Question[] => {
-  return questions.map(q => {
-    if (!q.files) return q;
-    // Filtrar archivos que NO están pendientes de eliminar
-    const keptFiles = q.files.filter(f => f.status !== 'pending-delete');
-    return { ...q, files: keptFiles };
-  });
-};
-
-// Helper para revertir archivos pendientes de eliminación
-const revertPendingDeleteFiles = (questions: Question[]): Question[] => {
-  return questions.map(q => {
-    if (!q.files) return q;
-    const revertedFiles = q.files.map(f => {
-      if (f.status === 'pending-delete') {
-        const { status, ...restOfFile } = f; // Quitar status
-        // Si tenía s3Key, restaurar status a 'uploaded'
-        if (f.s3Key) {
-          return { ...restOfFile, status: 'uploaded' as const }; // Volver a uploaded
-        }
-        // Si no tenía s3Key (era temporal), simplemente devolver sin status
-        return restOfFile;
-      }
-      return f;
-    });
-    return { ...q, files: revertedFiles as FileInfo[] }; // Asegurar tipo final del array
-  });
-};
-
 // Añadir la definición de la interfaz Window con _lastMutationTimestamp
 declare global {
   interface Window {
     _lastMutationTimestamp?: number;
   }
 }
-
-// Añadir una función helper para diagnóstico
-const logFormDebugInfo = (
-  context: string,
-  data: CognitiveTaskFormData | null,
-  error?: any,
-  extraInfo?: Record<string, any>
-) => {
-  console.log(`[DEBUG:CognitiveTaskForm:${context}]`, {
-    timestamp: new Date().toISOString(),
-    hasData: !!data,
-    dataInfo: data ? {
-      researchId: data.researchId,
-      id: data.id,
-      questionCount: data.questions?.length || 0,
-      questionsWithFiles: data.questions?.filter(q => q.files && q.files.length > 0).length || 0
-    } : null,
-    error: error ? {
-      name: error?.name,
-      message: error?.message,
-      statusCode: error?.statusCode,
-      stack: error?.stack
-    } : null,
-    ...extraInfo
-  });
-};
 
 /**
  * Hook principal refactorizado...
@@ -329,7 +258,7 @@ export const useCognitiveTaskForm = (
       const questionsForPayload = dataToSave.questions.map(q => {
         if (!q.files) return q;
         // Filtrar solo los archivos que NO están pendientes de eliminar
-        const keptFiles = q.files.filter(f => f.status !== 'pending-delete');
+        const keptFiles = (q.files as UIUploadedFile[]).filter(f => f.status !== 'pending-delete');
         // Limpiar el estado interno `status` antes de enviar al backend
         const cleanedFiles = keptFiles.map(({ status, isLoading, progress, error, questionId, ...rest }) => rest);
         return {
@@ -366,8 +295,8 @@ export const useCognitiveTaskForm = (
       console.log('[useCognitiveTaskForm] Datos guardados (REAL):', data);
       window._lastMutationTimestamp = Date.now();
       const wasUpdating = !!cognitiveTaskId;
-      if (data && data.id) {
-        setCognitiveTaskId(data.id);
+      if (data && (data as any).id) {
+        setCognitiveTaskId((data as any).id);
       }
       if (researchId) {
         // Limpiar solo archivos eliminados del localStorage
@@ -403,9 +332,9 @@ export const useCognitiveTaskForm = (
       setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.COGNITIVE_TASK, researchId] });
       }, 1000);
-      setFormData(prevData => ({
-        ...prevData,
-        questions: cleanupErrorFiles(prevData.questions)
+      setFormData((prev: CognitiveTaskFormData) => ({
+        ...prev,
+        questions: cleanupErrorFiles(prev.questions)
       }));
     },
     onError: (error: any) => {
@@ -417,9 +346,9 @@ export const useCognitiveTaskForm = (
       modals.showModal({ title: 'Error de Guardado', message: errorMessage, type: 'error' });
 
       // --- Inicio: Revertir estado pending-delete en error ---
-      setFormData(prevData => ({
-        ...prevData,
-        questions: cleanupErrorFiles(prevData.questions)
+      setFormData((prev: CognitiveTaskFormData) => ({
+        ...prev,
+        questions: cleanupErrorFiles(prev.questions)
       }));
       // --- Fin: Revertir estado ---
     }
@@ -435,8 +364,8 @@ export const useCognitiveTaskForm = (
 
     // Usar la forma funcional de setFormData para asegurar consistencia
     // aunque en este enfoque centralizado, el `prev` es menos crítico.
-    setFormData(prev => { // `prev` aquí representa el estado inicial o el anterior a la carga completa
-      let finalQuestions: Question[];
+    setFormData((prev: CognitiveTaskFormData) => { // `prev` aquí representa el estado inicial o el anterior a la carga completa
+      let finalQuestions: Question[] = [];
       let finalRandomize = false;
       let finalDataFromBackend: Partial<CognitiveTaskFormData> = {};
 
@@ -552,7 +481,7 @@ export const useCognitiveTaskForm = (
           }
         ];
 
-        finalQuestions = prev.questions.length > 0 ? prev.questions : defaultQuestions;
+        finalQuestions = prev.questions.length > 0 ? prev.questions as Question[] : defaultQuestions;
         finalRandomize = false;
         setCognitiveTaskId(null);
       } else {
@@ -560,7 +489,7 @@ export const useCognitiveTaskForm = (
         const existingData = cognitiveTaskData as CognitiveTaskFormData;
         finalDataFromBackend = existingData; // Guardar datos del backend
         finalRandomize = existingData.randomizeQuestions ?? false;
-        setCognitiveTaskId(existingData.id || null);
+        setCognitiveTaskId((existingData as any).id || null);
         // Usar preguntas existentes directamente
         finalQuestions = existingData.questions || [];
       }
@@ -568,26 +497,26 @@ export const useCognitiveTaskForm = (
       // <<< FUSION FINAL DE ARCHIVOS >>>
       // Iterar sobre las preguntas finales (ya fusionadas con backend si aplica)
       finalQuestions = finalQuestions.map(question => {
-        const backendFiles = (finalDataFromBackend.questions?.find(q => q.id === question.id)?.files || []) as ExtendedUploadedFile[];
+        const backendFiles = (finalDataFromBackend.questions?.find((q: Question) => q.id === question.id)?.files || []) as ExtendedUploadedFile[];
         const localStorageFiles = filesFromLocalStorage ? (filesFromLocalStorage[question.id] || []) : [];
 
         // Combinar y eliminar duplicados por ID
         const allFilesMap = new Map<string, ExtendedUploadedFile>();
 
         // Prioridad a archivos del backend (más recientes/autoritativos)
-        backendFiles.forEach(file => {
-          if (file && file.id && file.name) {
-            allFilesMap.set(file.id, file);
+        (backendFiles as (FileInfo | ExtendedUploadedFile)[]).forEach((file) => {
+          if (file && (file as ExtendedUploadedFile).id && (file as ExtendedUploadedFile).name) {
+            allFilesMap.set((file as ExtendedUploadedFile).id, file as ExtendedUploadedFile);
           } else {
             console.warn(`[useEffect Form Data] Archivo inválido en backend para pregunta ${question.id}:`, file);
           }
         });
 
         // Añadir archivos de localStorage solo si no existen ya (por ID)
-        localStorageFiles.forEach(file => {
-          if (file && file.id && file.name) {
-            if (!allFilesMap.has(file.id)) {
-              allFilesMap.set(file.id, file);
+        (localStorageFiles as (FileInfo | ExtendedUploadedFile)[]).forEach((file) => {
+          if (file && (file as ExtendedUploadedFile).id && (file as ExtendedUploadedFile).name) {
+            if (!allFilesMap.has((file as ExtendedUploadedFile).id)) {
+              allFilesMap.set((file as ExtendedUploadedFile).id, file as ExtendedUploadedFile);
             }
           } else {
             console.warn(`[useEffect Form Data] Archivo inválido en localStorage para pregunta ${question.id}:`, file);
@@ -596,14 +525,14 @@ export const useCognitiveTaskForm = (
 
         // Filtrar y validar los archivos para asegurar integridad
         const validFiles = Array.from(allFilesMap.values())
-          .filter(file => {
+          .filter((file: ExtendedUploadedFile) => {
             const isValid = file && file.id && file.name && file.size && (file.url || file.s3Key);
             if (!isValid) {
               console.warn(`[useEffect Form Data] Omitiendo archivo incompleto:`, file);
             }
             return isValid;
           })
-          .map(file => ({
+          .map((file: ExtendedUploadedFile) => ({
             ...file,
             // Asegurar que ciertos campos obligatorios tengan valores por defecto si faltan
             url: file.url || `https://placehold.co/300x300/gray/white?text=${encodeURIComponent(file.name)}`,
@@ -624,7 +553,7 @@ export const useCognitiveTaskForm = (
       const finalState: CognitiveTaskFormData = {
         ...(prev || {}), // Usar prev como base MUY inicial si es necesario
         ...finalDataFromBackend, // Sobrescribir con datos del backend (ID, metadata, etc.)
-        researchId: researchId || finalDataFromBackend.researchId || '', // Asegurar researchId
+        researchId: researchId || (finalDataFromBackend as any).researchId || '', // Asegurar researchId
         questions: finalQuestions, // Usar las preguntas con archivos correctamente fusionados
         randomizeQuestions: finalRandomize,
       };
@@ -663,7 +592,7 @@ export const useCognitiveTaskForm = (
       } : {})
     };
 
-    setFormData(prev => ({
+    setFormData((prev: CognitiveTaskFormData) => ({
       ...prev,
       questions: [...prev.questions, newQuestion]
     }));
@@ -676,19 +605,16 @@ export const useCognitiveTaskForm = (
       return runValidation(dataToValidate, researchId);
   }, [formData.questions, researchId, runValidation]); // Asegurar dependencias correctas
 
-  // --- Lógica de Acciones Principales (sin cambios grandes) ---
-  const continueWithAction = () => { /* ... */ };
-
   // <<< Implementar handlePreview >>>
   const handlePreview = useCallback(() => {
+    // Limpio archivos en error antes de validar
+    setFormData((prev: CognitiveTaskFormData) => ({
+      ...prev,
+      questions: cleanupErrorFiles(prev.questions)
+    }));
     if (validateCurrentForm()) {
-        // Formatear formData para mostrarlo
-        // Usar una copia profunda y limpiar archivos si es necesario para el preview
         const previewData = JSON.parse(JSON.stringify(formData));
-        // Opcional: Limpiar/simplificar datos para la vista previa si es necesario
-        // previewData.questions = previewData.questions.map((q: Question) => ({ ... }));
-
-        const jsonData = JSON.stringify(previewData, null, 2); // Indentado para legibilidad
+        const jsonData = JSON.stringify(previewData, null, 2);
         modals.showJsonModal(jsonData, 'preview');
     } else {
         // Mostrar un modal con el error de validación en lugar de un toast
@@ -698,9 +624,14 @@ export const useCognitiveTaskForm = (
             type: 'warning'
         });
     }
-  }, [formData, validateCurrentForm, modals]);
+  }, [formData, validateCurrentForm, modals, setFormData]);
 
   const handleSave = () => {
+    // Limpio archivos en error antes de validar
+    setFormData((prev: CognitiveTaskFormData) => ({
+      ...prev,
+      questions: cleanupErrorFiles(prev.questions)
+    }));
     console.log(`[handleSave] Iniciando guardado. researchId: ${researchId}`);
     const errorsFound = validateCurrentForm(); // <<< Capturar errores o null
     const isValid = errorsFound === null; // <<< Determinar validez
@@ -708,6 +639,38 @@ export const useCognitiveTaskForm = (
     console.log(`[handleSave] Resultado de validateCurrentForm: ${isValid}`);
     // <<< Loguear los errores encontrados INMEDIATAMENTE
     console.log('[handleSave] Errores encontrados por validateCurrentForm:', errorsFound);
+
+    // Mostrar el JSON que se va a enviar al backend
+    const filteredData = filterValidQuestions(formData);
+    const dataToSave = JSON.parse(JSON.stringify(filteredData));
+    dataToSave.questions = dataToSave.questions.map((q: Question) => ({
+      ...q,
+      files: q.files?.map((f: UIUploadedFile) => ({
+        id: f.id,
+        name: f.name,
+        size: f.size,
+        type: f.type,
+        url: f.url,
+        s3Key: f.s3Key,
+        hitZones: Array.isArray(f.hitZones)
+          ? f.hitZones.map((hz: any, idx: number) => ({
+              id: hz.id || `hz_${idx}_${Date.now()}`,
+              name: hz.name || `Zona ${idx + 1}`,
+              region: hz.region
+                ? hz.region
+                : {
+                    x: hz.x ?? 0,
+                    y: hz.y ?? 0,
+                    width: hz.width ?? 0,
+                    height: hz.height ?? 0,
+                  },
+              fileId: f.id,
+              ...(hz.severity ? { severity: hz.severity } : {})
+            }))
+          : []
+      })) as UploadedFile[] || []
+    }));
+    window.alert('JSON enviado al backend:\n' + JSON.stringify(dataToSave, null, 2));
 
     if (isValid) {
         // Llamar directamente a confirmAndSave en lugar de mostrar el modal de confirmación
@@ -739,28 +702,31 @@ export const useCognitiveTaskForm = (
       const dataToSave = JSON.parse(JSON.stringify(filteredData));
       // Limpiar archivos temporales antes de guardar
       dataToSave.questions = dataToSave.questions.map((q: Question) => ({
-          ...q,
-          files: q.files?.map((f: ExtendedUploadedFile) => ({
-              id: f.id,
-              name: f.name,
-              size: f.size,
-              type: f.type,
-              s3Key: f.s3Key,
-              hitZones: Array.isArray(f.hitZones)
-                ? f.hitZones.map((hz: any, idx: number) => ({
-                    id: hz.id || `hz_${idx}_${Date.now()}`,
-                    name: hz.name || `Zona ${idx + 1}`,
-                    region: {
-                      x: hz.x ?? hz.region?.x ?? 0,
-                      y: hz.y ?? hz.region?.y ?? 0,
-                      width: hz.width ?? hz.region?.width ?? 0,
-                      height: hz.height ?? hz.region?.height ?? 0,
+        ...q,
+        files: q.files?.map((f: UIUploadedFile) => ({
+          id: f.id,
+          name: f.name,
+          size: f.size,
+          type: f.type,
+          url: f.url,
+          s3Key: f.s3Key,
+          hitZones: Array.isArray(f.hitZones)
+            ? f.hitZones.map((hz: any, idx: number) => ({
+                id: hz.id || `hz_${idx}_${Date.now()}`,
+                name: hz.name || `Zona ${idx + 1}`,
+                region: hz.region
+                  ? hz.region
+                  : {
+                      x: hz.x ?? 0,
+                      y: hz.y ?? 0,
+                      width: hz.width ?? 0,
+                      height: hz.height ?? 0,
                     },
-                    fileId: f.id,
-                    ...(hz.severity ? { severity: hz.severity } : {})
-                  }))
-                : []
-          })) || []
+                fileId: f.id,
+                ...(hz.severity ? { severity: hz.severity } : {})
+              }))
+            : []
+        })) as UploadedFile[] || []
       }));
 
       if (process.env.NODE_ENV === 'development') {
@@ -793,7 +759,7 @@ export const useCognitiveTaskForm = (
 
       // Limpiar el estado local y restaurar preguntas por defecto (compatibles con interfaz compartida)
       setCognitiveTaskId(null);
-      setFormData(prev => ({
+      setFormData((prev: CognitiveTaskFormData) => ({
         ...prev,
         questions: [
           {
@@ -893,7 +859,7 @@ export const useCognitiveTaskForm = (
 
   // --- Retorno del Hook Principal ---
   console.log('[useCognitiveTaskForm] Estado FINAL formData (desde hook estado):',
-    JSON.stringify(formData?.questions?.map(q => ({ id: q.id, type: q.type, title: q.title?.substring(0, 20) })) || [], null, 2)
+    JSON.stringify(formData?.questions?.map((q: Question) => ({ id: q.id, type: q.type, title: q.title?.substring(0, 20) })) || [])
   );
 
   return {
@@ -938,6 +904,6 @@ export const useCognitiveTaskForm = (
     closeJsonModal: modals.closeJsonModal,
     jsonToSend: modals.jsonToSend,
     pendingAction: modals.pendingAction,
-    continueWithAction,
+    continueWithAction: (): void => { /* ... */ },
   };
 };

@@ -6,7 +6,8 @@ import s3Service from '@/services/s3Service';
 import { Trash2, Upload } from 'lucide-react';
 import React, { useRef } from 'react';
 import ReactDOM from 'react-dom';
-import { FileInfo, FileUploadQuestionProps } from '../../types';
+import { UploadedFile } from 'shared/interfaces/cognitive-task.interface';
+import { FileUploadQuestionProps } from '../../types';
 import { LocalHitzoneEditor } from './LocalHitzoneEditor';
 
 const DEFAULT_TEXTS = {
@@ -26,6 +27,14 @@ const DEFAULT_TEXTS = {
   WITHOUT_FRAME: 'Sin Marco'
 };
 
+// Define UIUploadedFile para uso interno de UI
+interface UIUploadedFile extends UploadedFile {
+  status?: 'uploaded' | 'uploading' | 'error' | 'pending-delete';
+  isLoading?: boolean;
+  progress?: number;
+  questionId?: string;
+}
+
 /**
  * Componente que maneja la configuración de preguntas con carga de archivos
  */
@@ -43,7 +52,7 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
 
   // Estado para el modal de hitzones
   const [hitzoneModalOpen, setHitzoneModalOpen] = React.useState(false);
-  const [hitzoneFile, setHitzoneFile] = React.useState<FileInfo | null>(null);
+  const [hitzoneFile, setHitzoneFile] = React.useState<UploadedFile | null>(null);
 
   const titleError = validationErrors ? validationErrors['title'] : null;
   const descriptionError = validationErrors ? validationErrors['description'] : null;
@@ -69,7 +78,7 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
     }
   };
 
-  const openHitzoneEditor = async (file: FileInfo) => {
+  const openHitzoneEditor = async (file: UploadedFile) => {
     let url = '';
     if (file.s3Key) {
       try {
@@ -140,9 +149,9 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
             </div>
             <p className="text-xs text-neutral-500">{uploadProgress || 0}{DEFAULT_TEXTS.PERCENTAGE_COMPLETE}</p>
           </div>
-        ) : validFiles.length > 0 ? (
+        ) : (validFiles as UIUploadedFile[]).length > 0 ? (
           <div className="w-full space-y-3">
-            {validFiles.map((file: FileInfo, index) => {
+            {(validFiles as UIUploadedFile[]).map((file: UIUploadedFile, index) => {
               const isPendingDelete = file.status === 'pending-delete';
               return (
                 <div
@@ -287,7 +296,7 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
               imageUrl={hitzoneFile.url}
               initialAreas={(hitzoneFile as any).hitzones || []}
               onSave={(newAreas) => {
-                onQuestionChange({ files: question.files?.map(f => f.id === hitzoneFile.id ? { ...f, hitzones: newAreas } : f) });
+                onQuestionChange({ files: question.files?.map(f => f.id === hitzoneFile.id ? { ...f, hitZones: newAreas } : f) });
                 setHitzoneModalOpen(false);
               }}
               onClose={() => setHitzoneModalOpen(false)}

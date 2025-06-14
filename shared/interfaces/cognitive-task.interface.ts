@@ -25,14 +25,14 @@ export const COGNITIVE_TASK_VALIDATION = {
 };
 
 // Tipos de preguntas soportados
-export type QuestionType = 
-  | 'short_text' 
-  | 'long_text' 
-  | 'single_choice' 
-  | 'multiple_choice' 
-  | 'linear_scale' 
-  | 'ranking' 
-  | 'navigation_flow' 
+export type QuestionType =
+  | 'short_text'
+  | 'long_text'
+  | 'single_choice'
+  | 'multiple_choice'
+  | 'linear_scale'
+  | 'ranking'
+  | 'navigation_flow'
   | 'preference_test';
 
 // Opciones para preguntas de selección
@@ -63,6 +63,14 @@ export interface UploadedFile {
   s3Key?: string; // Clave del objeto en S3
   error?: boolean; // Indica si hubo un error al cargar
   errorMessage?: string; // Mensaje de error durante la carga
+}
+
+// Interfaz extendida para archivos en el estado del formulario
+export interface FileInfo extends UploadedFile {
+  status?: 'uploading' | 'uploaded' | 'pending-delete' | 'error';
+  progress?: number;
+  isLoading?: boolean;
+  questionId?: string;
 }
 
 // Zonas interactivas (hitZones) para archivos
@@ -268,4 +276,4 @@ export const QUESTION_TEMPLATES: Record<QuestionType, Partial<Question>> = {
     deviceFrame: false,
     files: []
   }
-}; 
+};
