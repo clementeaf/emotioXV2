@@ -82,8 +82,9 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
       url = file.url;
     }
 
-    const hitZonesCopy = file.hitZones ? JSON.parse(JSON.stringify(file.hitZones)) : [];
-    setHitzoneFile({ ...file, url, hitZones: hitZonesCopy });
+    // Usar variable auxiliar para extraer 'hitzones' sin romper el tipado
+    const hitzones = (file as any).hitzones ? JSON.parse(JSON.stringify((file as any).hitzones)) : [];
+    setHitzoneFile({ ...file, url, hitzones } as any);
     setHitzoneModalOpen(true);
   };
 
@@ -284,9 +285,9 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
             <h2 className="text-lg font-semibold mb-4 text-center">Editar hitzones para: {hitzoneFile.name}</h2>
             <LocalHitzoneEditor
               imageUrl={hitzoneFile.url}
-              initialAreas={hitzoneFile.hitZones || []}
+              initialAreas={(hitzoneFile as any).hitzones || []}
               onSave={(newAreas) => {
-                onQuestionChange({ files: question.files?.map(f => f.id === hitzoneFile.id ? { ...f, hitZones: newAreas } : f) });
+                onQuestionChange({ files: question.files?.map(f => f.id === hitzoneFile.id ? { ...f, hitzones: newAreas } : f) });
                 setHitzoneModalOpen(false);
               }}
               onClose={() => setHitzoneModalOpen(false)}

@@ -746,7 +746,20 @@ export const useCognitiveTaskForm = (
               size: f.size,
               type: f.type,
               s3Key: f.s3Key,
-              hitZones: f.hitZones
+              hitZones: Array.isArray(f.hitZones)
+                ? f.hitZones.map((hz: any, idx: number) => ({
+                    id: hz.id || `hz_${idx}_${Date.now()}`,
+                    name: hz.name || `Zona ${idx + 1}`,
+                    region: {
+                      x: hz.x ?? hz.region?.x ?? 0,
+                      y: hz.y ?? hz.region?.y ?? 0,
+                      width: hz.width ?? hz.region?.width ?? 0,
+                      height: hz.height ?? hz.region?.height ?? 0,
+                    },
+                    fileId: f.id,
+                    ...(hz.severity ? { severity: hz.severity } : {})
+                  }))
+                : []
           })) || []
       }));
 
