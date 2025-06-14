@@ -1,7 +1,7 @@
-import { useEffect, useCallback } from 'react';
-import { useParticipantStore } from '../stores/participantStore';
-import { ParticipantFlowStep, ExpandedStep } from '../types/flow';
+import { useCallback, useEffect } from 'react';
 import type { ParticipantInfo } from '../stores/participantStore';
+import { useParticipantStore } from '../stores/participantStore';
+import { ExpandedStep, ParticipantFlowStep } from '../types/flow';
 
 // API URL constante
 const API_BASE_URL = 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev';
@@ -72,29 +72,29 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
 
     try {
       // 1. Añadir Preguntas demográficas
-      finalSteps.push({ 
-        id: 'demographic', 
-        name: 'Preguntas demográficas', 
-        type: 'demographic', 
-        config: { 
-          title: 'Preguntas demográficas', 
+      finalSteps.push({
+        id: 'demographic',
+        name: 'Preguntas demográficas',
+        type: 'demographic',
+        config: {
+          title: 'Preguntas demográficas',
           description: 'Por favor, responde a unas breves preguntas demográficas antes de comenzar.'
-        } 
+        }
       });
-      
+
       // 2. PRIMERO: Obtener datos de eye-tracking
       try {
         const eyeTrackingUrl = `${API_BASE_URL}/research/${currentResearchId}/eye-tracking`;
         console.log(`[useParticipantFlowWithStore] Fetching Eye Tracking: ${eyeTrackingUrl}`);
-        const eyeTrackingResponse = await fetch(eyeTrackingUrl, { 
+        const eyeTrackingResponse = await fetch(eyeTrackingUrl, {
           headers: { 'Authorization': `Bearer ${currentToken}` }
         });
-        
+
         if (eyeTrackingResponse.ok) {
           const eyeTrackingData = await eyeTrackingResponse.json();
           const eyeTrackingQuestions = eyeTrackingData?.questions || eyeTrackingData?.data?.questions || [];
           console.log(`[useParticipantFlowWithStore] Eye Tracking: ${eyeTrackingQuestions.length} elementos recibidos.`);
-          
+
           // Iterar sobre elementos de eye-tracking
           for (const question of eyeTrackingQuestions) {
             const frontendType = eyeTrackingTypeMap[question.type?.toUpperCase()] || 'eye_tracking_general';
@@ -112,29 +112,29 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
         console.error('[useParticipantFlowWithStore] Error obteniendo datos de eye-tracking:', eyeTrackingError);
         // No detenemos el flujo por este error
       }
-      
+
       // 3. SEGUNDO: Añadir Bienvenida
-      finalSteps.push({ 
-        id: 'welcome', 
-        name: 'Bienvenida', 
-        type: 'welcome', 
-        config: { 
-          title: '¡Bienvenido!', 
-          message: 'Gracias por tu tiempo.' 
-        } 
+      finalSteps.push({
+        id: 'welcome',
+        name: 'Bienvenida',
+        type: 'welcome',
+        config: {
+          title: '¡Bienvenido!',
+          message: 'Gracias por tu tiempo.'
+        }
       });
-      
+
       // 4. Obtener estructura de flujo completo (todos los módulos)
       try {
         const flowUrl = `${API_BASE_URL}/research/${currentResearchId}/flow`;
         console.log(`[useParticipantFlowWithStore] Fetching Research Flow: ${flowUrl}`);
         const flowResponse = await fetch(flowUrl, { headers: { 'Authorization': `Bearer ${currentToken}` } });
-        
+
         if (flowResponse.ok) {
           const flowData = await flowResponse.json();
           const moduleSteps = flowData?.data || [];
           console.log(`[useParticipantFlowWithStore] Estructura de flujo recibida: ${moduleSteps.length} módulos encontrados`);
-          
+
           // Procesar cada módulo según su tipo
           for (const step of moduleSteps) {
             console.log(`[useParticipantFlowWithStore] Procesando módulo: ${step.type}`);
@@ -145,7 +145,7 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
         console.error('[useParticipantFlowWithStore] Error obteniendo estructura de flujo:', flowError);
         // Continuar con los módulos conocidos sin detener por error
       }
-      
+
       // 5. TERCERO: Procesar Cognitive Task (después de welcome-screen)
       try {
         const url = `${API_BASE_URL}/research/${currentResearchId}/cognitive-task`;
@@ -155,7 +155,7 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
           const data = await response.json();
           const realCognitiveQuestions = data?.questions || [];
           console.log(`[useParticipantFlowWithStore] Cognitive Task: ${realCognitiveQuestions.length} preguntas recibidas.`);
-          
+
           // Iterar sobre preguntas cognitivas
           for (const question of realCognitiveQuestions) {
             const frontendType = `cognitive_${question.type}`;
@@ -215,41 +215,41 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
         // Endpoint para obtener lista de todos los módulos disponibles
         const modulesUrl = `${API_BASE_URL}/research/${currentResearchId}/modules`;
         console.log(`[useParticipantFlowWithStore] Fetching Modules List: ${modulesUrl}`);
-        const modulesResponse = await fetch(modulesUrl, { 
+        const modulesResponse = await fetch(modulesUrl, {
           headers: { 'Authorization': `Bearer ${currentToken}` },
           // Usar método HEAD para verificar si el endpoint existe
           method: 'HEAD'
         });
-        
+
         // Solo proceder si el endpoint existe
         if (modulesResponse.ok) {
-          const modulesListResponse = await fetch(modulesUrl, { 
+          const modulesListResponse = await fetch(modulesUrl, {
             headers: { 'Authorization': `Bearer ${currentToken}` }
           });
-          
+
           if (modulesListResponse.ok) {
             const modulesList = await modulesListResponse.json();
             const modules = modulesList?.modules || [];
-            
+
             // Procesar cada módulo de la lista
             for (const module of modules) {
               // Evitar procesar módulos ya manejados anteriormente
               if (['cognitive_task', 'smartvoc', 'eye_tracking'].includes(module.type)) {
                 continue;
               }
-              
+
               // Obtener preguntas para este módulo específico
               try {
                 const moduleUrl = `${API_BASE_URL}/research/${currentResearchId}/${module.type}`;
                 console.log(`[useParticipantFlowWithStore] Fetching Module ${module.type}: ${moduleUrl}`);
-                const moduleResponse = await fetch(moduleUrl, { 
+                const moduleResponse = await fetch(moduleUrl, {
                   headers: { 'Authorization': `Bearer ${currentToken}` }
                 });
-                
+
                 if (moduleResponse.ok) {
                   const moduleData = await moduleResponse.json();
                   const questions = moduleData?.questions || [];
-                  
+
                   // Procesar preguntas del módulo
                   for (const question of questions) {
                     const frontendType = `${module.type}_${question.type || 'question'}`;
@@ -277,30 +277,30 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
       let imageFeedbackConfig = null;
       let isModuleFeedbackHardcoded = false;
       let isImageFeedbackHardcoded = false;
-      
+
       try {
         console.log(`[useParticipantFlowWithStore] Intentando obtener configuración de feedback desde backend para researchId: ${currentResearchId}`);
         const formsUrl = `${API_BASE_URL}/research/${currentResearchId}/forms`;
-        const formsResponse = await fetch(formsUrl, { 
+        const formsResponse = await fetch(formsUrl, {
           headers: { 'Authorization': `Bearer ${currentToken}` }
         });
-        
+
         if (formsResponse.ok) {
           const formsData = await formsResponse.json();
           console.log('[useParticipantFlowWithStore] Respuesta de forms:', formsData);
-          
+
           if (formsData?.data && Array.isArray(formsData.data)) {
             // Buscar configuración específica de feedback del módulo
-            const feedbackForm = formsData.data.find((form: any) => 
-              form.derivedType === 'feedback' || 
+            const feedbackForm = formsData.data.find((form: any) =>
+              form.derivedType === 'feedback' ||
               form.derivedType === 'module_feedback' ||
               form.originalSk === 'FEEDBACK' ||
               (form.config && (
-                form.config.type === 'feedback' || 
+                form.config.type === 'feedback' ||
                 form.config.type === 'module_feedback'
               ))
             );
-            
+
             if (feedbackForm && feedbackForm.config) {
               console.log('[useParticipantFlowWithStore] ✅ Configuración de feedback del módulo encontrada en backend:', feedbackForm);
               moduleFeedbackConfig = {
@@ -312,18 +312,18 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
                 type: 'feedback'
               };
             }
-            
+
             // Buscar configuración específica de feedback de imagen
-            const imageFeedbackForm = formsData.data.find((form: any) => 
-              form.derivedType === 'image_feedback' || 
+            const imageFeedbackForm = formsData.data.find((form: any) =>
+              form.derivedType === 'image_feedback' ||
               form.derivedType === 'image-feedback' ||
               form.originalSk === 'IMAGE_FEEDBACK' ||
               (form.config && (
-                form.config.type === 'image_feedback' || 
+                form.config.type === 'image_feedback' ||
                 form.config.type === 'image-feedback'
               ))
             );
-            
+
             if (imageFeedbackForm && imageFeedbackForm.config) {
               console.log('[useParticipantFlowWithStore] ✅ Configuración de feedback de imagen encontrada en backend:', imageFeedbackForm);
               imageFeedbackConfig = {
@@ -343,7 +343,7 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
       } catch (formsError: unknown) {
         console.log('[useParticipantFlowWithStore] Error obteniendo configuración de forms, usando fallback:', formsError);
       }
-      
+
       // Configurar fallbacks hardcodeados si no se obtuvieron del backend
       if (!moduleFeedbackConfig) {
         console.warn('[useParticipantFlowWithStore] ⚠️ USANDO CONFIGURACIÓN HARDCODEADA para feedback del módulo - considera configurar esto en el backend');
@@ -357,7 +357,7 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
           type: 'feedback'
         };
       }
-      
+
       if (!imageFeedbackConfig) {
         console.warn('[useParticipantFlowWithStore] ⚠️ USANDO CONFIGURACIÓN HARDCODEADA para feedback de imagen - considera configurar esto en el backend');
         isImageFeedbackHardcoded = true;
@@ -370,14 +370,14 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
           type: 'image_feedback'
         };
       }
-      
+
       // Agregar pregunta de feedback del módulo si no existe
-      const hasFeedbackQuestion = finalSteps.some(step => 
-        step.name?.includes('Que te ha parecido el módulo') || 
+      const hasFeedbackQuestion = finalSteps.some(step =>
+        step.name?.includes('Que te ha parecido el módulo') ||
         step.id === 'module_feedback' ||
         step.id === moduleFeedbackConfig.id
       );
-      
+
       if (!hasFeedbackQuestion) {
         finalSteps.push({
           id: moduleFeedbackConfig.id,
@@ -388,21 +388,21 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
             isHardcoded: isModuleFeedbackHardcoded
           }
         });
-        
+
         if (isModuleFeedbackHardcoded) {
           console.warn('[useParticipantFlowWithStore] ⚠️ Paso de feedback del módulo agregado con configuración HARDCODEADA');
         } else {
           console.log('[useParticipantFlowWithStore] ✅ Paso de feedback del módulo agregado con configuración del BACKEND');
         }
       }
-      
+
       // Agregar pregunta de feedback de imagen si no existe
-      const hasImageQuestion = finalSteps.some(step => 
-        step.name?.includes('Que te parece esta imagen') || 
+      const hasImageQuestion = finalSteps.some(step =>
+        step.name?.includes('Que te parece esta imagen') ||
         step.id === 'image_feedback' ||
         step.id === imageFeedbackConfig.id
       );
-      
+
       if (!hasImageQuestion) {
         finalSteps.push({
           id: imageFeedbackConfig.id,
@@ -413,7 +413,7 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
             isHardcoded: isImageFeedbackHardcoded
           }
         });
-        
+
         if (isImageFeedbackHardcoded) {
           console.warn('[useParticipantFlowWithStore] ⚠️ Paso de feedback de imagen agregado con configuración HARDCODEADA');
         } else {
@@ -422,16 +422,16 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
       }
 
       // 10. Añadir Agradecimiento
-      finalSteps.push({ 
-        id: 'thankyou', 
-        name: 'Agradecimiento', 
-        type: 'thankyou', 
-        config: { 
-          title: '¡Muchas Gracias!', 
-          message: 'Hemos recibido tus respuestas.' 
-        } 
+      finalSteps.push({
+        id: 'thankyou',
+        name: 'Agradecimiento',
+        type: 'thankyou',
+        config: {
+          title: '¡Muchas Gracias!',
+          message: 'Hemos recibido tus respuestas.'
+        }
       });
-      
+
       // Finalizar construcción
       if (finalSteps.length <= 2) {
         console.warn("[useParticipantFlowWithStore] No se generaron pasos de preguntas reales.");
@@ -441,7 +441,7 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
       setExpandedSteps(finalSteps as import('../stores/participantStore').ExpandedStep[]);
       setCurrentStepIndex(0);
       setCurrentStep(ParticipantFlowStep.WELCOME);
-      
+
       return finalSteps;
     } catch (error: unknown) {
       const errorMsg = (error && typeof error === 'object' && 'message' in error)
@@ -455,7 +455,7 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
   // Adaptador para handleLoginSuccess
   const handleLoginSuccess = useCallback((participant: unknown) => {
     storeHandleLoginSuccess(participant as ParticipantInfo);
-    
+
     // Construir pasos expandidos después del login
     const storedToken = localStorage.getItem('participantToken');
     if (storedToken && researchId) {
@@ -473,13 +473,13 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
   useEffect(() => {
     if (researchId) {
       console.log(`[useParticipantFlowWithStore] Inicializando con researchId: ${researchId}`);
-      
+
       // Reset store y establecer research ID
       resetStore();
       setResearchId(researchId);
       setCurrentStep(ParticipantFlowStep.LOADING_SESSION);
       setError(null);
-      
+
       const storedToken = localStorage.getItem('participantToken');
       if (storedToken) {
         console.log("[useParticipantFlowWithStore] Token encontrado. Construyendo flujo...");
@@ -515,4 +515,4 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
     getStepResponse,
     maxVisitedIndex
   };
-}; 
+};

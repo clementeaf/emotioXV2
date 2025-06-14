@@ -1,6 +1,6 @@
-import { useState, ChangeEvent, FormEvent } from 'react';
+import { ChangeEvent, FormEvent, useState } from 'react';
 import { Participant } from '../../../shared/interfaces/participant';
-import { useParticipantStore, ParticipantState } from '../stores/participantStore';
+import { ParticipantState, useParticipantStore } from '../stores/participantStore';
 import { FormErrors } from '../types';
 import { UseParticipantLoginProps } from '../types/hooks.types';
 
@@ -83,10 +83,10 @@ export const useParticipantLogin = ({ researchId, onLogin }: UseParticipantLogin
       const response = await fetch(`${API_BASE_URL}/participants/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          name: participant.name, 
-          email: participant.email, 
-          researchId 
+        body: JSON.stringify({
+          name: participant.name,
+          email: participant.email,
+          researchId
         }),
       });
 
@@ -110,8 +110,6 @@ export const useParticipantLogin = ({ researchId, onLogin }: UseParticipantLogin
         return;
       }
 
-      localStorage.setItem('participantToken', apiToken);
-
       setResearchIdInStore(researchId);
 
       if (typeof onLogin === 'function') {
@@ -119,7 +117,7 @@ export const useParticipantLogin = ({ researchId, onLogin }: UseParticipantLogin
       } else {
         console.error('[useParticipantLogin] onLogin no es una función. No se pudo notificar el login.');
       }
-      
+
     } catch (error) {
       console.error('[useParticipantLogin] Excepción en handleSubmit:', error);
       setErrors(prev => ({ ...prev, submit: 'Ocurrió un error inesperado. Por favor, intenta de nuevo.' }));
@@ -135,4 +133,4 @@ export const useParticipantLogin = ({ researchId, onLogin }: UseParticipantLogin
     handleInputChange,// Función para actualizar inputs
     handleSubmit,     // Función para manejar el submit del form
   };
-}; 
+};

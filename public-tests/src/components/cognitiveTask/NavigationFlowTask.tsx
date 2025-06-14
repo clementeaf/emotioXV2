@@ -16,39 +16,13 @@ const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ onContinue, con
   // Buscar pregunta de tipo navigation_flow en la configuración
   const navigationQuestion = config?.questions?.find(q => q.type === 'navigation_flow');
   const imageFiles = navigationQuestion?.files || [];
-  
+
   // Estado para manejar la selección
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [selectedHitzone, setSelectedHitzone] = useState<string | null>(null);
 
-  // Datos hardcodeados como fallback si no hay configuración
-  const fallbackImages = [
-    {
-      id: 'desktop-1',
-      name: 'Vista Desktop 1',
-      url: 'https://via.placeholder.com/800x600/e3f2fd/1976d2?text=Desktop+1',
-      hitZones: [{
-        id: 'deposito-directo',
-        name: 'Botón Depósito Directo',
-        region: { x: 0.783, y: 0.55, width: 0.121, height: 0.06 },
-        fileId: 'desktop-1'
-      }]
-    },
-    {
-      id: 'desktop-2', 
-      name: 'Vista Desktop 2',
-      url: 'https://via.placeholder.com/800x600/f3e5f5/7b1fa2?text=Desktop+2',
-      hitZones: [{
-        id: 'continuar-proceso',
-        name: 'Botón Continuar',
-        region: { x: 0.4, y: 0.8, width: 0.2, height: 0.1 },
-        fileId: 'desktop-2'
-      }]
-    }
-  ];
-
-  // Usar imágenes de configuración o fallback
-  const images = imageFiles.length > 0 ? imageFiles : fallbackImages;
+  // Eliminar fallbackImages y lógica asociada
+  const images = imageFiles;
 
   const handleImageClick = (imageIndex: number) => {
     setSelectedImageIndex(imageIndex);
@@ -58,7 +32,7 @@ const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ onContinue, con
   const handleHitzoneClick = (hitzoneId: string) => {
     console.log(`[NavigationFlowTask] Hitzone clicked: ${hitzoneId}`);
     setSelectedHitzone(hitzoneId);
-    
+
     // Enviar respuesta inmediatamente al hacer clic en hitzone
     const responseData = {
       type: 'navigation_flow',
@@ -66,7 +40,7 @@ const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ onContinue, con
       selectedHitzone: hitzoneId,
       timestamp: Date.now()
     };
-    
+
     onContinue(responseData);
   };
 
@@ -91,11 +65,11 @@ const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ onContinue, con
         {/* Grid de imágenes en miniatura */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {images.map((image, index) => (
-            <div 
+            <div
               key={image.id}
               className={`relative cursor-pointer border-4 rounded-lg overflow-hidden transition-all duration-200 ${
-                selectedImageIndex === index 
-                  ? 'border-blue-500 shadow-lg scale-105' 
+                selectedImageIndex === index
+                  ? 'border-blue-500 shadow-lg scale-105'
                   : 'border-gray-200 hover:border-gray-400'
               }`}
               onClick={() => handleImageClick(index)}
@@ -109,11 +83,11 @@ const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ onContinue, con
                 <p className="text-sm font-medium">
                   {image.name || `Vista ${index + 1}`}
                 </p>
-                                 {image.hitZones && image.hitZones.length > 0 && (
-                   <p className="text-xs opacity-75">
-                     {image.hitZones.length} zona(s) interactiva(s)
-                   </p>
-                 )}
+                {image.hitZones && image.hitZones.length > 0 && (
+                  <p className="text-xs opacity-75">
+                    {image.hitZones.length} zona(s) interactiva(s)
+                  </p>
+                )}
               </div>
             </div>
           ))}
@@ -127,12 +101,12 @@ const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ onContinue, con
                 Vista detallada: {selectedImage.name || `Imagen ${selectedImageIndex! + 1}`}
               </h3>
               <p className="text-sm text-gray-600">
-                {availableHitzones.length > 0 
+                {availableHitzones.length > 0
                   ? 'Haz clic en las zonas destacadas para interactuar'
                   : 'No hay zonas interactivas definidas'}
               </p>
             </div>
-            
+
             <div className="relative inline-block max-w-full">
               <img
                 src={selectedImage.url}
@@ -140,7 +114,7 @@ const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ onContinue, con
                 className="max-w-full h-auto block"
                 style={{ maxHeight: '70vh' }}
               />
-              
+
               {/* Renderizar hitzones */}
               {availableHitzones.map((hitzone) => (
                 <div
@@ -175,4 +149,4 @@ const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ onContinue, con
   );
 };
 
-export default NavigationFlowTask; 
+export default NavigationFlowTask;

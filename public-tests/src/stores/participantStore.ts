@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import { ParticipantFlowStep } from '../types/flow';
 
 export interface ModuleResponse {
@@ -9,7 +9,7 @@ export interface ModuleResponse {
   stepTitle: string;
   stepType: string;
   response: unknown;
-  participantId?: string; 
+  participantId?: string;
   researchId?: string;
 }
 
@@ -65,28 +65,25 @@ export interface ParticipantState {
   setCurrentStepIndex: (index: number) => void;
   setExpandedSteps: (steps: ExpandedStep[]) => void;
   setIsFlowLoading: (loading: boolean) => void;
-  
+
   // Métodos de flujo
   handleLoginSuccess: (participant: ParticipantInfo) => void;
   goToNextStep: (answer?: unknown) => void;
   navigateToStep: (targetIndex: number) => void;
-  
+
   // Métodos de respuestas
   saveStepResponse: (stepIndex: number, answer: unknown) => void;
   getStepResponse: (stepIndex: number) => unknown;
   hasStepBeenAnswered: (stepIndex: number) => boolean;
   getAnsweredStepIndices: () => number[];
   getResponsesJson: () => string;
-  
+
   // <<< NUEVA ACCIÓN >>>
   setLoadedResponses: (loadedStepResponses: ModuleResponse[]) => void;
-  
-  // Persistencia forzada
-  forceSaveToLocalStorage: () => void;
-  
+
   // Limpieza de datos
   cleanupPreviousParticipantData: (currentResearchId: string, currentParticipantId: string) => void;
-  
+
   // Reset y utilidades
   clearAllResponses: () => void;
   resetStore: () => void;
@@ -96,66 +93,34 @@ export interface ParticipantState {
 // Función auxiliar para sanear objetos antes de JSON.stringify
 const sanitizeForJSON = (obj: unknown): unknown => {
   if (!obj) return obj;
-  
+
   const seen = new WeakSet();
   return JSON.parse(JSON.stringify(obj, (key, value) => {
     // Ignorar propiedades que empiezan con "__react" (internas de React)
     if (key.startsWith('__react')) return undefined;
-    
+
     // Manejar posibles referencias circulares
     if (typeof value === 'object' && value !== null) {
       if (seen.has(value)) {
         return '[Referencia Circular]';
       }
       seen.add(value);
-      
+
       // Eliminar propiedades específicas que causan problemas
-      if (typeof window !== 'undefined' && 
+      if (typeof window !== 'undefined' &&
           (value instanceof Element || value instanceof HTMLElement)) {
         return '[Elemento DOM]';
       }
-      
+
       // Si es un objeto con la propiedad "current" (posible React ref)
-      if ('current' in value && typeof window !== 'undefined' && 
+      if ('current' in value && typeof window !== 'undefined' &&
           (value.current instanceof Element || value.current instanceof HTMLElement)) {
         return '[React Ref]';
       }
     }
-    
+
     return value;
   }));
-};
-
-const saveToLocalStorage = (key: string, data: unknown): void => {
-  if (key.includes('response') || key === 'participantResponses' || key.includes('expandedSteps')) {
-    return;
-  }
-  
-  const allowedKeys = ['participantInfo', 'participantState', 'flowComplete', 'progress'];
-  if (!allowedKeys.some(allowedKey => key.includes(allowedKey))) {
-    return;
-  }
-
-  try {
-    const serializedData = JSON.stringify(data);
-    localStorage.setItem(key, serializedData);
-  } catch (error) {
-    console.error(`[ParticipantStore] Error guardando en localStorage (${key}):`, error);
-  }
-};
-
-const loadFromLocalStorage = (key: string): unknown => {
-  if (key.includes('response') || key === 'participantResponses' || key.includes('expandedSteps')) {
-    return null;
-  }
-
-  try {
-    const serializedData = localStorage.getItem(key);
-    return serializedData ? JSON.parse(serializedData) : null;
-  } catch (error) {
-    console.error(`[ParticipantStore] Error cargando desde localStorage (${key}):`, error);
-    return null;
-  }
 };
 
 // Valores iniciales para el estado de la tienda
@@ -186,39 +151,28 @@ export const useParticipantStore = create(
       completedRelevantSteps: 0,
       totalRelevantSteps: 0,
       responsesData: { ...initialResponsesData },
-      
+
       setResearchId: (id) => set({ researchId: id }),
       setToken: (token) => set({ token }),
       setParticipant: (participant) => {
-        set({ 
+        set({
           participantId: participant.id,
-          error: null 
+          error: null
         });
       },
       setError: (error) => set({ error }),
       setCurrentStep: (step) => set({ currentStep: step }),
-      setCurrentStepIndex: (index) => set((state) => ({ 
+      setCurrentStepIndex: (index) => set((state) => ({
         currentStepIndex: index,
-        maxVisitedIndex: Math.max(state.maxVisitedIndex, index) 
+        maxVisitedIndex: Math.max(state.maxVisitedIndex, index)
       })),
       setExpandedSteps: (steps) => {
-        set({ 
+        set({
           expandedSteps: steps,
           isFlowLoading: !(steps && steps.length > 0)
         });
       },
-      
-      forceSaveToLocalStorage: () => {
-        const state = get();
-        saveToLocalStorage('participantState', {
-          currentStepIndex: state.currentStepIndex,
-          maxVisitedIndex: state.maxVisitedIndex,
-          researchId: state.researchId,
-          participantId: state.participantId,
-          token: state.token
-        });
-      },
-      
+
       // Set loaded responses from API and clean conflicting localStorage
       setLoadedResponses: (loadedStepResponses) => set((state) => {
         const newResponsesData = JSON.parse(JSON.stringify(state.responsesData));
@@ -227,43 +181,30 @@ export const useParticipantStore = create(
         if (Array.isArray(loadedStepResponses)) {
           const existingSteps = newResponsesData.modules.all_steps || [];
           const combinedSteps = [...existingSteps, ...loadedStepResponses];
-          
-          const uniqueSteps = combinedSteps.filter((response, index, self) => 
+
+          const uniqueSteps = combinedSteps.filter((response, index, self) =>
              response.id && index === self.findIndex((r) => r.id === response.id)
           );
-          
+
           newResponsesData.modules = {
             ...newResponsesData.modules,
             all_steps: uniqueSteps,
           };
-
-          try {
-            loadedStepResponses.forEach((response) => {
-              if (response.id) {
-                const localKey = `response_${response.id}`;
-                if (localStorage.getItem(localKey)) {
-                  localStorage.removeItem(localKey);
-                }
-              }
-            });
-          } catch (error) {
-            console.warn('[ParticipantStore] Error cleaning localStorage:', error);
-          }
         } else {
            console.warn("[ParticipantStore] setLoadedResponses esperaba un array pero recibió:", loadedStepResponses);
         }
-        
+
         return { responsesData: newResponsesData };
       }),
-      
+
       // Método para manejar el login exitoso
       handleLoginSuccess: (participant) => {
         const { researchId } = get();
         if (!researchId) return;
-        
+
         // Limpiar localStorage de participantes anteriores para esta investigación
         get().cleanupPreviousParticipantData(researchId, participant.id);
-        
+
         // Guardar token en localStorage
         const storedToken = localStorage.getItem('participantToken');
         if (storedToken) {
@@ -279,7 +220,7 @@ export const useParticipantStore = create(
               all_steps: []
             }
           };
-          
+
           set({
             token: storedToken,
             participantId: participant.id,
@@ -287,10 +228,6 @@ export const useParticipantStore = create(
             isFlowLoading: true,
             currentStep: ParticipantFlowStep.LOADING_SESSION,
             responsesData: freshResponsesData
-          });
-          saveToLocalStorage('participantInfo', {
-            id: participant.id,
-            researchId: researchId
           });
         } else {
           set({
@@ -304,18 +241,18 @@ export const useParticipantStore = create(
       // Función para limpiar datos de participantes anteriores
       cleanupPreviousParticipantData: (currentResearchId: string, currentParticipantId: string) => {
         try {
-          const storedInfo = loadFromLocalStorage('participantInfo') as { researchId?: string; id?: string } | null;
-          
+          const storedInfo = localStorage.getItem('participantInfo') as string | null;
+
           // Si hay datos almacenados de un participante diferente, limpiarlos
-          if (storedInfo && 
-              (storedInfo.researchId !== currentResearchId || 
-               storedInfo.id !== currentParticipantId)) {
+          if (storedInfo &&
+              (storedInfo.split('|')[0] !== currentResearchId ||
+               storedInfo.split('|')[1] !== currentParticipantId)) {
             localStorage.removeItem('participantResponses');
             localStorage.removeItem('expandedSteps');
             localStorage.removeItem('progress');
             localStorage.removeItem('maxVisitedIndex');
             localStorage.removeItem('currentStepIndex');
-            
+
             // Buscar y eliminar todas las respuestas individuales
             const keysToRemove = [];
             for (let i = 0; i < localStorage.length; i++) {
@@ -330,31 +267,31 @@ export const useParticipantStore = create(
           console.error('[ParticipantStore] Error limpiando datos anteriores:', e);
         }
       },
-      
+
       // Método para guardar una respuesta
       saveStepResponse: (stepIndex, answer) => {
         const { expandedSteps } = get();
-        
+
         if (stepIndex < 0 || stepIndex >= expandedSteps.length) return;
-        
+
         const stepInfo = expandedSteps[stepIndex];
         const { type: stepType, name: stepName } = stepInfo;
         const id = stepInfo.id;
-        
+
         // Ignorar welcome/thankyou si no tienen respuesta
         if ((stepType === 'welcome' || stepType === 'thankyou') && answer === undefined) {
           return;
         }
-        
+
         // Forzar valores para cognitive, smartvoc y eye-tracking
         const isCognitive = stepType.startsWith('cognitive_');
         const isSmartVOC = stepType.startsWith('smartvoc_');
         const isEyeTracking = stepType.startsWith('eye_tracking_');
-        
+
         if (answer === undefined && (isCognitive || isSmartVOC || isEyeTracking)) {
           answer = isCognitive ? { text: "" } : isSmartVOC ? { value: 0 } : isEyeTracking ? { data: [] } : { value: null };
         }
-        
+
         // Crear objeto de respuesta
         const moduleResponse: ModuleResponse = {
           id,
@@ -366,27 +303,27 @@ export const useParticipantStore = create(
           participantId: get().participantId ?? undefined,
           researchId: get().researchId ?? undefined
         };
-        
+
         // Verificar sanitización
         if (moduleResponse.response === undefined || moduleResponse.response === null) {
           console.warn('[ParticipantStore] ALERTA: Respuesta perdida después de sanitizar');
-          moduleResponse.response = isCognitive 
-            ? { text: "Respuesta no capturada correctamente" } 
-            : isSmartVOC 
-              ? { value: 0 } 
+          moduleResponse.response = isCognitive
+            ? { text: "Respuesta no capturada correctamente" }
+            : isSmartVOC
+              ? { value: 0 }
               : isEyeTracking
                 ? { data: [] }
                 : "Respuesta no capturada correctamente";
         }
-        
+
         // Actualizar el estado de forma inmutable
         set(state => {
           const updatedData = { ...state.responsesData };
-          
+
           // 1. Guardar en categoría específica
           if (stepType === 'demographic') {
             updatedData.modules.demographic = moduleResponse;
-          } 
+          }
           else if (stepName?.includes('Que te ha parecido el módulo')) {
             updatedData.modules.feedback = moduleResponse;
           }
@@ -397,12 +334,12 @@ export const useParticipantStore = create(
             if (!updatedData.modules.cognitive_task) {
               updatedData.modules.cognitive_task = [];
             }
-            
+
             // Verificar si ya existe
             const existingIndex = updatedData.modules.cognitive_task.findIndex(
               resp => resp.id === id
             );
-            
+
             if (existingIndex >= 0) {
               updatedData.modules.cognitive_task[existingIndex] = moduleResponse;
             } else {
@@ -413,12 +350,12 @@ export const useParticipantStore = create(
             if (!updatedData.modules.smartvoc) {
               updatedData.modules.smartvoc = [];
             }
-            
+
             // Verificar si ya existe
             const existingIndex = updatedData.modules.smartvoc.findIndex(
               resp => resp.id === id
             );
-            
+
             if (existingIndex >= 0) {
               updatedData.modules.smartvoc[existingIndex] = moduleResponse;
             } else {
@@ -429,12 +366,12 @@ export const useParticipantStore = create(
             if (!updatedData.modules.eye_tracking) {
               updatedData.modules.eye_tracking = [];
             }
-            
+
             // Verificar si ya existe
             const existingIndex = updatedData.modules.eye_tracking.findIndex(
               resp => resp.id === id
             );
-            
+
             if (existingIndex >= 0) {
               updatedData.modules.eye_tracking[existingIndex] = moduleResponse;
             } else {
@@ -447,66 +384,63 @@ export const useParticipantStore = create(
             if (!updatedData.modules[moduleCategory]) {
               updatedData.modules[moduleCategory] = [];
             }
-            
+
             // Asegurar que es array
             if (!Array.isArray(updatedData.modules[moduleCategory])) {
               updatedData.modules[moduleCategory] = [updatedData.modules[moduleCategory] as ModuleResponse];
             }
-            
+
             (updatedData.modules[moduleCategory] as ModuleResponse[]).push(moduleResponse);
           }
-          
+
           // 2. Siempre guardar en all_steps
           if (!updatedData.modules.all_steps) {
             updatedData.modules.all_steps = [];
           }
-          
+
           // Verificar si ya existe
           const allStepsIndex = updatedData.modules.all_steps.findIndex(
             resp => resp.id === id
           );
-          
+
           if (allStepsIndex >= 0) {
             updatedData.modules.all_steps[allStepsIndex] = moduleResponse;
           } else {
             updatedData.modules.all_steps.push(moduleResponse);
           }
-          
+
           return { responsesData: updatedData };
         });
-        
+
         // Actualizar expandedSteps para mantener las respuestas en la configuración
         set(state => {
           const newSteps = [...state.expandedSteps];
           const targetStep = newSteps[stepIndex];
-          
+
           if (targetStep) {
             targetStep.config = {
               ...(typeof targetStep.config === 'object' && targetStep.config !== null ? targetStep.config : {}),
               savedResponses: answer
             };
           }
-          
+
           return { expandedSteps: newSteps };
         });
-        
+
         // Recalcular progreso
         get().calculateProgress();
-        
-        // Forzar guardado completo
-        get().forceSaveToLocalStorage();
       },
-      
+
       // Avanzar al siguiente paso
       goToNextStep: (answer?: unknown) => {
-        const { 
-          currentStepIndex, 
-          expandedSteps, 
-          isFlowLoading, 
-          maxVisitedIndex, 
-          researchId 
+        const {
+          currentStepIndex,
+          expandedSteps,
+          isFlowLoading,
+          maxVisitedIndex,
+          researchId
         } = get();
-        
+
         if (isFlowLoading || currentStepIndex >= expandedSteps.length - 1) {
           // Si estamos en el último paso
           if (!isFlowLoading && currentStepIndex === expandedSteps.length - 1) {
@@ -514,7 +448,7 @@ export const useParticipantStore = create(
             if (answer !== undefined) {
               get().saveStepResponse(currentStepIndex, answer);
             }
-            
+
             // Finalizar flujo
             set(state => ({
               currentStep: ParticipantFlowStep.DONE,
@@ -523,57 +457,49 @@ export const useParticipantStore = create(
                 endTime: Date.now()
               }
             }));
-            
+
             const finalData = {
               ...get().responsesData,
               endTime: Date.now()
             };
-            // ❌ DISABLED to prevent localStorage conflicts
-            // saveToLocalStorage('participantResponses', finalData);
-            saveToLocalStorage('flowComplete', { timestamp: Date.now() });
-            
-            // Forzar guardado completo
-            get().forceSaveToLocalStorage();
+            localStorage.setItem('flowComplete', JSON.stringify({ timestamp: Date.now() }));
           }
           return;
         }
-        
+
         // Guardar respuesta del paso actual
         if (answer !== undefined) {
           get().saveStepResponse(currentStepIndex, answer);
         }
-        
+
         // Avanzar al siguiente paso
         const nextIndex = currentStepIndex + 1;
-        
+
         // Actualizar máximo índice visitado
         if (nextIndex > maxVisitedIndex) {
           set({ maxVisitedIndex: nextIndex });
-          
+
           // Guardar en localStorage
-          saveToLocalStorage(`maxVisitedIndex_${researchId}`, nextIndex);
+          localStorage.setItem(`maxVisitedIndex_${researchId}`, nextIndex.toString());
         }
-        
+
         // Actualizar índice actual
         set({ currentStepIndex: nextIndex, error: null });
-        
+
         // Recalcular progreso
         get().calculateProgress();
-        
-        // Forzar guardado completo
-        get().forceSaveToLocalStorage();
       },
-      
+
       // Navegar a un paso específico
       navigateToStep: (targetIndex) => {
-        
-        const { 
-          currentStepIndex, 
-          expandedSteps, 
-          isFlowLoading, 
-          maxVisitedIndex 
+
+        const {
+          currentStepIndex,
+          expandedSteps,
+          isFlowLoading,
+          maxVisitedIndex
         } = get();
-        
+
         // Obtener pasos respondidos
         const answeredSteps = get().getAnsweredStepIndices();
         const isAnsweredStep = answeredSteps.includes(targetIndex);
@@ -585,20 +511,20 @@ export const useParticipantStore = create(
           targetIndexMayorQueMaxVisited: targetIndex > maxVisitedIndex,
           noEsStepRespondido: !isAnsweredStep
         };
-        
+
         const condicionBloqueo = targetIndex > maxVisitedIndex && !isAnsweredStep;
 
-        
+
         // Validar navegación
-        if (isFlowLoading || 
-            targetIndex < 0 || 
-            targetIndex >= expandedSteps.length || 
+        if (isFlowLoading ||
+            targetIndex < 0 ||
+            targetIndex >= expandedSteps.length ||
             (targetIndex > maxVisitedIndex && !isAnsweredStep)) {
-          
+
           // No-op si el índice es el actual
           if (targetIndex !== currentStepIndex) {
             console.warn(`❌ [ParticipantStore] Navegación bloqueada al índice ${targetIndex}.`, {
-              razon: isFlowLoading ? 'flujo-cargando' : 
+              razon: isFlowLoading ? 'flujo-cargando' :
                      targetIndex < 0 ? 'indice-negativo' :
                      targetIndex >= expandedSteps.length ? 'indice-fuera-de-rango' :
                      condicionBloqueo ? 'paso-no-visitado-ni-respondido' : 'razon-desconocida',
@@ -609,13 +535,13 @@ export const useParticipantStore = create(
         }
 
         const savedResponse = get().getStepResponse(targetIndex);
-        
+
         // Actualizar config con la respuesta guardada
         if (savedResponse !== null && savedResponse !== undefined) {
           set(state => {
             const newSteps = [...state.expandedSteps];
             const targetStep = newSteps[targetIndex];
-            
+
             if (
               targetStep &&
               typeof targetStep.config === 'object' &&
@@ -628,29 +554,26 @@ export const useParticipantStore = create(
               };
               return { expandedSteps: newSteps };
             }
-            
+
             return state; // No cambios
           });
         }
-        
+
         // Actualizar índice actual
         set({ currentStepIndex: targetIndex, error: null });
-        
+
         // Recalcular progreso
         get().calculateProgress();
-        
-        // Forzar guardado completo
-        get().forceSaveToLocalStorage();
       },
-      
+
       // Obtener índices de pasos respondidos
       getAnsweredStepIndices: () => {
-        
+
         const { expandedSteps, responsesData, maxVisitedIndex } = get();
         const completedStepIndices = new Set<number>();
-        
+
         const allApiResponses = responsesData.modules.all_steps || [];
-        
+
         if (!Array.isArray(allApiResponses)) {
             console.warn("[getAnsweredStepIndices] responsesData.modules.all_steps no es un array válido.");
             for (let i = 0; i <= maxVisitedIndex; i++) { completedStepIndices.add(i); }
@@ -659,20 +582,20 @@ export const useParticipantStore = create(
 
         expandedSteps.forEach((step, index) => {
           // <<< Usar step.name para comparar con apiResponse.stepTitle >>>
-          const { type: stepType, name: stepName } = step; 
-          
+          const { type: stepType, name: stepName } = step;
+
           if (stepType === 'welcome' || stepType === 'thankyou') {
             completedStepIndices.add(index);
             return;
           }
-          
+
           // <<< MODIFICADO: Buscar en allApiResponses usando stepName/stepTitle >>>
           const encontrado = allApiResponses.some(resp => resp.stepTitle === stepName);
           if (encontrado) {
             completedStepIndices.add(index);
           }
         });
-        
+
         // Marcar todos los pasos hasta maxVisitedIndex como completados/visitados
         const stepsPorMaxVisited = [];
         for (let i = 0; i <= maxVisitedIndex; i++) {
@@ -681,59 +604,47 @@ export const useParticipantStore = create(
           }
           completedStepIndices.add(i);
         }
-        
+
         const resultado = Array.from(completedStepIndices).sort((a, b) => a - b);
-        
+
         return resultado;
       },
-      
+
       // Obtener respuesta de un paso
       getStepResponse: (stepIndex) => {
         const { expandedSteps, responsesData } = get();
-        
+
         if (stepIndex < 0 || stepIndex >= expandedSteps.length) return null;
-        
+
         const step = expandedSteps[stepIndex];
         // <<< Usar step.name para comparar con apiResponse.stepTitle >>>
         const { type: stepType, name: stepName } = step;
-        
+
         if (stepType === 'welcome' || stepType === 'thankyou') return null;
-        
-        // Intentar cargar directamente de localStorage primero (si aún se usa)
-        // const directResponse = loadFromLocalStorage(`response_${stepId}`);
-        // if (directResponse && directResponse.response) {
-        //   return directResponse.response;
-        // }
-        
+
         const allApiResponses = responsesData.modules.all_steps || [];
         if (!Array.isArray(allApiResponses)) {
             console.warn("[getStepResponse] responsesData.modules.all_steps no es un array válido.");
             return null;
         }
-        
+
         // <<< MODIFICADO: Buscar en allApiResponses usando stepName/stepTitle >>>
         const response = allApiResponses.find(resp => resp.stepTitle === stepName);
         return response ? response.response : null;
       },
-      
+
       // Verificar si un paso ha sido respondido
       hasStepBeenAnswered: (stepIndex) => {
         const { expandedSteps, responsesData } = get();
-        
+
         if (stepIndex < 0 || stepIndex >= expandedSteps.length) return false;
-        
+
         const step = expandedSteps[stepIndex];
         // <<< Usar step.name para comparar con apiResponse.stepTitle >>>
         const { type: stepType, name: stepName } = step;
-        
+
         if (stepType === 'welcome' || stepType === 'thankyou') return true;
-        
-        // Verificar directamente en localStorage (si aún se usa)
-        // const directResponse = loadFromLocalStorage(`response_${stepId}`);
-        // if (directResponse) {
-        //   return true;
-        // }
-        
+
         const allApiResponses = responsesData.modules.all_steps || [];
         if (!Array.isArray(allApiResponses)) {
             console.warn("[hasStepBeenAnswered] responsesData.modules.all_steps no es un array válido.");
@@ -743,42 +654,42 @@ export const useParticipantStore = create(
         // <<< MODIFICADO: Buscar en allApiResponses usando stepName/stepTitle >>>
         return allApiResponses.some(resp => resp.stepTitle === stepName);
       },
-      
+
       // Obtener JSON de respuestas - ONLY use API data, ignore localStorage
       getResponsesJson: () => {
         const current = get().responsesData;
         return JSON.stringify(current, null, 2);
       },
-      
+
       // Calcular progreso para barra de progreso
       calculateProgress: () => {
         const { expandedSteps, currentStepIndex, currentStep } = get();
-        
+
         // Total sin Welcome/Thankyou
         const totalRelevantSteps = Math.max(0, expandedSteps.length - 2);
-        
+
         let completedRelevantSteps = 0;
         if (currentStepIndex > 0 && expandedSteps.length > 2) {
           // Si estamos después de welcome y hay pasos relevantes
           completedRelevantSteps = Math.min(currentStepIndex, totalRelevantSteps);
-          
+
           // Si estamos en el último paso (Thankyou), todos los relevantes están completados
           if (currentStepIndex === expandedSteps.length - 1) {
             completedRelevantSteps = totalRelevantSteps;
           }
         }
-        
+
         // Si el flujo ha terminado, todos completados
         if (currentStep === ParticipantFlowStep.DONE) {
           completedRelevantSteps = totalRelevantSteps;
         }
-        
+
         set({ completedRelevantSteps, totalRelevantSteps });
-        
+
         // Guardar progreso en localStorage
-        saveToLocalStorage('progress', { completedRelevantSteps, totalRelevantSteps });
+        localStorage.setItem('progress', JSON.stringify({ completedRelevantSteps, totalRelevantSteps }));
       },
-      
+
       // Limpiar solo las respuestas manteniendo la sesión
       clearAllResponses: () => {
         // Limpiar localStorage de respuestas específicas
@@ -822,7 +733,7 @@ export const useParticipantStore = create(
           localStorage.removeItem('expandedSteps');
           localStorage.removeItem('participantInfo');
           localStorage.removeItem('progress');
-          
+
           // Buscar y eliminar todas las respuestas individuales
           const keysToRemove = [];
           for (let i = 0; i < localStorage.length; i++) {
@@ -835,7 +746,7 @@ export const useParticipantStore = create(
         } catch (e) {
           console.error('[ParticipantStore] Error limpiando localStorage:', e);
         }
-        
+
         set({
           token: null,
           participantId: null,
@@ -874,7 +785,7 @@ export const useParticipantStore = create(
           if (error) {
             console.error('[ParticipantStore] Error recargando estado de Zustand:', error);
           }
-          
+
           if (restoredState) {
             try {
               const keysToClean = [];
@@ -887,7 +798,7 @@ export const useParticipantStore = create(
                   keysToClean.push(key);
                 }
               }
-              
+
               keysToClean.forEach(key => {
                 localStorage.removeItem(key);
               });
@@ -899,4 +810,4 @@ export const useParticipantStore = create(
       }
     }
   )
-); 
+);

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Participant, LoginFormProps } from '../types/common.types';
+import { LoginFormProps, Participant } from '../types/common.types';
 
 const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, researchId }) => {
   const [email, setEmail] = useState('');
@@ -8,44 +8,40 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, researchId }) => 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email.trim()) {
       setError('Por favor, introduce tu email');
       return;
     }
-    
+
     if (!researchId) {
       setError('ID de investigación no disponible');
       return;
     }
-    
+
     setIsLoading(true);
     setError(null);
-    
+
     try {
       // Simulación de llamada a API
       console.log(`[LoginForm] Intentando login con email ${email} para la investigación ${researchId}`);
-      
+
       // Esperar un segundo para simular la llamada
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // Generar ID de participante basado en email
       const participantId = `participant_${btoa(email).replace(/[=+/]/g, '')}`;
-      
-      // Simular token
-      const token = `token_${Math.random().toString(36).substring(2)}`;
-      localStorage.setItem('participantToken', token);
-      
+
       // Crear objeto de participante
       const participant: Participant = {
         id: participantId,
         email,
         name: email.split('@')[0]
       };
-      
+
       // Llamar al callback de éxito
       onLoginSuccess(participant);
-      
+
     } catch (err: unknown) {
       console.error('[LoginForm] Error en login:', err);
       if (typeof err === 'object' && err !== null && 'message' in err && typeof (err as { message?: unknown }).message === 'string') {
@@ -68,7 +64,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, researchId }) => 
       boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
     }}>
       <h2 style={{ textAlign: 'center', marginBottom: '1.5rem' }}>Ingresa a la investigación</h2>
-      
+
       {error && (
         <div style={{
           padding: '0.75rem',
@@ -80,11 +76,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, researchId }) => 
           {error}
         </div>
       )}
-      
+
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: '1.5rem' }}>
-          <label htmlFor="email" style={{ 
-            display: 'block', 
+          <label htmlFor="email" style={{
+            display: 'block',
             marginBottom: '0.5rem',
             fontWeight: 'bold'
           }}>
@@ -106,7 +102,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, researchId }) => 
             }}
           />
         </div>
-        
+
         <button
           type="submit"
           disabled={isLoading}
@@ -125,10 +121,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, researchId }) => 
           {isLoading ? 'Iniciando sesión...' : 'Iniciar sesión'}
         </button>
       </form>
-      
-      <p style={{ 
-        fontSize: '0.9rem', 
-        color: '#666', 
+
+      <p style={{
+        fontSize: '0.9rem',
+        color: '#666',
         marginTop: '1.5rem',
         textAlign: 'center'
       }}>
@@ -138,4 +134,4 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, researchId }) => 
   );
 };
 
-export default LoginForm; 
+export default LoginForm;

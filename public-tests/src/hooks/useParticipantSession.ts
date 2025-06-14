@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react';
-import { useParticipantStore } from '../stores/participantStore';
+import { useCallback, useState } from 'react';
 import { Participant } from '../../../shared/interfaces/participant';
+import { useParticipantStore } from '../stores/participantStore';
 
 export const useParticipantSession = () => {
     const storeGlobalSetToken = useParticipantStore(state => state.setToken);
@@ -12,14 +12,14 @@ export const useParticipantSession = () => {
     });
 
     const handleLoginSuccess = useCallback((participant: Participant & { id: string }) => {
-        const storedTokenFromLogin = localStorage.getItem('participantToken'); 
+        const storedTokenFromLogin = localStorage.getItem('participantToken');
 
         if (storedTokenFromLogin && participant.id) {
             storeGlobalSetToken(storedTokenFromLogin);
-            storeGlobalSetParticipant({ 
-                id: participant.id, 
-                name: participant.name, 
-                email: participant.email 
+            storeGlobalSetParticipant({
+                id: participant.id,
+                name: participant.name,
+                email: participant.email
             });
             setToken(storedTokenFromLogin);
         } else {
@@ -42,4 +42,4 @@ export const useParticipantSession = () => {
         handleLoginSuccess,
         logoutAndClearSession,
     };
-}; 
+};

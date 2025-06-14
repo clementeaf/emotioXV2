@@ -1,20 +1,20 @@
 import { useCallback, useEffect } from 'react';
-import { ParticipantFlowStep } from '../types/flow';
 import { Participant } from '../../../shared/interfaces/participant';
 import { useParticipantStore } from '../stores/participantStore';
-import { useResponseAPI } from './useResponseAPI';
-import { useLoadResearchFormsConfig } from './useResearchForms';
+import { ParticipantFlowStep } from '../types/flow';
 import { useFlowBuilder } from './useFlowBuilder';
-import { useResponseManager } from './useResponseManager';
 import { useFlowNavigationAndState } from './useFlowNavigationAndState';
 import { useParticipantSession } from './useParticipantSession';
+import { useLoadResearchFormsConfig } from './useResearchForms';
+import { useResponseAPI } from './useResponseAPI';
+import { useResponseManager } from './useResponseManager';
 
 const useStoreSetLoadedResponses = () => useParticipantStore(state => state.setLoadedResponses);
 
 export const useParticipantFlow = (researchId: string | undefined) => {
     const storeSetResearchId = useParticipantStore(state => state.setResearchId);
     const storeSetLoadedResponsesFromStore = useStoreSetLoadedResponses();
-    
+
     const {
         token,
         participantIdFromStore,
@@ -24,7 +24,7 @@ export const useParticipantFlow = (researchId: string | undefined) => {
     const participantId = participantIdFromStore;
     const loadedApiResponsesFromStore = useParticipantStore(state => state.responsesData.modules.all_steps);
     const maxVisitedIndexFromStore = useParticipantStore(state => state.maxVisitedIndex);
-    
+
     const currentStepIndex = useParticipantStore(state => state.currentStepIndex);
     const setCurrentStepIndex = useParticipantStore(state => state.setCurrentStepIndex);
     const storeNavigateToStep = useParticipantStore(state => state.navigateToStep);
@@ -33,11 +33,11 @@ export const useParticipantFlow = (researchId: string | undefined) => {
     const storeIsFlowLoading = useParticipantStore(state => state.isFlowLoading);
     const storeSetIsFlowLoading = useParticipantStore(state => state.setIsFlowLoading);
 
-    const { 
-        data: researchFlowApiData, 
-        isLoading: isResearchFlowHookLoading, 
+    const {
+        data: researchFlowApiData,
+        isLoading: isResearchFlowHookLoading,
         isError: isResearchFlowError,
-        error: researchFlowErrorObject 
+        error: researchFlowErrorObject
     } = useLoadResearchFormsConfig(researchId || '', {
         enabled: !!researchId && !!token,
     });
@@ -58,9 +58,9 @@ export const useParticipantFlow = (researchId: string | undefined) => {
 
     // Solo construir el flujo si hay token (evita warnings durante login)
     const shouldBuildFlow = !!token;
-    const builtExpandedSteps = useFlowBuilder({ 
-        researchFlowApiData: shouldBuildFlow ? researchFlowApiData : null, 
-        isLoading: isResearchFlowHookLoading || !shouldBuildFlow 
+    const builtExpandedSteps = useFlowBuilder({
+        researchFlowApiData: shouldBuildFlow ? researchFlowApiData : null,
+        isLoading: isResearchFlowHookLoading || !shouldBuildFlow
     });
     const expandedSteps = builtExpandedSteps;
 
@@ -90,17 +90,17 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         currentStep,
         setCurrentStep,
         error: navigationError,
-        setError: setNavigationError, 
+        setError: setNavigationError,
         isFlowLoading: navigationIsLoading,
-        setIsFlowLoading: setNavigationIsLoading, 
+        setIsFlowLoading: setNavigationIsLoading,
         completedRelevantSteps,
         totalRelevantSteps,
     } = useFlowNavigationAndState({
         expandedSteps,
-        initialResearchDataLoading: isResearchFlowHookLoading, 
+        initialResearchDataLoading: isResearchFlowHookLoading,
         researchId,
         participantId: participantId === null ? undefined : participantId,
-        maxVisitedIndexFromStore: maxVisitedIndexFromStore, 
+        maxVisitedIndexFromStore: maxVisitedIndexFromStore,
         saveStepResponse: saveStepResponse,
         markResponsesAsCompleted: markResponsesAsCompleted,
         getStepResponse: getStepResponse,
@@ -146,35 +146,26 @@ export const useParticipantFlow = (researchId: string | undefined) => {
             setCurrentStep(ParticipantFlowStep.LOGIN);
         }
     }, [
-        researchId, token, storeSetResearchId, handleError, 
+        researchId, token, storeSetResearchId, handleError,
         isResearchFlowHookLoading, isResearchFlowError, researchFlowApiData, researchFlowErrorObject,
-        currentStep, setCurrentStep, setNavigationIsLoading 
+        currentStep, setCurrentStep, setNavigationIsLoading
     ]);
 
     useEffect(() => {
         if (expandedSteps && expandedSteps.length > 0 && !navigationIsLoading && currentStep === ParticipantFlowStep.LOADING_SESSION) {
-            const storedMaxIndex = parseInt(localStorage.getItem('maxVisitedIndex') || '0', 10);
-            const effectiveMaxIndex = Math.max(storedMaxIndex, maxVisitedIndexFromStore || 0);
-            const storedCurrentIndex = parseInt(localStorage.getItem('currentStepIndex') || '0', 10);
-            let targetIndex = 0;
-            if (storedCurrentIndex > 0 && storedCurrentIndex < expandedSteps.length && storedCurrentIndex <= effectiveMaxIndex) {
-                targetIndex = storedCurrentIndex;
-            } else if (effectiveMaxIndex > 0 && effectiveMaxIndex < expandedSteps.length) {
-                targetIndex = effectiveMaxIndex;
-            }
-            setCurrentStepIndex(targetIndex); 
+            setCurrentStepIndex(0);
             setCurrentStep(ParticipantFlowStep.WELCOME);
             if (researchId && participantId) {
-                loadExistingResponses(); 
+                loadExistingResponses();
             }
             setNavigationIsLoading(false);
         } else if (expandedSteps && expandedSteps.length === 0 && !navigationIsLoading && currentStep === ParticipantFlowStep.LOADING_SESSION && researchId && !isResearchFlowError) {
-            setCurrentStep(ParticipantFlowStep.WELCOME); 
+            setCurrentStep(ParticipantFlowStep.WELCOME);
             setNavigationIsLoading(false);
         }
     }, [
-        expandedSteps, navigationIsLoading, currentStep, maxVisitedIndexFromStore, researchId, 
-        loadExistingResponses, participantId, isResearchFlowError, setCurrentStepIndex, setCurrentStep, 
+        expandedSteps, navigationIsLoading, currentStep, researchId,
+        loadExistingResponses, participantId, isResearchFlowError, setCurrentStepIndex, setCurrentStep,
         setNavigationIsLoading
     ]);
 
@@ -184,7 +175,7 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         setCurrentStep(ParticipantFlowStep.LOADING_SESSION);
         setNavigationIsLoading(true);
         if (researchId && participant.id) {
-            loadExistingResponses(); 
+            loadExistingResponses();
         }
     }, [handleLoginSuccessFromSession, setNavigationError, setCurrentStep, setNavigationIsLoading, researchId, loadExistingResponses]);
 
@@ -213,7 +204,7 @@ export const useParticipantFlow = (researchId: string | undefined) => {
     useEffect(() => {
         if (expandedSteps && expandedSteps.length > 0) {
             storeSetExpandedSteps(expandedSteps as import('../stores/participantStore').ExpandedStep[]);
-            
+
             if (currentStep === ParticipantFlowStep.LOADING_SESSION && !navigationIsLoading) {
                 setCurrentStep(ParticipantFlowStep.WELCOME);
             }
@@ -239,6 +230,6 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         getAnsweredStepIndices,
         getStepResponse,
         maxVisitedIndex: maxVisitedIndexFromStore,
-        loadedApiResponses: loadedApiResponsesFromStore 
+        loadedApiResponses: loadedApiResponsesFromStore
     };
-}; 
+};

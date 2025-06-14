@@ -4,10 +4,10 @@ import { ApiParticipant, ApiResponse } from '../types/common.types';
 // Función para obtener el token
 const getToken = (): string => {
   const token = localStorage.getItem('participantToken');
-  if (!token) {
-    throw new Error('No hay token disponible');
+  if (token) {
+    return token;
   }
-  return token;
+  throw new Error('No hay token disponible');
 };
 
 // Función para hacer peticiones con manejo de errores
@@ -16,10 +16,10 @@ const fetchWithAuth = async <T>(
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> => {
   console.log(`🔍 Iniciando petición a ${endpoint}`);
-  
+
   const token = getToken();
   const url = `${config.apiUrl}${endpoint}`;
-  
+
   const defaultOptions: RequestInit = {
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -139,4 +139,4 @@ export const runAllTests = async () => {
   } catch (error) {
     console.error('❌ Error durante las pruebas:', error);
   }
-}; 
+};

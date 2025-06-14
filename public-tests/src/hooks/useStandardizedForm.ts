@@ -1,14 +1,14 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParticipantStore } from '../stores/participantStore';
-import { useResponseAPI } from './useResponseAPI';
-import { useModuleResponses } from './useModuleResponses';
-import { 
-  StandardizedFormProps, 
-  ValidationRule, 
-  StandardizedFormState, 
-  StandardizedFormActions, 
-  UseStandardizedFormOptions 
+import {
+    StandardizedFormActions,
+    StandardizedFormProps,
+    StandardizedFormState,
+    UseStandardizedFormOptions,
+    ValidationRule
 } from '../types/hooks.types';
+import { useModuleResponses } from './useModuleResponses';
+import { useResponseAPI } from './useResponseAPI';
 
 // 🚨 NUEVO: Helper para persistir user interaction entre re-mounts
 const USER_INTERACTION_KEY_PREFIX = 'user_interaction_';
@@ -22,7 +22,7 @@ function invalidateOldCache(): void {
     const storedVersion = sessionStorage.getItem(CACHE_VERSION_KEY);
     if (storedVersion !== CURRENT_CACHE_VERSION) {
       console.log(`🧹 [useStandardizedForm] Invalidating old cache (${storedVersion} → ${CURRENT_CACHE_VERSION})`);
-      
+
       // Limpiar sessionStorage de user interactions
       const keys = Object.keys(sessionStorage);
       keys.forEach(key => {
@@ -30,17 +30,7 @@ function invalidateOldCache(): void {
           sessionStorage.removeItem(key);
         }
       });
-      
-      // Limpiar localStorage de respuestas obsoletas
-      const localKeys = Object.keys(localStorage);
-      localKeys.forEach(key => {
-        if (key.startsWith('response_') || 
-            key === 'participantResponses' || 
-            key.includes('expandedSteps')) {
-          localStorage.removeItem(key);
-        }
-      });
-      
+
       // Actualizar versión del caché
       sessionStorage.setItem(CACHE_VERSION_KEY, CURRENT_CACHE_VERSION);
       console.log(`✅ [useStandardizedForm] Cache invalidation complete`);
@@ -85,12 +75,12 @@ export function useStandardizedForm<T>(
   props: StandardizedFormProps,
   options: UseStandardizedFormOptions<T>
 ): [StandardizedFormState<T>, StandardizedFormActions<T>] {
-  
+
   // 🚨 CRÍTICO: Invalidar caché obsoleto al inicializar
   useEffect(() => {
     invalidateOldCache();
   }, []);
-  
+
   const {
     stepId,
     stepType,
@@ -111,7 +101,7 @@ export function useStandardizedForm<T>(
     moduleId
   } = options;
   const researchIdFromStore = useParticipantStore(state => state.researchId);
-  const participantIdFromStore = useParticipantStore(state => state.participantId);  
+  const participantIdFromStore = useParticipantStore(state => state.participantId);
   const researchId = propResearchId || researchIdFromStore;
   const participantId = propParticipantId || participantIdFromStore;
   const [value, setValueInternal] = useState<T>(initialValue);
@@ -121,7 +111,7 @@ export function useStandardizedForm<T>(
   const [hasExistingData, setHasExistingData] = useState(false);
   const userHasInteracted = useRef<boolean>(hasUserInteracted(stepId, stepType));
   const initialLoadComplete = useRef<boolean>(false);
-  
+
   useEffect(() => {
     const persistedInteraction = hasUserInteracted(stepId, stepType);
     if (persistedInteraction) {
@@ -154,7 +144,7 @@ export function useStandardizedForm<T>(
         userHasInteracted.current = true;
         setUserInteracted(stepId, stepType);
       }
-      
+
       setValueInternal(newValue);
     }
   }, [value, stepId, stepType]);
@@ -175,12 +165,12 @@ export function useStandardizedForm<T>(
     if (initialLoadComplete.current) {
       return;
     }
-    
+
     if (userHasInteracted.current && isDataLoaded && value !== initialValue) {
       initialLoadComplete.current = true;
       return;
     }
-    
+
     if (isDataLoaded && value !== initialValue) {
       initialLoadComplete.current = true;
       return;
@@ -213,7 +203,7 @@ export function useStandardizedForm<T>(
       const foundResponse = moduleResponsesArray.find((r: unknown) => {
         if (typeof r !== 'object' || r === null) return false;
         const response = r as { stepType?: string; stepId?: string; id?: string };
-        
+
         // Buscar solo por stepType (stepId no existe en el JSON)
         return response.stepType === stepType;
       });
@@ -227,16 +217,7 @@ export function useStandardizedForm<T>(
           setHasExistingData(true);
           setIsDataLoaded(true);
           initialLoadComplete.current = true;
-          
-          try {
-            const localStorageKey = `response_${stepId}`;
-            if (localStorage.getItem(localStorageKey)) {
-              localStorage.removeItem(localStorageKey);
-            }
-          } catch (e) {
-            console.warn('[useStandardizedForm] Error cleaning localStorage:', e);
-          }
-          
+
           return;
         } catch (err) {
           console.warn('[useStandardizedForm] Error extracting value from API response:', err);
@@ -247,15 +228,15 @@ export function useStandardizedForm<T>(
     setHasExistingData(false);
     setIsDataLoaded(true);
     initialLoadComplete.current = true;
-    
+
   }, [
-    isMock, 
-    savedResponse, 
-    isLoadingResponses, 
-    loadingError, 
-    moduleResponsesArray, 
-    stepType, 
-    stepId, 
+    isMock,
+    savedResponse,
+    isLoadingResponses,
+    loadingError,
+    moduleResponsesArray,
+    stepType,
+    stepId,
     initialValue,
     extractValueFromResponse,
     extractedValue,
@@ -291,7 +272,7 @@ export function useStandardizedForm<T>(
   // Save response
   const saveResponse = useCallback(async (valueToSave?: T): Promise<{ success: boolean; data?: unknown }> => {
     const finalValue = valueToSave !== undefined ? valueToSave : value;
-    
+
     if (!researchId || !participantId) {
       const errorMsg = 'ID de investigación o participante no disponible.';
       console.error(`❌ [useStandardizedForm] Missing IDs:`, { researchId, participantId });
@@ -314,7 +295,7 @@ export function useStandardizedForm<T>(
     setApiError(null);
 
     try {
-      
+
       const result = await saveOrUpdateResponse(
         stepId,
         stepType,
@@ -364,13 +345,13 @@ export function useStandardizedForm<T>(
   const validateAndSave = useCallback(async (valueToSave?: T): Promise<{ success: boolean; data?: unknown }> => {
     const finalValue = valueToSave !== undefined ? valueToSave : value;
     const validationError = validateValue(finalValue);
-    
+
     if (validationError) {
       console.error(`❌ [useStandardizedForm] validateAndSave validation error:`, validationError);
       setError(validationError);
       return { success: false };
     }
-    
+
     return saveResponse(finalValue);
   }, [value, validateValue, saveResponse]);
 
@@ -413,7 +394,7 @@ export function useStandardizedForm<T>(
     // 🚨 NUEVO: Reset agresivo que fuerza recarga desde API
     forceRefresh: () => {
       console.log(`🔄 [useStandardizedForm] Forcing refresh for ${stepId}`);
-      
+
       // Limpiar todo el estado local
       setValue(initialValue, false);
       setError(null);
@@ -422,20 +403,12 @@ export function useStandardizedForm<T>(
       setIsDataLoaded(false);
       userHasInteracted.current = false;
       initialLoadComplete.current = false;
-      
+
       // Limpiar user interaction persistida
       if (stepId) {
         clearUserInteraction(stepId, stepType);
       }
-      
-      // Limpiar localStorage específico de este step
-      try {
-        const localStorageKey = `response_${stepId}`;
-        localStorage.removeItem(localStorageKey);
-      } catch (e) {
-        console.warn('[useStandardizedForm] Error clearing localStorage:', e);
-      }
-      
+
       // Forzar recarga de respuestas desde API
       if (fetchResponses && researchId && participantId) {
         console.log(`🔄 [useStandardizedForm] Triggering API refresh for ${stepId}`);
@@ -477,43 +450,29 @@ export const userInteractionUtils = {
   nukeAllFormData: () => {
     try {
       console.log('💥 [userInteractionUtils] NUKING ALL FORM DATA - Nuclear reset initiated');
-      
+
       // Limpiar sessionStorage completamente
       const sessionKeys = Object.keys(sessionStorage);
       sessionKeys.forEach(key => {
-        if (key.startsWith(USER_INTERACTION_KEY_PREFIX) || 
+        if (key.startsWith(USER_INTERACTION_KEY_PREFIX) ||
             key === CACHE_VERSION_KEY ||
             key.includes('form_') ||
             key.includes('response_')) {
           sessionStorage.removeItem(key);
         }
       });
-      
-      // Limpiar localStorage de respuestas y datos obsoletos
-      const localKeys = Object.keys(localStorage);
-      localKeys.forEach(key => {
-        if (key.startsWith('response_') || 
-            key === 'participantResponses' || 
-            key.includes('expandedSteps') ||
-            key.includes('form_') ||
-            key.includes('smartvoc') ||
-            key.includes('csat') ||
-            key.includes('demographic')) {
-          localStorage.removeItem(key);
-        }
-      });
-      
+
       // Resetear versión de caché para forzar invalidación
       sessionStorage.setItem(CACHE_VERSION_KEY, CURRENT_CACHE_VERSION);
-      
+
       console.log('✅ [userInteractionUtils] Nuclear reset complete - All form data nuked');
       console.log('🔄 [userInteractionUtils] Please refresh the page to start fresh');
-      
+
       // Mostrar alerta al usuario
       if (typeof window !== 'undefined') {
         alert('🧹 Datos de formulario limpiados. Por favor, recarga la página para empezar desde cero.');
       }
-      
+
     } catch (e) {
       console.error('[userInteractionUtils] Error during nuclear reset:', e);
     }
@@ -527,16 +486,16 @@ export const valueExtractors = {
     if (typeof response === 'number') return response;
     if (typeof response === 'object' && response !== null) {
       const obj = response as Record<string, unknown>;
-      
+
       // Handle DynamoDB format {"N": "4"}
       if ('N' in obj && typeof obj.N === 'string') {
         const parsed = parseInt(obj.N, 10);
         if (!isNaN(parsed)) return parsed;
       }
-      
+
       // Handle standard format {"value": 4}
       if ('value' in obj && typeof obj.value === 'number') return obj.value;
-      
+
       // Handle nested structures
       if ('data' in obj && typeof obj.data === 'object' && obj.data !== null) {
         const dataObj = obj.data as Record<string, unknown>;
@@ -629,4 +588,4 @@ export const validationRules = {
     validate: (value: number) => value >= min && value <= max,
     message: message || `El valor debe estar entre ${min} y ${max}.`
   })
-}; 
+};
