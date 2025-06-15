@@ -234,7 +234,7 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
                       disabled={disabled || (!file.s3Key && !file.url?.startsWith('blob:'))}
                       title={file.s3Key || (file.url?.startsWith('blob:')) ? undefined : 'Primero sube o selecciona un archivo de imagen'}
                     >
-                      Edit hitzones
+                      Edit hitzone
                     </Button>
                   )}
                 </div>

@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface Area {
   id: string;
@@ -34,6 +34,16 @@ export const LocalHitzoneEditor: React.FC<LocalHitzoneEditorProps> = ({
   const [imgSize, setImgSize] = useState<{ width: number; height: number } | null>(null);
   const [imgNatural, setImgNatural] = useState<{ width: number; height: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [showActiveModal, setShowActiveModal] = useState(false);
+
+  // Seleccionar automáticamente la primera zona si existen áreas iniciales
+  useEffect(() => {
+    if (initialAreas && initialAreas.length > 0) {
+      setSelectedIdx(0);
+    } else {
+      setSelectedIdx(null);
+    }
+  }, [initialAreas]);
 
   // Al cargar la imagen, medir el tamaño real renderizado y el natural
   const handleImgLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -136,7 +146,7 @@ export const LocalHitzoneEditor: React.FC<LocalHitzoneEditorProps> = ({
                 strokeWidth={idx === selectedIdx ? 2 : 1}
                 onClick={
                   testMode && idx === selectedIdx
-                    ? () => alert(`¡Hitzone ${area.id} presionado!`)
+                    ? () => setShowActiveModal(true)
                     : (e) => handleRectClick(idx, e)
                 }
                 style={{
@@ -160,24 +170,40 @@ export const LocalHitzoneEditor: React.FC<LocalHitzoneEditorProps> = ({
           </svg>
         )}
       </div>
-      {/* Botones fuera de la imagen, centrados */}
-      <div className="flex flex-row items-center justify-center gap-4 mt-6">
-        {!testMode && (
+      {/* Mensaje y botones condicionales según cantidad de áreas y testMode */}
+      <div className="flex flex-col items-center justify-center w-full mt-4">
+        {testMode ? (
+          <div className="flex flex-row items-center justify-center gap-4">
+            <button onClick={() => setTestMode(false)} className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600">Salir de prueba</button>
+            <button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Cerrar</button>
+          </div>
+        ) : areas.length === 0 ? (
           <>
-            <button onClick={() => { console.log('[LocalHitzoneEditor] Áreas guardadas:', areas); onSave(areas); }} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Guardar zonas</button>
-            {selectedIdx !== null && (
-              <>
-                <button onClick={handleDelete} className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Eliminar zona</button>
-                <button onClick={() => setTestMode(true)} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Probar hitzone</button>
-              </>
-            )}
+            <div className="mb-4 text-sm text-neutral-600">Dibuja la zona a guardar</div>
+            <div className="flex flex-row items-center justify-center gap-4">
+              <button onClick={() => { console.log('[LocalHitzoneEditor] Área guardada:', areas); onSave(areas); }} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Guardar zona</button>
+              <button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Cerrar</button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="mb-4 text-sm text-neutral-600">Para generar un nuevo hitzone, primero borra el existente</div>
+            <div className="flex flex-row items-center justify-center gap-4">
+              <button onClick={handleDelete} className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Eliminar zona</button>
+              <button onClick={() => setTestMode(true)} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Probar hitzone</button>
+              <button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Cerrar</button>
+            </div>
           </>
         )}
-        {testMode && (
-          <button onClick={() => setTestMode(false)} className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600">Salir de prueba</button>
-        )}
-        <button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Cerrar</button>
       </div>
+      {showActiveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-lg shadow-lg p-8 flex flex-col items-center">
+            <h3 className="text-lg font-semibold mb-4">¡Hitzone activo!</h3>
+            <button onClick={() => setShowActiveModal(false)} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Cerrar</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
