@@ -4,24 +4,24 @@ import { useAuth } from '@/providers/AuthProvider';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useState } from 'react';
 import {
-  CognitiveTaskFormData,
-  Question,
-  UploadedFile
+    CognitiveTaskFormData,
+    Question,
+    UploadedFile
 } from 'shared/interfaces/cognitive-task.interface';
 import type { FileInfo } from '../../CognitiveTaskFormHelpers';
 import {
-  cleanupErrorFiles,
-  logFormDebugInfo
+    cleanupErrorFiles,
+    logFormDebugInfo
 } from '../../CognitiveTaskFormHelpers';
 import {
-  QUERY_KEYS,
-  SUCCESS_MESSAGES,
-  UI_TEXTS
+    QUERY_KEYS,
+    SUCCESS_MESSAGES,
+    UI_TEXTS
 } from '../constants';
 import type { ErrorModalData } from '../types';
 import { ValidationErrors } from '../types';
 import {
-  debugQuestionsToSend, filterValidQuestions
+    debugQuestionsToSend, filterValidQuestions
 } from '../utils/validateRequiredFields';
 import { useCognitiveTaskFileUpload } from './useCognitiveTaskFileUpload';
 import { useCognitiveTaskModals } from './useCognitiveTaskModals';
@@ -670,6 +670,7 @@ export const useCognitiveTaskForm = (
           : []
       })) as UploadedFile[] || []
     }));
+    console.log('[handleSave] JSON a enviar al backend:', JSON.stringify(dataToSave, null, 2));
     window.alert('JSON enviado al backend:\n' + JSON.stringify(dataToSave, null, 2));
 
     if (isValid) {
@@ -735,8 +736,8 @@ export const useCognitiveTaskForm = (
         debugQuestionsToSend(formData);
       }
 
-      console.log("[ConfirmAndSave] Datos listos para mutación:", dataToSave);
-      mutate(dataToSave); // Llamar a la mutación
+      console.log('[confirmAndSave] JSON FINAL a enviar al backend:', JSON.stringify(dataToSave, null, 2));
+      mutate(dataToSave);
   }, [formData, mutate]);
 
   const cancelSave = useCallback(() => {

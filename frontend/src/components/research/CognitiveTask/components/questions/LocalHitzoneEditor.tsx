@@ -164,7 +164,7 @@ export const LocalHitzoneEditor: React.FC<LocalHitzoneEditorProps> = ({
       <div className="flex flex-row items-center justify-center gap-4 mt-6">
         {!testMode && (
           <>
-            <button onClick={() => onSave(areas)} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Guardar zonas</button>
+            <button onClick={() => { console.log('[LocalHitzoneEditor] Áreas guardadas:', areas); onSave(areas); }} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Guardar zonas</button>
             {selectedIdx !== null && (
               <>
                 <button onClick={handleDelete} className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Eliminar zona</button>
