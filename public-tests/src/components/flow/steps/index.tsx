@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import imageUrl from '../../../assets/nav_flow_img.png';
-import { LongTextView } from '../../cognitiveTask/questions/LongTextView';
-import { SmartVOCQuestion } from '../../../types/smart-voc.types';
+import React from 'react';
 import { CognitiveQuestion } from '../../../types/cognitive-task.types';
 import { MappedStepComponentProps, StepComponentMap } from '../../../types/flow.types';
+import { SmartVOCQuestion } from '../../../types/smart-voc.types';
+import CognitiveNavigationFlowStep from '../../cognitiveTask/CognitiveNavigationFlowStep';
+import { LongTextView } from '../../cognitiveTask/questions/LongTextView';
 
 const ParticipantLogin = React.lazy(() => import('../../auth/ParticipantLogin').then(module => ({ default: module.ParticipantLogin })));
 const WelcomeScreenHandler = React.lazy(() => import('../WelcomeScreenHandler'));
@@ -36,8 +36,8 @@ const DifficultyScaleAdapter: React.FC<MappedStepComponentProps> = (props) => {
   }
 
   const moduleTypeParts = stepType.split('_');
-  const moduleIdForComponent = moduleTypeParts.length > 1 && moduleTypeParts[0] === 'smartvoc' 
-    ? moduleTypeParts[1] 
+  const moduleIdForComponent = moduleTypeParts.length > 1 && moduleTypeParts[0] === 'smartvoc'
+    ? moduleTypeParts[1]
     : stepId || 'unknown_module';
 
   return (
@@ -65,84 +65,18 @@ const InstructionStep: React.FC<MappedStepComponentProps> = ({ stepConfig, onSte
 };
 
 // eslint-disable-next-line react-refresh/only-export-components
-const CognitiveNavigationFlowStep: React.FC<MappedStepComponentProps> = ({ stepConfig }) => {
-    const cfg = (typeof stepConfig === 'object' && stepConfig !== null) ? (stepConfig as { questionText?: string; description?: string; deviceFrame?: boolean; title?: string }) : {};
-    const deviceFrame = cfg.deviceFrame;
-    // Coordenadas relativas del hitzone para el botón 'Ir a Depósito Directo'
-    const hitzones = [
-        {
-            id: 'deposito-directo',
-            x: 0.783, // Más a la derecha
-            y: 0.55, // Más abajo
-            width: 0.121, // Más angosto
-            height: 0.06, // Más bajo
-        }
-    ];
-    const imageWidth = 747;
-    const [modalOpen, setModalOpen] = useState(false);
-    return (
-        <div className="bg-white p-8 rounded-lg shadow-md max-w-2xl w-full">
-            <h2 className="text-xl font-medium mb-1 text-neutral-800">A continuación, verás las pantallas de la nueva APP, porfavor, navega por las imágenes y completa el proceso de darte de alta. Tus datos son simulados.</h2>
-            <p className="text-sm text-neutral-500 mb-3">Da clic en la imagen para realizar las instrucciones o completar la prueba</p>
-            <div className={`mb-6 border rounded-md relative ${imageUrl ? '' : 'flex items-center justify-center text-neutral-400'} ${deviceFrame ? 'bg-gray-200' : ''}`} style={{ maxWidth: imageWidth, margin: '0 auto' }}>
-                {imageUrl ? (
-                    <>
-                        <img 
-                            src={imageUrl} 
-                            alt="Simulación de navegación" 
-                            className={`object-contain w-full ${deviceFrame ? 'rounded-md shadow-lg' : ''}`}
-                            style={{ display: 'block', width: '100%', height: 'auto' }}
-                        />
-                        {hitzones.map(hz => (
-                            <div
-                                key={hz.id}
-                                style={{
-                                    position: 'absolute',
-                                    left: `${hz.x * 100}%`,
-                                    top: `${hz.y * 100}%`,
-                                    width: `${hz.width * 100}%`,
-                                    height: `${hz.height * 100}%`,
-                                    border: '2px solid #3b82f6',
-                                    background: 'rgba(59, 130, 246, 0.25)',
-                                    cursor: 'pointer',
-                                    borderRadius: 0,
-                                    zIndex: 10,
-                                    pointerEvents: 'auto',
-                                }}
-                                onClick={() => setModalOpen(true)}
-                                title="Ir a Depósito Directo"
-                            />
-                        ))}
-                        {/* Modal */}
-                        {modalOpen && (
-                            <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-                                <div className="bg-white rounded-lg shadow-lg p-8 min-w-[320px] max-w-[90vw] text-center animate-fade-in">
-                                    {/* Icono animado */}
-                                    <div className="flex justify-center mb-4">
-                                        <svg className="w-16 h-16 text-green-500 animate-bounce" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="rgba(34,197,94,0.1)" />
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2l4-4" />
-                                        </svg>
-                                    </div>
-                                    <h3 className="text-xl font-bold mb-2 text-blue-700">¡Excelente elección!</h3>
-                                    <p className="mb-4 text-neutral-700">Has presionado el hitzone de <span className="font-semibold text-blue-600">Ir a Depósito Directo</span>.<br/>¡Sigue así y completa el proceso!</p>
-                                    <button
-                                        onClick={() => setModalOpen(false)}
-                                        className="mt-2 px-8 py-2 bg-gradient-to-r from-blue-500 to-green-500 text-white rounded shadow hover:scale-105 hover:from-green-500 hover:to-blue-500 transition-all duration-200 font-semibold"
-                                    >
-                                        ¡Continuar!
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </>
-                ) : (
-                    <p>Simulación de Navegación (Imagen no configurada)</p>
-                )}
-            </div>
-            <button type="button" className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors">Siguiente</button>
-        </div>
-    );
+const CognitiveNavigationFlowStepAdapter: React.FC<MappedStepComponentProps> = (props) => {
+  // Si props.stepConfig es una pregunta individual, envolverla en { questions: [...] }
+  const config = Array.isArray((props.stepConfig as any)?.questions)
+    ? props.stepConfig as { questions: any[] }
+    : { questions: [props.stepConfig] };
+  console.log('[CognitiveNavigationFlowStepAdapter] config usado:', config);
+  return (
+    <CognitiveNavigationFlowStep
+      config={config}
+      onContinue={props.onStepComplete}
+    />
+  );
 };
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -184,7 +118,7 @@ export const stepComponentMap: StepComponentMap = {
     'cognitive_multiple_choice': MultipleChoiceQuestion,
     'cognitive_linear_scale': LinearScaleQuestion,
     'cognitive_ranking': RankingQuestion,
-    'cognitive_navigation_flow': CognitiveNavigationFlowStep,
+    'cognitive_navigation_flow': CognitiveNavigationFlowStepAdapter,
     'smartvoc_csat': CSATView,
     'smartvoc_cv': DifficultyScaleAdapter,
     'smartvoc_nev': DifficultyScaleAdapter,
@@ -198,4 +132,4 @@ export const stepComponentMap: StepComponentMap = {
     'feedback': SmartVocFeedbackQuestion,
     'image_feedback': SmartVocFeedbackQuestion,
     'cognitive_preference_test': CognitivePreferenceTestStep,
-}; 
+};

@@ -110,6 +110,10 @@ export const useParticipantLogin = ({ researchId, onLogin }: UseParticipantLogin
         return;
       }
 
+      // Guardar el token y el participantId en localStorage
+      localStorage.setItem('participantToken', apiToken);
+      localStorage.setItem('participantId', apiParticipant.id);
+
       setResearchIdInStore(researchId);
 
       if (typeof onLogin === 'function') {

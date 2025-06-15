@@ -61,11 +61,11 @@ DynamoDBTable:
       - AttributeName: sk
         AttributeType: S
       # Asegúrate de definir TODOS los atributos usados como claves en la tabla O en CUALQUIER GSI
-      - AttributeName: userId 
-        AttributeType: S 
+      - AttributeName: userId
+        AttributeType: S
       - AttributeName: researchId
         AttributeType: S
-      - AttributeName: EntityType 
+      - AttributeName: EntityType
         AttributeType: S
     KeySchema:
       - AttributeName: id
@@ -79,7 +79,7 @@ DynamoDBTable:
             KeyType: HASH
         Projection:
           ProjectionType: ALL # O el tipo de proyección que tenga el índice existente
-          
+
       # Volver a añadir con el nombre original para sincronizar
       - IndexName: researchId-index # <- NOMBRE ORIGINAL
         KeySchema:
@@ -87,21 +87,21 @@ DynamoDBTable:
             KeyType: HASH
         Projection:
           ProjectionType: ALL # O el tipo de proyección que tenga el índice existente
-          
+
       - IndexName: EntityTypeSkIndex # Este parece existir en tu tabla
         KeySchema:
           - AttributeName: EntityType # Clave de partición del índice
             KeyType: HASH
           - AttributeName: sk # Clave de ordenación del índice (si la tiene)
-            KeyType: RANGE 
+            KeyType: RANGE
         Projection:
           ProjectionType: ALL # O el tipo de proyección que tenga el índice existente
-          
+
     PointInTimeRecoverySpecification:
       PointInTimeRecoveryEnabled: true
     SSESpecification:
       SSEEnabled: true
-    
+
 # Tabla EyeTracking Recruit Config
 EyeTrackingRecruitConfigTable:
   Type: AWS::DynamoDB::Table
@@ -288,5 +288,19 @@ ModuleResponsesTable:
     SSESpecification:
       SSEEnabled: true
 
-# --- Fin de las definiciones de Recursos --- 
-# La sección Outputs se movió de nuevo a serverless.yml 
+# Permite acceso público de solo lectura a los archivos bajo cognitive-task-files/
+S3PublicReadPolicy:
+  Type: AWS::S3::BucketPolicy
+  Properties:
+    Bucket: !Ref StorageBucket
+    PolicyDocument:
+      Version: "2012-10-17"
+      Statement:
+        - Sid: AllowPublicReadForCognitiveTaskFiles
+          Effect: Allow
+          Principal: "*"
+          Action: "s3:GetObject"
+          Resource: !Sub "${StorageBucket.Arn}/cognitive-task-files/*"
+
+# --- Fin de las definiciones de Recursos ---
+# La sección Outputs se movió de nuevo a serverless.yml

@@ -4,8 +4,8 @@ import { ExpandedStep } from './flow.types';
 
 // Interfaz principal para una pregunta cognitiva
 export interface CognitiveQuestion {
-  id: string; 
-  type: string; 
+  id: string;
+  type: string;
   title?: string;
   description?: string;
   answerPlaceholder?: string;
@@ -238,10 +238,6 @@ export interface PasswordResetTaskProps {
   onComplete: (response: any) => void;
 }
 
-export interface CognitiveNavigationFlowStepProps {
-  onComplete: (response: any) => void;
-}
-
 export interface CognitiveQuestionRendererProps {
   question: CognitiveQuestion;
   onResponse: (response: any) => void;
@@ -344,4 +340,4 @@ export interface LongTextViewComponentProps {
   onStepComplete?: (answer?: unknown) => void;
   savedResponse?: { id?: string; response?: unknown } | null;
   savedResponseId?: string | null;
-} 
+}
