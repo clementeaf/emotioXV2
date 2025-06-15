@@ -31,13 +31,27 @@ export const LocalHitzoneEditor: React.FC<LocalHitzoneEditorProps> = ({
   const [currentRect, setCurrentRect] = useState<Area | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const [testMode, setTestMode] = useState(false);
+  const [imgSize, setImgSize] = useState<{ width: number; height: number } | null>(null);
+  const [imgNatural, setImgNatural] = useState<{ width: number; height: number } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Al cargar la imagen, medir el tamaño real renderizado y el natural
+  const handleImgLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const { naturalWidth, naturalHeight, width, height } = e.currentTarget;
+    setImgNatural({ width: naturalWidth, height: naturalHeight });
+    setImgSize({ width, height });
+  };
 
   // Iniciar dibujo
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button !== 0) return;
+    if (e.button !== 0 || !imgNatural || !imgSize) return;
     const rect = svgRef.current!.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    // Coordenadas relativas al SVG
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    // Convertir a sistema de referencia del canvas base
+    const x = mouseX * (imgNatural.width / imgSize.width);
+    const y = mouseY * (imgNatural.height / imgSize.height);
     setStart({ x, y });
     setCurrentRect({ id: `area_${Date.now()}`, x, y, width: 0, height: 0 });
     setDrawing(true);
@@ -45,10 +59,13 @@ export const LocalHitzoneEditor: React.FC<LocalHitzoneEditorProps> = ({
 
   // Dibujar rectángulo
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!drawing || !start) return;
+    if (!drawing || !start || !imgNatural || !imgSize) return;
     const rect = svgRef.current!.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    // Convertir a sistema de referencia del canvas base
+    const x = mouseX * (imgNatural.width / imgSize.width);
+    const y = mouseY * (imgNatural.height / imgSize.height);
     setCurrentRect({
       id: currentRect!.id,
       x: Math.min(start.x, x),
@@ -83,57 +100,68 @@ export const LocalHitzoneEditor: React.FC<LocalHitzoneEditorProps> = ({
   };
 
   return (
-    <div style={{ position: 'relative', width: CANVAS_SIZE, height: CANVAS_SIZE, background: '#fff', borderRadius: 8 }}>
-      <img
-        src={imageUrl}
-        alt="Imagen base"
-        style={{ width: CANVAS_SIZE, height: CANVAS_SIZE, display: 'block', borderRadius: 8, objectFit: 'contain', background: '#f8fafc' }}
-        draggable={false}
-      />
-      <svg
-        ref={svgRef}
-        width={CANVAS_SIZE}
-        height={CANVAS_SIZE}
-        style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'auto' }}
-        onMouseDown={!testMode ? handleMouseDown : undefined}
-        onMouseMove={!testMode ? handleMouseMove : undefined}
-        onMouseUp={!testMode ? handleMouseUp : undefined}
+    <div className="flex flex-col items-center justify-center">
+      <div
+        ref={containerRef}
+        className="relative w-[80vw] max-w-4xl max-h-[80vh] bg-white rounded-lg shadow-lg overflow-hidden"
+        style={{ aspectRatio: imgNatural ? `${imgNatural.width} / ${imgNatural.height}` : undefined }}
       >
-        {areas.map((area, idx) => (
-          <rect
-            key={area.id}
-            x={area.x}
-            y={area.y}
-            width={area.width}
-            height={area.height}
-            fill={idx === selectedIdx ? 'rgba(0,123,255,0.3)' : 'rgba(0,123,255,0.15)'}
-            stroke="#007bff"
-            strokeWidth={idx === selectedIdx ? 2 : 1}
-            onClick={
-              testMode && idx === selectedIdx
-                ? () => alert(`¡Hitzone ${area.id} presionado!`)
-                : (e) => handleRectClick(idx, e)
-            }
-            style={{
-              cursor: testMode && idx === selectedIdx ? 'pointer' : 'pointer',
-              opacity: testMode && idx !== selectedIdx ? 0.5 : 1,
-              pointerEvents: testMode && idx !== selectedIdx ? 'none' : 'auto',
-            }}
-          />
-        ))}
-        {currentRect && !testMode && (
-          <rect
-            x={currentRect.x}
-            y={currentRect.y}
-            width={currentRect.width}
-            height={currentRect.height}
-            fill={'rgba(0,123,255,0.2)'}
-            stroke={'#007bff'}
-            strokeDasharray="4"
-          />
+        <img
+          src={imageUrl}
+          alt="Imagen base"
+          className="w-full h-auto max-h-[80vh] object-contain bg-white"
+          draggable={false}
+          onLoad={handleImgLoad}
+          style={{ display: 'block' }}
+        />
+        {imgSize && imgNatural && (
+          <svg
+            ref={svgRef}
+            width={imgSize.width}
+            height={imgSize.height}
+            style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'auto', width: imgSize.width, height: imgSize.height }}
+            onMouseDown={!testMode ? handleMouseDown : undefined}
+            onMouseMove={!testMode ? handleMouseMove : undefined}
+            onMouseUp={!testMode ? handleMouseUp : undefined}
+          >
+            {areas.map((area, idx) => (
+              <rect
+                key={area.id}
+                x={area.x * (imgSize.width / (imgNatural.width || imgSize.width))}
+                y={area.y * (imgSize.height / (imgNatural.height || imgSize.height))}
+                width={area.width * (imgSize.width / (imgNatural.width || imgSize.width))}
+                height={area.height * (imgSize.height / (imgNatural.height || imgSize.height))}
+                fill={idx === selectedIdx ? 'rgba(0,123,255,0.3)' : 'rgba(0,123,255,0.15)'}
+                stroke="#007bff"
+                strokeWidth={idx === selectedIdx ? 2 : 1}
+                onClick={
+                  testMode && idx === selectedIdx
+                    ? () => alert(`¡Hitzone ${area.id} presionado!`)
+                    : (e) => handleRectClick(idx, e)
+                }
+                style={{
+                  cursor: testMode && idx === selectedIdx ? 'pointer' : 'pointer',
+                  opacity: testMode && idx !== selectedIdx ? 0.5 : 1,
+                  pointerEvents: testMode && idx !== selectedIdx ? 'none' : 'auto',
+                }}
+              />
+            ))}
+            {currentRect && !testMode && (
+              <rect
+                x={currentRect.x * (imgSize.width / (imgNatural.width || imgSize.width))}
+                y={currentRect.y * (imgSize.height / (imgNatural.height || imgSize.height))}
+                width={currentRect.width * (imgSize.width / (imgNatural.width || imgSize.width))}
+                height={currentRect.height * (imgSize.height / (imgNatural.height || imgSize.height))}
+                fill={'rgba(0,123,255,0.2)'}
+                stroke={'#007bff'}
+                strokeDasharray="4"
+              />
+            )}
+          </svg>
         )}
-      </svg>
-      <div style={{ position: 'absolute', bottom: 16, left: 16, zIndex: 20, display: 'flex', gap: 8 }}>
+      </div>
+      {/* Botones fuera de la imagen, centrados */}
+      <div className="flex flex-row items-center justify-center gap-4 mt-6">
         {!testMode && (
           <>
             <button onClick={() => onSave(areas)} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Guardar zonas</button>

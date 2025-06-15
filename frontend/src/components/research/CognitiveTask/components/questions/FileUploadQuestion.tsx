@@ -290,7 +290,7 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
       {/* Modal de edición de hitzones */}
       {hitzoneModalOpen && hitzoneFile && (typeof window !== 'undefined' ? ReactDOM.createPortal(
         <div className="fixed inset-0 w-screen h-screen top-0 left-0 z-50 flex items-center justify-center bg-black bg-opacity-40 m-0 p-0">
-          <div className="bg-white rounded-lg shadow-lg p-6 max-w-2xl w-full relative flex flex-col items-center">
+          <div className="bg-white rounded-lg shadow-lg py-6 px-8 w-auto relative flex flex-col items-center">
             <h2 className="text-lg font-semibold mb-4 text-center">Editar hitzones para: {hitzoneFile.name}</h2>
             <LocalHitzoneEditor
               imageUrl={hitzoneFile.url}

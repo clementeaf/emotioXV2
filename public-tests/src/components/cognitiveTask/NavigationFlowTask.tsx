@@ -98,26 +98,15 @@ const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ onContinue, con
 
         {/* Vista detallada de imagen seleccionada */}
         {selectedImage && (
-          <div className="border-2 border-gray-300 rounded-lg overflow-hidden bg-gray-50">
-            <div className="bg-gray-100 px-4 py-2 border-b">
-              <h3 className="font-semibold text-gray-800">
-                Vista detallada: {selectedImage.name || `Imagen ${selectedImageIndex! + 1}`}
-              </h3>
-              <p className="text-sm text-gray-600">
-                {availableHitzones.length > 0
-                  ? 'Haz clic en las zonas destacadas para interactuar'
-                  : 'No hay zonas interactivas definidas'}
-              </p>
-            </div>
-
-            <div className="relative inline-block max-w-full">
+          <div className="flex justify-center py-8">
+            <div className="relative w-full max-w-3xl bg-white rounded-lg shadow-lg overflow-hidden">
               <img
                 src={selectedImage.url}
                 alt={selectedImage.name || `Imagen detallada ${selectedImageIndex! + 1}`}
-                className="max-w-full h-auto block"
-                style={{ maxHeight: '70vh' }}
+                className="w-full h-auto max-h-[80vh] object-contain bg-gray-100"
+                loading="lazy"
+                style={{ display: 'block' }}
               />
-
               {/* Renderizar hitzones */}
               {availableHitzones.map((hitzone) => (
                 <div
