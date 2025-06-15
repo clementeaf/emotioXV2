@@ -236,7 +236,18 @@ export const useCognitiveTaskFileUpload = ({
           const questionIndex = updatedQuestions.findIndex(q => q.id === questionId);
           if (questionIndex === -1) return prevData;
           const existingFiles = (updatedQuestions[questionIndex].files || []).map(asFileInfo);
-          updatedQuestions[questionIndex].files = [...existingFiles, ...tempFilesArray];
+          // Filtra archivos temporales duplicados por nombre y tamaño
+          const filteredExistingFiles = existingFiles.filter(
+            f =>
+              !(
+                (f.status === 'uploading' || f.isLoading === true) &&
+                filesToProcess.some(
+                  file => file.name === f.name && file.size === f.size
+                )
+              )
+          );
+          // Ahora agrega los archivos temporales solo si no existen ya
+          updatedQuestions[questionIndex].files = [...filteredExistingFiles, ...tempFilesArray];
           console.log(`[FileUploadHook ${questionId}] Estado actualizado con ${tempFilesArray.length} archivos temporales. Estado actual de archivos:`, updatedQuestions[questionIndex].files.map(f => ({id: f.id, name: f.name, status: f.status, isLoading: f.isLoading})));
           return { ...prevData, questions: updatedQuestions };
       });
@@ -353,45 +364,28 @@ export const useCognitiveTaskFileUpload = ({
                     const updatedQuestions = [...prevData.questions];
                     const questionIndex = updatedQuestions.findIndex(q => q.id === questionId);
                     if (questionIndex !== -1 && updatedQuestions[questionIndex].files) {
-                        // Ensure the array contains FileInfo objects before searching
                         let currentFiles = updatedQuestions[questionIndex].files.map(asFileInfo);
-                        // Eliminar archivos temporales duplicados (mismo nombre y tamaño, estado uploading)
+                        // Eliminar SIEMPRE el archivo temporal por id
+                        currentFiles = currentFiles.filter(f => f.id !== tempFileId);
+                        // Eliminar cualquier archivo temporal (uploading/isLoading) con el mismo nombre y tamaño
                         currentFiles = currentFiles.filter(f => {
-                          if (f.id === tempFileId) return true;
-                          if (f.name === finalFileState.name && f.size === finalFileState.size && f.status === 'uploading') {
-                            return false; // Eliminar duplicado temporal
+                          if (
+                            (f.status === 'uploading' || f.isLoading === true) &&
+                            f.name === finalFileState.name &&
+                            f.size === finalFileState.size
+                          ) {
+                            return false;
                           }
                           return true;
                         });
-                        // Find the index of the temporary file to replace using its ID
-                        const fileIndexToReplace = currentFiles.findIndex(f => f.id === tempFileId);
-                        if (fileIndexToReplace !== -1) {
-                            // Create a new array with the replaced item using slice
-                            const updatedFiles = [
-                                ...currentFiles.slice(0, fileIndexToReplace),
-                                finalFileState, // Replace with the final state object
-                                ...currentFiles.slice(fileIndexToReplace + 1),
-                            ];
-                            updatedQuestions[questionIndex].files = updatedFiles;
-                            saveFilesToLocalStorage(updatedQuestions);
-                            console.log(`[FileUploadHook ${questionId}] Archivo ${file.name} (TempID: ${tempFileId}) REEMPLAZADO en índice ${fileIndexToReplace}.`);
-                            console.log(`[FileUploadHook ${questionId}] Estado DESPUÉS de reemplazar TempID ${tempFileId}:`, updatedFiles.map(f => ({id: f.id, name: f.name, status: f.status, isLoading: f.isLoading})));
-                        } else {
-                             console.warn(`[FileUploadHook ${questionId}] No se encontró el índice para TempID ${tempFileId} para reemplazar. Estado actual de archivos:`, currentFiles.map(f => ({id: f.id, name: f.name, status: f.status, isLoading: f.isLoading})));
-                             // Verificar si el archivo ya existe por nombre y tamaño para evitar duplicaciones
-                             const existingFileIndex = currentFiles.findIndex(f =>
-                                 f.name === finalFileState.name &&
-                                 f.size === finalFileState.size &&
-                                 f.status === 'uploaded'
-                             );
-                             if (existingFileIndex === -1) {
-                                 // Solo si no existe un archivo idéntico, agregamos el nuevo
-                                 console.log(`[FileUploadHook ${questionId}] No se encontró archivo existente similar, agregando nuevo.`);
-                                 updatedQuestions[questionIndex].files = [...currentFiles, finalFileState];
-                             } else {
-                                 console.log(`[FileUploadHook ${questionId}] Se encontró archivo existente similar, evitando duplicación.`);
-                             }
-                        }
+                        // Preparar el archivo definitivo (mergedFile si corresponde)
+                        const mergedFile = {
+                          ...finalFileState,
+                          status: 'uploaded',
+                          isLoading: false
+                        };
+                        // Agregar el archivo definitivo
+                        updatedQuestions[questionIndex].files = [...currentFiles, mergedFile];
                     }
                     return { ...prevData, questions: updatedQuestions };
                 });

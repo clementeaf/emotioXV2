@@ -25,6 +25,10 @@ const CognitiveNavigationFlowStep: React.FC<CognitiveNavigationFlowStepProps> = 
   const [imgSize, setImgSize] = useState<{width: number, height: number} | null>(null);
   const [imgNatural, setImgNatural] = useState<{width: number, height: number} | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
+  // Estado para mostrar el modal de éxito
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  // Estado para manejar la imagen actual
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   // Usar solo imágenes de la config
   const images = imageFiles;
@@ -34,8 +38,8 @@ const CognitiveNavigationFlowStep: React.FC<CognitiveNavigationFlowStepProps> = 
     setSelectedHitzone(null);
   };
 
-  // Siempre mostrar la primera imagen y sus hitzones
-  const selectedImage = images[0];
+  // Siempre mostrar la imagen actual y sus hitzones
+  const selectedImage = images[currentImageIndex];
   const availableHitzones = selectedImage?.hitZones ? convertHitZonesToPixelCoordinates(selectedImage.hitZones) : [];
 
   // Función para calcular el área visible de la imagen (letterboxing)
@@ -128,7 +132,7 @@ const CognitiveNavigationFlowStep: React.FC<CognitiveNavigationFlowStepProps> = 
                 }}
                 onClick={() => {
                   setSelectedHitzone(hitzone.id);
-                  alert(`¡Hitzone ${hitzone.id} presionado!`);
+                  setShowSuccessModal(true);
                 }}
                 title={`Zona interactiva: ${hitzone.id}`}
               />
@@ -136,6 +140,33 @@ const CognitiveNavigationFlowStep: React.FC<CognitiveNavigationFlowStepProps> = 
           })}
         </div>
       </div>
+      {/* Modal de éxito al identificar área */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-lg shadow-lg p-8 max-w-sm w-full flex flex-col items-center">
+            <h2 className="text-xl font-bold mb-4 text-green-700">¡Área correctamente identificada!</h2>
+            {currentImageIndex < images.length - 1 ? (
+              <button
+                className="mt-4 px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                onClick={() => {
+                  setShowSuccessModal(false);
+                  setCurrentImageIndex(currentImageIndex + 1);
+                  setSelectedHitzone(null);
+                }}
+              >
+                Siguiente imagen
+              </button>
+            ) : (
+              <button
+                className="mt-4 px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                onClick={() => setShowSuccessModal(false)}
+              >
+                Finalizar
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

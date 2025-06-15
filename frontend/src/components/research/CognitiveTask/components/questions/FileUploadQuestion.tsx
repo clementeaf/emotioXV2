@@ -97,6 +97,22 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
     setHitzoneModalOpen(true);
   };
 
+  // Antes de mapear los archivos para renderizar:
+  const filesToShow = (validFiles as UIUploadedFile[]).filter((file, idx, arr) => {
+    if (
+      (file.status === 'uploading' || file.isLoading) &&
+      arr.some(
+        f =>
+          f.name === file.name &&
+          f.size === file.size &&
+          f.status === 'uploaded'
+      )
+    ) {
+      return false;
+    }
+    return true;
+  });
+
   return (
     <div className="space-y-4">
       <div className="space-y-2">
@@ -138,20 +154,21 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
           data-question-id={question.id}
         />
 
-        {isThisQuestionUploading ? (
-          <div className="flex flex-col items-center gap-3 w-full">
-            <p className="text-sm text-neutral-600">{DEFAULT_TEXTS.UPLOADING_FILE_MESSAGE}</p>
-            <div className="w-full bg-neutral-200 rounded-full h-2.5">
-              <div
-                className="bg-blue-600 h-2.5 rounded-full"
-                style={{ width: `${uploadProgress || 0}%` }}
-              ></div>
-            </div>
-            <p className="text-xs text-neutral-500">{uploadProgress || 0}{DEFAULT_TEXTS.PERCENTAGE_COMPLETE}</p>
-          </div>
-        ) : (validFiles as UIUploadedFile[]).length > 0 ? (
+        {(filesToShow as UIUploadedFile[]).length > 0 ? (
           <div className="w-full space-y-3">
-            {(validFiles as UIUploadedFile[]).map((file: UIUploadedFile, index) => {
+            {isThisQuestionUploading && (
+              <div className="flex flex-col items-center gap-3 w-full mb-2">
+                <p className="text-sm text-neutral-600">{DEFAULT_TEXTS.UPLOADING_FILE_MESSAGE}</p>
+                <div className="w-full bg-neutral-200 rounded-full h-2.5">
+                  <div
+                    className="bg-blue-600 h-2.5 rounded-full"
+                    style={{ width: `${uploadProgress || 0}%` }}
+                  ></div>
+                </div>
+                <p className="text-xs text-neutral-500">{uploadProgress || 0}{DEFAULT_TEXTS.PERCENTAGE_COMPLETE}</p>
+              </div>
+            )}
+            {(filesToShow as UIUploadedFile[]).map((file: UIUploadedFile, index) => {
               const isPendingDelete = file.status === 'pending-delete';
               return (
                 <div
