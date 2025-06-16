@@ -1,15 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useSearchParams, useRouter } from 'next/navigation';
-import { useState, useEffect, Suspense } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
 
+import { API_HTTP_ENDPOINT } from '@/api/endpoints';
+import { withSearchParams } from '@/components/common/SearchParamsWrapper';
 import { Button } from '@/components/ui/Button';
 import { researchAPI } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useResearch } from '@/stores/useResearchStore';
-import { withSearchParams } from '@/components/common/SearchParamsWrapper';
-import { API_HTTP_ENDPOINT } from '@/api/endpoints';
 
 interface SidebarProps {
   className?: string;
@@ -545,7 +545,7 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
 
         {/* Sección de investigación en curso */}
         <div className="w-full">
-          <h3 className="p-4 w-full font-semibold text-xs text-neutral-500 uppercase flex items-center border-t border-neutral-200 pt-3">
+          <h3 className="p-4 w-full font-semibold text-xs text-neutral-500 uppercase flex items-center pt-3">
             <span className="text-blue-600 mr-1">•</span>
             INVESTIGACIÓN EN CURSO
           </h3>
@@ -625,4 +625,4 @@ export function Sidebar(props: SidebarProps) {
       <SidebarContentWithSuspense {...props} />
     </Suspense>
   );
-} 
+}

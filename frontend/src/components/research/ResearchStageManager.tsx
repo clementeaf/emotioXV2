@@ -1,20 +1,19 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
-import { ResearchSidebar } from '@/components/layout/ResearchSidebar';
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
 
 import { CognitiveTaskForm } from './CognitiveTask';
 // import { EyeTrackingForm } from './EyeTracking/EyeTrackingForm';
+import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { CognitiveTaskResults } from './CognitiveTaskResults';
+import { RecruitEyeTrackingForm } from './EyeTracking/Recruit/RecruitEyeTrackingForm';
 import { SmartVOCForm } from './SmartVOC';
 import { SmartVOCResults } from './SmartVOCResults/index';
 import { ThankYouScreenForm } from './ThankYouScreen';
 import { WelcomeScreenForm } from './WelcomeScreen';
-import { RecruitEyeTrackingForm } from './EyeTracking/Recruit/RecruitEyeTrackingForm';
-import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 
 interface ResearchStageManagerProps {
   researchId: string;
@@ -99,18 +98,11 @@ function ResearchStageManagerContent({ researchId }: ResearchStageManagerProps) 
   };
 
   return (
-    <div className="flex h-screen bg-neutral-50">
-      <ResearchSidebar researchId={researchId} activeStage={currentSection} />
-      <div className="flex-1 flex flex-col mt-12 pr-7 pb-4">
-        <div className="flex-1 overflow-y-auto mt-4 ml-4 bg-white p-4 rounded-lg border border-neutral-150">
-          <div className="mx-auto px-6 py-8">
-            <div className="mb-6">
-              <h1 className="text-2xl font-semibold text-neutral-900 mb-2">{getStageTitle()}</h1>
-            </div>
-            {renderStageContent()}
-          </div>
-        </div>
+    <div className="liquid-glass flex-1 overflow-y-auto mt-10 ml-4 p-10 rounded-2xl mb-4 min-h-[calc(100vh-6rem)] flex flex-col justify-start">
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold text-neutral-900 mb-2">{getStageTitle()}</h1>
       </div>
+      {renderStageContent()}
     </div>
   );
 }
@@ -135,7 +127,7 @@ export function LoadingState() {
       <div className="w-60">
         <div className="bg-white rounded-lg shadow-sm mx-4 mt-4 p-6">
           <div className="h-8 bg-neutral-200 rounded w-3/4 mb-8"></div>
-          
+
           <div className="space-y-6">
             <div>
               <div className="h-4 bg-neutral-200 rounded w-1/3 mb-3"></div>
@@ -145,7 +137,7 @@ export function LoadingState() {
                 <div className="h-8 bg-neutral-200 rounded-md"></div>
               </div>
             </div>
-            
+
             <div>
               <div className="h-4 bg-neutral-200 rounded w-1/3 mb-3"></div>
               <div className="space-y-2">
@@ -156,7 +148,7 @@ export function LoadingState() {
           </div>
         </div>
       </div>
-      
+
       {/* Contenido principal */}
       <div className="flex-1 flex flex-col mt-12 pr-7 pb-4">
         <div className="flex-1 overflow-y-auto mt-4 ml-4 bg-white p-4 rounded-lg border border-neutral-150">
@@ -184,4 +176,4 @@ const DisabledEyeTrackingForm = ({ researchId }: { researchId: string }) => (
       </div>
     </div>
   </div>
-); 
+);

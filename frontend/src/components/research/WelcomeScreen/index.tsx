@@ -1,19 +1,19 @@
-import React from 'react';
-import { WelcomeScreenFormProps } from './types';
-import { useWelcomeScreenForm } from './hooks/useWelcomeScreenForm';
-import {
-  WelcomeScreenSettings,
-  WelcomeScreenContent,
-  WelcomeScreenFooter,
-  WelcomeScreenSkeleton,
-  ErrorModal
-} from './components';
 import { cn } from '@/lib/utils';
+import React from 'react';
+import {
+    ErrorModal,
+    WelcomeScreenContent,
+    WelcomeScreenFooter,
+    WelcomeScreenSettings,
+    WelcomeScreenSkeleton
+} from './components';
+import { useWelcomeScreenForm } from './hooks/useWelcomeScreenForm';
+import { WelcomeScreenFormProps } from './types';
 
 /**
  * Componente principal para el formulario de configuración de la pantalla de bienvenida
  */
-export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({ 
+export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
   className,
   researchId,
   onSave
@@ -44,21 +44,21 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
 
   if (isLoading) {
     return (
-      <div className={cn('max-w-4xl space-y-4', className)}>
+      <div className={cn('max-w-4xl space-y-4 p-6 rounded-2xl shadow-xl border border-neutral-200', className)}>
         <WelcomeScreenSkeleton />
       </div>
     );
   }
 
   return (
-    <div className={cn('max-w-4xl space-y-4', className)}>
+    <div className={cn('max-w-4xl space-y-4 p-6 rounded-2xl shadow-xl border border-neutral-200', className)}>
       {/* Toggle de habilitación */}
-      <WelcomeScreenSettings 
+      <WelcomeScreenSettings
         isEnabled={formData.isEnabled ?? false}
         onChange={(checked) => handleChange('isEnabled', checked)}
         disabled={isLoading || isSaving}
       />
-      
+
       {/* Indicador de estado - Solo para debugging */}
       {process.env.NODE_ENV === 'development' && (
         <div className="mb-4 p-2 bg-gray-100 text-xs rounded">
@@ -68,9 +68,9 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
           <p>Research ID: {researchId}</p>
         </div>
       )}
-      
+
       {/* Contenido del formulario */}
-      <WelcomeScreenContent 
+      <WelcomeScreenContent
         title={formData.title}
         message={formData.message}
         startButtonText={formData.startButtonText}
@@ -80,28 +80,28 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
         validationErrors={validationErrors}
         disabled={isLoading || isSaving || !formData.isEnabled}
       />
-      
+
       {/* Pie de página con acciones */}
-      <WelcomeScreenFooter 
+      <WelcomeScreenFooter
         isSaving={isSaving}
         disabled={!formData.isEnabled || isSaving}
         onSave={handleSubmit}
         onPreview={handlePreview}
         isUpdate={isExisting}
       />
-      
+
       {/* Modal para mostrar errores y mensajes */}
-      <ErrorModal 
+      <ErrorModal
         isOpen={modalVisible}
         onClose={closeModal}
         error={modalError}
       />
 
-      <ErrorModal 
+      <ErrorModal
         isOpen={confirmModalVisible}
         onClose={closeConfirmModal}
         error={modalError}
       />
     </div>
   );
-}; 
+};

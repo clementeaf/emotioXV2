@@ -1,15 +1,14 @@
 'use client';
 
-import Link from 'next/link';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { Suspense, useEffect, useState } from 'react';
 import { ExternalLink } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
 
-import { ResearchSidebarProps, ResearchSection } from '@/interfaces/research';
-import { cn } from '@/lib/utils';
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
-import { Button } from '@/components/ui/Button';
+import { ResearchSection, ResearchSidebarProps } from '@/interfaces/research';
 import { researchAPI } from '@/lib/api';
+import { cn } from '@/lib/utils';
 import { Research } from '../../../../shared/interfaces/research.model';
 
 const sections: ResearchSection[] = [
@@ -45,7 +44,7 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentSection = searchParams?.get('section') || 'welcome-screen';
-  
+
   // Estados para el nombre y la carga
   const [researchName, setResearchName] = useState<string>('Cargando nombre...'); // Estado inicial de carga
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -66,7 +65,7 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
       }
 
       setIsLoading(true);
-      setError(null); 
+      setError(null);
 
       try {
         const response = await researchAPI.get(researchId);
@@ -81,7 +80,7 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
         if (nameFromApi) {
           setResearchName(nameFromApi);
           try {
-            localStorage.setItem(`research_${researchId}`, JSON.stringify(researchData)); 
+            localStorage.setItem(`research_${researchId}`, JSON.stringify(researchData));
           } catch (storageError) {
             console.error('[ResearchSidebar] Falló al guardar en localStorage:', storageError);
           }
@@ -93,7 +92,7 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
         setError(`Error al cargar datos (${apiError.message || 'detalle desconocido'})`);
         fetchNameFromLocalStorage();
       } finally {
-        setIsLoading(false); 
+        setIsLoading(false);
       }
     };
 
@@ -105,7 +104,7 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
           if (parsedData?.name) {
             setResearchName(parsedData.name);
             setError(null);
-            return; 
+            return;
           }
         }
       } catch (storageError) {
@@ -117,7 +116,7 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
 
     fetchResearchName();
   }, [researchId]);
-  
+
   const handleBackToDashboard = () => {
     router.push('/dashboard');
   };
@@ -133,23 +132,22 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
   }
 
   return (
-    <div className={cn('p-4 mt-4 mx-4 flex flex-col min-h-[510px]', className)}>
-      <div className="mb-4 pb-4 border-b border-neutral-200">
+    <div className={cn('p-4 mt-24 mx-4 flex flex-col min-h-[510px]', className)}>
+      <div>
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-lg font-semibold text-neutral-900 truncate" title={researchName}>
             {isLoading ? 'Cargando nombre...' : researchName}
           </h2>
         </div>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={handleBackToDashboard} 
-          className="text-neutral-700 flex items-center justify-start p-0 text-sm mb-2"
+        <button
+          onClick={handleBackToDashboard}
+          className="py-2 text-sm text-neutral-700 font-medium transition-colors text-left"
+          aria-label="Volver al dashboard"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1"><path d="M15 18l-6-6 6-6" /></svg>
-          Volver al dashboard
-        </Button>
-        
+          ← Volver al dashboard
+        </button>
+
+
         {/* Enlace a Public Tests */}
         {publicTestUrl ? (
           <a
@@ -166,10 +164,10 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
         )}
         {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
       </div>
-      
+
       {/* Contenido del sidebar */}
-      <div className="flex-1 overflow-y-auto py-4">
-        <nav className="space-y-6 px-2">
+      <div className="flex-1 overflow-y-auto py-4 mt-4">
+        <nav className="space-y-6">
           {sections.map((section) => (
             <div key={section.id} className="space-y-1">
               <div>
@@ -212,4 +210,4 @@ export function ResearchSidebar({ researchId, activeStage }: ResearchSidebarProp
       <ResearchSidebarContentWithSuspense researchId={researchId} activeStage={activeStage} />
     </Suspense>
   );
-} 
+}
