@@ -1,3 +1,5 @@
+import type { UploadedFile } from 'shared/interfaces/cognitive-task.interface';
+
 export interface Choice {
   id: string;
   text: string;
@@ -12,6 +14,15 @@ export interface HitzoneArea {
   width: number;
   height: number;
 }
+
+export type UIFile = Omit<UploadedFile, 'hitZones'> & {
+  status?: 'uploading' | 'uploaded' | 'pending-delete' | 'error';
+  isLoading?: boolean;
+  progress?: number;
+  questionId?: string;
+  error?: boolean;
+  hitZones?: HitzoneArea[];
+};
 
 export interface FileInfo {
   id: string;
@@ -44,7 +55,7 @@ export interface Question {
   showConditionally: boolean;
   choices?: Choice[];
   scaleConfig?: ScaleConfig;
-  files?: FileInfo[];
+  files?: UIFile[];
   deviceFrame: boolean;
   answerPlaceholder?: string;
 }

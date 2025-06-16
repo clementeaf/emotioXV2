@@ -612,19 +612,11 @@ export const useCognitiveTaskForm = (
       ...prev,
       questions: cleanupErrorFiles(prev.questions)
     }));
-    if (validateCurrentForm()) {
-        const previewData = JSON.parse(JSON.stringify(formData));
-        const jsonData = JSON.stringify(previewData, null, 2);
-        modals.showJsonModal(jsonData, 'preview');
-    } else {
-        // Mostrar un modal con el error de validación en lugar de un toast
-        modals.showModal({
-            title: 'Formulario Inválido',
-            message: 'Por favor, corrija los errores antes de previsualizar.',
-            type: 'warning'
-        });
-    }
-  }, [formData, validateCurrentForm, modals, setFormData]);
+    // SIEMPRE mostrar la vista previa, sin bloquear por validación
+    const previewData = JSON.parse(JSON.stringify(formData));
+    const jsonData = JSON.stringify(previewData, null, 2);
+    modals.showJsonModal(jsonData, 'preview');
+  }, [formData, modals, setFormData]);
 
   const handleSave = () => {
     // Limpio archivos en error antes de validar

@@ -6,7 +6,7 @@ import s3Service from '@/services/s3Service';
 import { Trash2, Upload } from 'lucide-react';
 import React, { useRef } from 'react';
 import ReactDOM from 'react-dom';
-import { UploadedFile } from 'shared/interfaces/cognitive-task.interface';
+import type { UIFile } from '../../types';
 import { FileUploadQuestionProps } from '../../types';
 import { LocalHitzoneEditor } from './LocalHitzoneEditor';
 
@@ -27,14 +27,6 @@ const DEFAULT_TEXTS = {
   WITHOUT_FRAME: 'Sin Marco'
 };
 
-// Define UIUploadedFile para uso interno de UI
-interface UIUploadedFile extends UploadedFile {
-  status?: 'uploaded' | 'uploading' | 'error' | 'pending-delete';
-  isLoading?: boolean;
-  progress?: number;
-  questionId?: string;
-}
-
 /**
  * Componente que maneja la configuración de preguntas con carga de archivos
  */
@@ -52,7 +44,7 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
 
   // Estado para el modal de hitzones
   const [hitzoneModalOpen, setHitzoneModalOpen] = React.useState(false);
-  const [hitzoneFile, setHitzoneFile] = React.useState<UploadedFile | null>(null);
+  const [hitzoneFile, setHitzoneFile] = React.useState<UIFile | null>(null);
 
   const titleError = validationErrors ? validationErrors['title'] : null;
   const descriptionError = validationErrors ? validationErrors['description'] : null;
@@ -62,7 +54,7 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
     question.files?.some(file => file.isLoading);
 
   // Filtrar archivos con status 'error' antes de renderizar
-  const validFiles = question.files ? question.files.filter(f => f.status !== 'error') : [];
+  const validFiles: UIFile[] = question.files ? (question.files as UIFile[]).filter(f => f.status !== 'error') : [];
 
   const handleButtonClick = () => {
     if (fileInputRef.current) {
@@ -78,7 +70,7 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
     }
   };
 
-  const openHitzoneEditor = async (file: UploadedFile) => {
+  const openHitzoneEditor = async (file: UIFile) => {
     let url = '';
     if (file.s3Key) {
       try {
@@ -98,7 +90,7 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
   };
 
   // Antes de mapear los archivos para renderizar:
-  const filesToShow = (validFiles as UIUploadedFile[]).filter((file, idx, arr) => {
+  const filesToShow: UIFile[] = validFiles.filter((file, idx, arr) => {
     if (
       (file.status === 'uploading' || file.isLoading) &&
       arr.some(
@@ -154,7 +146,7 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
           data-question-id={question.id}
         />
 
-        {(filesToShow as UIUploadedFile[]).length > 0 ? (
+        {(filesToShow as UIFile[]).length > 0 ? (
           <div className="w-full space-y-3">
             {isThisQuestionUploading && (
               <div className="flex flex-col items-center gap-3 w-full mb-2">
@@ -168,7 +160,7 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
                 <p className="text-xs text-neutral-500">{uploadProgress || 0}{DEFAULT_TEXTS.PERCENTAGE_COMPLETE}</p>
               </div>
             )}
-            {(filesToShow as UIUploadedFile[]).map((file: UIUploadedFile, index) => {
+            {(filesToShow as UIFile[]).map((file: UIFile, index) => {
               const isPendingDelete = file.status === 'pending-delete';
               return (
                 <div

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface JsonPreviewModalProps {
   isOpen: boolean;
@@ -24,15 +24,15 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
   const [parseError, setParseError] = useState<string | null>(null);
   const [parsedData, setParsedData] = useState<any>({ questions: [] });
   const [questionsHtml, setQuestionsHtml] = useState('');
-  
+
   // Referencia a los botones de navegación
   const navButtonsRef = useRef<HTMLDivElement>(null);
-  
+
   // Mover la lógica de parseo JSON a un useEffect para evitar actualizar estado durante el renderizado
   useEffect(() => {
     let newParsedData: any = { questions: [] };
     let newQuestionsHtml = '';
-    
+
     try {
       // Verificar que jsonData no sea vacío o inválido antes de intentar parsearlo
       if (!jsonData || jsonData.trim() === '') {
@@ -42,9 +42,9 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
         setQuestionsHtml('');
         return; // Salimos temprano de la función
       }
-      
+
       newParsedData = JSON.parse(jsonData);
-      
+
       // Función para determinar si una pregunta ha sido modificada
       const isQuestionModified = (question: any) => {
         // Considera una pregunta como modificada si tiene alguna propiedad
@@ -56,36 +56,36 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
           (question.files && question.files.length > 0)
         );
       };
-      
+
       // Función para determinar si una pregunta se enviará
       // (requiere archivos para ciertos tipos de preguntas)
       const willQuestionBeSent = (question: any) => {
         const requiresFiles = ['navigation_flow', 'preference_test'].includes(question.type);
-        
+
         if (requiresFiles) {
           return question.files && question.files.length > 0;
         }
-        
+
         return true;
       };
-      
+
       // Genera el HTML para cada pregunta
       if (newParsedData.questions && Array.isArray(newParsedData.questions)) {
         newQuestionsHtml = newParsedData.questions
           .map((question: any, index: number) => {
             const isModified = isQuestionModified(question);
             const willSend = willQuestionBeSent(question);
-            
+
             // Determina el estilo de la tarjeta
             let cardClass = 'question-card';
             if (!isModified) cardClass += ' red-card';
             else if (!willSend) cardClass += ' yellow-card';
             else cardClass += ' blue-card';
-            
+
             // Función para renderizar las opciones en preguntas de selección
             const renderChoices = (choices: any[]) => {
               if (!choices || choices.length === 0) return '<p class="empty-notice">Sin opciones</p>';
-              
+
               return `
                 <div class="choices-list">
                   ${choices.map((choice, i) => `
@@ -97,26 +97,42 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
                 </div>
               `;
             };
-            
+
             // Función para mostrar archivos
             const renderFiles = (files: any[]) => {
               if (!files || files.length === 0) return '<p class="empty-notice">Sin archivos</p>';
-              
               return `
-                <div class="files-list">
-                  ${files.map(file => `
-                    <div class="file-item">
-                      <div class="file-icon">📎</div>
-                      <div class="file-info">
-                        <div class="file-name">${file.name || 'Archivo sin nombre'}</div>
-                        <div class="file-url">${file.url || 'Sin URL'}</div>
+                <div class="files-list" style="display: flex; flex-direction: column; align-items: center; gap: 2.5rem;">
+                  ${files.map(file => {
+                    // Calcular overlays de hitzones si existen
+                    let overlays = '';
+                    if (Array.isArray(file.hitZones) && file.hitZones.length > 0) {
+                      overlays = file.hitZones.map((hz: any) => {
+                        // Asumimos que las coords están en px y relativas al tamaño natural de la imagen
+                        // Usar porcentajes para el overlay visual
+                        const left = ((hz.region?.x ?? hz.x) / (file.width || 1000)) * 100;
+                        const top = ((hz.region?.y ?? hz.y) / (file.height || 1000)) * 100;
+                        const width = ((hz.region?.width ?? hz.width) / (file.width || 1000)) * 100;
+                        const height = ((hz.region?.height ?? hz.height) / (file.height || 1000)) * 100;
+                        return `<div style="position:absolute; left:${left}%; top:${top}%; width:${width}%; height:${height}%; background:rgba(34,197,94,0.25); border:2px solid #22c55e; border-radius:6px;"></div>`;
+                      }).join('');
+                    }
+                    return `
+                      <div class="file-item" style="position:relative; display:flex; flex-direction:column; align-items:center; margin-bottom:2rem;">
+                        <div style="position:relative; width:420px; max-width:90vw; aspect-ratio:16/9; background:#f8fafc; border-radius:10px; overflow:hidden; box-shadow:0 2px 12px #0001;">
+                          <img src="${file.url}" alt="${file.name || 'Archivo'}" style="width:100%; height:100%; object-fit:contain; display:block; background:#f8fafc;" />
+                          ${overlays}
+                          ${!file.hitZones || file.hitZones.length === 0 ? `<div style='position:absolute;top:10px;right:10px; background:#f3f4f6; color:#64748b; border-radius:12px; padding:2px 12px; font-size:0.9em; border:1px solid #d1d5db;'>Sin hitzone configurado</div>` : ''}
+                        </div>
+                        <div style="margin-top:1rem; font-size:1.05em; color:#334155; font-weight:500;">${file.name || 'Archivo sin nombre'}</div>
                       </div>
-                    </div>
-                  `).join('')}
+                    `;
+                  }).join('')}
                 </div>
+                <div style="margin-top:1.5rem; text-align:center; color:#64748b; font-size:1.05em;">Haz clic en el área correcta para continuar (solo ejemplo visual, no interactivo)</div>
               `;
             };
-            
+
             // Función para obtener la etiqueta del tipo de pregunta
             const getQuestionTypeLabel = (type: string) => {
               const typeMap: Record<string, string> = {
@@ -129,35 +145,35 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
                 'navigation_flow': 'Flujo de navegación',
                 'preference_test': 'Prueba de preferencia'
               };
-              
+
               return typeMap[type] || type;
             };
-            
+
             return `
               <div class="${cardClass}" id="question-${question.id}">
                 <div class="question-header" data-id="${question.id}">
                   <h3>Pregunta ${index + 1}: ${question.title}</h3>
                   <span class="question-type">${getQuestionTypeLabel(question.type)}</span>
                 </div>
-                
+
                 <div class="question-body">
                   <div class="detail-row">
-                    <strong>Descripción:</strong> 
+                    <strong>Descripción:</strong>
                     <span>${question.description || '<span class="empty-value">Sin descripción</span>'}</span>
                   </div>
-                  
+
                   <div class="detail-row">
-                    <strong>Obligatoria:</strong> 
+                    <strong>Obligatoria:</strong>
                     <span>${question.required ? 'Sí' : 'No'}</span>
                   </div>
-                  
+
                   ${['single_choice', 'multiple_choice'].includes(question.type) ? `
                     <div class="detail-section">
                       <strong>Opciones:</strong>
                       ${renderChoices(question.choices)}
                     </div>
                   ` : ''}
-                  
+
                   ${['navigation_flow', 'preference_test'].includes(question.type) ? `
                     <div class="detail-section">
                       <strong>Archivos:</strong>
@@ -169,7 +185,7 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
             `;
           }).join('');
       }
-      
+
       // Actualizar estados
       setParseError(null);
       setParsedData(newParsedData);
@@ -181,7 +197,7 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
       setQuestionsHtml('');
     }
   }, [jsonData]); // Solo se ejecuta cuando cambia jsonData
-  
+
   // Hooks para agregar funcionalidad de scroll a los botones de navegación
   useEffect(() => {
     // La función para gestionar clicks en los botones de navegación
@@ -192,7 +208,7 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
         const questionElement = document.getElementById(`question-${questionId}`);
         if (questionElement) {
           questionElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          
+
           // Actualizar botón activo
           const allButtons = document.querySelectorAll('.nav-button');
           allButtons.forEach(btn => btn.classList.remove('active'));
@@ -210,7 +226,7 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
           button.addEventListener('click', handleNavButtonClick);
         });
       }, 100);
-      
+
       // Cleanup function para eliminar los event listeners
       return () => {
         clearTimeout(timerId);
@@ -220,11 +236,11 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
         });
       };
     }
-    
+
     // Función de limpieza vacía si el modal no está abierto
     return () => {};
   }, [isOpen]); // Solo re-ejecutar si cambia isOpen
-  
+
   // Retorno temprano
   if (!isOpen) return null;
 
@@ -233,12 +249,12 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
     // Si la acción es previsualizar, abrimos una nueva ventana con el HTML
     if (pendingAction === 'preview') {
       const previewWindow = window.open('', '_blank');
-      
+
       if (previewWindow) {
         try {
           // Inicializar la ventana con un mensaje de carga
           previewWindow.document.write('<html><body><h1>Cargando vista previa...</h1></body></html>');
-          
+
           // Contenido HTML para la vista previa
           previewWindow.document.write(`
             <!DOCTYPE html>
@@ -439,11 +455,11 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
                   <h1>${parsedData.title || 'Tarea cognitiva'}</h1>
                   <div class="description">${parsedData.description || 'Complete las siguientes preguntas.'}</div>
                 </header>
-                
+
                 <form>
                   ${parsedData.questions?.map((q: any, index: number) => {
                     let questionContent = '';
-                    
+
                     switch(q.type) {
                       case 'short_text':
                         questionContent = `
@@ -530,7 +546,7 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
                       default:
                         questionContent = `<p style="color: #666;">Tipo de pregunta no compatible con la vista previa.</p>`;
                     }
-                    
+
                     return `
                       <div class="question">
                         <div class="question-number">Pregunta ${index + 1}</div>
@@ -543,7 +559,7 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
                       </div>
                     `;
                   }).join('')}
-                  
+
                   <button type="button" class="submit-btn">Enviar respuestas</button>
                 </form>
               </div>
@@ -563,7 +579,7 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
         }
       }
     }
-    
+
     // Continuar con la acción
     onContinue();
   };
@@ -573,7 +589,7 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
       <div className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] flex flex-col">
         <div className="flex justify-between items-center p-4 border-b">
           <h2 className="text-lg font-semibold">
-            {showRawJson ? 'Datos JSON del formulario' : 'Vista previa del formulario'}
+            Vista previa del formulario
           </h2>
           <button
             onClick={onClose}
@@ -582,139 +598,18 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
             &times;
           </button>
         </div>
-        
-        <div className="p-6 overflow-auto flex-grow">
-          {parseError && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
-              <div className="font-semibold">⚠️ Error al procesar el JSON</div>
-              <p className="text-sm mt-1">{parseError}</p>
-              {parseError === 'Los datos JSON están vacíos' && (
-                <p className="text-sm mt-2">
-                  No se han proporcionado datos para previsualizar. Por favor, complete el formulario antes de intentar previsualizar.
-                </p>
-              )}
-            </div>
-          )}
-        
-          {hasValidationErrors && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
-              <div className="font-semibold">⚠️ Advertencia: El formulario tiene errores de validación</div>
-              <p className="text-sm mt-1">Este formulario contiene errores que deben corregirse antes de continuar.</p>
-            </div>
-          )}
-          
-          {!showRawJson ? (
-            // Vista previa visual
-            <div className="space-y-6">
-              {!parseError && (
-                <>
-                  <div className="flex flex-wrap items-center gap-4 mb-4">
-                    <div className="text-sm flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                      <span>Pregunta modificada</span>
-                    </div>
-                    <div className="text-sm flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                      <span>Pregunta sin modificar</span>
-                    </div>
-                    <div className="text-sm flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                      <span>Pregunta que no se enviará (sin archivos)</span>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 mb-6">
-                    <h3 className="text-base font-medium text-blue-800 mb-2">📋 Configuración general</h3>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div className="text-gray-600">Aleatorizar preguntas:</div>
-                      <div className="font-medium">{parsedData.randomizeQuestions ? '✅ Sí' : '❌ No'}</div>
-                      <div className="text-gray-600">Total de preguntas:</div>
-                      <div className="font-medium">{parsedData.questions?.length || 0}</div>
-                    </div>
-                  </div>
-                  
-                  {/* Navegación de preguntas */}
-                  {parsedData.questions && parsedData.questions.length > 0 && (
-                    <div className="bg-gray-50 p-3 rounded border mb-4">
-                      <div className="font-medium mb-2">Ir a pregunta:</div>
-                      <div className="flex flex-wrap gap-2" ref={navButtonsRef}>
-                        {parsedData.questions?.map((q: any, index: number) => (
-                          <button 
-                            key={q.id}
-                            className="nav-button py-1 px-2 text-sm border rounded hover:bg-gray-100"
-                            data-question={q.id}
-                          >
-                            {index + 1}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Lista de preguntas */}
-                  {questionsHtml ? (
-                    <div className="space-y-4" dangerouslySetInnerHTML={{ __html: questionsHtml }} />
-                  ) : (
-                    <div className="bg-gray-100 p-6 rounded-lg text-center text-gray-500">
-                      No hay preguntas para mostrar o los datos no están disponibles
-                    </div>
-                  )}
-                </>
-              )}
-              
-              {parseError && (
-                <div className="bg-gray-100 p-6 rounded-lg text-center">
-                  <p className="text-gray-600 mb-2">No se puede mostrar la vista previa debido a un error en los datos.</p>
-                  <p className="text-sm text-gray-500">Intente ver los datos JSON para más información o completar el formulario.</p>
-                </div>
-              )}
-            </div>
-          ) : (
-            // Vista JSON
-            <div>
-              <pre className="bg-gray-50 p-4 rounded border overflow-auto text-sm whitespace-pre-wrap">
-                {jsonData || 'No hay datos JSON disponibles'}
-              </pre>
-            </div>
-          )}
+        <div className="p-6 overflow-auto flex-grow flex items-center justify-center">
+          {/* Contenido eliminado */}
         </div>
-        
-        <div className="p-4 border-t bg-gray-50 flex justify-between items-center">
-          <div>
-            <button
-              onClick={() => setShowRawJson(!showRawJson)}
-              className="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1"
-            >
-              <span>{showRawJson ? '👁️ Ver vista previa visual' : '{ } Ver JSON'}</span>
-            </button>
-          </div>
-          
-          <div className="flex gap-2">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 border border-gray-300 bg-white rounded text-gray-700 hover:bg-gray-50"
-            >
-              Cancelar
-            </button>
-            
-            <button
-              onClick={handleContinue}
-              className={`px-4 py-2 rounded text-white ${
-                hasValidationErrors || parseError
-                  ? 'bg-gray-400 cursor-not-allowed' 
-                  : pendingAction === 'preview'
-                    ? 'bg-blue-600 hover:bg-blue-700'
-                    : 'bg-green-600 hover:bg-green-700'
-              }`}
-              disabled={hasValidationErrors || !!parseError}
-            >
-              {pendingAction === 'preview' 
-                ? 'Continuar con la previsualización' 
-                : 'Guardar formulario'}
-            </button>
-          </div>
+        <div className="p-4 border-t bg-gray-50 flex justify-end items-center">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 border border-gray-300 bg-white rounded text-gray-700 hover:bg-gray-50"
+          >
+            Cancelar
+          </button>
         </div>
       </div>
     </div>
   );
-}; 
+};

@@ -1,19 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-
-interface Area {
-  id: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
+import type { HitzoneArea } from '../../types';
 
 interface LocalHitzoneEditorProps {
   imageUrl: string;
-  initialAreas?: Area[];
-  onSave: (areas: Area[]) => void;
+  initialAreas?: HitzoneArea[];
+  onSave: (areas: HitzoneArea[]) => void;
   onClose: () => void;
-  hitZones?: Area[];
+  hitZones?: HitzoneArea[];
 }
 
 const CANVAS_SIZE = 575;
@@ -24,11 +17,11 @@ export const LocalHitzoneEditor: React.FC<LocalHitzoneEditorProps> = ({
   onSave,
   onClose,
 }) => {
-  const [areas, setAreas] = useState<Area[]>(() => JSON.parse(JSON.stringify(initialAreas)));
+  const [areas, setAreas] = useState<HitzoneArea[]>(() => JSON.parse(JSON.stringify(initialAreas)));
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [drawing, setDrawing] = useState(false);
   const [start, setStart] = useState<{ x: number; y: number } | null>(null);
-  const [currentRect, setCurrentRect] = useState<Area | null>(null);
+  const [currentRect, setCurrentRect] = useState<HitzoneArea | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const [testMode, setTestMode] = useState(false);
   const [imgSize, setImgSize] = useState<{ width: number; height: number } | null>(null);
