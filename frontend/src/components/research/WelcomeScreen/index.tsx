@@ -1,11 +1,10 @@
-import { cn } from '@/lib/utils';
 import React from 'react';
 import {
-    ErrorModal,
-    WelcomeScreenContent,
-    WelcomeScreenFooter,
-    WelcomeScreenSettings,
-    WelcomeScreenSkeleton
+  ErrorModal,
+  WelcomeScreenContent,
+  WelcomeScreenFooter,
+  WelcomeScreenSettings,
+  WelcomeScreenSkeleton
 } from './components';
 import { useWelcomeScreenForm } from './hooks/useWelcomeScreenForm';
 import { WelcomeScreenFormProps } from './types';
@@ -44,14 +43,13 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
 
   if (isLoading) {
     return (
-      <div className={cn('max-w-4xl space-y-4 p-6 rounded-2xl shadow-xl border border-neutral-200', className)}>
+
         <WelcomeScreenSkeleton />
-      </div>
     );
   }
 
   return (
-    <div className={cn('max-w-4xl space-y-4 p-6 rounded-2xl shadow-xl border border-neutral-200', className)}>
+    <>
       {/* Toggle de habilitación */}
       <WelcomeScreenSettings
         isEnabled={formData.isEnabled ?? false}
@@ -102,6 +100,6 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
         onClose={closeConfirmModal}
         error={modalError}
       />
-    </div>
+    </>
   );
 };

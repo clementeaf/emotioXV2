@@ -194,7 +194,7 @@ const DashboardContent = memo(() => {
   }
 
   return (
-    <div className="liquid-glass flex-1 overflow-y-auto mt-10 ml-4 p-4 rounded-2xl mb-4 min-h-[calc(100vh-6rem)] flex flex-col justify-start">
+    <div className="liquid-glass flex-1 mt-10 ml-4 p-4 rounded-2xl mb-4 min-h-[calc(100vh-6rem)] flex flex-col justify-start">
       <div className="mx-auto px-6 py-8 w-full">
         <DashboardStats />
         <DashboardMainContent />
@@ -215,7 +215,7 @@ const DashboardLayout = memo(() => {
 
   if (researchId && (isAimFramework || section)) {
     return (
-      <div className="min-h-screen bg-neutral-50">
+      <div className="bg-neutral-50">
         <ErrorBoundary>
           <Suspense fallback={<div className="p-4 text-center">Cargando...</div>}>
             <DashboardContentWithSuspense />
@@ -257,7 +257,7 @@ export default function DashboardPage() {
 
   if (authLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );

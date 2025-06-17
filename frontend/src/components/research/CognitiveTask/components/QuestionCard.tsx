@@ -1,14 +1,23 @@
 import React from 'react';
-import { Input } from '@/components/ui/Input';
-import { Switch } from '@/components/ui/Switch';
-import { Textarea } from '@/components/ui/Textarea';
-import { Button } from '@/components/ui/Button';
-import { Question, QuestionCardProps } from '../types';
-import { UI_TEXTS } from '../constants';
-import { TextQuestion } from './questions/TextQuestion';
+import type { Question } from 'shared/interfaces/cognitive-task.interface';
 import { ChoiceQuestion } from './questions/ChoiceQuestion';
-import { ScaleQuestion } from './questions/ScaleQuestion';
 import { FileUploadQuestion } from './questions/FileUploadQuestion';
+import { ScaleQuestion } from './questions/ScaleQuestion';
+import { TextQuestion } from './questions/TextQuestion';
+
+// Definir QuestionCardProps localmente:
+type QuestionCardProps = {
+  question: Question;
+  onQuestionChange: (questionId: string, updates: Partial<Question>) => void;
+  onAddChoice: (questionId: string) => void;
+  onRemoveChoice: (questionId: string, choiceId: string) => void;
+  onFileUpload: (questionId: string, files: FileList) => void;
+  onFileDelete: (questionId: string, fileId: string) => void;
+  disabled?: boolean;
+  validationErrors?: { [key: string]: string } | null;
+  isUploading?: boolean;
+  uploadProgress?: number;
+};
 
 /**
  * Componente para mostrar una tarjeta de pregunta con su configuración específica según el tipo
@@ -113,4 +122,4 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
       {renderQuestionInput()}
     </div>
   );
-}; 
+};

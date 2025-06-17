@@ -7,6 +7,7 @@ import { withSearchParams } from '@/components/common/SearchParamsWrapper';
 
 import { CognitiveTaskForm } from './CognitiveTask';
 // import { EyeTrackingForm } from './EyeTracking/EyeTrackingForm';
+import { ConfigCard } from '@/components/common/ConfigCard';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { CognitiveTaskResults } from './CognitiveTaskResults';
 import { RecruitEyeTrackingForm } from './EyeTracking/Recruit/RecruitEyeTrackingForm';
@@ -98,11 +99,13 @@ function ResearchStageManagerContent({ researchId }: ResearchStageManagerProps) 
   };
 
   return (
-    <div className="liquid-glass flex-1 overflow-y-auto mt-10 ml-4 p-10 rounded-2xl mb-4 min-h-[calc(100vh-6rem)] flex flex-col justify-start">
+    <div className="liquid-glass flex-1 mt-8 ml-4 p-10 rounded-2xl mb-4 flex flex-col justify-start overflow-hidden h-[1050px]">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-neutral-900 mb-2">{getStageTitle()}</h1>
+        <h1 className="text-2xl font-semibold text-neutral-900 mb-2 overflow-y-auto">{getStageTitle()}</h1>
       </div>
-      {renderStageContent()}
+      <ConfigCard>
+        {renderStageContent()}
+      </ConfigCard>
     </div>
   );
 }

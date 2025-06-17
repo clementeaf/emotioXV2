@@ -1,21 +1,21 @@
 import React from 'react';
-import { SmartVOCFormProps } from './types';
-import { useSmartVOCForm } from './hooks/useSmartVOCForm';
 import {
-  SmartVOCHeader,
-  SmartVOCSettings,
-  SmartVOCQuestions,
-  SmartVOCFooter,
-  ErrorModal,
+    ErrorModal,
+    SmartVOCFooter,
+    SmartVOCHeader,
+    SmartVOCQuestions,
+    SmartVOCSettings,
 } from './components';
 import { UI_TEXTS } from './constants';
+import { useSmartVOCForm } from './hooks/useSmartVOCForm';
+import { SmartVOCFormProps } from './types';
 
 /**
  * Componente principal del formulario SmartVOC
  * Esta versión refactorizada separa las responsabilidades en subcomponentes
  * y utiliza un hook personalizado para la lógica del formulario
  */
-export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({ 
+export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
   className,
   researchId,
   onSave
@@ -73,11 +73,11 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
       });
     }
   };
-  
+
   // Mientras carga, mostrar un indicador de carga
   if (isLoading) {
     return (
-      <div className={`bg-white p-6 rounded-lg shadow-sm ${className} flex flex-col items-center justify-center`}>
+      <div className={`${className} flex flex-col items-center justify-center`}>
         <div className="animate-pulse flex flex-col items-center space-y-4 w-full">
           <div className="h-6 bg-gray-200 rounded w-1/2"></div>
           <div className="h-4 bg-gray-200 rounded w-3/4"></div>
@@ -98,48 +98,42 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
       </div>
     );
   }
-  
+
   return (
     <div className={className}>
-      <div className="bg-white p-6 rounded-lg shadow-sm">
-        {/* Encabezado */}
-        <SmartVOCHeader 
-          title={UI_TEXTS.TITLE} 
-          description={UI_TEXTS.DESCRIPTION}
-        />
-        
-        {/* Indicador de estado - Solo para debugging */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mb-4 p-2 bg-gray-100 text-xs rounded">
-            <p>Estado: {smartVocId ? 'Configuración existente' : 'Nueva configuración'}</p>
-            <p>ID: {smartVocId || 'No hay ID (nueva)'}</p>
-            <p>Preguntas activas: {questions.length}</p>
-            <p>Aleatorizar: {formData.randomizeQuestions ? 'Sí' : 'No'}</p>
-            <p>Requerir respuestas: {formData.smartVocRequired ? 'Sí' : 'No'}</p>
-          </div>
-        )}
-        
-        {/* Configuración general */}
-        <SmartVOCSettings 
-          randomize={formData.randomizeQuestions}
-          onRandomizeChange={handleRandomizeChange}
-          requireAnswers={formData.smartVocRequired}
-          onRequireAnswersChange={handleRequireAnswersChange}
-          disabled={isLoading || isSaving}
-        />
-        
-        {/* Gestión de preguntas */}
-        <SmartVOCQuestions 
-          questions={questions}
-          onUpdateQuestion={updateQuestion}
-          onAddQuestion={addQuestion}
-          onRemoveQuestion={removeQuestion}
-          disabled={isLoading || isSaving}
-        />
-      </div>
-      
+      {/* Encabezado */}
+      <SmartVOCHeader
+        title={UI_TEXTS.TITLE}
+        description={UI_TEXTS.DESCRIPTION}
+      />
+      {/* Indicador de estado - Solo para debugging */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mb-4 p-2 bg-gray-100 text-xs rounded">
+          <p>Estado: {smartVocId ? 'Configuración existente' : 'Nueva configuración'}</p>
+          <p>ID: {smartVocId || 'No hay ID (nueva)'}</p>
+          <p>Preguntas activas: {questions.length}</p>
+          <p>Aleatorizar: {formData.randomizeQuestions ? 'Sí' : 'No'}</p>
+          <p>Requerir respuestas: {formData.smartVocRequired ? 'Sí' : 'No'}</p>
+        </div>
+      )}
+      {/* Configuración general */}
+      <SmartVOCSettings
+        randomize={formData.randomizeQuestions}
+        onRandomizeChange={handleRandomizeChange}
+        requireAnswers={formData.smartVocRequired}
+        onRequireAnswersChange={handleRequireAnswersChange}
+        disabled={isLoading || isSaving}
+      />
+      {/* Gestión de preguntas */}
+      <SmartVOCQuestions
+        questions={questions}
+        onUpdateQuestion={updateQuestion}
+        onAddQuestion={addQuestion}
+        onRemoveQuestion={removeQuestion}
+        disabled={isLoading || isSaving}
+      />
       {/* Pie de página con acciones */}
-      <SmartVOCFooter 
+      <SmartVOCFooter
         isSaving={isSaving}
         isLoading={isLoading}
         smartVocId={smartVocId}
@@ -148,13 +142,12 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
         onPreview={handlePreview}
         onDelete={handleDelete}
       />
-      
       {/* Modal para mostrar errores y mensajes */}
-      <ErrorModal 
+      <ErrorModal
         isOpen={modalVisible}
         onClose={closeModal}
         error={modalError}
       />
     </div>
   );
-}; 
+};

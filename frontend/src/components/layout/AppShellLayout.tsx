@@ -10,12 +10,12 @@ interface AppShellLayoutProps {
 export function AppShellLayout({ sidebar, children, navbar, className }: AppShellLayoutProps) {
   return (
     <div className="flex min-h-screen bg-neutral-50">
-      <aside className="w-72 flex-shrink-0 flex flex-col">
+      <aside className="w-72 flex-shrink-0 flex flex-col h-screen overflow-y-auto">
         {sidebar}
       </aside>
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-screen">
         {navbar && <div className="sticky top-0 z-30 bg-white border-b border-neutral-100">{navbar}</div>}
-        <main className={`flex-1 p-8 ${className || ''}`}>{children}</main>
+        <main className={`flex-1 p-8 overflow-y-auto h-full ${className || ''}`}>{children}</main>
       </div>
     </div>
   );

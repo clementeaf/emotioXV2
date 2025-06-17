@@ -132,7 +132,7 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
   }
 
   return (
-    <div className={cn('p-4 mt-24 mx-4 flex flex-col min-h-[510px]', className)}>
+    <div className={cn('p-4 mt-24 mx-4 flex flex-col min-h-[510px] h-full overflow-y-auto', className)}>
       <div>
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-lg font-semibold text-neutral-900 truncate" title={researchName}>

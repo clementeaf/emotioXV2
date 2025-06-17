@@ -1,16 +1,16 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, memo, useCallback, Suspense } from 'react';
+import { memo, Suspense, useCallback, useState } from 'react';
 
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
 import { Navbar } from '@/components/layout/Navbar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { CreateResearchForm } from '@/components/research/CreateResearchForm';
-import { Button } from '@/components/ui/Button';
 import { ResearchConfirmation } from '@/components/research/ResearchConfirmation';
 import { ResearchStageManager } from '@/components/research/ResearchStageManager';
+import { Button } from '@/components/ui/Button';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
 
 // Tipos para componentes modales
@@ -39,13 +39,13 @@ const ConfirmationModal = memo(({ isOpen, onClose, onContinue, onNew }: Confirma
             </h2>
           </div>
         </div>
-        
+
         {/* Contenido */}
         <div className="px-6 py-5">
           <p className="text-neutral-700 mb-6 leading-relaxed">
             Ya tienes una investigación en curso activa. Solo puede haber una investigación activa a la vez. ¿Qué deseas hacer?
           </p>
-          
+
           {/* Botones principales */}
           <div className="space-y-3">
             <Button
@@ -57,7 +57,7 @@ const ConfirmationModal = memo(({ isOpen, onClose, onContinue, onNew }: Confirma
               </svg>
               <span>Ir a la investigación actual</span>
             </Button>
-            
+
             <Button
               onClick={onNew}
               variant="outline"
@@ -70,7 +70,7 @@ const ConfirmationModal = memo(({ isOpen, onClose, onContinue, onNew }: Confirma
             </Button>
           </div>
         </div>
-        
+
         {/* Pie del modal */}
         <div className="bg-neutral-50 border-t border-neutral-200 px-6 py-3">
           <button
@@ -105,13 +105,13 @@ const DraftContinuationModal = memo(({ isOpen, onClose, onContinue, onNew }: Con
             </h2>
           </div>
         </div>
-        
+
         {/* Contenido */}
         <div className="px-6 py-5">
           <p className="text-neutral-700 mb-6 leading-relaxed">
             Tienes un borrador de investigación sin completar. ¿Deseas continuar con el borrador existente o iniciar uno nuevo?
           </p>
-          
+
           {/* Botones principales */}
           <div className="space-y-3">
             <Button
@@ -123,7 +123,7 @@ const DraftContinuationModal = memo(({ isOpen, onClose, onContinue, onNew }: Con
               </svg>
               <span>Continuar con el borrador</span>
             </Button>
-            
+
             <Button
               onClick={onNew}
               variant="outline"
@@ -136,7 +136,7 @@ const DraftContinuationModal = memo(({ isOpen, onClose, onContinue, onNew }: Con
             </Button>
           </div>
         </div>
-        
+
         {/* Pie del modal */}
         <div className="bg-neutral-50 border-t border-neutral-200 px-6 py-3">
           <button
@@ -168,7 +168,7 @@ const CreateSection = memo(({ onResearchCreated }: { onResearchCreated: (id: str
           Nueva Investigación
         </h1>
       </div>
-      
+
       <div className="bg-white rounded-lg border border-neutral-200 p-6">
         <CreateResearchForm onResearchCreated={onResearchCreated} />
       </div>
@@ -179,14 +179,14 @@ const CreateSection = memo(({ onResearchCreated }: { onResearchCreated: (id: str
 CreateSection.displayName = 'CreateSection';
 
 // Sección de investigación exitosa
-const SuccessSection = memo(({ 
-  id, 
-  name, 
-  onClose 
-}: { 
-  id: string, 
-  name: string, 
-  onClose: () => void 
+const SuccessSection = memo(({
+  id,
+  name,
+  onClose
+}: {
+  id: string,
+  name: string,
+  onClose: () => void
 }) => (
   <div className="flex-1 overflow-y-auto mt-4 ml-4 bg-white p-4 rounded-lg border border-neutral-150">
     <div className="mx-auto px-6 py-8">
@@ -198,12 +198,12 @@ const SuccessSection = memo(({
           Tu investigación ha sido creada exitosamente
         </p>
       </div>
-      
+
       <div className="bg-white rounded-lg border border-neutral-200 p-6">
-        <ResearchConfirmation 
+        <ResearchConfirmation
           researchId={id}
           researchName={name}
-          onClose={onClose} 
+          onClose={onClose}
         />
       </div>
     </div>
@@ -224,7 +224,7 @@ const StagesSection = memo(({ id }: { id: string }) => (
           Configura las etapas de tu investigación
         </p>
       </div>
-      
+
       <div className="bg-white rounded-lg border border-neutral-200 p-6">
         <ResearchStageManager researchId={id} />
       </div>
@@ -241,8 +241,8 @@ const ErrorSection = memo(({ onNavigateToStart }: { onNavigateToStart: () => voi
       <div className="p-6 bg-red-50 rounded-lg border border-red-200">
         <h2 className="text-xl font-medium text-red-800 mb-2">Paso no válido</h2>
         <p className="text-red-700">
-          El paso especificado no es válido. Por favor, regresa al 
-          <button 
+          El paso especificado no es válido. Por favor, regresa al
+          <button
             onClick={onNavigateToStart}
             className="ml-1 text-red-800 underline hover:text-red-900"
           >
@@ -262,18 +262,18 @@ function NewResearchContent() {
   const router = useRouter();
   const step = searchParams?.get('step') || 'create';
   const [successData, setSuccessData] = useState<SuccessData | null>(null);
-  
+
   // Función para manejar creación exitosa
   const handleSuccess = useCallback((id: string, name: string) => {
     setSuccessData({ id, name });
     router.push(`/dashboard/research/new?step=success&id=${id}`);
   }, [router]);
-  
+
   // Función para navegar al inicio
   const navigateToStart = useCallback(() => {
     router.push('/dashboard/research/new');
   }, [router]);
-  
+
   // Función para ir al dashboard con la investigación seleccionada
   const handleClose = useCallback(() => {
     if (successData?.id) {
@@ -284,28 +284,28 @@ function NewResearchContent() {
       router.push('/dashboard');
     }
   }, [router, successData, searchParams]);
-  
+
   // Determinar el contenido basado en el paso actual
   if (step === 'create') {
     return <CreateSection onResearchCreated={handleSuccess} />;
-  } 
-  
+  }
+
   if (step === 'success' && searchParams?.get('id')) {
     const id = searchParams.get('id') || '';
     return (
-      <SuccessSection 
-        id={id} 
-        name={successData?.name || 'Nueva Investigación'} 
-        onClose={handleClose} 
+      <SuccessSection
+        id={id}
+        name={successData?.name || 'Nueva Investigación'}
+        onClose={handleClose}
       />
     );
-  } 
-  
+  }
+
   if (step === 'stages' && searchParams?.get('id')) {
     const id = searchParams.get('id') || '';
     return <StagesSection id={id} />;
-  } 
-  
+  }
+
   return <ErrorSection onNavigateToStart={navigateToStart} />;
 }
 
@@ -314,11 +314,11 @@ const NewResearchContentWithSuspense = withSearchParams(NewResearchContent);
 
 export default function NewResearchPage() {
   const { token } = useProtectedRoute();
-  
+
   if (!token) {
     return null;
   }
-  
+
   return (
     <div className="flex min-h-screen bg-neutral-50">
       <Sidebar />
@@ -332,4 +332,4 @@ export default function NewResearchPage() {
       </div>
     </div>
   );
-} 
+}

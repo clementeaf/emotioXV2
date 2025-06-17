@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { QuestionCard } from './QuestionCard';
-import { Label } from '@/components/ui/Label';
 import { Checkbox } from '@/components/ui/Checkbox';
+import { Label } from '@/components/ui/Label';
 import { Info } from 'lucide-react';
-import type { Question, ValidationErrors } from '../types';
+import React, { useState } from 'react';
+import type { Question } from 'shared/interfaces/cognitive-task.interface';
+import type { ValidationErrors } from '../types';
+import { QuestionCard } from './QuestionCard';
 
 // Componente Tooltip personalizado
 interface TooltipProps {
@@ -14,10 +15,10 @@ interface TooltipProps {
 
 const Tooltip = ({ content, children }: TooltipProps) => {
   const [isVisible, setIsVisible] = useState(false);
-  
+
   return (
     <div className="relative inline-block">
-      <div 
+      <div
         onMouseEnter={() => setIsVisible(true)}
         onMouseLeave={() => setIsVisible(false)}
         className="inline-flex"
@@ -72,11 +73,11 @@ const AddQuestionModal: React.FC<AddQuestionModalProps> = ({ isOpen, onClose, on
             ×
           </button>
         </div>
-        
+
         <p className="text-sm text-gray-600 mb-4">
           Seleccione el tipo de pregunta que desea agregar:
         </p>
-        
+
         <div className="space-y-2">
           {questionTypes.map((type) => (
             <button
@@ -131,7 +132,7 @@ export const CognitiveTaskFields: React.FC<Props> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // LOG INICIAL AL RECIBIR PROPS
-  console.log('[CognitiveTaskFields] Props RECIBIDAS - questions:', 
+  console.log('[CognitiveTaskFields] Props RECIBIDAS - questions:',
     JSON.stringify(questions?.map(q => ({ id: q.id, type: q.type, title: q.title?.substring(0, 20) })) || [], null, 2)
   );
 
@@ -175,7 +176,7 @@ export const CognitiveTaskFields: React.FC<Props> = ({
             </div>
           ) : (
             questions.map((question) => {
-              
+
               // <<< Código original descomentado >>>
               const questionErrors: ValidationErrors = {};
               if (validationErrors) {
@@ -204,7 +205,7 @@ export const CognitiveTaskFields: React.FC<Props> = ({
               );
             })
           )}
-          
+
           {/* Botón para agregar nueva pregunta */}
           <div className="mt-4">
             <Button
@@ -227,4 +228,4 @@ export const CognitiveTaskFields: React.FC<Props> = ({
       />
     </div>
   );
-}; 
+};
