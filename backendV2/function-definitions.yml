@@ -3,172 +3,72 @@
 # Función principal para API REST - maneja todas las rutas
 api:
   handler: src/index.handler
-  # Añadir configuraciones de caché específicas para endpoints GET
   events:
     # --- Rutas de Participantes ---
     - http:
         path: /participants/login
         method: POST
-        cors:
-          origin: ${self:provider.environment.ALLOWED_ORIGIN}
-          headers: [Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token]
-          allowCredentials: true
-          methods: [OPTIONS, POST]
     - http:
         path: /participants
         method: POST
-        cors:
-          origin: ${self:provider.environment.ALLOWED_ORIGIN}
-          headers: [Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token]
-          allowCredentials: true
-          methods: [OPTIONS, POST]
     - http:
         path: /participants
         method: GET
-        cors:
-          origin: ${self:provider.environment.ALLOWED_ORIGIN}
-          headers: [Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token]
-          allowCredentials: true
-          methods: [OPTIONS, GET]
     - http:
         path: /participants/{id}
         method: GET
-        cors:
-          origin: ${self:provider.environment.ALLOWED_ORIGIN}
-          headers: [Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token]
-          allowCredentials: true
-          methods: [OPTIONS, GET]
     - http:
         path: /participants/{id}
         method: DELETE
-        cors:
-          origin: ${self:provider.environment.ALLOWED_ORIGIN}
-          headers: [Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token]
-          allowCredentials: true
-          methods: [OPTIONS, DELETE]
+
     # --- Rutas para Module Responses ---
     - http:
         path: /module-responses
         method: GET
-        cors:
-          origin: ${self:provider.environment.ALLOWED_ORIGIN}
-          headers: [Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token]
-          allowCredentials: true
-          methods: [OPTIONS, GET]
     - http:
         path: /module-responses
         method: POST
-        cors:
-          origin: ${self:provider.environment.ALLOWED_ORIGIN}
-          headers: [Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token]
-          allowCredentials: true
-          methods: [OPTIONS, POST]
     - http:
         path: /module-responses/{id}
         method: PUT
-        cors:
-          origin: ${self:provider.environment.ALLOWED_ORIGIN}
-          headers: [Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token]
-          allowCredentials: true
-          methods: [OPTIONS, PUT]
     - http:
         path: /module-responses/complete
         method: POST
-        cors:
-          origin: ${self:provider.environment.ALLOWED_ORIGIN}
-          headers: [Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token]
-          allowCredentials: true
-          methods: [OPTIONS, POST]
     - http:
         path: /module-responses/research/{id}
         method: GET
-        cors:
-          origin: ${self:provider.environment.ALLOWED_ORIGIN}
-          headers: [Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token]
-          allowCredentials: true
-          methods: [OPTIONS, GET]
     - http:
         path: /module-responses
         method: DELETE
-        cors:
-          origin: ${self:provider.environment.ALLOWED_ORIGIN}
-          headers: [Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token]
-          allowCredentials: true
-          methods: [OPTIONS, DELETE]
-    # Ruta específica para GET WelcomeScreen (Habilitar Caché)
+
+    # Ruta específica para GET WelcomeScreen
     - http:
         path: /research/{researchId}/welcome-screen
         method: GET
-        cors: true # Mantener simple si no hay problemas
-        # Habilitar caché para este método/ruta específico
-        # caching:
-        #   enabled: true # Requiere habilitar caché a nivel de etapa
-        #   ttlInSeconds: 300 # TTL específico (opcional, usa el de etapa si no)
-        #   cacheKeyParameters:
-        #     - name: method.request.path.researchId # Incluir researchId en la clave
-        #       required: true
-        #     # Añadir otros parámetros si son necesarios (ej: query strings, headers)
-        #     # - name: method.request.header.Authorization
-        #     # - name: method.request.querystring.myParam
-        #   dataEncrypted: true # Recomendado
-    # Ruta específica para GET SmartVOC (Habilitar Caché)
+
+    # Ruta específica para GET SmartVOC
     - http:
         path: /research/{researchId}/smart-voc
         method: GET
-        cors:
-          origin: ${self:provider.environment.ALLOWED_ORIGIN}
-          headers: [Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token]
-          allowCredentials: true
-          methods: [OPTIONS, GET]
-        # Habilitar caché para este método/ruta específico
-        # caching:
-        #   enabled: true # Requiere habilitar caché a nivel de etapa
-        #   ttlInSeconds: 300 # TTL específico (opcional)
-        #   cacheKeyParameters:
-        #     - name: method.request.path.researchId # Incluir researchId en la clave
-        #       required: true
-        #   dataEncrypted: true # Recomendado
-    # Añadir ruta explícita para PUT SmartVOC con CORS detallado
+
+    # Añadir ruta explícita para PUT SmartVOC
     - http:
         path: /research/{researchId}/smart-voc
         method: PUT
-        cors:
-          origin: ${self:provider.environment.ALLOWED_ORIGIN}
-          headers: [Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token]
-          allowCredentials: true
-          methods: [OPTIONS, PUT]
+
     # --- NUEVA RUTA: Obtener formularios/pasos de una investigación ---
     - http:
         path: /research/{researchId}/forms
         method: GET
-        cors:
-          origin: ${self:provider.environment.ALLOWED_ORIGIN}
-          headers: [Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token]
-          allowCredentials: true
-          methods: [OPTIONS, GET]
-        # Podrías habilitar caché aquí también si estos datos cambian poco
-        # caching:
-        #   enabled: true
-        #   cacheKeyParameters:
-        #     - name: method.request.path.researchId
-        #       required: true
-    # Ruta genérica para el resto (Sin Caché por defecto aquí)
+
+    # Ruta genérica para el resto
     - http:
         path: /{proxy+}
         method: ANY
-        cors:
-          origin: ${self:provider.environment.ALLOWED_ORIGIN}
-          headers: [Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token]
-          allowCredentials: true
-          methods: [OPTIONS, GET, POST, PUT, DELETE, PATCH, HEAD]
     - http:
         path: /
         method: ANY
-        cors:
-          origin: ${self:provider.environment.ALLOWED_ORIGIN}
-          headers: [Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token]
-          allowCredentials: true
-          methods: [OPTIONS, GET, POST, PUT, DELETE, PATCH, HEAD]
+
   environment:
     CONNECTION_TYPE: http
 
