@@ -1,21 +1,35 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
+const allowedOrigins = [
+  'http://localhost:3000', // Frontend local (Next.js default)
+  'http://localhost:4700', // Frontend local (Vite default for public-tests)
+  'http://localhost:5173', // Otro puerto común de Vite
+  // Añade aquí los dominios de producción/staging cuando los tengas
+  // 'https://emotiox.com',
+  // 'https://www.emotiox.com',
+];
+
 /**
  * Obtiene los headers CORS basados en el origen de la solicitud
  */
 export function getCorsHeaders(event: APIGatewayProxyEvent) {
   const origin = event.headers.origin || event.headers.Origin;
-  
+  let accessControlAllowOrigin = '';
+
+  if (origin && allowedOrigins.includes(origin)) {
+    accessControlAllowOrigin = origin;
+  }
+
   const headers: { [key: string]: string | boolean } = {
-    'Access-Control-Allow-Origin': origin || '*',
+    'Access-Control-Allow-Origin': accessControlAllowOrigin,
     'Access-Control-Allow-Credentials': true,
     'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS,PATCH',
-    'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token,X-Requested-With,Accept,Origin,Access-Control-Allow-Origin,Cache-Control,cache-control,Pragma,pragma,X-Amz-User-Agent',
+    'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token,X-Requested-With,Accept,Origin',
     'Access-Control-Max-Age': '86400',
   };
 
-  console.log(`CORS: Respondiendo con origin=${origin || '*'}`);
-  
+  console.log(`CORS: Solicitud de origin=${origin}. Permitido: ${accessControlAllowOrigin ? 'Sí' : 'No'}`);
+
   return headers;
 }
 
@@ -34,4 +48,4 @@ export async function corsMiddleware(event: APIGatewayProxyEvent): Promise<APIGa
 
   // Para otros métodos, continuamos con la ejecución
   return null;
-} 
+}

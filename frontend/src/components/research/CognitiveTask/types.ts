@@ -190,3 +190,21 @@ export const QUESTION_TYPES = [
   { id: 'navigation_flow', label: 'Navigation Flow', description: 'Navigation flow test' },
   { id: 'preference_test', label: 'Preference Test', description: 'A/B testing' }
 ];
+
+export interface UseCognitiveTaskModalsResult {
+  // Modal de error
+  modalVisible: boolean;
+  modalError: ErrorModalData | null;
+  showErrorModal: (error: ErrorModalData) => void;
+  closeModal: () => void;
+  // Modal de JSON
+  showJsonPreview: boolean;
+  jsonToSend: string;
+  pendingAction: 'save' | 'preview' | null;
+  openJsonModal: (jsonData: object, action: 'save' | 'preview') => void;
+  closeJsonModal: () => void;
+  // Modal de previsualización interactiva
+  showInteractivePreview: boolean;
+  openInteractivePreview: () => void;
+  closeInteractivePreview: () => void;
+}

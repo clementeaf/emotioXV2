@@ -6,10 +6,11 @@ import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 import React from 'react';
 import {
-  CognitiveTaskFooter,
-  CognitiveTaskHeader,
-  ErrorModal,
-  JsonPreviewModal
+    CognitiveTaskFooter,
+    CognitiveTaskHeader,
+    ErrorModal,
+    JsonPreviewModal,
+    NavigationFlowPreview
 } from './components';
 import { CognitiveTaskFields } from './components/CognitiveTaskFields';
 import { ProgressBar } from './components/ProgressBar';
@@ -52,7 +53,9 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
     closeJsonModal,
     jsonToSend,
     pendingAction,
-    continueWithAction
+    continueWithAction,
+    showInteractivePreview,
+    closeInteractivePreview
   } = useCognitiveTaskForm(researchId, onSave);
 
   // Registrar información importante para debugging
@@ -167,6 +170,14 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
           pendingAction={pendingAction}
           hasValidationErrors={!!validationErrors && Object.keys(validationErrors).length > 0}
         />
+
+        {/* >>> NUEVO: Modal para la previsualización interactiva */}
+        {showInteractivePreview && (
+          <NavigationFlowPreview
+            config={formData}
+            onClose={closeInteractivePreview}
+          />
+        )}
       </div>
     </div>
   );

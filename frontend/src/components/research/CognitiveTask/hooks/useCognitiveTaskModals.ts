@@ -1,79 +1,74 @@
-import { useState, useCallback } from 'react';
-import type { ErrorModalData } from '../types';
+import { useState } from 'react';
+import type { ErrorModalData, UseCognitiveTaskModalsResult } from '../types';
 
-interface UseCognitiveTaskModalsResult {
-  // Estado de Visibilidad
-  modalVisible: boolean;
-  showJsonPreview: boolean;
-  showConfirmModal: boolean;
-
-  // Contenido del Modal
-  modalError: ErrorModalData | null;
-  jsonToSend: string;
-  pendingAction: 'save' | 'preview' | null;
-
-  // Funciones de Control
-  showModal: (errorData: ErrorModalData) => void;
-  closeModal: () => void;
-  showJsonModal: (jsonData: string, action: 'save' | 'preview') => void;
-  closeJsonModal: () => void;
-  showConfirmModalAction: () => void; // Renombrado para claridad
-  closeConfirmModal: () => void;
-  setPendingAction: (action: 'save' | 'preview' | null) => void;
-  setJsonToSend: (json: string) => void;
-}
-
+/**
+ * Hook para gestionar los estados de los modales en el formulario de tareas cognitivas.
+ * Centraliza la lógica de visibilidad y contenido de los modales.
+ */
 export const useCognitiveTaskModals = (): UseCognitiveTaskModalsResult => {
-  const [modalVisible, setModalVisible] = useState<boolean>(false);
+  // Modal de error
+  const [modalVisible, setModalVisible] = useState(false);
   const [modalError, setModalError] = useState<ErrorModalData | null>(null);
-  const [showJsonPreview, setShowJsonPreview] = useState<boolean>(false);
-  const [jsonToSend, setJsonToSend] = useState<string>('');
+
+  // Modal de vista previa de JSON
+  const [showJsonPreview, setShowJsonPreview] = useState(false);
+  const [jsonToSend, setJsonToSend] = useState('');
   const [pendingAction, setPendingAction] = useState<'save' | 'preview' | null>(null);
-  const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
 
-  const showModal = useCallback((errorData: ErrorModalData) => {
-    setModalError(errorData);
+  // Nuevo: Modal para la previsualización interactiva
+  const [showInteractivePreview, setShowInteractivePreview] = useState(false);
+
+  // Función para mostrar el modal de error
+  const showErrorModal = (error: ErrorModalData) => {
+    setModalError(error);
     setModalVisible(true);
-  }, []);
+  };
 
-  const closeModal = useCallback(() => {
+  // Función para cerrar cualquier modal
+  const closeModal = () => {
     setModalVisible(false);
-    setModalError(null); // Limpiar error al cerrar
-  }, []);
+    setShowJsonPreview(false);
+    setShowInteractivePreview(false); // Asegurarse de cerrar el nuevo modal también
+    setModalError(null);
+    setPendingAction(null);
+  };
 
-  const showJsonModal = useCallback((jsonData: string, action: 'save' | 'preview') => {
-    setJsonToSend(jsonData);
+  // Funciones para el modal de JSON
+  const openJsonModal = (jsonData: object, action: 'save' | 'preview') => {
+    setJsonToSend(JSON.stringify(jsonData, null, 2));
     setPendingAction(action);
     setShowJsonPreview(true);
-  }, []);
+  };
 
-  const closeJsonModal = useCallback(() => {
+  const closeJsonModal = () => {
     setShowJsonPreview(false);
-    // No limpiar pendingAction aquí, se limpia al continuar o cancelar
-  }, []);
+    setPendingAction(null);
+  };
 
-  const showConfirmModalAction = useCallback(() => {
-    setShowConfirmModal(true);
-  }, []);
+  // Funciones para el modal de previsualización interactiva
+  const openInteractivePreview = () => {
+    setShowInteractivePreview(true);
+  };
 
-  const closeConfirmModal = useCallback(() => {
-    setShowConfirmModal(false);
-  }, []);
+  const closeInteractivePreview = () => {
+    setShowInteractivePreview(false);
+  };
 
   return {
+    // Modal de error
     modalVisible,
-    showJsonPreview,
-    showConfirmModal,
     modalError,
+    showErrorModal,
+    closeModal,
+    // Modal de JSON
+    showJsonPreview,
     jsonToSend,
     pendingAction,
-    showModal,
-    closeModal,
-    showJsonModal,
+    openJsonModal,
     closeJsonModal,
-    showConfirmModalAction,
-    closeConfirmModal,
-    setPendingAction,
-    setJsonToSend,
+    // Modal de previsualización interactiva
+    showInteractivePreview,
+    openInteractivePreview,
+    closeInteractivePreview,
   };
-}; 
+};

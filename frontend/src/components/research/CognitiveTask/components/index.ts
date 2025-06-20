@@ -1,8 +1,12 @@
 export { AddQuestionModal } from './AddQuestionModal';
-export { CognitiveTaskFooter } from './CognitiveTaskFooter';
-export { CognitiveTaskHeader } from './CognitiveTaskHeader';
+export * from './CognitiveTaskFields';
+export * from './CognitiveTaskFooter';
+export * from './CognitiveTaskHeader';
 export { CognitiveTaskSettings } from './CognitiveTaskSettings';
+export { ConfirmModal } from './ConfirmModal';
+export * from './ErrorModal';
+export * from './HitZoneViewer';
+export * from './JsonPreviewModal';
+export * from './NavigationFlowPreview';
+export * from './ProgressBar';
 export { QuestionCard } from './QuestionCard';
-export { JsonPreviewModal } from './JsonPreviewModal';
-export { ErrorModal } from './ErrorModal';
-export { ConfirmModal } from './ConfirmModal'; 
