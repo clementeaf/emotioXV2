@@ -1,6 +1,6 @@
 // ARCHIVO GENERADO AUTOMÁTICAMENTE
 // NO MODIFICAR MANUALMENTE
-// Generado: 2025-06-20T21:33:54.467Z
+// Generado: 2025-06-20T21:39:00.623Z
 
 // Endpoints de API exportados desde backend
 export const API_ENDPOINTS = {

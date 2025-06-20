@@ -70,31 +70,6 @@ provider:
   timeout: 30
   logRetentionInDays: 7
 
-  httpApi:
-    cors:
-      allowedOrigins:
-        - http://localhost:3000
-        - http://localhost:4700
-        - http://localhost:5173
-      allowedHeaders:
-        - Content-Type
-        - Authorization
-        - X-Amz-Date
-        - X-Api-Key
-        - X-Amz-Security-Token
-        - X-Requested-With
-        - Accept
-        - Origin
-      allowedMethods:
-        - GET
-        - POST
-        - PUT
-        - DELETE
-        - OPTIONS
-        - PATCH
-      allowCredentials: true
-      maxAge: 86400 # 24 horas
-
   stackTags:
     SERVICE_NAME: ${self:service}
     STAGE: ${self:provider.stage}

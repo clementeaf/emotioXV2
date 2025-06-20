@@ -21,7 +21,7 @@ interface UseCognitiveTaskStateResult {
 }
 
 // Constante para el estado inicial por defecto con las 8 preguntas originales (3.1-3.8)
-const DEFAULT_STATE: CognitiveTaskFormData = {
+export const DEFAULT_STATE: CognitiveTaskFormData = {
   researchId: '', // El researchId vendrá de props o se establecerá después
   questions: [
     {

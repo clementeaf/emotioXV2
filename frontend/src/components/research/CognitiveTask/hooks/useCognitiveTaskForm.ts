@@ -22,7 +22,7 @@ import {
 } from '../utils/validateRequiredFields';
 import { useCognitiveTaskFileUpload } from './useCognitiveTaskFileUpload';
 import { useCognitiveTaskModals } from './useCognitiveTaskModals';
-import { useCognitiveTaskState } from './useCognitiveTaskState';
+import { DEFAULT_STATE as DEFAULT_COGNITIVE_TASK_STATE, useCognitiveTaskState } from './useCognitiveTaskState';
 import { useCognitiveTaskValidation } from './useCognitiveTaskValidation';
 
 // Definición de QuestionType para evitar conflictos de importación
@@ -248,13 +248,22 @@ export const useCognitiveTaskForm = (
 
   // Efecto para actualizar el formulario cuando los datos de la consulta se cargan
   useEffect(() => {
-    if (cognitiveTaskData) {
-      const data = cognitiveTaskData as CognitiveTaskFormData & { id: string };
-      setFormData(data);
-      setCognitiveTaskId(data.id);
-      logFormDebugInfo('useEffect-data-loaded', data);
+    if (!isLoading) { // Solo actuar cuando la carga inicial haya terminado
+      if (cognitiveTaskData) {
+        console.log('[useCognitiveTaskForm] Datos existentes encontrados. Actualizando formulario.');
+        setFormData(cognitiveTaskData);
+        setCognitiveTaskId((cognitiveTaskData as any).id || null);
+      } else {
+        console.log('[useCognitiveTaskForm] No se encontraron datos. Usando configuración por defecto.');
+        // Si no hay datos, usar el estado por defecto, asegurando que el researchId se asigne
+        setFormData({
+          ...DEFAULT_COGNITIVE_TASK_STATE,
+          researchId: researchId || ''
+        });
+        setCognitiveTaskId(null);
+      }
     }
-  }, [cognitiveTaskData, setFormData, setCognitiveTaskId]);
+  }, [cognitiveTaskData, isLoading, researchId, setFormData]);
 
   const saveMutation = useMutation<CognitiveTaskFormData, ApiError, CognitiveTaskFormData>({
     mutationFn: async (dataToSave: CognitiveTaskFormData): Promise<CognitiveTaskFormData> => {
@@ -283,28 +292,34 @@ export const useCognitiveTaskForm = (
     },
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: async () => {
-      if (!researchId) throw new Error("ID de investigación no encontrado.");
-      return cognitiveTaskFixedAPI.delete(researchId);
+  // Hook de mutación para eliminar toda la configuración de la tarea cognitiva por researchId
+  const { mutate: deleteMutation, isPending: isDeleting } = useMutation<void, Error, string>({
+    mutationFn: (id: string) => {
+      if (!cognitiveTaskFixedAPI) {
+        throw new Error('API client no inicializado');
+      }
+      // Corregido: Llamar al método correcto que construye la URL adecuadamente
+      return cognitiveTaskFixedAPI.deleteByResearchId(id);
     },
-    onSuccess: () => {
+    onSuccess: (_, deletedResearchId) => {
       modals.showErrorModal({
-        title: 'Éxito',
-        message: 'La configuración ha sido eliminada.',
-        type: 'success',
+        title: 'Configuración eliminada',
+        message: `La configuración de la tarea cognitiva para la investigación ${deletedResearchId} ha sido eliminada.`,
+        type: 'success'
       });
-      setFormData({ researchId, questions: [], randomizeQuestions: false });
+      // Invalidar la consulta para forzar una recarga en la UI
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.COGNITIVE_TASK, deletedResearchId] });
+      // Limpiar el estado del formulario local con la estructura correcta
+      setFormData({ researchId: deletedResearchId, questions: [], randomizeQuestions: false });
       setCognitiveTaskId(null);
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.COGNITIVE_TASK, researchId] });
     },
-    onError: (error: any) => {
+    onError: (error, deletedResearchId) => {
       modals.showErrorModal({
-        title: 'Error al Eliminar',
-        message: error.message || 'No se pudo eliminar la configuración.',
-        type: 'error',
+        title: 'Error al eliminar',
+        message: `No se pudo eliminar la configuración para la investigación ${deletedResearchId}. ${error.message}`,
+        type: 'error'
       });
-    },
+    }
   });
 
   // Función para agregar una nueva pregunta
@@ -388,17 +403,17 @@ export const useCognitiveTaskForm = (
 
   // Función para eliminar datos CognitiveTasks
   const handleDelete = () => {
-    if (!cognitiveTaskId || !researchId) {
-      modals.showErrorModal({
-        title: 'Acción no permitida',
-        message: 'No se puede eliminar una configuración que no ha sido guardada.',
-        type: 'warning',
-      });
-      return;
-    }
-
     if (window.confirm('¿Estás seguro de que quieres eliminar esta configuración? Esta acción no se puede deshacer.')) {
-      deleteMutation.mutate();
+      if (researchId) {
+        deleteMutation(researchId);
+      } else {
+        console.error("No se puede eliminar porque researchId es undefined.");
+        modals.showErrorModal({
+          title: 'Error',
+          message: 'No se puede eliminar la configuración porque no se ha proporcionado un ID de investigación.',
+          type: 'error'
+        });
+      }
     }
   };
 

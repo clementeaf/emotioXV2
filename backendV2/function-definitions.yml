@@ -8,66 +8,89 @@ api:
     - http:
         path: /participants/login
         method: POST
+        cors: true
     - http:
         path: /participants
         method: POST
+        cors: true
     - http:
         path: /participants
         method: GET
+        cors: true
     - http:
         path: /participants/{id}
         method: GET
+        cors: true
     - http:
         path: /participants/{id}
         method: DELETE
+        cors: true
 
     # --- Rutas para Module Responses ---
     - http:
         path: /module-responses
         method: GET
+        cors: true
     - http:
         path: /module-responses
         method: POST
+        cors: true
     - http:
         path: /module-responses/{id}
         method: PUT
+        cors: true
     - http:
         path: /module-responses/complete
         method: POST
+        cors: true
     - http:
         path: /module-responses/research/{id}
         method: GET
+        cors: true
     - http:
         path: /module-responses
         method: DELETE
+        cors: true
 
     # Ruta específica para GET WelcomeScreen
     - http:
         path: /research/{researchId}/welcome-screen
         method: GET
+        cors: true
 
     # Ruta específica para GET SmartVOC
     - http:
         path: /research/{researchId}/smart-voc
         method: GET
+        cors: true
 
     # Añadir ruta explícita para PUT SmartVOC
     - http:
         path: /research/{researchId}/smart-voc
         method: PUT
+        cors: true
+
+    # Ruta específica para DELETE SmartVOC
+    - http:
+        path: /research/{researchId}/smart-voc
+        method: DELETE
+        cors: true
 
     # --- NUEVA RUTA: Obtener formularios/pasos de una investigación ---
     - http:
         path: /research/{researchId}/forms
         method: GET
+        cors: true
 
     # Ruta genérica para el resto
     - http:
         path: /{proxy+}
         method: ANY
+        cors: true
     - http:
         path: /
         method: ANY
+        cors: true
 
   environment:
     CONNECTION_TYPE: http
