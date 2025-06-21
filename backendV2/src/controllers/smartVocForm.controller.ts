@@ -1,16 +1,16 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { SmartVOCFormService, SmartVOCError } from '../services/smartVocForm.service';
 import { SmartVOCFormData } from '../../../shared/interfaces/smart-voc.interface';
-import { ApiError } from '../utils/errors';
-import { 
-  validateUserId, 
-  extractResearchId,
-  parseAndValidateBody,
-  ERROR_MESSAGES
-} from '../utils/validation';
-import { errorResponse, createResponse } from '../utils/controller.utils';
+import { SmartVOCError, SmartVOCFormService } from '../services/smartVocForm.service';
 import { createController, RouteMap } from '../utils/controller.decorator';
+import { createResponse, errorResponse } from '../utils/controller.utils';
+import { ApiError } from '../utils/errors';
 import { structuredLog } from '../utils/logging.util';
+import {
+    ERROR_MESSAGES,
+    extractResearchId,
+    parseAndValidateBody,
+    validateUserId
+} from '../utils/validation';
 
 // Función auxiliar para crear respuestas exitosas
 const successResponse = (body: any, statusCode = 200): APIGatewayProxyResult => createResponse(statusCode, body);
@@ -30,8 +30,8 @@ export class SmartVOCFormController {
    */
   private handleError(error: any, context: string): APIGatewayProxyResult {
     // Usar la utilidad compartida para loguear el error
-    structuredLog('error', `SmartVOCFormController.${context}`, 'Error al procesar la solicitud', { 
-        error: error instanceof Error ? { message: error.message, name: error.name } : error 
+    structuredLog('error', `SmartVOCFormController.${context}`, 'Error al procesar la solicitud', {
+        error: error instanceof Error ? { message: error.message, name: error.name } : error
     });
     if (error instanceof ApiError) {
       return errorResponse(error.message, error.statusCode);
@@ -52,15 +52,15 @@ export class SmartVOCFormController {
       const idResult = extractResearchId(event);
       if ('statusCode' in idResult) return idResult;
       const { researchId } = idResult;
-      
-      structuredLog('info', `SmartVOCFormController.${context}`, 'Obteniendo datos para investigación', { researchId: researchId }); 
+
+      structuredLog('info', `SmartVOCFormController.${context}`, 'Obteniendo datos para investigación', { researchId: researchId });
       const form = await this.service.getByResearchId(researchId);
-      
+
       if (!form) {
-         structuredLog('info', `SmartVOCFormController.${context}`, 'Formulario no encontrado', { researchId: researchId }); 
-         return errorResponse(ERROR_MESSAGES.RESOURCE.NOT_FOUND('Formulario SmartVOC para esta investigación'), 404);
+         structuredLog('info', `SmartVOCFormController.${context}`, 'Formulario no encontrado, devolviendo respuesta controlada', { researchId: researchId });
+         return successResponse({ notFound: true });
       }
-      
+
       structuredLog('info', `SmartVOCFormController.${context}`, 'Datos obtenidos', { researchId: researchId });
       return successResponse(form);
 
@@ -81,20 +81,20 @@ export class SmartVOCFormController {
       if (validationError) return validationError;
       const idResult = extractResearchId(event);
       if ('statusCode' in idResult) return idResult;
-      const { researchId } = idResult; 
+      const { researchId } = idResult;
       const bodyResult = parseAndValidateBody<SmartVOCFormData>(event);
       if ('statusCode' in bodyResult) return bodyResult;
       const { data } = bodyResult;
 
-      structuredLog('info', `SmartVOCFormController.${context}`, 'Intentando crear formulario', { researchId: researchId }); 
+      structuredLog('info', `SmartVOCFormController.${context}`, 'Intentando crear formulario', { researchId: researchId });
       const result = await this.service.create(data, researchId, userId);
-      
-      structuredLog('info', `SmartVOCFormController.${context}`, 'Formulario creado exitosamente', { formId: result.id, researchId: researchId }); 
+
+      structuredLog('info', `SmartVOCFormController.${context}`, 'Formulario creado exitosamente', { formId: result.id, researchId: researchId });
       return successResponse(result, 201);
 
     } catch (error) {
       if (error instanceof ApiError && error.message.includes(SmartVOCError.ALREADY_EXISTS)) {
-           structuredLog('warn', `SmartVOCFormController.${context}`, 'Intento de crear formulario duplicado', { researchId: (error as any)?.researchId || 'unknown' }); 
+           structuredLog('warn', `SmartVOCFormController.${context}`, 'Intento de crear formulario duplicado', { researchId: (error as any)?.researchId || 'unknown' });
            return errorResponse(error.message, 409);
        }
       return this.handleError(error, context);
@@ -114,15 +114,15 @@ export class SmartVOCFormController {
       const validationError = validateUserId(userId);
       if (validationError) return validationError;
       researchId = event.pathParameters?.researchId;
-      formId = event.pathParameters?.formId; 
+      formId = event.pathParameters?.formId;
       if (!researchId || !formId) {
         return errorResponse(ERROR_MESSAGES.VALIDATION.REQUIRED_FIELD('researchId y formId en la ruta'), 400);
       }
       const bodyResult = parseAndValidateBody<Partial<SmartVOCFormData>>(event);
       if ('statusCode' in bodyResult) return bodyResult;
       const { data } = bodyResult;
-      
-      structuredLog('info', `SmartVOCFormController.${context}`, 'Intentando actualizar formulario', { formId: formId, researchId: researchId }); 
+
+      structuredLog('info', `SmartVOCFormController.${context}`, 'Intentando actualizar formulario', { formId: formId, researchId: researchId });
       const result = await this.service.update(formId, data, userId);
 
       structuredLog('info', `SmartVOCFormController.${context}`, 'Formulario actualizado exitosamente', { formId: formId, researchId: researchId });
@@ -131,10 +131,10 @@ export class SmartVOCFormController {
     } catch (error) {
       const logData = { formId: formId || 'unknown', researchId: researchId || 'unknown' };
       if (error instanceof ApiError && error.message.includes(SmartVOCError.NOT_FOUND)) {
-           structuredLog('warn', `SmartVOCFormController.${context}`, 'Intento de actualizar formulario no encontrado', logData); 
+           structuredLog('warn', `SmartVOCFormController.${context}`, 'Intento de actualizar formulario no encontrado', logData);
            return errorResponse(error.message, 404);
        }
-      return this.handleError(error, context); 
+      return this.handleError(error, context);
     }
   }
 
@@ -149,15 +149,15 @@ export class SmartVOCFormController {
       const validationError = validateUserId(userId);
       if (validationError) return validationError;
       const researchId = event.pathParameters?.researchId;
-      const formId = event.pathParameters?.formId; 
+      const formId = event.pathParameters?.formId;
       if (!researchId || !formId) {
         return errorResponse(ERROR_MESSAGES.VALIDATION.REQUIRED_FIELD('researchId y formId en la ruta'), 400);
       }
 
-      structuredLog('info', `SmartVOCFormController.${context}`, 'Intentando eliminar formulario', { formId: formId, researchId: researchId }); 
+      structuredLog('info', `SmartVOCFormController.${context}`, 'Intentando eliminar formulario', { formId: formId, researchId: researchId });
       await this.service.delete(formId, userId);
-      
-      structuredLog('info', `SmartVOCFormController.${context}`, 'Formulario eliminado exitosamente', { formId: formId, researchId: researchId }); 
+
+      structuredLog('info', `SmartVOCFormController.${context}`, 'Formulario eliminado exitosamente', { formId: formId, researchId: researchId });
       return createResponse(204, null);
 
     } catch (error) {
@@ -179,14 +179,14 @@ export class SmartVOCFormController {
       if ('statusCode' in idResult) return idResult;
       const { researchId } = idResult;
 
-      structuredLog('info', `SmartVOCFormController.${context}`, 'Intentando eliminar formulario por researchId', { researchId: researchId }); 
+      structuredLog('info', `SmartVOCFormController.${context}`, 'Intentando eliminar formulario por researchId', { researchId: researchId });
       const deleted = await this.service.deleteByResearchId(researchId, userId);
-      
+
       if (deleted) {
-        structuredLog('info', `SmartVOCFormController.${context}`, 'Formulario eliminado exitosamente', { researchId: researchId }); 
+        structuredLog('info', `SmartVOCFormController.${context}`, 'Formulario eliminado exitosamente', { researchId: researchId });
         return createResponse(200, { message: 'Formulario SmartVOC eliminado exitosamente', researchId });
       } else {
-        structuredLog('info', `SmartVOCFormController.${context}`, 'No se encontró formulario para eliminar', { researchId: researchId }); 
+        structuredLog('info', `SmartVOCFormController.${context}`, 'No se encontró formulario para eliminar', { researchId: researchId });
         return createResponse(404, { error: 'No se encontró formulario SmartVOC para esta investigación', researchId });
       }
 
@@ -224,5 +224,5 @@ const smartVocRouteMap: RouteMap = {
 };
 
 export const mainHandler = createController(smartVocRouteMap, {
-  basePath: '', 
-}); 
+  basePath: '',
+});

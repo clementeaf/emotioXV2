@@ -1,5 +1,5 @@
-import { SmartVOCFormData as BaseSmartVOCFormData, SmartVOCQuestion as BaseSmartVOCQuestion } from 'shared/interfaces/smart-voc.interface';
 import { ReactNode } from 'react';
+import { SmartVOCFormData as BaseSmartVOCFormData, SmartVOCQuestion as BaseSmartVOCQuestion } from 'shared/interfaces/smart-voc.interface';
 
 /**
  * Tipos relacionados con el formulario SmartVOC
@@ -75,22 +75,22 @@ export interface SmartVOCResponse {
    * Identificador único del formulario guardado
    */
   id?: string;
-  
+
   /**
    * Datos del formulario
    */
   data: SmartVOCFormData;
-  
+
   /**
    * Indicador de éxito
    */
   success: boolean;
-  
+
   /**
    * Mensaje de error si aplica
    */
   error?: string;
-  
+
   /**
    * Indica si el recurso no fue encontrado
    */
@@ -153,6 +153,7 @@ export interface SmartVOCFooterProps {
   isLoading: boolean;
   smartVocId: string | null;
   researchId: string;
+  isExisting: boolean;
   onSave: () => void;
   onPreview?: () => void;
   onDelete?: () => void;
@@ -179,7 +180,7 @@ export interface ValidationErrors {
  */
 export interface UseSmartVOCFormResult {
   questions: SmartVOCQuestion[];
-  formData: SmartVOCFormData; 
+  formData: SmartVOCFormData;
   smartVocId: string | null;
   validationErrors: ValidationErrors;
   isLoading: boolean;
@@ -210,4 +211,4 @@ export interface JsonPreviewModalProps {
   onContinue: () => void;
   jsonData: string;
   pendingAction: 'save' | 'preview' | null;
-} 
+}

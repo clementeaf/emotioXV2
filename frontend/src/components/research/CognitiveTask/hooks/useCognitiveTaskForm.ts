@@ -268,12 +268,27 @@ export const useCognitiveTaskForm = (
   const saveMutation = useMutation<CognitiveTaskFormData, ApiError, CognitiveTaskFormData>({
     mutationFn: async (dataToSave: CognitiveTaskFormData): Promise<CognitiveTaskFormData> => {
       if (!researchId) throw new Error('ID de investigación no encontrado');
-      logFormDebugInfo('pre-save', dataToSave);
-      const result = await cognitiveTaskFixedAPI.save(researchId, dataToSave);
-      logFormDebugInfo('post-save-success', result);
-      return result;
+
+      logFormDebugInfo('pre-save', dataToSave, null, { cognitiveTaskId });
+
+      if (cognitiveTaskId) {
+        // Actualizar existente
+        console.log(`[useCognitiveTaskForm] Actualizando (PUT) config existente: ${cognitiveTaskId}`);
+        return cognitiveTaskFixedAPI.update(researchId, cognitiveTaskId, dataToSave);
+      } else {
+        // Crear nueva
+        console.log(`[useCognitiveTaskForm] Creando (POST) nueva config para researchId: ${researchId}`);
+        return cognitiveTaskFixedAPI.create(researchId, dataToSave);
+      }
     },
     onSuccess: (data) => {
+      // Extraer el ID de la respuesta y actualizar el estado
+      const responseWithId = data as CognitiveTaskFormData & { id?: string };
+      if (responseWithId.id && !cognitiveTaskId) {
+        setCognitiveTaskId(responseWithId.id);
+        console.log('[useCognitiveTaskForm] Nuevo ID de tarea cognitiva configurado:', responseWithId.id);
+      }
+
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.COGNITIVE_TASK, researchId] });
       modals.closeModal();
       modals.showErrorModal({
@@ -378,18 +393,24 @@ export const useCognitiveTaskForm = (
   };
 
   const handleSave = () => {
-    const errors = runValidation(formData);
+    const errors = runValidation(formData, researchId);
     if (errors && Object.keys(errors).length > 0) {
+      // Convertir el objeto de errores en un mensaje de texto legible
+      const errorMessages = Object.entries(errors)
+        .map(([key, value]) => `- ${key}: ${value}`)
+        .join('\\n'); // Usar saltos de línea de texto
+
       modals.showErrorModal({
         title: 'Errores de Validación',
-        message: 'Por favor, corrige los errores antes de guardar.',
+        message: `Por favor, corrige los siguientes errores:\n\n${errorMessages}`,
         type: 'warning'
       });
       return;
     }
 
+    // Llamar directamente a la mutación en lugar de abrir el modal intermedio
     const dataToSend = filterValidQuestions(formData);
-    modals.openJsonModal(dataToSend, 'save');
+    saveMutation.mutate(dataToSend);
   };
 
   const continueWithAction = () => {

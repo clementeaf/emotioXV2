@@ -3,10 +3,10 @@
  * Manejar solicitudes de manera similar a las otras APIs que funcionan bien
  */
 
-import { SmartVOCFormData } from 'shared/interfaces/smart-voc.interface';
+import { ApiError } from '@/config/api-client';
 import API_CONFIG from '@/config/api.config';
 import { ApiClient } from '@/lib/api-client';
-import { ApiError } from '@/config/api-client';
+import { SmartVOCFormData } from 'shared/interfaces/smart-voc.interface';
 
 export class SmartVOCFixedAPI extends ApiClient {
   constructor() {
@@ -28,7 +28,7 @@ export class SmartVOCFixedAPI extends ApiClient {
 
   async getByResearchId(researchId: string): Promise<SmartVOCFormData | null> {
     console.log(`[SmartVOCAPI] Obteniendo smart-voc por researchId: ${researchId}`);
-    const path = `/research/${researchId}/smart-voc`; 
+    const path = `/research/${researchId}/smart-voc`;
     console.log(`[SmartVOCAPI] Llamando a GET ${path}`);
     try {
       const result = await this.get<SmartVOCFormData>(path);
@@ -43,17 +43,20 @@ export class SmartVOCFixedAPI extends ApiClient {
     }
   }
 
-  async deleteSmartVOC(researchId: string, formId: string): Promise<void> {
+  async deleteSmartVOC(researchId: string, formId: string): Promise<boolean> {
      console.log(`[SmartVOCAPI] Eliminando smart-voc para researchId: ${researchId}, formId: ${formId}`);
      const path = `/research/${researchId}/smart-voc/${formId}`;
-     await this.delete<void>(path);
+     const result = await this.delete<any>(path);
+     // El ApiClient devuelve null en 404, y undefined en 204 (éxito)
+     // Si no es null (es decir, fue exitoso), devolvemos true
+     return result !== null;
   }
 
-  async deleteByResearchId(researchId: string): Promise<void> {
+  async deleteByResearchId(researchId: string): Promise<boolean> {
     console.log(`[SmartVOCAPI] Eliminando todos los datos smart-voc para researchId: ${researchId}`);
-    // Usar endpoint directo sin formId para eliminar por researchId
     const path = `/research/${researchId}/smart-voc`;
-    await this.delete<void>(path);
+    const result = await this.delete<any>(path);
+    return result !== null;
   }
 }
 

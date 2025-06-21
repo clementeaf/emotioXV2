@@ -36,6 +36,7 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
     handlePreview,
     handleDelete,
     closeModal,
+    isExisting,
   } = useSmartVOCForm(researchId);
 
   // Callbacks para cambios en los ajustes
@@ -137,6 +138,7 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
         isSaving={isSaving}
         isLoading={isLoading}
         smartVocId={smartVocId}
+        isExisting={isExisting}
         researchId={researchId}
         onSave={handleSaveAndNotify}
         onPreview={handlePreview}

@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Switch } from '@/components/ui/Switch';
-import { SmartVOCQuestionsProps, SmartVOCQuestion } from '../types';
+import React, { useEffect, useState } from 'react';
 import { UI_TEXTS } from '../constants';
+import { SmartVOCQuestion, SmartVOCQuestionsProps } from '../types';
 import { AddQuestionModal } from './AddQuestionModal';
 
 /**
@@ -17,15 +17,30 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
 }) => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
+  // ÚNICA FUENTE DE VERDAD para companyName
+  const firstQuestionWithCompany = questions.find(q => q.config && 'companyName' in q.config);
+  const [companyName, setCompanyName] = useState(firstQuestionWithCompany?.config.companyName || '');
+
+  // Sincronizar el estado local si las props cambian desde fuera
+  useEffect(() => {
+    const firstQuestionWithCompany = questions.find(q => q.config && 'companyName' in q.config);
+    setCompanyName(firstQuestionWithCompany?.config.companyName || '');
+  }, [questions]);
+
+
   // Función para propagar el nombre de la empresa a todas las preguntas que lo utilizan
-  const syncCompanyName = (companyName: string) => {
-    // Actualizar todas las preguntas que usan companyName
+  const syncCompanyName = (newCompanyName: string) => {
+    setCompanyName(newCompanyName); // Actualizar estado local para el input controlado
+
+    // Actualizar todas las preguntas que usan companyName en el estado principal (formData)
     questions.forEach(question => {
-      if (['CSAT', 'NEV', 'NPS'].includes(question.type) && 
-          question.config.companyName !== companyName) {
-        onUpdateQuestion(question.id, {
-          config: { ...question.config, companyName }
-        });
+      if (['CSAT', 'NEV', 'NPS'].includes(question.type)) {
+        // Solo llamar a la actualización si el valor es realmente diferente
+        if (question.config.companyName !== newCompanyName) {
+          onUpdateQuestion(question.id, {
+            config: { ...question.config, companyName: newCompanyName }
+          });
+        }
       }
     });
   };
@@ -33,48 +48,28 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
   // Obtener los tipos de preguntas ya existentes
   const existingQuestionTypes = questions.map(q => q.type);
 
+  // Determinar si el campo de companyName debe mostrarse
+  const showCompanyNameInput = questions.some(q => ['CSAT', 'NEV', 'NPS'].includes(q.type));
+
+
   // Renderiza la configuración específica para cada tipo de pregunta
   const renderQuestionConfig = (question: SmartVOCQuestion) => {
     switch (question.type) {
       case 'CSAT':
         return (
-          <div className="space-y-4">
-            <div className="flex items-center gap-4">
-              <span className="text-sm font-medium text-neutral-900">Tipo de visualización</span>
-              <select 
-                className="h-10 pl-3 pr-10 rounded-lg bg-neutral-50 border border-neutral-200 text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                value={question.config.type || 'stars'}
-                onChange={(e) => onUpdateQuestion(question.id, {
-                  config: { ...question.config, type: e.target.value as any }
-                })}
-                disabled={disabled}
-              >
-                <option value="stars">Estrellas</option>
-                <option value="numbers">Números</option>
-              </select>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm font-medium text-neutral-900">{UI_TEXTS.QUESTIONS.COMPANY_NAME_LABEL}</span>
-              <div className="flex-1 relative">
-                <input 
-                  type="text" 
-                  value={question.config.companyName || ''}
-                  onChange={(e) => {
-                    const newCompanyName = e.target.value;
-                    // Sincronizar con todas las preguntas que usan companyName
-                    syncCompanyName(newCompanyName);
-                  }}
-                  className="w-full h-10 px-3 rounded-lg bg-neutral-50 border border-neutral-200 text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                  placeholder={UI_TEXTS.QUESTIONS.COMPANY_NAME_PLACEHOLDER}
-                  disabled={disabled}
-                />
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <div className="text-xs text-amber-600 bg-amber-50 px-1 py-0.5 rounded">
-                    Se reutiliza
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-medium text-neutral-900">Tipo de visualización</span>
+            <select
+              className="h-10 pl-3 pr-10 rounded-lg bg-neutral-50 border border-neutral-200 text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              value={question.config.type || 'stars'}
+              onChange={(e) => onUpdateQuestion(question.id, {
+                config: { ...question.config, type: e.target.value as any }
+              })}
+              disabled={disabled}
+            >
+              <option value="stars">Estrellas</option>
+              <option value="numbers">Números</option>
+            </select>
           </div>
         );
 
@@ -82,7 +77,7 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
         return (
           <div className="flex items-center gap-4">
             <span className="text-sm font-medium text-neutral-900">CES</span>
-            <select 
+            <select
               className="h-10 pl-3 pr-10 rounded-lg bg-neutral-50 border border-neutral-200 text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               value={`${question.config.scaleRange?.start}-${question.config.scaleRange?.end}`}
               onChange={(e) => {
@@ -104,7 +99,7 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
           <div className="space-y-4">
             <div className="flex items-center gap-4">
               <span className="text-sm font-medium text-neutral-900">CV</span>
-              <select 
+              <select
                 className="h-10 pl-3 pr-10 rounded-lg bg-neutral-50 border border-neutral-200 text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                 value={`${question.config.scaleRange?.start}-${question.config.scaleRange?.end}`}
                 onChange={(e) => {
@@ -126,8 +121,8 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
             <div className="space-y-3">
               <div className="flex gap-4">
                 <span className="text-sm text-neutral-500 w-32 text-right">{UI_TEXTS.QUESTIONS.START_LABEL_TEXT}</span>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={question.config.startLabel || ''}
                   onChange={(e) => onUpdateQuestion(question.id, {
                     config: {
@@ -142,7 +137,7 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
               </div>
               <div className="flex gap-4">
                 <span className="text-sm text-neutral-500 w-32 text-right">{UI_TEXTS.QUESTIONS.END_LABEL_TEXT}</span>
-                <input 
+                <input
                   type="text"
                   value={question.config.endLabel || ''}
                   onChange={(e) => onUpdateQuestion(question.id, {
@@ -166,8 +161,8 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
             <div className="flex items-center gap-4">
               <span className="text-sm font-medium text-neutral-900">{UI_TEXTS.QUESTIONS.COMPANY_NAME_LABEL}</span>
               <div className="flex-1 relative">
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={question.config.companyName || ''}
                   onChange={(e) => {
                     const newCompanyName = e.target.value;
@@ -188,7 +183,7 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-4">
                 <span className="text-sm font-medium text-neutral-900">NEV</span>
-                <select 
+                <select
                   className="h-10 pl-3 pr-10 rounded-lg bg-neutral-50 border border-neutral-200 text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                   value={question.config.type}
                   onChange={(e) => onUpdateQuestion(question.id, {
@@ -220,8 +215,8 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
             <div className="flex items-center gap-4">
               <span className="text-sm font-medium text-neutral-900">{UI_TEXTS.QUESTIONS.COMPANY_NAME_LABEL}</span>
               <div className="flex-1 relative">
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={question.config.companyName || ''}
                   onChange={(e) => {
                     const newCompanyName = e.target.value;
@@ -241,7 +236,7 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
             </div>
             <div className="flex items-center gap-4">
               <span className="text-sm font-medium text-neutral-900">NPS</span>
-              <select 
+              <select
                 className="h-10 pl-3 pr-10 rounded-lg bg-neutral-50 border border-neutral-200 text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                 value={`${question.config.scaleRange?.start}-${question.config.scaleRange?.end}`}
                 onChange={(e) => {
@@ -262,7 +257,7 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
         return (
           <div className="flex items-center gap-4">
             <span className="text-sm font-medium text-neutral-900">Texto largo</span>
-            <select 
+            <select
               className="h-10 pl-3 pr-10 rounded-lg bg-neutral-50 border border-neutral-200 text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               value={question.config.type}
               onChange={(e) => onUpdateQuestion(question.id, {
@@ -280,83 +275,99 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
     }
   };
 
-  // Manejar la adición de una nueva pregunta desde el modal
   const handleAddQuestion = (question: SmartVOCQuestion) => {
+    // Si se añade una pregunta que usa companyName, asegurarse que herede el valor actual
+    if (['CSAT', 'NEV', 'NPS'].includes(question.type)) {
+      question.config.companyName = companyName;
+    }
     onAddQuestion(question);
-    setIsAddModalOpen(false);
   };
 
   return (
-    <div className="space-y-8" style={{ maxWidth: '100%', overflow: 'hidden' }}>
+    <div className="space-y-6">
+      {/* CAMPO ÚNICO Y CENTRALIZADO PARA EL NOMBRE DE LA EMPRESA */}
+      {showCompanyNameInput && (
+        <div className="p-4 border border-neutral-200 rounded-lg bg-neutral-50/50">
+           <div className="flex items-center gap-4">
+              <span className="text-sm font-medium text-neutral-900">{UI_TEXTS.QUESTIONS.COMPANY_NAME_LABEL}</span>
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  value={companyName}
+                  onChange={(e) => syncCompanyName(e.target.value)}
+                  className="w-full h-10 px-3 rounded-lg bg-neutral-100 border border-neutral-200 text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  placeholder={UI_TEXTS.QUESTIONS.COMPANY_NAME_PLACEHOLDER}
+                  disabled={disabled}
+                />
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <div className="text-xs text-amber-600 bg-amber-50 px-1 py-0.5 rounded">
+                    Se reutiliza en todas las preguntas aplicables
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+      )}
+
       {questions.map((question, index) => (
-        <div 
-          key={question.id}
-          className="bg-white rounded-lg border border-neutral-200 p-5 space-y-4"
-          style={{ maxWidth: '100%', boxSizing: 'border-box' }}
-        >
-          <div className="flex justify-between items-center mb-2">
-            <h3 className="text-sm font-medium text-neutral-900">Pregunta {index + 1}: {question.type}</h3>
-            <button 
-              className="text-sm text-red-600 hover:text-red-700"
-              onClick={() => onRemoveQuestion(question.id)}
-              disabled={disabled}
-            >
-              {UI_TEXTS.QUESTIONS.REMOVE_BUTTON}
-            </button>
+        <div key={question.id || index} className="p-4 border border-neutral-200 rounded-lg bg-white">
+          <div className="flex justify-between items-center mb-4">
+            <h4 className="font-semibold text-neutral-900">{`Pregunta ${index + 1}: ${question.title}`}</h4>
+            {questions.length > 1 && (
+               <Button variant="ghost" className="text-red-500 hover:text-red-600" onClick={() => onRemoveQuestion(question.id)} disabled={disabled}>
+                 Eliminar
+               </Button>
+            )}
           </div>
-          
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
-                {UI_TEXTS.QUESTIONS.QUESTION_TEXT_LABEL}
-              </label>
-              <input 
-                type="text" 
-                className="w-full px-3 py-2 border border-neutral-300 rounded-md"
-                style={{ maxWidth: '100%', boxSizing: 'border-box' }}
-                value={question.description}
-                onChange={(e) => onUpdateQuestion(question.id, { description: e.target.value })}
+              <label className="text-sm font-medium text-neutral-900 block mb-1.5">Texto de la pregunta</label>
+              <input
+                type="text"
+                value={question.title}
+                onChange={(e) => onUpdateQuestion(question.id, { title: e.target.value })}
+                className="w-full h-10 px-3 rounded-lg bg-neutral-50 border border-neutral-200 text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                placeholder="Introduzca el texto de la pregunta"
                 disabled={disabled}
               />
             </div>
-            
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
-                {UI_TEXTS.QUESTIONS.INSTRUCTIONS_LABEL}
-              </label>
+              <label className="text-sm font-medium text-neutral-900 block mb-1.5">Instrucciones (opcional)</label>
               <textarea
-                className="w-full px-3 py-2 border border-neutral-300 rounded-md resize-y min-h-[80px]"
-                style={{ maxWidth: '100%', boxSizing: 'border-box' }}
                 value={question.instructions || ''}
                 onChange={(e) => onUpdateQuestion(question.id, { instructions: e.target.value })}
-                placeholder={UI_TEXTS.QUESTIONS.INSTRUCTIONS_PLACEHOLDER}
+                className="w-full h-24 p-3 rounded-lg bg-neutral-50 border border-neutral-200 text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                placeholder="Añada instrucciones o información adicional para los participantes"
                 disabled={disabled}
               />
             </div>
 
+            {renderQuestionConfig(question)}
 
-            
-            <div>
-              {renderQuestionConfig(question)}
+            <div className="flex items-center justify-end gap-4 pt-4 border-t border-neutral-100 mt-4">
+              <span className="text-xs text-neutral-500">Mostrar condicionalmente</span>
+              <Switch
+                checked={question.showConditionally}
+                onCheckedChange={(checked) => onUpdateQuestion(question.id, { showConditionally: checked })}
+                disabled={disabled}
+              />
             </div>
           </div>
         </div>
       ))}
 
-      <div className="flex justify-center mt-4">
-        <Button 
-          variant="outline" 
-          className="w-full max-w-md"
+      {/* Botón para agregar nueva pregunta */}
+      <div className="pt-4">
+        <Button
+          variant="outline"
           onClick={() => setIsAddModalOpen(true)}
-          disabled={disabled}
+          disabled={disabled || existingQuestionTypes.length === 7} // Deshabilitar si todos los tipos ya existen
+          className="w-full"
         >
-          <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-          {UI_TEXTS.QUESTIONS.ADD_BUTTON}
+          Añadir pregunta
         </Button>
       </div>
-      
+
       <AddQuestionModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
@@ -365,4 +376,4 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
       />
     </div>
   );
-}; 
+};

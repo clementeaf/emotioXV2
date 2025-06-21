@@ -10,13 +10,13 @@ export class ApiClient {
   private async request<T>(path: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${path}`;
     const headers = new Headers();
-    
+
     // Agregar Content-Type por defecto
     headers.append('Content-Type', 'application/json');
-    
+
     // Agregar headers de autenticación si existen
     const authHeaders = getAuthHeaders();
-    
+
     if (authHeaders.Authorization) {
       headers.append('Authorization', authHeaders.Authorization);
       console.log('[ApiClient] Usando token de autenticación desde getAuthHeaders');
@@ -37,7 +37,7 @@ export class ApiClient {
         headersPresent: Array.from(headers.keys()),
         hasAuthHeader: headers.has('Authorization')
       });
-      
+
       const response = await fetch(url, {
         ...options,
         headers
@@ -46,14 +46,14 @@ export class ApiClient {
       if (!response.ok) {
         // Manejo especial para 404
         if (response.status === 404) {
-          console.warn(`[ApiClient] Recurso no encontrado (404) en ${url}. Devolviendo null.`);
+          // console.warn(`[ApiClient] Recurso no encontrado (404) en ${url}. Devolviendo null.`);
           // Intentar leer el cuerpo por si hay un mensaje, pero devolver null
           try {
             const errorBody = await response.json();
-            console.warn('[ApiClient] Cuerpo de error 404:', errorBody);
+            // console.warn('[ApiClient] Cuerpo de error 404:', errorBody);
           } catch (jsonError) {
             // Ignorar si el cuerpo del 404 no es JSON válido
-            console.warn('[ApiClient] No se pudo parsear el cuerpo del error 404 como JSON.');
+            // console.warn('[ApiClient] No se pudo parsear el cuerpo del error 404 como JSON.');
           }
           return null as T; // Devolver null para indicar que no se encontró
         }
@@ -66,7 +66,7 @@ export class ApiClient {
           errorBodyText = await response.text();
           console.error('[ApiClient] Detalles del error 500:', errorBodyText);
         } catch (textError) { /* ignorar */ }
-        
+
         // Para DELETE, asumimos que la operación "falló pero no es crítica"
         return { error: true, status: 500, message: errorBodyText } as T;
       }
@@ -89,7 +89,7 @@ export class ApiClient {
       if (response.status === 204) {
         return undefined as T;
       }
-      
+
       const data = await response.json();
       return data;
     } catch (error) {
@@ -121,4 +121,4 @@ export class ApiClient {
       method: 'DELETE',
     });
   }
-} 
+}
