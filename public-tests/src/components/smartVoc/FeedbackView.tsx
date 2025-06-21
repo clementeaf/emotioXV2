@@ -1,15 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FeedbackViewProps } from '../../types/smart-voc.types';
 
 const FeedbackView: React.FC<FeedbackViewProps> = ({
-  questionText,
-  instructions,
-  placeholder = "Escribe tu respuesta aquí...", // Placeholder genérico
-  initialValue = '', // NUEVO: Usar valor inicial
-  onChange, // NUEVO
-  onNext
+  question,
+  initialValue = '',
+  onChange,
+  onNext,
 }) => {
   const [feedback, setFeedback] = useState<string>(initialValue);
+
+  // Extraer datos de la pregunta
+  const questionText = question.title || 'Tu opinión es importante';
+  const instructions = question.description;
+  const placeholder =
+    question.config?.placeholder ||
+    'Comparte tu experiencia, comentarios y sugerencias aquí...';
 
   useEffect(() => {
     setFeedback(initialValue);
@@ -40,14 +45,14 @@ const FeedbackView: React.FC<FeedbackViewProps> = ({
             {instructions}
           </p>
         )}
-        
+
         <textarea
           className="w-full h-32 p-4 border border-neutral-300 rounded-lg resize-none focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 mb-8" // Añadir margen inferior
           placeholder={placeholder}
           value={feedback}
           onChange={handleFeedbackChange}
         />
-        
+
         <button
           className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-8 rounded-md w-fit transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={handleNextClick}
@@ -60,4 +65,4 @@ const FeedbackView: React.FC<FeedbackViewProps> = ({
   );
 };
 
-export default FeedbackView; 
+export default FeedbackView;

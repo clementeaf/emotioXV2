@@ -115,9 +115,7 @@ export interface EmotionSelectionViewProps {
 }
 
 export interface FeedbackViewProps {
-  questionText: string;
-  instructions?: string;
-  placeholder?: string;
+  question: SmartVOCQuestion;
   initialValue?: string;
   onChange?: (value: string) => void;
   onNext: (feedback: string) => void;
@@ -249,11 +247,11 @@ export interface NEVQuestionComponentProps {
 }
 
 export interface NPSQuestionComponentProps {
-  questionConfig: { 
-    id: string; 
-    description?: string; 
-    type: string; 
-    title?: string; 
+  questionConfig: {
+    id: string;
+    description?: string;
+    type: string;
+    title?: string;
     config: {
       scaleRange?: { start: number; end: number };
       startLabel?: string;
@@ -284,4 +282,4 @@ export interface UseSmartVOCConfigReturn {
   questions: SmartVOCQuestion[];
   error: string | null;
   config: SmartVOCConfig | null;
-} 
+}

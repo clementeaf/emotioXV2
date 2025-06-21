@@ -116,9 +116,29 @@ export const useSmartVOCMutations = (researchId: string, smartVocId?: string) =>
       if (process.env.NODE_ENV === 'development') {
         console.error('[SmartVOCForm] Error al guardar. Datos enviados:', data);
       }
+
+      let displayMessage = 'Ocurrió un error al guardar los datos. Por favor, intenta de nuevo.';
+      const rawMessage = error?.message || '';
+
+      if (rawMessage.includes('Body:')) {
+        try {
+          const bodyString = rawMessage.substring(rawMessage.indexOf('Body: ') + 6);
+          const bodyJson = JSON.parse(bodyString);
+          const serverMessage = bodyJson.message || '';
+
+          if (serverMessage.includes('requiere companyName')) {
+            displayMessage = "Error de validación: Una o más preguntas (CSAT, NPS, NEV) requieren un 'Nombre de la empresa'. Por favor, completa ese campo para poder guardar.";
+          } else if (serverMessage.includes('INVALID_SMART_VOC_DATA')) {
+             displayMessage = "Se encontraron errores de validación en el formulario. Por favor, revisa los datos de las preguntas.";
+          }
+        } catch (e) {
+          console.error("Error al parsear el mensaje de la API:", e);
+        }
+      }
+
       showModal({
         title: UI_TEXTS.MODAL.ERROR_TITLE,
-        message: error.message || 'Error al guardar los datos',
+        message: displayMessage,
         type: 'error'
       });
     }

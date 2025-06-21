@@ -20,6 +20,7 @@ export const SmartVocFeedbackQuestion: React.FC<ComponentSmartVocFeedbackQuestio
         title?: string;
         description?: string;
         questionText?: string;
+        answerPlaceholder?: string;
         required?: boolean;
         isHardcoded?: boolean;
         savedResponses?: string;
@@ -188,7 +189,7 @@ export const SmartVocFeedbackQuestion: React.FC<ComponentSmartVocFeedbackQuestio
           <textarea
             value={currentResponse}
             onChange={handleTextChange}
-            placeholder={cfg.questionText || "Comparte tu experiencia, comentarios y sugerencias aquí..."}
+            placeholder={cfg.answerPlaceholder || cfg.questionText || "Comparte tu experiencia, comentarios y sugerencias aquí..."}
             rows={6}
             className="w-full p-4 border border-neutral-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             disabled={isSaving || isLoading || isSubmittingToServer}
