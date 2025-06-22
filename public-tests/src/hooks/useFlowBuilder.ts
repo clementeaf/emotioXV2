@@ -66,7 +66,7 @@ const processSmartVocQuestions = (
     if (Array.isArray(moduleSpecificQuestions) && moduleSpecificQuestions.length > 0) {
         for (const question of moduleSpecificQuestions) {
             if (typeof question !== 'object' || question === null) continue;
-            const q = question as { id?: string; title?: string; type?: string };
+            const q = question as { id?: string; title?: string; type?: string; instructions?: string };
             const originalQuestionType = q.type;
             const upperQuestionType = typeof originalQuestionType === 'string' ? originalQuestionType.toUpperCase() : undefined;
             const frontendType = upperQuestionType && smartVOCTypeMap[upperQuestionType] ? smartVOCTypeMap[upperQuestionType] : undefined;
@@ -77,6 +77,7 @@ const processSmartVocQuestions = (
                     name: q.title || `Feedback: ${originalQuestionType || 'Desconocido'}`,
                     type: frontendType,
                     config: question,
+                    instructions: q.instructions,
                     responseKey: parentModuleResponseKey
                 });
             } else {
@@ -96,7 +97,7 @@ const processCognitiveTaskQuestions = (
     if (Array.isArray(moduleSpecificQuestions) && moduleSpecificQuestions.length > 0) {
         for (const question of moduleSpecificQuestions) {
             if (typeof question !== 'object' || question === null) continue;
-            const q = question as { id?: string; title?: string; type?: string };
+            const q = question as { id?: string; title?: string; type?: string; instructions?: string };
             const originalQuestionType = q.type;
             const upperOriginalType = typeof originalQuestionType === 'string' ? originalQuestionType.toUpperCase() : undefined;
 
@@ -106,6 +107,7 @@ const processCognitiveTaskQuestions = (
                     name: q.title || `SmartVOC: ${originalQuestionType}`,
                     type: smartVOCTypeMap[upperOriginalType],
                     config: question,
+                    instructions: q.instructions,
                     responseKey: parentModuleResponseKey
                 });
                 continue;
@@ -118,6 +120,7 @@ const processCognitiveTaskQuestions = (
                     name: q.title || `${moduleTitleFromBackend || 'Tarea Cognitiva'}: ${originalQuestionType || 'Desconocido'}`,
                     type: frontendType,
                     config: question,
+                    instructions: q.instructions,
                     responseKey: parentModuleResponseKey
                 });
             } else {
@@ -138,7 +141,7 @@ const processDefaultModuleQuestions = (
     if (Array.isArray(moduleSpecificQuestions) && moduleSpecificQuestions.length > 0) {
         for (const question of moduleSpecificQuestions) {
             if (typeof question !== 'object' || question === null) continue;
-            const q = question as { id?: string; title?: string; type?: string };
+            const q = question as { id?: string; title?: string; type?: string; instructions?: string };
             const originalQuestionType = q.type;
             const frontendType = moduleSK && typeof originalQuestionType === 'string' ? `${moduleSK.toLowerCase()}_${originalQuestionType.toLowerCase()}` : `unknown_${typeof originalQuestionType === 'string' ? originalQuestionType.toLowerCase() : 'question'}`;
             steps.push({
@@ -146,6 +149,7 @@ const processDefaultModuleQuestions = (
                 name: q.title || `${moduleTitleFromBackend || moduleSK || 'Módulo Desconocido'}: ${originalQuestionType || 'Pregunta'}`,
                 type: frontendType,
                 config: question,
+                instructions: q.instructions,
                 responseKey: parentModuleResponseKey
             });
         }

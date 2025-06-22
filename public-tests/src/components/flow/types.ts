@@ -5,8 +5,8 @@ import { ParticipantFlowStep } from "../../types/flow";
 export interface CognitiveTaskHandlerProps {
     researchId: string;
     token: string;
-    onComplete: () => void; 
-    onError: (message: string) => void; 
+    onComplete: () => void;
+    onError: (message: string) => void;
 }
 
 export interface CurrentStepProps {
@@ -16,6 +16,7 @@ export interface CurrentStepProps {
     stepName?: string;
     researchId: string;
     token?: string | null;
+    instructions?: string;
     onLoginSuccess?: (participant: Participant & { id: string }) => void;
     onStepComplete?: (answer?: unknown) => void;
     onError: (errorMessage: string, stepType: string) => void;
@@ -33,7 +34,7 @@ export interface CurrentStepRendererProps {
 
 export interface FlowStepContentProps {
     currentStep: ParticipantFlowStep;
-    researchId: string | undefined; 
+    researchId: string | undefined;
     token: string | null;
     error: string | null;
     // Callbacks
@@ -95,6 +96,6 @@ export interface WelcomeStepConfig {
 }
 
 export interface WelcomeScreenHandlerProps {
-    stepConfig?: WelcomeStepConfig; 
+    stepConfig?: WelcomeStepConfig;
     onStepComplete: () => void;
 }

@@ -2,23 +2,24 @@ import React, { useEffect, useState } from 'react';
 import { useModuleResponses } from '../../../hooks/useModuleResponses';
 import { useStepResponseManager } from '../../../hooks/useStepResponseManager';
 import { useParticipantStore } from '../../../stores/participantStore';
-import { ComponentSmartVocFeedbackQuestionProps } from '../../../types/flow.types';
+import { MappedStepComponentProps } from '../../../types/flow.types';
 import { getStandardButtonText } from '../../../utils/formHelpers';
 import { createComponentLogger } from '../../../utils/logger';
 
 const logger = createComponentLogger('SmartVocFeedbackQuestion');
 
-export const SmartVocFeedbackQuestion: React.FC<ComponentSmartVocFeedbackQuestionProps> = ({
-  config,
+export const SmartVocFeedbackQuestion: React.FC<MappedStepComponentProps> = ({
+  stepConfig,
   stepName,
-  onStepComplete
-  // isMock
+  onStepComplete,
+  instructions,
 }) => {
 
-  const cfg = (typeof config === 'object' && config !== null)
-    ? config as {
+  const cfg = (typeof stepConfig === 'object' && stepConfig !== null)
+    ? stepConfig as {
         title?: string;
         description?: string;
+        instructions?: string;
         questionText?: string;
         answerPlaceholder?: string;
         required?: boolean;
@@ -27,6 +28,16 @@ export const SmartVocFeedbackQuestion: React.FC<ComponentSmartVocFeedbackQuestio
         savedResponseId?: string;
       }
     : {};
+
+    console.log('[SmartVocFeedbackQuestion] Configuración completa:', {
+      stepConfigInstructions: cfg.instructions,
+      stepPropsInstructions: instructions,
+      stepConfigDescription: cfg.description,
+      stepName,
+      title: cfg.title
+    });
+
+  const finalInstructions = cfg.instructions || instructions;
 
   const [currentResponse, setCurrentResponse] = useState(() => {
     return cfg.savedResponses || '';
@@ -37,7 +48,7 @@ export const SmartVocFeedbackQuestion: React.FC<ComponentSmartVocFeedbackQuestio
   const participantId = useParticipantStore(state => state.participantId);
 
   // Hook para poder invalidar cache después de guardar
-  const { fetchResponses } = useModuleResponses({ autoFetch: false });
+  const { refetch } = useModuleResponses({ autoFetch: false });
 
   const {
     responseData,
@@ -69,13 +80,7 @@ export const SmartVocFeedbackQuestion: React.FC<ComponentSmartVocFeedbackQuestio
 
   // useEffect para respuestas guardadas desde CurrentStepRenderer
   useEffect(() => {
-    console.log(`🔍 [SmartVocFeedbackQuestion] useEffect savedResponses:`, {
-      savedResponses: cfg.savedResponses,
-      savedResponsesType: typeof cfg.savedResponses,
-      willUpdate: cfg.savedResponses !== undefined
-    });
     if (cfg.savedResponses !== undefined) {
-      console.log(`✅ [SmartVocFeedbackQuestion] Actualizando currentResponse a:`, cfg.savedResponses);
       setCurrentResponse(cfg.savedResponses);
     }
   }, [cfg.savedResponses]);
@@ -90,7 +95,7 @@ export const SmartVocFeedbackQuestion: React.FC<ComponentSmartVocFeedbackQuestio
   const handleSaveAndProceed = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!config) {
+    if (!stepConfig) {
       logger.error('Missing config');
       return;
     }
@@ -106,20 +111,21 @@ export const SmartVocFeedbackQuestion: React.FC<ComponentSmartVocFeedbackQuestio
       const { success } = await saveCurrentStepResponse(currentResponse);
 
       if (success) {
-        console.log(`🔄 [SmartVocFeedbackQuestion] Invalidando cache después de guardar exitosamente`);
-
         // Invalidar cache de module responses para obtener datos frescos
         if (researchId && participantId) {
           try {
-            fetchResponses(researchId, participantId);
+            await refetch();
           } catch (error) {
-            console.warn(`⚠️ [SmartVocFeedbackQuestion] Error invalidando cache:`, error);
+            logger.warn('Error invalidando cache', error);
           }
         }
 
-        onStepComplete(currentResponse);
+        // Verificamos si onStepComplete existe antes de llamarlo
+        if (onStepComplete) {
+          onStepComplete(currentResponse);
+        }
       } else {
-        console.error("[SmartVocFeedbackQuestion] Falló saveCurrentStepResponse. Error debería estar en stepResponseError.");
+        logger.error('Falló saveCurrentStepResponse');
       }
     } catch (error) {
       logger.error('Error guardando respuesta', error);
@@ -131,7 +137,7 @@ export const SmartVocFeedbackQuestion: React.FC<ComponentSmartVocFeedbackQuestio
   const buttonText = getStandardButtonText({
     isSaving: isSaving,
     isLoading: isSubmittingToServer,
-    hasExistingData: !!responseSpecificId || !!cfg.savedResponses || currentResponse !== '',
+    hasExistingData: !!responseSpecificId || !!cfg.savedResponses,
     isNavigating: isSubmittingToServer,
     customCreateText: 'Guardar y continuar',
     customUpdateText: 'Actualizar y continuar'
@@ -172,9 +178,9 @@ export const SmartVocFeedbackQuestion: React.FC<ComponentSmartVocFeedbackQuestio
         {cfg.title || stepName || 'Voice of Customer (VOC)'}
       </h2>
 
-      {cfg.description && (
+      {(finalInstructions || cfg.description) && (
         <p className="text-neutral-600 mb-6">
-          {cfg.description}
+          {finalInstructions || cfg.description}
         </p>
       )}
 

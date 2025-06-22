@@ -1,10 +1,9 @@
 import React, { useMemo } from 'react';
 import { ParticipantFlowStep } from '../../types/flow';
-import CurrentStepRenderer from './CurrentStepRenderer';
-import LoadingIndicator from '../common/LoadingIndicator';
 import ErrorDisplay from '../common/ErrorDisplay';
+import LoadingIndicator from '../common/LoadingIndicator';
+import CurrentStepRenderer from './CurrentStepRenderer';
 // import { FlowStepContentProps as OldFlowStepContentProps } from './types';
-import { ResponsesData } from '../../hooks/types';
 import { FlowStepContentComponentProps } from '../../types/flow.types';
 
 const FlowStepContent: React.FC<FlowStepContentComponentProps> = (props) => {
@@ -67,7 +66,7 @@ const FlowStepContent: React.FC<FlowStepContentComponentProps> = (props) => {
 
     if (currentStepEnum === ParticipantFlowStep.LOGIN) {
         return (
-            <CurrentStepRenderer 
+            <CurrentStepRenderer
                 key={`login-${stepKey}`}
                 stepType="login"
                 researchId={researchId}
@@ -79,12 +78,13 @@ const FlowStepContent: React.FC<FlowStepContentComponentProps> = (props) => {
 
     if (currentExpandedStep) {
         return (
-            <CurrentStepRenderer 
-                key={stepKey} // Usar key única para forzar re-renderizado
+            <CurrentStepRenderer
+                key={stepKey}
                 stepType={currentExpandedStep.type}
-                stepConfig={memoizedStepConfig} // Usar la config memoizada
                 stepId={currentExpandedStep.id}
                 stepName={currentExpandedStep.name}
+                stepConfig={memoizedStepConfig}
+                instructions={currentExpandedStep.instructions}
                 researchId={researchId}
                 token={token}
                 onStepComplete={handleStepComplete}
@@ -97,4 +97,4 @@ const FlowStepContent: React.FC<FlowStepContentComponentProps> = (props) => {
     return <ErrorDisplay title="Error Inesperado" message="El estado actual de la aplicación es inconsistente." />;
 };
 
-export default FlowStepContent; 
+export default FlowStepContent;

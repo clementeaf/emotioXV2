@@ -1,6 +1,8 @@
 import React from 'react';
+import { CognitiveQuestion } from './cognitive-task.types';
 import { DemographicConfig } from './demographics';
 import { ParticipantFlowStep } from './flow';
+import { SmartVOCQuestion } from './smart-voc.types';
 
 // Tipos base para el flujo
 export interface ExpandedStep {
@@ -11,6 +13,7 @@ export interface ExpandedStep {
   responseKey?: string;
   completed?: boolean;
   current?: boolean;
+  instructions?: string;
 }
 
 export interface Step {
@@ -18,6 +21,7 @@ export interface Step {
   name: string;
   completed?: boolean;
   current?: boolean;
+  instructions?: string;
 }
 
 // Props para handlers de flujo
@@ -29,11 +33,16 @@ export interface CognitiveTaskHandlerProps {
 }
 
 export interface CurrentStepProps {
-  step: ExpandedStep;
+  stepType: string;
+  stepId?: string;
+  stepName?: string;
   researchId: string;
-  participantId: string;
-  onComplete: () => void;
-  onError: (error: string) => void;
+  token: string | null | undefined;
+  instructions?: string;
+  onLoginSuccess?: (participant: unknown) => void;
+  onStepComplete?: (data?: unknown) => void;
+  onError?: (message: string, stepType: string) => void;
+  stepConfig?: Record<string, any> | CognitiveQuestion | SmartVOCQuestion | undefined;
 }
 
 export interface CurrentStepRendererProps {
@@ -89,6 +98,7 @@ export interface MappedStepComponentProps {
   isApiDisabled?: boolean;
   savedResponse?: unknown;
   savedResponseId?: string;
+  instructions?: string;
 }
 
 // Tipos para preguntas específicas del flujo

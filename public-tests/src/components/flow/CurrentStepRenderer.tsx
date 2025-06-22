@@ -19,6 +19,7 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
     onLoginSuccess,
     onStepComplete,
     onError,
+    ...restOfStepProps
 }) => {
     const [error, setError] = useState<string | null>(null);
 
@@ -45,6 +46,13 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
         }
     }, [onError, stepType]);
 
+    // Reconstruimos la configuración para el componente hijo,
+    // combinando el stepConfig con otras props del paso (como instructions).
+    const configForChild = {
+        ...(stepConfig || {}),
+        ...restOfStepProps,
+    };
+
     // Lógica principal de renderizado
     const ComponentToRender = stepComponentMap[stepType] || (() => <RenderError message={`Tipo de paso no encontrado: ${stepType}`} />);
 
@@ -56,17 +64,18 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
     return renderStepWithWarning(
         <Suspense fallback={<div className="flex items-center justify-center h-full">Cargando paso...</div>}>
             <ComponentToRender
-                // Pasamos las props directamente. El componente hijo se encargará de su estado.
                 stepType={stepType}
                 stepId={stepId}
                 stepName={stepName}
-                stepConfig={stepConfig}
+                // Pasamos la configuración combinada con el nombre de prop correcto
+                stepConfig={configForChild}
                 researchId={researchId}
                 participantId={participantIdFromStore}
                 token={token}
                 onLoginSuccess={onLoginSuccess as (p: unknown) => void}
                 onStepComplete={onStepComplete as (d?: unknown) => void}
                 onError={handleError}
+                {...restOfStepProps}
             />
         </Suspense>
     );
