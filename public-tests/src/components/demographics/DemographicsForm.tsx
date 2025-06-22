@@ -12,6 +12,24 @@ import { getStandardButtonText } from '../../utils/formHelpers';
 import { DemographicQuestion } from './DemographicQuestion';
 import { DemographicsFormProps } from './types';
 
+// ✅ PASO 1: Añadir mapa de traducciones
+const labelTranslations: Record<string, string> = {
+  age: 'Edad',
+  gender: 'Género',
+  education: 'Nivel de Educación',
+  educationLevel: 'Nivel de Educación',
+  occupation: 'Ocupación',
+  income: 'Ingresos',
+  householdIncome: 'Ingresos del Hogar',
+  location: 'Ubicación',
+  ethnicity: 'Etnia',
+  language: 'Idioma Principal',
+  country: 'País',
+  employmentStatus: 'Estado Laboral',
+  dailyHoursOnline: 'Horas diarias en línea',
+  technicalProficiency: 'Competencia Técnica',
+};
+
 export const DemographicsForm: React.FC<DemographicsFormProps> = ({
   config,
   initialValues = {},
@@ -23,8 +41,8 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
   const queryClient = useQueryClient();
   const { researchId, participantId } = useParticipantStore();
   const { refetch: refetchModuleResponses } = useModuleResponses({
-    researchId,
-    participantId,
+    researchId: researchId ?? undefined,
+    participantId: participantId ?? undefined,
     autoFetch: false
   });
 
@@ -143,6 +161,8 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
         key,
         config: {
           ...questionConfigFromFile,
+          // ✅ PASO 2: Aplicar traducción al título
+          title: labelTranslations[key] || questionConfigFromFile.title || key,
           id: questionConfigFromFile.id || key,
           options: finalOptions
         }
