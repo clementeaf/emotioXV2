@@ -1,22 +1,69 @@
-import { Star } from 'lucide-react';
+import React from 'react';
 
-// Componente de calificación por estrellas
-const StarRating = ({ rating, setRating }: { rating: number; setRating: (value: number) => void }) => {
+interface StarRatingProps {
+  count: number;
+  value: number;
+  onChange: (value: number) => void;
+  disabled?: boolean;
+}
+
+const Star = ({ filled, onClick, onMouseEnter, onMouseLeave }: { filled: boolean, onClick: () => void, onMouseEnter: () => void, onMouseLeave: () => void }) => {
   return (
-    <div className="flex space-x-4 justify-center my-8">
-      {[1, 2, 3, 4, 5].map((star) => (
+    <svg
+      width="40"
+      height="40"
+      viewBox="0 0 24 24"
+      fill={filled ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      onClick={onClick}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      className="cursor-pointer transition-colors duration-200 ease-in-out"
+      style={{ color: filled ? '#FFC107' : '#E0E0E0' }}
+    >
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+    </svg>
+  );
+};
+
+
+export const StarRating: React.FC<StarRatingProps> = ({ count, value, onChange, disabled = false }) => {
+  const [hoverValue, setHoverValue] = React.useState<number | undefined>(undefined);
+
+  const stars = Array.from({ length: count }, (_, i) => i + 1);
+
+  const handleMouseEnter = (newValue: number) => {
+    if (!disabled) {
+      setHoverValue(newValue);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (!disabled) {
+      setHoverValue(undefined);
+    }
+  };
+
+  const handleClick = (newValue: number) => {
+    if (!disabled) {
+      onChange(newValue);
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-center space-x-2">
+      {stars.map((starValue) => (
         <Star
-          key={star}
-          size={48}
-          fill={star <= rating ? "#FFB800" : "none"}
-          stroke={star <= rating ? "#FFB800" : "#D1D5DB"}
-          strokeWidth={1.5}
-          className="cursor-pointer hover:scale-110 transition-transform"
-          onClick={() => setRating(star)}
+          key={starValue}
+          filled={(hoverValue || value) >= starValue}
+          onClick={() => handleClick(starValue)}
+          onMouseEnter={() => handleMouseEnter(starValue)}
+          onMouseLeave={handleMouseLeave}
         />
       ))}
     </div>
   );
 };
-
-export default StarRating; 

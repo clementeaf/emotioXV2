@@ -1,16 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { useParticipantStore } from '../../../stores/participantStore';
+import React, { useEffect, useState } from 'react';
 import { useResponseAPI } from '../../../hooks/useResponseAPI';
 import { ApiClient, APIStatus } from '../../../lib/api';
-import { getStandardButtonText } from '../../../utils/formHelpers';
+import { useParticipantStore } from '../../../stores/participantStore';
 import { ComponentLinearScaleQuestionProps } from '../../../types/flow.types';
+import { getStandardButtonText } from '../../../utils/formHelpers';
+import { StarRating } from '../../smartVoc/StarRating';
 
 // Componente para Linear Scale
-export const LineaScaleQuestion: React.FC<ComponentLinearScaleQuestionProps> = ({ 
-    config, 
-    stepName, 
-    onStepComplete, 
-    isMock 
+export const LineaScaleQuestion: React.FC<ComponentLinearScaleQuestionProps> = ({
+    config,
+    stepName,
+    onStepComplete,
+    isMock
 }) => {
     // Unificar todas las props de config en un solo objeto seguro
     const cfg = (typeof config === 'object' && config !== null)
@@ -24,9 +25,11 @@ export const LineaScaleQuestion: React.FC<ComponentLinearScaleQuestionProps> = (
           maxLabel?: string;
           savedResponses?: number;
           required?: boolean;
+          type?: 'stars' | 'numbers';
         }
       : {};
 
+    const useStars = cfg.type === 'stars';
     const componentTitle = stepName || cfg.title || 'Pregunta de escala lineal';
     const description = cfg.description;
     const questionText = cfg.questionText ?? (isMock ? 'Valora en una escala (Prueba)' : 'Por favor, indica tu valoración.');
@@ -241,7 +244,7 @@ export const LineaScaleQuestion: React.FC<ComponentLinearScaleQuestionProps> = (
                             key={value}
                             onClick={() => setSelectedValue(value)}
                             disabled={isSaving || isApiLoading || dataLoading || isNavigating}
-                            className={`w-10 h-10 rounded-full border flex items-center justify-center transition-colors disabled:opacity-70 disabled:cursor-not-allowed ${selectedValue === value
+                            className={`w-12 h-12 rounded-full border flex items-center justify-center transition-colors disabled:opacity-70 disabled:cursor-not-allowed ${selectedValue === value
                                     ? 'bg-primary-600 text-white border-primary-600'
                                     : 'bg-white text-neutral-700 border-neutral-300 hover:bg-gray-50'
                                 }`}
@@ -251,6 +254,16 @@ export const LineaScaleQuestion: React.FC<ComponentLinearScaleQuestionProps> = (
                     ))}
                 </div>
             </div>
+            {useStars && (
+                <div className="mb-8 flex justify-center">
+                    <StarRating
+                        count={maxValue}
+                        value={selectedValue || 0}
+                        onChange={(newValue) => setSelectedValue(newValue)}
+                        disabled={isSaving || isApiLoading || dataLoading || isNavigating}
+                    />
+                </div>
+            )}
             <button
                 onClick={handleSaveAndProceed}
                 disabled={selectedValue === null || isSaving || isApiLoading || dataLoading || isNavigating || (isMock && selectedValue === null)}

@@ -1,13 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  DemographicResponses,
-  GENDER_OPTIONS,
-  EDUCATION_OPTIONS
-} from '../../types/demographics';
-import { DemographicQuestion } from './DemographicQuestion';
+import { useQueryClient } from '@tanstack/react-query';
+import React, { useEffect, useState } from 'react';
+import { useModuleResponses } from '../../hooks/useModuleResponses';
 import { useStepResponseManager } from '../../hooks/useStepResponseManager';
-import { DemographicsFormProps } from './types';
+import { useParticipantStore } from '../../stores/participantStore';
+import {
+    DemographicResponses,
+    EDUCATION_OPTIONS,
+    GENDER_OPTIONS
+} from '../../types/demographics';
 import { getStandardButtonText } from '../../utils/formHelpers';
+import { DemographicQuestion } from './DemographicQuestion';
+import { DemographicsFormProps } from './types';
 
 export const DemographicsForm: React.FC<DemographicsFormProps> = ({
   config,
@@ -16,6 +19,14 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
   onCancel,
   stepId = 'demographic',
 }) => {
+
+  const queryClient = useQueryClient();
+  const { researchId, participantId } = useParticipantStore();
+  const { refetch: refetchModuleResponses } = useModuleResponses({
+    researchId,
+    participantId,
+    autoFetch: false
+  });
 
   const [formFieldResponses, setFormFieldResponses] = useState<DemographicResponses>(initialValues);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -86,18 +97,19 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       console.warn(`❌ [DemographicsForm] Validation failed, aborting submit`);
       return;
     }
-    
+
     setIsSubmittingToServer(true);
-    
+
     const { success } = await saveCurrentStepResponse(formFieldResponses);
-    
+
     if (success) {
-      onSubmit(formFieldResponses); 
+      await refetchModuleResponses();
+      onSubmit(formFieldResponses);
     } else {
       console.error(`❌ [DemographicsForm] Save failed. Error:`, stepResponseError);
     }
@@ -112,7 +124,7 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
       </div>
     );
   }
-  
+
   const enabledQuestions = Object.entries(config.questions)
     .filter(([, questionConfig]) => questionConfig.enabled)
     .sort(([, a], [, b]) => (a.order !== undefined && b.order !== undefined ? a.order - b.order : 0))
@@ -128,12 +140,12 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
       }
 
       return {
-        key, 
-        config: { 
-          ...questionConfigFromFile, 
+        key,
+        config: {
+          ...questionConfigFromFile,
           id: questionConfigFromFile.id || key,
           options: finalOptions
-        } 
+        }
       };
     });
 
@@ -162,7 +174,7 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
               Cancelar
             </button>
           )}
-          <button type="submit" disabled={isSaving || isLoading || isSubmittingToServer} 
+          <button type="submit" disabled={isSaving || isLoading || isSubmittingToServer}
             className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
             {buttonText}
           </button>
@@ -170,4 +182,4 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
       </form>
     </div>
   );
-}; 
+};

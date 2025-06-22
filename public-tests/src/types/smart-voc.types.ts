@@ -125,7 +125,13 @@ export interface CSATViewProps extends StandardizedFormProps {
   questionText: string;
   instructions?: string;
   companyName?: string;
-  config?: unknown;
+  config?: {
+    id?: string;
+    type?: 'stars' | 'numbers';
+    scaleRange?: { start: number; end: number };
+    instructions?: string;
+    companyName?: string;
+  };
   scaleSize?: number;
   onNext?: (selectedValue: number) => void;
   onStepComplete?: (data?: unknown) => void;

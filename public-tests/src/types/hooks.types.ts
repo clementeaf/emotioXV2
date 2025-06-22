@@ -35,8 +35,9 @@ export interface UseStepResponseManagerReturn<TResponseData> {
   isLoading: boolean;
   isSaving: boolean;
   error: string | null;
-  responseSpecificId: string | null; 
+  responseSpecificId: string | null;
   saveCurrentStepResponse: (dataToSave: TResponseData) => Promise<{ success: boolean; id?: string | null }>;
+  hasExistingData: boolean;
 }
 
 export interface UseResponseManagerProps {
@@ -89,11 +90,10 @@ export interface UseModuleResponsesProps {
 }
 
 export interface UseModuleResponsesReturn {
-  data: unknown | null;
-  documentId: string | null;
+  data: any;
   isLoading: boolean;
   error: string | null;
-  fetchResponses: (researchId: string, participantId: string) => void;
+  refetch: () => Promise<any>;
 }
 
 // Tipos para hooks de login de participante
@@ -145,13 +145,13 @@ export interface StandardizedFormState<T> {
 }
 
 export interface StandardizedFormActions<T> {
-  setValue: (value: T, isUserInteraction?: boolean) => void;
+  setValue: (newValue: T, isUserInteraction?: boolean) => void;
   setError: (error: string | null) => void;
   clearError: () => void;
   saveResponse: (value?: T) => Promise<{ success: boolean; data?: unknown }>;
-  validateAndSave: (value?: T) => Promise<{ success: boolean; data?: unknown }>;
+  validateAndSave: (dataToSave?: T) => Promise<{ success: boolean; error: string | null; data: unknown | null }>;
   reset: () => void;
-  forceRefresh: () => void;
+  refetch: () => void;
 }
 
 export interface UseStandardizedFormOptions<T> {
@@ -205,4 +205,4 @@ export interface UseSmartVOCDataReturn {
   isLoading: boolean;
   error: string | null;
   fetchQuestions: () => Promise<void>;
-} 
+}

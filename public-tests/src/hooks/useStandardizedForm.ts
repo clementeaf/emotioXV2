@@ -100,6 +100,7 @@ export function useStandardizedForm<T>(
     enableAutoSave = false,
     moduleId
   } = options;
+
   const researchIdFromStore = useParticipantStore(state => state.researchId);
   const participantIdFromStore = useParticipantStore(state => state.participantId);
   const researchId = propResearchId || researchIdFromStore;
@@ -372,6 +373,12 @@ export function useStandardizedForm<T>(
     }
   }, [value, error]);
 
+  const refetch = useCallback(() => {
+    if (researchId && participantId && !isMock) {
+      fetchResponses(researchId, participantId);
+    }
+  }, [researchId, participantId, isMock, fetchResponses]);
+
   // Actions
   const actions: StandardizedFormActions<T> = {
     setValue,
@@ -414,7 +421,8 @@ export function useStandardizedForm<T>(
         console.log(`🔄 [useStandardizedForm] Triggering API refresh for ${stepId}`);
         fetchResponses(researchId, participantId);
       }
-    }
+    },
+    refetch
   };
 
   // State

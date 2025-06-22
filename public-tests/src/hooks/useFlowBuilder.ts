@@ -1,36 +1,36 @@
 import { useCallback, useMemo } from 'react';
-import { ExpandedStep } from '../types/flow'; 
-import { smartVOCTypeMap } from './utils'; 
+import { ExpandedStep } from '../types/flow';
 import { UseFlowBuilderProps } from './types';
 import { ProcessedResearchFormConfig } from './useResearchForms';
+import { smartVOCTypeMap } from './utils';
 
 const extractCoreStepConfigs = (flowDataModules: ProcessedResearchFormConfig[]) => {
-    
+
     let demographicsQuestions: unknown = null;
     let welcomeConfig: unknown = null;
     let thankyouConfig: unknown = null;
 
     for (const processedModule of flowDataModules) {
-        
+
         const moduleData = processedModule.config;
         if (!moduleData) {
             continue;
         }
 
         const moduleSK = (moduleData as { sk?: string }).sk;
-        
+
         switch (moduleSK) {
             case 'EYE_TRACKING_CONFIG':
-                
+
                 if ('demographicQuestions' in moduleData && (moduleData as { demographicQuestions?: unknown }).demographicQuestions) {
                     const demoQuestionsFromApi = (moduleData as { demographicQuestions?: unknown }).demographicQuestions;
-                    
+
                     if (demoQuestionsFromApi && typeof demoQuestionsFromApi === 'object' && demoQuestionsFromApi !== null) {
                         const hasEnabledQuestions = Object.values(demoQuestionsFromApi).some((question: unknown) => {
-                            return question && typeof question === 'object' && question !== null && 
+                            return question && typeof question === 'object' && question !== null &&
                                    'enabled' in question && (question as { enabled?: boolean }).enabled === true;
                         });
-                        
+
                         if (hasEnabledQuestions) {
                             demographicsQuestions = {
                                 questions: demoQuestionsFromApi,
@@ -53,7 +53,7 @@ const extractCoreStepConfigs = (flowDataModules: ProcessedResearchFormConfig[]) 
                 break;
         }
     }
-    
+
     return { demographicsQuestions, welcomeConfig, thankyouConfig };
 };
 
@@ -70,7 +70,7 @@ const processSmartVocQuestions = (
             const originalQuestionType = q.type;
             const upperQuestionType = typeof originalQuestionType === 'string' ? originalQuestionType.toUpperCase() : undefined;
             const frontendType = upperQuestionType && smartVOCTypeMap[upperQuestionType] ? smartVOCTypeMap[upperQuestionType] : undefined;
-            
+
             if (frontendType) {
                 steps.push({
                     id: q.id || `${frontendType}_${steps.length}`,
@@ -98,6 +98,19 @@ const processCognitiveTaskQuestions = (
             if (typeof question !== 'object' || question === null) continue;
             const q = question as { id?: string; title?: string; type?: string };
             const originalQuestionType = q.type;
+            const upperOriginalType = typeof originalQuestionType === 'string' ? originalQuestionType.toUpperCase() : undefined;
+
+            if (upperOriginalType && smartVOCTypeMap[upperOriginalType]) {
+                steps.push({
+                    id: q.id || `${smartVOCTypeMap[upperOriginalType]}_${steps.length}`,
+                    name: q.title || `SmartVOC: ${originalQuestionType}`,
+                    type: smartVOCTypeMap[upperOriginalType],
+                    config: question,
+                    responseKey: parentModuleResponseKey
+                });
+                continue;
+            }
+
             const frontendType = typeof originalQuestionType === 'string' ? `cognitive_${originalQuestionType.toLowerCase()}` : undefined;
             if (frontendType) {
                 steps.push({
@@ -141,9 +154,9 @@ const processDefaultModuleQuestions = (
 };
 
 export const useFlowBuilder = ({ researchFlowApiData, isLoading }: UseFlowBuilderProps & { isLoading?: boolean }): ExpandedStep[] => {
-    
+
     const buildStepsInternal = useCallback(() => {
-    
+
         const flowDataModules =
             researchFlowApiData && typeof researchFlowApiData === 'object' && researchFlowApiData !== null && 'data' in researchFlowApiData
                 ? (researchFlowApiData as { data: unknown }).data
@@ -163,30 +176,30 @@ export const useFlowBuilder = ({ researchFlowApiData, isLoading }: UseFlowBuilde
             console.warn('[useFlowBuilder] DEBUG - researchFlowApiData:', researchFlowApiData);
             console.warn('[useFlowBuilder] DEBUG - flowDataModules:', flowDataModules);
             console.warn('[useFlowBuilder] DEBUG - tipo de flowDataModules:', typeof flowDataModules);
-            
+
             // Si hay un error en la API, mostrarlo
             if (researchFlowApiData && typeof researchFlowApiData === 'object' && 'error' in researchFlowApiData) {
                 console.error('[useFlowBuilder] API Error:', (researchFlowApiData as { error?: unknown; message?: string }).message);
             }
-            
+
             return [
                 { id: 'welcome', name: 'Bienvenida', type: 'welcome', config: { title: '¡Bienvenido!', message: 'Iniciando...'}, responseKey: 'welcome' },
                 { id: 'thankyou', name: 'Agradecimiento', type: 'thankyou', config: { title: '¡Muchas Gracias!', message: 'Fin.'}, responseKey: 'thankyou' }
             ];
         }
-        
+
         if (!Array.isArray(flowDataModules) || flowDataModules.length === 0) {
             return [
                 { id: 'welcome', name: 'Bienvenida', type: 'welcome', config: { title: '¡Bienvenido!', message: 'Iniciando...'}, responseKey: 'welcome' },
                 { id: 'thankyou', name: 'Agradecimiento', type: 'thankyou', config: { title: '¡Muchas Gracias!', message: 'Fin.'}, responseKey: 'thankyou' }
             ];
         }
-        
+
         const finalSteps: ExpandedStep[] = [];
-        const { 
+        const {
             demographicsQuestions: demographicsConfigFromBackend,
-            welcomeConfig: welcomeConfigFromBackend, 
-            thankyouConfig: thankyouConfigFromBackend 
+            welcomeConfig: welcomeConfigFromBackend,
+            thankyouConfig: thankyouConfigFromBackend
         } = extractCoreStepConfigs(flowDataModules as ProcessedResearchFormConfig[]);
 
         if (demographicsConfigFromBackend && typeof demographicsConfigFromBackend === 'object' && demographicsConfigFromBackend !== null && 'questions' in demographicsConfigFromBackend) {
@@ -195,56 +208,56 @@ export const useFlowBuilder = ({ researchFlowApiData, isLoading }: UseFlowBuilde
                 id: 'demographic',
                 name: 'title' in demoConfig && typeof demoConfig.title === 'string' ? demoConfig.title : 'Preguntas Demográficas',
                 type: 'demographic',
-                config: { 
+                config: {
                     title: 'title' in demoConfig && typeof demoConfig.title === 'string' ? demoConfig.title : 'Preguntas Demográficas',
                     description: 'description' in demoConfig && typeof demoConfig.description === 'string' ? demoConfig.description : 'Por favor, complete lo siguiente:',
-                    demographicsConfig: demoConfig 
+                    demographicsConfig: demoConfig
                 },
                 responseKey: 'demographic'
             });
         } else {
             console.warn('[useFlowBuilder] No se encontró configuración demográfica en el backend (EYE_TRACKING_CONFIG.demographicQuestions). No se añadirá el paso demográfico.');
             console.info('[useFlowBuilder] 💡 Para mostrar preguntas demográficas: Ve al panel de administración > Eye Tracking > Recruit, y habilita las preguntas demográficas que desees incluir.');
-            
+
             // Temporal: En modo desarrollo, crear preguntas de prueba
             if (import.meta.env?.DEV || window.location.hostname === 'localhost') {
                 console.info('[useFlowBuilder] 🧪 Modo desarrollo detectado: Creando paso demográfico de prueba');
                 const developmentDemoConfig = {
                     questions: {
-                        age: { 
+                        age: {
                             id: 'age',
-                            enabled: true, 
-                            required: true, 
+                            enabled: true,
+                            required: true,
                             title: 'Edad',
-                            options: ['18-24', '25-34', '35-44', '45-54', '55+'] 
+                            options: ['18-24', '25-34', '35-44', '45-54', '55+']
                         },
-                        gender: { 
+                        gender: {
                             id: 'gender',
-                            enabled: true, 
-                            required: true, 
+                            enabled: true,
+                            required: true,
                             title: 'Género',
-                            options: ['Masculino', 'Femenino', 'Otro', 'Prefiero no decir'] 
+                            options: ['Masculino', 'Femenino', 'Otro', 'Prefiero no decir']
                         },
-                        educationLevel: { 
+                        educationLevel: {
                             id: 'educationLevel',
-                            enabled: true, 
-                            required: false, 
+                            enabled: true,
+                            required: false,
                             title: 'Nivel de Educación',
-                            options: ['Primaria', 'Secundaria', 'Universitaria', 'Posgrado'] 
+                            options: ['Primaria', 'Secundaria', 'Universitaria', 'Posgrado']
                         }
                     },
                     title: 'Preguntas Demográficas (Modo Desarrollo)',
                     description: 'Estas son preguntas de prueba para desarrollo. En producción, configúralas en el panel de administración.'
                 };
-                
+
                 finalSteps.push({
                     id: 'demographic',
                     name: developmentDemoConfig.title,
                     type: 'demographic',
-                    config: { 
+                    config: {
                         title: developmentDemoConfig.title,
                         description: developmentDemoConfig.description,
-                        demographicsConfig: developmentDemoConfig 
+                        demographicsConfig: developmentDemoConfig
                     },
                     responseKey: 'demographic'
                 });
@@ -254,14 +267,14 @@ export const useFlowBuilder = ({ researchFlowApiData, isLoading }: UseFlowBuilde
         const resolvedWelcomeConfig = (welcomeConfigFromBackend && typeof welcomeConfigFromBackend === 'object' && welcomeConfigFromBackend !== null && 'title' in welcomeConfigFromBackend)
             ? welcomeConfigFromBackend as { title?: string; message?: string }
             : { title: 'Bienvenida', message: 'Gracias por participar.' };
-        finalSteps.push({ 
-            id: 'welcome', 
-            name: 'title' in resolvedWelcomeConfig && typeof resolvedWelcomeConfig.title === 'string' ? resolvedWelcomeConfig.title : 'Bienvenida', 
-            type: 'welcome', 
+        finalSteps.push({
+            id: 'welcome',
+            name: 'title' in resolvedWelcomeConfig && typeof resolvedWelcomeConfig.title === 'string' ? resolvedWelcomeConfig.title : 'Bienvenida',
+            type: 'welcome',
             config: resolvedWelcomeConfig,
             responseKey: 'welcome'
         });
-        
+
         for (const processedModule of flowDataModules) {
             const moduleData = processedModule.config;
             if (!moduleData) continue;
@@ -273,7 +286,7 @@ export const useFlowBuilder = ({ researchFlowApiData, isLoading }: UseFlowBuilde
 
             switch (moduleSK) {
                 case 'EYE_TRACKING_CONFIG':
-                case 'WELCOME_SCREEN':     
+                case 'WELCOME_SCREEN':
                 case 'THANK_YOU_SCREEN':
                     break;
                 case 'SMART_VOC_FORM':
@@ -291,10 +304,10 @@ export const useFlowBuilder = ({ researchFlowApiData, isLoading }: UseFlowBuilde
         const resolvedThankYouConfig = (thankyouConfigFromBackend && typeof thankyouConfigFromBackend === 'object' && thankyouConfigFromBackend !== null && 'title' in thankyouConfigFromBackend)
             ? thankyouConfigFromBackend as { title?: string; message?: string }
             : { title: 'Fin', message: 'Gracias por completar el estudio.' };
-        finalSteps.push({ 
-            id: 'thankyou', 
-            name: 'title' in resolvedThankYouConfig && typeof resolvedThankYouConfig.title === 'string' ? resolvedThankYouConfig.title : 'Fin', 
-            type: 'thankyou', 
+        finalSteps.push({
+            id: 'thankyou',
+            name: 'title' in resolvedThankYouConfig && typeof resolvedThankYouConfig.title === 'string' ? resolvedThankYouConfig.title : 'Fin',
+            type: 'thankyou',
             config: resolvedThankYouConfig,
             responseKey: 'thankyou'
         });
@@ -305,4 +318,4 @@ export const useFlowBuilder = ({ researchFlowApiData, isLoading }: UseFlowBuilde
     const expandedSteps = useMemo(() => buildStepsInternal(), [buildStepsInternal]);
 
     return expandedSteps;
-}; 
+};
