@@ -6,10 +6,10 @@ import { createResponse, errorResponse } from '../utils/controller.utils';
 import { ApiError } from '../utils/errors';
 import { structuredLog } from '../utils/logging.util';
 import {
-    ERROR_MESSAGES,
-    extractResearchId,
-    parseAndValidateBody,
-    validateUserId
+  ERROR_MESSAGES,
+  extractResearchId,
+  parseAndValidateBody,
+  validateUserId
 } from '../utils/validation';
 
 // Función auxiliar para crear respuestas exitosas
@@ -60,6 +60,8 @@ export class SmartVOCFormController {
          structuredLog('info', `SmartVOCFormController.${context}`, 'Formulario no encontrado, devolviendo respuesta controlada', { researchId: researchId });
          return successResponse({ notFound: true });
       }
+
+      console.log('@@@@ DATOS A ENVIAR AL FRONTEND @@@@', JSON.stringify(form, null, 2));
 
       structuredLog('info', `SmartVOCFormController.${context}`, 'Datos obtenidos', { researchId: researchId });
       return successResponse(form);

@@ -103,7 +103,7 @@ export interface SmartVOCResponse {
 export interface ErrorModalData {
   title: string;
   message: string | ReactNode;
-  type: 'error' | 'info' | 'success';
+  type: 'error' | 'info' | 'success' | 'warning';
 }
 
 /**
@@ -166,6 +166,7 @@ export interface ErrorModalProps {
   isOpen: boolean;
   onClose: () => void;
   error: ErrorModalData | null;
+  onConfirm?: () => void;
 }
 
 /**

@@ -50,10 +50,20 @@ export const useSmartVOCData = ({ researchId, config }: UseSmartVOCDataProps): U
                 }
             } else {
                 const result = await response.json();
-                const fetchedQuestions = result?.questions as SmartVOCQuestion[] | undefined;
+                let fetchedQuestions = result?.questions;
+
+                // ✅ CORRECCIÓN DEFINITIVA: Parsear el string JSON
+                if (typeof fetchedQuestions === 'string') {
+                    try {
+                        fetchedQuestions = JSON.parse(fetchedQuestions);
+                    } catch (e) {
+                        console.error("Error al parsear el JSON de preguntas:", e);
+                        fetchedQuestions = [];
+                    }
+                }
 
                 if (fetchedQuestions && Array.isArray(fetchedQuestions)) {
-                    setQuestions(fetchedQuestions);
+                    setQuestions(fetchedQuestions as SmartVOCQuestion[]);
                 } else {
                     console.warn('[useSmartVOCData] No se encontraron preguntas en la respuesta.');
                     setQuestions([]);

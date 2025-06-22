@@ -1,82 +1,46 @@
-import React, { Suspense, useCallback, useState } from 'react';
-import { useParticipantStore } from '../../stores/participantStore';
+import React, { Suspense } from 'react';
 import { RenderError } from './RenderError';
 import { stepComponentMap } from './steps';
 import { CurrentStepProps } from './types';
 
-const SMART_VOC_ROUTER_STEP_TYPE = 'smart_voc_module';
-const DEMOGRAPHIC_STEP_TYPE = 'demographic';
-
-type EnrichedStepConfig = Record<string, unknown> | null;
-
+/**
+ * Componente que actúa como un "router" para renderizar el paso actual del flujo.
+ * Lee el `stepType` y, usando el `stepComponentMap`, renderiza el componente de UI correspondiente.
+ * También es responsable de mapear las propiedades genéricas del paso (como `title` o `instructions`
+ * desde `stepConfig`) a las props específicas que cada componente de UI espera (como `questionText`).
+ */
 const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
     stepType,
     stepConfig,
-    stepId,
-    stepName,
-    researchId,
-    token,
-    onLoginSuccess,
-    onStepComplete,
-    onError,
     ...restOfStepProps
 }) => {
-    const [error, setError] = useState<string | null>(null);
+    const ComponentToRender = stepComponentMap[stepType];
 
-    // Simplificación: Ya no manejaremos 'enrichedStepConfig' aquí.
-    // La lógica de cargar respuestas previas se manejará dentro de cada componente
-    // de paso específico (ej: a través del hook useModuleResponses).
-    // Esto evita el bucle de re-renderizado complejo.
-
-    const participantIdFromStore = useParticipantStore(state => state.participantId);
-
-    const renderStepWithWarning = useCallback(
-        (content: React.ReactNode) => (
-            <div className="w-full h-full">
-                {content}
-            </div>
-        ),
-        []
-    );
-
-    const handleError = useCallback((message: string) => {
-        setError(message);
-        if (onError) {
-            onError(message, stepType);
-        }
-    }, [onError, stepType]);
-
-    // Reconstruimos la configuración para el componente hijo,
-    // combinando el stepConfig con otras props del paso (como instructions).
-    const configForChild = {
-        ...(stepConfig || {}),
-        ...restOfStepProps,
-    };
-
-    // Lógica principal de renderizado
-    const ComponentToRender = stepComponentMap[stepType] || (() => <RenderError message={`Tipo de paso no encontrado: ${stepType}`} />);
-
-    if (error) {
-        return <RenderError message={error} stepType={stepType} />;
+    // Si no se encuentra un componente para el tipo de paso, muestra un error.
+    if (!ComponentToRender) {
+        return <RenderError message={`Tipo de paso no encontrado: ${stepType}`} />;
     }
 
-    // El componente a renderizar podría estar lazy-loaded, así que usamos Suspense.
-    return renderStepWithWarning(
+    // Prepara las props finales para el componente.
+    // Esto es crucial para la consistencia.
+    const finalProps = {
+        ...restOfStepProps,
+        stepType,
+        stepConfig,
+
+        // Mapeo de props genéricas a específicas:
+        // El `title` del paso se convierte en `questionText` para la pregunta.
+        onNext: (restOfStepProps as any).onStepComplete,
+        questionText: (stepConfig as any)?.title,
+        instructions: (stepConfig as any)?.instructions,
+        companyName: (stepConfig as any)?.config?.companyName,
+        config: (stepConfig as any)?.config,
+    };
+
+    // Renderiza el componente del paso, envuelto en Suspense por si está lazy-loaded.
+    return (
         <Suspense fallback={<div className="flex items-center justify-center h-full">Cargando paso...</div>}>
-            <ComponentToRender
-                stepType={stepType}
-                stepId={stepId}
-                stepName={stepName}
-                // Pasamos la configuración combinada con el nombre de prop correcto
-                stepConfig={configForChild}
-                researchId={researchId}
-                participantId={participantIdFromStore}
-                token={token}
-                onLoginSuccess={onLoginSuccess as (p: unknown) => void}
-                onStepComplete={onStepComplete as (d?: unknown) => void}
-                onError={handleError}
-                {...restOfStepProps}
-            />
+            <ComponentToRender {...(finalProps as any)} />
         </Suspense>
     );
 };

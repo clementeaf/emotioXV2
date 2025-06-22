@@ -187,22 +187,6 @@ export interface UseFlowBuilderProps {
   isLoading: boolean;
 }
 
-export interface UseFlowNavigationAndStateProps {
-  expandedSteps: ExpandedStep[];
-  initialResearchDataLoading: boolean;
-  researchId: string | undefined;
-  participantId: string | undefined;
-  maxVisitedIndexFromStore: number | undefined;
-  saveStepResponse: (answer?: unknown) => Promise<void>;
-  markResponsesAsCompleted: () => Promise<void>;
-  getStepResponse: (stepIndex: number) => unknown;
-  loadExistingResponses: () => Promise<void>;
-  handleErrorProp: (errorMessage: string, step: ParticipantFlowStep | string) => void;
-  setExternalExpandedSteps?: (updater: (prevSteps: ExpandedStep[]) => ExpandedStep[]) => void;
-  currentStepIndexState: number;
-  setCurrentStepIndexFunc: React.Dispatch<React.SetStateAction<number>>;
-}
-
 // Tipos demográficos específicos del flujo
 export interface ApiDemographicQuestion {
   id: string;

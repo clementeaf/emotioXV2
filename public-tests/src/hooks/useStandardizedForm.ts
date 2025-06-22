@@ -131,7 +131,7 @@ export function useStandardizedForm<T>(
     data: moduleResponsesArray,
     isLoading: isLoadingResponses,
     error: loadingError,
-    fetchResponses
+    refetch: fetchResponses
   } = useModuleResponses({
     researchId: researchId || undefined,
     participantId: participantId || undefined,
@@ -203,10 +203,10 @@ export function useStandardizedForm<T>(
     if (!loadingError && moduleResponsesArray && Array.isArray(moduleResponsesArray)) {
       const foundResponse = moduleResponsesArray.find((r: unknown) => {
         if (typeof r !== 'object' || r === null) return false;
-        const response = r as { stepType?: string; stepId?: string; id?: string };
+        const response = r as { stepType?: string; stepId?: string; stepTitle?: string; id?: string };
 
-        // Buscar solo por stepType (stepId no existe en el JSON)
-        return response.stepType === stepType;
+        // Lógica de búsqueda mejorada: usar tipo Y nombre para una coincidencia única.
+        return response.stepType === stepType && response.stepTitle === stepName;
       });
 
       if (foundResponse) {
@@ -238,6 +238,7 @@ export function useStandardizedForm<T>(
     moduleResponsesArray,
     stepType,
     stepId,
+    stepName,
     initialValue,
     extractValueFromResponse,
     extractedValue,
@@ -271,32 +272,31 @@ export function useStandardizedForm<T>(
   }, [required, validationRules]);
 
   // Save response
-  const saveResponse = useCallback(async (valueToSave?: T): Promise<{ success: boolean; data?: unknown }> => {
+  const saveResponse = useCallback(async (valueToSave?: T): Promise<{ success: boolean; error: string | null; data: unknown | null }> => {
     const finalValue = valueToSave !== undefined ? valueToSave : value;
 
     if (!researchId || !participantId) {
       const errorMsg = 'ID de investigación o participante no disponible.';
       console.error(`❌ [useStandardizedForm] Missing IDs:`, { researchId, participantId });
       setError(errorMsg);
-      return { success: false };
+      return { success: false, error: errorMsg, data: null };
     }
 
     if (isMock) {
-      return { success: true, data: { value: finalValue } };
+      return { success: true, data: { value: finalValue }, error: null };
     }
 
     const validationError = validateValue(finalValue);
     if (validationError) {
       console.error(`❌ [useStandardizedForm] Validation error:`, validationError);
       setError(validationError);
-      return { success: false };
+      return { success: false, error: validationError, data: null };
     }
 
     setError(null);
     setApiError(null);
 
     try {
-
       const result = await saveOrUpdateResponse(
         stepId,
         stepType,
@@ -306,24 +306,32 @@ export function useStandardizedForm<T>(
         moduleId
       );
 
-      if (apiError) {
-        console.error(`❌ [useStandardizedForm] API Error after save:`, apiError);
-        setError(apiError);
-        return { success: false };
+      if (result === null || result === undefined) {
+        console.error(`❌ [useStandardizedForm] API Error: saveOrUpdateResponse returned null. Check useResponseAPI logs.`);
+        const finalError = apiError || 'Error desconocido durante el guardado en la API.';
+        if (!apiError) {
+          setError(finalError);
+        }
+        return { success: false, error: finalError, data: null };
       }
 
-      if (result && typeof result === 'object' && result !== null && 'id' in result && !responseId) {
+      if (result && typeof result === 'object' && 'id' in result && !responseId) {
         const newId = (result as { id: string }).id;
         setResponseId(newId);
         setHasExistingData(true);
       }
 
-      return { success: true, data: result };
+      // CRÍTICO: Forzar la recarga de todas las respuestas para mantener el estado sincronizado.
+      if (fetchResponses) {
+        fetchResponses();
+      }
+
+      return { success: true, data: result, error: null };
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Error desconocido al guardar.';
       console.error(`💥 [useStandardizedForm] Exception during save:`, err);
       setError(errorMsg);
-      return { success: false };
+      return { success: false, error: errorMsg, data: null };
     }
   }, [
     value,
@@ -343,14 +351,14 @@ export function useStandardizedForm<T>(
   ]);
 
   // Validate and save
-  const validateAndSave = useCallback(async (valueToSave?: T): Promise<{ success: boolean; data?: unknown }> => {
+  const validateAndSave = useCallback(async (valueToSave?: T): Promise<{ success: boolean; error: string | null; data: unknown | null }> => {
     const finalValue = valueToSave !== undefined ? valueToSave : value;
     const validationError = validateValue(finalValue);
 
     if (validationError) {
       console.error(`❌ [useStandardizedForm] validateAndSave validation error:`, validationError);
       setError(validationError);
-      return { success: false };
+      return { success: false, error: validationError, data: null };
     }
 
     return saveResponse(finalValue);
@@ -375,7 +383,7 @@ export function useStandardizedForm<T>(
 
   const refetch = useCallback(() => {
     if (researchId && participantId && !isMock) {
-      fetchResponses(researchId, participantId);
+      fetchResponses();
     }
   }, [researchId, participantId, isMock, fetchResponses]);
 
@@ -419,7 +427,7 @@ export function useStandardizedForm<T>(
       // Forzar recarga de respuestas desde API
       if (fetchResponses && researchId && participantId) {
         console.log(`🔄 [useStandardizedForm] Triggering API refresh for ${stepId}`);
-        fetchResponses(researchId, participantId);
+        fetchResponses();
       }
     },
     refetch

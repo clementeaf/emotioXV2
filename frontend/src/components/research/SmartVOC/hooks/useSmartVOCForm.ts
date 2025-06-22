@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 
 import { useAuth } from '@/providers/AuthProvider';
@@ -45,6 +45,8 @@ export const useSmartVOCForm = (researchId: string) => {
   } = useSmartVOCMutations(researchId, smartVocId || undefined);
 
   const { validateForm, filterEditedQuestions } = useSmartVOCValidation();
+
+  const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
 
   // Logging solo en desarrollo
   useEffect(() => {
@@ -133,17 +135,20 @@ export const useSmartVOCForm = (researchId: string) => {
     saveMutation.mutate(cleanedData);
   }, [formData, filterEditedQuestions, validateForm, setValidationErrors, saveMutation]);
 
-  // Función para eliminar datos SmartVOC
-  const handleDelete = useCallback(async () => {
+  // Abre el modal de confirmación
+  const handleDelete = useCallback(() => {
+    setDeleteModalOpen(true);
+  }, []);
+
+  // Ejecuta la eliminación
+  const confirmDelete = useCallback(async () => {
+    setDeleteModalOpen(false); // Cierra el modal primero
     try {
       await deleteMutation.mutateAsync();
-
-      // Limpiar el estado local y restaurar preguntas por defecto
       setSmartVocId(null);
       resetToDefaultQuestions();
     } catch (error: unknown) {
-      // El error ya se maneja en la mutación
-      console.error('[SmartVOCForm] Error en handleDelete:', error);
+      console.error('[SmartVOCForm] Error en confirmDelete:', error);
     }
   }, [deleteMutation, setSmartVocId, resetToDefaultQuestions]);
 
@@ -170,6 +175,9 @@ export const useSmartVOCForm = (researchId: string) => {
     handleDelete,
     validateForm: (questionsToValidate: SmartVOCQuestion[]) => validateForm(questionsToValidate, formData),
     closeModal,
-    isExisting: !!smartVocId
+    isExisting: !!smartVocId,
+    isDeleteModalOpen,
+    confirmDelete,
+    closeDeleteModal: () => setDeleteModalOpen(false)
   };
 };

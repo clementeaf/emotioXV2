@@ -85,8 +85,11 @@ export interface Answers {
 export interface SmartVOCHandlerProps {
     researchId: string;
     token: string;
-    onComplete: () => void; // Llamado cuando se completa con éxito (o no existe)
-    onError: (message: string) => void; // Llamado si hay un error de carga
+    onComplete: (answers: Answers) => void; // Permitir pasar las respuestas
+    onError: (error: string) => void;
+    stepConfig?: { // <-- Añadir stepConfig opcional
+      moduleId?: string;
+    };
 }
 
 export interface WelcomeStepConfig {

@@ -2,7 +2,6 @@
  * Constantes para el SmartVOC
  */
 
-import { SmartVOCQuestion } from 'shared/interfaces/smart-voc.interface';
 
 // Claves para React Query
 export const QUERY_KEYS = {
@@ -57,16 +56,18 @@ export const UI_TEXTS = {
     EXISTING_CONFIGURATION: 'Se actualizará la configuración existente'
   },
   BUTTONS: {
-    SAVE: 'Guardar configuración',
-    UPDATE: 'Actualizar configuración',
-    PREVIEW: 'Vista previa',
+    SAVE: 'Guardar',
+    UPDATE: 'Actualizar',
+    PREVIEW: 'Vista Previa',
     CANCEL: 'Cancelar',
-    CONFIRM: 'Confirmar'
+    CONFIRM: 'Confirmar',
+    ACCEPT: 'Aceptar'
   },
   MODAL: {
     ERROR_TITLE: 'Error',
     INFO_TITLE: 'Información',
     SUCCESS_TITLE: 'Éxito',
+    WARNING_TITLE: 'Confirmación',
     CLOSE_BUTTON: 'Cerrar',
     SAVE_CONFIRM_TITLE: 'Confirmar configuración',
     SAVE_CONFIRM_MESSAGE: '¿Estás seguro de que deseas guardar esta configuración de SmartVOC?',
@@ -88,4 +89,4 @@ export const UI_TEXTS = {
   }
 };
 
-// Las preguntas ahora se crean dinámicamente sin valores por defecto 
+// Las preguntas ahora se crean dinámicamente sin valores por defecto

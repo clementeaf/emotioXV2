@@ -1,7 +1,7 @@
 import React from 'react';
 import { useStandardizedForm } from '../../hooks/useStandardizedForm';
-import { getStandardButtonText, getButtonDisabledState, formatQuestionText, getErrorDisplayProps, formSpacing } from '../../utils/formHelpers';
 import { NPSViewProps } from '../../types/smart-voc.types';
+import { formatQuestionText, formSpacing, getButtonDisabledState, getErrorDisplayProps, getStandardButtonText } from '../../utils/formHelpers';
 
 const NPSView: React.FC<NPSViewProps> = ({
   questionText,
@@ -18,12 +18,12 @@ const NPSView: React.FC<NPSViewProps> = ({
     initialValue: null,
     extractValueFromResponse: (response: unknown): number | null => {
       console.log(`🔍 [NPSView] extractValueFromResponse called with:`, response, typeof response);
-      
+
       if (typeof response === 'number') {
         console.log(`✅ [NPSView] Direct number:`, response);
         return response;
       }
-      
+
       if (typeof response === 'object' && response !== null && 'response' in response) {
         const innerResponse = (response as { response: unknown }).response;
         console.log(`🔍 [NPSView] Found nested response:`, innerResponse, typeof innerResponse);
@@ -32,7 +32,7 @@ const NPSView: React.FC<NPSViewProps> = ({
           return innerResponse;
         }
       }
-      
+
       if (typeof response === 'object' && response !== null) {
         const obj = response as Record<string, unknown>;
         if ('N' in obj && typeof obj.N === 'string') {
@@ -44,12 +44,12 @@ const NPSView: React.FC<NPSViewProps> = ({
           }
         }
       }
-      
+
       console.log(`⚠️ [NPSView] Could not extract number from:`, response);
       return null;
     },
-    moduleId: typeof config === 'object' && config !== null && 'moduleId' in config 
-      ? (config as { moduleId?: string }).moduleId 
+    moduleId: typeof config === 'object' && config !== null && 'moduleId' in config
+      ? (config as { moduleId?: string }).moduleId
       : undefined
   });
 
@@ -72,12 +72,12 @@ const NPSView: React.FC<NPSViewProps> = ({
     }
   };
 
-  // Formatear el texto de la pregunta (reemplazo simple)
+  // Formatear el texto de la pregunta
   const formattedQuestionText = formatQuestionText(questionText, companyName);
-  const buttonText = getStandardButtonText({ 
-    isSaving, 
-    isLoading, 
-    hasExistingData 
+  const buttonText = getStandardButtonText({
+    isSaving,
+    isLoading,
+    hasExistingData
   });
   const isButtonDisabled = getButtonDisabledState({
     isRequired: true,
@@ -95,6 +95,8 @@ const NPSView: React.FC<NPSViewProps> = ({
       </div>
     );
   }
+
+  console.log('[NPSView] Configuración recibida:', formattedQuestionText);
 
   return (
     <div className="flex flex-col items-center justify-center w-full h-full bg-white p-8">
@@ -151,4 +153,4 @@ const NPSView: React.FC<NPSViewProps> = ({
   );
 };
 
-export default NPSView; 
+export default NPSView;

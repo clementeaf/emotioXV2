@@ -432,143 +432,92 @@ export const useParticipantStore = create(
       },
 
       // Avanzar al siguiente paso
-      goToNextStep: (answer?: unknown) => {
-        const {
-          currentStepIndex,
-          expandedSteps,
-          isFlowLoading,
-          maxVisitedIndex,
-          researchId
-        } = get();
+      goToNextStep: (answer) => set((state) => {
+        const { currentStepIndex, expandedSteps } = state;
 
-        if (isFlowLoading || currentStepIndex >= expandedSteps.length - 1) {
-          // Si estamos en el último paso
-          if (!isFlowLoading && currentStepIndex === expandedSteps.length - 1) {
-            // Si hay respuesta, guardarla
-            if (answer !== undefined) {
-              get().saveStepResponse(currentStepIndex, answer);
-            }
-
-            // Finalizar flujo
-            set(state => ({
-              currentStep: ParticipantFlowStep.DONE,
-              responsesData: {
-                ...state.responsesData,
-                endTime: Date.now()
-              }
-            }));
-
-            const finalData = {
-              ...get().responsesData,
-              endTime: Date.now()
-            };
-            localStorage.setItem('flowComplete', JSON.stringify({ timestamp: Date.now() }));
-          }
-          return;
-        }
-
-        // Guardar respuesta del paso actual
+        // Guardar la respuesta si se proporciona
         if (answer !== undefined) {
-          get().saveStepResponse(currentStepIndex, answer);
+          state.saveStepResponse(currentStepIndex, answer);
         }
 
-        // Avanzar al siguiente paso
         const nextIndex = currentStepIndex + 1;
 
-        // Actualizar máximo índice visitado
-        if (nextIndex > maxVisitedIndex) {
-          set({ maxVisitedIndex: nextIndex });
-
-          // Guardar en localStorage
-          localStorage.setItem(`maxVisitedIndex_${researchId}`, nextIndex.toString());
+        if (nextIndex < expandedSteps.length) {
+          return {
+            currentStepIndex: nextIndex,
+            maxVisitedIndex: Math.max(state.maxVisitedIndex, nextIndex)
+          };
+        } else {
+          // Si es el último paso, marcar como finalizado
+          return { currentStep: ParticipantFlowStep.DONE };
         }
-
-        // Actualizar índice actual
-        set({ currentStepIndex: nextIndex, error: null });
-
-        // Recalcular progreso
-        get().calculateProgress();
-      },
+      }),
 
       // Navegar a un paso específico
-      navigateToStep: (targetIndex) => {
+      navigateToStep: (targetIndex) => set((state) => {
+        if (targetIndex >= 0 && targetIndex < state.expandedSteps.length && targetIndex <= state.maxVisitedIndex) {
+          const { currentStepIndex, expandedSteps, isFlowLoading, maxVisitedIndex } = state;
 
-        const {
-          currentStepIndex,
-          expandedSteps,
-          isFlowLoading,
-          maxVisitedIndex
-        } = get();
+          // Obtener pasos respondidos
+          const answeredSteps = state.getAnsweredStepIndices();
+          const isAnsweredStep = answeredSteps.includes(targetIndex);
+          // Validaciones individuales con logs detallados
+          const validaciones = {
+            isFlowLoading,
+            targetIndexNegativo: targetIndex < 0,
+            targetIndexFueraDeRango: targetIndex >= expandedSteps.length,
+            targetIndexMayorQueMaxVisited: targetIndex > maxVisitedIndex,
+            noEsStepRespondido: !isAnsweredStep
+          };
 
-        // Obtener pasos respondidos
-        const answeredSteps = get().getAnsweredStepIndices();
-        const isAnsweredStep = answeredSteps.includes(targetIndex);
-        // Validaciones individuales con logs detallados
-        const validaciones = {
-          isFlowLoading,
-          targetIndexNegativo: targetIndex < 0,
-          targetIndexFueraDeRango: targetIndex >= expandedSteps.length,
-          targetIndexMayorQueMaxVisited: targetIndex > maxVisitedIndex,
-          noEsStepRespondido: !isAnsweredStep
-        };
+          const condicionBloqueo = targetIndex > maxVisitedIndex && !isAnsweredStep;
 
-        const condicionBloqueo = targetIndex > maxVisitedIndex && !isAnsweredStep;
+          // Validar navegación
+          if (isFlowLoading ||
+              targetIndex < 0 ||
+              targetIndex >= expandedSteps.length ||
+              (targetIndex > maxVisitedIndex && !isAnsweredStep)) {
 
-
-        // Validar navegación
-        if (isFlowLoading ||
-            targetIndex < 0 ||
-            targetIndex >= expandedSteps.length ||
-            (targetIndex > maxVisitedIndex && !isAnsweredStep)) {
-
-          // No-op si el índice es el actual
-          if (targetIndex !== currentStepIndex) {
-            console.warn(`❌ [ParticipantStore] Navegación bloqueada al índice ${targetIndex}.`, {
-              razon: isFlowLoading ? 'flujo-cargando' :
-                     targetIndex < 0 ? 'indice-negativo' :
-                     targetIndex >= expandedSteps.length ? 'indice-fuera-de-rango' :
-                     condicionBloqueo ? 'paso-no-visitado-ni-respondido' : 'razon-desconocida',
-              detalles: validaciones
-            });
-          }
-          return;
-        }
-
-        const savedResponse = get().getStepResponse(targetIndex);
-
-        // Actualizar config con la respuesta guardada
-        if (savedResponse !== null && savedResponse !== undefined) {
-          set(state => {
-            const newSteps = [...state.expandedSteps];
-            const targetStep = newSteps[targetIndex];
-
-            if (
-              targetStep &&
-              typeof targetStep.config === 'object' &&
-              targetStep.config !== null &&
-              (targetStep.config as { savedResponses?: unknown }).savedResponses !== savedResponse
-            ) {
-              targetStep.config = {
-                ...(typeof targetStep.config === 'object' && targetStep.config !== null ? targetStep.config : {}),
-                savedResponses: savedResponse
-              };
-              return { expandedSteps: newSteps };
+            // No-op si el índice es el actual
+            if (targetIndex !== currentStepIndex) {
+              console.warn(`❌ [ParticipantStore] Navegación bloqueada al índice ${targetIndex}.`, {
+                razon: isFlowLoading ? 'flujo-cargando' :
+                       targetIndex < 0 ? 'indice-negativo' :
+                       targetIndex >= expandedSteps.length ? 'indice-fuera-de-rango' :
+                       condicionBloqueo ? 'paso-no-visitado-ni-respondido' : 'razon-desconocida',
+                detalles: validaciones
+              });
             }
+            return state;
+          }
 
-            return state; // No cambios
-          });
+          const savedResponse = state.getStepResponse(targetIndex);
+
+          // Actualizar config con la respuesta guardada
+          if (savedResponse !== null && savedResponse !== undefined) {
+            return {
+              currentStepIndex: targetIndex,
+              error: null,
+              expandedSteps: expandedSteps.map((step, index) =>
+                index === targetIndex ? {
+                  ...step,
+                  config: {
+                    ...(typeof step.config === 'object' && step.config !== null ? step.config : {}),
+                    savedResponses: savedResponse
+                  }
+                } : step
+              )
+            };
+          }
+
+          // Actualizar índice actual
+          return { currentStepIndex: targetIndex, error: null };
         }
-
-        // Actualizar índice actual
-        set({ currentStepIndex: targetIndex, error: null });
-
-        // Recalcular progreso
-        get().calculateProgress();
-      },
+        return state;
+      }),
 
       // Obtener índices de pasos respondidos
       getAnsweredStepIndices: () => {
-
         const { expandedSteps, responsesData, maxVisitedIndex } = get();
         const completedStepIndices = new Set<number>();
 
@@ -765,7 +714,9 @@ export const useParticipantStore = create(
           }
         });
       },
-      setIsFlowLoading: (loading: boolean) => set({ isFlowLoading: loading })
+      setIsFlowLoading: (loading) => {
+        set({ isFlowLoading: loading });
+      }
     }),
     {
       name: 'participant-storage',

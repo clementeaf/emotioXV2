@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ParticipantFlowStep, UseFlowNavigationAndStateProps } from '../types/flow';
+import { ParticipantFlowStep } from '../types/flow';
+import { ExpandedStep } from '../types/flow.types';
+import { UseFlowNavigationAndStateProps } from '../types/hooks.types';
 
 export const useFlowNavigationAndState = ({
     expandedSteps,
@@ -51,28 +53,6 @@ export const useFlowNavigationAndState = ({
 
     const goToNextStep = useCallback(async (answer?: unknown) => {
         if (!isFlowLoading && currentStepIndex < expandedSteps.length - 1) {
-            const currentStepInfo = expandedSteps[currentStepIndex];
-            if(!currentStepInfo) return;
-            const { type: stepType } = currentStepInfo;
-            const isCognitive = stepType.startsWith('cognitive_');
-            const isSmartVOC = stepType.startsWith('smartvoc_');
-            if (answer === undefined && (isCognitive || isSmartVOC)) {
-                answer = isCognitive ?
-                    { text: "Respuesta vacía", isEmpty: true } :
-                    { value: 0, isEmpty: true };
-            }
-            if (answer !== undefined) {
-                await saveStepResponse(answer);
-                if (setExternalExpandedSteps && currentStepInfo) {
-                    setExternalExpandedSteps(prevSteps => prevSteps.map((step, index) => {
-                        if (index === currentStepIndex) {
-                            const prevConfig = (typeof step.config === 'object' && step.config !== null) ? step.config : {};
-                            return { ...step, config: { ...prevConfig, savedResponses: answer } };
-                        }
-                        return step;
-                    }));
-                }
-            }
             const nextIndex = currentStepIndex + 1;
             setCurrentStepIndex(nextIndex);
             setError(null);
@@ -83,54 +63,36 @@ export const useFlowNavigationAndState = ({
              setCurrentStep(ParticipantFlowStep.DONE);
              await markResponsesAsCompleted();
         }
-    }, [currentStepIndex, expandedSteps, isFlowLoading, saveStepResponse, markResponsesAsCompleted, setExternalExpandedSteps, setCurrentStepIndex, setError, setCurrentStep]);
+    }, [currentStepIndex, expandedSteps, isFlowLoading, saveStepResponse, markResponsesAsCompleted, setCurrentStepIndex, setError, setCurrentStep]);
 
     const navigateToStep = useCallback((targetIndex: number) => {
-        console.log(`[useFlowNavigationAndState] Intentando navegar al índice: ${targetIndex}`);
-        console.log(`[useFlowNavigationAndState] Estado actual - currentStepIndex: ${currentStepIndex}, isFlowLoading: ${isFlowLoading}`);
-        console.log(`[useFlowNavigationAndState] expandedSteps.length: ${expandedSteps.length}`);
-
         // Validaciones básicas
         if (isFlowLoading) {
-            console.log('[useFlowNavigationAndState] Navegación bloqueada: flujo en carga');
             return;
         }
 
         if (targetIndex < 0 || targetIndex >= expandedSteps.length) {
-            console.log('[useFlowNavigationAndState] Navegación bloqueada: índice fuera de rango');
             return;
         }
 
         if (targetIndex === currentStepIndex) {
-            console.log('[useFlowNavigationAndState] Navegación bloqueada: ya estás en este paso');
             return;
         }
-
-        const targetStepInfo = expandedSteps[targetIndex];
 
         // Lógica simplificada: Si el sidebar permitió la navegación, confiar en esa decisión
         // Solo bloquear navegación hacia adelante más allá del máximo visitado + 1
         const maxVisited = Math.max(maxVisitedIndexFromStore || 0, currentStepIndex);
         const isForwardNavigation = targetIndex > maxVisited + 1;
 
-        console.log(`[useFlowNavigationAndState] Verificaciones simplificadas:`);
-        console.log(`  - maxVisited: ${maxVisited}, targetIndex: ${targetIndex}`);
-        console.log(`  - isForwardNavigation: ${isForwardNavigation}`);
-        console.log(`  - permitirNavegacion: ${!isForwardNavigation}`);
-
         if (isForwardNavigation) {
-            console.log('[useFlowNavigationAndState] Navegación bloqueada: salto hacia adelante no permitido');
             return;
         }
 
         // Realizar la navegación
-        console.log(`[useFlowNavigationAndState] Navegando al paso ${targetIndex}: ${targetStepInfo?.name}`);
-
         // Cargar respuesta guardada si existe
         const savedResponse = getStepResponse(targetIndex);
         if (savedResponse !== null && savedResponse !== undefined && setExternalExpandedSteps) {
-            console.log(`[useFlowNavigationAndState] Cargando respuesta guardada para el paso ${targetIndex}`);
-            setExternalExpandedSteps(prevSteps => prevSteps.map((step, index) => {
+            setExternalExpandedSteps((prevSteps: ExpandedStep[]) => prevSteps.map((step: ExpandedStep, index: number) => {
                 if (index === targetIndex) {
                     const prevConfig = (typeof step.config === 'object' && step.config !== null) ? step.config : {};
                     return { ...step, config: { ...prevConfig, savedResponses: savedResponse } };
@@ -149,8 +111,6 @@ export const useFlowNavigationAndState = ({
 
         // Limpiar errores
         setError(null);
-
-        console.log(`[useFlowNavigationAndState] Navegación completada al paso ${targetIndex}`);
     }, [
         isFlowLoading,
         expandedSteps,

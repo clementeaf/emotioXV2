@@ -1,20 +1,20 @@
-import React from 'react';
-import { SmartVOCFormProps } from '../types';
-import { useSmartVOCForm } from '../hooks/useSmartVOCForm';
-import {
-  SmartVOCSettings,
-  SmartVOCQuestions,
-  SmartVOCFooter,
-  ErrorModal,
-  AddQuestionButton,
-} from '.';
+import { Spinner } from '@/components/ui/Spinner';
 import { cn } from '@/lib/utils';
+import React from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { Spinner } from '@/components/ui/Spinner';
+import {
+    AddQuestionButton,
+    ErrorModal,
+    SmartVOCFooter,
+    SmartVOCQuestions,
+    SmartVOCSettings,
+} from '.';
+import { useSmartVOCForm } from '../hooks/useSmartVOCForm';
+import { SmartVOCFormProps } from '../types';
 import { generateNewQuestion } from '../utils';
 
-export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({ 
+export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
   className,
   researchId,
 }) => {
@@ -33,6 +33,10 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
     handleSave,
     handlePreview,
     closeModal,
+    handleDelete,
+    isDeleteModalOpen,
+    confirmDelete,
+    closeDeleteModal,
   } = useSmartVOCForm(researchId);
 
   // Debug: verificar preguntas en el componente
@@ -58,7 +62,7 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
           onRequireAnswersChange={(value) => updateSettings({ smartVocRequired: value })}
           disabled={isLoading || isSaving}
         />
-        
+
         {/* Contenido principal en un contenedor con bordes */}
         <div className="space-y-6 p-6 bg-white rounded-lg border border-neutral-100">
           <SmartVOCQuestions
@@ -80,6 +84,8 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
           researchId={researchId}
           onSave={handleSave}
           onPreview={handlePreview}
+          onDelete={handleDelete}
+          isExisting={!!smartVocId}
         />
 
         {/* Modal de errores */}
@@ -87,6 +93,18 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
           isOpen={modalVisible}
           onClose={closeModal}
           error={modalError}
+        />
+
+        {/* Modal de confirmación de borrado */}
+        <ErrorModal
+          isOpen={isDeleteModalOpen}
+          onClose={closeDeleteModal}
+          error={{
+            title: 'Confirmar Eliminación',
+            message: '¿Estás seguro de que quieres eliminar TODOS los datos SmartVOC de esta investigación? Esta acción no se puede deshacer.',
+            type: 'warning'
+          }}
+          onConfirm={confirmDelete}
         />
       </div>
     </DndProvider>

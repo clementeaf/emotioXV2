@@ -95,6 +95,7 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         setIsFlowLoading: setNavigationIsLoading,
         completedRelevantSteps,
         totalRelevantSteps,
+        goToNextStep
     } = useFlowNavigationAndState({
         expandedSteps,
         initialResearchDataLoading: isResearchFlowHookLoading,
@@ -125,6 +126,10 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         setCurrentStep(ParticipantFlowStep.ERROR);
         setNavigationIsLoading(false);
     }, [setNavigationError, setCurrentStep, setNavigationIsLoading]);
+
+    const handleStepComplete = useCallback((answer?: unknown) => {
+        storeGoToNextStep(answer);
+    }, [storeGoToNextStep]);
 
     useEffect(() => {
         setNavigationIsLoading(isResearchFlowHookLoading);
@@ -216,7 +221,7 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         token: token,
         error: navigationError,
         handleLoginSuccess,
-        handleStepComplete: storeGoToNextStep,
+        handleStepComplete: goToNextStep,
         handleError,
         expandedSteps,
         currentStepIndex,

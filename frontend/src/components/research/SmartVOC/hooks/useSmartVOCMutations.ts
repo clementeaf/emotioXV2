@@ -144,47 +144,31 @@ export const useSmartVOCMutations = (researchId: string, smartVocId?: string) =>
     }
   });
 
-  // Mutación para eliminar datos
+  // Mutación para eliminar datos - SIN confirmación interna
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      if (!window.confirm('⚠️ ¿Estás seguro de que quieres eliminar TODOS los datos SmartVOC de esta investigación?\n\nEsta acción no se puede deshacer.')) {
-        throw new Error('Operación cancelada por el usuario');
-      }
-
       let success = false;
-
       if (smartVocId) {
         success = await smartVocFixedAPI.deleteSmartVOC(researchId, smartVocId);
       } else {
         success = await smartVocFixedAPI.deleteByResearchId(researchId);
       }
-
       if (!success) {
-        // Si la API devuelve false (ej. por un 404), lanzamos un error para que lo capture el catch
         throw new Error('El recurso a eliminar no fue encontrado en el servidor (404).');
       }
-
       return success;
     },
     onSuccess: () => {
-      // Invalidar queries
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SMART_VOC, researchId] });
-
-      showModal({
-        title: 'Éxito',
-        message: 'Datos SmartVOC eliminados correctamente',
-        type: 'success'
-      });
+      toast.success('Datos SmartVOC eliminados correctamente.');
     },
     onError: (error: any) => {
-      if (error.message !== 'Operación cancelada por el usuario') {
-        console.error('[SmartVOCForm] Error al eliminar:', error);
-        showModal({
-          title: 'Error',
-          message: error.message || 'Error al eliminar los datos SmartVOC',
-          type: 'error'
-        });
-      }
+      console.error('[SmartVOCForm] Error al eliminar:', error);
+      showModal({
+        title: 'Error',
+        message: error.message || 'Error al eliminar los datos SmartVOC',
+        type: 'error'
+      });
     }
   });
 

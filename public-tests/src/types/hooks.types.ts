@@ -1,3 +1,4 @@
+import { ParticipantFlowStep } from './flow';
 import { ExpandedStep, ResponsesData } from './flow.types';
 
 // Tipos para hooks de respuestas
@@ -148,10 +149,11 @@ export interface StandardizedFormActions<T> {
   setValue: (newValue: T, isUserInteraction?: boolean) => void;
   setError: (error: string | null) => void;
   clearError: () => void;
-  saveResponse: (value?: T) => Promise<{ success: boolean; data?: unknown }>;
+  saveResponse: (value?: T) => Promise<{ success: boolean; error: string | null; data: unknown | null }>;
   validateAndSave: (dataToSave?: T) => Promise<{ success: boolean; error: string | null; data: unknown | null }>;
   reset: () => void;
   refetch: () => void;
+  forceRefresh: () => void;
 }
 
 export interface UseStandardizedFormOptions<T> {
@@ -196,8 +198,19 @@ export interface UseResearchFormsReturn {
 }
 
 export interface UseFlowNavigationAndStateProps {
-  researchId: string;
-  participantId: string;
+  expandedSteps: ExpandedStep[];
+  initialResearchDataLoading: boolean;
+  researchId: string | undefined;
+  participantId: string | undefined;
+  maxVisitedIndexFromStore: number | undefined;
+  saveStepResponse: (answer?: unknown) => Promise<void>;
+  markResponsesAsCompleted: () => Promise<void>;
+  getStepResponse: (stepIndex: number) => unknown;
+  loadExistingResponses: () => Promise<void>;
+  handleErrorProp: (errorMessage: string, step: ParticipantFlowStep | string) => void;
+  setExternalExpandedSteps?: (updater: (prevSteps: ExpandedStep[]) => ExpandedStep[]) => void;
+  currentStepIndexState: number;
+  setCurrentStepIndexFunc: React.Dispatch<React.SetStateAction<number>>;
 }
 
 export interface UseSmartVOCDataReturn {
