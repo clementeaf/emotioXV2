@@ -23,7 +23,7 @@ const DifficultyScaleView: React.FC<MappedStepComponentProps> = (props) => {
   const participantId = useParticipantStore(state => state.participantId);
 
   // 3. Carga de datos inicial
-  const { data: initialResponses, isLoading: isLoadingInitialData } = useModuleResponses({
+  const { data: initialResponses, isLoading: isLoadingInitialData, refetch } = useModuleResponses({
     researchId: researchId || undefined,
     participantId: participantId || undefined,
   });
@@ -76,6 +76,10 @@ const DifficultyScaleView: React.FC<MappedStepComponentProps> = (props) => {
         stepTitle: question.title || stepName || 'Respuesta de escala',
         response: { value: selectedValue }
       });
+
+      // Refrescamos los datos para invalidar la caché
+      await refetch();
+
       if (onStepComplete) {
         onStepComplete({ value: selectedValue });
       }
@@ -98,39 +102,41 @@ const DifficultyScaleView: React.FC<MappedStepComponentProps> = (props) => {
 
   // 6. Renderizado
   return (
-    <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full">
-      <QuestionHeader title={question.title} description={question.description} required={question.required} />
-      <div className="mt-6">
-        <div className="flex justify-between items-center flex-wrap gap-2">
-          {scaleOptions.map((value) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setSelectedValue(value)}
-              className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all duration-200 ease-in-out
-                ${selectedValue === value
-                  ? 'bg-primary-600 text-white shadow-lg scale-110'
-                  : 'bg-neutral-200 text-neutral-700 hover:bg-primary-100'
-                }`}
-            >
-              {value}
-            </button>
-          ))}
+    <div className="flex flex-col items-center justify-center w-full h-full p-4">
+      <div className="bg-white p-8 rounded-lg max-w-lg w-full">
+        <QuestionHeader title={question.title} description={question.description} required={question.required} />
+        <div className="mt-6">
+          <div className="flex justify-between items-center flex-wrap gap-2">
+            {scaleOptions.map((value) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setSelectedValue(value)}
+                className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all duration-200 ease-in-out
+                  ${selectedValue === value
+                    ? 'bg-primary-600 text-white shadow-lg scale-110'
+                    : 'bg-neutral-200 text-neutral-700 hover:bg-primary-100'
+                  }`}
+              >
+                {value}
+              </button>
+            ))}
+          </div>
+          <div className="flex justify-between text-sm text-neutral-500 mt-2 px-1">
+            <span>{minLabel}</span>
+            <span>{maxLabel}</span>
+          </div>
         </div>
-        <div className="flex justify-between text-sm text-neutral-500 mt-2 px-1">
-          <span>{minLabel}</span>
-          <span>{maxLabel}</span>
+        {error && <p className="text-red-500 text-sm mt-4">{error}</p>}
+        <div className="mt-8 text-right">
+          <button
+            onClick={handleSubmit}
+            disabled={isSaving || selectedValue === null}
+            className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg disabled:opacity-50"
+          >
+            {buttonText}
+          </button>
         </div>
-      </div>
-      {error && <p className="text-red-500 text-sm mt-4">{error}</p>}
-      <div className="mt-8 text-right">
-        <button
-          onClick={handleSubmit}
-          disabled={isSaving || selectedValue === null}
-          className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg disabled:opacity-50"
-        >
-          {buttonText}
-        </button>
       </div>
     </div>
   );
