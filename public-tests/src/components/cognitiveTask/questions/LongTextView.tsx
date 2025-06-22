@@ -1,17 +1,16 @@
 import React from 'react';
-import { LongTextViewComponentProps } from '../../../types/cognitive-task.types';
-import QuestionHeader from '../common/QuestionHeader';
-import TextAreaField from '../../common/TextAreaField';
-import { useStandardizedForm, valueExtractors, validationRules } from '../../../hooks/useStandardizedForm';
+import { useStandardizedForm, validationRules, valueExtractors } from '../../../hooks/useStandardizedForm';
+import { CognitiveQuestion } from '../../../types/cognitive-task.types';
+import { MappedStepComponentProps } from '../../../types/flow.types';
 import { StandardizedFormProps } from '../../../types/hooks.types';
-import { getStandardButtonText, getButtonDisabledState, getErrorDisplayProps, getFormContainerClass, formSpacing } from '../../../utils/formHelpers';
+import { formSpacing, getButtonDisabledState, getErrorDisplayProps, getFormContainerClass, getStandardButtonText } from '../../../utils/formHelpers';
+import TextAreaField from '../../common/TextAreaField';
+import QuestionHeader from '../common/QuestionHeader';
 
-export const LongTextView: React.FC<LongTextViewComponentProps> = ({ 
-  config, 
-  onStepComplete,
-  savedResponse,
-  savedResponseId,
-}) => {
+export const LongTextView: React.FC<MappedStepComponentProps> = (props) => {
+  const { stepConfig, onStepComplete, savedResponse, savedResponseId } = props;
+  const config = stepConfig as CognitiveQuestion;
+
   const id = config.id || '';
   const type = config.type || 'long_text';
   const title = config.title || 'Pregunta';
@@ -44,17 +43,17 @@ export const LongTextView: React.FC<LongTextViewComponentProps> = ({
 
   const handleSubmit = async () => {
     const result = await validateAndSave();
-    if (result.success) {
-      onStepComplete?.(result.data);
+    if (result.success && onStepComplete) {
+      onStepComplete(result.data);
     }
   };
 
-  const buttonText = getStandardButtonText({ 
-    isSaving, 
-    isLoading, 
+  const buttonText = getStandardButtonText({
+    isSaving,
+    isLoading,
     hasExistingData: hasExistingData || !!value.trim()
   });
-  
+
   const isButtonDisabled = getButtonDisabledState({
     isRequired: required,
     value,
@@ -76,7 +75,7 @@ export const LongTextView: React.FC<LongTextViewComponentProps> = ({
   return (
     <div className={getFormContainerClass('centered')}>
       <QuestionHeader title={title} description={description} required={required} />
-      
+
       <TextAreaField
         id={`long-text-${id}`}
         name={`long-text-${id}`}
@@ -86,13 +85,13 @@ export const LongTextView: React.FC<LongTextViewComponentProps> = ({
         placeholder={answerPlaceholder}
         disabled={isSaving || isLoading}
       />
-      
+
       {errorDisplay.hasError && (
         <div className={`${errorDisplay.errorClassName} ${formSpacing.error}`}>
           {errorDisplay.errorMessage}
         </div>
       )}
-      
+
       <button
         className={`bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg ${formSpacing.button} disabled:opacity-50 disabled:cursor-not-allowed`}
         onClick={handleSubmit}
@@ -102,4 +101,4 @@ export const LongTextView: React.FC<LongTextViewComponentProps> = ({
       </button>
     </div>
   );
-}; 
+};

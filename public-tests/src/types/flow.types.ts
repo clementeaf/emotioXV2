@@ -73,18 +73,22 @@ export interface WelcomeScreenHandlerProps {
 
 // Props para componente de mapeo de pasos
 export interface MappedStepComponentProps {
-  stepConfig?: unknown;
+  stepType: string;
   stepId?: string;
   stepName?: string;
-  stepType: string;
-  researchId?: string;
+  stepConfig?: any;
+  researchId: string;
+  participantId?: string | null;
   token?: string | null;
-  onStepComplete: (data?: unknown) => void;
   onLoginSuccess?: (participant: unknown) => void;
-  onError?: (message: string, stepType?: string) => void;
+  onStepComplete?: (data?: unknown) => void;
+  onError?: (message: string) => void;
+  isMock?: boolean;
   isInstructionMock?: boolean;
   isWelcomeMock?: boolean;
   isApiDisabled?: boolean;
+  savedResponse?: unknown;
+  savedResponseId?: string;
 }
 
 // Tipos para preguntas específicas del flujo
@@ -184,7 +188,7 @@ export interface UseFlowNavigationAndStateProps {
   getStepResponse: (stepIndex: number) => unknown;
   loadExistingResponses: () => Promise<void>;
   handleErrorProp: (errorMessage: string, step: ParticipantFlowStep | string) => void;
-  setExternalExpandedSteps?: (updater: (prevSteps: ExpandedStep[]) => ExpandedStep[]) => void; 
+  setExternalExpandedSteps?: (updater: (prevSteps: ExpandedStep[]) => ExpandedStep[]) => void;
   currentStepIndexState: number;
   setCurrentStepIndexFunc: React.Dispatch<React.SetStateAction<number>>;
 }
@@ -397,4 +401,4 @@ export interface ComponentLinearScaleQuestionProps {
   stepName?: string;
   onStepComplete: (answer: unknown) => void;
   isMock: boolean;
-} 
+}

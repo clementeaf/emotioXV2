@@ -1,85 +1,91 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useParticipantStore } from '../stores/participantStore';
 import { SmartVOCConfig, SmartVOCQuestion, UseSmartVOCConfigReturn } from '../types/smart-voc.types';
 
-export const useSmartVOCData = (researchId?: string, token?: string): UseSmartVOCConfigReturn => {
-    const [config, setConfig] = useState<SmartVOCConfig | null>(null);
+interface ParticipantState {
+  token: string | null;
+}
+
+// Props para el hook
+interface UseSmartVOCDataProps {
+  researchId?: string | null;
+  config?: SmartVOCConfig;
+}
+
+export const useSmartVOCData = ({ researchId, config }: UseSmartVOCDataProps): UseSmartVOCConfigReturn => {
     const [questions, setQuestions] = useState<SmartVOCQuestion[]>([]);
-    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
 
+    // Obtener el token directamente del store de Zustand
+    const token = useParticipantStore((state: ParticipantState) => state.token);
+
     const fetchConfig = useCallback(async () => {
+        // No hacer fetch si no hay researchId o token.
         if (!researchId || !token) {
-            setError("Token o Research ID no proporcionados.");
+            setError("Token o Research ID no proporcionados para el fetch.");
             setIsLoading(false);
-            setQuestions([]);
-            setConfig(null);
             return;
         }
 
         console.log(`[useSmartVOCData] Obteniendo config para researchId: ${researchId}`);
         setIsLoading(true);
-        setError(null);
-        setConfig(null);
-        setQuestions([]);
 
         try {
-            const apiUrl = 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev';
+            // La URL de la API debe ser una variable de entorno
+            const apiUrl = import.meta.env.VITE_API_URL || 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev';
             const url = `${apiUrl}/research/${researchId}/smart-voc`;
+
             const response = await fetch(url, {
                 method: 'GET',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                headers: { 'Authorization': `Bearer ${token}` },
             });
-            console.log('[useSmartVOCData] Response:', response);
 
-            if (response.ok) {
-                const result = await response.json();
-                const configData = result.data || result;
-                console.log('[useSmartVOCData] Config obtenida:', configData);
-
-                if (configData && typeof configData === 'object') {
-                    const typedConfig = configData as SmartVOCConfig;
-                    setConfig(typedConfig);
-                    const fetchedQuestions = typedConfig.questions as SmartVOCQuestion[] | undefined;
-
-                    if (fetchedQuestions && Array.isArray(fetchedQuestions) && fetchedQuestions.length > 0) {
-                        console.log(`[useSmartVOCData] ${fetchedQuestions.length} preguntas encontradas.`);
-                        setQuestions(fetchedQuestions);
-                    } else {
-                        console.warn('[useSmartVOCData] No se encontraron preguntas válidas en la configuración.');
-                        setQuestions([]); // No hay preguntas, pero la carga fue exitosa
-                    }
-                } else {
-                    console.warn('[useSmartVOCData] Respuesta OK pero formato inesperado', configData);
-                    setConfig(null);
+            if (!response.ok) {
+                if (response.status === 404) {
+                    console.log('[useSmartVOCData] No se encontró configuración SmartVOC (404). Se asume que no hay preguntas.');
                     setQuestions([]);
-                    // Considerar si esto debería ser un error
-                    setError('Formato de configuración inesperado.');
+                } else {
+                    throw new Error(`Error ${response.status} al cargar la configuración.`);
                 }
-            } else if (response.status === 404) {
-                console.log('[useSmartVOCData] No se encontró config (404).');
-                setConfig(null);
-                setQuestions([]); // No encontrado, no es necesariamente un error de fetch
             } else {
-                const errorText = await response.text();
-                console.error(`[useSmartVOCData] Error ${response.status}: ${errorText}`);
-                throw new Error(`Error ${response.status} al cargar SmartVOC.`);
+                const result = await response.json();
+                const fetchedQuestions = result?.questions as SmartVOCQuestion[] | undefined;
+
+                if (fetchedQuestions && Array.isArray(fetchedQuestions)) {
+                    setQuestions(fetchedQuestions);
+                } else {
+                    console.warn('[useSmartVOCData] No se encontraron preguntas en la respuesta.');
+                    setQuestions([]);
+                }
             }
-        } catch (err: unknown) {
-            console.error('[useSmartVOCData] Excepción en fetchConfig:', err);
-            const errorMsg = (err && typeof err === 'object' && 'message' in err)
-                ? (err as { message?: string }).message
-                : 'Error desconocido al cargar la configuración de SmartVOC.';
-            setError(errorMsg ?? 'Error desconocido al cargar la configuración de SmartVOC.');
+        } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : 'Error desconocido.';
+            setError(errorMsg);
             setQuestions([]);
-            setConfig(null);
         } finally {
             setIsLoading(false);
         }
     }, [researchId, token]);
 
     useEffect(() => {
-        fetchConfig();
-    }, [fetchConfig]); // fetchConfig ya incluye researchId y token como dependencias
+        // Prioridad 1: Usar preguntas del 'config' si existen.
+        if (config?.questions && Array.isArray(config.questions)) {
+            console.log('[useSmartVOCData] Usando preguntas desde la prop de configuración.');
+            setQuestions(config.questions);
+            setIsLoading(false);
+        }
+        // Prioridad 2: Hacer fetch si no hay preguntas en 'config'.
+        else if (researchId) {
+            fetchConfig();
+        }
+        // Caso final: No hay nada que cargar.
+        else {
+            setIsLoading(false);
+            setQuestions([]);
+        }
+    }, [researchId, config, fetchConfig]);
 
-    return { isLoading, questions, error, config };
-}; 
+    // Devolvemos un objeto que no incluye 'config' para coincidir con UseSmartVOCConfigReturn
+    return { isLoading, questions, error, config: null };
+};

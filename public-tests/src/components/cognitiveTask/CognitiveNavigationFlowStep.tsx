@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
-import { CognitiveNavigationFlowStepProps } from '../../types/cognitive-task.types';
+import { CognitiveQuestion } from '../../types/cognitive-task.types';
+import { MappedStepComponentProps } from '../../types/flow.types';
 
 // Función para convertir hitZones del backend a coordenadas absolutas en píxeles
 const convertHitZonesToPixelCoordinates = (hitZones: any[]) => {
@@ -12,37 +13,28 @@ const convertHitZonesToPixelCoordinates = (hitZones: any[]) => {
   }));
 };
 
-const CognitiveNavigationFlowStep: React.FC<CognitiveNavigationFlowStepProps> = ({ onContinue, config }) => {
-  // Buscar pregunta de tipo navigation_flow en la configuración
+const CognitiveNavigationFlowStep: React.FC<MappedStepComponentProps> = (props) => {
+  // 1. Extraemos las props del objeto genérico
+  const { stepConfig, onStepComplete } = props;
+  const config = stepConfig as { questions: CognitiveQuestion[] };
+  const onContinue = onStepComplete; // 2. Renombramos para compatibilidad interna
+
+  // 3. Lógica de estado y del componente original
   const navigationQuestion = config?.questions?.find(q => q.type === 'navigation_flow');
   const imageFiles = navigationQuestion?.files || [];
-  console.log('imageFiles: ', imageFiles);
 
-  // Estado para manejar la selección
-  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [selectedHitzone, setSelectedHitzone] = useState<string | null>(null);
-  // Estado para manejar el tamaño real de la imagen y su tamaño natural
   const [imgSize, setImgSize] = useState<{width: number, height: number} | null>(null);
   const [imgNatural, setImgNatural] = useState<{width: number, height: number} | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
-  // Estado para mostrar el modal de éxito
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  // Estado para manejar la imagen actual
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  // Usar solo imágenes de la config
   const images = imageFiles;
 
-  const handleImageClick = (imageIndex: number) => {
-    setSelectedImageIndex(imageIndex);
-    setSelectedHitzone(null);
-  };
-
-  // Siempre mostrar la imagen actual y sus hitzones
   const selectedImage = images[currentImageIndex];
   const availableHitzones = selectedImage?.hitZones ? convertHitZonesToPixelCoordinates(selectedImage.hitZones) : [];
 
-  // Función para calcular el área visible de la imagen (letterboxing)
   function getImageDrawRect(imgNatural: {width: number, height: number}, container: {width: number, height: number}) {
     const imgRatio = imgNatural.width / imgNatural.height;
     const containerRatio = container.width / container.height;
@@ -51,12 +43,10 @@ const CognitiveNavigationFlowStep: React.FC<CognitiveNavigationFlowStepProps> = 
     let offsetX = 0;
     let offsetY = 0;
     if (imgRatio > containerRatio) {
-      // Imagen más ancha que el contenedor
       drawWidth = container.width;
       drawHeight = container.width / imgRatio;
       offsetY = (container.height - drawHeight) / 2;
     } else {
-      // Imagen más alta que el contenedor
       drawHeight = container.height;
       drawWidth = container.height * imgRatio;
       offsetX = (container.width - drawWidth) / 2;
@@ -64,15 +54,13 @@ const CognitiveNavigationFlowStep: React.FC<CognitiveNavigationFlowStepProps> = 
     return { drawWidth, drawHeight, offsetX, offsetY };
   }
 
-  // Al cargar la imagen, guardar también su tamaño natural
   const handleImgLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const { width, height, naturalWidth, naturalHeight } = e.currentTarget;
     setImgSize({ width, height });
     setImgNatural({ width: naturalWidth, height: naturalHeight });
   };
 
-  // Mostrar error si no hay imágenes
-  if (images.length === 0) {
+  if (!images || images.length === 0) {
     return (
       <div className="w-full max-w-lg mx-auto bg-white p-6 rounded-lg shadow-md text-center">
         <h2 className="text-2xl font-bold text-gray-800 mb-4">Error de Configuración</h2>
@@ -81,6 +69,7 @@ const CognitiveNavigationFlowStep: React.FC<CognitiveNavigationFlowStepProps> = 
     );
   }
 
+  // 4. JSX del componente original
   return (
     <div>
       <div className="text-center">
@@ -102,14 +91,11 @@ const CognitiveNavigationFlowStep: React.FC<CognitiveNavigationFlowStepProps> = 
             style={{ display: 'block' }}
             onLoad={handleImgLoad}
           />
-          {/* Renderizar hitzones usando coordenadas escaladas y compensando letterboxing con natural size */}
-          {imgSize && imgNatural && availableHitzones.map((hitzone, _idx) => {
-            // Calcular el área visible de la imagen (letterboxing) usando el aspect ratio real
+          {imgSize && imgNatural && availableHitzones.map((hitzone) => {
             const { drawWidth, drawHeight, offsetX, offsetY } = getImageDrawRect(
               imgNatural,
               imgSize
             );
-            // Escalar desde el sistema de referencia natural de la imagen
             const scaleX = drawWidth / imgNatural.width;
             const scaleY = drawHeight / imgNatural.height;
             const left = hitzone.x * scaleX + offsetX;
@@ -140,7 +126,6 @@ const CognitiveNavigationFlowStep: React.FC<CognitiveNavigationFlowStepProps> = 
           })}
         </div>
       </div>
-      {/* Modal de éxito al identificar área */}
       {showSuccessModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
           <div className="bg-white rounded-lg shadow-lg p-8 max-w-sm w-full flex flex-col items-center">
@@ -161,7 +146,9 @@ const CognitiveNavigationFlowStep: React.FC<CognitiveNavigationFlowStepProps> = 
                 className="mt-4 px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700"
                 onClick={() => {
                   setShowSuccessModal(false);
-                  onContinue();
+                  if (onContinue) { // 5. Llamada segura a la función de callback
+                    onContinue();
+                  }
                 }}
               >
                 Finalizar

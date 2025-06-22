@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 // Importar todos los componentes de vista de preguntas
+import { useSmartVOCData } from '../../hooks/useSmartVOCData'; // <<< Importar el hook
+import AgreementScaleView from '../smartVoc/AgreementScaleView'; // Para CV
 import CSATView from '../smartVoc/CSATView';
 import DifficultyScaleView from '../smartVoc/DifficultyScaleView'; // Para CES
-import AgreementScaleView from '../smartVoc/AgreementScaleView'; // Para CV
 import EmotionSelectionView from '../smartVoc/EmotionSelectionView'; // Para NEV
-import NPSView from '../smartVoc/NPSView';
 import FeedbackView from '../smartVoc/FeedbackView'; // Para VOC (Texto libre)
+import NPSView from '../smartVoc/NPSView';
 import { Answers, SmartVOCHandlerProps } from './types';
-import { useSmartVOCData } from '../../hooks/useSmartVOCData'; // <<< Importar el hook
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const questionComponentsMap: { [key: string]: React.ComponentType<any> } = {
@@ -82,80 +82,102 @@ const SmartVOCHandler: React.FC<SmartVOCHandlerProps> = ({
         // Salvaguarda: Asegurarse de que el índice esté dentro de los límites (aunque no debería ocurrir)
         if (currentQuestionIndex >= questions.length) {
             console.warn("[SmartVOCHandler] renderCurrentQuestion llamado con índice fuera de límites.");
-            return null; 
+            return null;
         }
 
-        const question = questions[currentQuestionIndex];
-        const QuestionComponent = questionComponentsMap[question.type?.toUpperCase()];
+        const currentQuestion = questions[currentQuestionIndex];
+        const CurrentQuestionComponent = questionComponentsMap[currentQuestion.type];
 
-        if (!QuestionComponent) {
-            console.warn(`[SmartVOCHandler] Tipo de pregunta SmartVOC no soportado: ${question.type}`);
-            // Podríamos decidir saltar esta pregunta llamando a handleNextQuestion({})
-            // o mostrar un mensaje como antes. Por ahora, mostramos mensaje y bloqueamos.
-            return <div className="text-red-500 p-4">Tipo de pregunta "{question.type}" no implementado. Contacte al administrador.</div>;
+        // Si no se encuentra un componente, mostrar un error o un fallback
+        if (!CurrentQuestionComponent) {
+            console.warn(`No se encontró un componente para el tipo de pregunta: ${currentQuestion.type}`);
+            return (
+                <div className="p-4 text-center text-red-500">
+                    Error: Tipo de pregunta no soportado ({currentQuestion.type})
+                </div>
+            );
         }
 
-        // Log para debugging
-        console.log(`[SmartVOCHandler] Rendering question:`, question);
-
-        // Preparar props comunes
-        const commonProps = {
-            key: `smartvoc-${question.type?.toLowerCase()}`, // 🚨 Key estática por tipo de pregunta
-            questionText: (question as any).questionText || (question as any).title || `Pregunta ${question.type}`,
-            instructions: (question as any).instructions || (question as any).description || '',
-            onNext: handleNextQuestion,
+        // Preparamos las props para el componente de la pregunta actual
+        const questionProps = {
+            key: currentQuestion.id,
+            question: currentQuestion, // <<< Pasamos el objeto 'question' completo
+            onStepComplete: (answer: any) => handleNextQuestion(answer?.value),
         };
 
-        // Props específicas (basado en el switch original)
-        // Extraer solo las props relevantes para evitar pasar props no deseadas
-        const specificProps: Record<string, unknown> = {};
-        const questionData = question as any; // Type assertion para acceso flexible
-        
-        if (questionData.companyName) specificProps.companyName = questionData.companyName;
-        if (questionData.scaleSize) specificProps.scaleSize = questionData.scaleSize;
-        if (questionData.leftLabel) specificProps.leftLabel = questionData.leftLabel;
-        if (questionData.rightLabel) specificProps.rightLabel = questionData.rightLabel;
-        if (questionData.placeholder) specificProps.placeholder = questionData.placeholder;
+        return (
+            <div className="h-full">
+                {isLoading && <p>Cargando preguntas de SmartVOC...</p>}
+                {error && <p>Error: {error}</p>}
 
-        // Añadir props estándar para useStandardizedForm
-        const standardProps = {
-            stepId: question.id,
-            stepType: question.type,
-            stepName: (question as any).title || question.type,
-            researchId: researchId,
-            participantId: undefined, // Se obtendrá del store
-            required: question.required || false,
-            config: question.config
-        };
+                {currentQuestion && !isLoading && (
+                    <CurrentQuestionComponent {...questionProps} />
+                )}
 
-        // Renderizar el componente mapeado con sus props
-        return <QuestionComponent {...commonProps} {...specificProps} {...standardProps} />;
+                {!currentQuestion && !isLoading && (
+                    <div>
+                        {renderCurrentQuestion()}
+                    </div>
+                )}
+            </div>
+        );
     };
 
-    // --- Renderizado del Handler (Simplificado) ---
-    if (isLoading) {
-        return <div className="p-6 text-center">Cargando SmartVOC...</div>;
-    }
+    // Lógica de renderizado simplificada y robusta
+    const renderContent = () => {
+        // 1. Estado de carga
+        if (isLoading) {
+            return <p className="text-center p-8">Cargando configuración de SmartVOC...</p>;
+        }
 
-    if (error) {
-         // onError ya fue llamado por el useEffect
-        return <div className="p-6 text-center text-red-600">Error al cargar SmartVOC.</div>;
-    }
+        // 2. Estado de error
+        if (error) {
+            return <p className="text-center p-8 text-red-500">Error al cargar la configuración: {error}</p>;
+        }
 
-    if (questions.length === 0) {
-         // No hay preguntas que mostrar. El useEffect ya llamó a onComplete.
-         // console.log("[SmartVOCHandler] Renderizando null porque no hay preguntas (onComplete ya fue llamado).");
-        return null; // No mostrar nada si no hay preguntas que hacer
-    }
+        // 3. No hay preguntas configuradas
+        if (!questions || questions.length === 0) {
+            // Si no hay preguntas, consideramos el paso completado.
+            console.log('[SmartVOCHandler] No hay preguntas SmartVOC, completando el paso.');
+            onComplete();
+            return <p className="text-center p-8">No hay preguntas SmartVOC configuradas. Continuando...</p>;
+        }
 
-    // Si llegamos aquí, !isLoading, !error, y questions.length > 0
+        // 4. Se terminaron las preguntas
+        const currentQuestion = questions[currentQuestionIndex];
+        if (!currentQuestion) {
+            console.log('[SmartVOCHandler] Todas las preguntas completadas.');
+            onComplete();
+            return <p className="text-center p-8">Gracias por tus respuestas. Continuando...</p>;
+        }
+
+        // 5. Renderizar la pregunta actual
+        const CurrentQuestionComponent = questionComponentsMap[currentQuestion.type];
+        if (!CurrentQuestionComponent) {
+            console.warn(`No se encontró un componente para el tipo de pregunta: ${currentQuestion.type}`);
+            // Saltar a la siguiente pregunta si el componente no existe
+            handleNextQuestion(null);
+            return (
+                <p className="p-4 text-center text-red-500">
+                    Error: Tipo de pregunta no soportado ({currentQuestion.type}). Saltando a la siguiente.
+                </p>
+            );
+        }
+
+        const questionProps = {
+            key: currentQuestion.id,
+            question: currentQuestion,
+            onStepComplete: (answer: any) => handleNextQuestion(answer?.value),
+        };
+
+        return <CurrentQuestionComponent {...questionProps} />;
+    };
+
     return (
-        <div className="flex flex-col items-center justify-center w-full min-h-screen bg-gray-50 p-4 sm:p-8">
-            <div className="max-w-2xl w-full bg-white shadow-md rounded-lg p-6 sm:p-8 flex flex-col items-center">
-                {renderCurrentQuestion()}
-            </div>
+        <div className="h-full w-full">
+            {renderContent()}
         </div>
     );
 };
 
-export default SmartVOCHandler; 
+export default SmartVOCHandler;

@@ -1,22 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { useStepResponseManager } from '../../hooks/useStepResponseManager';
-import { CSATViewProps } from '../../types/smart-voc.types';
+import { SmartVOCQuestion } from '../../types/smart-voc.types';
 import { formatQuestionText, formSpacing } from '../../utils/formHelpers';
 import { StarRating } from './StarRating';
 
+interface CSATViewProps {
+  question: SmartVOCQuestion;
+  onStepComplete?: (data?: unknown) => void;
+}
+
 const CSATView: React.FC<CSATViewProps> = ({
-  config,
-  stepName,
+  question,
   onStepComplete,
 }) => {
-  if (!config) {
+  if (!question || !question.config) {
     return <div>Cargando configuración...</div>;
   }
 
-  const questionText = stepName || 'Valora tu satisfacción';
-  const instructions = config?.instructions || '';
-  const companyName = config?.companyName || '';
-  const useStars = config?.type === 'stars';
+  const questionText = question.title || 'Valora tu satisfacción';
+  const instructions = question.instructions || question.config.instructions || '';
+  const companyName = question.config.companyName || '';
+  const useStars = question.config.type === 'stars';
 
   const satisfactionLevels = [
     { value: 1, label: 'Muy insatisfecho' },
@@ -34,8 +38,8 @@ const CSATView: React.FC<CSATViewProps> = ({
     error,
     hasExistingData
   } = useStepResponseManager<number>({
-    stepId: config.id || '',
-    stepType: config.type || '',
+    stepId: question.id || '',
+    stepType: question.type || 'CSAT',
     initialData: null
   });
 

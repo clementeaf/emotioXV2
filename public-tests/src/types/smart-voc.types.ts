@@ -7,9 +7,16 @@ export interface SmartVOCQuestion {
   type: 'csat' | 'ces' | 'cv' | 'nev' | 'nps' | 'voc' | 'trust';
   title?: string;
   description?: string;
+  instructions?: string;
   required?: boolean;
   showConditionally?: boolean;
   config?: {
+    type?: 'stars' | 'numbers' | 'emojis' | 'scale' | 'text';
+    companyName?: string;
+    scaleRange?: {
+      start: number;
+      end: number;
+    };
     scale?: {
       min: number;
       max: number;
@@ -23,6 +30,7 @@ export interface SmartVOCQuestion {
     }>;
     placeholder?: string;
     maxLength?: number;
+    instructions?: string;
   };
 }
 
@@ -288,4 +296,9 @@ export interface UseSmartVOCConfigReturn {
   questions: SmartVOCQuestion[];
   error: string | null;
   config: SmartVOCConfig | null;
+}
+
+// Interfaz para la respuesta de la API que obtiene el formulario SmartVOC
+export interface SmartVOCFormResponse {
+  // ... existing code ...
 }
