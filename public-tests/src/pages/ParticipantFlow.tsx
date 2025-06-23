@@ -30,7 +30,7 @@ const ParticipantFlow: React.FC = () => {
     }, [expandedSteps, currentStepIndex]);
 
     // Log temporal para depuración
-    console.log('[ParticipantFlow] responsesData:', responsesData);
+    console.log('[ParticipantFlow] responsesData:', responsesData, 'currentStep:', memoizedCurrentExpandedStep?.id, memoizedCurrentExpandedStep);
 
     const savedResponseForCurrentStep = useMemo(() => {
         if (!memoizedCurrentExpandedStep || !responsesData) {

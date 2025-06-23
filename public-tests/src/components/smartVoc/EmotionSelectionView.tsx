@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useStandardizedForm } from '../../hooks/useStandardizedForm';
+import { StandardizedFormProps } from '../../types/hooks.types';
 import { BasicEmoji, EmotionSelectionViewComponentProps } from '../../types/smart-voc.types';
 
 // =================================================================
@@ -45,11 +47,69 @@ const EmotionSelectionView: React.FC<EmotionSelectionViewComponentProps> = ({
   instructions,
   companyName,
   config,
-  initialValue,
-  onNext
+  onNext,
+  // Props estandarizadas que vienen del flujo
+  stepId,
+  stepType,
+  stepName,
+  savedResponse,
+  savedResponseId,
+  required
 }) => {
-  // Log temporal para depuración
-  console.log('[EmotionSelectionView] initialValue:', initialValue);
+
+  // Crear props estandarizadas
+  const standardProps: StandardizedFormProps = {
+    stepId: stepId || 'nev-default',
+    stepType: stepType || 'smartvoc_nev',
+    stepName: stepName || questionText,
+    savedResponse,
+    savedResponseId,
+    required: required || false
+  };
+
+  const [state, actions] = useStandardizedForm<string | null>(standardProps, {
+    initialValue: null,
+    extractValueFromResponse: (response: unknown): string | null => {
+      console.log('[EmotionSelectionView] extractValueFromResponse called with:', response, typeof response);
+
+      // Si es string directo (emoji)
+      if (typeof response === 'string') {
+        console.log('[EmotionSelectionView] Direct string:', response);
+        return response;
+      }
+
+      // Si es objeto con campo 'value'
+      if (typeof response === 'object' && response !== null) {
+        const obj = response as Record<string, unknown>;
+        if ('value' in obj && typeof obj.value === 'string') {
+          console.log('[EmotionSelectionView] Extracted from value field:', obj.value);
+          return obj.value;
+        }
+
+        // Si es objeto con campo 'response'
+        if ('response' in obj) {
+          const innerResponse = obj.response;
+          if (typeof innerResponse === 'string') {
+            console.log('[EmotionSelectionView] Extracted from nested response:', innerResponse);
+            return innerResponse;
+          }
+          if (typeof innerResponse === 'object' && innerResponse !== null && 'value' in (innerResponse as Record<string, unknown>)) {
+            const nestedValue = (innerResponse as Record<string, unknown>).value;
+            if (typeof nestedValue === 'string') {
+              console.log('[EmotionSelectionView] Extracted from nested response.value:', nestedValue);
+              return nestedValue;
+            }
+          }
+        }
+      }
+
+      console.log('[EmotionSelectionView] Could not extract string from response:', response);
+      return null;
+    }
+  });
+
+  const { value: selectedEmoji, isSaving, isLoading, error, hasExistingData } = state;
+  const { setValue, validateAndSave } = actions;
 
   // Determinar qué conjunto de emojis usar basándose en la configuración
   const getEmojiSet = () => {
@@ -65,21 +125,33 @@ const EmotionSelectionView: React.FC<EmotionSelectionViewComponentProps> = ({
   };
 
   const emojis = getEmojiSet();
-  const [selectedEmoji, setSelectedEmoji] = useState<string | null>(initialValue || null);
 
   const handleSelect = (emoji: string) => {
-    setSelectedEmoji(emoji);
+    setValue(emoji, true); // true = user interaction
   };
 
-  const handleNextClick = () => {
+  const handleNextClick = async () => {
     if (selectedEmoji !== null) {
-      onNext(selectedEmoji);
+      const result = await validateAndSave();
+      if (result.success && onNext) {
+        onNext(selectedEmoji);
+      }
     }
   };
 
   const formattedQuestionText = companyName
     ? questionText.replace(/\[company\]|\[empresa\]/gi, companyName)
     : questionText;
+
+  // Log para depuración
+  console.log('[EmotionSelectionView] Current selectedEmoji:', selectedEmoji);
+  console.log('[EmotionSelectionView] hasExistingData:', hasExistingData);
+
+  // Determinar el texto del botón basado en si hay datos existentes
+  const getButtonText = () => {
+    if (isSaving) return 'Guardando...';
+    return hasExistingData ? 'Actualizar y continuar' : 'Guardar y continuar';
+  };
 
   return (
     <div className="flex flex-col items-center justify-center w-full h-full bg-white p-8">
@@ -94,12 +166,19 @@ const EmotionSelectionView: React.FC<EmotionSelectionViewComponentProps> = ({
           </p>
         )}
 
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-red-600 text-sm">{error}</p>
+          </div>
+        )}
+
         <div className="flex flex-wrap justify-center gap-4 mb-10">
           {emojis.map((item) => (
             <button
               key={item.label}
               onClick={() => handleSelect(item.emoji)}
-              className={`flex flex-col items-center gap-2 p-3 rounded-lg transition-all duration-150 ease-in-out ${selectedEmoji === item.emoji
+              disabled={isLoading || isSaving}
+              className={`flex flex-col items-center gap-2 p-3 rounded-lg transition-all duration-150 ease-in-out disabled:opacity-50 ${selectedEmoji === item.emoji
                 ? 'bg-indigo-100 scale-110 ring-2 ring-indigo-500'
                 : 'hover:scale-110 hover:bg-neutral-100'
               }`}
@@ -113,9 +192,9 @@ const EmotionSelectionView: React.FC<EmotionSelectionViewComponentProps> = ({
         <button
           className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-8 rounded-md w-fit transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={handleNextClick}
-          disabled={selectedEmoji === null}
+          disabled={selectedEmoji === null || isSaving}
         >
-          Guardar y continuar
+          {getButtonText()}
         </button>
       </div>
     </div>

@@ -214,13 +214,12 @@ export interface BasicEmoji {
   label: string;
 }
 
-export interface EmotionSelectionViewComponentProps {
+export interface EmotionSelectionViewComponentProps extends StandardizedFormProps {
   questionText: string;
   instructions?: string;
   companyName?: string;
   config?: any;
-  initialValue?: string | null;
-  onNext: (selectedEmoji: string) => void;
+  onNext: (selectedEmoji: unknown) => void;
 }
 
 export interface AgreementScaleViewComponentProps {

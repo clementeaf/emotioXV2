@@ -23,7 +23,14 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
         return <RenderError message={`Tipo de paso no encontrado: ${stepType}`} />;
     }
 
+    // LOGS DE DEPURACIÓN CRÍTICA
+    console.log('[CurrentStepRenderer] stepType:', stepType, 'stepConfig:', stepConfig, 'savedResponse:', savedResponse);
+
     // Prepara las props finales para el componente.
+    let initialValueToPass = savedResponse;
+    if (savedResponse && typeof savedResponse === 'object' && 'value' in savedResponse) {
+        initialValueToPass = (savedResponse as any).value;
+    }
     const finalProps = {
         ...restOfStepProps,
         stepType,
@@ -33,7 +40,7 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
         onNext: onStepComplete,
         onSubmit: onStepComplete,
         onStepComplete: onStepComplete,
-        initialValue: savedResponse,
+        initialValue: initialValueToPass,
     };
 
     // Renderiza el componente del paso, envuelto en Suspense por si está lazy-loaded.
