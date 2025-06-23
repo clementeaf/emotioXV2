@@ -154,6 +154,19 @@ export class CognitiveTaskFixedAPI extends ApiClient {
         hasFiles: payload.questions?.some(q => q.files && q.files.length > 0) || false
       });
 
+      // LOG COMPLETO: Mostrar los datos exactos que se envían al backend
+      console.log(`[CognitiveTaskFixedAPI] PAYLOAD COMPLETO que se envía al backend:`, payload);
+
+      // LOG ESPECÍFICO: Mostrar archivos con hitZones
+      payload.questions?.forEach((q, qIndex) => {
+        if (q.files && q.files.length > 0) {
+          console.log(`[CognitiveTaskFixedAPI] Pregunta ${qIndex} (${q.id}) archivos:`, q.files);
+          q.files.forEach((file, fIndex) => {
+            console.log(`[CognitiveTaskFixedAPI] Archivo ${fIndex} (${file.name}) hitZones:`, file.hitZones);
+          });
+        }
+      });
+
       return this.put<CognitiveTaskFormData>(path, payload);
     } catch (error) {
       console.error(`[CognitiveTaskFixedAPI] Error en save:`, error);
