@@ -30,8 +30,10 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
         stepConfig,
         config: stepConfig,
         initialValues: savedResponse,
+        onNext: onStepComplete,
         onSubmit: onStepComplete,
         onStepComplete: onStepComplete,
+        initialValue: savedResponse,
     };
 
     // Renderiza el componente del paso, envuelto en Suspense por si está lazy-loaded.

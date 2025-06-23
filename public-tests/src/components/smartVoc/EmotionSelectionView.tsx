@@ -48,6 +48,9 @@ const EmotionSelectionView: React.FC<EmotionSelectionViewComponentProps> = ({
   initialValue,
   onNext
 }) => {
+  // Log temporal para depuración
+  console.log('[EmotionSelectionView] initialValue:', initialValue);
+
   // Determinar qué conjunto de emojis usar basándose en la configuración
   const getEmojiSet = () => {
     switch (config?.type) {

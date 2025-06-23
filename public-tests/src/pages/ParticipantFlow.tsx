@@ -29,6 +29,17 @@ const ParticipantFlow: React.FC = () => {
                : null;
     }, [expandedSteps, currentStepIndex]);
 
+    // Log temporal para depuración
+    console.log('[ParticipantFlow] responsesData:', responsesData);
+
+    const savedResponseForCurrentStep = useMemo(() => {
+        if (!memoizedCurrentExpandedStep || !responsesData) {
+            return undefined;
+        }
+        // Las respuestas están guardadas usando el ID del paso como clave.
+        return (responsesData as any)[memoizedCurrentExpandedStep.id];
+    }, [memoizedCurrentExpandedStep, responsesData]);
+
     const memoizedResponsesDataProp = useMemo(() => {
         const isThankYou = memoizedCurrentExpandedStep?.type === 'thankyou' || currentStep === ParticipantFlowStep.DONE;
         return isThankYou ? (responsesData as any) : undefined;
@@ -126,6 +137,7 @@ const ParticipantFlow: React.FC = () => {
                                         handleStepComplete={handleStepComplete}
                                         handleError={handleError}
                                         responsesData={memoizedResponsesDataProp as any}
+                                        savedResponse={savedResponseForCurrentStep}
                                     />
                                 </div>
                             </div>
