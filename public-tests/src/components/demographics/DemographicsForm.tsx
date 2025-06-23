@@ -121,15 +121,17 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
       return;
     }
 
+    console.log('✅ [DemographicsForm] Formulario validado. Guardando respuestas...');
     setIsSubmittingToServer(true);
 
     const { success } = await saveCurrentStepResponse(formFieldResponses);
 
     if (success) {
+      console.log('✅ [DemographicsForm] Respuestas guardadas. Llamando a onSubmit para avanzar al siguiente paso.');
       await refetchModuleResponses();
       onSubmit(formFieldResponses);
     } else {
-      console.error(`❌ [DemographicsForm] Save failed. Error:`, stepResponseError);
+      console.error(`❌ [DemographicsForm] El guardado falló. Error:`, stepResponseError);
     }
     setIsSubmittingToServer(false);
   };

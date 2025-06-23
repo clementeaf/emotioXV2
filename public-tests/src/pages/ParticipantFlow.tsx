@@ -1,14 +1,14 @@
 import React, { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { ParticipantFlowStep } from '../types/flow';
-import { useParticipantFlow } from '../hooks/useParticipantFlow';
+import LoadingIndicator from '../components/common/LoadingIndicator';
 import FlowStepContent from '../components/flow/FlowStepContent';
 import { ProgressSidebar } from '../components/layout/ProgressSidebar';
-import LoadingIndicator from '../components/common/LoadingIndicator';
+import { useParticipantFlow } from '../hooks/useParticipantFlow';
+import { ParticipantFlowStep } from '../types/flow';
 
 const ParticipantFlow: React.FC = () => {
     const { researchId } = useParams<{ researchId: string }>();
-    
+
     const {
         currentStep,
         token,
@@ -24,33 +24,33 @@ const ParticipantFlow: React.FC = () => {
     } = useParticipantFlow(researchId);
 
     const memoizedCurrentExpandedStep = useMemo(() => {
-        return expandedSteps && expandedSteps.length > currentStepIndex 
-               ? expandedSteps[currentStepIndex] 
+        return expandedSteps && expandedSteps.length > currentStepIndex
+               ? expandedSteps[currentStepIndex]
                : null;
     }, [expandedSteps, currentStepIndex]);
 
     const memoizedResponsesDataProp = useMemo(() => {
         const isThankYou = memoizedCurrentExpandedStep?.type === 'thankyou' || currentStep === ParticipantFlowStep.DONE;
-        return isThankYou ? responsesData : undefined;
+        return isThankYou ? (responsesData as any) : undefined;
     }, [memoizedCurrentExpandedStep, currentStep, responsesData]);
-    
+
     const showSidebar = ![
-        ParticipantFlowStep.LOGIN, 
-        ParticipantFlowStep.LOADING_SESSION, 
+        ParticipantFlowStep.LOGIN,
+        ParticipantFlowStep.LOADING_SESSION,
         ParticipantFlowStep.ERROR
     ].includes(currentStep);
 
     // Calcular progreso para la barra superior
     const progressInfo = useMemo(() => {
         if (!expandedSteps?.length) return { percentage: 0, current: 0, total: 0 };
-        
-        const relevantSteps = expandedSteps.filter(step => 
+
+        const relevantSteps = expandedSteps.filter(step =>
             step.type !== 'welcome' && step.type !== 'thankyou'
         );
-        
+
         const completedSteps = Math.min(currentStepIndex, relevantSteps.length);
         const percentage = relevantSteps.length > 0 ? Math.round((completedSteps / relevantSteps.length) * 100) : 0;
-        
+
         return {
             percentage,
             current: completedSteps,
@@ -81,7 +81,7 @@ const ParticipantFlow: React.FC = () => {
                                     Paso {currentStepIndex + 1} de {expandedSteps.length}
                                 </span>
                             </div>
-                            
+
                             {/* Barra de progreso visual - usando 70% del ancho */}
                             <div className="w-[70%]">
                                 <div className="flex items-center justify-between text-xs text-neutral-500 mb-2 font-mono">
@@ -89,7 +89,7 @@ const ParticipantFlow: React.FC = () => {
                                     <span>{progressInfo.percentage}%</span>
                                 </div>
                                 <div className="w-full bg-neutral-300 rounded-full h-1.5">
-                                    <div 
+                                    <div
                                         className="bg-neutral-800 h-1.5 rounded-full transition-all duration-700 ease-out"
                                         style={{ width: `${progressInfo.percentage}%` }}
                                     />
@@ -103,9 +103,9 @@ const ParticipantFlow: React.FC = () => {
                 <div className="flex overflow-hidden" style={{ height: showSidebar ? 'calc(100vh - 120px)' : '100vh' }}>
                     {/* Sidebar de pasos a la izquierda */}
                     {showSidebar && expandedSteps && (
-                        <ProgressSidebar 
+                        <ProgressSidebar
                             steps={expandedSteps}
-                            currentStepIndex={currentStepIndex} 
+                            currentStepIndex={currentStepIndex}
                             onNavigateToStep={navigateToStep}
                         />
                     )}
@@ -125,7 +125,7 @@ const ParticipantFlow: React.FC = () => {
                                         handleLoginSuccess={handleLoginSuccess}
                                         handleStepComplete={handleStepComplete}
                                         handleError={handleError}
-                                        responsesData={memoizedResponsesDataProp}
+                                        responsesData={memoizedResponsesDataProp as any}
                                     />
                                 </div>
                             </div>
@@ -136,7 +136,11 @@ const ParticipantFlow: React.FC = () => {
         );
     }
 
-    return content;
+    return (
+        <>
+            {content}
+        </>
+    );
 };
 
 export default ParticipantFlow;

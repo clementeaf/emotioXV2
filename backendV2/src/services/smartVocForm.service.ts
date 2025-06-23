@@ -1,5 +1,5 @@
+import { CESConfig, CSATConfig, CVConfig, NEVConfig, NPSConfig, QuestionConfig, SmartVOCFormData, VOCConfig } from '../../../shared/interfaces/smart-voc.interface';
 import { SmartVOCFormModel, SmartVOCFormRecord } from '../models/smartVocForm.model';
-import { SmartVOCFormData, QuestionConfig, CSATConfig, CESConfig, CVConfig, NEVConfig, NPSConfig, VOCConfig } from '../../../shared/interfaces/smart-voc.interface';
 // Eliminar imports directos de DynamoDB
 // import { PutCommand, QueryCommand, DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 // import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
@@ -49,7 +49,7 @@ export class SmartVOCFormService {
         data.questions.forEach((q, index) => {
             const questionKey = `question_${index + 1}`;
             qErrors[questionKey] = {}; // Inicializar errores para esta pregunta
-            
+
             // Validaciones básicas de pregunta
             if (!q.id || typeof q.id !== 'string' || q.id.trim() === '') qErrors[questionKey].id = `debe tener un ID válido`;
             if (!q.title || typeof q.title !== 'string' || q.title.trim() === '') qErrors[questionKey].title = `debe tener título`;
@@ -58,7 +58,7 @@ export class SmartVOCFormService {
             if (q.required === undefined || typeof q.required !== 'boolean') qErrors[questionKey].required = `debe indicar si es requerida (true/false)`;
             if (q.showConditionally === undefined || typeof q.showConditionally !== 'boolean') qErrors[questionKey].showConditionally = `debe indicar si se muestra condicionalmente (true/false)`;
             if (!q.config || typeof q.config !== 'object') qErrors[questionKey].config = `debe tener un objeto de configuración`;
-            
+
             // Validación profunda de q.config basada en q.type
             if (q.config && q.type) {
                 const config = q.config as QuestionConfig; // Cast para acceso seguro
@@ -81,7 +81,10 @@ export class SmartVOCFormService {
                          break;
                     case 'NEV':
                          const nevConfig = config as NEVConfig;
-                         if (nevConfig.type !== 'emojis') qErrors[questionKey]['config.type'] = 'NEV: tipo de config debe ser emojis';
+                         const validNevTypes = ['emojis', 'emojis_detailed', 'quadrants'];
+                         if (!nevConfig.type || !validNevTypes.includes(nevConfig.type)) {
+                            qErrors[questionKey]['config.type'] = `NEV: tipo de config debe ser uno de: ${validNevTypes.join(', ')}`;
+                         }
                          if (!nevConfig.companyName || typeof nevConfig.companyName !== 'string') qErrors[questionKey]['config.companyName'] = 'NEV: requiere companyName';
                          break;
                     case 'NPS':
@@ -263,7 +266,7 @@ export class SmartVOCFormService {
         console.log(`[SmartVOCFormService.delete] Llamada a model.delete completada para ID: ${formId}`);
     } catch (error: any) {
         // Ya no debería haber ApiError aquí si el modelo no lo lanza para delete
-        // if (error instanceof ApiError) { 
+        // if (error instanceof ApiError) {
         //     throw error;
         // }
         console.error(`[SmartVOCFormService.delete] Error desde el modelo al eliminar ID ${formId}:`, error);
@@ -283,7 +286,7 @@ export class SmartVOCFormService {
    */
   async deleteByResearchId(researchId: string, _userId?: string): Promise<boolean> {
     console.log(`[SmartVOCFormService.deleteByResearchId] Eliminando formulario para researchId: ${researchId}`);
-    
+
     if (!researchId) {
       throw new ApiError(`${SmartVOCError.RESEARCH_REQUIRED}: Se requiere ID de investigación`, 400);
     }
@@ -291,13 +294,13 @@ export class SmartVOCFormService {
     try {
       // Delegar al modelo que maneja la lógica de búsqueda y eliminación
       const deleted = await this.model.deleteByResearchId(researchId);
-      
+
       if (deleted) {
         console.log(`[SmartVOCFormService.deleteByResearchId] Formulario eliminado exitosamente para researchId: ${researchId}`);
       } else {
         console.log(`[SmartVOCFormService.deleteByResearchId] No se encontró formulario para eliminar con researchId: ${researchId}`);
       }
-      
+
       return deleted;
     } catch (error: any) {
       console.error('[SmartVOCFormService.deleteByResearchId] Error desde el modelo:', error);
@@ -337,6 +340,6 @@ export class SmartVOCFormService {
 }
 
 // Eliminar la exportación de la instancia singleton
-// export const smartVOCFormService = new SmartVOCFormService(); 
+// export const smartVOCFormService = new SmartVOCFormService();
 
-// La clase ya se exporta con `export class SmartVOCFormService { ... }` 
+// La clase ya se exporta con `export class SmartVOCFormService { ... }`

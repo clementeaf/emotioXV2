@@ -20,6 +20,7 @@ export interface CurrentStepProps {
     onLoginSuccess?: (participant: Participant & { id: string }) => void;
     onStepComplete?: (answer?: unknown) => void;
     onError: (errorMessage: string, stepType: string) => void;
+    savedResponse?: any;
 }
 
 // Props que necesita este componente para funcionar

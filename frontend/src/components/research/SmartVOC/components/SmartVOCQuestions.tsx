@@ -191,9 +191,8 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
                   })}
                   disabled={disabled}
                 >
-                  <option value="emojis">Emojis básicos</option>
+                  <option value="emojis">Escala emocional completa</option>
                   <option value="emojis_detailed">Emojis detallados (20 estados)</option>
-                  <option value="emotional_scale">Escala emocional completa</option>
                   <option value="quadrants">4 Estadios emocionales</option>
                 </select>
               </div>

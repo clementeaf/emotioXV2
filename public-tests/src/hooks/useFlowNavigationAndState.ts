@@ -52,16 +52,31 @@ export const useFlowNavigationAndState = ({
     }, [expandedSteps, isFlowLoading, currentStep, maxVisitedIndexFromStore, researchId, loadExistingResponses, participantId, setCurrentStepIndex, setCurrentStep]);
 
     const goToNextStep = useCallback(async (answer?: unknown) => {
+        console.log('[useFlowNavigationAndState] ➡️ goToNextStep llamado.', {
+            isFlowLoading,
+            currentStepIndex,
+            totalSteps: expandedSteps.length
+        });
+
         if (!isFlowLoading && currentStepIndex < expandedSteps.length - 1) {
             const nextIndex = currentStepIndex + 1;
+            console.log(`[useFlowNavigationAndState] 🚀 Avanzando del paso ${currentStepIndex} al ${nextIndex}.`);
+            if (answer !== undefined) {
+                await saveStepResponse(answer);
+            }
             setCurrentStepIndex(nextIndex);
             setError(null);
-        } else if (!isFlowLoading) {
-             if (answer !== undefined) {
-                await saveStepResponse(answer);
-             }
-             setCurrentStep(ParticipantFlowStep.DONE);
-             await markResponsesAsCompleted();
+        } else {
+            console.log(`[useFlowNavigationAndState] 🛑 Fin del flujo o carga en progreso. Step: ${currentStepIndex}`);
+            if (!isFlowLoading) {
+                if (answer !== undefined) {
+                    await saveStepResponse(answer);
+                }
+                setCurrentStep(ParticipantFlowStep.DONE);
+                await markResponsesAsCompleted();
+            } else {
+                console.warn('[useFlowNavigationAndState] ⏳ goToNextStep llamado pero el flujo está cargando.');
+            }
         }
     }, [currentStepIndex, expandedSteps, isFlowLoading, saveStepResponse, markResponsesAsCompleted, setCurrentStepIndex, setError, setCurrentStep]);
 

@@ -1,12 +1,12 @@
-import { NewResearch, ResearchType } from '../models/newResearch.model';
-import { WelcomeScreenFormData } from '../../../shared/interfaces/welcome-screen.interface';
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { SmartVOCFormData, SmartVOCQuestion } from '../../../shared/interfaces/smart-voc.interface';
-import { APIGatewayProxyResult, APIGatewayProxyEvent } from 'aws-lambda';
-import { errorResponse } from './controller.utils';
-import { 
-  ThankYouScreenFormData, 
-  DEFAULT_THANK_YOU_SCREEN_VALIDATION 
+import {
+    DEFAULT_THANK_YOU_SCREEN_VALIDATION,
+    ThankYouScreenFormData
 } from '../../../shared/interfaces/thank-you-screen.interface';
+import { WelcomeScreenFormData } from '../../../shared/interfaces/welcome-screen.interface';
+import { NewResearch, ResearchType } from '../models/newResearch.model';
+import { errorResponse } from './controller.utils';
 
 // Constantes para mensajes de error comunes
 export const ERROR_MESSAGES = {
@@ -16,7 +16,7 @@ export const ERROR_MESSAGES = {
     TOO_LONG: (fieldName: string, maxLength: number) => `${fieldName} no puede exceder los ${maxLength} caracteres`,
     TOO_SHORT: (fieldName: string, minLength: number) => `${fieldName} debe tener al menos ${minLength} caracteres`,
     EMPTY_ARRAY: (fieldName: string) => `${fieldName} debe contener al menos un elemento`,
-    INVALID_TYPE: (fieldName: string, validTypes: string[]) => 
+    INVALID_TYPE: (fieldName: string, validTypes: string[]) =>
       `${fieldName} debe ser uno de los siguientes: ${validTypes.join(', ')}`,
     INVALID_RANGE: (fieldName: string) => `${fieldName} debe tener un rango válido`,
     MISSING_CONFIG: (fieldName: string) => `${fieldName} debe tener una configuración válida`
@@ -224,8 +224,8 @@ export type ParsedBody<T> = { success: true; data: T } | { success: false; error
 export function parseRequestBody<T = any>(body: string | null): ParsedBody<T> {
   if (!body) {
     console.log('No se proporcionaron datos en la petición');
-    return { 
-      success: false, 
+    return {
+      success: false,
       error: errorResponse('Se requieren datos para procesar la petición', 400)
     };
   }
@@ -235,8 +235,8 @@ export function parseRequestBody<T = any>(body: string | null): ParsedBody<T> {
     return { success: true, data };
   } catch (e) {
     console.error('Error al parsear JSON del cuerpo:', e);
-    return { 
-      success: false, 
+    return {
+      success: false,
       error: errorResponse('Error al procesar los datos de la petición, formato JSON inválido', 400)
     };
   }
@@ -288,7 +288,7 @@ export function validateIdFormat(id: string, fieldName: string): APIGatewayProxy
  * Valida los datos específicos de una pantalla de bienvenida
  * @param data Datos de la pantalla de bienvenida
  * @returns Respuesta de error o null si los datos son válidos
- * 
+ *
  * @example
  * // Ejemplo de datos válidos:
  * {
@@ -342,7 +342,7 @@ export function validateWelcomeScreenData(data: WelcomeScreenFormData): APIGatew
 export function validateSmartVOCData(data: SmartVOCFormData): APIGatewayProxyResult | null {
   // Cache para mensajes de error comunes
   const error = ERROR_MESSAGES.VALIDATION;
-  
+
   // Validar que existan preguntas
   if (!data.questions || !Array.isArray(data.questions) || data.questions.length === 0) {
     return errorResponse(error.EMPTY_ARRAY('El formulario'), 400);
@@ -352,36 +352,36 @@ export function validateSmartVOCData(data: SmartVOCFormData): APIGatewayProxyRes
   for (let i = 0; i < data.questions.length; i++) {
     const question = data.questions[i];
     const questionLabel = `La pregunta ${i + 1}`;
-    
+
     // Validar título
     if (!question.title || question.title.trim() === '') {
       return errorResponse(error.REQUIRED_FIELD(`título de ${questionLabel.toLowerCase()}`), 400);
     }
-    
+
     if (question.title.length > 100) {
       return errorResponse(error.TOO_LONG(`El título de ${questionLabel.toLowerCase()}`, 100), 400);
     }
-    
+
     // Validar descripción
     if (!question.description || question.description.trim() === '') {
       return errorResponse(error.REQUIRED_FIELD(`descripción de ${questionLabel.toLowerCase()}`), 400);
     }
-    
+
     if (question.description.length > 500) {
       return errorResponse(error.TOO_LONG(`La descripción de ${questionLabel.toLowerCase()}`, 500), 400);
     }
-    
+
     // Validar tipo
     const validTypes = ['CSAT', 'CES', 'CV', 'NEV', 'NPS', 'VOC'];
     if (!validTypes.includes(question.type)) {
       return errorResponse(error.INVALID_TYPE(`El tipo de ${questionLabel.toLowerCase()}`, validTypes), 400);
     }
-    
+
     // Validar configuración
     if (!question.config) {
       return errorResponse(error.MISSING_CONFIG(questionLabel), 400);
     }
-    
+
     // Validar configuración específica según el tipo
     const validationResult = validateQuestionConfigByType(question, i);
     if (validationResult) {
@@ -399,59 +399,62 @@ export function validateSmartVOCData(data: SmartVOCFormData): APIGatewayProxyRes
  * @returns Respuesta de error o null si la configuración es válida
  */
 function validateQuestionConfigByType(question: SmartVOCQuestion, index: number): APIGatewayProxyResult | null {
+  const { type, config } = question;
   const questionLabel = `La pregunta ${index + 1}`;
   const error = ERROR_MESSAGES.VALIDATION;
-  
-  switch (question.type) {
+
+  switch (type) {
     case 'CSAT':
-      if (!question.config.companyName) {
+      if (!config.companyName) {
         return errorResponse(error.REQUIRED_FIELD(`nombre de empresa en ${questionLabel.toLowerCase()}`), 400);
       }
-      if (question.config.type !== 'stars' && question.config.type !== 'numbers' && question.config.type !== 'emojis') {
+      if (config.type !== 'stars' && config.type !== 'numbers' && config.type !== 'emojis') {
         return errorResponse(
-          `${questionLabel} de tipo CSAT debe tener un tipo de entrada válido: stars, numbers o emojis`, 
+          `${questionLabel} de tipo CSAT debe tener un tipo de entrada válido: stars, numbers o emojis`,
           400
         );
       }
       break;
-      
+
     case 'NPS':
     case 'CES':
     case 'CV':
-      if (question.config.type !== 'scale') {
+      if (config.type !== 'scale') {
         return errorResponse(
-          `${questionLabel} de tipo ${question.type} debe tener un tipo de entrada 'scale'`, 
+          `${questionLabel} de tipo ${type} debe tener un tipo de entrada 'scale'`,
           400
         );
       }
-      if (!question.config.scaleRange || 
-          question.config.scaleRange.start >= question.config.scaleRange.end) {
-        return errorResponse(error.INVALID_RANGE(`${questionLabel} de tipo ${question.type}`), 400);
+      if (!config.scaleRange ||
+          config.scaleRange.start >= config.scaleRange.end) {
+        return errorResponse(error.INVALID_RANGE(`${questionLabel} de tipo ${type}`), 400);
       }
       break;
-      
+
     case 'VOC':
-      if (question.config.type !== 'text') {
+      if (config.type !== 'text') {
         return errorResponse(
-          `${questionLabel} de tipo VOC debe tener un tipo de entrada 'text'`, 
+          `${questionLabel} de tipo VOC debe tener un tipo de entrada 'text'`,
           400
         );
       }
       break;
-      
+
     case 'NEV':
-      if (question.config.type !== 'emojis') {
-        return errorResponse(
-          `${questionLabel} de tipo NEV debe tener un tipo de entrada 'emojis'`, 
-          400
-        );
+      if (!config) return errorResponse(`NEV: ${ERROR_MESSAGES.VALIDATION.MISSING_CONFIG('config')}`);
+
+      // Permitir múltiples tipos de configuración para NEV
+      const validNevTypes = ['emojis', 'emojis_detailed', 'quadrants'];
+      if (!config.type || !validNevTypes.includes(config.type)) {
+        return errorResponse(`NEV: tipo de config debe ser uno de: ${validNevTypes.join(', ')}`);
       }
-      if (!question.config.companyName) {
-        return errorResponse(error.REQUIRED_FIELD(`nombre de empresa en ${questionLabel.toLowerCase()}`), 400);
+
+      if (!config.companyName || typeof config.companyName !== 'string') {
+        return errorResponse(`NEV: requiere companyName`);
       }
       break;
   }
-  
+
   return null;
 }
 
@@ -459,7 +462,7 @@ function validateQuestionConfigByType(question: SmartVOCQuestion, index: number)
  * Ejecuta múltiples validaciones y devuelve el primer error encontrado
  * @param validations Lista de resultados de validación
  * @returns El primer error encontrado o null si todas las validaciones pasan
- * 
+ *
  * @example
  * const error = validateMultiple(
  *   validateUserId(userId),
@@ -480,20 +483,20 @@ export function validateMultiple(...validations: (APIGatewayProxyResult | null)[
  * @param event Evento API Gateway
  * @param bodyData Datos opcionales del cuerpo que podrían contener un researchId
  * @returns Un objeto con el ID validado o una respuesta de error
- * 
+ *
  * @example
  * const result = extractResearchId(event, screenData);
  * if ('statusCode' in result) return result;
  * const { researchId } = result;
  */
 export function extractResearchId(
-  event: APIGatewayProxyEvent, 
+  event: APIGatewayProxyEvent,
   bodyData?: any
 ): { researchId: string } | APIGatewayProxyResult {
   // Intentar obtener el researchId de diferentes fuentes en orden de prioridad
-  let researchId = 
-    bodyData?.researchId || 
-    event.pathParameters?.researchId || 
+  let researchId =
+    bodyData?.researchId ||
+    event.pathParameters?.researchId ||
     event.queryStringParameters?.researchId;
 
   // <<< NUEVO: Fallback si no se encuentra en las fuentes anteriores >>>
@@ -511,13 +514,13 @@ export function extractResearchId(
       console.warn('[extractResearchId] Error al intentar extraer ID del path:', e);
     }
   }
-    
+
   const error = validateResearchId(researchId);
-  
+
   if (error) {
     return error;
   }
-  
+
   // Si llegamos aquí, sabemos que researchId está definido
   return { researchId: researchId! };
 }
@@ -527,7 +530,7 @@ export function extractResearchId(
  * @param event Evento API Gateway
  * @param validator Función opcional para validar el cuerpo una vez parseado
  * @returns Objeto con los datos validados o una respuesta de error
- * 
+ *
  * @example
  * const result = parseAndValidateBody<WelcomeScreenFormData>(
  *   event,
@@ -542,13 +545,13 @@ export function parseAndValidateBody<T>(
 ): { data: T } | APIGatewayProxyResult {
   // Parsear el cuerpo
   const bodyResult = parseRequestBody<T>(event.body);
-  
+
   if (!bodyResult.success) {
     return bodyResult.error;
   }
-  
+
   const data = bodyResult.data;
-  
+
   // Si hay un validador, usarlo
   if (validator) {
     const validationError = validator(data);
@@ -558,7 +561,7 @@ export function parseAndValidateBody<T>(
       return validationError;
     }
   }
-  
+
   return { data };
 }
 
@@ -604,7 +607,7 @@ export const validateCognitiveTaskData = (data: any, partial: boolean = false): 
   }
 
   // Si no hay errores, devolver null
-  return null; 
+  return null;
 };
 
 /**
@@ -631,7 +634,7 @@ export function validateThankYouScreenData(data: Partial<ThankYouScreenFormData>
     else if (data.redirectUrl.length < validationRules.redirectUrl.minLength) errors.redirectUrl = `La URL debe tener al menos ${validationRules.redirectUrl.minLength} caracteres`;
     else if (data.redirectUrl.length > validationRules.redirectUrl.maxLength) errors.redirectUrl = `La URL no puede exceder los ${validationRules.redirectUrl.maxLength} caracteres`;
   }
-  
+
   if (Object.keys(errors).length > 0) {
     const errorMessage = `Datos de pantalla de agradecimiento inválidos: ${JSON.stringify(errors)}`;
     return errorResponse(errorMessage, 400);
@@ -666,11 +669,11 @@ export const validateEyeTrackingData = (data: any): APIGatewayProxyResult | null
   // Validar demographics questions si están presentes
   if (data.demographicQuestions) {
     const dq = data.demographicQuestions;
-    
+
     // Verificar estructura básica para cada pregunta demográfica
-    const questionKeys = ['age', 'country', 'gender', 'educationLevel', 'householdIncome', 
+    const questionKeys = ['age', 'country', 'gender', 'educationLevel', 'householdIncome',
                           'employmentStatus', 'dailyHoursOnline', 'technicalProficiency'];
-    
+
     questionKeys.forEach(key => {
       if (dq[key]) {
         if (typeof dq[key].enabled !== 'boolean') {
@@ -689,15 +692,15 @@ export const validateEyeTrackingData = (data: any): APIGatewayProxyResult | null
   // Validar linkConfig si está presente
   if (data.linkConfig) {
     const lc = data.linkConfig;
-    
+
     if (lc.allowMobile !== undefined && typeof lc.allowMobile !== 'boolean') {
       errors['linkConfig.allowMobile'] = 'El campo allowMobile debe ser un valor booleano';
     }
-    
+
     if (lc.trackLocation !== undefined && typeof lc.trackLocation !== 'boolean') {
       errors['linkConfig.trackLocation'] = 'El campo trackLocation debe ser un valor booleano';
     }
-    
+
     if (lc.allowMultipleAttempts !== undefined && typeof lc.allowMultipleAttempts !== 'boolean') {
       errors['linkConfig.allowMultipleAttempts'] = 'El campo allowMultipleAttempts debe ser un valor booleano';
     }
@@ -706,11 +709,11 @@ export const validateEyeTrackingData = (data: any): APIGatewayProxyResult | null
   // Validar participantLimit si está presente
   if (data.participantLimit) {
     const pl = data.participantLimit;
-    
+
     if (pl.enabled !== undefined && typeof pl.enabled !== 'boolean') {
       errors['participantLimit.enabled'] = 'El campo enabled debe ser un valor booleano';
     }
-    
+
     if (pl.value !== undefined) {
       if (typeof pl.value !== 'number') {
         errors['participantLimit.value'] = 'El campo value debe ser un número';
@@ -723,16 +726,16 @@ export const validateEyeTrackingData = (data: any): APIGatewayProxyResult | null
   // Validar backlinks si está presente
   if (data.backlinks) {
     const bl = data.backlinks;
-    
+
     // Validar que las URLs sean strings
     if (bl.complete !== undefined && typeof bl.complete !== 'string') {
       errors['backlinks.complete'] = 'El campo complete debe ser una cadena de texto';
     }
-    
+
     if (bl.disqualified !== undefined && typeof bl.disqualified !== 'string') {
       errors['backlinks.disqualified'] = 'El campo disqualified debe ser una cadena de texto';
     }
-    
+
     if (bl.overquota !== undefined && typeof bl.overquota !== 'string') {
       errors['backlinks.overquota'] = 'El campo overquota debe ser una cadena de texto';
     }
@@ -766,7 +769,7 @@ export const validateEyeTrackingData = (data: any): APIGatewayProxyResult | null
   // Validar parameterOptions si está presente
   if (data.parameterOptions) {
     const po = data.parameterOptions;
-    
+
     const optionKeys = ['saveDeviceInfo', 'saveLocationInfo', 'saveResponseTimes', 'saveUserJourney'];
     optionKeys.forEach(key => {
       if (po[key] !== undefined && typeof po[key] !== 'boolean') {

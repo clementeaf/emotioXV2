@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 
 interface ConfirmationModalProps {
   isOpen: boolean;
@@ -15,13 +15,25 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   title,
   message,
 }) => {
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('overflow-hidden');
+    } else {
+      document.body.classList.remove('overflow-hidden');
+    }
+    // Cleanup
+    return () => {
+      document.body.classList.remove('overflow-hidden');
+    };
+  }, [isOpen]);
+
   if (!isOpen) {
     return null;
   }
 
   return (
-    <div className="fixed top-0 left-0 w-screen h-screen bg-black bg-opacity-50 z-50 flex justify-center items-center">
-      <div className="bg-white rounded-lg p-6 shadow-xl max-w-sm w-full">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
+      <div className="bg-white rounded-lg p-6 shadow-xl max-w-sm w-full z-[51]">
         <h3 className="text-lg font-bold text-gray-900">{title}</h3>
         <p className="mt-2 text-sm text-gray-600">{message}</p>
         <div className="mt-6 flex justify-end gap-3">

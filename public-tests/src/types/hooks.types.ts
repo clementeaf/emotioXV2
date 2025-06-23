@@ -1,5 +1,6 @@
+import { ResponsesData } from '../hooks/types';
 import { ParticipantFlowStep } from './flow';
-import { ExpandedStep, ResponsesData } from './flow.types';
+import { ExpandedStep } from './flow.types';
 
 // Tipos para hooks de respuestas
 export interface UseResponseAPIProps {

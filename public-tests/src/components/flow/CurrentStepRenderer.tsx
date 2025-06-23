@@ -12,6 +12,8 @@ import { CurrentStepProps } from './types';
 const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
     stepType,
     stepConfig,
+    savedResponse,
+    onStepComplete,
     ...restOfStepProps
 }) => {
     const ComponentToRender = stepComponentMap[stepType];
@@ -22,25 +24,20 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
     }
 
     // Prepara las props finales para el componente.
-    // Esto es crucial para la consistencia.
     const finalProps = {
         ...restOfStepProps,
         stepType,
         stepConfig,
-
-        // Mapeo de props genéricas a específicas:
-        // El `title` del paso se convierte en `questionText` para la pregunta.
-        onNext: (restOfStepProps as any).onStepComplete,
-        questionText: (stepConfig as any)?.title,
-        instructions: (stepConfig as any)?.instructions,
-        companyName: (stepConfig as any)?.config?.companyName,
-        config: (stepConfig as any)?.config,
+        config: stepConfig,
+        initialValues: savedResponse,
+        onSubmit: onStepComplete,
+        onStepComplete: onStepComplete,
     };
 
     // Renderiza el componente del paso, envuelto en Suspense por si está lazy-loaded.
     return (
         <Suspense fallback={<div className="flex items-center justify-center h-full">Cargando paso...</div>}>
-            <ComponentToRender {...(finalProps as any)} />
+            <ComponentToRender {...finalProps as any} />
         </Suspense>
     );
 };

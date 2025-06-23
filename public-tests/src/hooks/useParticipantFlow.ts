@@ -28,10 +28,19 @@ export const useParticipantFlow = (researchId: string | undefined) => {
     const currentStepIndex = useParticipantStore(state => state.currentStepIndex);
     const setCurrentStepIndex = useParticipantStore(state => state.setCurrentStepIndex);
     const storeNavigateToStep = useParticipantStore(state => state.navigateToStep);
-    const storeGoToNextStep = useParticipantStore(state => state.goToNextStep);
     const storeSetExpandedSteps = useParticipantStore(state => state.setExpandedSteps);
     const storeIsFlowLoading = useParticipantStore(state => state.isFlowLoading);
     const storeSetIsFlowLoading = useParticipantStore(state => state.setIsFlowLoading);
+
+    // Log para debug del token
+    useEffect(() => {
+        console.log('[useParticipantFlow] Estado del token:', {
+            hasToken: !!token,
+            tokenLength: token?.length || 0,
+            researchId,
+            participantId
+        });
+    }, [token, researchId, participantId]);
 
     const {
         data: researchFlowApiData,
@@ -86,6 +95,31 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         storeSetLoadedResponses: storeSetLoadedResponsesFromStore as (responses: unknown[]) => void
     });
 
+    // Adaptadores para las firmas esperadas por useFlowNavigationAndState
+    const adaptedSaveStepResponse = useCallback(async (answer?: unknown) => {
+        if (currentStepIndex >= 0 && currentStepIndex < expandedSteps.length) {
+            const currentStep = expandedSteps[currentStepIndex];
+            if (currentStep) {
+                await saveStepResponse(
+                    currentStep.id,
+                    answer,
+                    currentStep.type,
+                    currentStep.name
+                );
+            }
+        }
+    }, [saveStepResponse, currentStepIndex, expandedSteps]);
+
+    const adaptedGetStepResponse = useCallback((stepIndex: number): unknown => {
+        if (stepIndex >= 0 && stepIndex < expandedSteps.length) {
+            const step = expandedSteps[stepIndex];
+            if (step) {
+                return getStepResponse(step.id);
+            }
+        }
+        return null;
+    }, [getStepResponse, expandedSteps]);
+
     const {
         currentStep,
         setCurrentStep,
@@ -102,9 +136,9 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         researchId,
         participantId: participantId === null ? undefined : participantId,
         maxVisitedIndexFromStore: maxVisitedIndexFromStore,
-        saveStepResponse: saveStepResponse,
+        saveStepResponse: adaptedSaveStepResponse,
         markResponsesAsCompleted: markResponsesAsCompleted,
-        getStepResponse: getStepResponse,
+        getStepResponse: adaptedGetStepResponse,
         loadExistingResponses: loadExistingResponses,
         handleErrorProp: (errMsg: string, errStep: any) => handleError(errMsg, errStep),
         setExternalExpandedSteps: () => expandedSteps,
@@ -127,27 +161,34 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         setNavigationIsLoading(false);
     }, [setNavigationError, setCurrentStep, setNavigationIsLoading]);
 
-    const handleStepComplete = useCallback((answer?: unknown) => {
-        storeGoToNextStep(answer);
-    }, [storeGoToNextStep]);
-
     useEffect(() => {
         setNavigationIsLoading(isResearchFlowHookLoading);
         if (!researchId) {
             handleError("ID de investigación no encontrado.", "Initialization");
             return;
         }
+
+        console.log('[useParticipantFlow] Verificando estado de autenticación:', {
+            hasToken: !!token,
+            currentStep,
+            isResearchFlowHookLoading
+        });
+
         if (!token && currentStep !== ParticipantFlowStep.LOGIN && currentStep !== ParticipantFlowStep.ERROR) {
+            console.log('[useParticipantFlow] No hay token, redirigiendo a LOGIN');
             setCurrentStep(ParticipantFlowStep.LOGIN);
             return;
         }
+
         if (researchId && token && !isResearchFlowHookLoading) {
+            console.log('[useParticipantFlow] Configurando investigación con token válido');
             storeSetResearchId(researchId);
             if (isResearchFlowError) {
                 handleError(researchFlowErrorObject?.message || "Error al cargar la configuración del estudio.", "ResearchFlowInit");
                 return;
             }
         } else if (researchId && !token && currentStep !== ParticipantFlowStep.LOGIN && currentStep !== ParticipantFlowStep.ERROR) {
+            console.log('[useParticipantFlow] No hay token para investigación, redirigiendo a LOGIN');
             setCurrentStep(ParticipantFlowStep.LOGIN);
         }
     }, [

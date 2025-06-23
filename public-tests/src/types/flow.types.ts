@@ -1,7 +1,7 @@
 import React from 'react';
 import { CognitiveQuestion } from './cognitive-task.types';
 import { DemographicConfig } from './demographics';
-import { ParticipantFlowStep } from './flow';
+import { ExpandedStep, ParticipantFlowStep } from './flow';
 import { SmartVOCQuestion } from './smart-voc.types';
 
 // Tipos base para el flujo
@@ -43,6 +43,7 @@ export interface CurrentStepProps {
   onStepComplete?: (data?: unknown) => void;
   onError?: (message: string, stepType: string) => void;
   stepConfig?: Record<string, any> | CognitiveQuestion | SmartVOCQuestion | undefined;
+  savedResponse?: any;
 }
 
 export interface CurrentStepRendererProps {
@@ -366,6 +367,7 @@ export interface FlowStepContentComponentProps extends Omit<OldFlowStepContentPr
   isLoading: boolean;
   responsesData?: ResponsesData;
   handleError: (errorMessage: string, step: ParticipantFlowStep | string) => void;
+  savedResponse?: any;
 }
 
 // Interfaces para componentes de preguntas de flow

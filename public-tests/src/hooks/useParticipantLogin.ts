@@ -110,14 +110,22 @@ export const useParticipantLogin = ({ researchId, onLogin }: UseParticipantLogin
         return;
       }
 
+      // Generar un ID único para el participante si no viene del servidor
+      const participantId = responseData.data.participantId || `participant_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
       // Guardar el token y el participantId en localStorage
       localStorage.setItem('participantToken', apiToken);
-      localStorage.setItem('participantId', apiParticipant.id);
+      localStorage.setItem('participantId', participantId);
 
       setResearchIdInStore(researchId);
 
       if (typeof onLogin === 'function') {
-        onLogin(apiParticipant);
+        // Crear un objeto participante con ID para el callback
+        const participantWithId = {
+          ...apiParticipant,
+          id: participantId
+        };
+        onLogin(participantWithId);
       } else {
         console.error('[useParticipantLogin] onLogin no es una función. No se pudo notificar el login.');
       }

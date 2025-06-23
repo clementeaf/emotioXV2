@@ -218,6 +218,8 @@ export interface EmotionSelectionViewComponentProps {
   questionText: string;
   instructions?: string;
   companyName?: string;
+  config?: any;
+  initialValue?: string | null;
   onNext: (selectedEmoji: string) => void;
 }
 

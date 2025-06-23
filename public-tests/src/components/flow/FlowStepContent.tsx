@@ -19,6 +19,7 @@ const FlowStepContent: React.FC<FlowStepContentComponentProps> = (props) => {
         handleStepComplete,
         handleError,
         responsesData,
+        savedResponse,
     } = props;
 
     // Memoizar la lógica de stepConfig ANTES de cualquier return condicional
@@ -89,6 +90,7 @@ const FlowStepContent: React.FC<FlowStepContentComponentProps> = (props) => {
                 token={token}
                 onStepComplete={handleStepComplete}
                 onError={handleRendererError}
+                savedResponse={savedResponse}
             />
         );
     }

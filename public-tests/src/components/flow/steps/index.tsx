@@ -15,6 +15,7 @@ const MultipleChoiceQuestion = React.lazy(() => import('../questions/MultipleCho
 const SingleChoiceQuestion = React.lazy(() => import('../questions/SingleChoiceQuestion').then(module => ({ default: module.SingleChoiceQuestion })));
 const DemographicStep = React.lazy(() => import('../questions/DemographicStep').then(module => ({ default: module.DemographicStep })));
 const NPSView = React.lazy(() => import('../../smartVoc/NPSView'));
+const EmotionSelectionView = React.lazy(() => import('../../smartVoc/EmotionSelectionView'));
 
 const InstructionStep: React.FC<MappedStepComponentProps> = ({ stepConfig, onStepComplete, isInstructionMock }) => {
     const config = isInstructionMock ? { title: 'Instrucciones (Prueba)', text: 'Texto de instrucciones de prueba.' } : (stepConfig as { title?: string; text?: string } | undefined) || {};
@@ -42,7 +43,7 @@ export const stepComponentMap: StepComponentMap = {
     'cognitive_navigation_flow': CognitiveNavigationFlowStep,
     'smartvoc_csat': CSATView,
     'smartvoc_cv': DifficultyScaleView,
-    'smartvoc_nev': DifficultyScaleView,
+    'smartvoc_nev': EmotionSelectionView,
     'smartvoc_feedback': SmartVocFeedbackQuestion,
     'smartvoc_ces': DifficultyScaleView,
     'smartvoc_nps': NPSView,

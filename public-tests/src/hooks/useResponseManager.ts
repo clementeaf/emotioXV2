@@ -1,6 +1,6 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { UseResponseAPIReturn, UseResponseManagerProps, UseResponseManagerReturn } from '../types';
 import { ModuleResponse, ResponsesData } from './types';
-import { ExpandedStepType, UseResponseManagerProps, UseResponseManagerReturn, UseResponseAPIReturn } from '../types';
 
 const sanitizeForJSON = (obj: unknown): unknown => {
     if (!obj) return obj;
@@ -42,24 +42,24 @@ export const useResponseManager = ({
         if (!researchId || !participantId) return;
         setIsLoading(true);
         setError(null);
-        
+
         const api = responseAPI as UseResponseAPIReturn;
         try {
             const apiResponse = await api.getResponses();
-            
+
             // Si no hay respuesta o es null, es normal para participantes nuevos
             if (!apiResponse || apiResponse === null) {
                 storeSetLoadedResponses([]);
                 return;
             }
-            
+
             // Si la respuesta no es un objeto, probablemente hay un error
             if (typeof apiResponse !== 'object') {
                 console.warn('[useResponseManager] Respuesta de API en formato inesperado. Enviando array vacío.');
                 storeSetLoadedResponses([]);
                 return;
             }
-            
+
             // Si no tiene la propiedad 'responses', puede ser normal para nuevos participantes
             if (!('responses' in apiResponse)) {
                 // Solo loguear si parece ser un error real (tiene otras propiedades de error)
@@ -70,7 +70,7 @@ export const useResponseManager = ({
                 storeSetLoadedResponses([]);
                 return;
             }
-            
+
             const modulesDataFromApi = (apiResponse as { responses: unknown }).responses;
 
             if (
@@ -165,7 +165,7 @@ export const useResponseManager = ({
 
         try {
             const firestoreResponseDocumentId = findExistingResponseId(currentStepId);
-            
+
             await (responseAPI as UseResponseAPIReturn).saveOrUpdateResponse(
                 currentStepId,
                 currentStepType,
@@ -184,14 +184,14 @@ export const useResponseManager = ({
             if (!newData.modules.all_steps) {
                 newData.modules.all_steps = [];
             }
-            
+
             const existingIndex = newData.modules.all_steps.findIndex(r => r.id === currentStepId);
             if (existingIndex >= 0) {
                 newData.modules.all_steps[existingIndex] = moduleResponse;
             } else {
                 newData.modules.all_steps.push(moduleResponse);
             }
-            
+
             return newData;
         });
     }, [currentStepIndex, expandedSteps, responseAPI, findExistingResponseId]);
@@ -244,4 +244,4 @@ export const useResponseManager = ({
         isLoading,
         error
     };
-}; 
+};

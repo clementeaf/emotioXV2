@@ -1,8 +1,9 @@
-import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
-import { ApiTester } from './components/ApiTester';
-import ParticipantFlow from './pages/ParticipantFlow';
 import { useEffect } from 'react';
+import { Toaster } from 'react-hot-toast';
+import { Route, BrowserRouter as Router, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { ApiTester } from './components/ApiTester';
+import './index.css';
+import ParticipantFlow from './pages/ParticipantFlow';
 
 function Home() {
   const navigate = useNavigate();
