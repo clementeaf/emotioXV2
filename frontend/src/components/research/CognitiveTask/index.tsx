@@ -84,6 +84,13 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
   React.useEffect(() => {
     const handleAutoSave = () => {
       console.log('[CognitiveTaskForm] Evento de guardado automático recibido, guardando configuración...');
+      console.log('[CognitiveTaskForm] Estado actual del formData antes del guardado automático:', formData);
+      // Mostrar específicamente las preguntas con archivos y sus hitZones
+      formData.questions.forEach(q => {
+        if (q.files && q.files.length > 0) {
+          console.log(`[CognitiveTaskForm] Pregunta ${q.id} tiene archivos con hitZones:`, q.files.map(f => ({ name: f.name, hitZones: (f as any).hitZones })));
+        }
+      });
       saveForm(); // Guardar automáticamente la configuración
     };
 
@@ -92,7 +99,7 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
     return () => {
       window.removeEventListener('cognitiveTaskAutoSave', handleAutoSave);
     };
-  }, [saveForm]);
+  }, [saveForm, formData]);
 
   // Estilo restrictivo para el formulario
   const containerStyle = {

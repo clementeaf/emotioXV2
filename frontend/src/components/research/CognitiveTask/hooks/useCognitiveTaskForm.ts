@@ -258,26 +258,36 @@ export const useCognitiveTaskForm = (
           ...cognitiveTaskData,
           questions: cognitiveTaskData.questions.map(question => {
             if (question.files && question.files.length > 0) {
+              console.log(`[useCognitiveTaskForm] Procesando pregunta ${question.id} con ${question.files.length} archivos`);
               const processedFiles = question.files.map(file => {
+                console.log(`[useCognitiveTaskForm] Archivo original del backend:`, file);
+                console.log(`[useCognitiveTaskForm] file.hitZones del backend:`, file.hitZones);
+                console.log(`[useCognitiveTaskForm] Tipo de file.hitZones:`, typeof file.hitZones, Array.isArray(file.hitZones));
+
                 // Convertir HitZone[] del backend a HitzoneArea[] para el frontend
                 const processedFile = {
                   ...file,
                   hitZones: file.hitZones ? file.hitZones.map((hz: any) => {
+                    console.log(`[useCognitiveTaskForm] Procesando hitZone individual:`, hz);
                     // Si ya es HitzoneArea (tiene x, y directamente), devolverlo tal como está
                     if (hz.x !== undefined) {
+                      console.log(`[useCognitiveTaskForm] HitZone ya es HitzoneArea:`, hz);
                       return hz;
                     }
                     // Si es HitZone (tiene region), convertirlo
-                    return {
+                    const converted = {
                       id: hz.id,
                       x: hz.region.x,
                       y: hz.region.y,
                       width: hz.region.width,
                       height: hz.region.height
                     };
+                    console.log(`[useCognitiveTaskForm] HitZone convertido a HitzoneArea:`, converted);
+                    return converted;
                   }) : undefined
                 };
                 console.log(`[useCognitiveTaskForm] Archivo procesado ${file.name}:`, processedFile);
+                console.log(`[useCognitiveTaskForm] processedFile.hitZones final:`, processedFile.hitZones);
                 return processedFile;
               });
               return { ...question, files: processedFiles };
