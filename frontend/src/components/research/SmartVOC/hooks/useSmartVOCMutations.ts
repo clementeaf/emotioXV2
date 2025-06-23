@@ -52,7 +52,8 @@ export const useSmartVOCMutations = (researchId: string, smartVocId?: string) =>
       return response;
     },
     enabled: !!researchId && isAuthenticated && !authLoading,
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
+    retry: false,
   });
 
   // Mutación para guardar datos
@@ -147,19 +148,27 @@ export const useSmartVOCMutations = (researchId: string, smartVocId?: string) =>
   // Mutación para eliminar datos - SIN confirmación interna
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      let success = false;
-      if (smartVocId) {
-        success = await smartVocFixedAPI.deleteSmartVOC(researchId, smartVocId);
-      } else {
-        success = await smartVocFixedAPI.deleteByResearchId(researchId);
+      // Obtener el ID más actualizado directamente de los datos en caché
+      const currentData = queryClient.getQueryData<SmartVOCFormData & { id?: string }>([QUERY_KEYS.SMART_VOC, researchId]);
+      const idToDelete = currentData?.id;
+
+      if (!idToDelete) {
+        toast.error('No se encontró un ID para eliminar. Es posible que los datos ya hayan sido borrados.');
+        throw new Error('No se pudo determinar el ID del SmartVOC a eliminar.');
       }
+
+      const success = await smartVocFixedAPI.deleteSmartVOC(researchId, idToDelete);
+
       if (!success) {
         throw new Error('El recurso a eliminar no fue encontrado en el servidor (404).');
       }
       return success;
     },
     onSuccess: () => {
+      // Limpiar el cache para forzar la recarga y reflejar el estado "sin configuración"
+      queryClient.setQueryData([QUERY_KEYS.SMART_VOC, researchId], { notFound: true });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SMART_VOC, researchId] });
+
       toast.success('Datos SmartVOC eliminados correctamente.');
     },
     onError: (error: any) => {

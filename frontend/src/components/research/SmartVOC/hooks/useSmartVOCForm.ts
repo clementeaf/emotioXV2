@@ -71,8 +71,7 @@ export const useSmartVOCForm = (researchId: string) => {
 
     if (smartVocData && !('notFound' in smartVocData) && smartVocData.questions && smartVocData.questions.length > 0) {
       // Solo actualizar si hay preguntas reales de la API (configuración existente)
-      console.log('[SmartVOCForm] Datos cargados desde API:', smartVocData);
-      console.log('[SmartVOCForm] Preguntas encontradas:', smartVocData.questions?.length || 0);
+      console.log('✅ [DIAGNÓSTICO] Datos de API recibidos. Objeto completo:', smartVocData);
 
       // Actualizar formData con los datos cargados
       setFormData({
@@ -90,12 +89,17 @@ export const useSmartVOCForm = (researchId: string) => {
 
       // Extraer y configurar el ID si existe
       const responseWithId = smartVocData as SmartVOCFormData & { id?: string };
+
+      console.log(`[DIAGNÓSTICO] Intentando extraer ID. El ID encontrado es: '${responseWithId?.id}' (Tipo: ${typeof responseWithId?.id})`);
+
       if (responseWithId?.id) {
+        console.log(`[DIAGNÓSTICO] ✅ El ID es válido. Llamando a setSmartVocId con:`, responseWithId.id);
         setSmartVocId(responseWithId.id);
-        console.log('[SmartVOCForm] SmartVOC ID configurado:', responseWithId.id);
+      } else {
+        console.error(`[DIAGNÓSTICO] 🛑 ¡ERROR CRÍTICO! No se encontró la propiedad 'id' en los datos de la API, aunque se esperaba. El botón de eliminar no se activará.`);
       }
     } else if (smartVocData && 'notFound' in smartVocData && smartVocData.notFound) {
-      console.log('[SmartVOCForm] No se encontró configuración existente, manteniendo preguntas plantilla');
+      console.log('[DIAGNÓSTICO] No se encontró configuración existente. El botón de eliminar debe estar desactivado.');
       // No hacer nada - mantener las preguntas plantilla para que el usuario pueda empezar a trabajar
     } else {
       console.log('[SmartVOCForm] smartVocData es null/undefined o en estado de carga, manteniendo estado actual');
@@ -144,13 +148,14 @@ export const useSmartVOCForm = (researchId: string) => {
   const confirmDelete = useCallback(async () => {
     setDeleteModalOpen(false); // Cierra el modal primero
     try {
+      // La mutación se encarga de invalidar la query y el useEffect actualizará el estado
       await deleteMutation.mutateAsync();
-      setSmartVocId(null);
       resetToDefaultQuestions();
     } catch (error: unknown) {
+      // El hook de mutación ya muestra un toast/modal en caso de error
       console.error('[SmartVOCForm] Error en confirmDelete:', error);
     }
-  }, [deleteMutation, setSmartVocId, resetToDefaultQuestions]);
+  }, [deleteMutation, resetToDefaultQuestions]);
 
   // Función para manejar la previsualización
   const handlePreview = useCallback(() => {
@@ -162,7 +167,7 @@ export const useSmartVOCForm = (researchId: string) => {
     questions: formData.questions,
     smartVocId,
     validationErrors,
-    isLoading,
+    isLoading: isLoading || authLoading,
     isSaving,
     modalError,
     modalVisible,

@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+    ConfirmationModal,
     ErrorModal,
     SmartVOCFooter,
     SmartVOCHeader,
@@ -37,6 +38,9 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
     handleDelete,
     closeModal,
     isExisting,
+    isDeleteModalOpen,
+    confirmDelete,
+    closeDeleteModal,
   } = useSmartVOCForm(researchId);
 
   // Callbacks para cambios en los ajustes
@@ -149,6 +153,15 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
         isOpen={modalVisible}
         onClose={closeModal}
         error={modalError}
+      />
+
+      {/* Modal de confirmación para eliminar datos */}
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={closeDeleteModal}
+        onConfirm={confirmDelete}
+        title="Confirmar Eliminación"
+        message="¿Estás seguro de que quieres eliminar TODOS los datos SmartVOC de esta investigación? Esta acción no se puede deshacer."
       />
     </div>
   );

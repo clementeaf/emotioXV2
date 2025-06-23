@@ -4,11 +4,12 @@ import React from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import {
-    AddQuestionButton,
-    ErrorModal,
-    SmartVOCFooter,
-    SmartVOCQuestions,
-    SmartVOCSettings,
+  AddQuestionButton,
+  ConfirmationModal,
+  ErrorModal,
+  SmartVOCFooter,
+  SmartVOCQuestions,
+  SmartVOCSettings,
 } from '.';
 import { useSmartVOCForm } from '../hooks/useSmartVOCForm';
 import { SmartVOCFormProps } from '../types';
@@ -39,16 +40,19 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
     closeDeleteModal,
   } = useSmartVOCForm(researchId);
 
-  // Debug: verificar preguntas en el componente
-  console.log('[SmartVOCForm] Renderizando con', questions.length, 'preguntas:', questions);
-
   const handleAddQuestion = () => {
     const newQuestion = generateNewQuestion(questions.length);
     addQuestion(newQuestion);
   };
 
+  console.log('isDeleteModalOpen: ', isDeleteModalOpen);
+
   if (isLoading) {
-    return <Spinner />;
+    return (
+      <div className="flex justify-center items-center h-40">
+        <Spinner />
+      </div>
+    );
   }
 
   return (
@@ -88,23 +92,20 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
           isExisting={!!smartVocId}
         />
 
-        {/* Modal de errores */}
+        {/* Modal de errores (SOLO para errores) */}
         <ErrorModal
           isOpen={modalVisible}
           onClose={closeModal}
           error={modalError}
         />
 
-        {/* Modal de confirmación de borrado */}
-        <ErrorModal
+        {/* Modal de confirmación (NUEVO y específico) */}
+        <ConfirmationModal
           isOpen={isDeleteModalOpen}
           onClose={closeDeleteModal}
-          error={{
-            title: 'Confirmar Eliminación',
-            message: '¿Estás seguro de que quieres eliminar TODOS los datos SmartVOC de esta investigación? Esta acción no se puede deshacer.',
-            type: 'warning'
-          }}
           onConfirm={confirmDelete}
+          title="Confirmar Eliminación"
+          message="¿Estás seguro de que quieres eliminar TODOS los datos SmartVOC de esta investigación? Esta acción no se puede deshacer."
         />
       </div>
     </DndProvider>
