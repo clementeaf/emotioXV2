@@ -166,12 +166,22 @@ export class CognitiveTaskFixedAPI extends ApiClient {
    */
   private mapHitzoneAreasToHitZones(files: any[]): any[] {
     return files.map(file => {
-      if (!file.hitzones || !Array.isArray(file.hitzones)) {
+      console.log(`[CognitiveTaskFixedAPI] Procesando archivo para mapeo hitZones:`, file);
+      console.log(`[CognitiveTaskFixedAPI] file.hitZones (mayúscula):`, file.hitZones);
+      console.log(`[CognitiveTaskFixedAPI] file.hitzones (minúscula):`, file.hitzones);
+
+      // Buscar hitZones tanto en mayúscula como minúscula para compatibilidad
+      const hitzonesData = file.hitZones || file.hitzones;
+
+      if (!hitzonesData || !Array.isArray(hitzonesData)) {
+        console.log(`[CognitiveTaskFixedAPI] No hay hitZones para procesar en archivo ${file.name}`);
         return file;
       }
 
+      console.log(`[CognitiveTaskFixedAPI] Mapeando ${hitzonesData.length} hitZones para archivo ${file.name}:`, hitzonesData);
+
       // Mapear HitzoneArea[] a HitZone[]
-      const hitZones = file.hitzones.map((area: any) => ({
+      const hitZones = hitzonesData.map((area: any) => ({
         id: area.id,
         name: `Hitzone-${area.id}`, // Generar nombre por defecto
         region: {
@@ -183,10 +193,13 @@ export class CognitiveTaskFixedAPI extends ApiClient {
         fileId: file.id
       }));
 
+      console.log(`[CognitiveTaskFixedAPI] HitZones mapeados para backend:`, hitZones);
+
       return {
         ...file,
         hitZones, // Formato backend
-        hitzones: undefined // Remover formato frontend
+        hitzones: undefined // Remover formato frontend (minúscula)
+        // Mantener hitZones para que no se pierda en el frontend
       };
     });
   }
@@ -228,12 +241,18 @@ export class CognitiveTaskFixedAPI extends ApiClient {
    */
   private mapHitZonesToHitzoneAreas(files: any[]): any[] {
     return files.map(file => {
+      console.log(`[CognitiveTaskFixedAPI] Procesando archivo del backend para mapeo a frontend:`, file);
+      console.log(`[CognitiveTaskFixedAPI] file.hitZones del backend:`, file.hitZones);
+
       if (!file.hitZones || !Array.isArray(file.hitZones)) {
+        console.log(`[CognitiveTaskFixedAPI] No hay hitZones del backend para procesar en archivo ${file.name}`);
         return file;
       }
 
+      console.log(`[CognitiveTaskFixedAPI] Mapeando ${file.hitZones.length} hitZones del backend a formato frontend`);
+
       // Mapear HitZone[] a HitzoneArea[] solo si region existe
-      const hitzones = file.hitZones
+      const hitZones = file.hitZones
         .filter((zone: any) => zone && zone.region)
         .map((zone: any) => ({
           id: zone.id,
@@ -243,10 +262,12 @@ export class CognitiveTaskFixedAPI extends ApiClient {
           height: zone.region.height
         }));
 
+      console.log(`[CognitiveTaskFixedAPI] HitzoneAreas mapeados para frontend:`, hitZones);
+
       return {
         ...file,
-        hitzones, // Formato frontend
-        hitZones: undefined // Remover formato backend
+        hitZones, // Mantener en formato frontend (mayúscula)
+        // No remover hitZones del backend, mantenerlo para el frontend
       };
     });
   }
