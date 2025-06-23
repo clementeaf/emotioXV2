@@ -54,6 +54,10 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
   const [hitzoneModalOpen, setHitzoneModalOpen] = React.useState(false);
   const [hitzoneFile, setHitzoneFile] = React.useState<UIFile | null>(null);
 
+  // LOGS DE DEBUG PARA VER QUÉ PASA CON LOS ARCHIVOS
+  console.log(`[FileUploadQuestion] Pregunta ${question.id} - question.files:`, question.files);
+  console.log(`[FileUploadQuestion] Pregunta ${question.id} - question.files?.length:`, question.files?.length);
+
   const titleError = validationErrors ? validationErrors['title'] : null;
   const descriptionError = validationErrors ? validationErrors['description'] : null;
   const filesError = validationErrors ? validationErrors['files'] : null;
@@ -63,6 +67,9 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
 
   // Filtrar archivos con status 'error' antes de renderizar
   const validFiles: UIFile[] = question.files ? (question.files as UIFile[]).filter(f => f.status !== 'error') : [];
+
+  console.log(`[FileUploadQuestion] Pregunta ${question.id} - validFiles:`, validFiles);
+  console.log(`[FileUploadQuestion] Pregunta ${question.id} - validFiles.length:`, validFiles.length);
 
   const handleButtonClick = () => {
     if (fileInputRef.current) {

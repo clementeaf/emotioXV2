@@ -34,6 +34,13 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
   isUploading,
   uploadProgress
 }) => {
+  // LOGS DE DEBUG PARA VER QUÉ PREGUNTA SE ESTÁ RENDERIZANDO
+  console.log(`[QuestionCard] Renderizando pregunta ${question.id} (${question.type}):`, question);
+  if (question.type === 'navigation_flow' || question.type === 'preference_test') {
+    console.log(`[QuestionCard] Pregunta ${question.id} archivos:`, question.files);
+    console.log(`[QuestionCard] Pregunta ${question.id} archivos length:`, question.files?.length);
+  }
+
   const renderQuestionInput = () => {
     const baseProps = {
       disabled,
