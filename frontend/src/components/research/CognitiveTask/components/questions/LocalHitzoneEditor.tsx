@@ -174,14 +174,14 @@ export const LocalHitzoneEditor: React.FC<LocalHitzoneEditorProps> = ({
           <>
             <div className="mb-4 text-sm text-neutral-600">Dibuja la zona a guardar</div>
             <div className="flex flex-row items-center justify-center gap-4">
-              <button onClick={() => { console.log('[LocalHitzoneEditor] Área guardada:', areas); onSave(areas); }} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Guardar zona</button>
               <button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Cerrar</button>
             </div>
           </>
         ) : (
           <>
-            <div className="mb-4 text-sm text-neutral-600">Para generar un nuevo hitzone, primero borra el existente</div>
+            <div className="mb-4 text-sm text-neutral-600">Zona dibujada. Puedes guardarla, eliminarla o probarla.</div>
             <div className="flex flex-row items-center justify-center gap-4">
+              <button onClick={() => { console.log('[LocalHitzoneEditor] Área guardada:', areas); onSave(areas); }} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Guardar zona</button>
               <button onClick={handleDelete} className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Eliminar zona</button>
               <button onClick={() => setTestMode(true)} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Probar hitzone</button>
               <button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Cerrar</button>

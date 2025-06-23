@@ -6,9 +6,17 @@ import s3Service from '@/services/s3Service';
 import { Trash2, Upload } from 'lucide-react';
 import React, { useRef } from 'react';
 import ReactDOM from 'react-dom';
-import type { UIFile } from '../../types';
+import { UploadedFile } from 'shared/interfaces/cognitive-task.interface';
 import { FileUploadQuestionProps } from '../../types';
 import { LocalHitzoneEditor } from './LocalHitzoneEditor';
+
+// Definir UIFile localmente extendiendo UploadedFile
+interface UIFile extends UploadedFile {
+  status?: 'uploading' | 'uploaded' | 'pending-delete' | 'error';
+  progress?: number;
+  isLoading?: boolean;
+  questionId?: string;
+}
 
 const DEFAULT_TEXTS = {
   QUESTION_TITLE_PLACEHOLDER: 'Añadir pregunta',
@@ -51,7 +59,7 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
   const filesError = validationErrors ? validationErrors['files'] : null;
 
   const isThisQuestionUploading = isUploading &&
-    question.files?.some(file => file.isLoading);
+    question.files?.some(file => (file as UIFile).isLoading);
 
   // Filtrar archivos con status 'error' antes de renderizar
   const validFiles: UIFile[] = question.files ? (question.files as UIFile[]).filter(f => f.status !== 'error') : [];
@@ -71,6 +79,10 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
   };
 
   const openHitzoneEditor = async (file: UIFile) => {
+    console.log('[FileUploadQuestion] openHitzoneEditor - archivo recibido:', file);
+    console.log('[FileUploadQuestion] openHitzoneEditor - file.hitZones:', file.hitZones);
+    console.log('[FileUploadQuestion] openHitzoneEditor - (file as any).hitZones:', (file as any).hitZones);
+
     let url = '';
     if (file.s3Key) {
       try {
@@ -85,6 +97,8 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
 
     // Usar SIEMPRE el campo 'hitZones' para las áreas iniciales
     const hitZones = (file as any).hitZones || [];
+    console.log('[FileUploadQuestion] openHitzoneEditor - hitZones finales para modal:', hitZones);
+
     setHitzoneFile({ ...file, url, hitZones } as any);
     setHitzoneModalOpen(true);
   };
@@ -307,6 +321,8 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
               onSave={(newAreas) => {
                 onQuestionChange({ files: question.files?.map(f => f.id === hitzoneFile.id ? { ...f, hitZones: newAreas } : f) });
                 setHitzoneModalOpen(false);
+                console.log('[FileUploadQuestion] Hitzones guardados, disparando guardado automático al backend');
+                window.dispatchEvent(new CustomEvent('cognitiveTaskAutoSave'));
               }}
               onClose={() => setHitzoneModalOpen(false)}
             />

@@ -1,6 +1,5 @@
-import React from 'react';
 import { FormFooter } from '@/components/ui/FormFooter';
-import { Save } from 'lucide-react';
+import React from 'react';
 
 interface CognitiveTaskFooterProps {
   onSave: () => void;
@@ -23,16 +22,16 @@ export const CognitiveTaskFooter: React.FC<CognitiveTaskFooterProps> = ({
 }) => {
   // Determinar si estamos editando un formulario existente
   const isExistingForm = !!cognitiveTaskId;
-  
+
   // Log para depuración
   React.useEffect(() => {
-    console.log('[CognitiveTaskFooter] Estado del botón:', { 
-      isSaving, 
-      isExistingForm, 
-      cognitiveTaskId 
+    console.log('[CognitiveTaskFooter] Estado del botón:', {
+      isSaving,
+      isExistingForm,
+      cognitiveTaskId
     });
   }, [isSaving, isExistingForm, cognitiveTaskId]);
-  
+
   return (
     <div className="flex flex-col gap-4">
       <FormFooter
@@ -46,9 +45,9 @@ export const CognitiveTaskFooter: React.FC<CognitiveTaskFooterProps> = ({
         savingText="Guardando..."
         previewText="Vista previa"
       />
-      
-      {/* Botón de eliminar datos */}
-      {onDelete && (
+
+      {/* Botón de eliminar datos - Solo mostrar si hay datos guardados en el backend */}
+      {onDelete && cognitiveTaskId && (
         <div className="flex justify-center pt-4 border-t border-gray-200">
           <button
             onClick={onDelete}
@@ -61,4 +60,4 @@ export const CognitiveTaskFooter: React.FC<CognitiveTaskFooterProps> = ({
       )}
     </div>
   );
-}; 
+};

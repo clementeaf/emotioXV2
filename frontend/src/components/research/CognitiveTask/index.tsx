@@ -80,6 +80,20 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
     console.log('[CognitiveTaskForm] Estado del botón de guardar:', isSaving ? "Guardando..." : cognitiveTaskId ? "Actualizar" : "Guardar y Continuar");
   }, [cognitiveTaskId, formData.questions, isSaving]);
 
+  // Listener para guardado automático cuando se definen hitzones
+  React.useEffect(() => {
+    const handleAutoSave = () => {
+      console.log('[CognitiveTaskForm] Evento de guardado automático recibido, guardando configuración...');
+      saveForm(); // Guardar automáticamente la configuración
+    };
+
+    window.addEventListener('cognitiveTaskAutoSave', handleAutoSave);
+
+    return () => {
+      window.removeEventListener('cognitiveTaskAutoSave', handleAutoSave);
+    };
+  }, [saveForm]);
+
   // Estilo restrictivo para el formulario
   const containerStyle = {
     maxWidth: '768px',

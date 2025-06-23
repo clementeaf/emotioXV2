@@ -1,9 +1,26 @@
 import { useAuth } from '@/providers/AuthProvider';
 import { Dispatch, SetStateAction, useCallback, useState } from 'react';
 import toast from 'react-hot-toast';
-import type { HitZone } from 'shared/interfaces/cognitive-task.interface';
+import type { HitZone, UploadedFile } from 'shared/interfaces/cognitive-task.interface';
 import { v4 as uuidv4 } from 'uuid';
-import type { CognitiveTaskData, HitzoneArea, Question, UIFile } from '../types';
+import type { CognitiveTaskData, Question } from '../types';
+
+// Definir tipos locales que faltan
+interface HitzoneArea {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+interface UIFile extends UploadedFile {
+  status?: 'uploading' | 'uploaded' | 'pending-delete' | 'error';
+  progress?: number;
+  isLoading?: boolean;
+  questionId?: string;
+  hitZones?: any;
+}
 
 function mapHitZonesToHitzoneAreas(hitZones?: HitZone[] | HitzoneArea[]): HitzoneArea[] | undefined {
   if (!hitZones) return undefined;
@@ -175,7 +192,7 @@ export const useCognitiveTaskFileUpload = ({
           toast(`${skippedFileCount} archivo(s) omitido(s) por ser duplicado(s).`);
       }
 
-      if (initialFileCount > 0) {
+      if (filesToProcess.length === 0) {
           return;
       }
 

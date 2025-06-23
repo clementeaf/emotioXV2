@@ -148,16 +148,9 @@ export const useSmartVOCMutations = (researchId: string, smartVocId?: string) =>
   // Mutación para eliminar datos - SIN confirmación interna
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      // Obtener el ID más actualizado directamente de los datos en caché
-      const currentData = queryClient.getQueryData<SmartVOCFormData & { id?: string }>([QUERY_KEYS.SMART_VOC, researchId]);
-      const idToDelete = currentData?.id;
-
-      if (!idToDelete) {
-        toast.error('No se encontró un ID para eliminar. Es posible que los datos ya hayan sido borrados.');
-        throw new Error('No se pudo determinar el ID del SmartVOC a eliminar.');
-      }
-
-      const success = await smartVocFixedAPI.deleteSmartVOC(researchId, idToDelete);
+      // Usar deleteByResearchId que solo requiere researchId, no un formId específico
+      console.log(`[SmartVOCForm] Eliminando SmartVOC para researchId: ${researchId}`);
+      const success = await smartVocFixedAPI.deleteByResearchId(researchId);
 
       if (!success) {
         throw new Error('El recurso a eliminar no fue encontrado en el servidor (404).');

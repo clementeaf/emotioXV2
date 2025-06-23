@@ -4,21 +4,21 @@ import { useAuth } from '@/providers/AuthProvider';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useState } from 'react';
 import {
-    CognitiveTaskFormData,
-    Question,
-    UploadedFile
+  CognitiveTaskFormData,
+  Question,
+  UploadedFile
 } from 'shared/interfaces/cognitive-task.interface';
 import {
-    logFormDebugInfo
+  logFormDebugInfo
 } from '../../CognitiveTaskFormHelpers';
 import {
-    QUERY_KEYS,
-    SUCCESS_MESSAGES
+  QUERY_KEYS,
+  SUCCESS_MESSAGES
 } from '../constants';
 import type { ErrorModalData } from '../types';
 import { ValidationErrors } from '../types';
 import {
-    filterValidQuestions
+  filterValidQuestions
 } from '../utils/validateRequiredFields';
 import { useCognitiveTaskFileUpload } from './useCognitiveTaskFileUpload';
 import { useCognitiveTaskModals } from './useCognitiveTaskModals';
@@ -271,15 +271,9 @@ export const useCognitiveTaskForm = (
 
       logFormDebugInfo('pre-save', dataToSave, null, { cognitiveTaskId });
 
-      if (cognitiveTaskId) {
-        // Actualizar existente
-        console.log(`[useCognitiveTaskForm] Actualizando (PUT) config existente: ${cognitiveTaskId}`);
-        return cognitiveTaskFixedAPI.update(researchId, cognitiveTaskId, dataToSave);
-      } else {
-        // Crear nueva
-        console.log(`[useCognitiveTaskForm] Creando (POST) nueva config para researchId: ${researchId}`);
-        return cognitiveTaskFixedAPI.create(researchId, dataToSave);
-      }
+      // SIEMPRE usar la ruta 'save' que maneja tanto creación como actualización
+      console.log(`[useCognitiveTaskForm] Guardando config para researchId: ${researchId} (usando ruta save)`);
+      return cognitiveTaskFixedAPI.save(researchId, dataToSave);
     },
     onSuccess: (data) => {
       // Extraer el ID de la respuesta y actualizar el estado
@@ -324,8 +318,11 @@ export const useCognitiveTaskForm = (
       });
       // Invalidar la consulta para forzar una recarga en la UI
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.COGNITIVE_TASK, deletedResearchId] });
-      // Limpiar el estado del formulario local con la estructura correcta
-      setFormData({ researchId: deletedResearchId, questions: [], randomizeQuestions: false });
+      // Restaurar el estado del formulario con las preguntas por defecto (3.1 a 3.8)
+      setFormData({
+        ...DEFAULT_COGNITIVE_TASK_STATE,
+        researchId: deletedResearchId
+      });
       setCognitiveTaskId(null);
     },
     onError: (error, deletedResearchId) => {
