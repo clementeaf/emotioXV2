@@ -251,7 +251,43 @@ export const useCognitiveTaskForm = (
     if (!isLoading) { // Solo actuar cuando la carga inicial haya terminado
       if (cognitiveTaskData) {
         console.log('[useCognitiveTaskForm] Datos existentes encontrados. Actualizando formulario.');
-        setFormData(cognitiveTaskData);
+        console.log('[useCognitiveTaskForm] Datos del backend (raw):', cognitiveTaskData);
+
+        // Procesar los datos para convertir HitZone[] a HitzoneArea[] en los archivos
+        const processedData = {
+          ...cognitiveTaskData,
+          questions: cognitiveTaskData.questions.map(question => {
+            if (question.files && question.files.length > 0) {
+              const processedFiles = question.files.map(file => {
+                // Convertir HitZone[] del backend a HitzoneArea[] para el frontend
+                const processedFile = {
+                  ...file,
+                  hitZones: file.hitZones ? file.hitZones.map((hz: any) => {
+                    // Si ya es HitzoneArea (tiene x, y directamente), devolverlo tal como está
+                    if (hz.x !== undefined) {
+                      return hz;
+                    }
+                    // Si es HitZone (tiene region), convertirlo
+                    return {
+                      id: hz.id,
+                      x: hz.region.x,
+                      y: hz.region.y,
+                      width: hz.region.width,
+                      height: hz.region.height
+                    };
+                  }) : undefined
+                };
+                console.log(`[useCognitiveTaskForm] Archivo procesado ${file.name}:`, processedFile);
+                return processedFile;
+              });
+              return { ...question, files: processedFiles };
+            }
+            return question;
+          })
+        };
+
+        console.log('[useCognitiveTaskForm] Datos procesados para UI:', processedData);
+        setFormData(processedData);
         setCognitiveTaskId((cognitiveTaskData as any).id || null);
       } else {
         console.log('[useCognitiveTaskForm] No se encontraron datos. Usando configuración por defecto.');
