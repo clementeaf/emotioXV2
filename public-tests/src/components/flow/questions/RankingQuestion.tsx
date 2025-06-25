@@ -23,26 +23,20 @@ export const RankingQuestion: React.FC<{
         }
       : {};
 
-    // 🔍 DEBUG: Ver qué datos llegan
-    console.log('🔍 [RankingQuestion] initialConfig:', initialConfig);
-    console.log('🔍 [RankingQuestion] cfg:', cfg);
-    console.log('🔍 [RankingQuestion] cfg.options:', cfg.options);
-    console.log('🔍 [RankingQuestion] cfg.choices:', (cfg as any).choices);
+
 
     const componentTitle = cfg.title || stepNameFromProps || 'Pregunta de ranking';
     const description = cfg.description;
     const questionText = cfg.questionText || '';
     const itemsFromConfig = useMemo(() => {
-        // Primero intentar con options
+                // Primero intentar con options
         if (Array.isArray(cfg.options)) {
-            console.log('🔍 [RankingQuestion] cfg.options is array:', cfg.options);
             return cfg.options.filter((item): item is string => typeof item === 'string');
         }
 
         // Si no hay options, intentar con choices (formato del backend)
         const choices = (cfg as any).choices;
         if (Array.isArray(choices)) {
-            console.log('🔍 [RankingQuestion] cfg.choices is array:', choices);
             // choices podría ser array de objetos con { text: string } o strings directos
             return choices.map((choice: any) => {
                 if (typeof choice === 'string') return choice;
@@ -51,7 +45,6 @@ export const RankingQuestion: React.FC<{
             }).filter((item: string) => item.trim() !== '');
         }
 
-        console.log('🔍 [RankingQuestion] Neither cfg.options nor cfg.choices are arrays');
         return [];
     }, [cfg.options, (cfg as any).choices]);
 
@@ -261,8 +254,7 @@ export const RankingQuestion: React.FC<{
         );
     }
 
-    // 🔍 DEBUG: Ver qué hay en rankedItems antes del render
-    console.log('🔍 [RankingQuestion] rankedItems antes del render:', rankedItems);
+
 
     return (
         <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full">

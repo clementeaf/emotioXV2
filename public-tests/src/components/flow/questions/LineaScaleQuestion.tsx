@@ -19,24 +19,32 @@ export const LineaScaleQuestion: React.FC<ComponentLinearScaleQuestionProps> = (
           title?: string;
           description?: string;
           questionText?: string;
-          minValue?: number;
-          maxValue?: number;
-          minLabel?: string;
-          maxLabel?: string;
+          scaleConfig?: {
+            startValue?: number;
+            endValue?: number;
+            startLabel?: string;
+            endLabel?: string;
+          };
           savedResponses?: number;
           required?: boolean;
           type?: 'stars' | 'numbers';
         }
       : {};
 
+    // 🔍 DEBUG: Ver qué datos llegan
+    console.log('🔍 [LineaScaleQuestion] config:', config);
+    console.log('🔍 [LineaScaleQuestion] cfg.scaleConfig:', cfg.scaleConfig);
+
     const useStars = cfg.type === 'stars';
     const componentTitle = stepName || cfg.title || 'Pregunta de escala lineal';
     const description = cfg.description;
-    const questionText = cfg.questionText ?? (isMock ? 'Valora en una escala (Prueba)' : 'Por favor, indica tu valoración.');
-    const minValue = typeof cfg.minValue === 'number' ? cfg.minValue : 1;
-    const maxValue = typeof cfg.maxValue === 'number' ? cfg.maxValue : 5;
-    const minLabel = typeof cfg.minLabel === 'string' ? cfg.minLabel : (isMock ? 'Mín' : 'Muy insatisfecho');
-    const maxLabel = typeof cfg.maxLabel === 'string' ? cfg.maxLabel : (isMock ? 'Máx' : 'Muy satisfecho');
+    const questionText = cfg.questionText ?? '';
+
+    // Usar scaleConfig del formato del backend
+    const minValue = cfg.scaleConfig?.startValue ?? 1;
+    const maxValue = cfg.scaleConfig?.endValue ?? 5;
+    const minLabel = cfg.scaleConfig?.startLabel ?? '';
+    const maxLabel = cfg.scaleConfig?.endLabel ?? '';
     const savedResponses = typeof cfg.savedResponses === 'number' ? cfg.savedResponses : undefined;
     const required = typeof cfg.required === 'boolean' ? cfg.required : true;
 
@@ -224,7 +232,7 @@ export const LineaScaleQuestion: React.FC<ComponentLinearScaleQuestionProps> = (
         <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full">
             <h2 className="text-xl font-medium mb-1 text-neutral-800">{componentTitle}</h2>
             {description && <p className="text-sm text-neutral-500 mb-3">{description}</p>}
-            <p className="text-neutral-600 mb-4">{questionText}</p>
+            {questionText && <p className="text-neutral-600 mb-4">{questionText}</p>}
 
             {(apiError || apiHookError) && (
                 <div className="bg-red-50 border border-red-200 text-sm text-red-700 px-4 py-3 rounded mb-4" role="alert">
@@ -234,10 +242,6 @@ export const LineaScaleQuestion: React.FC<ComponentLinearScaleQuestionProps> = (
             )}
 
             <div className="mb-8">
-                <div className="flex justify-between mb-2">
-                    <span className="text-sm text-neutral-500">{minLabel}</span>
-                    <span className="text-sm text-neutral-500">{maxLabel}</span>
-                </div>
                 <div className="flex justify-between">
                     {scaleValues.map(value => (
                         <button
@@ -252,6 +256,10 @@ export const LineaScaleQuestion: React.FC<ComponentLinearScaleQuestionProps> = (
                             {value}
                         </button>
                     ))}
+                </div>
+                <div className="flex justify-between mt-2">
+                    <span className="text-sm text-neutral-500">{minLabel}</span>
+                    <span className="text-sm text-neutral-500">{maxLabel}</span>
                 </div>
             </div>
             {useStars && (
