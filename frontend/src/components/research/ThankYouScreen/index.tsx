@@ -1,23 +1,16 @@
+import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
+import { cn } from '@/lib/utils';
 import React from 'react';
-import { ThankYouScreenFormProps } from './types';
-import { useThankYouScreenForm } from './hooks/useThankYouScreenForm';
 import {
-  ThankYouScreenHeader,
-  ThankYouScreenSettings,
+  ErrorModal,
   ThankYouScreenContent,
   ThankYouScreenFooter,
-  ErrorModal
+  ThankYouScreenSettings
 } from './components';
-import { UI_TEXTS } from './constants';
-import { cn } from '@/lib/utils';
-import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
+import { useThankYouScreenForm } from './hooks/useThankYouScreenForm';
+import { ThankYouScreenFormProps } from './types';
 
-/**
- * Componente principal para el formulario de configuración de la pantalla de agradecimiento
- * Esta versión refactorizada separa las responsabilidades en subcomponentes
- * y utiliza un hook personalizado para la lógica del formulario
- */
-export const ThankYouScreenForm: React.FC<ThankYouScreenFormProps> = ({ 
+export const ThankYouScreenForm: React.FC<ThankYouScreenFormProps> = ({
   className,
   researchId,
   onSave
@@ -36,7 +29,6 @@ export const ThankYouScreenForm: React.FC<ThankYouScreenFormProps> = ({
     closeModal
   } = useThankYouScreenForm(researchId);
 
-  // Callbacks específicos para cada campo
   const handleTitleChange = (value: string) => {
     handleChange('title', value);
   };
@@ -53,15 +45,13 @@ export const ThankYouScreenForm: React.FC<ThankYouScreenFormProps> = ({
     handleChange('isEnabled', checked);
   };
 
-  // Callback para guardar y notificar al componente padre si es necesario
   const handleSaveAndNotify = () => {
     handleSave();
     if (onSave) {
       onSave(formData);
     }
   };
-  
-  // Mientras carga, mostrar un indicador de carga
+
   if (isLoading) {
     return (
       <div className={cn('max-w-4xl space-y-4', className)}>
@@ -69,28 +59,26 @@ export const ThankYouScreenForm: React.FC<ThankYouScreenFormProps> = ({
       </div>
     );
   }
-  
+
   return (
     <div className={cn('max-w-4xl space-y-4', className)}>
-      {/* Toggle de habilitación */}
-      <ThankYouScreenSettings 
+      <ThankYouScreenSettings
         isEnabled={formData.isEnabled}
         onEnabledChange={handleEnabledChange}
         disabled={isLoading || isSaving}
       />
-      
-      {/* Indicador de estado - Solo para debugging */}
+
       {process.env.NODE_ENV === 'development' && (
-        <div className="mb-4 p-2 bg-gray-100 text-xs rounded">
+        <div className="mb-4 p-2 bg-transparent border border-neutral-200 text-[14px] rounded-lg p-4">
           <p>Estado: {thankYouScreenId ? 'Configuración existente' : 'Nueva configuración'}</p>
-          <p>ID: {thankYouScreenId || 'No hay ID (nueva)'}</p>
           <p>Habilitado: {formData.isEnabled ? 'Sí' : 'No'}</p>
-          <p>Research ID: {researchId}</p>
+          <p>ID Investigación: {researchId}</p>
+          <p>ID Formulario Agradecimiento: {thankYouScreenId || 'No hay ID (nueva)'}</p>
         </div>
       )}
-      
+
       {/* Contenido del formulario */}
-      <ThankYouScreenContent 
+      <ThankYouScreenContent
         title={formData.title}
         message={formData.message}
         redirectUrl={formData.redirectUrl ?? ''}
@@ -100,9 +88,9 @@ export const ThankYouScreenForm: React.FC<ThankYouScreenFormProps> = ({
         validationErrors={validationErrors}
         disabled={isLoading || isSaving || !formData.isEnabled}
       />
-      
+
       {/* Pie de página con acciones */}
-      <ThankYouScreenFooter 
+      <ThankYouScreenFooter
         isSaving={isSaving}
         isLoading={isLoading}
         isEnabled={formData.isEnabled}
@@ -110,13 +98,13 @@ export const ThankYouScreenForm: React.FC<ThankYouScreenFormProps> = ({
         onSave={handleSaveAndNotify}
         onPreview={handlePreview}
       />
-      
+
       {/* Modal para mostrar errores y mensajes */}
-      <ErrorModal 
+      <ErrorModal
         isOpen={modalVisible}
         onClose={closeModal}
         error={modalError}
       />
     </div>
   );
-}; 
+};

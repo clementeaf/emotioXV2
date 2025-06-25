@@ -1,9 +1,8 @@
-import React from 'react';
-import { Textarea } from '@/components/ui/Textarea';
 import { Input } from '@/components/ui/Input';
-import { ThankYouScreenContentProps } from '../types';
+import { Textarea } from '@/components/ui/Textarea';
+import React from 'react';
 import { UI_TEXTS } from '../constants';
-import { cn } from '@/lib/utils';
+import { ThankYouScreenContentProps } from '../types';
 
 /**
  * Componente para el contenido principal del formulario de la pantalla de agradecimiento
@@ -19,7 +18,7 @@ export const ThankYouScreenContent: React.FC<ThankYouScreenContentProps> = ({
   disabled
 }) => {
   return (
-    <div className="space-y-4 p-4 bg-white rounded-lg border border-neutral-200 shadow-xl">
+    <div className="space-y-4 p-4 bg-white rounded-lg border border-neutral-200">
       {/* Campo de título */}
       <div className="space-y-2">
         <Input
@@ -73,4 +72,4 @@ export const ThankYouScreenContent: React.FC<ThankYouScreenContentProps> = ({
       </div>
     </div>
   );
-}; 
+};
