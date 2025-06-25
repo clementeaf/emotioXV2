@@ -1,18 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { useStepResponseManager } from '../../hooks/useStepResponseManager';
+import { MappedStepComponentProps } from '../../types/flow.types';
 import { SmartVOCQuestion } from '../../types/smart-voc.types';
 import { formatQuestionText, formSpacing } from '../../utils/formHelpers';
 import { StarRating } from './StarRating';
 
-interface CSATViewProps {
-  question: SmartVOCQuestion;
-  onStepComplete?: (data?: unknown) => void;
-}
-
-const CSATView: React.FC<CSATViewProps> = ({
-  question,
+const CSATView: React.FC<MappedStepComponentProps> = ({
+  stepConfig,
   onStepComplete,
 }) => {
+  // Convertir stepConfig a SmartVOCQuestion
+  const question = stepConfig as SmartVOCQuestion;
+
+  console.log('[CSATView] 🔍 Props recibidas:', { stepConfig, question });
+
   if (!question || !question.config) {
     return <div>Cargando configuración...</div>;
   }
