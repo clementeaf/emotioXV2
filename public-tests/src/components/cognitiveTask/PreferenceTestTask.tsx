@@ -23,13 +23,36 @@ const PreferenceTestTask: React.FC<MappedStepComponentProps> = ({ stepConfig, on
   const [error, setError] = useState<string | null>(null);
   const [hasBeenSaved, setHasBeenSaved] = useState<boolean>(false);
 
-  // Extraer la configuración de la pregunta
-  const config = stepConfig as PreferenceTestConfig;
+  // Extraer la configuración de la pregunta - MEJORADO para compatibilidad
+  let preferenceQuestion: any = null;
+
+  if (stepConfig && typeof stepConfig === 'object') {
+    // Caso 1: stepConfig es un array de preguntas (formato anterior)
+    if ('questions' in stepConfig && Array.isArray((stepConfig as any).questions)) {
+      const config = stepConfig as { questions: any[] };
+      preferenceQuestion = config.questions.find(q => q.type === 'preference_test');
+    }
+    // Caso 2: stepConfig es directamente la pregunta (formato actual del log)
+    else if ('type' in stepConfig && (stepConfig as any).type === 'preference_test') {
+      preferenceQuestion = stepConfig;
+    }
+    // Caso 3: stepConfig tiene estructura anidada con config
+    else if ('config' in stepConfig) {
+      preferenceQuestion = (stepConfig as any).config;
+    }
+  }
+
+  // Extraer datos con fallbacks
+  const config = preferenceQuestion || stepConfig;
   const images = config?.files || [];
 
   // 🔍 LOGGING CRÍTICO PARA DEBUG
   console.log('[PreferenceTestTask] 🔍 DEBUG COMPLETO:', {
     stepConfig,
+    preferenceQuestion,
+    config,
+    images,
+    imagesLength: images.length,
     savedResponse,
     savedResponseType: typeof savedResponse,
     savedResponseKeys: savedResponse && typeof savedResponse === 'object' ? Object.keys(savedResponse) : null,
@@ -68,7 +91,7 @@ const PreferenceTestTask: React.FC<MappedStepComponentProps> = ({ stepConfig, on
           if (!obj || typeof obj !== 'object') return null;
 
           for (const [key, value] of Object.entries(obj)) {
-            if (typeof value === 'string' && images.some(img => img.id === value)) {
+            if (typeof value === 'string' && images.some((img: any) => img.id === value)) {
               console.log('[PreferenceTestTask] Caso 4 - encontrado en:', key, value);
               return value;
             }
@@ -83,7 +106,7 @@ const PreferenceTestTask: React.FC<MappedStepComponentProps> = ({ stepConfig, on
         extractedImageId = searchForImageId(savedResponse);
       }
 
-      if (extractedImageId && images.some(img => img.id === extractedImageId)) {
+      if (extractedImageId && images.some((img: any) => img.id === extractedImageId)) {
         console.log('[PreferenceTestTask] ✅ Cargando respuesta previa:', extractedImageId);
         setSelectedImageId(extractedImageId);
         setHasBeenSaved(true);
@@ -107,7 +130,7 @@ const PreferenceTestTask: React.FC<MappedStepComponentProps> = ({ stepConfig, on
       return;
     }
 
-    const selectedImage = images.find(img => img.id === selectedImageId);
+    const selectedImage = images.find((img: any) => img.id === selectedImageId);
     const responseData = {
       questionId: config.id,
       selectedImageId,
@@ -149,7 +172,7 @@ const PreferenceTestTask: React.FC<MappedStepComponentProps> = ({ stepConfig, on
 
         {/* Images Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {images.map((image, index) => (
+          {images.map((image: any, index: number) => (
             <div
               key={image.id}
               className={`relative bg-white rounded-lg shadow-lg overflow-hidden cursor-pointer transition-all duration-300 transform hover:scale-[1.02] ${

@@ -55,4 +55,5 @@ export const stepComponentMap: StepComponentMap = {
     'feedback': SmartVocFeedbackQuestion,
     'image_feedback': SmartVocFeedbackQuestion,
     'cognitive_preference_test': PreferenceTestTask,
+    'preference_test': PreferenceTestTask,
 };

@@ -58,10 +58,10 @@ const CognitiveNavigationFlowStep: React.FC<MappedStepComponentProps> = (props) 
     // Caso 1: stepConfig es un array de preguntas (formato anterior)
     if ('questions' in stepConfig && Array.isArray((stepConfig as any).questions)) {
       const config = stepConfig as { questions: CognitiveQuestion[] };
-      navigationQuestion = config.questions.find(q => q.type === 'navigation_flow');
+      navigationQuestion = config.questions.find(q => q.type === 'navigation_flow' || q.type === 'preference_test');
     }
     // Caso 2: stepConfig es directamente la pregunta (formato actual del log)
-    else if ('type' in stepConfig && (stepConfig as any).type === 'navigation_flow') {
+    else if ('type' in stepConfig && ((stepConfig as any).type === 'navigation_flow' || (stepConfig as any).type === 'preference_test')) {
       navigationQuestion = stepConfig;
     }
   }
@@ -139,27 +139,27 @@ const CognitiveNavigationFlowStep: React.FC<MappedStepComponentProps> = (props) 
     );
   }
 
-  // 4. JSX del componente original
+    // 4. JSX del componente original
   return (
-    <div className="min-h-screen bg-gray-50 p-2">
-      <div className="text-center px-4 py-6">
-        <h1 className="text-xl md:text-2xl font-bold text-gray-800 mb-3 leading-tight">
-          {navigationQuestion?.title || 'Flujo de Navegación - Desktop'}
-        </h1>
-        <p className="text-sm md:text-base text-gray-600 mb-4 max-w-2xl mx-auto leading-relaxed">
-          {navigationQuestion?.description || '¿En cuál de las siguientes pantallas encuentras el objetivo indicado?'}
-        </p>
-      </div>
-      <div className="flex flex-col items-center py-4 px-2">
-        {/* Contenedor de imagen optimizado para mobile */}
-        <div className="relative w-full max-w-none bg-white rounded-lg shadow-lg overflow-hidden">
+    <div className="py-6">
+      <div className="max-w-4xl mx-auto px-4">
+        <div className="text-center mb-6">
+          <h1 className="text-xl md:text-2xl font-bold text-gray-800 mb-3 leading-tight">
+            {navigationQuestion?.title || 'Prueba de Navegación'}
+          </h1>
+          <p className="text-sm md:text-base text-gray-600 mb-4 max-w-2xl mx-auto leading-relaxed">
+            {navigationQuestion?.description || 'Haz clic en la zona indicada para continuar'}
+          </p>
+        </div>
+        <div className="flex justify-center">
+        {/* Contenedor de imagen - TAMAÑO IDÉNTICO AL FRONTEND */}
+        <div className="relative max-w-5xl mx-auto bg-white rounded-lg shadow-2xl overflow-hidden">
           <img
             ref={imgRef}
             src={selectedImage.url}
             alt={selectedImage.name || 'Imagen detallada'}
-            className="w-full h-auto max-h-[70vh] object-contain bg-white"
+            className="w-full h-auto max-h-[80vh] object-contain bg-white"
             loading="lazy"
-            style={{ display: 'block' }}
             onLoad={handleImgLoad}
           />
           {imgSize && imgNatural && availableHitzones
@@ -199,6 +199,7 @@ const CognitiveNavigationFlowStep: React.FC<MappedStepComponentProps> = (props) 
               />
             );
           })}
+        </div>
         </div>
       </div>
       {showSuccessModal && (
