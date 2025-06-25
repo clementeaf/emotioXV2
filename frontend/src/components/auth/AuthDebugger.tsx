@@ -1,133 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/providers/AuthProvider';
-
-interface TokenInfo {
-  isValid: boolean;
-  expiresAt?: Date;
-  timeRemaining?: string;
-  payload?: any;
-}
-
-// Función segura para decodificar token JWT
-const parseJwt = (token: string): any | null => {
-  try {
-    // Dividir el token para obtener la parte del payload
-    const base64Url = token.split('.')[1];
-    if (!base64Url) return null;
-    
-    // Reemplazar caracteres para Base64 estándar y crear el buffer
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    
-    // Usar método seguro para decodificación
-    const jsonPayload = decodeURIComponent(
-      window.atob(base64)
-        .split('')
-        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
-    );
-    
-    return JSON.parse(jsonPayload);
-  } catch (e) {
-    console.error('Error al decodificar token:', e);
-    return null;
-  }
-};
+import { useAuthDebugger } from '@/hooks/useAuthDebugger';
 
 export function AuthDebugger() {
-  const { token, user, logout } = useAuth();
-  const [localToken, setLocalToken] = useState<string | null>(null);
-  const [sessionToken, setSessionToken] = useState<string | null>(null);
-  const [tokenInfo, setTokenInfo] = useState<TokenInfo>({ isValid: false });
-  const [showDebugger, setShowDebugger] = useState(false);
+  const {
+    showDebugger,
+    localToken,
+    sessionToken,
+    token,
+    user,
+    tokenInfo,
+    toggleDebugger,
+    handleFix,
+    logout,
+    getStatusInfo
+  } = useAuthDebugger();
 
-  useEffect(() => {
-    // Solo ejecutar en el cliente
-    if (typeof window === 'undefined') return;
-
-    const localStorageToken = localStorage.getItem('token');
-    const sessionStorageToken = sessionStorage.getItem('token');
-
-    setLocalToken(localStorageToken);
-    setSessionToken(sessionStorageToken);
-
-    // Analizar el token
-    const tokenToAnalyze = localStorageToken || sessionStorageToken;
-    if (tokenToAnalyze) {
-      try {
-        const parts = tokenToAnalyze.split('.');
-        if (parts.length !== 3) {
-          setTokenInfo({ isValid: false });
-          return;
-        }
-
-        const payload = parseJwt(tokenToAnalyze);
-        
-        if (!payload) {
-          setTokenInfo({ isValid: false });
-          return;
-        }
-        
-        // Verificar expiración
-        let expiresAt: Date | undefined = undefined;
-        let timeRemaining: string | undefined = undefined;
-        let isValid = true;
-        
-        if (payload.exp) {
-          expiresAt = new Date(payload.exp * 1000);
-          const now = new Date();
-          isValid = now < expiresAt;
-          
-          const diffMs = expiresAt.getTime() - now.getTime();
-          const diffMins = Math.round(diffMs / 60000);
-          
-          if (diffMins <= 0) {
-            timeRemaining = `Expirado hace ${Math.abs(diffMins)} minutos`;
-          } else {
-            timeRemaining = `Expira en ${diffMins} minutos`;
-          }
-        }
-
-        setTokenInfo({
-          isValid,
-          expiresAt,
-          timeRemaining,
-          payload
-        });
-      } catch (error) {
-        console.error('Error analizando token:', error);
-        setTokenInfo({ isValid: false });
-      }
-    } else {
-      setTokenInfo({ isValid: false });
-    }
-  }, [token]);
-
-  const handleFix = () => {
-    // Intentar corregir el problema común: token en localStorage pero no en contexto
-    if (localToken && !token) {
-      window.location.reload();
-    } 
-    // Token expirado o no existe, redirigir a login
-    else {
-      // Limpiar almacenamiento para evitar problemas
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      sessionStorage.removeItem('token');
-      sessionStorage.removeItem('user');
-      
-      // Redirigir a login
-      window.location.href = '/login';
-    }
-  };
-
-  const toggleDebugger = () => {
-    setShowDebugger(prev => !prev);
-  };
-
-  // Solo mostrar el icono de depuración normalmente
   if (!showDebugger) {
     return (
-      <button 
+      <button
         onClick={toggleDebugger}
         className="fixed bottom-4 right-4 bg-gray-800 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg z-50 opacity-70 hover:opacity-100"
         title="Depurador de autenticación"
@@ -139,23 +28,7 @@ export function AuthDebugger() {
     );
   }
 
-  // Definir clases y mensajes según el estado
-  let statusClass = "bg-gray-100 text-gray-800";
-  let statusMessage = "Verificando estado de autenticación...";
-
-  if (!localToken && !sessionToken) {
-    statusClass = "bg-red-100 text-red-800";
-    statusMessage = "No estás autenticado. No se encontró ningún token.";
-  } else if (!tokenInfo.isValid) {
-    statusClass = "bg-red-100 text-red-800";
-    statusMessage = "Token inválido o expirado.";
-  } else if (localToken && token) {
-    statusClass = "bg-green-100 text-green-800";
-    statusMessage = "Autenticación correcta.";
-  } else {
-    statusClass = "bg-yellow-100 text-yellow-800";
-    statusMessage = "Token en storage pero no en contexto de aplicación.";
-  }
+  const { statusClass, statusMessage } = getStatusInfo();
 
   return (
     <div className="fixed bottom-0 right-0 p-4 w-full md:w-96 z-50">
@@ -169,12 +42,12 @@ export function AuthDebugger() {
             </svg>
           </button>
         </div>
-        
+
         <div className={`px-4 py-2 ${statusClass} border-l-4 border-current`}>
           <p className="font-medium">{statusMessage}</p>
           {tokenInfo.timeRemaining && <p className="text-sm">{tokenInfo.timeRemaining}</p>}
         </div>
-        
+
         <div className="p-4 space-y-4">
           <div className="space-y-2">
             <div className="flex justify-between">
@@ -194,7 +67,7 @@ export function AuthDebugger() {
               <span className="text-sm">{user ? "✅" : "❌"}</span>
             </div>
           </div>
-          
+
           <div className="flex gap-2">
             <button
               onClick={handleFix}
@@ -202,7 +75,7 @@ export function AuthDebugger() {
             >
               Reparar autenticación
             </button>
-            
+
             <button
               onClick={logout}
               className="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded"
@@ -214,4 +87,4 @@ export function AuthDebugger() {
       </div>
     </div>
   );
-} 
+}

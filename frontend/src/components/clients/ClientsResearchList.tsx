@@ -1,23 +1,21 @@
 'use client';
 
-import { ClientResearch, ResearchListProps } from '@/interfaces/research';
+import { ResearchActions } from '@/components/research-actions';
+import { StatusBadge } from '@/components/ui/StatusBadge';
+import { ResearchListProps } from '@/interfaces/research';
 import { cn } from '@/lib/utils';
 
-export function ResearchList({ className, data = [] }: ResearchListProps) {
-  const getStatusBadgeClass = (status: ClientResearch['status']) => {
-    const baseClasses = 'inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset';
-    switch (status) {
-      case 'pending':
-        return cn(baseClasses, 'bg-yellow-50 text-yellow-700 ring-yellow-600/20');
-      case 'in_progress':
-        return cn(baseClasses, 'bg-blue-50 text-blue-700 ring-blue-600/20');
-      case 'completed':
-        return cn(baseClasses, 'bg-green-50 text-green-700 ring-green-600/20');
-      default:
-        return cn(baseClasses, 'bg-neutral-50 text-neutral-700 ring-neutral-600/20');
-    }
-  };
+interface ClientsResearchListProps extends ResearchListProps {
+  onDuplicateSuccess?: (newResearchId: string) => void;
+  onDeleteSuccess?: (deletedResearchId: string) => void;
+}
 
+export function ClientsResearchList({
+  className,
+  data = [],
+  onDuplicateSuccess,
+  onDeleteSuccess
+}: ClientsResearchListProps) {
   return (
     <div className={cn('bg-white rounded-lg shadow-sm overflow-hidden', className)}>
       <div className="p-6">
@@ -44,9 +42,7 @@ export function ResearchList({ className, data = [] }: ResearchListProps) {
                       {research.name}
                     </td>
                     <td className="whitespace-nowrap py-3">
-                      <span className={getStatusBadgeClass(research.status)}>
-                        {research.status.replace('_', ' ')}
-                      </span>
+                      <StatusBadge status={research.status} />
                     </td>
                     <td className="whitespace-nowrap py-3">
                       <div className="flex items-center gap-2">
@@ -68,17 +64,12 @@ export function ResearchList({ className, data = [] }: ResearchListProps) {
                       {research.researcher}
                     </td>
                     <td className="whitespace-nowrap py-3">
-                      <div className="flex items-center gap-2">
-                        <button className="text-sm text-neutral-600 hover:text-neutral-900">
-                          View
-                        </button>
-                        <button className="text-sm text-neutral-600 hover:text-neutral-900">
-                          Duplicate
-                        </button>
-                        <button className="text-sm text-red-600 hover:text-red-900">
-                          Delete
-                        </button>
-                      </div>
+                      <ResearchActions
+                        researchId={research.id}
+                        researchName={research.name}
+                        onDuplicateSuccess={onDuplicateSuccess}
+                        onDeleteSuccess={onDeleteSuccess}
+                      />
                     </td>
                   </tr>
                 ))
@@ -95,4 +86,4 @@ export function ResearchList({ className, data = [] }: ResearchListProps) {
       </div>
     </div>
   );
-} 
+}
