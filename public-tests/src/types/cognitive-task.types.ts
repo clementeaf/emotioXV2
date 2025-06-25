@@ -177,7 +177,7 @@ export interface TaskProgressBarProps {
 // Props para QuestionHeader
 export interface QuestionHeaderProps {
   title?: string;
-  description?: string;
+  instructions?: string;
   required?: boolean;
 }
 

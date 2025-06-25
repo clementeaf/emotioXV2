@@ -9,7 +9,7 @@ import QuestionHeader from '../cognitiveTask/common/QuestionHeader';
 const apiClient = new ApiClient();
 
 const DifficultyScaleView: React.FC<MappedStepComponentProps> = (props) => {
-  const { stepConfig, onStepComplete, stepId, stepName } = props;
+  const { stepConfig, onStepComplete, stepName } = props;
   const question = stepConfig as SmartVOCQuestion;
 
   // 1. Estado local
@@ -104,7 +104,11 @@ const DifficultyScaleView: React.FC<MappedStepComponentProps> = (props) => {
   return (
     <div className="flex flex-col items-center justify-center w-full h-full p-4">
       <div className="bg-white p-8 rounded-lg max-w-lg w-full">
-        <QuestionHeader title={question.title} description={question.description} required={question.required} />
+        <QuestionHeader
+          title={question.title}
+          instructions={question.instructions}
+          required={question.required}
+        />
         <div className="mt-6">
           <div className="flex justify-between items-center flex-wrap gap-2">
             {scaleOptions.map((value) => (

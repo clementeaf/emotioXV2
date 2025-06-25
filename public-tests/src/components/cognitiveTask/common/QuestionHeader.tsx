@@ -1,9 +1,9 @@
 import React from 'react';
 import { QuestionHeaderProps } from '../../../types/cognitive-task.types';
 
-const QuestionHeader: React.FC<QuestionHeaderProps> = ({ title, description, required }) => {
+const QuestionHeader: React.FC<QuestionHeaderProps> = ({ title, instructions, required }) => {
     // Si no hay título ni descripción, mostrar un texto por defecto
-    if (!title && !description) {
+    if (!title && !instructions) {
         return (
             <div className="mb-4 space-y-1">
                 <h3 className="text-lg font-semibold text-gray-800">
@@ -15,19 +15,19 @@ const QuestionHeader: React.FC<QuestionHeaderProps> = ({ title, description, req
     }
 
     return (
-        <div className="mb-4 space-y-1"> {/* Espacio debajo y entre título/descripción */} 
+        <div className="mb-4 space-y-1"> {/* Espacio debajo y entre título/descripción */}
              {title && (
                 <h3 className="text-lg font-semibold text-gray-800">
-                    {title} {required && <span className="text-red-500 ml-1">*</span>} 
+                    {title} {required && <span className="text-red-500 ml-1">*</span>}
                 </h3>
             )}
-            {description && (
+            {instructions && (
                 <p className="text-base text-gray-600">
-                    {description}
+                    {instructions}
                 </p>
             )}
         </div>
     );
 };
 
-export default QuestionHeader; 
+export default QuestionHeader;

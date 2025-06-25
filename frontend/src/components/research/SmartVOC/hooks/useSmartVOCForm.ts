@@ -151,11 +151,16 @@ export const useSmartVOCForm = (researchId: string) => {
       // La mutación se encarga de invalidar la query y el useEffect actualizará el estado
       await deleteMutation.mutateAsync();
       resetToDefaultQuestions();
+
+      // 🔧 AGREGADO: Resetear smartVocId para que el componente vuelva al estado "nuevo"
+      setSmartVocId(null);
+
+      console.log('[SmartVOCForm] 🔄 Estado reseteado completamente después de eliminación exitosa');
     } catch (error: unknown) {
       // El hook de mutación ya muestra un toast/modal en caso de error
       console.error('[SmartVOCForm] Error en confirmDelete:', error);
     }
-  }, [deleteMutation, resetToDefaultQuestions]);
+  }, [deleteMutation, resetToDefaultQuestions, setSmartVocId]);
 
   // Función para manejar la previsualización
   const handlePreview = useCallback(() => {
