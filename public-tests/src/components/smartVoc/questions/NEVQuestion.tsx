@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { useParticipantStore } from '../../../stores/participantStore';
+import React, { useEffect, useState } from 'react';
 import { useModuleResponses } from '../../../hooks/useModuleResponses';
 import { useResponseAPI } from '../../../hooks/useResponseAPI';
-import { getStandardButtonText } from '../../../utils/formHelpers';
+import { useParticipantStore } from '../../../stores/participantStore';
 import { NEVQuestionComponentProps } from '../../../types/smart-voc.types';
+import { getStandardButtonText } from '../../../utils/formHelpers';
 
 const emojiOptions = [
   { value: 'negative', label: '😞', numValue: -1 },
@@ -40,14 +40,14 @@ export const NEVQuestion: React.FC<NEVQuestionComponentProps> = ({ questionConfi
     if (!isLoadingInitialData && !loadingError && moduleResponsesArray && Array.isArray(moduleResponsesArray)) {
       const foundResponse = moduleResponsesArray.find((r: unknown) => {
         if (typeof r !== 'object' || r === null) return false;
-        const resp = r as { 
-          stepType?: unknown; 
-          stepTitle?: unknown; 
+        const resp = r as {
+          stepType?: unknown;
+          stepTitle?: unknown;
           id?: unknown;
-          stepId?: unknown; 
-          moduleId?: unknown 
+          stepId?: unknown;
+          moduleId?: unknown
         };
-        
+
         // Buscar por múltiples criterios para máxima compatibilidad
         return (
           // Por stepType + moduleId (nuevo formato)
@@ -62,7 +62,7 @@ export const NEVQuestion: React.FC<NEVQuestionComponentProps> = ({ questionConfi
           (resp.id === questionId)
         );
       });
-      
+
       if (
         foundResponse &&
         typeof foundResponse === 'object' &&
@@ -136,8 +136,11 @@ export const NEVQuestion: React.FC<NEVQuestionComponentProps> = ({ questionConfi
     hasExistingData: !!internalModuleResponseId && selectedValue !== null
   });
 
-  if (!description) {
-    return <div className="text-red-600">Error: Falta la descripción de la pregunta.</div>;
+  // Usar el título de la pregunta configurado, con fallback a description
+  const questionText = questionTitle || description || 'Indica tu nivel emocional';
+
+  if (!questionText) {
+    return <div className="text-red-600">Error: Falta el texto de la pregunta.</div>;
   }
 
   if (isLoadingInitialData) {
@@ -146,16 +149,18 @@ export const NEVQuestion: React.FC<NEVQuestionComponentProps> = ({ questionConfi
 
   return (
     <div className="space-y-4 flex flex-col items-center w-full">
-      <p className="text-base md:text-lg font-medium text-gray-800">{description}</p>
+      <h2 className="text-xl font-medium text-center text-neutral-800 mb-4">
+        {questionText}
+      </h2>
       <div className="flex justify-center gap-4 md:gap-6">
         {emojiOptions.map((option) => (
           <button
             key={option.value}
             type="button"
             onClick={() => handleSelect(option.numValue)}
-            className={`p-2 rounded-full transition-all duration-150 ease-in-out 
-              ${selectedValue === option.numValue 
-                ? 'bg-blue-100 ring-2 ring-blue-500 scale-110' 
+            className={`p-2 rounded-full transition-all duration-150 ease-in-out
+              ${selectedValue === option.numValue
+                ? 'bg-blue-100 ring-2 ring-blue-500 scale-110'
                 : 'bg-gray-100 hover:bg-gray-200'
               }`}
             aria-label={`Seleccionar ${option.value}`}
@@ -177,4 +182,4 @@ export const NEVQuestion: React.FC<NEVQuestionComponentProps> = ({ questionConfi
       </button>
     </div>
   );
-}; 
+};

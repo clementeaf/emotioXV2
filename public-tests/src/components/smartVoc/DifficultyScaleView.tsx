@@ -12,6 +12,13 @@ const DifficultyScaleView: React.FC<MappedStepComponentProps> = (props) => {
   const { stepConfig, onStepComplete, stepName } = props;
   const question = stepConfig as SmartVOCQuestion;
 
+  console.log('[DifficultyScaleView] 🔍 Configuración completa:', {
+    stepConfig,
+    question,
+    questionConfig: question?.config,
+    questionConfigStructure: JSON.stringify(question?.config, null, 2)
+  });
+
   // 1. Estado local
   const [selectedValue, setSelectedValue] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -44,18 +51,33 @@ const DifficultyScaleView: React.FC<MappedStepComponentProps> = (props) => {
   }
 
   // Desestructuración aún más segura
-  const config = question.config || {};
-  const scaleConfig = config.scale || {
-    min: 1,
-    max: 7,
-    minLabel: 'Muy difícil',
-    maxLabel: 'Muy fácil'
-  };
+  const config = (question.config || {}) as any;
+
+  // 🔧 CORREGIDO: Verificar si la configuración viene en el formato esperado
+  let scaleConfig;
+  if (config.scaleRange) {
+    // Formato del frontend: { scaleRange: { start: 1, end: 7 }, startLabel: "", endLabel: "" }
+    scaleConfig = {
+      min: config.scaleRange.start || 1,
+      max: config.scaleRange.end || 7,
+      startLabel: config.startLabel || 'Muy difícil',
+      endLabel: config.endLabel || 'Muy fácil'
+    };
+  } else {
+    // Formato alternativo o por defecto
+    scaleConfig = {
+      min: config.min || 1,
+      max: config.max || 7,
+      startLabel: config.startLabel || 'Muy difícil',
+      endLabel: config.endLabel || 'Muy fácil'
+    };
+  }
+
   const {
     min,
     max,
-    minLabel,
-    maxLabel
+    startLabel,
+    endLabel
   } = scaleConfig;
 
   const scaleOptions = Array.from({ length: (max || 7) - (min || 1) + 1 }, (_, i) => (min || 1) + i);
@@ -127,8 +149,8 @@ const DifficultyScaleView: React.FC<MappedStepComponentProps> = (props) => {
             ))}
           </div>
           <div className="flex justify-between text-sm text-neutral-500 mt-2 px-1">
-            <span>{minLabel}</span>
-            <span>{maxLabel}</span>
+            <span>{startLabel}</span>
+            <span>{endLabel}</span>
           </div>
         </div>
         {error && <p className="text-red-500 text-sm mt-4">{error}</p>}

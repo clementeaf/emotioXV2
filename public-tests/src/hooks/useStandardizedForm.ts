@@ -152,9 +152,24 @@ export function useStandardizedForm<T>(
 
   // Extract previous value from saved response
   const extractedValue = useMemo(() => {
-    if (savedResponse?.response) {
+    // 🔧 CORREGIDO: Manejar savedResponse tanto como string directo como objeto
+    if (savedResponse) {
       try {
-        return extractValueFromResponse(savedResponse.response);
+        // Caso 1: savedResponse es string directo (ej: '😐')
+        if (typeof savedResponse === 'string') {
+          console.log('[useStandardizedForm] Processing direct string savedResponse:', savedResponse);
+          return extractValueFromResponse(savedResponse);
+        }
+
+        // Caso 2: savedResponse es objeto con campo response
+        if (typeof savedResponse === 'object' && savedResponse !== null && 'response' in savedResponse) {
+          console.log('[useStandardizedForm] Processing object savedResponse:', savedResponse);
+          return extractValueFromResponse((savedResponse as { response: unknown }).response);
+        }
+
+        // Caso 3: savedResponse es otro tipo de objeto, intentar extraer directamente
+        console.log('[useStandardizedForm] Processing unknown savedResponse structure:', savedResponse);
+        return extractValueFromResponse(savedResponse);
       } catch (err) {
         console.warn('[useStandardizedForm] Error extracting value from saved response:', err);
       }

@@ -57,6 +57,20 @@ const EmotionSelectionView: React.FC<EmotionSelectionViewComponentProps> = ({
   required
 }) => {
 
+  // 🔍 LOGGING CRÍTICO PARA DIAGNÓSTICO
+  console.log('[EmotionSelectionView] 🔍 Props recibidas:', {
+    questionText,
+    instructions,
+    companyName,
+    config,
+    stepId,
+    stepType,
+    stepName,
+    savedResponse,
+    savedResponseId,
+    required
+  });
+
   // Crear props estandarizadas
   const standardProps: StandardizedFormProps = {
     stepId: stepId || 'nev-default',
@@ -66,6 +80,8 @@ const EmotionSelectionView: React.FC<EmotionSelectionViewComponentProps> = ({
     savedResponseId,
     required: required || false
   };
+
+  console.log('[EmotionSelectionView] 🔍 Props para useStandardizedForm:', standardProps);
 
   const [state, actions] = useStandardizedForm<string | null>(standardProps, {
     initialValue: null,

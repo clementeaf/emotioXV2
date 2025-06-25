@@ -47,6 +47,26 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
     // Determinar qué savedResponse usar - priorizar stepConfig.savedResponses
     const finalSavedResponse = stepConfigSavedResponses || savedResponse;
 
+    // Mapeo específico de props para componentes SmartVOC
+    let mappedProps = {};
+
+    if (stepType.startsWith('smartvoc_') && stepConfig && typeof stepConfig === 'object') {
+        const config = stepConfig as any;
+        mappedProps = {
+            questionText: config.title || config.description || config.questionText,
+            instructions: config.instructions,
+            companyName: config.config?.companyName,
+            config: config.config,
+            stepId: config.id,
+            stepName: config.title || config.description,
+            required: config.required,
+            savedResponse: finalSavedResponse,
+            savedResponseId: config.savedResponseId || config.id,
+        };
+
+        console.log('[CurrentStepRenderer] 🎯 SmartVOC props mapeadas:', mappedProps);
+    }
+
     const finalProps = {
         ...restOfStepProps,
         stepType,
@@ -58,6 +78,7 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
         onSubmit: onStepComplete,
         onStepComplete: onStepComplete,
         initialValue: initialValueToPass,
+        ...mappedProps, // ✅ AGREGADO: props específicas para SmartVOC
     };
 
     // Renderiza el componente del paso, envuelto en Suspense por si está lazy-loaded.
