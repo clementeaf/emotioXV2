@@ -36,7 +36,7 @@ export const LineaScaleQuestion: React.FC<ComponentLinearScaleQuestionProps> = (
     console.log('🔍 [LineaScaleQuestion] cfg.scaleConfig:', cfg.scaleConfig);
 
     const useStars = cfg.type === 'stars';
-    const componentTitle = stepName || cfg.title || 'Pregunta de escala lineal';
+    const componentTitle = stepName || cfg.title || '';
     const description = cfg.description;
     const questionText = cfg.questionText ?? '';
 
@@ -233,13 +233,6 @@ export const LineaScaleQuestion: React.FC<ComponentLinearScaleQuestionProps> = (
             <h2 className="text-xl font-medium mb-1 text-neutral-800">{componentTitle}</h2>
             {description && <p className="text-sm text-neutral-500 mb-3">{description}</p>}
             {questionText && <p className="text-neutral-600 mb-4">{questionText}</p>}
-
-            {(apiError || apiHookError) && (
-                <div className="bg-red-50 border border-red-200 text-sm text-red-700 px-4 py-3 rounded mb-4" role="alert">
-                    <strong className="font-bold">Error: </strong>
-                    <span>{apiError || apiHookError}</span>
-                </div>
-            )}
 
             <div className="mb-8">
                 <div className="flex justify-between">

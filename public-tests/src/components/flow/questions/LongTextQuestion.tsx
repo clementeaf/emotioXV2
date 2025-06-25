@@ -26,8 +26,8 @@ export const LongTextQuestion: React.FC<LongTextQuestionProps> = ({
 
     const title = cfg.title || stepName || 'Pregunta';
     const description = cfg.description;
-    const questionText = cfg.questionText || (isMock ? 'Pregunta de prueba' : '');
-    const answerPlaceholder = cfg.answerPlaceholder || 'Escribe tu respuesta detallada aquí...';
+    const questionText = cfg.questionText || '';
+    const answerPlaceholder = cfg.answerPlaceholder || '';
     const savedResponses = cfg.savedResponses;
 
     console.log(`🔍 [LongTextQuestion] Inicializando componente:`, {

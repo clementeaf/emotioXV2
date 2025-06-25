@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { apiClient } from '../lib/api';
 import { UseResponseAPIProps } from '../types';
 
@@ -17,18 +17,18 @@ export const useResponseAPI = ({ researchId, participantId }: UseResponseAPIProp
 
     try {
       const response = await apiClient.getModuleResponses(researchId, participantId);
-      
+
       if ((response.status === 404 || response.notFound === true)) {
         setError(null);
         return {};
       }
-      
+
       if (response.error || !response.data) {
         console.error('Error obteniendo respuestas:', response);
         setError(response.message || 'Error obteniendo respuestas');
         return null;
       }
-      
+
       if (response && typeof response === 'object' && response !== null && 'data' in response) {
         const dataObj = (response as { data?: unknown }).data;
         if (dataObj && typeof dataObj === 'object' && dataObj !== null && 'data' in dataObj) {
@@ -47,11 +47,11 @@ export const useResponseAPI = ({ researchId, participantId }: UseResponseAPIProp
 
   // Función para guardar una nueva respuesta
   const saveResponse = useCallback(async (
-    stepId: string,        
-    stepType: string, 
-    stepName: string, 
+    stepId: string,
+    stepType: string,
+    stepName: string,
     answer: unknown,
-    moduleId?: string     
+    moduleId?: string
   ) => {
 
     console.log(`🔍 [useResponseAPI] saveResponse called with:`, {
@@ -84,13 +84,13 @@ export const useResponseAPI = ({ researchId, participantId }: UseResponseAPIProp
         response: answer,
         ...(moduleId ? { moduleId } : {})
       };
-      
+
       console.log(`📤 [useResponseAPI] Calling apiClient.saveModuleResponse with payload:`, payload);
-      
+
       const response = await apiClient.saveModuleResponse(payload);
-      
+
       console.log(`📋 [useResponseAPI] API response received:`, response);
-      
+
       if (response.error || !response.data) {
         console.error('❌ [useResponseAPI] Error guardando respuesta:', response);
         setError(response.message || 'Error guardando respuesta');
@@ -116,8 +116,8 @@ export const useResponseAPI = ({ researchId, participantId }: UseResponseAPIProp
 
   // Ajuste en updateResponse para el linter
   const updateResponse = useCallback(async (responseId: string, answer: unknown) => {
-    
-    if (!researchId || !participantId || !responseId) { 
+
+    if (!researchId || !participantId || !responseId) {
       setError('Datos inválidos para actualizar respuesta (researchId, participantId, o responseId faltantes)');
       return null;
     }
@@ -129,13 +129,13 @@ export const useResponseAPI = ({ researchId, participantId }: UseResponseAPIProp
       const payloadForBody = { response: answer };
 
       const response = await apiClient.updateModuleResponse(responseId, researchId, participantId, payloadForBody);
-      
+
       if (response.error || !response.data) {
         console.error('Error actualizando respuesta:', response);
         setError(response.message || 'Error actualizando respuesta');
         return null;
       }
-      
+
       if (response && typeof response === 'object' && response !== null && 'data' in response) {
         const dataObj = (response as { data?: unknown }).data;
         if (dataObj && typeof dataObj === 'object' && dataObj !== null && 'data' in dataObj) {
@@ -164,13 +164,13 @@ export const useResponseAPI = ({ researchId, participantId }: UseResponseAPIProp
 
     try {
       const response = await apiClient.markResponsesAsCompleted(researchId, participantId);
-      
+
       if (response.error || !response.data) {
         console.error('Error marcando respuestas como completadas:', response);
         setError(response.message || 'Error marcando respuestas como completadas');
         return null;
       }
-      
+
       if (response && typeof response === 'object' && response !== null && 'data' in response) {
         const dataObj = (response as { data?: unknown }).data;
         if (dataObj && typeof dataObj === 'object' && dataObj !== null && 'data' in dataObj) {
@@ -189,24 +189,43 @@ export const useResponseAPI = ({ researchId, participantId }: UseResponseAPIProp
 
   // Función combinada para guardar o actualizar respuesta según corresponda
   const saveOrUpdateResponse = useCallback(async (
-    stepId: string, 
-    stepType: string, 
-    stepName: string, 
-    answer: unknown, 
+    stepId: string,
+    stepType: string,
+    stepName: string,
+    answer: unknown,
     existingResponseId?: string,
-    moduleId?: string, 
+    moduleId?: string,
   ) => {
-    if (existingResponseId) {
-      const result = await updateResponse(existingResponseId, answer);
-      // Si el update falla con 404, intenta un save
-      if (error && (error.includes('404') || error.toLowerCase().includes('not found'))) {
-        return saveResponse(stepId, stepType, stepName, answer, moduleId);
+    console.log(`🔍 [useResponseAPI] saveOrUpdateResponse called with:`, {
+      stepId,
+      stepType,
+      stepName,
+      existingResponseId,
+      hasExistingId: !!existingResponseId,
+      moduleId
+    });
+
+    if (existingResponseId && existingResponseId.trim() !== '') {
+      console.log(`🔄 [useResponseAPI] Attempting to update existing response: ${existingResponseId}`);
+      try {
+        const result = await updateResponse(existingResponseId, answer);
+        if (result !== null) {
+          console.log(`✅ [useResponseAPI] Update successful`);
+          return result;
+        }
+        console.log(`⚠️ [useResponseAPI] Update returned null, trying save instead`);
+      } catch (updateError) {
+        console.log(`❌ [useResponseAPI] Update failed, trying save instead:`, updateError);
       }
-      return result;
+
+      // Si llegamos aquí, el update falló, intentamos save
+      console.log(`🆕 [useResponseAPI] Falling back to save new response`);
+      return saveResponse(stepId, stepType, stepName, answer, moduleId);
     } else {
+      console.log(`🆕 [useResponseAPI] No existing response ID, saving new response`);
       return saveResponse(stepId, stepType, stepName, answer, moduleId);
     }
-  }, [saveResponse, updateResponse, error]);
+  }, [saveResponse, updateResponse]);
 
   return {
     isLoading,

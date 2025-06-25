@@ -1,21 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ComponentShortTextQuestionProps } from '../../../types/flow.types';
 
-export const ShortTextQuestion: React.FC<ComponentShortTextQuestionProps> = ({ 
-    config, 
-    stepName, 
-    onStepComplete, 
-    isMock 
+export const ShortTextQuestion: React.FC<ComponentShortTextQuestionProps> = ({
+    config,
+    stepName,
+    onStepComplete,
+    isMock
 }) => {
     const cfg = (typeof config === 'object' && config !== null)
         ? config as { title?: string; description?: string; questionText?: string; answerPlaceholder?: string; savedResponses?: string }
         : {};
     const title = cfg.title || stepName || 'Pregunta';
     const description = cfg.description;
-    const questionText = cfg.questionText || (isMock ? 'Pregunta de prueba' : '');
-    const answerPlaceholder = cfg.answerPlaceholder || 'Escribe tu respuesta corta aquí...';
+    const questionText = cfg.questionText || '';
+    const answerPlaceholder = cfg.answerPlaceholder || '';
     const savedResponses = cfg.savedResponses;
-    
+
     // Inicializar con respuestas guardadas o string vacío
     const [currentResponse, setCurrentResponse] = useState(() => {
         return savedResponses || '';
@@ -52,4 +52,4 @@ export const ShortTextQuestion: React.FC<ComponentShortTextQuestionProps> = ({
             </button>
         </div>
     );
-}; 
+};

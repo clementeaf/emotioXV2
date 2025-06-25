@@ -23,7 +23,7 @@ export const SingleChoiceQuestion: React.FC<ComponentSingleChoiceQuestionProps> 
         }
       : {};
 
-    const componentTitle = cfg.title ?? stepName ?? 'Pregunta de opción única';
+    const componentTitle = cfg.title ?? stepName ?? '';
     const description = cfg.description;
     const questionText = cfg.questionText ?? '';
     const required = cfg.required !== false; // Asumir requerido por defecto

@@ -15,7 +15,7 @@ export const LongTextView: React.FC<MappedStepComponentProps> = (props) => {
   const type = config.type || 'long_text';
   const title = config.title || 'Pregunta';
   const description = config.description;
-  const answerPlaceholder = config.answerPlaceholder || 'Escribe tu respuesta detallada aquí...';
+  const answerPlaceholder = config.answerPlaceholder || '';
   const required = config.required;
 
   // Crear props estandarizadas
@@ -23,7 +23,7 @@ export const LongTextView: React.FC<MappedStepComponentProps> = (props) => {
     stepId: id,
     stepType: type,
     stepName: title,
-    savedResponse,
+    savedResponse: savedResponse as { id?: string | undefined; response?: unknown; } | null | undefined,
     savedResponseId,
     required
   };
@@ -74,7 +74,7 @@ export const LongTextView: React.FC<MappedStepComponentProps> = (props) => {
 
   return (
     <div className={getFormContainerClass('centered')}>
-      <QuestionHeader title={title} description={description} required={required} />
+      <QuestionHeader title={title} instructions={description} required={required} />
 
       <TextAreaField
         id={`long-text-${id}`}

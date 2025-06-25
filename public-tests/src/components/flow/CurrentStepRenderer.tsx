@@ -61,7 +61,7 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
             stepName: config.title || config.description,
             required: config.required,
             savedResponse: finalSavedResponse,
-            savedResponseId: config.savedResponseId || config.id,
+            savedResponseId: config.savedResponseId,
         };
 
         console.log('[CurrentStepRenderer] 🎯 SmartVOC props mapeadas:', mappedProps);

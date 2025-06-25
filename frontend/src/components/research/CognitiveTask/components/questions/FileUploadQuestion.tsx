@@ -324,7 +324,8 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
                 onQuestionChange({ files: updatedFiles });
                 setHitzoneModalOpen(false);
 
-                window.dispatchEvent(new CustomEvent('cognitiveTaskAutoSave'));
+                // ✅ COMENTADO: Evitar autoguardado al editar hitzone
+                // window.dispatchEvent(new CustomEvent('cognitiveTaskAutoSave'));
               }}
               onClose={() => setHitzoneModalOpen(false)}
             />

@@ -1,7 +1,7 @@
-import { useEffect, useState, useMemo } from "react";
-import { useParticipantStore } from "../../../stores/participantStore";
+import { useEffect, useMemo, useState } from "react";
 import { useResponseAPI } from "../../../hooks/useResponseAPI";
 import { ApiClient, APIStatus } from "../../../lib/api";
+import { useParticipantStore } from "../../../stores/participantStore";
 import { getStandardButtonText } from "../../../utils/formHelpers";
 
 import { MultipleChoiceQuestionProps } from '../../../types/flow.types';
@@ -28,20 +28,20 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
         }
       : {};
 
-    const componentTitle = stepNameFromProps || cfg.title || 'Pregunta de opciones múltiples';
+    const componentTitle = stepNameFromProps || cfg.title || '';
     const description = cfg.description;
-    const questionText = cfg.questionText ?? (isMock ? 'Selecciona todas las opciones que apliquen (Prueba)' : 'Por favor, selecciona una o más opciones.');
+    const questionText = cfg.questionText ?? '';
     const choicesFromConfig = useMemo(() => Array.isArray(cfg.choices) ? cfg.choices : [], [cfg.choices]);
     const savedResponses = useMemo(() => Array.isArray(cfg.savedResponses) ? cfg.savedResponses : [], [cfg.savedResponses]);
     const displayOptions = useMemo(() => {
         if (choicesFromConfig.length === 0 && !isMock) {
             return ['Opción Múltiple A (sin texto)', 'Opción Múltiple B (sin texto)', 'Opción Múltiple C (sin texto)'];
         }
-        
+
         if (isMock) {
             return ['Opción Múltiple Mock A', 'Opción Múltiple Mock B', 'Opción Múltiple Mock C'];
         }
-        
+
         if (choicesFromConfig.length > 0) {
             // Convertir objetos a strings si es necesario
             return choicesFromConfig.map((choice, index) => {
@@ -53,7 +53,7 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
                 return `Opción Múltiple ${String.fromCharCode(65 + index)} (sin texto)`;
             });
         }
-        
+
         return [];
     }, [choicesFromConfig, isMock]);
     const minSelections = typeof cfg.minSelections === 'number' ? cfg.minSelections : 0;
@@ -75,7 +75,7 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
         researchId: researchId || '',
         participantId: participantId || ''
     });
-    
+
     useEffect(() => {
         if (isMock) {
             const validSavedResponses = savedResponses.filter(opt => {
@@ -92,7 +92,7 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
         }
     }, [isMock, researchId, participantId, stepType, savedResponses, displayOptions]);
 
-    useEffect(() => { 
+    useEffect(() => {
         if (isMock || !researchId || !participantId || !stepType) {
             return;
         }
@@ -174,7 +174,7 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
                 newSelectionCalc = [...prev, option];
             }
             if (newSelectionCalc.length > maxSelections) {
-                return prev; 
+                return prev;
             }
             return newSelectionCalc;
         });
@@ -278,13 +278,6 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
             <h2 className="text-xl font-medium mb-1 text-neutral-800">{componentTitle}</h2>
             {description && <p className="text-sm text-neutral-500 mb-3">{description}</p>}
             <p className="text-neutral-600 mb-4">{questionText}</p>
-
-            {(apiError || apiHookError) && (
-                <div className="bg-red-50 border border-red-200 text-sm text-red-700 px-4 py-3 rounded mb-4" role="alert">
-                    <strong className="font-bold">Error: </strong>
-                    <span>{apiError || apiHookError}</span>
-                </div>
-            )}
 
             <div className="flex flex-col gap-2 mb-4">
                 {displayOptions.map((option: unknown, index: number) => (

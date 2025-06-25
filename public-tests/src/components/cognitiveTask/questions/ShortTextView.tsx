@@ -1,7 +1,7 @@
 import React from 'react';
-import QuestionHeader from '../common/QuestionHeader';
-import FormField from '../../common/FormField';
 import { ShortTextViewProps } from '../../../types';
+import FormField from '../../common/FormField';
+import QuestionHeader from '../common/QuestionHeader';
 
 export const ShortTextView: React.FC<ShortTextViewProps> = ({ config, value, onChange }) => {
   // Extracción de datos
@@ -25,7 +25,7 @@ export const ShortTextView: React.FC<ShortTextViewProps> = ({ config, value, onC
     <div className="space-y-4">
       <QuestionHeader
         title={title}
-        description={description}
+        instructions={description}
         required={required}
       />
 
@@ -33,17 +33,17 @@ export const ShortTextView: React.FC<ShortTextViewProps> = ({ config, value, onC
       <FormField
         id={`short-text-${id}`}
         // Usar name=id para que handleInputChange funcione si se reutilizara hook de form
-        name={id} 
+        name={id}
         // Label es sr-only en FormField por defecto si no se muestra explícitamente
-        label={title || description || 'Respuesta corta'} 
+        label={title || description || 'Respuesta corta'}
         type="text"
         value={value || ''}
         onChange={handleChange}
-        placeholder={answerPlaceholder || 'Escribe tu respuesta aquí...'}
-        // error={/* Pasar error si hubiera validación */} 
+        placeholder={answerPlaceholder || ''}
+        // error={/* Pasar error si hubiera validación */}
         disabled={false} // Pasar disabled si viniera de config
         required={required} // Pasar required a FormField si este lo usara para aria-*
       />
     </div>
   );
-}; 
+};

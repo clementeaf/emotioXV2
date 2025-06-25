@@ -1,10 +1,10 @@
-import React from 'react'; 
-import { ShortTextView } from './questions/ShortTextView';
-import { LongTextView } from './questions/LongTextView';
-import { SingleChoiceView } from './questions/SingleChoiceView';
-import { MultiChoiceView } from './questions/MultiChoiceView';
-import { LinearScaleView } from './questions/LinearScaleView';
+import React from 'react';
 import { CognitiveQuestionRendererProps } from '../../types/cognitive-task.types';
+import { LinearScaleView } from './questions/LinearScaleView';
+import { LongTextView } from './questions/LongTextView';
+import { MultiChoiceView } from './questions/MultiChoiceView';
+import { ShortTextView } from './questions/ShortTextView';
+import { SingleChoiceView } from './questions/SingleChoiceView';
 
 const CognitiveQuestionRenderer: React.FC<CognitiveQuestionRendererProps> = ({
     question,
@@ -14,7 +14,7 @@ const CognitiveQuestionRenderer: React.FC<CognitiveQuestionRendererProps> = ({
 
     switch (question.type.toUpperCase()) {
         case 'SHORT_TEXT':
-        case 'TEXTO_CORTO': 
+        case 'TEXTO_CORTO':
             return (
                 <ShortTextView
                     key={question.id}
@@ -24,15 +24,28 @@ const CognitiveQuestionRenderer: React.FC<CognitiveQuestionRendererProps> = ({
                 />
             );
         case 'LONG_TEXT':
-        case 'TEXTO_LARGO': 
+        case 'TEXTO_LARGO':
             return (
                 <LongTextView
                     key={question.id}
-                    config={question}
+                    stepType={question.type}
+                    stepId={question.id}
+                    stepName={question.title}
+                    stepConfig={question}
+                    researchId=""
+                    participantId=""
+                    onStepComplete={(data) => {
+                        // Adapter para convertir desde MappedStepComponentProps a las props esperadas
+                        if (onChange && question.id) {
+                            onChange(question.id, data);
+                        }
+                    }}
+                    savedResponse={answer}
+                    savedResponseId={undefined}
                 />
             );
         case 'SINGLE_CHOICE':
-        case 'OPCION_UNICA': 
+        case 'OPCION_UNICA':
             return (
                 <SingleChoiceView
                     key={question.id}
@@ -67,4 +80,4 @@ const CognitiveQuestionRenderer: React.FC<CognitiveQuestionRendererProps> = ({
     }
 };
 
-export default CognitiveQuestionRenderer; 
+export default CognitiveQuestionRenderer;
