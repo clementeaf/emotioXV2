@@ -18,6 +18,9 @@ export const useCognitiveTaskModals = (): UseCognitiveTaskModalsResult => {
   // Nuevo: Modal para la previsualización interactiva
   const [showInteractivePreview, setShowInteractivePreview] = useState(false);
 
+  // 🆕 Modal de confirmación para eliminar datos (igual que SmartVOC)
+  const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
+
   // Función para mostrar el modal de error
   const showErrorModal = (error: ErrorModalData) => {
     setModalError(error);
@@ -28,7 +31,8 @@ export const useCognitiveTaskModals = (): UseCognitiveTaskModalsResult => {
   const closeModal = () => {
     setModalVisible(false);
     setShowJsonPreview(false);
-    setShowInteractivePreview(false); // Asegurarse de cerrar el nuevo modal también
+    setShowInteractivePreview(false);
+    setDeleteModalOpen(false); // 🆕 Cerrar también el modal de confirmación
     setModalError(null);
     setPendingAction(null);
   };
@@ -54,6 +58,15 @@ export const useCognitiveTaskModals = (): UseCognitiveTaskModalsResult => {
     setShowInteractivePreview(false);
   };
 
+  // 🆕 Funciones para el modal de confirmación de eliminación
+  const openDeleteModal = () => {
+    setDeleteModalOpen(true);
+  };
+
+  const closeDeleteModal = () => {
+    setDeleteModalOpen(false);
+  };
+
   return {
     // Modal de error
     modalVisible,
@@ -70,5 +83,9 @@ export const useCognitiveTaskModals = (): UseCognitiveTaskModalsResult => {
     showInteractivePreview,
     openInteractivePreview,
     closeInteractivePreview,
+    // 🆕 Modal de confirmación de eliminación
+    isDeleteModalOpen,
+    openDeleteModal,
+    closeDeleteModal,
   };
 };

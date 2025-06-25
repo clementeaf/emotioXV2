@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 interface ConfirmationModalProps {
   isOpen: boolean;
@@ -31,9 +32,20 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     return null;
   }
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
-      <div className="bg-white rounded-lg p-6 shadow-xl max-w-sm w-full z-[51]">
+  const modalContent = (
+    <div
+      className="fixed top-0 left-0 w-screen h-screen bg-black bg-opacity-50 z-[9999] flex justify-center items-center"
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        zIndex: 9999,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)'
+      }}
+    >
+      <div className="bg-white rounded-lg p-6 shadow-xl max-w-sm w-full mx-4 z-[10000] relative">
         <h3 className="text-lg font-bold text-gray-900">{title}</h3>
         <p className="mt-2 text-sm text-gray-600">{message}</p>
         <div className="mt-6 flex justify-end gap-3">
@@ -53,4 +65,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
       </div>
     </div>
   );
+
+  // Renderizar el modal directamente en el body usando createPortal
+  return createPortal(modalContent, document.body);
 };

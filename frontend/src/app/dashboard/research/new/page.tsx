@@ -5,7 +5,6 @@ import { memo, Suspense, useCallback, useState } from 'react';
 
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
-import { Navbar } from '@/components/layout/Navbar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { CreateResearchForm } from '@/components/research/CreateResearchForm';
 import { ResearchConfirmation } from '@/components/research/ResearchConfirmation';
@@ -322,8 +321,7 @@ export default function NewResearchPage() {
   return (
     <div className="flex min-h-screen bg-neutral-50">
       <Sidebar />
-      <div className="flex-1 flex flex-col mt-12 pr-7 pb-4">
-        <Navbar />
+      <div className="flex-1 flex flex-col p-8">
         <ErrorBoundary>
           <Suspense fallback={<div className="p-4 text-center">Cargando...</div>}>
             <NewResearchContentWithSuspense />

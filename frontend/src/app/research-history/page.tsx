@@ -1,16 +1,15 @@
 'use client';
 
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
-import { Navbar } from '@/components/layout/Navbar';
+import { withSearchParams } from '@/components/common/SearchParamsWrapper';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { ClientInfo } from '@/components/research-history/ClientInfo';
 import { ClientSelector } from '@/components/research-history/ClientSelector';
 import { PerceivedValueChart } from '@/components/research-history/PerceivedValueChart';
 import { ResearchList } from '@/components/research-history/ResearchList';
-import { withSearchParams } from '@/components/common/SearchParamsWrapper';
+import { useProtectedRoute } from '@/hooks/useProtectedRoute';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, memo, useEffect, useState } from 'react';
-import { useProtectedRoute } from '@/hooks/useProtectedRoute';
 
 // Interfaces para tipado
 interface ClientData {
@@ -85,11 +84,11 @@ const ResearchHistoryContent = memo(() => {
   // Usar useSearchParams directamente
   const searchParams = useSearchParams();
   const [selectedClient, setSelectedClient] = useState<ClientData | null>(null);
-  
+
   // Aquí podemos usar searchParams de forma segura
   const clientParam = searchParams?.get('client');
   const clientId: string | null = clientParam || null;
-  
+
   // Efecto para cargar datos del cliente cuando cambia el ID
   useEffect(() => {
     if (clientId) {
@@ -104,7 +103,7 @@ const ResearchHistoryContent = memo(() => {
       setSelectedClient(null);
     }
   }, [clientId]);
-  
+
   return (
     <div className="space-y-6">
       {/* Client Selector Section */}
@@ -148,16 +147,15 @@ LoadingSpinner.displayName = 'LoadingSpinner';
  */
 export default function ResearchHistoryPage() {
   const { token } = useProtectedRoute();
-  
+
   if (!token) {
     return null;
   }
-  
+
   return (
     <div className="flex h-screen bg-neutral-50">
       <Sidebar />
       <div className="flex-1 flex flex-col">
-        <Navbar />
         <main className="flex-1 p-6">
           <ErrorBoundary>
             <Suspense fallback={<LoadingSpinner />}>
@@ -168,4 +166,4 @@ export default function ResearchHistoryPage() {
       </div>
     </div>
   );
-} 
+}

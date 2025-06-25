@@ -9,6 +9,7 @@ import { withSearchParams } from '@/components/common/SearchParamsWrapper';
 import { Button } from '@/components/ui/Button';
 import { researchAPI } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/providers/AuthProvider';
 import { useResearch } from '@/stores/useResearchStore';
 
 interface SidebarProps {
@@ -24,6 +25,12 @@ interface Research {
   name: string;
   technique?: string;
   createdAt: string;
+}
+
+interface User {
+  id: string;
+  email: string;
+  name: string;
 }
 
 const mainNavItems = [
@@ -169,6 +176,51 @@ function DeleteConfirmationModal({ isOpen, onClose, onConfirm, researchName }: D
 // Componente interno para el contenido del sidebar que usa useSearchParams
 function SidebarContent({ className, activeResearch }: SidebarProps) {
   const router = useRouter();
+  const { user, logout } = useAuth();
+
+  // Componente para mostrar información del usuario
+  function UserInfo() {
+    return (
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center">
+          <span className="text-sm font-medium text-neutral-700">
+            {(user as User)?.name?.[0]?.toUpperCase() || 'U'}
+          </span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-neutral-900 truncate">
+            {(user as User)?.name || 'Usuario'}
+          </p>
+          <p className="text-xs text-neutral-500 truncate">
+            {(user as User)?.email || 'email@ejemplo.com'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Componente para el botón de logout
+  function LogoutButton() {
+    const handleLogout = async () => {
+      try {
+        await logout();
+      } catch (error) {
+        console.error('Error al cerrar sesión:', error);
+      }
+    };
+
+    return (
+      <button
+        onClick={handleLogout}
+        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors"
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+        </svg>
+        Cerrar sesión
+      </button>
+    );
+  }
   const pathname = usePathname() || '';
   const searchParams = useSearchParams();
   const { hasDraft, currentDraft } = useResearch();
@@ -467,7 +519,13 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
 
   // Sidebar estándar para el resto de vistas
   return (
-    <div className={cn('w-56 h-[410px] bg-transparent flex flex-col mt-24 ml-4 mb-4', className)}>
+    <div className={cn('w-56 bg-white border-r border-neutral-200 flex flex-col h-screen', className)}>
+      {/* Header con información del usuario */}
+      <div className="px-4 py-4 border-b border-neutral-200">
+        <UserInfo />
+      </div>
+
+      {/* Logo del proyecto */}
       <div className="px-4 pt-4 pb-3">
         <a
           href="/dashboard"
@@ -598,6 +656,11 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
             </ul>
           )}
         </div>
+      </div>
+
+      {/* Footer con logout */}
+      <div className="px-4 py-4 border-t border-neutral-200 mt-auto">
+        <LogoutButton />
       </div>
 
       {/* Modal de confirmación */}

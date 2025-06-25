@@ -7,7 +7,6 @@ import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
 import ResearchList from '@/components/dashboard/ResearchList';
 import { AppShellLayout } from '@/components/layout/AppShellLayout';
-import { Navbar } from '@/components/layout/Navbar';
 import { ResearchSidebar } from '@/components/layout/ResearchSidebar';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
 
@@ -51,7 +50,7 @@ export default function ResearchPage() {
   }
 
   return (
-    <AppShellLayout sidebar={<ResearchSidebar researchId={researchId} />} navbar={<Navbar />}>
+    <AppShellLayout sidebar={<ResearchSidebar researchId={researchId} />}>
       <ErrorBoundary>
         <ResearchPageContent />
       </ErrorBoundary>

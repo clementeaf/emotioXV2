@@ -207,4 +207,8 @@ export interface UseCognitiveTaskModalsResult {
   showInteractivePreview: boolean;
   openInteractivePreview: () => void;
   closeInteractivePreview: () => void;
+  // Modal de confirmación de eliminación
+  isDeleteModalOpen: boolean;
+  openDeleteModal: () => void;
+  closeDeleteModal: () => void;
 }

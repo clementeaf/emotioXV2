@@ -9,7 +9,6 @@ import { ResearchTable } from '@/components/dashboard/ResearchTable';
 import { ResearchTypes } from '@/components/dashboard/ResearchTypes';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { AppShellLayout } from '@/components/layout/AppShellLayout';
-import { Navbar } from '@/components/layout/Navbar';
 import { ResearchSidebar } from '@/components/layout/ResearchSidebar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { ResearchStageManager } from '@/components/research/ResearchStageManager';
@@ -246,7 +245,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
     ? <ResearchSidebar researchId={researchId} activeStage={section} />
     : <Sidebar />;
   return (
-    <AppShellLayout sidebar={sidebar} navbar={<Navbar />}>
+    <AppShellLayout sidebar={sidebar}>
       {children}
     </AppShellLayout>
   );

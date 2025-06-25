@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
+import { useSearchParams } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
 
 import { BenchmarkChart } from '@/components/clients/BenchmarkChart';
 import { BestPerformer } from '@/components/clients/BestPerformer';
@@ -10,7 +10,6 @@ import { ClientSelector } from '@/components/clients/ClientSelector';
 import { ResearchList } from '@/components/clients/ResearchList';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { SearchParamsWrapper } from '@/components/common/SearchParamsWrapper';
-import { Navbar } from '@/components/layout/Navbar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
 import { ClientResearch } from '@/interfaces/research';
@@ -130,9 +129,6 @@ const ClientsContent = () => {
 
       {/* Contenido principal con scroll interno si es necesario */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Navbar fijo */}
-        <Navbar className="" />
-        
         {/* Contenedor principal con scroll */}
         <div className="flex-1 overflow-auto">
           <div className="h-full p-6">

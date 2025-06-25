@@ -4,19 +4,19 @@
  */
 
 import React from 'react';
-import { 
-  QuestionType,
-  Question as BaseQuestion,
-  Choice,
-  ScaleConfig,
-  UploadedFile,
-  HitZone,
-  CognitiveTaskFormData,
-  CognitiveTaskFormResponse,
-  CognitiveTaskModel,
-  DEFAULT_COGNITIVE_TASK,
-  QUESTION_TYPES_INFO,
-  QUESTION_TEMPLATES
+import {
+    Question as BaseQuestion,
+    Choice,
+    CognitiveTaskFormData,
+    CognitiveTaskFormResponse,
+    CognitiveTaskModel,
+    DEFAULT_COGNITIVE_TASK,
+    HitZone,
+    QUESTION_TEMPLATES,
+    QUESTION_TYPES_INFO,
+    QuestionType,
+    ScaleConfig,
+    UploadedFile
 } from 'shared/interfaces/cognitive-task.interface';
 
 // Extendemos la interfaz Question para incluir propiedades adicionales
@@ -25,23 +25,17 @@ export interface Question extends BaseQuestion {
 }
 
 // Re-exportamos los tipos importados para mantener compatibilidad
-export type { 
-  QuestionType,
-  Choice,
-  ScaleConfig,
-  UploadedFile,
-  HitZone,
-  CognitiveTaskFormData,
-  CognitiveTaskFormResponse,
-  CognitiveTaskModel
+export type {
+    Choice, CognitiveTaskFormData,
+    CognitiveTaskFormResponse,
+    CognitiveTaskModel, HitZone, QuestionType, ScaleConfig,
+    UploadedFile
 };
 
 // Re-exportamos las constantes
-export {
-  DEFAULT_COGNITIVE_TASK,
-  QUESTION_TYPES_INFO,
-  QUESTION_TEMPLATES
-};
+    export {
+        DEFAULT_COGNITIVE_TASK, QUESTION_TEMPLATES, QUESTION_TYPES_INFO
+    };
 
 // Tipo para errores de validación
 export interface ValidationErrors {
@@ -165,6 +159,32 @@ export interface FileUploadQuestionProps {
   totalFiles?: number;
 }
 
+// Resultado del hook useCognitiveTaskModals
+export interface UseCognitiveTaskModalsResult {
+  // Modal de error
+  modalVisible: boolean;
+  modalError: ErrorModalData | null;
+  showErrorModal: (error: ErrorModalData) => void;
+  closeModal: () => void;
+
+  // Modal de JSON
+  showJsonPreview: boolean;
+  jsonToSend: string;
+  pendingAction: 'save' | 'preview' | null;
+  openJsonModal: (jsonData: object, action: 'save' | 'preview') => void;
+  closeJsonModal: () => void;
+
+  // Modal de previsualización interactiva
+  showInteractivePreview: boolean;
+  openInteractivePreview: () => void;
+  closeInteractivePreview: () => void;
+
+  // Modal de confirmación de eliminación
+  isDeleteModalOpen: boolean;
+  openDeleteModal: () => void;
+  closeDeleteModal: () => void;
+}
+
 // Resultado del hook useCognitiveTaskForm
 export interface UseCognitiveTaskFormResult {
   formData: CognitiveTaskFormData;
@@ -180,7 +200,7 @@ export interface UseCognitiveTaskFormResult {
   currentFileIndex: number;
   totalFiles: number;
   questionTypes: QuestionTypeInfo[];
-  
+
   // Métodos de gestión
   handleQuestionChange: (questionId: string, updates: Partial<Question>) => void;
   handleAddChoice: (questionId: string) => void;
@@ -192,7 +212,7 @@ export interface UseCognitiveTaskFormResult {
   handleRandomizeChange: (checked: boolean) => void;
   openAddQuestionModal: () => void;
   closeAddQuestionModal: () => void;
-  
+
   // Métodos de acción
   handleSave: () => void;
   handlePreview: () => void;
@@ -200,7 +220,7 @@ export interface UseCognitiveTaskFormResult {
   validateForm: () => boolean;
   closeModal: () => void;
   initializeDefaultQuestions: (defaultQuestions: Question[]) => void;
-  
+
   // Nuevas propiedades para el modal JSON
   showJsonPreview: boolean;
   closeJsonModal: () => void;
@@ -221,4 +241,4 @@ export interface CognitiveTaskFieldsProps {
   uploadProgress?: number;
   FileItemComponent?: React.ComponentType<any>;
   FileUploaderComponent?: React.ComponentType<any>;
-} 
+}

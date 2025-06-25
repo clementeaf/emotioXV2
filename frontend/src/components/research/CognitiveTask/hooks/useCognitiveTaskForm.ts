@@ -17,6 +17,7 @@ import {
 } from '../constants';
 import type { ErrorModalData } from '../types';
 import { ValidationErrors } from '../types';
+import { debugQuestionsToSend, filterValidQuestions } from '../utils/validateRequiredFields';
 import { useCognitiveTaskFileUpload } from './useCognitiveTaskFileUpload';
 import { useCognitiveTaskModals } from './useCognitiveTaskModals';
 import { DEFAULT_STATE as DEFAULT_COGNITIVE_TASK_STATE, useCognitiveTaskState } from './useCognitiveTaskState';
@@ -87,6 +88,7 @@ interface UseCognitiveTaskFormResult {
   handleSave: () => void;
   handlePreview: () => void;
   handleDelete: () => void;
+  confirmDelete: () => void;
 
   // Validación
   validationErrors: ValidationErrors | null;
@@ -437,11 +439,24 @@ export const useCognitiveTaskForm = (
       return;
     }
 
-    // 🎯 LOG TEMPORAL: Verificar qué datos se envían exactamente
-    const questionsWithFiles = formData.questions.filter(q => q.files && q.files.length > 0);
+    // 🔧 FILTRAR SOLO PREGUNTAS VÁLIDAS antes de enviar
+    const dataToSend = filterValidQuestions(formData);
+
+    // 🎯 LOG: Mostrar información de debug sobre qué se envía
+    debugQuestionsToSend(formData);
+    console.log(`🔧 [handleSave] ANTES del filtrado: ${formData.questions.length} preguntas totales`);
+    console.log(`🔧 [handleSave] DESPUÉS del filtrado: ${dataToSend.questions.length} preguntas válidas a enviar`);
+
+    // Log detallado de preguntas válidas que se enviarán
+    dataToSend.questions.forEach((q: Question, index: number) => {
+      console.log(`🔧 [handleSave] Pregunta válida ${index + 1}: ${q.id} - "${q.title}" (${q.type})`);
+    });
+
+    // 🎯 LOG TEMPORAL: Verificar qué datos se envían exactamente (archivos)
+    const questionsWithFiles = dataToSend.questions.filter((q: Question) => q.files && q.files.length > 0);
     if (questionsWithFiles.length > 0) {
       console.log(`🎯 [handleSave] Enviando ${questionsWithFiles.length} preguntas con archivos`);
-      questionsWithFiles.forEach(q => {
+      questionsWithFiles.forEach((q: Question) => {
         const filesWithHitZones = q.files?.filter((f: any) => f.hitZones && f.hitZones.length > 0) || [];
         console.log(`🎯 [handleSave] Pregunta ${q.id}: ${q.files?.length || 0} archivos total, ${filesWithHitZones.length} con hitZones`);
         if (filesWithHitZones.length > 0) {
@@ -452,8 +467,7 @@ export const useCognitiveTaskForm = (
       });
     }
 
-    // Llamar directamente a la mutación en lugar de abrir el modal intermedio
-    const dataToSend = formData;
+    // Enviar solo las preguntas válidas filtradas
     saveMutation.mutate(dataToSend);
   };
 
@@ -468,17 +482,23 @@ export const useCognitiveTaskForm = (
 
   // Función para eliminar datos CognitiveTasks
   const handleDelete = () => {
-    if (window.confirm('¿Estás seguro de que quieres eliminar esta configuración? Esta acción no se puede deshacer.')) {
-      if (researchId) {
-        deleteMutation(researchId);
-      } else {
-        console.error("No se puede eliminar porque researchId es undefined.");
-        modals.showErrorModal({
-          title: 'Error',
-          message: 'No se puede eliminar la configuración porque no se ha proporcionado un ID de investigación.',
-          type: 'error'
-        });
-      }
+    // 🆕 Abrir modal de confirmación en lugar de window.confirm
+    modals.openDeleteModal();
+  };
+
+  // 🆕 Función para confirmar la eliminación (ejecutada desde el modal)
+  const confirmDelete = async () => {
+    modals.closeDeleteModal(); // Cerrar el modal primero
+
+    if (researchId) {
+      deleteMutation(researchId);
+    } else {
+      console.error("No se puede eliminar porque researchId es undefined.");
+      modals.showErrorModal({
+        title: 'Error',
+        message: 'No se puede eliminar la configuración porque no se ha proporcionado un ID de investigación.',
+        type: 'error'
+      });
     }
   };
 
@@ -504,6 +524,7 @@ export const useCognitiveTaskForm = (
     handleSave,
     handlePreview,
     handleDelete,
+    confirmDelete,
     // Validación (del hook)
     validationErrors,
     validateForm: validateCurrentForm,

@@ -5,12 +5,12 @@ import { Spinner } from '@/components/ui/Spinner';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 import React from 'react';
+import { ConfirmationModal } from '../SmartVOC/components/ConfirmationModal';
 import {
     CognitiveTaskFooter,
     CognitiveTaskHeader,
     ErrorModal,
-    JsonPreviewModal,
-    NavigationFlowPreview
+    JsonPreviewModal
 } from './components';
 import { CognitiveTaskFields } from './components/CognitiveTaskFields';
 import { ProgressBar } from './components/ProgressBar';
@@ -46,6 +46,7 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
     handleSave: saveForm,
     handlePreview,
     handleDelete,
+    confirmDelete,
     closeModal,
     isUploading,
     uploadProgress,
@@ -53,10 +54,27 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
     closeJsonModal,
     jsonToSend,
     pendingAction,
-    continueWithAction,
-    showInteractivePreview,
-    closeInteractivePreview
+    continueWithAction
   } = useCognitiveTaskForm(researchId, onSave);
+
+  // 🆕 Estado temporal para el modal de confirmación (hasta que se implemente en el hook)
+  const [showDeleteModal, setShowDeleteModal] = React.useState(false);
+
+  // 🆕 Función para manejar la eliminación con modal
+  const handleDeleteWithModal = () => {
+    setShowDeleteModal(true);
+  };
+
+  // 🆕 Función para confirmar la eliminación
+  const handleConfirmDelete = () => {
+    setShowDeleteModal(false);
+    if (confirmDelete) {
+      confirmDelete();
+    } else {
+      // Fallback al método original si confirmDelete no está disponible
+      handleDelete();
+    }
+  };
 
   // Registrar información importante para debugging
   React.useEffect(() => {
@@ -161,7 +179,7 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
         <CognitiveTaskFooter
           onSave={saveForm}
           onPreview={handlePreview}
-          onDelete={handleDelete}
+          onDelete={handleDeleteWithModal}
           isSaving={isSaving}
           cognitiveTaskId={cognitiveTaskId}
           researchId={researchId}
@@ -185,12 +203,23 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
         />
 
         {/* >>> NUEVO: Modal para la previsualización interactiva */}
+        {/* TEMPORALMENTE COMENTADO hasta implementar las propiedades faltantes
         {showInteractivePreview && (
           <NavigationFlowPreview
             config={formData}
             onClose={closeInteractivePreview}
           />
         )}
+        */}
+
+        {/* 🆕 Modal de confirmación para eliminar datos */}
+        <ConfirmationModal
+          isOpen={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
+          onConfirm={handleConfirmDelete}
+          title="Confirmar Eliminación"
+          message="¿Estás seguro de que quieres eliminar TODOS los datos Cognitive Tasks de esta investigación? Esta acción no se puede deshacer."
+        />
       </div>
     </div>
   );

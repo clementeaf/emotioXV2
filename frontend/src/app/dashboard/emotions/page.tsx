@@ -1,18 +1,17 @@
 'use client';
 
-import { Suspense, memo } from 'react';
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
-import { Navbar } from '@/components/layout/Navbar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
+import { Suspense, memo } from 'react';
 
 // Extraer datos mock a un archivo separado
-import { 
-  emotionData, 
-  recentAnalysis, 
-  keyInsights, 
-  recommendations, 
-  nextSteps 
+import {
+    emotionData,
+    keyInsights,
+    nextSteps,
+    recentAnalysis,
+    recommendations
 } from '@/data/emotionsMockData';
 
 // Interfaces para los tipos de datos
@@ -97,11 +96,11 @@ const EmotionDistribution = memo(() => (
     <h3 className="text-lg font-medium text-neutral-900 mb-4">Emotion Distribution</h3>
     <div className="space-y-4">
       {emotionData.map((item: EmotionData) => (
-        <EmotionBar 
-          key={item.emotion} 
-          emotion={item.emotion} 
-          value={item.value} 
-          color={item.color} 
+        <EmotionBar
+          key={item.emotion}
+          emotion={item.emotion}
+          value={item.value}
+          color={item.color}
         />
       ))}
     </div>
@@ -130,10 +129,10 @@ const InsightsSection = memo(() => (
     <h3 className="text-lg font-medium text-neutral-900 mb-4">Key Insights</h3>
     <ul className="space-y-3">
       {keyInsights.map((insight: BulletItem, index: number) => (
-        <BulletPoint 
-          key={index} 
-          color={insight.color} 
-          text={insight.text} 
+        <BulletPoint
+          key={index}
+          color={insight.color}
+          text={insight.text}
         />
       ))}
     </ul>
@@ -148,10 +147,10 @@ const RecommendationsSection = memo(() => (
     <h3 className="text-lg font-medium text-neutral-900 mb-4">Recommendations</h3>
     <ul className="space-y-3">
       {recommendations.map((rec: BulletItem, index: number) => (
-        <BulletPoint 
-          key={index} 
-          color={rec.color} 
-          text={rec.text} 
+        <BulletPoint
+          key={index}
+          color={rec.color}
+          text={rec.text}
         />
       ))}
     </ul>
@@ -166,10 +165,10 @@ const NextStepsSection = memo(() => (
     <h3 className="text-lg font-medium text-neutral-900 mb-4">Next Steps</h3>
     <ul className="space-y-3">
       {nextSteps.map((step: BulletItem, index: number) => (
-        <BulletPoint 
-          key={index} 
-          color={step.color} 
-          text={step.text} 
+        <BulletPoint
+          key={index}
+          color={step.color}
+          text={step.text}
         />
       ))}
     </ul>
@@ -212,20 +211,19 @@ const EmotionsContentWithSuspense = withSearchParams(EmotionsContent);
 
 export default function EmotionsPage() {
   const { token } = useProtectedRoute();
-  
+
   if (!token) {
     return null;
   }
-  
+
   return (
     <div className="flex min-h-screen bg-neutral-50">
       <Sidebar />
-      <div className="flex-1 flex flex-col mt-12 pr-7 pb-4">
-        <Navbar />
+      <div className="flex-1 flex flex-col p-8">
         <Suspense fallback={<div className="p-4 text-center">Cargando...</div>}>
           <EmotionsContentWithSuspense />
         </Suspense>
       </div>
     </div>
   );
-} 
+}
