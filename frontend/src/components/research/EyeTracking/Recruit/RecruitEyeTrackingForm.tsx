@@ -1,12 +1,12 @@
 'use client';
 
-import React from 'react';
-import { cn } from '@/lib/utils';
-import { useEyeTrackingRecruit } from './hooks/useEyeTrackingRecruit';
-import { DemographicQuestionKeys, ParameterOptionKeys, BacklinkKeys } from '@/shared/interfaces/eyeTrackingRecruit.interface';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { Spinner } from '@/components/ui/Spinner';
+import { cn } from '@/lib/utils';
+import { BacklinkKeys, DemographicQuestionKeys, ParameterOptionKeys } from '@/shared/interfaces/eyeTrackingRecruit.interface';
+import React from 'react';
 import { ErrorModal } from './components';
+import { useEyeTrackingRecruit } from './hooks/useEyeTrackingRecruit';
 
 
 interface CheckboxProps {
@@ -120,7 +120,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
   return (
     <>
       <div className={cn("max-w-[1600px]", className)}>
-        <div className="bg-white rounded-xl border border-neutral-200/70 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.05)] overflow-hidden">
+        <div className="rounded-xl overflow-hidden">
           <div className="p-6">
             <div className="flex flex-col md:flex-row gap-8">
               <div>
@@ -561,4 +561,4 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
       />
     </>
   );
-} 
+}
