@@ -26,17 +26,34 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
     // LOGS DE DEPURACIÓN CRÍTICA
     console.log('[CurrentStepRenderer] stepType:', stepType, 'stepConfig:', stepConfig, 'savedResponse:', savedResponse);
 
+    // 🔍 LOGGING ESPECÍFICO PARA DEBUGEAR SAVED RESPONSE
+    const stepConfigSavedResponses = stepConfig && typeof stepConfig === 'object' && 'savedResponses' in stepConfig
+        ? (stepConfig as any).savedResponses
+        : undefined;
+
+    console.log('[CurrentStepRenderer] 🔍 Análisis detallado savedResponse:', {
+        directSavedResponse: savedResponse,
+        stepConfigSavedResponses,
+        stepConfigKeys: stepConfig && typeof stepConfig === 'object' ? Object.keys(stepConfig) : null,
+        willUseSavedResponses: stepConfigSavedResponses || savedResponse
+    });
+
     // Prepara las props finales para el componente.
     let initialValueToPass = savedResponse;
     if (savedResponse && typeof savedResponse === 'object' && 'value' in savedResponse) {
         initialValueToPass = (savedResponse as any).value;
     }
+
+    // Determinar qué savedResponse usar - priorizar stepConfig.savedResponses
+    const finalSavedResponse = stepConfigSavedResponses || savedResponse;
+
     const finalProps = {
         ...restOfStepProps,
         stepType,
         stepConfig,
         config: stepConfig,
         initialValues: savedResponse,
+        savedResponse: finalSavedResponse, // ✅ AGREGADO: pasar savedResponse explícitamente
         onNext: onStepComplete,
         onSubmit: onStepComplete,
         onStepComplete: onStepComplete,

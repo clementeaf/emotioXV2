@@ -341,65 +341,100 @@ export const useParticipantStore = create(
 
       // Navegar a un paso específico
       navigateToStep: (targetIndex) => set((state) => {
-        if (targetIndex >= 0 && targetIndex < state.expandedSteps.length && targetIndex <= state.maxVisitedIndex) {
-          const { currentStepIndex, expandedSteps, isFlowLoading, maxVisitedIndex } = state;
+        console.log('[participantStore.navigateToStep] 🔍 Llamada recibida:', { targetIndex, currentStepIndex: state.currentStepIndex });
 
-          // Obtener pasos respondidos
-          const answeredSteps = state.getAnsweredStepIndices();
-          const isAnsweredStep = answeredSteps.includes(targetIndex);
-          // Validaciones individuales con logs detallados
-          const validaciones = {
-            isFlowLoading,
-            targetIndexNegativo: targetIndex < 0,
-            targetIndexFueraDeRango: targetIndex >= expandedSteps.length,
-            targetIndexMayorQueMaxVisited: targetIndex > maxVisitedIndex,
-            noEsStepRespondido: !isAnsweredStep
-          };
-
-          const condicionBloqueo = targetIndex > maxVisitedIndex && !isAnsweredStep;
-
-          // Validar navegación
-          if (isFlowLoading ||
-              targetIndex < 0 ||
-              targetIndex >= expandedSteps.length ||
-              (targetIndex > maxVisitedIndex && !isAnsweredStep)) {
-
-            // No-op si el índice es el actual
-            if (targetIndex !== currentStepIndex) {
-              console.warn(`❌ [ParticipantStore] Navegación bloqueada al índice ${targetIndex}.`, {
-                razon: isFlowLoading ? 'flujo-cargando' :
-                       targetIndex < 0 ? 'indice-negativo' :
-                       targetIndex >= expandedSteps.length ? 'indice-fuera-de-rango' :
-                       condicionBloqueo ? 'paso-no-visitado-ni-respondido' : 'razon-desconocida',
-                detalles: validaciones
-              });
-            }
-            return state;
-          }
-
-          const savedResponse = state.getStepResponse(targetIndex);
-
-          // Actualizar config con la respuesta guardada
-          if (savedResponse !== null && savedResponse !== undefined) {
-            return {
-              currentStepIndex: targetIndex,
-              error: null,
-              expandedSteps: expandedSteps.map((step, index) =>
-                index === targetIndex ? {
-                  ...step,
-                  config: {
-                    ...(typeof step.config === 'object' && step.config !== null ? step.config : {}),
-                    savedResponses: savedResponse
-                  }
-                } : step
-              )
-            };
-          }
-
-          // Actualizar índice actual
-          return { currentStepIndex: targetIndex, error: null };
+        if (targetIndex === state.currentStepIndex) {
+          console.log('[participantStore.navigateToStep] ❌ Bloqueado: ya estás en ese step');
+          return state;
         }
-        return state;
+
+        const { expandedSteps, maxVisitedIndex, isFlowLoading } = state;
+
+        console.log('[participantStore.navigateToStep] 🔍 Estado actual:', {
+          targetIndex,
+          currentStepIndex: state.currentStepIndex,
+          expandedStepsLength: expandedSteps.length,
+          maxVisitedIndex,
+          isFlowLoading,
+          stepId: expandedSteps[targetIndex]?.id,
+          stepName: expandedSteps[targetIndex]?.name
+        });
+
+        if (expandedSteps.length === 0) {
+          console.log('[participantStore.navigateToStep] ❌ No hay expandedSteps disponibles');
+          return state;
+        }
+
+        // Validaciones básicas
+        const validaciones = {
+          isFlowLoading,
+          targetIndexOutOfRange: targetIndex < 0 || targetIndex >= expandedSteps.length,
+          targetStep: expandedSteps[targetIndex],
+          maxVisitedIndex
+        };
+
+        // Verificar si el paso está respondido
+        const isAnsweredStep = state.hasStepBeenAnswered(targetIndex);
+        const condicionBloqueo = targetIndex > maxVisitedIndex && !isAnsweredStep;
+
+        console.log('[participantStore.navigateToStep] 🔍 Validaciones:', {
+          ...validaciones,
+          isAnsweredStep,
+          condicionBloqueo
+        });
+
+        // Validar navegación
+        if (isFlowLoading ||
+            targetIndex < 0 ||
+            targetIndex >= expandedSteps.length ||
+            (targetIndex > maxVisitedIndex && !isAnsweredStep)) {
+
+          // No-op si el índice es el actual
+          if (targetIndex !== state.currentStepIndex) {
+            console.warn(`❌ [ParticipantStore] Navegación bloqueada al índice ${targetIndex}.`, {
+              razon: isFlowLoading ? 'flujo-cargando' :
+                     targetIndex < 0 ? 'indice-negativo' :
+                     targetIndex >= expandedSteps.length ? 'indice-fuera-de-rango' :
+                     condicionBloqueo ? 'paso-no-visitado-ni-respondido' : 'razon-desconocida',
+              detalles: validaciones
+            });
+          }
+          return state;
+        }
+
+        console.log('[participantStore.navigateToStep] ✅ Navegación permitida, obteniendo savedResponse...');
+        const savedResponse = state.getStepResponse(targetIndex);
+        console.log('[participantStore.navigateToStep] 🔍 savedResponse obtenido:', savedResponse);
+
+        // Actualizar config con la respuesta guardada
+        if (savedResponse !== null && savedResponse !== undefined) {
+          console.log('[participantStore.navigateToStep] ✅ Aplicando savedResponse al config del step');
+          const newExpandedSteps = expandedSteps.map((step, index) =>
+            index === targetIndex ? {
+              ...step,
+              config: {
+                ...(typeof step.config === 'object' && step.config !== null ? step.config : {}),
+                savedResponses: savedResponse
+              }
+            } : step
+          );
+
+          console.log('[participantStore.navigateToStep] 🔍 Nuevo config para step:', {
+            stepId: expandedSteps[targetIndex].id,
+            oldConfig: expandedSteps[targetIndex].config,
+            newConfig: newExpandedSteps[targetIndex].config
+          });
+
+          return {
+            currentStepIndex: targetIndex,
+            error: null,
+            expandedSteps: newExpandedSteps
+          };
+        }
+
+        console.log('[participantStore.navigateToStep] ❌ No hay savedResponse, actualizando solo el índice');
+        // Actualizar índice actual
+        return { currentStepIndex: targetIndex, error: null };
       }),
 
       // Guardar respuesta de un paso
@@ -454,10 +489,21 @@ export const useParticipantStore = create(
       getStepResponse: (stepIndex) => {
         const { expandedSteps, responsesData } = get();
 
-        if (stepIndex < 0 || stepIndex >= expandedSteps.length) return null;
+        console.log('[getStepResponse] 🔍 Estado completo:', {
+          stepIndex,
+          expandedStepsLength: expandedSteps.length,
+          responsesDataStructure: responsesData,
+          allStepsCount: responsesData.modules.all_steps?.length || 0,
+          allStepsContent: responsesData.modules.all_steps
+        });
+
+        if (stepIndex < 0 || stepIndex >= expandedSteps.length) {
+          console.warn('[getStepResponse] ❌ Índice fuera de rango:', { stepIndex, expandedStepsLength: expandedSteps.length });
+          return null;
+        }
 
         const step = expandedSteps[stepIndex];
-        const { name: stepName } = step;
+        const { id: stepId } = step;
 
         const allApiResponses = responsesData.modules.all_steps || [];
         if (!Array.isArray(allApiResponses)) {
@@ -465,7 +511,9 @@ export const useParticipantStore = create(
             return null;
         }
 
-        const response = allApiResponses.find(resp => resp.stepTitle === stepName);
+        console.log('[getStepResponse] Buscando respuesta para stepId:', stepId, 'en responses:', allApiResponses.map(r => ({ id: r.id, stepTitle: r.stepTitle })));
+        const response = allApiResponses.find(resp => resp.id === stepId);
+        console.log('[getStepResponse] Respuesta encontrada:', response);
         return response ? response.response : null;
       },
 
@@ -487,7 +535,7 @@ export const useParticipantStore = create(
         if (stepIndex < 0 || stepIndex >= expandedSteps.length) return false;
 
         const step = expandedSteps[stepIndex];
-        const { type: stepType, name: stepName } = step;
+        const { type: stepType, id: stepId } = step;
 
         if (stepType === 'welcome' || stepType === 'thankyou') return true;
 
@@ -497,7 +545,7 @@ export const useParticipantStore = create(
             return false;
         }
 
-        return allApiResponses.some(resp => resp.stepTitle === stepName);
+        return allApiResponses.some(resp => resp.id === stepId);
       },
 
       // Obtener JSON de respuestas - ONLY use API data, ignore localStorage

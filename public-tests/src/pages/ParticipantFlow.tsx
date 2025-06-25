@@ -4,6 +4,7 @@ import LoadingIndicator from '../components/common/LoadingIndicator';
 import FlowStepContent from '../components/flow/FlowStepContent';
 import { ProgressSidebar } from '../components/layout/ProgressSidebar';
 import { useParticipantFlow } from '../hooks/useParticipantFlow';
+import { useParticipantStore } from '../stores/participantStore';
 import { ParticipantFlowStep } from '../types/flow';
 
 const ParticipantFlow: React.FC = () => {
@@ -21,7 +22,11 @@ const ParticipantFlow: React.FC = () => {
         isFlowLoading,
         navigateToStep,
         responsesData,
+        getStepResponse: getStepResponseFromManager,
     } = useParticipantFlow(researchId);
+
+    // Obtener función getStepResponse del store (para backup/debugging)
+    const getStepResponseFromStore = useParticipantStore(state => state.getStepResponse);
 
     const memoizedCurrentExpandedStep = useMemo(() => {
         return expandedSteps && expandedSteps.length > currentStepIndex
@@ -33,12 +38,29 @@ const ParticipantFlow: React.FC = () => {
     console.log('[ParticipantFlow] responsesData:', responsesData, 'currentStep:', memoizedCurrentExpandedStep?.id, memoizedCurrentExpandedStep);
 
     const savedResponseForCurrentStep = useMemo(() => {
-        if (!memoizedCurrentExpandedStep || !responsesData) {
+        if (!memoizedCurrentExpandedStep) {
+            console.log('[ParticipantFlow] 🔍 No hay currentExpandedStep');
             return undefined;
         }
-        // Las respuestas están guardadas usando el ID del paso como clave.
-        return (responsesData as any)[memoizedCurrentExpandedStep.id];
-    }, [memoizedCurrentExpandedStep, responsesData]);
+
+        // 🔧 CAMBIO: Usar getStepResponse del useResponseManager que tiene los datos correctos
+        const savedResponse = getStepResponseFromManager(memoizedCurrentExpandedStep.id);
+        console.log('[ParticipantFlow] 🔍 savedResponse obtenido del useResponseManager:', {
+            stepId: memoizedCurrentExpandedStep.id,
+            stepIndex: currentStepIndex,
+            savedResponse
+        });
+
+        // 🔍 DEBUG: También verificar el store para comparar
+        const storeResponse = getStepResponseFromStore(currentStepIndex);
+        console.log('[ParticipantFlow] 🔍 Comparación store vs manager:', {
+            storeResponse,
+            managerResponse: savedResponse,
+            areDifferent: storeResponse !== savedResponse
+        });
+
+        return savedResponse;
+    }, [memoizedCurrentExpandedStep, getStepResponseFromManager, getStepResponseFromStore, currentStepIndex]);
 
     const memoizedResponsesDataProp = useMemo(() => {
         const isThankYou = memoizedCurrentExpandedStep?.type === 'thankyou' || currentStep === ParticipantFlowStep.DONE;

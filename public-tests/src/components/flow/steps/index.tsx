@@ -1,6 +1,7 @@
 import React from 'react';
 import { MappedStepComponentProps, StepComponentMap } from '../../../types/flow.types';
 import CognitiveNavigationFlowStep from '../../cognitiveTask/CognitiveNavigationFlowStep';
+import PreferenceTestTask from '../../cognitiveTask/PreferenceTestTask';
 import { LongTextView } from '../../cognitiveTask/questions/LongTextView';
 
 const ParticipantLogin = React.lazy(() => import('../../auth/ParticipantLogin').then(module => ({ default: module.ParticipantLogin })));
@@ -53,5 +54,5 @@ export const stepComponentMap: StepComponentMap = {
     'thankyou': ThankYouView,
     'feedback': SmartVocFeedbackQuestion,
     'image_feedback': SmartVocFeedbackQuestion,
-    'cognitive_preference_test': CognitiveNavigationFlowStep,
+    'cognitive_preference_test': PreferenceTestTask,
 };

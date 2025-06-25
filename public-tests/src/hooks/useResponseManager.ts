@@ -1,20 +1,39 @@
 import { useCallback, useEffect, useState } from 'react';
-import { UseResponseAPIReturn, UseResponseManagerProps, UseResponseManagerReturn } from '../types';
-import { ModuleResponse, ResponsesData } from './types';
+import { ModuleResponse } from '../stores/participantStore';
+import { UseResponseAPIReturn, UseResponseManagerProps, UseResponseManagerReturn } from '../types/hooks.types';
+import { ResponsesData } from '../types/store.types';
 
+// Función auxiliar para sanear objetos antes de JSON.stringify (copiada del store)
 const sanitizeForJSON = (obj: unknown): unknown => {
-    if (!obj) return obj;
-    const seen = new WeakSet();
-    return JSON.parse(JSON.stringify(obj, (key, value) => {
-        if (key.startsWith('__react')) return undefined;
-        if (typeof value === 'object' && value !== null) {
-            if (seen.has(value)) return '[Referencia Circular]';
-            seen.add(value);
-            if (typeof window !== 'undefined' && (value instanceof Element || value instanceof HTMLElement)) return '[Elemento DOM]';
-            if ('current' in value && typeof window !== 'undefined' && (value.current instanceof Element || value.current instanceof HTMLElement)) return '[React Ref]';
-        }
-        return value;
-    }));
+  if (!obj) return obj;
+
+  const seen = new WeakSet();
+  return JSON.parse(JSON.stringify(obj, (key, value) => {
+    // Ignorar propiedades que empiezan con "__react" (internas de React)
+    if (key.startsWith('__react')) return undefined;
+
+    // Manejar posibles referencias circulares
+    if (typeof value === 'object' && value !== null) {
+      if (seen.has(value)) {
+        return '[Referencia Circular]';
+      }
+      seen.add(value);
+
+      // Eliminar propiedades específicas que causan problemas
+      if (typeof window !== 'undefined' &&
+          (value instanceof Element || value instanceof HTMLElement)) {
+        return '[Elemento DOM]';
+      }
+
+      // Si es un objeto con la propiedad "current" (posible React ref)
+      if ('current' in value && typeof window !== 'undefined' &&
+          (value.current instanceof Element || value.current instanceof HTMLElement)) {
+        return '[React Ref]';
+      }
+    }
+
+    return value;
+  }));
 };
 
 export const useResponseManager = ({
@@ -29,6 +48,7 @@ export const useResponseManager = ({
         researchId: researchId || '',
         startTime: Date.now(),
         modules: {
+            eye_tracking: [],
             cognitive_task: [],
             smartvoc: [],
             all_steps: []

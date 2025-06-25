@@ -83,14 +83,17 @@ export const useFlowNavigationAndState = ({
     const navigateToStep = useCallback((targetIndex: number) => {
         // Validaciones básicas
         if (isFlowLoading) {
+            console.log('[navigateToStep] ❌ Bloqueado: isFlowLoading=true');
             return;
         }
 
         if (targetIndex < 0 || targetIndex >= expandedSteps.length) {
+            console.log('[navigateToStep] ❌ Bloqueado: índice fuera de rango', { targetIndex, totalSteps: expandedSteps.length });
             return;
         }
 
         if (targetIndex === currentStepIndex) {
+            console.log('[navigateToStep] ❌ Bloqueado: ya estás en ese step');
             return;
         }
 
@@ -100,20 +103,35 @@ export const useFlowNavigationAndState = ({
         const isForwardNavigation = targetIndex > maxVisited + 1;
 
         if (isForwardNavigation) {
+            console.log('[navigateToStep] ❌ Bloqueado: navegación hacia adelante no permitida', { targetIndex, maxVisited });
             return;
         }
+
+        console.log('[navigateToStep] 🔍 Iniciando navegación:', {
+            targetIndex,
+            currentStepIndex,
+            stepId: expandedSteps[targetIndex]?.id,
+            stepName: expandedSteps[targetIndex]?.name
+        });
 
         // Realizar la navegación
         // Cargar respuesta guardada si existe
         const savedResponse = getStepResponse(targetIndex);
+        console.log('[navigateToStep] 🔍 getStepResponse resultado:', savedResponse);
+
         if (savedResponse !== null && savedResponse !== undefined && setExternalExpandedSteps) {
+            console.log('[navigateToStep] ✅ Aplicando savedResponse al config del step');
             setExternalExpandedSteps((prevSteps: ExpandedStep[]) => prevSteps.map((step: ExpandedStep, index: number) => {
                 if (index === targetIndex) {
                     const prevConfig = (typeof step.config === 'object' && step.config !== null) ? step.config : {};
-                    return { ...step, config: { ...prevConfig, savedResponses: savedResponse } };
+                    const newConfig = { ...prevConfig, savedResponses: savedResponse };
+                    console.log('[navigateToStep] 🔍 Nuevo config para step:', { stepId: step.id, prevConfig, newConfig });
+                    return { ...step, config: newConfig };
                 }
                 return step;
             }));
+        } else {
+            console.log('[navigateToStep] ❌ No hay savedResponse o setExternalExpandedSteps no está disponible');
         }
 
         // Actualizar el índice del paso actual
