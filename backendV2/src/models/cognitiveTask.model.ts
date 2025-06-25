@@ -75,20 +75,13 @@ export class CognitiveTaskModel {
     const parsedMetadata = JSON.parse(item.metadata || '{}');
     const parsedQuestions = JSON.parse(item.questions || '[]') as Question[];
 
+
+
+
     // Log de diagnóstico al mapear
     const resultQuestionsWithFiles = parsedQuestions.filter(q =>
         ['navigation_flow', 'preference_test'].includes(q.type) && q.files && q.files.length > 0
       );
-
-    if (resultQuestionsWithFiles.length > 0) {
-      console.log('[DIAGNOSTICO-IMAGEN:MODEL:MAP_TO_RECORD] Preguntas con archivos al mapear desde DB:',
-        JSON.stringify(resultQuestionsWithFiles.map(q => ({
-          id: q.id,
-          type: q.type,
-          files: q.files?.map(f => ({id: f.id, name: f.name, url: f.url, s3Key: f.s3Key}))
-        })), null, 2)
-      );
-    }
 
     return {
       id: item.id,
@@ -110,26 +103,10 @@ export class CognitiveTaskModel {
     const now = new Date().toISOString();
     const questions = data.questions || [];
 
-    // Log para diagnóstico de imágenes
-    const questionsWithFiles = questions.filter(q =>
-      ['navigation_flow', 'preference_test'].includes(q.type) && q.files && q.files.length > 0
-    );
-
-    if (questionsWithFiles.length > 0) {
-      console.log('[DIAGNOSTICO-IMAGEN:MODEL:CREATE] Preguntas con archivos antes de guardar:',
-        JSON.stringify(questionsWithFiles.map(q => ({
-          id: q.id,
-          type: q.type,
-          files: q.files?.map(f => ({id: f.id, name: f.name, url: f.url, s3Key: f.s3Key}))
-        })), null, 2)
-      );
-    }
-
     // Asegurarse de que las referencias de imágenes estén completas (solo s3Key es vital)
     questions.forEach(q => {
       if (q.files && q.files.length > 0) {
         q.files = q.files.filter(f => f && f.s3Key);
-        console.log(`[DIAGNOSTICO-IMAGEN:MODEL:CREATE] Pregunta ${q.id} tiene ${q.files.length} archivos válidos (con s3Key)`);
       }
     });
 
@@ -152,10 +129,7 @@ export class CognitiveTaskModel {
       updatedAt: now
     };
 
-    // Log del JSON que se guardará en la BD
-    console.log('[DIAGNOSTICO-IMAGEN:MODEL:CREATE] JSON de preguntas que se guardará en DynamoDB:',
-      item.questions.substring(0, 300) + (item.questions.length > 300 ? '...' : '')
-    );
+
 
     const command = new PutCommand({
       TableName: this.tableName,
@@ -262,7 +236,6 @@ export class CognitiveTaskModel {
    * Usa researchId como PK.
    */
   async update(researchId: string, data: Partial<CognitiveTaskFormData>): Promise<CognitiveTaskRecord> {
-    console.log(`[MODEL:update] Iniciando actualización para researchId=${researchId}`);
 
     try {
       // Primero, obtener el registro para conseguir su ID
@@ -282,14 +255,7 @@ export class CognitiveTaskModel {
           );
 
           if (questionsWithFiles.length > 0) {
-            console.log('[MODEL:update] Preguntas con archivos antes de actualizar:',
-              JSON.stringify(questionsWithFiles.map(q => ({
-                id: q.id,
-                type: q.type,
-                fileCount: q.files?.length,
-                fileIds: q.files?.map(f => f.id)
-              })), null, 2)
-            );
+            // Preguntas con archivos encontradas
           }
 
           // Mejorar la validación de archivos con verificación estricta
@@ -357,6 +323,13 @@ export class CognitiveTaskModel {
             expressionAttributeValues[':questions'].substring(0, 300) +
             (expressionAttributeValues[':questions'].length > 300 ? '...' : '')
           );
+
+                    // AGREGADO: Log específico para verificar hitZones en el JSON
+          const jsonData = JSON.parse(expressionAttributeValues[':questions']) as Question[];
+          const questionsWithHitZones = jsonData.filter((q: Question) =>
+            q.files && q.files.some((f: any) => f.hitZones && f.hitZones.length > 0)
+          );
+
         } catch (questionsError: any) {
           console.error('[MODEL:update] Error preparando preguntas para actualización:', questionsError);
           throw new Error(`Error preparando preguntas para actualización: ${questionsError.message}`);

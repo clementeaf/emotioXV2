@@ -80,18 +80,10 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
     console.log('[CognitiveTaskForm] Estado del botón de guardar:', isSaving ? "Guardando..." : cognitiveTaskId ? "Actualizar" : "Guardar y Continuar");
   }, [cognitiveTaskId, formData.questions, isSaving]);
 
-  // Listener para guardado automático cuando se definen hitzones
+    // Listener para guardado automático cuando se definen hitzones
   React.useEffect(() => {
     const handleAutoSave = () => {
-      console.log('[CognitiveTaskForm] Evento de guardado automático recibido, guardando configuración...');
-      console.log('[CognitiveTaskForm] Estado actual del formData antes del guardado automático:', formData);
-      // Mostrar específicamente las preguntas con archivos y sus hitZones
-      formData.questions.forEach(q => {
-        if (q.files && q.files.length > 0) {
-          console.log(`[CognitiveTaskForm] Pregunta ${q.id} tiene archivos con hitZones:`, q.files.map(f => ({ name: f.name, hitZones: (f as any).hitZones })));
-        }
-      });
-      saveForm(); // Guardar automáticamente la configuración
+      saveForm();
     };
 
     window.addEventListener('cognitiveTaskAutoSave', handleAutoSave);
@@ -99,7 +91,7 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
     return () => {
       window.removeEventListener('cognitiveTaskAutoSave', handleAutoSave);
     };
-  }, [saveForm, formData]);
+  }, [saveForm]);
 
   // Estilo restrictivo para el formulario
   const containerStyle = {

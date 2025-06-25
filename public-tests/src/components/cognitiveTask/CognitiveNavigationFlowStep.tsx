@@ -68,10 +68,25 @@ const CognitiveNavigationFlowStep: React.FC<MappedStepComponentProps> = (props) 
 
   const imageFiles = navigationQuestion?.files || [];
 
-  // Logs de depuración
+  // Logs de depuración MEJORADOS
   console.log('[CognitiveNavigationFlowStep] stepConfig recibido:', stepConfig);
   console.log('[CognitiveNavigationFlowStep] navigationQuestion extraída:', navigationQuestion);
   console.log('[CognitiveNavigationFlowStep] imageFiles encontrados:', imageFiles);
+
+  // LOG ESPECÍFICO PARA HITZONES DEBUG
+  if (imageFiles && imageFiles.length > 0) {
+    imageFiles.forEach((file: any, index: number) => {
+      console.log(`[CognitiveNavigationFlowStep] 🎯 HITZONE DEBUG File ${index}:`);
+      console.log(`  - File ID: ${file.id}`);
+      console.log(`  - File name: ${file.name}`);
+      console.log(`  - hitZones field exists: ${file.hasOwnProperty('hitZones')}`);
+      console.log(`  - hitZones value: ${file.hitZones}`);
+      console.log(`  - hitZones type: ${typeof file.hitZones}`);
+      console.log(`  - hitZones isArray: ${Array.isArray(file.hitZones)}`);
+      console.log(`  - All file keys:`, Object.keys(file));
+      console.log(`  - Full file object:`, JSON.stringify(file, null, 2));
+    });
+  }
 
   const [selectedHitzone, setSelectedHitzone] = useState<string | null>(null);
   const [imgSize, setImgSize] = useState<{width: number, height: number} | null>(null);

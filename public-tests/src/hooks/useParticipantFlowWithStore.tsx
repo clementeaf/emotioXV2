@@ -156,6 +156,24 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
           const realCognitiveQuestions = data?.questions || [];
           console.log(`[useParticipantFlowWithStore] Cognitive Task: ${realCognitiveQuestions.length} preguntas recibidas.`);
 
+          // LOG ESPECÍFICO PARA DEPURAR HITZONES
+          console.log('[useParticipantFlowWithStore] 🎯 HITZONE DEBUG - Raw backend data:', JSON.stringify(data, null, 2));
+
+          // Verificar preguntas navigation_flow específicamente
+          const navigationQuestions = realCognitiveQuestions.filter((q: any) => q.type === 'navigation_flow');
+          if (navigationQuestions.length > 0) {
+            console.log(`[useParticipantFlowWithStore] 🎯 Found ${navigationQuestions.length} navigation_flow questions`);
+            navigationQuestions.forEach((q: any, idx: number) => {
+              console.log(`[useParticipantFlowWithStore] 🎯 Navigation Question ${idx}:`, q);
+              if (q.files && q.files.length > 0) {
+                q.files.forEach((file: any, fileIdx: number) => {
+                  console.log(`[useParticipantFlowWithStore] 🎯 File ${fileIdx} hitZones:`, file.hitZones);
+                  console.log(`[useParticipantFlowWithStore] 🎯 File ${fileIdx} keys:`, Object.keys(file));
+                });
+              }
+            });
+          }
+
           // Iterar sobre preguntas cognitivas
           for (const question of realCognitiveQuestions) {
             const frontendType = `cognitive_${question.type}`;

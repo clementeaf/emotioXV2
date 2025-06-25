@@ -4,22 +4,19 @@ import { useAuth } from '@/providers/AuthProvider';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useState } from 'react';
 import {
-  CognitiveTaskFormData,
-  Question,
-  UploadedFile
+    CognitiveTaskFormData,
+    Question,
+    UploadedFile
 } from 'shared/interfaces/cognitive-task.interface';
 import {
-  logFormDebugInfo
+    logFormDebugInfo
 } from '../../CognitiveTaskFormHelpers';
 import {
-  QUERY_KEYS,
-  SUCCESS_MESSAGES
+    QUERY_KEYS,
+    SUCCESS_MESSAGES
 } from '../constants';
 import type { ErrorModalData } from '../types';
 import { ValidationErrors } from '../types';
-import {
-  filterValidQuestions
-} from '../utils/validateRequiredFields';
 import { useCognitiveTaskFileUpload } from './useCognitiveTaskFileUpload';
 import { useCognitiveTaskModals } from './useCognitiveTaskModals';
 import { DEFAULT_STATE as DEFAULT_COGNITIVE_TASK_STATE, useCognitiveTaskState } from './useCognitiveTaskState';
@@ -192,51 +189,41 @@ export const useCognitiveTaskForm = (
           return null;
         }
 
-        console.log(`[useCognitiveTaskForm] Buscando config existente (fixed API): ${researchId}`);
         logFormDebugInfo('queryFn-pre-fetch', null, null, { researchId });
 
         // Añadir un tiempo de espera para asegurar que el backend tenga tiempo de procesar
         if (window._lastMutationTimestamp && Date.now() - window._lastMutationTimestamp < 1000) {
-          console.log('[useCognitiveTaskForm] Esperando brevemente antes de GET para asegurar consistencia');
           await new Promise(resolve => setTimeout(resolve, 500));
         }
 
         const response = await cognitiveTaskFixedAPI.getByResearchId(researchId);
 
-        console.log('[useCognitiveTaskForm] Respuesta de API (fixed): ', response);
+
         logFormDebugInfo('queryFn-post-fetch', response);
 
         // Validar la integridad básica de los datos
         if (response && (!response.researchId || !Array.isArray(response.questions))) {
-          console.warn('[useCognitiveTaskForm] ⚠️ Datos recibidos con estructura incompleta:', response);
           logFormDebugInfo('queryFn-invalid-structure', response, new Error('Estructura de datos incompleta'));
-          // Aún así devolver los datos para que se pueda intentar trabajar con ellos
         }
 
         return response;
       } catch (error: any) {
-        console.error('[useCognitiveTaskForm] Error al obtener datos (fixed API):', error);
         logFormDebugInfo('queryFn-error', null, error, { researchId });
 
         if (error instanceof ApiError && error.statusCode === 404) {
-            console.log('[useCognitiveTaskForm] Configuración no encontrada (404), tratando como null.');
-            return null; // Tratar 404 como "no encontrado"
+            return null;
         }
 
-        // Intentar recuperar datos del localStorage como alternativa de último recurso
         try {
           const localFiles = loadFilesFromLocalStorage();
           if (localFiles && Object.keys(localFiles).length > 0) {
-            console.log('[useCognitiveTaskForm] Intentando construir estado inicial desde localStorage');
-            // No lanzar error, devolver null pero permitir que useEffect utilice localStorage
             return null;
           }
         } catch (localError) {
           console.error('[useCognitiveTaskForm] Error al intentar recuperar datos del localStorage:', localError);
         }
 
-        console.error('[useCognitiveTaskForm] Error no manejado en queryFn, devolviendo null.', error);
-        return null; // Indicar a React Query que la consulta falló pero no relanzar
+        return null;
       }
     },
     enabled: !!researchId && isAuthenticated,
@@ -246,49 +233,50 @@ export const useCognitiveTaskForm = (
     refetchOnWindowFocus: false
   });
 
-  // Efecto para actualizar el formulario cuando los datos de la consulta se cargan
+    // Efecto para actualizar el formulario cuando los datos de la consulta se cargan
   useEffect(() => {
     if (!isLoading) { // Solo actuar cuando la carga inicial haya terminado
       if (cognitiveTaskData) {
-        console.log('[useCognitiveTaskForm] Datos existentes encontrados. Actualizando formulario.');
-        console.log('[useCognitiveTaskForm] Datos del backend (raw):', cognitiveTaskData);
 
-        // Procesar los datos para convertir HitZone[] a HitzoneArea[] en los archivos
+
+        // Procesar los datos manteniendo hitZones locales si existen
         const processedData = {
           ...cognitiveTaskData,
           questions: cognitiveTaskData.questions.map(question => {
             if (question.files && question.files.length > 0) {
-              console.log(`[useCognitiveTaskForm] Procesando pregunta ${question.id} con ${question.files.length} archivos`);
-              const processedFiles = question.files.map(file => {
-                console.log(`[useCognitiveTaskForm] Archivo original del backend:`, file);
-                console.log(`[useCognitiveTaskForm] file.hitZones del backend:`, file.hitZones);
-                console.log(`[useCognitiveTaskForm] Tipo de file.hitZones:`, typeof file.hitZones, Array.isArray(file.hitZones));
+              // Buscar si ya existe esta pregunta en el estado actual
+              const existingQuestion = formData.questions.find(q => q.id === question.id);
 
-                // Convertir HitZone[] del backend a HitzoneArea[] para el frontend
-                const processedFile = {
+              const processedFiles = question.files.map(file => {
+                // Buscar archivo existente con posibles hitZones en memoria
+                const existingFile = existingQuestion?.files?.find(f => f.id === file.id);
+
+                // Si el archivo existente tiene hitZones, preservarlas
+                if (existingFile?.hitZones && existingFile.hitZones.length > 0) {
+                  return {
+                    ...file,
+                    hitZones: existingFile.hitZones
+                  };
+                }
+
+                // Si no hay hitZones locales, procesar las del backend si existen
+                return {
                   ...file,
                   hitZones: file.hitZones ? file.hitZones.map((hz: any) => {
-                    console.log(`[useCognitiveTaskForm] Procesando hitZone individual:`, hz);
                     // Si ya es HitzoneArea (tiene x, y directamente), devolverlo tal como está
                     if (hz.x !== undefined) {
-                      console.log(`[useCognitiveTaskForm] HitZone ya es HitzoneArea:`, hz);
                       return hz;
                     }
                     // Si es HitZone (tiene region), convertirlo
-                    const converted = {
+                    return {
                       id: hz.id,
                       x: hz.region.x,
                       y: hz.region.y,
                       width: hz.region.width,
                       height: hz.region.height
                     };
-                    console.log(`[useCognitiveTaskForm] HitZone convertido a HitzoneArea:`, converted);
-                    return converted;
                   }) : undefined
                 };
-                console.log(`[useCognitiveTaskForm] Archivo procesado ${file.name}:`, processedFile);
-                console.log(`[useCognitiveTaskForm] processedFile.hitZones final:`, processedFile.hitZones);
-                return processedFile;
               });
               return { ...question, files: processedFiles };
             }
@@ -296,12 +284,10 @@ export const useCognitiveTaskForm = (
           })
         };
 
-        console.log('[useCognitiveTaskForm] Datos procesados para UI:', processedData);
         setFormData(processedData);
         setCognitiveTaskId((cognitiveTaskData as any).id || null);
       } else {
-        console.log('[useCognitiveTaskForm] No se encontraron datos. Usando configuración por defecto.');
-        // Si no hay datos, usar el estado por defecto, asegurando que el researchId se asigne
+
         setFormData({
           ...DEFAULT_COGNITIVE_TASK_STATE,
           researchId: researchId || ''
@@ -315,10 +301,11 @@ export const useCognitiveTaskForm = (
     mutationFn: async (dataToSave: CognitiveTaskFormData): Promise<CognitiveTaskFormData> => {
       if (!researchId) throw new Error('ID de investigación no encontrado');
 
+
+
       logFormDebugInfo('pre-save', dataToSave, null, { cognitiveTaskId });
 
       // SIEMPRE usar la ruta 'save' que maneja tanto creación como actualización
-      console.log(`[useCognitiveTaskForm] Guardando config para researchId: ${researchId} (usando ruta save)`);
       return cognitiveTaskFixedAPI.save(researchId, dataToSave);
     },
     onSuccess: (data) => {
@@ -326,7 +313,6 @@ export const useCognitiveTaskForm = (
       const responseWithId = data as CognitiveTaskFormData & { id?: string };
       if (responseWithId.id && !cognitiveTaskId) {
         setCognitiveTaskId(responseWithId.id);
-        console.log('[useCognitiveTaskForm] Nuevo ID de tarea cognitiva configurado:', responseWithId.id);
       }
 
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.COGNITIVE_TASK, researchId] });
@@ -451,14 +437,29 @@ export const useCognitiveTaskForm = (
       return;
     }
 
+    // 🎯 LOG TEMPORAL: Verificar qué datos se envían exactamente
+    const questionsWithFiles = formData.questions.filter(q => q.files && q.files.length > 0);
+    if (questionsWithFiles.length > 0) {
+      console.log(`🎯 [handleSave] Enviando ${questionsWithFiles.length} preguntas con archivos`);
+      questionsWithFiles.forEach(q => {
+        const filesWithHitZones = q.files?.filter((f: any) => f.hitZones && f.hitZones.length > 0) || [];
+        console.log(`🎯 [handleSave] Pregunta ${q.id}: ${q.files?.length || 0} archivos total, ${filesWithHitZones.length} con hitZones`);
+        if (filesWithHitZones.length > 0) {
+          filesWithHitZones.forEach((f: any, i: number) => {
+            console.log(`🎯 [handleSave] Archivo ${i} (${f.name}) hitZones:`, f.hitZones);
+          });
+        }
+      });
+    }
+
     // Llamar directamente a la mutación en lugar de abrir el modal intermedio
-    const dataToSend = filterValidQuestions(formData);
+    const dataToSend = formData;
     saveMutation.mutate(dataToSend);
   };
 
   const continueWithAction = () => {
     if (modals.pendingAction === 'save') {
-      const dataToSend = filterValidQuestions(formData);
+      const dataToSend = formData;
       saveMutation.mutate(dataToSend);
       modals.closeJsonModal();
     }
@@ -482,9 +483,6 @@ export const useCognitiveTaskForm = (
   };
 
   // --- Retorno del Hook Principal ---
-  console.log('[useCognitiveTaskForm] Estado FINAL formData (desde hook estado):',
-    JSON.stringify(formData?.questions?.map((q: Question) => ({ id: q.id, type: q.type, title: q.title?.substring(0, 20) })) || [])
-  );
 
   return {
     formData,

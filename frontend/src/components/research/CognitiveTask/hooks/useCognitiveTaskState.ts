@@ -1,9 +1,13 @@
 import { Dispatch, SetStateAction, useCallback, useState } from 'react';
 import { Question } from 'shared/interfaces/cognitive-task.interface';
-import { CognitiveTaskFormData } from './useCognitiveTaskForm'; // Importar o definir localmente
 
-// Definir localmente si no se exporta
-// interface CognitiveTaskFormData { ... }
+// Definir CognitiveTaskFormData localmente
+interface CognitiveTaskFormData {
+  researchId: string;
+  questions: Question[];
+  randomizeQuestions: boolean;
+  metadata?: any;
+}
 
 // Interfaz para las props del hook de estado
 interface UseCognitiveTaskStateProps {
@@ -32,8 +36,7 @@ export const DEFAULT_STATE: CognitiveTaskFormData = {
       required: false,
       showConditionally: false,
       deviceFrame: false,
-      files: [],
-      answerPlaceholder: ''
+      files: []
     },
     {
       id: '3.2',
@@ -135,12 +138,39 @@ export const useCognitiveTaskState = ({
 
   // Función para manejar cambios en preguntas
   const handleQuestionChange = useCallback((questionId: string, updates: Partial<Question>) => {
-    setFormData(prevData => ({
-      ...prevData,
-      questions: prevData.questions.map(q =>
-        q.id === questionId ? { ...q, ...updates } : q
-      )
-    }));
+    // 🎯 LOG TEMPORAL: Verificar que las hitZones lleguen aquí
+    if (updates.files) {
+      const filesWithHitZones = updates.files.filter((f: any) => f.hitZones && f.hitZones.length > 0);
+      if (filesWithHitZones.length > 0) {
+        console.log(`🎯 [useCognitiveTaskState] handleQuestionChange recibió ${filesWithHitZones.length} archivos con hitZones para pregunta ${questionId}`);
+        filesWithHitZones.forEach((f: any, i: number) => {
+          console.log(`🎯 [useCognitiveTaskState] Archivo ${i} (${f.name}) hitZones:`, f.hitZones);
+        });
+      }
+    }
+
+    setFormData(prevData => {
+      const updatedQuestions = prevData.questions.map(q => {
+        if (q.id === questionId) {
+          return { ...q, ...updates };
+        }
+        return q;
+      });
+
+      // 🎯 LOG TEMPORAL: Verificar el estado después de la actualización
+      const updatedQuestion = updatedQuestions.find(q => q.id === questionId);
+      if (updatedQuestion?.files) {
+        const filesWithHitZones = updatedQuestion.files.filter((f: any) => f.hitZones && f.hitZones.length > 0);
+        if (filesWithHitZones.length > 0) {
+          console.log(`🎯 [useCognitiveTaskState] Después de actualizar, pregunta ${questionId} tiene ${filesWithHitZones.length} archivos con hitZones`);
+        }
+      }
+
+      return {
+        ...prevData,
+        questions: updatedQuestions
+      };
+    });
   }, []);
 
   // Función para agregar una opción a una pregunta

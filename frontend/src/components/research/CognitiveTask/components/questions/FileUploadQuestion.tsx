@@ -54,10 +54,6 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
   const [hitzoneModalOpen, setHitzoneModalOpen] = React.useState(false);
   const [hitzoneFile, setHitzoneFile] = React.useState<UIFile | null>(null);
 
-  // LOGS DE DEBUG PARA VER QUÉ PASA CON LOS ARCHIVOS
-  console.log(`[FileUploadQuestion] Pregunta ${question.id} - question.files:`, question.files);
-  console.log(`[FileUploadQuestion] Pregunta ${question.id} - question.files?.length:`, question.files?.length);
-
   const titleError = validationErrors ? validationErrors['title'] : null;
   const descriptionError = validationErrors ? validationErrors['description'] : null;
   const filesError = validationErrors ? validationErrors['files'] : null;
@@ -68,9 +64,6 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
   // Filtrar archivos con status 'error' antes de renderizar
   const validFiles: UIFile[] = question.files ? (question.files as UIFile[]).filter(f => f.status !== 'error') : [];
 
-  console.log(`[FileUploadQuestion] Pregunta ${question.id} - validFiles:`, validFiles);
-  console.log(`[FileUploadQuestion] Pregunta ${question.id} - validFiles.length:`, validFiles.length);
-
   const handleButtonClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
@@ -79,17 +72,12 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0 && onFileUpload) {
-      console.log(`[FileUploadQuestion] Subiendo archivo para pregunta ${question.id}`);
       onFileUpload(e.target.files);
       e.target.value = '';
     }
   };
 
   const openHitzoneEditor = async (file: UIFile) => {
-    console.log('[FileUploadQuestion] openHitzoneEditor - archivo recibido:', file);
-    console.log('[FileUploadQuestion] openHitzoneEditor - file.hitZones:', file.hitZones);
-    console.log('[FileUploadQuestion] openHitzoneEditor - (file as any).hitZones:', (file as any).hitZones);
-
     let url = '';
     if (file.s3Key) {
       try {
@@ -104,7 +92,6 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
 
     // Usar SIEMPRE el campo 'hitZones' para las áreas iniciales
     const hitZones = (file as any).hitZones || [];
-    console.log('[FileUploadQuestion] openHitzoneEditor - hitZones finales para modal:', hitZones);
 
     setHitzoneFile({ ...file, url, hitZones } as any);
     setHitzoneModalOpen(true);
@@ -224,7 +211,6 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
                     type="button"
                     onClick={() => {
                       if (!isPendingDelete && onFileDelete) {
-                        console.log(`[FileUploadQuestion ${question.id}] Delete button clicked for file ID:`, file.id);
                         onFileDelete(file.id)
                       }
                     }}
@@ -326,9 +312,18 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
               imageUrl={hitzoneFile.url}
               initialAreas={(hitzoneFile as any).hitZones || []}
               onSave={(newAreas) => {
-                onQuestionChange({ files: question.files?.map(f => f.id === hitzoneFile.id ? { ...f, hitZones: newAreas } : f) });
+                // Actualizar el archivo específico con las nuevas hitZones
+                const updatedFiles = question.files?.map(f => {
+                  if (f.id === hitzoneFile.id) {
+                    return { ...f, hitZones: newAreas };
+                  }
+                  return f;
+                }) || [];
+
+                // Llamar a onQuestionChange con la estructura correcta
+                onQuestionChange({ files: updatedFiles });
                 setHitzoneModalOpen(false);
-                console.log('[FileUploadQuestion] Hitzones guardados, disparando guardado automático al backend');
+
                 window.dispatchEvent(new CustomEvent('cognitiveTaskAutoSave'));
               }}
               onClose={() => setHitzoneModalOpen(false)}

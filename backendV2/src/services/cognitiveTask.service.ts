@@ -40,7 +40,7 @@ export class CognitiveTaskService {
    * Llama a validaciones auxiliares.
    */
   private validateFormData(data: Partial<CognitiveTaskFormData>): void {
-    console.log('[DEBUG] CognitiveTaskService.validateFormData - Datos recibidos:', JSON.stringify(data, null, 2));
+
 
     // 1. Validar researchId (esencial)
     if (!data.researchId) {
