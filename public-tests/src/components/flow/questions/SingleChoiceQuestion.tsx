@@ -1,8 +1,8 @@
-import React, { useMemo, useEffect } from "react";
-import { useStandardizedForm, valueExtractors, validationRules } from "../../../hooks/useStandardizedForm";
-import { StandardizedFormProps } from "../../../types/hooks.types";
-import { getStandardButtonText, getButtonDisabledState, getErrorDisplayProps, getFormContainerClass, formSpacing, getMockOptions } from "../../../utils/formHelpers";
+import React, { useEffect, useMemo } from "react";
+import { useStandardizedForm, validationRules, valueExtractors } from "../../../hooks/useStandardizedForm";
 import { ComponentSingleChoiceQuestionProps } from '../../../types/flow.types';
+import { StandardizedFormProps } from "../../../types/hooks.types";
+import { formSpacing, getButtonDisabledState, getErrorDisplayProps, getFormContainerClass, getMockOptions, getStandardButtonText } from "../../../utils/formHelpers";
 
 export const SingleChoiceQuestion: React.FC<ComponentSingleChoiceQuestionProps> = ({
     config,
@@ -25,7 +25,7 @@ export const SingleChoiceQuestion: React.FC<ComponentSingleChoiceQuestionProps> 
 
     const componentTitle = cfg.title ?? stepName ?? 'Pregunta de opción única';
     const description = cfg.description;
-    const questionText = cfg.questionText ?? (isMock ? 'Pregunta de prueba' : 'Por favor, selecciona una opción.');
+    const questionText = cfg.questionText ?? '';
     const required = cfg.required !== false; // Asumir requerido por defecto
 
     // Generar opciones de display - moviendo la lógica dentro del useMemo
@@ -37,7 +37,7 @@ export const SingleChoiceQuestion: React.FC<ComponentSingleChoiceQuestionProps> 
             }
             return ['Opción A (sin texto)', 'Opción B (sin texto)', 'Opción C (sin texto)'];
         }
-        
+
         // Convertir objetos a strings si es necesario, pero generar nombres consistentes
         return choices.map((choice, index) => {
             if (typeof choice === 'string' && choice.trim() !== '') return choice;
@@ -88,7 +88,7 @@ export const SingleChoiceQuestion: React.FC<ComponentSingleChoiceQuestionProps> 
 
     // Limpiar valor si no coincide con las opciones actuales - VERSION AGRESIVA
     useEffect(() => {
-        
+
         if (value && !displayOptions.includes(value)) {
             setValue(null);
         }
@@ -107,12 +107,12 @@ export const SingleChoiceQuestion: React.FC<ComponentSingleChoiceQuestionProps> 
         }
     };
 
-    const buttonText = getStandardButtonText({ 
-        isSaving, 
-        isLoading, 
+    const buttonText = getStandardButtonText({
+        isSaving,
+        isLoading,
         hasExistingData: hasExistingData && !!value // ✅ SOLO considerar existente si HAY datos Y valor actual válido
     });
-    
+
     const isButtonDisabled = getButtonDisabledState({
         isRequired: required,
         value,
@@ -144,16 +144,18 @@ export const SingleChoiceQuestion: React.FC<ComponentSingleChoiceQuestionProps> 
                 </p>
             )}
 
-            <p className={`text-neutral-600 ${formSpacing.section}`}>
-                {questionText}
-            </p>
+            {questionText && (
+                <p className={`text-neutral-600 ${formSpacing.section}`}>
+                    {questionText}
+                </p>
+            )}
 
             {/* Opciones */}
             <div className={`space-y-3 ${formSpacing.section}`}>
                 {displayOptions.map((option, index) => {
                     const optionValue = typeof option === 'string' ? option : `Opción ${index + 1}`;
                     const isSelected = value === optionValue;
-                    
+
                     return (
                         <label
                             key={index}
