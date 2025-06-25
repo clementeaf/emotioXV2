@@ -1,4 +1,0 @@
-Correcciones realizadas:
-1. Interfaces de frontend/src/shared/interfaces/eyeTracking.ts actualizadas para alinear con el backend
-2. useEyeTrackingRecruit.ts actualizado para usar las nuevas propiedades
-3. Errores pendientes en RecruitEyeTrackingForm.tsx que requieren actualización manual
