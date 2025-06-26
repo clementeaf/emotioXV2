@@ -382,8 +382,7 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
 
   const ResearchInProgressBlock = (
     <div className="w-full mt-2">
-      <h3 className="p-4 w-full font-semibold text-xs text-neutral-500 uppercase flex items-center pt-3">
-        <span className="text-blue-600 mr-1">•</span>
+      <h3 className="p-3 w-full font-semibold text-[14px] text-neutral-500 uppercase flex items-center pt-3">
         INVESTIGACIÓN EN CURSO
       </h3>
       {isLoadingResearch ? (
@@ -399,7 +398,7 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
           {recentResearch.map((item) => (
             item && item.id ? (
               <li key={`recent-${item.id}`}>
-                <div className="flex ml-5">
+                <div className="flex pl-2">
                   <Link
                     href={`/dashboard?research=${item.id}&section=welcome-screen`}
                     className={cn(

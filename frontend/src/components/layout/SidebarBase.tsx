@@ -36,7 +36,7 @@ export function SidebarBase({ userInfo, topBlock, children, footer, className }:
 
       {/* Footer (logout, etc) */}
       {footer && (
-        <div className="px-6 py-4 border-t border-neutral-200 mt-auto">
+        <div className="px-4 py-4 border-t border-neutral-200 mt-auto">
           {footer}
         </div>
       )}
