@@ -1,7 +1,9 @@
 'use client';
 
 import React from 'react';
+
 import { cn } from '@/lib/utils';
+
 import { CognitiveTaskResult } from '../types';
 
 interface TaskCardProps {
@@ -25,8 +27,8 @@ export function TaskCard({ task, className }: TaskCardProps) {
   
   // Determinar el color del círculo de progreso según la puntuación
   const getScoreColor = () => {
-    if (score >= 80) return '#4CAF50'; // Verde para puntuación alta
-    if (score >= 60) return '#2196F3'; // Azul para puntuación media
+    if (score >= 80) {return '#4CAF50';} // Verde para puntuación alta
+    if (score >= 60) {return '#2196F3';} // Azul para puntuación media
     return '#F44336'; // Rojo para puntuación baja
   };
   

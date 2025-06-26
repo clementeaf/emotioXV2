@@ -112,8 +112,8 @@ export function RecruitConfiguration({ className }: RecruitConfigurationProps) {
             <h1 className="text-lg font-semibold text-neutral-900">
               1.0 - Recruitment Configuration
             </h1>
-            <p className="mt-1 text-sm text-neutral-500">
-              Configure recruitment settings and participant requirements.
+            <p className="text-sm text-gray-600 mb-4">
+              Configura los parámetros de reclutamiento para tu investigación. Estos ajustes afectan cómo se presentará tu estudio a los participantes potenciales.
             </p>
           </header>
 
@@ -122,7 +122,7 @@ export function RecruitConfiguration({ className }: RecruitConfigurationProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div>
                 <h2 className="text-base font-medium mb-4">Recruitment link</h2>
-                
+
                 {/* Demographic questions */}
                 <div className="space-y-6">
                   <div className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg">
@@ -130,12 +130,12 @@ export function RecruitConfiguration({ className }: RecruitConfigurationProps) {
                       <h3 className="text-sm font-medium text-neutral-900">Demographic questions</h3>
                       <p className="text-sm text-neutral-500">Collect demographic information from participants.</p>
                     </div>
-                    <Switch 
+                    <Switch
                       checked={demographicEnabled}
                       onCheckedChange={setDemographicEnabled}
                     />
                   </div>
-                  
+
                   {demographicEnabled && (
                     <div className="space-y-3 px-4">
                       {Object.entries(demographics).map(([key, value]) => (
@@ -161,7 +161,7 @@ export function RecruitConfiguration({ className }: RecruitConfigurationProps) {
                         <h3 className="text-sm font-medium text-neutral-900">Link configuration</h3>
                         <p className="text-sm text-neutral-500">Configure how participants can access your research.</p>
                       </div>
-                      <Switch 
+                      <Switch
                         checked={linkConfigEnabled}
                         onCheckedChange={setLinkConfigEnabled}
                       />
@@ -200,7 +200,7 @@ export function RecruitConfiguration({ className }: RecruitConfigurationProps) {
                         <h3 className="text-sm font-medium text-neutral-900">Limit number of participants</h3>
                         <p className="text-sm text-neutral-500">Set a maximum number of participants for this research.</p>
                       </div>
-                      <Switch 
+                      <Switch
                         checked={limitParticipantsEnabled}
                         onCheckedChange={setLimitParticipantsEnabled}
                       />
@@ -227,7 +227,7 @@ export function RecruitConfiguration({ className }: RecruitConfigurationProps) {
               {/* Research configuration */}
               <div>
                 <h2 className="text-base font-medium mb-4">Research configuration</h2>
-                
+
                 {/* Backlinks */}
                 <div className="space-y-6">
                   <div>
@@ -262,7 +262,7 @@ export function RecruitConfiguration({ className }: RecruitConfigurationProps) {
 
                   {/* Research link */}
                   <div>
-                    <h3 className="text-sm font-medium text-neutral-900 mb-3">B. Research's link to share</h3>
+                    <h3 className="text-sm font-medium text-neutral-900 mb-3">B. Research&apos;s link to share</h3>
                     <div className="space-y-2">
                       <p className="text-sm text-neutral-600">
                         Third-party invitation system should substitute [your respondent id here]
@@ -288,10 +288,10 @@ export function RecruitConfiguration({ className }: RecruitConfigurationProps) {
             </div>
 
             {/* QR Code Modal */}
-            <QRCodeModal 
-              open={qrModalOpen} 
-              onOpenChange={setQrModalOpen} 
-              researchUrl={researchConfig.researchUrl} 
+            <QRCodeModal
+              open={qrModalOpen}
+              onOpenChange={setQrModalOpen}
+              researchUrl={researchConfig.researchUrl}
             />
 
             {/* Current statistics */}
@@ -335,4 +335,4 @@ export function RecruitConfiguration({ className }: RecruitConfigurationProps) {
       </div>
     </div>
   );
-} 
+}

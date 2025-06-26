@@ -57,7 +57,7 @@ export function useEyeTrackingAreas({
       const newAreas = [...prevData.areasOfInterest.areas];
       const areaIndex = newAreas.findIndex(a => a.id === id);
       
-      if (areaIndex === -1) return prevData;
+      if (areaIndex === -1) {return prevData;}
       
       // Dividir la ruta del campo para navegación anidada
       const fieldParts = fieldPath.split('.');

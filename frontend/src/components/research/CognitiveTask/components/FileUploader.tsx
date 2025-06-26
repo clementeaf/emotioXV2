@@ -1,5 +1,6 @@
-import React, { useState, useRef } from 'react';
 import { Upload, UploadCloud } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+
 import { Button } from '@/components/ui/Button';
 
 interface FileUploaderProps {
@@ -31,7 +32,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!isDragging) setIsDragging(true);
+    if (!isDragging) {setIsDragging(true);}
   };
 
   const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {

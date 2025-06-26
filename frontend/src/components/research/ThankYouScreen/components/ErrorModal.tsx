@@ -1,10 +1,12 @@
+import { AlertCircle, AlertTriangle, Info, XCircle } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom'; // Importar createPortal
-import { ErrorModalProps } from '../types';
-import { UI_TEXTS } from '../constants';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/Dialog';
+
 import { Button } from '@/components/ui/Button';
-import { AlertCircle, AlertTriangle, Info, XCircle } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/Dialog';
+
+import { UI_TEXTS } from '../constants';
+import { ErrorModalProps } from '../types';
 
 /**
  * Componente para mostrar errores y mensajes en un modal, usando Portal.

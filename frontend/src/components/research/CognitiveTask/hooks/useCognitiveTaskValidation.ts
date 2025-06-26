@@ -41,15 +41,15 @@ export const useCognitiveTaskValidation = (): UseCognitiveTaskValidationResult =
     }
     
     // Validar que haya al menos una pregunta con título
-      // Filtrar solo preguntas con título para validación
-  const questionsWithTitle = formData.questions ? formData.questions.filter(q => q.title && q.title.trim() !== '') : [];
+    // Filtrar solo preguntas con título para validación
+    const questionsWithTitle = formData.questions ? formData.questions.filter(q => q.title && q.title.trim() !== '') : [];
   
-  if (questionsWithTitle.length === 0) {
-    errors.questions = "Debe haber al menos una pregunta con título";
-  }
+    if (questionsWithTitle.length === 0) {
+      errors.questions = 'Debe haber al menos una pregunta con título';
+    }
 
-      // Validar cada pregunta que tenga título
-  questionsWithTitle.forEach((question, index) => {
+    // Validar cada pregunta que tenga título
+    questionsWithTitle.forEach((question, index) => {
       // Solo validar título si la pregunta está marcada como required por el usuario
       if (question.required && !question.title?.trim()) {
         errors[`question_${index}_title`] = VALIDATION_ERROR_MESSAGES.TITLE_REQUIRED;
@@ -84,12 +84,12 @@ export const useCognitiveTaskValidation = (): UseCognitiveTaskValidationResult =
       
       // Validación de Archivos (Corregida)
       if (question.required && ['navigation_flow', 'preference_test'].includes(question.type)) {
-         const fileCount = question.files?.length || 0; // Usar longitud directa del array
-         if (fileCount === 0) {
-             errors[`question_${index}_files`] = VALIDATION_ERROR_MESSAGES.FILES_REQUIRED;
-         } else if (question.type === 'preference_test' && fileCount !== 2) {
-             errors[`question_${index}_files`] = VALIDATION_ERROR_MESSAGES.PREFERENCE_TEST_FILES_REQUIRED;
-         }
+        const fileCount = question.files?.length || 0; // Usar longitud directa del array
+        if (fileCount === 0) {
+          errors[`question_${index}_files`] = VALIDATION_ERROR_MESSAGES.FILES_REQUIRED;
+        } else if (question.type === 'preference_test' && fileCount !== 2) {
+          errors[`question_${index}_files`] = VALIDATION_ERROR_MESSAGES.PREFERENCE_TEST_FILES_REQUIRED;
+        }
       }
     });
     

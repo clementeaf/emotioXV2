@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { AnalysisTabType, CommentsList, AnalysisTabs, SentimentAnalysisPanel, ThemesPanel, KeywordsPanel } from './';
+
 import { CognitiveTaskQuestion } from '../types';
+
+import { AnalysisTabType, CommentsList, AnalysisTabs, SentimentAnalysisPanel, ThemesPanel, KeywordsPanel } from './';
 
 interface MainContentProps {
   data: CognitiveTaskQuestion;

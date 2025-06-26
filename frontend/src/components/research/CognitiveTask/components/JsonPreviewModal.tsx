@@ -78,13 +78,13 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
 
             // Determina el estilo de la tarjeta
             let cardClass = 'question-card';
-            if (!isModified) cardClass += ' red-card';
-            else if (!willSend) cardClass += ' yellow-card';
-            else cardClass += ' blue-card';
+            if (!isModified) {cardClass += ' red-card';}
+            else if (!willSend) {cardClass += ' yellow-card';}
+            else {cardClass += ' blue-card';}
 
             // Función para renderizar las opciones en preguntas de selección
             const renderChoices = (choices: any[]) => {
-              if (!choices || choices.length === 0) return '<p class="empty-notice">Sin opciones</p>';
+              if (!choices || choices.length === 0) {return '<p class="empty-notice">Sin opciones</p>';}
 
               return `
                 <div class="choices-list">
@@ -100,34 +100,34 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
 
             // Función para mostrar archivos
             const renderFiles = (files: any[]) => {
-              if (!files || files.length === 0) return '<p class="empty-notice">Sin archivos</p>';
+              if (!files || files.length === 0) {return '<p class="empty-notice">Sin archivos</p>';}
               return `
                 <div class="files-list" style="display: flex; flex-direction: column; align-items: center; gap: 2.5rem;">
                   ${files.map(file => {
-                    // Calcular overlays de hitzones si existen
-                    let overlays = '';
-                    if (Array.isArray(file.hitZones) && file.hitZones.length > 0) {
-                      overlays = file.hitZones.map((hz: any) => {
-                        // Asumimos que las coords están en px y relativas al tamaño natural de la imagen
-                        // Usar porcentajes para el overlay visual
-                        const left = ((hz.region?.x ?? hz.x) / (file.width || 1000)) * 100;
-                        const top = ((hz.region?.y ?? hz.y) / (file.height || 1000)) * 100;
-                        const width = ((hz.region?.width ?? hz.width) / (file.width || 1000)) * 100;
-                        const height = ((hz.region?.height ?? hz.height) / (file.height || 1000)) * 100;
-                        return `<div style="position:absolute; left:${left}%; top:${top}%; width:${width}%; height:${height}%; background:rgba(34,197,94,0.25); border:2px solid #22c55e; border-radius:6px;"></div>`;
-                      }).join('');
-                    }
-                    return `
+    // Calcular overlays de hitzones si existen
+    let overlays = '';
+    if (Array.isArray(file.hitZones) && file.hitZones.length > 0) {
+      overlays = file.hitZones.map((hz: any) => {
+        // Asumimos que las coords están en px y relativas al tamaño natural de la imagen
+        // Usar porcentajes para el overlay visual
+        const left = ((hz.region?.x ?? hz.x) / (file.width || 1000)) * 100;
+        const top = ((hz.region?.y ?? hz.y) / (file.height || 1000)) * 100;
+        const width = ((hz.region?.width ?? hz.width) / (file.width || 1000)) * 100;
+        const height = ((hz.region?.height ?? hz.height) / (file.height || 1000)) * 100;
+        return `<div style="position:absolute; left:${left}%; top:${top}%; width:${width}%; height:${height}%; background:rgba(34,197,94,0.25); border:2px solid #22c55e; border-radius:6px;"></div>`;
+      }).join('');
+    }
+    return `
                       <div class="file-item" style="position:relative; display:flex; flex-direction:column; align-items:center; margin-bottom:2rem;">
                         <div style="position:relative; width:420px; max-width:90vw; aspect-ratio:16/9; background:#f8fafc; border-radius:10px; overflow:hidden; box-shadow:0 2px 12px #0001;">
                           <img src="${file.url}" alt="${file.name || 'Archivo'}" style="width:100%; height:100%; object-fit:contain; display:block; background:#f8fafc;" />
                           ${overlays}
-                          ${!file.hitZones || file.hitZones.length === 0 ? `<div style='position:absolute;top:10px;right:10px; background:#f3f4f6; color:#64748b; border-radius:12px; padding:2px 12px; font-size:0.9em; border:1px solid #d1d5db;'>Sin hitzone configurado</div>` : ''}
+                          ${!file.hitZones || file.hitZones.length === 0 ? '<div style=\'position:absolute;top:10px;right:10px; background:#f3f4f6; color:#64748b; border-radius:12px; padding:2px 12px; font-size:0.9em; border:1px solid #d1d5db;\'>Sin hitzone configurado</div>' : ''}
                         </div>
                         <div style="margin-top:1rem; font-size:1.05em; color:#334155; font-weight:500;">${file.name || 'Archivo sin nombre'}</div>
                       </div>
                     `;
-                  }).join('')}
+  }).join('')}
                 </div>
                 <div style="margin-top:1.5rem; text-align:center; color:#64748b; font-size:1.05em;">Haz clic en el área correcta para continuar (solo ejemplo visual, no interactivo)</div>
               `;
@@ -242,7 +242,7 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
   }, [isOpen]); // Solo re-ejecutar si cambia isOpen
 
   // Retorno temprano
-  if (!isOpen) return null;
+  if (!isOpen) {return null;}
 
   // Función para continuar con la acción
   const handleContinue = () => {
@@ -458,27 +458,27 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
 
                 <form>
                   ${parsedData.questions?.map((q: any, index: number) => {
-                    let questionContent = '';
+    let questionContent = '';
 
-                    switch(q.type) {
-                      case 'short_text':
-                        questionContent = `
+    switch(q.type) {
+      case 'short_text':
+        questionContent = `
                           <div class="form-field">
                             <label class="sr-only">Respuesta de texto corto</label>
                             <input type="text" name="question-${q.id}" placeholder="Tu respuesta" class="input-text">
                           </div>
                         `;
-                        break;
-                      case 'long_text':
-                        questionContent = `
+        break;
+      case 'long_text':
+        questionContent = `
                           <div class="form-field">
                             <label class="sr-only">Respuesta de texto largo</label>
                             <textarea name="question-${q.id}" rows="4" placeholder="Tu respuesta" class="textarea"></textarea>
                           </div>
                         `;
-                        break;
-                      case 'single_choice':
-                        questionContent = `
+        break;
+      case 'single_choice':
+        questionContent = `
                           <fieldset class="choices-container">
                             <legend class="sr-only">Seleccione una opción</legend>
                             <div class="choices">
@@ -493,9 +493,9 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
                             </div>
                           </fieldset>
                         `;
-                        break;
-                      case 'multiple_choice':
-                        questionContent = `
+        break;
+      case 'multiple_choice':
+        questionContent = `
                           <fieldset class="choices-container">
                             <legend class="sr-only">Seleccione una o más opciones</legend>
                             <div class="choices">
@@ -510,9 +510,9 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
                             </div>
                           </fieldset>
                         `;
-                        break;
-                      case 'linear_scale':
-                        questionContent = `
+        break;
+      case 'linear_scale':
+        questionContent = `
                           <fieldset class="scale-container">
                             <legend class="sr-only">Seleccione un valor en la escala</legend>
                             <div class="linear-scale">
@@ -527,9 +527,9 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
                             </div>
                           </fieldset>
                         `;
-                        break;
-                      case 'ranking':
-                        questionContent = `
+        break;
+      case 'ranking':
+        questionContent = `
                           <div class="ranking">
                             ${q.choices?.map((choice: any, choiceIndex: number) => `
                               <div class="ranking-item">
@@ -542,23 +542,23 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
                             <input type="text" placeholder="Tu respuesta">
                           </div>
                         `;
-                        break;
-                      default:
-                        questionContent = `<p style="color: #666;">Tipo de pregunta no compatible con la vista previa.</p>`;
-                    }
+        break;
+      default:
+        questionContent = '<p style="color: #666;">Tipo de pregunta no compatible con la vista previa.</p>';
+    }
 
-                    return `
+    return `
                       <div class="question">
                         <div class="question-number">Pregunta ${index + 1}</div>
                         <div class="question-title">
-                          ${q.title || `Pregunta sin título`}
+                          ${q.title || 'Pregunta sin título'}
                           ${q.required ? '<span class="required">*</span>' : ''}
                         </div>
                         ${q.description ? `<div class="question-description">${q.description}</div>` : ''}
                         ${questionContent}
                       </div>
                     `;
-                  }).join('')}
+  }).join('')}
 
                   <button type="button" class="submit-btn">Enviar respuestas</button>
                 </form>

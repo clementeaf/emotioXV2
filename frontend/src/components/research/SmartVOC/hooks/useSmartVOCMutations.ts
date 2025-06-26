@@ -1,12 +1,14 @@
 // Hook para operaciones de API del formulario SmartVOC
 // Responsabilidad: Contener toda la lógica de TanStack Query (useQuery y useMutation)
 
-import { smartVocFixedAPI } from '@/lib/smart-voc-api';
-import { useAuth } from '@/providers/AuthProvider';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import toast from 'react-hot-toast';
 import { SmartVOCFormData } from 'shared/interfaces/smart-voc.interface';
+
+import { smartVocFixedAPI } from '@/lib/smart-voc-api';
+import { useAuth } from '@/providers/AuthProvider';
+
 import { QUERY_KEYS, SUCCESS_MESSAGES, UI_TEXTS } from '../constants';
 import { ErrorModalData } from '../types';
 
@@ -130,10 +132,10 @@ export const useSmartVOCMutations = (researchId: string, smartVocId?: string) =>
           if (serverMessage.includes('requiere companyName')) {
             displayMessage = "Error de validación: Una o más preguntas (CSAT, NPS, NEV) requieren un 'Nombre de la empresa'. Por favor, completa ese campo para poder guardar.";
           } else if (serverMessage.includes('INVALID_SMART_VOC_DATA')) {
-             displayMessage = "Se encontraron errores de validación en el formulario. Por favor, revisa los datos de las preguntas.";
+            displayMessage = 'Se encontraron errores de validación en el formulario. Por favor, revisa los datos de las preguntas.';
           }
         } catch (e) {
-          console.error("Error al parsear el mensaje de la API:", e);
+          console.error('Error al parsear el mensaje de la API:', e);
         }
       }
 

@@ -1,6 +1,8 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useCallback, useState } from 'react';
+
 import { SuccessData } from '../../../../shared/interfaces/research-creation.interface';
+
 import { CreateSection, ErrorSection, StagesSection, SuccessSection } from './sections';
 
 /**

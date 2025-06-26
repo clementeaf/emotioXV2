@@ -1,18 +1,20 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import toast from 'react-hot-toast';
-import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { useErrorLog } from '@/components/utils/ErrorLogger';
+import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
+import React from 'react';
+import toast from 'react-hot-toast';
 import { 
   EyeTrackingRecruitStats,
   DemographicQuestionKeys,
   LinkConfigKeys,
   ParameterOptionKeys,
 } from 'shared/interfaces/eyeTrackingRecruit.interface';
-import { eyeTrackingFixedAPI } from "@/lib/eye-tracking-api";
-import React from 'react';
+
+import { useErrorLog } from '@/components/utils/ErrorLogger';
+import { eyeTrackingFixedAPI } from '@/lib/eye-tracking-api';
+
 
 // Interfaces
 interface ErrorModalData {
@@ -236,11 +238,11 @@ const processApiResponse = (response: any): EyeTrackingRecruitFormData => {
   };
 
   // Si no hay respuesta, devolver la configuración predeterminada
-  if (!response) return safeResponse;
+  if (!response) {return safeResponse;}
 
   try {
     // ID
-    if (response.id) safeResponse.id = response.id;
+    if (response.id) {safeResponse.id = response.id;}
 
     // Preguntas demográficas
     if (response.demographicQuestions) {

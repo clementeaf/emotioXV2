@@ -1,6 +1,8 @@
+import React from 'react';
+
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
-import React from 'react';
+
 import { UI_TEXTS } from '../constants';
 import { ThankYouScreenContentProps } from '../types';
 

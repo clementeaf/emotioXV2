@@ -1,6 +1,8 @@
 import React from 'react';
+
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
+
 import { TextQuestionProps } from '../../types';
 // import { UI_TEXTS } from '../../constants'; // Comentado por ahora
 

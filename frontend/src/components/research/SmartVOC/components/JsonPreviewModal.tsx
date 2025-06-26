@@ -20,7 +20,7 @@ export const JsonPreviewModal: React.FC<JsonPreviewModalProps> = ({
 }) => {
   const [showRawJson, setShowRawJson] = useState(false);
   
-  if (!isOpen) return null;
+  if (!isOpen) {return null;}
   
   // Parseamos el JSON para extraer los datos
   let parsedData: any = {};

@@ -1,11 +1,12 @@
 import React from 'react';
+
+import { Button } from '@/components/ui/Button';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/Dialog';
-import { Button } from '@/components/ui/Button';
 
 interface AuthModalProps {
   isOpen: boolean;

@@ -1,8 +1,11 @@
 'use client';
 
 import React from 'react';
+
 import { cn } from '@/lib/utils';
+
 import { CognitiveSummary } from '../types';
+
 import { MetricCard } from './MetricCard';
 
 interface SummarySectionProps {

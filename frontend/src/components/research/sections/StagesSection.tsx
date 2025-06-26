@@ -1,5 +1,7 @@
-import { ResearchStageManager } from '@/components/research/ResearchStageManager';
 import { memo } from 'react';
+
+import { ResearchStageManager } from '@/components/research/ResearchStageManager';
+
 import { StagesSectionProps } from '../../../../../shared/interfaces/research-creation.interface';
 
 /**

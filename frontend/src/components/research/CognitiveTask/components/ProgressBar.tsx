@@ -7,7 +7,7 @@ interface ProgressBarProps {
 
 export const ProgressBar: React.FC<ProgressBarProps> = ({ 
   value, 
-  className = ""
+  className = ''
 }) => {
   return (
     <div className={`relative h-2 w-full overflow-hidden rounded-full bg-gray-200 ${className}`}>

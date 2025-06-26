@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-import { apiClient } from '@/config/api-client';
+import { apiClient } from '../config/api';
 
 export const useAppInitialization = () => {
   useEffect(() => {
@@ -11,8 +11,14 @@ export const useAppInitialization = () => {
     const initializeApp = () => {
       const isDevEnv = process.env.NODE_ENV === 'development';
 
+      // Reactivar el debugger de manera más segura
       if (isDevEnv && typeof window.enableApiDebugger === 'function') {
-        window.enableApiDebugger();
+        try {
+          window.enableApiDebugger();
+          console.log('🔍 [API-DEBUG] Debugger activado exitosamente');
+        } catch (error) {
+          console.warn('🔍 [API-DEBUG] Error al activar debugger:', error);
+        }
       }
 
       initializeApiAuth();

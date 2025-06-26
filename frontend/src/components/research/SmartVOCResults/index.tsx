@@ -1,18 +1,20 @@
 'use client';
 
 import { useState } from 'react';
+
 import { cn } from '@/lib/utils';
+
+import { metrics } from './config';
 import { CPVCard } from './CPVCard';
-import { TrustRelationshipFlow } from './TrustRelationshipFlow';
-import { MetricCard } from './MetricCard';
-import { QuestionResults } from './QuestionResults';
 import { EmotionalStates } from './EmotionalStates';
 import { Filters } from './Filters';
-import { NPSQuestion } from './NPSQuestion';
-import { VOCQuestion } from './VOCQuestion';
+import { MetricCard } from './MetricCard';
 import { mockData } from './mockData';
+import { NPSQuestion } from './NPSQuestion';
+import { QuestionResults } from './QuestionResults';
+import { TrustRelationshipFlow } from './TrustRelationshipFlow';
 import { SmartVOCResultsProps } from './types';
-import { metrics } from './config';
+import { VOCQuestion } from './VOCQuestion';
 
 // Datos de ejemplo para el gráfico NPS
 const monthlyNPSData = [
@@ -48,7 +50,7 @@ export function SmartVOCResults({ className }: SmartVOCResultsProps) {
   const [timeRange, setTimeRange] = useState<'Today' | 'Week' | 'Month'>('Today');
 
   return (
-    <div className={cn("flex gap-8 p-8", className)}>
+    <div className={cn('flex gap-8 p-8', className)}>
       <div className="flex-1 space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <CPVCard

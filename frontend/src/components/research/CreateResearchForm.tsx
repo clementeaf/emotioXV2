@@ -1,8 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 
 import { Button } from '@/components/ui/Button';
@@ -12,9 +11,9 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
 import { useResearch } from '@/stores/useResearchStore';
 
-import { 
-  ResearchType,
-  ResearchBasicData
+import {
+    ResearchBasicData,
+    ResearchType
 } from '../../../../shared/interfaces/research.model';
 
 
@@ -66,10 +65,10 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
   const router = useRouter();
   const { token } = useAuth();
   const { currentDraft, createDraft, updateDraft, clearDraft } = useResearch();
-  
+
   // Mover la inicialización a un estado básico primero
   const [formData, setFormData] = useState<FormState>(initialFormState);
-  
+
   // Luego usar un useEffect para actualizar con el borrador si existe
   useEffect(() => {
     if (currentDraft && currentDraft.data.basic) {
@@ -80,16 +79,16 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
           type: currentDraft.data.basic.type as ResearchType || undefined,
           technique: currentDraft.data.configuration?.technique || ''
         },
-        currentStep: currentDraft.step === 'basic' ? 1 : 
+        currentStep: currentDraft.step === 'basic' ? 1 :
           currentDraft.step === 'configuration' ? 2 : 3,
         errors: {}
       };
-      
+
       // Actualizar el estado del formulario con los datos del borrador
       setFormData(draftData);
     }
   }, [currentDraft]);
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdResearchId, setCreatedResearchId] = useState<string | null>(null);
   const [showSummary, setShowSummary] = useState(false);
@@ -101,11 +100,11 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
     // Solo crear un borrador nuevo cuando realmente se necesite
     // y no en cada renderizado
     let shouldCreateDraft = false;
-    
+
     if (!currentDraft) {
       shouldCreateDraft = true;
     }
-    
+
     // Mover la creación del borrador fuera del flujo de renderizado
     if (shouldCreateDraft) {
       setTimeout(() => {
@@ -113,30 +112,30 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
       }, 0);
     }
   }, [currentDraft, createDraft]);
-  
+
   // Efecto para manejar el comportamiento del placeholder en el select
   useEffect(() => {
     const selectEl = enterpriseSelectRef.current;
     if (!selectEl) {return;}
-    
+
     // Función para ocultar la primera opción cuando el select está abierto
     const handleSelectFocus = () => {
       if (selectEl.options[0] && selectEl.options[0].value === '') {
         selectEl.options[0].style.display = 'none';
       }
     };
-    
+
     // Función para mostrar la primera opción cuando el select está cerrado
     const handleSelectBlur = () => {
       if (selectEl.options[0] && selectEl.options[0].value === '') {
         selectEl.options[0].style.display = '';
       }
     };
-    
+
     // Agregar event listeners
     selectEl.addEventListener('focus', handleSelectFocus);
     selectEl.addEventListener('blur', handleSelectBlur);
-    
+
     // Cleanup
     return () => {
       selectEl.removeEventListener('focus', handleSelectFocus);
@@ -178,16 +177,16 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
   const updateFormData = (field: string, value: any) => {
     // Crear una copia local de formData que podamos modificar
     const currentFormData = {...formData};
-    
+
     // Actualizar la copia local
     currentFormData.basic = {
       ...currentFormData.basic,
       [field]: value
     };
-    
+
     // Actualizar el estado con la copia modificada
     setFormData(currentFormData);
-    
+
     // Mover la actualización del borrador fuera de la función de actualización de estado
     // utilizando un setTimeout para evitar actualizaciones durante el renderizado
     setTimeout(() => {
@@ -202,7 +201,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
             technique: currentFormData.basic.technique
           }
         },
-        currentFormData.currentStep === 1 ? 'basic' : 
+        currentFormData.currentStep === 1 ? 'basic' :
           currentFormData.currentStep === 2 ? 'configuration' : 'review'
       );
     }, 0);
@@ -212,15 +211,15 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
     if (validateStep(formData.currentStep)) {
       // Crear una copia local y calcular el nuevo paso
       const newStep = formData.currentStep + 1;
-      const draftStep = newStep === 1 ? 'basic' : 
+      const draftStep = newStep === 1 ? 'basic' :
         newStep === 2 ? 'configuration' : 'review';
-      
+
       // Actualizar el estado
       setFormData((prev) => ({
         ...prev,
         currentStep: newStep
       }));
-      
+
       // Mover la actualización del borrador fuera del ciclo de renderizado
       setTimeout(() => {
         updateDraft(
@@ -243,15 +242,15 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
   const handlePrevious = () => {
     // Calcular el nuevo paso
     const newStep = Math.max(1, formData.currentStep - 1);
-    const draftStep = newStep === 1 ? 'basic' : 
+    const draftStep = newStep === 1 ? 'basic' :
       newStep === 2 ? 'configuration' : 'review';
-    
+
     // Actualizar el estado
     setFormData((prev) => ({
       ...prev,
       currentStep: newStep
     }));
-    
+
     // Mover la actualización del borrador fuera del ciclo de renderizado
     setTimeout(() => {
       updateDraft(
@@ -308,9 +307,9 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
           enterprise: formData.basic.enterprise,
           createdAt: new Date().toISOString()
         };
-        
+
         localStorage.setItem('research_list', JSON.stringify([...currentResearchList, newResearch]));
-        
+
         // También guardar los detalles específicos de la investigación
         localStorage.setItem(`research_${researchId}`, JSON.stringify(newResearch));
 
@@ -381,9 +380,9 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
               <p className="text-sm mb-1">ID de investigación: <span className="font-mono bg-neutral-100 px-1 py-0.5 rounded">{createdResearchId}</span></p>
               <p className="text-sm mb-1">Nombre: <span className="font-medium">{formData.basic.name}</span></p>
               <p className="text-sm mb-4">Técnica: <span className="font-medium">{formData.basic.technique === 'aim-framework' ? 'AIM Framework' : 'Biométrica'}</span></p>
-              
+
               <div className="mt-4 flex flex-col sm:flex-row gap-3">
-                <a 
+                <a
                   href={formData.basic.technique === 'aim-framework'
                     ? `/dashboard?research=${createdResearchId}&aim=true&section=welcome-screen`
                     : `/dashboard?research=${createdResearchId}&section=forms`
@@ -392,7 +391,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
                 >
                   Continuar con la investigación
                 </a>
-                <a 
+                <a
                   href="/dashboard"
                   className="inline-flex justify-center items-center px-6 py-3 text-sm font-medium text-neutral-700 bg-white border border-neutral-300 rounded-lg hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-500 shadow-sm"
                 >
@@ -416,7 +415,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
               </div>
             </div>
             <h2 className="text-2xl font-bold mb-4">Configurando AIM Framework</h2>
-            
+
             <div className="bg-neutral-50 p-4 rounded-lg w-full mb-6">
               <h3 className="font-medium text-lg mb-3 text-left">Resumen de opciones seleccionadas:</h3>
               <div className="space-y-2 text-left">
@@ -438,7 +437,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
                 </div>
               </div>
             </div>
-            
+
             <p className="text-lg mb-2">
               Preparando espacio de trabajo conforme a las opciones seleccionadas.
             </p>
@@ -494,7 +493,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
                   <div>
                     <h2 className="text-lg font-medium">Name the Research</h2>
                     <p className="text-neutral-500 text-sm mb-6">Please, name the research project and assign it to an existing client or create a new one</p>
-                    
+
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <label htmlFor="name" className="block text-sm font-medium text-neutral-900">
@@ -514,7 +513,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
 
                       <div className="space-y-2">
                         <label htmlFor="enterprise" className="block text-sm font-medium text-neutral-900">
-                          It's made for
+                          It&apos;s made for
                         </label>
                         <select
                           id="enterprise"
@@ -546,16 +545,16 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
                   <div>
                     <h2 className="text-xl font-medium mb-2">Kind of research</h2>
                     <p className="text-neutral-500 text-sm mb-6">
-                      Select the type of research you wish to carry out. In the next 
+                      Select the type of research you wish to carry out. In the next
                       step, you will be able to select between different configurations.
                     </p>
 
                     <div className="space-y-4">
                       {/* Solo Behavioural Research */}
                       <div className={cn(
-                        'p-4 border rounded-lg transition-colors', 
-                        formData.basic.type === ResearchType.BEHAVIOURAL 
-                          ? 'border-blue-500 bg-blue-50' 
+                        'p-4 border rounded-lg transition-colors',
+                        formData.basic.type === ResearchType.BEHAVIOURAL
+                          ? 'border-blue-500 bg-blue-50'
                           : 'border-neutral-200'
                       )}>
                         <div className="flex items-center justify-between">
@@ -650,8 +649,8 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
                       loading={isSubmitting && !showSummary}
                       disabled={!formData.basic.technique}
                     >
-                      {formData.basic.technique === 'aim-framework' 
-                        ? 'Setup AIM Framework' 
+                      {formData.basic.technique === 'aim-framework'
+                        ? 'Setup AIM Framework'
                         : 'Create Research'}
                     </Button>
                   )}
@@ -678,4 +677,4 @@ function getResearchTypeDescription(type: ResearchType): string {
     default:
       return '';
   }
-} 
+}

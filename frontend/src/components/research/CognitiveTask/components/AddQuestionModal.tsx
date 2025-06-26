@@ -1,5 +1,7 @@
 import React from 'react';
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
+
 import { Question } from '../types';
 
 interface QuestionType {

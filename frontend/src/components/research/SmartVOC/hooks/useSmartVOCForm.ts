@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
+import { SmartVOCFormData } from 'shared/interfaces/smart-voc.interface';
 
 import { useAuth } from '@/providers/AuthProvider';
 
-import { SmartVOCFormData } from 'shared/interfaces/smart-voc.interface';
 
 import { SmartVOCQuestion } from '../types';
+
 import { useSmartVOCMutations } from './useSmartVOCMutations';
 import { useSmartVOCState } from './useSmartVOCState';
 import { useSmartVOCValidation } from './useSmartVOCValidation';
@@ -93,10 +94,10 @@ export const useSmartVOCForm = (researchId: string) => {
       console.log(`[DIAGNÓSTICO] Intentando extraer ID. El ID encontrado es: '${responseWithId?.id}' (Tipo: ${typeof responseWithId?.id})`);
 
       if (responseWithId?.id) {
-        console.log(`[DIAGNÓSTICO] ✅ El ID es válido. Llamando a setSmartVocId con:`, responseWithId.id);
+        console.log('[DIAGNÓSTICO] ✅ El ID es válido. Llamando a setSmartVocId con:', responseWithId.id);
         setSmartVocId(responseWithId.id);
       } else {
-        console.error(`[DIAGNÓSTICO] 🛑 ¡ERROR CRÍTICO! No se encontró la propiedad 'id' en los datos de la API, aunque se esperaba. El botón de eliminar no se activará.`);
+        console.error('[DIAGNÓSTICO] 🛑 ¡ERROR CRÍTICO! No se encontró la propiedad \'id\' en los datos de la API, aunque se esperaba. El botón de eliminar no se activará.');
       }
     } else if (smartVocData && 'notFound' in smartVocData && smartVocData.notFound) {
       console.log('[DIAGNÓSTICO] No se encontró configuración existente. El botón de eliminar debe estar desactivado.');

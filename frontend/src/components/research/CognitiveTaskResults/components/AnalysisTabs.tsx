@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+
 import { cn } from '@/lib/utils';
 
 export type AnalysisTabType = 'sentiment' | 'themes' | 'keywords';
@@ -15,10 +16,10 @@ export function AnalysisTabs({ activeTab, onTabChange }: AnalysisTabsProps) {
     <div className="flex border-b border-neutral-200 bg-white sticky top-0 z-10">
       <button 
         className={cn(
-          "px-6 py-4 text-sm font-medium border-b-2 flex items-center gap-2",
+          'px-6 py-4 text-sm font-medium border-b-2 flex items-center gap-2',
           activeTab === 'sentiment' 
-            ? "border-blue-600 text-blue-600" 
-            : "border-transparent text-neutral-600 hover:text-neutral-800"
+            ? 'border-blue-600 text-blue-600' 
+            : 'border-transparent text-neutral-600 hover:text-neutral-800'
         )}
         onClick={() => onTabChange('sentiment')}
       >
@@ -32,10 +33,10 @@ export function AnalysisTabs({ activeTab, onTabChange }: AnalysisTabsProps) {
       </button>
       <button 
         className={cn(
-          "px-6 py-4 text-sm font-medium border-b-2 flex items-center gap-2",
+          'px-6 py-4 text-sm font-medium border-b-2 flex items-center gap-2',
           activeTab === 'themes' 
-            ? "border-blue-600 text-blue-600" 
-            : "border-transparent text-neutral-600 hover:text-neutral-800"
+            ? 'border-blue-600 text-blue-600' 
+            : 'border-transparent text-neutral-600 hover:text-neutral-800'
         )}
         onClick={() => onTabChange('themes')}
       >
@@ -47,10 +48,10 @@ export function AnalysisTabs({ activeTab, onTabChange }: AnalysisTabsProps) {
       </button>
       <button 
         className={cn(
-          "px-6 py-4 text-sm font-medium border-b-2 flex items-center gap-2",
+          'px-6 py-4 text-sm font-medium border-b-2 flex items-center gap-2',
           activeTab === 'keywords' 
-            ? "border-blue-600 text-blue-600" 
-            : "border-transparent text-neutral-600 hover:text-neutral-800"
+            ? 'border-blue-600 text-blue-600' 
+            : 'border-transparent text-neutral-600 hover:text-neutral-800'
         )}
         onClick={() => onTabChange('keywords')}
       >

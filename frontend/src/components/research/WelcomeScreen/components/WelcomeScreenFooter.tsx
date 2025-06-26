@@ -1,8 +1,10 @@
 import React from 'react';
+
 // import { WelcomeScreenFormProps } from '../types';
-import { Button } from '@/components/ui/Button';
-import { UI_TEXTS } from '../constants';
 import { FormFooter } from '@/components/ui/FormFooter';
+
+import { UI_TEXTS } from '../constants';
+
 
 // <<< Definir props específicas >>>
 interface WelcomeScreenFooterProps {

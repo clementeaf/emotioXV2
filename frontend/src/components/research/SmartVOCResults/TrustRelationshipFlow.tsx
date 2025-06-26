@@ -1,7 +1,5 @@
 'use client';
 
-import { Card } from '@/components/ui/Card';
-import { cn } from '@/lib/utils';
 import { 
   LineChart, 
   Line, 
@@ -12,6 +10,10 @@ import {
   CartesianGrid,
   Legend
 } from 'recharts';
+
+import { Card } from '@/components/ui/Card';
+import { cn } from '@/lib/utils';
+
 import { TrustFlowData } from './types';
 
 interface TrustRelationshipFlowProps {
@@ -61,7 +63,7 @@ const CustomLegend = ({ payload }: any) => {
 
 export const TrustRelationshipFlow = ({ data, className }: TrustRelationshipFlowProps) => {
   return (
-    <Card className={cn("p-6", className)}>
+    <Card className={cn('p-6', className)}>
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <div>

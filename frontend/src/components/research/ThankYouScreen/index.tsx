@@ -1,6 +1,8 @@
+import React from 'react';
+
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { cn } from '@/lib/utils';
-import React from 'react';
+
 import {
   ErrorModal,
   ThankYouScreenContent,

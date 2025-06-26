@@ -1,4 +1,5 @@
 import React from 'react';
+
 import {
   ErrorModal,
   WelcomeScreenContent,
@@ -44,7 +45,7 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
   if (isLoading) {
     return (
 
-        <WelcomeScreenSkeleton />
+      <WelcomeScreenSkeleton />
     );
   }
 

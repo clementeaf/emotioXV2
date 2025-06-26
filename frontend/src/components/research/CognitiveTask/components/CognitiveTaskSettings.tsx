@@ -1,7 +1,9 @@
 import React from 'react';
+
 import { Switch } from '@/components/ui/Switch';
-import { CognitiveTaskFieldsProps as CognitiveTaskSettingsProps } from '../types';
+
 import { UI_TEXTS } from '../constants';
+import { CognitiveTaskFieldsProps as CognitiveTaskSettingsProps } from '../types';
 
 /**
  * Componente para las configuraciones generales de las tareas cognitivas

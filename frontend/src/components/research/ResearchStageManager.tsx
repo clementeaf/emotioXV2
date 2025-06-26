@@ -3,12 +3,13 @@
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 
+import { ConfigCard } from '@/components/common/ConfigCard';
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
+import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 
 import { CognitiveTaskForm } from './CognitiveTask';
 // import { EyeTrackingForm } from './EyeTracking/EyeTrackingForm';
-import { ConfigCard } from '@/components/common/ConfigCard';
-import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
+
 import { CognitiveTaskResults } from './CognitiveTaskResults';
 import { RecruitEyeTrackingForm } from './EyeTracking/Recruit/RecruitEyeTrackingForm';
 import { SmartVOCForm } from './SmartVOC';

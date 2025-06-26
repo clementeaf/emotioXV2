@@ -1,9 +1,4 @@
-import { Badge } from "@/components/ui/Badge";
-import { Card } from "@/components/ui/Card";
-import Progress from "./ui/Progress";
-import { CircularProgress } from "@/components/ui/CircularProgress";
-import { cn } from "@/lib/utils";
-import { Target } from "lucide-react";
+import { Target } from 'lucide-react';
 import { 
   ComposedChart, 
   Bar, 
@@ -12,9 +7,14 @@ import {
   YAxis, 
   CartesianGrid, 
   Tooltip, 
-  ResponsiveContainer,
-  Legend
+  ResponsiveContainer
 } from 'recharts';
+
+import { Badge } from '@/components/ui/Badge';
+import { Card } from '@/components/ui/Card';
+import { CircularProgress } from '@/components/ui/CircularProgress';
+
+import Progress from './ui/Progress';
 
 interface QuestionResultProps {
   questionNumber: string;
@@ -42,11 +42,11 @@ interface QuestionResultProps {
   }>;
   loyaltyEvolution?: {
     promoters: number;
-    promotersTrend: "up" | "down";
+    promotersTrend: 'up' | 'down';
     detractors: number;
-    detractorsTrend: "up" | "down";
+    detractorsTrend: 'up' | 'down';
     neutrals: number;
-    neutralsTrend: "up" | "down";
+    neutralsTrend: 'up' | 'down';
     changePercentage: number;
   };
 }
@@ -133,9 +133,9 @@ export function QuestionResults({
                   value={item.percentage} 
                   className="h-2" 
                   indicatorClassName={
-                    item.color === "green" ? "bg-green-500" :
-                    item.color === "gray" ? "bg-gray-400" :
-                    "bg-red-500"
+                    item.color === 'green' ? 'bg-green-500' :
+                      item.color === 'gray' ? 'bg-gray-400' :
+                        'bg-red-500'
                   }
                 />
               </div>
@@ -245,7 +245,7 @@ export function QuestionResults({
                     dataKey="npsRatio"
                     stroke="#4F46E5"
                     strokeWidth={2}
-                    dot={{ r: 4, fill: "#4F46E5" }}
+                    dot={{ r: 4, fill: '#4F46E5' }}
                     activeDot={{ r: 6 }}
                     name="NPS Ratio"
                   />
@@ -269,7 +269,7 @@ export function QuestionResults({
                     <div className="flex items-center justify-center gap-2">
                       <span className="text-2xl font-semibold">{loyaltyEvolution.promoters ?? 0}%</span>
                       {loyaltyEvolution.promotersTrend && (
-                        loyaltyEvolution.promotersTrend === "up" ? (
+                        loyaltyEvolution.promotersTrend === 'up' ? (
                           <svg className="w-5 h-5 text-green-600" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M10 17a.75.75 0 01-.75-.75V5.612L5.29 9.77a.75.75 0 01-1.08-1.04l5.25-5.5a.75.75 0 011.08 0l5.25 5.5a.75.75 0 11-1.08 1.04l-3.96-4.158V16.25A.75.75 0 0110 17z" clipRule="evenodd" />
                           </svg>
@@ -287,7 +287,7 @@ export function QuestionResults({
                     <div className="flex items-center justify-center gap-2">
                       <span className="text-2xl font-semibold">{loyaltyEvolution.detractors ?? 0}%</span>
                       {loyaltyEvolution.detractorsTrend && (
-                        loyaltyEvolution.detractorsTrend === "up" ? (
+                        loyaltyEvolution.detractorsTrend === 'up' ? (
                           <svg className="w-5 h-5 text-red-600" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M10 3a.75.75 0 01.75.75v10.638l3.96-4.158a.75.75 0 111.08 1.04l-5.25 5.5a.75.75 0 01-1.08 0l-5.25-5.5a.75.75 0 111.08-1.04l3.96 4.158V3.75A.75.75 0 0110 3z" clipRule="evenodd" />
                           </svg>
@@ -305,7 +305,7 @@ export function QuestionResults({
                     <div className="flex items-center justify-center gap-2">
                       <span className="text-2xl font-semibold">{loyaltyEvolution.neutrals ?? 0}%</span>
                       {loyaltyEvolution.neutralsTrend && (
-                        loyaltyEvolution.neutralsTrend === "up" ? (
+                        loyaltyEvolution.neutralsTrend === 'up' ? (
                           <svg className="w-5 h-5 text-green-600" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M10 17a.75.75 0 01-.75-.75V5.612L5.29 9.77a.75.75 0 01-1.08-1.04l5.25-5.5a.75.75 0 011.08 0l5.25 5.5a.75.75 0 11-1.08 1.04l-3.96-4.158V16.25A.75.75 0 0110 17z" clipRule="evenodd" />
                           </svg>

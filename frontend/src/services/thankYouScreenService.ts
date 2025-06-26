@@ -1,4 +1,4 @@
-import { apiClient } from '../config/api-client';
+import { thankYouScreenFixedAPI } from '@/lib/thank-you-screen-api';
 
 /**
  * Interfaz para los datos de la pantalla de agradecimiento
@@ -36,12 +36,8 @@ export const thankYouScreenService = {
    * @returns Pantalla de agradecimiento
    */
   async getById(id: string): Promise<ThankYouScreenRecord> {
-    try {
-      return await apiClient.get<ThankYouScreenRecord, 'thankYouScreen'>('thankYouScreen', 'GET', { id });
-    } catch (error) {
-      console.error(`Error al obtener pantalla de agradecimiento ${id}:`, error);
-      throw error;
-    }
+    const response = await thankYouScreenFixedAPI.getById(id).send();
+    return response;
   },
 
   /**
@@ -50,12 +46,8 @@ export const thankYouScreenService = {
    * @returns Pantalla de agradecimiento
    */
   async getByResearchId(researchId: string): Promise<ThankYouScreenRecord> {
-    try {
-      return await apiClient.get<ThankYouScreenRecord, 'thankYouScreen'>('thankYouScreen', 'GET_BY_RESEARCH', { researchId });
-    } catch (error) {
-      console.error(`Error al obtener pantalla de agradecimiento para investigación ${researchId}:`, error);
-      throw error;
-    }
+    const response = await thankYouScreenFixedAPI.getByResearchId(researchId).send();
+    return response;
   },
 
   /**
@@ -64,12 +56,8 @@ export const thankYouScreenService = {
    * @returns Pantalla creada
    */
   async create(data: ThankYouScreenData): Promise<ThankYouScreenRecord> {
-    try {
-      return await apiClient.post<ThankYouScreenRecord, ThankYouScreenData, 'thankYouScreen'>('thankYouScreen', 'CREATE', data);
-    } catch (error) {
-      console.error('Error al crear pantalla de agradecimiento:', error);
-      throw error;
-    }
+    const response = await thankYouScreenFixedAPI.create(data).send();
+    return response;
   },
 
   /**
@@ -79,12 +67,8 @@ export const thankYouScreenService = {
    * @returns Pantalla actualizada
    */
   async update(id: string, data: Partial<ThankYouScreenData>): Promise<ThankYouScreenRecord> {
-    try {
-      return await apiClient.put<ThankYouScreenRecord, Partial<ThankYouScreenData>, 'thankYouScreen'>('thankYouScreen', 'UPDATE', data, { id });
-    } catch (error) {
-      console.error(`Error al actualizar pantalla de agradecimiento ${id}:`, error);
-      throw error;
-    }
+    const response = await thankYouScreenFixedAPI.update(id, data).send();
+    return response;
   },
 
   /**
@@ -92,12 +76,8 @@ export const thankYouScreenService = {
    * @param id ID de la pantalla
    */
   async delete(id: string): Promise<void> {
-    try {
-      await apiClient.delete<void, 'thankYouScreen'>('thankYouScreen', 'DELETE', { id });
-    } catch (error) {
-      console.error(`Error al eliminar pantalla de agradecimiento ${id}:`, error);
-      throw error;
-    }
+    const response = await thankYouScreenFixedAPI.delete(id).send();
+    return response;
   },
 
   /**
@@ -127,4 +107,4 @@ export const thankYouScreenService = {
   }
 };
 
-export default thankYouScreenService; 
+export default thankYouScreenService;

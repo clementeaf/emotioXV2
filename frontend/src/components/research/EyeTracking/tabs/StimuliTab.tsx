@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import FileUploader from '@/components/FileUploader/FileUploader';
 import { EyeTrackingFormData, EyeTrackingStimulus } from 'shared/interfaces/eye-tracking.interface';
+
+import FileUploader from '@/components/FileUploader/FileUploader';
 import { useErrorLog } from '@/components/utils/ErrorLogger';
 
 interface StimuliTabProps {
@@ -160,7 +161,7 @@ export const StimuliTab: React.FC<StimuliTabProps> = ({
         
         try {
           const currentResearchId = researchIdRef.current;
-          if (!currentResearchId) return;
+          if (!currentResearchId) {return;}
           
           // Debemos comprobar la clave de localStorage para archivos ya subidos
           const stimuliTabStorageKey = `eye_tracking_fileuploader_${currentResearchId}`;

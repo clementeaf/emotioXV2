@@ -1,5 +1,15 @@
-import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+
+
+import { thankYouScreenFixedAPI } from '@/lib/thank-you-screen-api';
+import { useAuth } from '@/providers/AuthProvider';
+
+import {
+  QUERY_KEYS,
+  ERROR_MESSAGES,
+  SUCCESS_MESSAGES
+} from '../constants';
 import {
   ThankYouScreenFormData,
   ThankYouScreenConfig,
@@ -8,14 +18,6 @@ import {
   DEFAULT_THANK_YOU_SCREEN_VALIDATION,
   UseThankYouScreenFormResult
 } from '../types';
-import { thankYouScreenFixedAPI } from '@/lib/thank-you-screen-api';
-import {
-  QUERY_KEYS,
-  ERROR_MESSAGES,
-  SUCCESS_MESSAGES
-} from '../constants';
-import { useAuth } from '@/providers/AuthProvider';
-import { authService } from '@/services/authService';
 
 /**
  * Hook personalizado para gestionar la lógica del formulario de pantalla de agradecimiento

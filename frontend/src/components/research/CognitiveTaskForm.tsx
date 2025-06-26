@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { CognitiveTaskFormData } from 'shared/interfaces/cognitive-task.interface';
+
 import { CognitiveTaskForm as ModularForm } from './CognitiveTask';
 
 // Props para el componente principal

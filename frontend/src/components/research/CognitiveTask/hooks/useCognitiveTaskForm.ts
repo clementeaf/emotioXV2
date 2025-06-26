@@ -1,23 +1,25 @@
-import { ApiError } from '@/config/api-client';
-import { cognitiveTaskFixedAPI } from '@/lib/cognitive-task-api';
-import { useAuth } from '@/providers/AuthProvider';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useState } from 'react';
 import {
-    CognitiveTaskFormData,
-    Question,
-    UploadedFile
+  CognitiveTaskFormData,
+  Question,
+  UploadedFile
 } from 'shared/interfaces/cognitive-task.interface';
+
+import { useAuth } from '@/providers/AuthProvider';
+import { cognitiveTaskService } from '@/services/cognitiveTaskService';
+
 import {
-    logFormDebugInfo
+  logFormDebugInfo
 } from '../../CognitiveTaskFormHelpers';
 import {
-    QUERY_KEYS,
-    SUCCESS_MESSAGES
+  QUERY_KEYS,
+  SUCCESS_MESSAGES
 } from '../constants';
 import type { ErrorModalData } from '../types';
 import { ValidationErrors } from '../types';
 import { debugQuestionsToSend, filterValidQuestions } from '../utils/validateRequiredFields';
+
 import { useCognitiveTaskFileUpload } from './useCognitiveTaskFileUpload';
 import { useCognitiveTaskModals } from './useCognitiveTaskModals';
 import { DEFAULT_STATE as DEFAULT_COGNITIVE_TASK_STATE, useCognitiveTaskState } from './useCognitiveTaskState';
@@ -149,8 +151,16 @@ export const useCognitiveTaskForm = (
   const { user, token } = useAuth();
   const isAuthenticated = !!user && !!token;
 
+  console.log('[useCognitiveTaskForm] Estado de autenticación:', {
+    user: !!user,
+    token: !!token,
+    isAuthenticated,
+    researchId,
+    tokenLength: token?.length
+  });
+
   // <<< Usar hook de estado >>>
-    const {
+  const {
     formData,
     setFormData,
     handleQuestionChange,
@@ -167,14 +177,14 @@ export const useCognitiveTaskForm = (
 
   // <<< Usar hook de archivos >>>
   const {
-      isUploading,
-      uploadProgress,
-      currentFileIndex,
-      totalFiles,
-      handleFileUpload,
-      handleMultipleFilesUpload,
-      handleFileDelete: originalHandleFileDelete,
-      loadFilesFromLocalStorage
+    isUploading,
+    uploadProgress,
+    currentFileIndex,
+    totalFiles,
+    handleFileUpload,
+    handleMultipleFilesUpload,
+    handleFileDelete: originalHandleFileDelete,
+    loadFilesFromLocalStorage
   } = useCognitiveTaskFileUpload({ researchId, formData, setFormData });
 
   // Consulta para obtener datos existentes (usando la nueva API)
@@ -198,8 +208,7 @@ export const useCognitiveTaskForm = (
           await new Promise(resolve => setTimeout(resolve, 500));
         }
 
-        const response = await cognitiveTaskFixedAPI.getByResearchId(researchId);
-
+        const response = await cognitiveTaskService.getByResearchId(researchId);
 
         logFormDebugInfo('queryFn-post-fetch', response);
 
@@ -212,8 +221,8 @@ export const useCognitiveTaskForm = (
       } catch (error: any) {
         logFormDebugInfo('queryFn-error', null, error, { researchId });
 
-        if (error instanceof ApiError && error.statusCode === 404) {
-            return null;
+        if (error && error.message?.includes('404')) {
+          return null;
         }
 
         try {
@@ -235,12 +244,10 @@ export const useCognitiveTaskForm = (
     refetchOnWindowFocus: false
   });
 
-    // Efecto para actualizar el formulario cuando los datos de la consulta se cargan
+  // Efecto para actualizar el formulario cuando los datos de la consulta se cargan
   useEffect(() => {
     if (!isLoading) { // Solo actuar cuando la carga inicial haya terminado
       if (cognitiveTaskData) {
-
-
         // Procesar los datos manteniendo hitZones locales si existen
         const processedData = {
           ...cognitiveTaskData,
@@ -289,7 +296,6 @@ export const useCognitiveTaskForm = (
         setFormData(processedData);
         setCognitiveTaskId((cognitiveTaskData as any).id || null);
       } else {
-
         setFormData({
           ...DEFAULT_COGNITIVE_TASK_STATE,
           researchId: researchId || ''
@@ -299,16 +305,14 @@ export const useCognitiveTaskForm = (
     }
   }, [cognitiveTaskData, isLoading, researchId, setFormData]);
 
-  const saveMutation = useMutation<CognitiveTaskFormData, ApiError, CognitiveTaskFormData>({
+  const saveMutation = useMutation<CognitiveTaskFormData, unknown, CognitiveTaskFormData>({
     mutationFn: async (dataToSave: CognitiveTaskFormData): Promise<CognitiveTaskFormData> => {
-      if (!researchId) throw new Error('ID de investigación no encontrado');
-
-
+      if (!researchId) {throw new Error('ID de investigación no encontrado');}
 
       logFormDebugInfo('pre-save', dataToSave, null, { cognitiveTaskId });
 
       // SIEMPRE usar la ruta 'save' que maneja tanto creación como actualización
-      return cognitiveTaskFixedAPI.save(researchId, dataToSave);
+      return cognitiveTaskService.save(researchId, dataToSave);
     },
     onSuccess: (data) => {
       // Extraer el ID de la respuesta y actualizar el estado
@@ -324,12 +328,12 @@ export const useCognitiveTaskForm = (
         message: 'La configuración se guardó correctamente.',
         type: 'success'
       });
-      if (onSave) onSave(data);
+      if (onSave) {onSave(data);}
     },
     onError: (error) => {
       modals.showErrorModal({
         title: 'Error al Guardar',
-        message: error.message || 'Ocurrió un error inesperado.',
+        message: (error && typeof error === 'object' && 'message' in error) ? (error as any).message : 'Ocurrió un error inesperado.',
         type: 'error'
       });
     },
@@ -338,11 +342,8 @@ export const useCognitiveTaskForm = (
   // Hook de mutación para eliminar toda la configuración de la tarea cognitiva por researchId
   const { mutate: deleteMutation, isPending: isDeleting } = useMutation<void, Error, string>({
     mutationFn: (id: string) => {
-      if (!cognitiveTaskFixedAPI) {
-        throw new Error('API client no inicializado');
-      }
       // Corregido: Llamar al método correcto que construye la URL adecuadamente
-      return cognitiveTaskFixedAPI.deleteByResearchId(id);
+      return cognitiveTaskService.deleteByResearchId(id);
     },
     onSuccess: (_, deletedResearchId) => {
       modals.showErrorModal({
@@ -355,7 +356,7 @@ export const useCognitiveTaskForm = (
       // Restaurar el estado del formulario con las preguntas por defecto (3.1 a 3.8)
       setFormData({
         ...DEFAULT_COGNITIVE_TASK_STATE,
-        researchId: deletedResearchId
+        researchId: deletedResearchId || ''
       });
       setCognitiveTaskId(null);
     },
@@ -400,9 +401,9 @@ export const useCognitiveTaskForm = (
 
   // Wrapper para validación (actualizar para que coincida)
   const validateCurrentForm = useCallback((): ValidationErrors | null => {
-      // Pasar solo los campos necesarios de formData para la validación
-      const dataToValidate = { questions: formData.questions };
-      return runValidation(dataToValidate, researchId);
+    // Pasar solo los campos necesarios de formData para la validación
+    const dataToValidate = { questions: formData.questions };
+    return runValidation(dataToValidate, researchId);
   }, [formData.questions, researchId, runValidation]); // Asegurar dependencias correctas
 
   const handlePreview = async () => {
@@ -414,7 +415,7 @@ export const useCognitiveTaskForm = (
       // 3. Abrir el modal de previsualización interactiva
       modals.openInteractivePreview();
     } catch (error) {
-      console.error("Error al refrescar los datos para la vista previa:", error);
+      console.error('Error al refrescar los datos para la vista previa:', error);
       modals.showErrorModal({
         title: 'Error de Sincronización',
         message: 'No se pudieron cargar los datos más recientes para la vista previa. Inténtalo de nuevo.',
@@ -493,7 +494,7 @@ export const useCognitiveTaskForm = (
     if (researchId) {
       deleteMutation(researchId);
     } else {
-      console.error("No se puede eliminar porque researchId es undefined.");
+      console.error('No se puede eliminar porque researchId es undefined.');
       modals.showErrorModal({
         title: 'Error',
         message: 'No se puede eliminar la configuración porque no se ha proporcionado un ID de investigación.',

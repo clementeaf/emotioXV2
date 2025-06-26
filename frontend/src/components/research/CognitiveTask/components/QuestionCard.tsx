@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Question } from 'shared/interfaces/cognitive-task.interface';
+
 import { ChoiceQuestion } from './questions/ChoiceQuestion';
 import { FileUploadQuestion } from './questions/FileUploadQuestion';
 import { ScaleQuestion } from './questions/ScaleQuestion';

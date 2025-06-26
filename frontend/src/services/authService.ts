@@ -1,4 +1,4 @@
-import { apiClient } from '../config/api-client';
+import { apiClient } from '../config/api';
 
 /**
  * Datos para el registro de usuario
@@ -44,15 +44,15 @@ export const authService = {
    */
   async register(data: RegisterData): Promise<AuthResponse> {
     try {
-      const response = await apiClient.post<AuthResponse, RegisterData, 'auth'>('auth', 'REGISTER', data);
-      
+      const response = await apiClient.post('auth', 'register', data) as AuthResponse;
+
       // Almacenar el token en localStorage para uso en futuras peticiones
       if (response.token) {
         localStorage.setItem('token', response.token);
         localStorage.setItem('refreshToken', response.refreshToken);
         apiClient.setAuthToken(response.token);
       }
-      
+
       return response;
     } catch (error) {
       console.error('Error durante el registro:', error);
@@ -67,15 +67,15 @@ export const authService = {
    */
   async login(data: LoginData): Promise<AuthResponse> {
     try {
-      const response = await apiClient.post<AuthResponse, LoginData, 'auth'>('auth', 'LOGIN', data);
-      
+      const response = await apiClient.post('auth', 'login', data) as AuthResponse;
+
       // Almacenar el token en localStorage para uso en futuras peticiones
       if (response.token) {
         localStorage.setItem('token', response.token);
         localStorage.setItem('refreshToken', response.refreshToken);
         apiClient.setAuthToken(response.token);
       }
-      
+
       return response;
     } catch (error) {
       console.error('Error durante el inicio de sesión:', error);
@@ -88,8 +88,8 @@ export const authService = {
    */
   async logout(): Promise<void> {
     try {
-      await apiClient.post<void, {}, 'auth'>('auth', 'LOGOUT', {});
-      
+      await apiClient.post('auth', 'logout', {});
+
       // Limpiar tokens almacenados
       localStorage.removeItem('token');
       localStorage.removeItem('refreshToken');
@@ -124,4 +124,4 @@ export const authService = {
   }
 };
 
-export default authService; 
+export default authService;

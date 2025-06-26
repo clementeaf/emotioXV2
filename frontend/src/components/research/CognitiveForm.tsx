@@ -5,8 +5,9 @@
  * Este archivo se mantiene para compatibilidad pero usa la interfaz compartida
  */
 
-import { CognitiveTaskForm as CognitiveTaskFormComponent } from './CognitiveTaskForm';
 import { CognitiveTaskFormData } from 'shared/interfaces/cognitive-task.interface';
+
+import { CognitiveTaskForm as CognitiveTaskFormComponent } from './CognitiveTaskForm';
 
 // Tipos para las props del componente
 interface CognitiveTaskFormProps {

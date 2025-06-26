@@ -1,4 +1,5 @@
 import { memo } from 'react';
+
 import { ErrorSectionProps } from '../../../../../shared/interfaces/research-creation.interface';
 
 /**

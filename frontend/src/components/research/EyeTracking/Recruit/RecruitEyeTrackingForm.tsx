@@ -1,10 +1,12 @@
 'use client';
 
+import React from 'react';
+
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { Spinner } from '@/components/ui/Spinner';
 import { cn } from '@/lib/utils';
 import { BacklinkKeys, DemographicQuestionKeys, ParameterOptionKeys } from '@/shared/interfaces/eyeTrackingRecruit.interface';
-import React from 'react';
+
 import { ErrorModal } from './components';
 import { useEyeTrackingRecruit } from './hooks/useEyeTrackingRecruit';
 
@@ -35,10 +37,10 @@ const Checkbox = React.forwardRef<HTMLButtonElement, CheckboxProps>(
         role="checkbox"
         aria-checked={isChecked}
         id={id}
-        data-state={isChecked ? "checked" : "unchecked"}
+        data-state={isChecked ? 'checked' : 'unchecked'}
         onClick={handleClick}
         className={cn(
-          "peer h-4 w-4 shrink-0 rounded-sm border border-primary ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground",
+          'peer h-4 w-4 shrink-0 rounded-sm border border-primary ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground',
           className
         )}
         {...props}
@@ -62,7 +64,7 @@ const Checkbox = React.forwardRef<HTMLButtonElement, CheckboxProps>(
   }
 );
 
-Checkbox.displayName = "Checkbox";
+Checkbox.displayName = 'Checkbox';
 
 interface RecruitEyeTrackingFormProps {
   researchId: string;
@@ -110,7 +112,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
   if (loading) {
     return (
       <>
-        <div className={cn("max-w-4xl", className)}>
+        <div className={cn('max-w-4xl', className)}>
           <LoadingSkeleton variant="form" rows={8} title={true} />
         </div>
       </>
@@ -119,7 +121,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
 
   return (
     <>
-      <div className={cn("max-w-[1600px]", className)}>
+      <div className={cn('max-w-[1600px]', className)}>
         <div className="rounded-xl overflow-hidden">
           <div className="p-6">
             <div className="flex flex-col md:flex-row gap-8">
@@ -365,7 +367,9 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           </div>
                         </div>
                       </h3>
-                      <p className="text-sm text-neutral-500 mb-4">Utilice parámetros uid para transmitir los ID de los participantes a su sistema</p>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Los participantes podrán acceder a tu investigación usando el enlace de reclutamiento que se generará. Asegúrate de que la configuración sea correcta antes de continuar.
+                      </p>
 
                       <div className="space-y-4">
                         <div>
@@ -424,15 +428,17 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                             <p><strong>¿Cómo funciona este enlace?</strong></p>
                             <p className="mt-1">Esta es la URL que se debe compartir con participantes potenciales para invitarlos al estudio. Funciona así:</p>
                             <ul className="list-disc pl-5 mt-1">
-                              <li>La URL contiene un marcador <code className="bg-green-100 px-1 py-0.5 rounded">{"participant_id"}</code> que debe ser reemplazado</li>
+                              <li>La URL contiene un marcador <code className="bg-green-100 px-1 py-0.5 rounded">{'participant_id'}</code> que debe ser reemplazado</li>
                               <li>Si usa un panel externo, ellos reemplazarán este marcador con el ID único de cada participante</li>
                               <li>Si comparte manualmente, puede reemplazarlo con cualquier identificador (ej. correo o nombre)</li>
                             </ul>
-                            <p className="mt-1">Ejemplo: <code className="bg-green-100 px-1 py-0.5 rounded">www.useremotion.com/sysgd-jye746?respondent=123</code> donde "123" es el ID único del participante.</p>
+                            <p className="mt-1">Ejemplo: <code className="bg-green-100 px-1 py-0.5 rounded">www.useremotion.com/sysgd-jye746?respondent=123</code> donde &quot;123&quot; es el ID único del participante.</p>
                           </div>
                         </div>
                       </h3>
-                      <p className="text-sm text-neutral-500 mb-4">El sistema de invitación externo debe sustituir el parámetro [ID del participante] por el ID individual del participante.</p>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Los participantes podrán acceder a tu investigación usando el enlace de reclutamiento que se generará. Asegúrate de que la configuración sea correcta antes de continuar.
+                      </p>
 
                       <div>
                         <label className="block text-sm mb-2">URL de la investigación</label>
@@ -533,20 +539,20 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                   </div>
                 </div>
                 <div className="flex justify-end self-end">
-                <button
-                  type="button"
-                  onClick={saveForm}
-                  disabled={saving}
-                  className="px-4 py-2 rounded-lg bg-neutral-900 text-white shadow hover:bg-neutral-800 text-sm font-medium disabled:opacity-50 flex items-center justify-center min-w-[160px] mt-8"
-                >
-                  {saving ? (
-                    <div className="flex items-center gap-2">
-                      <Spinner size="sm" className="text-white" />
-                      <span>Guardando...</span>
-                    </div>
-                  ) : getSaveButtonText()}
-                </button>
-              </div>
+                  <button
+                    type="button"
+                    onClick={saveForm}
+                    disabled={saving}
+                    className="px-4 py-2 rounded-lg bg-neutral-900 text-white shadow hover:bg-neutral-800 text-sm font-medium disabled:opacity-50 flex items-center justify-center min-w-[160px] mt-8"
+                  >
+                    {saving ? (
+                      <div className="flex items-center gap-2">
+                        <Spinner size="sm" className="text-white" />
+                        <span>Guardando...</span>
+                      </div>
+                    ) : getSaveButtonText()}
+                  </button>
+                </div>
               </div>
             </div>
           </div>

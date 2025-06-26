@@ -1,13 +1,5 @@
 import { Dispatch, SetStateAction, useCallback, useState } from 'react';
-import { Question } from 'shared/interfaces/cognitive-task.interface';
-
-// Definir CognitiveTaskFormData localmente
-interface CognitiveTaskFormData {
-  researchId: string;
-  questions: Question[];
-  randomizeQuestions: boolean;
-  metadata?: any;
-}
+import type { CognitiveTaskFormData, Question } from 'shared/interfaces/cognitive-task.interface';
 
 // Interfaz para las props del hook de estado
 interface UseCognitiveTaskStateProps {
@@ -180,12 +172,12 @@ export const useCognitiveTaskState = ({
       questions: prevData.questions.map(q =>
         q.id === questionId && q.choices
           ? {
-              ...q,
-              choices: [
-                ...q.choices,
-                { id: String(q.choices.length + 1), text: '', isQualify: false, isDisqualify: false }
-              ]
-            }
+            ...q,
+            choices: [
+              ...q.choices,
+              { id: String(q.choices.length + 1), text: '', isQualify: false, isDisqualify: false }
+            ]
+          }
           : q
       )
     }));
@@ -198,9 +190,9 @@ export const useCognitiveTaskState = ({
       questions: prevData.questions.map(q =>
         q.id === questionId && q.choices
           ? {
-              ...q,
-              choices: q.choices.filter(c => c.id !== choiceId)
-            }
+            ...q,
+            choices: q.choices.filter(c => c.id !== choiceId)
+          }
           : q
       )
     }));

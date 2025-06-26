@@ -1,7 +1,8 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { LoadingScreen } from '@/components/ui/LoadingScreen';
+import { apiClient } from '@/config/api';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
 interface User {
   id: string;
@@ -37,6 +38,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [authError, setAuthError] = useState<string | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
+  // Configurar token en el cliente API cuando esté disponible
+  useEffect(() => {
+    if (token) {
+      console.log('🔑 [AuthProvider] Configurando token en cliente API:', token.substring(0, 20) + '...');
+      // Agregar un pequeño delay para asegurar que se configure correctamente
+      setTimeout(() => {
+        apiClient.setAuthToken(token);
+        console.log('🔑 [AuthProvider] Token configurado en cliente API');
+      }, 100);
+    } else {
+      console.log('🔑 [AuthProvider] Limpiando token del cliente API');
+      apiClient.clearAuthToken();
+    }
+  }, [token]);
+
   // Función simple para guardar en storage
   const saveToStorage = (rememberMe: boolean, data: { token: string; user: User }) => {
     const storage = rememberMe ? localStorage : sessionStorage;
@@ -68,28 +84,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Buscar token en localStorage primero
       let storedToken = localStorage.getItem('token');
       let authType = 'local';
-      
+
       // Si no está en localStorage, intentar en sessionStorage
       if (!storedToken) {
         storedToken = sessionStorage.getItem('token');
         authType = 'session';
       }
-      
+
       // Si no hay token en ningún storage, no podemos restaurar
       if (!storedToken) {
         console.log('No se encontró ningún token almacenado');
         return false;
       }
-      
+
       try {
         // Decodificar el token para verificar si es válido
         const tokenParts = storedToken.split('.');
         if (tokenParts.length !== 3) {
           throw new Error('Token inválido');
         }
-        
+
         const payload = JSON.parse(atob(tokenParts[1]));
-        
+
         // Verificar si el token ha expirado
         const now = Math.floor(Date.now() / 1000);
         if (payload.exp && payload.exp < now) {
@@ -97,18 +113,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           clearStorage();
           return false;
         }
-        
+
         // Token válido, extraer datos del usuario
         const userData: User = {
           id: payload.id || payload.sub,
           email: payload.email,
           name: payload.name
         };
-        
+
         // Actualizar estado
         setToken(storedToken);
         setUser(userData);
-        
+
         console.log('Sesión restaurada exitosamente');
         return true;
       } catch (error) {
@@ -129,7 +145,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Decodificar el token
       const tokenParts = newToken.split('.');
       if (tokenParts.length !== 3) throw new Error('Token inválido');
-      
+
       const payload = JSON.parse(atob(tokenParts[1]));
       const userData: User = {
         id: payload.id || payload.sub,
@@ -141,12 +157,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Guardar en storage
       saveToStorage(rememberMe, { token: newToken, user: userData });
-      
+
       // Actualizar estado
       setToken(newToken);
       setUser(userData);
       setAuthError(null);
-      
+
       console.log('Login completado exitosamente');
       window.location.href = '/dashboard';
     } catch (error) {
@@ -187,9 +203,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const authType = localStorage.getItem('auth_type');
       const storage = authType === 'session' ? sessionStorage : localStorage;
-      
+
       const storedToken = storage.getItem('token');
       const storedUser = storage.getItem('user');
+
+      console.log('[AuthProvider] Datos encontrados:', {
+        authType,
+        hasToken: !!storedToken,
+        hasUser: !!storedUser,
+        tokenLength: storedToken?.length
+      });
 
       if (storedToken && storedUser) {
         console.log('Encontrados datos almacenados');
@@ -225,4 +248,4 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       {children}
     </AuthContext.Provider>
   );
-}; 
+};

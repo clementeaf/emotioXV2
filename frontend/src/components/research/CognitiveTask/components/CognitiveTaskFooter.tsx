@@ -1,5 +1,6 @@
-import { FormFooter } from '@/components/ui/FormFooter';
 import React from 'react';
+
+import { FormFooter } from '@/components/ui/FormFooter';
 
 interface CognitiveTaskFooterProps {
   onSave: () => void;

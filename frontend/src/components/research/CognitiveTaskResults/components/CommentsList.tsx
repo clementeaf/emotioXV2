@@ -1,8 +1,10 @@
 'use client';
 
 import React from 'react';
-import { cn } from '@/lib/utils';
 import { BiSelectMultiple } from 'react-icons/bi';
+
+import { cn } from '@/lib/utils';
+
 import { SentimentResult } from '../types';
 
 interface CommentsListProps {
@@ -53,15 +55,15 @@ export function CommentsList({
             <div>
               <span 
                 className={cn(
-                  "px-3 py-1 rounded-md text-sm",
-                  item.sentiment === 'positive' && "bg-green-100 text-green-700",
-                  item.sentiment === 'neutral' && "bg-neutral-100 text-neutral-700",
-                  item.sentiment === 'negative' && "bg-red-100 text-red-700",
-                  item.sentiment === 'green' && "bg-green-100 text-green-700",
+                  'px-3 py-1 rounded-md text-sm',
+                  item.sentiment === 'positive' && 'bg-green-100 text-green-700',
+                  item.sentiment === 'neutral' && 'bg-neutral-100 text-neutral-700',
+                  item.sentiment === 'negative' && 'bg-red-100 text-red-700',
+                  item.sentiment === 'green' && 'bg-green-100 text-green-700',
                 )}
               >
                 {item.sentiment === 'green' ? 'Positive' : 
-                 item.sentiment.charAt(0).toUpperCase() + item.sentiment.slice(1)}
+                  item.sentiment.charAt(0).toUpperCase() + item.sentiment.slice(1)}
               </span>
             </div>
           </div>

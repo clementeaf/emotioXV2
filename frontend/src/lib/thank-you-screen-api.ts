@@ -3,19 +3,19 @@
  * Implementación actualizada con manejo mejorado de errores y URL
  */
 
-import API_CONFIG from '@/config/api.config';
+import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 
 // Función auxiliar para obtener el token correctamente desde localStorage o sessionStorage
 const getToken = () => {
   if (typeof window !== 'undefined') {
     // Verificar el tipo de almacenamiento utilizado (localStorage o sessionStorage)
     const storageType = localStorage.getItem('auth_storage_type') || 'local';
-    
+
     // Obtener token del almacenamiento correspondiente
     const token = storageType === 'local'
       ? localStorage.getItem('token') || ''
       : sessionStorage.getItem('token') || '';
-    
+
     return token;
   }
   return '';
@@ -28,7 +28,7 @@ const getToken = () => {
  */
 const handleThankYouScreenResponse = async (response: Response) => {
   console.log(`[ThankYouScreenAPI] Respuesta recibida: ${response.status} ${response.statusText}`);
-  
+
   // Ya no lanzamos error para 404 aquí, porque lo manejamos en getByResearchId
   // Intentar obtener el cuerpo como JSON
   try {
@@ -52,12 +52,12 @@ const handleThankYouScreenResponse = async (response: Response) => {
 const getAuthHeaders = () => {
   const token = getToken();
   // Log del token parcial para depuración (seguridad)
-  const tokenSummary = token 
+  const tokenSummary = token
     ? `${token.substring(0, 6)}...${token.substring(token.length - 4)}`
     : 'no hay token';
-  
+
   console.log(`[ThankYouScreenAPI] Usando token: ${tokenSummary}`);
-  
+
   return {
     'Content-Type': 'application/json',
     'Authorization': token ? `Bearer ${token}` : ''
@@ -78,24 +78,24 @@ export const thankYouScreenFixedAPI = {
     if (!id) {
       throw new Error('Se requiere un ID para obtener el ThankYouScreen');
     }
-    
-    const url = API_CONFIG.endpoints.thankYouScreen?.GET?.replace('{id}', id) || `/thank-you-screen/${id}`;
+
+    const url = API_ENDPOINTS.thankYouScreen?.getByResearch?.replace('{id}', id) || `/thank-you-screen/${id}`;
     console.log(`[ThankYouScreenAPI] Obteniendo ThankYouScreen con ID ${id}, URL: ${url}`);
-    console.log(`[ThankYouScreenAPI] URL completa: ${API_CONFIG.baseURL}${url}`);
-    
+    console.log(`[ThankYouScreenAPI] URL completa: ${API_BASE_URL}${url}`);
+
     return {
       send: async () => {
         const headers = getAuthHeaders();
-        const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
+        const response = await fetch(`${API_BASE_URL}${url}`, {
           method: 'GET',
           headers
         });
-        
+
         return handleThankYouScreenResponse(response);
       }
     };
   },
-  
+
   /**
    * Obtiene el ThankYouScreen asociado a una investigación
    * @param researchId ID de la investigación
@@ -105,31 +105,31 @@ export const thankYouScreenFixedAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación');
     }
-    
-    const url = API_CONFIG.endpoints.thankYouScreen.GET_BY_RESEARCH.replace('{researchId}', researchId);
+
+    const url = API_ENDPOINTS.thankYouScreen?.getByResearch?.replace('{researchId}', researchId) || `/thank-you-screen/research/${researchId}`;
     console.log(`[ThankYouScreenAPI] Obteniendo ThankYouScreen para investigación ${researchId}, URL: ${url}`);
-    console.log(`[ThankYouScreenAPI] URL completa: ${API_CONFIG.baseURL}${url}`);
-    
+    console.log(`[ThankYouScreenAPI] URL completa: ${API_BASE_URL}${url}`);
+
     return {
       send: async () => {
         try {
           const headers = getAuthHeaders();
-          const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
+          const response = await fetch(`${API_BASE_URL}${url}`, {
             method: 'GET',
             headers
           });
-          
+
           if (response.status === 404) {
             console.log('[ThankYouScreenAPI] No se encontró configuración de ThankYouScreen para esta investigación');
-            return { 
-              notFound: true, 
+            return {
+              notFound: true,
               data: null,
               ok: false,
               status: 404,
               statusText: 'Not Found'
             };
           }
-          
+
           return handleThankYouScreenResponse(response);
         } catch (error) {
           console.log('[ThankYouScreenAPI] Error al obtener ThankYouScreen por researchId:', error);
@@ -138,7 +138,7 @@ export const thankYouScreenFixedAPI = {
       }
     };
   },
-  
+
   /**
    * Crea un nuevo ThankYouScreen
    * @param data Datos del ThankYouScreen
@@ -148,22 +148,22 @@ export const thankYouScreenFixedAPI = {
     if (!data || !data.researchId) {
       throw new Error('Se requieren datos y un ID de investigación para crear el ThankYouScreen');
     }
-    
+
     // Obtener la plantilla URL
-    const urlTemplate = API_CONFIG.endpoints.thankYouScreen.CREATE;
+    const urlTemplate = API_ENDPOINTS.thankYouScreen.create;
     // Reemplazar el placeholder con el researchId real
     const url = urlTemplate.replace('{researchId}', data.researchId.trim());
 
     console.log(`[ThankYouScreenAPI] Creando ThankYouScreen para investigación ${data.researchId}, URL plantilla: ${urlTemplate}, URL final: ${url}`);
-    console.log(`[ThankYouScreenAPI] URL completa: ${API_CONFIG.baseURL}${url}`);
+    console.log(`[ThankYouScreenAPI] URL completa: ${API_BASE_URL}${url}`);
     console.log('[ThankYouScreenAPI] Datos a enviar:', data);
-    
+
     return {
       send: async () => {
         try {
           const headers = getAuthHeaders();
           // Usar la URL corregida
-          const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
+          const response = await fetch(`${API_BASE_URL}${url}`, {
             method: 'POST',
             headers,
             body: JSON.stringify({
@@ -171,7 +171,7 @@ export const thankYouScreenFixedAPI = {
               researchId: data.researchId.trim()
             })
           });
-          
+
           // Verificar si la respuesta es exitosa
           if (!response.ok) {
             // Intentar obtener el mensaje de error
@@ -182,11 +182,11 @@ export const thankYouScreenFixedAPI = {
             } catch (e) {
               errorMessage = `Error ${response.status}: ${response.statusText}`;
             }
-            
+
             // Clasificar y manejar los errores
             if (response.status === 404) {
               // URL inexistente - mostrar error
-              console.error(`[ThankYouScreenAPI] Error 404: URL no encontrada: ${url}`);
+              console.log(`[ThankYouScreenAPI] Error 404: URL no encontrada: ${url}`);
               throw new Error(`La URL de la API no existe: ${errorMessage}`);
             } else if (response.status === 400 || response.status === 422) {
               // Datos incompatibles - mostrar error
@@ -198,7 +198,7 @@ export const thankYouScreenFixedAPI = {
               throw new Error('No se pudo crear la pantalla de agradecimiento. Por favor, inténtelo de nuevo.');
             }
           }
-          
+
           // Procesar respuesta exitosa
           return handleThankYouScreenResponse(response);
         } catch (error) {
@@ -208,7 +208,7 @@ export const thankYouScreenFixedAPI = {
       }
     };
   },
-  
+
   /**
    * Actualiza un ThankYouScreen existente
    * @param screenId ID del ThankYouScreen
@@ -219,32 +219,32 @@ export const thankYouScreenFixedAPI = {
     if (!screenId) {
       throw new Error('Se requiere un ID para actualizar el ThankYouScreen');
     }
-    
+
     if (!data || !data.researchId) {
       throw new Error('Se requieren datos completos incluyendo researchId para actualizar el ThankYouScreen');
     }
-    
+
     // Obtener la plantilla de URL y reemplazar ambos parámetros
-    const urlTemplate = API_CONFIG.endpoints.thankYouScreen.UPDATE;
+    const urlTemplate = API_ENDPOINTS.thankYouScreen.update;
     const url = urlTemplate
       .replace('{researchId}', data.researchId)
       .replace('{screenId}', screenId);
-    
+
     console.log(`[ThankYouScreenAPI] Actualizando ThankYouScreen con ID ${screenId} para investigación ${data.researchId}`);
     console.log(`[ThankYouScreenAPI] URL plantilla: ${urlTemplate}, URL final: ${url}`);
-    console.log(`[ThankYouScreenAPI] URL completa: ${API_CONFIG.baseURL}${url}`);
+    console.log(`[ThankYouScreenAPI] URL completa: ${API_BASE_URL}${url}`);
     console.log('[ThankYouScreenAPI] Datos a enviar:', data);
-    
+
     return {
       send: async () => {
         try {
           const headers = getAuthHeaders();
-          const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
+          const response = await fetch(`${API_BASE_URL}${url}`, {
             method: 'PUT',
             headers,
             body: JSON.stringify(data)
           });
-          
+
           // Verificar si la respuesta es exitosa
           if (!response.ok) {
             // Intentar obtener el mensaje de error
@@ -255,11 +255,11 @@ export const thankYouScreenFixedAPI = {
             } catch (e) {
               errorMessage = `Error ${response.status}: ${response.statusText}`;
             }
-            
+
             // Clasificar y manejar los errores
             if (response.status === 404) {
               // URL inexistente o recurso no encontrado - mostrar error
-              console.error(`[ThankYouScreenAPI] Error 404: Recurso no encontrado con ID ${screenId}`);
+              console.log(`[ThankYouScreenAPI] Error 404: Recurso no encontrado con ID ${screenId}`);
               throw new Error(`No se encontró la pantalla de agradecimiento con ID ${screenId}: ${errorMessage}`);
             } else if (response.status === 400 || response.status === 422) {
               // Datos incompatibles - mostrar error
@@ -271,7 +271,7 @@ export const thankYouScreenFixedAPI = {
               throw new Error('No se pudo actualizar la pantalla de agradecimiento. Por favor, inténtelo de nuevo.');
             }
           }
-          
+
           // Procesar respuesta exitosa
           return handleThankYouScreenResponse(response);
         } catch (error) {
@@ -281,7 +281,7 @@ export const thankYouScreenFixedAPI = {
       }
     };
   },
-  
+
   /**
    * Elimina un ThankYouScreen existente
    * @param id ID del ThankYouScreen
@@ -291,21 +291,21 @@ export const thankYouScreenFixedAPI = {
     if (!id) {
       throw new Error('Se requiere un ID para eliminar el ThankYouScreen');
     }
-    
-    const url = (API_CONFIG.endpoints.thankYouScreen?.DELETE || '/thank-you-screen/{id}').replace('{id}', id);
+
+    const url = (API_ENDPOINTS.thankYouScreen?.delete || '/thank-you-screen/{id}').replace('{id}', id);
     console.log(`[ThankYouScreenAPI] Eliminando ThankYouScreen con ID ${id}, URL: ${url}`);
-    console.log(`[ThankYouScreenAPI] URL completa: ${API_CONFIG.baseURL}${url}`);
-    
+    console.log(`[ThankYouScreenAPI] URL completa: ${API_BASE_URL}${url}`);
+
     return {
       send: async () => {
         const headers = getAuthHeaders();
-        const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
+        const response = await fetch(`${API_BASE_URL}${url}`, {
           method: 'DELETE',
           headers
         });
-        
+
         return handleThankYouScreenResponse(response);
       }
     };
   }
-}; 
+};

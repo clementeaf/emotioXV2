@@ -1,4 +1,5 @@
 import { SmartVOCFormData } from 'shared/interfaces/smart-voc.interface';
+
 import { SmartVOCQuestion } from '../types';
 
 /**

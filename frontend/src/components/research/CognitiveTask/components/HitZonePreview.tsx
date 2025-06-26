@@ -1,6 +1,7 @@
-import { HitZoneViewer } from '@/components/research/CognitiveTask/components/HitZoneViewer';
 import React from 'react';
 import { HitZone, UploadedFile } from 'shared/interfaces/cognitive-task.interface';
+
+import { HitZoneViewer } from '@/components/research/CognitiveTask/components/HitZoneViewer';
 
 interface HitZonePreviewProps {
   file: UploadedFile;

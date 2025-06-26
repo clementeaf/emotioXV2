@@ -1,4 +1,4 @@
-import { apiClient, ApiError } from '../config/api-client';
+import { welcomeScreenFixedAPI } from '@/lib/welcome-screen-api';
 
 /**
  * Interfaz para los datos de la pantalla de bienvenida
@@ -17,7 +17,7 @@ export interface WelcomeScreenData {
   disclaimer?: string;
   customCss?: string;
   researchId: string;
-  metadata?: { 
+  metadata?: {
     version?: string;
     lastUpdated?: string;
     lastModifiedBy?: string;
@@ -44,17 +44,8 @@ export const welcomeScreenService = {
    * @returns Pantalla de bienvenida.
    */
   async getById(researchId: string, screenId: string): Promise<WelcomeScreenRecord> {
-    try {
-      // Usar 'GET' (mayúsculas) como se define en API_CONFIG
-      return await apiClient.get<WelcomeScreenRecord, 'welcomeScreen'>(
-        'welcomeScreen', 
-        'GET', // Corregido
-        { researchId, screenId } 
-      );
-    } catch (error) {
-      console.error(`Error al obtener pantalla de bienvenida ${screenId} para investigación ${researchId}:`, error);
-      throw error;
-    }
+    const response = await welcomeScreenFixedAPI.getById(screenId).send();
+    return response;
   },
 
   /**
@@ -64,18 +55,12 @@ export const welcomeScreenService = {
    */
   async getByResearchId(researchId: string): Promise<WelcomeScreenRecord | null> {
     try {
-      // El tipo genérico T aquí es lo que devuelve la API (y apiClient)
-      const result = await apiClient.get<WelcomeScreenRecord, 'welcomeScreen'>(
-        'welcomeScreen', 
-        'GET_BY_RESEARCH', 
-        { researchId } 
-      );
-      // Devolver directamente el resultado de apiClient
+      const result = await welcomeScreenFixedAPI.getByResearchId(researchId).send();
       return result;
     } catch (error: any) {
-      if (error instanceof ApiError && error.statusCode === 404) {
-         console.log(`[Service] No se encontró pantalla (404), devolviendo null.`);
-        return null; // <-- Correcto
+      if (error && typeof error === 'object' && 'statusCode' in error && (error as any).statusCode === 404) {
+        console.log(`[Service] No se encontró pantalla (404), devolviendo null.`);
+        return null;
       }
       console.error(`Error al obtener pantalla de bienvenida para investigación ${researchId}:`, error);
       throw error;
@@ -88,19 +73,9 @@ export const welcomeScreenService = {
    * @returns Pantalla creada
    */
   async create(data: WelcomeScreenData): Promise<WelcomeScreenRecord> {
-    try {
-      if (!data.researchId) throw new Error('researchId es requerido en los datos para crear.');
-      // Usar 'CREATE' (mayúsculas)
-      return await apiClient.post<WelcomeScreenRecord, WelcomeScreenData, 'welcomeScreen'>(
-        'welcomeScreen', 
-        'CREATE', // Corregido
-        data, 
-        { researchId: data.researchId } 
-      );
-    } catch (error) {
-      console.error('Error al crear pantalla de bienvenida:', error);
-      throw error;
-    }
+    if (!data.researchId) throw new Error('researchId es requerido en los datos para crear.');
+    const response = await welcomeScreenFixedAPI.create(data.researchId, data).send();
+    return response;
   },
 
   /**
@@ -111,22 +86,12 @@ export const welcomeScreenService = {
    * @returns Pantalla actualizada.
    */
   async update(researchId: string, screenId: string, data: Partial<WelcomeScreenData>): Promise<WelcomeScreenRecord> {
-    try {
-      if (!researchId || !screenId) {
-        throw new Error('researchId y screenId son requeridos para actualizar.');
-      }
-      console.log(`[Service DEBUG] Actualizando pantalla con screenId: ${screenId}, researchId: ${researchId}`);
-      // Usar 'UPDATE' (mayúsculas)
-      return await apiClient.put<WelcomeScreenRecord, Partial<WelcomeScreenData>, 'welcomeScreen'>(
-        'welcomeScreen', 
-        'UPDATE', // Corregido
-        data, 
-        { researchId, screenId } 
-      );
-    } catch (error) {
-      console.error(`Error al actualizar pantalla de bienvenida ${screenId}:`, error);
-      throw error;
+    if (!researchId || !screenId) {
+      throw new Error('researchId y screenId son requeridos para actualizar.');
     }
+    console.log(`[Service DEBUG] Actualizando pantalla con screenId: ${screenId}, researchId: ${researchId}`);
+    const response = await welcomeScreenFixedAPI.update(researchId, screenId, data).send();
+    return response;
   },
 
   /**
@@ -135,20 +100,11 @@ export const welcomeScreenService = {
    * @param screenId ID específico de la pantalla a eliminar.
    */
   async delete(researchId: string, screenId: string): Promise<void> {
-    try {
-      if (!researchId || !screenId) {
-        throw new Error('researchId y screenId son requeridos para eliminar.');
-      }
-      // Usar 'DELETE' (mayúsculas)
-      await apiClient.delete<void, 'welcomeScreen'>(
-        'welcomeScreen', 
-        'DELETE', // Corregido
-        { researchId, screenId } 
-      );
-    } catch (error) {
-      console.error(`Error al eliminar pantalla de bienvenida ${screenId}:`, error);
-      throw error;
+    if (!researchId || !screenId) {
+      throw new Error('researchId y screenId son requeridos para eliminar.');
     }
+    const response = await welcomeScreenFixedAPI.delete(researchId, screenId).send();
+    return response;
   },
 
   /**
@@ -158,21 +114,21 @@ export const welcomeScreenService = {
     researchId: string,
     data: WelcomeScreenData // Incluye researchId
   ): Promise<WelcomeScreenRecord> {
-      // Llama a la función `create` base 
-      return this.create(data); 
+    // Llama a la función `create` base
+    return this.create(data);
   },
 
   /**
    * Actualiza una pantalla de bienvenida existente para una investigación (Usa PUT).
    */
   async updateForResearch(
-    researchId: string, 
+    researchId: string,
     screenId: string,
     data: Partial<WelcomeScreenData> // No incluye researchId/screenId aquí
   ): Promise<WelcomeScreenRecord> {
-      // Llama a la función `update` base pasando todos los IDs
-      return this.update(researchId, screenId, data); 
+    // Llama a la función `update` base pasando todos los IDs
+    return this.update(researchId, screenId, data);
   }
 };
 
-export default welcomeScreenService; 
+export default welcomeScreenService;

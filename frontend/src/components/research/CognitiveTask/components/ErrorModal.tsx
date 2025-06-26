@@ -1,8 +1,10 @@
-import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/Dialog';
-import { Button } from '@/components/ui/Button';
-import { ErrorModalData } from '../types';
 import { Info } from 'lucide-react';
+import React from 'react';
+
+import { Button } from '@/components/ui/Button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/Dialog';
+
+import { ErrorModalData } from '../types';
 
 interface ErrorModalProps {
   isOpen: boolean;
@@ -14,7 +16,7 @@ interface ErrorModalProps {
  * Componente para mostrar errores y mensajes en un modal
  */
 export const ErrorModal: React.FC<ErrorModalProps> = ({ isOpen, onClose, error }) => {
-  if (!error) return null;
+  if (!error) {return null;}
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

@@ -52,127 +52,127 @@ export const mockData: MockData = {
   ],
   questionResults: [
     {
-      questionNumber: "2.1",
-      title: "Customer Satisfaction Score (CSAT)",
-      type: "Linear Scale question",
-      conditionality: "Conditionality disabled",
+      questionNumber: '2.1',
+      title: 'Customer Satisfaction Score (CSAT)',
+      type: 'Linear Scale question',
+      conditionality: 'Conditionality disabled',
       required: true,
-      question: "How would you rate your overall satisfaction level with [company]?",
+      question: 'How would you rate your overall satisfaction level with [company]?',
       responses: {
         count: 28635,
-        timeAgo: "26s"
+        timeAgo: '26s'
       },
       score: 53,
       distribution: [
         {
-          label: "Promoters",
+          label: 'Promoters',
           percentage: 70,
-          color: "green"
+          color: 'green'
         },
         {
-          label: "Neutrals",
+          label: 'Neutrals',
           percentage: 10,
-          color: "gray"
+          color: 'gray'
         },
         {
-          label: "Detractors",
+          label: 'Detractors',
           percentage: 20,
-          color: "red"
+          color: 'red'
         }
       ]
     },
     {
-      questionNumber: "2.2",
-      title: "Customer Effort Score (CES)",
-      type: "Linear Scale question",
-      conditionality: "Conditionality disabled",
+      questionNumber: '2.2',
+      title: 'Customer Effort Score (CES)',
+      type: 'Linear Scale question',
+      conditionality: 'Conditionality disabled',
       required: true,
-      question: "It was easy for me to handle my issue today",
+      question: 'It was easy for me to handle my issue today',
       responses: {
         count: 24625,
-        timeAgo: "26s"
+        timeAgo: '26s'
       },
       score: 45,
       distribution: [
         {
-          label: "Little effort",
+          label: 'Little effort',
           percentage: 70,
-          color: "green"
+          color: 'green'
         },
         {
-          label: "Neutrals",
+          label: 'Neutrals',
           percentage: 10,
-          color: "gray"
+          color: 'gray'
         },
         {
-          label: "Much effort",
+          label: 'Much effort',
           percentage: 20,
-          color: "red"
+          color: 'red'
         }
       ]
     },
     {
-      questionNumber: "2.3",
-      title: "Cognitive Value (CV)",
-      type: "Linear Scale question",
-      conditionality: "Conditionality disabled",
+      questionNumber: '2.3',
+      title: 'Cognitive Value (CV)',
+      type: 'Linear Scale question',
+      conditionality: 'Conditionality disabled',
       required: true,
-      question: "This was the best app my eyes had see",
+      question: 'This was the best app my eyes had see',
       responses: {
         count: 31162,
-        timeAgo: "26s"
+        timeAgo: '26s'
       },
       score: 61,
       distribution: [
         {
-          label: "Worth",
+          label: 'Worth',
           percentage: 70,
-          color: "green"
+          color: 'green'
         },
         {
-          label: "Neutrals",
+          label: 'Neutrals',
           percentage: 10,
-          color: "gray"
+          color: 'gray'
         },
         {
-          label: "Worthless",
+          label: 'Worthless',
           percentage: 20,
-          color: "red"
+          color: 'red'
         }
       ]
     },
   ],
   emotionalStates: {
     states: [
-      { name: "Feliz", value: 6, isPositive: true },
-      { name: "Satisfecho", value: 9, isPositive: true },
-      { name: "Confiado", value: 9, isPositive: true },
-      { name: "Valorado", value: 4, isPositive: true },
-      { name: "Cuidado", value: 4, isPositive: true },
-      { name: "Seguro", value: 9, isPositive: true },
-      { name: "Entendido", value: 9, isPositive: true },
-      { name: "Inteligente", value: 3, isPositive: true },
-      { name: "Estimulado", value: 3, isPositive: true },
-      { name: "Exploratorio", value: 7, isPositive: true },
-      { name: "Interesado", value: 7, isPositive: true },
-      { name: "Energico", value: 8, isPositive: true },
-      { name: "Descontento", value: 10, isPositive: false },
-      { name: "Frustrado", value: 10, isPositive: false },
-      { name: "Irritado", value: 3, isPositive: false },
-      { name: "Decepción", value: 3, isPositive: false },
-      { name: "Estresado", value: 2, isPositive: false },
-      { name: "Infeliz", value: 2, isPositive: false },
-      { name: "Desatendido", value: 7, isPositive: false }
+      { name: 'Feliz', value: 6, isPositive: true },
+      { name: 'Satisfecho', value: 9, isPositive: true },
+      { name: 'Confiado', value: 9, isPositive: true },
+      { name: 'Valorado', value: 4, isPositive: true },
+      { name: 'Cuidado', value: 4, isPositive: true },
+      { name: 'Seguro', value: 9, isPositive: true },
+      { name: 'Entendido', value: 9, isPositive: true },
+      { name: 'Inteligente', value: 3, isPositive: true },
+      { name: 'Estimulado', value: 3, isPositive: true },
+      { name: 'Exploratorio', value: 7, isPositive: true },
+      { name: 'Interesado', value: 7, isPositive: true },
+      { name: 'Energico', value: 8, isPositive: true },
+      { name: 'Descontento', value: 10, isPositive: false },
+      { name: 'Frustrado', value: 10, isPositive: false },
+      { name: 'Irritado', value: 3, isPositive: false },
+      { name: 'Decepción', value: 3, isPositive: false },
+      { name: 'Estresado', value: 2, isPositive: false },
+      { name: 'Infeliz', value: 2, isPositive: false },
+      { name: 'Desatendido', value: 7, isPositive: false }
     ],
     longTermClusters: [
-      { name: "Advocacy", value: 70.5, trend: "up" },
-      { name: "Recommendation", value: 50.5, trend: "down" },
-      { name: "Attention", value: 23.5, trend: "up" },
-      { name: "Destroying", value: 36.5, trend: "down" }
+      { name: 'Advocacy', value: 70.5, trend: 'up' },
+      { name: 'Recommendation', value: 50.5, trend: 'down' },
+      { name: 'Attention', value: 23.5, trend: 'up' },
+      { name: 'Destroying', value: 36.5, trend: 'down' }
     ],
     shortTermClusters: [
-      { name: "Attention", value: 23.5, trend: "up" },
-      { name: "Destroying", value: 36.5, trend: "down" }
+      { name: 'Attention', value: 23.5, trend: 'up' },
+      { name: 'Destroying', value: 36.5, trend: 'down' }
     ]
   }
 }; 

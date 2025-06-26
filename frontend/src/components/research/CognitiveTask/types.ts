@@ -1,4 +1,4 @@
-import type { HitZone, UploadedFile } from 'shared/interfaces/cognitive-task.interface';
+import type { CognitiveTaskFormData, HitZone, UploadedFile } from 'shared/interfaces/cognitive-task.interface';
 
 export interface Choice {
   id: string;
@@ -41,13 +41,6 @@ export interface Question {
   deviceFrame: boolean;
   answerPlaceholder?: string;
   hitZones?: HitZone[];
-}
-
-export interface CognitiveTaskData {
-  id?: string;
-  researchId?: string;
-  questions: Question[];
-  randomizeQuestions: boolean;
 }
 
 export type ValidationErrors = Record<string, string>;
@@ -120,7 +113,7 @@ export interface AddQuestionModalProps {
 }
 
 export interface UseCognitiveTaskFormResult {
-  formData: CognitiveTaskData;
+  formData: CognitiveTaskFormData;
   cognitiveTaskId: string | null;
   validationErrors: { [key: string]: string } | null;
   isLoading: boolean;
@@ -175,7 +168,8 @@ export interface FileUploadQuestionProps {
 
 // Formularios ahora empiezan vacíos sin preguntas predeterminadas
 
-export const DEFAULT_COGNITIVE_TASK_CONFIG: CognitiveTaskData = {
+export const DEFAULT_COGNITIVE_TASK_CONFIG: CognitiveTaskFormData = {
+  researchId: '',
   questions: [],
   randomizeQuestions: false
 };

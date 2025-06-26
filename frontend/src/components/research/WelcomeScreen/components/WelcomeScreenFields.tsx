@@ -1,8 +1,10 @@
 import React from 'react';
-import { DEFAULT_WELCOME_SCREEN_CONFIG, ValidationErrors } from '../types';
-import { WelcomeScreenData } from '@/services/welcomeScreenService';
+
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
+import { WelcomeScreenData } from '@/services/welcomeScreenService';
+
+import { DEFAULT_WELCOME_SCREEN_CONFIG, ValidationErrors } from '../types';
 
 /**
  * Componente para los campos del formulario de pantalla de bienvenida

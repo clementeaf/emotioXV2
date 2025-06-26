@@ -1,5 +1,5 @@
-import { apiClient } from '../config/api-client';
-import { EyeTrackingFormData } from '../types';
+import { eyeTrackingFixedAPI } from '@/lib/eye-tracking-api';
+import type { EyeTrackingFormData } from 'shared/interfaces/eye-tracking.interface';
 
 /**
  * Interfaz que extiende los datos del formulario con campos adicionales del servidor
@@ -20,12 +20,8 @@ export const eyeTrackingService = {
    * @returns Configuración solicitada
    */
   async getById(id: string): Promise<EyeTrackingRecord> {
-    try {
-      return await apiClient.get<EyeTrackingRecord, 'eyeTracking'>('eyeTracking', 'GET', { id });
-    } catch (error) {
-      console.error(`Error al obtener configuración de seguimiento ocular ${id}:`, error);
-      throw error;
-    }
+    const response = await eyeTrackingFixedAPI.getById(id).send();
+    return response;
   },
 
   /**
@@ -33,44 +29,38 @@ export const eyeTrackingService = {
    * @param researchId ID de la investigación
    * @returns Configuración solicitada
    */
-  async getByResearchId(researchId: string): Promise<EyeTrackingRecord> {
+  async getByResearchId(researchId: string): Promise<EyeTrackingFormData | null> {
     try {
-      return await apiClient.get<EyeTrackingRecord, 'eyeTracking'>('eyeTracking', 'GET_BY_RESEARCH', { researchId });
+      const response = await eyeTrackingFixedAPI.getByResearchId(researchId).send();
+      return response;
     } catch (error) {
-      console.error(`Error al obtener configuración de seguimiento ocular para investigación ${researchId}:`, error);
+      if (error && typeof error === 'object' && 'statusCode' in error && (error as any).statusCode === 404) {
+        return null;
+      }
       throw error;
     }
   },
 
   /**
    * Crea una nueva configuración de seguimiento ocular
+   * @param researchId ID de la investigación
    * @param data Datos de la nueva configuración
-   * @param researchId ID de la investigación (opcional)
    * @returns Configuración creada
    */
-  async create(data: EyeTrackingFormData, researchId?: string): Promise<EyeTrackingRecord> {
-    try {
-      const payload = researchId ? { ...data, researchId } : data;
-      return await apiClient.post<EyeTrackingRecord, typeof payload, 'eyeTracking'>('eyeTracking', 'CREATE', payload);
-    } catch (error) {
-      console.error('Error al crear configuración de seguimiento ocular:', error);
-      throw error;
-    }
+  async create(researchId: string, data: EyeTrackingFormData): Promise<EyeTrackingFormData> {
+    const response = await eyeTrackingFixedAPI.create({ ...data, researchId }).send();
+    return response;
   },
 
   /**
    * Actualiza una configuración de seguimiento ocular existente
-   * @param id ID de la configuración
+   * @param researchId ID de la investigación
    * @param data Datos a actualizar
    * @returns Configuración actualizada
    */
-  async update(id: string, data: Partial<EyeTrackingFormData>): Promise<EyeTrackingRecord> {
-    try {
-      return await apiClient.put<EyeTrackingRecord, Partial<EyeTrackingFormData>, 'eyeTracking'>('eyeTracking', 'UPDATE', data, { id });
-    } catch (error) {
-      console.error(`Error al actualizar configuración de seguimiento ocular ${id}:`, error);
-      throw error;
-    }
+  async update(researchId: string, data: Partial<EyeTrackingFormData>): Promise<EyeTrackingFormData> {
+    const response = await eyeTrackingFixedAPI.update(researchId, data).send();
+    return response;
   },
 
   /**
@@ -80,26 +70,18 @@ export const eyeTrackingService = {
    * @returns Configuración actualizada o creada
    */
   async updateByResearchId(researchId: string, data: EyeTrackingFormData): Promise<EyeTrackingRecord> {
-    try {
-      return await apiClient.put<EyeTrackingRecord, EyeTrackingFormData, 'eyeTracking'>('eyeTracking', 'UPDATE', data, { researchId });
-    } catch (error) {
-      console.error(`Error al actualizar configuración de seguimiento ocular para investigación ${researchId}:`, error);
-      throw error;
-    }
+    const response = await eyeTrackingFixedAPI.update(researchId, data).send();
+    return response;
   },
 
   /**
    * Elimina una configuración de seguimiento ocular
-   * @param id ID de la configuración
+   * @param researchId ID de la investigación
    * @returns Confirmación de eliminación
    */
-  async delete(id: string): Promise<void> {
-    try {
-      await apiClient.delete<void, 'eyeTracking'>('eyeTracking', 'DELETE', { id });
-    } catch (error) {
-      console.error(`Error al eliminar configuración de seguimiento ocular ${id}:`, error);
-      throw error;
-    }
+  async deleteByResearchId(researchId: string): Promise<void> {
+    // Nota: eyeTrackingFixedAPI no tiene método delete, usar update con status deleted o implementar
+    throw new Error('Método delete no implementado en la API actual');
   },
 
   /**
@@ -108,13 +90,9 @@ export const eyeTrackingService = {
    * @returns Configuración para participantes
    */
   async getForParticipant(researchId: string): Promise<EyeTrackingRecord> {
-    try {
-      return await apiClient.get<EyeTrackingRecord, 'eyeTracking'>('eyeTracking', 'GET_BY_RESEARCH', { researchId });
-    } catch (error) {
-      console.error(`Error al obtener configuración de seguimiento ocular para participantes de investigación ${researchId}:`, error);
-      throw error;
-    }
+    const response = await eyeTrackingFixedAPI.getByResearchId(researchId).send();
+    return response;
   }
 };
 
-export default eyeTrackingService; 
+export default eyeTrackingService;

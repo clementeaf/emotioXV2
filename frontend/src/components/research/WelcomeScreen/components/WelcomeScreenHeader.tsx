@@ -1,6 +1,5 @@
 import React from 'react';
-import { WelcomeScreenData } from '@/services/welcomeScreenService';
-import { UI_TEXTS } from '../constants';
+
 
 interface WelcomeScreenHeaderProps {
   title: string;

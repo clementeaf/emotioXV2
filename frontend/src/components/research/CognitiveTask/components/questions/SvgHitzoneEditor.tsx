@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface Area {
   id: string;
@@ -53,7 +53,7 @@ export const SvgHitzoneEditor: React.FC<SvgHitzoneEditorProps & { onClose?: () =
 
   // Iniciar dibujo
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button !== 0) return; // solo click izquierdo
+    if (e.button !== 0) {return;} // solo click izquierdo
     const rect = svgRef.current!.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -64,7 +64,7 @@ export const SvgHitzoneEditor: React.FC<SvgHitzoneEditorProps & { onClose?: () =
 
   // Dibujar rectángulo
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!drawing || !startPoint) return;
+    if (!drawing || !startPoint) {return;}
     const rect = svgRef.current!.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -96,7 +96,7 @@ export const SvgHitzoneEditor: React.FC<SvgHitzoneEditorProps & { onClose?: () =
 
   // Eliminar área seleccionada
   const handleDelete = () => {
-    if (localSelectedIdx === null) return;
+    if (localSelectedIdx === null) {return;}
     setLocalAreas(localAreas.filter((_, idx) => idx !== localSelectedIdx));
     setLocalSelectedIdx(null);
   };
@@ -104,7 +104,7 @@ export const SvgHitzoneEditor: React.FC<SvgHitzoneEditorProps & { onClose?: () =
   // Mover área seleccionada (drag)
   const handleRectDrag = (idx: number, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (localSelectedIdx !== idx) return;
+    if (localSelectedIdx !== idx) {return;}
     // Implementar lógica de drag si se requiere (puede agregarse luego)
   };
 
@@ -112,7 +112,7 @@ export const SvgHitzoneEditor: React.FC<SvgHitzoneEditorProps & { onClose?: () =
   const handleRectMouseDown = (idx: number, e: React.MouseEvent) => {
     e.stopPropagation();
     setLocalSelectedIdx(idx);
-    if (e.shiftKey) return; // Shift para solo seleccionar
+    if (e.shiftKey) {return;} // Shift para solo seleccionar
     const area = localAreas[idx];
     setDragOffset({
       x: e.clientX - area.x,
@@ -194,7 +194,7 @@ export const SvgHitzoneEditor: React.FC<SvgHitzoneEditorProps & { onClose?: () =
       )}
       {/* Instrucciones */}
       <div style={{ position: 'absolute', top: 16, left: 16, zIndex: 20, background: '#f8fafc', borderRadius: 6, padding: '8px 16px', fontSize: 13, color: '#333', boxShadow: '0 1px 4px #0001' }}>
-        <b>Instrucciones:</b> Dibuja una zona arrastrando con el mouse. Haz clic en una zona para seleccionarla. Arrastra para mover. Usa los círculos para redimensionar. Pulsa "Eliminar zona" para borrar la seleccionada.
+        <b>Instrucciones:</b> Dibuja una zona arrastrando con el mouse. Haz clic en una zona para seleccionarla. Arrastra para mover. Usa los círculos para redimensionar. Pulsa &quot;Eliminar zona&quot; para borrar la seleccionada.
       </div>
       {/* Botones de acción */}
       <div style={{ position: 'absolute', bottom: 16, left: 16, zIndex: 20, display: 'flex', gap: 8 }}>
@@ -235,8 +235,8 @@ export const SvgHitzoneEditor: React.FC<SvgHitzoneEditorProps & { onClose?: () =
                 showTest
                   ? 'rgba(40,167,69,0.25)'
                   : idx === localSelectedIdx
-                  ? 'rgba(0,123,255,0.3)'
-                  : 'rgba(0,123,255,0.15)'
+                    ? 'rgba(0,123,255,0.3)'
+                    : 'rgba(0,123,255,0.15)'
               }
               stroke={idx === localSelectedIdx ? '#007bff' : '#007bff'}
               strokeWidth={idx === localSelectedIdx ? 2 : 1}
@@ -283,4 +283,4 @@ export const SvgHitzoneEditor: React.FC<SvgHitzoneEditorProps & { onClose?: () =
       </svg>
     </div>
   );
-}; 
+};

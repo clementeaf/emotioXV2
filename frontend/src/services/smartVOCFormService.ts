@@ -1,8 +1,7 @@
-import { apiClient } from '../config/api-client';
+import { smartVocFixedAPI } from '@/lib/smart-voc-api';
 import type {
-  SmartVOCQuestion,
   SmartVOCFormData,
-  SmartVOCFormResponse,
+  SmartVOCQuestion
 } from 'shared/interfaces/smart-voc.interface';
 
 /**
@@ -11,96 +10,49 @@ import type {
 export const smartVOCFormService = {
   /**
    * Obtiene un formulario por su ID de investigación.
-   * Nota: La ruta real del backend mapea researchId. 
+   * Nota: La ruta real del backend mapea researchId.
    * El método original getById(formId) no tiene una ruta backend directa ahora.
    * Se mantiene getByResearchId.
    * @param researchId ID de la investigación
    * @returns Formulario SmartVOC (o array si el backend lo devuelve así)
    */
-  async getByResearchId(researchId: string): Promise<SmartVOCFormData | null> { // Ajustar tipo de retorno si el backend devuelve solo uno o null
-    try {
-      // Asumiendo que GET_BY_RESEARCH mapea a GET /research/{researchId}/smart-voc
-      const response = await apiClient.get<SmartVOCFormData, 'smartVoc'>('smartVoc', 'GET_BY_RESEARCH', { researchId });
-      // Si el backend devuelve un array, tomar el primero o ajustar la lógica
-      return response as SmartVOCFormData; // Hacer cast o ajustar según la respuesta real
-    } catch (error: any) {
-       // Manejar 404 específicamente si es posible
-       if (error?.response?.status === 404) {
-          console.log(`No se encontró formulario SmartVOC para investigación ${researchId}`);
-          return null;
-       }
-      console.error(`Error al obtener formulario SmartVOC para investigación ${researchId}:`, error);
-      throw error;
-    }
+  async getByResearchId(researchId: string): Promise<SmartVOCFormData | null> {
+    return smartVocFixedAPI.getByResearchId(researchId);
   },
 
   /**
    * Crea un nuevo formulario SmartVOC
    * Ruta Backend: POST /research/{researchId}/smart-voc
+   * @param researchId ID de la investigación
    * @param data Datos del formulario (debe incluir researchId)
    * @returns Formulario creado
    */
-  async create(data: SmartVOCFormData): Promise<SmartVOCFormData> {
-    try {
-      // Asumiendo que CREATE mapea a la ruta POST y el apiClient/backend extraen researchId
-      const response = await apiClient.post<SmartVOCFormData, SmartVOCFormData, 'smartVoc'>('smartVoc', 'CREATE', data);
-      return response;
-    } catch (error) {
-      console.error('Error al crear formulario SmartVOC:', error);
-      throw error;
-    }
+  async create(researchId: string, data: SmartVOCFormData): Promise<SmartVOCFormData> {
+    return smartVocFixedAPI.create({ ...data, researchId });
   },
 
   /**
    * Actualiza un formulario SmartVOC existente
    * Ruta Backend: PUT /research/{researchId}/smart-voc/{formId}
    * @param researchId ID de la investigación
-   * @param formId ID del formulario
    * @param data Datos a actualizar
    * @returns Formulario actualizado
    */
-  async update(researchId: string, formId: string, data: Partial<SmartVOCFormData>): Promise<SmartVOCFormData> {
-    try {
-      // Pasar researchId y formId como parámetros de ruta
-      const response = await apiClient.put<SmartVOCFormData, Partial<SmartVOCFormData>, 'smartVoc'>(
-          'smartVoc', 
-          'UPDATE', // Acción (puede ser usada por apiClient)
-          data,     // Cuerpo de la petición
-          { researchId, formId } // Parámetros de ruta
-      );
-      return response;
-    } catch (error) {
-      console.error(`Error al actualizar formulario SmartVOC ${formId} para investigación ${researchId}:`, error);
-      throw error;
-    }
+  async update(researchId: string, data: Partial<SmartVOCFormData>): Promise<SmartVOCFormData> {
+    return smartVocFixedAPI.update(researchId, data);
   },
 
   /**
    * Elimina un formulario SmartVOC
    * Ruta Backend: DELETE /research/{researchId}/smart-voc/{formId}
    * @param researchId ID de la investigación
-   * @param formId ID del formulario
+   * @returns true si se eliminó correctamente, false en caso contrario
    */
-  async delete(researchId: string, formId: string): Promise<void> {
-    try {
-      // Pasar researchId y formId como parámetros de ruta
-      const response = await apiClient.delete<{ success: boolean; message?: string }, 'smartVoc'>(
-          'smartVoc', 
-          'DELETE', // Acción
-          { researchId, formId } // Parámetros de ruta
-      );
-      // El backend ahora devuelve 204 No Content en éxito, no un cuerpo
-      // Comprobar el status si es necesario, pero si no hay error, asumir éxito.
-      // if (!response.success) { 
-      //   throw new Error(response.message || 'Error al eliminar formulario SmartVOC');
-      // }
-    } catch (error) {
-      console.error(`Error al eliminar formulario SmartVOC ${formId} para investigación ${researchId}:`, error);
-      throw error;
-    }
+  async deleteByResearchId(researchId: string): Promise<boolean> {
+    return smartVocFixedAPI.deleteByResearchId(researchId);
   },
 
-  // --- Métodos auxiliares que dependen de los anteriores --- 
+  // --- Métodos auxiliares que dependen de los anteriores ---
 
   /**
    * Agrega una pregunta a un formulario existente
@@ -116,19 +68,19 @@ export const smartVOCFormService = {
     try {
       // Obtener el formulario actual usando researchId
       const form = await this.getByResearchId(researchId);
-      if (!form) { 
+      if (!form) {
           throw new Error(`Formulario no encontrado para research ${researchId}.`);
       }
-      
+
       const newQuestion: SmartVOCQuestion = {
         ...question,
-        id: Math.random().toString(36).substring(2, 15), 
+        id: Math.random().toString(36).substring(2, 15),
       };
-      
+
       const currentQuestions = Array.isArray(form.questions) ? form.questions : [];
-      
+
       // Llamar a update con researchId y formId
-      return await this.update(researchId, formId, {
+      return await this.update(researchId, {
         questions: [...currentQuestions, newQuestion]
       });
     } catch (error) {
@@ -151,12 +103,12 @@ export const smartVOCFormService = {
       if (!form) {
           throw new Error(`Formulario no encontrado para research ${researchId}.`);
       }
-      
+
       const currentQuestions = Array.isArray(form.questions) ? form.questions : [];
       const updatedQuestions = currentQuestions.filter(q => q.id !== questionId);
-      
+
       // Llamar a update con researchId y formId
-      return await this.update(researchId, formId, {
+      return await this.update(researchId, {
         questions: updatedQuestions
       });
     } catch (error) {
@@ -178,4 +130,4 @@ export const smartVOCFormService = {
   */
 };
 
-export default smartVOCFormService; 
+export default smartVOCFormService;

@@ -4,7 +4,7 @@
  */
 
 // Servicios de API
-export { apiClient } from '../config/api-client';
+export { apiClient } from '../config/api';
 
 // Servicios de autenticación y usuario
 export { default as authService } from './authService';
@@ -14,13 +14,13 @@ export { default as tokenService } from './tokenService';
 export { default as researchService } from './researchService';
 
 // Servicios de pantallas y formularios
-export { default as welcomeScreenService } from './welcomeScreenService';
-export { default as thankYouScreenService } from './thankYouScreenService';
 export { default as smartVOCFormService } from './smartVOCFormService';
+export { default as thankYouScreenService } from './thankYouScreenService';
+export { default as welcomeScreenService } from './welcomeScreenService';
 
 // Servicios de eye tracking
-export { default as eyeTrackingService } from './eyeTrackingService';
 export { default as eyeTrackingRecruitService } from './eyeTrackingRecruitService';
+export { default as eyeTrackingService } from './eyeTrackingService';
 
 // Servicio de tareas cognitivas
 export { default as cognitiveTaskService } from './cognitiveTaskService';
@@ -30,10 +30,10 @@ export { default as s3Service } from './s3Service';
 
 // Exportar también los tipos
 export * from './authService';
+export * from './cognitiveTaskService';
+export * from './eyeTrackingRecruitService';
+export * from './eyeTrackingService';
 export * from './researchService';
 export * from './smartVOCFormService';
-export * from './eyeTrackingService';
-export * from './welcomeScreenService';
 export * from './thankYouScreenService';
-export * from './cognitiveTaskService';
-export * from './eyeTrackingRecruitService'; 
+export * from './welcomeScreenService';

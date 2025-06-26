@@ -1,20 +1,20 @@
-import { Badge } from "@/components/ui/Badge";
-import { Card } from "@/components/ui/Card";
-import Progress from "./ui/Progress";
-import { CircularProgress } from "@/components/ui/CircularProgress";
-import { Target, ChevronDown } from "lucide-react";
+import { Target, ChevronDown } from 'lucide-react';
 import { 
   ComposedChart, 
   Bar, 
-  Line, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  Legend,
   Area
 } from 'recharts';
+
+import { Badge } from '@/components/ui/Badge';
+import { Card } from '@/components/ui/Card';
+import { CircularProgress } from '@/components/ui/CircularProgress';
+
+import Progress from './ui/Progress';
 
 interface NPSQuestionProps {
   monthlyData: Array<{

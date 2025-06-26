@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
+
 import { Button } from '@/components/ui/Button';
-import { QuestionType, SmartVOCQuestion } from '../types';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
+
 import { UI_TEXTS } from '../constants';
 import { QUESTION_TEMPLATES, getAvailableQuestionTypes, createQuestionFromTemplate } from '../templates/questionTemplates';
+import { QuestionType, SmartVOCQuestion } from '../types';
 
 interface AddQuestionModalProps {
   isOpen: boolean;
@@ -21,13 +23,13 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
   const [selectedType, setSelectedType] = useState<QuestionType | null>(null);
   const [instructions, setInstructions] = useState('');
 
-  if (!isOpen) return null;
+  if (!isOpen) {return null;}
 
   // Obtener tipos de preguntas disponibles (que no se hayan agregado ya)
   const availableQuestionTypes = getAvailableQuestionTypes(existingQuestionTypes);
 
   const handleAddQuestion = () => {
-    if (!selectedType) return;
+    if (!selectedType) {return;}
     
     const questionTemplate = createQuestionFromTemplate(selectedType, instructions);
     onAddQuestion(questionTemplate);

@@ -1,7 +1,9 @@
 import React from 'react';
-import { Switch } from '@/components/ui/Switch';
+
 import { Label } from '@/components/ui/Label';
+import { Switch } from '@/components/ui/Switch';
 import { cn } from '@/lib/utils';
+
 import { UI_TEXTS } from '../constants';
 
 interface WelcomeScreenSettingsProps {

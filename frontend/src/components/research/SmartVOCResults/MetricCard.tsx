@@ -1,7 +1,5 @@
 'use client';
 
-import { Card } from '@/components/ui/Card';
-import { cn } from '@/lib/utils';
 import { 
   LineChart, 
   Line, 
@@ -12,6 +10,10 @@ import {
   CartesianGrid,
   Legend
 } from 'recharts';
+
+import { Card } from '@/components/ui/Card';
+import { cn } from '@/lib/utils';
+
 import { MetricCardProps } from './types';
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -56,7 +58,7 @@ const CustomLegend = ({ payload }: any) => {
 
 export const MetricCard = ({ title, score, question, data, className }: MetricCardProps) => {
   return (
-    <Card className={cn("p-6 space-y-6", className)}>
+    <Card className={cn('p-6 space-y-6', className)}>
       <div className="space-y-4">
         <h3 className="text-gray-600">{title}</h3>
         <div className="flex items-baseline gap-2">

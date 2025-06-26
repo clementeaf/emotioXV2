@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useCallback, useState } from 'react';
 
-import API_CONFIG from '@/config/api.config';
+import { API_ENDPOINTS } from '../config/api';
 
 import { useAuth } from './useAuth';
 
@@ -27,7 +27,7 @@ export function useApi<T = any>(defaultOptions: UseApiOptions = {}) {
       options: UseApiOptions = {}
     ): Promise<ApiResponse<T>> => {
       setLoading(true);
-      
+
       try {
         const headers: HeadersInit = {
           'Content-Type': 'application/json',
@@ -38,7 +38,7 @@ export function useApi<T = any>(defaultOptions: UseApiOptions = {}) {
         // Para solicitudes a través del proxy local, no necesitamos mode: 'cors'
         // Para solicitudes directas a AWS, necesitamos mode: 'cors'
         const isProxyUrl = url.startsWith('/');
-        
+
         const fetchOptions: RequestInit = {
           method,
           headers,
@@ -51,7 +51,7 @@ export function useApi<T = any>(defaultOptions: UseApiOptions = {}) {
         console.log('Fetching URL:', url, 'with options:', fetchOptions);
 
         const response = await fetch(url, fetchOptions);
-        
+
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
           throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
@@ -79,13 +79,13 @@ export function useApi<T = any>(defaultOptions: UseApiOptions = {}) {
   );
 
   const post = useCallback(
-    (url: string, data?: any, options?: UseApiOptions) => 
+    (url: string, data?: any, options?: UseApiOptions) =>
       fetchApi(url, 'POST', data, options),
     [fetchApi]
   );
 
   const put = useCallback(
-    (url: string, data?: any, options?: UseApiOptions) => 
+    (url: string, data?: any, options?: UseApiOptions) =>
       fetchApi(url, 'PUT', data, options),
     [fetchApi]
   );
@@ -96,33 +96,31 @@ export function useApi<T = any>(defaultOptions: UseApiOptions = {}) {
   );
 
   const api = {
-    // Estas operaciones opcionales solo estarán disponibles si se definen en la configuración
-    
     // Autenticación
     auth: {
-      login: (data: { email: string; password: string }) => post(API_CONFIG.endpoints.auth.LOGIN, data),
-      register: (data: any) => post(API_CONFIG.endpoints.auth.REGISTER, data),
-      logout: () => post(API_CONFIG.endpoints.auth.LOGOUT, {}),
+      login: (data: { email: string; password: string }) => post(API_ENDPOINTS.auth.login, data),
+      register: (data: any) => post(API_ENDPOINTS.auth.register, data),
+      logout: () => post(API_ENDPOINTS.auth.logout, {}),
     },
 
-    // Investigaciones - Siempre disponible ya que es requerido en el tipo Endpoints
+    // Investigaciones
     research: {
-      create: (data: any) => post(API_CONFIG.endpoints.research.createResearch, data),
-      getById: (id: string) => get(API_CONFIG.endpoints.research.getResearch.replace('{id}', id)),
-      getAll: () => get(API_CONFIG.endpoints.research.getAllResearch),
-      update: (id: string, data: any) => put(API_CONFIG.endpoints.research.updateResearch.replace('{id}', id), data),
-      delete: (id: string) => del(API_CONFIG.endpoints.research.deleteResearch.replace('{id}', id)),
-      updateStatus: (id: string, status: string) => put(API_CONFIG.endpoints.research.UPDATE_STATUS.replace('{id}', id), { status }),
-      updateStage: (id: string, stage: string) => put(API_CONFIG.endpoints.research.UPDATE_STAGE.replace('{id}', id), { stage }),
+      create: (data: any) => post(API_ENDPOINTS.research.create, data),
+      getById: (id: string) => get(API_ENDPOINTS.research.getById.replace('{id}', id)),
+      getAll: () => get(API_ENDPOINTS.research.getAll),
+      update: (id: string, data: any) => put(API_ENDPOINTS.research.update.replace('{id}', id), data),
+      delete: (id: string) => del(API_ENDPOINTS.research.delete.replace('{id}', id)),
+      updateStatus: (id: string, status: string) => put(API_ENDPOINTS.research.updateStatus.replace('{id}', id), { status }),
+      updateStage: (id: string, stage: string) => put(API_ENDPOINTS.research.updateStage.replace('{id}', id), { stage }),
     },
 
-    // Welcome Screens - Siempre disponible ya que es requerido en el tipo Endpoints
+    // Welcome Screens
     welcomeScreen: {
-      create: (data: any) => post(API_CONFIG.endpoints.welcomeScreen.CREATE, data),
-      getById: (id: string) => get(API_CONFIG.endpoints.welcomeScreen.GET.replace('{id}', id)),
-      getByResearchId: (researchId: string) => get(API_CONFIG.endpoints.welcomeScreen.GET_BY_RESEARCH.replace('{researchId}', researchId)),
-      update: (id: string, data: any) => put(API_CONFIG.endpoints.welcomeScreen.UPDATE.replace('{id}', id), data),
-      delete: (id: string) => del(API_CONFIG.endpoints.welcomeScreen.DELETE.replace('{id}', id)),
+      create: (data: any) => post(API_ENDPOINTS.welcomeScreen.create, data),
+      getById: (id: string) => get(API_ENDPOINTS.welcomeScreen.getByResearch.replace('{id}', id)),
+      getByResearchId: (researchId: string) => get(API_ENDPOINTS.welcomeScreen.getByResearch.replace('{researchId}', researchId)),
+      update: (id: string, data: any) => put(API_ENDPOINTS.welcomeScreen.update.replace('{id}', id), data),
+      delete: (id: string) => del(API_ENDPOINTS.welcomeScreen.delete.replace('{id}', id)),
     },
 
     // Archivos
@@ -147,4 +145,4 @@ export function useApi<T = any>(defaultOptions: UseApiOptions = {}) {
     put,
     delete: del,
   };
-} 
+}

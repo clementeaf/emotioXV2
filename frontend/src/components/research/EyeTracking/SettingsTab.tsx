@@ -1,8 +1,7 @@
 import React, { useCallback } from 'react';
-import { Card } from '@/components/ui/Card';
+
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Switch } from '@/components/ui/Switch';
+import { Card } from '@/components/ui/Card';
 import { useErrorLog } from '@/components/utils/ErrorLogger';
 
 interface SettingsTabProps {

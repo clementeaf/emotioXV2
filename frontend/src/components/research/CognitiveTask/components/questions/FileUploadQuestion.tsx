@@ -1,13 +1,16 @@
+import { Trash2, Upload } from 'lucide-react';
+import React, { useRef } from 'react';
+import ReactDOM from 'react-dom';
+import { UploadedFile } from 'shared/interfaces/cognitive-task.interface';
+
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Switch } from '@/components/ui/Switch';
 import { Textarea } from '@/components/ui/Textarea';
 import s3Service from '@/services/s3Service';
-import { Trash2, Upload } from 'lucide-react';
-import React, { useRef } from 'react';
-import ReactDOM from 'react-dom';
-import { UploadedFile } from 'shared/interfaces/cognitive-task.interface';
+
 import { FileUploadQuestionProps } from '../../types';
+
 import { LocalHitzoneEditor } from './LocalHitzoneEditor';
 
 // Definir UIFile localmente extendiendo UploadedFile
@@ -126,20 +129,20 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
           helperText={titleError || undefined}
         />
         <div>
-           <label className="block text-sm font-medium text-neutral-700 mb-1 sr-only">
-             {DEFAULT_TEXTS.DESCRIPTION_LABEL}
-           </label>
-           <Textarea
-             value={question.description || ''}
-             onChange={(e) => onQuestionChange({ description: e.target.value })}
-             placeholder={DEFAULT_TEXTS.DESCRIPTION_PLACEHOLDER}
-             rows={3}
-             disabled={disabled}
-             error={!!descriptionError}
-           />
-           {descriptionError && (
-              <p className="mt-1 text-xs text-red-500">{descriptionError}</p>
-           )}
+          <label className="block text-sm font-medium text-neutral-700 mb-1 sr-only">
+            {DEFAULT_TEXTS.DESCRIPTION_LABEL}
+          </label>
+          <Textarea
+            value={question.description || ''}
+            onChange={(e) => onQuestionChange({ description: e.target.value })}
+            placeholder={DEFAULT_TEXTS.DESCRIPTION_PLACEHOLDER}
+            rows={3}
+            disabled={disabled}
+            error={!!descriptionError}
+          />
+          {descriptionError && (
+            <p className="mt-1 text-xs text-red-500">{descriptionError}</p>
+          )}
         </div>
       </div>
 
@@ -203,7 +206,7 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
                         {(file.size / 1024 / 1024).toFixed(2)} MB
                       </p>
                       {isPendingDelete && (
-                         <p className="text-xs text-amber-600 italic">Pendiente de eliminar...</p>
+                        <p className="text-xs text-amber-600 italic">Pendiente de eliminar...</p>
                       )}
                     </div>
                   </div>
@@ -211,7 +214,7 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
                     type="button"
                     onClick={() => {
                       if (!isPendingDelete && onFileDelete) {
-                        onFileDelete(file.id)
+                        onFileDelete(file.id);
                       }
                     }}
                     className={`p-1 rounded ${isPendingDelete ? 'text-gray-400 cursor-not-allowed' : 'text-red-500 hover:text-red-700 hover:bg-red-50'} delete-file-button transition-colors`}
@@ -219,7 +222,7 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
                     data-role="delete-file"
                     data-file-id={file.id}
                     data-question-id={question.id}
-                    aria-label={isPendingDelete ? "Archivo pendiente de eliminar" : "Eliminar archivo"}
+                    aria-label={isPendingDelete ? 'Archivo pendiente de eliminar' : 'Eliminar archivo'}
                   >
                     <Trash2 size={18} />
                   </button>
@@ -271,36 +274,36 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
       </div>
 
       <div className="pt-4 border-t border-neutral-200 space-y-3">
-           <h4 className="text-sm font-medium text-neutral-800 sr-only">Opciones Adicionales</h4>
-           <div className="flex items-center justify-between">
-             <span className="text-sm text-neutral-600">{DEFAULT_TEXTS.REQUIRED_LABEL}</span>
-             <Switch
-              checked={question.required || false}
-              onCheckedChange={(checked: boolean) => onQuestionChange({ required: checked })}
+        <h4 className="text-sm font-medium text-neutral-800 sr-only">Opciones Adicionales</h4>
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-neutral-600">{DEFAULT_TEXTS.REQUIRED_LABEL}</span>
+          <Switch
+            checked={question.required || false}
+            onCheckedChange={(checked: boolean) => onQuestionChange({ required: checked })}
+            disabled={disabled}
+          />
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-neutral-600">{DEFAULT_TEXTS.SHOW_CONDITIONALLY_LABEL}</span>
+          <Switch
+            checked={question.showConditionally || false}
+            onCheckedChange={(checked: boolean) => onQuestionChange({ showConditionally: checked })}
+            disabled={disabled}
+          />
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-neutral-600">{DEFAULT_TEXTS.DEVICE_FRAME_LABEL}</span>
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={question.deviceFrame || false}
+              onCheckedChange={(checked: boolean) => onQuestionChange({ deviceFrame: checked })}
               disabled={disabled}
             />
+            <span className="text-xs text-neutral-500">
+              {question.deviceFrame ? DEFAULT_TEXTS.WITH_FRAME : DEFAULT_TEXTS.WITHOUT_FRAME}
+            </span>
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-neutral-600">{DEFAULT_TEXTS.SHOW_CONDITIONALLY_LABEL}</span>
-             <Switch
-              checked={question.showConditionally || false}
-              onCheckedChange={(checked: boolean) => onQuestionChange({ showConditionally: checked })}
-              disabled={disabled}
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-neutral-600">{DEFAULT_TEXTS.DEVICE_FRAME_LABEL}</span>
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={question.deviceFrame || false}
-                onCheckedChange={(checked: boolean) => onQuestionChange({ deviceFrame: checked })}
-                disabled={disabled}
-              />
-               <span className="text-xs text-neutral-500">
-                {question.deviceFrame ? DEFAULT_TEXTS.WITH_FRAME : DEFAULT_TEXTS.WITHOUT_FRAME}
-               </span>
-             </div>
-           </div>
+        </div>
       </div>
 
       {/* Modal de edición de hitzones */}

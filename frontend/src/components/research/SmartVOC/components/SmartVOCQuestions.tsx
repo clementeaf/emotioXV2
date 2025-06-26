@@ -1,8 +1,11 @@
+import React, { useEffect, useState } from 'react';
+
 import { Button } from '@/components/ui/Button';
 import { Switch } from '@/components/ui/Switch';
-import React, { useEffect, useState } from 'react';
+
 import { UI_TEXTS } from '../constants';
 import { SmartVOCQuestion, SmartVOCQuestionsProps } from '../types';
+
 import { AddQuestionModal } from './AddQuestionModal';
 
 /**
@@ -287,24 +290,24 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
       {/* CAMPO ÚNICO Y CENTRALIZADO PARA EL NOMBRE DE LA EMPRESA */}
       {showCompanyNameInput && (
         <div className="p-4 border border-neutral-200 rounded-lg bg-neutral-50/50">
-           <div className="flex items-center gap-4">
-              <span className="text-sm font-medium text-neutral-900">{UI_TEXTS.QUESTIONS.COMPANY_NAME_LABEL}</span>
-              <div className="flex-1 relative">
-                <input
-                  type="text"
-                  value={companyName}
-                  onChange={(e) => syncCompanyName(e.target.value)}
-                  className="w-full h-10 px-3 rounded-lg bg-neutral-100 border border-neutral-200 text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                  placeholder={UI_TEXTS.QUESTIONS.COMPANY_NAME_PLACEHOLDER}
-                  disabled={disabled}
-                />
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <div className="text-xs text-amber-600 bg-amber-50 px-1 py-0.5 rounded">
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-medium text-neutral-900">{UI_TEXTS.QUESTIONS.COMPANY_NAME_LABEL}</span>
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                value={companyName}
+                onChange={(e) => syncCompanyName(e.target.value)}
+                className="w-full h-10 px-3 rounded-lg bg-neutral-100 border border-neutral-200 text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                placeholder={UI_TEXTS.QUESTIONS.COMPANY_NAME_PLACEHOLDER}
+                disabled={disabled}
+              />
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <div className="text-xs text-amber-600 bg-amber-50 px-1 py-0.5 rounded">
                     Se reutiliza en todas las preguntas aplicables
-                  </div>
                 </div>
               </div>
             </div>
+          </div>
         </div>
       )}
 
@@ -313,9 +316,9 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
           <div className="flex justify-between items-center mb-4">
             <h4 className="font-semibold text-neutral-900">{`Pregunta ${index + 1}: ${question.title}`}</h4>
             {questions.length > 1 && (
-               <Button variant="ghost" className="text-red-500 hover:text-red-600" onClick={() => onRemoveQuestion(question.id)} disabled={disabled}>
+              <Button variant="ghost" className="text-red-500 hover:text-red-600" onClick={() => onRemoveQuestion(question.id)} disabled={disabled}>
                  Eliminar
-               </Button>
+              </Button>
             )}
           </div>
           <div className="space-y-4">

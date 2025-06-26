@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { Button } from '@/components/ui/Button';
+
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { useErrorLog } from '@/components/utils/ErrorLogger';
@@ -90,8 +90,8 @@ export const CalibrationTab: React.FC<CalibrationTabProps> = ({
                   id="standard"
                   name="calibrationType"
                   value="standard"
-                  checked={formData.calibration.type === "standard"}
-                  onChange={() => handleTypeChange("standard")}
+                  checked={formData.calibration.type === 'standard'}
+                  onChange={() => handleTypeChange('standard')}
                   className="h-4 w-4 text-blue-600"
                 />
                 <label htmlFor="standard" className="text-sm">Estándar (5 puntos)</label>
@@ -102,8 +102,8 @@ export const CalibrationTab: React.FC<CalibrationTabProps> = ({
                   id="advanced"
                   name="calibrationType"
                   value="advanced"
-                  checked={formData.calibration.type === "advanced"}
-                  onChange={() => handleTypeChange("advanced")}
+                  checked={formData.calibration.type === 'advanced'}
+                  onChange={() => handleTypeChange('advanced')}
                   className="h-4 w-4 text-blue-600"
                 />
                 <label htmlFor="advanced" className="text-sm">Avanzada (9 puntos)</label>
@@ -114,8 +114,8 @@ export const CalibrationTab: React.FC<CalibrationTabProps> = ({
                   id="custom"
                   name="calibrationType"
                   value="custom"
-                  checked={formData.calibration.type === "custom"}
-                  onChange={() => handleTypeChange("custom")}
+                  checked={formData.calibration.type === 'custom'}
+                  onChange={() => handleTypeChange('custom')}
                   className="h-4 w-4 text-blue-600"
                 />
                 <label htmlFor="custom" className="text-sm">Personalizada</label>
@@ -149,8 +149,8 @@ export const CalibrationTab: React.FC<CalibrationTabProps> = ({
                   id="small"
                   name="targetSize"
                   value="small"
-                  checked={formData.calibration.targetSize === "small"}
-                  onChange={() => handleTargetSizeChange("small")}
+                  checked={formData.calibration.targetSize === 'small'}
+                  onChange={() => handleTargetSizeChange('small')}
                   className="h-4 w-4 text-blue-600"
                 />
                 <label htmlFor="small" className="text-sm">Pequeño</label>
@@ -161,8 +161,8 @@ export const CalibrationTab: React.FC<CalibrationTabProps> = ({
                   id="medium"
                   name="targetSize"
                   value="medium"
-                  checked={formData.calibration.targetSize === "medium"}
-                  onChange={() => handleTargetSizeChange("medium")}
+                  checked={formData.calibration.targetSize === 'medium'}
+                  onChange={() => handleTargetSizeChange('medium')}
                   className="h-4 w-4 text-blue-600"
                 />
                 <label htmlFor="medium" className="text-sm">Mediano</label>
@@ -173,8 +173,8 @@ export const CalibrationTab: React.FC<CalibrationTabProps> = ({
                   id="large"
                   name="targetSize"
                   value="large"
-                  checked={formData.calibration.targetSize === "large"}
-                  onChange={() => handleTargetSizeChange("large")}
+                  checked={formData.calibration.targetSize === 'large'}
+                  onChange={() => handleTargetSizeChange('large')}
                   className="h-4 w-4 text-blue-600"
                 />
                 <label htmlFor="large" className="text-sm">Grande</label>
@@ -233,9 +233,9 @@ export const CalibrationTab: React.FC<CalibrationTabProps> = ({
             style={{ 
               backgroundColor: formData.calibration.targetColor,
               width: formData.calibration.targetSize === 'small' ? '20px' : 
-                    formData.calibration.targetSize === 'medium' ? '30px' : '40px',
+                formData.calibration.targetSize === 'medium' ? '30px' : '40px',
               height: formData.calibration.targetSize === 'small' ? '20px' : 
-                     formData.calibration.targetSize === 'medium' ? '30px' : '40px'
+                formData.calibration.targetSize === 'medium' ? '30px' : '40px'
             }}
           />
         </div>

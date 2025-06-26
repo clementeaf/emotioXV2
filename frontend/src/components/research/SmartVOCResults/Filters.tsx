@@ -1,9 +1,10 @@
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { Checkbox } from "./ui/Checkbox";
-import { ChevronDown, ChevronUp } from "lucide-react";
-import { useState } from "react";
-import { cn } from "@/lib/utils";
+import { ChevronDown, ChevronUp } from 'lucide-react';
+import { useState } from 'react';
+
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+
+import { Checkbox } from './ui/Checkbox';
 
 interface FilterSection {
   title: string;
@@ -21,73 +22,73 @@ interface FiltersProps {
 
 export function Filters({ className }: FiltersProps) {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    "Country": true,
-    "Age range": true,
-    "Gender": true,
-    "Education level": true,
-    "User ID": true,
-    "Participants": true,
+    'Country': true,
+    'Age range': true,
+    'Gender': true,
+    'Education level': true,
+    'User ID': true,
+    'Participants': true,
   });
 
   const [showMoreSections, setShowMoreSections] = useState<Record<string, boolean>>({});
 
   const filterSections: FilterSection[] = [
     {
-      title: "Country",
+      title: 'Country',
       initialVisibleItems: 3,
       items: [
-        { id: "country-1", label: "Estonia" },
-        { id: "country-2", label: "Chile" },
-        { id: "country-3", label: "Mexico" },
-        { id: "country-4", label: "Spain" }
+        { id: 'country-1', label: 'Estonia' },
+        { id: 'country-2', label: 'Chile' },
+        { id: 'country-3', label: 'Mexico' },
+        { id: 'country-4', label: 'Spain' }
       ]
     },
     {
-      title: "Age range",
+      title: 'Age range',
       initialVisibleItems: 3,
       items: [
-        { id: "age-1", label: "< 19", count: 1 },
-        { id: "age-2", label: "30-34", count: 4 },
-        { id: "age-3", label: "35-39", count: 8 },
-        { id: "age-4", label: "40-44", count: 23 }
+        { id: 'age-1', label: '< 19', count: 1 },
+        { id: 'age-2', label: '30-34', count: 4 },
+        { id: 'age-3', label: '35-39', count: 8 },
+        { id: 'age-4', label: '40-44', count: 23 }
       ]
     },
     {
-      title: "Gender",
+      title: 'Gender',
       items: [
-        { id: "gender-1", label: "Male", count: 24 },
-        { id: "gender-2", label: "Female", count: 23 }
+        { id: 'gender-1', label: 'Male', count: 24 },
+        { id: 'gender-2', label: 'Female', count: 23 }
       ]
     },
     {
-      title: "Education level",
+      title: 'Education level',
       initialVisibleItems: 3,
       items: [
-        { id: "edu-1", label: "High school graduate", count: 8 },
-        { id: "edu-2", label: "Some college", count: 3 },
-        { id: "edu-3", label: "College graduate", count: 6 },
-        { id: "edu-4", label: "Some postgraduate work", count: 2 },
-        { id: "edu-5", label: "Post graduate degree", count: 12 }
+        { id: 'edu-1', label: 'High school graduate', count: 8 },
+        { id: 'edu-2', label: 'Some college', count: 3 },
+        { id: 'edu-3', label: 'College graduate', count: 6 },
+        { id: 'edu-4', label: 'Some postgraduate work', count: 2 },
+        { id: 'edu-5', label: 'Post graduate degree', count: 12 }
       ]
     },
     {
-      title: "User ID",
+      title: 'User ID',
       initialVisibleItems: 3,
       items: [
-        { id: "user-1", label: "e5adfa14-18be-433e-e5d4-ce8" },
-        { id: "user-2", label: "eytd414-12he-123e-e52h4-ck85" },
-        { id: "user-3", label: "y9dhcr89-11xk-643s-g7s9-ch73" },
-        { id: "user-4", label: "gtdo874-11ae-193b-f65h1-cl851" }
+        { id: 'user-1', label: 'e5adfa14-18be-433e-e5d4-ce8' },
+        { id: 'user-2', label: 'eytd414-12he-123e-e52h4-ck85' },
+        { id: 'user-3', label: 'y9dhcr89-11xk-643s-g7s9-ch73' },
+        { id: 'user-4', label: 'gtdo874-11ae-193b-f65h1-cl851' }
       ]
     },
     {
-      title: "Participants",
+      title: 'Participants',
       initialVisibleItems: 3,
       items: [
-        { id: "part-1", label: "11 mar 2024, Chile" },
-        { id: "part-2", label: "11 mar 2024, Chile" },
-        { id: "part-3", label: "11 mar 2024, Chile" },
-        { id: "part-4", label: "11 mar 2024, Chile" }
+        { id: 'part-1', label: '11 mar 2024, Chile' },
+        { id: 'part-2', label: '11 mar 2024, Chile' },
+        { id: 'part-3', label: '11 mar 2024, Chile' },
+        { id: 'part-4', label: '11 mar 2024, Chile' }
       ]
     }
   ];

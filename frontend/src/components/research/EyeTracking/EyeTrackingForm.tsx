@@ -1,12 +1,15 @@
+import { Save } from 'lucide-react';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Tabs, Tab } from '@/components/ui/Tabs';
 import { useErrorLog } from '@/components/utils/ErrorLogger';
+
 import { StimuliTab } from '../StimuliTab/StimuliTab';
+
 import { CalibrationTab } from './CalibrationTab';
 import { SettingsTab } from './SettingsTab';
-import { Save } from 'lucide-react';
 
 interface EyeTrackingFormProps {
   researchId: string;

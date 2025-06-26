@@ -1,7 +1,9 @@
-import { Button } from '@/components/ui/Button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import { AlertCircle, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 import React from 'react';
+
+import { Button } from '@/components/ui/Button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
+
 import { UI_TEXTS } from '../constants';
 import { ErrorModalProps } from '../types';
 

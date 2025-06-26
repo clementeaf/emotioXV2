@@ -1,7 +1,9 @@
 'use client';
 
 import React from 'react';
+
 import { ThemeResult } from '../types';
+
 import { AnalysisImage } from './AnalysisImage';
 
 interface ThemesPanelProps {

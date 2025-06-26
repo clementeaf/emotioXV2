@@ -1,8 +1,15 @@
-import { Spinner } from '@/components/ui/Spinner';
-import { cn } from '@/lib/utils';
 import React from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
+
+import { Spinner } from '@/components/ui/Spinner';
+import { cn } from '@/lib/utils';
+
+
+import { useSmartVOCForm } from '../hooks/useSmartVOCForm';
+import { SmartVOCFormProps } from '../types';
+import { generateNewQuestion } from '../utils';
+
 import {
   AddQuestionButton,
   ConfirmationModal,
@@ -11,9 +18,6 @@ import {
   SmartVOCQuestions,
   SmartVOCSettings,
 } from '.';
-import { useSmartVOCForm } from '../hooks/useSmartVOCForm';
-import { SmartVOCFormProps } from '../types';
-import { generateNewQuestion } from '../utils';
 
 export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
   className,

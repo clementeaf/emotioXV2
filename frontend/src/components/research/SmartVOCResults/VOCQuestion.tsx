@@ -1,7 +1,7 @@
-import { Badge } from "@/components/ui/Badge";
-import { Card } from "@/components/ui/Card";
-import { Tabs } from "@/components/ui/Tabs";
-import { UserIcon, ClipboardListIcon, KeyboardIcon } from "lucide-react";
+import { UserIcon, ClipboardListIcon, KeyboardIcon } from 'lucide-react';
+
+import { Badge } from '@/components/ui/Badge';
+import { Card } from '@/components/ui/Card';
 
 interface Comment {
   text: string;
@@ -43,7 +43,7 @@ export function VOCQuestion({ comments }: VOCQuestionProps) {
             </thead>
             <tbody className="divide-y">
               {comments.map((comment, index) => (
-                <tr key={index} className={comment.selected ? "bg-blue-50" : ""}>
+                <tr key={index} className={comment.selected ? 'bg-blue-50' : ''}>
                   <td className="p-3">
                     <div className="flex items-center gap-2">
                       <input 
@@ -58,7 +58,7 @@ export function VOCQuestion({ comments }: VOCQuestionProps) {
                   <td className="p-3">
                     <span className={`text-sm px-2 py-1 rounded-full ${
                       comment.mood === 'Positive' ? 'bg-green-100 text-green-700' : 
-                      comment.mood === 'green' ? 'bg-green-100 text-green-700' : ''
+                        comment.mood === 'green' ? 'bg-green-100 text-green-700' : ''
                     }`}>
                       {comment.mood}
                     </span>

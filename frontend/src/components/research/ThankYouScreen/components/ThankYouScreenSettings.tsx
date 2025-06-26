@@ -1,9 +1,11 @@
 import React from 'react';
-import { Switch } from '@/components/ui/Switch';
+
 import { Label } from '@/components/ui/Label';
+import { Switch } from '@/components/ui/Switch';
 import { cn } from '@/lib/utils';
-import { ThankYouScreenSettingsProps } from '../types';
+
 import { UI_TEXTS } from '../constants';
+import { ThankYouScreenSettingsProps } from '../types';
 
 /**
  * Componente para configuración general de la pantalla de agradecimiento

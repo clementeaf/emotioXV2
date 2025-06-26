@@ -1,7 +1,9 @@
 import React from 'react';
-import { ThankYouScreenFooterProps } from '../types';
-import { UI_TEXTS } from '../constants';
+
 import { FormFooter } from '@/components/ui/FormFooter';
+
+import { UI_TEXTS } from '../constants';
+import { ThankYouScreenFooterProps } from '../types';
 
 /**
  * Componente para el pie de página con acciones del formulario

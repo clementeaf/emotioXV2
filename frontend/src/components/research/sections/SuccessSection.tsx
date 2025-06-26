@@ -1,5 +1,7 @@
-import { ResearchConfirmation } from '@/components/research/ResearchConfirmation';
 import { memo } from 'react';
+
+import { ResearchConfirmation } from '@/components/research/ResearchConfirmation';
+
 import { SuccessSectionProps } from '../../../../../shared/interfaces/research-creation.interface';
 
 /**

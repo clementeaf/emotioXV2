@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
+
 import welcomeScreenService, { WelcomeScreenData, WelcomeScreenRecord } from '@/services/welcomeScreenService';
+
 import {
   ErrorModalData,
   UseWelcomeScreenFormResult,
@@ -97,9 +99,9 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
 
   const validateForm = (): boolean => {
     const errors: ValidationErrors = {};
-    if (!formData.title) errors.title = 'El título es requerido';
-    if (!formData.message) errors.message = 'El mensaje es requerido';
-    if (!formData.startButtonText) errors.startButtonText = 'El texto del botón es requerido';
+    if (!formData.title) {errors.title = 'El título es requerido';}
+    if (!formData.message) {errors.message = 'El mensaje es requerido';}
+    if (!formData.startButtonText) {errors.startButtonText = 'El texto del botón es requerido';}
 
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;

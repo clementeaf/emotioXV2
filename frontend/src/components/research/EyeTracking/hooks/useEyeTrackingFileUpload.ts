@@ -1,8 +1,9 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
-import { useFileUpload } from '@/hooks';
-import { useErrorLog } from '@/components/utils/ErrorLogger';
 import { EyeTrackingFormData, EyeTrackingStimulus } from 'shared/interfaces/eye-tracking.interface';
+
+import { useErrorLog } from '@/components/utils/ErrorLogger';
+import { useFileUpload } from '@/hooks';
 
 // Función para generar un ID único
 const generateId = (): string => {

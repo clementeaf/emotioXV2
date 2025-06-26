@@ -1,9 +1,10 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { EyeTrackingFormData, EyeTrackingConfig, DEFAULT_EYE_TRACKING_CONFIG, EyeTrackingStimulus } from 'shared/interfaces/eye-tracking.interface';
-import { eyeTrackingFixedAPI } from '@/lib/eye-tracking-api';
-import { useFileUpload } from '@/hooks';
-import { useErrorLog } from '@/components/utils/ErrorLogger';
 import { toast } from 'react-hot-toast';
+import { EyeTrackingFormData, EyeTrackingConfig, DEFAULT_EYE_TRACKING_CONFIG, EyeTrackingStimulus } from 'shared/interfaces/eye-tracking.interface';
+
+import { useErrorLog } from '@/components/utils/ErrorLogger';
+import { useFileUpload } from '@/hooks';
+import { eyeTrackingFixedAPI } from '@/lib/eye-tracking-api';
 
 // Interfaz extendida que incluye propiedades de UI para la experiencia de carga
 interface EyeTrackingStimulusWithUI extends EyeTrackingStimulus {
@@ -303,7 +304,7 @@ export function useEyeTrackingForm({
   // Función para guardar datos en localStorage
   const saveToLocalStorage = useCallback((data: EyeTrackingFormData) => {
     try {
-      if (!researchId) return;
+      if (!researchId) {return;}
       
       // Generamos un objeto simplificado para localStorage
       const stimuli = data.stimuli.items.map(item => ({
@@ -332,7 +333,7 @@ export function useEyeTrackingForm({
   
   // Cargar estímulos desde localStorage al inicializar
   useEffect(() => {
-    if (!researchId) return;
+    if (!researchId) {return;}
     
     try {
       const storageKey = `eye_tracking_temp_stimuli_${researchId}`;

@@ -1,7 +1,8 @@
 import React from 'react';
-import { Switch } from '@/components/ui/Switch';
-import { Input } from '@/components/ui/Input';
 import { TrackingDeviceType, EYE_TRACKING_VALIDATION, EyeTrackingFormData } from 'shared/interfaces/eye-tracking.interface';
+
+import { Input } from '@/components/ui/Input';
+import { Switch } from '@/components/ui/Switch';
 
 interface SetupTabProps {
   formData: EyeTrackingFormData;

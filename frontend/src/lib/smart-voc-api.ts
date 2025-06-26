@@ -1,63 +1,94 @@
-/**
- * API para SmartVOC
- * Manejar solicitudes de manera similar a las otras APIs que funcionan bien
- */
-
-import { ApiError } from '@/config/api-client';
-import API_CONFIG from '@/config/api.config';
-import { ApiClient } from '@/lib/api-client';
 import { SmartVOCFormData } from 'shared/interfaces/smart-voc.interface';
+import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 
-export class SmartVOCFixedAPI extends ApiClient {
-  constructor() {
-    super(`${API_CONFIG.baseURL}`);
+const getToken = () => {
+  if (typeof window !== 'undefined') {
+    const storageType = localStorage.getItem('auth_storage_type') || 'local';
+    return storageType === 'local'
+      ? localStorage.getItem('token') || ''
+      : sessionStorage.getItem('token') || '';
   }
+  return '';
+};
 
+const getAuthHeaders = () => {
+  const token = getToken();
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': token ? `Bearer ${token}` : ''
+  };
+};
+
+const handleSmartVOCResponse = async (response: Response) => {
+  try {
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || data.error || `Error ${response.status}: ${response.statusText}`);
+    }
+    return data;
+  } catch (error) {
+    const text = await response.text().catch(() => 'No se pudo obtener el cuerpo de la respuesta');
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${text}`);
+    }
+    return text;
+  }
+};
+
+export const smartVocFixedAPI = {
   async create(data: SmartVOCFormData): Promise<SmartVOCFormData> {
-    console.log('[SmartVOCAPI] Creando smart-voc:', data);
-    const path = `/research/${data.researchId}/smart-voc`;
-    return this.post<SmartVOCFormData>(path, data);
-  }
+    const url = API_ENDPOINTS.smartVoc.create.replace('{researchId}', data.researchId);
+    const headers = getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(data)
+    });
+    return handleSmartVOCResponse(response);
+  },
 
-  async update(id: string, data: Partial<SmartVOCFormData>): Promise<SmartVOCFormData> {
-    console.log(`[SmartVOCAPI] Actualizando smart-voc ${id}:`, data);
-    if (!data.researchId) throw new Error('ResearchId es necesario para actualizar SmartVOC');
-    const path = `/research/${data.researchId}/smart-voc/${id}`;
-    return this.put<SmartVOCFormData>(path, data);
-  }
+  async update(researchId: string, data: Partial<SmartVOCFormData>): Promise<SmartVOCFormData> {
+    if (!researchId) throw new Error('ResearchId es necesario para actualizar SmartVOC');
+    const url = API_ENDPOINTS.smartVoc.update.replace('{researchId}', researchId);
+    const headers = getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(data)
+    });
+    return handleSmartVOCResponse(response);
+  },
 
   async getByResearchId(researchId: string): Promise<SmartVOCFormData | null> {
-    console.log(`[SmartVOCAPI] Obteniendo smart-voc por researchId: ${researchId}`);
-    const path = `/research/${researchId}/smart-voc`;
-    console.log(`[SmartVOCAPI] Llamando a GET ${path}`);
-    try {
-      const result = await this.get<SmartVOCFormData>(path);
-      return result;
-    } catch (error) {
-      if (error instanceof ApiError && error.statusCode === 404) {
-        console.log(`[SmartVOCAPI] No se encontró SmartVOC para researchId: ${researchId}, devolviendo null.`);
-        return null;
-      }
-      console.error("[SmartVOCAPI] Error en getByResearchId:", error);
-      throw error;
+    const url = API_ENDPOINTS.smartVoc.getByResearch.replace('{researchId}', researchId);
+    const headers = getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+      method: 'GET',
+      headers
+    });
+    if (response.status === 404) {
+      return null;
     }
-  }
+    return handleSmartVOCResponse(response);
+  },
 
   async deleteSmartVOC(researchId: string, formId: string): Promise<boolean> {
-     console.log(`[SmartVOCAPI] Eliminando smart-voc para researchId: ${researchId}, formId: ${formId}`);
-     const path = `/research/${researchId}/smart-voc/${formId}`;
-     const result = await this.delete<any>(path);
-     // El ApiClient devuelve null en 404, y undefined en 204 (éxito)
-     // Si no es null (es decir, fue exitoso), devolvemos true
-     return result !== null;
-  }
+    const url = API_ENDPOINTS.smartVoc.delete.replace('{researchId}', researchId);
+    const headers = getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+      method: 'DELETE',
+      headers
+    });
+    return response.ok;
+  },
 
   async deleteByResearchId(researchId: string): Promise<boolean> {
-    console.log(`[SmartVOCAPI] Eliminando todos los datos smart-voc para researchId: ${researchId}`);
-    const path = `/research/${researchId}/smart-voc`;
-    const result = await this.delete<any>(path);
-    return result !== null;
+    const url = API_ENDPOINTS.smartVoc.delete.replace('{researchId}', researchId);
+    const headers = getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+      method: 'DELETE',
+      headers
+    });
+    return response.ok;
   }
-}
-
-export const smartVocFixedAPI = new SmartVOCFixedAPI();
+};

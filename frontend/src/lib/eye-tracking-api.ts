@@ -1,21 +1,14 @@
-/**
- * API específica para EyeTracking
- * Implementación actualizada con manejo mejorado de errores y URL
- */
+import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 
-import API_CONFIG from '@/config/api.config';
-
-// Función auxiliar para obtener el token correctamente desde localStorage o sessionStorage
 const getToken = () => {
   if (typeof window !== 'undefined') {
-    // Verificar el tipo de almacenamiento utilizado (localStorage o sessionStorage)
     const storageType = localStorage.getItem('auth_storage_type') || 'local';
-    
+
     // Obtener token del almacenamiento correspondiente
     const token = storageType === 'local'
       ? localStorage.getItem('token') || ''
       : sessionStorage.getItem('token') || '';
-    
+
     return token;
   }
   return '';
@@ -28,7 +21,7 @@ const getToken = () => {
  */
 const handleEyeTrackingResponse = async (response: Response) => {
   console.log(`[EyeTrackingAPI] Respuesta recibida: ${response.status} ${response.statusText}`);
-  
+
   // Ya no lanzamos error para 404 aquí, porque lo manejamos en getByResearchId
   // Intentar obtener el cuerpo como JSON
   try {
@@ -52,12 +45,12 @@ const handleEyeTrackingResponse = async (response: Response) => {
 const getAuthHeaders = () => {
   const token = getToken();
   // Log del token parcial para depuración (seguridad)
-  const tokenSummary = token 
+  const tokenSummary = token
     ? `${token.substring(0, 6)}...${token.substring(token.length - 4)}`
     : 'no hay token';
-  
+
   console.log(`[EyeTrackingAPI] Usando token: ${tokenSummary}`);
-  
+
   return {
     'Content-Type': 'application/json',
     'Authorization': token ? `Bearer ${token}` : ''
@@ -78,24 +71,24 @@ export const eyeTrackingFixedAPI = {
     if (!id) {
       throw new Error('Se requiere un ID para obtener el EyeTracking');
     }
-    
-    const url = API_CONFIG.endpoints.eyeTracking?.GET?.replace('{id}', id) || `/eye-tracking/${id}`;
+
+    const url = API_ENDPOINTS.eyeTracking?.getByResearch?.replace('{id}', id) || `/eye-tracking/${id}`;
     console.log(`[EyeTrackingAPI] Obteniendo EyeTracking con ID ${id}, URL: ${url}`);
-    console.log(`[EyeTrackingAPI] URL completa: ${API_CONFIG.baseURL}${url}`);
-    
+    console.log(`[EyeTrackingAPI] URL completa: ${API_BASE_URL}${url}`);
+
     return {
       send: async () => {
         const headers = getAuthHeaders();
-        const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
+        const response = await fetch(`${API_BASE_URL}${url}`, {
           method: 'GET',
           headers
         });
-        
+
         return handleEyeTrackingResponse(response);
       }
     };
   },
-  
+
   /**
    * Obtiene la configuración de EyeTracking actual
    * @param researchId ID de la investigación
@@ -105,47 +98,46 @@ export const eyeTrackingFixedAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para obtener la configuración de EyeTracking');
     }
-    
-    const url = (API_CONFIG.endpoints.eyeTracking?.GET_BY_RESEARCH || '/eye-tracking/research/{researchId}')
-      .replace('{researchId}', researchId);
-    
+
+    const url = API_ENDPOINTS.eyeTracking?.getByResearch?.replace('{researchId}', researchId) || `/eye-tracking/research/${researchId}`;
+
     console.log(`[EyeTrackingAPI] Obteniendo config por researchId ${researchId}, URL: ${url}`);
-    
+
     return {
       send: async () => {
         try {
           const headers = getAuthHeaders();
-          const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
+          const response = await fetch(`${API_BASE_URL}${url}`, {
             method: 'GET',
             headers
           });
-          
+
           if (!response.ok) {
             console.log(`[EyeTrackingAPI] Error en respuesta: ${response.status} ${response.statusText}`);
-            
+
             // Si no hay datos simplemente devolvemos objeto vacío
             if (response.status === 404) {
               console.log('[EyeTrackingAPI] No se encontraron datos (404)');
               throw { statusCode: 404, message: 'No se encontró configuración de EyeTracking' };
             }
-            
+
             const errorText = await response.text();
             console.log(`[EyeTrackingAPI] Texto de error: ${errorText}`);
-            
+
             let error;
             try {
               error = JSON.parse(errorText);
             } catch (e) {
               error = { message: errorText };
             }
-            
-            throw { 
+
+            throw {
               statusCode: response.status,
               message: error.message || 'Error desconocido',
               data: error
             };
           }
-          
+
           const data = await response.json();
           console.log('[EyeTrackingAPI] Datos obtenidos:', data);
           return data;
@@ -156,7 +148,7 @@ export const eyeTrackingFixedAPI = {
       }
     };
   },
-  
+
   /**
    * Crea un nuevo EyeTracking
    * @param data Datos del EyeTracking
@@ -166,17 +158,17 @@ export const eyeTrackingFixedAPI = {
     if (!data || !data.researchId) {
       throw new Error('Se requieren datos y un ID de investigación para crear el EyeTracking');
     }
-    
-    const url = API_CONFIG.endpoints.eyeTracking?.CREATE || '/eye-tracking';
+
+    const url = API_ENDPOINTS.eyeTracking?.create || '/eye-tracking';
     console.log(`[EyeTrackingAPI] Creando EyeTracking para investigación ${data.researchId}, URL: ${url}`);
-    console.log(`[EyeTrackingAPI] URL completa: ${API_CONFIG.baseURL}${url}`);
+    console.log(`[EyeTrackingAPI] URL completa: ${API_BASE_URL}${url}`);
     console.log('[EyeTrackingAPI] Datos a enviar:', data);
-    
+
     return {
       send: async () => {
         try {
           const headers = getAuthHeaders();
-          const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
+          const response = await fetch(`${API_BASE_URL}${url}`, {
             method: 'POST',
             headers,
             body: JSON.stringify({
@@ -184,7 +176,7 @@ export const eyeTrackingFixedAPI = {
               researchId: data.researchId.trim()
             })
           });
-          
+
           // Verificar si la respuesta es exitosa
           if (!response.ok) {
             // Intentar obtener el mensaje de error
@@ -195,11 +187,11 @@ export const eyeTrackingFixedAPI = {
             } catch (e) {
               errorMessage = `Error ${response.status}: ${response.statusText}`;
             }
-            
+
             // Clasificar y manejar los errores
             if (response.status === 404) {
               // URL inexistente - mostrar error
-              console.error(`[EyeTrackingAPI] Error 404: URL no encontrada: ${url}`);
+              console.log(`[EyeTrackingAPI] Error 404: URL no encontrada: ${url}`);
               throw new Error(`La URL de la API no existe: ${errorMessage}`);
             } else if (response.status === 400 || response.status === 422) {
               // Datos incompatibles - mostrar error
@@ -211,7 +203,7 @@ export const eyeTrackingFixedAPI = {
               throw new Error('No se pudo crear el EyeTracking. Por favor, inténtelo de nuevo.');
             }
           }
-          
+
           // Procesar respuesta exitosa
           return handleEyeTrackingResponse(response);
         } catch (error) {
@@ -221,7 +213,7 @@ export const eyeTrackingFixedAPI = {
       }
     };
   },
-  
+
   /**
    * Actualiza un EyeTracking existente
    * @param id ID del EyeTracking
@@ -232,26 +224,26 @@ export const eyeTrackingFixedAPI = {
     if (!id) {
       throw new Error('Se requiere un ID para actualizar el EyeTracking');
     }
-    
+
     if (!data) {
       throw new Error('Se requieren datos para actualizar el EyeTracking');
     }
-    
-    const url = (API_CONFIG.endpoints.eyeTracking?.UPDATE || '/eye-tracking/{id}').replace('{id}', id);
+
+    const url = (API_ENDPOINTS.eyeTracking?.update || '/eye-tracking/{id}').replace('{id}', id);
     console.log(`[EyeTrackingAPI] Actualizando EyeTracking con ID ${id}, URL: ${url}`);
-    console.log(`[EyeTrackingAPI] URL completa: ${API_CONFIG.baseURL}${url}`);
+    console.log(`[EyeTrackingAPI] URL completa: ${API_BASE_URL}${url}`);
     console.log('[EyeTrackingAPI] Datos a enviar:', data);
-    
+
     return {
       send: async () => {
         try {
           const headers = getAuthHeaders();
-          const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
+          const response = await fetch(`${API_BASE_URL}${url}`, {
             method: 'PUT',
             headers,
             body: JSON.stringify(data)
           });
-          
+
           // Verificar si la respuesta es exitosa
           if (!response.ok) {
             // Intentar obtener el mensaje de error
@@ -262,11 +254,11 @@ export const eyeTrackingFixedAPI = {
             } catch (e) {
               errorMessage = `Error ${response.status}: ${response.statusText}`;
             }
-            
+
             // Clasificar y manejar los errores
             if (response.status === 404) {
               // URL inexistente o recurso no encontrado - mostrar error
-              console.error(`[EyeTrackingAPI] Error 404: Recurso no encontrado con ID ${id}`);
+              console.log(`[EyeTrackingAPI] Error 404: Recurso no encontrado con ID ${id}`);
               throw new Error(`No se encontró el EyeTracking con ID ${id}: ${errorMessage}`);
             } else if (response.status === 400 || response.status === 422) {
               // Datos incompatibles - mostrar error
@@ -278,7 +270,7 @@ export const eyeTrackingFixedAPI = {
               throw new Error('No se pudo actualizar el EyeTracking. Por favor, inténtelo de nuevo.');
             }
           }
-          
+
           // Procesar respuesta exitosa
           return handleEyeTrackingResponse(response);
         } catch (error) {
@@ -298,58 +290,58 @@ export const eyeTrackingFixedAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para obtener la configuración de reclutamiento');
     }
-    
+
     // Usar el controlador de eye-tracking normal
     const url = `/research/${researchId}/eye-tracking`;
     console.log(`[EyeTrackingAPI] Obteniendo config de reclutamiento para researchId ${researchId}, URL: ${url}`);
-    
+
     return {
       send: async () => {
         try {
           const headers = getAuthHeaders();
-          const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
+          const response = await fetch(`${API_BASE_URL}${url}`, {
             method: 'GET',
             headers
           });
-          
+
           if (!response.ok) {
             console.log(`[EyeTrackingAPI] Error en respuesta: ${response.status} ${response.statusText}`);
-            
+
             // Si no hay datos simplemente devolvemos null
             if (response.status === 404) {
               console.log('[EyeTrackingAPI] No se encontraron datos de reclutamiento (404)');
               return null;
             }
-            
+
             // Manejar caso donde no hay contenido (204)
             if (response.status === 204) {
               console.log('[EyeTrackingAPI] Sin contenido (204)');
               return null;
             }
-            
+
             const errorText = await response.text();
             console.log(`[EyeTrackingAPI] Texto de error: ${errorText}`);
-            
+
             let error;
             try {
               error = JSON.parse(errorText);
             } catch (e) {
               error = { message: errorText };
             }
-            
-            throw { 
+
+            throw {
               statusCode: response.status,
               message: error.message || 'Error desconocido',
               data: error
             };
           }
-          
+
           // Manejar caso donde la respuesta está vacía
           if (response.headers.get('content-length') === '0') {
             console.log('[EyeTrackingAPI] Respuesta vacía pero exitosa');
             return null;
           }
-          
+
           // Intentar parsear la respuesta JSON
           try {
             const data = await response.json();
@@ -366,7 +358,7 @@ export const eyeTrackingFixedAPI = {
       }
     };
   },
-  
+
   /**
    * Guarda la configuración de reclutamiento para EyeTracking
    * @param data Datos de la configuración de reclutamiento
@@ -376,39 +368,39 @@ export const eyeTrackingFixedAPI = {
     if (!data || !data.researchId) {
       throw new Error('Se requieren datos y un ID de investigación para guardar la configuración de reclutamiento');
     }
-    
+
     // Usar el controlador de eye-tracking normal
     const url = `/research/${data.researchId}/eye-tracking`;
     console.log(`[EyeTrackingAPI] Guardando config de reclutamiento para investigación ${data.researchId}, URL: ${url}`);
     console.log('[EyeTrackingAPI] Datos a enviar:', data);
-    
+
     return {
       send: async () => {
         try {
           const headers = getAuthHeaders();
-          const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
+          const response = await fetch(`${API_BASE_URL}${url}`, {
             method: 'PUT', // Cambiamos a PUT siguiendo el patrón de otros endpoints
             headers,
             body: JSON.stringify(data)
           });
-          
+
           if (!response.ok) {
             // Intentar obtener mensaje de error
             let errorMessage = '';
-            
+
             // Manejar caso específico de 404
             if (response.status === 404) {
               console.error(`[EyeTrackingAPI] Ruta no encontrada: ${url}`);
               errorMessage = `Ruta no encontrada: ${url}`;
               throw new Error(errorMessage);
             }
-            
+
             // Manejar caso de 204 No Content (aunque es técnicamente un éxito)
             if (response.status === 204) {
               console.log('[EyeTrackingAPI] Guardado exitoso (sin contenido)');
               return { success: true };
             }
-            
+
             // Para otros errores, intentar obtener detalles
             try {
               const errorData = await response.json();
@@ -416,17 +408,17 @@ export const eyeTrackingFixedAPI = {
             } catch (e) {
               errorMessage = `Error ${response.status}: ${response.statusText}`;
             }
-            
+
             console.error(`[EyeTrackingAPI] Error al guardar config de reclutamiento: ${errorMessage}`);
             throw new Error(`No se pudo guardar la configuración: ${errorMessage}`);
           }
-          
+
           // Manejar respuesta exitosa pero vacía
           if (response.headers.get('content-length') === '0') {
             console.log('[EyeTrackingAPI] Guardado exitoso (respuesta vacía)');
             return { success: true };
           }
-          
+
           // Intentar procesar respuesta JSON
           try {
             const result = await response.json();
@@ -444,4 +436,119 @@ export const eyeTrackingFixedAPI = {
       }
     };
   }
-}; 
+};
+
+export const eyeTrackingRecruitAPI = {
+  async getConfigByResearchId(researchId: string) {
+    const url = API_ENDPOINTS.eyeTrackingRecruit.getConfigByResearch.replace('{researchId}', researchId);
+    const headers = getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}${url}`, { method: 'GET', headers });
+    if (!response.ok) return null;
+    return response.json();
+  },
+  async createConfig(researchId: string, data: any) {
+    const url = API_ENDPOINTS.eyeTrackingRecruit.createConfig.replace('{researchId}', researchId);
+    const headers = getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}${url}`, { method: 'POST', headers, body: JSON.stringify(data) });
+    if (!response.ok) throw new Error('Error al crear configuración');
+    return response.json();
+  },
+  async updateConfig(researchId: string, data: any) {
+    const url = API_ENDPOINTS.eyeTrackingRecruit.updateConfig.replace('{researchId}', researchId);
+    const headers = getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}${url}`, { method: 'PUT', headers, body: JSON.stringify(data) });
+    if (!response.ok) throw new Error('Error al actualizar configuración');
+    return response.json();
+  },
+  async completeConfig(researchId: string) {
+    const url = API_ENDPOINTS.eyeTrackingRecruit.updateConfig.replace('{researchId}', researchId);
+    const headers = getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}${url}`, { method: 'PUT', headers, body: JSON.stringify({ status: 'completed' }) });
+    if (!response.ok) throw new Error('Error al completar configuración');
+    return response.json();
+  },
+  async deleteConfig(researchId: string) {
+    const url = API_ENDPOINTS.eyeTrackingRecruit.updateConfig.replace('{researchId}', researchId);
+    const headers = getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}${url}`, { method: 'DELETE', headers });
+    if (!response.ok) throw new Error('Error al eliminar configuración');
+    return;
+  },
+  async createParticipant(configId: string, data: any) {
+    const url = API_ENDPOINTS.eyeTrackingRecruit.createParticipant.replace('{configId}', configId);
+    const headers = getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}${url}`, { method: 'POST', headers, body: JSON.stringify(data) });
+    if (!response.ok) throw new Error('Error al crear participante');
+    return response.json();
+  },
+  async updateParticipantStatus(participantId: string, status: string) {
+    const url = API_ENDPOINTS.eyeTrackingRecruit.updateParticipantStatus.replace('{participantId}', participantId);
+    const headers = getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}${url}`, { method: 'PUT', headers, body: JSON.stringify({ status }) });
+    if (!response.ok) throw new Error('Error al actualizar estado del participante');
+    return response.json();
+  },
+  async getParticipantsByConfigId(configId: string) {
+    const url = API_ENDPOINTS.eyeTrackingRecruit.getParticipants.replace('{configId}', configId);
+    const headers = getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}${url}`, { method: 'GET', headers });
+    if (!response.ok) throw new Error('Error al obtener participantes');
+    return response.json();
+  },
+  async getStatsByConfigId(configId: string) {
+    const url = API_ENDPOINTS.eyeTrackingRecruit.getStats.replace('{configId}', configId);
+    const headers = getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}${url}`, { method: 'GET', headers });
+    if (!response.ok) throw new Error('Error al obtener estadísticas');
+    return response.json();
+  },
+  async generateRecruitmentLink(configId: string, type: string, expirationDays?: number) {
+    const url = API_ENDPOINTS.eyeTrackingRecruit.generateLink.replace('{configId}', configId);
+    const headers = getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}${url}`, { method: 'POST', headers, body: JSON.stringify({ type, expirationDays }) });
+    if (!response.ok) throw new Error('Error al generar enlace de reclutamiento');
+    return response.json();
+  },
+  async getActiveLinks(configId: string) {
+    const url = API_ENDPOINTS.eyeTrackingRecruit.getActiveLinks.replace('{configId}', configId);
+    const headers = getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}${url}`, { method: 'GET', headers });
+    if (!response.ok) throw new Error('Error al obtener enlaces activos');
+    return response.json();
+  },
+  async deactivateLink(token: string) {
+    const url = API_ENDPOINTS.eyeTrackingRecruit.deactivateLink.replace('{token}', token);
+    const headers = getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}${url}`, { method: 'PUT', headers });
+    if (!response.ok) throw new Error('Error al desactivar enlace');
+    return response.json();
+  },
+  async validateRecruitmentLink(token: string) {
+    const url = API_ENDPOINTS.eyeTrackingRecruit.validateLink.replace('{token}', token);
+    const headers = getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}${url}`, { method: 'GET', headers });
+    if (!response.ok) throw new Error('Error al validar enlace');
+    return response.json();
+  },
+  async getResearchSummary(researchId: string) {
+    const url = API_ENDPOINTS.eyeTrackingRecruit.getResearchSummary.replace('{researchId}', researchId);
+    const headers = getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}${url}`, { method: 'GET', headers });
+    if (!response.ok) throw new Error('Error al obtener resumen de investigación');
+    return response.json();
+  },
+  async registerPublicParticipant(data: any) {
+    const url = API_ENDPOINTS.eyeTrackingRecruit.registerPublicParticipant;
+    const headers = getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}${url}`, { method: 'POST', headers, body: JSON.stringify(data) });
+    if (!response.ok) throw new Error('Error al registrar participante público');
+    return response.json();
+  },
+  async updatePublicParticipantStatus(participantId: string, status: string) {
+    const url = API_ENDPOINTS.eyeTrackingRecruit.updatePublicParticipantStatus.replace('{participantId}', participantId);
+    const headers = getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}${url}`, { method: 'PUT', headers, body: JSON.stringify({ status }) });
+    if (!response.ok) throw new Error('Error al actualizar estado del participante público');
+    return response.json();
+  }
+};

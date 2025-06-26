@@ -1,6 +1,7 @@
 import React from 'react';
+import { EYE_TRACKING_VALIDATION, EyeTrackingFormData, PresentationSequenceType } from 'shared/interfaces/eye-tracking.interface';
+
 import { Input } from '@/components/ui/Input';
-import { EyeTrackingFormData, PresentationSequenceType, EYE_TRACKING_VALIDATION } from 'shared/interfaces/eye-tracking.interface';
 
 interface PreviewTabProps {
   formData: EyeTrackingFormData;
@@ -23,7 +24,7 @@ export const PreviewTab: React.FC<PreviewTabProps> = ({ formData, updateFormData
             </button>
           </div>
         </div>
-        
+
         {/* Common initial screen */}
         <div className="border border-neutral-200 rounded-b-lg">
           <div className="p-4 border-b border-neutral-200 bg-neutral-50">
@@ -38,7 +39,7 @@ export const PreviewTab: React.FC<PreviewTabProps> = ({ formData, updateFormData
               </p>
               <div className="bg-blue-50 p-4 rounded-lg mb-6">
                 <p className="text-sm text-blue-800">
-                  Haz clic en "Comenzar" cuando estés listo para iniciar el experimento.
+                  Haz clic en &quot;Comenzar&quot; cuando estés listo para iniciar el experimento.
                 </p>
               </div>
               <button className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
@@ -47,7 +48,7 @@ export const PreviewTab: React.FC<PreviewTabProps> = ({ formData, updateFormData
             </div>
           </div>
         </div>
-        
+
         {/* Experiment sequence information */}
         <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
           <h3 className="text-sm font-medium text-blue-800 mb-2">Orden recomendado del estudio</h3>
@@ -69,7 +70,7 @@ export const PreviewTab: React.FC<PreviewTabProps> = ({ formData, updateFormData
             </div>
           </div>
         </div>
-        
+
         <div className="bg-neutral-800 rounded-lg overflow-hidden">
           <div className="aspect-video relative">
             <div className="absolute inset-0 flex items-center justify-center">
@@ -83,11 +84,11 @@ export const PreviewTab: React.FC<PreviewTabProps> = ({ formData, updateFormData
             </div>
           </div>
         </div>
-        
+
         <div className="grid grid-cols-2 gap-6">
           <div className="space-y-2">
             <h3 className="text-sm font-medium text-neutral-900">Secuencia de presentación</h3>
-            <select 
+            <select
               className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
               value={formData.stimuli.presentationSequence}
               onChange={(e) => updateFormData('stimuli.presentationSequence', e.target.value as PresentationSequenceType)}
@@ -116,4 +117,4 @@ export const PreviewTab: React.FC<PreviewTabProps> = ({ formData, updateFormData
       </div>
     </>
   );
-}; 
+};

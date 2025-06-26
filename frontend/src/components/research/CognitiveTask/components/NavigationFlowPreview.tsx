@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { CognitiveTaskFormData, Question } from 'shared/interfaces/cognitive-task.interface';
+
 import { HitZoneViewer } from './HitZoneViewer';
 
 interface NavigationFlowPreviewProps {

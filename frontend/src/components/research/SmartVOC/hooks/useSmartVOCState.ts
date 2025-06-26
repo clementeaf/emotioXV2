@@ -1,5 +1,4 @@
 import { useCallback, useState } from 'react';
-
 import { SmartVOCFormData } from 'shared/interfaces/smart-voc.interface';
 
 import { SmartVOCQuestion, ValidationErrors } from '../types';

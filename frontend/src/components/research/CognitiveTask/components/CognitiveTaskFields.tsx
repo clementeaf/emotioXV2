@@ -1,10 +1,13 @@
-import { Button } from '@/components/ui/Button';
-import { Checkbox } from '@/components/ui/Checkbox';
-import { Label } from '@/components/ui/Label';
 import { Info } from 'lucide-react';
 import React, { useState } from 'react';
 import type { Question } from 'shared/interfaces/cognitive-task.interface';
+
+import { Button } from '@/components/ui/Button';
+import { Checkbox } from '@/components/ui/Checkbox';
+import { Label } from '@/components/ui/Label';
+
 import type { ValidationErrors } from '../types';
+
 import { QuestionCard } from './QuestionCard';
 
 // Componente Tooltip personalizado
@@ -43,7 +46,7 @@ interface AddQuestionModalProps {
 }
 
 const AddQuestionModal: React.FC<AddQuestionModalProps> = ({ isOpen, onClose, onAddQuestion }) => {
-  if (!isOpen) return null;
+  if (!isOpen) {return null;}
 
   const questionTypes = [
     { id: 'short_text', label: 'Texto Corto', description: 'Respuesta corta de texto' },

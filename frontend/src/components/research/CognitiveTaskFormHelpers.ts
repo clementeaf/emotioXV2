@@ -22,7 +22,7 @@ export interface FileInfo {
 // Helper para limpieza profunda de archivos en error
 export const cleanupErrorFiles = (questions: Question[]): Question[] => {
   return questions.map(q => {
-    if (!q.files) return q;
+    if (!q.files) {return q;}
     const keptFiles = (q.files as UIUploadedFile[]).filter(f => f.status !== 'error');
     return { ...q, files: keptFiles };
   });
@@ -31,7 +31,7 @@ export const cleanupErrorFiles = (questions: Question[]): Question[] => {
 // Helper para limpieza profunda de archivos pendientes de eliminación
 export const cleanupPendingDeleteFiles = (questions: Question[]): Question[] => {
   return questions.map(q => {
-    if (!q.files) return q;
+    if (!q.files) {return q;}
     const keptFiles = (q.files as UIUploadedFile[]).filter(f => f.status !== 'pending-delete');
     return { ...q, files: keptFiles };
   });
@@ -40,7 +40,7 @@ export const cleanupPendingDeleteFiles = (questions: Question[]): Question[] => 
 // Helper para revertir archivos pendientes de eliminación
 export const revertPendingDeleteFiles = (questions: Question[]): Question[] => {
   return questions.map((q: Question) => {
-    if (!q.files) return q;
+    if (!q.files) {return q;}
     const revertedFiles = (q.files as UIUploadedFile[]).map((f: UIUploadedFile) => {
       if (f.status === 'pending-delete') {
         const { status, ...restOfFile } = f;
@@ -238,7 +238,7 @@ export function mergeCognitiveTaskFormData(
         const isValid = file && file.id && file.name && file.size && (file.url || file.s3Key);
         if (!isValid) {
           // eslint-disable-next-line no-console
-          console.warn(`[useEffect Form Data] Omitiendo archivo incompleto:`, file);
+          console.warn('[useEffect Form Data] Omitiendo archivo incompleto:', file);
         }
         return isValid;
       })

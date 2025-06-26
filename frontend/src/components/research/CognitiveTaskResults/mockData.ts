@@ -1,4 +1,4 @@
-import { CognitiveTaskResult, CognitiveSummary, FilterSection, VisualizationData, ScatterDataPoint, ClusterGroup, CognitiveTaskQuestion, SentimentResult, ThemeResult, KeywordResult } from './types';
+import { CognitiveTaskResult, CognitiveSummary, FilterSection, VisualizationData, ScatterDataPoint, ClusterGroup, CognitiveTaskQuestion } from './types';
 
 // Datos de ejemplo para análisis de tareas cognitivas
 export const cognitiveTaskQuestion: CognitiveTaskQuestion = {

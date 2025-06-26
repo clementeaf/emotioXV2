@@ -1,5 +1,7 @@
-import { Button } from '@/components/ui/Button';
 import { memo } from 'react';
+
+import { Button } from '@/components/ui/Button';
+
 import { ConfirmationModalProps } from '../../../../../shared/interfaces/research-creation.interface';
 
 /**

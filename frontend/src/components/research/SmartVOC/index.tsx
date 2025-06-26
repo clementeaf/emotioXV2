@@ -1,11 +1,12 @@
 import React from 'react';
+
 import {
-    ConfirmationModal,
-    ErrorModal,
-    SmartVOCFooter,
-    SmartVOCHeader,
-    SmartVOCQuestions,
-    SmartVOCSettings,
+  ConfirmationModal,
+  ErrorModal,
+  SmartVOCFooter,
+  SmartVOCHeader,
+  SmartVOCQuestions,
+  SmartVOCSettings,
 } from './components';
 import { UI_TEXTS } from './constants';
 import { useSmartVOCForm } from './hooks/useSmartVOCForm';

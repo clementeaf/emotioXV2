@@ -1,11 +1,14 @@
 'use client';
 
 import React from 'react';
-import { QuestionInfo, MainContent, ChoiceResults, RankingResults } from './';
+
 import { CognitiveTaskQuestion } from '../types';
+
 import { AnalysisTabType } from './AnalysisTabs';
 import { ChoiceQuestionData } from './ChoiceResults';
 import { RankingQuestionData } from './RankingResults';
+
+import { QuestionInfo, MainContent, ChoiceResults, RankingResults } from './';
 
 // Tipo de visualización para la pregunta
 export type QuestionViewType = 'sentiment' | 'choice' | 'ranking';

@@ -1,10 +1,11 @@
 'use client';
 
 import React from 'react';
-import { cognitiveTaskQuestion, cognitiveTaskQuestion2 } from './mockData';
-import { singleChoiceQuestionData, multipleChoiceQuestionData, linearScaleQuestionData } from './mockChoiceData';
-import { rankingQuestionData } from './mockRankingData';
+
 import { CognitiveTaskHeader, QuestionContainer, NavigationTestResults } from './components';
+import { singleChoiceQuestionData, multipleChoiceQuestionData, linearScaleQuestionData } from './mockChoiceData';
+import { cognitiveTaskQuestion, cognitiveTaskQuestion2 } from './mockData';
+import { rankingQuestionData } from './mockRankingData';
 
 export const CognitiveTaskResults: React.FC = () => {
   const handleFilter = () => {
@@ -17,10 +18,10 @@ export const CognitiveTaskResults: React.FC = () => {
 
   // URL de la imagen de ejemplo para el análisis de temas
   // Esta imagen debe existir en tu proyecto o ser servida desde una URL pública
-  const themeImageUrl = "https://images.unsplash.com/photo-1533134486753-c833f0ed4866?q=80&w=1920&auto=format&fit=crop";
+  const themeImageUrl = 'https://images.unsplash.com/photo-1533134486753-c833f0ed4866?q=80&w=1920&auto=format&fit=crop';
 
   // URL de la imagen para la pregunta de multiple choice y escala lineal
-  const questionImageUrl = "https://images.unsplash.com/photo-1533134486753-c833f0ed4866?q=80&w=1920&auto=format&fit=crop";
+  const questionImageUrl = 'https://images.unsplash.com/photo-1533134486753-c833f0ed4866?q=80&w=1920&auto=format&fit=crop';
 
   return (
     <div className="space-y-6">

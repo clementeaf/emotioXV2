@@ -1,5 +1,5 @@
-import { Question } from '../types';
 import { CognitiveTaskFormData } from '../hooks/useCognitiveTaskForm';
+import { Question } from '../types';
 
 /**
  * Valida si una pregunta individual tiene todos los campos requeridos

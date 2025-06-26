@@ -1,16 +1,19 @@
 'use client';
 
+import { Loader2 } from 'lucide-react';
+import React from 'react';
+
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { Spinner } from '@/components/ui/Spinner';
 import { cn } from '@/lib/utils';
-import { Loader2 } from 'lucide-react';
-import React from 'react';
+
 import { ConfirmationModal } from '../SmartVOC/components/ConfirmationModal';
+
 import {
-    CognitiveTaskFooter,
-    CognitiveTaskHeader,
-    ErrorModal,
-    JsonPreviewModal
+  CognitiveTaskFooter,
+  CognitiveTaskHeader,
+  ErrorModal,
+  JsonPreviewModal
 } from './components';
 import { CognitiveTaskFields } from './components/CognitiveTaskFields';
 import { ProgressBar } from './components/ProgressBar';
@@ -95,10 +98,10 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
     }
 
     // Mostrar el modo actual del botón de guardar
-    console.log('[CognitiveTaskForm] Estado del botón de guardar:', isSaving ? "Guardando..." : cognitiveTaskId ? "Actualizar" : "Guardar y Continuar");
+    console.log('[CognitiveTaskForm] Estado del botón de guardar:', isSaving ? 'Guardando...' : cognitiveTaskId ? 'Actualizar' : 'Guardar y Continuar');
   }, [cognitiveTaskId, formData.questions, isSaving]);
 
-    // Listener para guardado automático cuando se definen hitzones
+  // Listener para guardado automático cuando se definen hitzones
   React.useEffect(() => {
     const handleAutoSave = () => {
       saveForm();
@@ -117,14 +120,14 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
     width: '100%',
     marginLeft: '0',
     marginRight: '0',
-    overflowX: 'hidden' as 'hidden'
+    overflowX: 'hidden' as const
   };
 
   // Estilo para el contenedor secundario
   const innerContainerStyle = {
     width: '100%',
     maxWidth: '768px',
-    boxSizing: 'border-box' as 'border-box'
+    boxSizing: 'border-box' as const
   };
 
   // Mientras carga, mostrar un esqueleto de carga
@@ -229,7 +232,7 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
  * Componente para mostrar el progreso de carga de archivos
  */
 const FileProgressIndicator = ({ progress, isLoading }: { progress: number; isLoading: boolean }) => {
-  if (!isLoading) return null;
+  if (!isLoading) {return null;}
 
   return (
     <div className="my-2">
@@ -263,7 +266,7 @@ const FileItem = ({ file, onDelete }: { file: any; onDelete: () => void }) => {
             <p className="font-medium text-sm truncate max-w-[200px]">{file.name}</p>
             <p className="text-xs text-gray-500">
               {(file.size / 1024 / 1024).toFixed(2)} MB
-              {file.isLoading && ` • Cargando...`}
+              {file.isLoading && ' • Cargando...'}
             </p>
           </div>
         </div>

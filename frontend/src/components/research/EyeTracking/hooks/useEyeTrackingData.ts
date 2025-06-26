@@ -1,7 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
-import { eyeTrackingFixedAPI } from '@/lib/eye-tracking-api';
-import s3Service from '@/services/s3Service';
 import {
   EyeTrackingFormData,
   DEFAULT_EYE_TRACKING_CONFIG,
@@ -9,7 +7,9 @@ import {
   EyeTrackingConfig,
   EyeTrackingStimuliConfig
 } from 'shared/interfaces/eye-tracking.interface';
+
 import { useErrorLog } from '@/components/utils/ErrorLogger';
+import { eyeTrackingFixedAPI } from '@/lib/eye-tracking-api';
 
 // Interfaz para los datos de la API
 interface ApiResponse {

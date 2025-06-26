@@ -3,19 +3,19 @@
  * Implementación actualizada con manejo mejorado de errores y URL
  */
 
-import API_CONFIG from '@/config/api.config';
+import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 
 // Función auxiliar para obtener el token correctamente desde localStorage o sessionStorage
 const getToken = () => {
   if (typeof window !== 'undefined') {
     // Verificar el tipo de almacenamiento utilizado (localStorage o sessionStorage)
     const storageType = localStorage.getItem('auth_storage_type') || 'local';
-    
+
     // Obtener token del almacenamiento correspondiente
     const token = storageType === 'local'
       ? localStorage.getItem('token') || ''
       : sessionStorage.getItem('token') || '';
-    
+
     return token;
   }
   return '';
@@ -28,9 +28,9 @@ const getToken = () => {
  */
 const handleWelcomeScreenResponse = async (response: Response) => {
   console.log(`[WelcomeScreenAPI] Respuesta recibida: ${response.status} ${response.statusText}`);
-  
+
   // Ya no lanzamos error para 404 aquí, porque lo manejamos en getByResearchId
-  
+
   // Intentar obtener el cuerpo como JSON
   try {
     const data = await response.json();
@@ -53,12 +53,12 @@ const handleWelcomeScreenResponse = async (response: Response) => {
 const getAuthHeaders = () => {
   const token = getToken();
   // Log del token parcial para depuración (seguridad)
-  const tokenSummary = token 
+  const tokenSummary = token
     ? `${token.substring(0, 6)}...${token.substring(token.length - 4)}`
     : 'no hay token';
-  
+
   console.log(`[WelcomeScreenAPI] Usando token: ${tokenSummary}`);
-  
+
   return {
     'Content-Type': 'application/json',
     'Authorization': token ? `Bearer ${token}` : ''
@@ -79,23 +79,23 @@ export const welcomeScreenFixedAPI = {
     if (!id) {
       throw new Error('Se requiere un ID para obtener la pantalla de bienvenida');
     }
-    
-    const url = API_CONFIG.endpoints.welcomeScreen.GET.replace('{id}', id);
+
+    const url = API_ENDPOINTS.welcomeScreen.getByResearch.replace('{id}', id);
     console.log(`[WelcomeScreenAPI] Obteniendo pantalla con ID ${id}, URL: ${url}`);
-    
+
     return {
       send: async () => {
         const headers = getAuthHeaders();
-        const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
+        const response = await fetch(`${API_BASE_URL}${url}`, {
           method: 'GET',
           headers
         });
-        
+
         return handleWelcomeScreenResponse(response);
       }
     };
   },
-  
+
   /**
    * Obtiene la pantalla de bienvenida asociada a una investigación
    * @param researchId ID de la investigación
@@ -105,27 +105,27 @@ export const welcomeScreenFixedAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación');
     }
-    
-    const url = API_CONFIG.endpoints.welcomeScreen.GET_BY_RESEARCH.replace('{researchId}', researchId);
+
+    const url = API_ENDPOINTS.welcomeScreen?.getByResearch?.replace('{researchId}', researchId) || `/welcome-screen/research/${researchId}`;
     console.log(`[WelcomeScreenAPI] Obteniendo pantalla para investigación ${researchId}, URL: ${url}`);
-    console.log(`[WelcomeScreenAPI] URL completa: ${API_CONFIG.baseURL}${url}`);
-    
+    console.log(`[WelcomeScreenAPI] URL completa: ${API_BASE_URL}${url}`);
+
     return {
       send: async () => {
         try {
           // ======== SOLUCIÓN ULTRA SILENCIOSA PARA EVITAR ERRORES 404 EN LA CONSOLA ========
-          
+
           // Generamos una clave única para este recurso
           const cacheKey = `welcome_screen_resource_${researchId}`;
-          
+
           // Si ya intentamos acceder a este recurso antes y no existía, devolvemos directamente
           // una respuesta simulada sin hacer ninguna solicitud HTTP
           const isKnownNonExistent = localStorage.getItem(cacheKey) === 'nonexistent';
-          
+
           if (isKnownNonExistent) {
             console.log(`[WelcomeScreenAPI] Usando respuesta en caché para ${researchId} - sabemos que no existe`);
-            return { 
-              notFound: true, 
+            return {
+              notFound: true,
               data: null,
               ok: false,
               status: 404,
@@ -134,10 +134,10 @@ export const welcomeScreenFixedAPI = {
               text: () => Promise.resolve('')
             };
           }
-          
+
           // Si no sabemos si existe, hacemos la solicitud GET directamente y manejamos el 404 si ocurre
           const headers = getAuthHeaders();
-          
+
           // Usamos Image() como un hack para evitar errores en la consola
           // Las imágenes fallidas no muestran errores en la red en la consola de Chrome
           if (false && typeof window !== 'undefined') {
@@ -145,34 +145,34 @@ export const welcomeScreenFixedAPI = {
               const dummyImage = new Image();
               dummyImage.style.display = 'none';
               const timestamp = Date.now();
-              
+
               // Creamos una promesa que se resolverá cuando la imagen se cargue o falle
               const checkPromise = new Promise((resolve) => {
                 dummyImage.onload = () => resolve(true);
                 dummyImage.onerror = () => resolve(false);
-                
+
                 // Establecemos un timeout para asegurarnos de que no se quede esperando para siempre
                 setTimeout(() => resolve(false), 3000);
               });
-              
+
               // Intentamos cargar la imagen (esto fallará con 404, pero no mostrará error en la consola)
               document.body.appendChild(dummyImage);
-              dummyImage.src = `${API_CONFIG.baseURL}${url}?timestamp=${timestamp}`;
-              
+              dummyImage.src = `${API_BASE_URL}${url}?timestamp=${timestamp}`;
+
               // Esperamos a que la imagen se cargue o falle
               const exists = await checkPromise;
-              
+
               // Limpiamos
               if (document.body.contains(dummyImage)) {
                 document.body.removeChild(dummyImage);
               }
-              
+
               // Si la imagen falló, entonces el recurso no existe
               if (!exists) {
                 console.log('[WelcomeScreenAPI] No se encontró la pantalla de bienvenida en la verificación con imagen');
                 localStorage.setItem(cacheKey, 'nonexistent');
-                return { 
-                  notFound: true, 
+                return {
+                  notFound: true,
                   data: null,
                   ok: false,
                   status: 404,
@@ -186,27 +186,27 @@ export const welcomeScreenFixedAPI = {
               // Si hay un error, continuamos con el enfoque normal
             }
           }
-          
+
           // Usamos el método fetch con catch para capturar errores 404
           try {
-            const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
+            const response = await fetch(`${API_BASE_URL}${url}`, {
               method: 'GET',
               headers
             });
-            
+
             // Si la respuesta es exitosa, guardamos que el recurso existe y procesamos normalmente
             if (response.ok) {
               localStorage.removeItem(cacheKey); // Ya no es "nonexistent"
               return handleWelcomeScreenResponse(response);
             }
-            
+
             // Si es 404, guardamos que el recurso no existe para evitar solicitudes futuras
             if (response.status === 404) {
               console.log('[WelcomeScreenAPI] No se encontró configuración de pantalla de bienvenida para esta investigación - esto es normal para nuevas investigaciones');
               localStorage.setItem(cacheKey, 'nonexistent');
-              
-              return { 
-                notFound: true, 
+
+              return {
+                notFound: true,
                 data: null,
                 ok: false,
                 status: 404,
@@ -215,7 +215,7 @@ export const welcomeScreenFixedAPI = {
                 text: () => Promise.resolve('')
               };
             }
-            
+
             // Para otros errores, procesamos normalmente
             return handleWelcomeScreenResponse(response);
           } catch (fetchError) {
@@ -230,7 +230,7 @@ export const welcomeScreenFixedAPI = {
       }
     };
   },
-  
+
   /**
    * Crea una nueva pantalla de bienvenida
    * @param researchId ID de la investigación
@@ -244,17 +244,17 @@ export const welcomeScreenFixedAPI = {
     if (!data) {
       throw new Error('Se requieren datos para crear la pantalla');
     }
-    
+
     // <<< Usar el endpoint CREATE >>>
-    const url = API_CONFIG.endpoints.welcomeScreen.CREATE.replace('{researchId}', researchId);
+    const url = API_ENDPOINTS.welcomeScreen.create.replace('{researchId}', researchId);
     console.log(`[WelcomeScreenAPI] Creando (POST) pantalla para investigación ${researchId}, URL: ${url}`);
     console.log('[WelcomeScreenAPI] Datos a enviar:', data);
-    
+
     return {
       send: async () => {
         try {
           const headers = getAuthHeaders();
-          const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
+          const response = await fetch(`${API_BASE_URL}${url}`, {
             method: 'POST',
             headers,
             body: JSON.stringify(data)
@@ -267,7 +267,7 @@ export const welcomeScreenFixedAPI = {
       }
     };
   },
-  
+
   /**
    * Actualiza una pantalla de bienvenida existente
    * @param researchId ID de la investigación
@@ -284,10 +284,10 @@ export const welcomeScreenFixedAPI = {
     }
 
     // <<< Usar el endpoint UPDATE y reemplazar ambos parámetros >>>
-    const url = API_CONFIG.endpoints.welcomeScreen.UPDATE
+    const url = API_ENDPOINTS.welcomeScreen.update
       .replace('{researchId}', researchId)
       .replace('{screenId}', screenId);
-    
+
     console.log(`[WelcomeScreenAPI] Actualizando (PUT) pantalla ${screenId} para investigación ${researchId}, URL: ${url}`);
     console.log('[WelcomeScreenAPI] Datos a enviar:', data);
 
@@ -295,7 +295,7 @@ export const welcomeScreenFixedAPI = {
       send: async () => {
         try {
           const headers = getAuthHeaders();
-          const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
+          const response = await fetch(`${API_BASE_URL}${url}`, {
             method: 'PUT',
             headers,
             body: JSON.stringify(data)
@@ -308,7 +308,7 @@ export const welcomeScreenFixedAPI = {
       }
     };
   },
-  
+
   /**
    * Elimina la pantalla de bienvenida asociada a una investigación
    * @param researchId ID de la investigación
@@ -319,9 +319,9 @@ export const welcomeScreenFixedAPI = {
     if (!researchId || !screenId) {
       throw new Error('Se requieren researchId y screenId para eliminar la pantalla');
     }
-    
+
     // <<< Usar el endpoint DELETE y reemplazar ambos parámetros >>>
-    const url = API_CONFIG.endpoints.welcomeScreen.DELETE
+    const url = API_ENDPOINTS.welcomeScreen.delete
        .replace('{researchId}', researchId)
        .replace('{screenId}', screenId);
     console.log(`[WelcomeScreenAPI] Eliminando (DELETE) pantalla ${screenId} para investigación ${researchId}, URL: ${url}`);
@@ -331,7 +331,7 @@ export const welcomeScreenFixedAPI = {
         try {
           const headers = getAuthHeaders();
           headers['Content-Type'] = undefined as any;
-          const response = await fetch(`${API_CONFIG.baseURL}${url}`, {
+          const response = await fetch(`${API_BASE_URL}${url}`, {
             method: 'DELETE',
             headers: headers as HeadersInit
           });
@@ -349,4 +349,4 @@ export const welcomeScreenFixedAPI = {
 };
 
 // Exportar la API para ser usada por los servicios
-export const welcomeScreenAPI = welcomeScreenFixedAPI; 
+export const welcomeScreenAPI = welcomeScreenFixedAPI;

@@ -1,4 +1,4 @@
-import { apiClient } from '../config/api-client';
+import { apiClient } from '../config/api';
 
 /**
  * Interfaz que representa una investigación en el sistema
@@ -32,12 +32,7 @@ export const researchService = {
    * @returns Lista de investigaciones
    */
   async getAll(): Promise<Research[]> {
-    try {
-      return await apiClient.get<Research[], 'research'>('research', 'getAllResearch');
-    } catch (error) {
-      console.error('Error al obtener investigaciones:', error);
-      throw error;
-    }
+    return apiClient.get('research', 'getAll');
   },
 
   /**
@@ -46,12 +41,7 @@ export const researchService = {
    * @returns Investigación solicitada
    */
   async getById(id: string): Promise<Research> {
-    try {
-      return await apiClient.get<Research, 'research'>('research', 'getResearch', { id });
-    } catch (error) {
-      console.error(`Error al obtener investigación ${id}:`, error);
-      throw error;
-    }
+    return apiClient.get('research', 'getById', { id });
   },
 
   /**
@@ -60,12 +50,7 @@ export const researchService = {
    * @returns Investigación creada
    */
   async create(data: CreateResearchData): Promise<Research> {
-    try {
-      return await apiClient.post<Research, CreateResearchData, 'research'>('research', 'createResearch', data);
-    } catch (error) {
-      console.error('Error al crear investigación:', error);
-      throw error;
-    }
+    return apiClient.post('research', 'create', data);
   },
 
   /**
@@ -75,12 +60,7 @@ export const researchService = {
    * @returns Investigación actualizada
    */
   async update(id: string, data: Partial<CreateResearchData>): Promise<Research> {
-    try {
-      return await apiClient.put<Research, Partial<CreateResearchData>, 'research'>('research', 'updateResearch', data, { id });
-    } catch (error) {
-      console.error(`Error al actualizar investigación ${id}:`, error);
-      throw error;
-    }
+    return apiClient.put('research', 'update', data, { id });
   },
 
   /**
@@ -89,13 +69,8 @@ export const researchService = {
    * @returns Confirmación de eliminación
    */
   async delete(id: string): Promise<void> {
-    try {
-      await apiClient.delete<void, 'research'>('research', 'deleteResearch', { id });
-    } catch (error) {
-      console.error(`Error al eliminar investigación ${id}:`, error);
-      throw error;
-    }
+    return apiClient.delete('research', 'delete', { id });
   }
 };
 
-export default researchService; 
+export default researchService;

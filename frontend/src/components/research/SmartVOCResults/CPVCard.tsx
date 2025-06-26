@@ -1,11 +1,14 @@
 'use client';
 
+import { Info, ArrowUpRight } from 'lucide-react';
+import { ReactNode, useState } from 'react';
+import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+
 import { Card } from '@/components/ui/Card';
 import { cn } from '@/lib/utils';
-import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
-import { Info, ArrowUpRight } from 'lucide-react';
+
 import { CPVChartData } from './types';
-import { ReactNode, useState } from 'react';
+
 
 // Componente Tooltip personalizado
 interface UITooltipProps {
@@ -53,10 +56,10 @@ const TimeRangeSelector = ({ timeRange, onChange }: {
         <button
           key={range}
           className={cn(
-            "px-3 py-1.5 text-xs font-medium rounded transition-all",
+            'px-3 py-1.5 text-xs font-medium rounded transition-all',
             timeRange === range 
-              ? "bg-white text-blue-600" 
-              : "text-white/80 hover:bg-white/5"
+              ? 'bg-white text-blue-600' 
+              : 'text-white/80 hover:bg-white/5'
           )}
           onClick={() => onChange(range)}
         >
@@ -71,7 +74,7 @@ export const CPVCard = ({ value, timeRange, onTimeRangeChange, trendData, classN
   const percentChange = 2.5; // Valor de ejemplo para el cambio porcentual
   
   return (
-    <Card className={cn("relative overflow-hidden bg-gradient-to-br from-blue-600 to-blue-700 text-white h-96", className)}>
+    <Card className={cn('relative overflow-hidden bg-gradient-to-br from-blue-600 to-blue-700 text-white h-96', className)}>
       <div className="absolute top-4 right-4 z-20">
         <TimeRangeSelector 
           timeRange={timeRange}
@@ -94,8 +97,8 @@ export const CPVCard = ({ value, timeRange, onTimeRangeChange, trendData, classN
             <div className="flex items-baseline">
               <span className="text-3xl font-bold tracking-tight">{value}%</span>
               <div className={cn(
-                "flex items-center px-1.5 py-0.5 rounded ml-2 self-start mt-2",
-                percentChange >= 0 ? "bg-green-500/20 text-green-300" : "bg-red-500/20 text-red-300"
+                'flex items-center px-1.5 py-0.5 rounded ml-2 self-start mt-2',
+                percentChange >= 0 ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
               )}>
                 <ArrowUpRight className="w-3 h-3 mr-0.5" />
                 <span className="text-xs font-medium">+{percentChange}%</span>

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+
 import { EyeTrackingRecruitFormData } from '@/shared/interfaces/eyeTrackingRecruit.interface';
 
 interface ParticipantViewProps {
@@ -199,14 +200,14 @@ export function ParticipantView({
                       <div key={key} className="bg-white p-4 rounded-lg border border-gray-200">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           {key === 'age' ? 'Edad' :
-                           key === 'country' ? 'País' :
-                           key === 'gender' ? 'Género' :
-                           key === 'educationLevel' ? 'Nivel educativo' :
-                           key === 'householdIncome' ? 'Ingresos del hogar' :
-                           key === 'employmentStatus' ? 'Situación laboral' :
-                           key === 'dailyHoursOnline' ? 'Horas diarias en línea' :
-                           key === 'technicalProficiency' ? 'Nivel técnico' :
-                           key}
+                            key === 'country' ? 'País' :
+                              key === 'gender' ? 'Género' :
+                                key === 'educationLevel' ? 'Nivel educativo' :
+                                  key === 'householdIncome' ? 'Ingresos del hogar' :
+                                    key === 'employmentStatus' ? 'Situación laboral' :
+                                      key === 'dailyHoursOnline' ? 'Horas diarias en línea' :
+                                        key === 'technicalProficiency' ? 'Nivel técnico' :
+                                          key}
                           {value.required && <span className="text-red-500 ml-1">*</span>}
                         </label>
                         <select

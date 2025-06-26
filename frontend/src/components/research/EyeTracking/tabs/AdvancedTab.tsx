@@ -1,7 +1,8 @@
 import React from 'react';
+import { EYE_TRACKING_VALIDATION, EyeTrackingFormData } from 'shared/interfaces/eye-tracking.interface';
+
 import { Input } from '@/components/ui/Input';
 import { Switch } from '@/components/ui/Switch';
-import { EyeTrackingFormData, EYE_TRACKING_VALIDATION } from 'shared/interfaces/eye-tracking.interface';
 
 interface AdvancedTabProps {
   formData: EyeTrackingFormData;
@@ -10,8 +11,8 @@ interface AdvancedTabProps {
   removeAreaOfInterest: (id: string) => void;
 }
 
-export const AdvancedTab: React.FC<AdvancedTabProps> = ({ 
-  formData, 
+export const AdvancedTab: React.FC<AdvancedTabProps> = ({
+  formData,
   updateFormData,
   addAreaOfInterest,
   removeAreaOfInterest
@@ -29,9 +30,9 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
             </div>
             <div className="flex items-center">
               <span className="text-sm text-neutral-600 mr-2">Activar</span>
-              <Switch 
-                checked={formData.areasOfInterest.enabled} 
-                onCheckedChange={(checked: boolean) => updateFormData('areasOfInterest.enabled', checked)} 
+              <Switch
+                checked={formData.areasOfInterest.enabled}
+                onCheckedChange={(checked: boolean) => updateFormData('areasOfInterest.enabled', checked)}
               />
             </div>
           </div>
@@ -53,7 +54,7 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                   {formData.areasOfInterest.areas.map((area) => (
                     <div key={area.id} className="p-3 bg-neutral-50 rounded-lg border border-neutral-200">
                       <div className="flex items-center justify-between mb-3">
-                        <Input 
+                        <Input
                           type="text"
                           value={area.name}
                           onChange={(e) => {
@@ -81,19 +82,19 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                       <div className="grid grid-cols-4 gap-2">
                         <div>
                           <label className="block text-xs text-neutral-500 mb-1">Posición X</label>
-                          <Input 
+                          <Input
                             type="number"
                             value={area.region.x}
                             onChange={(e) => {
                               const newAreas = [...formData.areasOfInterest.areas];
                               const areaIndex = newAreas.findIndex(a => a.id === area.id);
                               if (areaIndex !== -1) {
-                                newAreas[areaIndex] = { 
-                                  ...newAreas[areaIndex], 
-                                  region: { 
-                                    ...newAreas[areaIndex].region, 
-                                    x: parseInt(e.target.value) 
-                                  } 
+                                newAreas[areaIndex] = {
+                                  ...newAreas[areaIndex],
+                                  region: {
+                                    ...newAreas[areaIndex].region,
+                                    x: parseInt(e.target.value)
+                                  }
                                 };
                                 updateFormData('areasOfInterest.areas', newAreas);
                               }
@@ -103,19 +104,19 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                         </div>
                         <div>
                           <label className="block text-xs text-neutral-500 mb-1">Posición Y</label>
-                          <Input 
+                          <Input
                             type="number"
                             value={area.region.y}
                             onChange={(e) => {
                               const newAreas = [...formData.areasOfInterest.areas];
                               const areaIndex = newAreas.findIndex(a => a.id === area.id);
                               if (areaIndex !== -1) {
-                                newAreas[areaIndex] = { 
-                                  ...newAreas[areaIndex], 
-                                  region: { 
-                                    ...newAreas[areaIndex].region, 
-                                    y: parseInt(e.target.value) 
-                                  } 
+                                newAreas[areaIndex] = {
+                                  ...newAreas[areaIndex],
+                                  region: {
+                                    ...newAreas[areaIndex].region,
+                                    y: parseInt(e.target.value)
+                                  }
                                 };
                                 updateFormData('areasOfInterest.areas', newAreas);
                               }
@@ -125,19 +126,19 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                         </div>
                         <div>
                           <label className="block text-xs text-neutral-500 mb-1">Ancho</label>
-                          <Input 
+                          <Input
                             type="number"
                             value={area.region.width}
                             onChange={(e) => {
                               const newAreas = [...formData.areasOfInterest.areas];
                               const areaIndex = newAreas.findIndex(a => a.id === area.id);
                               if (areaIndex !== -1) {
-                                newAreas[areaIndex] = { 
-                                  ...newAreas[areaIndex], 
-                                  region: { 
-                                    ...newAreas[areaIndex].region, 
-                                    width: parseInt(e.target.value) 
-                                  } 
+                                newAreas[areaIndex] = {
+                                  ...newAreas[areaIndex],
+                                  region: {
+                                    ...newAreas[areaIndex].region,
+                                    width: parseInt(e.target.value)
+                                  }
                                 };
                                 updateFormData('areasOfInterest.areas', newAreas);
                               }
@@ -147,19 +148,19 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                         </div>
                         <div>
                           <label className="block text-xs text-neutral-500 mb-1">Alto</label>
-                          <Input 
+                          <Input
                             type="number"
                             value={area.region.height}
                             onChange={(e) => {
                               const newAreas = [...formData.areasOfInterest.areas];
                               const areaIndex = newAreas.findIndex(a => a.id === area.id);
                               if (areaIndex !== -1) {
-                                newAreas[areaIndex] = { 
-                                  ...newAreas[areaIndex], 
-                                  region: { 
-                                    ...newAreas[areaIndex].region, 
-                                    height: parseInt(e.target.value) 
-                                  } 
+                                newAreas[areaIndex] = {
+                                  ...newAreas[areaIndex],
+                                  region: {
+                                    ...newAreas[areaIndex].region,
+                                    height: parseInt(e.target.value)
+                                  }
                                 };
                                 updateFormData('areasOfInterest.areas', newAreas);
                               }
@@ -196,7 +197,7 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                 </div>
               ) : (
                 <div className="p-4 bg-neutral-50 rounded-lg text-center text-neutral-500">
-                  No hay áreas de interés definidas. Haz clic en "Añadir área de interés" para comenzar.
+                  No hay áreas de interés definidas. Haz clic en &quot;Añadir área de interés&quot; para comenzar.
                 </div>
               )}
             </>
@@ -205,7 +206,7 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
 
         <div className="p-4 border border-neutral-200 rounded-lg">
           <h3 className="text-sm font-medium text-neutral-900 mb-4">Parámetros avanzados</h3>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="block text-sm text-neutral-700">Umbral de fijación (ms)</label>
@@ -221,7 +222,7 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                 Umbral de tiempo (en milisegundos) para clasificar una mirada como fijación
               </p>
             </div>
-            
+
             <div className="space-y-2">
               <label className="block text-sm text-neutral-700">Umbral de velocidad sacádica (°/s)</label>
               <Input
@@ -238,7 +239,7 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
             </div>
           </div>
         </div>
-        
+
         <div className="p-4 border border-neutral-200 rounded-lg">
           <div className="flex items-center justify-between">
             <div>
@@ -247,13 +248,13 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                 Mostrar marco/superposición del dispositivo durante la presentación
               </p>
             </div>
-            <Switch 
-              checked={formData.deviceFrame} 
-              onCheckedChange={(checked: boolean) => updateFormData('deviceFrame', checked)} 
+            <Switch
+              checked={formData.deviceFrame}
+              onCheckedChange={(checked: boolean) => updateFormData('deviceFrame', checked)}
             />
           </div>
         </div>
       </div>
     </>
   );
-}; 
+};

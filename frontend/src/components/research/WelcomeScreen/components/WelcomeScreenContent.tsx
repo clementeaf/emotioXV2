@@ -1,7 +1,9 @@
 import React from 'react';
+
 import { Input } from '@/components/ui/Input';
-import { Textarea } from '@/components/ui/Textarea';
 import { Label } from '@/components/ui/Label';
+import { Textarea } from '@/components/ui/Textarea';
+
 import { ValidationErrors } from '../types';
 
 interface WelcomeScreenContentProps {

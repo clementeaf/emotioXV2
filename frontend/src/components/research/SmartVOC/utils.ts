@@ -1,5 +1,6 @@
-import { SmartVOCQuestion } from './types'; // Asegúrate que la ruta a types sea correcta
 import { v4 as uuidv4 } from 'uuid';
+
+import { SmartVOCQuestion } from './types'; // Asegúrate que la ruta a types sea correcta
 
 // Instala uuid si no lo has hecho: npm install uuid @types/uuid
 

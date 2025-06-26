@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import Image from 'next/image';
 
 interface AnalysisImageProps {
   src: string;
@@ -9,7 +8,7 @@ interface AnalysisImageProps {
   className?: string;
 }
 
-export function AnalysisImage({ src, alt = "Analysis image", className }: AnalysisImageProps) {
+export function AnalysisImage({ src, alt = 'Analysis image', className }: AnalysisImageProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const toggleExpand = () => {

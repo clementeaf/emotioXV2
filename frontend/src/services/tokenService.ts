@@ -2,7 +2,7 @@
  * Servicio de gestión de tokens
  * Maneja la renovación automática, almacenamiento y validación de tokens de autenticación
  */
-import { authAPI } from '@/lib/api';
+import { storage } from '@/utils/storage';
 
 // Intervalo para renovación periódica del token (30 minutos)
 const TOKEN_REFRESH_INTERVAL = 30 * 60 * 1000;
@@ -43,6 +43,11 @@ const logService = {
 };
 
 /**
+ * Verifica si estamos en el navegador
+ */
+const isClient = typeof window !== 'undefined';
+
+/**
  * Decodifica un token JWT sin verificar la firma
  * @param token Token JWT
  * @returns Payload decodificado o null si hay error
@@ -52,7 +57,7 @@ const decodeToken = (token: string): any | null => {
     // Obtener la parte del payload (segunda parte del token)
     const base64Url = token.split('.')[1];
     if (!base64Url) {return null;}
-    
+
     // Decodificar el base64
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
     const jsonPayload = decodeURIComponent(
@@ -62,7 +67,7 @@ const decodeToken = (token: string): any | null => {
         .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
         .join('')
     );
-    
+
     return JSON.parse(jsonPayload);
   } catch (error) {
     logService.error('Error al decodificar token:', error);
@@ -79,11 +84,11 @@ const isTokenExpiringSoon = (token: string): boolean => {
   try {
     const payload = decodeToken(token);
     if (!payload || !payload.exp) {return true;}
-    
+
     // Convertir exp a milisegundos
     const expirationTime = payload.exp * 1000;
     const currentTime = Date.now();
-    
+
     // Si el token expira en menos del umbral, considerar que está próximo a expirar
     return expirationTime - currentTime < TOKEN_REFRESH_THRESHOLD;
   } catch (error) {
@@ -98,38 +103,43 @@ const isTokenExpiringSoon = (token: string): boolean => {
  */
 const getToken = (): string | null => {
   try {
+    // Verificar que estamos en el cliente
+    if (!isClient) {
+      return null;
+    }
+
     // Verificación principal: intentar obtener el token de localStorage
-    const token = localStorage.getItem('token');
-    
+    const token = storage.getItem('token');
+
     if (token) {
-      // Asegurarnos de que el token tenga el prefijo Bearer
-      const formattedToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
-      console.log('tokenService.getToken - TOKEN ENCONTRADO (primeros caracteres):', 
-        formattedToken.substring(0, 27) + '...');
-      return formattedToken;
+      // Remover el prefijo Bearer si existe para devolver solo el token
+      const cleanToken = token.replace('Bearer ', '').trim();
+      console.log('tokenService.getToken - TOKEN ENCONTRADO (primeros caracteres):',
+        cleanToken.substring(0, 20) + '...');
+      return cleanToken;
     }
-    
+
     // Si no se encuentra en localStorage, intentar obtener de sessionStorage como respaldo
-    const sessionToken = sessionStorage.getItem('token');
+    const sessionToken = storage.getSessionItem('token');
     if (sessionToken) {
-      // Asegurarnos de que el token tenga el prefijo Bearer
-      const formattedToken = sessionToken.startsWith('Bearer ') ? sessionToken : `Bearer ${sessionToken}`;
-      console.log('tokenService.getToken - TOKEN ENCONTRADO en sessionStorage (primeros caracteres):', 
-        formattedToken.substring(0, 27) + '...');
-      
-      // Guardar en localStorage para futuras solicitudes
-      localStorage.setItem('token', formattedToken);
+      // Remover el prefijo Bearer si existe para devolver solo el token
+      const cleanToken = sessionToken.replace('Bearer ', '').trim();
+      console.log('tokenService.getToken - TOKEN ENCONTRADO en sessionStorage (primeros caracteres):',
+        cleanToken.substring(0, 20) + '...');
+
+      // Guardar en localStorage para futuras solicitudes (sin prefijo Bearer)
+      storage.setItem('token', cleanToken);
       console.log('tokenService.getToken - Token de sessionStorage copiado a localStorage');
-      
-      return formattedToken;
+
+      return cleanToken;
     }
-    
+
     // Verificar si hay información de almacenamiento en localStorage
-    const storageType = localStorage.getItem('auth_storage_type');
+    const storageType = storage.getItem('auth_storage_type');
     console.warn('tokenService.getToken - NO SE ENCONTRÓ TOKEN. Tipo de almacenamiento:', storageType);
-    console.warn('tokenService.getToken - Keys en localStorage:', Object.keys(localStorage));
-    console.warn('tokenService.getToken - Keys en sessionStorage:', Object.keys(sessionStorage));
-    
+    console.warn('tokenService.getToken - Keys en localStorage:', storage.getKeys());
+    console.warn('tokenService.getToken - Keys en sessionStorage:', storage.getSessionKeys());
+
     return null;
   } catch (error) {
     console.error('tokenService.getToken - Error crítico al obtener token:', error);
@@ -142,9 +152,13 @@ const getToken = (): string | null => {
  * @param token Token JWT
  */
 const saveToken = (token: string): void => {
-  // Asegurarnos de que el token tenga el prefijo Bearer
-  const formattedToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
-  localStorage.setItem('token', formattedToken);
+  if (!isClient) {
+    return;
+  }
+
+  // Remover el prefijo Bearer si existe para guardar solo el token
+  const cleanToken = token.replace('Bearer ', '').trim();
+  storage.setItem('token', cleanToken);
   logService.info('Token actualizado en localStorage');
 };
 
@@ -152,9 +166,13 @@ const saveToken = (token: string): void => {
  * Elimina el token del almacenamiento
  */
 const removeToken = (): void => {
-  localStorage.removeItem('token');
+  if (!isClient) {
+    return;
+  }
+
+  storage.removeItem('token');
   logService.info('Token eliminado de localStorage');
-  
+
   // Detener el temporizador si existe
   if (refreshTimer) {
     clearInterval(refreshTimer);
@@ -203,6 +221,8 @@ const refreshTokenIfNeeded = async (): Promise<boolean> => {
     }
 
     try {
+      // Importación dinámica para evitar dependencia circular
+      const { authAPI } = await import('@/lib/api');
       const response = await authAPI.refreshToken();
       if (!response?.data?.token) {
         throw new Error('No se recibió token en la respuesta');
@@ -216,9 +236,9 @@ const refreshTokenIfNeeded = async (): Promise<boolean> => {
       saveToken(newToken);
       return true;
     } catch (error) {
-      if (error instanceof Error && 
-         (error.message.includes('401') || 
-          error.message === 'NO_TOKEN_AVAILABLE' || 
+      if (error instanceof Error &&
+         (error.message.includes('401') ||
+          error.message === 'NO_TOKEN_AVAILABLE' ||
           error.message === 'INVALID_TOKEN_FORMAT')) {
         removeToken();
         stopAutoRefresh();
@@ -242,10 +262,12 @@ const forceTokenRefresh = async (): Promise<boolean> => {
       logService.warn('No hay token disponible para forzar renovación');
       return false;
     }
-    
+
     logService.info('Forzando renovación de token...');
+    // Importación dinámica para evitar dependencia circular
+    const { authAPI } = await import('@/lib/api');
     const response = await authAPI.refreshToken();
-    
+
     if (response.data && response.data.token) {
       // Guardar siempre el token renovado
       logService.info('Token renovado forzosamente con éxito');
@@ -267,7 +289,7 @@ const forceTokenRefresh = async (): Promise<boolean> => {
 const startAutoRefresh = (): void => {
   // Detener cualquier temporizador existente
   stopAutoRefresh();
-  
+
   // Verificar si hay un token válido antes de iniciar
   const currentToken = getToken();
   if (!currentToken) {
@@ -317,4 +339,4 @@ const tokenService = {
   decodeToken
 };
 
-export default tokenService; 
+export default tokenService;

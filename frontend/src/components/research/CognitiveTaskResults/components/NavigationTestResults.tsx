@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+
 import { cn } from '@/lib/utils';
 
 interface NavigationTestResultsProps {
@@ -31,8 +32,8 @@ interface AreaOfInterest {
 
 export function NavigationTestResults({ 
   className,
-  questionId = "3.7.-Navigation Test",
-  questionType = "Navigation Test",
+  questionId = '3.7.-Navigation Test',
+  questionType = 'Navigation Test',
   conditionalityDisabled = true,
   required = true
 }: NavigationTestResultsProps) {
@@ -43,56 +44,56 @@ export function NavigationTestResults({
   const steps: Step[] = [
     {
       id: 1,
-      title: "Step 1",
-      description: "Step 1 and task description",
+      title: 'Step 1',
+      description: 'Step 1 and task description',
       completionRate: 100,
-      completionTime: "15s",
+      completionTime: '15s',
       participants: 47,
       areas: [
         {
-          id: "1",
-          name: "Area of Interest (AOI)",
+          id: '1',
+          name: 'Area of Interest (AOI)',
           percentage: 14,
-          viewTime: "6s",
-          participants: "05"
+          viewTime: '6s',
+          participants: '05'
         },
         {
-          id: "2",
-          name: "Area of Interest (AOI)",
+          id: '2',
+          name: 'Area of Interest (AOI)',
           percentage: 14,
-          viewTime: "6s",
-          participants: "05"
+          viewTime: '6s',
+          participants: '05'
         },
         {
-          id: "3",
-          name: "Area of Interest (AOI)",
+          id: '3',
+          name: 'Area of Interest (AOI)',
           percentage: 14,
-          viewTime: "6s",
-          participants: "05"
+          viewTime: '6s',
+          participants: '05'
         },
         {
-          id: "4",
-          name: "Area of Interest (AOI)",
+          id: '4',
+          name: 'Area of Interest (AOI)',
           percentage: 14,
-          viewTime: "6s",
-          participants: "05"
+          viewTime: '6s',
+          participants: '05'
         }
       ]
     },
     {
       id: 2,
-      title: "Step 2",
-      description: "Step 2 and task description",
+      title: 'Step 2',
+      description: 'Step 2 and task description',
       completionRate: 100,
-      completionTime: "55s",
+      completionTime: '55s',
       participants: 3
     },
     {
       id: 3,
-      title: "Step 3",
-      description: "Step 3 and task description",
+      title: 'Step 3',
+      description: 'Step 3 and task description',
       completionRate: 100,
-      completionTime: "76s",
+      completionTime: '76s',
       participants: 0
     }
   ];
@@ -122,8 +123,8 @@ export function NavigationTestResults({
       <div 
         key={step.id} 
         className={cn(
-          "border border-gray-200 rounded-lg overflow-hidden mb-4 cursor-pointer hover:shadow-md transition-shadow",
-          selectedStep === step.id && "ring-2 ring-blue-500"
+          'border border-gray-200 rounded-lg overflow-hidden mb-4 cursor-pointer hover:shadow-md transition-shadow',
+          selectedStep === step.id && 'ring-2 ring-blue-500'
         )}
         onClick={() => handleStepClick(step.id)}
       >
@@ -157,10 +158,10 @@ export function NavigationTestResults({
   };
 
   const renderStepDetail = () => {
-    if (selectedStep === null) return null;
+    if (selectedStep === null) {return null;}
     
     const step = steps.find(s => s.id === selectedStep);
-    if (!step) return null;
+    if (!step) {return null;}
     
     return (
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -180,8 +181,8 @@ export function NavigationTestResults({
           <div className="flex space-x-1">
             <button 
               className={cn(
-                "px-3 py-1 rounded text-sm flex items-center",
-                selectedMapView === 'heat' ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700"
+                'px-3 py-1 rounded text-sm flex items-center',
+                selectedMapView === 'heat' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'
               )}
               onClick={() => handleMapViewChange('heat')}
             >
@@ -192,8 +193,8 @@ export function NavigationTestResults({
             </button>
             <button 
               className={cn(
-                "px-3 py-1 rounded text-sm flex items-center",
-                selectedMapView === 'click' ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700"
+                'px-3 py-1 rounded text-sm flex items-center',
+                selectedMapView === 'click' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'
               )}
               onClick={() => handleMapViewChange('click')}
             >
@@ -204,8 +205,8 @@ export function NavigationTestResults({
             </button>
             <button 
               className={cn(
-                "px-3 py-1 rounded text-sm flex items-center",
-                selectedMapView === 'opacity' ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700"
+                'px-3 py-1 rounded text-sm flex items-center',
+                selectedMapView === 'opacity' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'
               )}
               onClick={() => handleMapViewChange('opacity')}
             >
@@ -217,8 +218,8 @@ export function NavigationTestResults({
             </button>
             <button 
               className={cn(
-                "px-3 py-1 rounded text-sm flex items-center",
-                selectedMapView === 'scanPath' ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700"
+                'px-3 py-1 rounded text-sm flex items-center',
+                selectedMapView === 'scanPath' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'
               )}
               onClick={() => handleMapViewChange('scanPath')}
             >
@@ -229,8 +230,8 @@ export function NavigationTestResults({
             </button>
             <button 
               className={cn(
-                "px-3 py-1 rounded text-sm flex items-center",
-                selectedMapView === 'image' ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700"
+                'px-3 py-1 rounded text-sm flex items-center',
+                selectedMapView === 'image' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'
               )}
               onClick={() => handleMapViewChange('image')}
             >
@@ -241,8 +242,8 @@ export function NavigationTestResults({
             </button>
             <button 
               className={cn(
-                "px-3 py-1 rounded text-sm flex items-center",
-                selectedMapView === 'prediction' ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700"
+                'px-3 py-1 rounded text-sm flex items-center',
+                selectedMapView === 'prediction' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'
               )}
               onClick={() => handleMapViewChange('prediction')}
             >
@@ -260,13 +261,13 @@ export function NavigationTestResults({
             <div className="w-full h-80 rounded-lg bg-blue-50 flex items-center justify-center overflow-hidden">
               <div className={
                 cn(
-                  "w-full h-full",
-                  selectedMapView === 'heat' ? "bg-gradient-to-br from-red-500/30 via-yellow-500/20 to-blue-500/10" : 
-                  selectedMapView === 'click' ? "bg-blue-100" :
-                  selectedMapView === 'opacity' ? "bg-gradient-to-tr from-blue-200/50 to-blue-100/20" :
-                  selectedMapView === 'scanPath' ? "bg-blue-50" :
-                  selectedMapView === 'image' ? "bg-gray-100" :
-                  "bg-indigo-50"
+                  'w-full h-full',
+                  selectedMapView === 'heat' ? 'bg-gradient-to-br from-red-500/30 via-yellow-500/20 to-blue-500/10' : 
+                    selectedMapView === 'click' ? 'bg-blue-100' :
+                      selectedMapView === 'opacity' ? 'bg-gradient-to-tr from-blue-200/50 to-blue-100/20' :
+                        selectedMapView === 'scanPath' ? 'bg-blue-50' :
+                          selectedMapView === 'image' ? 'bg-gray-100' :
+                            'bg-indigo-50'
                 )
               }>
                 {selectedMapView === 'scanPath' && (
@@ -349,7 +350,7 @@ export function NavigationTestResults({
   };
 
   return (
-    <div className={cn("w-full", className)}>
+    <div className={cn('w-full', className)}>
       {/* Header con información de la prueba */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2">

@@ -1,8 +1,9 @@
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/Dialog';
+
 import { Button } from '@/components/ui/Button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/Dialog';
 import { WelcomeScreenData } from '@/services/welcomeScreenService';
-import { UI_TEXTS } from '../constants';
+
 
 interface ConfirmationModalProps {
   isOpen: boolean;
@@ -12,7 +13,7 @@ interface ConfirmationModalProps {
 }
 
 export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, onClose, onConfirm, data }) => {
-  if (!isOpen) return null;
+  if (!isOpen) {return null;}
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -30,8 +31,8 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, on
           </DialogDescription>
         </DialogHeader>
         <div className="flex justify-end space-x-3 mt-4">
-           <Button variant="outline" onClick={onClose}>Cancelar</Button>
-           <Button onClick={onConfirm}>Confirmar</Button>
+          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button onClick={onConfirm}>Confirmar</Button>
         </div>
       </DialogContent>
     </Dialog>

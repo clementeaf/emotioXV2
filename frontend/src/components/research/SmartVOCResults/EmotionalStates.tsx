@@ -1,7 +1,8 @@
-import { Card } from "@/components/ui/Card";
-import { cn } from "@/lib/utils";
-import { ArrowUpIcon, ArrowDownIcon } from "lucide-react";
-import { Target } from "lucide-react";
+import { ArrowUpIcon, ArrowDownIcon } from 'lucide-react';
+import { Target } from 'lucide-react';
+
+import { Card } from '@/components/ui/Card';
+import { cn } from '@/lib/utils';
 
 interface EmotionalState {
   name: string;
@@ -12,7 +13,7 @@ interface EmotionalState {
 interface Cluster {
   name: string;
   value: number;
-  trend: "up" | "down";
+  trend: 'up' | 'down';
 }
 
 interface EmotionalStatesProps {
@@ -30,7 +31,7 @@ export function EmotionalStates({
   longTermClusters,
   shortTermClusters,
   totalResponses = 28635,
-  responseTime = "26s"
+  responseTime = '26s'
 }: EmotionalStatesProps) {
   const positivePercentage = emotionalStates
     .filter(state => state.isPositive)
@@ -39,7 +40,7 @@ export function EmotionalStates({
   const negativePercentage = 100 - positivePercentage;
 
   return (
-    <Card className={cn("p-6 pb-14", className)}>
+    <Card className={cn('p-6 pb-14', className)}>
       {/* Encabezado de la pregunta */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex-1">
@@ -145,8 +146,8 @@ export function EmotionalStates({
                   {/* La barra en sí */}
                   <div 
                     className={cn(
-                      "absolute bottom-0 w-4 rounded-full",
-                      state.isPositive ? "bg-[#4ADE80]" : "bg-[#F87171]"
+                      'absolute bottom-0 w-4 rounded-full',
+                      state.isPositive ? 'bg-[#4ADE80]' : 'bg-[#F87171]'
                     )}
                     style={{ 
                       height: `${state.value * 10}%`,
@@ -166,10 +167,10 @@ export function EmotionalStates({
                     <span 
                       className="text-xs text-gray-600 absolute top-0 whitespace-nowrap"
                       style={{ 
-                        writingMode: "vertical-lr",
-                        transform: "rotate(180deg)",
-                        textOrientation: "mixed",
-                        lineHeight: "1"
+                        writingMode: 'vertical-lr',
+                        transform: 'rotate(180deg)',
+                        textOrientation: 'mixed',
+                        lineHeight: '1'
                       }}
                     >
                       {state.name}
@@ -190,14 +191,14 @@ export function EmotionalStates({
                 <div key={cluster.name} className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">{cluster.name}</span>
                   <div className="flex items-center gap-1">
-                    {cluster.trend === "up" ? (
+                    {cluster.trend === 'up' ? (
                       <ArrowUpIcon className="h-4 w-4 text-[#4ADE80]" />
                     ) : (
                       <ArrowDownIcon className="h-4 w-4 text-[#F87171]" />
                     )}
                     <span className={cn(
-                      "text-sm font-medium",
-                      cluster.trend === "up" ? "text-[#4ADE80]" : "text-[#F87171]"
+                      'text-sm font-medium',
+                      cluster.trend === 'up' ? 'text-[#4ADE80]' : 'text-[#F87171]'
                     )}>
                       {cluster.value}%
                     </span>
@@ -214,14 +215,14 @@ export function EmotionalStates({
                 <div key={cluster.name} className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">{cluster.name}</span>
                   <div className="flex items-center gap-1">
-                    {cluster.trend === "up" ? (
+                    {cluster.trend === 'up' ? (
                       <ArrowUpIcon className="h-4 w-4 text-[#4ADE80]" />
                     ) : (
                       <ArrowDownIcon className="h-4 w-4 text-[#F87171]" />
                     )}
                     <span className={cn(
-                      "text-sm font-medium",
-                      cluster.trend === "up" ? "text-[#4ADE80]" : "text-[#F87171]"
+                      'text-sm font-medium',
+                      cluster.trend === 'up' ? 'text-[#4ADE80]' : 'text-[#F87171]'
                     )}>
                       {cluster.value}%
                     </span>

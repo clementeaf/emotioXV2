@@ -1,7 +1,8 @@
 import React from 'react';
+
 import { Switch } from '@/components/ui/Switch';
+
 import { SmartVOCSettingsProps } from '../types';
-import { UI_TEXTS } from '../constants';
 
 /**
  * Componente para los ajustes generales de SmartVOC

@@ -1,4 +1,6 @@
+import { Loader2 } from 'lucide-react';
 import React from 'react';
+
 import { Button } from '@/components/ui/Button';
 import { 
   Dialog, 
@@ -7,7 +9,6 @@ import {
   DialogTitle, 
   DialogDescription
 } from '@/components/ui/Dialog';
-import { Loader2 } from 'lucide-react';
 
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -30,7 +31,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   cancelText = 'Cancelar',
   isConfirming = false,
 }) => {
-  if (!isOpen) return null;
+  if (!isOpen) {return null;}
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>

@@ -1,4 +1,4 @@
-import { NPSQuestion } from "./NPSQuestion";
+import { NPSQuestion } from './NPSQuestion';
 
 
 const monthlyNPSData = [

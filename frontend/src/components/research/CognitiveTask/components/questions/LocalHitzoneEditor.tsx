@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+
 import type { HitzoneArea } from '../../types';
 
 interface LocalHitzoneEditorProps {
@@ -47,7 +48,7 @@ export const LocalHitzoneEditor: React.FC<LocalHitzoneEditorProps> = ({
 
   // Iniciar dibujo
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button !== 0 || !imgNatural || !imgSize) return;
+    if (e.button !== 0 || !imgNatural || !imgSize) {return;}
     const rect = svgRef.current!.getBoundingClientRect();
     // Coordenadas relativas al SVG
     const mouseX = e.clientX - rect.left;
@@ -62,7 +63,7 @@ export const LocalHitzoneEditor: React.FC<LocalHitzoneEditorProps> = ({
 
   // Dibujar rectángulo
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!drawing || !start || !imgNatural || !imgSize) return;
+    if (!drawing || !start || !imgNatural || !imgSize) {return;}
     const rect = svgRef.current!.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
@@ -97,7 +98,7 @@ export const LocalHitzoneEditor: React.FC<LocalHitzoneEditorProps> = ({
 
   // Eliminar área seleccionada
   const handleDelete = () => {
-    if (selectedIdx === null) return;
+    if (selectedIdx === null) {return;}
     setAreas(areas.filter((_, idx) => idx !== selectedIdx));
     setSelectedIdx(null);
   };

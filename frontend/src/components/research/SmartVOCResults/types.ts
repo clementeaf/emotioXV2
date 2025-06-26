@@ -54,7 +54,7 @@ export interface EmotionalState {
 export interface Cluster {
   name: string;
   value: number;
-  trend: "up" | "down";
+  trend: 'up' | 'down';
 }
 
 export interface EmotionalStatesData {
