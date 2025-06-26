@@ -11,6 +11,7 @@ import { researchAPI } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
 import { useResearch } from '@/stores/useResearchStore';
+import { SidebarBase } from './SidebarBase';
 
 interface SidebarProps {
   className?: string;
@@ -173,97 +174,44 @@ function DeleteConfirmationModal({ isOpen, onClose, onConfirm, researchName }: D
   );
 }
 
-// Componente interno para el contenido del sidebar que usa useSearchParams
 function SidebarContent({ className, activeResearch }: SidebarProps) {
   const router = useRouter();
   const { user, logout } = useAuth();
-
-  // Componente para mostrar información del usuario
-  function UserInfo() {
-    // Debug: Verificar datos del usuario
-    console.log('UserInfo - user data:', user);
-    console.log('UserInfo - user type:', typeof user);
-
-    if (!user) {
-      console.log('UserInfo - No user data available');
-      return (
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center">
-            <span className="text-sm font-medium text-neutral-700">U</span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-neutral-900 truncate">Usuario</p>
-            <p className="text-xs text-neutral-500 truncate">Cargando...</p>
-          </div>
-        </div>
-      );
-    }
-
-    const userName = user.name || 'Usuario';
-    const userEmail = user.email || 'Sin email';
-    const userInitial = userName.charAt(0).toUpperCase();
-
-    console.log('UserInfo - Rendering with:', { userName, userEmail, userInitial });
-
-    return (
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-          <span className="text-sm font-medium text-blue-700">
-            {userInitial}
-          </span>
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-neutral-900 truncate">
-            {userName}
-          </p>
-          <p className="text-xs text-neutral-500 truncate">
-            {userEmail}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  // Componente para el botón de logout
-  function LogoutButton() {
-    const handleLogout = async () => {
-      try {
-        console.log('Iniciando logout desde sidebar...');
-        await logout();
-      } catch (error) {
-        console.error('Error al cerrar sesión:', error);
-        // Forzar logout local en caso de error
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
-      }
-    };
-
-    return (
-      <button
-        onClick={handleLogout}
-        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-red-200 hover:border-red-300"
-        title="Cerrar sesión"
-      >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-        </svg>
-        <span className="font-medium">Cerrar sesión</span>
-      </button>
-    );
-  }
   const pathname = usePathname() || '';
   const searchParams = useSearchParams();
   const { hasDraft, currentDraft } = useResearch();
   const isAimFramework = searchParams?.get('aim') === 'true';
-  const searchParamsSection = searchParams ? searchParams.get('section') : null;
-
-  // Estado para la investigación más reciente
   const [recentResearch, setRecentResearch] = useState<Array<{ id: string, name: string, technique: string }>>([]);
   const [isLoadingResearch, setIsLoadingResearch] = useState<boolean>(true);
   const [showNoResearchMessage, setShowNoResearchMessage] = useState<boolean>(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [researchToDelete, setResearchToDelete] = useState<{ id: string, name: string } | null>(null);
+
+  const closeDeleteModal = () => {
+    setShowDeleteModal(false);
+    setResearchToDelete(null);
+  };
+
+  const confirmDeleteResearch = async () => {
+    if (!researchToDelete || !researchToDelete.id) {
+      closeDeleteModal();
+      return;
+    }
+    try {
+      try {
+        await researchAPI.delete(researchToDelete.id);
+      } catch (apiError) {}
+      localStorage.setItem('research_list', JSON.stringify([]));
+      localStorage.removeItem(`research_${researchToDelete.id}`);
+      setRecentResearch([]);
+      if (window.location.search.includes(`research=${researchToDelete.id}`)) {
+        router.replace('/dashboard');
+      }
+    } catch (error) {} finally {
+      setShowDeleteModal(false);
+      setResearchToDelete(null);
+    }
+  };
 
   // Cargar la investigación más reciente
   useEffect(() => {
@@ -271,8 +219,6 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
       setIsLoadingResearch(true);
       setShowNoResearchMessage(false); // Asumir que hay investigaciones inicialmente
       try {
-        // Obtener todas las investigaciones del usuario
-        console.log('Fetching /research/all...'); // Log para depuración
         const response = await fetch(`${API_HTTP_ENDPOINT}/research/all`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -288,37 +234,29 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
         }
 
         const data = await response.json();
-        // Asegurarse de que data.data es un array
         const researches = Array.isArray(data?.data) ? data.data : [];
-        console.log('Researches received:', researches); // Log para depuración
 
         if (researches.length === 0) {
           console.log('No researches found.');
           setRecentResearch([]);
           setShowNoResearchMessage(true);
         } else {
-          // Ordenar por fecha de creación (más reciente primero)
           const sortedResearches = researches.sort((a: Research, b: Research) => {
-            // Manejar posibles valores nulos o inválidos de createdAt
             const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
             const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-            return dateB - dateA; // Descendente
+            return dateB - dateA;
           });
-          console.log('Sorted researches:', sortedResearches); // Log para depuración
 
-          // Tomar la más reciente (el primer elemento)
           const mostRecent = sortedResearches[0];
-          console.log('Most recent research:', mostRecent); // Log para depuración
 
           if (mostRecent && mostRecent.id) {
             setRecentResearch([{
               id: mostRecent.id,
-              name: mostRecent.name || 'Investigación sin nombre', // Valor por defecto
+              name: mostRecent.name || 'Investigación sin nombre',
               technique: mostRecent.technique || ''
             }]);
             setShowNoResearchMessage(false);
           } else {
-            console.log('Most recent research has no valid ID.');
             setRecentResearch([]);
             setShowNoResearchMessage(true);
           }
@@ -326,374 +264,175 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
       } catch (error) {
         console.error('Error cargando investigaciones en fetchMostRecentResearch:', error);
         setRecentResearch([]);
-        setShowNoResearchMessage(true); // Mostrar mensaje si hay error
+        setShowNoResearchMessage(true);
       } finally {
         setIsLoadingResearch(false);
       }
     };
 
     fetchMostRecentResearch();
-  }, [activeResearch]); // Dependencia mantenida por si cambia la investigación activa externa
+  }, [activeResearch]);
 
-  // Determinar si debemos mostrar el sidebar de AIM Framework
-  const isAimFrameworkResearch = isAimFramework ||
-    (recentResearch.length > 0 && recentResearch[0].technique === 'aim-framework');
-
-  // Función para manejar el clic en el logo de EmotioX
-  const handleLogoClick = () => {
-    router.push('/dashboard');
-  };
-
-  const confirmDeleteResearch = async () => {
-    if (!researchToDelete || !researchToDelete.id) {
-      console.error('Error: Intentando eliminar una investigación sin ID válido');
-      closeDeleteModal();
-      return;
-    }
-
-    try {
-      // Llamar a la API para eliminar la investigación del backend
-      try {
-        console.log('Eliminando investigación con ID:', researchToDelete.id);
-        const response = await researchAPI.delete(researchToDelete.id);
-        console.log('Investigación eliminada en el backend:', response);
-      } catch (apiError) {
-        console.error('Error al eliminar la investigación del backend:', apiError);
-        // Continuamos con la eliminación local incluso si la API falla
-      }
-
-      // Eliminar los datos del localStorage como respaldo o en caso de fallo de la API
-      localStorage.setItem('research_list', JSON.stringify([]));
-      console.log('Investigación eliminada localmente:', researchToDelete.id);
-
-      // También eliminar los datos específicos de la investigación
-      localStorage.removeItem(`research_${researchToDelete.id}`);
-
-      // Actualizar el estado local para reflejar el cambio inmediatamente
-      setRecentResearch([]);
-
-      // Redirigir al dashboard principal si estamos actualmente en la investigación eliminada
-      if (window.location.search.includes(`research=${researchToDelete.id}`)) {
-        router.replace('/dashboard');
-      }
-    } catch (error) {
-      console.error('Error al eliminar la investigación:', error);
-    } finally {
-      // Cerrar el modal y limpiar el estado
-      setShowDeleteModal(false);
-      setResearchToDelete(null);
-    }
-  };
-
-  const closeDeleteModal = () => {
-    setShowDeleteModal(false);
-    setResearchToDelete(null);
-  };
-
-  // Si tenemos una investigación activa de tipo AIM Framework
-  if (activeResearch && isAimFrameworkResearch) {
-    return (
-      <div className={cn('w-56 bg-white shadow-lg flex flex-col mt-16 ml-4 mb-4 rounded-2xl', className)}>
-        <div className="px-4 pt-8">
-          <a
-            href="/dashboard"
-            className="flex items-center"
-            onClick={handleLogoClick}
-          >
-            <div className="flex items-center">
-              <span className="text-xl font-semibold text-neutral-900">EmotioX</span>
-            </div>
-          </a>
+  function UserInfo() {
+    if (!user) {
+      return (
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center">
+            <span className="text-sm font-medium text-neutral-700">U</span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-neutral-900 truncate">Usuario</p>
+            <p className="text-xs text-neutral-500 truncate">Cargando...</p>
+          </div>
         </div>
-
-        <nav className="flex-1 p-4 overflow-y-auto">
-          <div className="mb-4">
-            <h3 className="font-semibold text-xs text-neutral-500 uppercase mb-2">BUILD</h3>
-            <ul className="space-y-1">
-              <li key="welcome-screen">
-                <Link
-                  href={`/dashboard?research=${activeResearch.id}&aim=true&section=welcome-screen`}
-                  className={cn(
-                    'flex items-center text-sm px-3 py-2 rounded-md transition-colors',
-                    searchParamsSection === 'welcome-screen'
-                      ? 'bg-blue-50 text-blue-600'
-                      : 'text-neutral-700 hover:bg-neutral-100'
-                  )}
-                >
-                  <span className="w-5 h-5 mr-2 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 text-xs">1</span>
-                  Welcome Screen
-                </Link>
-              </li>
-              <li key="smart-voc">
-                <Link
-                  href={`/dashboard?research=${activeResearch.id}&aim=true&section=smart-voc`}
-                  className={cn(
-                    'flex items-center text-sm px-3 py-2 rounded-md transition-colors',
-                    searchParamsSection === 'smart-voc'
-                      ? 'bg-blue-50 text-blue-600'
-                      : 'text-neutral-700 hover:bg-neutral-100'
-                  )}
-                >
-                  <span className="w-5 h-5 mr-2 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 text-xs">2</span>
-                  Smart VOC
-                </Link>
-              </li>
-              <li key="cognitive-task">
-                <Link
-                  href={`/dashboard?research=${activeResearch.id}&aim=true&section=cognitive-task`}
-                  className={cn(
-                    'flex items-center text-sm px-3 py-2 rounded-md transition-colors',
-                    searchParamsSection === 'cognitive-task'
-                      ? 'bg-blue-50 text-blue-600'
-                      : 'text-neutral-700 hover:bg-neutral-100'
-                  )}
-                >
-                  <span className="w-5 h-5 mr-2 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 text-xs">3</span>
-                  Cognitive Tasks
-                </Link>
-              </li>
-              <li key="eye-tracking">
-                <Link
-                  href={`/dashboard?research=${activeResearch.id}&aim=true&section=eye-tracking`}
-                  className={cn(
-                    'flex items-center text-sm px-3 py-2 rounded-md transition-colors',
-                    searchParamsSection === 'eye-tracking'
-                      ? 'bg-blue-50 text-blue-600'
-                      : 'text-neutral-700 hover:bg-neutral-100'
-                  )}
-                >
-                  <span className="w-5 h-5 mr-2 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 text-xs">4</span>
-                  Eye Tracking
-                </Link>
-              </li>
-              <li key="thank-you">
-                <Link
-                  href={`/dashboard?research=${activeResearch.id}&aim=true&section=thank-you`}
-                  className={cn(
-                    'flex items-center text-sm px-3 py-2 rounded-md transition-colors',
-                    searchParamsSection === 'thank-you'
-                      ? 'bg-blue-50 text-blue-600'
-                      : 'text-neutral-700 hover:bg-neutral-100'
-                  )}
-                >
-                  <span className="w-5 h-5 mr-2 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 text-xs">5</span>
-                  Thank You Screen
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          <div className="mb-6">
-            <h3 className="font-semibold text-xs text-neutral-500 uppercase mb-2">RECRUIT</h3>
-            <ul className="space-y-1">
-              <li key="eye-tracking-recruit">
-                <Link
-                  href={`/dashboard?research=${activeResearch.id}&aim=true&section=eye-tracking-recruit`}
-                  className={cn(
-                    'flex items-center text-sm px-3 py-2 rounded-md transition-colors',
-                    searchParamsSection === 'eye-tracking-recruit'
-                      ? 'bg-blue-50 text-blue-600'
-                      : 'text-neutral-700 hover:bg-neutral-100'
-                  )}
-                >
-                  Eye Tracking
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="font-semibold text-xs text-neutral-500 uppercase mb-2">RESULTS</h3>
-            <ul className="space-y-1">
-              <li key="smart-voc-results">
-                <Link
-                  href={`/dashboard?research=${activeResearch.id}&aim=true&section=smart-voc-results`}
-                  className={cn(
-                    'flex items-center text-sm px-3 py-2 rounded-md transition-colors',
-                    searchParamsSection === 'smart-voc-results'
-                      ? 'bg-blue-50 text-blue-600'
-                      : 'text-neutral-700 hover:bg-neutral-100'
-                  )}
-                >
-                  SmartVOC
-                </Link>
-              </li>
-              <li key="cognitive-task-results">
-                <Link
-                  href={`/dashboard?research=${activeResearch.id}&aim=true&section=cognitive-task-results`}
-                  className={cn(
-                    'flex items-center text-sm px-3 py-2 rounded-md transition-colors',
-                    searchParamsSection === 'cognitive-task-results'
-                      ? 'bg-blue-50 text-blue-600'
-                      : 'text-neutral-700 hover:bg-neutral-100'
-                  )}
-                >
-                  Cognitive Task
-                </Link>
-              </li>
-            </ul>
-          </div>
-        </nav>
-
-        {/* Modal de confirmación */}
-        {researchToDelete && (
-          <DeleteConfirmationModal
-            isOpen={showDeleteModal}
-            onClose={closeDeleteModal}
-            onConfirm={confirmDeleteResearch}
-            researchName={researchToDelete.name}
-          />
-        )}
+      );
+    }
+    const userName = user.name || 'Usuario';
+    const userEmail = user.email || 'Sin email';
+    const userInitial = userName.charAt(0).toUpperCase();
+    return (
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+          <span className="text-sm font-medium text-blue-700">{userInitial}</span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-neutral-900 truncate">{userName}</p>
+          <p className="text-xs text-neutral-500 truncate">{userEmail}</p>
+        </div>
       </div>
     );
   }
 
-  // Sidebar estándar para el resto de vistas
-  return (
-    <div className={cn('w-56 bg-white border-r border-neutral-200 flex flex-col h-screen', className)}>
-      {/* Header con información del usuario */}
-      <div className="px-4 py-4 border-b border-neutral-200">
-        <UserInfo />
-      </div>
+  const LogoBlock = (
+    <a href="/dashboard" className="flex items-center" onClick={() => router.push('/dashboard')}>
+      <span className="text-xl font-semibold text-neutral-900">EmotioX</span>
+    </a>
+  );
 
-      {/* Logo del proyecto */}
-      <div className="px-4 pt-4 pb-3">
-        <a
-          href="/dashboard"
-          className="flex items-center"
-          onClick={handleLogoClick}
-        >
-          <div className="flex items-center">
-            <span className="text-xl font-semibold text-neutral-900">EmotioX</span>
-          </div>
-        </a>
-      </div>
+  const MenuBlock = (
+    <nav className="mb-6">
+      <ul className="space-y-1">
+        {mainNavItems.map((item) => {
+          let isActive = false;
+          if (item.id === 'dashboard') isActive = pathname === '/dashboard';
+          else if (item.id === 'new-research') isActive = pathname === '/dashboard/research/new';
+          else if (item.id === 'research-history') isActive = pathname === '/dashboard/research-history';
+          else if (item.id === 'research') isActive = pathname === '/dashboard/research';
+          else if (item.id === 'emotions') isActive = pathname === '/dashboard/emotions';
+          if (item.id === 'new-research') {
+            return (
+              <li key={item.id}>
+                <Link
+                  href="/dashboard/research/new"
+                  className={cn(
+                    'flex items-center py-2 px-3 rounded-md transition-colors w-full text-left',
+                    isActive ? 'bg-blue-50 text-blue-600' : 'text-neutral-700 hover:bg-neutral-100'
+                  )}
+                >
+                  {typeof item.label === 'function'
+                    ? item.getDynamicLabel!(hasDraft, currentDraft?.step, currentDraft?.lastUpdated)
+                    : item.label}
+                </Link>
+              </li>
+            );
+          }
+          return (
+            <li key={item.id}>
+              <button
+                onClick={() => router.push(item.href)}
+                className={cn(
+                  'flex items-center py-2 px-3 rounded-md transition-colors w-full text-left',
+                  isActive ? 'bg-blue-50 text-blue-600' : 'text-neutral-700 hover:bg-neutral-100'
+                )}
+              >
+                {typeof item.label === 'function'
+                  ? item.getDynamicLabel!(hasDraft, currentDraft?.step, currentDraft?.lastUpdated)
+                  : item.label}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
 
-      <div className="flex-1 overflow-y-auto">
-        <nav className="p-4">
-          <ul className="space-y-1">
-            {mainNavItems.map((item) => {
-              let isActive = false;
+  function LogoutButton() {
+    const handleLogout = async () => {
+      try {
+        await logout();
+      } catch (error) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
+    };
+    return (
+      <button
+        onClick={handleLogout}
+        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-red-200 hover:border-red-300"
+        title="Cerrar sesión"
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+        </svg>
+        <span className="font-medium">Cerrar sesión</span>
+      </button>
+    );
+  }
 
-              if (item.id === 'dashboard') {
-                isActive = pathname === '/dashboard';
-              }
-              else if (item.id === 'new-research') {
-                isActive = pathname === '/dashboard/research/new';
-              }
-              else if (item.id === 'research-history') {
-                isActive = pathname === '/dashboard/research-history';
-              }
-              else if (item.id === 'research') {
-                isActive = pathname === '/dashboard/research';
-              }
-              else if (item.id === 'emotions') {
-                isActive = pathname === '/dashboard/emotions';
-              }
-
-              if (item.id === 'new-research') {
-                return (
-                  <li key={item.id}>
-                    <Link
-                      href="/dashboard/research/new"
-                      className={cn(
-                        'flex items-center py-2 px-3 rounded-md transition-colors w-full text-left',
-                        isActive
-                          ? 'bg-blue-50 text-blue-600'
-                          : 'text-neutral-700 hover:bg-neutral-100'
-                      )}
-                    >
-                      {typeof item.label === 'function'
-                        ? item.getDynamicLabel!(hasDraft, currentDraft?.step, currentDraft?.lastUpdated)
-                        : item.label}
-                    </Link>
-                  </li>
-                );
-              }
-
-              return (
-                <li key={item.id}>
-                  <button
-                    onClick={() => router.push(item.href)}
+  const ResearchInProgressBlock = (
+    <div className="w-full mt-2">
+      <h3 className="p-4 w-full font-semibold text-xs text-neutral-500 uppercase flex items-center pt-3">
+        <span className="text-blue-600 mr-1">•</span>
+        INVESTIGACIÓN EN CURSO
+      </h3>
+      {isLoadingResearch ? (
+        <div className="px-3 text-xs text-neutral-500">
+          Buscando investigación reciente...
+        </div>
+      ) : showNoResearchMessage || !recentResearch.length || !recentResearch[0]?.id ? (
+        <div className="px-3 text-xs ml-2 text-sm text-neutral-500">
+          NO HAY INVESTIGACIÓN EN CURSO
+        </div>
+      ) : (
+        <ul>
+          {recentResearch.map((item) => (
+            item && item.id ? (
+              <li key={`recent-${item.id}`}>
+                <div className="flex ml-5">
+                  <Link
+                    href={`/dashboard?research=${item.id}&section=welcome-screen`}
                     className={cn(
-                      'flex items-center py-2 px-3 rounded-md transition-colors w-full text-left',
-                      isActive
-                        ? 'bg-blue-50 text-blue-600'
-                        : 'text-neutral-700 hover:bg-neutral-100'
+                      'flex-1 flex items-center py-2 px-2 rounded-lg text-sm bg-blue-50 border border-blue-100 text-blue-700 hover:bg-blue-100 transition-colors max-w-[150px]',
+                      pathname?.includes(`research=${item.id}`)
+                        ? 'bg-neutral-100 text-neutral-900 font-medium'
+                        : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
                     )}
                   >
-                    {typeof item.label === 'function'
-                      ? item.getDynamicLabel!(hasDraft, currentDraft?.step, currentDraft?.lastUpdated)
-                      : item.label}
+                    <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                    <span className="truncate">{item.name}</span>
+                    {item.technique === 'aim-framework' && (
+                      <span className="ml-auto text-xs text-blue-500 bg-blue-100 px-2 py-0.5 rounded-full">AIM</span>
+                    )}
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setResearchToDelete(item);
+                      setShowDeleteModal(true);
+                    }}
+                    className="ml-2 p-1 text-neutral-400 hover:text-red-500 transition-colors"
+                    title="Eliminar investigación"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                   </button>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-
-        {/* Sección de investigación en curso */}
-        <div className="w-full">
-          <h3 className="p-4 w-full font-semibold text-xs text-neutral-500 uppercase flex items-center pt-3">
-            <span className="text-blue-600 mr-1">•</span>
-            INVESTIGACIÓN EN CURSO
-          </h3>
-
-          {isLoadingResearch ? (
-            <div className="px-3 text-xs text-neutral-500">
-              Buscando investigación reciente...
-            </div>
-          ) : showNoResearchMessage || !recentResearch.length || !recentResearch[0]?.id ? (
-            <div className="px-3 text-xs ml-2 text-sm text-neutral-500">
-              NO HAY INVESTIGACIÓN EN CURSO
-            </div>
-          ) : (
-            <ul>
-              {recentResearch.map((item) => (
-                item && item.id ? (
-                  <li key={`recent-${item.id}`}>
-                    <div className="flex ml-5">
-                      <Link
-                        href={`/dashboard?research=${item.id}&section=welcome-screen`}
-                        className={cn(
-                          'flex-1 flex items-center py-2 px-2 rounded-lg text-sm bg-blue-50 border border-blue-100 text-blue-700 hover:bg-blue-100 transition-colors max-w-[150px]',
-                          pathname?.includes(`research=${item.id}`)
-                            ? 'bg-neutral-100 text-neutral-900 font-medium'
-                            : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
-                        )}
-                      >
-                        <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                        <span className="truncate">{item.name}</span>
-                        {item.technique === 'aim-framework' && (
-                          <span className="ml-auto text-xs text-blue-500 bg-blue-100 px-2 py-0.5 rounded-full">AIM</span>
-                        )}
-                      </Link>
-                      <button
-                        onClick={() => {
-                          setResearchToDelete(item);
-                          setShowDeleteModal(true);
-                        }}
-                        className="ml-2 p-1 text-neutral-400 hover:text-red-500 transition-colors"
-                        title="Eliminar investigación"
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                  </li>
-                ) : null
-              ))}
-            </ul>
-          )}
-        </div>
-      </div>
-
-      {/* Footer con logout */}
-      <div className="px-4 py-4 border-t border-neutral-200 mt-auto">
-        <LogoutButton />
-      </div>
-
+                </div>
+              </li>
+            ) : null
+          ))}
+        </ul>
+      )}
       {/* Modal de confirmación */}
       {showDeleteModal && researchToDelete && (
         <DeleteConfirmationModal
@@ -705,15 +444,25 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
       )}
     </div>
   );
+
+  return (
+    <SidebarBase
+      userInfo={<UserInfo />}
+      topBlock={LogoBlock}
+      footer={<LogoutButton />}
+      className={className}
+    >
+      {MenuBlock}
+      {ResearchInProgressBlock}
+    </SidebarBase>
+  );
 }
 
-// Envolver el componente con el HOC withSearchParams
 const SidebarContentWithSuspense = withSearchParams(SidebarContent);
 
-// Componente público que exportamos
 export function Sidebar(props: SidebarProps) {
   return (
-    <Suspense fallback={<div className="w-64 bg-white border-r border-neutral-200 flex flex-col">
+    <Suspense fallback={<div className="w-64 flex flex-col">
       <div className="p-4 text-center text-neutral-600">Cargando...</div>
     </div>}>
       <SidebarContentWithSuspense {...props} />

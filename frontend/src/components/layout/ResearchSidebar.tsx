@@ -11,6 +11,7 @@ import { researchAPI } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
 import { Research } from '../../../../shared/interfaces/research.model';
+import { SidebarBase } from './SidebarBase';
 
 const sections: ResearchSection[] = [
   {
@@ -40,64 +41,54 @@ const sections: ResearchSection[] = [
   }
 ];
 
-// Componente interno que usa useSearchParams
 function ResearchSidebarContent({ researchId, activeStage, className }: ResearchSidebarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, logout } = useAuth();
   const currentSection = searchParams?.get('section') || 'welcome-screen';
 
-  // Componente para mostrar información del usuario
+  // Bloque de usuario/avatar
   function UserInfo() {
     if (!user) {
       return (
         <div className="flex items-center gap-3 p-3">
-          <div className="w-8 h-8 rounded-full bg-neutral-200 flex items-center justify-center">
-            <span className="text-xs font-medium text-neutral-600">U</span>
+          <div className="w-12 h-12 rounded-full bg-neutral-200 flex items-center justify-center">
+            <span className="text-lg font-medium text-neutral-600">U</span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-neutral-700 truncate">Usuario</p>
-            <p className="text-xs text-neutral-500 truncate">Cargando...</p>
+            <p className="text-md font-medium text-neutral-900 truncate">Usuario</p>
+            <p className="text-md text-neutral-500 truncate">Cargando...</p>
           </div>
         </div>
       );
     }
-
     const userName = user.name || 'Usuario';
     const userEmail = user.email || 'Sin email';
     const userInitial = userName.charAt(0).toUpperCase();
-
     return (
-      <div className="flex items-center gap-3 border-b border-neutral-200 pb-4">
+      <div className="flex items-center gap-3">
         <div className="w-12 h-12 rounded-full bg-blue-300 flex items-center justify-center">
-          <span className="text-lg font-medium text-blue-900">
-            {userInitial}
-          </span>
+          <span className="text-lg font-medium text-blue-900">{userInitial}</span>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-md font-medium text-neutral-900 truncate">
-            {userName}
-          </p>
-          <p className="text-md text-neutral-500 truncate">
-            {userEmail}
-          </p>
+          <p className="text-md font-medium text-neutral-900 truncate">{userName}</p>
+          <p className="text-md text-neutral-500 truncate">{userEmail}</p>
         </div>
       </div>
     );
   }
 
+  // Footer (logout)
   function LogoutButton() {
     const handleLogout = async () => {
       try {
         await logout();
       } catch (error) {
-        console.error('Error al cerrar sesión:', error);
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         window.location.href = '/login';
       }
     };
-
     return (
       <button
         onClick={handleLogout}
@@ -110,16 +101,12 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
   }
 
   // Estados para el nombre y la carga
-  const [researchName, setResearchName] = useState<string>('Cargando nombre...'); // Estado inicial de carga
+  const [researchName, setResearchName] = useState<string>('Cargando nombre...');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Obtener URL base de public-tests desde variable de entorno
   const publicTestsBaseUrl = process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://main.dgsabzeqh9eea.amplifyapp.com';
   const localPublicTestsUrl = 'http://localhost:5173';
   const isAmplify = !!publicTestsBaseUrl;
-
-  // Obtener nombre de la investigación
   useEffect(() => {
     const fetchResearchName = async () => {
       if (!researchId) {
@@ -180,12 +167,7 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
 
     fetchResearchName();
   }, [researchId]);
-
-  const handleBackToDashboard = () => {
-    router.push('/dashboard');
-  };
-
-  // Construir la URL de public-tests según entorno
+  const handleBackToDashboard = () => { router.push('/dashboard'); };
   let publicTestUrl: string | null = null;
   if (researchId) {
     if (process.env.NODE_ENV === 'development') {
@@ -195,88 +177,81 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
     }
   }
 
-  return (
-    <div className={cn('p-4 mt-24 mx-4 flex flex-col min-h-[510px] h-full overflow-y-auto', className)}>
-      {/* Header con información del usuario */}
-      <div className="mb-4">
-        <UserInfo />
+  // Bloque superior: nombre proyecto y enlaces
+  const TopBlock = (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="text-lg font-semibold text-neutral-900 truncate" title={researchName}>
+          {isLoading ? 'Cargando nombre...' : researchName}
+        </h2>
       </div>
-
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-lg font-semibold text-neutral-900 truncate" title={researchName}>
-            {isLoading ? 'Cargando nombre...' : researchName}
-          </h2>
-        </div>
-        <button
-          onClick={handleBackToDashboard}
-          className="py-2 text-sm text-neutral-700 font-medium transition-colors text-left"
-          aria-label="Volver al dashboard"
+      <button
+        onClick={handleBackToDashboard}
+        className="py-2 text-sm text-neutral-700 font-medium transition-colors text-left"
+        aria-label="Volver al dashboard"
+      >
+        ← Volver al dashboard
+      </button>
+      {publicTestUrl ? (
+        <a
+          href={publicTestUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 hover:underline"
         >
-          ← Volver al dashboard
-        </button>
-
-        {/* Enlace a Public Tests */}
-        {publicTestUrl ? (
-          <a
-            href={publicTestUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 hover:underline"
-          >
-            Abrir vista de participante
-            <ExternalLink size={14} className="ml-1.5" />
-          </a>
-        ) : (
-          <p className="text-xs text-neutral-500">(URL de Public Tests no configurada)</p>
-        )}
-        {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
-      </div>
-
-      {/* Contenido del sidebar */}
-      <div className="flex-1 overflow-y-auto py-4 mt-4">
-        <nav className="space-y-6">
-          {sections.map((section) => (
-            <div key={section.id} className="space-y-1">
-              <div>
-                <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                  {section.title}
-                </h3>
-              </div>
-
-              {section.stages?.map((stage) => (
-                <Link
-                  key={stage.id}
-                  href={`/dashboard?research=${researchId}&aim=true&section=${stage.id}`}
-                  className={cn(
-                    'flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors',
-                    currentSection === stage.id
-                      ? 'bg-blue-200 text-blue-600 font-medium'
-                      : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'
-                  )}
-                >
-                  <span className="flex-1">{stage.title}</span>
-                </Link>
-              ))}
-
-              {/* Agregar botón de cerrar sesión después de la sección RESULTS */}
-              {section.id === 'results' && (
-                <div className="mt-4 pt-3 border-t border-neutral-200">
-                  <LogoutButton />
-                </div>
-              )}
-            </div>
-          ))}
-        </nav>
-      </div>
+          Abrir vista de participante
+          <ExternalLink size={14} className="ml-1.5" />
+        </a>
+      ) : (
+        <p className="text-xs text-neutral-500">(URL de Public Tests no configurada)</p>
+      )}
+      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
     </div>
+  );
+
+  // Menú/secciones
+  const MenuBlock = (
+    <nav className="space-y-6">
+      {sections.map((section) => (
+        <div key={section.id} className="space-y-1">
+          <div>
+            <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
+              {section.title}
+            </h3>
+          </div>
+          {section.stages?.map((stage) => (
+            <Link
+              key={stage.id}
+              href={`/dashboard?research=${researchId}&aim=true&section=${stage.id}`}
+              className={cn(
+                'flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors',
+                currentSection === stage.id
+                  ? 'bg-blue-200 text-blue-600 font-medium'
+                  : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'
+              )}
+            >
+              <span className="flex-1">{stage.title}</span>
+            </Link>
+          ))}
+        </div>
+      ))}
+    </nav>
+  );
+
+  return (
+    <SidebarBase
+      userInfo={<UserInfo />}
+      topBlock={TopBlock}
+      footer={<LogoutButton />}
+      className={className}
+    >
+      {MenuBlock}
+    </SidebarBase>
   );
 }
 
-// Usar el HOC para envolver el componente
 const ResearchSidebarContentWithSuspense = withSearchParams(ResearchSidebarContent);
 
-// Componente público que exportamos
 export function ResearchSidebar({ researchId, activeStage }: ResearchSidebarProps) {
   return (
     <Suspense fallback={<div className="w-60 flex flex-col">

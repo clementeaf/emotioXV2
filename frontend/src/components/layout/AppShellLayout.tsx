@@ -7,14 +7,13 @@ interface AppShellLayoutProps {
   className?: string;
 }
 
-export function AppShellLayout({ sidebar, children, navbar, className }: AppShellLayoutProps) {
+export function AppShellLayout({ sidebar, children, className }: AppShellLayoutProps) {
   return (
     <div className="flex min-h-screen bg-neutral-50">
-      <aside className="w-72 flex-shrink-0 flex flex-col h-screen overflow-y-auto">
+      <aside className="w-72 flex flex-col h-screen overflow-y-auto pl-4 pt-20">
         {sidebar}
       </aside>
       <div className="flex-1 flex flex-col min-w-0 h-screen">
-        {navbar && <div className="sticky top-0 z-30 bg-white border-b border-neutral-100">{navbar}</div>}
         <main className={`flex-1 p-8 overflow-y-auto h-full ${className || ''}`}>{children}</main>
       </div>
     </div>
