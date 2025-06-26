@@ -1,5 +1,7 @@
 import { memo } from 'react';
+
 import { BulletItem } from '../../../../shared/interfaces/emotions.interface';
+
 import { BulletPoint } from './BulletPoint';
 
 interface NextStepsSectionProps {

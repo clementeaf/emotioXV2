@@ -1,4 +1,5 @@
 import React, { useState, useRef, ChangeEvent, useEffect } from 'react';
+
 import { useFileUpload } from '../../hooks/useFileUpload';
 import './FileUploader.css';
 
@@ -101,14 +102,14 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   
   // Este efecto maneja específicamente la recuperación de archivos completados
   useEffect(() => {
-    if (!researchId || !folder || !onUploadComplete) return;
+    if (!researchId || !folder || !onUploadComplete) {return;}
     
     // Ya no creamos la referencia aquí, usamos la creada en el nivel superior
-    if (processedRef.current) return;
+    if (processedRef.current) {return;}
     
     const completedStorageKey = `fileuploader_completed_${researchId}_${folder}`;
     const processCompletedData = () => {
-      if (processedRef.current) return;
+      if (processedRef.current) {return;}
       
       try {
         const completedData = localStorage.getItem(completedStorageKey);
@@ -216,7 +217,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   };
 
   const handleUpload = async () => {
-    if (selectedFiles.length === 0) return;
+    if (selectedFiles.length === 0) {return;}
     
     setErrors([]);
     resetState();

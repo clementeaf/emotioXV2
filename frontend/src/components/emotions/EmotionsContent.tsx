@@ -1,11 +1,13 @@
-import {
-    emotionData,
-    keyInsights,
-    nextSteps,
-    recentAnalysis,
-    recommendations
-} from '@/data/emotionsMockData';
 import React from 'react';
+
+import {
+  emotionData,
+  keyInsights,
+  nextSteps,
+  recentAnalysis,
+  recommendations
+} from '@/data/emotionsMockData';
+
 import { EmotionDistribution } from './EmotionDistribution';
 import { InsightsSection } from './InsightsSection';
 import { NextStepsSection } from './NextStepsSection';

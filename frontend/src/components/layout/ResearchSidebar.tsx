@@ -10,7 +10,9 @@ import { ResearchSection, ResearchSidebarProps } from '@/interfaces/research';
 import { researchAPI } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
+
 import { Research } from '../../../../shared/interfaces/research.model';
+
 import { SidebarBase } from './SidebarBase';
 
 const sections: ResearchSection[] = [
@@ -106,7 +108,6 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
   const [error, setError] = useState<string | null>(null);
   const publicTestsBaseUrl = process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://main.dgsabzeqh9eea.amplifyapp.com';
   const localPublicTestsUrl = 'http://localhost:5173';
-  const isAmplify = !!publicTestsBaseUrl;
   useEffect(() => {
     const fetchResearchName = async () => {
       if (!researchId) {
@@ -133,14 +134,14 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
           try {
             localStorage.setItem(`research_${researchId}`, JSON.stringify(researchData));
           } catch (storageError) {
-            console.error('[ResearchSidebar] Falló al guardar en localStorage:', storageError);
+            // Error handling silencioso
           }
         } else {
           fetchNameFromLocalStorage();
         }
-      } catch (apiError: any) {
-        console.error(`[ResearchSidebar] Error capturado al llamar a researchAPI.get para ${researchId}:`, apiError);
-        setError(`Error al cargar datos (${apiError.message || 'detalle desconocido'})`);
+      } catch (apiError: unknown) {
+        const errorMessage = apiError instanceof Error ? apiError.message : 'detalle desconocido';
+        setError(`Error al cargar datos (${errorMessage})`);
         fetchNameFromLocalStorage();
       } finally {
         setIsLoading(false);
@@ -159,7 +160,6 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
           }
         }
       } catch (storageError) {
-         console.error('[ResearchSidebar] Error al leer/parsear localStorage:', storageError);
         setError('Error al acceder a datos locales.');
       }
       setResearchName('Nombre no disponible');

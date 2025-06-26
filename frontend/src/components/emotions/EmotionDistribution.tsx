@@ -1,5 +1,7 @@
 import { memo } from 'react';
+
 import { EmotionData } from '../../../../shared/interfaces/emotions.interface';
+
 import { EmotionBar } from './EmotionBar';
 
 interface EmotionDistributionProps {

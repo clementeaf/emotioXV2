@@ -1,5 +1,7 @@
-import { formatDate } from '@/utils/dateUtils';
 import { memo } from 'react';
+
+import { formatDate } from '@/utils/dateUtils';
+
 import { AnalysisItemProps } from '../../../../shared/interfaces/emotions.interface';
 
 /**

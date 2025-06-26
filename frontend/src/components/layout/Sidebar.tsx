@@ -11,6 +11,7 @@ import { researchAPI } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
 import { useResearch } from '@/stores/useResearchStore';
+
 import { SidebarBase } from './SidebarBase';
 
 interface SidebarProps {
@@ -142,7 +143,7 @@ function DeleteConfirmationModal({ isOpen, onClose, onConfirm, researchName }: D
         {/* Contenido */}
         <div className="px-6 py-5">
           <p className="text-neutral-700 mb-6 leading-relaxed">
-            ¿Estás seguro de que deseas terminar la investigación <span className="font-semibold">"{researchName}"</span>? Esta acción no se puede deshacer.
+            ¿Estás seguro de que deseas terminar la investigación <span className="font-semibold">&quot;{researchName}&quot;</span>? Esta acción no se puede deshacer.
           </p>
 
           {/* Botones principales */}
@@ -180,7 +181,6 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
   const pathname = usePathname() || '';
   const searchParams = useSearchParams();
   const { hasDraft, currentDraft } = useResearch();
-  const isAimFramework = searchParams?.get('aim') === 'true';
   const [recentResearch, setRecentResearch] = useState<Array<{ id: string, name: string, technique: string }>>([]);
   const [isLoadingResearch, setIsLoadingResearch] = useState<boolean>(true);
   const [showNoResearchMessage, setShowNoResearchMessage] = useState<boolean>(false);
@@ -200,14 +200,18 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
     try {
       try {
         await researchAPI.delete(researchToDelete.id);
-      } catch (apiError) {}
+      } catch (apiError) {
+        // Error handling silencioso
+      }
       localStorage.setItem('research_list', JSON.stringify([]));
       localStorage.removeItem(`research_${researchToDelete.id}`);
       setRecentResearch([]);
       if (window.location.search.includes(`research=${researchToDelete.id}`)) {
         router.replace('/dashboard');
       }
-    } catch (error) {} finally {
+    } catch (error) {
+      // Error handling silencioso
+    } finally {
       setShowDeleteModal(false);
       setResearchToDelete(null);
     }
@@ -217,7 +221,7 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
   useEffect(() => {
     const fetchMostRecentResearch = async () => {
       setIsLoadingResearch(true);
-      setShowNoResearchMessage(false); // Asumir que hay investigaciones inicialmente
+      setShowNoResearchMessage(false);
       try {
         const response = await fetch(`${API_HTTP_ENDPOINT}/research/all`, {
           headers: {
@@ -227,9 +231,7 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
         });
 
         if (!response.ok) {
-          // Lanzar error si la respuesta no es OK (incluye 4xx y 5xx)
           const errorText = await response.text();
-          console.error('Error response from /research/all:', response.status, errorText);
           throw new Error(`Error ${response.status} al obtener investigaciones: ${errorText}`);
         }
 
@@ -237,7 +239,6 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
         const researches = Array.isArray(data?.data) ? data.data : [];
 
         if (researches.length === 0) {
-          console.log('No researches found.');
           setRecentResearch([]);
           setShowNoResearchMessage(true);
         } else {
@@ -262,7 +263,6 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
           }
         }
       } catch (error) {
-        console.error('Error cargando investigaciones en fetchMostRecentResearch:', error);
         setRecentResearch([]);
         setShowNoResearchMessage(true);
       } finally {
@@ -314,11 +314,11 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
       <ul className="space-y-1">
         {mainNavItems.map((item) => {
           let isActive = false;
-          if (item.id === 'dashboard') isActive = pathname === '/dashboard';
-          else if (item.id === 'new-research') isActive = pathname === '/dashboard/research/new';
-          else if (item.id === 'research-history') isActive = pathname === '/dashboard/research-history';
-          else if (item.id === 'research') isActive = pathname === '/dashboard/research';
-          else if (item.id === 'emotions') isActive = pathname === '/dashboard/emotions';
+          if (item.id === 'dashboard') {isActive = pathname === '/dashboard';}
+          else if (item.id === 'new-research') {isActive = pathname === '/dashboard/research/new';}
+          else if (item.id === 'research-history') {isActive = pathname === '/dashboard/research-history';}
+          else if (item.id === 'research') {isActive = pathname === '/dashboard/research';}
+          else if (item.id === 'emotions') {isActive = pathname === '/dashboard/emotions';}
           if (item.id === 'new-research') {
             return (
               <li key={item.id}>
@@ -330,7 +330,7 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
                   )}
                 >
                   {typeof item.label === 'function'
-                    ? item.getDynamicLabel!(hasDraft, currentDraft?.step, currentDraft?.lastUpdated)
+                    ? item.getDynamicLabel?.(hasDraft, currentDraft?.step, currentDraft?.lastUpdated)
                     : item.label}
                 </Link>
               </li>
@@ -346,7 +346,7 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
                 )}
               >
                 {typeof item.label === 'function'
-                  ? item.getDynamicLabel!(hasDraft, currentDraft?.step, currentDraft?.lastUpdated)
+                  ? item.getDynamicLabel?.(hasDraft, currentDraft?.step, currentDraft?.lastUpdated)
                   : item.label}
               </button>
             </li>

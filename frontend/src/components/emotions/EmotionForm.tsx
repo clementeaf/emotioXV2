@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
 import { useApi } from '@/hooks/useApi';
@@ -41,22 +41,16 @@ const initialFormData: FormData = {
   tags: [],
 };
 
-export function EmotionForm({ emotionId, onSuccess, onCancel }: EmotionFormProps) {
-  const { api } = useApi();
+export function EmotionForm({ emotionId, onSuccess: _onSuccess, onCancel }: EmotionFormProps) {
+  const { api: _api } = useApi();
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
   const [tagInput, setTagInput] = useState('');
 
-  useEffect(() => {
-    if (emotionId) {
-      loadEmotion();
-    }
-  }, [emotionId]);
-
-  const loadEmotion = async () => {
+  const loadEmotion = useCallback(async () => {
     if (!emotionId) {return;}
-    
+
     setLoading(true);
     try {
       // <<< Comentar llamada a API >>>
@@ -66,7 +60,7 @@ export function EmotionForm({ emotionId, onSuccess, onCancel }: EmotionFormProps
         setFormData(response.data);
       }
       */
-      console.log('Funcionalidad loadEmotion comentada temporalmente');
+      // Funcionalidad loadEmotion comentada temporalmente
       throw new Error('Carga de emoción deshabilitada temporalmente'); // Simular error
 
     } catch (err) {
@@ -75,7 +69,13 @@ export function EmotionForm({ emotionId, onSuccess, onCancel }: EmotionFormProps
     } finally {
       setLoading(false);
     }
-  };
+  }, [emotionId]);
+
+  useEffect(() => {
+    if (emotionId) {
+      loadEmotion();
+    }
+  }, [emotionId, loadEmotion]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,7 +92,7 @@ export function EmotionForm({ emotionId, onSuccess, onCancel }: EmotionFormProps
       }
       onSuccess?.(); // No llamar a onSuccess si la API está comentada
       */
-      console.log('Funcionalidad handleSubmit comentada temporalmente');
+      // Funcionalidad handleSubmit comentada temporalmente
       throw new Error('Guardado de emoción deshabilitado temporalmente'); // Simular error
 
     } catch (err) {
@@ -280,4 +280,4 @@ export function EmotionForm({ emotionId, onSuccess, onCancel }: EmotionFormProps
       </div>
     </div>
   );
-} 
+}

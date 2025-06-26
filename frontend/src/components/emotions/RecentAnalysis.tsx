@@ -1,5 +1,7 @@
 import { memo } from 'react';
+
 import { AnalysisItem as AnalysisItemType } from '../../../../shared/interfaces/emotions.interface';
+
 import { AnalysisItem } from './AnalysisItem';
 
 interface RecentAnalysisProps {

@@ -1,4 +1,5 @@
 import { memo } from 'react';
+
 import { BulletPointProps } from '../../../../shared/interfaces/emotions.interface';
 
 /**

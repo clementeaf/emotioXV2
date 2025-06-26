@@ -1,4 +1,5 @@
 import { memo } from 'react';
+
 import { EmotionBarProps } from '../../../../shared/interfaces/emotions.interface';
 
 /**
