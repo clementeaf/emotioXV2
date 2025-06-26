@@ -34,30 +34,11 @@ const ParticipantFlow: React.FC = () => {
                : null;
     }, [expandedSteps, currentStepIndex]);
 
-    // Log temporal para depuración
-    console.log('[ParticipantFlow] responsesData:', responsesData, 'currentStep:', memoizedCurrentExpandedStep?.id, memoizedCurrentExpandedStep);
-
     const savedResponseForCurrentStep = useMemo(() => {
         if (!memoizedCurrentExpandedStep) {
-            console.log('[ParticipantFlow] 🔍 No hay currentExpandedStep');
             return undefined;
         }
-
-        // 🔧 CAMBIO: Usar getStepResponse del useResponseManager que tiene los datos correctos
         const savedResponse = getStepResponseFromManager(memoizedCurrentExpandedStep.id);
-        console.log('[ParticipantFlow] 🔍 savedResponse obtenido del useResponseManager:', {
-            stepId: memoizedCurrentExpandedStep.id,
-            stepIndex: currentStepIndex,
-            savedResponse
-        });
-
-        // 🔍 DEBUG: También verificar el store para comparar
-        const storeResponse = getStepResponseFromStore(currentStepIndex);
-        console.log('[ParticipantFlow] 🔍 Comparación store vs manager:', {
-            storeResponse,
-            managerResponse: savedResponse,
-            areDifferent: storeResponse !== savedResponse
-        });
 
         return savedResponse;
     }, [memoizedCurrentExpandedStep, getStepResponseFromManager, getStepResponseFromStore, currentStepIndex]);

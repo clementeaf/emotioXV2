@@ -32,16 +32,6 @@ export const useParticipantFlow = (researchId: string | undefined) => {
     const storeIsFlowLoading = useParticipantStore(state => state.isFlowLoading);
     const storeSetIsFlowLoading = useParticipantStore(state => state.setIsFlowLoading);
 
-    // Log para debug del token
-    useEffect(() => {
-        console.log('[useParticipantFlow] Estado del token:', {
-            hasToken: !!token,
-            tokenLength: token?.length || 0,
-            researchId,
-            participantId
-        });
-    }, [token, researchId, participantId]);
-
     const {
         data: researchFlowApiData,
         isLoading: isResearchFlowHookLoading,
@@ -168,27 +158,18 @@ export const useParticipantFlow = (researchId: string | undefined) => {
             return;
         }
 
-        console.log('[useParticipantFlow] Verificando estado de autenticación:', {
-            hasToken: !!token,
-            currentStep,
-            isResearchFlowHookLoading
-        });
-
         if (!token && currentStep !== ParticipantFlowStep.LOGIN && currentStep !== ParticipantFlowStep.ERROR) {
-            console.log('[useParticipantFlow] No hay token, redirigiendo a LOGIN');
             setCurrentStep(ParticipantFlowStep.LOGIN);
             return;
         }
 
         if (researchId && token && !isResearchFlowHookLoading) {
-            console.log('[useParticipantFlow] Configurando investigación con token válido');
             storeSetResearchId(researchId);
             if (isResearchFlowError) {
                 handleError(researchFlowErrorObject?.message || "Error al cargar la configuración del estudio.", "ResearchFlowInit");
                 return;
             }
         } else if (researchId && !token && currentStep !== ParticipantFlowStep.LOGIN && currentStep !== ParticipantFlowStep.ERROR) {
-            console.log('[useParticipantFlow] No hay token para investigación, redirigiendo a LOGIN');
             setCurrentStep(ParticipantFlowStep.LOGIN);
         }
     }, [

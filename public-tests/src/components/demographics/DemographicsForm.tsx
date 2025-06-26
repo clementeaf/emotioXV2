@@ -1,14 +1,13 @@
-import { useQueryClient } from '@tanstack/react-query';
 import React, { useEffect, useState } from 'react';
 import { useModuleResponses } from '../../hooks/useModuleResponses';
 import { useStepResponseManager } from '../../hooks/useStepResponseManager';
 import { useParticipantStore } from '../../stores/participantStore';
 import {
-    DemographicResponses,
-    EDUCATION_OPTIONS,
-    GENDER_OPTIONS
+  DemographicResponses,
+  EDUCATION_OPTIONS,
+  GENDER_OPTIONS
 } from '../../types/demographics';
-import { getStandardButtonText } from '../../utils/formHelpers';
+import FormSubmitButton from '../common/FormSubmitButton';
 import { DemographicQuestion } from './DemographicQuestion';
 import { DemographicsFormProps } from './types';
 
@@ -37,8 +36,6 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
   onCancel,
   stepId = 'demographic',
 }) => {
-
-  const queryClient = useQueryClient();
   const { researchId, participantId } = useParticipantStore();
   const { refetch: refetchModuleResponses } = useModuleResponses({
     researchId: researchId ?? undefined,
@@ -64,23 +61,19 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
     initialData: initialValues,
   });
 
+  // Sincronizar el estado del formulario con la respuesta guardada o los valores iniciales
   useEffect(() => {
-    if (responseData) {
+    if (responseData && Object.keys(responseData).length > 0) {
       setFormFieldResponses(responseData);
+    } else if (initialValues && Object.keys(initialValues).length > 0) {
+      setFormFieldResponses(initialValues);
+    } else {
+      setFormFieldResponses({});
     }
-  }, [responseData]);
+  }, [responseData, initialValues]);
 
   // Determinar si hay datos existentes correctamente
   const hasExistingData = !!(responseData && Object.keys(responseData).length > 0) || !!useStepResponseManagerReturnedSpecificId;
-
-  const buttonText = getStandardButtonText({
-    isSaving: isSaving,
-    isLoading: isSubmittingToServer,
-    hasExistingData: hasExistingData,
-    isNavigating: isSubmittingToServer,
-    customCreateText: 'Guardar y continuar',
-    customUpdateText: 'Actualizar y continuar'
-  });
 
   if (!config || !config.questions) {
     return (
@@ -117,23 +110,24 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
     e.preventDefault();
 
     if (!validateForm()) {
-      console.warn(`❌ [DemographicsForm] Validation failed, aborting submit`);
       return;
     }
 
-    console.log('✅ [DemographicsForm] Formulario validado. Guardando respuestas...');
     setIsSubmittingToServer(true);
 
     const { success } = await saveCurrentStepResponse(formFieldResponses);
 
     if (success) {
-      console.log('✅ [DemographicsForm] Respuestas guardadas. Llamando a onSubmit para avanzar al siguiente paso.');
       await refetchModuleResponses();
       onSubmit(formFieldResponses);
-    } else {
-      console.error(`❌ [DemographicsForm] El guardado falló. Error:`, stepResponseError);
     }
     setIsSubmittingToServer(false);
+  };
+
+  const handleSubmitClick = () => {
+    // Crear un evento sintético para mantener la compatibilidad
+    const syntheticEvent = { preventDefault: () => {} } as React.FormEvent;
+    handleSubmit(syntheticEvent);
   };
 
   if (isLoading && !responseData) {
@@ -196,10 +190,14 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
               Cancelar
             </button>
           )}
-          <button type="submit" disabled={isSaving || isLoading || isSubmittingToServer}
-            className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
-            {buttonText}
-          </button>
+          <FormSubmitButton
+            isSaving={isSaving || isSubmittingToServer}
+            hasExistingData={hasExistingData}
+            onClick={handleSubmitClick}
+            disabled={isLoading}
+            customCreateText="Guardar y continuar"
+            customUpdateText="Actualizar y continuar"
+          />
         </div>
       </form>
     </div>

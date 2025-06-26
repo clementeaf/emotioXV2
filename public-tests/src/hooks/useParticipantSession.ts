@@ -10,27 +10,22 @@ export const useParticipantSession = () => {
 
     const [token, setToken] = useState<string | null>(() => {
         const storedToken = localStorage.getItem('participantToken');
-        console.log('[useParticipantSession] Inicializando token desde localStorage:', storedToken ? 'presente' : 'ausente');
         return storedToken;
     });
 
     // Sincronizar token del store con el estado local
     useEffect(() => {
         if (tokenFromStore && tokenFromStore !== token) {
-            console.log('[useParticipantSession] Sincronizando token desde store:', tokenFromStore ? 'presente' : 'ausente');
             setToken(tokenFromStore);
         } else if (!tokenFromStore && token) {
-            console.log('[useParticipantSession] Limpiando token local');
             setToken(null);
         }
     }, [tokenFromStore, token]);
 
     const handleLoginSuccess = useCallback((participant: Participant & { id: string }) => {
-        console.log('[useParticipantSession] handleLoginSuccess llamado con:', participant);
         const storedTokenFromLogin = localStorage.getItem('participantToken');
 
         if (storedTokenFromLogin && participant.id) {
-            console.log('[useParticipantSession] Configurando sesión con token y participante');
             storeGlobalSetToken(storedTokenFromLogin);
             storeGlobalSetParticipant({
                 id: participant.id,
@@ -46,7 +41,6 @@ export const useParticipantSession = () => {
     }, [storeGlobalSetToken, storeGlobalSetParticipant]);
 
     const logoutAndClearSession = useCallback(() => {
-        console.log('[useParticipantSession] logoutAndClearSession llamado');
         localStorage.removeItem('participantToken');
         localStorage.removeItem('participantId');
         setToken(null);

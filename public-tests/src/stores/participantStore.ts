@@ -155,9 +155,7 @@ export const useParticipantStore = create(
 
       setResearchId: (id) => set({ researchId: id }),
       setToken: (token) => {
-        console.log('[participantStore] setToken llamado con:', token ? 'token presente' : 'token null');
         set({ token });
-        // Sincronizar con localStorage
         if (token) {
           localStorage.setItem('participantToken', token);
         } else {
@@ -165,7 +163,6 @@ export const useParticipantStore = create(
         }
       },
       setParticipant: (participant) => {
-        console.log('[participantStore] setParticipant llamado con:', participant);
         set({
           participantId: participant.id,
           error: null
@@ -174,13 +171,11 @@ export const useParticipantStore = create(
       setError: (error) => set({ error }),
       setCurrentStep: (step) => set({ currentStep: step }),
       setCurrentStepIndex: (index) => {
-        console.log(`[participantStore] 🔄 Solicitud para cambiar el índice del paso a: ${index}`);
         set((state) => {
           if (state.currentStepIndex === index) {
             console.warn(`[participantStore] ⚠️ El índice ya es ${index}. No se realiza ninguna acción.`);
             return state;
           }
-          console.log(`[participantStore] ✅ Índice del paso actualizado de ${state.currentStepIndex} a ${index}.`);
           return {
             currentStepIndex: index,
             maxVisitedIndex: Math.max(state.maxVisitedIndex, index),
@@ -220,7 +215,6 @@ export const useParticipantStore = create(
 
       // Método para manejar el éxito del login
       handleLoginSuccess: (participant) => {
-        console.log('[participantStore] handleLoginSuccess llamado con:', participant);
         const researchId = get().researchId;
 
         if (!researchId) {
@@ -233,15 +227,11 @@ export const useParticipantStore = create(
           return;
         }
 
-        // Limpiar localStorage de participantes anteriores para esta investigación
         get().cleanupPreviousParticipantData(researchId, participant.id);
 
-        // Obtener token desde localStorage
         const storedToken = localStorage.getItem('participantToken');
-        console.log('[participantStore] Token obtenido de localStorage:', storedToken ? 'presente' : 'ausente');
 
         if (storedToken) {
-          // Crear datos de respuesta limpios para el nuevo participante
           const freshResponsesData = {
             participantId: participant.id,
             researchId: researchId,
@@ -254,7 +244,6 @@ export const useParticipantStore = create(
             }
           };
 
-          console.log('[participantStore] Configurando store con token y participante');
           set({
             token: storedToken,
             participantId: participant.id,
@@ -278,7 +267,6 @@ export const useParticipantStore = create(
         try {
           const storedInfo = localStorage.getItem('participantInfo') as string | null;
 
-          // Si hay datos almacenados de un participante diferente, limpiarlos
           if (storedInfo &&
               (storedInfo.split('|')[0] !== currentResearchId ||
                storedInfo.split('|')[1] !== currentParticipantId)) {
@@ -341,31 +329,17 @@ export const useParticipantStore = create(
 
       // Navegar a un paso específico
       navigateToStep: (targetIndex) => set((state) => {
-        console.log('[participantStore.navigateToStep] 🔍 Llamada recibida:', { targetIndex, currentStepIndex: state.currentStepIndex });
 
         if (targetIndex === state.currentStepIndex) {
-          console.log('[participantStore.navigateToStep] ❌ Bloqueado: ya estás en ese step');
           return state;
         }
 
         const { expandedSteps, maxVisitedIndex, isFlowLoading } = state;
 
-        console.log('[participantStore.navigateToStep] 🔍 Estado actual:', {
-          targetIndex,
-          currentStepIndex: state.currentStepIndex,
-          expandedStepsLength: expandedSteps.length,
-          maxVisitedIndex,
-          isFlowLoading,
-          stepId: expandedSteps[targetIndex]?.id,
-          stepName: expandedSteps[targetIndex]?.name
-        });
-
         if (expandedSteps.length === 0) {
-          console.log('[participantStore.navigateToStep] ❌ No hay expandedSteps disponibles');
           return state;
         }
 
-        // Validaciones básicas
         const validaciones = {
           isFlowLoading,
           targetIndexOutOfRange: targetIndex < 0 || targetIndex >= expandedSteps.length,
@@ -373,17 +347,9 @@ export const useParticipantStore = create(
           maxVisitedIndex
         };
 
-        // Verificar si el paso está respondido
         const isAnsweredStep = state.hasStepBeenAnswered(targetIndex);
         const condicionBloqueo = targetIndex > maxVisitedIndex && !isAnsweredStep;
 
-        console.log('[participantStore.navigateToStep] 🔍 Validaciones:', {
-          ...validaciones,
-          isAnsweredStep,
-          condicionBloqueo
-        });
-
-        // Validar navegación
         if (isFlowLoading ||
             targetIndex < 0 ||
             targetIndex >= expandedSteps.length ||
@@ -402,13 +368,9 @@ export const useParticipantStore = create(
           return state;
         }
 
-        console.log('[participantStore.navigateToStep] ✅ Navegación permitida, obteniendo savedResponse...');
         const savedResponse = state.getStepResponse(targetIndex);
-        console.log('[participantStore.navigateToStep] 🔍 savedResponse obtenido:', savedResponse);
 
-        // Actualizar config con la respuesta guardada
         if (savedResponse !== null && savedResponse !== undefined) {
-          console.log('[participantStore.navigateToStep] ✅ Aplicando savedResponse al config del step');
           const newExpandedSteps = expandedSteps.map((step, index) =>
             index === targetIndex ? {
               ...step,
@@ -419,12 +381,6 @@ export const useParticipantStore = create(
             } : step
           );
 
-          console.log('[participantStore.navigateToStep] 🔍 Nuevo config para step:', {
-            stepId: expandedSteps[targetIndex].id,
-            oldConfig: expandedSteps[targetIndex].config,
-            newConfig: newExpandedSteps[targetIndex].config
-          });
-
           return {
             currentStepIndex: targetIndex,
             error: null,
@@ -432,8 +388,6 @@ export const useParticipantStore = create(
           };
         }
 
-        console.log('[participantStore.navigateToStep] ❌ No hay savedResponse, actualizando solo el índice');
-        // Actualizar índice actual
         return { currentStepIndex: targetIndex, error: null };
       }),
 
@@ -469,13 +423,11 @@ export const useParticipantStore = create(
           }
         };
 
-        // Forzar cálculo de progreso después de guardar
         get().calculateProgress();
 
         return { responsesData: newResponsesData };
       }),
 
-      // Obtener índices de pasos respondidos
       getAnsweredStepIndices: () => {
         const { expandedSteps, responsesData } = get();
         const resultado = (responsesData.modules.all_steps || [])
@@ -489,21 +441,12 @@ export const useParticipantStore = create(
       getStepResponse: (stepIndex) => {
         const { expandedSteps, responsesData } = get();
 
-        console.log('[getStepResponse] 🔍 Estado completo:', {
-          stepIndex,
-          expandedStepsLength: expandedSteps.length,
-          responsesDataStructure: responsesData,
-          allStepsCount: responsesData.modules.all_steps?.length || 0,
-          allStepsContent: responsesData.modules.all_steps
-        });
-
         if (stepIndex < 0 || stepIndex >= expandedSteps.length) {
           console.warn('[getStepResponse] ❌ Índice fuera de rango:', { stepIndex, expandedStepsLength: expandedSteps.length });
           return null;
         }
 
         const step = expandedSteps[stepIndex];
-        const { id: stepId } = step;
 
         const allApiResponses = responsesData.modules.all_steps || [];
         if (!Array.isArray(allApiResponses)) {
@@ -511,9 +454,9 @@ export const useParticipantStore = create(
             return null;
         }
 
-        console.log('[getStepResponse] Buscando respuesta para stepId:', stepId, 'en responses:', allApiResponses.map(r => ({ id: r.id, stepTitle: r.stepTitle })));
-        const response = allApiResponses.find(resp => resp.id === stepId);
-        console.log('[getStepResponse] Respuesta encontrada:', response);
+        const response = allApiResponses.find(resp =>
+          resp.stepType === step.type && resp.stepTitle === step.name
+        );
         return response ? response.response : null;
       },
 
@@ -553,7 +496,7 @@ export const useParticipantStore = create(
         const { responsesData } = get();
         return JSON.stringify({
           ...responsesData,
-          modules: { // Solo enviar datos de la API
+          modules: {
             demographic: responsesData.modules.demographic,
             feedback: responsesData.modules.feedback,
             welcome: responsesData.modules.welcome,
@@ -565,14 +508,11 @@ export const useParticipantStore = create(
         }, null, 2);
       },
 
-      // Limpiar todas las respuestas
       clearAllResponses: () => {
         set({ responsesData: { ...initialResponsesData } });
       },
 
-      // Resetear la tienda completa
       resetStore: () => {
-        console.log('[participantStore] resetStore llamado');
         set({
           researchId: null,
           token: null,
@@ -598,31 +538,20 @@ export const useParticipantStore = create(
       merge: (persistedState, currentState) => {
         const state = persistedState as ParticipantState;
 
-        console.log('[participantStore] merge llamado - estado persistido:', {
-          hasToken: !!state.token,
-          hasParticipantId: !!state.participantId,
-          hasResearchId: !!state.researchId
-        });
-
-        // Sincronizar token desde localStorage si no está en el store
         if (!state.token) {
           const localStorageToken = localStorage.getItem('participantToken');
           if (localStorageToken) {
-            console.log('[participantStore] Sincronizando token desde localStorage');
             state.token = localStorageToken;
           }
         }
 
-        // Sincronizar participantId desde localStorage si no está en el store
         if (!state.participantId) {
             const localStorageParticipantId = localStorage.getItem('participantId');
             if (localStorageParticipantId) {
-                console.log('[participantStore] Sincronizando participantId desde localStorage');
                 state.participantId = localStorageParticipantId;
             }
         }
 
-        // No sobreescribir el estado de carga o los pasos expandidos durante la hidratación
         if (currentState.isFlowLoading || currentState.expandedSteps.length > 0) {
           return {
             ...currentState,

@@ -1,29 +1,23 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParticipantStore } from '../stores/participantStore';
 import {
-    StandardizedFormActions,
-    StandardizedFormProps,
-    StandardizedFormState,
-    UseStandardizedFormOptions,
-    ValidationRule
+  StandardizedFormActions,
+  StandardizedFormProps,
+  StandardizedFormState,
+  UseStandardizedFormOptions,
+  ValidationRule
 } from '../types/hooks.types';
 import { useModuleResponses } from './useModuleResponses';
 import { useResponseAPI } from './useResponseAPI';
 
-// 🚨 NUEVO: Helper para persistir user interaction entre re-mounts
 const USER_INTERACTION_KEY_PREFIX = 'user_interaction_';
-
-// 🚨 NUEVO: Sistema de invalidación de caché
 const CACHE_VERSION_KEY = 'form_cache_version';
-const CURRENT_CACHE_VERSION = '2.0.0'; // Incrementar cuando hay cambios importantes
+const CURRENT_CACHE_VERSION = '2.0.0';
 
 function invalidateOldCache(): void {
   try {
     const storedVersion = sessionStorage.getItem(CACHE_VERSION_KEY);
     if (storedVersion !== CURRENT_CACHE_VERSION) {
-      console.log(`🧹 [useStandardizedForm] Invalidating old cache (${storedVersion} → ${CURRENT_CACHE_VERSION})`);
-
-      // Limpiar sessionStorage de user interactions
       const keys = Object.keys(sessionStorage);
       keys.forEach(key => {
         if (key.startsWith(USER_INTERACTION_KEY_PREFIX)) {
@@ -31,9 +25,7 @@ function invalidateOldCache(): void {
         }
       });
 
-      // Actualizar versión del caché
       sessionStorage.setItem(CACHE_VERSION_KEY, CURRENT_CACHE_VERSION);
-      console.log(`✅ [useStandardizedForm] Cache invalidation complete`);
     }
   } catch (e) {
     console.warn('[useStandardizedForm] Error during cache invalidation:', e);
@@ -76,7 +68,6 @@ export function useStandardizedForm<T>(
   options: UseStandardizedFormOptions<T>
 ): [StandardizedFormState<T>, StandardizedFormActions<T>] {
 
-  // 🚨 CRÍTICO: Invalidar caché obsoleto al inicializar
   useEffect(() => {
     invalidateOldCache();
   }, []);
@@ -138,7 +129,6 @@ export function useStandardizedForm<T>(
     autoFetch: !!(researchId && participantId && !isMock)
   });
 
-  // Enhanced setValue with logging and user interaction tracking
   const setValue = useCallback((newValue: T, isUserInteraction: boolean = false) => {
     if (value !== newValue) {
       if (isUserInteraction) {
@@ -150,25 +140,17 @@ export function useStandardizedForm<T>(
     }
   }, [value, stepId, stepType]);
 
-  // Extract previous value from saved response
   const extractedValue = useMemo(() => {
-    // 🔧 CORREGIDO: Manejar savedResponse tanto como string directo como objeto
     if (savedResponse) {
       try {
-        // Caso 1: savedResponse es string directo (ej: '😐')
         if (typeof savedResponse === 'string') {
-          console.log('[useStandardizedForm] Processing direct string savedResponse:', savedResponse);
           return extractValueFromResponse(savedResponse);
         }
 
-        // Caso 2: savedResponse es objeto con campo response
         if (typeof savedResponse === 'object' && savedResponse !== null && 'response' in savedResponse) {
-          console.log('[useStandardizedForm] Processing object savedResponse:', savedResponse);
           return extractValueFromResponse((savedResponse as { response: unknown }).response);
         }
 
-        // Caso 3: savedResponse es otro tipo de objeto, intentar extraer directamente
-        console.log('[useStandardizedForm] Processing unknown savedResponse structure:', savedResponse);
         return extractValueFromResponse(savedResponse);
       } catch (err) {
         console.warn('[useStandardizedForm] Error extracting value from saved response:', err);
@@ -200,7 +182,6 @@ export function useStandardizedForm<T>(
       return;
     }
 
-    // Handle saved response (from props)
     if (savedResponse) {
       setValue(extractedValue, false);
       setIsDataLoaded(true);
@@ -209,18 +190,15 @@ export function useStandardizedForm<T>(
       return;
     }
 
-    // Wait for API responses to load
     if (isLoadingResponses) {
-      return; // Still loading, don't set anything yet
+      return;
     }
 
-    // Check for API response (PRIORITY #1)
     if (!loadingError && moduleResponsesArray && Array.isArray(moduleResponsesArray)) {
       const foundResponse = moduleResponsesArray.find((r: unknown) => {
         if (typeof r !== 'object' || r === null) return false;
         const response = r as { stepType?: string; stepId?: string; stepTitle?: string; id?: string };
 
-        // Lógica de búsqueda mejorada: usar tipo Y nombre para una coincidencia única.
         return response.stepType === stepType && response.stepTitle === stepName;
       });
 
@@ -258,12 +236,9 @@ export function useStandardizedForm<T>(
     extractValueFromResponse,
     extractedValue,
     isDataLoaded
-    // setValue REMOVIDO para evitar re-ejecuciones no deseadas
   ]);
 
-  // Validation
   const validateValue = useCallback((valueToValidate: T): string | null => {
-    // Required validation
     if (required) {
       if (valueToValidate === null || valueToValidate === undefined) {
         return 'Este campo es obligatorio.';
@@ -276,7 +251,6 @@ export function useStandardizedForm<T>(
       }
     }
 
-    // Custom validation rules
     for (const rule of validationRules) {
       if (!rule.validate(valueToValidate)) {
         return rule.message;
@@ -286,7 +260,6 @@ export function useStandardizedForm<T>(
     return null;
   }, [required, validationRules]);
 
-  // Save response
   const saveResponse = useCallback(async (valueToSave?: T): Promise<{ success: boolean; error: string | null; data: unknown | null }> => {
     const finalValue = valueToSave !== undefined ? valueToSave : value;
 
@@ -336,7 +309,6 @@ export function useStandardizedForm<T>(
         setHasExistingData(true);
       }
 
-      // CRÍTICO: Forzar la recarga de todas las respuestas para mantener el estado sincronizado.
       if (fetchResponses) {
         fetchResponses();
       }
@@ -365,7 +337,6 @@ export function useStandardizedForm<T>(
     fetchResponses
   ]);
 
-  // Validate and save
   const validateAndSave = useCallback(async (valueToSave?: T): Promise<{ success: boolean; error: string | null; data: unknown | null }> => {
     const finalValue = valueToSave !== undefined ? valueToSave : value;
     const validationError = validateValue(finalValue);
@@ -379,7 +350,6 @@ export function useStandardizedForm<T>(
     return saveResponse(finalValue);
   }, [value, validateValue, saveResponse]);
 
-  // Auto-save effect
   useEffect(() => {
     if (enableAutoSave && isDataLoaded && !isSaving && !isMock) {
       const validationError = validateValue(value);
@@ -421,11 +391,8 @@ export function useStandardizedForm<T>(
         clearUserInteraction(stepId, stepType);
       }
     },
-    // 🚨 NUEVO: Reset agresivo que fuerza recarga desde API
-    forceRefresh: () => {
-      console.log(`🔄 [useStandardizedForm] Forcing refresh for ${stepId}`);
 
-      // Limpiar todo el estado local
+    forceRefresh: () => {
       setValue(initialValue, false);
       setError(null);
       setResponseId(null);
@@ -434,21 +401,17 @@ export function useStandardizedForm<T>(
       userHasInteracted.current = false;
       initialLoadComplete.current = false;
 
-      // Limpiar user interaction persistida
       if (stepId) {
         clearUserInteraction(stepId, stepType);
       }
 
-      // Forzar recarga de respuestas desde API
       if (fetchResponses && researchId && participantId) {
-        console.log(`🔄 [useStandardizedForm] Triggering API refresh for ${stepId}`);
         fetchResponses();
       }
     },
     refetch
   };
 
-  // State
   const state: StandardizedFormState<T> = {
     value,
     isLoading: isLoadingResponses,
@@ -462,12 +425,10 @@ export function useStandardizedForm<T>(
   return [state, actions];
 }
 
-// 🚨 NUEVO: Export utility functions para uso externo si es necesario
 export const userInteractionUtils = {
   hasUserInteracted,
   setUserInteracted,
   clearUserInteraction,
-  // Limpiar todas las interacciones (útil para debugging/testing)
   clearAllUserInteractions: () => {
     try {
       const keys = Object.keys(sessionStorage);
@@ -477,12 +438,9 @@ export const userInteractionUtils = {
       console.warn('[userInteractionUtils] Error clearing all interactions:', e);
     }
   },
-  // 🚨 NUEVO: Limpieza completa del sistema para resolver problemas persistentes
   nukeAllFormData: () => {
     try {
-      console.log('💥 [userInteractionUtils] NUKING ALL FORM DATA - Nuclear reset initiated');
 
-      // Limpiar sessionStorage completamente
       const sessionKeys = Object.keys(sessionStorage);
       sessionKeys.forEach(key => {
         if (key.startsWith(USER_INTERACTION_KEY_PREFIX) ||
@@ -493,13 +451,8 @@ export const userInteractionUtils = {
         }
       });
 
-      // Resetear versión de caché para forzar invalidación
       sessionStorage.setItem(CACHE_VERSION_KEY, CURRENT_CACHE_VERSION);
 
-      console.log('✅ [userInteractionUtils] Nuclear reset complete - All form data nuked');
-      console.log('🔄 [userInteractionUtils] Please refresh the page to start fresh');
-
-      // Mostrar alerta al usuario
       if (typeof window !== 'undefined') {
         alert('🧹 Datos de formulario limpiados. Por favor, recarga la página para empezar desde cero.');
       }
@@ -510,24 +463,19 @@ export const userInteractionUtils = {
   }
 };
 
-// Utility functions for common value extractors
 export const valueExtractors = {
-  // For simple numeric scales (CSAT, NPS, Linear Scale)
   numericScale: (response: unknown): number | null => {
     if (typeof response === 'number') return response;
     if (typeof response === 'object' && response !== null) {
       const obj = response as Record<string, unknown>;
 
-      // Handle DynamoDB format {"N": "4"}
       if ('N' in obj && typeof obj.N === 'string') {
         const parsed = parseInt(obj.N, 10);
         if (!isNaN(parsed)) return parsed;
       }
 
-      // Handle standard format {"value": 4}
       if ('value' in obj && typeof obj.value === 'number') return obj.value;
 
-      // Handle nested structures
       if ('data' in obj && typeof obj.data === 'object' && obj.data !== null) {
         const dataObj = obj.data as Record<string, unknown>;
         if ('response' in dataObj && typeof dataObj.response === 'object' && dataObj.response !== null) {
@@ -552,7 +500,6 @@ export const valueExtractors = {
     return '';
   },
 
-  // For single choice responses
   singleChoice: (response: unknown): string | null => {
     if (typeof response === 'string') return response;
     if (typeof response === 'object' && response !== null) {
@@ -562,8 +509,6 @@ export const valueExtractors = {
     }
     return null;
   },
-
-  // For multiple choice responses
   multipleChoice: (response: unknown): unknown[] => {
     if (Array.isArray(response)) return response;
     if (typeof response === 'object' && response !== null) {
@@ -574,7 +519,6 @@ export const valueExtractors = {
     return [];
   },
 
-  // For ranking responses
   ranking: (response: unknown): string[] => {
     if (Array.isArray(response) && response.every(item => typeof item === 'string')) {
       return response as string[];
@@ -583,7 +527,6 @@ export const valueExtractors = {
   }
 };
 
-// Common validation rules
 export const validationRules = {
   required: <T>(message = 'Este campo es obligatorio.'): ValidationRule<T> => ({
     validate: (value: T) => {
