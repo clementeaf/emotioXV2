@@ -1,17 +1,35 @@
-import { researchAPI } from '@/lib/api';
 import { useQuery } from '@tanstack/react-query';
 
-export interface Client {
+import { researchAPI } from '@/lib/api';
+
+interface Client {
   id: string;
   name: string;
+  email: string;
+  company: string;
   status: 'active' | 'inactive';
+  researchCount: number;
+  lastActivity: string;
 }
 
-/**
- * Hook para obtener la lista de clientes
- * Reemplaza los datos mock hardcodeados
- */
-export const useClients = () => {
+interface Research {
+  id: string;
+  title: string;
+  status: 'draft' | 'active' | 'completed' | 'archived';
+  participants: number;
+  completionRate: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface UseClientsReturn {
+  clients: Client[];
+  isLoading: boolean;
+  error: any;
+  refetch: () => void;
+}
+
+export const useClients = (): UseClientsReturn => {
   const {
     data: clients = [],
     isLoading,
@@ -19,7 +37,7 @@ export const useClients = () => {
     refetch
   } = useQuery({
     queryKey: ['clients'],
-    queryFn: async () => {
+    queryFn: async (): Promise<Client[]> => {
       try {
         const response = await researchAPI.list();
         const research = response.data || [];
@@ -33,7 +51,11 @@ export const useClients = () => {
             clientsMap.set(clientName, {
               id: clientName,
               name: clientName,
-              status: 'active' as const
+              email: '',
+              company: clientName,
+              status: 'active' as const,
+              researchCount: 1,
+              lastActivity: new Date().toISOString()
             });
           }
         });
@@ -43,23 +65,35 @@ export const useClients = () => {
         // Si no hay clientes en las investigaciones, devolver datos por defecto
         if (uniqueClients.length === 0) {
           return [
-            { id: '1', name: 'Universidad del Desarrollo', status: 'active' as const },
-            { id: '2', name: 'Cliente Demo', status: 'active' as const }
+            {
+              id: '1',
+              name: 'Universidad del Desarrollo',
+              email: 'contacto@udd.cl',
+              company: 'Universidad del Desarrollo',
+              status: 'active' as const,
+              researchCount: 5,
+              lastActivity: new Date().toISOString()
+            },
+            {
+              id: '2',
+              name: 'Cliente Demo',
+              email: 'demo@cliente.com',
+              company: 'Cliente Demo',
+              status: 'active' as const,
+              researchCount: 2,
+              lastActivity: new Date().toISOString()
+            }
           ];
         }
 
         return uniqueClients;
       } catch (error) {
-        console.error('Error loading clients:', error);
-        // En caso de error, devolver datos mínimos para que la app funcione
-        return [
-          { id: '1', name: 'Universidad del Desarrollo', status: 'active' as const },
-          { id: '2', name: 'Cliente Demo', status: 'active' as const }
-        ];
+        console.error('Error fetching clients:', error);
+        return [];
       }
     },
     staleTime: 5 * 60 * 1000, // 5 minutos
-    gcTime: 10 * 60 * 1000, // 10 minutos
+    retry: 2
   });
 
   return {

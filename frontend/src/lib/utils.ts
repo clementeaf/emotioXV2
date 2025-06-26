@@ -18,7 +18,7 @@ export function isDevelopmentMode(): boolean {
   if (typeof process !== 'undefined' && process.env.NODE_ENV) {
     return process.env.NODE_ENV === 'development';
   }
-  
+
   // Si no hay NODE_ENV, asumir que no estamos en desarrollo
   return false;
 }
@@ -42,11 +42,13 @@ export function shouldUseSimulatedMode(): boolean {
  * @returns Fecha formateada
  */
 export function formatDate(date: Date | string): string {
-  if (!date) return '';
+  if (!date) {
+    return '';
+  }
   const d = typeof date === 'string' ? new Date(date) : date;
-  return d.toLocaleDateString('es-ES', { 
-    year: 'numeric', 
-    month: 'long', 
+  return d.toLocaleDateString('es-ES', {
+    year: 'numeric',
+    month: 'long',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit'
@@ -78,7 +80,7 @@ export function generateId(): string {
  */
 export function formatDateLong(dateString: string | Date, locale: string = 'es'): string {
   const date = dateString instanceof Date ? dateString : new Date(dateString);
-  
+
   return new Intl.DateTimeFormat(locale, {
     year: 'numeric',
     month: 'long',
@@ -98,12 +100,12 @@ export function getTimeAgo(dateString: string | Date, locale: string = 'es'): st
   const date = dateString instanceof Date ? dateString : new Date(dateString);
   const now = new Date();
   const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-  
+
   // Si es futuro, retornar string en localización española o inglesa
   if (seconds < 0) {
     return locale === 'es' ? 'en el futuro' : 'in the future';
   }
-  
+
   // Intervalos de tiempo en segundos
   const intervals = {
     year: 31536000,
@@ -114,7 +116,7 @@ export function getTimeAgo(dateString: string | Date, locale: string = 'es'): st
     minute: 60,
     second: 1
   };
-  
+
   // Textos según localización
   const timeTexts = {
     es: {
@@ -138,23 +140,23 @@ export function getTimeAgo(dateString: string | Date, locale: string = 'es'): st
       ago: 'ago'
     }
   };
-  
+
   // Usar español por defecto, o inglés si se especifica
   const texts = locale === 'es' ? timeTexts.es : timeTexts.en;
-  
+
   // Encontrar el intervalo más apropiado
   for (const [key, value] of Object.entries(intervals)) {
     const interval = Math.floor(seconds / value);
     if (interval >= 1) {
       const textKey = key as keyof typeof texts;
       const plural = interval === 1 ? 0 : 1;
-      
+
       // Construir frase según localización
-      return locale === 'es' 
+      return locale === 'es'
         ? `${texts.ago} ${interval} ${texts[textKey][plural]}`
         : `${interval} ${texts[textKey][plural]} ${texts.ago}`;
     }
   }
-  
+
   return locale === 'es' ? 'ahora mismo' : 'just now';
-} 
+}

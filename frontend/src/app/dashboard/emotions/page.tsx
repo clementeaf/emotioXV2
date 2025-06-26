@@ -1,12 +1,11 @@
 'use client';
 
-import { withSearchParams } from '@/components/common/SearchParamsWrapper';
-import { EmotionsContent } from '@/components/emotions';
-import { Sidebar } from '@/components/layout/Sidebar';
-import { useProtectedRoute } from '@/hooks/useProtectedRoute';
 import { Suspense } from 'react';
 
-const EmotionsContentWithSuspense = withSearchParams(EmotionsContent);
+import { SearchParamsWrapper } from '@/components/common/SearchParamsWrapper';
+import { EmotionsContent } from '@/components/emotions/EmotionsContent';
+import { Sidebar } from '@/components/layout/Sidebar';
+import { useProtectedRoute } from '@/hooks/useProtectedRoute';
 
 export default function EmotionsPage() {
   const { token } = useProtectedRoute();
@@ -20,7 +19,9 @@ export default function EmotionsPage() {
       <Sidebar />
       <div className="flex-1 flex flex-col p-8">
         <Suspense fallback={<div className="p-4 text-center">Cargando...</div>}>
-          <EmotionsContentWithSuspense />
+          <SearchParamsWrapper>
+            <EmotionsContent />
+          </SearchParamsWrapper>
         </Suspense>
       </div>
     </div>

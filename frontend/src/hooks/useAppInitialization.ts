@@ -1,9 +1,12 @@
-import { apiClient } from '@/config/api-client';
 import { useEffect } from 'react';
+
+import { apiClient } from '@/config/api-client';
 
 export const useAppInitialization = () => {
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
 
     const initializeApp = () => {
       const isDevEnv = process.env.NODE_ENV === 'development';

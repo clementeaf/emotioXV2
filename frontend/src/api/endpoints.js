@@ -5,18 +5,18 @@
 // Endpoints de API exportados desde backend
 export const API_ENDPOINTS = {
   // Endpoint HTTP API
-  http: "https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev",
-  
+  http: 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev',
+
   // Endpoint WebSocket
-  ws: "wss://w8dj7wxnl9.execute-api.us-east-1.amazonaws.com/dev",
-  
+  ws: 'wss://w8dj7wxnl9.execute-api.us-east-1.amazonaws.com/dev',
+
   // Etapa de despliegue (dev, prod, etc.)
-  stage: "dev"
+  stage: 'dev'
 };
 
 // Constantes para uso más fácil
-export const API_HTTP_ENDPOINT = "https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev";
-export const API_WEBSOCKET_ENDPOINT = "wss://w8dj7wxnl9.execute-api.us-east-1.amazonaws.com/dev";
+export const API_HTTP_ENDPOINT = 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev';
+export const API_WEBSOCKET_ENDPOINT = 'wss://w8dj7wxnl9.execute-api.us-east-1.amazonaws.com/dev';
 
 // Función para obtener URL completa de una ruta
 export function getApiUrl(path) {

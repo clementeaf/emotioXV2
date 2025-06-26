@@ -1,6 +1,7 @@
+import { useEffect, useState } from 'react';
+
 import { useAuth } from '@/providers/AuthProvider';
 import { analyzeToken } from '@/utils/jwt-utils';
-import { useEffect, useState } from 'react';
 
 interface TokenInfo {
   isValid: boolean;
@@ -17,7 +18,9 @@ export const useAuthDebugger = () => {
   const [showDebugger, setShowDebugger] = useState(false);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
 
     const localStorageToken = localStorage.getItem('token');
     const sessionStorageToken = sessionStorage.getItem('token');
@@ -50,21 +53,21 @@ export const useAuthDebugger = () => {
   };
 
   const getStatusInfo = () => {
-    let statusClass = "bg-gray-100 text-gray-800";
-    let statusMessage = "Verificando estado de autenticación...";
+    let statusClass = 'bg-gray-100 text-gray-800';
+    let statusMessage = 'Verificando estado de autenticación...';
 
     if (!localToken && !sessionToken) {
-      statusClass = "bg-red-100 text-red-800";
-      statusMessage = "No estás autenticado. No se encontró ningún token.";
+      statusClass = 'bg-red-100 text-red-800';
+      statusMessage = 'No estás autenticado. No se encontró ningún token.';
     } else if (!tokenInfo.isValid) {
-      statusClass = "bg-red-100 text-red-800";
-      statusMessage = "Token inválido o expirado.";
+      statusClass = 'bg-red-100 text-red-800';
+      statusMessage = 'Token inválido o expirado.';
     } else if (localToken && token) {
-      statusClass = "bg-green-100 text-green-800";
-      statusMessage = "Autenticación correcta.";
+      statusClass = 'bg-green-100 text-green-800';
+      statusMessage = 'Autenticación correcta.';
     } else {
-      statusClass = "bg-yellow-100 text-yellow-800";
-      statusMessage = "Token en storage pero no en contexto de aplicación.";
+      statusClass = 'bg-yellow-100 text-yellow-800';
+      statusMessage = 'Token en storage pero no en contexto de aplicación.';
     }
 
     return { statusClass, statusMessage };

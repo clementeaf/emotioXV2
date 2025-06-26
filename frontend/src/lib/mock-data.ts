@@ -3,7 +3,6 @@
  * Estas funciones son útiles cuando la API no está disponible o hay errores
  */
 
-import { v4 as uuidv4 } from 'uuid';
 
 import { ResearchProject } from '@/interfaces/research';
 
@@ -72,7 +71,7 @@ export function simulateNetworkDelay(minMs: number = 300, maxMs: number = 1500):
 export const mockResearchAPI = {
   // Almacenamiento vacío en lugar de datos generados
   _mockStorage: [] as ResearchProject[],
-  
+
   /**
    * Obtiene lista de investigaciones
    */
@@ -80,7 +79,7 @@ export const mockResearchAPI = {
     await simulateNetworkDelay();
     return generateMockApiResponse(mockResearchAPI._mockStorage);
   },
-  
+
   /**
    * Obtiene una investigación por ID
    */
@@ -89,7 +88,7 @@ export const mockResearchAPI = {
     const research = mockResearchAPI._mockStorage.find(r => r.id === id);
     return generateMockApiResponse(research || null);
   },
-  
+
   /**
    * Crea una nueva investigación
    */
@@ -98,18 +97,18 @@ export const mockResearchAPI = {
     data: ResearchProject;
   }> {
     await simulateNetworkDelay();
-    
+
     // Crear nueva investigación con ID generado y fecha actual
     const newResearch: ResearchProject = {
       ...data,
       id: generateMockId('research'),
       createdAt: new Date().toISOString(),
     };
-    
+
     mockResearchAPI._mockStorage.push(newResearch);
     return generateMockApiResponse(newResearch);
   },
-  
+
   /**
    * Actualiza una investigación existente
    */
@@ -118,12 +117,12 @@ export const mockResearchAPI = {
     data: ResearchProject | null;
   }> {
     await simulateNetworkDelay();
-    
+
     const index = mockResearchAPI._mockStorage.findIndex(r => r.id === id);
     if (index === -1) {
       return generateMockApiResponse(null);
     }
-    
+
     // Actualizar los datos de la investigación
     mockResearchAPI._mockStorage[index] = {
       ...mockResearchAPI._mockStorage[index],
@@ -131,16 +130,16 @@ export const mockResearchAPI = {
       // Preservar ID original
       id: mockResearchAPI._mockStorage[index].id
     };
-    
+
     return generateMockApiResponse(mockResearchAPI._mockStorage[index]);
   },
-  
+
   /**
    * Elimina una investigación
    */
   async delete(id: string): Promise<{ success: boolean; message: string }> {
     await simulateNetworkDelay();
-    
+
     const index = mockResearchAPI._mockStorage.findIndex(r => r.id === id);
     if (index === -1) {
       return {
@@ -148,11 +147,56 @@ export const mockResearchAPI = {
         message: 'Investigación no encontrada'
       };
     }
-    
+
     mockResearchAPI._mockStorage.splice(index, 1);
     return {
       success: true,
       message: 'Investigación eliminada correctamente'
     };
   }
-}; 
+};
+
+// Datos mock para desarrollo y testing
+// Estos datos se usan cuando la API no está disponible o en modo desarrollo
+
+export const mockResearchData = [
+  {
+    id: '1',
+    title: 'Estudio de UX - E-commerce',
+    status: 'active',
+    participants: 150,
+    completionRate: 85,
+    createdAt: '2024-01-15T10:30:00Z',
+    updatedAt: '2024-01-20T14:45:00Z'
+  },
+  {
+    id: '2',
+    title: 'Análisis de Emociones - App Móvil',
+    status: 'completed',
+    participants: 200,
+    completionRate: 92,
+    createdAt: '2024-01-10T09:15:00Z',
+    updatedAt: '2024-01-18T16:20:00Z'
+  }
+];
+
+export const mockClientsData = [
+  {
+    id: '1',
+    name: 'Universidad del Desarrollo',
+    email: 'contacto@udd.cl',
+    company: 'Universidad del Desarrollo',
+    status: 'active',
+    researchCount: 5,
+    lastActivity: '2024-01-20T14:45:00Z'
+  },
+  {
+    id: '2',
+    name: 'Cliente Demo',
+    email: 'demo@cliente.com',
+    company: 'Cliente Demo',
+    status: 'active',
+    researchCount: 2,
+    lastActivity: '2024-01-18T16:20:00Z'
+  }
+];
