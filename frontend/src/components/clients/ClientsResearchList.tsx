@@ -1,6 +1,7 @@
 'use client';
 
 import { ResearchActions } from '@/components/research-actions';
+import { ProgressBar } from '@/components/ui/ProgressBar';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { ResearchListProps } from '@/interfaces/research';
 import { cn } from '@/lib/utils';
@@ -45,17 +46,7 @@ export function ClientsResearchList({
                       <StatusBadge status={research.status} />
                     </td>
                     <td className="whitespace-nowrap py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-16 rounded-full bg-neutral-100">
-                          <div
-                            className="h-2 rounded-full bg-blue-500"
-                            style={{ width: `${research.progress}%` }}
-                          />
-                        </div>
-                        <span className="text-sm text-neutral-600">
-                          {research.progress}%
-                        </span>
-                      </div>
+                      <ProgressBar progress={research.progress} />
                     </td>
                     <td className="whitespace-nowrap py-3 text-sm text-neutral-600">
                       {research.date}

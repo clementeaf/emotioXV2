@@ -1,4 +1,6 @@
-import React from 'react';
+'use client';
+
+import { cn } from '@/lib/utils';
 
 export interface ConfigCardProps {
   children: React.ReactNode;
@@ -6,11 +8,20 @@ export interface ConfigCardProps {
   style?: React.CSSProperties;
 }
 
-export const ConfigCard: React.FC<ConfigCardProps> = ({ children, className = '', style }) => (
-  <div
-    className={`p-8 max-h-[calc(100vh-160px)] min-h-[400px] overflow-y-auto ${className}`}
-    style={style}
-  >
-    {children}
-  </div>
-);
+export function ConfigCard({
+  children,
+  className,
+  style
+}: ConfigCardProps) {
+  return (
+    <div
+      className={cn(
+        'p-8 max-h-[calc(100vh-160px)] min-h-[400px] overflow-y-auto',
+        className
+      )}
+      style={style}
+    >
+      {children}
+    </div>
+  );
+}

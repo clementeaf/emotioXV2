@@ -49,6 +49,15 @@ export interface ErrorModalData {
   type: 'error' | 'info' | 'success';
 }
 
+// Tipo para áreas de hitzone (usado en LocalHitzoneEditor)
+export interface HitzoneArea {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 // Tipo para los metadatos de tipos de preguntas
 export interface QuestionTypeInfo {
   id: QuestionType;

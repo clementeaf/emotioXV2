@@ -1,4 +1,4 @@
-import { HitZoneEditor } from '@/components/research/CognitiveTask/components/HitZoneEditor';
+import { HitZoneViewer } from '@/components/research/CognitiveTask/components/HitZoneViewer';
 import React from 'react';
 import { HitZone, UploadedFile } from 'shared/interfaces/cognitive-task.interface';
 
@@ -16,11 +16,10 @@ export const HitZonePreview: React.FC<HitZonePreviewProps> = ({ file, hitzones }
         className="max-w-full max-h-full object-contain"
       />
       <div className="absolute top-0 left-0 w-full h-full">
-        <HitZoneEditor
-          file={file}
+        <HitZoneViewer
           hitzones={hitzones}
-          onHitzonesChange={() => {}} // No se necesita en modo solo lectura
-          readOnly={true} // El prop clave para modo de solo lectura
+          imageNaturalSize={{ width: 800, height: 600 }} // Valores por defecto
+          imageRenderedSize={{ width: 800, height: 600 }} // Valores por defecto
         />
       </div>
     </div>

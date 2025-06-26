@@ -1,6 +1,8 @@
-// Exportar componentes comunes para fácil importación
+// Export common components for easy importing
+export * from './ConfigCard';
 export * from './DataErrorFallback';
-export * from './SimulatedDataBanner';
 export * from './DevModeInfo';
 export * from './ErrorBoundary';
-export * from './DataDisplayExample'; 
+export * from './SearchParamsWrapper';
+export * from './SimulatedDataBanner';
+export * from './withDataErrorHandling';
