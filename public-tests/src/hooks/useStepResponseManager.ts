@@ -23,7 +23,10 @@ export function useStepResponseManager<TResponseData = unknown>({
 
 
   const [state, actions] = useStandardizedForm<TResponseData>(
-    standardizedProps,
+    {
+      ...standardizedProps,
+      savedResponse: initialData ?? null,
+    },
     {
       // Usar valor inicial proporcionado, asegurándonos de que sea del tipo correcto
       initialValue: (initialData ?? {} as TResponseData),
