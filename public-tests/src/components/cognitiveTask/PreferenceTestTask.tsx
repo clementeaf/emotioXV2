@@ -155,7 +155,7 @@ const PreferenceTestTask: React.FC<MappedStepComponentProps> = ({ stepConfig, on
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="p-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -171,11 +171,11 @@ const PreferenceTestTask: React.FC<MappedStepComponentProps> = ({ stepConfig, on
         </div>
 
         {/* Images Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="flex flex-row gap-4">
           {images.map((image: any, index: number) => (
             <div
               key={image.id}
-              className={`relative bg-white rounded-lg shadow-lg overflow-hidden cursor-pointer transition-all duration-300 transform hover:scale-[1.02] ${
+              className={`relative rounded-lg shadow-lg overflow-hidden cursor-pointer transition-all duration-300 transform hover:scale-[1.02] ${
                 selectedImageId === image.id
                   ? 'ring-4 ring-blue-500 shadow-2xl scale-[1.02]'
                   : 'hover:shadow-xl'
