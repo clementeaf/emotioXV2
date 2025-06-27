@@ -11,7 +11,6 @@ export const DemographicStep: React.FC<DemographicStepProps & { savedResponse?: 
     savedResponse
 }) => {
     const [loading, setLoading] = useState(false);
-    console.log('[DemographicStep] savedResponse (prop):', savedResponse);
     const initialFormValues = savedResponse && typeof savedResponse === 'object' ? savedResponse : {};
     const formConfig = (stepConfig as { demographicsConfig?: DemographicsSection })?.demographicsConfig as DemographicsSection | undefined;
 
@@ -22,7 +21,6 @@ export const DemographicStep: React.FC<DemographicStepProps & { savedResponse?: 
                 onStepComplete(responses);
             }
         } catch (error) {
-            console.error('[DemographicStep] Error inesperado en handleDemographicSubmit:', error);
             if (onError) {
                 onError(error instanceof Error ? error.message : 'Error procesando el paso demográfico.', 'demographic');
             }

@@ -36,8 +36,6 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
   onCancel,
   stepId = 'demographic',
 }) => {
-  // Log para depuración: mostrar initialValues al montar o actualizar props
-  console.log('[DemographicsForm] initialValues:', initialValues);
 
   const { researchId, participantId } = useParticipantStore();
   const { refetch: refetchModuleResponses } = useModuleResponses({
@@ -115,9 +113,6 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
     if (!validateForm()) {
       return;
     }
-
-    // Log para verificar el payload enviado al backend
-    console.log('[DemographicsForm] Payload enviado al backend:', formFieldResponses);
 
     setIsSubmittingToServer(true);
 

@@ -53,19 +53,6 @@ export const useResponseAPI = ({ researchId, participantId }: UseResponseAPIProp
     answer: unknown,
     moduleId?: string
   ) => {
-
-    console.log(`🔍 [useResponseAPI] saveResponse called with:`, {
-      stepId,
-      stepType,
-      stepName,
-      answer,
-      answerType: typeof answer,
-      answerKeys: typeof answer === 'object' && answer ? Object.keys(answer) : 'not object',
-      moduleId,
-      researchId,
-      participantId
-    });
-
     if (!researchId || !participantId || !stepId || !stepType) {
       const errorMsg = 'Datos inválidos para guardar respuesta (faltan IDs/tipo)';
       console.error(`❌ [useResponseAPI] ${errorMsg}:`, { researchId, participantId, stepId, stepType });
@@ -85,11 +72,7 @@ export const useResponseAPI = ({ researchId, participantId }: UseResponseAPIProp
         ...(moduleId ? { moduleId } : {})
       };
 
-      console.log(`📤 [useResponseAPI] Calling apiClient.saveModuleResponse with payload:`, payload);
-
       const response = await apiClient.saveModuleResponse(payload);
-
-      console.log(`📋 [useResponseAPI] API response received:`, response);
 
       if (response.error || !response.data) {
         console.error('❌ [useResponseAPI] Error guardando respuesta:', response);
@@ -99,7 +82,6 @@ export const useResponseAPI = ({ researchId, participantId }: UseResponseAPIProp
       if (response && typeof response === 'object' && response !== null && 'data' in response) {
         const dataObj = (response as { data?: unknown }).data;
         if (dataObj && typeof dataObj === 'object' && dataObj !== null && 'data' in dataObj) {
-          console.log(`✅ [useResponseAPI] Successfully saved, returning data:`, (dataObj as { data?: unknown }).data);
           return (dataObj as { data?: unknown }).data;
         }
       }
@@ -196,33 +178,18 @@ export const useResponseAPI = ({ researchId, participantId }: UseResponseAPIProp
     existingResponseId?: string,
     moduleId?: string,
   ) => {
-    console.log(`🔍 [useResponseAPI] saveOrUpdateResponse called with:`, {
-      stepId,
-      stepType,
-      stepName,
-      existingResponseId,
-      hasExistingId: !!existingResponseId,
-      moduleId
-    });
 
     if (existingResponseId && existingResponseId.trim() !== '') {
-      console.log(`🔄 [useResponseAPI] Attempting to update existing response: ${existingResponseId}`);
       try {
         const result = await updateResponse(existingResponseId, answer);
         if (result !== null) {
-          console.log(`✅ [useResponseAPI] Update successful`);
           return result;
         }
-        console.log(`⚠️ [useResponseAPI] Update returned null, trying save instead`);
       } catch (updateError) {
         console.log(`❌ [useResponseAPI] Update failed, trying save instead:`, updateError);
       }
-
-      // Si llegamos aquí, el update falló, intentamos save
-      console.log(`🆕 [useResponseAPI] Falling back to save new response`);
       return saveResponse(stepId, stepType, stepName, answer, moduleId);
     } else {
-      console.log(`🆕 [useResponseAPI] No existing response ID, saving new response`);
       return saveResponse(stepId, stepType, stepName, answer, moduleId);
     }
   }, [saveResponse, updateResponse]);
