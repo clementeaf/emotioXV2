@@ -110,8 +110,6 @@ export const researchAPI = {
     if (!id) {
       throw new Error('Se requiere un ID para eliminar la investigación');
     }
-
-    console.log(`Eliminando investigación con ID ${id}`);
     return apiClient.delete('research', 'delete', { id });
   },
 
@@ -130,7 +128,6 @@ export const thankYouScreenAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para crear la pantalla de agradecimiento');
     }
-    console.log(`Endpoint CREATE thankYouScreen utilizado con researchId: ${researchId}`);
     return apiClient.post('thankYouScreen', 'create', data, { researchId });
   },
 
@@ -138,7 +135,6 @@ export const thankYouScreenAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación');
     }
-    console.log(`Endpoint GET_BY_RESEARCH thankYouScreen utilizado con researchId: ${researchId}`);
     return apiClient.get('thankYouScreen', 'getByResearch', { researchId });
   },
 
@@ -146,7 +142,6 @@ export const thankYouScreenAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para actualizar la pantalla de agradecimiento');
     }
-    console.log(`Endpoint UPDATE thankYouScreen utilizado con researchId: ${researchId}, screenId: ${screenId}`);
     return apiClient.put('thankYouScreen', 'update', data, { researchId, screenId });
   },
 
@@ -154,7 +149,6 @@ export const thankYouScreenAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para eliminar la pantalla de agradecimiento');
     }
-    console.log(`Endpoint DELETE thankYouScreen utilizado con researchId: ${researchId}, screenId: ${screenId}`);
     return apiClient.delete('thankYouScreen', 'delete', { researchId, screenId });
   },
 };
@@ -165,7 +159,6 @@ export const eyeTrackingAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para crear eye tracking');
     }
-    console.log(`Endpoint CREATE eyeTracking utilizado con researchId: ${researchId}`);
     return apiClient.post('eyeTracking', 'create', data, { researchId });
   },
 
@@ -173,7 +166,6 @@ export const eyeTrackingAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación');
     }
-    console.log(`Endpoint GET_BY_RESEARCH eyeTracking utilizado con researchId: ${researchId}`);
     return apiClient.get('eyeTracking', 'getByResearch', { researchId });
   },
 
@@ -181,7 +173,6 @@ export const eyeTrackingAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para actualizar eye tracking');
     }
-    console.log(`Endpoint UPDATE eyeTracking utilizado con researchId: ${researchId}`);
     return apiClient.put('eyeTracking', 'update', data, { researchId });
   },
 
@@ -189,7 +180,6 @@ export const eyeTrackingAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para eliminar eye tracking');
     }
-    console.log(`Endpoint DELETE eyeTracking utilizado con researchId: ${researchId}`);
     return apiClient.delete('eyeTracking', 'delete', { researchId });
   },
 };
@@ -200,7 +190,6 @@ export const eyeTrackingRecruitAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para crear eye tracking recruit');
     }
-    console.log(`Endpoint CREATE eyeTrackingRecruit utilizado con researchId: ${researchId}`);
     return apiClient.post('eyeTrackingRecruit', 'createConfig', data, { researchId });
   },
 
@@ -208,7 +197,6 @@ export const eyeTrackingRecruitAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación');
     }
-    console.log(`Endpoint GET_BY_RESEARCH eyeTrackingRecruit utilizado con researchId: ${researchId}`);
     return apiClient.get('eyeTrackingRecruit', 'getConfigByResearch', { researchId });
   },
 
@@ -216,7 +204,6 @@ export const eyeTrackingRecruitAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para actualizar eye tracking recruit');
     }
-    console.log(`Endpoint UPDATE eyeTrackingRecruit utilizado con researchId: ${researchId}`);
     return apiClient.put('eyeTrackingRecruit', 'updateConfig', data, { researchId });
   },
 
@@ -224,7 +211,6 @@ export const eyeTrackingRecruitAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para eliminar eye tracking recruit');
     }
-    console.log(`Endpoint DELETE eyeTrackingRecruit utilizado con researchId: ${researchId}`);
     return apiClient.delete('eyeTrackingRecruit', 'createConfig', { researchId });
   },
 };
@@ -235,7 +221,6 @@ export const smartVocAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para crear SmartVOC');
     }
-    console.log(`Endpoint CREATE smartVoc utilizado con researchId: ${researchId}`);
     return apiClient.post('smartVoc', 'create', data, { researchId });
   },
 
@@ -243,7 +228,6 @@ export const smartVocAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación');
     }
-    console.log(`Endpoint GET_BY_RESEARCH smartVoc utilizado con researchId: ${researchId}`);
     return apiClient.get('smartVoc', 'getByResearch', { researchId });
   },
 
@@ -251,7 +235,6 @@ export const smartVocAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para actualizar SmartVOC');
     }
-    console.log(`Endpoint UPDATE smartVoc utilizado con researchId: ${researchId}`);
     return apiClient.put('smartVoc', 'update', data, { researchId });
   },
 
@@ -259,7 +242,6 @@ export const smartVocAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para eliminar SmartVOC');
     }
-    console.log(`Endpoint DELETE smartVoc utilizado con researchId: ${researchId}`);
     return apiClient.delete('smartVoc', 'delete', { researchId });
   },
 };
@@ -270,7 +252,6 @@ export const welcomeScreenAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para crear la pantalla de bienvenida');
     }
-    console.log(`Endpoint CREATE welcomeScreen utilizado con researchId: ${researchId}`);
     return apiClient.post('welcomeScreen', 'create', data, { researchId });
   },
 
@@ -278,7 +259,6 @@ export const welcomeScreenAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación');
     }
-    console.log(`Endpoint GET_BY_RESEARCH welcomeScreen utilizado con researchId: ${researchId}`);
     return apiClient.get('welcomeScreen', 'getByResearch', { researchId });
   },
 
@@ -286,7 +266,6 @@ export const welcomeScreenAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para actualizar la pantalla de bienvenida');
     }
-    console.log(`Endpoint UPDATE welcomeScreen utilizado con researchId: ${researchId}, screenId: ${screenId}`);
     return apiClient.put('welcomeScreen', 'update', data, { researchId, screenId });
   },
 
@@ -294,7 +273,6 @@ export const welcomeScreenAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para eliminar la pantalla de bienvenida');
     }
-    console.log(`Endpoint DELETE welcomeScreen utilizado con researchId: ${researchId}, screenId: ${screenId}`);
     return apiClient.delete('welcomeScreen', 'delete', { researchId, screenId });
   },
 };
@@ -305,7 +283,6 @@ export const cognitiveTaskAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para crear la tarea cognitiva');
     }
-    console.log(`Endpoint CREATE cognitiveTask utilizado con researchId: ${researchId}`);
     return apiClient.post('cognitiveTask', 'create', data, { researchId });
   },
 
@@ -313,7 +290,6 @@ export const cognitiveTaskAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación');
     }
-    console.log(`Endpoint GET_BY_RESEARCH cognitiveTask utilizado con researchId: ${researchId}`);
     return apiClient.get('cognitiveTask', 'getByResearch', { researchId });
   },
 
@@ -321,7 +297,6 @@ export const cognitiveTaskAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para actualizar la tarea cognitiva');
     }
-    console.log(`Endpoint UPDATE cognitiveTask utilizado con researchId: ${researchId}`);
     return apiClient.put('cognitiveTask', 'update', data, { researchId });
   },
 
@@ -329,7 +304,6 @@ export const cognitiveTaskAPI = {
     if (!researchId) {
       throw new Error('Se requiere un ID de investigación para eliminar la tarea cognitiva');
     }
-    console.log(`Endpoint DELETE cognitiveTask utilizado con researchId: ${researchId}`);
     return apiClient.delete('cognitiveTask', 'delete', { researchId });
   },
 };

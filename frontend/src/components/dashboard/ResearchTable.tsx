@@ -1,14 +1,13 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useState, useEffect, useCallback } from 'react';
+import { API_HTTP_ENDPOINT } from '@/api/endpoints';
+import { Button } from '@/components/ui/Button';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Button } from '@/components/ui/Button';
-import { ErrorBoundary } from '../common/ErrorBoundary';
 import Link from 'next/link';
-import { API_HTTP_ENDPOINT } from '@/api/endpoints';
-import { researchAPI } from '@/lib/api'; // Opcional: importar el API cliente para operaciones REST
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useState } from 'react';
+import { ErrorBoundary } from '../common/ErrorBoundary';
 
 interface Research {
   id: string;
@@ -37,8 +36,6 @@ function ResearchTableContent() {
       setIsLoading(true);
       setError(null);
 
-      // Obtener todas las investigaciones directamente
-      console.log('ResearchTable: Fetching /research/all...'); // Log para depuración
       const response = await fetch(`${API_HTTP_ENDPOINT}/research/all`, {
         method: 'GET',
         headers: {
@@ -53,12 +50,12 @@ function ResearchTableContent() {
 
       const data = await response.json();
       const researchData = data?.data || data;
-      
+
       // Verificar que cada item tenga un ID válido antes de agregarlo
-      const validResearch = Array.isArray(researchData) 
+      const validResearch = Array.isArray(researchData)
         ? researchData.filter(item => item && item.id)
         : [];
-        
+
       setResearch(validResearch);
     } catch (error) {
       console.error('Error:', error);
@@ -103,7 +100,6 @@ function ResearchTableContent() {
     }
 
     try {
-      console.log('Eliminando investigación con ID:', projectToDelete.id);
       const response = await fetch(`${API_HTTP_ENDPOINT}/research/${projectToDelete.id}`, {
         method: 'DELETE',
         headers: {
@@ -202,7 +198,7 @@ function ResearchTableContent() {
                       {getStatusBadge(item.status)}
                     </td>
                     <td className="px-6 py-4 text-sm text-neutral-500 whitespace-nowrap">
-                      {item.createdAt ? 
+                      {item.createdAt ?
                         (() => {
                           try {
                             const date = new Date(item.createdAt);
@@ -215,7 +211,7 @@ function ResearchTableContent() {
                             console.error('Error formateando fecha:', error);
                             return 'Fecha no disponible';
                           }
-                        })() 
+                        })()
                         : 'Fecha no disponible'
                       }
                     </td>

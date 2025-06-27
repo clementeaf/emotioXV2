@@ -75,6 +75,7 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0 && onFileUpload) {
+      // Procesar todos los archivos seleccionados
       onFileUpload(e.target.files);
       e.target.value = '';
     }
@@ -144,19 +145,19 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
             <p className="mt-1 text-xs text-red-500">{descriptionError}</p>
           )}
         </div>
+        {/* El input file oculto se mantiene para ser disparado por el botón inferior */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple // Permitir selección múltiple
+          style={{ display: 'none' }}
+          onChange={handleFileChange}
+          disabled={disabled || isThisQuestionUploading}
+        />
       </div>
 
       <div className="p-6 border-2 border-dashed rounded-lg bg-neutral-50 flex flex-col items-center justify-center gap-3">
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileChange}
-          className="hidden"
-          disabled={disabled || isThisQuestionUploading}
-          accept="image/*,.pdf"
-          data-question-id={question.id}
-        />
-
         {(filesToShow as UIFile[]).length > 0 ? (
           <div className="w-full space-y-3">
             {isThisQuestionUploading && (
@@ -318,7 +319,15 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
                 // Actualizar el archivo específico con las nuevas hitZones
                 const updatedFiles = question.files?.map(f => {
                   if (f.id === hitzoneFile.id) {
-                    return { ...f, hitZones: newAreas };
+                    return {
+                      ...f,
+                      hitZones: newAreas.map(area => ({
+                        id: area.id,
+                        name: '', // puedes poner un label si lo deseas
+                        fileId: f.id,
+                        region: { x: area.x, y: area.y, width: area.width, height: area.height },
+                      }))
+                    };
                   }
                   return f;
                 }) || [];
