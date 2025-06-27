@@ -314,19 +314,52 @@ export const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
             <h2 className="text-lg font-semibold mb-4 text-center">Editar hitzones para: {hitzoneFile.name}</h2>
             <LocalHitzoneEditor
               imageUrl={hitzoneFile.url}
-              initialAreas={(hitzoneFile as any).hitZones || []}
+              initialAreas={((hitzoneFile as any).hitZones || []).map((hitZone: any) => ({
+                id: hitZone.id,
+                x: hitZone.region?.x || 0,
+                y: hitZone.region?.y || 0,
+                width: hitZone.region?.width || 0,
+                height: hitZone.region?.height || 0,
+              }))}
               onSave={(newAreas) => {
+                console.log('[FileUploadQuestion] onSave recibió newAreas:', newAreas);
+                console.log('[FileUploadQuestion] Detalle de cada área recibida:', newAreas.map(area => ({
+                  id: area.id,
+                  x: area.x,
+                  y: area.y,
+                  width: area.width,
+                  height: area.height,
+                  xType: typeof area.x,
+                  yType: typeof area.y,
+                  widthType: typeof area.width,
+                  heightType: typeof area.height
+                })));
+
                 // Actualizar el archivo específico con las nuevas hitZones
                 const updatedFiles = question.files?.map(f => {
                   if (f.id === hitzoneFile.id) {
-                    return {
-                      ...f,
-                      hitZones: newAreas.map(area => ({
+                    const hitZones = newAreas.map(area => {
+                      // Validar que las coordenadas sean números válidos
+                      const x = typeof area.x === 'number' && !isNaN(area.x) ? area.x : 0;
+                      const y = typeof area.y === 'number' && !isNaN(area.y) ? area.y : 0;
+                      const width = typeof area.width === 'number' && !isNaN(area.width) ? area.width : 0;
+                      const height = typeof area.height === 'number' && !isNaN(area.height) ? area.height : 0;
+
+                      console.log('[FileUploadQuestion] Coordenadas validadas:', { x, y, width, height });
+
+                      return {
                         id: area.id,
                         name: '', // puedes poner un label si lo deseas
                         fileId: f.id,
-                        region: { x: area.x, y: area.y, width: area.width, height: area.height },
-                      }))
+                        region: { x, y, width, height },
+                      };
+                    });
+
+                    console.log('[FileUploadQuestion] hitZones convertidos:', hitZones);
+
+                    return {
+                      ...f,
+                      hitZones
                     };
                   }
                   return f;

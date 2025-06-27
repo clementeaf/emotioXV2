@@ -1,4 +1,4 @@
-import { CognitiveTaskFormData } from '../hooks/useCognitiveTaskForm';
+import { CognitiveTaskFormData } from 'shared/interfaces/cognitive-task.interface';
 import { Question } from '../types';
 
 /**
@@ -6,36 +6,36 @@ import { Question } from '../types';
  */
 export const isQuestionValid = (question: Question): { isValid: boolean; missingFields: string[] } => {
   const missingFields: string[] = [];
-  
+
   // Validar campos básicos requeridos
   if (!question.id || question.id.trim() === '') {
     missingFields.push('id');
   }
-  
+
   if (!question.type) {
     missingFields.push('type');
   }
-  
+
   if (!question.title || question.title.trim() === '') {
     missingFields.push('title');
   }
-  
+
   if (question.required === undefined || question.required === null) {
     missingFields.push('required');
   }
-  
+
   if (question.showConditionally === undefined || question.showConditionally === null) {
     missingFields.push('showConditionally');
   }
-  
+
   if (question.deviceFrame === undefined || question.deviceFrame === null) {
     missingFields.push('deviceFrame');
   }
-  
+
   // Validar campos específicos según el tipo de pregunta
   const typeSpecificFields = validateQuestionTypeSpecificFields(question);
   missingFields.push(...typeSpecificFields);
-  
+
   return {
     isValid: missingFields.length === 0,
     missingFields
@@ -47,7 +47,7 @@ export const isQuestionValid = (question: Question): { isValid: boolean; missing
  */
 const validateQuestionTypeSpecificFields = (question: Question): string[] => {
   const missingFields: string[] = [];
-  
+
   switch (question.type) {
     case 'single_choice':
     case 'multiple_choice':
@@ -56,7 +56,7 @@ const validateQuestionTypeSpecificFields = (question: Question): string[] => {
         missingFields.push('choices (debe tener al menos una opción)');
       } else {
         // Validar que al menos una opción tenga texto
-        const validChoices = question.choices.filter(choice => 
+        const validChoices = question.choices.filter(choice =>
           choice.text && choice.text.trim() !== ''
         );
         if (validChoices.length === 0) {
@@ -64,7 +64,7 @@ const validateQuestionTypeSpecificFields = (question: Question): string[] => {
         }
       }
       break;
-      
+
     case 'linear_scale':
       if (!question.scaleConfig) {
         missingFields.push('scaleConfig');
@@ -80,41 +80,41 @@ const validateQuestionTypeSpecificFields = (question: Question): string[] => {
         }
       }
       break;
-      
+
     case 'navigation_flow':
       if (!question.files || question.files.length === 0) {
         missingFields.push('files (navigation_flow requiere al menos un archivo)');
       } else {
-        // Validar que los archivos tengan los datos necesarios
-        const validFiles = question.files.filter(file => 
-          file.name && file.url && (file.s3Key || file.status !== 'uploaded')
+        // Validar que los archivos tengan los datos necesarios, incluyendo s3Key
+        const validFiles = question.files.filter(file =>
+          file.name && file.url && file.s3Key // Requerir s3Key explícitamente
         );
         if (validFiles.length === 0) {
           missingFields.push('files (archivos deben tener nombre, URL y s3Key válidos)');
         }
       }
       break;
-      
+
     case 'preference_test':
-      if (!question.files || question.files.length !== 2) {
-        missingFields.push('files (preference_test requiere exactamente 2 archivos)');
+      if (!question.files || question.files.length < 2) {
+        missingFields.push('files (preference_test requiere al menos 2 archivos)');
       } else {
-        // Validar que ambos archivos sean válidos
-        const validFiles = question.files.filter(file => 
-          file.name && file.url && (file.s3Key || file.status !== 'uploaded')
+        // Validar que al menos 2 archivos sean válidos, incluyendo s3Key
+        const validFiles = question.files.filter(file =>
+          file.name && file.url && file.s3Key // Requerir s3Key explícitamente
         );
-        if (validFiles.length !== 2) {
-          missingFields.push('files (ambos archivos deben ser válidos)');
+        if (validFiles.length < 2) {
+          missingFields.push('files (al menos 2 archivos deben ser válidos con s3Key)');
         }
       }
       break;
-      
+
     case 'short_text':
     case 'long_text':
       // Estos tipos no requieren campos adicionales específicos
       break;
   }
-  
+
   return missingFields;
 };
 
@@ -126,7 +126,7 @@ export const filterValidQuestions = (formData: CognitiveTaskFormData): Cognitive
     const validation = isQuestionValid(question);
     return validation.isValid;
   });
-  
+
   return {
     ...formData,
     questions: validQuestions
@@ -150,16 +150,16 @@ export const validateForm = (formData: CognitiveTaskFormData): {
   issues: string[];
 } => {
   const issues: string[] = [];
-  
+
   const validQuestions = formData.questions.filter(question => {
     const validation = isQuestionValid(question);
     return validation.isValid;
   });
-  
+
   if (validQuestions.length === 0) {
     issues.push('Debe haber al menos una pregunta válida con todos los campos requeridos');
   }
-  
+
   return {
     isValid: issues.length === 0,
     issues
@@ -176,7 +176,7 @@ export const getQuestionsValidationInfo = (formData: CognitiveTaskFormData): {
 } => {
   const valid: Question[] = [];
   const invalid: { question: Question; missingFields: string[] }[] = [];
-  
+
   formData.questions.forEach(question => {
     const validation = isQuestionValid(question);
     if (validation.isValid) {
@@ -185,7 +185,7 @@ export const getQuestionsValidationInfo = (formData: CognitiveTaskFormData): {
       invalid.push({ question, missingFields: validation.missingFields });
     }
   });
-  
+
   return {
     total: formData.questions.length,
     valid,
@@ -199,16 +199,16 @@ export const getQuestionsValidationInfo = (formData: CognitiveTaskFormData): {
 export const debugQuestionsToSend = (formData: CognitiveTaskFormData): void => {
   if (process.env.NODE_ENV === 'development') {
     console.group('🔍 [CognitiveTask] Debug de preguntas a enviar');
-    
+
     const validationInfo = getQuestionsValidationInfo(formData);
-    
+
     console.log('Total de preguntas:', validationInfo.total);
     console.log('✅ Preguntas válidas (se enviarán):', validationInfo.valid.length);
-    
+
     validationInfo.valid.forEach((q, index) => {
       console.log(`  ${index + 1}. ${q.type}: "${q.title}"`);
     });
-    
+
     if (validationInfo.invalid.length > 0) {
       console.log('🚫 Preguntas inválidas (se omitirán):', validationInfo.invalid.length);
       validationInfo.invalid.forEach(({ question, missingFields }, index) => {
@@ -216,7 +216,7 @@ export const debugQuestionsToSend = (formData: CognitiveTaskFormData): void => {
         console.log(`     Campos faltantes: ${missingFields.join(', ')}`);
       });
     }
-    
+
     console.groupEnd();
   }
-}; 
+};

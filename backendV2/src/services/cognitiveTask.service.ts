@@ -105,6 +105,7 @@ export class CognitiveTaskService {
         break;
       case 'navigation_flow':
       case 'preference_test':
+        // Permitir cualquier cantidad de archivos, solo validar estructura de cada uno
         this._validateQuestionFiles(question.files, questionNumber);
         break;
       // Añadir casos para otros tipos si existen (e.g., 'text_input')
@@ -173,20 +174,17 @@ export class CognitiveTaskService {
 
   /**
    * Valida los archivos (files) para preguntas que los requieren.
+   * Permite cualquier cantidad de archivos, solo valida la estructura de cada uno.
    */
   private _validateQuestionFiles(files: UploadedFile[] | undefined, questionNumber: number): void {
     if (!files || !Array.isArray(files)) {
-      // Permitir que no haya archivos si no son obligatorios? Depende de la lógica.
-      // Si son obligatorios, lanzar error aquí. Si no, simplemente retornar.
-      // Asumiendo que *pueden* estar vacíos, pero si existen, deben ser un array válido.
-       if (files === undefined) return; // Si no existe el array, OK (asumiendo opcional)
-       throw new ApiError(
+      if (files === undefined) return; // Si no existe el array, OK (asumiendo opcional)
+      throw new ApiError(
         `${CognitiveTaskError.INVALID_DATA}: Los archivos de la pregunta ${questionNumber} deben ser un array`,
         400
       );
     }
-
-    // Si el array existe, validar cada archivo
+    // Validar cada archivo individualmente (sin restricción de cantidad)
     files.forEach((file, fileIndex) => {
       const fileNumber = fileIndex + 1;
       if (!file || typeof file !== 'object') {
@@ -195,17 +193,12 @@ export class CognitiveTaskService {
           400
         );
       }
-
-      // Validar campos básicos del archivo
       if (!file.id || !file.name || !file.size || !file.type) {
         throw new ApiError(
           `${CognitiveTaskError.INVALID_DATA}: El archivo ${fileNumber} (pregunta ${questionNumber}) debe tener id, name, size y type`,
           400
         );
       }
-
-      // <<< Modificar Validación: Solo requerir s3Key, no url >>>
-      // La URL final se deriva de S3, no necesitamos recibirla.
       if (!file.s3Key) {
         console.log(`[VALIDACION-IMAGEN] Archivo sin s3Key: Pregunta ${questionNumber}, Archivo ${fileNumber}`, file);
         throw new ApiError(
@@ -213,17 +206,12 @@ export class CognitiveTaskService {
           400
         );
       }
-
-      // Validar tamaño máximo
       if (file.size > COGNITIVE_TASK_VALIDATION.files.maxSize) {
         throw new ApiError(
           `${CognitiveTaskError.INVALID_DATA}: El archivo ${fileNumber} (pregunta ${questionNumber}) excede el tamaño máximo (${COGNITIVE_TASK_VALIDATION.files.maxSize / (1024 * 1024)} MB)`,
           400
         );
       }
-      // Podría añadirse validación de tipo MIME si COGNITIVE_TASK_VALIDATION.files.validTypes existe
-
-      // Validar hitZones si existen
       if (file.hitZones !== undefined) {
         if (!Array.isArray(file.hitZones)) {
           throw new ApiError(
@@ -239,7 +227,6 @@ export class CognitiveTaskService {
             );
           }
         });
-        // Log de diagnóstico
         if (file.hitZones.length > 0) {
           console.log(`[HITZONES] Pregunta ${questionNumber}, archivo ${fileNumber} contiene ${file.hitZones.length} hitZones:`, JSON.stringify(file.hitZones));
         }
