@@ -151,54 +151,54 @@ const CognitiveNavigationFlowStep: React.FC<MappedStepComponentProps> = (props) 
           </p>
         </div>
         <div className="flex justify-center">
-        {/* Contenedor de imagen - TAMAÑO IDÉNTICO AL FRONTEND */}
-        <div className="relative max-w-5xl mx-auto bg-white rounded-lg shadow-2xl overflow-hidden">
-          <img
-            ref={imgRef}
-            src={selectedImage.url}
-            alt={selectedImage.name || 'Imagen detallada'}
-            className="w-full h-auto max-h-[80vh] object-contain bg-white"
-            loading="lazy"
-            onLoad={handleImgLoad}
-          />
-          {imgSize && imgNatural && availableHitzones
-            .filter(hitzone => hitzone !== null) // Filtrar hitzones null
-            .map((hitzone) => {
-            const { drawWidth, drawHeight, offsetX, offsetY } = getImageDrawRect(
-              imgNatural,
-              imgSize
-            );
-            const scaleX = drawWidth / imgNatural.width;
-            const scaleY = drawHeight / imgNatural.height;
-            const left = hitzone.x * scaleX + offsetX;
-            const top = hitzone.y * scaleY + offsetY;
-            const width = hitzone.width * scaleX;
-            const height = hitzone.height * scaleY;
-            return (
-              <div
-                key={hitzone.id}
-                className={`absolute cursor-pointer transition-all duration-300 transform hover:scale-105 ${
-                  selectedHitzone === hitzone.id
-                    ? 'bg-green-500 bg-opacity-50 border-3 border-green-600 shadow-lg'
-                    : 'bg-blue-500 bg-opacity-30 border-2 border-blue-400 hover:bg-opacity-40 hover:border-blue-500'
-                }`}
-                style={{
-                  left: `${left}px`,
-                  top: `${top}px`,
-                  width: `${Math.max(width, 44)}px`, // Área mínima de toque de 44px
-                  height: `${Math.max(height, 44)}px`, // Área mínima de toque de 44px
-                  minWidth: '44px',
-                  minHeight: '44px',
-                }}
-                onClick={() => {
-                  setSelectedHitzone(hitzone.id);
-                  setShowSuccessModal(true);
-                }}
-                title={`Zona interactiva: ${hitzone.id}`}
-              />
-            );
-          })}
-        </div>
+          {/* Contenedor de imagen responsive */}
+          <div className="relative w-full sm:max-w-5xl mx-auto bg-white sm:rounded-lg sm:shadow-2xl sm:overflow-hidden">
+            <img
+              ref={imgRef}
+              src={selectedImage.url}
+              alt={selectedImage.name || 'Imagen detallada'}
+              className="w-full h-auto max-h-[70vh] sm:max-h-[80vh] object-contain bg-white"
+              loading="lazy"
+              onLoad={handleImgLoad}
+            />
+            {imgSize && imgNatural && availableHitzones
+              .filter(hitzone => hitzone !== null) // Filtrar hitzones null
+              .map((hitzone) => {
+              const { drawWidth, drawHeight, offsetX, offsetY } = getImageDrawRect(
+                imgNatural,
+                imgSize
+              );
+              const scaleX = drawWidth / imgNatural.width;
+              const scaleY = drawHeight / imgNatural.height;
+              const left = hitzone.x * scaleX + offsetX;
+              const top = hitzone.y * scaleY + offsetY;
+              const width = hitzone.width * scaleX;
+              const height = hitzone.height * scaleY;
+              return (
+                <div
+                  key={hitzone.id}
+                  className={`absolute cursor-pointer transition-all duration-300 transform hover:scale-105 ${
+                    selectedHitzone === hitzone.id
+                      ? 'bg-green-500 bg-opacity-50 border-3 border-green-600 shadow-lg'
+                      : 'bg-blue-500 bg-opacity-30 border-2 border-blue-400 hover:bg-opacity-40 hover:border-blue-500'
+                  }`}
+                  style={{
+                    left: `${left}px`,
+                    top: `${top}px`,
+                    width: `${Math.max(width, 44)}px`, // Área mínima de toque de 44px
+                    height: `${Math.max(height, 44)}px`, // Área mínima de toque de 44px
+                    minWidth: '44px',
+                    minHeight: '44px',
+                  }}
+                  onClick={() => {
+                    setSelectedHitzone(hitzone.id);
+                    setShowSuccessModal(true);
+                  }}
+                  title={`Zona interactiva: ${hitzone.id}`}
+                />
+              );
+            })}
+          </div>
         </div>
       </div>
       {showSuccessModal && (
