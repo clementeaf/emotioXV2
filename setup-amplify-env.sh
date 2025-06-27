@@ -16,15 +16,13 @@ NC='\033[0m' # No Color
 # Configuración
 APP_ID="d1718q1uyn5ffx"
 BRANCH_NAME="main"
-REGION="us-east-1"
+REGIONS=("us-east-1" "us-west-2" "eu-west-1")
 
-# Variables de entorno
-declare -A ENV_VARS=(
-    ["NEXT_PUBLIC_API_URL"]="https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev"
-    ["NEXT_PUBLIC_API_BASE_URL"]="https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev"
-    ["NEXT_PUBLIC_WS_URL"]="wss://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev"
-    ["NEXT_PUBLIC_PUBLIC_TESTS_URL"]="https://main.dgsabzeqh9eea.amplifyapp.com"
-)
+# Variables de entorno (compatible con bash estándar)
+NEXT_PUBLIC_API_URL="https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev"
+NEXT_PUBLIC_API_BASE_URL="https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev"
+NEXT_PUBLIC_WS_URL="wss://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev"
+NEXT_PUBLIC_PUBLIC_TESTS_URL="https://main.dgsabzeqh9eea.amplifyapp.com"
 
 echo -e "${BLUE}🚀 Configurando AWS Amplify para EmotioXV2${NC}"
 echo "=================================================="
@@ -37,16 +35,6 @@ check_dependencies() {
         echo -e "${RED}❌ AWS CLI no está instalado${NC}"
         echo "Instala AWS CLI: https://aws.amazon.com/cli/"
         exit 1
-    fi
-
-    if ! command -v jq &> /dev/null; then
-        echo -e "${YELLOW}⚠️  jq no está instalado. Instalando...${NC}"
-        if [[ "$OSTYPE" == "darwin"* ]]; then
-            brew install jq
-        else
-            echo "Instala jq manualmente: https://stedolan.github.io/jq/"
-            exit 1
-        fi
     fi
 
     echo -e "${GREEN}✅ Dependencias verificadas${NC}"
@@ -66,17 +54,22 @@ check_aws_config() {
     echo -e "${GREEN}✅ AWS configurado (Account: ${ACCOUNT_ID})${NC}"
 }
 
-# Función para verificar que la app existe
-check_app_exists() {
-    echo -e "${YELLOW}🔍 Verificando que la app existe...${NC}"
+# Función para encontrar la región correcta
+find_app_region() {
+    echo -e "${YELLOW}🔍 Buscando la app en diferentes regiones...${NC}"
 
-    if ! aws amplify get-app --app-id $APP_ID --region $REGION &> /dev/null; then
-        echo -e "${RED}❌ App $APP_ID no encontrada${NC}"
-        echo "Verifica el APP_ID en team-provider-info.json"
-        exit 1
-    fi
+    for region in "${REGIONS[@]}"; do
+        echo -e "${YELLOW}  Probando región: $region${NC}"
+        if aws amplify get-app --app-id $APP_ID --region $region &> /dev/null; then
+            echo -e "${GREEN}✅ App encontrada en región: $region${NC}"
+            REGION=$region
+            return 0
+        fi
+    done
 
-    echo -e "${GREEN}✅ App encontrada${NC}"
+    echo -e "${RED}❌ App $APP_ID no encontrada en ninguna región${NC}"
+    echo "Verifica el APP_ID en team-provider-info.json"
+    exit 1
 }
 
 # Función para configurar variables de entorno
@@ -87,9 +80,10 @@ configure_env_vars() {
     cat > /tmp/amplify-env-vars.json << EOF
 {
     "environmentVariables": {
-$(for key in "${!ENV_VARS[@]}"; do
-    echo "        \"$key\": \"${ENV_VARS[$key]}\""
-done | sed '$ s/,$//')
+        "NEXT_PUBLIC_API_URL": "$NEXT_PUBLIC_API_URL",
+        "NEXT_PUBLIC_API_BASE_URL": "$NEXT_PUBLIC_API_BASE_URL",
+        "NEXT_PUBLIC_WS_URL": "$NEXT_PUBLIC_WS_URL",
+        "NEXT_PUBLIC_PUBLIC_TESTS_URL": "$NEXT_PUBLIC_PUBLIC_TESTS_URL"
     }
 }
 EOF
@@ -98,8 +92,7 @@ EOF
     aws amplify update-app \
         --app-id $APP_ID \
         --region $REGION \
-        --cli-input-json file:///tmp/amplify-env-vars.json \
-        --output table
+        --cli-input-json file:///tmp/amplify-env-vars.json
 
     echo -e "${GREEN}✅ Variables de entorno configuradas${NC}"
 }
@@ -112,8 +105,7 @@ restart_build() {
         --app-id $APP_ID \
         --branch-name $BRANCH_NAME \
         --job-type RELEASE \
-        --region $REGION \
-        --output table
+        --region $REGION
 
     echo -e "${GREEN}✅ Build reiniciado${NC}"
 }
@@ -126,12 +118,14 @@ show_status() {
     # Obtener URL de la app
     APP_URL=$(aws amplify get-app --app-id $APP_ID --region $REGION --query 'app.defaultDomain' --output text)
     echo -e "${GREEN}🌐 URL de la app: https://$APP_URL${NC}"
+    echo -e "${GREEN}📍 Región: $REGION${NC}"
 
     # Mostrar variables configuradas
     echo -e "${GREEN}📋 Variables configuradas:${NC}"
-    for key in "${!ENV_VARS[@]}"; do
-        echo "  $key = ${ENV_VARS[$key]}"
-    done
+    echo "  NEXT_PUBLIC_API_URL = $NEXT_PUBLIC_API_URL"
+    echo "  NEXT_PUBLIC_API_BASE_URL = $NEXT_PUBLIC_API_BASE_URL"
+    echo "  NEXT_PUBLIC_WS_URL = $NEXT_PUBLIC_WS_URL"
+    echo "  NEXT_PUBLIC_PUBLIC_TESTS_URL = $NEXT_PUBLIC_PUBLIC_TESTS_URL"
 
     echo ""
     echo -e "${GREEN}✅ Configuración completada exitosamente!${NC}"
@@ -142,7 +136,7 @@ show_status() {
 main() {
     check_dependencies
     check_aws_config
-    check_app_exists
+    find_app_region
     configure_env_vars
     restart_build
     show_status
