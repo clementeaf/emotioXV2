@@ -3,14 +3,16 @@ import { DemographicResponses, DemographicsSection } from "../../../types/demogr
 import { DemographicsForm } from "../../demographics/DemographicsForm";
 import { DemographicStepProps } from "./types";
 
-export const DemographicStep: React.FC<DemographicStepProps> = ({
+export const DemographicStep: React.FC<DemographicStepProps & { savedResponse?: any }> = ({
     stepConfig,
     stepId,
     onStepComplete,
-    onError
+    onError,
+    savedResponse
 }) => {
     const [loading, setLoading] = useState(false);
-    const initialFormValues = (stepConfig as { savedResponses?: Record<string, unknown> })?.savedResponses || {};
+    console.log('[DemographicStep] savedResponse (prop):', savedResponse);
+    const initialFormValues = savedResponse && typeof savedResponse === 'object' ? savedResponse : {};
     const formConfig = (stepConfig as { demographicsConfig?: DemographicsSection })?.demographicsConfig as DemographicsSection | undefined;
 
     const handleDemographicSubmit = async (responses: DemographicResponses) => {
