@@ -167,7 +167,7 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
     });
 
   return (
-    <div className="w-full max-w-lg mx-auto bg-white p-6 rounded-lg shadow-md">
+    <div className="w-full max-w-lg mx-auto bg-white p-6 sm:rounded-lg sm:shadow-md">
       <h2 className="text-2xl font-bold text-center text-gray-800 mb-4">{config?.title || 'Preguntas Demográficas'}</h2>
       {config?.description && (
         <p className="text-gray-600 text-center mb-6">{config.description}</p>

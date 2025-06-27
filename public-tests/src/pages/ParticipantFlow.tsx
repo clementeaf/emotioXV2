@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import LoadingIndicator from '../components/common/LoadingIndicator';
 import FlowStepContent from '../components/flow/FlowStepContent';
@@ -27,6 +27,8 @@ const ParticipantFlow: React.FC = () => {
 
     // Obtener función getStepResponse del store (para backup/debugging)
     const getStepResponseFromStore = useParticipantStore(state => state.getStepResponse);
+
+    const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
     const memoizedCurrentExpandedStep = useMemo(() => {
         return expandedSteps && expandedSteps.length > currentStepIndex
@@ -81,11 +83,25 @@ const ParticipantFlow: React.FC = () => {
         );
     } else {
         content = (
-            <div className="min-h-screen w-screen bg-neutral-200">
+            <div className="min-h-screen w-screen bg-neutral-200 sm:bg-neutral-200 bg-white sm:bg-white">
                 {/* Barra de progreso superior */}
                 {showSidebar && expandedSteps && (
-                    <div className="w-full px-8 py-6">
-                        <div className="max-w-5xl mx-auto">
+                    <div className="w-full px-4 py-4 sm:px-8 sm:py-6 flex items-center">
+                        {/* Burger solo mobile */}
+                        <button
+                          className="block sm:hidden mr-4 p-2 rounded bg-white shadow border border-neutral-200"
+                          onClick={() => setIsMobileSidebarOpen(true)}
+                          aria-label="Abrir menú de progreso"
+                        >
+                          <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                            <line x1="3" y1="12" x2="21" y2="12" />
+                            <line x1="3" y1="6" x2="21" y2="6" />
+                            <line x1="3" y1="18" x2="21" y2="18" />
+                          </svg>
+                        </button>
+                        {/* Cabecera solo desktop */}
+                        <div className="hidden sm:block flex-1">
+                          <div className="max-w-5xl mx-auto">
                             {/* Información del progreso */}
                             <div className="flex items-center justify-between mb-4">
                                 <h1 className="text-xl font-semibold text-neutral-900">
@@ -95,9 +111,8 @@ const ParticipantFlow: React.FC = () => {
                                     Paso {currentStepIndex + 1} de {expandedSteps.length}
                                 </span>
                             </div>
-
                             {/* Barra de progreso visual - usando 70% del ancho */}
-                            <div className="w-[70%]">
+                            <div className="w-full sm:w-[70%]">
                                 <div className="flex items-center justify-between text-xs text-neutral-500 mb-2 font-mono">
                                     <span>Progreso del estudio</span>
                                     <span>{progressInfo.percentage}%</span>
@@ -109,26 +124,69 @@ const ParticipantFlow: React.FC = () => {
                                     />
                                 </div>
                             </div>
+                          </div>
                         </div>
                     </div>
                 )}
 
-                {/* Contenido principal */}
-                <div className="flex overflow-hidden" style={{ height: showSidebar ? 'calc(100vh - 120px)' : '100vh' }}>
-                    {/* Sidebar de pasos a la izquierda */}
-                    {showSidebar && expandedSteps && (
+                {/* Drawer lateral mobile */}
+                {showSidebar && expandedSteps && (
+                  <>
+                    {/* Backdrop */}
+                    {isMobileSidebarOpen && (
+                      <div
+                        className="fixed inset-0 bg-black bg-opacity-40 z-40 sm:hidden"
+                        onClick={() => setIsMobileSidebarOpen(false)}
+                        aria-hidden="true"
+                      />
+                    )}
+                    {/* Drawer */}
+                    <div
+                      className={`fixed top-0 left-0 h-full w-64 bg-white z-50 shadow-lg transition-transform duration-300 sm:hidden ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+                      style={{ willChange: 'transform' }}
+                    >
+                      <button
+                        className="absolute top-3 right-3 p-2 rounded-full bg-gray-100 hover:bg-gray-200"
+                        onClick={() => setIsMobileSidebarOpen(false)}
+                        aria-label="Cerrar menú de progreso"
+                      >
+                        <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                          <line x1="18" y1="6" x2="6" y2="18" />
+                          <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                      </button>
+                      <div className="h-full overflow-y-auto pt-12 pb-4">
                         <ProgressSidebar
-                            steps={expandedSteps}
-                            currentStepIndex={currentStepIndex}
-                            onNavigateToStep={navigateToStep}
+                          steps={expandedSteps}
+                          currentStepIndex={currentStepIndex}
+                          onNavigateToStep={(idx) => {
+                            setIsMobileSidebarOpen(false);
+                            navigateToStep(idx);
+                          }}
                         />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Contenido principal */}
+                <div className={`flex overflow-hidden ${showSidebar ? 'sm:h-[calc(100vh-120px)]' : 'sm:h-screen'} sm:h-auto`}>
+                    {/* Sidebar de pasos a la izquierda (solo desktop) */}
+                    {showSidebar && expandedSteps && (
+                        <div className="hidden sm:block">
+                          <ProgressSidebar
+                              steps={expandedSteps}
+                              currentStepIndex={currentStepIndex}
+                              onNavigateToStep={navigateToStep}
+                          />
+                        </div>
                     )}
 
                     {/* Contenido del formulario en cuadro blanco expandido */}
-                    <main className={`flex-1 overflow-y-auto p-6 pr-0 pb-0 ${!showSidebar ? 'w-full' : ''}`}>
-                        <div className="h-full">
-                            <div className="bg-white rounded-tl-xl shadow-lg border-l border-t border-neutral-200 h-full">
-                                <div className="p-8">
+                    <main className={`flex-1 overflow-y-auto p-0 sm:p-6 pr-0 pb-0 ${!showSidebar ? 'w-full' : ''}`}>
+                        <div className="w-full pt-4 pb-6 sm:pt-0 sm:pb-0 flex justify-center sm:block">
+                            <div className="bg-white !shadow-none !border-0 rounded-none sm:rounded-tl-xl sm:shadow-lg sm:border-l sm:border-t sm:border-neutral-200 h-auto w-full sm:w-auto sm:h-auto flex justify-center sm:block">
+                                <div className="p-0 sm:p-8 w-full h-auto max-w-md mx-auto sm:max-w-none flex justify-center sm:block">
                                     <FlowStepContent
                                         currentStepEnum={currentStep}
                                         currentExpandedStep={memoizedCurrentExpandedStep}
