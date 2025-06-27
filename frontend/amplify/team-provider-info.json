@@ -17,6 +17,39 @@
           "appId": "d1718q1uyn5ffx",
           "type": "manual"
         }
+      },
+      "function": {
+        "emotioXV2lambda": {}
+      }
+    }
+  },
+  "emotioxapp": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-frontend-emotioxapp-8dafa-authRole",
+      "UnauthRoleArn": "arn:aws:iam::992382408780:role/amplify-frontend-emotioxapp-8dafa-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::992382408780:role/amplify-frontend-emotioxapp-8dafa-authRole",
+      "Region": "us-east-1",
+      "DeploymentBucketName": "amplify-frontend-emotioxapp-8dafa-deployment",
+      "UnauthRoleName": "amplify-frontend-emotioxapp-8dafa-unauthRole",
+      "StackName": "amplify-frontend-emotioxapp-8dafa",
+      "StackId": "arn:aws:cloudformation:us-east-1:992382408780:stack/amplify-frontend-emotioxapp-8dafa/d5e31cc0-539c-11f0-8659-0affd09127ad",
+      "AmplifyAppId": "d27335y3nvam7j"
+    },
+    "categories": {
+      "function": {
+        "emotioXV2lambda": {
+          "deploymentBucketName": "amplify-frontend-emotioxapp-8dafa-deployment",
+          "s3Key": "amplify-builds/emotioXV2lambda-34574b7a3542326a6969-build.zip"
+        }
+      },
+      "hosting": {
+        "amplifyhosting": {
+          "appId": "d27335y3nvam7j",
+          "type": "manual"
+        }
+      },
+      "api": {
+        "emotioXV2api": {}
       }
     }
   }

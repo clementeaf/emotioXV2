@@ -4,8 +4,8 @@
  */
 
 // URLs base desde el archivo principal de endpoints
-export const API_BASE_URL = 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev';
-export const WS_BASE_URL = 'wss://w8dj7wxnl9.execute-api.us-east-1.amazonaws.com/dev';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+export const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL || '';
 
 /**
  * Configuración de endpoints simplificada
