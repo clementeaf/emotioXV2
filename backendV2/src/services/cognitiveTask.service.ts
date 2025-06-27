@@ -200,7 +200,6 @@ export class CognitiveTaskService {
         );
       }
       if (!file.s3Key) {
-        console.log(`[VALIDACION-IMAGEN] Archivo sin s3Key: Pregunta ${questionNumber}, Archivo ${fileNumber}`, file);
         throw new ApiError(
           `${CognitiveTaskError.INVALID_DATA}: El archivo ${fileNumber} (pregunta ${questionNumber}) debe tener una s3Key`,
           400
@@ -227,9 +226,6 @@ export class CognitiveTaskService {
             );
           }
         });
-        if (file.hitZones.length > 0) {
-          console.log(`[HITZONES] Pregunta ${questionNumber}, archivo ${fileNumber} contiene ${file.hitZones.length} hitZones:`, JSON.stringify(file.hitZones));
-        }
       }
     });
   }
@@ -303,12 +299,10 @@ export class CognitiveTaskService {
           }
       } catch (extractError) {
           console.error(`[${operation}] Error extrayendo fileId de la key ${uploadUrlData.key}:`, extractError);
-          // Usará el fallback uuidv4() definido al inicio
       }
 
-      // Construir el objeto UploadedFile usando el ID EXTRAIDO
       const uploadedFile: UploadedFile = {
-        id: extractedFileId, // <<< Usar el ID EXTRAIDO de la s3Key
+        id: extractedFileId,
         name: fileParams.fileName,
         size: fileParams.fileSize,
         type: fileParams.fileType,
@@ -316,11 +310,9 @@ export class CognitiveTaskService {
         url: uploadUrlData.fileUrl,
       };
 
-       console.log(`${operation} - Datos de archivo preparado (con ID extraído):`, uploadedFile);
-
       return {
         uploadUrl: uploadUrlData.uploadUrl,
-        fileUrl: uploadUrlData.fileUrl, // Devolver la URL directa por si es útil en algún otro lugar? O quitarla.
+        fileUrl: uploadUrlData.fileUrl,
         file: uploadedFile,
       };
 
@@ -329,7 +321,6 @@ export class CognitiveTaskService {
          if (error instanceof ApiError) {
              throw error;
          }
-         // Re-lanzar como error genérico de archivo
          throw new ApiError(`${CognitiveTaskError.UPLOAD_ERROR}: ${error instanceof Error ? error.message : 'Error desconocido al preparar subida'}`, 500);
     }
   }
@@ -413,7 +404,6 @@ export class CognitiveTaskService {
       this.validateFormData(data);
       structuredLog('info', `${this.serviceName}.${context}`, 'Verificando si ya existe formulario CognitiveTask', { researchId });
 
-      // Verificar si ya existe un formulario para este researchId
       try {
         const existingForm = await this.model.getByResearchId(researchId);
         if (existingForm) {
@@ -424,14 +414,11 @@ export class CognitiveTaskService {
           );
         }
       } catch (error) {
-        // Solo ignorar NotFoundError (es lo que esperamos)
         if (!(error instanceof NotFoundError)) {
-          throw error; // Propagar cualquier otro error
+          throw error;
         }
-        // Normal flow continues if form doesn't exist
       }
 
-      // Proceder con la creación
       const formId = data.id || uuidv4();
       structuredLog('info', `${this.serviceName}.${context}`, 'Creando nuevo formulario CognitiveTask', { researchId, formId });
 

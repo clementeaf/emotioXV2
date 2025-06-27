@@ -202,9 +202,6 @@ export const debugQuestionsToSend = (formData: CognitiveTaskFormData): void => {
 
     const validationInfo = getQuestionsValidationInfo(formData);
 
-    console.log('Total de preguntas:', validationInfo.total);
-    console.log('✅ Preguntas válidas (se enviarán):', validationInfo.valid.length);
-
     validationInfo.valid.forEach((q, index) => {
       console.log(`  ${index + 1}. ${q.type}: "${q.title}"`);
     });
