@@ -1,6 +1,4 @@
-import React, { useState } from 'react';
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
+import React, { useEffect, useRef, useState } from 'react';
 import { MappedStepComponentProps } from '../../types/flow.types';
 
 interface PreferenceFile {
@@ -17,6 +15,11 @@ const PreferenceTestTask: React.FC<MappedStepComponentProps> = ({ stepConfig, on
   const [hasBeenSaved, setHasBeenSaved] = useState<boolean>(false);
   // Estado para zoom modal
   const [zoomImage, setZoomImage] = useState<PreferenceFile | null>(null);
+  const [zoom, setZoom] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
+  const imgContainerRef = useRef<HTMLDivElement>(null);
 
   // Extraer la configuración de la pregunta - MEJORADO para compatibilidad
   let preferenceQuestion: any = null;
@@ -79,6 +82,14 @@ const PreferenceTestTask: React.FC<MappedStepComponentProps> = ({ stepConfig, on
     }
   }, [savedResponse, images]);
 
+  // Reset zoom y pan al cambiar de imagen
+  useEffect(() => {
+    setZoom(1);
+    setOffset({ x: 0, y: 0 });
+    setDragging(false);
+    setDragStart(null);
+  }, [zoomImage]);
+
   const handleImageSelect = (imageId: string) => {
     setSelectedImageId(imageId);
     setError(null);
@@ -100,6 +111,72 @@ const PreferenceTestTask: React.FC<MappedStepComponentProps> = ({ stepConfig, on
 
     setHasBeenSaved(true);
     onStepComplete?.(responseData);
+  };
+
+  // Función para navegar entre imágenes en el modal
+  const handleZoomNav = (direction: 'prev' | 'next') => {
+    if (!zoomImage) return;
+    const currentIdx = images.findIndex((img: any) => img.id === zoomImage.id);
+    if (direction === 'prev' && currentIdx > 0) {
+      setZoomImage(images[currentIdx - 1]);
+    } else if (direction === 'next' && currentIdx < images.length - 1) {
+      setZoomImage(images[currentIdx + 1]);
+    }
+  };
+
+  // Zoom con scroll
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    let newZoom = zoom + (e.deltaY < 0 ? 0.15 : -0.15);
+    newZoom = Math.max(1, Math.min(newZoom, 5));
+    setZoom(newZoom);
+  };
+
+  // Pan con drag
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setDragging(true);
+    setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
+  };
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!dragging || !dragStart) return;
+    setOffset({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
+  };
+  const handleMouseUp = () => {
+    setDragging(false);
+    setDragStart(null);
+  };
+
+  // Touch events para mobile (pinch y pan)
+  const lastTouch = useRef<{ x: number; y: number; dist?: number } | null>(null);
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      lastTouch.current = { x: e.touches[0].clientX - offset.x, y: e.touches[0].clientY - offset.y };
+    } else if (e.touches.length === 2) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      lastTouch.current = { x: 0, y: 0, dist };
+    }
+  };
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!lastTouch.current) return;
+    if (e.touches.length === 1 && lastTouch.current.dist === undefined) {
+      setOffset({ x: e.touches[0].clientX - lastTouch.current.x, y: e.touches[0].clientY - lastTouch.current.y });
+    } else if (e.touches.length === 2 && lastTouch.current.dist !== undefined) {
+      const newDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      let newZoom = zoom * (newDist / (lastTouch.current.dist || 1));
+      newZoom = Math.max(1, Math.min(newZoom, 5));
+      setZoom(newZoom);
+      lastTouch.current.dist = newDist;
+    }
+  };
+  const handleTouchEnd = () => {
+    lastTouch.current = null;
   };
 
   if (!images || images.length === 0) {
@@ -186,10 +263,10 @@ const PreferenceTestTask: React.FC<MappedStepComponentProps> = ({ stepConfig, on
           ))}
         </div>
 
-        {/* Modal de zoom con react-medium-image-zoom */}
+        {/* Modal de zoom custom con navegación y zoom/pan manual */}
         {zoomImage && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60" onClick={() => setZoomImage(null)}>
-            <div className="bg-white rounded-lg shadow-2xl p-4 max-w-3xl w-full relative flex flex-col items-center" onClick={e => e.stopPropagation()}>
+            <div className="bg-white rounded-lg shadow-2xl p-4 max-w-7xl w-full relative flex flex-col items-center" onClick={e => e.stopPropagation()}>
               <button
                 className="absolute top-2 right-2 text-gray-600 hover:text-red-500 bg-white bg-opacity-80 rounded-full p-2 shadow"
                 onClick={() => setZoomImage(null)}
@@ -200,15 +277,68 @@ const PreferenceTestTask: React.FC<MappedStepComponentProps> = ({ stepConfig, on
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
               </button>
-              <Zoom>
+              {/* Flecha izquierda */}
+              {images.findIndex((img: any) => img.id === zoomImage.id) > 0 && (
+                <button
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-white bg-opacity-80 rounded-full p-2 shadow hover:bg-opacity-100 focus:outline-none"
+                  onClick={() => handleZoomNav('prev')}
+                  title="Anterior"
+                  style={{ zIndex: 10 }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <polyline points="15 19 8 12 15 5" />
+                  </svg>
+                </button>
+              )}
+              {/* Flecha derecha */}
+              {images.findIndex((img: any) => img.id === zoomImage.id) < images.length - 1 && (
+                <button
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-white bg-opacity-80 rounded-full p-2 shadow hover:bg-opacity-100 focus:outline-none"
+                  onClick={() => handleZoomNav('next')}
+                  title="Siguiente"
+                  style={{ zIndex: 10 }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <polyline points="9 5 16 12 9 19" />
+                  </svg>
+                </button>
+              )}
+              {/* Imagen con zoom y pan manual */}
+              <div
+                ref={imgContainerRef}
+                className="w-full h-full flex items-center justify-center overflow-hidden"
+                style={{ maxHeight: '100vh', maxWidth: '100%', cursor: dragging ? 'grabbing' : 'grab', background: '#f9f9f9' }}
+                onWheel={handleWheel}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+              >
                 <img
                   src={zoomImage.url}
                   alt={zoomImage.name}
-                  className="w-full h-auto max-h-[80vh] object-contain rounded cursor-zoom-in"
-                  style={{ background: '#f9f9f9' }}
+                  draggable={false}
+                  style={{
+                    transform: `scale(${zoom}) translate(${offset.x / zoom}px, ${offset.y / zoom}px)` ,
+                    transition: dragging ? 'none' : 'transform 0.2s',
+                    maxWidth: '100%',
+                    maxHeight: '100vh',
+                    userSelect: 'none',
+                    pointerEvents: 'auto',
+                  }}
                 />
-              </Zoom>
+              </div>
               <div className="mt-2 text-center text-gray-700 text-sm">{zoomImage.name}</div>
+              {/* Controles de zoom */}
+              <div className="flex gap-2 mt-2">
+                <button className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300" onClick={() => setZoom(z => Math.max(1, z - 0.2))}>-</button>
+                <span className="px-2">{(zoom * 100).toFixed(0)}%</span>
+                <button className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300" onClick={() => setZoom(z => Math.min(5, z + 0.2))}>+</button>
+                <button className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300" onClick={() => { setZoom(1); setOffset({ x: 0, y: 0 }); }}>Reset</button>
+              </div>
             </div>
           </div>
         )}
