@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 import { MappedStepComponentProps } from '../../types/flow.types';
 
 interface PreferenceFile {
@@ -9,90 +11,54 @@ interface PreferenceFile {
   size: number;
 }
 
-interface PreferenceTestConfig {
-  id: string;
-  type: string;
-  title?: string;
-  description?: string;
-  required?: boolean;
-  files?: PreferenceFile[];
-}
-
 const PreferenceTestTask: React.FC<MappedStepComponentProps> = ({ stepConfig, onStepComplete, savedResponse }) => {
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hasBeenSaved, setHasBeenSaved] = useState<boolean>(false);
+  // Estado para zoom modal
+  const [zoomImage, setZoomImage] = useState<PreferenceFile | null>(null);
 
   // Extraer la configuración de la pregunta - MEJORADO para compatibilidad
   let preferenceQuestion: any = null;
 
   if (stepConfig && typeof stepConfig === 'object') {
-    // Caso 1: stepConfig es un array de preguntas (formato anterior)
     if ('questions' in stepConfig && Array.isArray((stepConfig as any).questions)) {
       const config = stepConfig as { questions: any[] };
       preferenceQuestion = config.questions.find(q => q.type === 'preference_test');
     }
-    // Caso 2: stepConfig es directamente la pregunta (formato actual del log)
     else if ('type' in stepConfig && (stepConfig as any).type === 'preference_test') {
       preferenceQuestion = stepConfig;
     }
-    // Caso 3: stepConfig tiene estructura anidada con config
     else if ('config' in stepConfig) {
       preferenceQuestion = (stepConfig as any).config;
     }
   }
 
-  // Extraer datos con fallbacks
   const config = preferenceQuestion || stepConfig;
   const images = config?.files || [];
 
-  // 🔍 LOGGING CRÍTICO PARA DEBUG
-  console.log('[PreferenceTestTask] 🔍 DEBUG COMPLETO:', {
-    stepConfig,
-    preferenceQuestion,
-    config,
-    images,
-    imagesLength: images.length,
-    savedResponse,
-    savedResponseType: typeof savedResponse,
-    savedResponseKeys: savedResponse && typeof savedResponse === 'object' ? Object.keys(savedResponse) : null,
-    fullSavedResponse: JSON.stringify(savedResponse, null, 2)
-  });
-
-  // Cargar respuesta previa si existe - LÓGICA MEJORADA
   React.useEffect(() => {
-    console.log('[PreferenceTestTask] useEffect savedResponse:', savedResponse);
-
     if (savedResponse) {
       let extractedImageId: string | null = null;
 
-      // Caso 1: savedResponse tiene selectedImageId directamente
       if (typeof savedResponse === 'object' && 'selectedImageId' in savedResponse) {
         extractedImageId = (savedResponse as { selectedImageId: string }).selectedImageId;
-        console.log('[PreferenceTestTask] Caso 1 - selectedImageId directo:', extractedImageId);
       }
-      // Caso 2: savedResponse tiene structure { response: { selectedImageId: ... } }
       else if (typeof savedResponse === 'object' && 'response' in savedResponse) {
         const response = (savedResponse as { response: unknown }).response;
         if (typeof response === 'object' && response && 'selectedImageId' in response) {
           extractedImageId = (response as { selectedImageId: string }).selectedImageId;
-          console.log('[PreferenceTestTask] Caso 2 - response.selectedImageId:', extractedImageId);
         }
       }
-      // Caso 3: savedResponse es directamente el selectedImageId como string
       else if (typeof savedResponse === 'string') {
         extractedImageId = savedResponse;
-        console.log('[PreferenceTestTask] Caso 3 - string directo:', extractedImageId);
       }
-      // Caso 4: cualquier estructura que contenga el valor
       else if (typeof savedResponse === 'object') {
-        // Buscar recursivamente cualquier propiedad que contenga un ID de imagen válido
         const searchForImageId = (obj: any): string | null => {
           if (!obj || typeof obj !== 'object') return null;
 
-          for (const [key, value] of Object.entries(obj)) {
+          for (const [_key, value] of Object.entries(obj)) {
             if (typeof value === 'string' && images.some((img: any) => img.id === value)) {
-              console.log('[PreferenceTestTask] Caso 4 - encontrado en:', key, value);
               return value;
             }
             if (typeof value === 'object' && value !== null) {
@@ -107,17 +73,11 @@ const PreferenceTestTask: React.FC<MappedStepComponentProps> = ({ stepConfig, on
       }
 
       if (extractedImageId && images.some((img: any) => img.id === extractedImageId)) {
-        console.log('[PreferenceTestTask] ✅ Cargando respuesta previa:', extractedImageId);
         setSelectedImageId(extractedImageId);
         setHasBeenSaved(true);
-      } else {
-        console.log('[PreferenceTestTask] ❌ No se pudo extraer imageId válido:', extractedImageId);
       }
     }
   }, [savedResponse, images]);
-
-  console.log('[PreferenceTestTask] stepConfig:', stepConfig);
-  console.log('[PreferenceTestTask] images:', images);
 
   const handleImageSelect = (imageId: string) => {
     setSelectedImageId(imageId);
@@ -138,7 +98,6 @@ const PreferenceTestTask: React.FC<MappedStepComponentProps> = ({ stepConfig, on
       type: 'preference_test'
     };
 
-    console.log('[PreferenceTestTask] Respuesta enviada:', responseData);
     setHasBeenSaved(true);
     onStepComplete?.(responseData);
   };
@@ -167,11 +126,10 @@ const PreferenceTestTask: React.FC<MappedStepComponentProps> = ({ stepConfig, on
               {config.description}
             </p>
           )}
-
         </div>
 
         {/* Images Grid */}
-        <div className="flex flex-row gap-4">
+        <div className="flex flex-row gap-4 justify-center mb-8">
           {images.map((image: any, index: number) => (
             <div
               key={image.id}
@@ -182,6 +140,20 @@ const PreferenceTestTask: React.FC<MappedStepComponentProps> = ({ stepConfig, on
               }`}
               onClick={() => handleImageSelect(image.id)}
             >
+              {/* Botón de zoom (lupa) */}
+              <button
+                type="button"
+                className="absolute top-3 right-3 z-20 bg-white bg-opacity-80 rounded-full p-2 shadow hover:bg-opacity-100 focus:outline-none"
+                style={{ border: 'none' }}
+                onClick={e => { e.stopPropagation(); setZoomImage(image); }}
+                title="Ver grande"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <circle cx="11" cy="11" r="7" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+              </button>
+
               {/* Selection indicator */}
               {selectedImageId === image.id && (
                 <div className="absolute top-4 right-4 z-10 bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold shadow-lg">
@@ -213,6 +185,33 @@ const PreferenceTestTask: React.FC<MappedStepComponentProps> = ({ stepConfig, on
             </div>
           ))}
         </div>
+
+        {/* Modal de zoom con react-medium-image-zoom */}
+        {zoomImage && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60" onClick={() => setZoomImage(null)}>
+            <div className="bg-white rounded-lg shadow-2xl p-4 max-w-3xl w-full relative flex flex-col items-center" onClick={e => e.stopPropagation()}>
+              <button
+                className="absolute top-2 right-2 text-gray-600 hover:text-red-500 bg-white bg-opacity-80 rounded-full p-2 shadow"
+                onClick={() => setZoomImage(null)}
+                title="Cerrar"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+              <Zoom>
+                <img
+                  src={zoomImage.url}
+                  alt={zoomImage.name}
+                  className="w-full h-auto max-h-[80vh] object-contain rounded cursor-zoom-in"
+                  style={{ background: '#f9f9f9' }}
+                />
+              </Zoom>
+              <div className="mt-2 text-center text-gray-700 text-sm">{zoomImage.name}</div>
+            </div>
+          </div>
+        )}
 
         {/* Error message */}
         {error && (
