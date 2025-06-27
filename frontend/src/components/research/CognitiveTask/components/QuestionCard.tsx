@@ -6,7 +6,6 @@ import { FileUploadQuestion } from './questions/FileUploadQuestion';
 import { ScaleQuestion } from './questions/ScaleQuestion';
 import { TextQuestion } from './questions/TextQuestion';
 
-// Definir QuestionCardProps localmente:
 type QuestionCardProps = {
   question: Question;
   onQuestionChange: (questionId: string, updates: Partial<Question>) => void;
@@ -35,13 +34,6 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
   isUploading,
   uploadProgress
 }) => {
-  // LOGS DE DEBUG PARA VER QUÉ PREGUNTA SE ESTÁ RENDERIZANDO
-  console.log(`[QuestionCard] Renderizando pregunta ${question.id} (${question.type}):`, question);
-  if (question.type === 'navigation_flow' || question.type === 'preference_test') {
-    console.log(`[QuestionCard] Pregunta ${question.id} archivos:`, question.files);
-    console.log(`[QuestionCard] Pregunta ${question.id} archivos length:`, question.files?.length);
-  }
-
   const renderQuestionInput = () => {
     const baseProps = {
       disabled,
@@ -127,7 +119,6 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
           </div>
         )}
       </div>
-      {/* ADVERTENCIA SOLO PARA preference_test */}
       {question.type === 'preference_test' && (
         <div className="mb-4 p-3 bg-yellow-50 border border-yellow-300 text-yellow-800 rounded">
           <strong>Advertencia:</strong> Para guardar esta pregunta, debes subir <b>exactamente 2 archivos válidos</b> (imágenes). Si no lo haces, la pregunta será descartada al guardar.

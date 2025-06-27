@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-import type { HitzoneArea } from '../../types';
+import type { HitzoneArea } from '../../types/index';
 
 interface LocalHitzoneEditorProps {
   imageUrl: string;
@@ -29,6 +29,7 @@ export const LocalHitzoneEditor: React.FC<LocalHitzoneEditorProps> = ({
   const [imgNatural, setImgNatural] = useState<{ width: number; height: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [showActiveModal, setShowActiveModal] = useState(false);
+  const [activeTestIdx, setActiveTestIdx] = useState<number | null>(null);
 
   // Seleccionar automáticamente la primera zona si existen áreas iniciales
   useEffect(() => {
@@ -139,14 +140,14 @@ export const LocalHitzoneEditor: React.FC<LocalHitzoneEditorProps> = ({
                 stroke="#007bff"
                 strokeWidth={idx === selectedIdx ? 2 : 1}
                 onClick={
-                  testMode && idx === selectedIdx
-                    ? () => setShowActiveModal(true)
+                  testMode
+                    ? () => setActiveTestIdx(idx)
                     : (e) => handleRectClick(idx, e)
                 }
                 style={{
-                  cursor: testMode && idx === selectedIdx ? 'pointer' : 'pointer',
-                  opacity: testMode && idx !== selectedIdx ? 0.5 : 1,
-                  pointerEvents: testMode && idx !== selectedIdx ? 'none' : 'auto',
+                  cursor: 'pointer',
+                  opacity: 1,
+                  pointerEvents: 'auto',
                 }}
               />
             ))}
@@ -190,11 +191,12 @@ export const LocalHitzoneEditor: React.FC<LocalHitzoneEditorProps> = ({
           </>
         )}
       </div>
-      {showActiveModal && (
+      {/* Modal de prueba para cualquier hitzone */}
+      {testMode && activeTestIdx !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
           <div className="bg-white rounded-lg shadow-lg p-8 flex flex-col items-center">
-            <h3 className="text-lg font-semibold mb-4">¡Hitzone activo!</h3>
-            <button onClick={() => setShowActiveModal(false)} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Cerrar</button>
+            <h3 className="text-lg font-semibold mb-4">¡Hitzone activo! Zona {activeTestIdx + 1}</h3>
+            <button onClick={() => setActiveTestIdx(null)} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Cerrar</button>
           </div>
         </div>
       )}
