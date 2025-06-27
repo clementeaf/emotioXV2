@@ -127,6 +127,12 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
           </div>
         )}
       </div>
+      {/* ADVERTENCIA SOLO PARA preference_test */}
+      {question.type === 'preference_test' && (
+        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-300 text-yellow-800 rounded">
+          <strong>Advertencia:</strong> Para guardar esta pregunta, debes subir <b>exactamente 2 archivos válidos</b> (imágenes). Si no lo haces, la pregunta será descartada al guardar.
+        </div>
+      )}
       {renderQuestionInput()}
     </div>
   );
