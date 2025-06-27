@@ -74,7 +74,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
     if (currentDraft && currentDraft.data.basic) {
       const draftData: FormState = {
         basic: {
-          name: currentDraft.data.basic.title || '',
+          name: currentDraft.data.basic.name || '',
           enterprise: currentDraft.data.basic.description || '',
           type: currentDraft.data.basic.type as ResearchType || undefined,
           technique: currentDraft.data.configuration?.technique || ''
@@ -278,7 +278,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
 
     try {
       // Preparar los datos para la API
-      const createData = {
+      const createData: ResearchBasicData = {
         name: formData.basic.name,
         enterprise: formData.basic.enterprise,
         type: formData.basic.type || ResearchType.BEHAVIOURAL,

@@ -4,8 +4,7 @@ import { ComponentShortTextQuestionProps } from '../../../types/flow.types';
 export const ShortTextQuestion: React.FC<ComponentShortTextQuestionProps> = ({
     config,
     stepName,
-    onStepComplete,
-    isMock
+    onStepComplete
 }) => {
     const cfg = (typeof config === 'object' && config !== null)
         ? config as { title?: string; description?: string; questionText?: string; answerPlaceholder?: string; savedResponses?: string }

@@ -5,8 +5,7 @@ import { getStandardButtonText } from '../../../utils/formHelpers';
 export const LongTextQuestion: React.FC<LongTextQuestionProps> = ({
     config,
     stepName,
-    onStepComplete,
-    isMock
+    onStepComplete
 }) => {
     // Unificar todas las props de config en un solo objeto seguro
     const cfg = (typeof config === 'object' && config !== null)

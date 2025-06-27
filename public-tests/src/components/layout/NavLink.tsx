@@ -1,7 +1,6 @@
-import React from 'react';
+import { ChevronDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '../../lib/utils';
-import { ChevronDown } from 'lucide-react';
 import { NavLinkProps } from '../../types/flow.types';
 
 export function NavLink({ to, icon, label, active, hasSubMenu, onClick }: NavLinkProps) {
@@ -10,7 +9,7 @@ export function NavLink({ to, icon, label, active, hasSubMenu, onClick }: NavLin
       to={to}
       className={cn(
         'flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors',
-        active 
+        active
           ? 'bg-primary-50 text-primary-700'
           : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'
       )}
@@ -21,4 +20,4 @@ export function NavLink({ to, icon, label, active, hasSubMenu, onClick }: NavLin
       {hasSubMenu && <ChevronDown className="w-4 h-4" />}
     </Link>
   );
-} 
+}

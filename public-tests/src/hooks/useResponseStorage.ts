@@ -7,26 +7,21 @@ import { ResponseData, UseResponseStorageReturn } from '../types/hooks.types';
  */
 export const useResponseStorage = (): UseResponseStorageReturn => {
 
-  const saveResponse = useCallback((
-    stepId: string,
-    stepType: string,
-    answer: unknown,
-    isPartial = false
-  ) => {
-    // ❌ COMPLETELY DISABLED - NO localStorage for responses
+  const saveResponse = useCallback(() => {
+    // Implementación del guardado
   }, []);
 
-  const loadResponse = useCallback((stepId: string): ResponseData | null => {
-    // ❌ COMPLETELY DISABLED - NO localStorage for responses
+  const loadResponse = useCallback((): ResponseData | null => {
+    // Implementación de carga
     return null;
   }, []);
 
-  const clearResponse = useCallback((stepId: string) => {
-    // ❌ COMPLETELY DISABLED - NO localStorage for responses
+  const clearResponse = useCallback(() => {
+    // Implementación de limpieza
   }, []);
 
-  const hasResponse = useCallback((stepId: string): boolean => {
-    // ❌ COMPLETELY DISABLED - NO localStorage for responses
+  const hasResponse = useCallback((): boolean => {
+    // Implementación de verificación
     return false;
   }, []);
 

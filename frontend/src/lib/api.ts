@@ -1,3 +1,4 @@
+import { Research, ResearchBasicData } from '../../../shared/interfaces/research.model';
 import { apiClient } from '../config/api';
 
 // Tipos
@@ -24,21 +25,6 @@ interface User {
   email: string;
   name: string;
   role: string;
-}
-
-interface ResearchBasicData {
-  title: string;
-  description?: string;
-  status?: string;
-  stage?: string;
-  progress?: number;
-}
-
-interface Research extends ResearchBasicData {
-  id: string;
-  userId: string;
-  createdAt: string;
-  updatedAt: string;
 }
 
 // Función para configurar token de autenticación (se llamará cuando sea necesario)
@@ -86,9 +72,7 @@ export const researchAPI = {
   create: async (data: ResearchBasicData): Promise<APIResponse<Research>> => {
     const processedData = {
       ...data,
-      status: data.status || 'draft',
-      stage: data.stage || 'setup',
-      progress: data.progress || 0,
+      // Remover propiedades que no existen en ResearchBasicData de shared
     };
 
     return apiClient.post('research', 'create', processedData);
@@ -324,3 +308,6 @@ export const s3API = {
     return apiClient.delete('s3', 'deleteObject', { key });
   },
 };
+
+// Exportar apiClient para uso en otros módulos
+export { apiClient };

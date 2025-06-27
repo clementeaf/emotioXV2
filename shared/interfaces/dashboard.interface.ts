@@ -1,6 +1,7 @@
 /**
  * Interfaces para el módulo de dashboard
  */
+import React from 'react';
 
 /**
  * Datos de investigación para el dashboard

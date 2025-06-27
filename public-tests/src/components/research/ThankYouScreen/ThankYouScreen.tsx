@@ -1,5 +1,5 @@
 import React from 'react';
-import { ResearchThankYouScreenProps, ThankYouConfig } from '../../../types/flow.types';
+import { ResearchThankYouScreenProps } from '../../../types/flow.types';
 
 export const ThankYouScreen: React.FC<ResearchThankYouScreenProps> = ({ researchId, stepId, title, stepConfig, onError }) => {
 
@@ -8,7 +8,7 @@ export const ThankYouScreen: React.FC<ResearchThankYouScreenProps> = ({ research
   // Ya no hay estados isLoading, error, configData
   // Ya no hay handleError, fetchStepConfig, useEffect
 
-  // --- Renderizado --- 
+  // --- Renderizado ---
 
   // Validar que stepConfig existe (puede ser objeto vacío)
   if (!stepConfig) {
@@ -25,8 +25,8 @@ export const ThankYouScreen: React.FC<ResearchThankYouScreenProps> = ({ research
       {/* TODO: Usar stepConfig.showConfetti si existe */}
       <h2 className="text-2xl font-bold mb-4">{displayTitle}</h2>
       <p className="mb-6">{displayMessage}</p>
-      
+
       <p className="text-sm text-gray-500">Puedes cerrar esta ventana.</p>
     </div>
   );
-}; 
+};

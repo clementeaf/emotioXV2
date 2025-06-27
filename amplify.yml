@@ -5,10 +5,17 @@ applications:
       phases:
         preBuild:
           commands:
+            - echo "Instalando dependencias del frontend..."
             - npm ci
+            - echo "Instalando dependencias compartidas..."
+            - cd ../shared && npm ci && cd ../frontend
+            - echo "Configurando dependencia local @emotiox/shared..."
+            - npm install ../shared
         build:
           commands:
+            - echo "Build del frontend..."
             - npm run build
+            - echo "Build completado exitosamente"
       artifacts:
         baseDirectory: out
         files:
@@ -16,15 +23,23 @@ applications:
       cache:
         paths:
           - node_modules/**/*
+          - ../shared/node_modules/**/*
   - appRoot: public-tests
     frontend:
       phases:
         preBuild:
           commands:
+            - echo "Instalando dependencias de public-tests..."
             - npm ci
+            - echo "Instalando dependencias compartidas..."
+            - cd ../shared && npm ci && cd ../public-tests
+            - echo "Configurando dependencia local @emotiox/shared..."
+            - npm install ../shared
         build:
           commands:
+            - echo "Build de public-tests..."
             - npm run build
+            - echo "Build completado exitosamente"
       artifacts:
         baseDirectory: dist
         files:
@@ -32,3 +47,4 @@ applications:
       cache:
         paths:
           - node_modules/**/*
+          - ../shared/node_modules/**/*

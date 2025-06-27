@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { MappedStepComponentProps } from '../types/flow.types';
 
-const ThankYouScreen: React.FC<MappedStepComponentProps> = ({ stepConfig, onStepComplete }) => {
+const ThankYouScreen: React.FC<MappedStepComponentProps> = ({ stepConfig }) => {
   // Desestructurar la configuración con valores por defecto
   const {
     title = '¡Muchas gracias!',

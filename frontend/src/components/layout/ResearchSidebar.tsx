@@ -123,9 +123,9 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
         const response = await researchAPI.get(researchId);
         let researchData: Research | null = null;
         if (Array.isArray(response.data) && response.data.length > 0) {
-          researchData = response.data[0] as Research;
+          researchData = response.data[0] as unknown as Research;
         } else if (response.data && typeof response.data === 'object' && !Array.isArray(response.data)) {
-          researchData = response.data as Research;
+          researchData = response.data as unknown as Research;
         }
         const nameFromApi = researchData?.name;
 

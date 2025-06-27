@@ -1,7 +1,7 @@
 import React from 'react';
-import QuestionHeader from '../common/QuestionHeader'; // Importar QuestionHeader
-import RadioButtonGroup from '../../common/RadioButtonGroup'; // Importar el nuevo componente
 import { SingleChoiceViewComponentProps } from '../../../types/cognitive-task.types';
+import RadioButtonGroup from '../../common/RadioButtonGroup'; // Importar el nuevo componente
+import QuestionHeader from '../common/QuestionHeader'; // Importar QuestionHeader
 
 export const SingleChoiceView: React.FC<SingleChoiceViewComponentProps> = ({ config, value, onChange }) => {
   const id = config.id;
@@ -23,7 +23,7 @@ export const SingleChoiceView: React.FC<SingleChoiceViewComponentProps> = ({ con
   return (
     <div className="space-y-4">
       {/* Usar QuestionHeader para Título y Descripción */}
-      <QuestionHeader title={title} description={description} required={required} />
+      <QuestionHeader title={title} instructions={description} required={required} />
 
       {/* Usar RadioButtonGroup para las Opciones */}
       <RadioButtonGroup
@@ -34,4 +34,4 @@ export const SingleChoiceView: React.FC<SingleChoiceViewComponentProps> = ({ con
       />
     </div>
   );
-}; 
+};

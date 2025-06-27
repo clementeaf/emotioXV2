@@ -1,39 +1,32 @@
-import { API_BASE_URL, API_ENDPOINTS } from '@/config/api';
-import alovaInstance from '@/lib/api';
+import { apiClient } from '@/lib/api';
 import {
-  EyeTrackingConfig,
-  EyeTrackingRecruitRequest
+    EyeTrackingConfig,
+    EyeTrackingRecruitRequest
 } from '../interfaces/eyeTracking';
 
 /**
- * API para configurar el módulo de EyeTracking usando AlovaJS
+ * API para configurar el módulo de EyeTracking usando apiClient
  */
 export const eyeTrackingAPI = {
   /**
    * Obtiene la configuración de EyeTracking para Build
    */
   getEyeTrackingConfig: (researchId: string) => {
-    const url = `${API_BASE_URL}${API_ENDPOINTS.eyeTracking.getByResearch.replace('{researchId}', researchId)}`;
-    const method = alovaInstance.Get(url);
-    return method;
+    return apiClient.get('eyeTracking', 'getByResearch', { researchId });
   },
 
   /**
    * Actualiza la configuración de EyeTracking para Build
    */
   updateEyeTrackingConfig: (researchId: string, config: EyeTrackingConfig) => {
-    const url = `${API_BASE_URL}${API_ENDPOINTS.eyeTracking.update.replace('{researchId}', researchId)}`;
-    const method = alovaInstance.Put(url, config);
-    return method;
+    return apiClient.put('eyeTracking', 'update', config, { researchId });
   },
 
   /**
    * Obtiene la configuración de reclutamiento de EyeTracking
    */
   getEyeTrackingRecruitConfig: (researchId: string) => {
-    const url = `${API_BASE_URL}${API_ENDPOINTS.eyeTrackingRecruit.getConfigByResearch.replace('{researchId}', researchId)}`;
-    const method = alovaInstance.Get(url);
-    return method;
+    return apiClient.get('eyeTrackingRecruit', 'getConfigByResearch', { researchId });
   },
 
   /**
@@ -41,9 +34,7 @@ export const eyeTrackingAPI = {
    */
   updateEyeTrackingRecruitConfig: (request: EyeTrackingRecruitRequest) => {
     const { researchId, config } = request;
-    const url = `${API_BASE_URL}${API_ENDPOINTS.eyeTrackingRecruit.updateConfig.replace('{researchId}', researchId)}`;
-    const method = alovaInstance.Put(url, config);
-    return method;
+    return apiClient.put('eyeTrackingRecruit', 'updateConfig', config, { researchId });
   },
 
   /**
@@ -51,44 +42,34 @@ export const eyeTrackingAPI = {
    */
   createEyeTrackingRecruitConfig: (request: EyeTrackingRecruitRequest) => {
     const { researchId, config } = request;
-    const url = `${API_BASE_URL}${API_ENDPOINTS.eyeTrackingRecruit.createConfig.replace('{researchId}', researchId)}`;
-    const method = alovaInstance.Post(url, config);
-    return method;
+    return apiClient.post('eyeTrackingRecruit', 'createConfig', config, { researchId });
   },
 
   /**
    * Obtiene las estadísticas actuales de reclutamiento
    */
   getEyeTrackingRecruitStats: (researchId: string) => {
-    const url = `${API_BASE_URL}${API_ENDPOINTS.eyeTrackingRecruit.getResearchSummary.replace('{researchId}', researchId)}`;
-    const method = alovaInstance.Get(url);
-    return method;
+    return apiClient.get('eyeTrackingRecruit', 'getResearchSummary', { researchId });
   },
 
   /**
    * Genera un enlace de reclutamiento nuevo
    */
   generateRecruitmentLink: (configId: string) => {
-    const url = `${API_BASE_URL}${API_ENDPOINTS.eyeTrackingRecruit.generateLink.replace('{configId}', configId)}`;
-    const method = alovaInstance.Post(url, {});
-    return method;
+    return apiClient.post('eyeTrackingRecruit', 'generateLink', {}, { configId });
   },
 
   /**
    * Obtiene los enlaces activos para una configuración
    */
   getActiveLinks: (configId: string) => {
-    const url = `${API_BASE_URL}${API_ENDPOINTS.eyeTrackingRecruit.getActiveLinks.replace('{configId}', configId)}`;
-    const method = alovaInstance.Get(url);
-    return method;
+    return apiClient.get('eyeTrackingRecruit', 'getActiveLinks', { configId });
   },
 
   /**
    * Obtiene las estadísticas para una configuración específica
    */
   getConfigStats: (configId: string) => {
-    const url = `${API_BASE_URL}${API_ENDPOINTS.eyeTrackingRecruit.getStats.replace('{configId}', configId)}`;
-    const method = alovaInstance.Get(url);
-    return method;
+    return apiClient.get('eyeTrackingRecruit', 'getStats', { configId });
   }
 };

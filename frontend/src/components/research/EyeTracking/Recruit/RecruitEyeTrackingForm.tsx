@@ -547,7 +547,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                   >
                     {saving ? (
                       <div className="flex items-center gap-2">
-                        <Spinner size="sm" className="text-white" />
+                        <Spinner size="sm" />
                         <span>Guardando...</span>
                       </div>
                     ) : getSaveButtonText()}

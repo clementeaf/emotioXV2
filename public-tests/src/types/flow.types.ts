@@ -1,15 +1,16 @@
 import React from 'react';
 import { CognitiveQuestion } from './cognitive-task.types';
 import { DemographicConfig } from './demographics';
-import { ExpandedStep, ParticipantFlowStep } from './flow';
+// import { ExpandedStep, ParticipantFlowStep } from './flow';
+import { ParticipantFlowStep } from './flow';
 import { SmartVOCQuestion } from './smart-voc.types';
 
-// Tipos base para el flujo
+// Definición local de ExpandedStep para evitar conflicto de importación
 export interface ExpandedStep {
   id: string;
   name: string;
   type: string;
-  config: unknown;
+  config?: unknown;
   responseKey?: string;
   completed?: boolean;
   current?: boolean;

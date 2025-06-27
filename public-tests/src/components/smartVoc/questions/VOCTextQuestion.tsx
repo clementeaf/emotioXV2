@@ -1,30 +1,29 @@
 import React from 'react';
-import { SmartVOCQuestion } from '../../../types/smart-voc.interface';
-import { VOCTextQuestionComponentProps, VOCTextData } from '../../../types/smart-voc.types';
-import { StandardizedFormProps } from '../../../types/hooks.types';
-import { 
-  useStandardizedForm, 
-  // valueExtractors, 
-  validationRules
+import {
+    useStandardizedForm,
+    // valueExtractors,
+    validationRules
 } from '../../../hooks/useStandardizedForm';
-import { 
-  getStandardButtonText, 
-  getButtonDisabledState, 
-  getErrorDisplayProps, 
-  getFormContainerClass, 
-  formSpacing 
+import { StandardizedFormProps } from '../../../types/hooks.types';
+import { VOCTextData, VOCTextQuestionComponentProps } from '../../../types/smart-voc.types';
+import {
+    formSpacing,
+    getButtonDisabledState,
+    getErrorDisplayProps,
+    getFormContainerClass,
+    getStandardButtonText
 } from '../../../utils/formHelpers';
 import LoadingScreen from '../../LoadingScreen';
 
 /**
  * VOCTextQuestion - Versión migrada a useStandardizedForm
- * 
+ *
  * ANTES: 170 líneas, complejidad 17, múltiples hooks manuales
  * DESPUÉS: ~80 líneas, complejidad ~5, patrón unificado
- * 
+ *
  * Migración completa de:
  * - useResponseAPI manual → auto-save integrado
- * - 3 useState → estado unificado  
+ * - 3 useState → estado unificado
  * - Validación manual → validationRules
  * - Loading states múltiples → estado unificado
  * - Extracción de datos compleja → valueExtractor
@@ -53,12 +52,12 @@ export const VOCTextQuestion: React.FC<VOCTextQuestionComponentProps> = ({
     {
       // Valor inicial limpio
       initialValue: { value: '' },
-      
+
       // Extractor para respuestas guardadas - reemplaza toda la lógica de useEffect
       extractValueFromResponse: (response: unknown): VOCTextData => {
         if (
-          typeof response === 'object' && 
-          response !== null && 
+          typeof response === 'object' &&
+          response !== null &&
           'value' in response &&
           typeof (response as { value: unknown }).value === 'string'
         ) {
@@ -66,12 +65,12 @@ export const VOCTextQuestion: React.FC<VOCTextQuestionComponentProps> = ({
         }
         return { value: '' };
       },
-      
+
       // Validación unificada - reemplaza validación manual
       validationRules: [
         validationRules.required('Por favor, escribe tu respuesta.')
       ],
-      
+
       // ID del módulo para SmartVOC
       moduleId: moduleId
     }
@@ -94,15 +93,15 @@ export const VOCTextQuestion: React.FC<VOCTextQuestionComponentProps> = ({
       const moduleResponseId = result.data && typeof result.data === 'object' && 'id' in result.data
         ? String((result.data as { id: unknown }).id)
         : null;
-      
+
       onSaveSuccess(questionId, value.value, moduleResponseId);
     }
   };
 
   // UI helpers usando sistema estandarizado
-  const buttonText = getStandardButtonText({ 
-    isSaving, 
-    isLoading, 
+  const buttonText = getStandardButtonText({
+    isSaving,
+    isLoading,
     hasExistingData: hasExistingData && !!value.value.trim()
   });
 
@@ -137,13 +136,13 @@ export const VOCTextQuestion: React.FC<VOCTextQuestionComponentProps> = ({
   return (
     <div className={getFormContainerClass('centered')}>
       {/* Título de la pregunta */}
-      <label 
-        htmlFor={`voc-text-${questionId}`} 
+      <label
+        htmlFor={`voc-text-${questionId}`}
         className={`block text-base md:text-lg font-medium text-gray-800 ${formSpacing.field}`}
       >
         {description}
       </label>
-      
+
       {/* Campo de texto */}
       <textarea
         id={`voc-text-${questionId}`}
@@ -154,14 +153,14 @@ export const VOCTextQuestion: React.FC<VOCTextQuestionComponentProps> = ({
         placeholder="Escribe tu respuesta aquí..."
         disabled={isSaving || isLoading}
       />
-      
+
       {/* Mostrar errores usando sistema estandarizado */}
       {errorDisplay.hasError && (
         <p className={`${errorDisplay.errorClassName} ${formSpacing.error}`}>
           {errorDisplay.errorMessage}
         </p>
       )}
-      
+
       {/* Botón de guardado con estado unificado */}
       <button
         className={`${formSpacing.button} bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-10 rounded-md w-fit transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed`}
@@ -176,15 +175,15 @@ export const VOCTextQuestion: React.FC<VOCTextQuestionComponentProps> = ({
 
 /**
  * 📊 RESUMEN DE MIGRACIÓN
- * 
+ *
  * ELIMINADO:
  * - 3 useState manuales → 1 estado unificado
- * - useResponseAPI manual → auto-save integrado  
+ * - useResponseAPI manual → auto-save integrado
  * - useModuleResponses manual → carga automática
  * - useEffect complejo → valueExtractor simple
  * - Validación ad-hoc → validationRules
  * - Múltiples loading states → estado unificado
- * 
+ *
  * MEJORADO:
  * - 170 → ~80 líneas de código (-53%)
  * - Complejidad 17 → ~5 (-70%)
@@ -192,10 +191,10 @@ export const VOCTextQuestion: React.FC<VOCTextQuestionComponentProps> = ({
  * - Auto-save sin configuración adicional
  * - Error handling unificado
  * - Testing más simple
- * 
+ *
  * MANTENIDO:
  * - API pública idéntica
  * - Funcionalidad completa
  * - Estilos y UX
  * - Compatibilidad con SmartVOC
- */ 
+ */

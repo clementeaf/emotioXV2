@@ -8,7 +8,7 @@ const initialState = {
   error: null,
 };
 
-export const useParticipantData = create<ParticipantDataState>((set, get) => ({
+export const useParticipantData = create<ParticipantDataState>((set) => ({
   ...initialState,
 
   setResearchId: (id) => set({ researchId: id }),

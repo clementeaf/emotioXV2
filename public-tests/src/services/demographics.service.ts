@@ -1,6 +1,6 @@
-import { DemographicsSection, DemographicResponses, StepDefinition, DemographicDataPayload } from '../types/demographics';
-import { APIResponse } from '../lib/types';
 import { APIStatus, ApiClient } from '../lib/api';
+import { APIResponse } from '../lib/types';
+import { DemographicDataPayload, DemographicResponseData, DemographicResponses, DemographicsSection, StepDefinition } from '../types/demographics';
 
 /**
  * URL base de la API
@@ -90,7 +90,7 @@ export const demographicsService = {
       }
 
       // Buscar la configuración de Eye Tracking
-      const eyeTrackingConfig = formsData.find(item => 
+      const eyeTrackingConfig = formsData.find(item =>
         item.originalSk === 'EYE_TRACKING_CONFIG' || item.sk === 'EYE_TRACKING_CONFIG'
       );
 
@@ -189,7 +189,7 @@ export const demographicsService = {
   ): Promise<APIResponse<DemographicDataPayload>> {
     if (!researchId || !participantId) {
       return {
-        data: { responses: {}, documentId: null, demographicModuleResponseId: null }, 
+        data: { responses: {}, documentId: null, demographicModuleResponseId: null },
         error: true,
         apiStatus: APIStatus.ERROR,
         message: 'Se requiere el ID de investigación y el ID del participante'
@@ -242,19 +242,19 @@ export const demographicsService = {
       }
 
       return {
-        data: { responses: demographicDataToReturn, documentId: foundDocumentId, demographicModuleResponseId: foundDemographicModuleResponseId },
+        data: { responses: demographicDataToReturn as DemographicResponseData, documentId: foundDocumentId, demographicModuleResponseId: foundDemographicModuleResponseId },
         status: apiResponse.status || 200,
         apiStatus: APIStatus.SUCCESS
       };
     } catch (error) {
       console.error('[DemographicsService] Error interno obteniendo/procesando respuestas demográficas:', error);
-      return { 
-        data: { responses: {}, documentId: null, demographicModuleResponseId: null }, 
-        error: true, 
+      return {
+        data: { responses: {}, documentId: null, demographicModuleResponseId: null },
+        error: true,
         status: 500,
-        apiStatus: APIStatus.ERROR, 
-        message: error instanceof Error ? error.message : 'Error desconocido al procesar respuestas demográficas.' 
+        apiStatus: APIStatus.ERROR,
+        message: error instanceof Error ? error.message : 'Error desconocido al procesar respuestas demográficas.'
       };
     }
   },
-}; 
+};

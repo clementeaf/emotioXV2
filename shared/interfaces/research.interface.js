@@ -1,25 +1,37 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DEFAULT_RESEARCH_CONFIG = exports.DEFAULT_RESEARCH_VALIDATION = exports.ResearchStage = exports.ResearchStatus = exports.ResearchType = void 0;
+/**
+ * Enum for research types
+ */
 var ResearchType;
 (function (ResearchType) {
     ResearchType["EYE_TRACKING"] = "eye-tracking";
     ResearchType["ATTENTION_PREDICTION"] = "attention-prediction";
     ResearchType["COGNITIVE_ANALYSIS"] = "cognitive-analysis";
-})(ResearchType = exports.ResearchType || (exports.ResearchType = {}));
+})(ResearchType || (exports.ResearchType = ResearchType = {}));
+/**
+ * Enum for research status
+ */
 var ResearchStatus;
 (function (ResearchStatus) {
     ResearchStatus["DRAFT"] = "draft";
     ResearchStatus["IN_PROGRESS"] = "in-progress";
     ResearchStatus["COMPLETED"] = "completed";
     ResearchStatus["ARCHIVED"] = "archived";
-})(ResearchStatus = exports.ResearchStatus || (exports.ResearchStatus = {}));
+})(ResearchStatus || (exports.ResearchStatus = ResearchStatus = {}));
+/**
+ * Enum for research stages
+ */
 var ResearchStage;
 (function (ResearchStage) {
     ResearchStage["BUILD"] = "build";
     ResearchStage["RECRUIT"] = "recruit";
     ResearchStage["RESULTS"] = "results";
-})(ResearchStage = exports.ResearchStage || (exports.ResearchStage = {}));
+})(ResearchStage || (exports.ResearchStage = ResearchStage = {}));
+/**
+ * Default validation rules for research
+ */
 exports.DEFAULT_RESEARCH_VALIDATION = {
     basic: {
         title: {
@@ -44,6 +56,9 @@ exports.DEFAULT_RESEARCH_VALIDATION = {
         }
     }
 };
+/**
+ * Default research configuration
+ */
 exports.DEFAULT_RESEARCH_CONFIG = {
     basic: {
         title: '',

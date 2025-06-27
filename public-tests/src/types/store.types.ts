@@ -1,4 +1,3 @@
-import React from 'react';
 import { ParticipantFlowStep } from './flow';
 
 export interface ModuleResponse {
@@ -8,7 +7,7 @@ export interface ModuleResponse {
   stepTitle: string;
   stepType: string;
   response: unknown;
-  participantId?: string; 
+  participantId?: string;
   researchId?: string;
 }
 
@@ -64,28 +63,28 @@ export interface ParticipantState {
   setCurrentStepIndex: (index: number) => void;
   setExpandedSteps: (steps: ExpandedStep[]) => void;
   setIsFlowLoading: (loading: boolean) => void;
-  
+
   // Métodos de flujo
   handleLoginSuccess: (participant: ParticipantInfo) => void;
   goToNextStep: (answer?: unknown) => void;
   navigateToStep: (targetIndex: number) => void;
-  
+
   // Métodos de respuestas
   saveStepResponse: (stepIndex: number, answer: unknown) => void;
   getStepResponse: (stepIndex: number) => unknown;
   hasStepBeenAnswered: (stepIndex: number) => boolean;
   getAnsweredStepIndices: () => number[];
   getResponsesJson: () => string;
-  
+
   // Nueva acción
   setLoadedResponses: (loadedStepResponses: ModuleResponse[]) => void;
-  
+
   // Persistencia forzada
   forceSaveToLocalStorage: () => void;
-  
+
   // Limpieza de datos
   cleanupPreviousParticipantData: (currentResearchId: string, currentParticipantId: string) => void;
-  
+
   // Reset y utilidades
   resetStore: () => void;
   calculateProgress: () => void;
@@ -97,11 +96,11 @@ export interface ParticipantDataState {
   token: string | null;
   participantId: string | null;
   error: string | null;
-  
+
   // Actions
   setResearchId: (id: string | null) => void;
   setToken: (token: string | null) => void;
   setParticipant: (participant: ParticipantInfo) => void;
   setError: (error: string | null) => void;
   reset: () => void;
-} 
+}

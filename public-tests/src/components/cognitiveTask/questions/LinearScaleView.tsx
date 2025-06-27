@@ -1,9 +1,9 @@
 import React from 'react';
 // Importar los nuevos subcomponentes
+import { LinearScaleViewComponentProps } from '../../../types/cognitive-task.types';
 import QuestionHeader from '../common/QuestionHeader';
 import ScaleButtonGroup from './common/ScaleButtonGroup';
 import ScaleLabels from './common/ScaleLabels';
-import { LinearScaleViewComponentProps } from '../../../types/cognitive-task.types';
 
 export const LinearScaleView: React.FC<LinearScaleViewComponentProps> = ({ config, value, onChange }) => {
   const id = config.id;
@@ -31,9 +31,9 @@ export const LinearScaleView: React.FC<LinearScaleViewComponentProps> = ({ confi
 
   return (
     <div className="space-y-4">
-      <QuestionHeader 
+      <QuestionHeader
         title={title}
-        description={description}
+        instructions={description}
         required={required}
       />
 
@@ -49,4 +49,4 @@ export const LinearScaleView: React.FC<LinearScaleViewComponentProps> = ({ confi
       />
     </div>
   );
-}; 
+};

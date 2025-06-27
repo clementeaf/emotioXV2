@@ -1,35 +1,32 @@
 import React, { useState } from 'react';
-import { ResponsesData } from '../../hooks/types';
 import { ResponsesViewerProps } from '../../types/flow.types';
 
 export const ResponsesViewer: React.FC<ResponsesViewerProps> = ({ data, onClose }) => {
   const [copied, setCopied] = useState(false);
-  
+
   // Formatear las fechas para mejor visualización
   const formattedData = {
     ...data,
-    startTime: new Date(data.startTime).toLocaleString(),
-    endTime: data.endTime ? new Date(data.endTime).toLocaleString() : undefined,
     modules: {
       ...data.modules,
-      // Formatear fechas en módulos específicos
+      // Formatear fechas en módulos específicos si existen
       demographic: data.modules.demographic ? {
         ...data.modules.demographic,
-        createdAt: new Date(data.modules.demographic.createdAt).toLocaleString(),
+        createdAt: data.modules.demographic.createdAt ? new Date(data.modules.demographic.createdAt).toLocaleString() : undefined,
       } : undefined,
-      cognitive_task: data.modules.cognitive_task.map(item => ({
+      cognitive_task: Array.isArray(data.modules.cognitive_task) ? data.modules.cognitive_task.map(item => ({
         ...item,
-        createdAt: new Date(item.createdAt).toLocaleString(),
-      })),
-      smartvoc: data.modules.smartvoc.map(item => ({
+        createdAt: item.createdAt ? new Date(item.createdAt).toLocaleString() : undefined,
+      })) : [],
+      smartvoc: Array.isArray(data.modules.smartvoc) ? data.modules.smartvoc.map(item => ({
         ...item,
-        createdAt: new Date(item.createdAt).toLocaleString(),
-      })),
+        createdAt: item.createdAt ? new Date(item.createdAt).toLocaleString() : undefined,
+      })) : [],
     }
   };
-  
+
   const jsonString = JSON.stringify(formattedData, null, 2);
-  
+
   const handleCopy = () => {
     navigator.clipboard.writeText(jsonString)
       .then(() => {
@@ -40,49 +37,53 @@ export const ResponsesViewer: React.FC<ResponsesViewerProps> = ({ data, onClose 
         console.error('Error al copiar el JSON:', err);
       });
   };
-  
+
   const handleDownload = () => {
     const blob = new Blob([jsonString], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `responses_${data.researchId}_${new Date().toISOString()}.json`;
+    a.download = `responses_${new Date().toISOString()}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
-  
+
   const countResponses = () => {
     let total = 0;
     if (data.modules.demographic) total += 1;
-    total += data.modules.cognitive_task.length;
-    total += data.modules.smartvoc.length;
+    if (Array.isArray(data.modules.cognitive_task)) {
+      total += data.modules.cognitive_task.length;
+    }
+    if (Array.isArray(data.modules.smartvoc)) {
+      total += data.modules.smartvoc.length;
+    }
     return total;
   };
-  
+
   const totalModules = countResponses();
-  
+
   return (
     <div className="bg-white shadow-lg rounded-lg p-6 max-w-4xl mx-auto">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-bold">Datos de respuestas guardadas</h2>
         <div className="space-x-2">
-          <button 
-            onClick={handleCopy} 
+          <button
+            onClick={handleCopy}
             className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md"
           >
             {copied ? '✓ Copiado' : 'Copiar JSON'}
           </button>
-          <button 
-            onClick={handleDownload} 
+          <button
+            onClick={handleDownload}
             className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md"
           >
             Descargar JSON
           </button>
           {onClose && (
-            <button 
-              onClick={onClose} 
+            <button
+              onClick={onClose}
               className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md"
             >
               Cerrar
@@ -90,27 +91,13 @@ export const ResponsesViewer: React.FC<ResponsesViewerProps> = ({ data, onClose 
           )}
         </div>
       </div>
-      
+
       <div className="mb-4">
-        <p className="text-gray-700">
-          <span className="font-semibold">Investigación:</span> {data.researchId}
-        </p>
-        <p className="text-gray-700">
-          <span className="font-semibold">Participante:</span> {data.participantId || 'No identificado'}
-        </p>
-        <p className="text-gray-700">
-          <span className="font-semibold">Inicio:</span> {formattedData.startTime}
-        </p>
-        {formattedData.endTime && (
-          <p className="text-gray-700">
-            <span className="font-semibold">Fin:</span> {formattedData.endTime}
-          </p>
-        )}
         <p className="text-gray-700">
           <span className="font-semibold">Total de respuestas:</span> {totalModules}
         </p>
       </div>
-      
+
       <div className="border rounded-md overflow-hidden">
         <div className="bg-gray-100 p-2 border-b">
           <h3 className="font-mono text-sm font-semibold">JSON completo</h3>
@@ -121,4 +108,4 @@ export const ResponsesViewer: React.FC<ResponsesViewerProps> = ({ data, onClose 
       </div>
     </div>
   );
-}; 
+};

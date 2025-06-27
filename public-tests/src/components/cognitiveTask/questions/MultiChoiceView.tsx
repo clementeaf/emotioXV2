@@ -1,7 +1,7 @@
 import React from 'react';
-import QuestionHeader from '../common/QuestionHeader'; // Importar QuestionHeader
-import CheckboxGroup from '../../common/CheckboxGroup'; // Importar el nuevo componente
 import { MultiChoiceViewComponentProps } from '../../../types/cognitive-task.types';
+import CheckboxGroup from '../../common/CheckboxGroup'; // Importar el nuevo componente
+import QuestionHeader from '../common/QuestionHeader'; // Importar QuestionHeader
 
 export const MultiChoiceView: React.FC<MultiChoiceViewComponentProps> = ({ config, value = [], onChange }) => {
   const id = config.id;
@@ -30,7 +30,7 @@ export const MultiChoiceView: React.FC<MultiChoiceViewComponentProps> = ({ confi
 
   return (
     <div className="space-y-4">
-      <QuestionHeader title={title} description={description} required={required} />
+      <QuestionHeader title={title} instructions={description} required={required} />
       <CheckboxGroup
         name={`question-${id}`}
         options={options}
@@ -39,4 +39,4 @@ export const MultiChoiceView: React.FC<MultiChoiceViewComponentProps> = ({ confi
       />
     </div>
   );
-}; 
+};

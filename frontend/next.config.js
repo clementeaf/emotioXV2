@@ -8,7 +8,7 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   typescript: {
-    ignoreBuildErrors: true,
+    // ignoreBuildErrors: true, // Temporalmente comentado para verificar errores
   },
   // Configuración para imágenes y rutas
   images: {

@@ -1,9 +1,9 @@
 import ResearchClient from './client';
 
 interface PageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 // Requerido para la exportación estática con output: export
@@ -16,6 +16,7 @@ export function generateStaticParams() {
   ];
 }
 
-export default function ResearchPage({ params }: PageProps) {
-  return <ResearchClient id={params.id} />;
-} 
+export default async function ResearchPage({ params }: PageProps) {
+  const { id } = await params;
+  return <ResearchClient id={id} />;
+}

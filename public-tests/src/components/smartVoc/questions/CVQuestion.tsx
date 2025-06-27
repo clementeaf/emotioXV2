@@ -1,22 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { useParticipantStore } from '../../../stores/participantStore';
+import React, { useEffect, useState } from 'react';
 import { useModuleResponses } from '../../../hooks/useModuleResponses';
 import { useResponseAPI } from '../../../hooks/useResponseAPI';
-import { getStandardButtonText } from '../../../utils/formHelpers';
+import { useParticipantStore } from '../../../stores/participantStore';
 import { CVQuestionComponentProps } from '../../../types/smart-voc.types';
+import { getStandardButtonText } from '../../../utils/formHelpers';
 
 export const CVQuestion: React.FC<CVQuestionComponentProps> = ({
-  questionConfig, 
+  questionConfig,
   researchId,
   moduleId,
-  onSaveSuccess 
+  onSaveSuccess
 }) => {
-  const { id: questionId, description, type: questionType, title: questionTitleFromConfig, config: specificConfig } = questionConfig;
-  const mainQuestionText = description || questionTitleFromConfig || '¿Cómo calificarías el valor recibido?';
+  const { question, minValue, maxValue, minLabel, maxLabel } = questionConfig;
+  const mainQuestionText = question || '¿Cómo calificarías el valor recibido?';
 
-  const scaleRange = specificConfig?.scaleRange || { start: 1, end: 7 };
-  const leftLabel = specificConfig?.startLabel || "Poco valor";
-  const rightLabel = specificConfig?.endLabel || "Mucho valor";
+  const scaleRange = { start: minValue, end: maxValue };
+  const leftLabel = minLabel || "Poco valor";
+  const rightLabel = maxLabel || "Mucho valor";
 
   const participantIdFromStore = useParticipantStore(state => state.participantId);
 
@@ -44,23 +44,23 @@ export const CVQuestion: React.FC<CVQuestionComponentProps> = ({
     if (!isLoadingInitialData && !loadingError && moduleResponsesArray && Array.isArray(moduleResponsesArray)) {
       const foundResponse = moduleResponsesArray.find((r: unknown) => {
         if (typeof r !== 'object' || r === null) return false;
-        const resp = r as { 
-          stepType?: unknown; 
-          stepTitle?: unknown; 
+        const resp = r as {
+          stepType?: unknown;
+          stepTitle?: unknown;
           id?: unknown;
-          stepId?: unknown; 
-          moduleId?: unknown 
+          stepId?: unknown;
+          moduleId?: unknown
         };
-        
+
         return (
-          (resp.stepType === questionType && resp.moduleId === moduleId) ||
-          (resp.stepId === questionId && resp.moduleId === moduleId) ||
-          (resp.stepType === questionType) ||
-          (typeof resp.stepTitle === 'string' && resp.stepTitle.includes(questionId)) ||
-          (resp.id === questionId)
+          (resp.stepType === 'cv' && resp.moduleId === moduleId) ||
+          (resp.stepId === question && resp.moduleId === moduleId) ||
+          (resp.stepType === 'cv') ||
+          (typeof resp.stepTitle === 'string' && resp.stepTitle.includes(question)) ||
+          (resp.id === question)
         );
       });
-      
+
       if (
         foundResponse &&
         typeof foundResponse === 'object' &&
@@ -71,7 +71,7 @@ export const CVQuestion: React.FC<CVQuestionComponentProps> = ({
         typeof (foundResponse as { response?: { value?: unknown } }).response?.value === 'number'
       ) {
         const responseValue = (foundResponse as { response: { value: number } }).response.value;
-        console.log(`[CVQuestion] Cargando respuesta existente para ${questionId}:`, responseValue);
+        console.log(`[CVQuestion] Cargando respuesta existente para ${question}:`, responseValue);
         setSelectedValue(responseValue);
         setInternalModuleResponseId(
           'id' in foundResponse && typeof (foundResponse as { id?: unknown }).id === 'string'
@@ -79,12 +79,12 @@ export const CVQuestion: React.FC<CVQuestionComponentProps> = ({
             : null
         );
       } else {
-        console.log(`[CVQuestion] No se encontró respuesta previa para ${questionId}`);
+        console.log(`[CVQuestion] No se encontró respuesta previa para ${question}`);
         setSelectedValue(null);
         setInternalModuleResponseId(null);
       }
     }
-  }, [moduleResponsesArray, isLoadingInitialData, loadingError, questionId, moduleId, questionType]);
+  }, [moduleResponsesArray, isLoadingInitialData, loadingError, question, moduleId]);
 
   const handleSelect = (value: number) => {
     setSelectedValue(value);
@@ -102,11 +102,11 @@ export const CVQuestion: React.FC<CVQuestionComponentProps> = ({
     }
 
     const responseData = { value: selectedValue };
-    const stepNameForApi = questionTitleFromConfig || description || questionId;
+    const stepNameForApi = question;
 
     const result = await saveOrUpdateResponse(
-      questionId,
-      questionType,
+      question,
+      'cv',
       stepNameForApi,
       responseData,
       internalModuleResponseId || undefined,
@@ -126,7 +126,7 @@ export const CVQuestion: React.FC<CVQuestionComponentProps> = ({
           setInternalModuleResponseId(newId);
         }
       }
-      onSaveSuccess(questionId, selectedValue, newId || internalModuleResponseId || null);
+      onSaveSuccess(question, selectedValue, newId || internalModuleResponseId || null);
     } else if (!result && !submissionError) {
       setSubmissionError("Ocurrió un error desconocido al guardar la respuesta (CVQuestion).");
     }
@@ -137,10 +137,10 @@ export const CVQuestion: React.FC<CVQuestionComponentProps> = ({
     scaleOptions.push(i);
   }
   if (scaleOptions.length === 0) {
-    console.warn(`[CVQuestion] scaleOptions vacío para ${questionId}, usando 1-7 por defecto.`);
+    console.warn(`[CVQuestion] scaleOptions vacío para ${question}, usando 1-7 por defecto.`);
     for (let i = 1; i <= 7; i++) { scaleOptions.push(i); }
   }
-  
+
   const buttonText = getStandardButtonText({
     isSaving: isSubmitting,
     isLoading: isLoadingInitialData,
@@ -161,7 +161,7 @@ export const CVQuestion: React.FC<CVQuestionComponentProps> = ({
         <h2 className="text-xl font-medium text-center text-neutral-800 mb-4">
           {mainQuestionText}
         </h2>
-        
+
         {(submissionError || loadingError) && (
           <p className="text-sm text-red-600 my-2 text-center">Error: {submissionError || loadingError}</p>
         )}
@@ -172,7 +172,7 @@ export const CVQuestion: React.FC<CVQuestionComponentProps> = ({
               key={value}
               onClick={() => handleSelect(value)}
               disabled={isSubmitting || isLoadingInitialData}
-              className={`w-9 h-9 rounded-full border flex items-center justify-center font-medium transition-colors ${ 
+              className={`w-9 h-9 rounded-full border flex items-center justify-center font-medium transition-colors ${
                 selectedValue === value
                   ? 'bg-indigo-600 text-white border-indigo-600'
                   : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-100'
@@ -198,4 +198,4 @@ export const CVQuestion: React.FC<CVQuestionComponentProps> = ({
       </div>
     </div>
   );
-}; 
+};

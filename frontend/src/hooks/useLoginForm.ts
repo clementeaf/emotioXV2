@@ -83,7 +83,7 @@ export const useLoginForm = () => {
       });
 
       const data = response.data;
-      const token = data.token || (data.auth && data.auth.token);
+      const token = data.token;
 
       if (token) {
         await login(token, state.rememberMe);
