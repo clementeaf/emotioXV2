@@ -409,7 +409,7 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
                     )}
                   >
                     <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                    <span className="truncate">{item.name}</span>
+                    <span className="truncate cursor-pointer">{item.name}</span>
                     {item.technique === 'aim-framework' && (
                       <span className="ml-auto text-xs text-blue-500 bg-blue-100 px-2 py-0.5 rounded-full">AIM</span>
                     )}

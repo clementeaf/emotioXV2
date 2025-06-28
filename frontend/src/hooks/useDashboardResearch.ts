@@ -10,22 +10,29 @@ export const useDashboardResearch = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
 
+  // Nuevo: loading para SSR/hidratación
+  const [isLoading, setIsLoading] = useState(true);
+
   const researchId = searchParams?.get('research');
   const section = searchParams?.get('section') || null;
   const [isAimFramework, setIsAimFramework] = useState(searchParams?.get('aim') === 'true');
   const [activeResearch, setActiveResearch] = useState<ActiveResearch | undefined>(undefined);
 
   useEffect(() => {
-    if (researchId) {
-      handleResearchLoad(researchId);
-    } else {
+    // Si no hay researchId, limpiar y salir
+    if (!researchId) {
       handleNoResearch();
+      setIsLoading(false);
+      return;
     }
+    setIsLoading(true);
+    handleResearchLoad(researchId);
+    setIsLoading(false);
   }, [researchId, searchParams, router, section]);
 
   const handleResearchLoad = (researchId: string) => {
     try {
-      const storedResearch = localStorage.getItem(`research_${researchId}`);
+      const storedResearch = typeof window !== 'undefined' ? localStorage.getItem(`research_${researchId}`) : null;
       let researchData: ResearchData;
       const hasAimParam = searchParams?.get('aim') === 'true';
 
@@ -48,7 +55,9 @@ export const useDashboardResearch = () => {
 
     if (hasAimParam && researchData.technique !== 'aim-framework') {
       researchData.technique = 'aim-framework';
-      localStorage.setItem(`research_${researchId}`, JSON.stringify(researchData));
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`research_${researchId}`, JSON.stringify(researchData));
+      }
     }
 
     updateResearchList(researchData);
@@ -64,7 +73,9 @@ export const useDashboardResearch = () => {
       status: 'draft'
     };
 
-    localStorage.setItem(`research_${researchId}`, JSON.stringify(newResearchData));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`research_${researchId}`, JSON.stringify(newResearchData));
+    }
     updateResearchList(newResearchData);
 
     setActiveResearch({
@@ -87,8 +98,9 @@ export const useDashboardResearch = () => {
       technique: researchData.technique || '',
       createdAt: researchData.createdAt || new Date().toISOString()
     }];
-
-    localStorage.setItem('research_list', JSON.stringify(newResearchList));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('research_list', JSON.stringify(newResearchList));
+    }
   };
 
   const handleAimFrameworkRedirect = (researchData: ResearchData, researchId: string) => {
@@ -101,7 +113,6 @@ export const useDashboardResearch = () => {
         router.replace(redirectUrl);
       }
     }
-
     setIsAimFramework(isAimFramework);
   };
 
@@ -115,13 +126,16 @@ export const useDashboardResearch = () => {
   const handleNoResearch = () => {
     setActiveResearch(undefined);
     setIsAimFramework(false);
-    cleanAllResearchFromLocalStorage();
+    if (typeof window !== 'undefined') {
+      cleanAllResearchFromLocalStorage();
+    }
   };
 
   return {
     researchId,
     section,
     isAimFramework,
-    activeResearch
+    activeResearch,
+    isLoading
   };
 };

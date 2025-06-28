@@ -12,6 +12,11 @@ export function DashboardShell({ children }: DashboardShellProps) {
   const researchId = searchParams?.get('research');
   const section = searchParams?.get('section') || 'welcome-screen';
 
+  // Forzar renderizado del sidebar y los hijos solo cuando searchParams esté listo
+  if (typeof window !== 'undefined' && !searchParams) {
+    return null;
+  }
+
   const sidebar = researchId
     ? <ResearchSidebar researchId={researchId} activeStage={section} />
     : <Sidebar />;

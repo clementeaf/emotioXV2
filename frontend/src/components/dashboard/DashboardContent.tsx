@@ -10,7 +10,12 @@ import { DashboardStats } from './DashboardStats';
  * Componente principal del contenido del dashboard
  */
 export const DashboardContent = memo(() => {
-  const { researchId, section, isAimFramework, activeResearch } = useDashboardResearch();
+  const { researchId, section, isAimFramework, activeResearch, isLoading } = useDashboardResearch();
+
+  // Nuevo: loading explícito si el estado aún no está listo
+  if (isLoading) {
+    return <div className="p-4 text-center">Cargando investigación...</div>;
+  }
 
   // Si hay una investigación activa con AIM framework o sección específica
   if (activeResearch && (isAimFramework || section)) {
