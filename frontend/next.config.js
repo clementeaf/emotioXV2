@@ -1,8 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Cambiar a exportación estática para Amplify
-  output: 'export',
-  reactStrictMode: true,
   // Desactivar verificaciones durante el build
   eslint: {
     ignoreDuringBuilds: true,
