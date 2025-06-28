@@ -4,11 +4,9 @@ const allowedOrigins = [
   'http://localhost:3000', // Frontend local (Next.js default)
   'http://localhost:4700', // Frontend local (Vite default for public-tests)
   'http://localhost:5173', // Otro puerto común de Vite
-  'https://main.d1ztaxtiiqd78hd.amplifyapp.com', // Frontend en producción Amplify
-  'https://main.dgsabzeqh9eea.amplifyapp.com', // Public-tests en producción Amplify
-  // Añade aquí los dominios de producción/staging cuando los tengas
-  // 'https://emotiox.com',
-  // 'https://www.emotiox.com',
+  'https://main.d1ztaxtiiqd78hd.amplifyapp.com',
+  'https://main.dgsabzeqh9eea.amplifyapp.com',
+  'https://d2s9nr0bm47yl1.cloudfront.net'
 ];
 
 /**
