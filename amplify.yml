@@ -16,10 +16,9 @@ applications:
             - echo "Build del frontend..."
             - npm run build
             - echo "Build completado exitosamente"
-      # artifacts:
-      #   baseDirectory: .next
-      #   files:
-      #     - '**/*'
+      artifacts:
+        files:
+          - '**/*'
       cache:
         paths:
           - node_modules/**/*
