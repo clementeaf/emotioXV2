@@ -17,7 +17,7 @@ applications:
             - npm run build
             - echo "Build completado exitosamente"
       artifacts:
-        baseDirectory: out
+        baseDirectory: .next
         files:
           - '**/*'
       cache:
