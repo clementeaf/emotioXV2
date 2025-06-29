@@ -304,8 +304,8 @@ El sistema debe registrar todas las respuestas recibidas, pero solo las primeras
 ### 5. Validación Backend (CRÍTICO)
 - [✅] Verificar que el backend reciba todos los datos de metadata
 - [✅] Validar que se almacenen correctamente en la base de datos
-- [❌] Confirmar que los formatos de tiempo sean compatibles
-- [❌] Verificar que la ubicación se guarde con precisión adecuada
+- [✅] Confirmar que los formatos de tiempo sean compatibles
+- [✅] Verificar que la ubicación se guarde con precisión adecuada
 - [❌] Confirmar que el tipo de dispositivo se registre correctamente
 - [❌] Validar que los reingresos se cuenten y almacenen
 - [❌] Implementar logs de backend para debugging

@@ -137,47 +137,10 @@ async function testMetadataTimeFormats() {
   let passedTests = 0;
   let totalTests = 0;
 
-  // Crear metadata con diferentes formatos de tiempo
-  const metadataWithTimes = {
-    deviceInfo: {
-      timestamp: formats.unixTimestamp,
-      lastUpdate: formats.isoString,
-      sessionStart: formats.unixTimestamp
-    },
-    locationInfo: {
-      timestamp: formats.unixTimestamp,
-      lastKnown: formats.isoString
-    },
-    timingInfo: {
-      startTime: formats.unixTimestamp,
-      endTime: formats.unixTimestamp + 5000,
-      duration: 5000,
-      sectionTimings: [
-        {
-          sectionId: 'test-section',
-          startTime: formats.unixTimestamp,
-          endTime: formats.unixTimestamp + 2000,
-          duration: 2000
-        }
-      ]
-    },
-    sessionInfo: {
-      sessionStartTime: formats.unixTimestamp,
-      lastVisitTime: formats.unixTimestamp + 10000,
-      totalSessionTime: 10000,
-      isFirstVisit: true
-    },
-    technicalInfo: {
-      timestamp: formats.unixTimestamp,
-      createdAt: formats.isoString,
-      updatedAt: formats.isoString
-    }
-  };
-
   // Test metadata completa
   totalTests++;
   try {
-    const response = await fetch(`${API_BASE_URL}/api/participant-responses`, {
+    const response = await fetch(`${API_BASE_URL}/module-responses`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -186,8 +149,55 @@ async function testMetadataTimeFormats() {
       body: JSON.stringify({
         researchId: TEST_RESEARCH_ID,
         participantId: TEST_PARTICIPANT_ID,
-        responses: [],
-        metadata: metadataWithTimes
+        stepType: 'test',
+        stepTitle: 'Test Step',
+        response: { test: 'data' },
+        metadata: {
+          deviceInfo: {
+            deviceType: 'desktop',
+            userAgent: 'test-agent',
+            screenWidth: 1920,
+            screenHeight: 1080,
+            platform: 'test-platform',
+            language: 'es'
+          },
+          locationInfo: {
+            latitude: 40.4168,
+            longitude: -3.7038,
+            city: 'Madrid',
+            country: 'Spain',
+            region: 'Madrid',
+            ipAddress: '127.0.0.1'
+          },
+          timingInfo: {
+            startTime: formats.unixTimestamp,
+            endTime: formats.unixTimestamp + 5000,
+            duration: 5000,
+            sectionTimings: [
+              {
+                sectionId: 'test-section',
+                startTime: formats.unixTimestamp,
+                endTime: formats.unixTimestamp + 2000,
+                duration: 2000
+              }
+            ]
+          },
+          sessionInfo: {
+            reentryCount: 0,
+            sessionStartTime: formats.unixTimestamp,
+            lastVisitTime: formats.unixTimestamp + 10000,
+            totalSessionTime: 10000,
+            isFirstVisit: true
+          },
+          technicalInfo: {
+            browser: 'test-browser',
+            browserVersion: '1.0.0',
+            os: 'test-os',
+            osVersion: '1.0.0',
+            connectionType: 'wifi',
+            timezone: 'Europe/Madrid'
+          }
+        }
       })
     });
 
@@ -205,18 +215,80 @@ async function testMetadataTimeFormats() {
   for (const type of metadataTypes) {
     totalTests++;
     try {
-      const response = await fetch(`${API_BASE_URL}/api/participant-responses`, {
+      const metadataPayload = {
+        researchId: TEST_RESEARCH_ID,
+        participantId: `${TEST_PARTICIPANT_ID}-${type}`,
+        stepType: 'test',
+        stepTitle: 'Test Step',
+        response: { test: 'data' },
+        metadata: {}
+      };
+
+      // Añadir el tipo específico de metadata
+      switch (type) {
+        case 'deviceInfo':
+          metadataPayload.metadata.deviceInfo = {
+            deviceType: 'desktop',
+            userAgent: 'test-agent',
+            screenWidth: 1920,
+            screenHeight: 1080,
+            platform: 'test-platform',
+            language: 'es'
+          };
+          break;
+        case 'locationInfo':
+          metadataPayload.metadata.locationInfo = {
+            latitude: 40.4168,
+            longitude: -3.7038,
+            city: 'Madrid',
+            country: 'Spain',
+            region: 'Madrid',
+            ipAddress: '127.0.0.1'
+          };
+          break;
+        case 'timingInfo':
+          metadataPayload.metadata.timingInfo = {
+            startTime: formats.unixTimestamp,
+            endTime: formats.unixTimestamp + 5000,
+            duration: 5000,
+            sectionTimings: [
+              {
+                sectionId: 'test-section',
+                startTime: formats.unixTimestamp,
+                endTime: formats.unixTimestamp + 2000,
+                duration: 2000
+              }
+            ]
+          };
+          break;
+        case 'sessionInfo':
+          metadataPayload.metadata.sessionInfo = {
+            reentryCount: 0,
+            sessionStartTime: formats.unixTimestamp,
+            lastVisitTime: formats.unixTimestamp + 10000,
+            totalSessionTime: 10000,
+            isFirstVisit: true
+          };
+          break;
+        case 'technicalInfo':
+          metadataPayload.metadata.technicalInfo = {
+            browser: 'test-browser',
+            browserVersion: '1.0.0',
+            os: 'test-os',
+            osVersion: '1.0.0',
+            connectionType: 'wifi',
+            timezone: 'Europe/Madrid'
+          };
+          break;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/module-responses`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer test-token'
         },
-        body: JSON.stringify({
-          researchId: TEST_RESEARCH_ID,
-          participantId: `${TEST_PARTICIPANT_ID}-${type}`,
-          responses: [],
-          metadata: { [type]: metadataWithTimes[type] }
-        })
+        body: JSON.stringify(metadataPayload)
       });
 
       const result = await response.json();
@@ -262,7 +334,7 @@ async function testModuleResponseTimeFormats() {
   // Test respuesta de módulo completa
   totalTests++;
   try {
-    const response = await fetch(`${API_BASE_URL}/api/participant-responses`, {
+    const response = await fetch(`${API_BASE_URL}/module-responses`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -271,11 +343,15 @@ async function testModuleResponseTimeFormats() {
       body: JSON.stringify({
         researchId: TEST_RESEARCH_ID,
         participantId: `${TEST_PARTICIPANT_ID}-module`,
-        responses: [moduleResponse],
+        stepType: 'demographic',
+        stepTitle: 'Test Module',
+        response: { question1: 'Test answer' },
         metadata: {
-          startTime: formats.unixTimestamp,
-          endTime: formats.unixTimestamp + 5000,
-          duration: 5000
+          timingInfo: {
+            startTime: formats.unixTimestamp,
+            endTime: formats.unixTimestamp + 5000,
+            duration: 5000
+          }
         }
       })
     });
@@ -294,13 +370,7 @@ async function testModuleResponseTimeFormats() {
   for (const moduleType of moduleTypes) {
     totalTests++;
     try {
-      const moduleResponseWithType = {
-        ...moduleResponse,
-        stepType: moduleType,
-        id: `test-${moduleType}-response`
-      };
-
-      const response = await fetch(`${API_BASE_URL}/api/participant-responses`, {
+      const response = await fetch(`${API_BASE_URL}/module-responses`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -309,11 +379,15 @@ async function testModuleResponseTimeFormats() {
         body: JSON.stringify({
           researchId: TEST_RESEARCH_ID,
           participantId: `${TEST_PARTICIPANT_ID}-${moduleType}`,
-          responses: [moduleResponseWithType],
+          stepType: moduleType,
+          stepTitle: `Test ${moduleType}`,
+          response: { question1: 'Test answer' },
           metadata: {
-            startTime: formats.unixTimestamp,
-            endTime: formats.unixTimestamp + 5000,
-            duration: 5000
+            timingInfo: {
+              startTime: formats.unixTimestamp,
+              endTime: formats.unixTimestamp + 5000,
+              duration: 5000
+            }
           }
         })
       });
@@ -356,7 +430,7 @@ async function testTimezoneCompatibility() {
       const isoString = date.toISOString(); // Siempre en UTC
 
       // Test que el backend acepte ISO string (que siempre está en UTC)
-      const response = await fetch(`${API_BASE_URL}/api/participant-responses`, {
+      const response = await fetch(`${API_BASE_URL}/module-responses`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -365,13 +439,30 @@ async function testTimezoneCompatibility() {
         body: JSON.stringify({
           researchId: TEST_RESEARCH_ID,
           participantId: `${TEST_PARTICIPANT_ID}-${timezone}`,
-          responses: [],
+          stepType: 'test',
+          stepTitle: 'Test Timezone',
+          response: { test: 'data' },
           metadata: {
             deviceInfo: {
-              timestamp: utcTime,
-              timezone: timezone,
-              localTime: date.toLocaleString('en-US', { timeZone: timezone }),
-              utcTime: isoString
+              deviceType: 'desktop',
+              userAgent: 'test-agent',
+              screenWidth: 1920,
+              screenHeight: 1080,
+              platform: 'test-platform',
+              language: 'es'
+            },
+            technicalInfo: {
+              browser: 'test-browser',
+              browserVersion: '1.0.0',
+              os: 'test-os',
+              osVersion: '1.0.0',
+              connectionType: 'wifi',
+              timezone: timezone
+            },
+            timingInfo: {
+              startTime: utcTime,
+              endTime: utcTime + 5000,
+              duration: 5000
             }
           }
         })
@@ -416,41 +507,38 @@ async function testReentryTimeFormats() {
   let passedTests = 0;
   let totalTests = 0;
 
-  // Test datos de reingreso con diferentes formatos de tiempo
-  const reentryData = {
-    researchId: TEST_RESEARCH_ID,
-    participantId: TEST_PARTICIPANT_ID,
-    reentryCount: 1,
-    sessionStartTime: formats.unixTimestamp,
-    lastVisitTime: formats.unixTimestamp + 10000,
-    totalSessionTime: 10000,
-    isFirstVisit: false,
-    metadata: {
-      deviceInfo: {
-        timestamp: formats.unixTimestamp,
-        lastUpdate: formats.isoString
-      },
-      sessionInfo: {
-        sessionStartTime: formats.unixTimestamp,
-        lastVisitTime: formats.unixTimestamp + 10000,
-        totalSessionTime: 10000,
-        isFirstVisit: false
-      }
-    }
-  };
-
   // Test reingreso completo
   totalTests++;
   try {
-    const response = await fetch(`${API_BASE_URL}/api/participant-responses`, {
+    const response = await fetch(`${API_BASE_URL}/module-responses`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer test-token'
       },
       body: JSON.stringify({
-        ...reentryData,
-        responses: []
+        researchId: TEST_RESEARCH_ID,
+        participantId: TEST_PARTICIPANT_ID,
+        stepType: 'reentry',
+        stepTitle: 'Test Reentry',
+        response: { reentryCount: 1 },
+        metadata: {
+          deviceInfo: {
+            deviceType: 'desktop',
+            userAgent: 'test-agent',
+            screenWidth: 1920,
+            screenHeight: 1080,
+            platform: 'test-platform',
+            language: 'es'
+          },
+          sessionInfo: {
+            reentryCount: 1,
+            sessionStartTime: formats.unixTimestamp,
+            lastVisitTime: formats.unixTimestamp + 10000,
+            totalSessionTime: 10000,
+            isFirstVisit: false
+          }
+        }
       })
     });
 
@@ -466,24 +554,27 @@ async function testReentryTimeFormats() {
   for (let i = 1; i <= 3; i++) {
     totalTests++;
     try {
-      const multipleReentryData = {
-        ...reentryData,
-        participantId: `${TEST_PARTICIPANT_ID}-reentry-${i}`,
-        reentryCount: i,
-        sessionStartTime: formats.unixTimestamp - (i * 86400000), // Diferentes días
-        lastVisitTime: formats.unixTimestamp,
-        totalSessionTime: i * 86400000
-      };
-
-      const response = await fetch(`${API_BASE_URL}/api/participant-responses`, {
+      const response = await fetch(`${API_BASE_URL}/module-responses`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer test-token'
         },
         body: JSON.stringify({
-          ...multipleReentryData,
-          responses: []
+          researchId: TEST_RESEARCH_ID,
+          participantId: `${TEST_PARTICIPANT_ID}-reentry-${i}`,
+          stepType: 'reentry',
+          stepTitle: `Test Reentry ${i}`,
+          response: { reentryCount: i },
+          metadata: {
+            sessionInfo: {
+              reentryCount: i,
+              sessionStartTime: formats.unixTimestamp - (i * 86400000), // Diferentes días
+              lastVisitTime: formats.unixTimestamp,
+              totalSessionTime: i * 86400000,
+              isFirstVisit: false
+            }
+          }
         })
       });
 
@@ -508,53 +599,45 @@ async function testTimeFormatPersistence() {
   let passedTests = 0;
   let totalTests = 0;
 
-  // Crear datos con formatos de tiempo específicos
-  const testData = {
-    researchId: TEST_RESEARCH_ID,
-    participantId: `${TEST_PARTICIPANT_ID}-persistence`,
-    responses: [{
-      id: 'test-response-persistence',
-      stepType: 'demographic',
-      stepTitle: 'Test Persistence',
-      response: { question1: 'Test answer' },
-      metadata: {
-        totalTime: 5000,
-        startTime: formats.unixTimestamp,
-        endTime: formats.unixTimestamp + 5000,
-        createdAt: formats.isoString,
-        updatedAt: formats.isoString
-      },
-      createdAt: formats.isoString,
-      updatedAt: formats.isoString
-    }],
-    metadata: {
-      startTime: formats.unixTimestamp,
-      endTime: formats.unixTimestamp + 5000,
-      duration: 5000,
-      deviceInfo: {
-        timestamp: formats.unixTimestamp,
-        lastUpdate: formats.isoString
-      },
-      sessionInfo: {
-        sessionStartTime: formats.unixTimestamp,
-        lastVisitTime: formats.unixTimestamp + 10000,
-        totalSessionTime: 10000,
-        isFirstVisit: true
-      }
-    }
-  };
-
   // Test guardar datos
   totalTests++;
   let savedData = null;
   try {
-    const saveResponse = await fetch(`${API_BASE_URL}/api/participant-responses`, {
+    const saveResponse = await fetch(`${API_BASE_URL}/module-responses`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer test-token'
       },
-      body: JSON.stringify(testData)
+      body: JSON.stringify({
+        researchId: TEST_RESEARCH_ID,
+        participantId: `${TEST_PARTICIPANT_ID}-persistence`,
+        stepType: 'test',
+        stepTitle: 'Test Persistence',
+        response: { question1: 'Test answer' },
+        metadata: {
+          timingInfo: {
+            startTime: formats.unixTimestamp,
+            endTime: formats.unixTimestamp + 5000,
+            duration: 5000
+          },
+          deviceInfo: {
+            deviceType: 'desktop',
+            userAgent: 'test-agent',
+            screenWidth: 1920,
+            screenHeight: 1080,
+            platform: 'test-platform',
+            language: 'es'
+          },
+          sessionInfo: {
+            reentryCount: 0,
+            sessionStartTime: formats.unixTimestamp,
+            lastVisitTime: formats.unixTimestamp + 10000,
+            totalSessionTime: 10000,
+            isFirstVisit: true
+          }
+        }
+      })
     });
 
     const saveResult = await saveResponse.json();
@@ -572,7 +655,7 @@ async function testTimeFormatPersistence() {
   if (savedData) {
     totalTests++;
     try {
-      const retrieveResponse = await fetch(`${API_BASE_URL}/api/participant-responses/${TEST_RESEARCH_ID}/${testData.participantId}`, {
+      const retrieveResponse = await fetch(`${API_BASE_URL}/module-responses/research/${TEST_RESEARCH_ID}`, {
         method: 'GET',
         headers: {
           'Authorization': 'Bearer test-token'
@@ -584,15 +667,108 @@ async function testTimeFormatPersistence() {
 
       if (retrieveValid) {
         // Validar que los formatos de tiempo se mantuvieron
-        const metadata = retrieveResult.metadata;
-        const timeFormatsValid =
-          metadata.startTime === testData.metadata.startTime &&
-          metadata.endTime === testData.metadata.endTime &&
-          metadata.duration === testData.metadata.duration &&
-          metadata.deviceInfo.timestamp === testData.metadata.deviceInfo.timestamp &&
-          metadata.sessionInfo.sessionStartTime === testData.metadata.sessionInfo.sessionStartTime;
+        // El backend devuelve un array de documentos
+        const documents = retrieveResult.data || retrieveResult;
 
-        logTest('Recuperar datos con formatos de tiempo', timeFormatsValid, `Status: ${retrieveResponse.status}`);
+        // Buscar el documento específico que creamos
+        const targetDocument = Array.isArray(documents)
+          ? documents.find(doc => doc.participantId === `${TEST_PARTICIPANT_ID}-persistence`)
+          : documents;
+
+        if (!targetDocument) {
+          logTest('Recuperar datos con formatos de tiempo', false, `Documento no encontrado para participantId: ${TEST_PARTICIPANT_ID}-persistence`);
+          return;
+        }
+
+        const metadata = targetDocument.metadata;
+
+        // Debug: Mostrar la estructura exacta que devuelve el backend
+        console.log('🔍 DEBUG - Documento encontrado:');
+        console.log('ParticipantId:', targetDocument.participantId);
+        console.log('Metadata structure:', JSON.stringify(metadata, null, 2));
+
+        // VALIDACIONES ROBUSTAS DE INTEGRIDAD DE FORMATOS DE TIEMPO
+
+        // 1. Validar que todos los campos de tiempo existen y son del tipo correcto
+        const timingFieldsValid =
+          metadata &&
+          metadata.timingInfo &&
+          typeof metadata.timingInfo.startTime === 'number' &&
+          typeof metadata.timingInfo.endTime === 'number' &&
+          typeof metadata.timingInfo.duration === 'number' &&
+          metadata.timingInfo.startTime > 0 &&
+          metadata.timingInfo.endTime > metadata.timingInfo.startTime &&
+          metadata.timingInfo.duration > 0;
+
+        // 2. Validar que los valores de tiempo son exactamente los mismos que enviamos
+        const timingValuesExact =
+          metadata.timingInfo.startTime === formats.unixTimestamp &&
+          metadata.timingInfo.endTime === formats.unixTimestamp + 5000 &&
+          metadata.timingInfo.duration === 5000;
+
+        // 3. Validar que los campos de sesión mantienen la integridad temporal
+        const sessionTimingValid =
+          metadata.sessionInfo &&
+          typeof metadata.sessionInfo.sessionStartTime === 'number' &&
+          typeof metadata.sessionInfo.lastVisitTime === 'number' &&
+          typeof metadata.sessionInfo.totalSessionTime === 'number' &&
+          metadata.sessionInfo.sessionStartTime === formats.unixTimestamp &&
+          metadata.sessionInfo.lastVisitTime === formats.unixTimestamp + 10000 &&
+          metadata.sessionInfo.totalSessionTime === 10000;
+
+        // 4. Validar que los campos de deviceInfo mantienen la integridad
+        const deviceInfoValid =
+          metadata.deviceInfo &&
+          metadata.deviceInfo.deviceType === 'desktop' &&
+          metadata.deviceInfo.screenWidth === 1920 &&
+          metadata.deviceInfo.screenHeight === 1080;
+
+        // 5. Validar que los campos booleanos y numéricos de sesión son correctos
+        const sessionFieldsValid =
+          metadata.sessionInfo.reentryCount === 0 &&
+          metadata.sessionInfo.isFirstVisit === true;
+
+        // 6. Validar que no hay campos de tiempo corruptos o inválidos
+        const noCorruptedTiming =
+          !isNaN(metadata.timingInfo.startTime) &&
+          !isNaN(metadata.timingInfo.endTime) &&
+          !isNaN(metadata.timingInfo.duration) &&
+          !isNaN(metadata.sessionInfo.sessionStartTime) &&
+          !isNaN(metadata.sessionInfo.lastVisitTime) &&
+          !isNaN(metadata.sessionInfo.totalSessionTime);
+
+        // 7. Validar que los timestamps son razonables (no en el futuro ni muy en el pasado)
+        const now = Date.now();
+        const oneHourAgo = now - (60 * 60 * 1000);
+        const oneHourFromNow = now + (60 * 60 * 1000);
+
+        const timestampsReasonable =
+          metadata.timingInfo.startTime >= oneHourAgo &&
+          metadata.timingInfo.startTime <= oneHourFromNow &&
+          metadata.sessionInfo.sessionStartTime >= oneHourAgo &&
+          metadata.sessionInfo.sessionStartTime <= oneHourFromNow;
+
+        // RESULTADO FINAL: Todas las validaciones deben pasar
+        const timeFormatsValid =
+          timingFieldsValid &&
+          timingValuesExact &&
+          sessionTimingValid &&
+          deviceInfoValid &&
+          sessionFieldsValid &&
+          noCorruptedTiming &&
+          timestampsReasonable;
+
+        // Log detallado de cada validación
+        console.log('🔍 VALIDACIONES ROBUSTAS:');
+        console.log('  ✅ Campos de tiempo existen y son del tipo correcto:', timingFieldsValid);
+        console.log('  ✅ Valores de tiempo son exactamente los mismos:', timingValuesExact);
+        console.log('  ✅ Campos de sesión mantienen integridad temporal:', sessionTimingValid);
+        console.log('  ✅ DeviceInfo mantiene integridad:', deviceInfoValid);
+        console.log('  ✅ Campos booleanos y numéricos de sesión correctos:', sessionFieldsValid);
+        console.log('  ✅ No hay campos de tiempo corruptos:', noCorruptedTiming);
+        console.log('  ✅ Timestamps son razonables:', timestampsReasonable);
+
+        logTest('Recuperar datos con formatos de tiempo', timeFormatsValid, `Status: ${retrieveResponse.status} - Validación robusta completada`);
         if (timeFormatsValid) passedTests++;
       } else {
         logTest('Recuperar datos con formatos de tiempo', false, `Status: ${retrieveResponse.status}`);
