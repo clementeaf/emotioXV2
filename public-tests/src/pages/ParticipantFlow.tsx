@@ -1,14 +1,28 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import LoadingIndicator from '../components/common/LoadingIndicator';
+import { LocationPermissionRequest } from '../components/common/LocationPermissionRequest';
+import { MobileBlockScreen } from '../components/common/MobileBlockScreen';
+import { ReentryInfo } from '../components/common/ReentryInfo';
+import { TimeProgress } from '../components/common/TimeProgress';
+import { TimingInfo } from '../components/common/TimingInfo';
 import FlowStepContent from '../components/flow/FlowStepContent';
 import { ProgressSidebar } from '../components/layout/ProgressSidebar';
+import { useLocationTracking } from '../hooks/useLocationTracking';
+import { useMobileDeviceCheck } from '../hooks/useMobileDeviceCheck';
 import { useParticipantFlow } from '../hooks/useParticipantFlow';
+import { useReentryTracking } from '../hooks/useReentryTracking';
+import { useResponseTiming } from '../hooks/useResponseTiming';
 import { useParticipantStore } from '../stores/participantStore';
 import { ParticipantFlowStep } from '../types/flow';
 
 const ParticipantFlow: React.FC = () => {
     const { researchId } = useParams<{ researchId: string }>();
+    const setDeviceType = useParticipantStore(state => state.setDeviceType);
+    const incrementReentryCount = useParticipantStore(state => state.incrementReentryCount);
+    const startGlobalTimer = useParticipantStore(state => state.startGlobalTimer);
+    const stopGlobalTimer = useParticipantStore(state => state.stopGlobalTimer);
+    const deviceType = useParticipantStore(state => state.deviceType);
 
     const {
         currentStep,
@@ -74,6 +88,106 @@ const ParticipantFlow: React.FC = () => {
         };
     }, [expandedSteps, currentStepIndex]);
 
+    // Iniciar timer global solo al pasar de LOGIN a otro estado
+    useEffect(() => {
+        if (currentStep !== ParticipantFlowStep.LOGIN && currentStep !== ParticipantFlowStep.LOADING_SESSION) {
+            startGlobalTimer();
+        }
+    }, [currentStep, startGlobalTimer]);
+
+    // Detener timer global al salir
+    useEffect(() => {
+        return () => {
+            stopGlobalTimer();
+        };
+    }, [stopGlobalTimer]);
+
+    useEffect(() => {
+        // Detección robusta de dispositivo
+        const ua = navigator.userAgent;
+        let type: 'mobile' | 'tablet' | 'desktop' = 'desktop';
+        if (/Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(ua)) {
+            type = /iPad|Tablet|PlayBook|Silk/i.test(ua) ? 'tablet' : 'mobile';
+        }
+        setDeviceType(type);
+        incrementReentryCount();
+    }, [setDeviceType, incrementReentryCount]);
+
+    // Obtener la config de eye tracking (si existe) desde responsesData o expandedSteps
+    // Se asume que responsesData.modules.eye_tracking[0] contiene la config
+    const eyeTrackingConfig = useMemo(() => {
+        if (
+            responsesData &&
+            responsesData.modules &&
+            Array.isArray(responsesData.modules.eye_tracking) &&
+            responsesData.modules.eye_tracking.length > 0
+        ) {
+            const first = responsesData.modules.eye_tracking[0];
+            return first && typeof first === 'object' && 'config' in first && first.config ? first.config : first;
+        }
+        // Fallback: buscar en expandedSteps si está disponible
+        if (expandedSteps && expandedSteps.length > 0) {
+            const eyeTrackingStep = expandedSteps.find(step => step.type === 'eye_tracking');
+            if (eyeTrackingStep && eyeTrackingStep.config) {
+                return eyeTrackingStep.config;
+            }
+        }
+        return null;
+    }, [responsesData, expandedSteps]);
+
+    // Usar el hook personalizado para la detección de dispositivos móviles
+    const {
+        allowMobile,
+        configFound,
+        shouldBlock
+    } = useMobileDeviceCheck(eyeTrackingConfig, isFlowLoading);
+
+    // Usar el hook personalizado para el tracking de ubicación
+    const {
+        isEnabled: isLocationTrackingEnabled
+    } = useLocationTracking(eyeTrackingConfig);
+
+    // Usar el hook de tracking de reingresos
+    const {
+        reentryCount,
+        sessionStartTime,
+        lastVisitTime,
+        totalSessionTime,
+        isFirstVisit
+    } = useReentryTracking();
+
+    // Usar el hook de cronometrización de respuestas
+    const {
+        isGlobalTimerRunning,
+        globalStartTime,
+        globalEndTime,
+        activeSectionTimers,
+        sectionTimings
+    } = useResponseTiming();
+
+    // Log de información de reingresos para debug
+    useEffect(() => {
+        console.log('[ParticipantFlow] Información de reingresos:', {
+            reentryCount,
+            sessionStartTime: new Date(sessionStartTime).toISOString(),
+            lastVisitTime: new Date(lastVisitTime).toISOString(),
+            totalSessionTime: `${Math.round(totalSessionTime / 1000)}s`,
+            isFirstVisit
+        });
+    }, [reentryCount, sessionStartTime, lastVisitTime, totalSessionTime, isFirstVisit]);
+
+    // BLOQUEO MEJORADO: Si no se permite móvil y el usuario está en móvil/tablet
+    if (shouldBlock) {
+        return (
+            <MobileBlockScreen
+                deviceType={deviceType || 'mobile'}
+                researchId={researchId}
+                allowMobile={allowMobile}
+                configFound={configFound}
+            />
+        );
+    }
+
     let content;
     if (isFlowLoading) {
         content = (
@@ -107,9 +221,12 @@ const ParticipantFlow: React.FC = () => {
                                 <h1 className="text-xl font-semibold text-neutral-900">
                                     {memoizedCurrentExpandedStep?.name || 'Cargando...'}
                                 </h1>
-                                <span className="text-sm text-neutral-500 font-mono">
-                                    Paso {currentStepIndex + 1} de {expandedSteps.length}
-                                </span>
+                                <div className="flex items-center gap-4">
+                                    <TimeProgress variant="minimal" />
+                                    <span className="text-sm text-neutral-500 font-mono">
+                                        Paso {currentStepIndex + 1} de {expandedSteps.length}
+                                    </span>
+                                </div>
                             </div>
                             {/* Barra de progreso visual - usando 70% del ancho */}
                             <div className="w-full sm:w-[70%]">
@@ -187,6 +304,43 @@ const ParticipantFlow: React.FC = () => {
                         <div className="w-full pt-4 pb-6 sm:pt-0 sm:pb-0 flex justify-center sm:block">
                             <div className="bg-white !shadow-none !border-0 rounded-none sm:rounded-tl-xl sm:shadow-lg sm:border-l sm:border-t sm:border-neutral-200 h-auto w-full sm:w-auto sm:h-auto flex justify-center sm:block">
                                 <div className="p-0 sm:p-8 w-full h-auto max-w-md mx-auto sm:max-w-none flex justify-center sm:block">
+                                    {/* Componente de información de reingresos (solo en desarrollo) */}
+                                    <div className="mb-4">
+                                        <ReentryInfo
+                                            reentryCount={reentryCount}
+                                            sessionStartTime={sessionStartTime}
+                                            lastVisitTime={lastVisitTime}
+                                            totalSessionTime={totalSessionTime}
+                                            isFirstVisit={isFirstVisit}
+                                        />
+                                    </div>
+
+                                    {/* Componente de información de timing (solo en desarrollo) */}
+                                    <div className="mb-4">
+                                        <TimingInfo
+                                            isGlobalTimerRunning={isGlobalTimerRunning}
+                                            globalStartTime={globalStartTime}
+                                            globalEndTime={globalEndTime}
+                                            activeSectionTimers={activeSectionTimers}
+                                            sectionTimings={sectionTimings}
+                                        />
+                                    </div>
+
+                                    {/* Componente de solicitud de ubicación si está habilitado */}
+                                    {isLocationTrackingEnabled && (
+                                        <div className="mb-6">
+                                            <LocationPermissionRequest
+                                                onLocationGranted={(location: { latitude: number; longitude: number; accuracy?: number }) => {
+                                                    console.log('Ubicación obtenida:', location);
+                                                }}
+                                                onLocationDenied={() => {
+                                                    console.log('Permiso de ubicación denegado');
+                                                }}
+                                                showFallbackInfo={true}
+                                            />
+                                        </div>
+                                    )}
+
                                     <FlowStepContent
                                         currentStepEnum={currentStep}
                                         currentExpandedStep={memoizedCurrentExpandedStep}

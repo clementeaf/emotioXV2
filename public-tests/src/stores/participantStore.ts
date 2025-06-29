@@ -28,6 +28,17 @@ export interface ResponsesData {
     all_steps: ModuleResponse[];
     [key: string]: ModuleResponse | ModuleResponse[] | undefined;
   };
+  timestamps?: {
+    start?: number;
+    end?: number;
+    duration?: number;
+  };
+  sectionTimings?: Array<{
+    sectionId: string;
+    start: number;
+    end?: number;
+    duration?: number;
+  }>;
 }
 
 export interface ExpandedStep {
@@ -57,6 +68,10 @@ export interface ParticipantState {
   completedRelevantSteps: number;
   totalRelevantSteps: number;
   responsesData: ResponsesData;
+  deviceType: 'mobile' | 'tablet' | 'desktop' | null;
+  setDeviceType: (type: 'mobile' | 'tablet' | 'desktop') => void;
+  reentryCount: number;
+  incrementReentryCount: () => void;
   setResearchId: (id: string | null) => void;
   setToken: (token: string | null) => void;
   setParticipant: (participant: ParticipantInfo) => void;
@@ -89,6 +104,12 @@ export interface ParticipantState {
   clearAllResponses: () => void;
   resetStore: () => void;
   calculateProgress: () => void;
+
+  // NUEVO: métodos para timer global y por sección
+  startGlobalTimer: () => void;
+  stopGlobalTimer: () => void;
+  startSectionTimer: (sectionId: string) => void;
+  stopSectionTimer: (sectionId: string) => void;
 }
 
 // Función auxiliar para sanear objetos antes de JSON.stringify
@@ -152,6 +173,18 @@ export const useParticipantStore = create(
       completedRelevantSteps: 0,
       totalRelevantSteps: 0,
       responsesData: { ...initialResponsesData },
+      deviceType: null,
+      setDeviceType: (type) => set({ deviceType: type }),
+      reentryCount: typeof window !== 'undefined' && localStorage.getItem('reentryCount') ? parseInt(localStorage.getItem('reentryCount') || '0', 10) : 0,
+      incrementReentryCount: () => {
+        set((state) => {
+          const newCount = state.reentryCount + 1;
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('reentryCount', newCount.toString());
+          }
+          return { reentryCount: newCount };
+        });
+      },
 
       setResearchId: (id) => set({ researchId: id }),
       setToken: (token) => {
@@ -529,7 +562,73 @@ export const useParticipantStore = create(
         });
         localStorage.removeItem('participantToken');
         localStorage.removeItem('participantInfo');
-      }
+      },
+
+      // NUEVO: métodos para timer global y por sección
+      startGlobalTimer: () => {
+        set((state) => {
+          const now = Date.now();
+          return {
+            responsesData: {
+              ...state.responsesData,
+              timestamps: {
+                ...state.responsesData.timestamps,
+                start: now
+              }
+            }
+          };
+        });
+      },
+      stopGlobalTimer: () => {
+        set((state) => {
+          const now = Date.now();
+          const start = state.responsesData.timestamps?.start || state.responsesData.startTime;
+          return {
+            responsesData: {
+              ...state.responsesData,
+              timestamps: {
+                ...state.responsesData.timestamps,
+                end: now,
+                duration: start ? now - start : undefined
+              }
+            }
+          };
+        });
+      },
+      startSectionTimer: (sectionId) => {
+        set((state) => {
+          const now = Date.now();
+          const timings = state.responsesData.sectionTimings || [];
+          // Si ya existe, no reiniciar
+          if (timings.some(t => t.sectionId === sectionId && t.start)) return {};
+          return {
+            responsesData: {
+              ...state.responsesData,
+              sectionTimings: [
+                ...timings,
+                { sectionId, start: now }
+              ]
+            }
+          };
+        });
+      },
+      stopSectionTimer: (sectionId) => {
+        set((state) => {
+          const now = Date.now();
+          const timings = state.responsesData.sectionTimings || [];
+          const updated = timings.map(t =>
+            t.sectionId === sectionId && !t.end
+              ? { ...t, end: now, duration: t.start ? now - t.start : undefined }
+              : t
+          );
+          return {
+            responsesData: {
+              ...state.responsesData,
+              sectionTimings: updated
+            }
+          };
+        });
+      },
     }),
     {
       name: 'participantResponses',

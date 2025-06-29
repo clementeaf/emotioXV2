@@ -257,11 +257,19 @@ export class ApiClient {
    * @param payload Datos de la respuesta
    * @returns Respuesta guardada
    */
-  async saveModuleResponse(payload: { researchId: string, participantId: string, stepType: string, stepTitle: string, response: unknown }): Promise<APIResponse<unknown>> {
+  async saveModuleResponse(payload: {
+    researchId: string,
+    participantId: string,
+    stepType: string,
+    stepTitle: string,
+    response: unknown,
+    metadata?: unknown
+  }): Promise<APIResponse<unknown>> {
     console.log(`🔍 [ApiClient] saveModuleResponse called with payload:`, {
       ...payload,
       responseType: typeof payload.response,
-      responseKeys: typeof payload.response === 'object' && payload.response ? Object.keys(payload.response) : 'not object'
+      responseKeys: typeof payload.response === 'object' && payload.response ? Object.keys(payload.response) : 'not object',
+      hasMetadata: !!payload.metadata
     });
 
     const result = await this.request<unknown>('/module-responses', {
@@ -285,7 +293,10 @@ export class ApiClient {
     responseId: string,
     researchId: string,
     participantId: string,
-    payload: { response: unknown }
+    payload: {
+      response: unknown,
+      metadata?: unknown
+    }
   ): Promise<APIResponse<unknown>> {
     if (!responseId || !researchId || !participantId || !payload) {
       console.error('[ApiClient] Faltan IDs o payload para updateModuleResponse');

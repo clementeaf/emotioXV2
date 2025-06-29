@@ -18,6 +18,27 @@ import { ApiError } from '../utils/errors';
 const RESEARCH_INDEX = 'ResearchIndex';
 const RESEARCH_PARTICIPANT_INDEX = 'ResearchParticipantIndex';
 
+// Utilidad para serializar metadata antes de guardar en DynamoDB
+function serializeMetadata(metadata: any): string | undefined {
+  if (!metadata) return undefined;
+  try {
+    return JSON.stringify(metadata);
+  } catch {
+    return undefined;
+  }
+}
+
+// Utilidad para deserializar metadata al leer de DynamoDB
+function deserializeMetadata(metadata: any): any {
+  if (!metadata) return undefined;
+  if (typeof metadata === 'object') return metadata;
+  try {
+    return JSON.parse(metadata);
+  } catch {
+    return undefined;
+  }
+}
+
 export class ModuleResponseService {
   private readonly tableName: string;
   private readonly dynamoClient: DynamoDBDocumentClient;
@@ -50,29 +71,50 @@ export class ModuleResponseService {
     researchId: string,
     participantId: string,
     initialResponse: ModuleResponse
-  ): Promise<ParticipantResponsesDocument> {
+  ): Promise<ModuleResponse> {
     const id = uuidv4();
     const now = new Date().toISOString();
+
+    // Mantener metadata como objeto en memoria
+    const responseForMemory = {
+      ...initialResponse,
+      metadata: initialResponse.metadata
+    };
 
     const newDocument: ParticipantResponsesDocument = {
       id,
       researchId,
       participantId,
-      responses: [initialResponse],
+      responses: [responseForMemory],
+      metadata: initialResponse.metadata || {},
       createdAt: now,
       updatedAt: now,
       isCompleted: false
     };
 
+    // Serializar metadata solo para guardar en DynamoDB
+    const itemToSave = {
+      ...newDocument,
+      responses: newDocument.responses.map(r => ({
+        ...r,
+        metadata: serializeMetadata(r.metadata)
+      })),
+      metadata: serializeMetadata(newDocument.metadata)
+    };
+
     const command = new PutCommand({
       TableName: this.tableName,
-      Item: newDocument,
+      Item: itemToSave,
       ConditionExpression: 'attribute_not_exists(id)'
     });
 
     try {
       await this.dynamoClient.send(command);
-      return newDocument;
+      // Recuperar el documento recién creado para asegurar deserialización correcta
+      const createdDoc = await this.findByResearchAndParticipant(researchId, participantId);
+      if (!createdDoc || !createdDoc.responses || createdDoc.responses.length === 0) throw new ApiError('No se pudo recuperar la respuesta recién creada', 500);
+      // Devolver la primera respuesta (la recién creada) con metadata deserializada
+      return createdDoc.responses[0];
     } catch (error: any) {
       console.error('[ModuleResponseService.createNewDocument] Error:', error);
       if (error.name === 'ConditionalCheckFailedException') {
@@ -104,7 +146,28 @@ export class ModuleResponseService {
       console.log(`[ModuleResponseService.findByResearchAndParticipant] Querying DDB: Table=${this.tableName}, Index=${RESEARCH_PARTICIPANT_INDEX}, researchId=${researchId}, participantId=${participantId}`);
       const result = await this.dynamoClient.send(command);
       console.log(`[ModuleResponseService.findByResearchAndParticipant] Query result items count: ${result.Items?.length || 0}`);
-      return (result.Items?.[0] as ParticipantResponsesDocument) || null;
+
+      if (!result.Items || result.Items.length === 0) {
+        return null;
+      }
+
+      const rawDocument = result.Items[0] as ParticipantResponsesDocument;
+      console.log(`[ModuleResponseService.findByResearchAndParticipant] Raw document metadata:`, rawDocument.metadata);
+
+      // Deserializar metadata del documento y de cada respuesta
+      const processedDocument = {
+        ...rawDocument,
+        metadata: deserializeMetadata(rawDocument.metadata),
+        responses: (rawDocument.responses || []).map(r => ({
+          ...r,
+          metadata: deserializeMetadata(r.metadata)
+        }))
+      };
+
+      console.log(`[ModuleResponseService.findByResearchAndParticipant] Processed document metadata:`, processedDocument.metadata);
+      console.log(`[ModuleResponseService.findByResearchAndParticipant] Processed responses count:`, processedDocument.responses.length);
+
+      return processedDocument;
     } catch (error: any) {
       console.error('[ModuleResponseService.findByResearchAndParticipant] Full DDB Error object:', JSON.stringify(error, null, 2));
       console.error('[ModuleResponseService.findByResearchAndParticipant] DDB Error Name:', error.name);
@@ -125,7 +188,7 @@ export class ModuleResponseService {
   async saveModuleResponse(
     createDto: CreateModuleResponseDto
   ): Promise<ModuleResponse> {
-    const { researchId, participantId, stepType, stepTitle, response } = createDto;
+    const { researchId, participantId, stepType, stepTitle, response, metadata } = createDto;
 
     const existingDocument = await this.findByResearchAndParticipant(researchId, participantId);
 
@@ -137,12 +200,14 @@ export class ModuleResponseService {
       stepType,
       stepTitle,
       response,
+      metadata: metadata || {},
       createdAt: now
     };
 
     if (!existingDocument) {
-      await this.createNewDocument(researchId, participantId, moduleResponse);
-      return moduleResponse;
+      // Crear nuevo documento usando el método privado
+      const newResponse = await this.createNewDocument(researchId, participantId, moduleResponse);
+      return newResponse;
     }
 
     const existingResponseIndex = existingDocument.responses.findIndex(
@@ -161,18 +226,21 @@ export class ModuleResponseService {
     if (existingResponseIndex >= 0) {
       expressionAttributeNames['#nestedResponse'] = 'response'; // Alias para el campo 'response' anidado
       expressionAttributeNames['#nestedUpdatedAt'] = 'updatedAt'; // Alias para el campo 'updatedAt' anidado
+      expressionAttributeNames['#nestedMetadata'] = 'metadata'; // Alias para el campo 'metadata' anidado
 
       updateExpression = `SET
         #responses[${existingResponseIndex}].#nestedResponse = :responseValue,
         #responses[${existingResponseIndex}].#nestedUpdatedAt = :responseNestedUpdatedAt,
-        #updatedAt = :updatedAt`; // #updatedAt aquí es el del documento principal
+        #responses[${existingResponseIndex}].#nestedMetadata = :responseMetadata,
+        #updatedAt = :updatedAt`;
 
       expressionAttributeValues[':responseValue'] = response;
-      expressionAttributeValues[':responseNestedUpdatedAt'] = now; // Valor para el updatedAt anidado
+      expressionAttributeValues[':responseNestedUpdatedAt'] = now;
+      expressionAttributeValues[':responseMetadata'] = serializeMetadata(metadata || {});
     } else {
       updateExpression = 'SET #responses = list_append(if_not_exists(#responses, :empty_list), :newResponse), #updatedAt = :updatedAt';
-      expressionAttributeValues[':newResponse'] = [moduleResponse];
-      expressionAttributeValues[':empty_list'] = []; // Necesario para if_not_exists en list_append la primera vez
+      expressionAttributeValues[':newResponse'] = [{ ...moduleResponse, metadata: serializeMetadata(moduleResponse.metadata) }];
+      expressionAttributeValues[':empty_list'] = [];
     }
 
     const command = new UpdateCommand({
@@ -187,12 +255,15 @@ export class ModuleResponseService {
     try {
       const result = await this.dynamoClient.send(command);
       const updatedDocument = result.Attributes as ParticipantResponsesDocument;
-
+      // Deserializar metadata antes de devolver
+      const updatedResponses = (updatedDocument.responses || []).map(r => ({
+        ...r,
+        metadata: deserializeMetadata(r.metadata)
+      }));
       if (existingResponseIndex >= 0) {
-        return updatedDocument.responses[existingResponseIndex];
+        return updatedResponses[existingResponseIndex];
       } else {
-        // Devolver la última respuesta añadida, que es la que acabamos de insertar
-        return updatedDocument.responses[updatedDocument.responses.length - 1];
+        return updatedResponses[updatedResponses.length - 1];
       }
     } catch (error: any) {
       console.error('[ModuleResponseService.saveModuleResponse] Error DDB Object:', JSON.stringify(error, null, 2));
@@ -227,10 +298,11 @@ export class ModuleResponseService {
 
     const now = new Date().toISOString();
 
-    // Actualizar sólo el campo 'response' y el timestamp
+    // Actualizar el campo 'response', 'metadata' y el timestamp
     const updateExpression = `SET
       #responses[${responseIndex}].#nestedResponse = :newResponse,
       #responses[${responseIndex}].#nestedUpdatedAt = :updatedAtTimestamp,
+      #responses[${responseIndex}].#nestedMetadata = :newMetadata,
       #docUpdatedAt = :updatedAtTimestamp`;
 
     const command = new UpdateCommand({
@@ -239,13 +311,15 @@ export class ModuleResponseService {
       UpdateExpression: updateExpression,
       ExpressionAttributeNames: {
         '#responses': 'responses',
-        '#nestedResponse': 'response', // Alias para el campo 'response' anidado
-        '#nestedUpdatedAt': 'updatedAt', // Alias para el campo 'updatedAt' anidado
-        '#docUpdatedAt': 'updatedAt' // Para el 'updatedAt' del documento principal
+        '#nestedResponse': 'response',
+        '#nestedUpdatedAt': 'updatedAt',
+        '#nestedMetadata': 'metadata',
+        '#docUpdatedAt': 'updatedAt'
       },
       ExpressionAttributeValues: {
         ':newResponse': updateDto.response,
-        ':updatedAtTimestamp': now // Usar un nombre de placeholder diferente para evitar colisión con el nombre de atributo
+        ':newMetadata': serializeMetadata(updateDto.metadata || {}),
+        ':updatedAtTimestamp': now
       },
       ReturnValues: 'ALL_NEW'
     });
@@ -253,7 +327,12 @@ export class ModuleResponseService {
     try {
       const result = await this.dynamoClient.send(command);
       const updatedDocument = result.Attributes as ParticipantResponsesDocument;
-      return updatedDocument.responses[responseIndex];
+      // Deserializar metadata antes de devolver
+      const updatedResponses = (updatedDocument.responses || []).map(r => ({
+        ...r,
+        metadata: deserializeMetadata(r.metadata)
+      }));
+      return updatedResponses[responseIndex];
     } catch (error: any) {
       console.error('[ModuleResponseService.updateModuleResponse] Error:', error);
       throw new ApiError(`Database Error: Could not update module response - ${error.message}`, 500);
@@ -267,7 +346,16 @@ export class ModuleResponseService {
     researchId: string,
     participantId: string
   ): Promise<ParticipantResponsesDocument | null> {
-    return this.findByResearchAndParticipant(researchId, participantId);
+    const doc = await this.findByResearchAndParticipant(researchId, participantId);
+    if (!doc) return null;
+    return {
+      ...doc,
+      responses: (doc.responses || []).map(r => ({
+        ...r,
+        metadata: deserializeMetadata(r.metadata)
+      })),
+      metadata: deserializeMetadata(doc.metadata)
+    };
   }
 
   /**
@@ -313,22 +401,31 @@ export class ModuleResponseService {
    * Obtiene todas las respuestas para un research específico
    */
   async getResponsesByResearch(researchId: string): Promise<ParticipantResponsesDocument[]> {
-    const command = new QueryCommand({
-      TableName: this.tableName,
-      IndexName: RESEARCH_INDEX,
-      KeyConditionExpression: 'researchId = :rid',
-      ExpressionAttributeValues: {
-        ':rid': researchId
+    const docs = await (async () => {
+      const command = new QueryCommand({
+        TableName: this.tableName,
+        IndexName: RESEARCH_INDEX,
+        KeyConditionExpression: 'researchId = :rid',
+        ExpressionAttributeValues: {
+          ':rid': researchId
+        }
+      });
+      try {
+        const result = await this.dynamoClient.send(command);
+        return (result.Items as ParticipantResponsesDocument[]) || [];
+      } catch (error: any) {
+        console.error('[ModuleResponseService.getResponsesByResearch] Error:', error);
+        throw new ApiError(`Database Error: Could not retrieve responses by research - ${error.message}`, 500);
       }
-    });
-
-    try {
-      const result = await this.dynamoClient.send(command);
-      return (result.Items as ParticipantResponsesDocument[]) || [];
-    } catch (error: any) {
-      console.error('[ModuleResponseService.getResponsesByResearch] Error:', error);
-      throw new ApiError(`Database Error: Could not retrieve responses by research - ${error.message}`, 500);
-    }
+    })();
+    return docs.map(doc => ({
+      ...doc,
+      responses: (doc.responses || []).map(r => ({
+        ...r,
+        metadata: deserializeMetadata(r.metadata)
+      })),
+      metadata: deserializeMetadata(doc.metadata)
+    }));
   }
 
   /**

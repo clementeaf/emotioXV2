@@ -1,7 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 // import { ExpandedStep } from '../stores/participantStore';
 import { useResponseStorage } from '../hooks/useResponseStorage';
+import { useStepTimeout } from '../hooks/useStepTimeout';
+import { useStepTimeoutConfig } from '../hooks/useStepTimeoutConfig';
 import { CognitiveTaskQuestionProps } from '../types/cognitive-task.types';
+import { StepTimeoutDisplay } from './common/StepTimeoutDisplay';
 
 const CognitiveTaskQuestion: React.FC<CognitiveTaskQuestionProps> = ({
   cognitiveQuestion,
@@ -11,9 +14,26 @@ const CognitiveTaskQuestion: React.FC<CognitiveTaskQuestionProps> = ({
   const [answer, setAnswer] = useState<string>('');
   const [selected, setSelected] = useState<string>('');
 
-  const timeLimit = typeof cognitiveQuestion.config === 'object' && cognitiveQuestion.config !== null && 'timeLimit' in cognitiveQuestion.config && typeof (cognitiveQuestion.config as { timeLimit?: unknown }).timeLimit === 'number'
-    ? (cognitiveQuestion.config as { timeLimit: number }).timeLimit
-    : 60;
+  // Extraer configuración de timeout
+  const timeoutConfig = useStepTimeoutConfig(cognitiveQuestion.config);
+
+  // Hook de timeout
+  const timeoutState = useStepTimeout(
+    timeoutConfig,
+    () => {
+      console.log('[CognitiveTaskQuestion] Timeout ejecutado');
+      // Auto-submit con datos por defecto si está configurado
+      if (timeoutConfig.autoSubmit) {
+        const result = cognitiveQuestion.type.includes('multiplechoice')
+          ? { option: selected || 'timeout', timeLeft: 0, timeoutExpired: true }
+          : { text: answer || 'Sin respuesta', timeLeft: 0, timeoutExpired: true };
+        onComplete(result);
+      }
+    },
+    () => {
+      console.log('[CognitiveTaskQuestion] Warning ejecutado');
+    }
+  );
 
   const { saveResponse, loadResponse, clearResponse } = useResponseStorage();
 
@@ -42,6 +62,17 @@ const CognitiveTaskQuestion: React.FC<CognitiveTaskQuestionProps> = ({
     }
   }, [cognitiveQuestion.id, isAnswered, loadResponse]);
 
+  // Iniciar timeout automáticamente
+  useEffect(() => {
+    if (timeoutConfig.enabled && !isAnswered) {
+      timeoutState.startTimeout();
+    }
+
+    return () => {
+      timeoutState.resetTimeout();
+    };
+  }, [timeoutConfig.enabled, isAnswered]);
+
   // Manejar cambios en la respuesta de texto
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const newValue = e.target.value;
@@ -49,7 +80,10 @@ const CognitiveTaskQuestion: React.FC<CognitiveTaskQuestionProps> = ({
 
     // Guardar automáticamente para textos largos
     if (newValue.length > 50) {
-      saveResponse(cognitiveQuestion.id, cognitiveQuestion.type, { text: newValue, timeLeft: timeLimit }, true);
+      saveResponse(cognitiveQuestion.id, cognitiveQuestion.type, {
+        text: newValue,
+        timeLeft: timeoutState.timeRemaining
+      }, true);
     }
   };
 
@@ -57,19 +91,23 @@ const CognitiveTaskQuestion: React.FC<CognitiveTaskQuestionProps> = ({
   const handleOptionSelect = (option: string) => {
     setSelected(option);
     // Guardar selección inmediatamente
-    saveResponse(cognitiveQuestion.id, cognitiveQuestion.type, { option, timeLeft: timeLimit }, true);
+    saveResponse(cognitiveQuestion.id, cognitiveQuestion.type, {
+      option,
+      timeLeft: timeoutState.timeRemaining
+    }, true);
   };
 
   // Enviar respuesta final
   const handleSubmit = useCallback(() => {
     const result = cognitiveQuestion.type.includes('multiplechoice')
-      ? { option: selected, timeLeft: timeLimit }
-      : { text: answer, timeLeft: timeLimit };
+      ? { option: selected, timeLeft: timeoutState.timeRemaining }
+      : { text: answer, timeLeft: timeoutState.timeRemaining };
 
     // Limpiar respuesta temporal y guardar definitiva
     clearResponse(cognitiveQuestion.id);
+    timeoutState.resetTimeout();
     onComplete(result);
-  }, [answer, selected, timeLimit, cognitiveQuestion, onComplete, clearResponse]);
+  }, [answer, selected, timeoutState, cognitiveQuestion, onComplete, clearResponse]);
 
   // Renderizar opciones múltiples
   const renderMultipleChoice = () => {
@@ -149,18 +187,12 @@ const CognitiveTaskQuestion: React.FC<CognitiveTaskQuestionProps> = ({
       }}>
         <h2>{cognitiveQuestion.name || getCognitiveType()}</h2>
 
-        {/* Temporizador comentado temporalmente por error de tipos */}
-        {/* {cognitiveQuestion.config && typeof cognitiveQuestion.config === 'object' && 'timeLimit' in cognitiveQuestion.config && (
-          <div className="timer" style={{
-            backgroundColor: timeLimit < 10 ? '#ffebee' : '#f5f5f5',
-            color: timeLimit < 10 ? '#c62828' : '#333',
-            padding: '0.5rem 1rem',
-            borderRadius: '4px',
-            fontWeight: 'bold'
-          }}>
-            {timeLimit}s
-          </div>
-        )} */}
+        {/* Timer de timeout */}
+        <StepTimeoutDisplay
+          timeoutState={timeoutState}
+          variant="minimal"
+          className="ml-4"
+        />
       </div>
 
       {/* Imagen comentada temporalmente por error de tipos */}

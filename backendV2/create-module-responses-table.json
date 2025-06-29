@@ -1,0 +1,66 @@
+{
+  "TableName": "emotioxv2-backend-module-responses-dev",
+  "AttributeDefinitions": [
+    {
+      "AttributeName": "id",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "researchId",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "participantId",
+      "AttributeType": "S"
+    }
+  ],
+  "KeySchema": [
+    {
+      "AttributeName": "id",
+      "KeyType": "HASH"
+    }
+  ],
+  "GlobalSecondaryIndexes": [
+    {
+      "IndexName": "ResearchIndex",
+      "KeySchema": [
+        {
+          "AttributeName": "researchId",
+          "KeyType": "HASH"
+        }
+      ],
+      "Projection": {
+        "ProjectionType": "ALL"
+      }
+    },
+    {
+      "IndexName": "ParticipantIndex",
+      "KeySchema": [
+        {
+          "AttributeName": "participantId",
+          "KeyType": "HASH"
+        }
+      ],
+      "Projection": {
+        "ProjectionType": "ALL"
+      }
+    },
+    {
+      "IndexName": "ResearchParticipantIndex",
+      "KeySchema": [
+        {
+          "AttributeName": "researchId",
+          "KeyType": "HASH"
+        },
+        {
+          "AttributeName": "participantId",
+          "KeyType": "RANGE"
+        }
+      ],
+      "Projection": {
+        "ProjectionType": "ALL"
+      }
+    }
+  ],
+  "BillingMode": "PAY_PER_REQUEST"
+}

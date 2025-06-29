@@ -1,10 +1,17 @@
 import { useCallback, useState } from 'react';
-import { apiClient } from '../lib/api';
-import { UseResponseAPIProps } from '../types';
+import { ApiClient } from '../lib/api';
+import { collectResponseMetadata } from '../utils/deviceInfo';
+
+interface UseResponseAPIProps {
+  researchId: string;
+  participantId: string;
+}
 
 export const useResponseAPI = ({ researchId, participantId }: UseResponseAPIProps) => {
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const apiClient = new ApiClient();
 
   const getResponses = useCallback(async () => {
     if (!researchId || !participantId) {
@@ -62,6 +69,9 @@ export const useResponseAPI = ({ researchId, participantId }: UseResponseAPIProp
     setIsLoading(true);
     setError(null);
     try {
+      // Recolectar metadata antes de enviar
+      const metadata = await collectResponseMetadata();
+
       const payload = {
         researchId,
         participantId,
@@ -69,6 +79,7 @@ export const useResponseAPI = ({ researchId, participantId }: UseResponseAPIProp
         stepType,
         stepTitle: stepName,
         response: answer,
+        metadata,
         ...(moduleId ? { moduleId } : {})
       };
 
@@ -108,7 +119,13 @@ export const useResponseAPI = ({ researchId, participantId }: UseResponseAPIProp
     setError(null);
 
     try {
-      const payloadForBody = { response: answer };
+      // Recolectar metadata antes de enviar
+      const metadata = await collectResponseMetadata();
+
+      const payloadForBody = {
+        response: answer,
+        metadata
+      };
 
       const response = await apiClient.updateModuleResponse(responseId, researchId, participantId, payloadForBody);
 
