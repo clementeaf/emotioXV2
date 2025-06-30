@@ -1,25 +1,12 @@
 'use client';
 
-// import { EmotionIntensity, EmotionCategory } from '@emotiox/shared'; // <<< Eliminar importación
-import { useEffect, useReducer, useCallback, useState } from 'react';
+import { Emotion } from '@/types/shared-types';
+import { useCallback, useEffect, useReducer, useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
 import { useApi } from '@/hooks/useApi';
 
 import { EmotionForm } from './emotions/EmotionForm';
-
-// <<< Definir tipos localmente (temporal) >>>
-type EmotionIntensity = 'LOW' | 'MEDIUM' | 'HIGH';
-type EmotionCategory = 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL';
-
-interface Emotion {
-  id: string;
-  name: string;
-  description: string;
-  intensity: EmotionIntensity;
-  category: EmotionCategory;
-  tags: string[];
-}
 
 interface EmotionsState {
   emotions: Emotion[];
@@ -81,7 +68,7 @@ export function EmotionsList() {
     // <<< Comentar llamada a API >>>
     /*
     const result = await api.emotions.getAll();
-    
+
     if (result.error) {
       dispatch({ type: 'FETCH_ERROR', payload: result.error });
     } else {
@@ -212,9 +199,9 @@ export function EmotionsList() {
                   </Button>
                 </div>
               </div>
-              
+
               <p className="text-gray-600">{emotion.description}</p>
-              
+
               <div className="flex gap-2">
                 <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                   {emotion.intensity.toLowerCase()}
@@ -223,7 +210,7 @@ export function EmotionsList() {
                   {emotion.category.toLowerCase()}
                 </span>
               </div>
-              
+
               {emotion.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1">
                   {emotion.tags.map(tag => (
@@ -242,4 +229,4 @@ export function EmotionsList() {
       )}
     </div>
   );
-} 
+}
