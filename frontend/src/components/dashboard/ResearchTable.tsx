@@ -2,6 +2,14 @@
 
 import { API_HTTP_ENDPOINT } from '@/api/endpoints';
 import { Button } from '@/components/ui/Button';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle
+} from '@/components/ui/Dialog';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Link from 'next/link';
@@ -246,32 +254,26 @@ function ResearchTableContent() {
       </div>
 
       {showDeleteModal && projectToDelete && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-            <div className="p-6">
-              <h3 className="text-lg font-medium text-neutral-900 mb-4">
-                ¿Eliminar investigación?
-              </h3>
-              <p className="text-neutral-600 mb-6">
+        <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>¿Eliminar investigación?</DialogTitle>
+              <DialogDescription>
                 ¿Estás seguro de que deseas eliminar la investigación "{projectToDelete.name}"? Esta acción no se puede deshacer.
-              </p>
-              <div className="flex justify-end space-x-4">
-                <Button
-                  variant="outline"
-                  onClick={cancelDeleteResearch}
-                >
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex justify-end space-x-4 mt-6">
+              <DialogClose asChild>
+                <Button variant="outline" onClick={cancelDeleteResearch}>
                   Cancelar
                 </Button>
-                <Button
-                  variant="destructive"
-                  onClick={confirmDeleteResearch}
-                >
-                  Eliminar
-                </Button>
-              </div>
+              </DialogClose>
+              <Button variant="destructive" onClick={confirmDeleteResearch}>
+                Eliminar
+              </Button>
             </div>
-          </div>
-        </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

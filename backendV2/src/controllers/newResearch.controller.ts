@@ -314,10 +314,14 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
         console.log('Manejando POST /research');
         return await controllerInstance.createResearch(event, userId);
 
+      case 'DELETE':
+        console.log('Manejando DELETE /research/{researchId}');
+        return await controllerInstance.deleteResearch(event, userId);
+
       default:
         return createResponse(405, {
           error: 'Método no permitido',
-          allowedMethods: ['GET', 'POST']
+          allowedMethods: ['GET', 'POST', 'DELETE']
         });
     }
 

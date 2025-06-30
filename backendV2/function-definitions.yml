@@ -94,6 +94,12 @@ api:
         method: GET
         cors: true
 
+    # --- RUTA: Eliminar investigación por ID ---
+    - http:
+        path: /research/{researchId}
+        method: DELETE
+        cors: true
+
     # Ruta genérica para el resto
     - http:
         path: /{proxy+}
