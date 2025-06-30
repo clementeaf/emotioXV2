@@ -1,10 +1,10 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { NewResearch } from '../models/newResearch.model';
 import { newResearchService, ResearchError } from '../services/newResearch.service';
-import { 
-  createResponse, 
-  errorResponse,
-  validateTokenAndSetupAuth
+import {
+    createResponse,
+    errorResponse,
+    validateTokenAndSetupAuth
 } from '../utils/controller.utils';
 
 /**
@@ -26,7 +26,7 @@ export class NewResearchController {
         body: event.body,
         requestContext: event.requestContext
       });
-      
+
       // Verificar que hay un cuerpo en la petición
       if (!event.body) {
         console.log('Error: No hay cuerpo en la petición');
@@ -34,7 +34,7 @@ export class NewResearchController {
       }
 
       console.log('ID de usuario extraído:', userId);
-      
+
       if (!userId) {
         console.log('Error: Usuario no autenticado');
         return errorResponse('Usuario no autenticado', 401);
@@ -263,20 +263,20 @@ export class NewResearchController {
    */
   private handleError(error: any): APIGatewayProxyResult {
     console.error('Error en controlador de investigaciones:', error);
-    
+
     if (error instanceof ResearchError) {
       const responseBody: any = {
         message: error.message
       };
-      
+
       // Si hay errores de validación, incluirlos en la respuesta
       if (error.validationErrors) {
         responseBody.errors = error.validationErrors;
       }
-      
+
       return createResponse(error.statusCode, responseBody);
     }
-    
+
     return createResponse(500, {
       error: 'Error interno del servidor',
       details: error.message || 'Error no especificado',
@@ -287,25 +287,44 @@ export class NewResearchController {
 // <<< Instanciar el controlador >>>
 const controllerInstance = new NewResearchController();
 
-// <<< Handler simple y directo para GET /research/all >>>
+// <<< Handler principal que maneja GET y POST /research >>>
 // Exportar como el nombre original esperado por el index/router
 export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-  console.log('Ejecutando simpleGetAllResearchesHandler (exportado como newResearchHandler)');
+  console.log('Ejecutando mainHandler para /research:', {
+    method: event.httpMethod,
+    path: event.path,
+    body: event.body
+  });
+
   try {
-    // Simular validación de token (necesario para obtener userId)
-    const authResult = await validateTokenAndSetupAuth(event, '/research/all');
+    // Validar token y obtener userId
+    const authResult = await validateTokenAndSetupAuth(event, event.path);
     if ('statusCode' in authResult) {
       return authResult;
     }
     const userId = authResult.userId;
 
-    // Llamar directamente al método del controlador instanciado
-    return await controllerInstance.getAllResearches(event, userId);
+    // Manejar diferentes métodos HTTP
+    switch (event.httpMethod) {
+      case 'GET':
+        console.log('Manejando GET /research');
+        return await controllerInstance.getAllResearches(event, userId);
+
+      case 'POST':
+        console.log('Manejando POST /research');
+        return await controllerInstance.createResearch(event, userId);
+
+      default:
+        return createResponse(405, {
+          error: 'Método no permitido',
+          allowedMethods: ['GET', 'POST']
+        });
+    }
 
   } catch (error: any) {
-    console.error('Error en simple handler (exportado como newResearchHandler):', error);
+    console.error('Error en mainHandler:', error);
     return createResponse(500, {
-      error: 'Error interno del servidor (simple handler)',
+      error: 'Error interno del servidor',
       details: error.message || 'Error no especificado'
     });
   }
@@ -340,4 +359,4 @@ const newResearchRouteMap: RouteMap = {
 export const newResearchHandler_original = createController(newResearchRouteMap, {
   basePath: '/research',
 });
-*/ 
+*/

@@ -18,11 +18,11 @@ role:
         - Fn::Sub: arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${self:service}-*-${self:provider.stage}
         # ARN para TODOS los índices de esas tablas
         - Fn::Sub: arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${self:service}-*-${self:provider.stage}/index/*
-        
-        # Las líneas explícitas para "ModuleResponses" literal se eliminan ya que ahora usamos una variable de entorno 
+
+        # Las líneas explícitas para "ModuleResponses" literal se eliminan ya que ahora usamos una variable de entorno
         # y la tabla se crea con un nombre basado en el servicio y la etapa.
         # La regla genérica de arriba debería cubrir la nueva tabla ${self:provider.environment.MODULE_RESPONSES_TABLE}
-        # si sigue el patrón ${self:service}-<algo>-${self:provider.stage}, 
+        # si sigue el patrón ${self:service}-<algo>-${self:provider.stage},
         # que es el caso con ${self:service}-module-responses-${self:provider.stage}.
 
         # Las siguientes entradas parecen ser para una tabla diferente que NO sigue el patrón ${self:service}-*-${self:provider.stage}
@@ -32,6 +32,7 @@ role:
         # o usar Fn::GetAtt si es la tabla principal definida en resources.yml con un nombre lógico.
         - Fn::Sub: arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/emotioxv2-backend-table-dev
         - Fn::Sub: arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/emotioxv2-backend-table-dev/index/researchId-index
+        - Fn::Sub: arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/emotioxv2-backend-table-dev/index/EntityTypeSkIndex
 
     # Permisos para el bucket S3
     - Effect: Allow
@@ -43,7 +44,7 @@ role:
         - s3:ListBucket
       Resource:
         # ARN del bucket referenciando el recurso lógico
-        - Fn::GetAtt: [StorageBucket, Arn] 
+        - Fn::GetAtt: [StorageBucket, Arn]
         # ARN para los objetos dentro del bucket
         - Fn::Join: ['', [Fn::GetAtt: [StorageBucket, Arn], '/*']]
 
@@ -53,6 +54,6 @@ role:
         - "logs:CreateLogGroup"
         - "logs:CreateLogStream"
         - "logs:PutLogEvents"
-      Resource: 
+      Resource:
         # ARN para los grupos de logs de las funciones de este stack
-        - Fn::Sub: arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${self:service}-${self:provider.stage}-*:* 
+        - Fn::Sub: arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${self:service}-${self:provider.stage}-*:*

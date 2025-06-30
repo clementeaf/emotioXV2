@@ -6,12 +6,10 @@ import { cn } from '@/lib/utils';
 
 import { metrics } from './config';
 import { CPVCard } from './CPVCard';
-import { EmotionalStates } from './EmotionalStates';
 import { Filters } from './Filters';
 import { MetricCard } from './MetricCard';
 import { mockData } from './mockData';
 import { NPSQuestion } from './NPSQuestion';
-import { QuestionResults } from './QuestionResults';
 import { TrustRelationshipFlow } from './TrustRelationshipFlow';
 import { SmartVOCResultsProps } from './types';
 import { VOCQuestion } from './VOCQuestion';
@@ -82,20 +80,20 @@ export function SmartVOCResults({ className }: SmartVOCResultsProps) {
           })}
         </div>
 
-        <div className="space-y-6">
+        {/* <div className="space-y-6">
           {mockData.questionResults.map((result) => (
             <QuestionResults
               key={result.questionNumber}
               {...result}
             />
           ))}
-        </div>
+        </div> */}
 
-        <EmotionalStates
+        {/* <EmotionalStates
           emotionalStates={mockData.emotionalStates.states}
           longTermClusters={mockData.emotionalStates.longTermClusters}
           shortTermClusters={mockData.emotionalStates.shortTermClusters}
-        />
+        /> */}
 
         {/* NPS Question después de EmotionalStates */}
         <NPSQuestion monthlyData={monthlyNPSData} />

@@ -3,7 +3,7 @@
 import { Suspense } from 'react';
 
 import { SearchParamsWrapper } from '@/components/common/SearchParamsWrapper';
-import { EmotionsContent } from '@/components/emotions/EmotionsContent';
+import { EmotionsList } from '@/components/EmotionsList';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
 
@@ -20,7 +20,7 @@ export default function EmotionsPage() {
       <div className="flex-1 flex flex-col p-8">
         <Suspense fallback={<div className="p-4 text-center">Cargando...</div>}>
           <SearchParamsWrapper>
-            <EmotionsContent />
+            <EmotionsList />
           </SearchParamsWrapper>
         </Suspense>
       </div>

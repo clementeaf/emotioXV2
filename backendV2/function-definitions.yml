@@ -76,6 +76,18 @@ api:
         method: DELETE
         cors: true
 
+    # --- RUTA: Crear nueva investigación ---
+    - http:
+        path: /research
+        method: POST
+        cors: true
+
+    # --- RUTA: Obtener todas las investigaciones ---
+    - http:
+        path: /research
+        method: GET
+        cors: true
+
     # --- NUEVA RUTA: Obtener formularios/pasos de una investigación ---
     - http:
         path: /research/{researchId}/forms

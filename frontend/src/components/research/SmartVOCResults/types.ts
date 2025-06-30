@@ -15,9 +15,8 @@ export interface MetricCardProps {
 }
 
 export interface TrustFlowData {
-  hour: string;
-  nps: number;
-  nev: number;
+  stage: string;
+  value: number;
 }
 
 export interface CPVChartData {
@@ -61,4 +60,32 @@ export interface EmotionalStatesData {
   states: EmotionalState[];
   longTermClusters: Cluster[];
   shortTermClusters: Cluster[];
+}
+
+export interface MockData {
+  cpv: number;
+  cpvTrend: Array<{ date: string; value: number }>;
+  trustFlow: Array<{ stage: string; value: number }>;
+  emotionalStates: {
+    states: Array<{ emotion: string; percentage: number }>;
+    longTermClusters: Array<{ cluster: string; count: number }>;
+    shortTermClusters: Array<{ cluster: string; count: number }>;
+  };
+  questionResults: Array<{
+    questionNumber: number;
+    question: string;
+    responses: Array<{ label: string; count: number; percentage: number }>;
+  }>;
+  csat: {
+    score: number;
+    data: Array<{ date: string; satisfied: number; dissatisfied: number }>;
+  };
+  ces: {
+    score: number;
+    data: Array<{ date: string; satisfied: number; dissatisfied: number }>;
+  };
+  cv: {
+    score: number;
+    data: Array<{ date: string; satisfied: number; dissatisfied: number }>;
+  };
 }

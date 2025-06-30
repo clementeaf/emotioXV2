@@ -4,20 +4,20 @@ NODE_ENV: ${self:provider.stage}
 STAGE: ${self:provider.stage}
 AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
 APP_REGION: ${self:provider.region}
-API_ENDPOINT: 
+API_ENDPOINT:
   Fn::Join:
     - ""
     - - "https://"
       - Ref: "ApiGatewayRestApi"
       - ".execute-api.${self:provider.region}.amazonaws.com/${self:provider.stage}"
-WEBSOCKET_ENDPOINT: 
+WEBSOCKET_ENDPOINT:
   Fn::Join:
     - ""
     - - "wss://"
       - Ref: "WebsocketsApi"
       - ".execute-api.${self:provider.region}.amazonaws.com/${self:provider.stage}"
 USER_TABLE: ${self:custom.usersTableName}
-DYNAMODB_TABLE: ${self:service}-table-${self:provider.stage}
+DYNAMODB_TABLE: emotioxv2-backend-table-dev
 PARTICIPANT_TABLE: ${self:service}-participants-${self:provider.stage}
 MODULE_RESPONSES_TABLE: ${self:service}-module-responses-${self:provider.stage}
 JWT_SECRET: ${env:JWT_SECRET, 'mi-clave-secreta-para-firmar-tokens'}
@@ -29,4 +29,4 @@ RECRUITMENT_LINK_TABLE: ${self:custom.recruitmentLinkTable}
 EMAIL_FROM: process.env.EMAIL_FROM
 EMAIL_TO: process.env.EMAIL_TO
 TABLE_NAME: ${self:custom.tableName}
-ALLOWED_ORIGIN: ${env:ALLOWED_ORIGIN, '*'} # Permitir cualquier origen por defecto para dev 
+ALLOWED_ORIGIN: ${env:ALLOWED_ORIGIN, '*'} # Permitir cualquier origen por defecto para dev

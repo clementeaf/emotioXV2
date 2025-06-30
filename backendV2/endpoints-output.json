@@ -1,2 +1,2 @@
-HttpApiUrl = "https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev"
-WebsocketApiUrl = "wss://w8dj7wxnl9.execute-api.us-east-1.amazonaws.com/dev"
+HttpApiUrl = "https://8tgodyuvfj.execute-api.us-east-1.amazonaws.com/prod"
+WebsocketApiUrl = "wss://0x3ndqqhe9.execute-api.us-east-1.amazonaws.com/prod"

@@ -8,4 +8,4 @@ export { NextStepsSection } from './NextStepsSection';
 export { RecentAnalysis } from './RecentAnalysis';
 export { RecommendationsSection } from './RecommendationsSection';
 
-export { EmotionsContent } from './EmotionsContent';
+// export { EmotionsContent } from './EmotionsContent';

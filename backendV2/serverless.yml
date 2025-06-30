@@ -18,19 +18,6 @@ custom:
   eyeTrackingRecruitParticipantTable: ${self:service}-eye-tracking-recruit-participant-${self:provider.stage}
   recruitmentLinkTable: ${self:service}-recruitment-link-${self:provider.stage}
 
-  esbuild:
-    bundle: true
-    minify: false
-    sourcemap: true
-    exclude: ['@aws-sdk/*']
-    target: 'node18'
-    define:
-      'process.env.NODE_ENV': '"${self:provider.stage}"'
-    platform: 'node'
-    concurrency: 10
-    keepNames: true
-    keepOutputDirectory: false
-
   # Configuración para entorno de desarrollo
   serverless-offline:
     httpPort: 3000
@@ -84,6 +71,16 @@ provider:
 
   environment: ${file(./environment-variables.yml)}
   iam: ${file(./iam-permissions.yml)}
+
+  # Configuración de esbuild
+  esbuild:
+    bundle: true
+    minify: false
+    sourcemap: true
+    exclude: ['aws-sdk']
+    target: 'node18'
+    platform: 'node'
+    concurrency: 10
 
 functions: ${file(./function-definitions.yml)}
 
