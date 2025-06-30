@@ -306,10 +306,10 @@ El sistema debe registrar todas las respuestas recibidas, pero solo las primeras
 - [✅] Validar que se almacenen correctamente en la base de datos
 - [✅] Confirmar que los formatos de tiempo sean compatibles
 - [✅] Verificar que la ubicación se guarde con precisión adecuada
-- [❌] Confirmar que el tipo de dispositivo se registre correctamente
-- [❌] Validar que los reingresos se cuenten y almacenen
+- [✅] Confirmar que el tipo de dispositivo se registre correctamente
+- [✅] Validar que los reingresos se cuenten y almacenen
 - [❌] Implementar logs de backend para debugging
-- [❌] Crear tests de integración backend-frontend
+- [✅] Crear tests de integración backend-frontend
 
 ### 6. Sistema de metadata completa
 - [✅] Recolectar información del dispositivo (deviceInfo)
@@ -318,12 +318,12 @@ El sistema debe registrar todas las respuestas recibidas, pero solo las primeras
 - [✅] Recolectar información de sesión (sessionInfo)
 - [✅] Recolectar información técnica (technicalInfo)
 - [✅] Verificar que el backend reciba todos los datos de metadata
-- [❌] Implementar filtros de metadata por configuración
+- [✅] Implementar filtros de metadata por configuración
 - [❌] Agregar analytics de metadata
 
 ### 7. Consentimiento y Privacidad
-- [❌] Implementar modal de consentimiento GDPR para geolocalización
-- [❌] Crear aviso de privacidad detallado
+- [✅] Implementar modal de consentimiento GDPR para geolocalización
+- [✅] Crear aviso de privacidad detallado
 - [❌] Manejar casos de rechazo de permisos
 - [❌] Implementar opción de "recordar decisión"
 - [❌] Agregar información sobre uso de datos

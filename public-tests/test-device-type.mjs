@@ -9,7 +9,7 @@
 
 import fetch from 'node-fetch';
 
-const API_BASE_URL = process.env.API_BASE_URL || 'https://api.emotiox.com';
+const API_BASE_URL = process.env.API_BASE_URL || 'https://8tgodyuvfj.execute-api.us-east-1.amazonaws.com/prod';
 const RESEARCH_ID = 'test-device-type-research';
 const PARTICIPANT_ID = 'test-device-type-participant';
 
