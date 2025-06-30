@@ -61,9 +61,9 @@ export function SmartVOCResults({ className }: SmartVOCResultsProps) {
             className="md:col-span-1"
           />
 
-          <TrustRelationshipFlow 
-            data={mockData.trustFlow} 
-            className="md:col-span-2" 
+          <TrustRelationshipFlow
+            data={mockData.trustFlow}
+            className="md:col-span-2"
           />
         </div>
 
@@ -107,4 +107,4 @@ export function SmartVOCResults({ className }: SmartVOCResultsProps) {
       <Filters className="w-80 shrink-0" />
     </div>
   );
-} 
+}

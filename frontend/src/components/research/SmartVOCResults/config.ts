@@ -42,4 +42,4 @@ export const metrics: MetricConfig[] = [
       data: data.cv.data
     })
   }
-]; 
+];
