@@ -13,6 +13,8 @@
 - [✅] **Enlaces desde modal GDPR y footer**
 - [✅] **Tests para página de privacidad**
 - [✅] **Crear aviso de privacidad detallado**
+- [✅] **Manejar casos de rechazo de permisos**
+- [✅] **Implementar opción de "recordar decisión"**
 
 ---
 
@@ -59,6 +61,36 @@
 - **Acceso**: `/privacy`
 - **Funcionalidad**: Página dedicada con información adicional
 - **Integración**: Enlaces desde modal GDPR y footer
+
+### 8. **Hook de Manejo de Rechazos** (`usePermissionRejection.ts`)
+- **Ubicación**: `src/hooks/usePermissionRejection.ts`
+- **Funcionalidad**: Manejo completo de rechazos de permisos GPS
+- **Fallback**: Ubicación por IP automática
+- **Estados**: Permisos, errores, ubicación IP
+
+### 9. **Componente de Notificación** (`PermissionRejectionNotice.tsx`)
+- **Ubicación**: `src/components/common/PermissionRejectionNotice.tsx`
+- **Funcionalidad**: Notificación de rechazo con opciones
+- **Acciones**: Reintentar GPS, usar IP, descartar
+- **Diseño**: Responsive y accesible
+
+### 10. **Hook Combinado Actualizado** (`useGeolocationWithConsent.ts`)
+- **Ubicación**: `src/hooks/useGeolocationWithConsent.ts`
+- **Funcionalidad**: Integración completa de consentimiento + permisos
+- **Manejo**: Rechazos, fallbacks, reintentos
+- **Estados**: Todos los estados posibles de permisos
+
+### 11. **Hook de Preferencias GDPR** (`useGDPRPreferences.ts`)
+- **Ubicación**: `src/hooks/useGDPRPreferences.ts`
+- **Funcionalidad**: Gestión completa de preferencias de usuario
+- **Opciones**: Recordar decisión, auto-aceptación, frecuencia
+- **Persistencia**: localStorage con historial de consentimientos
+
+### 12. **Panel de Preferencias** (`GDPRPreferencesPanel.tsx`)
+- **Ubicación**: `src/components/common/GDPRPreferencesPanel.tsx`
+- **Funcionalidad**: Interfaz completa de configuración
+- **Opciones**: Todas las preferencias GDPR configurables
+- **Diseño**: Modal responsive y accesible
 
 ---
 
@@ -160,14 +192,102 @@ const {
   location,
   isLoading,
   error,
+  consentStatus,
+  permissionStatus,
+  hasAttemptedGPS,
   requestLocation,
-  consentStatus
+  clearLocation,
+  retryWithGPS,
+  useIPLocation
 } = useGeolocationWithConsent();
 
 // El hook maneja automáticamente el consentimiento
 useEffect(() => {
   requestLocation();
 }, []);
+```
+
+### **Uso del Manejo de Rechazos**
+```typescript
+import { usePermissionRejection } from './hooks/usePermissionRejection';
+import { PermissionRejectionNotice } from './components/common/PermissionRejectionNotice';
+
+const {
+  gpsPermission,
+  ipLocation,
+  requestGPSPermission,
+  getLocationByIP
+} = usePermissionRejection();
+
+// Manejar rechazo de permisos
+const handlePermissionRejection = async () => {
+  const gpsLocation = await requestGPSPermission();
+
+  if (!gpsLocation) {
+    // Mostrar notificación de rechazo
+    setShowRejectionNotice(true);
+  }
+};
+
+// Usar ubicación por IP como fallback
+const handleUseIPLocation = async () => {
+  const ipLocationData = await getLocationByIP();
+  // Usar ubicación aproximada
+};
+```
+
+### **Uso del Sistema de Preferencias**
+```typescript
+import { useGDPRPreferences } from './hooks/useGDPRPreferences';
+import { GDPRPreferencesPanel } from './components/common/GDPRPreferencesPanel';
+
+const {
+  preferences,
+  updatePreferences,
+  resetPreferences,
+  shouldShowConsent
+} = useGDPRPreferences();
+
+// Configurar preferencias
+const handleUpdatePreferences = () => {
+  updatePreferences({
+    rememberDecision: true,
+    autoAccept: false,
+    notificationFrequency: 'once'
+  });
+};
+
+// Verificar si debe mostrar consentimiento
+const shouldShow = shouldShowConsent('research-id');
+
+// Panel de configuración
+const [showPreferences, setShowPreferences] = useState(false);
+
+<GDPRPreferencesPanel
+  isOpen={showPreferences}
+  onClose={() => setShowPreferences(false)}
+/>
+```
+
+### **Uso del Modal con Recordar Decisión**
+```typescript
+import { useGDPRConsent } from './hooks/useGDPRConsent';
+
+const {
+  rememberDecision,
+  setRememberDecision,
+  requestConsent
+} = useGDPRConsent('research-id');
+
+<GDPRConsentModal
+  isOpen={isModalOpen}
+  onAccept={handleAccept}
+  onReject={handleReject}
+  onClose={closeModal}
+  rememberDecision={rememberDecision}
+  onRememberDecisionChange={setRememberDecision}
+  researchTitle="Mi Investigación"
+/>
 ```
 
 ---

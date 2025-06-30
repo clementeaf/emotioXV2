@@ -5,8 +5,11 @@ interface GDPRConsentModalProps {
   onAccept: () => void;
   onReject: () => void;
   onClose: () => void;
+  onUseIPLocation?: () => void;
   researchTitle?: string;
   className?: string;
+  rememberDecision?: boolean;
+  onRememberDecisionChange?: (remember: boolean) => void;
 }
 
 export const GDPRConsentModal: React.FC<GDPRConsentModalProps> = ({
@@ -14,8 +17,11 @@ export const GDPRConsentModal: React.FC<GDPRConsentModalProps> = ({
   onAccept,
   onReject,
   onClose,
+  onUseIPLocation,
   researchTitle = 'esta investigación',
-  className = ''
+  className = '',
+  rememberDecision,
+  onRememberDecisionChange
 }) => {
   const [hasInteracted, setHasInteracted] = useState(false);
 
@@ -192,6 +198,46 @@ export const GDPRConsentModal: React.FC<GDPRConsentModalProps> = ({
                 </a>
               </div>
             </div>
+
+            {/* Preferencias de Consentimiento */}
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <h4 className="text-md font-semibold text-gray-900 mb-3">
+                ⚙️ Preferencias de Consentimiento
+              </h4>
+
+              <div className="space-y-3">
+                {/* Recordar Decisión */}
+                <div className="flex items-start">
+                  <input
+                    type="checkbox"
+                    id="remember-decision"
+                    checked={rememberDecision}
+                    onChange={(e) => onRememberDecisionChange?.(e.target.checked)}
+                    className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="remember-decision" className="ml-3 text-sm text-gray-700">
+                    <span className="font-medium">Recordar mi decisión</span>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Si marca esta opción, no le volveremos a preguntar sobre el consentimiento de geolocalización
+                      para futuras investigaciones de este tipo. Puede cambiar esta preferencia en cualquier momento.
+                    </p>
+                  </label>
+                </div>
+
+                {/* Información adicional sobre preferencias */}
+                <div className="text-xs text-gray-500 bg-white p-3 rounded border">
+                  <p className="mb-2">
+                    <strong>¿Qué significa "recordar decisión"?</strong>
+                  </p>
+                  <ul className="space-y-1 ml-4">
+                    <li>• Su elección se guardará en su navegador</li>
+                    <li>• Se aplicará automáticamente a investigaciones similares</li>
+                    <li>• Puede cambiar su decisión en cualquier momento</li>
+                    <li>• Los datos se almacenan solo en su dispositivo</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -204,6 +250,15 @@ export const GDPRConsentModal: React.FC<GDPRConsentModalProps> = ({
             <p>Al hacer clic en "Aceptar", confirma que ha leído y comprendido esta información</p>
           </div>
           <div className="flex space-x-3">
+            {onUseIPLocation && (
+              <button
+                data-testid="gdpr-modal-use-ip"
+                onClick={onUseIPLocation}
+                className="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-300 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              >
+                📍 Usar ubicación aproximada
+              </button>
+            )}
             <button
               data-testid="gdpr-modal-reject"
               onClick={handleReject}
