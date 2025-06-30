@@ -37,11 +37,11 @@ export const useGDPRPreferences = (): UseGDPRPreferencesReturn => {
       const stored = localStorage.getItem(GDPR_PREFERENCES_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        setPreferences(prev => ({
+        setPreferences({
           ...DEFAULT_PREFERENCES,
           ...parsed,
           lastUpdated: parsed.lastUpdated || Date.now(),
-        }));
+        });
       }
     } catch (error) {
       console.warn('Error loading GDPR preferences from localStorage:', error);

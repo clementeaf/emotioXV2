@@ -19,7 +19,6 @@ export const TimeProgress: React.FC<TimeProgressProps> = ({
   const {
     isGlobalTimerRunning,
     globalStartTime,
-    globalEndTime,
     getGlobalDuration
   } = useResponseTiming();
 

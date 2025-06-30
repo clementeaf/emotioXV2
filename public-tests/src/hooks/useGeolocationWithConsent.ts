@@ -38,10 +38,9 @@ export const useGeolocationWithConsent = (): UseGeolocationWithConsentReturn => 
     hasAttemptedGPS: false,
   });
 
-  const { consentState, requestConsent, resetConsent, canUseGeolocation } = useGDPRConsent();
+  const { consentState, canUseGeolocation } = useGDPRConsent();
   const {
     gpsPermission,
-    ipLocation,
     requestGPSPermission,
     getLocationByIP,
     resetPermissions

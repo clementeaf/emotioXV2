@@ -21,7 +21,7 @@ const nextConfig = {
   // Transpilación de paquetes externos
   transpilePackages: ['../shared'],
   // Habilitar soporte para Amplify
-  output: 'export',
+  // output: 'export',
   webpack: (config) => {
     // Resolver correctamente los módulos compartidos
     config.resolve.fallback = {

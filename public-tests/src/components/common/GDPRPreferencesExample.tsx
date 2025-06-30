@@ -9,23 +9,21 @@ export const GDPRPreferencesExample: React.FC = () => {
 
   const {
     consentState,
-    isModalOpen,
-    rememberDecision,
     requestConsent,
+    resetConsent,
+    rememberDecision,
+    setRememberDecision,
+    isModalOpen,
     handleAccept,
     handleReject,
     closeModal,
-    resetConsent,
-    setRememberDecision,
     needsConsent,
     canUseGeolocation,
-    getConsentInfo,
-    preferences
+    getConsentInfo
   } = useGDPRConsent('test-research-preferences');
 
   const {
     preferences: gdprPreferences,
-    updatePreferences,
     resetPreferences
   } = useGDPRPreferences();
 

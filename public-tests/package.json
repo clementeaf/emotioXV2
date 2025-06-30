@@ -13,6 +13,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@emotiox/shared": "*",
     "@headlessui/react": "^2.2.0",
     "@radix-ui/react-slot": "^1.2.0",
     "@tanstack/react-query": "^5.73.3",
