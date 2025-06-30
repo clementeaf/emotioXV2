@@ -1,9 +1,11 @@
 #!/bin/bash
 
-# Obtener la URL del API Gateway (ajusta el nombre del stack y OutputKey según tu infraestructura)
-export API_URL=$(aws cloudformation describe-stacks --stack-name emotiox-backend-stack --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" --output text)
+# URLs reales obtenidas del código existente
+export API_URL="https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev"
+export PUBLIC_TESTS_CLOUDFRONT_URL="https://d2s9nr0bm47yl1.cloudfront.net/"
 
-# Obtener la URL de CloudFront para public-tests (ajusta el nombre del stack y OutputKey)
-export PUBLIC_TESTS_CLOUDFRONT_URL=$(aws cloudformation describe-stacks --stack-name emotiox-public-tests-stack --query "Stacks[0].Outputs[?OutputKey=='CloudFrontUrl'].OutputValue" --output text)
+echo "🔧 Variables de entorno cargadas:"
+echo "   API_URL: $API_URL"
+echo "   PUBLIC_TESTS_CLOUDFRONT_URL: $PUBLIC_TESTS_CLOUDFRONT_URL"
 
 # Puedes agregar más variables dinámicas aquí si lo necesitas
