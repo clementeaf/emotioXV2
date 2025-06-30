@@ -1,10 +1,8 @@
 #!/bin/bash
 set -e
 
-# === CONFIGURACIÓN ===
-API_URL="https://tu-api-lambda.amazonaws.com/dev" # Cambia esto por la URL real tras el deploy
-FRONTEND_ENV=frontend/.env.production
-PUBLIC_TESTS_ENV=public-tests/.env.production
+# Cargar variables dinámicas
+source scripts/envs-source.sh
 
 # === 1. Actualizar o agregar la variable en frontend/.env.production ===
 echo "Actualizando NEXT_PUBLIC_API_URL en $FRONTEND_ENV..."

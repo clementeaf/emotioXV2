@@ -2,9 +2,7 @@
 set -e
 
 # === CONFIGURACIÓN INICIAL ===
-# Cambia estos valores según tu entorno
-API_URL="https://tu-api-lambda.amazonaws.com/dev" # Actualiza tras deploy de backendv2
-PUBLIC_TESTS_CLOUDFRONT_URL="https://d2s9nr0bm47yl1.cloudfront.net/"
+source scripts/envs-source.sh
 
 # === 1. Actualizar la URL de backendv2 en ambos frontends ===
 echo "\n[1/5] Actualizando NEXT_PUBLIC_API_URL en ambos .env.production..."
