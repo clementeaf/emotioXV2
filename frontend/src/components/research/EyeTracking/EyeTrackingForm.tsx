@@ -11,6 +11,8 @@ import { StimuliTab } from '../StimuliTab/StimuliTab';
 import { CalibrationTab } from './CalibrationTab';
 import { SettingsTab } from './SettingsTab';
 
+import { useEyeTrackingForm } from './hooks/useEyeTrackingForm';
+
 interface EyeTrackingFormProps {
   researchId: string;
   initialData?: any;

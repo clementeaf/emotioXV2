@@ -1,7 +1,7 @@
 import { smartVocFixedAPI } from '@/lib/smart-voc-api';
 import type {
-  SmartVOCFormData,
-  SmartVOCQuestion
+    SmartVOCFormData,
+    SmartVOCQuestion
 } from 'shared/interfaces/smart-voc.interface';
 
 /**
@@ -39,7 +39,8 @@ export const smartVOCFormService = {
    * @returns Formulario actualizado
    */
   async update(researchId: string, data: Partial<SmartVOCFormData>): Promise<SmartVOCFormData> {
-    return smartVocFixedAPI.update(researchId, data);
+    // Para SmartVOC, el researchId actúa como formId
+    return smartVocFixedAPI.update(researchId, researchId, data);
   },
 
   /**

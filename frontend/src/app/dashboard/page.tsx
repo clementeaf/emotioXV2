@@ -1,6 +1,6 @@
 'use client';
 
-import { DashboardLayoutWithParams } from '@/components/dashboard';
+import { DashboardContent } from '@/components/dashboard/DashboardContent';
 import { useAuth } from '@/providers/AuthProvider';
 import { Suspense } from 'react';
 
@@ -24,7 +24,7 @@ export default function DashboardPage() {
 
   return (
     <Suspense fallback={<div className="p-4 text-center">Cargando...</div>}>
-      <DashboardLayoutWithParams />
+      <DashboardContent />
     </Suspense>
   );
 }

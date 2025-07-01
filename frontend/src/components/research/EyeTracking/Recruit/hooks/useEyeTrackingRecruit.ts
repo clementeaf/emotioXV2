@@ -1,15 +1,14 @@
 'use client';
 
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect, useCallback } from 'react';
-import React from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { 
-  EyeTrackingRecruitStats,
-  DemographicQuestionKeys,
-  LinkConfigKeys,
-  ParameterOptionKeys,
+import {
+    DemographicQuestionKeys,
+    EyeTrackingRecruitStats,
+    LinkConfigKeys,
+    ParameterOptionKeys,
 } from 'shared/interfaces/eyeTrackingRecruit.interface';
 
 import { useErrorLog } from '@/components/utils/ErrorLogger';
@@ -102,13 +101,13 @@ interface UseEyeTrackingRecruitResult {
   saving: boolean;
   formData: EyeTrackingRecruitFormData;
   stats: EyeTrackingRecruitStats | null;
-  
+
   // Estados para los switches principales
   demographicQuestionsEnabled: boolean;
   setDemographicQuestionsEnabled: (value: boolean) => void;
   linkConfigEnabled: boolean;
   setLinkConfigEnabled: (value: boolean) => void;
-  
+
   // Métodos para manipular el formulario
   handleDemographicChange: (key: DemographicQuestionKeys, value: boolean) => void;
   handleDemographicRequired: (key: DemographicQuestionKeys, required: boolean) => void;
@@ -117,23 +116,23 @@ interface UseEyeTrackingRecruitResult {
   handleParamOptionChange: (key: ParameterOptionKeys, value: boolean) => void;
   setLimitParticipants: (value: boolean) => void;
   setParticipantLimit: (value: number) => void;
-  
+
   // Acciones
   saveForm: () => void;
   handleConfirmSave: () => Promise<void>;
   generateRecruitmentLink: () => string;
   generateQRCode: () => void;
   copyLinkToClipboard: () => void;
-  
+
   // Estados para los modales
   modalError: ErrorModalData | null;
   modalVisible: boolean;
   showConfirmModal: boolean;
   apiErrors: {visible: boolean, title: string, message: string} | undefined;
-  
+
   // Métodos para los modales
   closeModal: () => void;
-  
+
   // Nuevos estados para QR
   qrCodeData: string | null;
   showQRModal: boolean;
@@ -165,45 +164,45 @@ const ensureOptionsArray = (options?: string[]): string[] => {
 const DEFAULT_CONFIG: EyeTrackingRecruitFormData = {
   researchId: '',
   demographicQuestions: {
-    age: { 
-      enabled: false, 
-      required: false, 
-      options: [] 
+    age: {
+      enabled: false,
+      required: false,
+      options: []
     },
-    country: { 
-      enabled: false, 
-      required: false, 
-      options: [] 
+    country: {
+      enabled: false,
+      required: false,
+      options: []
     },
-    gender: { 
-      enabled: false, 
-      required: false, 
-      options: [] 
+    gender: {
+      enabled: false,
+      required: false,
+      options: []
     },
-    educationLevel: { 
-      enabled: false, 
-      required: false, 
-      options: [] 
+    educationLevel: {
+      enabled: false,
+      required: false,
+      options: []
     },
-    householdIncome: { 
-      enabled: false, 
-      required: false, 
-      options: [] 
+    householdIncome: {
+      enabled: false,
+      required: false,
+      options: []
     },
-    employmentStatus: { 
-      enabled: false, 
-      required: false, 
-      options: [] 
+    employmentStatus: {
+      enabled: false,
+      required: false,
+      options: []
     },
-    dailyHoursOnline: { 
-      enabled: false, 
-      required: false, 
-      options: [] 
+    dailyHoursOnline: {
+      enabled: false,
+      required: false,
+      options: []
     },
-    technicalProficiency: { 
-      enabled: false, 
-      required: false, 
-      options: [] 
+    technicalProficiency: {
+      enabled: false,
+      required: false,
+      options: []
     }
   },
   linkConfig: {
@@ -247,8 +246,8 @@ const processApiResponse = (response: any): EyeTrackingRecruitFormData => {
     // Preguntas demográficas
     if (response.demographicQuestions) {
       const demographicKeys: DemographicQuestionKeys[] = [
-        'age', 'country', 'gender', 'educationLevel', 
-        'householdIncome', 'employmentStatus', 
+        'age', 'country', 'gender', 'educationLevel',
+        'householdIncome', 'employmentStatus',
         'dailyHoursOnline', 'technicalProficiency'
       ];
 
@@ -318,7 +317,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   const router = useRouter();
   const logger = useErrorLog();
   const queryClient = useQueryClient();
-  
+
   // Estados
   const [formData, setFormData] = useState<EyeTrackingRecruitFormData>({
     ...DEFAULT_CONFIG,
@@ -327,28 +326,28 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   const [stats, setStats] = useState<EyeTrackingRecruitStats | null>(DEFAULT_STATS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  
+
   // Estados para los switches principales
   const [demographicQuestionsEnabled, setDemographicQuestionsEnabledState] = useState(true);
   const [linkConfigEnabled, setLinkConfigEnabledState] = useState(true);
-  
+
   // Estados para los modales
   const [modalError, setModalError] = useState<ErrorModalData | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [apiErrors, setApiErrors] = useState<{visible: boolean, title: string, message: string} | undefined>(undefined);
-  
+
   // Nuevos estados para QR
   const [qrCodeData, setQrCodeData] = useState<string | null>(null);
   const [showQRModal, setShowQRModal] = useState<boolean>(false);
-  
+
   // Función para generar el enlace de reclutamiento
   const generateRecruitmentLink = useCallback(() => {
     const actualResearchId = researchId === 'current' ? '1234' : researchId;
-    // Usar el mismo formato que en ResearchSidebar para asegurar consistencia
+    // Usar el mismo formato que en el sidebar unificado para asegurar consistencia
     const publicTestsBaseUrl = process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://useremotion.com';
     return `${publicTestsBaseUrl}/link/${actualResearchId}`;
   }, [researchId]);
-  
+
   // Cargar configuración existente
   const actualResearchId = researchId === 'current' ? '1234' : researchId;
   const { isLoading: isLoadingConfig } = useQuery({
@@ -358,39 +357,39 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
         console.log('[useEyeTrackingRecruit] Cargando config para:', actualResearchId);
         const response = await eyeTrackingFixedAPI.getRecruitConfig(actualResearchId).send();
         console.log('[useEyeTrackingRecruit] Config cargada (respuesta API):', response);
-        
+
         // Si no hay datos en la respuesta, crear una configuración predeterminada
         if (!response) {
           console.log('[useEyeTrackingRecruit] Sin respuesta, usando configuración predeterminada');
           return createDefaultConfig(actualResearchId);
         }
-        
+
         // Verificar si la respuesta contiene los datos necesarios
         if (!response.id) {
           console.log('[useEyeTrackingRecruit] Respuesta sin ID, usando configuración predeterminada');
           return createDefaultConfig(actualResearchId);
         }
-        
+
         // Procesar la respuesta para adaptarla a nuestra estructura
         // Si estamos usando la API de eye-tracking normal, necesitamos adaptarla
         const configData = processApiResponse(response);
-        
+
         // Asegurarnos de usar el researchId correcto
         configData.researchId = actualResearchId;
-        
+
         // Actualizar el estado del formulario
         setFormData(configData);
-        
+
         // Determinar si hay preguntas demográficas habilitadas
         const hasDemographics = Object.values(configData.demographicQuestions).some(
           (q: any) => q.enabled
         );
         setDemographicQuestionsEnabledState(hasDemographics);
-        
+
         // Determinar si hay opciones de configuración de enlace habilitadas
         const hasLinkConfig = Object.values(configData.linkConfig).some(value => value);
         setLinkConfigEnabledState(hasLinkConfig);
-        
+
         return configData;
       } catch (error: any) {
         console.log('[useEyeTrackingRecruit] Error al cargar:', error);
@@ -404,12 +403,12 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     },
     enabled: !!actualResearchId
   });
-  
+
   // Actualizar estado de carga cuando termina la consulta y asignar URL automáticamente
   useEffect(() => {
     if (!isLoadingConfig) {
       setLoading(false);
-      
+
       // Establecer automáticamente la URL de investigación al cargar
       const generatedLink = generateRecruitmentLink();
       setFormData(prev => ({
@@ -418,30 +417,30 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       }));
     }
   }, [isLoadingConfig, generateRecruitmentLink]);
-  
+
   // Función para validar campos requeridos
   const checkRequiredFields = useCallback(() => {
     const errors: string[] = [];
-    
+
     // Verificar que tenga una URL de investigación
     if (!formData.researchUrl) {
       errors.push('URL de investigación es requerida');
     }
-    
+
     // Verificar campos demográficos marcados como required
     Object.entries(formData.demographicQuestions).forEach(([key, value]) => {
       if (value.enabled && value.required) {
         // Aquí podríamos verificar más condiciones si fuera necesario
       }
     });
-    
+
     // Verificar otras condiciones según sea necesario...
-    
+
     if (errors.length > 0) {
       console.log('[useEyeTrackingRecruit] Errores de validación:', errors);
       return false;
     }
-    
+
     return true;
   }, [formData]);
 
@@ -464,13 +463,13 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       });
     }
   });
-  
+
   // Handlers para el modal de error
   const closeModal = useCallback(() => {
     setModalVisible(false);
     setModalError(null);
   }, []);
-  
+
   // Función para cerrar el modal QR
   const closeQRModal = useCallback(() => {
     setShowQRModal(false);
@@ -481,30 +480,30 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     setModalError(data);
     setModalVisible(true);
   }, []);
-  
+
   // Función que ejecuta el guardado real
   const handleConfirmSave = React.useCallback(async () => {
     setLoading(true);
-    
+
     try {
       // Preparamos los datos para enviar
       const actualResearchId = researchId === 'current' ? '1234' : researchId;
-      
+
       // Extraer los datos excluyendo el id, para forzar al backend a usar updateByResearchId
       const { id, ...restFormData } = formData;
       const dataToSave = {
         ...restFormData,
-        researchId: actualResearchId 
+        researchId: actualResearchId
       };
-      
+
       console.log('[useEyeTrackingRecruit] Guardando config con ID de investigación:', dataToSave.researchId);
       console.log('[useEyeTrackingRecruit] ID original de configuración eliminado:', id || 'No tenía ID');
       console.log('[useEyeTrackingRecruit] Payload completo:', JSON.stringify(dataToSave, null, 2));
-      
+
       // Enviamos los datos al servidor
       const result = await saveConfigMutation.mutateAsync(dataToSave);
       console.log('[useEyeTrackingRecruit] Resultado exitoso:', result);
-      
+
       // Mostrar modal de éxito (tipo info para usar azul)
       showModal({
         title: 'Éxito',
@@ -513,7 +512,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       });
     } catch (error: any) {
       console.error('[useEyeTrackingRecruit] Error al guardar:', error);
-      
+
       // Mostrar información detallada del error
       let errorMessage = '';
       if (error.statusCode) {
@@ -523,9 +522,9 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       } else {
         errorMessage = 'Error desconocido al guardar la configuración';
       }
-      
+
       toast.error(`Error: ${errorMessage}`);
-      
+
       // Mostrar el modal de error
       setApiErrors({
         visible: true,
@@ -541,7 +540,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   const saveForm = React.useCallback(async () => {
     setLoading(true);
     setApiErrors(undefined);
-    
+
     try {
       // Validamos los datos antes de enviar
       if (checkRequiredFields()) {
@@ -580,7 +579,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       }));
     }
   }, [demographicQuestionsEnabled]);
-  
+
   // Actualizar el efecto de linkConfigEnabled
   useEffect(() => {
     if (!linkConfigEnabled) {
@@ -594,7 +593,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       }));
     }
   }, [linkConfigEnabled]);
-  
+
   // Métodos para manipular el formulario
   const handleDemographicChange = useCallback((key: DemographicQuestionKeys, value: boolean) => {
     setFormData(prevData => ({
@@ -609,7 +608,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       }
     }));
   }, []);
-  
+
   // Nuevo método para manejar el cambio de required en preguntas demográficas
   const handleDemographicRequired = useCallback((key: DemographicQuestionKeys, required: boolean) => {
     setFormData(prevData => ({
@@ -623,7 +622,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       }
     }));
   }, []);
-  
+
   const handleLinkConfigChange = useCallback((key: LinkConfigKeys, value: any) => {
     setFormData(prevData => ({
       ...prevData,
@@ -633,7 +632,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       }
     }));
   }, []);
-  
+
   const handleBacklinkChange = useCallback((key: string, value: string) => {
     setFormData(prevData => ({
       ...prevData,
@@ -643,7 +642,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       }
     }));
   }, []);
-  
+
   const handleParamOptionChange = useCallback((key: ParameterOptionKeys, value: boolean) => {
     setFormData(prevData => ({
       ...prevData,
@@ -653,7 +652,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       }
     }));
   }, []);
-  
+
   const setLimitParticipants = useCallback((value: boolean) => {
     setFormData(prevData => ({
       ...prevData,
@@ -663,7 +662,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       }
     }));
   }, []);
-  
+
   const setParticipantLimit = useCallback((value: number) => {
     setFormData(prevData => ({
       ...prevData,
@@ -673,28 +672,28 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       }
     }));
   }, []);
-  
+
   // Acciones
   const generateQRCode = useCallback(() => {
     const link = generateRecruitmentLink();
-    
+
     // Generar QR (en una aplicación real, podríamos usar una librería como qrcode.react)
     // Aquí simularemos la generación almacenando la URL en el estado
     setQrCodeData(link);
     setShowQRModal(true);
-    
+
     // Aquí es donde normalmente generaríamos el QR con una librería
     // Por ejemplo: const qrCodeSvg = await QRCode.toString(link, { type: 'svg' });
-    
+
     toast.success('Código QR generado correctamente');
   }, [generateRecruitmentLink]);
-  
+
   const copyLinkToClipboard = useCallback(() => {
     const link = generateRecruitmentLink();
     navigator.clipboard.writeText(link);
     toast.success('Enlace copiado al portapapeles');
   }, [generateRecruitmentLink]);
-  
+
   // Efecto para crear el modal QR
   useEffect(() => {
     if (showQRModal && qrCodeData) {
@@ -732,28 +731,28 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
           </div>
         </div>
       `;
-      
+
       // Crear elemento en el DOM
       const qrModalContainer = document.createElement('div');
       qrModalContainer.innerHTML = qrModalHtml;
       document.body.appendChild(qrModalContainer);
-      
+
       // Configurar eventos
       document.getElementById('closeQRModal')?.addEventListener('click', () => {
         document.body.removeChild(qrModalContainer);
         closeQRModal();
       });
-      
+
       document.getElementById('downloadQRCode')?.addEventListener('click', () => {
         // En una aplicación real, aquí descargaríamos la imagen del QR
         toast.success('Código QR descargado correctamente');
       });
-      
+
       document.getElementById('closeQRAction')?.addEventListener('click', () => {
         document.body.removeChild(qrModalContainer);
         closeQRModal();
       });
-      
+
       // También permitir cerrar haciendo clic fuera del modal
       qrModalContainer.addEventListener('click', (e) => {
         if (e.target === qrModalContainer.firstChild) {
@@ -761,7 +760,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
           closeQRModal();
         }
       });
-      
+
       // Limpiar al desmontar
       return () => {
         if (document.body.contains(qrModalContainer)) {
@@ -770,7 +769,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       };
     }
   }, [showQRModal, qrCodeData]);
-  
+
   // Actualizar el handler de demographicQuestionsEnabled
   const setDemographicQuestionsEnabled = useCallback((enabled: boolean) => {
     if (!enabled) {
@@ -791,7 +790,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     }
     setDemographicQuestionsEnabledState(enabled);
   }, []);
-  
+
   // Actualizar el handler de linkConfigEnabled
   const setLinkConfigEnabled = useCallback((enabled: boolean) => {
     if (!enabled) {
@@ -807,47 +806,47 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     }
     setLinkConfigEnabledState(enabled);
   }, []);
-  
+
   // Función auxiliar para crear una configuración predeterminada
   const createDefaultConfig = (researchId: string) => {
     const defaultConfig = {
       ...DEFAULT_CONFIG,
       researchId
     };
-    
+
     // Actualizar el estado del formulario
     setFormData(defaultConfig);
-    
+
     return defaultConfig;
   };
-  
+
   return {
     // Estados del formulario
     loading,
     saving,
     formData,
     stats,
-    
+
     // Estados para los switches principales
     demographicQuestionsEnabled,
     setDemographicQuestionsEnabled,
     linkConfigEnabled,
     setLinkConfigEnabled,
-    
+
     // Estados para los modales
     modalError,
     modalVisible,
     showConfirmModal: false,
     apiErrors,
-    
+
     // Métodos para los modales
     closeModal,
-    
+
     // Nuevos estados para QR
     qrCodeData,
     showQRModal,
     closeQRModal,
-    
+
     // Métodos del formulario
     handleDemographicChange,
     handleDemographicRequired,
@@ -856,7 +855,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     handleParamOptionChange,
     setLimitParticipants,
     setParticipantLimit,
-    
+
     // Acciones
     saveForm,
     handleConfirmSave,
@@ -864,4 +863,4 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     generateQRCode,
     copyLinkToClipboard
   };
-} 
+}

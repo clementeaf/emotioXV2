@@ -97,21 +97,14 @@ export interface ResearchDraft {
 export interface ResearchStore {
   currentDraft: ResearchDraft | null;
   hasDraft: boolean;
-  
+
   createDraft: () => ResearchDraft;
   updateDraft: (data: Partial<ResearchDraft['data']>, step: ResearchDraft['step']) => void;
   clearDraft: () => void;
   getDraft: () => ResearchDraft | null;
 }
 
-/**
- * Props para el sidebar de investigación
- */
-export interface ResearchSidebarProps {
-  researchId: string;
-  activeStage?: string;
-  className?: string;
-}
+
 
 /**
  * Interfaz para las secciones del sidebar
@@ -135,4 +128,4 @@ export interface ResearchContextType {
   updateDraft: (data: Partial<ResearchDraft['data']>, step: ResearchDraft['step']) => void;
   clearDraft: () => void;
   getDraft: () => ResearchDraft | null;
-} 
+}

@@ -342,7 +342,8 @@ export function useEyeTrackingForm({
           setIsEmpty(true);
           return;
         }
-        const data = await eyeTrackingFixedAPI.getByResearchId(researchId);
+        const apiResult = await eyeTrackingFixedAPI.getByResearchId(researchId);
+        const data = await apiResult.send();
         if (!data) {
           setIsEmpty(true);
           return;
@@ -352,7 +353,7 @@ export function useEyeTrackingForm({
         setEyeTrackingId(data.id || null);
       } catch (error) {
         // Solo mostrar error si NO es 404/null
-        if (error && error.status !== 404) {
+        if (error && typeof error === 'object' && 'status' in error && (error as any).status !== 404) {
           // Aquí podrías setear un modal de error si tienes uno
         }
         setIsEmpty(true);
