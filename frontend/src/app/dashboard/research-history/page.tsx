@@ -2,7 +2,6 @@
 
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
-import { Sidebar } from '@/components/layout/Sidebar';
 import { ResearchHistoryContent } from '@/components/research-history/ResearchHistoryContent';
 import { Spinner } from '@/components/ui/Spinner';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
@@ -18,17 +17,12 @@ export default function ResearchHistoryPage() {
   }
 
   return (
-    <div className="flex h-screen bg-neutral-50">
-      <Sidebar />
-      <div className="flex-1 flex flex-col">
-        <main className="flex-1 p-6">
-          <ErrorBoundary>
-            <Suspense fallback={<Spinner message="Cargando datos del historial..." />}>
-              <ResearchHistoryContentWithParams />
-            </Suspense>
-          </ErrorBoundary>
-        </main>
-      </div>
+    <div className="bg-white rounded-xl shadow p-6 min-h-[400px]">
+      <ErrorBoundary>
+        <Suspense fallback={<Spinner message="Cargando datos del historial..." />}>
+          <ResearchHistoryContentWithParams />
+        </Suspense>
+      </ErrorBoundary>
     </div>
   );
 }

@@ -1,29 +1,22 @@
 'use client';
 
-import { Suspense } from 'react';
-
 import { SearchParamsWrapper } from '@/components/common/SearchParamsWrapper';
 import { EmotionsList } from '@/components/EmotionsList';
-import { Sidebar } from '@/components/layout/Sidebar';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
+import { Suspense } from 'react';
 
 export default function EmotionsPage() {
   const { token } = useProtectedRoute();
-
   if (!token) {
     return null;
   }
-
   return (
-    <div className="flex min-h-screen bg-neutral-50">
-      <Sidebar />
-      <div className="flex-1 flex flex-col p-8">
-        <Suspense fallback={<div className="p-4 text-center">Cargando...</div>}>
-          <SearchParamsWrapper>
-            <EmotionsList />
-          </SearchParamsWrapper>
-        </Suspense>
-      </div>
+    <div className="bg-white rounded-xl shadow p-6 min-h-[400px]">
+      <Suspense fallback={<div className="p-4 text-center">Cargando...</div>}>
+        <SearchParamsWrapper>
+          <EmotionsList />
+        </SearchParamsWrapper>
+      </Suspense>
     </div>
   );
 }

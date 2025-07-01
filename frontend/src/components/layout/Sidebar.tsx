@@ -314,41 +314,27 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
       <ul className="space-y-1">
         {mainNavItems.map((item) => {
           let isActive = false;
-          if (item.id === 'dashboard') {isActive = pathname === '/dashboard';}
-          else if (item.id === 'new-research') {isActive = pathname === '/dashboard/research/new';}
-          else if (item.id === 'research-history') {isActive = pathname === '/dashboard/research-history';}
-          else if (item.id === 'research') {isActive = pathname === '/dashboard/research';}
-          else if (item.id === 'emotions') {isActive = pathname === '/dashboard/emotions';}
-          if (item.id === 'new-research') {
-            return (
-              <li key={item.id}>
-                <Link
-                  href="/dashboard/research/new"
-                  className={cn(
-                    'flex items-center py-2 px-3 rounded-md transition-colors w-full text-left',
-                    isActive ? 'bg-blue-50 text-blue-600' : 'text-neutral-700 hover:bg-neutral-100'
-                  )}
-                >
-                  {typeof item.label === 'function'
-                    ? item.getDynamicLabel?.(hasDraft, currentDraft?.step, currentDraft?.lastUpdated)
-                    : item.label}
-                </Link>
-              </li>
-            );
-          }
+          if (item.id === 'dashboard') { isActive = pathname === '/dashboard'; }
+          else if (item.id === 'new-research') { isActive = pathname.startsWith('/dashboard/research/new'); }
+          else if (item.id === 'research-history') { isActive = pathname.startsWith('/dashboard/research-history'); }
+          else if (item.id === 'research') { isActive = pathname.startsWith('/dashboard/research') && !pathname.startsWith('/dashboard/research/new'); }
+          else if (item.id === 'emotions') { isActive = pathname.startsWith('/dashboard/emotions'); }
           return (
             <li key={item.id}>
-              <button
-                onClick={() => router.push(item.href)}
+              <Link
+                href={item.href}
                 className={cn(
-                  'flex items-center py-2 px-3 rounded-md transition-colors w-full text-left',
-                  isActive ? 'bg-blue-50 text-blue-600' : 'text-neutral-700 hover:bg-neutral-100'
+                  'flex items-center py-2 px-3 rounded-md transition-colors w-full text-left border-l-4',
+                  isActive
+                    ? 'bg-blue-50 text-blue-700 font-semibold border-blue-600'
+                    : 'text-neutral-700 hover:bg-neutral-100 border-transparent'
                 )}
+                aria-current={isActive ? 'page' : undefined}
               >
                 {typeof item.label === 'function'
                   ? item.getDynamicLabel?.(hasDraft, currentDraft?.step, currentDraft?.lastUpdated)
                   : item.label}
-              </button>
+              </Link>
             </li>
           );
         })}

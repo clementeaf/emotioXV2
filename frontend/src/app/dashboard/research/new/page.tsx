@@ -2,7 +2,6 @@
 
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
-import { Sidebar } from '@/components/layout/Sidebar';
 import { NewResearchContent } from '@/components/research/NewResearchContent';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
 import { Suspense } from 'react';
@@ -20,15 +19,12 @@ export default function NewResearchPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-neutral-50">
-      <Sidebar />
-      <div className="flex-1 flex flex-col p-8">
-        <ErrorBoundary>
-          <Suspense fallback={<div className="p-4 text-center">Cargando...</div>}>
-            <NewResearchContentWithSuspense />
-          </Suspense>
-        </ErrorBoundary>
-      </div>
+    <div className="bg-white rounded-xl shadow p-6 min-h-[400px]">
+      <ErrorBoundary>
+        <Suspense fallback={<div className="p-4 text-center">Cargando...</div>}>
+          <NewResearchContentWithSuspense />
+        </Suspense>
+      </ErrorBoundary>
     </div>
   );
 }

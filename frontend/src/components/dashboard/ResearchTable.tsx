@@ -1,14 +1,15 @@
 'use client';
 
 import { API_HTTP_ENDPOINT } from '@/api/endpoints';
+import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle
 } from '@/components/ui/Dialog';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -171,9 +172,62 @@ function ResearchTableContent() {
       </div>
 
       {error && (
-        <div className="m-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-600">{error}</p>
-        </div>
+        <Alert variant="destructive" className="m-6">
+          <div className="flex items-start space-x-3">
+            {/* Icono de error */}
+            <svg
+              className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+
+            <div className="flex-1">
+              <div className="text-red-800">
+                <div className="mb-3">
+                  <div className="font-medium mb-1">
+                    No se pudieron cargar las investigaciones
+                  </div>
+                  <div className="text-sm">
+                    Por favor, intenta de nuevo. Si el problema persiste, contacta al soporte técnico.
+                  </div>
+                </div>
+
+                {/* Detalles técnicos solo en desarrollo */}
+                {process.env.NODE_ENV !== 'production' && (
+                  <details className="mt-2">
+                    <summary className="text-xs text-red-600 cursor-pointer hover:text-red-700">
+                      Ver detalles técnicos
+                    </summary>
+                    <pre className="mt-1 text-xs text-red-600 bg-red-50 p-2 rounded border border-red-200 overflow-auto">
+                      {error}
+                    </pre>
+                  </details>
+                )}
+
+                {/* Botón de reintentar */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefresh}
+                  className="mt-3 border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400"
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Reintentar
+                </Button>
+              </div>
+            </div>
+          </div>
+        </Alert>
       )}
 
       <div className="min-w-full">

@@ -50,58 +50,55 @@ UsersTable:
       SSEEnabled: true
 
 # Tabla principal DynamoDB
-# Comentado para usar tabla existente en producción
-# DynamoDBTable:
-#   Type: AWS::DynamoDB::Table
-#   Properties:
-#     TableName: ${self:provider.environment.DYNAMODB_TABLE}
-#     BillingMode: PAY_PER_REQUEST
-#     AttributeDefinitions:
-#       - AttributeName: id
-#         AttributeType: S
-#       - AttributeName: sk
-#         AttributeType: S
-#       # Asegúrate de definir TODOS los atributos usados como claves en la tabla O en CUALQUIER GSI
-#       - AttributeName: userId
-#         AttributeType: S
-#       - AttributeName: researchId
-#         AttributeType: S
-#       - AttributeName: EntityType
-#         AttributeType: S
-#     KeySchema:
-#       - AttributeName: id
-#         KeyType: HASH
-#       - AttributeName: sk
-#         KeyType: RANGE
-#     GlobalSecondaryIndexes: # Definir EXACTAMENTE los índices existentes
-#       - IndexName: userId-index
-#         KeySchema:
-#           - AttributeName: userId # Clave del índice
-#             KeyType: HASH
-#         Projection:
-#           ProjectionType: ALL # O el tipo de proyección que tenga el índice existente
+DynamoDBTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    TableName: ${self:provider.environment.DYNAMODB_TABLE}
+    BillingMode: PAY_PER_REQUEST
+    AttributeDefinitions:
+      - AttributeName: id
+        AttributeType: S
+      - AttributeName: sk
+        AttributeType: S
+      - AttributeName: userId
+        AttributeType: S
+      - AttributeName: researchId
+        AttributeType: S
+      - AttributeName: EntityType
+        AttributeType: S
+    KeySchema:
+      - AttributeName: id
+        KeyType: HASH
+      - AttributeName: sk
+        KeyType: RANGE
+    GlobalSecondaryIndexes:
+      - IndexName: userId-index
+        KeySchema:
+          - AttributeName: userId
+            KeyType: HASH
+        Projection:
+          ProjectionType: ALL
 
-#       # Volver a añadir con el nombre original para sincronizar
-#       - IndexName: researchId-index # <- NOMBRE ORIGINAL
-#         KeySchema:
-#           - AttributeName: researchId # Clave del índice
-#             KeyType: HASH
-#         Projection:
-#           ProjectionType: ALL # O el tipo de proyección que tenga el índice existente
+      - IndexName: researchId-index
+        KeySchema:
+          - AttributeName: researchId
+            KeyType: HASH
+        Projection:
+          ProjectionType: ALL
 
-#       - IndexName: EntityTypeSkIndex # Este parece existir en tu tabla
-#         KeySchema:
-#           - AttributeName: EntityType # Clave de partición del índice
-#             KeyType: HASH
-#           - AttributeName: sk # Clave de ordenación del índice (si la tiene)
-#             KeyType: RANGE
-#         Projection:
-#           ProjectionType: ALL # O el tipo de proyección que tenga el índice existente
+      - IndexName: EntityTypeSkIndex
+        KeySchema:
+          - AttributeName: EntityType
+            KeyType: HASH
+          - AttributeName: sk
+            KeyType: RANGE
+        Projection:
+          ProjectionType: ALL
 
-#     PointInTimeRecoverySpecification:
-#       PointInTimeRecoveryEnabled: true
-#     SSESpecification:
-#       SSEEnabled: true
+    PointInTimeRecoverySpecification:
+      PointInTimeRecoveryEnabled: true
+    SSESpecification:
+      SSEEnabled: true
 
 # Tabla EyeTracking Recruit Config
 EyeTrackingRecruitConfigTable:

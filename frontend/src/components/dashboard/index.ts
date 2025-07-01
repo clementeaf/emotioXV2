@@ -10,7 +10,6 @@ export { DashboardStats } from './DashboardStats';
 // Componentes principales
 export { DashboardContent } from './DashboardContent';
 export { DashboardLayout, DashboardLayoutWithParams } from './DashboardLayout';
-export { DashboardShell } from './DashboardShell';
 
 // Componentes existentes
 export { default as ResearchList } from './ResearchList';
