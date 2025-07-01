@@ -60,23 +60,20 @@ export const useSmartVOCMutations = (researchId: string, smartVocId?: string) =>
 
   // Mutación para guardar datos
   const saveMutation = useMutation({
-    mutationFn: async (data: SmartVOCFormData): Promise<SmartVOCFormData> => {
+    mutationFn: async (data: SmartVOCFormData & { smartVocId?: string | null }): Promise<SmartVOCFormData> => {
       // Limpiar y preparar los datos para cumplir con la validación del backend
       const cleanedData: SmartVOCFormData = {
         ...data,
         questions: data.questions.map((q) => {
           // 1. Asegurar que 'description' no esté vacío
-          const description = q.description || q.title || ' '; // Usar título como fallback
-
+          const description = q.description || q.title || ' ';
           // 2. Añadir el campo 'required'
-          const required = q.type !== 'VOC'; // Todas son requeridas excepto VOC
-
+          const required = q.type !== 'VOC';
           // 3. Limpiar 'companyName' si está vacío en la configuración
           const config = { ...q.config };
           if ('companyName' in config && config.companyName === '') {
             delete config.companyName;
           }
-
           return {
             ...q,
             description,
@@ -85,11 +82,10 @@ export const useSmartVOCMutations = (researchId: string, smartVocId?: string) =>
           };
         }),
       };
-
-      // Lógica condicional: Si tenemos un ID, actualizamos (PUT). Si no, creamos (POST).
-      if (smartVocId) {
-        console.log(`[SmartVOCForm] Actualizando (PUT) formulario existente con ID: ${smartVocId}`);
-        return smartVocFixedAPI.update(researchId, cleanedData);
+      // Lógica condicional: Si tenemos un smartVocId, actualizamos (PUT). Si no, creamos (POST).
+      if (data.smartVocId) {
+        console.log(`[SmartVOCForm] Actualizando (PUT) formulario existente con ID: ${data.smartVocId}`);
+        return smartVocFixedAPI.update(researchId, data.smartVocId, cleanedData);
       } else {
         console.log(`[SmartVOCForm] Creando (POST) nuevo formulario para researchId: ${researchId}`);
         return smartVocFixedAPI.create(cleanedData);

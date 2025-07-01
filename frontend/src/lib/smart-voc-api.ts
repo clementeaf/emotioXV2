@@ -47,9 +47,9 @@ export const smartVocFixedAPI = {
     return handleSmartVOCResponse(response);
   },
 
-  async update(researchId: string, data: Partial<SmartVOCFormData>): Promise<SmartVOCFormData> {
-    if (!researchId) throw new Error('ResearchId es necesario para actualizar SmartVOC');
-    const url = API_ENDPOINTS.smartVoc.update.replace('{researchId}', researchId);
+  async update(researchId: string, formId: string, data: Partial<SmartVOCFormData>): Promise<SmartVOCFormData> {
+    if (!researchId || !formId) throw new Error('ResearchId y formId son necesarios para actualizar SmartVOC');
+    const url = API_ENDPOINTS.smartVoc.update.replace('{researchId}', researchId).replace('{formId}', formId);
     const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}${url}`, {
       method: 'PUT',

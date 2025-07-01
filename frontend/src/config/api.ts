@@ -51,7 +51,7 @@ export const API_ENDPOINTS = {
   smartVoc: {
     getByResearch: '/research/{researchId}/smart-voc',
     create: '/research/{researchId}/smart-voc',
-    update: '/research/{researchId}/smart-voc',
+    update: '/research/{researchId}/smart-voc/{formId}',
     delete: '/research/{researchId}/smart-voc',
   },
 

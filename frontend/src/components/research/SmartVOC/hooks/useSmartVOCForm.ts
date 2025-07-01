@@ -139,8 +139,8 @@ export const useSmartVOCForm = (researchId: string) => {
       })),
     };
 
-    saveMutation.mutate(cleanedData);
-  }, [formData, filterEditedQuestions, validateForm, setValidationErrors, saveMutation]);
+    saveMutation.mutate({ ...cleanedData, smartVocId });
+  }, [formData, filterEditedQuestions, validateForm, setValidationErrors, saveMutation, smartVocId]);
 
   // Abre el modal de confirmación
   const handleDelete = useCallback(() => {
