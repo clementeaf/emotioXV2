@@ -1,20 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useState } from 'react';
 import {
-  CognitiveTaskFormData,
-  Question,
-  UploadedFile
+    CognitiveTaskFormData,
+    Question,
+    UploadedFile
 } from 'shared/interfaces/cognitive-task.interface';
 
 import { useAuth } from '@/providers/AuthProvider';
 import { cognitiveTaskService } from '@/services/cognitiveTaskService';
 
 import {
-  logFormDebugInfo
+    logFormDebugInfo
 } from '../../CognitiveTaskFormHelpers';
 import {
-  QUERY_KEYS,
-  SUCCESS_MESSAGES
+    QUERY_KEYS,
+    SUCCESS_MESSAGES
 } from '../constants';
 import type { ErrorModalData } from '../types';
 import { ValidationErrors } from '../types';
@@ -116,6 +116,8 @@ interface UseCognitiveTaskFormResult {
   jsonToSend: string;
   pendingAction: 'save' | 'preview' | null;
   continueWithAction: () => void;
+
+  isEmpty: boolean;
 }
 
 // Definiciones locales para QUESTION_TYPES
@@ -244,6 +246,8 @@ export const useCognitiveTaskForm = (
     refetchOnWindowFocus: false
   });
 
+  const [isEmpty, setIsEmpty] = useState(false);
+
   // Efecto para actualizar el formulario cuando los datos de la consulta se cargan
   useEffect(() => {
     if (!isLoading) { // Solo actuar cuando la carga inicial haya terminado
@@ -302,6 +306,12 @@ export const useCognitiveTaskForm = (
         });
         setCognitiveTaskId(null);
       }
+    }
+
+    if (cognitiveTaskData === null && !isLoading) {
+      setIsEmpty(true);
+    } else {
+      setIsEmpty(false);
     }
   }, [cognitiveTaskData, isLoading, researchId, setFormData]);
 
@@ -543,6 +553,8 @@ export const useCognitiveTaskForm = (
     continueWithAction,
 
     // Exportar todos los estados y funciones del modal
-    ...modals
+    ...modals,
+
+    isEmpty,
   };
 };

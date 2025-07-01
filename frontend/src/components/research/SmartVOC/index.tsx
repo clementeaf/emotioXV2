@@ -1,12 +1,12 @@
 import React from 'react';
 
 import {
-  ConfirmationModal,
-  ErrorModal,
-  SmartVOCFooter,
-  SmartVOCHeader,
-  SmartVOCQuestions,
-  SmartVOCSettings,
+    ConfirmationModal,
+    ErrorModal,
+    SmartVOCFooter,
+    SmartVOCHeader,
+    SmartVOCQuestions,
+    SmartVOCSettings,
 } from './components';
 import { UI_TEXTS } from './constants';
 import { useSmartVOCForm } from './hooks/useSmartVOCForm';
@@ -42,6 +42,7 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
     isDeleteModalOpen,
     confirmDelete,
     closeDeleteModal,
+    isEmpty
   } = useSmartVOCForm(researchId);
 
   // Callbacks para cambios en los ajustes
@@ -107,6 +108,13 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
 
   return (
     <div className={className}>
+      {/* Mensaje amigable si no hay configuración previa */}
+      {isEmpty && (
+        <div className="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded">
+          <strong>¡Aún no has configurado el formulario SmartVOC!</strong><br />
+          Agrega preguntas y guarda para comenzar a recolectar feedback de los participantes.
+        </div>
+      )}
       {/* Encabezado */}
       <SmartVOCHeader
         title={UI_TEXTS.TITLE}

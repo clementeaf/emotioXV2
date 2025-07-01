@@ -201,6 +201,7 @@ export interface UseSmartVOCFormResult {
   jsonToSend: string;
   pendingAction: 'save' | 'preview' | null;
   continueWithAction: () => void;
+  isEmpty: boolean;
 }
 
 /**

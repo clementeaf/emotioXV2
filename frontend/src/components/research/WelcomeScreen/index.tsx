@@ -1,11 +1,11 @@
 import React from 'react';
 
 import {
-  ErrorModal,
-  WelcomeScreenContent,
-  WelcomeScreenFooter,
-  WelcomeScreenSettings,
-  WelcomeScreenSkeleton
+    ErrorModal,
+    WelcomeScreenContent,
+    WelcomeScreenFooter,
+    WelcomeScreenSettings,
+    WelcomeScreenSkeleton
 } from './components';
 import { useWelcomeScreenForm } from './hooks/useWelcomeScreenForm';
 import { WelcomeScreenFormProps } from './types';
@@ -30,7 +30,8 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
     handleSubmit,
     handlePreview,
     closeModal,
-    existingScreen
+    existingScreen,
+    isEmpty
   } = useWelcomeScreenForm(researchId);
 
   // Determine if it's an existing config based on existingScreen data
@@ -51,6 +52,14 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
 
   return (
     <>
+      {/* Mensaje amigable si no hay configuración previa */}
+      {isEmpty && (
+        <div className="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded">
+          <strong>¡Aún no has configurado la pantalla de bienvenida!</strong><br />
+          Completa el formulario y guarda para que los participantes vean una pantalla personalizada al iniciar la investigación.
+        </div>
+      )}
+
       {/* Toggle de habilitación */}
       <WelcomeScreenSettings
         isEnabled={formData.isEnabled ?? false}

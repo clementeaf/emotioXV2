@@ -5,18 +5,18 @@
 
 import React from 'react';
 import {
-  Question as BaseQuestion,
-  Choice,
-  CognitiveTaskFormData,
-  CognitiveTaskFormResponse,
-  CognitiveTaskModel,
-  DEFAULT_COGNITIVE_TASK,
-  HitZone,
-  QUESTION_TEMPLATES,
-  QUESTION_TYPES_INFO,
-  QuestionType,
-  ScaleConfig,
-  UploadedFile
+    Question as BaseQuestion,
+    Choice,
+    CognitiveTaskFormData,
+    CognitiveTaskFormResponse,
+    CognitiveTaskModel,
+    DEFAULT_COGNITIVE_TASK,
+    HitZone,
+    QUESTION_TEMPLATES,
+    QUESTION_TYPES_INFO,
+    QuestionType,
+    ScaleConfig,
+    UploadedFile
 } from 'shared/interfaces/cognitive-task.interface';
 
 // Extendemos la interfaz Question para incluir propiedades adicionales
@@ -26,16 +26,16 @@ export interface Question extends BaseQuestion {
 
 // Re-exportamos los tipos importados para mantener compatibilidad
 export type {
-  Choice, CognitiveTaskFormData,
-  CognitiveTaskFormResponse,
-  CognitiveTaskModel, HitZone, QuestionType, ScaleConfig,
-  UploadedFile
+    Choice, CognitiveTaskFormData,
+    CognitiveTaskFormResponse,
+    CognitiveTaskModel, HitZone, QuestionType, ScaleConfig,
+    UploadedFile
 };
 
 // Re-exportamos las constantes
-export {
-  DEFAULT_COGNITIVE_TASK, QUESTION_TEMPLATES, QUESTION_TYPES_INFO
-};
+    export {
+        DEFAULT_COGNITIVE_TASK, QUESTION_TEMPLATES, QUESTION_TYPES_INFO
+    };
 
 // Tipo para errores de validación
 export interface ValidationErrors {
@@ -233,6 +233,7 @@ export interface UseCognitiveTaskFormResult {
   // Nuevas propiedades para el modal JSON
   showJsonPreview: boolean;
   closeJsonModal: () => void;
+  isEmpty: boolean;
 }
 
 export interface CognitiveTaskFieldsProps {

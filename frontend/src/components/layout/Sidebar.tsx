@@ -314,10 +314,15 @@ function SidebarContent({ className, activeResearch }: SidebarProps) {
       <ul className="space-y-1">
         {mainNavItems.map((item) => {
           let isActive = false;
-          if (item.id === 'dashboard') { isActive = pathname === '/dashboard'; }
+          if (item.id === 'dashboard') { isActive = pathname.replace(/\/$/, '') === '/dashboard'; }
           else if (item.id === 'new-research') { isActive = pathname.startsWith('/dashboard/research/new'); }
           else if (item.id === 'research-history') { isActive = pathname.startsWith('/dashboard/research-history'); }
-          else if (item.id === 'research') { isActive = pathname.startsWith('/dashboard/research') && !pathname.startsWith('/dashboard/research/new'); }
+          else if (item.id === 'research') {
+            isActive =
+              pathname.startsWith('/dashboard/research') &&
+              !pathname.startsWith('/dashboard/research/new') &&
+              !pathname.startsWith('/dashboard/research-history');
+          }
           else if (item.id === 'emotions') { isActive = pathname.startsWith('/dashboard/emotions'); }
           return (
             <li key={item.id}>

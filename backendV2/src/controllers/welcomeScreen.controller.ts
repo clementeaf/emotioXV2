@@ -1,21 +1,22 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { welcomeScreenService, WelcomeScreenError } from '../services/welcomeScreen.service';
 import { WelcomeScreenFormData as SharedWelcomeScreenFormData } from '../../../shared/interfaces/welcome-screen.interface';
-import { ApiError } from '../utils/errors';
-import { 
-  createResponse, 
-  errorResponse
-} from '../utils/controller.utils';
+import { HttpError } from '../errors';
+import { WelcomeScreenError, welcomeScreenService } from '../services/welcomeScreen.service';
 import { createController, RouteMap } from '../utils/controller.decorator';
-import { 
-  validateUserId, 
-  validateResearchId, 
-  validateWelcomeScreenData, 
-  validateMultiple,
-  extractResearchId,
-  parseAndValidateBody
-} from '../utils/validation';
+import {
+    createResponse,
+    errorResponse
+} from '../utils/controller.utils';
+import { ApiError } from '../utils/errors';
 import { structuredLog } from '../utils/logging.util';
+import {
+    extractResearchId,
+    parseAndValidateBody,
+    validateMultiple,
+    validateResearchId,
+    validateUserId,
+    validateWelcomeScreenData
+} from '../utils/validation';
 
 interface WelcomeScreenFormData extends SharedWelcomeScreenFormData {
   researchId?: string;
@@ -29,18 +30,18 @@ export class WelcomeScreenController {
     const context = 'WelcomeScreenController.createWelcomeScreen';
     try {
       structuredLog('info', context, 'Inicio de creación');
-      
+
       const authError = validateUserId(userId);
       if (authError) return authError;
-      
+
       const bodyResult = parseAndValidateBody<WelcomeScreenFormData>(event, validateWelcomeScreenData);
       if ('statusCode' in bodyResult) return bodyResult;
-      
+
       const screenData = bodyResult.data;
-      
+
       const researchResult = extractResearchId(event, screenData);
       if ('statusCode' in researchResult) return researchResult;
-      
+
       const { researchId } = researchResult;
 
       structuredLog('info', context, 'Llamando al servicio para crear', { researchId: researchId });
@@ -65,15 +66,15 @@ export class WelcomeScreenController {
       const researchResult = extractResearchId(event);
       if ('statusCode' in researchResult) return researchResult;
       const { researchId } = researchResult;
-      
+
       structuredLog('info', context, 'Buscando welcome screen para la investigación', { researchId: researchId });
       const screen = await welcomeScreenService.getByResearchId(researchId);
-      
+
       if (!screen) {
         structuredLog('info', context, 'No se encontró welcome screen', { researchId: researchId });
         return createResponse(404, { message: 'Welcome screen not found for this research.'});
       }
-      
+
       structuredLog('info', context, 'Welcome screen encontrado', { welcomeScreenId: screen.id, researchId: researchId });
       return createResponse(200, screen);
 
@@ -91,23 +92,23 @@ export class WelcomeScreenController {
     let screenId: string | undefined;
     try {
       structuredLog('info', context, 'Inicio de actualización');
-      
+
       screenId = event.pathParameters?.screenId;
       if (!screenId) {
         return errorResponse('Se requiere screenId en la ruta', 400);
       }
-      
+
       researchId = event.pathParameters?.researchId;
       const validationError = validateMultiple(
         validateUserId(userId),
         validateResearchId(researchId)
       );
       if (validationError) return validationError;
-      
+
       const bodyResult = parseAndValidateBody<WelcomeScreenFormData>(event, validateWelcomeScreenData);
       if ('statusCode' in bodyResult) return bodyResult;
       const screenData = bodyResult.data;
-      
+
       const currentResearchId = researchId!;
 
       structuredLog('info', context, 'Actualizando welcome screen', { screenId: screenId, researchId: currentResearchId });
@@ -133,7 +134,7 @@ export class WelcomeScreenController {
     let screenId: string | undefined;
     try {
       structuredLog('info', context, 'Inicio de eliminación');
-      
+
       screenId = event.pathParameters?.screenId;
       if (!screenId) {
         return errorResponse('Se requiere screenId en la ruta', 400);
@@ -145,9 +146,9 @@ export class WelcomeScreenController {
         validateResearchId(researchId)
       );
       if (validationError) return validationError;
-      
+
       const currentResearchId = researchId!;
-            
+
       structuredLog('info', context, 'Eliminando welcome screen', { screenId: screenId, researchId: currentResearchId });
       await welcomeScreenService.delete(screenId, userId);
       structuredLog('info', context, 'Eliminación completada en servicio');
@@ -163,11 +164,16 @@ export class WelcomeScreenController {
    * Maneja errores y genera respuestas HTTP adecuadas (sin cambios)
    */
   private handleError(error: any, context: string, extraData?: Record<string, any>): APIGatewayProxyResult {
-    // Usar structuredLog para el error
-    structuredLog('error', context, 'Error procesando la solicitud', { 
+    structuredLog('error', context, 'Error procesando la solicitud', {
         error: error instanceof Error ? { name: error.name, message: error.message } : error,
         ...extraData // Añadir IDs relevantes si se pasaron
     });
+
+    if (error instanceof HttpError) {
+      return createResponse(error.statusCode, {
+        error: error.message
+      });
+    }
 
     if (error instanceof ApiError) {
       return createResponse(error.statusCode, {
@@ -211,9 +217,9 @@ const welcomeScreenRouteMap: RouteMap = {
 
 /**
  * Manejador principal para las rutas de pantallas de bienvenida
- * 
+ *
  * Utiliza el decorador de controlador para manejar la autenticación y CORS automáticamente.
- * 
+ *
  * Estructura jerárquica:
  * - GET /research/{researchId}/welcome-screen : Obtiene el welcome screen de la investigación
  * - POST /research/{researchId}/welcome-screen : Crea un nuevo welcome screen para la investigación
@@ -223,4 +229,4 @@ const welcomeScreenRouteMap: RouteMap = {
 export const mainHandler = createController(welcomeScreenRouteMap, {
   basePath: '',  // Sin base path para permitir múltiples patrones de ruta
   // No hay rutas públicas, todas requieren autenticación
-}); 
+});

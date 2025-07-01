@@ -48,6 +48,7 @@ export const useSmartVOCForm = (researchId: string) => {
   const { validateForm, filterEditedQuestions } = useSmartVOCValidation();
 
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [isEmpty, setIsEmpty] = useState(false);
 
   // Logging solo en desarrollo
   useEffect(() => {
@@ -102,6 +103,7 @@ export const useSmartVOCForm = (researchId: string) => {
     } else if (smartVocData && 'notFound' in smartVocData && smartVocData.notFound) {
       console.log('[DIAGNÓSTICO] No se encontró configuración existente. El botón de eliminar debe estar desactivado.');
       // No hacer nada - mantener las preguntas plantilla para que el usuario pueda empezar a trabajar
+      setIsEmpty(true);
     } else {
       console.log('[SmartVOCForm] smartVocData es null/undefined o en estado de carga, manteniendo estado actual');
     }
@@ -189,6 +191,7 @@ export const useSmartVOCForm = (researchId: string) => {
     isExisting: !!smartVocId,
     isDeleteModalOpen,
     confirmDelete,
-    closeDeleteModal: () => setDeleteModalOpen(false)
+    closeDeleteModal: () => setDeleteModalOpen(false),
+    isEmpty
   };
 };

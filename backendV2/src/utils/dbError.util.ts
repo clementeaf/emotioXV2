@@ -1,3 +1,4 @@
+import { HttpError } from '../errors';
 import { ApiError } from './errors';
 import { structuredLog } from './logging.util';
 
@@ -25,10 +26,14 @@ export const handleDbError = (
   context: string,
   serviceName: string,
   modelErrorMappings: ErrorMapping = {}
-): ApiError => {
+): ApiError | HttpError => {
   // Si ya es un ApiError, retornarlo (puede venir de validaciones previas o del propio modelo)
   if (error instanceof ApiError) {
     return error;
+  }
+  // [FIX] Si es un HttpError (incluye NotFoundError), retornarlo tal cual
+  if (error instanceof Error && 'statusCode' in error && typeof (error as any).statusCode === 'number') {
+    return error as HttpError;
   }
 
   const logContext = `${serviceName}.${context}`;
@@ -53,9 +58,9 @@ export const handleDbError = (
       `DATABASE_ERROR: ${error.message || 'Error inesperado en base de datos'}`,
       500
     );
-  } 
+  }
 
   // Fallback para errores que no son instancias de Error
   structuredLog('error', logContext, 'Error desconocido/no-Error capturado', { errorData: JSON.stringify(error) });
   return new ApiError('DATABASE_ERROR: Error inesperado en la capa de datos', 500);
-}; 
+};

@@ -10,10 +10,10 @@ import { cn } from '@/lib/utils';
 import { ConfirmationModal } from '../SmartVOC/components/ConfirmationModal';
 
 import {
-  CognitiveTaskFooter,
-  CognitiveTaskHeader,
-  ErrorModal,
-  JsonPreviewModal
+    CognitiveTaskFooter,
+    CognitiveTaskHeader,
+    ErrorModal,
+    JsonPreviewModal
 } from './components';
 import { CognitiveTaskFields } from './components/CognitiveTaskFields';
 import { ProgressBar } from './components/ProgressBar';
@@ -57,7 +57,8 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
     closeJsonModal,
     jsonToSend,
     pendingAction,
-    continueWithAction
+    continueWithAction,
+    isEmpty
   } = useCognitiveTaskForm(researchId, onSave);
 
   // 🆕 Estado temporal para el modal de confirmación (hasta que se implemente en el hook)
@@ -145,6 +146,14 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
   return (
     <div style={containerStyle}>
       <div className={cn('space-y-4', className)} style={innerContainerStyle}>
+        {/* Mensaje amigable si no hay configuración previa */}
+        {isEmpty && (
+          <div className="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded">
+            <strong>¡Aún no has configurado la tarea cognitiva!</strong><br />
+            Agrega preguntas y guarda para comenzar a recolectar datos de los participantes.
+          </div>
+        )}
+
         {/* Encabezado */}
         <CognitiveTaskHeader
           title={UI_TEXTS.TITLE}

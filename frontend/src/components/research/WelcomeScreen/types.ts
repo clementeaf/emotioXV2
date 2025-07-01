@@ -14,7 +14,7 @@ export const DEFAULT_WELCOME_SCREEN_CONFIG: Partial<WelcomeScreenServiceData> = 
 };
 
 // Importar los tipos correctos desde el servicio (con alias)
-import { WelcomeScreenData as WelcomeScreenServiceData, WelcomeScreenRecord } from '@/services/welcomeScreenService';
+import { WelcomeScreenRecord, WelcomeScreenData as WelcomeScreenServiceData } from '@/services/welcomeScreenService';
 
 export interface ErrorModalData {
   title: string;
@@ -35,6 +35,7 @@ export interface UseWelcomeScreenFormResult {
   handleSubmit: () => Promise<void>;
   closeModal: () => void;
   handlePreview: () => void;
+  isEmpty: boolean;
 }
 
 /**
@@ -71,4 +72,4 @@ export interface ErrorModalProps {
   isOpen: boolean;
   onClose: () => void;
   error: ErrorModalData | null;
-} 
+}

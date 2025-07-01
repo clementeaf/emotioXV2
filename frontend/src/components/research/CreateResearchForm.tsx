@@ -12,8 +12,8 @@ import { useAuth } from '@/providers/AuthProvider';
 import { useResearch } from '@/stores/useResearchStore';
 
 import {
-    ResearchBasicData,
-    ResearchType
+  ResearchBasicData,
+  ResearchType
 } from '../../../../shared/interfaces/research.model';
 
 
@@ -71,21 +71,20 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
 
   // Luego usar un useEffect para actualizar con el borrador si existe
   useEffect(() => {
-    if (currentDraft && currentDraft.data.basic) {
-      const draftData: FormState = {
+    if (currentDraft && currentDraft.data && currentDraft.data.basic) {
+      setFormData((prev) => ({
+        ...prev,
         basic: {
-          name: currentDraft.data.basic.name || '',
-          enterprise: currentDraft.data.basic.description || '',
-          type: currentDraft.data.basic.type as ResearchType || undefined,
-          technique: currentDraft.data.configuration?.technique || ''
+          ...prev.basic,
+          name: prev.basic.name || currentDraft.data.basic?.name || '',
+          enterprise: prev.basic.enterprise || currentDraft.data.basic?.description || '',
+          type: prev.basic.type || (currentDraft.data.basic?.type as ResearchType) || undefined,
+          technique: prev.basic.technique || (currentDraft.data.configuration?.technique || '')
         },
         currentStep: currentDraft.step === 'basic' ? 1 :
           currentDraft.step === 'configuration' ? 2 : 3,
         errors: {}
-      };
-
-      // Actualizar el estado del formulario con los datos del borrador
-      setFormData(draftData);
+      }));
     }
   }, [currentDraft]);
 
