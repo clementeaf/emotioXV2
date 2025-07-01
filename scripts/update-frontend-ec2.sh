@@ -77,8 +77,8 @@ build_docker_image() {
   cd "$(dirname "$0")/.." || exit 1
 
   cat > .env.production << EOF
-NEXT_PUBLIC_API_URL=https://api.emotioxv2.com
-NEXT_PUBLIC_ENV=production
+NEXT_PUBLIC_API_URL=https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev
+NEXT_PUBLIC_ENV=development
 NEXT_PUBLIC_VERSION=$(date +%Y%m%d-%H%M%S)
 EOF
 
@@ -103,6 +103,18 @@ push_docker_image() {
 # === FUNCIONES DE DESPLIEGUE ===
 deploy_to_ec2() {
   print_message "Desplegando a EC2..."
+
+  print_message "Validando espacio libre en EC2..."
+  FREE_GB=$(ssh -i "$EC2_KEY" "$EC2_USER@$EC2_HOST" "df -BG --output=avail / | tail -1 | tr -dc '0-9'")
+  if [ "$FREE_GB" -lt 1 ]; then
+    print_error "Espacio libre insuficiente en EC2 (<1GB). Aborta el despliegue."
+    exit 1
+  else
+    print_success "Espacio libre suficiente en EC2: ${FREE_GB}GB"
+  fi
+
+  print_message "Limpieza automática de imágenes y recursos Docker en EC2..."
+  ssh -i "$EC2_KEY" "$EC2_USER@$EC2_HOST" "docker system prune -a -f"
 
   print_message "Deteniendo contenedor existente..."
   ssh -i "$EC2_KEY" "$EC2_USER@$EC2_HOST" "
