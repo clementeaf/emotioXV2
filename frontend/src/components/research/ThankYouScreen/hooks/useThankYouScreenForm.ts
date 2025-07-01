@@ -1,22 +1,22 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState, useEffect } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 
 
 import { thankYouScreenFixedAPI } from '@/lib/thank-you-screen-api';
 import { useAuth } from '@/providers/AuthProvider';
 
 import {
-  QUERY_KEYS,
-  ERROR_MESSAGES,
-  SUCCESS_MESSAGES
+    ERROR_MESSAGES,
+    QUERY_KEYS,
+    SUCCESS_MESSAGES
 } from '../constants';
 import {
-  ThankYouScreenFormData,
-  ThankYouScreenConfig,
-  ValidationErrors,
-  ErrorModalData,
-  DEFAULT_THANK_YOU_SCREEN_VALIDATION,
-  UseThankYouScreenFormResult
+    DEFAULT_THANK_YOU_SCREEN_VALIDATION,
+    ErrorModalData,
+    ThankYouScreenConfig,
+    ThankYouScreenFormData,
+    UseThankYouScreenFormResult,
+    ValidationErrors
 } from '../types';
 
 /**
@@ -39,15 +39,15 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
   const [modalError, setModalError] = useState<ErrorModalData | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const { token, user, restoreSession } = useAuth();
-  
+
   // Comprobamos si está autenticado (token existe)
   const isAuthenticated = !!token;
 
   // Añadimos log de estado de autenticación para depuración
   useEffect(() => {
     const isTokenInStorage = !!localStorage.getItem('token') || !!sessionStorage.getItem('token');
-    console.log('[ThankYouScreenForm] Estado de autenticación:', { 
-      isAuthenticated, 
+    console.log('[ThankYouScreenForm] Estado de autenticación:', {
+      isAuthenticated,
       tokenInHook: !!token,
       tokenInStorage: isTokenInStorage,
       user: !!user
@@ -82,7 +82,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
   useEffect(() => {
     // Verificar que existingScreen exista, que no sea la respuesta del 404 (que tiene notFound: true)
     // y que contenga datos (ej. verificando el id o title)
-    if (existingScreen && !existingScreen.notFound && existingScreen.id) { 
+    if (existingScreen && !existingScreen.notFound && existingScreen.id) {
       setFormData({
         // Usar directamente las propiedades de existingScreen
         isEnabled: existingScreen.isEnabled,
@@ -91,7 +91,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
         redirectUrl: existingScreen.redirectUrl,
         metadata: existingScreen.metadata, // Asegúrate que metadata existe o maneja su ausencia
         // Mantener el researchId del prop, no el de la respuesta (por si acaso)
-        researchId 
+        researchId
       });
       setThankYouScreenId(existingScreen.id);
     } else if (existingScreen?.notFound) {
@@ -112,7 +112,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
       // Si existe un ID, actualizamos, si no, creamos
       if (thankYouScreenId) {
         // Asegurarse que researchId esté en los datos para la actualización
-        return await thankYouScreenFixedAPI.update(thankYouScreenId, {
+        return await thankYouScreenFixedAPI.update(researchId, {
           ...data,
           researchId // Asegurar que el researchId está incluido
         }).send();
@@ -125,7 +125,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
         setThankYouScreenId(response.id);
       }
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.THANK_YOU_SCREEN, researchId] });
-      
+
       // Reemplazar toast.success por modal de éxito
       showModal({
         title: 'Éxito',
@@ -135,7 +135,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
     },
     onError: (error: any) => {
       console.error('[ThankYouScreenForm] Error:', error);
-      
+
       // Reemplazar toast.error por modal de error
       showModal({
         title: 'Error al guardar',
@@ -221,12 +221,12 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
     const localStorageToken = localStorage.getItem('token');
     const sessionStorageToken = sessionStorage.getItem('token');
     const hasStorageToken = !!localStorageToken || !!sessionStorageToken;
-    
+
     // Si hay tokens en storage pero isAuthenticated es false, hay un problema de sincronización
     if (hasStorageToken && !isAuthenticated) {
       // Intentar restaurar la sesión automáticamente
       const restored = await restoreSession();
-      
+
       if (restored) {
         // Si se restauró la sesión correctamente, volver a intentar la operación
         showModal({
@@ -234,7 +234,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
           message: 'Sesión restaurada correctamente. Intente guardar nuevamente.',
           type: 'info'
         });
-        
+
         // Esperar un momento para que el estado se actualice
         setTimeout(() => {
           // Intentar guardar nuevamente
@@ -242,14 +242,14 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
         }, 500);
         return;
       }
-      
+
       // Si no se pudo restaurar, mostrar el mensaje de error
       showModal({
         title: 'Problema de sincronización de sesión',
         message: 'Detectamos un token en el almacenamiento, pero la sesión no está activa. Por favor, actualice la página para restaurar su sesión.',
         type: 'warning'
       });
-      
+
       // Añadimos botón para recargar la página en el mismo modal
       setTimeout(() => {
         const modalContent = document.querySelector('.modal-content');
@@ -261,10 +261,10 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
           modalContent.appendChild(reloadButton);
         }
       }, 100);
-      
+
       return;
     }
-    
+
     // Si realmente no hay sesión, mostrar error y opción de login
     if (!isAuthenticated) {
       showModal({
@@ -272,7 +272,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
         message: 'No ha iniciado sesión. Por favor, inicie sesión para guardar la pantalla de agradecimiento.',
         type: 'error'
       });
-      
+
       // Crear un botón para ir a la página de login
       setTimeout(() => {
         const modalContent = document.querySelector('.modal-content');
@@ -284,7 +284,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
           modalContent.appendChild(loginButton);
         }
       }, 100);
-      
+
       return;
     }
 
@@ -372,7 +372,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
                   flex-direction: column;
                   min-height: 100vh;
                 }
-                
+
                 .preview-badge {
                   position: fixed;
                   top: 12px;
@@ -384,7 +384,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
                   font-size: 12px;
                   z-index: 100;
                 }
-                
+
                 .header {
                   background-color: #4f46e5;
                   color: white;
@@ -394,13 +394,13 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
                   align-items: center;
                   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
                 }
-                
+
                 .header h1 {
                   font-size: 16px;
                   margin: 0;
                   font-weight: 500;
                 }
-                
+
                 .content {
                   flex: 1;
                   display: flex;
@@ -411,7 +411,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
                   text-align: center;
                 background-color: #ffffff;
                 }
-                
+
                 .thank-you-container {
                   max-width: 800px;
                   width: 100%;
@@ -420,14 +420,14 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
                 background-color: #ffffff;
                   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 10px 15px rgba(0, 0, 0, 0.03);
                 }
-                
+
                 .thank-you-title {
                   font-size: 32px;
                   font-weight: 700;
                   margin-bottom: 24px;
                 color: #111827;
                 }
-                
+
                 .thank-you-message {
                   font-size: 18px;
                   line-height: 1.6;
@@ -435,12 +435,12 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
                   margin-bottom: 32px;
                   white-space: pre-line;
                 }
-                
+
                 .logo {
                   max-height: 80px;
                   margin-bottom: 24px;
                 }
-                
+
                 .redirect-info {
                   margin-top: 40px;
                   padding-top: 20px;
@@ -448,7 +448,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
                   font-size: 14px;
                   color: #6b7280;
                 }
-                
+
                 .redirect-url {
                   font-family: monospace;
                   color: #3b82f6;
@@ -460,7 +460,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
                   display: inline-block;
                   word-break: break-all;
                 }
-                
+
                 .footer {
                   padding: 10px 20px;
                   font-size: 12px;
@@ -473,20 +473,20 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
             </head>
             <body>
               <div class="preview-badge">Vista previa</div>
-              
+
               <header class="header">
                 <h1>Vista previa de la pantalla de agradecimiento</h1>
                 <button onclick="window.close()" style="background: none; border: none; color: white; cursor: pointer;">Cerrar</button>
               </header>
-              
+
               <main class="content">
                 <div class="thank-you-container">
                   <h1 class="thank-you-title">${dataToPreview.title || 'Título no configurado'}</h1>
-                  
+
                   <div class="thank-you-message">
                     ${dataToPreview.message || 'Mensaje no configurado'}
                   </div>
-                  
+
                   ${dataToPreview.redirectUrl ? `
                   <div class="redirect-info">
                     <p>Al finalizar, el participante será redirigido a:</p>
@@ -495,7 +495,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
                   ` : ''}
                 </div>
               </main>
-              
+
               <footer class="footer">
                 <p>Esta es una vista previa y puede no representar exactamente cómo se verá la pantalla real.</p>
               </footer>
@@ -547,4 +547,4 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
     closeModal,
     isExisting: !!thankYouScreenId
   };
-}; 
+};

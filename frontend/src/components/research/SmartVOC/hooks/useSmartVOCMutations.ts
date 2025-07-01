@@ -89,7 +89,7 @@ export const useSmartVOCMutations = (researchId: string, smartVocId?: string) =>
       // Lógica condicional: Si tenemos un ID, actualizamos (PUT). Si no, creamos (POST).
       if (smartVocId) {
         console.log(`[SmartVOCForm] Actualizando (PUT) formulario existente con ID: ${smartVocId}`);
-        return smartVocFixedAPI.update(smartVocId, cleanedData);
+        return smartVocFixedAPI.update(researchId, cleanedData);
       } else {
         console.log(`[SmartVOCForm] Creando (POST) nuevo formulario para researchId: ${researchId}`);
         return smartVocFixedAPI.create(cleanedData);
