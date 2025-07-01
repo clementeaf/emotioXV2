@@ -50,6 +50,11 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
         return;
       }
 
+      // [FIX] Eliminar cualquier cacheo local de inexistencia
+      try {
+        localStorage.removeItem(`welcome_screen_resource_${actualResearchId}`);
+      } catch (e) { /* ignorar errores de localStorage */ }
+
       const fetchedRecord: WelcomeScreenRecord | null = await welcomeScreenService.getByResearchId(actualResearchId);
       if (fetchedRecord) {
         setExistingScreen(fetchedRecord);
@@ -197,20 +202,19 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
 
       // 2. Actualizar el estado del formulario PRIMERO
       setFormData(formDataFromResult);
+      // 3. Disparar refetch para sincronizar con backend
+      setRefetchTrigger(prev => prev + 1);
 
-      // 3. Actualizar el registro existente
+      // 4. Actualizar el registro existente
       setExistingScreen(resultRecord);
 
-      // 4. Mostrar el modal de éxito DESPUÉS
+      // 5. Mostrar el modal de éxito DESPUÉS
       setModalError({
         title: 'Éxito',
         message: 'Pantalla de bienvenida guardada correctamente.',
         type: 'info'
       });
       setModalVisible(true);
-
-      // 5. Disparar refetch para obtener los datos más frescos
-      setRefetchTrigger(prev => prev + 1);
 
     } catch (error) {
       console.error('Error saving welcome screen:', error);
