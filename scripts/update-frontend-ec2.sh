@@ -7,6 +7,9 @@ EC2_HOST=54.90.132.233
 EC2_KEY=~/.ssh/tu-llave-ec2.pem
 IMAGE_NAME=emotiox-frontend-ssr
 CONTAINER_NAME=emotiox-frontend-ssr
+DOCKERHUB_USER=clemente91
+DOCKERHUB_REPO=$DOCKERHUB_USER/$IMAGE_NAME
+TAG=latest
 
 # === COLORES PARA LOGGING ===
 RED='\033[0;31m'
@@ -71,21 +74,28 @@ check_ec2_connection() {
 build_docker_image() {
   print_message "Construyendo imagen Docker..."
 
-  # Navegar al directorio raíz del proyecto
   cd "$(dirname "$0")/.." || exit 1
 
-  # Crear archivo de variables de entorno para producción
   cat > .env.production << EOF
 NEXT_PUBLIC_API_URL=https://api.emotioxv2.com
 NEXT_PUBLIC_ENV=production
 NEXT_PUBLIC_VERSION=$(date +%Y%m%d-%H%M%S)
 EOF
 
-  # Construir imagen
-  if docker build -t "$IMAGE_NAME" -f frontend/Dockerfile .; then
-    print_success "Imagen Docker construida: $IMAGE_NAME"
+  if docker build --platform linux/amd64 -t "$DOCKERHUB_REPO:$TAG" -f frontend/Dockerfile .; then
+    print_success "Imagen Docker construida: $DOCKERHUB_REPO:$TAG"
   else
     print_error "Error al construir imagen Docker"
+    exit 1
+  fi
+}
+
+push_docker_image() {
+  print_message "Haciendo push de la imagen a DockerHub..."
+  if docker push "$DOCKERHUB_REPO:$TAG"; then
+    print_success "Imagen subida a DockerHub: $DOCKERHUB_REPO:$TAG"
+  else
+    print_error "Error al hacer push a DockerHub"
     exit 1
   fi
 }
@@ -94,33 +104,28 @@ EOF
 deploy_to_ec2() {
   print_message "Desplegando a EC2..."
 
-  # Detener y eliminar contenedor existente
   print_message "Deteniendo contenedor existente..."
   ssh -i "$EC2_KEY" "$EC2_USER@$EC2_HOST" "
     docker stop $CONTAINER_NAME 2>/dev/null || true
     docker rm $CONTAINER_NAME 2>/dev/null || true
   "
 
-  # Copiar imagen a EC2
-  print_message "Copiando imagen a EC2..."
-  docker save "$IMAGE_NAME" | bzip2 | ssh -i "$EC2_KEY" "$EC2_USER@$EC2_HOST" 'bunzip2 | docker load'
-
-  # Copiar archivo de variables de entorno
   print_message "Copiando configuración..."
   scp -i "$EC2_KEY" .env.production "$EC2_USER@$EC2_HOST:~/.env.production"
 
-  # Ejecutar nuevo contenedor
-  print_message "Iniciando nuevo contenedor..."
+  print_message "Haciendo pull de la imagen desde DockerHub..."
   ssh -i "$EC2_KEY" "$EC2_USER@$EC2_HOST" "
+    docker login -u $DOCKERHUB_USER --password-stdin <<< '$DOCKERHUB_PASSWORD'
+    docker pull $DOCKERHUB_REPO:$TAG
     docker run -d \
       --name $CONTAINER_NAME \
       --restart unless-stopped \
       -p 3000:3000 \
       --env-file ~/.env.production \
-      $IMAGE_NAME
+      $DOCKERHUB_REPO:$TAG
   "
 
-  print_success "Contenedor desplegado en EC2"
+  print_success "Contenedor desplegado en EC2 desde DockerHub"
 }
 
 # === FUNCIONES DE VERIFICACIÓN POST-DESPLIEGUE ===
@@ -155,6 +160,7 @@ main() {
   check_dependencies
   check_ec2_connection
   build_docker_image
+  push_docker_image
   deploy_to_ec2
   verify_deployment
 
