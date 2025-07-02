@@ -19,6 +19,7 @@
     "@alova/scene-react": "^1.6.2",
     "@aws-sdk/client-dynamodb": "^3.767.0",
     "@aws-sdk/lib-dynamodb": "^3.767.0",
+    "@emotiox/shared": "*",
     "@headlessui/react": "^2.2.0",
     "@radix-ui/react-checkbox": "^1.1.5",
     "@radix-ui/react-dialog": "^1.1.6",
@@ -46,8 +47,7 @@
     "tailwind-merge": "^2.2.1",
     "uuid": "^11.1.0",
     "zod": "^3.22.4",
-    "zustand": "^5.0.3",
-    "@emotiox/shared": "*"
+    "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@types/node": "^20",

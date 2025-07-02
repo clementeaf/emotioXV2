@@ -106,7 +106,7 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
   const [researchName, setResearchName] = useState<string>('Cargando nombre...');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const publicTestsBaseUrl = process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://main.dgsabzeqh9eea.amplifyapp.com';
+  const publicTestsBaseUrl = process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://d2s9nr0bm47yl1.cloudfront.net';
   const localPublicTestsUrl = 'http://localhost:5173';
   useEffect(() => {
     const fetchResearchName = async () => {

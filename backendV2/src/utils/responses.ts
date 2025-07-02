@@ -4,7 +4,7 @@ import { APIGatewayProxyResult } from 'aws-lambda';
  * Middleware para manejar CORS de forma centralizada
  */
 export const corsHeaders = {
-    'Access-Control-Allow-Origin': 'https://emotioxv2-frontend.amplifyapp.com, http://localhost:3000, http://localhost:5173',
+    'Access-Control-Allow-Origin': 'http://localhost:3000, http://localhost:5173',
     'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS,PATCH',
     'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Requested-With,Accept',
     'Access-Control-Allow-Credentials': 'true'

@@ -4,8 +4,6 @@ const allowedOrigins = [
   'http://localhost:3000', // Frontend local (Next.js default)
   'http://localhost:4700', // Frontend local (Vite default for public-tests)
   'http://localhost:5173', // Otro puerto común de Vite
-  'https://main.d1ztaxtiiqd78hd.amplifyapp.com',
-  'https://main.dgsabzeqh9eea.amplifyapp.com',
   'https://d2s9nr0bm47yl1.cloudfront.net'
 ];
 
