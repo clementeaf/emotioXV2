@@ -3,8 +3,9 @@
 import { ResearchSidebar } from '@/components/layout/ResearchSidebar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams();
   const researchId = searchParams ? searchParams.get('research') : '';
 
@@ -21,5 +22,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </main>
       </div>
     </div>
+  );
+}
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={<div className="p-4 text-center">Cargando layout...</div>}>
+      <DashboardLayoutContent>{children}</DashboardLayoutContent>
+    </Suspense>
   );
 }

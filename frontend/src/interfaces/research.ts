@@ -104,8 +104,6 @@ export interface ResearchStore {
   getDraft: () => ResearchDraft | null;
 }
 
-
-
 /**
  * Interfaz para las secciones del sidebar
  */
@@ -128,4 +126,13 @@ export interface ResearchContextType {
   updateDraft: (data: Partial<ResearchDraft['data']>, step: ResearchDraft['step']) => void;
   clearDraft: () => void;
   getDraft: () => ResearchDraft | null;
+}
+
+/**
+ * Props para el componente ResearchSidebar
+ */
+export interface ResearchSidebarProps {
+  researchId?: string;
+  activeStage?: string;
+  className?: string;
 }
