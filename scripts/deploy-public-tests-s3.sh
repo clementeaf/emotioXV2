@@ -3,7 +3,7 @@ set -e
 
 # === CONFIGURACIÓN ===
 BUCKET_NAME=emotioxv2-public-tests-bucket
-CLOUDFRONT_DIST_ID=E74AT36863Y15
+CLOUDFRONT_DIST_ID=E2X8HCFI5FM1EC
 PUBLIC_TESTS_DIR=public-tests
 BUILD_DIR=dist
 
@@ -25,7 +25,7 @@ aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DIST_ID --paths
 
 # === 4. Imprimir URL pública ===
 PUBLIC_URL="https://$BUCKET_NAME.s3.amazonaws.com/index.html"
-CLOUDFRONT_URL="https://d2s9nr0bm47yl1.cloudfront.net/"
+CLOUDFRONT_URL="https://d2zt8ia21te5mv.cloudfront.net/"
 echo "\n✅ Deploy completo. URL pública S3: $PUBLIC_URL"
 echo "✅ URL CloudFront: $CLOUDFRONT_URL"
 echo "\nPuedes inyectar esta URL en el frontend principal usando la variable NEXT_PUBLIC_PUBLIC_TESTS_URL."

@@ -1,0 +1,66 @@
+{
+  "CallerReference": "emotioxv2-public-tests-1733145600",
+  "Comment": "EmotioXV2 Public Tests Distribution - Nueva configuración",
+  "Enabled": true,
+  "Origins": {
+    "Quantity": 1,
+    "Items": [
+      {
+        "Id": "S3-emotioxv2-public-tests-bucket",
+        "DomainName": "emotioxv2-public-tests-bucket.s3.amazonaws.com",
+        "OriginPath": "",
+        "CustomHeaders": {
+          "Quantity": 0
+        },
+        "S3OriginConfig": {
+          "OriginAccessIdentity": ""
+        },
+        "ConnectionAttempts": 3,
+        "ConnectionTimeout": 10,
+        "OriginShield": {
+          "Enabled": false
+        }
+      }
+    ]
+  },
+  "DefaultCacheBehavior": {
+    "TargetOriginId": "S3-emotioxv2-public-tests-bucket",
+    "ViewerProtocolPolicy": "redirect-to-https",
+    "AllowedMethods": {
+      "Quantity": 2,
+      "Items": ["GET", "HEAD"],
+      "CachedMethods": {
+        "Quantity": 2,
+        "Items": ["GET", "HEAD"]
+      }
+    },
+    "Compress": true,
+    "ForwardedValues": {
+      "QueryString": false,
+      "Cookies": {
+        "Forward": "none"
+      },
+      "Headers": {
+        "Quantity": 0
+      },
+      "QueryStringCacheKeys": {
+        "Quantity": 0
+      }
+    },
+    "TrustedSigners": {
+      "Enabled": false,
+      "Quantity": 0
+    },
+    "TrustedKeyGroups": {
+      "Enabled": false,
+      "Quantity": 0
+    },
+    "MinTTL": 0,
+    "DefaultTTL": 86400,
+    "MaxTTL": 31536000
+  },
+  "DefaultRootObject": "index.html",
+  "PriceClass": "PriceClass_100",
+  "HttpVersion": "http2",
+  "IsIPV6Enabled": true
+}

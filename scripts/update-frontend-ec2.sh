@@ -76,9 +76,24 @@ build_docker_image() {
 
   cd "$(dirname "$0")/.." || exit 1
 
+  # Crear archivo .env limpio
+  cat > .env << EOF
+NEXT_PUBLIC_API_URL=https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev
+NEXT_PUBLIC_WEBSOCKET_URL=wss://pgfnp44rj1.execute-api.us-east-1.amazonaws.com
+NEXT_PUBLIC_PUBLIC_TESTS_URL=https://d2zt8ia21te5mv.cloudfront.net
+NEXT_PUBLIC_ENV=production
+NEXT_PUBLIC_STAGE=dev
+NEXT_PUBLIC_REGION=us-east-1
+NODE_ENV=production
+NEXT_PUBLIC_VERSION=$(date +%Y%m%d-%H%M%S)
+EOF
+
+  # Crear archivo .env.production
   cat > .env.production << EOF
 NEXT_PUBLIC_API_URL=https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev
-NEXT_PUBLIC_ENV=development
+NEXT_PUBLIC_PUBLIC_TESTS_URL=https://d2zt8ia21te5mv.cloudfront.net
+NODE_ENV=production
+NEXT_PUBLIC_ENV=production
 NEXT_PUBLIC_VERSION=$(date +%Y%m%d-%H%M%S)
 EOF
 

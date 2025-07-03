@@ -106,8 +106,17 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
   const [researchName, setResearchName] = useState<string>('Cargando nombre...');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const publicTestsBaseUrl = process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://d2s9nr0bm47yl1.cloudfront.net';
+  const publicTestsBaseUrl = process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://d2zt8ia21te5mv.cloudfront.net';
   const localPublicTestsUrl = 'http://localhost:5173';
+
+  console.log('[ResearchSidebar] Environment check:', {
+    NODE_ENV: process.env.NODE_ENV,
+    NEXT_PUBLIC_ENV: process.env.NEXT_PUBLIC_ENV,
+    NEXT_PUBLIC_PUBLIC_TESTS_URL: process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL,
+    publicTestsBaseUrl,
+    localPublicTestsUrl
+  });
+
   useEffect(() => {
     const fetchResearchName = async () => {
       if (!researchId) {
@@ -170,7 +179,7 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
   const handleBackToDashboard = () => { router.push('/dashboard'); };
   let publicTestUrl: string | null = null;
   if (researchId) {
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NEXT_PUBLIC_ENV === 'development') {
       publicTestUrl = `${localPublicTestsUrl}?researchId=${researchId}`;
     } else {
       publicTestUrl = `${publicTestsBaseUrl}?researchId=${researchId}`;
