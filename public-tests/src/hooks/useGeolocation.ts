@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export interface GeolocationState {
   latitude?: number;
@@ -29,6 +29,7 @@ const DEFAULT_OPTIONS: Required<GeolocationOptions> = {
 
 /**
  * Hook personalizado para manejar geolocalización con mejor UX
+ * CORREGIDO: Eliminado bucle infinito de ipapi.co
  */
 export const useGeolocation = (options: GeolocationOptions = {}) => {
   const [state, setState] = useState<GeolocationState>({
@@ -37,7 +38,15 @@ export const useGeolocation = (options: GeolocationOptions = {}) => {
     permissionStatus: 'prompt'
   });
 
-  const opts = { ...DEFAULT_OPTIONS, ...options };
+  const hasInitializedRef = useRef(false);
+
+  // CORRIGIDO: Memoizar opts para evitar recreaciones
+  const opts = useMemo(() => ({ ...DEFAULT_OPTIONS, ...options }), [
+    options.enableHighAccuracy,
+    options.timeout,
+    options.maximumAge,
+    options.fallbackToIP
+  ]);
 
   // Verificar si la geolocalización está soportada
   const isGeolocationSupported = typeof navigator !== 'undefined' && 'geolocation' in navigator;
@@ -162,14 +171,16 @@ export const useGeolocation = (options: GeolocationOptions = {}) => {
         error: errorMessage
       }));
     }
-  }, [isGeolocationSupported, checkPermissionStatus, getLocationByIP, opts]);
+  }, [isGeolocationSupported, checkPermissionStatus, getLocationByIP, opts.enableHighAccuracy, opts.timeout, opts.maximumAge, opts.fallbackToIP]);
 
-  // Solicitar ubicación automáticamente al montar el componente
+  // CORRIGIDO: Solo ejecutar una vez al montar, sin dependencias que causen loops
   useEffect(() => {
-    if (isGeolocationSupported) {
+    if (isGeolocationSupported && !hasInitializedRef.current) {
+      hasInitializedRef.current = true;
       requestLocation();
     }
-  }, [isGeolocationSupported, requestLocation]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isGeolocationSupported]);
 
   // Función para reintentar
   const retry = useCallback(() => {
