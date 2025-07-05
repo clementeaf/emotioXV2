@@ -269,3 +269,4 @@ Si hay errores durante el despliegue:
 1. Verifica tus credenciales de AWS
 2. Comprueba los logs de CloudFormation
 3. Ejecuta `serverless logs` para ver los logs de las funciones Lambda
+# CI/CD Pipeline Status: Testing GitHub Actions with AWS Amplify
