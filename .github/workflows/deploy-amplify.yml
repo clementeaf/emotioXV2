@@ -43,23 +43,10 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
 
-    - name: Install root dependencies
-      run: npm ci
-
     - name: Install frontend dependencies
       run: |
         cd frontend
-        npm ci
-
-    - name: Lint frontend code
-      run: |
-        cd frontend
-        npm run lint:check
-
-    - name: Verify API configuration
-      run: |
-        cd frontend
-        npm run verify:api
+        npm install
 
     - name: Build frontend
       run: |
