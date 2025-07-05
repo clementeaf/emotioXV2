@@ -21,3 +21,4 @@ body {
   background: rgb(var(--background-rgb));
   overflow: hidden;
 }
+/* Test trigger for CI/CD */
