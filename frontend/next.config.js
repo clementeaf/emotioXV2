@@ -14,7 +14,7 @@ const nextConfig = {
     externalDir: true
   },
   // Transpilación de paquetes externos
-  transpilePackages: ['../shared'],
+  // transpilePackages: ['../shared'], // Comentado temporalmente para deployment
   webpack: (config) => {
     // Resolver correctamente los módulos compartidos
     config.resolve.fallback = {
