@@ -62,15 +62,38 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
     initialData: initialValues,
   });
 
+  // DEBUG avanzado: loggear montaje/desmontaje
+  useEffect(() => {
+    console.log('[DemographicsForm] Montado', { stepId });
+    return () => {
+      console.log('[DemographicsForm] Desmontado', { stepId });
+    };
+  }, [stepId]);
+
+  // DEBUG avanzado: loggear cada render
+  console.log('[DemographicsForm] Render', {
+    formFieldResponses,
+    responseData,
+    initialValues
+  });
+
   // Sincronizar el estado del formulario con la respuesta guardada o los valores iniciales
   useEffect(() => {
-    if (responseData && Object.keys(responseData).length > 0) {
+    // Sincronizar el estado del formulario con la respuesta guardada o los valores iniciales
+    const isEmpty = Object.keys(formFieldResponses).length === 0;
+    const isDifferentFromResponseData = responseData && JSON.stringify(formFieldResponses) !== JSON.stringify(responseData);
+    const isDifferentFromInitialValues = initialValues && JSON.stringify(formFieldResponses) !== JSON.stringify(initialValues);
+
+    if (
+      responseData && Object.keys(responseData).length > 0 && (isEmpty || isDifferentFromResponseData)
+    ) {
       setFormFieldResponses(responseData);
-    } else if (initialValues && Object.keys(initialValues).length > 0) {
+    } else if (
+      initialValues && Object.keys(initialValues).length > 0 && (isEmpty || isDifferentFromInitialValues)
+    ) {
       setFormFieldResponses(initialValues);
-    } else {
-      setFormFieldResponses({});
     }
+    // eslint-disable-next-line
   }, [responseData, initialValues]);
 
   // Determinar si hay datos existentes correctamente
@@ -195,7 +218,13 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
             isSaving={isSaving || isSubmittingToServer}
             hasExistingData={hasExistingData}
             onClick={handleSubmitClick}
-            disabled={isLoading}
+            disabled={
+              isLoading ||
+              !participantId ||
+              !researchId ||
+              isSaving ||
+              isSubmittingToServer
+            }
             customCreateText="Guardar y continuar"
             customUpdateText="Actualizar y continuar"
           />

@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Exportación estática para S3/CloudFront
+  output: 'export',
   // Configuración para imágenes y rutas
   images: {
     unoptimized: true,

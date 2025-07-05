@@ -78,14 +78,11 @@ export class NewResearchController {
       if (!researchId) {
         return errorResponse('ID de investigación no proporcionado en pathParameters', 400);
       }
-
       if (!userId) {
         return errorResponse('Usuario no autenticado', 401);
       }
-
-      // Obtener la investigación
-      const research = await newResearchService.getResearchById(researchId, 'user', userId);
-
+      // Obtener la investigación (sin validación de permisos especiales)
+      const research = await newResearchService.getResearchById(researchId, 'user');
       return createResponse(200, {
         data: research
       });
@@ -125,31 +122,23 @@ export class NewResearchController {
    */
   async updateResearch(event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
     try {
-      // Verificar que hay un cuerpo en la petición
       if (!event.body) {
         return errorResponse('Se requieren datos para actualizar la investigación', 400);
       }
-
-      // Obtener ID de la investigación de los parámetros
       const researchId = event.pathParameters?.researchId;
       if (!researchId) {
         return errorResponse('ID de investigación no proporcionado en pathParameters', 400);
       }
-
       if (!userId) {
         return errorResponse('Usuario no autenticado', 401);
       }
-
-      // Parsear el cuerpo de la petición
       const updateData: Partial<NewResearch> = JSON.parse(event.body);
-
-      // Actualizar la investigación
+      // Actualizar la investigación (sin validación de permisos especiales)
       const updatedResearch = await newResearchService.updateResearch(
         researchId,
         updateData,
         userId
       );
-
       return createResponse(200, {
         message: 'Investigación actualizada exitosamente',
         data: updatedResearch
@@ -196,34 +185,26 @@ export class NewResearchController {
    */
   async changeResearchStatus(event: APIGatewayProxyEvent, userId: string): Promise<APIGatewayProxyResult> {
     try {
-      // Verificar que hay un cuerpo en la petición
       if (!event.body) {
         return errorResponse('Se requiere especificar el nuevo estado', 400);
       }
-
-      // Obtener ID de la investigación de los parámetros
       const researchId = event.pathParameters?.researchId;
       if (!researchId) {
         return errorResponse('ID de investigación no proporcionado en pathParameters', 400);
       }
-
       if (!userId) {
         return errorResponse('Usuario no autenticado', 401);
       }
-
-      // Parsear el cuerpo de la petición
       const { status } = JSON.parse(event.body);
       if (!status) {
         return errorResponse('Se requiere especificar el nuevo estado', 400);
       }
-
-      // Cambiar el estado de la investigación
+      // Cambiar el estado de la investigación (sin validación de permisos especiales)
       const updatedResearch = await newResearchService.changeResearchStatus(
         researchId,
         status,
         userId
       );
-
       return createResponse(200, {
         message: `Estado cambiado a '${status}' exitosamente`,
         data: updatedResearch

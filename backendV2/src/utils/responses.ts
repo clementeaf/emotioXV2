@@ -1,22 +1,36 @@
-import { APIGatewayProxyResult } from 'aws-lambda';
+import { APIGatewayProxyResult, APIGatewayProxyEvent } from 'aws-lambda';
+import { getCorsHeaders } from '../middlewares/cors';
 
 /**
- * Middleware para manejar CORS de forma centralizada
+ * Headers CORS por defecto (deprecated - usar getCorsHeaders en su lugar)
+ * @deprecated Use getCorsHeaders from cors middleware instead
  */
 export const corsHeaders = {
-    'Access-Control-Allow-Origin': 'http://localhost:3000, http://localhost:5173',
+    'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || 'http://localhost:4700',
     'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS,PATCH',
-    'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Requested-With,Accept',
+    'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Requested-With,Accept,Origin,Cache-Control,Pragma',
     'Access-Control-Allow-Credentials': 'true'
 };
 
 /**
- * Función para crear respuestas estandarizadas
+ * Función para crear respuestas estandarizadas (versión legacy)
+ * @deprecated Use createResponseWithCors instead
  */
 export const createResponse = (statusCode: number, body: any): APIGatewayProxyResult => {
     return {
         statusCode,
         headers: corsHeaders,
+        body: JSON.stringify(body)
+    };
+};
+
+/**
+ * Función para crear respuestas estandarizadas con CORS dinámico
+ */
+export const createResponseWithCors = (statusCode: number, body: any, event: APIGatewayProxyEvent): APIGatewayProxyResult => {
+    return {
+        statusCode,
+        headers: getCorsHeaders(event),
         body: JSON.stringify(body)
     };
 };

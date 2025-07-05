@@ -18,6 +18,15 @@ export const useDashboardResearch = () => {
   const [isAimFramework, setIsAimFramework] = useState(searchParams?.get('aim') === 'true');
   const [activeResearch, setActiveResearch] = useState<ActiveResearch | undefined>(undefined);
 
+  // DEBUG: Agregar logs para entender qué está pasando
+  console.log('[useDashboardResearch] Debug info:', {
+    researchId,
+    section,
+    aim: searchParams?.get('aim'),
+    isAimFramework,
+    searchParams: Object.fromEntries(searchParams?.entries() || [])
+  });
+
   useEffect(() => {
     // Si no hay researchId, limpiar y salir
     if (!researchId) {
@@ -35,6 +44,13 @@ export const useDashboardResearch = () => {
       const storedResearch = typeof window !== 'undefined' ? localStorage.getItem(`research_${researchId}`) : null;
       let researchData: ResearchData;
       const hasAimParam = searchParams?.get('aim') === 'true';
+
+      console.log('[useDashboardResearch] handleResearchLoad:', {
+        researchId,
+        hasAimParam,
+        section,
+        storedResearch: !!storedResearch
+      });
 
       if (storedResearch) {
         researchData = JSON.parse(storedResearch);
@@ -87,6 +103,7 @@ export const useDashboardResearch = () => {
 
     if (hasAimParam && !searchParams?.get('section')) {
       const redirectUrl = `/dashboard?research=${researchId}&aim=true&section=welcome-screen`;
+      console.log('[useDashboardResearch] Redirecting to:', redirectUrl);
       router.replace(redirectUrl);
     }
   };
@@ -106,10 +123,19 @@ export const useDashboardResearch = () => {
   const handleAimFrameworkRedirect = (researchData: ResearchData, researchId: string) => {
     const isAimFramework = researchData.technique === 'aim-framework';
     const hasAimParam = searchParams?.get('aim') === 'true';
+    const currentSection = searchParams?.get('section');
+
+    console.log('[useDashboardResearch] handleAimFrameworkRedirect:', {
+      isAimFramework,
+      hasAimParam,
+      currentSection,
+      section
+    });
 
     if (isAimFramework) {
-      if (!hasAimParam || !section) {
-        const redirectUrl = `/dashboard?research=${researchId}&aim=true${!section ? '&section=welcome-screen' : ''}`;
+      if (!hasAimParam || !currentSection || currentSection === '' || currentSection === 'null') {
+        const redirectUrl = `/dashboard?research=${researchId}&aim=true&section=welcome-screen`;
+        console.log('[useDashboardResearch] Redirecting to:', redirectUrl);
         router.replace(redirectUrl);
       }
     }

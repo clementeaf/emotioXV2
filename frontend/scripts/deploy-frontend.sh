@@ -413,10 +413,16 @@ main() {
   print_message "Iniciando despliegue del frontend de EmotioXV2..."
   echo ""
 
-  # Ejecutar funciones en secuencia
   check_dependencies
   check_aws_config
-  select_environment
+
+  # Permitir argumento para entorno
+  if [[ "$1" == "dev" || "$1" == "test" || "$1" == "prod" ]]; then
+    ENV="$1"
+    print_message "Entorno seleccionado por argumento: ${GREEN}$ENV${NC}"
+  else
+    select_environment
+  fi
 
   # Validaciones críticas antes del build
   validate_environment_variables
@@ -430,5 +436,5 @@ main() {
   show_website_url
 }
 
-# Ejecutar el script
-main
+# Ejecutar el script, pasando todos los argumentos
+main "$@"

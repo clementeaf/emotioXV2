@@ -129,11 +129,11 @@ export function useApi<T = any>(defaultOptions: UseApiOptions = {}) {
         const formData = new FormData();
         formData.append('file', file);
         // Implementar cuando tengamos un endpoint para subir archivos
-        return post('/api/files/upload', formData, {
+        return post(`${API_ENDPOINTS.s3.upload}`, formData, {
           headers: {}, // Permitir que el navegador establezca el Content-Type correcto
         });
       },
-      getUrl: (key: string) => get(`/api/files/${key}`),
+      getUrl: (key: string) => get(`${API_ENDPOINTS.s3.download}?key=${key}`),
     },
   };
 

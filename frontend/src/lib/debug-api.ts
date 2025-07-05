@@ -1,6 +1,6 @@
 /**
  * Biblioteca de API para endpoints de debug en desarrollo
- * IMPORTANTE: Estos endpoints solo funcionan en el entorno de desarrollo (localhost)
+ * IMPORTANTE: Estos endpoints solo funcionan en el entorno de desarrollo
  */
 
 /**
@@ -12,7 +12,7 @@
  */
 export const isLocalDevelopment = (): boolean => {
   if (typeof window === 'undefined') {return false;}
-  return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  return process.env.NODE_ENV === 'development';
 };
 
 /**
@@ -22,14 +22,14 @@ export const getDevToken = async (): Promise<string> => {
   if (!isLocalDevelopment()) {
     throw new Error('Esta función solo debe usarse en desarrollo local');
   }
-  
+
   const response = await fetch('/api/debug/get-dev-token');
   const data = await response.json();
-  
+
   if (data.success && data.token) {
     return data.token;
   }
-  
+
   throw new Error('No se pudo obtener un token de desarrollo');
 };
 
@@ -42,13 +42,13 @@ export const createResearch = async (data: any): Promise<{ id: string }> => {
   if (!isLocalDevelopment()) {
     throw new Error('Esta función solo debe usarse en desarrollo local');
   }
-  
+
   // Generar un ID único para la investigación
   const id = `dev-research-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-  
+
   // Simular un retraso de red
   await new Promise(resolve => setTimeout(resolve, 800));
-  
+
   // Guardar datos en localStorage para simular persistencia
   localStorage.setItem(`research_${id}`, JSON.stringify({
     id,
@@ -56,9 +56,9 @@ export const createResearch = async (data: any): Promise<{ id: string }> => {
     createdAt: new Date().toISOString(),
     status: 'draft'
   }));
-  
+
   console.log(`[DEBUG API] Investigación creada con ID: ${id}`);
-  
+
   // Devolver respuesta simulada
   return { id };
-}; 
+};

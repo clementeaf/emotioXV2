@@ -93,7 +93,23 @@ export const useParticipantLogin = ({ researchId, onLogin }: UseParticipantLogin
       const responseData = await response.json();
 
       if (!response.ok) {
-        const errorMessage = responseData.error || `Error ${response.status} al iniciar sesión.`;
+        let errorMessage = responseData.error || `Error ${response.status} al iniciar sesión.`;
+        
+        // Manejo específico de errores según el status code y mensaje
+        if (response.status === 403) {
+          if (responseData.error?.includes('No tienes permiso para acceder a esta investigación')) {
+            errorMessage = `Esta investigación aún no está disponible para participantes.\n\nPor favor, contacta al organizador del estudio o intenta más tarde.`;
+          } else {
+            errorMessage = 'No tienes permisos para participar en esta investigación.';
+          }
+        } else if (response.status === 404) {
+          errorMessage = 'La investigación especificada no existe. Verifica el enlace de acceso.';
+        } else if (response.status === 400) {
+          if (responseData.error?.includes('Research ID inválido')) {
+            errorMessage = 'El enlace de acceso parece estar corrupto. Verifica la URL completa.';
+          }
+        }
+        
         console.error('[useParticipantLogin] Login API Error:', responseData);
         setErrors(prev => ({ ...prev, submit: errorMessage }));
         setIsLoading(false);

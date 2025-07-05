@@ -13,7 +13,9 @@
     "lint": "next lint",
     "lint:check": "eslint src/**/*.{ts,tsx}",
     "lint:fix": "eslint src/**/*.{ts,tsx} --fix",
-    "lint:strict": "eslint src/**/*.{ts,tsx} --max-warnings=0"
+    "lint:strict": "eslint src/**/*.{ts,tsx} --max-warnings=0",
+    "verify:api": "node scripts/verify-api-config.js",
+    "verify:all": "npm run verify:api && npm run lint:check"
   },
   "dependencies": {
     "@alova/scene-react": "^1.6.2",

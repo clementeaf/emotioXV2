@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParticipantStore } from '../stores/participantStore';
 import {
-  StandardizedFormActions,
-  StandardizedFormProps,
-  StandardizedFormState,
-  UseStandardizedFormOptions,
-  ValidationRule
+    StandardizedFormActions,
+    StandardizedFormProps,
+    StandardizedFormState,
+    UseStandardizedFormOptions,
+    ValidationRule
 } from '../types/hooks.types';
 import { useModuleResponses } from './useModuleResponses';
 import { useResponseAPI } from './useResponseAPI';
@@ -170,6 +170,11 @@ export function useStandardizedForm<T>(
     }
 
     if (isDataLoaded && value !== initialValue) {
+      initialLoadComplete.current = true;
+      return;
+    }
+
+    if (userHasInteracted.current) {
       initialLoadComplete.current = true;
       return;
     }

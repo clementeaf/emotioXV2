@@ -1,7 +1,9 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { getCorsHeaders as getCorsHeadersFromMiddleware } from '../middlewares/cors';
 
 /**
  * Obtiene los headers CORS estándar para todas las respuestas API
+ * @deprecated Use getCorsHeaders from cors middleware with event parameter instead
  * @returns Objeto con los headers CORS configurados
  */
 export const getCorsHeaders = (): { [key: string]: string } => {
@@ -23,13 +25,40 @@ export const getCorsHeaders = (): { [key: string]: string } => {
 };
 
 /**
- * Crea una respuesta HTTP estándar con los headers CORS apropiados
+ * Obtiene los headers CORS dinámicos basados en el evento
+ * @param event Evento de API Gateway
+ * @returns Objeto con los headers CORS configurados dinámicamente
+ */
+export const getDynamicCorsHeaders = (event: APIGatewayProxyEvent): { [key: string]: string | boolean } => {
+  return getCorsHeadersFromMiddleware(event);
+};
+
+/**
+ * Crea una respuesta HTTP estándar con los headers CORS apropiados (versión legacy)
+ * @deprecated Use createResponseWithDynamicCors instead
  * @param statusCode Código de estado HTTP
  * @param body Cuerpo de la respuesta (se convertirá a JSON)
  * @returns Respuesta HTTP formateada
  */
 export const createResponse = (statusCode: number, body: any): APIGatewayProxyResult => {
   const corsHeaders = getCorsHeaders();
+  
+  return {
+    statusCode,
+    headers: corsHeaders,
+    body: JSON.stringify(body)
+  };
+};
+
+/**
+ * Crea una respuesta HTTP estándar con los headers CORS dinámicos
+ * @param statusCode Código de estado HTTP
+ * @param body Cuerpo de la respuesta (se convertirá a JSON)
+ * @param event Evento de API Gateway para determinar el origen
+ * @returns Respuesta HTTP formateada con CORS dinámico
+ */
+export const createResponseWithDynamicCors = (statusCode: number, body: any, event: APIGatewayProxyEvent): APIGatewayProxyResult => {
+  const corsHeaders = getDynamicCorsHeaders(event);
   
   return {
     statusCode,

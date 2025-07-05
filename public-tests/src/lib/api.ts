@@ -151,7 +151,7 @@ export class ApiClient {
   // Método para registrar un participante
   async registerParticipant(data: ParticipantRegistration): Promise<APIResponse<{ token: string }>> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/public/participant/register`, {
+      const response = await fetch(`${API_BASE_URL}/eye-tracking-recruit/public/participant/start`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

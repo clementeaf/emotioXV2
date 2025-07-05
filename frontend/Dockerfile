@@ -9,22 +9,25 @@ COPY shared/package*.json ./shared/
 COPY frontend/package*.json ./frontend/
 
 # Instalar dependencias solo una vez
-RUN npm install --legacy-peer-deps --ignore-scripts
+RUN npm install --legacy-peer-deps --include=dev
 
 # Copiar solo el código fuente necesario
 COPY shared ./shared
 COPY frontend ./frontend
 
-# Construir shared y frontend
-RUN npm run build --workspace=shared
-RUN npm run build --workspace=frontend
+# Copiar .env.production al lugar correcto para el build
+COPY frontend/.env.production ./frontend/.env.production
+
+# Build del frontend con variables correctas
+WORKDIR /app/frontend
+RUN npm run build
 
 FROM node:20-alpine AS runner
 WORKDIR /app
 
 # Copiar solo node_modules y el frontend compilado
-COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/frontend .
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/shared ./node_modules/@emotiox/shared
 
 # Limpiar archivos de desarrollo

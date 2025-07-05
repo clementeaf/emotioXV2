@@ -107,14 +107,12 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const publicTestsBaseUrl = process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://d2zt8ia21te5mv.cloudfront.net';
-  const localPublicTestsUrl = 'http://localhost:5173';
 
   console.log('[ResearchSidebar] Environment check:', {
     NODE_ENV: process.env.NODE_ENV,
     NEXT_PUBLIC_ENV: process.env.NEXT_PUBLIC_ENV,
     NEXT_PUBLIC_PUBLIC_TESTS_URL: process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL,
-    publicTestsBaseUrl,
-    localPublicTestsUrl
+    publicTestsBaseUrl
   });
 
   useEffect(() => {
@@ -179,11 +177,7 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
   const handleBackToDashboard = () => { router.push('/dashboard'); };
   let publicTestUrl: string | null = null;
   if (researchId) {
-    if (process.env.NEXT_PUBLIC_ENV === 'development') {
-      publicTestUrl = `${localPublicTestsUrl}?researchId=${researchId}`;
-    } else {
-      publicTestUrl = `${publicTestsBaseUrl}?researchId=${researchId}`;
-    }
+    publicTestUrl = `${publicTestsBaseUrl}?researchId=${researchId}`;
   }
 
   // Bloque superior: nombre proyecto y enlaces

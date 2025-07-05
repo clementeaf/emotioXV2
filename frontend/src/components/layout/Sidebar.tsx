@@ -343,12 +343,9 @@ function SidebarContent({ className }: SidebarProps) {
     if (!researchId || !currentResearchName) return null;
 
     const publicTestsBaseUrl = process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://d2zt8ia21te5mv.cloudfront.net';
-    const localPublicTestsUrl = 'http://localhost:5173';
 
     let publicTestUrl: string | null = null;
-    if (process.env.NEXT_PUBLIC_ENV === 'development') {
-      publicTestUrl = `${localPublicTestsUrl}?researchId=${researchId}`;
-    } else {
+    if (researchId) {
       publicTestUrl = `${publicTestsBaseUrl}?researchId=${researchId}`;
     }
 

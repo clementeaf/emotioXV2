@@ -31,9 +31,13 @@ export const ParticipantLogin = ({ onLoginSuccess, researchId }: ParticipantLogi
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {errors.submit && (
-            <p className="text-sm text-red-500 text-center bg-red-50 p-2 rounded border border-red-200">
-              {errors.submit}
-            </p>
+            <div className="text-sm text-red-500 text-center bg-red-50 p-3 rounded border border-red-200">
+              {errors.submit.split('\n').map((line, index) => (
+                <p key={index} className={index > 0 ? 'mt-2' : ''}>
+                  {line}
+                </p>
+              ))}
+            </div>
           )}
           
           <FormField

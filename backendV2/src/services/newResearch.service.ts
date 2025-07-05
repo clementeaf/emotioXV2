@@ -30,29 +30,29 @@ export class NewResearchService {
     try {
       console.log('Creando nueva investigación con datos:', JSON.stringify(data));
       console.log('Usuario ID:', userId);
-      
+
       // Validar campos requeridos
       validateRequiredFields(data);
       console.log('Validación de campos requeridos completada');
-      
+
       // Validar todos los datos
       validateNewResearch(data);
       console.log('Validación completa de datos completada');
-      
+
       const result = await newResearchModel.create(data, userId);
       console.log('Investigación creada exitosamente:', JSON.stringify(result));
       return result;
     } catch (error) {
       console.error('Error detallado al crear investigación:', error);
-      
+
       if (error instanceof ResearchError) {
         throw error;
       }
-      
+
       if (error instanceof ValidationError) {
         throw new ResearchError('Error de validación en los datos', 400, error.errors);
       }
-      
+
       console.error('Error al crear investigación:', error);
       throw new ResearchError('Error al crear la investigación', 500);
     }
@@ -62,40 +62,22 @@ export class NewResearchService {
    * Obtiene una investigación por su ID
    * @param id ID de la investigación
    * @param context Contexto de la llamada ('user' o 'public-check')
-   *                - 'user': Verifica propiedad usando userId
-   *                - 'public-check': Verifica existencia y estado activo
-   * @param userId ID del usuario (requerido si context es 'user')
+   * @param userId ID del usuario (ya no se usa para permisos)
    * @returns Datos de la investigación
    */
-  async getResearchById(id: string, context: 'user' | 'public-check', userId?: string): Promise<NewResearch> {
+  async getResearchById(id: string, context: 'user' | 'public-check', _userId?: string): Promise<NewResearch> {
     try {
       const research = await newResearchModel.getById(id);
-      
       if (!research) {
         throw new ResearchError('Investigación no encontrada', 404);
       }
-      
-      // Lógica de permisos basada en el contexto
-      if (context === 'user') {
-        if (!userId) {
-          // Error si se requiere userId pero no se proporciona
-          throw new ResearchError('Se requiere userId para verificar permisos de usuario', 500);
-        }
-        // Verificar si el usuario tiene permiso (es propietario)
-        if (!(await this.canAccessResearch(id, userId))) {
-          throw new ResearchError('No tienes permiso para acceder a esta investigación', 403);
-        }
-      } else if (context === 'public-check') {
-        // Para acceso público/participante, solo verificar estado
-        console.log(`[NewResearchService.getResearchById - public-check] Verificando investigación ID: ${id}. Estado actual: ${research.status}`);
+      // Solo validar estado para acceso público
+      if (context === 'public-check') {
         if (research.status !== 'active') {
-          console.warn(`[NewResearchService.getResearchById - public-check] Investigación ${id} no está activa (estado: ${research.status}). Denegando acceso.`);
           throw new ResearchError('No tienes permiso para acceder a esta investigación', 403);
         }
-        // Si está activa, el acceso público está permitido (para este chequeo)
       }
-      
-      return research; // Si pasa los chequeos, devuelve la investigación
+      return research;
     } catch (error) {
       if (error instanceof ResearchError) {
         throw error;
@@ -123,36 +105,27 @@ export class NewResearchService {
    * Actualiza una investigación existente
    * @param id ID de la investigación
    * @param data Datos a actualizar
-   * @param userId ID del usuario (para verificar permisos)
+   * @param userId ID del usuario (ya no se usa para permisos)
    * @returns Investigación actualizada
    */
-  async updateResearch(id: string, data: Partial<NewResearch>, userId: string): Promise<NewResearch> {
+  async updateResearch(id: string, data: Partial<NewResearch>, _userId: string): Promise<NewResearch> {
     try {
       // Verificar existencia
       const existingResearch = await newResearchModel.getById(id);
       if (!existingResearch) {
         throw new ResearchError('Investigación no encontrada', 404);
       }
-      
-      // Verificar permisos
-      if (!await this.canAccessResearch(id, userId)) {
-        throw new ResearchError('No tienes permiso para modificar esta investigación', 403);
-      }
-      
       // Validar datos antes de actualizar
       validateNewResearch(data);
-      
       // Actualizar investigación
       return await newResearchModel.update(id, data);
     } catch (error) {
       if (error instanceof ResearchError) {
         throw error;
       }
-      
       if (error instanceof ValidationError) {
         throw new ResearchError('Error de validación en los datos', 400, error.errors);
       }
-      
       console.error('Error al actualizar investigación:', error);
       throw new ResearchError('Error al actualizar la investigación', 500);
     }
@@ -161,23 +134,17 @@ export class NewResearchService {
   /**
    * Elimina una investigación
    * @param id ID de la investigación
-   * @param userId ID del usuario (para verificar permisos)
+   * @param userId ID del usuario (ya no se usa para permisos)
    * @returns Confirmación de eliminación
    */
-  async deleteResearch(id: string, userId: string): Promise<{ message: string }> {
+  async deleteResearch(id: string, _userId: string): Promise<{ message: string }> {
     try {
       // Verificar existencia
       const existingResearch = await newResearchModel.getById(id);
       if (!existingResearch) {
         throw new ResearchError('Investigación no encontrada', 404);
       }
-      
-      // Verificar permisos
-      if (!await this.canAccessResearch(id, userId)) {
-        throw new ResearchError('No tienes permiso para eliminar esta investigación', 403);
-      }
-      
-      // Eliminar investigación
+      // Eliminar investigación (sin validar permisos)
       await newResearchModel.delete(id);
       return { message: 'Investigación eliminada exitosamente' };
     } catch (error) {
@@ -188,62 +155,34 @@ export class NewResearchService {
       throw new ResearchError('Error al eliminar la investigación', 500);
     }
   }
-  
+
   /**
    * Cambia el estado de una investigación
    * @param id ID de la investigación
    * @param status Nuevo estado
-   * @param userId ID del usuario (para verificar permisos)
+   * @param userId ID del usuario (ya no se usa para permisos)
    * @returns Investigación actualizada
    */
-  async changeResearchStatus(id: string, status: string, userId: string): Promise<NewResearch> {
+  async changeResearchStatus(id: string, status: string, _userId: string): Promise<NewResearch> {
     try {
       // Verificar existencia
       const existingResearch = await newResearchModel.getById(id);
       if (!existingResearch) {
         throw new ResearchError('Investigación no encontrada', 404);
       }
-      
-      // Verificar permisos
-      if (!await this.canAccessResearch(id, userId)) {
-        throw new ResearchError('No tienes permiso para modificar esta investigación', 403);
-      }
-      
       // Validar el nuevo estado
       validateNewResearch({ status });
-      
       // Actualizar estado
       return await newResearchModel.updateStatus(id, status);
     } catch (error) {
       if (error instanceof ResearchError) {
         throw error;
       }
-      
       if (error instanceof ValidationError) {
         throw new ResearchError('Estado no válido', 400, error.errors);
       }
-      
       console.error('Error al cambiar estado de investigación:', error);
       throw new ResearchError('Error al cambiar el estado de la investigación', 500);
-    }
-  }
-
-  /**
-   * Verifica si un usuario puede acceder a una investigación
-   * @param researchId ID de la investigación
-   * @param userId ID del usuario
-   * @returns true si tiene acceso, false en caso contrario
-   */
-  private async canAccessResearch(researchId: string, userId: string): Promise<boolean> {
-    try {
-      const research = await newResearchModel.getById(researchId);
-      if (!research) return false;
-      
-      // Verificar si es el propietario (añadir más lógica según sea necesario)
-      return await newResearchModel.isOwner(researchId, userId);
-    } catch (error) {
-      console.error('Error al verificar permisos:', error);
-      return false;
     }
   }
 
@@ -259,10 +198,10 @@ export class NewResearchService {
       // Re-lanzar el error original para que el controlador lo maneje
       // Si el modelo devuelve [], no entrará aquí.
       // Si hay un error real (permisos, red, etc.), se propagará.
-      throw error; 
+      throw error;
     }
   }
 }
 
 // Exportar instancia única
-export const newResearchService = new NewResearchService(); 
+export const newResearchService = new NewResearchService();
