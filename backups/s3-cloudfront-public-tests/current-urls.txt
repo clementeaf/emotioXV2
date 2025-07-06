@@ -1,0 +1,10 @@
+S3 Bucket: emotioxv2-public-tests-bucket
+CloudFront Distribution ID: E2X8HCFI5FM1EC
+CloudFront URL: https://d2zt8ia21te5mv.cloudfront.net/
+S3 Website URL: http://emotioxv2-public-tests-bucket.s3-website-us-east-1.amazonaws.com
+Backup Date: 2025-07-06T15:42:00Z
+
+NUEVA INFRAESTRUCTURA AMPLIFY:
+App ID: d38z5t7y6s2foi
+URL: https://d38z5t7y6s2foi.amplifyapp.com
+Console: https://console.aws.amazon.com/amplify/home?region=us-east-1#/d38z5t7y6s2foi

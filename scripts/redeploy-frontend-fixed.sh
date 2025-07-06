@@ -1,0 +1,250 @@
+#!/bin/bash
+
+# 🚀 EmotioXV2 - Redeploy Frontend Optimizado 
+# Script para redesplegar frontend con correcciones de navegación SPA
+
+set -e
+
+# Colores para output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+# Funciones de logging
+log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
+log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
+log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
+log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
+
+# Configuración
+FRONTEND_DIR="frontend"
+BUILD_DIR="out"
+BUCKET_NAME="emotioxv2-frontend-bucket"
+CLOUDFRONT_DIST_ID="E2X8HCFI5FM1EC"
+REGION="us-east-1"
+
+main() {
+    echo ""
+    log_info "🚀 Redesplegando frontend con correcciones SPA..."
+    echo ""
+
+    # Verificar dependencias
+    check_dependencies
+
+    # Limpiar y hacer build optimizado
+    clean_and_build
+
+    # Optimizar archivos para SPA
+    optimize_spa_files
+
+    # Deploy a S3 con headers optimizados
+    deploy_to_s3_optimized
+
+    # Corregir configuración CloudFront
+    fix_cloudfront_config
+
+    # Invalidar cache completo
+    invalidate_cache
+
+    # Verificar deployment
+    verify_deployment
+
+    echo ""
+    log_success "✅ Redeploy completado con correcciones SPA!"
+    echo ""
+}
+
+check_dependencies() {
+    log_info "Verificando dependencias..."
+
+    for cmd in aws jq node npm; do
+        if ! command -v $cmd &> /dev/null; then
+            log_error "$cmd no está instalado"
+            exit 1
+        fi
+    done
+
+    if ! aws sts get-caller-identity &> /dev/null; then
+        log_error "AWS CLI no está configurado correctamente"
+        exit 1
+    fi
+
+    log_success "Todas las dependencias están disponibles"
+}
+
+clean_and_build() {
+    log_info "Limpiando y construyendo frontend..."
+
+    cd "$FRONTEND_DIR"
+
+    # Limpiar builds y cache anteriores
+    rm -rf "$BUILD_DIR" .next node_modules/.cache
+
+    # Reinstalar dependencias para asegurar limpieza
+    log_info "Reinstalando dependencias..."
+    npm ci --silent
+
+    # Build con optimizaciones
+    log_info "Construyendo con optimizaciones..."
+    NODE_ENV=production npm run build --silent
+
+    # Verificar build exitoso
+    if [ ! -d "$BUILD_DIR" ]; then
+        log_error "Build falló - directorio '$BUILD_DIR' no fue creado"
+        exit 1
+    fi
+
+    log_success "Build completado"
+    cd ..
+}
+
+optimize_spa_files() {
+    log_info "Optimizando archivos para SPA..."
+
+    cd "$FRONTEND_DIR/$BUILD_DIR"
+
+    # Asegurar que todas las rutas tengan index.html
+    find . -type d -not -path "./_next*" | while read -r dir; do
+        if [ "$dir" != "." ] && [ ! -f "$dir/index.html" ]; then
+            cp ./index.html "$dir/index.html"
+            log_info "Creado index.html en: $dir"
+        fi
+    done
+
+    # Verificar rutas críticas
+    CRITICAL_ROUTES=("dashboard" "login" "register" "research" "profile")
+    for route in "${CRITICAL_ROUTES[@]}"; do
+        if [ ! -f "./$route/index.html" ]; then
+            log_warning "Creando index.html faltante para /$route"
+            mkdir -p "./$route"
+            cp ./index.html "./$route/index.html"
+        fi
+    done
+
+    log_success "Archivos optimizados para SPA"
+    cd ../..
+}
+
+deploy_to_s3_optimized() {
+    log_info "Desplegando a S3 con headers optimizados..."
+
+    # Verificar bucket
+    if ! aws s3 ls "s3://$BUCKET_NAME" &> /dev/null; then
+        log_error "El bucket $BUCKET_NAME no existe"
+        exit 1
+    fi
+
+    # Sincronizar archivos estáticos con cache largo
+    aws s3 sync "$FRONTEND_DIR/$BUILD_DIR/_next" "s3://$BUCKET_NAME/_next" \
+        --delete \
+        --cache-control "max-age=31536000,public,immutable" \
+        --quiet
+
+    # Sincronizar archivos HTML con cache corto
+    aws s3 sync "$FRONTEND_DIR/$BUILD_DIR" "s3://$BUCKET_NAME" \
+        --delete \
+        --exclude "_next/*" \
+        --cache-control "max-age=0,no-cache,no-store,must-revalidate" \
+        --quiet
+
+    # Configurar index.html específico
+    aws s3 cp "$FRONTEND_DIR/$BUILD_DIR/index.html" "s3://$BUCKET_NAME/index.html" \
+        --cache-control "max-age=0,no-cache,no-store,must-revalidate" \
+        --content-type "text/html" \
+        --quiet
+
+    log_success "Archivos desplegados a S3 con headers optimizados"
+}
+
+fix_cloudfront_config() {
+    log_info "Aplicando correcciones de configuración CloudFront..."
+
+    # Ejecutar script de corrección si existe
+    if [ -f "scripts/fix-cloudfront-spa.sh" ]; then
+        log_info "Ejecutando script de corrección CloudFront..."
+        bash scripts/fix-cloudfront-spa.sh
+    else
+        log_warning "Script de corrección CloudFront no encontrado, aplicando configuración básica..."
+        
+        # Configuración básica S3 para SPA
+        aws s3 website "s3://$BUCKET_NAME" \
+            --index-document index.html \
+            --error-document index.html
+        
+        log_success "Configuración básica aplicada"
+    fi
+}
+
+invalidate_cache() {
+    log_info "Invalidando caché completo de CloudFront..."
+
+    # Invalidación completa
+    aws cloudfront create-invalidation \
+        --distribution-id "$CLOUDFRONT_DIST_ID" \
+        --paths "/*" \
+        --no-cli-pager
+
+    log_success "Caché invalidada"
+    log_warning "La propagación puede tardar hasta 15 minutos"
+}
+
+verify_deployment() {
+    log_info "Verificando deployment..."
+
+    # Esperar un momento para que los cambios se reflejen
+    sleep 5
+
+    # URLs de verificación
+    CLOUDFRONT_URL="https://d2s9nr0bm47yl1.cloudfront.net"
+    
+    echo ""
+    log_info "🧪 Verificando URLs críticas..."
+    
+    # Verificar página principal
+    if curl -s -o /dev/null -w "%{http_code}" "$CLOUDFRONT_URL/" | grep -q "200"; then
+        log_success "✓ Página principal: OK"
+    else
+        log_error "✗ Página principal: ERROR"
+    fi
+    
+    # Verificar rutas SPA
+    ROUTES=("dashboard" "login" "register" "research/test-id")
+    for route in "${ROUTES[@]}"; do
+        status=$(curl -s -o /dev/null -w "%{http_code}" "$CLOUDFRONT_URL/$route/")
+        if [ "$status" = "200" ]; then
+            log_success "✓ /$route/: OK ($status)"
+        else
+            log_warning "⚠ /$route/: Status $status"
+        fi
+    done
+
+    echo ""
+    log_info "📋 Información del deployment:"
+    echo "  🪣 S3 Bucket: $BUCKET_NAME"
+    echo "  🌐 CloudFront ID: $CLOUDFRONT_DIST_ID"
+    echo "  🔗 URL Principal: $CLOUDFRONT_URL/"
+    echo ""
+    
+    log_info "🔧 Para verificar manualmente:"
+    echo "  1. Acceder a: $CLOUDFRONT_URL/"
+    echo "  2. Navegar directamente a: $CLOUDFRONT_URL/dashboard/"
+    echo "  3. Verificar que no hay errores 404 en rutas internas"
+    echo ""
+    
+    if [ -f "config/deployment/deployment-info.json" ]; then
+        log_info "📄 Actualizando información de deployment..."
+        
+        # Actualizar timestamp en deployment-info.json
+        jq --arg date "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+           '.deployment_date = $date | .status = "redeployed_with_spa_fixes"' \
+           config/deployment/deployment-info.json > config/deployment/deployment-info.json.tmp
+        
+        mv config/deployment/deployment-info.json.tmp config/deployment/deployment-info.json
+        log_success "Información de deployment actualizada"
+    fi
+}
+
+# Ejecutar función principal
+main

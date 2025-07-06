@@ -1,0 +1,194 @@
+#!/bin/bash
+
+# 🔍 EmotioXV2 - Verificación Final SPA
+# Script para verificar el estado del deployment y navegación SPA
+
+set -e
+
+# Colores para output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+# Funciones de logging
+log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
+log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
+log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
+log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
+
+# Configuración
+CLOUDFRONT_DIST_ID="E3MCIWNMF6ES2R"
+CLOUDFRONT_URL="https://d2s9nr0bm47yl1.cloudfront.net"
+BUCKET_NAME="emotioxv2-frontend-bucket"
+
+main() {
+    echo ""
+    log_info "🔍 Verificando estado del deployment SPA..."
+    echo ""
+
+    # Verificar estado de CloudFront
+    check_cloudfront_status
+
+    # Verificar configuración SPA
+    check_spa_config
+
+    # Probar navegación
+    test_navigation
+
+    # Mostrar resumen
+    show_summary
+
+    echo ""
+    log_info "✅ Verificación completada!"
+    echo ""
+}
+
+check_cloudfront_status() {
+    log_info "Verificando estado de CloudFront..."
+
+    STATUS=$(aws cloudfront get-distribution --id "$CLOUDFRONT_DIST_ID" --query "Distribution.Status" --output text)
+    
+    case $STATUS in
+        "Deployed")
+            log_success "CloudFront Distribution: Deployed ✓"
+            ;;
+        "InProgress")
+            log_warning "CloudFront Distribution: InProgress (propagándose)"
+            log_info "Los cambios pueden tardar hasta 15 minutos en completarse"
+            ;;
+        *)
+            log_error "CloudFront Distribution: Estado desconocido ($STATUS)"
+            ;;
+    esac
+
+    # Verificar si está habilitada
+    ENABLED=$(aws cloudfront get-distribution --id "$CLOUDFRONT_DIST_ID" --query "Distribution.DistributionConfig.Enabled")
+    if [ "$ENABLED" = "true" ]; then
+        log_success "CloudFront Distribution: Habilitada ✓"
+    else
+        log_error "CloudFront Distribution: Deshabilitada ✗"
+    fi
+}
+
+check_spa_config() {
+    log_info "Verificando configuración SPA..."
+
+    # Verificar Custom Error Responses
+    ERROR_RESPONSES=$(aws cloudfront get-distribution --id "$CLOUDFRONT_DIST_ID" \
+        --query "Distribution.DistributionConfig.CustomErrorResponses")
+    
+    ERROR_COUNT=$(echo "$ERROR_RESPONSES" | jq '.Quantity')
+    
+    if [ "$ERROR_COUNT" -eq 2 ]; then
+        log_success "Custom Error Responses: Configurados correctamente ✓"
+        
+        # Verificar que los códigos sean 403 y 404
+        CODES=$(echo "$ERROR_RESPONSES" | jq -r '.Items[].ErrorCode' | sort | tr '\n' ' ')
+        if [ "$CODES" = "403 404 " ]; then
+            log_success "Error Codes: 403 y 404 configurados ✓"
+        else
+            log_warning "Error Codes: $CODES (esperados: 403 404)"
+        fi
+    else
+        log_warning "Custom Error Responses: $ERROR_COUNT encontrados (esperados: 2)"
+    fi
+
+    # Verificar Default Root Object
+    ROOT_OBJECT=$(aws cloudfront get-distribution --id "$CLOUDFRONT_DIST_ID" \
+        --query "Distribution.DistributionConfig.DefaultRootObject" --output text)
+    
+    if [ "$ROOT_OBJECT" = "index.html" ]; then
+        log_success "Default Root Object: index.html ✓"
+    else
+        log_warning "Default Root Object: $ROOT_OBJECT (esperado: index.html)"
+    fi
+}
+
+test_navigation() {
+    log_info "Probando navegación SPA..."
+
+    # Lista de rutas críticas para probar
+    ROUTES=(
+        ""                    # Página principal
+        "dashboard/"          # Dashboard
+        "login/"              # Login
+        "register/"           # Register
+        "research/"           # Research list
+        "research/test-123/"  # Research dinámico
+        "profile/"            # Profile
+        "clients/"            # Clients
+    )
+
+    echo ""
+    log_info "🧪 Resultados de navegación:"
+    
+    PASSED=0
+    TOTAL=${#ROUTES[@]}
+    
+    for route in "${ROUTES[@]}"; do
+        url="$CLOUDFRONT_URL/$route"
+        
+        # Hacer request con timeout
+        status=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$url")
+        response_time=$(curl -s -o /dev/null -w "%{time_total}" --max-time 10 "$url")
+        
+        if [ "$status" = "200" ]; then
+            log_success "✓ /$route -> $status (${response_time}s)"
+            ((PASSED++))
+        else
+            log_warning "⚠ /$route -> $status (${response_time}s)"
+        fi
+    done
+    
+    echo ""
+    log_info "📊 Resumen de pruebas: $PASSED/$TOTAL rutas exitosas"
+    
+    if [ $PASSED -eq $TOTAL ]; then
+        log_success "🎉 Todas las rutas funcionan correctamente!"
+    elif [ $PASSED -gt $((TOTAL/2)) ]; then
+        log_warning "⚠️  La mayoría de rutas funcionan, puede haber propagación pendiente"
+    else
+        log_error "❌ Múltiples rutas con problemas"
+    fi
+}
+
+show_summary() {
+    echo ""
+    log_info "📋 Resumen del Estado Actual:"
+    echo "  🌐 CloudFront URL: $CLOUDFRONT_URL"
+    echo "  🆔 Distribution ID: $CLOUDFRONT_DIST_ID"
+    echo "  🪣 S3 Bucket: $BUCKET_NAME"
+    echo ""
+    
+    log_info "🔗 URLs principales para verificar:"
+    echo "  🏠 Inicio: $CLOUDFRONT_URL/"
+    echo "  📊 Dashboard: $CLOUDFRONT_URL/dashboard/"
+    echo "  🔐 Login: $CLOUDFRONT_URL/login/"
+    echo "  🔬 Research: $CLOUDFRONT_URL/research/"
+    echo ""
+    
+    log_info "🧪 Comandos de verificación manual:"
+    echo "  # Probar acceso directo a rutas SPA:"
+    echo "  curl -I $CLOUDFRONT_URL/dashboard/"
+    echo "  curl -I $CLOUDFRONT_URL/research/123/"
+    echo ""
+    echo "  # Verificar que devuelve 200 en lugar de 404:"
+    echo "  curl -s -o /dev/null -w 'Status: %{http_code}\\n' $CLOUDFRONT_URL/ruta-inexistente/"
+    echo ""
+    
+    # Verificar si hay invalidaciones en progreso
+    INVALIDATIONS=$(aws cloudfront list-invalidations --distribution-id "$CLOUDFRONT_DIST_ID" \
+        --query "InvalidationList.Items[?Status=='InProgress'].Id" --output text)
+    
+    if [ -n "$INVALIDATIONS" ]; then
+        log_warning "⏳ Invalidaciones en progreso: $INVALIDATIONS"
+        log_info "Espera unos minutos y vuelve a verificar"
+    else
+        log_success "✅ No hay invalidaciones pendientes"
+    fi
+}
+
+# Ejecutar función principal
+main

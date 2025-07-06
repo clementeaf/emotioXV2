@@ -6,7 +6,7 @@
 set -e
 
 BUCKET="emotioxv2-frontend-bucket"
-DIST_ID="E2X8HCFI5FM1EC"
+DIST_ID="E3MCIWNMF6ES2R"
 
 # 1. Configurar S3 para servir index.html en errores
 aws s3 website s3://$BUCKET/ --index-document index.html --error-document index.html

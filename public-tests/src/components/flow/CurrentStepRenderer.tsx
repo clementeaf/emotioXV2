@@ -9,11 +9,12 @@ import { CurrentStepProps } from './types';
  * También es responsable de mapear las propiedades genéricas del paso (como `title` o `instructions`
  * desde `stepConfig`) a las props específicas que cada componente de UI espera (como `questionText`).
  */
-const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
+const CurrentStepRenderer: React.FC<CurrentStepProps & { responsesData?: any }> = ({
     stepType,
     stepConfig,
     savedResponse,
     onStepComplete,
+    responsesData,
     ...restOfStepProps
 }) => {
     const ComponentToRender = stepComponentMap[stepType];
@@ -49,13 +50,21 @@ const CurrentStepRenderer: React.FC<CurrentStepProps> = ({
         };
     }
 
+    let demographicSavedResponse = savedResponse;
+    if (stepType === 'demographic' && responsesData && Array.isArray(responsesData)) {
+        const found = responsesData.find((r) => r && typeof r === 'object' && r.stepType === 'demographic' && 'response' in r);
+        if (found && typeof found.response === 'object') {
+            demographicSavedResponse = found.response;
+        }
+    }
+
     const finalProps = {
         ...restOfStepProps,
         stepType,
         stepConfig,
         config: stepConfig,
-        initialValues: savedResponse,
-        savedResponse: finalSavedResponse,
+        initialValues: stepType === 'demographic' ? demographicSavedResponse : savedResponse,
+        savedResponse: stepType === 'demographic' ? demographicSavedResponse : finalSavedResponse,
         onNext: onStepComplete,
         onSubmit: onStepComplete,
         onStepComplete: onStepComplete,

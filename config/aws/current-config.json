@@ -1,5 +1,5 @@
 {
-    "ETag": "E1BWMHYNGD7RLH",
+    "ETag": "E1CRL1XV7E6354",
     "DistributionConfig": {
         "CallerReference": "emotioxv2-frontend-$(date +%s)",
         "Aliases": {

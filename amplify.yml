@@ -8,13 +8,8 @@ applications:
             - echo "Starting EmotioXV2 Frontend Build Process"
             - echo "Node version:" && node --version
             - echo "NPM version:" && npm --version
-            - echo "Installing shared dependencies..."
-            - cd ../shared && npm ci || echo "Shared dependencies not found, continuing..."
-            - cd ../frontend
             - echo "Installing frontend dependencies..."
-            - npm ci
-            - echo "Linking shared package..."
-            - npm install ../shared || echo "Shared package not available, continuing..."
+            - npm install
             - echo "Dependencies installed successfully"
         build:
           commands:

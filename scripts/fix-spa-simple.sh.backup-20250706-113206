@@ -1,0 +1,171 @@
+#!/bin/bash
+
+# 🔧 EmotioXV2 - Fix SPA Simple
+# Script simplificado para corregir navegación SPA en CloudFront
+
+set -e
+
+# Colores para output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+# Funciones de logging
+log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
+log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
+log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
+log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
+
+# Configuración
+BUCKET_NAME="emotioxv2-frontend-bucket"
+CLOUDFRONT_DIST_ID="E3MCIWNMF6ES2R"
+CONFIG_DIR="config/aws"
+
+main() {
+    echo ""
+    log_info "🔧 Aplicando correcciones SPA simplificadas..."
+    echo ""
+
+    # Verificar dependencias
+    check_dependencies
+
+    # Configurar S3 para SPA
+    configure_s3_spa
+
+    # Aplicar configuración CloudFront conservadora
+    apply_spa_config
+
+    # Invalidar cache
+    invalidate_cache
+
+    # Verificar
+    verify_spa
+
+    echo ""
+    log_success "✅ Correcciones SPA aplicadas!"
+    echo ""
+}
+
+check_dependencies() {
+    log_info "Verificando dependencias..."
+
+    if ! command -v aws &> /dev/null; then
+        log_error "AWS CLI no está instalado"
+        exit 1
+    fi
+
+    if ! command -v jq &> /dev/null; then
+        log_error "jq no está instalado. Instala con: brew install jq"
+        exit 1
+    fi
+
+    log_success "Dependencias verificadas"
+}
+
+configure_s3_spa() {
+    log_info "Configurando S3 para SPA..."
+
+    # Configurar website hosting con index.html como error document
+    aws s3 website "s3://$BUCKET_NAME" \
+        --index-document index.html \
+        --error-document index.html
+
+    log_success "S3 configurado para SPA"
+}
+
+apply_spa_config() {
+    log_info "Aplicando configuración CloudFront para SPA..."
+
+    # Crear directorio de configuración
+    mkdir -p "$CONFIG_DIR"
+
+    # Descargar configuración actual
+    aws cloudfront get-distribution-config --id "$CLOUDFRONT_DIST_ID" > "$CONFIG_DIR/current-config.json"
+    ETAG=$(cat "$CONFIG_DIR/current-config.json" | jq -r '.ETag')
+
+    # Extraer solo la configuración y asegurar Custom Error Responses
+    cat "$CONFIG_DIR/current-config.json" | jq '.DistributionConfig |
+    (.CustomErrorResponses.Items) |= [
+      {
+        "ErrorCode": 403,
+        "ResponsePagePath": "/index.html",
+        "ResponseCode": "200",
+        "ErrorCachingMinTTL": 0
+      },
+      {
+        "ErrorCode": 404,
+        "ResponsePagePath": "/index.html",
+        "ResponseCode": "200", 
+        "ErrorCachingMinTTL": 0
+      }
+    ] |
+    (.CustomErrorResponses.Quantity) |= 2' > "$CONFIG_DIR/spa-config.json"
+
+    # Aplicar configuración
+    aws cloudfront update-distribution \
+        --id "$CLOUDFRONT_DIST_ID" \
+        --if-match "$ETAG" \
+        --distribution-config "file://$CONFIG_DIR/spa-config.json"
+
+    log_success "Configuración CloudFront actualizada"
+    log_warning "Los cambios pueden tardar hasta 15 minutos en propagarse"
+}
+
+invalidate_cache() {
+    log_info "Invalidando caché de CloudFront..."
+
+    aws cloudfront create-invalidation \
+        --distribution-id "$CLOUDFRONT_DIST_ID" \
+        --paths "/*" \
+        --no-cli-pager
+
+    log_success "Caché invalidada"
+}
+
+verify_spa() {
+    log_info "Verificando configuración SPA..."
+
+    # Verificar Custom Error Responses
+    ERROR_COUNT=$(aws cloudfront get-distribution --id "$CLOUDFRONT_DIST_ID" \
+        --query "Distribution.DistributionConfig.CustomErrorResponses.Quantity")
+
+    if [ "$ERROR_COUNT" -eq 2 ]; then
+        log_success "Custom Error Responses configurados correctamente"
+    else
+        log_warning "Custom Error Responses: $ERROR_COUNT (esperados: 2)"
+    fi
+
+    # Probar URLs después de un breve delay
+    log_info "Esperando 10 segundos para pruebas de URL..."
+    sleep 10
+
+    CLOUDFRONT_URL="https://d2s9nr0bm47yl1.cloudfront.net"
+    
+    # Verificar rutas
+    log_info "🧪 Probando rutas SPA:"
+    
+    for route in "" "dashboard" "login" "research/test"; do
+        url="$CLOUDFRONT_URL/$route"
+        status=$(curl -s -o /dev/null -w "%{http_code}" "$url")
+        
+        if [ "$status" = "200" ]; then
+            log_success "✓ $url -> $status"
+        else
+            log_warning "⚠ $url -> $status"
+        fi
+    done
+
+    echo ""
+    log_info "📋 URLs para verificar manualmente:"
+    echo "  🏠 Home: $CLOUDFRONT_URL/"
+    echo "  📊 Dashboard: $CLOUDFRONT_URL/dashboard/"
+    echo "  🔐 Login: $CLOUDFRONT_URL/login/"
+    echo "  🔬 Research: $CLOUDFRONT_URL/research/123/"
+    echo ""
+    log_info "Navega directamente a estas URLs para verificar que no haya errores 404"
+}
+
+# Ejecutar función principal
+main

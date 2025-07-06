@@ -91,6 +91,7 @@ const FlowStepContent: React.FC<FlowStepContentComponentProps> = (props) => {
                 onStepComplete={handleStepComplete}
                 onError={handleRendererError}
                 savedResponse={savedResponse}
+                responsesData={responsesData}
             />
         );
     }

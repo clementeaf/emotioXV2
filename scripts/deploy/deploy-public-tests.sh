@@ -7,7 +7,7 @@ set -e
 
 # Configuración
 BUCKET="emotioxv2-public-tests-bucket"
-DISTRIBUTION_ID="E3MCIWNMF6ES2R"
+DISTRIBUTION_ID="E2X8HCFI5FM1EC"
 REGION="us-east-1"
 BUILD_DIR="dist"
 

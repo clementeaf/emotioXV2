@@ -29,6 +29,21 @@ const labelTranslations: Record<string, string> = {
   technicalProficiency: 'Competencia Técnica',
 };
 
+// Extraer respuesta previa plana del array si es necesario
+function extractDemographicInitialValues(initialValues: any): DemographicResponses {
+  if (Array.isArray(initialValues) && initialValues.length > 0) {
+    // Buscar el primer objeto que tenga un campo 'response' y retornarlo
+    const found = initialValues.find((r) => r && typeof r === 'object' && 'response' in r);
+    if (found && typeof found.response === 'object') {
+      return found.response;
+    }
+  }
+  if (initialValues && typeof initialValues === 'object' && 'response' in initialValues) {
+    return initialValues.response;
+  }
+  return initialValues || {};
+}
+
 export const DemographicsForm: React.FC<DemographicsFormProps> = ({
   config,
   initialValues = {},
@@ -44,7 +59,8 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
     autoFetch: false
   });
 
-  const [formFieldResponses, setFormFieldResponses] = useState<DemographicResponses>(initialValues);
+  const demographicInitialValues = extractDemographicInitialValues(initialValues);
+  const [formFieldResponses, setFormFieldResponses] = useState<DemographicResponses>(demographicInitialValues);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [isSubmittingToServer, setIsSubmittingToServer] = useState(false);
 
@@ -59,7 +75,7 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
     stepId: stepId,
     stepType: 'demographic',
     stepName: config?.title || 'Preguntas Demográficas',
-    initialData: initialValues,
+    initialData: demographicInitialValues,
   });
 
   // DEBUG avanzado: loggear montaje/desmontaje
@@ -82,19 +98,19 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
     // Sincronizar el estado del formulario con la respuesta guardada o los valores iniciales
     const isEmpty = Object.keys(formFieldResponses).length === 0;
     const isDifferentFromResponseData = responseData && JSON.stringify(formFieldResponses) !== JSON.stringify(responseData);
-    const isDifferentFromInitialValues = initialValues && JSON.stringify(formFieldResponses) !== JSON.stringify(initialValues);
+    const isDifferentFromInitialValues = demographicInitialValues && JSON.stringify(formFieldResponses) !== JSON.stringify(demographicInitialValues);
 
     if (
       responseData && Object.keys(responseData).length > 0 && (isEmpty || isDifferentFromResponseData)
     ) {
       setFormFieldResponses(responseData);
     } else if (
-      initialValues && Object.keys(initialValues).length > 0 && (isEmpty || isDifferentFromInitialValues)
+      demographicInitialValues && Object.keys(demographicInitialValues).length > 0 && (isEmpty || isDifferentFromInitialValues)
     ) {
-      setFormFieldResponses(initialValues);
+      setFormFieldResponses(demographicInitialValues);
     }
     // eslint-disable-next-line
-  }, [responseData, initialValues]);
+  }, [responseData, demographicInitialValues]);
 
   // Determinar si hay datos existentes correctamente
   const hasExistingData = !!(responseData && Object.keys(responseData).length > 0) || !!useStepResponseManagerReturnedSpecificId;

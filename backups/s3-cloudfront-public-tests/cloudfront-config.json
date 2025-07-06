@@ -1,7 +1,7 @@
 {
-    "ETag": "E1BWMHYNGD7RLH",
+    "ETag": "E2MTAVBZGV2LY5",
     "DistributionConfig": {
-        "CallerReference": "emotioxv2-frontend-$(date +%s)",
+        "CallerReference": "emotioxv2-public-tests-1733145600",
         "Aliases": {
             "Quantity": 0
         },
@@ -10,8 +10,8 @@
             "Quantity": 1,
             "Items": [
                 {
-                    "Id": "S3-emotioxv2-frontend-bucket",
-                    "DomainName": "emotioxv2-frontend-bucket.s3.amazonaws.com",
+                    "Id": "S3-emotioxv2-public-tests-bucket",
+                    "DomainName": "emotioxv2-public-tests-bucket.s3.amazonaws.com",
                     "OriginPath": "",
                     "CustomHeaders": {
                         "Quantity": 0
@@ -32,7 +32,7 @@
             "Quantity": 0
         },
         "DefaultCacheBehavior": {
-            "TargetOriginId": "S3-emotioxv2-frontend-bucket",
+            "TargetOriginId": "S3-emotioxv2-public-tests-bucket",
             "TrustedSigners": {
                 "Enabled": false,
                 "Quantity": 0
@@ -104,14 +104,14 @@
                 }
             ]
         },
-        "Comment": "EmotioXV2 Frontend Distribution",
+        "Comment": "EmotioXV2 Public Tests Distribution - Nueva configuración",
         "Logging": {
             "Enabled": false,
             "IncludeCookies": false,
             "Bucket": "",
             "Prefix": ""
         },
-        "PriceClass": "PriceClass_All",
+        "PriceClass": "PriceClass_100",
         "Enabled": true,
         "ViewerCertificate": {
             "CloudFrontDefaultCertificate": true,

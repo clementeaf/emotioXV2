@@ -3,6 +3,19 @@ import { DemographicResponses, DemographicsSection } from "../../../types/demogr
 import { DemographicsForm } from "../../demographics/DemographicsForm";
 import { DemographicStepProps } from "./types";
 
+function extractDemographicInitialValues(initialValues: any) {
+    if (Array.isArray(initialValues) && initialValues.length > 0) {
+        const found = initialValues.find((r) => r && typeof r === 'object' && 'response' in r);
+        if (found && typeof found.response === 'object') {
+            return found.response;
+        }
+    }
+    if (initialValues && typeof initialValues === 'object' && 'response' in initialValues) {
+        return initialValues.response;
+    }
+    return initialValues || {};
+}
+
 export const DemographicStep: React.FC<DemographicStepProps & { savedResponse?: any }> = ({
     stepConfig,
     stepId,
@@ -11,7 +24,7 @@ export const DemographicStep: React.FC<DemographicStepProps & { savedResponse?: 
     savedResponse
 }) => {
     const [loading, setLoading] = useState(false);
-    const initialFormValues = savedResponse && typeof savedResponse === 'object' ? savedResponse : {};
+    const initialFormValues = extractDemographicInitialValues(savedResponse);
     const formConfig = (stepConfig as { demographicsConfig?: DemographicsSection })?.demographicsConfig as DemographicsSection | undefined;
 
     const handleDemographicSubmit = async (responses: DemographicResponses) => {

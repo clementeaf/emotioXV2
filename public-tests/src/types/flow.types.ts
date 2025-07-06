@@ -45,6 +45,7 @@ export interface CurrentStepProps {
   onError?: (message: string, stepType: string) => void;
   stepConfig?: Record<string, any> | CognitiveQuestion | SmartVOCQuestion | undefined;
   savedResponse?: any;
+  responsesData?: any;
 }
 
 export interface CurrentStepRendererProps {

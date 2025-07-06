@@ -1,0 +1,197 @@
+#!/bin/bash
+
+# 🔧 EmotioXV2 - Fix CloudFront SPA Configuration
+# Script para corregir problemas de navegación en CloudFront
+
+set -e
+
+# Colores para output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+# Funciones de logging
+log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
+log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
+log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
+log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
+
+# Configuración
+BUCKET_NAME="emotioxv2-frontend-bucket"
+CLOUDFRONT_DIST_ID="E3MCIWNMF6ES2R"
+REGION="us-east-1"
+CONFIG_DIR="config/aws"
+
+main() {
+    echo ""
+    log_info "🔧 Corrigiendo configuración de CloudFront para SPA..."
+    echo ""
+
+    # Crear directorio de configuración si no existe
+    mkdir -p "$CONFIG_DIR"
+
+    # Verificar dependencias
+    check_dependencies
+
+    # Descargar configuración actual
+    download_current_config
+
+    # Generar nueva configuración optimizada
+    generate_optimized_config
+
+    # Aplicar nueva configuración
+    apply_new_config
+
+    # Configurar S3 para SPA
+    configure_s3_spa
+
+    # Invalidar cache
+    invalidate_cache
+
+    # Verificar configuración
+    verify_configuration
+
+    echo ""
+    log_success "✅ Configuración de SPA corregida exitosamente!"
+    echo ""
+}
+
+check_dependencies() {
+    log_info "Verificando dependencias..."
+
+    if ! command -v aws &> /dev/null; then
+        log_error "AWS CLI no está instalado"
+        exit 1
+    fi
+
+    if ! command -v jq &> /dev/null; then
+        log_error "jq no está instalado. Instala con: brew install jq"
+        exit 1
+    fi
+
+    if ! aws sts get-caller-identity &> /dev/null; then
+        log_error "AWS CLI no está configurado correctamente"
+        exit 1
+    fi
+
+    log_success "Todas las dependencias están disponibles"
+}
+
+download_current_config() {
+    log_info "Descargando configuración actual de CloudFront..."
+    
+    aws cloudfront get-distribution-config --id "$CLOUDFRONT_DIST_ID" > "$CONFIG_DIR/dist-config-raw.json"
+    ETAG=$(cat "$CONFIG_DIR/dist-config-raw.json" | jq -r '.ETag')
+    
+    log_success "Configuración descargada (ETag: $ETAG)"
+}
+
+generate_optimized_config() {
+    log_info "Generando configuración optimizada para SPA..."
+
+    # Extraer DistributionConfig y aplicar optimizaciones para SPA
+    cat "$CONFIG_DIR/dist-config-raw.json" | jq --tab '.DistributionConfig |
+    
+    # Configurar Custom Error Responses para SPA
+    (.CustomErrorResponses.Items) |= [
+      {
+        "ErrorCode": 403,
+        "ResponsePagePath": "/index.html",
+        "ResponseCode": "200",
+        "ErrorCachingMinTTL": 0
+      },
+      {
+        "ErrorCode": 404,
+        "ResponsePagePath": "/index.html", 
+        "ResponseCode": "200",
+        "ErrorCachingMinTTL": 0
+      }
+    ] |
+    (.CustomErrorResponses.Quantity) |= 2 |
+    
+    # Optimizar Default Cache Behavior para HTML y rutas SPA
+    (.DefaultCacheBehavior.MinTTL) |= 0 |
+    (.DefaultCacheBehavior.DefaultTTL) |= 0 |
+    (.DefaultCacheBehavior.MaxTTL) |= 86400 |
+    (.DefaultCacheBehavior.Compress) |= true |
+    (.DefaultCacheBehavior.SmoothStreaming) |= false |
+    (.DefaultCacheBehavior.ForwardedValues.QueryString) |= true |
+    
+    # Asegurar que está habilitado
+    (.Enabled) |= true |
+    
+    # Mejorar configuración de compresión
+    (.DefaultRootObject) |= "index.html"' > "$CONFIG_DIR/dist-config-spa-optimized.json"
+
+    log_success "Configuración optimizada generada"
+}
+
+apply_new_config() {
+    log_info "Aplicando nueva configuración a CloudFront..."
+    
+    aws cloudfront update-distribution \
+        --id "$CLOUDFRONT_DIST_ID" \
+        --if-match "$ETAG" \
+        --distribution-config "file://$CONFIG_DIR/dist-config-spa-optimized.json"
+    
+    log_success "Nueva configuración aplicada a CloudFront"
+    log_warning "Los cambios en CloudFront pueden tardar hasta 15 minutos en propagarse"
+}
+
+configure_s3_spa() {
+    log_info "Configurando S3 para SPA..."
+    
+    # Configurar S3 website hosting
+    aws s3 website "s3://$BUCKET_NAME" \
+        --index-document index.html \
+        --error-document index.html
+    
+    log_success "S3 configurado para SPA"
+}
+
+invalidate_cache() {
+    log_info "Invalidando caché de CloudFront..."
+    
+    aws cloudfront create-invalidation \
+        --distribution-id "$CLOUDFRONT_DIST_ID" \
+        --paths "/*" \
+        --no-cli-pager
+    
+    log_success "Caché invalidada"
+}
+
+verify_configuration() {
+    log_info "Verificando configuración..."
+    
+    # Verificar que CloudFront está habilitado
+    ENABLED=$(aws cloudfront get-distribution --id "$CLOUDFRONT_DIST_ID" --query "Distribution.DistributionConfig.Enabled")
+    if [ "$ENABLED" = "true" ]; then
+        log_success "CloudFront distribution está habilitada"
+    else
+        log_error "CloudFront distribution está deshabilitada"
+    fi
+    
+    # Verificar Custom Error Responses
+    ERROR_RESPONSES=$(aws cloudfront get-distribution --id "$CLOUDFRONT_DIST_ID" --query "Distribution.DistributionConfig.CustomErrorResponses.Quantity")
+    if [ "$ERROR_RESPONSES" -eq 2 ]; then
+        log_success "Custom Error Responses configurados correctamente"
+    else
+        log_warning "Custom Error Responses: encontrados $ERROR_RESPONSES (esperados: 2)"
+    fi
+    
+    echo ""
+    log_info "📋 URLs de verificación:"
+    echo "  🌐 CloudFront: https://d2s9nr0bm47yl1.cloudfront.net/"
+    echo "  🔗 Dashboard: https://d2s9nr0bm47yl1.cloudfront.net/dashboard/"
+    echo "  🔗 Login: https://d2s9nr0bm47yl1.cloudfront.net/login/"
+    echo ""
+    log_info "🧪 Prueba directa de rutas SPA:"
+    echo "  curl -s -o /dev/null -w 'Status: %{http_code}' https://d2s9nr0bm47yl1.cloudfront.net/dashboard/"
+    echo "  curl -s -o /dev/null -w 'Status: %{http_code}' https://d2s9nr0bm47yl1.cloudfront.net/research/123/"
+    echo ""
+}
+
+# Ejecutar función principal
+main
