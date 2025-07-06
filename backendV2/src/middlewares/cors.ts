@@ -15,9 +15,9 @@ function getAllowedOrigins(): string[] {
     'http://54.90.132.233:3000', // Frontend EC2
     // Dominios de AWS Amplify
     'https://d12psv9dnscmm4.amplifyapp.com', // Frontend Amplify
-    'https://d2vbj9lxdnqvqq.amplifyapp.com', // Public-tests Amplify
+    'https://d3n0zihdxwat96.amplifyapp.com', // Public-tests Amplify (nuevo)
     'https://main.d12psv9dnscmm4.amplifyapp.com', // Frontend main branch
-    'https://main.d2vbj9lxdnqvqq.amplifyapp.com' // Public-tests main branch
+    'https://main.d3n0zihdxwat96.amplifyapp.com' // Public-tests main branch (nuevo)
   ];
   
   // Combinar orígenes de la variable de entorno con los por defecto
