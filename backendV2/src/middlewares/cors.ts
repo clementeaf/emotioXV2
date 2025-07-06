@@ -12,7 +12,12 @@ function getAllowedOrigins(): string[] {
     'http://localhost:5173', // Otro puerto común de Vite
     'https://d2s9nr0bm47yl1.cloudfront.net', // Frontend principal
     'https://d2zt8ia21te5mv.cloudfront.net', // Public-tests CloudFront
-    'http://54.90.132.233:3000' // Frontend EC2
+    'http://54.90.132.233:3000', // Frontend EC2
+    // Dominios de AWS Amplify
+    'https://d12psv9dnscmm4.amplifyapp.com', // Frontend Amplify
+    'https://d2vbj9lxdnqvqq.amplifyapp.com', // Public-tests Amplify
+    'https://main.d12psv9dnscmm4.amplifyapp.com', // Frontend main branch
+    'https://main.d2vbj9lxdnqvqq.amplifyapp.com' // Public-tests main branch
   ];
   
   // Combinar orígenes de la variable de entorno con los por defecto
@@ -30,10 +35,14 @@ export function getCorsHeaders(event: APIGatewayProxyEvent) {
   const allowedOrigins = getAllowedOrigins();
   let accessControlAllowOrigin = '';
 
-  // Permitir cualquier dominio de public-tests (regex para flexibilidad)
+  // Permitir dominios de Amplify automáticamente
+  const isAmplifyDomain = /\.amplifyapp\.com$/.test(requestOrigin);
   const isPublicTests = /public-tests/.test(requestOrigin);
   
-  if (isPublicTests) {
+  if (isAmplifyDomain) {
+    accessControlAllowOrigin = requestOrigin;
+    console.log(`CORS: Dominio Amplify permitido automáticamente: ${requestOrigin}`);
+  } else if (isPublicTests) {
     accessControlAllowOrigin = requestOrigin;
     console.log(`CORS: Origen public-tests permitido automáticamente: ${requestOrigin}`);
   } else if (requestOrigin && allowedOrigins.includes(requestOrigin)) {

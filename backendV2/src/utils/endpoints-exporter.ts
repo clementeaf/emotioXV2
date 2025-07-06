@@ -95,6 +95,18 @@ export async function exportEndpoints(outputFilePath: string): Promise<void> {
       };
     }
 
+    // Obtener URLs de Amplify si están disponibles
+    let amplifyUrls = {};
+    try {
+      const configPath = path.resolve(process.cwd(), '../config/amplify-urls.json');
+      if (fs.existsSync(configPath)) {
+        amplifyUrls = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+        console.log('URLs de Amplify cargadas:', amplifyUrls);
+      }
+    } catch (error: any) {
+      console.warn('No se pudieron cargar URLs de Amplify:', error.message);
+    }
+
     // Construir contenido del archivo JavaScript de configuración
     const template = `// ARCHIVO GENERADO AUTOMÁTICAMENTE
 // NO MODIFICAR MANUALMENTE
@@ -112,6 +124,9 @@ export const API_ENDPOINTS = {
   stage: "${endpoints.stage || process.env.STAGE || 'dev'}"
 };
 
+// URLs de AWS Amplify
+export const AMPLIFY_URLS = ${JSON.stringify(amplifyUrls, null, 2)};
+
 // Constantes para uso más fácil
 export const API_HTTP_ENDPOINT = "${endpoints.http}";
 export const API_WEBSOCKET_ENDPOINT = "${endpoints.websocket}";
@@ -126,6 +141,17 @@ export function getApiUrl(path) {
 // Función para websocket
 export function getWebsocketUrl() {
   return API_WEBSOCKET_ENDPOINT;
+}
+
+// Función para obtener URL de public-tests
+export function getPublicTestsUrl() {
+  return AMPLIFY_URLS.publicTests || 'http://localhost:4700';
+}
+
+// Función para navegar a public-tests con researchID
+export function navigateToPublicTests(researchID) {
+  const url = \`\${getPublicTestsUrl()}/\${researchID}\`;
+  window.open(url, '_blank');
 }
 
 // Versión default para import default
