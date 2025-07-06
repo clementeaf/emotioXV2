@@ -11,6 +11,7 @@ import { researchAPI } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
 import { useResearch } from '@/stores/useResearchStore';
+import { navigateToPublicTestsSafe } from '@/config/amplify-config';
 
 import { SidebarBase } from './SidebarBase';
 
@@ -342,12 +343,12 @@ function SidebarContent({ className }: SidebarProps) {
   function CurrentResearchSection() {
     if (!researchId || !currentResearchName) return null;
 
-    const publicTestsBaseUrl = process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://d2zt8ia21te5mv.cloudfront.net';
-
-    let publicTestUrl: string | null = null;
-    if (researchId) {
-      publicTestUrl = `${publicTestsBaseUrl}?researchId=${researchId}`;
-    }
+    // Función para navegar a public-tests usando Amplify
+    const handleOpenPublicTests = () => {
+      if (researchId) {
+        navigateToPublicTestsSafe(researchId);
+      }
+    };
 
     return (
       <div className="border-t border-neutral-200 pt-4 mt-4">
@@ -366,16 +367,14 @@ function SidebarContent({ className }: SidebarProps) {
             ← Volver al dashboard
           </Link>
 
-          {publicTestUrl && (
-            <a
-              href={publicTestUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:underline"
+          {researchId && (
+            <button
+              onClick={handleOpenPublicTests}
+              className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:underline transition-colors"
             >
               <ExternalLink className="w-4 h-4" />
               Abrir test público
-            </a>
+            </button>
           )}
         </div>
       </div>

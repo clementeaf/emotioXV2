@@ -10,6 +10,7 @@ import { ResearchSection, ResearchSidebarProps } from '@/interfaces/research';
 import { researchAPI } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
+import { navigateToPublicTestsSafe } from '@/config/amplify-config';
 
 import { Research } from '../../../../shared/interfaces/research.model';
 
@@ -106,14 +107,6 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
   const [researchName, setResearchName] = useState<string>('Cargando nombre...');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const publicTestsBaseUrl = process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL || 'https://d2zt8ia21te5mv.cloudfront.net';
-
-  console.log('[ResearchSidebar] Environment check:', {
-    NODE_ENV: process.env.NODE_ENV,
-    NEXT_PUBLIC_ENV: process.env.NEXT_PUBLIC_ENV,
-    NEXT_PUBLIC_PUBLIC_TESTS_URL: process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL,
-    publicTestsBaseUrl
-  });
 
   useEffect(() => {
     const fetchResearchName = async () => {
@@ -174,11 +167,15 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
 
     fetchResearchName();
   }, [researchId]);
+  
   const handleBackToDashboard = () => { router.push('/dashboard'); };
-  let publicTestUrl: string | null = null;
-  if (researchId) {
-    publicTestUrl = `${publicTestsBaseUrl}?researchId=${researchId}`;
-  }
+  
+  // Función para navegar a public-tests usando Amplify
+  const handleOpenPublicTests = () => {
+    if (researchId) {
+      navigateToPublicTestsSafe(researchId);
+    }
+  };
 
   // Bloque superior: nombre proyecto y enlaces
   const TopBlock = (
@@ -195,18 +192,16 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
       >
         ← Volver al dashboard
       </button>
-      {publicTestUrl ? (
-        <a
-          href={publicTestUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 hover:underline"
+      {researchId ? (
+        <button
+          onClick={handleOpenPublicTests}
+          className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 hover:underline transition-colors"
         >
           Abrir vista de participante
           <ExternalLink size={14} className="ml-1.5" />
-        </a>
+        </button>
       ) : (
-        <p className="text-xs text-neutral-500">(URL de Public Tests no configurada)</p>
+        <p className="text-xs text-neutral-500">(Research ID no disponible)</p>
       )}
       {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
     </div>
