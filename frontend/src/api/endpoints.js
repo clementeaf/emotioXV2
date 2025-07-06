@@ -17,10 +17,10 @@ export const API_ENDPOINTS = {
 // URLs de AWS Amplify
 export const AMPLIFY_URLS = {
   "frontend": "https://d12psv9dnscmm4.amplifyapp.com",
-  "publicTests": "https://d3n0zihdxwat96.amplifyapp.com",
+  "publicTests": "https://public-tests.vercel.app",
   "frontendAppId": "d12psv9dnscmm4",
-  "publicTestsAppId": "d3n0zihdxwat96",
-  "generatedAt": "2025-07-06T23:10:00Z"
+  "publicTestsAppId": "vercel-deployment",
+  "generatedAt": "2025-07-06T23:30:00Z"
 };
 
 // Constantes para uso más fácil

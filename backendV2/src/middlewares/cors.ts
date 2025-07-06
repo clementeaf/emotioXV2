@@ -15,9 +15,11 @@ function getAllowedOrigins(): string[] {
     'http://54.90.132.233:3000', // Frontend EC2
     // Dominios de AWS Amplify
     'https://d12psv9dnscmm4.amplifyapp.com', // Frontend Amplify
-    'https://d3n0zihdxwat96.amplifyapp.com', // Public-tests Amplify (nuevo)
+    'https://d3n0zihdxwat96.amplifyapp.com', // Public-tests Amplify (backup)
     'https://main.d12psv9dnscmm4.amplifyapp.com', // Frontend main branch
-    'https://main.d3n0zihdxwat96.amplifyapp.com' // Public-tests main branch (nuevo)
+    // Vercel deployments
+    'https://public-tests.vercel.app', // Public-tests Vercel (MAIN)
+    'https://public-tests-clementeafs-projects.vercel.app' // Vercel full URL
   ];
   
   // Combinar orígenes de la variable de entorno con los por defecto
