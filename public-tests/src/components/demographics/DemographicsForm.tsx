@@ -3,9 +3,9 @@ import { useModuleResponses } from '../../hooks/useModuleResponses';
 import { useStepResponseManager } from '../../hooks/useStepResponseManager';
 import { useParticipantStore } from '../../stores/participantStore';
 import {
-  DemographicResponses,
-  EDUCATION_OPTIONS,
-  GENDER_OPTIONS
+    DemographicResponses,
+    EDUCATION_OPTIONS,
+    GENDER_OPTIONS
 } from '../../types/demographics';
 import FormSubmitButton from '../common/FormSubmitButton';
 import { DemographicQuestion } from './DemographicQuestion';
@@ -95,19 +95,17 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
 
   // Sincronizar el estado del formulario con la respuesta guardada o los valores iniciales
   useEffect(() => {
-    // Sincronizar el estado del formulario con la respuesta guardada o los valores iniciales
-    const isEmpty = Object.keys(formFieldResponses).length === 0;
-    const isDifferentFromResponseData = responseData && JSON.stringify(formFieldResponses) !== JSON.stringify(responseData);
-    const isDifferentFromInitialValues = demographicInitialValues && JSON.stringify(formFieldResponses) !== JSON.stringify(demographicInitialValues);
-
-    if (
-      responseData && Object.keys(responseData).length > 0 && (isEmpty || isDifferentFromResponseData)
-    ) {
-      setFormFieldResponses(responseData);
-    } else if (
-      demographicInitialValues && Object.keys(demographicInitialValues).length > 0 && (isEmpty || isDifferentFromInitialValues)
-    ) {
-      setFormFieldResponses(demographicInitialValues);
+    // Si hay respuesta previa, hacer merge con el estado actual (prioridad a lo que ya llenó el usuario)
+    if (responseData && Object.keys(responseData).length > 0) {
+      setFormFieldResponses(prev => ({
+        ...responseData,
+        ...prev // lo que el usuario ya llenó tiene prioridad
+      }));
+    } else if (demographicInitialValues && Object.keys(demographicInitialValues).length > 0) {
+      setFormFieldResponses(prev => ({
+        ...demographicInitialValues,
+        ...prev
+      }));
     }
     // eslint-disable-next-line
   }, [responseData, demographicInitialValues]);
