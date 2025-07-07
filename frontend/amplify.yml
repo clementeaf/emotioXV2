@@ -3,15 +3,10 @@ frontend:
   phases:
     preBuild:
       commands:
-        - echo "🔧 Configurando entorno de build..."
         - npm ci
-        - echo "📦 Instalando dependencias completas..."
-        - npm install
     build:
       commands:
-        - echo "🏗️ Construyendo aplicación Next.js..."
         - npm run build
-        - echo "✅ Build completado exitosamente"
   artifacts:
     baseDirectory: .next
     files:
@@ -19,4 +14,3 @@ frontend:
   cache:
     paths:
       - node_modules/**/*
-      - .next/cache/**/*
