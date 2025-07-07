@@ -62,17 +62,13 @@ export function getPublicTestsUrl() {
 
   switch (environment) {
     case 'local':
-      return LOCAL_URLS.publicTests || 'http://localhost:4700';
+      return 'http://localhost:4700';
 
     case 'amplify':
-      // URL de public-tests desplegado en AWS (S3/CloudFront o Amplify)
-      return process.env.NEXT_PUBLIC_PUBLIC_TESTS_AWS_URL ||
-             process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL ||
-             'https://emotioxv2-public-tests.s3.amazonaws.com';
+      return 'https://emotio-xv-2-public-tests.vercel.app';
 
     default:
-      // Fallback a local
-      return LOCAL_URLS.publicTests || 'http://localhost:4700';
+      return 'http://localhost:4700';
   }
 }
 

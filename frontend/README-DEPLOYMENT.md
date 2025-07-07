@@ -273,3 +273,39 @@ Si encuentras algún problema:
 4. **Confirma que el backend** esté funcionando
 
 **El frontend está diseñado para funcionar perfectamente en EC2 sin errores.**
+
+# 🚀 Despliegue automático en Vercel (Next.js 15)
+
+## 1. ¿Qué necesitas?
+- Tener este repo en GitHub
+- Una cuenta gratuita en [Vercel](https://vercel.com)
+
+## 2. Pasos para desplegar (solo la primera vez)
+1. Ve a https://vercel.com/import
+2. Conecta tu cuenta de GitHub y selecciona el repo `emotioXV2`
+3. Cuando te pregunte el directorio raíz, selecciona: `frontend`
+4. Vercel detecta Next.js automáticamente (no cambies nada)
+5. Configura las variables de entorno necesarias (usa `.env.example` como referencia)
+6. Haz click en **Deploy**
+
+## 3. Automatización
+- Cada commit en `main` (o la rama que elijas) dispara un build y despliegue automático
+- Puedes ver el progreso y logs en el dashboard de Vercel
+- Cada Pull Request genera una URL de preview automática
+
+## 4. Variables de entorno
+Copia `.env.example` a `.env` y pon los valores reales. Configura los mismos en Vercel Dashboard (Settings > Environment Variables).
+
+## 5. Notas técnicas
+- El build usa Next.js 15 con `output: 'export'` (estático, compatible con Vercel)
+- El archivo `vercel.json` agrega headers de seguridad y rewrites para API
+- No necesitas scripts de deploy ni configuración extra
+
+## 6. ¿Problemas?
+- Si ves un error, revisa los logs en Vercel Dashboard
+- Si usas rutas dinámicas, Vercel las maneja automáticamente
+- Si necesitas headers o rewrites personalizados, edita `vercel.json`
+
+---
+
+**¡Listo! Tu app estará online en minutos y cada commit la actualizará automáticamente.**
