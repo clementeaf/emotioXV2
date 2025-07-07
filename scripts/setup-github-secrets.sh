@@ -118,23 +118,104 @@ setup_vercel_secrets() {
 
 # Configurar URLs de las aplicaciones
 setup_app_urls() {
-    log_info "Configurando URLs de las aplicaciones..."
+  log_info "Configurando URLs de las aplicaciones..."
 
-    echo "🌐 URL del Frontend (ej: https://emotioxv2-frontend.vercel.app):"
-    read -p "Ingresa NEXT_PUBLIC_PUBLIC_TESTS_URL: " NEXT_PUBLIC_PUBLIC_TESTS_URL
+  echo "🌐 URL del Frontend (ej: https://emotioxv2-frontend.vercel.app):"
+  read -p "Ingresa NEXT_PUBLIC_PUBLIC_TESTS_URL: " NEXT_PUBLIC_PUBLIC_TESTS_URL
 
-    echo "🌐 URL de Public Tests (ej: https://emotioxv2-public-tests.vercel.app):"
-    read -p "Ingresa VITE_PUBLIC_TESTS_URL: " VITE_PUBLIC_TESTS_URL
+  echo "🌐 URL de Public Tests (ej: https://emotioxv2-public-tests.vercel.app):"
+  read -p "Ingresa VITE_PUBLIC_TESTS_URL: " VITE_PUBLIC_TESTS_URL
 
-    if [ -n "$NEXT_PUBLIC_PUBLIC_TESTS_URL" ]; then
-        gh secret set NEXT_PUBLIC_PUBLIC_TESTS_URL --body "$NEXT_PUBLIC_PUBLIC_TESTS_URL" --repo "$OWNER/$REPO"
-        log_success "NEXT_PUBLIC_PUBLIC_TESTS_URL configurado"
+  if [ -n "$NEXT_PUBLIC_PUBLIC_TESTS_URL" ]; then
+    gh secret set NEXT_PUBLIC_PUBLIC_TESTS_URL --body "$NEXT_PUBLIC_PUBLIC_TESTS_URL" --repo "$OWNER/$REPO"
+    log_success "NEXT_PUBLIC_PUBLIC_TESTS_URL configurado"
+  fi
+
+  if [ -n "$VITE_PUBLIC_TESTS_URL" ]; then
+    gh secret set VITE_PUBLIC_TESTS_URL --body "$VITE_PUBLIC_TESTS_URL" --repo "$OWNER/$REPO"
+    log_success "VITE_PUBLIC_TESTS_URL configurado"
+  fi
+}
+
+# Configurar secrets para actualización automática de endpoints
+setup_endpoint_update_secrets() {
+  log_info "Configurando secrets para actualización automática de endpoints..."
+
+  echo "🔧 ¿Quieres configurar actualización automática de endpoints en otros despliegues?"
+  read -p "Esto incluye Amplify, CloudFront, EC2, etc. (y/n): " setup_endpoints
+
+  if [[ $setup_endpoints =~ ^[Yy]$ ]]; then
+    echo ""
+    echo "📋 Configurando Amplify (opcional):"
+    read -p "AMPLIFY_FRONTEND_APP_ID (dejar vacío si no usas Amplify): " AMPLIFY_FRONTEND_APP_ID
+    read -p "AMPLIFY_PUBLIC_TESTS_APP_ID (dejar vacío si no usas Amplify): " AMPLIFY_PUBLIC_TESTS_APP_ID
+
+    echo ""
+    echo "📋 Configurando CloudFront/S3 (opcional):"
+    read -p "CLOUDFRONT_FRONTEND_DIST_ID (dejar vacío si no usas CloudFront): " CLOUDFRONT_FRONTEND_DIST_ID
+    read -p "CLOUDFRONT_PUBLIC_TESTS_DIST_ID (dejar vacío si no usas CloudFront): " CLOUDFRONT_PUBLIC_TESTS_DIST_ID
+    read -p "FRONTEND_S3_BUCKET (dejar vacío si no usas S3): " FRONTEND_S3_BUCKET
+    read -p "PUBLIC_TESTS_S3_BUCKET (dejar vacío si no usas S3): " PUBLIC_TESTS_S3_BUCKET
+
+    echo ""
+    echo "📋 Configurando EC2 (opcional):"
+    read -p "EC2_FRONTEND_URL (dejar vacío si no usas EC2): " EC2_FRONTEND_URL
+    read -p "EC2_API_ENDPOINT (dejar vacío si no usas EC2): " EC2_API_ENDPOINT
+
+    echo ""
+    echo "📋 Configurando Webhook (opcional):"
+    read -p "WEBHOOK_URL para notificaciones (dejar vacío si no quieres webhook): " WEBHOOK_URL
+
+    # Guardar secrets no vacíos
+    if [ -n "$AMPLIFY_FRONTEND_APP_ID" ]; then
+      gh secret set AMPLIFY_FRONTEND_APP_ID --body "$AMPLIFY_FRONTEND_APP_ID" --repo "$OWNER/$REPO"
+      log_success "AMPLIFY_FRONTEND_APP_ID configurado"
     fi
 
-    if [ -n "$VITE_PUBLIC_TESTS_URL" ]; then
-        gh secret set VITE_PUBLIC_TESTS_URL --body "$VITE_PUBLIC_TESTS_URL" --repo "$OWNER/$REPO"
-        log_success "VITE_PUBLIC_TESTS_URL configurado"
+    if [ -n "$AMPLIFY_PUBLIC_TESTS_APP_ID" ]; then
+      gh secret set AMPLIFY_PUBLIC_TESTS_APP_ID --body "$AMPLIFY_PUBLIC_TESTS_APP_ID" --repo "$OWNER/$REPO"
+      log_success "AMPLIFY_PUBLIC_TESTS_APP_ID configurado"
     fi
+
+    if [ -n "$CLOUDFRONT_FRONTEND_DIST_ID" ]; then
+      gh secret set CLOUDFRONT_FRONTEND_DIST_ID --body "$CLOUDFRONT_FRONTEND_DIST_ID" --repo "$OWNER/$REPO"
+      log_success "CLOUDFRONT_FRONTEND_DIST_ID configurado"
+    fi
+
+    if [ -n "$CLOUDFRONT_PUBLIC_TESTS_DIST_ID" ]; then
+      gh secret set CLOUDFRONT_PUBLIC_TESTS_DIST_ID --body "$CLOUDFRONT_PUBLIC_TESTS_DIST_ID" --repo "$OWNER/$REPO"
+      log_success "CLOUDFRONT_PUBLIC_TESTS_DIST_ID configurado"
+    fi
+
+    if [ -n "$FRONTEND_S3_BUCKET" ]; then
+      gh secret set FRONTEND_S3_BUCKET --body "$FRONTEND_S3_BUCKET" --repo "$OWNER/$REPO"
+      log_success "FRONTEND_S3_BUCKET configurado"
+    fi
+
+    if [ -n "$PUBLIC_TESTS_S3_BUCKET" ]; then
+      gh secret set PUBLIC_TESTS_S3_BUCKET --body "$PUBLIC_TESTS_S3_BUCKET" --repo "$OWNER/$REPO"
+      log_success "PUBLIC_TESTS_S3_BUCKET configurado"
+    fi
+
+    if [ -n "$EC2_FRONTEND_URL" ]; then
+      gh secret set EC2_FRONTEND_URL --body "$EC2_FRONTEND_URL" --repo "$OWNER/$REPO"
+      log_success "EC2_FRONTEND_URL configurado"
+    fi
+
+    if [ -n "$EC2_API_ENDPOINT" ]; then
+      gh secret set EC2_API_ENDPOINT --body "$EC2_API_ENDPOINT" --repo "$OWNER/$REPO"
+      log_success "EC2_API_ENDPOINT configurado"
+    fi
+
+    if [ -n "$WEBHOOK_URL" ]; then
+      gh secret set WEBHOOK_URL --body "$WEBHOOK_URL" --repo "$OWNER/$REPO"
+      log_success "WEBHOOK_URL configurado"
+    fi
+
+    log_success "Secrets para actualización automática configurados"
+  else
+    log_info "Saltando configuración de actualización automática de endpoints"
+  fi
 }
 
 # Mostrar resumen de configuración
@@ -176,6 +257,9 @@ main() {
     echo ""
 
     setup_app_urls
+    echo ""
+
+    setup_endpoint_update_secrets
     echo ""
 
     show_summary

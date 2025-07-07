@@ -90,12 +90,34 @@ jobs:
           STAGE: dev
           AWS_REGION: ${{ env.AWS_REGION }}
 
-      - name: Export endpoints
+            - name: Export endpoints
         run: |
           cd backendV2
           npm run export-endpoints
           npx ts-node src/utils/endpoints-exporter.ts ../frontend/src/api/endpoints.js
           npx ts-node src/utils/endpoints-exporter.ts ../public-tests/src/config/endpoints.js
+
+      - name: Update endpoints in all deployments
+        run: |
+          echo "🔄 Actualizando endpoints en todos los despliegues activos..."
+          chmod +x scripts/update-endpoints-all-deployments.sh
+          ./scripts/update-endpoints-all-deployments.sh
+        env:
+          STAGE: dev
+          AWS_REGION: ${{ env.AWS_REGION }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_PUBLIC_TESTS_PROJECT_ID: ${{ secrets.VERCEL_PUBLIC_TESTS_PROJECT_ID }}
+          AMPLIFY_FRONTEND_APP_ID: ${{ secrets.AMPLIFY_FRONTEND_APP_ID }}
+          AMPLIFY_PUBLIC_TESTS_APP_ID: ${{ secrets.AMPLIFY_PUBLIC_TESTS_APP_ID }}
+          CLOUDFRONT_FRONTEND_DIST_ID: ${{ secrets.CLOUDFRONT_FRONTEND_DIST_ID }}
+          CLOUDFRONT_PUBLIC_TESTS_DIST_ID: ${{ secrets.CLOUDFRONT_PUBLIC_TESTS_DIST_ID }}
+          FRONTEND_S3_BUCKET: ${{ secrets.FRONTEND_S3_BUCKET }}
+          PUBLIC_TESTS_S3_BUCKET: ${{ secrets.PUBLIC_TESTS_S3_BUCKET }}
+          EC2_FRONTEND_URL: ${{ secrets.EC2_FRONTEND_URL }}
+          EC2_API_ENDPOINT: ${{ secrets.EC2_API_ENDPOINT }}
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
 
       - name: Get API endpoints
         id: get-endpoints

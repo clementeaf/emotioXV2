@@ -119,6 +119,20 @@ Ve a tu repositorio en GitHub → Settings → Secrets and variables → Actions
 | `NEXT_PUBLIC_PUBLIC_TESTS_URL` | URL de Public Tests | `https://emotioxv2-public-tests.vercel.app` |
 | `VITE_PUBLIC_TESTS_URL` | URL de Public Tests para Vite | `https://emotioxv2-public-tests.vercel.app` |
 
+#### Secrets Opcionales para Actualización Automática de Endpoints:
+
+| Secret | Descripción | Cuándo Usar |
+|--------|-------------|-------------|
+| `AMPLIFY_FRONTEND_APP_ID` | App ID de Amplify Frontend | Si usas AWS Amplify |
+| `AMPLIFY_PUBLIC_TESTS_APP_ID` | App ID de Amplify Public Tests | Si usas AWS Amplify |
+| `CLOUDFRONT_FRONTEND_DIST_ID` | Distribution ID de CloudFront Frontend | Si usas CloudFront/S3 |
+| `CLOUDFRONT_PUBLIC_TESTS_DIST_ID` | Distribution ID de CloudFront Public Tests | Si usas CloudFront/S3 |
+| `FRONTEND_S3_BUCKET` | Nombre del bucket S3 del frontend | Si usas S3/CloudFront |
+| `PUBLIC_TESTS_S3_BUCKET` | Nombre del bucket S3 de public-tests | Si usas S3/CloudFront |
+| `EC2_FRONTEND_URL` | URL del frontend en EC2 | Si usas EC2 |
+| `EC2_API_ENDPOINT` | Endpoint de API de EC2 | Si usas EC2 |
+| `WEBHOOK_URL` | URL de webhook para notificaciones | Si quieres notificaciones |
+
 ## 🔄 Workflows Disponibles
 
 ### 1. `deploy-all.yml` (Recomendado)
@@ -137,6 +151,7 @@ Ve a tu repositorio en GitHub → Settings → Secrets and variables → Actions
 ### 4. `deploy-backend.yml`
 - **Trigger**: Cambios en `backendV2/` o `shared/`
 - **Función**: Solo despliega el backend
+- **Plus**: Actualiza automáticamente endpoints en todos los despliegues activos
 
 ## 🚀 Flujo de Trabajo
 
@@ -191,12 +206,65 @@ gh workflow run deploy-backend.yml
 - [console.aws.amazon.com](https://console.aws.amazon.com)
 - Monitorea Lambda functions y API Gateway
 
+## 🔄 Actualización Automática de Endpoints
+
+### ¿Cómo Funciona?
+
+Cuando se despliega el backend en AWS Lambda, el sistema automáticamente:
+
+1. **Obtiene los nuevos endpoints** desde CloudFormation
+2. **Actualiza todos los despliegues activos**:
+   - Vercel (variables de entorno + redeploy)
+   - AWS Amplify (variables de entorno + redeploy)
+   - CloudFront/S3 (archivos de endpoints + invalidación)
+   - EC2 (si está configurado)
+3. **Genera archivos locales** para desarrollo
+4. **Envía notificaciones** (si hay webhook configurado)
+
+### Archivos de Endpoints Dinámicos
+
+El sistema incluye archivos de endpoints dinámicos que cargan automáticamente los endpoints más recientes:
+
+- `frontend/src/api/dynamic-endpoints.ts`
+- `public-tests/src/config/dynamic-endpoints.ts`
+
+Estos archivos intentan cargar endpoints desde múltiples ubicaciones y tienen fallback a variables de entorno.
+
+### Configuración
+
+Para habilitar la actualización automática, configura los secrets correspondientes:
+
+```bash
+# Ejecutar script de configuración
+./scripts/setup-github-secrets.sh
+```
+
+El script te preguntará si quieres configurar actualización automática y te guiará a través de la configuración de cada plataforma.
+
 ## 🔧 Solución de Problemas
 
 ### Error: "Vercel token not found"
 ```bash
 # Verificar que el secret está configurado
 gh secret list --repo owner/repo
+```
+
+### Error: "No se pudieron obtener los endpoints del backend"
+```bash
+# Verificar que el backend está desplegado
+aws cloudformation describe-stacks --stack-name emotioxv2-backend-dev
+
+# Verificar permisos de AWS
+aws sts get-caller-identity
+```
+
+### Error: "No se pudo actualizar endpoints en [plataforma]"
+```bash
+# Verificar que los secrets están configurados correctamente
+gh secret list --repo owner/repo
+
+# Verificar permisos en la plataforma correspondiente
+# (Vercel, Amplify, CloudFront, etc.)
 ```
 
 ### Error: "AWS credentials not found"
