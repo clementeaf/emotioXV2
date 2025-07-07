@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParticipantStore } from '../stores/participantStore';
 import {
-    StandardizedFormActions,
-    StandardizedFormProps,
-    StandardizedFormState,
-    UseStandardizedFormOptions,
-    ValidationRule
+  StandardizedFormActions,
+  StandardizedFormProps,
+  StandardizedFormState,
+  UseStandardizedFormOptions,
+  ValidationRule
 } from '../types/hooks.types';
 import { useModuleResponses } from './useModuleResponses';
 import { useResponseAPI } from './useResponseAPI';
@@ -160,88 +160,52 @@ export function useStandardizedForm<T>(
   }, [savedResponse, extractValueFromResponse, initialValue]);
 
   useEffect(() => {
+    // Log para depuración
+    if (!participantId || !researchId) {
+      console.log('[useStandardizedForm] Esperando participantId o researchId:', { participantId, researchId });
+      return;
+    }
     if (initialLoadComplete.current) {
       return;
     }
-
     if (userHasInteracted.current && isDataLoaded && value !== initialValue) {
       initialLoadComplete.current = true;
       return;
     }
-
     if (isDataLoaded && value !== initialValue) {
       initialLoadComplete.current = true;
       return;
     }
-
     if (userHasInteracted.current) {
       initialLoadComplete.current = true;
       return;
     }
-
     if (isMock) {
       setValue(savedResponse ? extractedValue : initialValue, false);
       setIsDataLoaded(true);
       setHasExistingData(!!savedResponse);
       initialLoadComplete.current = true;
+      console.log('[useStandardizedForm] Prellenado mock:', { value: savedResponse ? extractedValue : initialValue });
       return;
     }
-
     if (savedResponse) {
       setValue(extractedValue, false);
       setIsDataLoaded(true);
       setHasExistingData(true);
       initialLoadComplete.current = true;
+      console.log('[useStandardizedForm] Prellenado con respuesta previa:', { value: extractedValue });
       return;
     }
-
     if (isLoadingResponses) {
       return;
     }
-
-    if (!loadingError && moduleResponsesArray && Array.isArray(moduleResponsesArray)) {
-      const foundResponse = moduleResponsesArray.find((r: unknown) => {
-        if (typeof r !== 'object' || r === null) return false;
-        const response = r as { stepType?: string; stepId?: string; stepTitle?: string; id?: string };
-
-        return response.stepType === stepType && response.stepTitle === stepName;
-      });
-
-      if (foundResponse) {
-        const foundResp = foundResponse as { response?: unknown; id?: string };
-        try {
-          const extractedVal = extractValueFromResponse(foundResp.response);
-          setValue(extractedVal, false);
-          setResponseId(foundResp.id || null);
-          setHasExistingData(true);
-          setIsDataLoaded(true);
-          initialLoadComplete.current = true;
-
-          return;
-        } catch (err) {
-          console.warn('[useStandardizedForm] Error extracting value from API response:', err);
-        }
-      }
-    }
+    // Si no hay respuesta previa, limpiar
     setValue(initialValue, false);
-    setHasExistingData(false);
     setIsDataLoaded(true);
+    setHasExistingData(false);
     initialLoadComplete.current = true;
-
-  }, [
-    isMock,
-    savedResponse,
-    isLoadingResponses,
-    loadingError,
-    moduleResponsesArray,
-    stepType,
-    stepId,
-    stepName,
-    initialValue,
-    extractValueFromResponse,
-    extractedValue,
-    isDataLoaded
-  ]);
+    console.log('[useStandardizedForm] Sin respuesta previa, valor inicial:', { value: initialValue });
+  }, [participantId, researchId, isLoadingResponses, savedResponse, isMock, extractedValue, initialValue, value, isDataLoaded]);
 
   const validateValue = useCallback((valueToValidate: T): string | null => {
     if (required) {
