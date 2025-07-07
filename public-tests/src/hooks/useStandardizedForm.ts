@@ -160,7 +160,6 @@ export function useStandardizedForm<T>(
   }, [savedResponse, extractValueFromResponse, initialValue]);
 
   useEffect(() => {
-    // Log para depuración
     if (!participantId || !researchId) {
       console.log('[useStandardizedForm] Esperando participantId o researchId:', { participantId, researchId });
       return;
@@ -188,24 +187,34 @@ export function useStandardizedForm<T>(
       console.log('[useStandardizedForm] Prellenado mock:', { value: savedResponse ? extractedValue : initialValue });
       return;
     }
-    if (savedResponse) {
-      setValue(extractedValue, false);
-      setIsDataLoaded(true);
-      setHasExistingData(true);
-      initialLoadComplete.current = true;
-      console.log('[useStandardizedForm] Prellenado con respuesta previa:', { value: extractedValue });
-      return;
+    if (moduleResponsesArray && Array.isArray(moduleResponsesArray)) {
+      const foundResponse = moduleResponsesArray.find((r: unknown) => {
+        if (typeof r !== 'object' || r === null) return false;
+        const response = r as { stepType?: string; stepId?: string; stepTitle?: string; id?: string };
+        return response.stepType === stepType && response.stepTitle === stepName;
+      });
+      if (foundResponse) {
+        const foundResp = foundResponse as { response?: unknown; id?: string };
+        try {
+          const extractedVal = extractValueFromResponse(foundResp.response);
+          setValue(extractedVal, false);
+          setResponseId(foundResp.id || null);
+          setHasExistingData(true);
+          setIsDataLoaded(true);
+          initialLoadComplete.current = true;
+          console.log('[useStandardizedForm] Prellenado con respuesta previa de API:', { value: extractedVal });
+          return;
+        } catch (err) {
+          console.warn('[useStandardizedForm] Error extracting value from API response:', err);
+        }
+      }
     }
-    if (isLoadingResponses) {
-      return;
-    }
-    // Si no hay respuesta previa, limpiar
     setValue(initialValue, false);
     setIsDataLoaded(true);
     setHasExistingData(false);
     initialLoadComplete.current = true;
     console.log('[useStandardizedForm] Sin respuesta previa, valor inicial:', { value: initialValue });
-  }, [participantId, researchId, isLoadingResponses, savedResponse, isMock, extractedValue, initialValue, value, isDataLoaded]);
+  }, [participantId, researchId, isLoadingResponses, savedResponse, isMock, extractedValue, initialValue, value, isDataLoaded, moduleResponsesArray, stepType, stepName, extractValueFromResponse]);
 
   const validateValue = useCallback((valueToValidate: T): string | null => {
     if (required) {
