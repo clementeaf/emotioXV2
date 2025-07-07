@@ -68,7 +68,7 @@ export function getPublicTestsUrl() {
       return 'https://emotio-xv-2-public-tests.vercel.app';
 
     default:
-      return 'http://localhost:4700';
+      return 'https://emotio-xv-2-public-tests.vercel.app';
   }
 }
 
