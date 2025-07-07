@@ -94,7 +94,7 @@ export const useParticipantLogin = ({ researchId, onLogin }: UseParticipantLogin
 
       if (!response.ok) {
         let errorMessage = responseData.error || `Error ${response.status} al iniciar sesión.`;
-        
+
         // Manejo específico de errores según el status code y mensaje
         if (response.status === 403) {
           if (responseData.error?.includes('No tienes permiso para acceder a esta investigación')) {
@@ -109,7 +109,7 @@ export const useParticipantLogin = ({ researchId, onLogin }: UseParticipantLogin
             errorMessage = 'El enlace de acceso parece estar corrupto. Verifica la URL completa.';
           }
         }
-        
+
         console.error('[useParticipantLogin] Login API Error:', responseData);
         setErrors(prev => ({ ...prev, submit: errorMessage }));
         setIsLoading(false);
@@ -126,12 +126,34 @@ export const useParticipantLogin = ({ researchId, onLogin }: UseParticipantLogin
         return;
       }
 
-      // Generar un ID único para el participante si no viene del servidor
-      const participantId = responseData.data.participantId || `participant_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      // Verificar si ya existe un participantId para este usuario y researchId
+      const existingParticipantId = localStorage.getItem('participantId');
+      const existingParticipantInfo = localStorage.getItem('participantInfo');
+
+      let participantId: string;
+
+      if (existingParticipantId && existingParticipantInfo) {
+        const [existingResearchId, existingParticipantIdFromInfo] = existingParticipantInfo.split('|');
+
+        // Si es el mismo researchId y el participantId existe, usarlo
+        if (existingResearchId === researchId && existingParticipantIdFromInfo === existingParticipantId) {
+          participantId = existingParticipantId;
+          console.log('[useParticipantLogin] Reutilizando participantId existente:', participantId);
+        } else {
+          // ResearchId diferente o participantId no coincide, generar uno nuevo
+          participantId = responseData.data.participantId || `participant_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          console.log('[useParticipantLogin] Generando nuevo participantId para researchId diferente:', participantId);
+        }
+      } else {
+        // No existe participantId previo, generar uno nuevo
+        participantId = responseData.data.participantId || `participant_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        console.log('[useParticipantLogin] Generando nuevo participantId (primera vez):', participantId);
+      }
 
       // Guardar el token y el participantId en localStorage
       localStorage.setItem('participantToken', apiToken);
       localStorage.setItem('participantId', participantId);
+      localStorage.setItem('participantInfo', `${researchId}|${participantId}`);
 
       setResearchIdInStore(researchId);
 
