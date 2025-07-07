@@ -1,6 +1,6 @@
 // ARCHIVO GENERADO AUTOMÁTICAMENTE
 // NO MODIFICAR MANUALMENTE
-// Generado: 2025-07-06T20:17:59.201Z
+// Generado: 2025-07-07T20:23:03.728Z
 
 // Endpoints de API exportados desde backend
 export const API_ENDPOINTS = {
@@ -17,8 +17,7 @@ export const API_ENDPOINTS = {
 // URLs de desarrollo local
 export const LOCAL_URLS = {
   "frontend": "http://localhost:3000",
-  "publicTests": "http://localhost:4700",
-  "generatedAt": "2025-07-06T23:30:00Z"
+  "publicTests": "http://localhost:4700"
 };
 
 // Constantes para uso más fácil
@@ -37,48 +36,16 @@ export function getWebsocketUrl() {
   return API_WEBSOCKET_ENDPOINT;
 }
 
-// Función para detectar el entorno de despliegue
-export function detectDeploymentEnvironment() {
-  if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname;
-
-    // AWS Amplify
-    if (hostname.includes('amplifyapp.com') || hostname.includes('amplify.aws')) {
-      return 'amplify';
-    }
-
-    // Local development
-    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('192.168.')) {
-      return 'local';
-    }
-  }
-
-  return 'unknown';
-}
-
-// Función para obtener URL de public-tests basada en el entorno
+// Función para obtener URL de public-tests
 export function getPublicTestsUrl() {
-  const environment = detectDeploymentEnvironment();
-
-  switch (environment) {
-    case 'local':
-      return 'http://localhost:5173';
-
-    case 'amplify':
-      return 'https://emotio-xv-2-public-tests.vercel.app';
-
-    default:
-      return 'https://emotio-xv-2-public-tests.vercel.app';
-  }
+  return LOCAL_URLS.publicTests || 'http://localhost:4700';
 }
 
 // Función para navegar a public-tests con researchID
-   export function navigateToPublicTests(researchID) {
-     const baseUrl = getPublicTestsUrl().replace(/\/$/, '');
-     const url = `${baseUrl}/?researchId=${encodeURIComponent(researchID)}`;
-     console.log(`🌐 Navegando a public-tests: ${url} (entorno: ${detectDeploymentEnvironment()})`);
-     window.open(url, '_blank');
-   }
+export function navigateToPublicTests(researchID) {
+  const url = `${getPublicTestsUrl()}/${researchID}`;
+  window.open(url, '_blank');
+}
 
 // Versión default para import default
 export default API_ENDPOINTS;

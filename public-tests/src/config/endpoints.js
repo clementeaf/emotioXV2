@@ -1,22 +1,17 @@
 // ARCHIVO GENERADO AUTOMÁTICAMENTE
 // NO MODIFICAR MANUALMENTE
-// Modificado para priorizar variable de entorno VITE_API_URL y usar /dev por defecto
+// Generado: 2025-07-07T20:23:04.775Z
 
-const _API_HTTP_ENDPOINT = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL
-  ? import.meta.env.VITE_API_URL
-  : (typeof process !== 'undefined' && process.env && process.env.VITE_API_URL
-      ? process.env.VITE_API_URL
-      : 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev');
-
+// Endpoints de API exportados desde backend
 export const API_ENDPOINTS = {
   // Endpoint HTTP API
-  http: _API_HTTP_ENDPOINT,
+  http: "https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev",
 
-  // Endpoint WebSocket (opcional, si aplica)
-  ws: '',
+  // Endpoint WebSocket
+  ws: "wss://w8dj7wxnl9.execute-api.us-east-1.amazonaws.com/dev",
 
   // Etapa de despliegue (dev, prod, etc.)
-  stage: 'dev'
+  stage: "dev"
 };
 
 // URLs de desarrollo local
@@ -26,17 +21,17 @@ export const LOCAL_URLS = {
 };
 
 // Constantes para uso más fácil
-export const API_HTTP_ENDPOINT = _API_HTTP_ENDPOINT;
-export const API_WEBSOCKET_ENDPOINT = '';
+export const API_HTTP_ENDPOINT = "https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev";
+export const API_WEBSOCKET_ENDPOINT = "wss://w8dj7wxnl9.execute-api.us-east-1.amazonaws.com/dev";
 
 // Función para obtener URL completa de una ruta
 export function getApiUrl(path) {
   // Eliminar slash inicial si existe
   const cleanPath = path.startsWith('/') ? path.substring(1) : path;
-  return `${_API_HTTP_ENDPOINT}/${cleanPath}`;
+  return `${API_HTTP_ENDPOINT}/${cleanPath}`;
 }
 
-// Función para websocket (placeholder)
+// Función para websocket
 export function getWebsocketUrl() {
   return API_WEBSOCKET_ENDPOINT;
 }
