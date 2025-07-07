@@ -492,8 +492,29 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
     if (researchId) {
       console.log(`[useParticipantFlowWithStore] Inicializando con researchId: ${researchId}`);
 
-      // Reset store y establecer research ID
-      resetStore();
+      // Verificar si ya existe un participantId válido para este researchId
+      const existingParticipantId = localStorage.getItem('participantId');
+      const existingParticipantInfo = localStorage.getItem('participantInfo');
+
+      let shouldResetStore = true;
+
+      if (existingParticipantId && existingParticipantInfo) {
+        const [existingResearchId] = existingParticipantInfo.split('|');
+
+        // Si es el mismo researchId y ya existe participantId, NO resetear
+        if (existingResearchId === researchId) {
+          shouldResetStore = false;
+          console.log(`[useParticipantFlowWithStore] Reutilizando participantId existente: ${existingParticipantId}`);
+        } else {
+          console.log(`[useParticipantFlowWithStore] ResearchId diferente, reseteando store`);
+        }
+      }
+
+      // Solo resetear si es necesario
+      if (shouldResetStore) {
+        resetStore();
+      }
+
       setResearchId(researchId);
       setCurrentStep(ParticipantFlowStep.LOADING_SESSION);
       setError(null);
