@@ -75,7 +75,7 @@ export function getPublicTestsUrl() {
 // Función para navegar a public-tests con researchID
 export function navigateToPublicTests(researchID) {
   const baseUrl = getPublicTestsUrl();
-  const url = `${baseUrl}/${researchID}`;
+  const url = `${baseUrl}/?researchId=${researchID}`;
 
   console.log(`🌐 Navegando a public-tests: ${url} (entorno: ${detectDeploymentEnvironment()})`);
   window.open(url, '_blank');
