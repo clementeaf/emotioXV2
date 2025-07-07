@@ -45,9 +45,34 @@ const DEFAULT_ENDPOINTS: DynamicEndpoints = {
     return `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/${cleanPath}`;
   },
   getWebsocketUrl: () => process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001',
-  getPublicTestsUrl: () => 'http://localhost:4700',
+  getPublicTestsUrl: () => {
+    // Detectar entorno de despliegue
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+
+      // AWS Amplify
+      if (hostname.includes('amplifyapp.com') || hostname.includes('amplify.aws')) {
+        return process.env.NEXT_PUBLIC_PUBLIC_TESTS_AWS_URL ||
+               process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL ||
+               'https://emotioxv2-public-tests.s3.amazonaws.com';
+      }
+
+      // Local development
+      if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('192.168.')) {
+        return 'http://localhost:4700';
+      }
+    }
+
+    // Fallback a local
+    return 'http://localhost:4700';
+  },
   navigateToPublicTests: (researchID: string) => {
-    const url = `http://localhost:4700/${researchID}`;
+    const baseUrl = process.env.NEXT_PUBLIC_PUBLIC_TESTS_AWS_URL ||
+                   process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL ||
+                   'http://localhost:4700';
+    const url = `${baseUrl}/${researchID}`;
+
+    console.log(`🌐 Navegando a public-tests: ${url}`);
     window.open(url, '_blank');
   }
 };
@@ -103,9 +128,34 @@ export async function loadDynamicEndpoints(): Promise<DynamicEndpoints> {
                 return `${httpEndpoint}/${cleanPath}`;
               },
               getWebsocketUrl: () => wsEndpoint,
-              getPublicTestsUrl: () => 'http://localhost:4700',
+              getPublicTestsUrl: () => {
+                // Detectar entorno de despliegue
+                if (typeof window !== 'undefined') {
+                  const hostname = window.location.hostname;
+
+                  // AWS Amplify
+                  if (hostname.includes('amplifyapp.com') || hostname.includes('amplify.aws')) {
+                    return process.env.NEXT_PUBLIC_PUBLIC_TESTS_AWS_URL ||
+                           process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL ||
+                           'https://emotioxv2-public-tests.s3.amazonaws.com';
+                  }
+
+                  // Local development
+                  if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('192.168.')) {
+                    return 'http://localhost:4700';
+                  }
+                }
+
+                // Fallback a local
+                return 'http://localhost:4700';
+              },
               navigateToPublicTests: (researchID: string) => {
-                const url = `http://localhost:4700/${researchID}`;
+                const baseUrl = process.env.NEXT_PUBLIC_PUBLIC_TESTS_AWS_URL ||
+                               process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL ||
+                               'http://localhost:4700';
+                const url = `${baseUrl}/${researchID}`;
+
+                console.log(`🌐 Navegando a public-tests: ${url}`);
                 window.open(url, '_blank');
               }
             };

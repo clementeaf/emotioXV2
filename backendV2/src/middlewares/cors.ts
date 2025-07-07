@@ -15,10 +15,7 @@ function getAllowedOrigins(): string[] {
     'http://54.90.132.233:3000', // Frontend EC2
     // Dominios de desarrollo local
 'http://localhost:3000', // Frontend local
-'http://localhost:4700', // Public-tests local
-    // Vercel deployments
-    'https://public-tests.vercel.app', // Public-tests Vercel (MAIN)
-    'https://public-tests-clementeafs-projects.vercel.app' // Vercel full URL
+  'http://localhost:4700', // Public-tests local
   ];
 
   // Combinar orígenes de la variable de entorno con los por defecto

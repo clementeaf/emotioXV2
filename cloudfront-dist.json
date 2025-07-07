@@ -1,0 +1,144 @@
+{
+    "ETag": "EC9OUTEMEQ0KC",
+    "Distribution": {
+        "Id": "E1J2YXOVM8QFOG",
+        "ARN": "arn:aws:cloudfront::992382408780:distribution/E1J2YXOVM8QFOG",
+        "Status": "Deployed",
+        "LastModifiedTime": "2025-07-07T01:18:11.982000+00:00",
+        "InProgressInvalidationBatches": 0,
+        "DomainName": "d3ldxleq72ngmd.cloudfront.net",
+        "ActiveTrustedSigners": {
+            "Enabled": false,
+            "Quantity": 0
+        },
+        "ActiveTrustedKeyGroups": {
+            "Enabled": false,
+            "Quantity": 0
+        },
+        "DistributionConfig": {
+            "CallerReference": "public-tests-spa-config-1751851090",
+            "Aliases": {
+                "Quantity": 0
+            },
+            "DefaultRootObject": "",
+            "Origins": {
+                "Quantity": 1,
+                "Items": [
+                    {
+                        "Id": "S3-emotioxv2-public-tests",
+                        "DomainName": "emotioxv2-public-tests.s3.amazonaws.com",
+                        "OriginPath": "",
+                        "CustomHeaders": {
+                            "Quantity": 0
+                        },
+                        "S3OriginConfig": {
+                            "OriginAccessIdentity": ""
+                        },
+                        "ConnectionAttempts": 3,
+                        "ConnectionTimeout": 10,
+                        "OriginShield": {
+                            "Enabled": false
+                        },
+                        "OriginAccessControlId": ""
+                    }
+                ]
+            },
+            "OriginGroups": {
+                "Quantity": 0
+            },
+            "DefaultCacheBehavior": {
+                "TargetOriginId": "S3-emotioxv2-public-tests",
+                "TrustedSigners": {
+                    "Enabled": false,
+                    "Quantity": 0
+                },
+                "TrustedKeyGroups": {
+                    "Enabled": false,
+                    "Quantity": 0
+                },
+                "ViewerProtocolPolicy": "redirect-to-https",
+                "AllowedMethods": {
+                    "Quantity": 2,
+                    "Items": [
+                        "HEAD",
+                        "GET"
+                    ],
+                    "CachedMethods": {
+                        "Quantity": 2,
+                        "Items": [
+                            "HEAD",
+                            "GET"
+                        ]
+                    }
+                },
+                "SmoothStreaming": false,
+                "Compress": false,
+                "LambdaFunctionAssociations": {
+                    "Quantity": 0
+                },
+                "FunctionAssociations": {
+                    "Quantity": 0
+                },
+                "FieldLevelEncryptionId": "",
+                "GrpcConfig": {
+                    "Enabled": false
+                },
+                "ForwardedValues": {
+                    "QueryString": false,
+                    "Cookies": {
+                        "Forward": "none"
+                    },
+                    "Headers": {
+                        "Quantity": 0
+                    },
+                    "QueryStringCacheKeys": {
+                        "Quantity": 0
+                    }
+                },
+                "MinTTL": 0,
+                "DefaultTTL": 86400,
+                "MaxTTL": 31536000
+            },
+            "CacheBehaviors": {
+                "Quantity": 0
+            },
+            "CustomErrorResponses": {
+                "Quantity": 1,
+                "Items": [
+                    {
+                        "ErrorCode": 404,
+                        "ResponsePagePath": "/index.html",
+                        "ResponseCode": "200",
+                        "ErrorCachingMinTTL": 0
+                    }
+                ]
+            },
+            "Comment": "Public Tests SPA Distribution",
+            "Logging": {
+                "Enabled": false,
+                "IncludeCookies": false,
+                "Bucket": "",
+                "Prefix": ""
+            },
+            "PriceClass": "PriceClass_100",
+            "Enabled": true,
+            "ViewerCertificate": {
+                "CloudFrontDefaultCertificate": true,
+                "SSLSupportMethod": "vip",
+                "MinimumProtocolVersion": "TLSv1",
+                "CertificateSource": "cloudfront"
+            },
+            "Restrictions": {
+                "GeoRestriction": {
+                    "RestrictionType": "none",
+                    "Quantity": 0
+                }
+            },
+            "WebACLId": "",
+            "HttpVersion": "http2",
+            "IsIPV6Enabled": true,
+            "ContinuousDeploymentPolicyId": "",
+            "Staging": false
+        }
+    }
+}

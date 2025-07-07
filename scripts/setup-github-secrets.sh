@@ -84,46 +84,14 @@ setup_aws_secrets() {
     fi
 }
 
-# Configurar Vercel Secrets
-setup_vercel_secrets() {
-    log_info "Configurando secrets de Vercel..."
-
-    echo "🔑 Vercel Token:"
-    echo "Obtén tu token desde: https://vercel.com/account/tokens"
-    read -s -p "Ingresa tu VERCEL_TOKEN: " VERCEL_TOKEN
-    echo
-
-    echo "🔑 Vercel Organization ID:"
-    echo "Encuéntralo en: https://vercel.com/account"
-    read -p "Ingresa tu VERCEL_ORG_ID: " VERCEL_ORG_ID
-
-    echo "🔑 Vercel Frontend Project ID:"
-    echo "Crea un proyecto en Vercel para el frontend y obtén el ID"
-    read -p "Ingresa tu VERCEL_PROJECT_ID: " VERCEL_PROJECT_ID
-
-    echo "🔑 Vercel Public Tests Project ID:"
-    echo "Crea un proyecto en Vercel para public-tests y obtén el ID"
-    read -p "Ingresa tu VERCEL_PUBLIC_TESTS_PROJECT_ID: " VERCEL_PUBLIC_TESTS_PROJECT_ID
-
-    if [ -n "$VERCEL_TOKEN" ] && [ -n "$VERCEL_ORG_ID" ] && [ -n "$VERCEL_PROJECT_ID" ] && [ -n "$VERCEL_PUBLIC_TESTS_PROJECT_ID" ]; then
-        gh secret set VERCEL_TOKEN --body "$VERCEL_TOKEN" --repo "$OWNER/$REPO"
-        gh secret set VERCEL_ORG_ID --body "$VERCEL_ORG_ID" --repo "$OWNER/$REPO"
-        gh secret set VERCEL_PROJECT_ID --body "$VERCEL_PROJECT_ID" --repo "$OWNER/$REPO"
-        gh secret set VERCEL_PUBLIC_TESTS_PROJECT_ID --body "$VERCEL_PUBLIC_TESTS_PROJECT_ID" --repo "$OWNER/$REPO"
-        log_success "Vercel secrets configurados"
-    else
-        log_warning "Vercel secrets no configurados"
-    fi
-}
-
 # Configurar URLs de las aplicaciones
 setup_app_urls() {
   log_info "Configurando URLs de las aplicaciones..."
 
-  echo "🌐 URL del Frontend (ej: https://emotioxv2-frontend.vercel.app):"
+  echo "🌐 URL del Frontend (ej: https://main.tu-app-id.amplifyapp.com):"
   read -p "Ingresa NEXT_PUBLIC_PUBLIC_TESTS_URL: " NEXT_PUBLIC_PUBLIC_TESTS_URL
 
-  echo "🌐 URL de Public Tests (ej: https://emotioxv2-public-tests.vercel.app):"
+  echo "🌐 URL de Public Tests (ej: https://tu-distribution-id.cloudfront.net):"
   read -p "Ingresa VITE_PUBLIC_TESTS_URL: " VITE_PUBLIC_TESTS_URL
 
   if [ -n "$NEXT_PUBLIC_PUBLIC_TESTS_URL" ]; then
@@ -197,6 +165,12 @@ setup_endpoint_update_secrets() {
       log_success "PUBLIC_TESTS_S3_BUCKET configurado"
     fi
 
+    # Configurar CloudFront Distribution ID para public-tests
+    if [ -n "$CLOUDFRONT_PUBLIC_TESTS_DIST_ID" ]; then
+      gh secret set PUBLIC_TESTS_CLOUDFRONT_DISTRIBUTION_ID --body "$CLOUDFRONT_PUBLIC_TESTS_DIST_ID" --repo "$OWNER/$REPO"
+      log_success "PUBLIC_TESTS_CLOUDFRONT_DISTRIBUTION_ID configurado"
+    fi
+
     if [ -n "$EC2_FRONTEND_URL" ]; then
       gh secret set EC2_FRONTEND_URL --body "$EC2_FRONTEND_URL" --repo "$OWNER/$REPO"
       log_success "EC2_FRONTEND_URL configurado"
@@ -225,15 +199,15 @@ show_summary() {
 
     echo "🔑 Secrets configurados:"
     gh secret list --repo "$OWNER/$REPO" | while read line; do
-        if [[ $line == *"AWS_"* ]] || [[ $line == *"VERCEL_"* ]] || [[ $line == *"URL"* ]]; then
+        if [[ $line == *"AWS_"* ]] || [[ $line == *"URL"* ]]; then
             echo "  ✅ $line"
         fi
     done
 
     echo ""
     echo "📋 Próximos pasos:"
-    echo "1. Crea proyectos en Vercel para frontend y public-tests"
-    echo "2. Configura las variables de entorno en Vercel"
+    echo "1. Crea apps en Amplify y configura S3/CloudFront para frontend y public-tests"
+    echo "2. Configura las variables de entorno en Amplify y AWS"
     echo "3. Haz push a main para activar los workflows"
     echo "4. Monitorea los despliegues en GitHub Actions"
 }
@@ -251,9 +225,6 @@ main() {
     echo ""
 
     setup_aws_secrets
-    echo ""
-
-    setup_vercel_secrets
     echo ""
 
     setup_app_urls

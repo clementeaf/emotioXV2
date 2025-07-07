@@ -1,29 +1,28 @@
 // ARCHIVO GENERADO AUTOMÁTICAMENTE
 // NO MODIFICAR MANUALMENTE
-// Generado: 2025-07-06T20:18:15.903Z
+// Generado: 2025-07-07T01:33:18.155Z
 
 // Endpoints de API exportados desde backend
 export const API_ENDPOINTS = {
   // Endpoint HTTP API
-  http: "http://localhost:3000/dev",
+  http: "https://api.emotioxv2.com/prod",
 
   // Endpoint WebSocket
-  ws: "ws://localhost:3001/dev",
+  ws: "wss://ws.emotioxv2.com/prod",
 
   // Etapa de despliegue (dev, prod, etc.)
-  stage: "dev"
+  stage: "production"
 };
 
 // URLs de desarrollo local
 export const LOCAL_URLS = {
   "frontend": "http://localhost:3000",
-  "publicTests": "http://localhost:4700",
-  "generatedAt": "2025-07-06T20:11:33Z"
+  "publicTests": "http://localhost:4700"
 };
 
 // Constantes para uso más fácil
-export const API_HTTP_ENDPOINT = "http://localhost:3000/dev";
-export const API_WEBSOCKET_ENDPOINT = "ws://localhost:3001/dev";
+export const API_HTTP_ENDPOINT = "https://api.emotioxv2.com/prod";
+export const API_WEBSOCKET_ENDPOINT = "wss://ws.emotioxv2.com/prod";
 
 // Función para obtener URL completa de una ruta
 export function getApiUrl(path) {

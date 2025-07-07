@@ -5,7 +5,7 @@ EmotioX es una plataforma para la creación y gestión de investigaciones de eye
 ## Entorno de desarrollo
 
 ### Requisitos
-- Node.js 18+ 
+- Node.js 18+
 - AWS CLI configurado con credenciales válidas
 - DynamoDB local (opcional)
 - Java Runtime Environment (JRE) versión 8.x o superior (para DynamoDB Local)
@@ -16,11 +16,11 @@ EmotioX es una plataforma para la creación y gestión de investigaciones de eye
    ```bash
    # En la carpeta principal
    cd emotioX.v2
-   
+
    # Instalar dependencias del frontend
    cd frontend
    npm install
-   
+
    # Volver a la carpeta principal e instalar backend (si es necesario)
    cd ..
    cd backend
@@ -229,6 +229,7 @@ serverless offline start
 
 ### Despliegue
 
+#### Despliegue Manual
 ```bash
 # Desplegar en desarrollo
 cd backend
@@ -240,6 +241,31 @@ npm run deploy:test
 # Desplegar en producción
 npm run deploy:prod
 ```
+
+#### Despliegue Automático (CI/CD)
+El proyecto incluye workflows de GitHub Actions para despliegue automático:
+
+- **Frontend**: Despliegue automático a AWS Amplify
+- **Public Tests**: Despliegue automático a AWS S3/CloudFront
+- **Backend**: Despliegue automático a AWS Lambda
+
+Para configurar el despliegue automático:
+```bash
+# Configurar secrets de GitHub
+./scripts/setup-github-secrets.sh
+
+# Probar despliegue S3/CloudFront
+./scripts/test-s3-cloudfront-deployment.sh
+```
+
+Documentación completa:
+- [Despliegue S3/CloudFront](public-tests/DEPLOYMENT_S3_CLOUDFRONT.md)
+
+### **Frontend:**
+- **Amplify:** `https://main.tu-app-id.amplifyapp.com`
+
+### **Public Tests:**
+- **S3/CloudFront:** `https://tu-distribution-id.cloudfront.net`
 
 ## Solución de problemas
 
@@ -269,4 +295,3 @@ Si hay errores durante el despliegue:
 1. Verifica tus credenciales de AWS
 2. Comprueba los logs de CloudFormation
 3. Ejecuta `serverless logs` para ver los logs de las funciones Lambda
-# CI/CD Pipeline Status: Testing GitHub Actions with AWS Amplify

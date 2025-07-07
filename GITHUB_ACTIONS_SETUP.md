@@ -1,345 +1,238 @@
 # 🚀 Configuración de GitHub Actions para EmotioXV2
 
-Esta guía te ayudará a configurar la automatización completa de despliegues para EmotioXV2 usando GitHub Actions.
-
-## 📋 Tabla de Contenidos
-
-1. [Arquitectura de Despliegue](#arquitectura-de-despliegue)
-2. [Prerrequisitos](#prerrequisitos)
-3. [Configuración de Vercel](#configuración-de-vercel)
-4. [Configuración de GitHub Secrets](#configuración-de-github-secrets)
-5. [Workflows Disponibles](#workflows-disponibles)
-6. [Flujo de Trabajo](#flujo-de-trabajo)
+## 📋 Índice
+1. [Requisitos Previos](#requisitos-previos)
+2. [Configuración de AWS](#configuración-de-aws)
+3. [Configuración de GitHub Secrets](#configuración-de-github-secrets)
+4. [Workflows Configurados](#workflows-configurados)
+5. [Despliegue](#despliegue)
+6. [Monitoreo](#monitoreo)
 7. [Solución de Problemas](#solución-de-problemas)
 
 ## 🏗️ Arquitectura de Despliegue
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   GitHub Repo   │───▶│ GitHub Actions  │───▶│   Vercel        │
-│                 │    │                 │    │   (Frontend)    │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                              │
-                              ▼
-                       ┌─────────────────┐
-                       │   AWS Lambda    │
-                       │   (Backend)     │
-                       └─────────────────┘
+│   GitHub Repo   │───▶│ GitHub Actions  │───▶│   AWS Services   │
+│                 │    │                 │    │                  │
+│   Main Branch   │    │   Workflows     │    │   Amplify        │
+│   Push/PR       │    │   Build         │    │   S3/CloudFront  │
+│                 │    │   Test          │    │   Lambda         │
 ```
 
 ### Componentes:
+- **Backend**: AWS Lambda (Serverless Framework)
+- **Frontend**: Next.js 14 → AWS Amplify
+- **Public Tests**: Vite/React → AWS S3/CloudFront
 
-- **Frontend**: Next.js 14 → Vercel
-- **Public Tests**: Vite/React → Vercel
-- **Backend**: AWS Lambda (Serverless) → AWS
-- **Shared**: Interfaces TypeScript compartidas
+## ✅ Requisitos Previos
 
-## ✅ Prerrequisitos
+### 1. Cuenta de AWS
+- Cuenta de AWS con permisos para:
+  - AWS Lambda
+  - AWS Amplify
+  - S3
+  - CloudFront
+  - IAM
+- AWS CLI configurado localmente
 
-### 1. GitHub CLI
+### 2. Cuenta de GitHub
+- Repositorio en GitHub
+- GitHub CLI instalado (`gh`)
+- Acceso a Actions y Secrets
+
+### 3. Configuración Local
+- Node.js 18+
+- Serverless Framework CLI
+- AWS CLI configurado
+
+## 🔧 Configuración de AWS
+
+### 1. Configurar AWS CLI
 ```bash
-# Instalar GitHub CLI
-brew install gh  # macOS
-# o descargar desde: https://cli.github.com/
-
-# Autenticarse
-gh auth login
-```
-
-### 2. Cuenta de Vercel
-- Crear cuenta en [vercel.com](https://vercel.com)
-- Instalar Vercel CLI: `npm i -g vercel`
-
-### 3. AWS CLI
-```bash
-# Instalar AWS CLI
-brew install awscli  # macOS
-
-# Configurar credenciales
 aws configure
+# Ingresa tu Access Key ID, Secret Access Key, región (us-east-1)
 ```
 
-## 🌐 Configuración de Plataformas de Despliegue
-
-### Opción 1: Vercel (Recomendado para desarrollo rápido)
-
-#### Frontend (Next.js)
+### 2. Crear Apps en Amplify
 ```bash
-cd frontend
-vercel login
-vercel --name emotioxv2-frontend
+# Frontend
+aws amplify create-app --name emotioxv2-frontend --region us-east-1
+
+# Public Tests (opcional, ya que usamos S3/CloudFront)
+aws amplify create-app --name emotioxv2-public-tests --region us-east-1
 ```
 
-#### Public Tests (Vite)
+### 3. Configurar S3 y CloudFront
 ```bash
-cd public-tests
-vercel --name emotioxv2-public-tests
+# Crear bucket para public-tests
+aws s3 mb s3://emotioxv2-public-tests --region us-east-1
+
+# Configurar CloudFront distribution
+# (Hacer manualmente en la consola de AWS)
 ```
-
-### Opción 2: AWS Amplify (Recomendado para producción)
-
-#### Frontend en Amplify
-```bash
-# Ejecutar script de configuración automática
-./scripts/setup-amplify-frontend.sh
-
-# O seguir los pasos manuales:
-# 1. Ir a AWS Amplify Console
-# 2. Crear nueva aplicación
-# 3. Conectar repositorio Git
-# 4. Configurar build settings
-# 5. Configurar variables de entorno
-```
-
-### 2. Obtener IDs de Proyecto
-
-1. Ve a [vercel.com/dashboard](https://vercel.com/dashboard)
-2. Selecciona cada proyecto
-3. Ve a Settings → General
-4. Copia el **Project ID**
-
-### 3. Obtener Organization ID
-
-1. Ve a [vercel.com/account](https://vercel.com/account)
-2. Copia el **Team ID** (Organization ID)
-
-### 4. Crear Token de Vercel
-
-1. Ve a [vercel.com/account/tokens](https://vercel.com/account/tokens)
-2. Crea un nuevo token con permisos de deploy
 
 ## 🔑 Configuración de GitHub Secrets
 
-### Opción 1: Script Automático (Recomendado)
-
+### 1. Ejecutar Script de Configuración
 ```bash
-# Ejecutar script de configuración
 ./scripts/setup-github-secrets.sh
 ```
 
-### Opción 2: Configuración Manual
-
-Ve a tu repositorio en GitHub → Settings → Secrets and variables → Actions
-
-#### Secrets Requeridos:
+### 2. Secrets Requeridos
 
 | Secret | Descripción | Ejemplo |
 |--------|-------------|---------|
-| `AWS_ACCESS_KEY_ID` | AWS Access Key ID | `AKIA...` |
-| `AWS_SECRET_ACCESS_KEY` | AWS Secret Access Key | `...` |
-| `VERCEL_TOKEN` | Token de Vercel | `...` |
-| `VERCEL_ORG_ID` | Organization ID de Vercel | `team_...` |
-| `VERCEL_PROJECT_ID` | Project ID del Frontend | `prj_...` |
-| `VERCEL_PUBLIC_TESTS_PROJECT_ID` | Project ID de Public Tests | `prj_...` |
-| `NEXT_PUBLIC_PUBLIC_TESTS_URL` | URL de Public Tests | `https://emotioxv2-public-tests.vercel.app` |
-| `VITE_PUBLIC_TESTS_URL` | URL de Public Tests para Vite | `https://emotioxv2-public-tests.vercel.app` |
+| `AWS_ACCESS_KEY_ID` | Access Key de AWS | `AKIA...` |
+| `AWS_SECRET_ACCESS_KEY` | Secret Key de AWS | `...` |
+| `AWS_DEFAULT_REGION` | Región de AWS | `us-east-1` |
+| `AMPLIFY_FRONTEND_APP_ID` | App ID de Amplify Frontend | `d1234567890` |
+| `AMPLIFY_PUBLIC_TESTS_APP_ID` | App ID de Amplify Public Tests | `d1234567890` |
+| `PUBLIC_TESTS_S3_BUCKET` | Bucket S3 para Public Tests | `emotioxv2-public-tests` |
+| `PUBLIC_TESTS_CLOUDFRONT_DISTRIBUTION_ID` | Distribution ID de CloudFront | `E1234567890` |
+| `NEXT_PUBLIC_PUBLIC_TESTS_URL` | URL de Public Tests | `https://tu-distribution-id.cloudfront.net` |
+| `VITE_PUBLIC_TESTS_URL` | URL de Public Tests para Vite | `https://tu-distribution-id.cloudfront.net` |
 
-#### Secrets Opcionales para Actualización Automática de Endpoints:
+## 🔄 Workflows Configurados
 
-| Secret | Descripción | Cuándo Usar |
-|--------|-------------|-------------|
-| `AMPLIFY_FRONTEND_APP_ID` | App ID de Amplify Frontend | Si usas AWS Amplify |
-| `AMPLIFY_PUBLIC_TESTS_APP_ID` | App ID de Amplify Public Tests | Si usas AWS Amplify |
-| `CLOUDFRONT_FRONTEND_DIST_ID` | Distribution ID de CloudFront Frontend | Si usas CloudFront/S3 |
-| `CLOUDFRONT_PUBLIC_TESTS_DIST_ID` | Distribution ID de CloudFront Public Tests | Si usas CloudFront/S3 |
-| `FRONTEND_S3_BUCKET` | Nombre del bucket S3 del frontend | Si usas S3/CloudFront |
-| `PUBLIC_TESTS_S3_BUCKET` | Nombre del bucket S3 de public-tests | Si usas S3/CloudFront |
-| `EC2_FRONTEND_URL` | URL del frontend en EC2 | Si usas EC2 |
-| `EC2_API_ENDPOINT` | Endpoint de API de EC2 | Si usas EC2 |
-| `WEBHOOK_URL` | URL de webhook para notificaciones | Si quieres notificaciones |
-
-## 🔄 Workflows Disponibles
-
-### 1. `deploy-all.yml` (Recomendado)
+### 1. `deploy-all.yml`
 - **Trigger**: Push a `main`
-- **Función**: Despliega todos los componentes
-- **Orden**: Backend → Frontend → Public Tests
+- **Funciones**:
+  - Detecta cambios en componentes
+  - Despliega backend primero
+  - Despliega frontend a Amplify
+  - Despliega public-tests a S3/CloudFront
+  - Actualiza endpoints automáticamente
 
-### 2. `deploy-frontend.yml`
-- **Trigger**: Cambios en `frontend/` o `shared/`
-- **Función**: Solo despliega el frontend
+### 2. `deploy-backend.yml`
+- **Trigger**: Cambios en `backendV2/`
+- **Funciones**:
+  - Despliega AWS Lambda
+  - Exporta endpoints
+  - Actualiza configuración
 
-### 3. `deploy-public-tests.yml`
-- **Trigger**: Cambios en `public-tests/` o `shared/`
-- **Función**: Solo despliega public-tests
+### 3. `deploy-public-tests-s3.yml`
+- **Trigger**: Cambios en `public-tests/`
+- **Funciones**:
+  - Build de Vite
+  - Despliegue a S3
+  - Invalidación de CloudFront
 
-### 4. `deploy-backend.yml`
-- **Trigger**: Cambios en `backendV2/` o `shared/`
-- **Función**: Solo despliega el backend
-- **Plus**: Actualiza automáticamente endpoints en todos los despliegues activos
+## 🚀 Despliegue
 
-### 5. `deploy-frontend-amplify.yml`
-- **Trigger**: Cambios en `frontend/` o `shared/`
-- **Función**: Solo despliega el frontend en AWS Amplify
-- **Plus**: Build, test y despliegue completo con verificación
-
-## 🚀 Flujo de Trabajo
-
-### Desarrollo Normal
-
-1. **Crear feature branch**
-   ```bash
-   git checkout -b feature/nueva-funcionalidad
-   ```
-
-2. **Desarrollar y commit**
-   ```bash
-   git add .
-   git commit -m "feat: nueva funcionalidad"
-   ```
-
-3. **Push y crear PR**
-   ```bash
-   git push origin feature/nueva-funcionalidad
-   # Crear Pull Request en GitHub
-   ```
-
-4. **Merge a main**
-   - Los workflows se ejecutan automáticamente
-   - Despliegue automático a producción
+### Despliegue Automático
+```bash
+# Hacer push a main para activar workflows
+git add .
+git commit -m "feat: new feature"
+git push origin main
+```
 
 ### Despliegue Manual
-
 ```bash
-# Desplegar todo
-gh workflow run deploy-all.yml
+# Desde GitHub Actions UI
+# Ir a Actions → deploy-all → Run workflow
+```
 
-# Desplegar solo frontend
-gh workflow run deploy-frontend.yml
+### Verificar Despliegue
+```bash
+# Probar S3/CloudFront
+./scripts/test-s3-cloudfront-deployment.sh
 
-# Desplegar solo backend
-gh workflow run deploy-backend.yml
+# Verificar Amplify
+aws amplify get-app --app-id $AMPLIFY_APP_ID
 ```
 
 ## 📊 Monitoreo
 
-### GitHub Actions
-- Ve a tu repositorio → Actions
-- Monitorea el progreso de los workflows
-- Revisa los logs si hay errores
-
-### Vercel Dashboard
-- [vercel.com/dashboard](https://vercel.com/dashboard)
-- Monitorea despliegues y performance
+### GitHub Actions Dashboard
+- [github.com/username/repo/actions](https://github.com/username/repo/actions)
+- Monitorear ejecución de workflows
+- Revisar logs en caso de errores
 
 ### AWS Console
-- [console.aws.amazon.com](https://console.aws.amazon.com)
-- Monitorea Lambda functions y API Gateway
+- **Amplify Console**: Monitorear builds y deployments
+- **CloudFront**: Métricas de performance y errores
+- **Lambda**: Logs y métricas de funciones
 
-## 🔄 Actualización Automática de Endpoints
+### Alertas
+- Configurar notificaciones en GitHub
+- Configurar CloudWatch Alarms
+- Monitorear métricas de performance
 
-### ¿Cómo Funciona?
-
-Cuando se despliega el backend en AWS Lambda, el sistema automáticamente:
-
-1. **Obtiene los nuevos endpoints** desde CloudFormation
-2. **Actualiza todos los despliegues activos**:
-   - Vercel (variables de entorno + redeploy)
-   - AWS Amplify (variables de entorno + redeploy)
-   - CloudFront/S3 (archivos de endpoints + invalidación)
-   - EC2 (si está configurado)
-3. **Genera archivos locales** para desarrollo
-4. **Envía notificaciones** (si hay webhook configurado)
-
-### Archivos de Endpoints Dinámicos
-
-El sistema incluye archivos de endpoints dinámicos que cargan automáticamente los endpoints más recientes:
-
-- `frontend/src/api/dynamic-endpoints.ts`
-- `public-tests/src/config/dynamic-endpoints.ts`
-
-Estos archivos intentan cargar endpoints desde múltiples ubicaciones y tienen fallback a variables de entorno.
-
-### Configuración
-
-Para habilitar la actualización automática, configura los secrets correspondientes:
-
-```bash
-# Ejecutar script de configuración
-./scripts/setup-github-secrets.sh
-```
-
-El script te preguntará si quieres configurar actualización automática y te guiará a través de la configuración de cada plataforma.
-
-## 🔧 Solución de Problemas
-
-### Error: "Vercel token not found"
-```bash
-# Verificar que el secret está configurado
-gh secret list --repo owner/repo
-```
-
-### Error: "No se pudieron obtener los endpoints del backend"
-```bash
-# Verificar que el backend está desplegado
-aws cloudformation describe-stacks --stack-name emotioxv2-backend-dev
-
-# Verificar permisos de AWS
-aws sts get-caller-identity
-```
-
-### Error: "No se pudo actualizar endpoints en [plataforma]"
-```bash
-# Verificar que los secrets están configurados correctamente
-gh secret list --repo owner/repo
-
-# Verificar permisos en la plataforma correspondiente
-# (Vercel, Amplify, CloudFront, etc.)
-```
+## 🚨 Solución de Problemas
 
 ### Error: "AWS credentials not found"
 ```bash
 # Verificar configuración de AWS
+aws configure list
 aws sts get-caller-identity
 ```
 
+### Error: "Amplify app not found"
+```bash
+# Verificar que la app existe
+aws amplify list-apps --region us-east-1
+
+# Crear app si no existe
+aws amplify create-app --name emotioxv2-frontend --region us-east-1
+```
+
+### Error: "S3 bucket not found"
+```bash
+# Crear bucket
+aws s3 mb s3://emotioxv2-public-tests --region us-east-1
+
+# Configurar bucket policy
+aws s3api put-bucket-policy --bucket emotioxv2-public-tests --policy file://bucket-policy.json
+```
+
+### Error: "CloudFront distribution not found"
+1. Crear distribución en AWS Console
+2. Configurar origen S3
+3. Configurar Custom Error Responses para SPA
+4. Actualizar secret `PUBLIC_TESTS_CLOUDFRONT_DISTRIBUTION_ID`
+
 ### Error: "Build failed"
-1. Revisar logs en GitHub Actions
+1. Verificar logs en GitHub Actions
 2. Verificar dependencias en `package.json`
-3. Probar build localmente
+3. Verificar variables de entorno
+4. Probar build localmente
 
 ### Error: "Deployment failed"
-1. Verificar configuración de Vercel
-2. Revisar variables de entorno
-3. Verificar permisos de proyecto
+1. Verificar permisos de AWS
+2. Verificar configuración de secrets
+3. Verificar logs de CloudFormation
+4. Verificar límites de AWS
 
-## 📝 Variables de Entorno
+## 📚 Recursos Adicionales
 
-### Frontend (Next.js)
-```env
-NEXT_PUBLIC_API_URL=https://api.emotioxv2.com
-NEXT_PUBLIC_PUBLIC_TESTS_URL=https://tests.emotioxv2.com
+### Documentación
+- [AWS Amplify](https://docs.aws.amazon.com/amplify/)
+- [AWS S3](https://docs.aws.amazon.com/s3/)
+- [AWS CloudFront](https://docs.aws.amazon.com/cloudfront/)
+- [GitHub Actions](https://docs.github.com/en/actions)
+
+### URLs de Despliegue
+- **Frontend**: `https://main.tu-app-id.amplifyapp.com`
+- **Public Tests**: `https://tu-distribution-id.cloudfront.net`
+- **Backend API**: `https://tu-api-gateway.amazonaws.com/prod`
+
+### Comandos Útiles
+```bash
+# Verificar estado de apps
+aws amplify list-apps
+
+# Verificar builds
+aws amplify list-jobs --app-id $APP_ID
+
+# Verificar CloudFront
+aws cloudfront list-distributions
+
+# Verificar S3
+aws s3 ls s3://tu-bucket-public-tests
 ```
-
-### Public Tests (Vite)
-```env
-VITE_API_URL=https://api.emotioxv2.com
-VITE_PUBLIC_TESTS_URL=https://tests.emotioxv2.com
-```
-
-### Backend (AWS Lambda)
-```env
-STAGE=dev
-AWS_REGION=us-east-1
-```
-
-## 🎯 URLs de Producción
-
-Una vez configurado, tus aplicaciones estarán disponibles en:
-
-- **Frontend**: `https://emotioxv2-frontend.vercel.app`
-- **Public Tests**: `https://emotioxv2-public-tests.vercel.app`
-- **Backend API**: `https://[api-gateway-url].execute-api.us-east-1.amazonaws.com/dev`
-
-## 📞 Soporte
-
-Si encuentras problemas:
-
-1. Revisa los logs en GitHub Actions
-2. Verifica la configuración de secrets
-3. Prueba los despliegues localmente
-4. Consulta la documentación de [Vercel](https://vercel.com/docs) y [GitHub Actions](https://docs.github.com/en/actions)
 
 ---
 
-**¡Listo! Tu pipeline de CI/CD está configurado y listo para usar. 🚀**
+**Última actualización**: $(date)
+**Versión**: 2.0.0 (AWS Only)

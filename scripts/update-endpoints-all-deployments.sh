@@ -64,52 +64,6 @@ get_backend_endpoints() {
     export WS_ENDPOINT
 }
 
-# Función para actualizar endpoints en Vercel
-update_vercel_endpoints() {
-    log_info "Actualizando endpoints en Vercel..."
-
-    # Verificar si Vercel CLI está disponible
-    if ! command -v vercel &> /dev/null; then
-        log_warning "Vercel CLI no está instalado, saltando actualización de Vercel"
-        return 0
-    fi
-
-    # Verificar si hay token de Vercel
-    if [ -z "$VERCEL_TOKEN" ]; then
-        log_warning "VERCEL_TOKEN no configurado, saltando actualización de Vercel"
-        return 0
-    fi
-
-    # Actualizar variables de entorno en Vercel para frontend
-    if [ -n "$VERCEL_PROJECT_ID" ]; then
-        log_info "Actualizando frontend en Vercel..."
-        vercel env add NEXT_PUBLIC_API_URL production "$HTTP_ENDPOINT" --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID" --yes 2>/dev/null || true
-        vercel env add NEXT_PUBLIC_API_URL preview "$HTTP_ENDPOINT" --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID" --yes 2>/dev/null || true
-        vercel env add NEXT_PUBLIC_API_URL development "$HTTP_ENDPOINT" --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID" --yes 2>/dev/null || true
-        log_success "Frontend Vercel actualizado"
-    fi
-
-    # Actualizar variables de entorno en Vercel para public-tests
-    if [ -n "$VERCEL_PUBLIC_TESTS_PROJECT_ID" ]; then
-        log_info "Actualizando public-tests en Vercel..."
-        vercel env add VITE_API_URL production "$HTTP_ENDPOINT" --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID" --yes 2>/dev/null || true
-        vercel env add VITE_API_URL preview "$HTTP_ENDPOINT" --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID" --yes 2>/dev/null || true
-        vercel env add VITE_API_URL development "$HTTP_ENDPOINT" --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID" --yes 2>/dev/null || true
-        log_success "Public Tests Vercel actualizado"
-    fi
-
-    # Redeploy automático en Vercel
-    if [ -n "$VERCEL_PROJECT_ID" ]; then
-        log_info "Redeployando frontend en Vercel..."
-        vercel --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID" --prod --yes 2>/dev/null || log_warning "No se pudo redeployar frontend"
-    fi
-
-    if [ -n "$VERCEL_PUBLIC_TESTS_PROJECT_ID" ]; then
-        log_info "Redeployando public-tests en Vercel..."
-        vercel --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID" --prod --yes 2>/dev/null || log_warning "No se pudo redeployar public-tests"
-    fi
-}
-
 # Función para actualizar endpoints en AWS Amplify
 update_amplify_endpoints() {
     log_info "Actualizando endpoints en AWS Amplify..."
@@ -357,7 +311,6 @@ notify_update() {
   },
   "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")",
   "deployments_updated": [
-    "vercel",
     "amplify",
     "cloudfront",
     "ec2"
@@ -389,7 +342,6 @@ main() {
     }
 
     # Actualizar en todas las plataformas
-    update_vercel_endpoints
     update_amplify_endpoints
     update_cloudfront_endpoints
     update_ec2_endpoints

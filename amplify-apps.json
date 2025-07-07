@@ -1,0 +1,41 @@
+{
+    "apps": [
+        {
+            "appId": "d3n0zihdxwat96",
+            "appArn": "arn:aws:amplify:us-east-1:992382408780:apps/d3n0zihdxwat96",
+            "name": "emotioxv2-public-tests",
+            "tags": {},
+            "platform": "WEB",
+            "createTime": "2025-07-06T18:52:51.387000-04:00",
+            "updateTime": "2025-07-06T19:18:02.576000-04:00",
+            "environmentVariables": {
+                "NODE_ENV": "production",
+                "VITE_NODE_ENV": "production"
+            },
+            "defaultDomain": "d3n0zihdxwat96.amplifyapp.com",
+            "enableBranchAutoBuild": false,
+            "enableBranchAutoDeletion": false,
+            "enableBasicAuth": false,
+            "customRules": [
+                {
+                    "source": "/<*>",
+                    "target": "/index.html",
+                    "status": "404-200"
+                }
+            ],
+            "productionBranch": {
+                "lastDeployTime": "2025-07-06T19:16:38.098000-04:00",
+                "status": "SUCCEED",
+                "branchName": "main"
+            },
+            "customHeaders": "",
+            "enableAutoBranchCreation": false,
+            "cacheConfig": {
+                "type": "AMPLIFY_MANAGED_NO_COOKIES"
+            },
+            "jobConfig": {
+                "buildComputeType": "STANDARD_8GB"
+            }
+        }
+    ]
+}

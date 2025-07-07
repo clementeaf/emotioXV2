@@ -37,14 +37,51 @@ export function getWebsocketUrl() {
   return API_WEBSOCKET_ENDPOINT;
 }
 
-// Función para obtener URL de public-tests
+// Función para detectar el entorno de despliegue
+export function detectDeploymentEnvironment() {
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+
+    // AWS Amplify
+    if (hostname.includes('amplifyapp.com') || hostname.includes('amplify.aws')) {
+      return 'amplify';
+    }
+
+    // Local development
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('192.168.')) {
+      return 'local';
+    }
+  }
+
+  return 'unknown';
+}
+
+// Función para obtener URL de public-tests basada en el entorno
 export function getPublicTestsUrl() {
-  return LOCAL_URLS.publicTests || 'http://localhost:4700';
+  const environment = detectDeploymentEnvironment();
+
+  switch (environment) {
+    case 'local':
+      return LOCAL_URLS.publicTests || 'http://localhost:4700';
+
+    case 'amplify':
+      // URL de public-tests desplegado en AWS (S3/CloudFront o Amplify)
+      return process.env.NEXT_PUBLIC_PUBLIC_TESTS_AWS_URL ||
+             process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL ||
+             'https://emotioxv2-public-tests.s3.amazonaws.com';
+
+    default:
+      // Fallback a local
+      return LOCAL_URLS.publicTests || 'http://localhost:4700';
+  }
 }
 
 // Función para navegar a public-tests con researchID
 export function navigateToPublicTests(researchID) {
-  const url = `${getPublicTestsUrl()}/${researchID}`;
+  const baseUrl = getPublicTestsUrl();
+  const url = `${baseUrl}/${researchID}`;
+
+  console.log(`🌐 Navegando a public-tests: ${url} (entorno: ${detectDeploymentEnvironment()})`);
   window.open(url, '_blank');
 }
 
