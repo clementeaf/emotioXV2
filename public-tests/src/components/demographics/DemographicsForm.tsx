@@ -31,11 +31,17 @@ const labelTranslations: Record<string, string> = {
 
 // Extraer respuesta previa plana del array si es necesario
 function extractDemographicInitialValues(initialValues: any): DemographicResponses {
+  // Si es un array, buscar la respuesta demográfica
   if (Array.isArray(initialValues) && initialValues.length > 0) {
-    // Buscar el primer objeto que tenga un campo 'response' y retornarlo
-    const found = initialValues.find((r) => r && typeof r === 'object' && 'response' in r);
+    // Buscar el primer objeto que tenga stepType 'demographic' y campo 'response'
+    const found = initialValues.find((r) => r && typeof r === 'object' && r.stepType === 'demographic' && 'response' in r);
     if (found && typeof found.response === 'object') {
       return found.response;
+    }
+    // Fallback: buscar el primer objeto que tenga un campo 'response'
+    const fallback = initialValues.find((r) => r && typeof r === 'object' && 'response' in r);
+    if (fallback && typeof fallback.response === 'object') {
+      return fallback.response;
     }
   }
   if (initialValues && typeof initialValues === 'object' && 'response' in initialValues) {
