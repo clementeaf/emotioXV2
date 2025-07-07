@@ -59,9 +59,9 @@ brew install awscli  # macOS
 aws configure
 ```
 
-## 🌐 Configuración de Vercel
+## 🌐 Configuración de Plataformas de Despliegue
 
-### 1. Crear Proyectos en Vercel
+### Opción 1: Vercel (Recomendado para desarrollo rápido)
 
 #### Frontend (Next.js)
 ```bash
@@ -74,6 +74,21 @@ vercel --name emotioxv2-frontend
 ```bash
 cd public-tests
 vercel --name emotioxv2-public-tests
+```
+
+### Opción 2: AWS Amplify (Recomendado para producción)
+
+#### Frontend en Amplify
+```bash
+# Ejecutar script de configuración automática
+./scripts/setup-amplify-frontend.sh
+
+# O seguir los pasos manuales:
+# 1. Ir a AWS Amplify Console
+# 2. Crear nueva aplicación
+# 3. Conectar repositorio Git
+# 4. Configurar build settings
+# 5. Configurar variables de entorno
 ```
 
 ### 2. Obtener IDs de Proyecto
@@ -152,6 +167,11 @@ Ve a tu repositorio en GitHub → Settings → Secrets and variables → Actions
 - **Trigger**: Cambios en `backendV2/` o `shared/`
 - **Función**: Solo despliega el backend
 - **Plus**: Actualiza automáticamente endpoints en todos los despliegues activos
+
+### 5. `deploy-frontend-amplify.yml`
+- **Trigger**: Cambios en `frontend/` o `shared/`
+- **Función**: Solo despliega el frontend en AWS Amplify
+- **Plus**: Build, test y despliegue completo con verificación
 
 ## 🚀 Flujo de Trabajo
 

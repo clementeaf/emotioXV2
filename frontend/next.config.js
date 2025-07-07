@@ -1,7 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Exportación estática para S3/CloudFront
-  output: 'export',
   // Configuración para imágenes y rutas
   images: {
     unoptimized: true,
@@ -24,6 +22,42 @@ const nextConfig = {
     };
 
     return config;
+  },
+  // Configuración específica para AWS Amplify
+  env: {
+    CUSTOM_KEY: process.env.CUSTOM_KEY,
+  },
+  // Configuración de headers para Amplify
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block',
+          },
+        ],
+      },
+    ];
+  },
+  // Configuración de redirecciones para Amplify
+  async redirects() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: '/api/:path*',
+        permanent: false,
+      },
+    ];
   }
 }
 

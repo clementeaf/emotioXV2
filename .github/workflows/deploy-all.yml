@@ -166,6 +166,57 @@ jobs:
           NEXT_PUBLIC_API_URL: ${{ env.HTTP_ENDPOINT }}
           NEXT_PUBLIC_PUBLIC_TESTS_URL: ${{ secrets.NEXT_PUBLIC_PUBLIC_TESTS_URL }}
 
+      - name: Deploy to Amplify (if configured)
+        if: secrets.AMPLIFY_FRONTEND_APP_ID != ''
+        run: |
+          echo "🚀 Desplegando Frontend a AWS Amplify..."
+
+          # Obtener información de la aplicación
+          APP_INFO=$(aws amplify get-app --app-id ${{ secrets.AMPLIFY_FRONTEND_APP_ID }} --region ${{ env.AWS_REGION }})
+          APP_NAME=$(echo "$APP_INFO" | jq -r '.app.name')
+          APP_DOMAIN=$(echo "$APP_INFO" | jq -r '.app.domain')
+
+          echo "📱 Aplicación: $APP_NAME"
+          echo "🌐 Dominio: $APP_DOMAIN"
+
+          # Iniciar job de despliegue
+          JOB_ID=$(aws amplify start-job \
+            --app-id ${{ secrets.AMPLIFY_FRONTEND_APP_ID }} \
+            --branch-name main \
+            --job-type RELEASE \
+            --region ${{ env.AWS_REGION }} \
+            --query 'jobSummary.jobId' \
+            --output text)
+
+          echo "🔄 Job ID: $JOB_ID"
+
+          # Esperar a que termine el despliegue
+          echo "⏳ Esperando que termine el despliegue..."
+          aws amplify wait job-complete \
+            --app-id ${{ secrets.AMPLIFY_FRONTEND_APP_ID }} \
+            --branch-name main \
+            --job-id "$JOB_ID" \
+            --region ${{ env.AWS_REGION }}
+
+          # Obtener estado del job
+          JOB_STATUS=$(aws amplify get-job \
+            --app-id ${{ secrets.AMPLIFY_FRONTEND_APP_ID }} \
+            --branch-name main \
+            --job-id "$JOB_ID" \
+            --region ${{ env.AWS_REGION }} \
+            --query 'job.summary.status' \
+            --output text)
+
+          echo "📊 Estado del despliegue: $JOB_STATUS"
+
+          if [ "$JOB_STATUS" = "SUCCEED" ]; then
+            echo "✅ Despliegue exitoso!"
+            echo "🌐 URL: https://main.$APP_DOMAIN.amplifyapp.com"
+          else
+            echo "❌ Despliegue falló con estado: $JOB_STATUS"
+            exit 1
+          fi
+
   # Despliegue de Public Tests
   deploy-public-tests:
     runs-on: ubuntu-latest
@@ -226,7 +277,10 @@ jobs:
 
           if [ "${{ needs.deploy-frontend.result }}" == "success" ]; then
             echo "✅ Frontend deployed successfully!"
-            echo "🌐 URL: https://emotioxv2-frontend.vercel.app"
+            echo "🌐 Vercel URL: https://emotioxv2-frontend.vercel.app"
+            if [ -n "${{ secrets.AMPLIFY_FRONTEND_APP_ID }}" ]; then
+              echo "🌐 Amplify URL: https://main.${{ secrets.AMPLIFY_FRONTEND_APP_ID }}.amplifyapp.com"
+            fi
           fi
 
           if [ "${{ needs.deploy-public-tests.result }}" == "success" ]; then
