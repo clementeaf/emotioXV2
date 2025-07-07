@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Configuración para exportación estática
+  output: 'export',
   // Configuración para imágenes y rutas
   images: {
     unoptimized: true,
