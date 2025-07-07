@@ -62,7 +62,7 @@ export function getPublicTestsUrl() {
 
   switch (environment) {
     case 'local':
-      return 'http://localhost:4700';
+      return 'http://localhost:5173';
 
     case 'amplify':
       return 'https://emotio-xv-2-public-tests.vercel.app';

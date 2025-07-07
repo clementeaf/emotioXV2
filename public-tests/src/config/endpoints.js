@@ -1,17 +1,22 @@
 // ARCHIVO GENERADO AUTOMÁTICAMENTE
 // NO MODIFICAR MANUALMENTE
-// Generado: 2025-07-07T01:33:18.155Z
+// Modificado para priorizar variable de entorno VITE_API_URL y usar /dev por defecto
 
-// Endpoints de API exportados desde backend
+const _API_HTTP_ENDPOINT = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL
+  ? import.meta.env.VITE_API_URL
+  : (typeof process !== 'undefined' && process.env && process.env.VITE_API_URL
+      ? process.env.VITE_API_URL
+      : 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev');
+
 export const API_ENDPOINTS = {
   // Endpoint HTTP API
-  http: "https://api.emotioxv2.com/prod",
+  http: _API_HTTP_ENDPOINT,
 
-  // Endpoint WebSocket
-  ws: "wss://ws.emotioxv2.com/prod",
+  // Endpoint WebSocket (opcional, si aplica)
+  ws: '',
 
   // Etapa de despliegue (dev, prod, etc.)
-  stage: "production"
+  stage: 'dev'
 };
 
 // URLs de desarrollo local
@@ -21,17 +26,17 @@ export const LOCAL_URLS = {
 };
 
 // Constantes para uso más fácil
-export const API_HTTP_ENDPOINT = "https://api.emotioxv2.com/prod";
-export const API_WEBSOCKET_ENDPOINT = "wss://ws.emotioxv2.com/prod";
+export const API_HTTP_ENDPOINT = _API_HTTP_ENDPOINT;
+export const API_WEBSOCKET_ENDPOINT = '';
 
 // Función para obtener URL completa de una ruta
 export function getApiUrl(path) {
   // Eliminar slash inicial si existe
   const cleanPath = path.startsWith('/') ? path.substring(1) : path;
-  return `${API_HTTP_ENDPOINT}/${cleanPath}`;
+  return `${_API_HTTP_ENDPOINT}/${cleanPath}`;
 }
 
-// Función para websocket
+// Función para websocket (placeholder)
 export function getWebsocketUrl() {
   return API_WEBSOCKET_ENDPOINT;
 }
