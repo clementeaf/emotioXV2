@@ -126,29 +126,9 @@ export const useParticipantLogin = ({ researchId, onLogin }: UseParticipantLogin
         return;
       }
 
-      // Verificar si ya existe un participantId para este usuario y researchId
-      const existingParticipantId = localStorage.getItem('participantId');
-      const existingParticipantInfo = localStorage.getItem('participantInfo');
-
-      let participantId: string;
-
-      if (existingParticipantId && existingParticipantInfo) {
-        const [existingResearchId, existingParticipantIdFromInfo] = existingParticipantInfo.split('|');
-
-        // Si es el mismo researchId y el participantId existe, usarlo
-        if (existingResearchId === researchId && existingParticipantIdFromInfo === existingParticipantId) {
-          participantId = existingParticipantId;
-          console.log('[useParticipantLogin] Reutilizando participantId existente:', participantId);
-        } else {
-          // ResearchId diferente o participantId no coincide, generar uno nuevo
-          participantId = responseData.data.participantId || `participant_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-          console.log('[useParticipantLogin] Generando nuevo participantId para researchId diferente:', participantId);
-        }
-      } else {
-        // No existe participantId previo, generar uno nuevo
-        participantId = responseData.data.participantId || `participant_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        console.log('[useParticipantLogin] Generando nuevo participantId (primera vez):', participantId);
-      }
+      // USAR SIEMPRE EL ID QUE DEVUELVE EL BACKEND
+      const participantId = (apiParticipant as any).id;
+      console.log('[useParticipantLogin] Usando participantId del backend:', participantId);
 
       // Guardar el token y el participantId en localStorage
       localStorage.setItem('participantToken', apiToken);
