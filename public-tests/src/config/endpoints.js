@@ -6,20 +6,18 @@
 export const API_ENDPOINTS = {
   // Endpoint HTTP API
   http: "http://localhost:3000/dev",
-  
+
   // Endpoint WebSocket
   ws: "ws://localhost:3001/dev",
-  
+
   // Etapa de despliegue (dev, prod, etc.)
   stage: "dev"
 };
 
-// URLs de AWS Amplify
-export const AMPLIFY_URLS = {
-  "frontend": "https://d12psv9dnscmm4.amplifyapp.com",
-  "publicTests": "https://d2vbj9lxdnqvqq.amplifyapp.com",
-  "frontendAppId": "d12psv9dnscmm4",
-  "publicTestsAppId": "d2vbj9lxdnqvqq",
+// URLs de desarrollo local
+export const LOCAL_URLS = {
+  "frontend": "http://localhost:3000",
+  "publicTests": "http://localhost:4700",
   "generatedAt": "2025-07-06T20:11:33Z"
 };
 
@@ -41,7 +39,7 @@ export function getWebsocketUrl() {
 
 // Función para obtener URL de public-tests
 export function getPublicTestsUrl() {
-  return AMPLIFY_URLS.publicTests || 'http://localhost:4700';
+  return LOCAL_URLS.publicTests || 'http://localhost:4700';
 }
 
 // Función para navegar a public-tests con researchID

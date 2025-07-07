@@ -4,7 +4,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 function getAllowedOrigins(): string[] {
   // Leer desde variable de entorno, soportando múltiples orígenes separados por comas
   const envOrigins = (process.env.ALLOWED_ORIGIN || '').split(',').map(o => o.trim()).filter(o => o);
-  
+
   // Orígenes por defecto para desarrollo y producción
   const defaultOrigins = [
     'http://localhost:3000', // Frontend local (Next.js default)
@@ -13,18 +13,17 @@ function getAllowedOrigins(): string[] {
     'https://d2s9nr0bm47yl1.cloudfront.net', // Frontend principal
     'https://d2zt8ia21te5mv.cloudfront.net', // Public-tests CloudFront
     'http://54.90.132.233:3000', // Frontend EC2
-    // Dominios de AWS Amplify
-    'https://d12psv9dnscmm4.amplifyapp.com', // Frontend Amplify
-    'https://d3n0zihdxwat96.amplifyapp.com', // Public-tests Amplify (backup)
-    'https://main.d12psv9dnscmm4.amplifyapp.com', // Frontend main branch
+    // Dominios de desarrollo local
+'http://localhost:3000', // Frontend local
+'http://localhost:4700', // Public-tests local
     // Vercel deployments
     'https://public-tests.vercel.app', // Public-tests Vercel (MAIN)
     'https://public-tests-clementeafs-projects.vercel.app' // Vercel full URL
   ];
-  
+
   // Combinar orígenes de la variable de entorno con los por defecto
   const allOrigins = [...new Set([...envOrigins, ...defaultOrigins])];
-  
+
   console.log('Orígenes CORS permitidos:', allOrigins);
   return allOrigins;
 }
@@ -37,13 +36,13 @@ export function getCorsHeaders(event: APIGatewayProxyEvent) {
   const allowedOrigins = getAllowedOrigins();
   let accessControlAllowOrigin = '';
 
-  // Permitir dominios de Amplify automáticamente
-  const isAmplifyDomain = /\.amplifyapp\.com$/.test(requestOrigin);
+  // Permitir dominios de desarrollo local automáticamente
+  const isLocalDomain = /^http:\/\/localhost:\d+$/.test(requestOrigin);
   const isPublicTests = /public-tests/.test(requestOrigin);
-  
-  if (isAmplifyDomain) {
+
+  if (isLocalDomain) {
     accessControlAllowOrigin = requestOrigin;
-    console.log(`CORS: Dominio Amplify permitido automáticamente: ${requestOrigin}`);
+    console.log(`CORS: Dominio local permitido automáticamente: ${requestOrigin}`);
   } else if (isPublicTests) {
     accessControlAllowOrigin = requestOrigin;
     console.log(`CORS: Origen public-tests permitido automáticamente: ${requestOrigin}`);

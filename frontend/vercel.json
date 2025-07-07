@@ -1,28 +1,26 @@
 {
   "version": 2,
-  "name": "emotioxv2-public-tests",
+  "name": "emotioxv2-frontend",
   "builds": [
     {
       "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
+      "use": "@vercel/next"
     }
   ],
   "routes": [
     {
-      "src": "/assets/(.*)",
-      "dest": "/assets/$1"
-    },
-    {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "/$1"
     }
   ],
   "env": {
-    "VITE_API_URL": "@vite_api_url",
-    "VITE_PUBLIC_TESTS_URL": "@vite_public_tests_url"
+    "NEXT_PUBLIC_API_URL": "@next_public_api_url",
+    "NEXT_PUBLIC_PUBLIC_TESTS_URL": "@next_public_public_tests_url"
+  },
+  "functions": {
+    "app/api/**/*.ts": {
+      "runtime": "nodejs18.x"
+    }
   },
   "headers": [
     {

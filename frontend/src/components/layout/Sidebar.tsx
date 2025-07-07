@@ -5,13 +5,12 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 
-import { API_HTTP_ENDPOINT } from '@/api/endpoints';
+import { API_HTTP_ENDPOINT, navigateToPublicTests } from '@/api/endpoints';
 import { Button } from '@/components/ui/Button';
 import { researchAPI } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
 import { useResearch } from '@/stores/useResearchStore';
-import { navigateToPublicTestsSafe } from '@/config/amplify-config';
 
 import { SidebarBase } from './SidebarBase';
 
@@ -343,10 +342,10 @@ function SidebarContent({ className }: SidebarProps) {
   function CurrentResearchSection() {
     if (!researchId || !currentResearchName) return null;
 
-    // Función para navegar a public-tests usando Amplify
+    // Función para navegar a public-tests
     const handleOpenPublicTests = () => {
       if (researchId) {
-        navigateToPublicTestsSafe(researchId);
+        navigateToPublicTests(researchId);
       }
     };
 

@@ -5,12 +5,12 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 
+import { navigateToPublicTests } from '@/api/endpoints';
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
 import { ResearchSection, ResearchSidebarProps } from '@/interfaces/research';
 import { researchAPI } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
-import { navigateToPublicTestsSafe } from '@/config/amplify-config';
 
 import { Research } from '../../../../shared/interfaces/research.model';
 
@@ -167,13 +167,13 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
 
     fetchResearchName();
   }, [researchId]);
-  
+
   const handleBackToDashboard = () => { router.push('/dashboard'); };
-  
-  // Función para navegar a public-tests usando Amplify
+
+  // Función para navegar a public-tests
   const handleOpenPublicTests = () => {
     if (researchId) {
-      navigateToPublicTestsSafe(researchId);
+      navigateToPublicTests(researchId);
     }
   };
 

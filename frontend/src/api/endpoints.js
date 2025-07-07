@@ -6,20 +6,18 @@
 export const API_ENDPOINTS = {
   // Endpoint HTTP API
   http: "https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev",
-  
+
   // Endpoint WebSocket
   ws: "wss://w8dj7wxnl9.execute-api.us-east-1.amazonaws.com/dev",
-  
+
   // Etapa de despliegue (dev, prod, etc.)
   stage: "dev"
 };
 
-// URLs de AWS Amplify
-export const AMPLIFY_URLS = {
-  "frontend": "https://d12psv9dnscmm4.amplifyapp.com",
-  "publicTests": "https://public-tests.vercel.app",
-  "frontendAppId": "d12psv9dnscmm4",
-  "publicTestsAppId": "vercel-deployment",
+// URLs de desarrollo local
+export const LOCAL_URLS = {
+  "frontend": "http://localhost:3000",
+  "publicTests": "http://localhost:4700",
   "generatedAt": "2025-07-06T23:30:00Z"
 };
 
@@ -41,7 +39,7 @@ export function getWebsocketUrl() {
 
 // Función para obtener URL de public-tests
 export function getPublicTestsUrl() {
-  return AMPLIFY_URLS.publicTests || 'http://localhost:4700';
+  return LOCAL_URLS.publicTests || 'http://localhost:4700';
 }
 
 // Función para navegar a public-tests con researchID

@@ -1,7 +1,7 @@
 /**
  * Utilidad para exportar los endpoints para uso en frontend
- * 
- * Este módulo genera un archivo que contiene todos los endpoints de la API 
+ *
+ * Este módulo genera un archivo que contiene todos los endpoints de la API
  * y permite importarlos de forma dinámica desde el frontend sin necesidad
  * de hardcodear URLs
  */
@@ -95,17 +95,11 @@ export async function exportEndpoints(outputFilePath: string): Promise<void> {
       };
     }
 
-    // Obtener URLs de Amplify si están disponibles
-    let amplifyUrls = {};
-    try {
-      const configPath = path.resolve(process.cwd(), '../config/amplify-urls.json');
-      if (fs.existsSync(configPath)) {
-        amplifyUrls = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-        console.log('URLs de Amplify cargadas:', amplifyUrls);
-      }
-    } catch (error: any) {
-      console.warn('No se pudieron cargar URLs de Amplify:', error.message);
-    }
+    // URLs de desarrollo local por defecto
+    let localUrls = {
+      "frontend": "http://localhost:3000",
+      "publicTests": "http://localhost:4700"
+    };
 
     // Construir contenido del archivo JavaScript de configuración
     const template = `// ARCHIVO GENERADO AUTOMÁTICAMENTE
@@ -116,16 +110,16 @@ export async function exportEndpoints(outputFilePath: string): Promise<void> {
 export const API_ENDPOINTS = {
   // Endpoint HTTP API
   http: "${endpoints.http}",
-  
+
   // Endpoint WebSocket
   ws: "${endpoints.websocket}",
-  
+
   // Etapa de despliegue (dev, prod, etc.)
   stage: "${endpoints.stage || process.env.STAGE || 'dev'}"
 };
 
-// URLs de AWS Amplify
-export const AMPLIFY_URLS = ${JSON.stringify(amplifyUrls, null, 2)};
+// URLs de desarrollo local
+export const LOCAL_URLS = ${JSON.stringify(localUrls, null, 2)};
 
 // Constantes para uso más fácil
 export const API_HTTP_ENDPOINT = "${endpoints.http}";
@@ -145,7 +139,7 @@ export function getWebsocketUrl() {
 
 // Función para obtener URL de public-tests
 export function getPublicTestsUrl() {
-  return AMPLIFY_URLS.publicTests || 'http://localhost:4700';
+  return LOCAL_URLS.publicTests || 'http://localhost:4700';
 }
 
 // Función para navegar a public-tests con researchID
@@ -176,25 +170,25 @@ export function readEndpointsFromServerless(): ApiEndpoints {
     const serverlessDir = path.resolve(process.cwd(), '.serverless');
     const endpointsPath = path.join(serverlessDir, 'endpoints.json');
     const outputsPath = path.join(process.cwd(), 'endpoints-output.json');
-    
+
     // Valores por defecto
     let endpoints: ApiEndpoints = {
       http: process.env.API_ENDPOINT || 'http://localhost:3000/dev',
       websocket: process.env.WEBSOCKET_ENDPOINT || 'ws://localhost:3001/dev',
       stage: process.env.STAGE || 'dev'
     };
-    
+
     // Intentar leer endpoints.json si existe
     if (fs.existsSync(endpointsPath)) {
       console.log(`Leyendo endpoints desde: ${endpointsPath}`);
       try {
         const endpointsData = JSON.parse(fs.readFileSync(endpointsPath, 'utf-8'));
         if (endpointsData.http) {
-          endpoints.http = Array.isArray(endpointsData.http) 
-            ? endpointsData.http[0] 
+          endpoints.http = Array.isArray(endpointsData.http)
+            ? endpointsData.http[0]
             : endpointsData.http;
         }
-        
+
         if (endpointsData.websocket) {
           endpoints.websocket = Array.isArray(endpointsData.websocket)
             ? endpointsData.websocket[0]
@@ -204,27 +198,27 @@ export function readEndpointsFromServerless(): ApiEndpoints {
         console.warn(`Error al leer endpoints.json: ${error.message}`);
       }
     }
-    
+
     // Intentar leer outputs.json si existe (formato clave = valor)
     if (fs.existsSync(outputsPath)) {
       console.log(`Leyendo outputs desde: ${outputsPath}`);
       try {
         // Leer el archivo como texto
         const fileContent = fs.readFileSync(outputsPath, 'utf-8');
-        
+
         // Parsear el formato clave = valor
         const httpMatch = fileContent.match(/HttpApiUrl\s*=\s*"([^"]+)"/);
         if (httpMatch && httpMatch[1]) {
           endpoints.http = httpMatch[1];
           console.log(`Encontrado HTTP API URL: ${endpoints.http}`);
         }
-        
+
         const wsMatch = fileContent.match(/WebsocketApiUrl\s*=\s*"([^"]+)"/);
         if (wsMatch && wsMatch[1]) {
           endpoints.websocket = wsMatch[1];
           console.log(`Encontrado WebSocket API URL: ${endpoints.websocket}`);
         }
-        
+
         const stageMatch = fileContent.match(/Stage\s*=\s*"([^"]+)"/);
         if (stageMatch && stageMatch[1]) {
           endpoints.stage = stageMatch[1];
@@ -233,7 +227,7 @@ export function readEndpointsFromServerless(): ApiEndpoints {
         console.warn(`Error al leer outputs.json: ${error.message}`);
       }
     }
-    
+
     console.log('Endpoints encontrados:', endpoints);
     return endpoints;
   } catch (error) {
@@ -251,4 +245,4 @@ export function readEndpointsFromServerless(): ApiEndpoints {
 if (require.main === module) {
   const outputPath = process.argv[2] || '../../../frontend/src/api/endpoints.js';
   exportEndpoints(outputPath);
-} 
+}

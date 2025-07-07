@@ -1,8 +1,0 @@
-AMPLIFY_APP_ID=d3255my1o5nhup
-AMPLIFY_APP_ARN=arn:aws:amplify:us-east-1:992382408780:apps/d3255my1o5nhup
-AWS_REGION=us-east-1
-APP_NAME=emotioXV2
-REPOSITORY_URL=https://github.com/clementeaf/emotioXV2
-DEFAULT_DOMAIN=d3255my1o5nhup.amplifyapp.com
-BRANCH_NAME=main
-STAGE=PRODUCTION
