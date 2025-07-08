@@ -99,7 +99,11 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
     // eslint-disable-next-line
   }, [responseData, demographicInitialValues]);
 
-  const hasExistingData = !!(responseData && Object.keys(responseData).length > 0) || !!useStepResponseManagerReturnedSpecificId;
+  // Determinar si hay datos existentes correctamente
+  const hasExistingData = !!(
+    (responseData && Object.keys(responseData).length > 0) ||
+    (demographicInitialValues && Object.keys(demographicInitialValues).length > 0)
+  );
 
   if (!config || !config.questions) {
     return (
