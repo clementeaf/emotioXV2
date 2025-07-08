@@ -56,12 +56,10 @@ export const useResponseTiming = (): TimingState & TimingActions => {
   const stopSectionTimer = useParticipantStore(state => state.stopSectionTimer);
   const responsesData = useParticipantStore(state => state.responsesData);
 
-  // Sincronizar estado con el store
   useEffect(() => {
     const timestamps = responsesData.timestamps;
     const sectionTimings = responsesData.sectionTimings || [];
 
-    // Convertir los datos del store al formato del hook
     const convertedSectionTimings = sectionTimings.map(section => ({
       sectionId: section.sectionId,
       startTime: section.start,
@@ -84,11 +82,9 @@ export const useResponseTiming = (): TimingState & TimingActions => {
     }));
   }, [responsesData.timestamps, responsesData.sectionTimings]);
 
-  // Función para iniciar timer global
   const handleStartGlobalTimer = useCallback(() => {
     const now = Date.now();
 
-    // Validar que no esté ya iniciado
     if (state.isGlobalTimerRunning) {
       console.warn('[ResponseTiming] Timer global ya está iniciado');
       return;
@@ -104,14 +100,11 @@ export const useResponseTiming = (): TimingState & TimingActions => {
       globalDuration: null
     }));
 
-    console.log(`[ResponseTiming] Timer global iniciado: ${new Date(now).toISOString()}`);
   }, [startGlobalTimer, state.isGlobalTimerRunning]);
 
-  // Función para detener timer global
   const handleStopGlobalTimer = useCallback(() => {
     const now = Date.now();
 
-    // Validar que esté iniciado
     if (!state.isGlobalTimerRunning) {
       console.warn('[ResponseTiming] Timer global no está iniciado');
       return;
@@ -122,7 +115,6 @@ export const useResponseTiming = (): TimingState & TimingActions => {
     setState(prev => {
       const duration = prev.globalStartTime ? now - prev.globalStartTime : null;
 
-      // Validar duración positiva
       const validDuration = duration && duration >= 0 ? duration : null;
 
       return {
@@ -133,10 +125,8 @@ export const useResponseTiming = (): TimingState & TimingActions => {
       };
     });
 
-    console.log(`[ResponseTiming] Timer global detenido: ${new Date(now).toISOString()}`);
   }, [stopGlobalTimer, state.isGlobalTimerRunning]);
 
-  // Función para iniciar timer de sección
   const handleStartSectionTimer = useCallback((sectionId: string) => {
     if (!sectionId || typeof sectionId !== 'string') {
       console.error('[ResponseTiming] sectionId inválido:', sectionId);
@@ -145,7 +135,6 @@ export const useResponseTiming = (): TimingState & TimingActions => {
 
     const now = Date.now();
 
-    // Validar que no esté ya iniciado
     if (state.activeSectionTimers.has(sectionId)) {
       console.warn(`[ResponseTiming] Timer de sección ${sectionId} ya está iniciado`);
       return;
@@ -162,10 +151,8 @@ export const useResponseTiming = (): TimingState & TimingActions => {
       ]
     }));
 
-    console.log(`[ResponseTiming] Timer de sección iniciado: ${sectionId} - ${new Date(now).toISOString()}`);
   }, [startSectionTimer, state.activeSectionTimers]);
 
-  // Función para detener timer de sección
   const handleStopSectionTimer = useCallback((sectionId: string) => {
     if (!sectionId || typeof sectionId !== 'string') {
       console.error('[ResponseTiming] sectionId inválido:', sectionId);
@@ -174,7 +161,6 @@ export const useResponseTiming = (): TimingState & TimingActions => {
 
     const now = Date.now();
 
-    // Validar que esté iniciado
     if (!state.activeSectionTimers.has(sectionId)) {
       console.warn(`[ResponseTiming] Timer de sección ${sectionId} no está iniciado`);
       return;
@@ -186,7 +172,6 @@ export const useResponseTiming = (): TimingState & TimingActions => {
       const section = prev.sectionTimings.find(t => t.sectionId === sectionId);
       const duration = section?.startTime ? now - section.startTime : null;
 
-      // Validar duración positiva
       const validDuration = duration && duration >= 0 ? duration : undefined;
 
       const updatedTimings = prev.sectionTimings.map(t =>
@@ -205,10 +190,8 @@ export const useResponseTiming = (): TimingState & TimingActions => {
       };
     });
 
-    console.log(`[ResponseTiming] Timer de sección detenido: ${sectionId} - ${new Date(now).toISOString()}`);
   }, [stopSectionTimer, state.activeSectionTimers]);
 
-  // Función para obtener duración global
   const getGlobalDuration = useCallback((): number | null => {
     if (state.globalStartTime && state.globalEndTime) {
       const duration = state.globalEndTime - state.globalStartTime;
@@ -221,22 +204,20 @@ export const useResponseTiming = (): TimingState & TimingActions => {
     return null;
   }, [state.globalStartTime, state.globalEndTime, state.isGlobalTimerRunning]);
 
-  // Función para obtener duración de sección
   const getSectionDuration = useCallback((sectionId: string): number | null => {
     const section = state.sectionTimings.find(t => t.sectionId === sectionId);
     if (!section) return null;
 
     if (section.endTime && section.duration) {
-      return section.duration >= 0 ? section.duration : null; // Validar duración positiva
+      return section.duration >= 0 ? section.duration : null;
     }
     if (section.startTime && state.activeSectionTimers.has(sectionId)) {
       const duration = Date.now() - section.startTime;
-      return duration >= 0 ? duration : null; // Validar duración positiva
+      return duration >= 0 ? duration : null;
     }
     return null;
   }, [state.sectionTimings, state.activeSectionTimers]);
 
-  // Función para resetear todos los timers
   const resetAllTimers = useCallback(() => {
     setState({
       isGlobalTimerRunning: false,
@@ -247,10 +228,8 @@ export const useResponseTiming = (): TimingState & TimingActions => {
       sectionTimings: []
     });
 
-    console.log('[ResponseTiming] Todos los timers reseteados');
   }, []);
 
-  // Función para obtener información completa de timing
   const getTimingInfo = useCallback(() => {
     return {
       globalStartTime: state.globalStartTime || undefined,
@@ -260,14 +239,13 @@ export const useResponseTiming = (): TimingState & TimingActions => {
     };
   }, [state.globalStartTime, state.globalEndTime, state.sectionTimings, getGlobalDuration]);
 
-  // Timer de actualización en tiempo real para timers activos - OPTIMIZADO
   useEffect(() => {
     const hasActiveTimers = state.isGlobalTimerRunning || state.activeSectionTimers.size > 0;
 
     if (hasActiveTimers && !intervalRef.current) {
       intervalRef.current = setInterval(() => {
-        setState(prev => ({ ...prev })); // Forzar re-render para actualizar duraciones
-      }, 1000); // Actualizar cada segundo
+        setState(prev => ({ ...prev }));
+      }, 1000);
     } else if (!hasActiveTimers && intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
@@ -281,12 +259,11 @@ export const useResponseTiming = (): TimingState & TimingActions => {
     };
   }, [state.isGlobalTimerRunning, state.activeSectionTimers.size]);
 
-  // Iniciar timer global automáticamente al montar si no está iniciado
   useEffect(() => {
     if (!state.isGlobalTimerRunning && !state.globalStartTime) {
       handleStartGlobalTimer();
     }
-  }, []); // Solo se ejecuta al montar
+  }, []);
 
   return {
     ...state,

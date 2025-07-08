@@ -108,7 +108,6 @@ const ParticipantFlow: React.FC = () => {
     }, [stopGlobalTimer]);
 
     useEffect(() => {
-        // Detección robusta de dispositivo
         const ua = navigator.userAgent;
         let type: 'mobile' | 'tablet' | 'desktop' = 'desktop';
         if (/Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(ua)) {
@@ -118,8 +117,6 @@ const ParticipantFlow: React.FC = () => {
         incrementReentryCount();
     }, [setDeviceType, incrementReentryCount]);
 
-    // Obtener la config de eye tracking (si existe) desde responsesData o expandedSteps
-    // Se asume que responsesData.modules.eye_tracking[0] contiene la config
     const eyeTrackingConfig = useMemo(() => {
         if (
             responsesData &&
@@ -145,19 +142,16 @@ const ParticipantFlow: React.FC = () => {
         return null;
     }, [responsesData, expandedSteps]);
 
-    // Usar el hook personalizado para la detección de dispositivos móviles
     const {
         allowMobile,
         configFound,
         shouldBlock
     } = useMobileDeviceCheck(eyeTrackingConfig, isFlowLoading);
 
-    // Usar el hook personalizado para el tracking de ubicación
     const {
         isEnabled: isLocationTrackingEnabled
     } = useLocationTracking(eyeTrackingConfig);
 
-    // Usar el hook de tracking de reingresos
     const {
         reentryCount,
         sessionStartTime,
@@ -166,7 +160,6 @@ const ParticipantFlow: React.FC = () => {
         isFirstVisit
     } = useReentryTracking();
 
-    // Usar el hook de cronometrización de respuestas
     const {
         isGlobalTimerRunning,
         globalStartTime,
@@ -175,18 +168,6 @@ const ParticipantFlow: React.FC = () => {
         sectionTimings
     } = useResponseTiming();
 
-    // Log de información de reingresos para debug
-    useEffect(() => {
-        console.log('[ParticipantFlow] Información de reingresos:', {
-            reentryCount,
-            sessionStartTime: new Date(sessionStartTime).toISOString(),
-            lastVisitTime: new Date(lastVisitTime).toISOString(),
-            totalSessionTime: `${Math.round(totalSessionTime / 1000)}s`,
-            isFirstVisit
-        });
-    }, [reentryCount, sessionStartTime, lastVisitTime, totalSessionTime, isFirstVisit]);
-
-    // Forzar fetch de respuestas cuando ambos IDs estén listos
     useEffect(() => {
         if (researchId && participantId) {
             loadExistingResponses();
@@ -194,7 +175,6 @@ const ParticipantFlow: React.FC = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [researchId, participantId]);
 
-    // BLOQUEO MEJORADO: Si no se permite móvil y el usuario está en móvil/tablet
     if (shouldBlock) {
         return (
             <MobileBlockScreen
@@ -348,12 +328,6 @@ const ParticipantFlow: React.FC = () => {
                                     {isLocationTrackingEnabled && (
                                         <div className="mb-6">
                                             <LocationPermissionRequest
-                                                onLocationGranted={(location: { latitude: number; longitude: number; accuracy?: number }) => {
-                                                    console.log('Ubicación obtenida:', location);
-                                                }}
-                                                onLocationDenied={() => {
-                                                    console.log('Permiso de ubicación denegado');
-                                                }}
                                                 showFallbackInfo={true}
                                             />
                                         </div>

@@ -164,7 +164,6 @@ export function useStandardizedForm<T>(
 
   useEffect(() => {
     if (!participantId || !researchId) {
-      console.log('[useStandardizedForm] Esperando participantId o researchId:', { participantId, researchId });
       return;
     }
     if (initialLoadComplete.current) {
@@ -187,7 +186,6 @@ export function useStandardizedForm<T>(
       setIsDataLoaded(true);
       setHasExistingData(!!savedResponse);
       initialLoadComplete.current = true;
-      console.log('[useStandardizedForm] Prellenado mock:', { value: savedResponse ? extractedValue : initialValue });
       return;
     }
     if (responses && Array.isArray(responses)) {
@@ -205,7 +203,6 @@ export function useStandardizedForm<T>(
           setHasExistingData(true);
           setIsDataLoaded(true);
           initialLoadComplete.current = true;
-          console.log('[useStandardizedForm] Prellenado con respuesta previa de API:', { value: extractedVal });
           return;
         } catch (err) {
           console.warn('[useStandardizedForm] Error extracting value from API response:', err);
@@ -216,7 +213,6 @@ export function useStandardizedForm<T>(
     setIsDataLoaded(true);
     setHasExistingData(false);
     initialLoadComplete.current = true;
-    console.log('[useStandardizedForm] Sin respuesta previa, valor inicial:', { value: initialValue });
   }, [participantId, researchId, isLoadingResponses, savedResponse, isMock, extractedValue, initialValue, value, isDataLoaded, responses, stepType, stepName, extractValueFromResponse]);
 
   const validateValue = useCallback((valueToValidate: T): string | null => {

@@ -3,9 +3,9 @@ import { useModuleResponses } from '../../hooks/useModuleResponses';
 import { useStepResponseManager } from '../../hooks/useStepResponseManager';
 import { useParticipantStore } from '../../stores/participantStore';
 import {
-    DemographicResponses,
-    EDUCATION_OPTIONS,
-    GENDER_OPTIONS
+  DemographicResponses,
+  EDUCATION_OPTIONS,
+  GENDER_OPTIONS
 } from '../../types/demographics';
 import FormSubmitButton from '../common/FormSubmitButton';
 import { DemographicQuestion } from './DemographicQuestion';
@@ -84,28 +84,11 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
     initialData: demographicInitialValues,
   });
 
-  // DEBUG avanzado: loggear montaje/desmontaje
   useEffect(() => {
-    console.log('[DemographicsForm] Montado', { stepId });
-    return () => {
-      console.log('[DemographicsForm] Desmontado', { stepId });
-    };
-  }, [stepId]);
-
-  // DEBUG avanzado: loggear cada render
-  console.log('[DemographicsForm] Render', {
-    formFieldResponses,
-    responseData,
-    initialValues
-  });
-
-  // Sincronizar el estado del formulario con la respuesta guardada o los valores iniciales
-  useEffect(() => {
-    // Si hay respuesta previa, hacer merge con el estado actual (prioridad a lo que ya llenó el usuario)
     if (responseData && Object.keys(responseData).length > 0) {
       setFormFieldResponses(prev => ({
         ...responseData,
-        ...prev // lo que el usuario ya llenó tiene prioridad
+        ...prev
       }));
     } else if (demographicInitialValues && Object.keys(demographicInitialValues).length > 0) {
       setFormFieldResponses(prev => ({
@@ -116,7 +99,6 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
     // eslint-disable-next-line
   }, [responseData, demographicInitialValues]);
 
-  // Determinar si hay datos existentes correctamente
   const hasExistingData = !!(responseData && Object.keys(responseData).length > 0) || !!useStepResponseManagerReturnedSpecificId;
 
   if (!config || !config.questions) {
