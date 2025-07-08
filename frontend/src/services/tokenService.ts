@@ -114,8 +114,8 @@ const getToken = (): string | null => {
     if (token) {
       // Remover el prefijo Bearer si existe para devolver solo el token
       const cleanToken = token.replace('Bearer ', '').trim();
-      console.log('tokenService.getToken - TOKEN ENCONTRADO (primeros caracteres):',
-        cleanToken.substring(0, 20) + '...');
+      // console.log('tokenService.getToken - TOKEN ENCONTRADO (primeros caracteres):',
+      //   cleanToken.substring(0, 20) + '...');
       return cleanToken;
     }
 
@@ -124,12 +124,12 @@ const getToken = (): string | null => {
     if (sessionToken) {
       // Remover el prefijo Bearer si existe para devolver solo el token
       const cleanToken = sessionToken.replace('Bearer ', '').trim();
-      console.log('tokenService.getToken - TOKEN ENCONTRADO en sessionStorage (primeros caracteres):',
-        cleanToken.substring(0, 20) + '...');
+      // console.log('tokenService.getToken - TOKEN ENCONTRADO en sessionStorage (primeros caracteres):',
+      //   cleanToken.substring(0, 20) + '...');
 
       // Guardar en localStorage para futuras solicitudes (sin prefijo Bearer)
       storage.setItem('token', cleanToken);
-      console.log('tokenService.getToken - Token de sessionStorage copiado a localStorage');
+      // console.log('tokenService.getToken - Token de sessionStorage copiado a localStorage');
 
       return cleanToken;
     }

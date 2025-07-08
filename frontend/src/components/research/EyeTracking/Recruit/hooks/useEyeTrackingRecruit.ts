@@ -354,19 +354,19 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     queryKey: ['eyeTrackingRecruit', actualResearchId],
     queryFn: async () => {
       try {
-        console.log('[useEyeTrackingRecruit] Cargando config para:', actualResearchId);
+        // console.log('[useEyeTrackingRecruit] Cargando config para:', actualResearchId);
         const response = await eyeTrackingFixedAPI.getRecruitConfig(actualResearchId).send();
-        console.log('[useEyeTrackingRecruit] Config cargada (respuesta API):', response);
+        // console.log('[useEyeTrackingRecruit] Config cargada (respuesta API):', response);
 
         // Si no hay datos en la respuesta, crear una configuración predeterminada
         if (!response) {
-          console.log('[useEyeTrackingRecruit] Sin respuesta, usando configuración predeterminada');
+          // console.log('[useEyeTrackingRecruit] Sin respuesta, usando configuración predeterminada');
           return createDefaultConfig(actualResearchId);
         }
 
         // Verificar si la respuesta contiene los datos necesarios
         if (!response.id) {
-          console.log('[useEyeTrackingRecruit] Respuesta sin ID, usando configuración predeterminada');
+          // console.log('[useEyeTrackingRecruit] Respuesta sin ID, usando configuración predeterminada');
           return createDefaultConfig(actualResearchId);
         }
 
@@ -392,9 +392,9 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
 
         return configData;
       } catch (error: any) {
-        console.log('[useEyeTrackingRecruit] Error al cargar:', error);
+        // console.log('[useEyeTrackingRecruit] Error al cargar:', error);
         if (error.statusCode === 404) {
-          console.log('[useEyeTrackingRecruit] No hay configuración previa para:', actualResearchId);
+          // console.log('[useEyeTrackingRecruit] No hay configuración previa para:', actualResearchId);
           return createDefaultConfig(actualResearchId);
         }
         toast.error(`Error al cargar configuración: ${error.message || 'Error desconocido'}`);
@@ -437,7 +437,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     // Verificar otras condiciones según sea necesario...
 
     if (errors.length > 0) {
-      console.log('[useEyeTrackingRecruit] Errores de validación:', errors);
+      // console.log('[useEyeTrackingRecruit] Errores de validación:', errors);
       return false;
     }
 
@@ -496,13 +496,13 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
         researchId: actualResearchId
       };
 
-      console.log('[useEyeTrackingRecruit] Guardando config con ID de investigación:', dataToSave.researchId);
-      console.log('[useEyeTrackingRecruit] ID original de configuración eliminado:', id || 'No tenía ID');
-      console.log('[useEyeTrackingRecruit] Payload completo:', JSON.stringify(dataToSave, null, 2));
+      // console.log('[useEyeTrackingRecruit] Guardando config con ID de investigación:', dataToSave.researchId);
+      // console.log('[useEyeTrackingRecruit] ID original de configuración eliminado:', id || 'No tenía ID');
+      // console.log('[useEyeTrackingRecruit] Payload completo:', JSON.stringify(dataToSave, null, 2));
 
       // Enviamos los datos al servidor
       const result = await saveConfigMutation.mutateAsync(dataToSave);
-      console.log('[useEyeTrackingRecruit] Resultado exitoso:', result);
+      // console.log('[useEyeTrackingRecruit] Resultado exitoso:', result);
 
       // Mostrar modal de éxito (tipo info para usar azul)
       showModal({

@@ -5,11 +5,11 @@ import { CognitiveTaskHeader, NavigationTestResults } from './components';
 
 export const CognitiveTaskResults: React.FC = () => {
   const handleFilter = () => {
-    console.log('Filtrar resultados');
+    // console.log('Filtrar resultados');
   };
 
   const handleUpdate = () => {
-    console.log('Actualizar datos');
+    // console.log('Actualizar datos');
   };
 
   // TODO: Integrar fetch de datos reales desde la API/backend

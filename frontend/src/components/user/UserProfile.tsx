@@ -74,7 +74,7 @@ export function UserProfileComponent({ className }: UserProfileComponentProps) {
       }
       */
       // Placeholder para evitar error de no uso:
-      console.log('Funcionalidad fetchUserProfile comentada temporalmente');
+      // console.log('Funcionalidad fetchUserProfile comentada temporalmente');
       throw new Error('Perfil no disponible temporalmente'); // Simular error ya que no hay datos
 
     } catch (err) {
@@ -129,7 +129,7 @@ export function UserProfileComponent({ className }: UserProfileComponentProps) {
       }
       */
       // Placeholder:
-      console.log('Funcionalidad handleSubmit comentada temporalmente');
+      // console.log('Funcionalidad handleSubmit comentada temporalmente');
       throw new Error('Actualización no disponible temporalmente'); // Simular error
 
     } catch (err) {

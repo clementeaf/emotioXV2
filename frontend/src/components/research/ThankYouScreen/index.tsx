@@ -1,13 +1,13 @@
 import React from 'react';
 
-import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
+import { FormsSkeleton } from '@/components/research/WelcomeScreen/components/FormsSkeleton';
 import { cn } from '@/lib/utils';
 
 import {
-  ErrorModal,
-  ThankYouScreenContent,
-  ThankYouScreenFooter,
-  ThankYouScreenSettings
+    ErrorModal,
+    ThankYouScreenContent,
+    ThankYouScreenFooter,
+    ThankYouScreenSettings
 } from './components';
 import { useThankYouScreenForm } from './hooks/useThankYouScreenForm';
 import { ThankYouScreenFormProps } from './types';
@@ -57,7 +57,7 @@ export const ThankYouScreenForm: React.FC<ThankYouScreenFormProps> = ({
   if (isLoading) {
     return (
       <div className={cn('max-w-4xl space-y-4', className)}>
-        <LoadingSkeleton variant="form" rows={6} />
+        <FormsSkeleton />
       </div>
     );
   }

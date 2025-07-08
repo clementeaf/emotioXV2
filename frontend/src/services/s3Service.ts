@@ -61,7 +61,6 @@ class S3Service {
 
   constructor() {
     this.baseURL = API_BASE_URL;
-    console.log('S3Service inicializado. Base URL:', this.baseURL);
   }
 
   /**
@@ -69,19 +68,11 @@ class S3Service {
    */
   private getAuthHeaders(): Record<string, string> {
     const token = tokenService.getToken();
-
-    console.log('===== DEBUG TOKEN COMPLETO =====');
-    console.log('Token enviado en headers:', token);
-    console.log('Longitud del token:', token ? token.length : 0);
-
     const authHeader = token ? `Bearer ${token}` : '';
-    console.log('Header Authorization completo:', authHeader);
 
     if (token && token.split('.').length !== 3) {
       console.error('TOKEN MALFORMADO: No tiene el formato JWT estándar (xxx.yyy.zzz)');
     }
-
-    console.log('================================');
 
     return {
       'Content-Type': 'application/json',
@@ -99,8 +90,6 @@ class S3Service {
   ): Promise<PresignedUrlResponse> {
     const fileType = determineFileType(file);
 
-    console.log('S3Service.getUploadPresignedUrl - Solicitando URL para subida');
-
     const requestBody = {
       fileType,
       fileName: file.name,
@@ -110,11 +99,9 @@ class S3Service {
       folder: folder || 'general'
     };
 
-    console.log('S3Service.getUploadPresignedUrl - Cuerpo de la petición:', requestBody);
-
     try {
       const response = await apiClient.post('s3', 'upload', requestBody);
-      console.log('S3Service.getUploadPresignedUrl - URL obtenida:', response.data);
+
       return response.data;
     } catch (error) {
       console.error('===== ERROR COMPLETO S3 =====');
@@ -130,8 +117,6 @@ class S3Service {
   async getDownloadUrl(key: string): Promise<string> {
     const encodedKey = encodeURIComponent(key);
 
-    console.log('S3Service.getDownloadUrl - Solicitando URL para descarga con key:', encodedKey);
-
     try {
       const response = await apiClient.get('s3', 'download', undefined, { key: encodedKey });
 
@@ -140,7 +125,6 @@ class S3Service {
         throw new Error('La respuesta del servidor no contiene la URL de descarga esperada.');
       }
 
-      console.log('S3Service.getDownloadUrl - URL obtenida:', response.data.downloadUrl);
       return response.data.downloadUrl;
     } catch (error) {
       console.error('S3Service.getDownloadUrl - Error en respuesta:', error);
@@ -161,11 +145,7 @@ class S3Service {
     }
 
     try {
-      console.log(`${operation} - Eliminando archivo con clave: ${key}`);
-
       await apiClient.post('s3', 'deleteObject', { key: key });
-
-      console.log(`${operation} - Archivo eliminado exitosamente: ${key}`);
     } catch (error) {
       console.error(`${operation} - Error al eliminar archivo:`, error);
       throw new Error(`Error al eliminar archivo: ${error instanceof Error ? error.message : 'Error desconocido'}`);
@@ -184,7 +164,6 @@ class S3Service {
     onError
   }: FileUploadParams): Promise<{ fileUrl: string; key: string }> {
     try {
-      console.log('S3Service.uploadFile - Iniciando subida para:', file.name, 'en carpeta:', folder);
 
       const token = tokenService.getToken();
       if (!token) {
@@ -200,12 +179,7 @@ class S3Service {
         throw error;
       }
 
-      console.log('Token encontrado (longitud):', token.length);
-      console.log('Primeros 20 caracteres del token:', token.substring(0, 20) + '...');
-
       const presignedData = await this.getUploadPresignedUrl(file, researchId, folder);
-
-      console.log('S3Service.uploadFile - URL prefirmada obtenida:', presignedData.uploadUrl);
 
       const xhr = new XMLHttpRequest();
 
@@ -225,7 +199,6 @@ class S3Service {
 
         xhr.onload = () => {
           if (xhr.status === 200 || xhr.status === 204) {
-            console.log('S3Service.uploadFile - Subida exitosa:', file.name);
 
             const result = {
               fileUrl: presignedData.fileUrl,

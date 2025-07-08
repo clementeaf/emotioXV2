@@ -49,7 +49,7 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
     addQuestion(newQuestion);
   };
 
-  console.log('isDeleteModalOpen: ', isDeleteModalOpen);
+  // console.log('isDeleteModalOpen: ', isDeleteModalOpen);
 
   if (isLoading) {
     return (

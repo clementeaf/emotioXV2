@@ -53,27 +53,27 @@ export const useSmartVOCForm = (researchId: string) => {
   // Logging solo en desarrollo
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
-      console.log('[SmartVOCForm] Auth state:', {
-        isAuthenticated,
-        hasToken: !!token,
-        researchId,
-        authLoading
-      });
+      // console.log('[SmartVOCForm] Auth state:', {
+      //   isAuthenticated,
+      //   hasToken: !!token,
+      //   researchId,
+      //   authLoading
+      // });
     }
   }, [isAuthenticated, token, researchId, authLoading]);
 
   // Efecto para actualizar formData cuando lleguen datos de la API
   useEffect(() => {
-    console.log('[SmartVOCForm] useEffect ejecutado:', {
-      hasData: !!smartVocData,
-      isNotFound: smartVocData && 'notFound' in smartVocData ? smartVocData.notFound : false,
-      dataType: typeof smartVocData,
-      questionCount: smartVocData && 'questions' in smartVocData && Array.isArray(smartVocData.questions) ? smartVocData.questions.length : 'No es array'
-    });
+    // console.log('[SmartVOCForm] useEffect ejecutado:', {
+    //   hasData: !!smartVocData,
+    //   isNotFound: smartVocData && 'notFound' in smartVocData ? smartVocData.notFound : false,
+    //   dataType: typeof smartVocData,
+    //   questionCount: smartVocData && 'questions' in smartVocData && Array.isArray(smartVocData.questions) ? smartVocData.questions.length : 'No es array'
+    // });
 
     if (smartVocData && !('notFound' in smartVocData) && smartVocData.questions && smartVocData.questions.length > 0) {
       // Solo actualizar si hay preguntas reales de la API (configuración existente)
-      console.log('✅ [DIAGNÓSTICO] Datos de API recibidos. Objeto completo:', smartVocData);
+      // console.log('✅ [DIAGNÓSTICO] Datos de API recibidos. Objeto completo:', smartVocData);
 
       // Actualizar formData con los datos cargados
       setFormData({
@@ -87,25 +87,25 @@ export const useSmartVOCForm = (researchId: string) => {
         }
       });
 
-      console.log('[SmartVOCForm] ✅ formData actualizado con', smartVocData.questions?.length || 0, 'preguntas desde API');
+      // console.log('[SmartVOCForm] ✅ formData actualizado con', smartVocData.questions?.length || 0, 'preguntas desde API');
 
       // Extraer y configurar el ID si existe
       const responseWithId = smartVocData as SmartVOCFormData & { id?: string };
 
-      console.log(`[DIAGNÓSTICO] Intentando extraer ID. El ID encontrado es: '${responseWithId?.id}' (Tipo: ${typeof responseWithId?.id})`);
+      // console.log(`[DIAGNÓSTICO] Intentando extraer ID. El ID encontrado es: '${responseWithId?.id}' (Tipo: ${typeof responseWithId?.id})`);
 
       if (responseWithId?.id) {
-        console.log('[DIAGNÓSTICO] ✅ El ID es válido. Llamando a setSmartVocId con:', responseWithId.id);
+        // console.log('[DIAGNÓSTICO] ✅ El ID es válido. Llamando a setSmartVocId con:', responseWithId.id);
         setSmartVocId(responseWithId.id);
       } else {
         console.error('[DIAGNÓSTICO] 🛑 ¡ERROR CRÍTICO! No se encontró la propiedad \'id\' en los datos de la API, aunque se esperaba. El botón de eliminar no se activará.');
       }
     } else if (smartVocData && 'notFound' in smartVocData && smartVocData.notFound) {
-      console.log('[DIAGNÓSTICO] No se encontró configuración existente. El botón de eliminar debe estar desactivado.');
+      // console.log('[DIAGNÓSTICO] No se encontró configuración existente. El botón de eliminar debe estar desactivado.');
       // No hacer nada - mantener las preguntas plantilla para que el usuario pueda empezar a trabajar
       setIsEmpty(true);
     } else {
-      console.log('[SmartVOCForm] smartVocData es null/undefined o en estado de carga, manteniendo estado actual');
+      // console.log('[SmartVOCForm] smartVocData es null/undefined o en estado de carga, manteniendo estado actual');
     }
   }, [smartVocData, researchId, setFormData, setSmartVocId]);
 
@@ -158,7 +158,7 @@ export const useSmartVOCForm = (researchId: string) => {
       // 🔧 AGREGADO: Resetear smartVocId para que el componente vuelva al estado "nuevo"
       setSmartVocId(null);
 
-      console.log('[SmartVOCForm] 🔄 Estado reseteado completamente después de eliminación exitosa');
+      // console.log('[SmartVOCForm] 🔄 Estado reseteado completamente después de eliminación exitosa');
     } catch (error: unknown) {
       // El hook de mutación ya muestra un toast/modal en caso de error
       console.error('[SmartVOCForm] Error en confirmDelete:', error);

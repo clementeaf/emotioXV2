@@ -57,7 +57,7 @@ export function useWebSocketUnified() {
       ws.current = new WebSocket(wsUrl);
 
       ws.current.onopen = () => {
-        console.log('WebSocket conectado');
+        // console.log('WebSocket conectado');
         setState(prev => ({
           ...prev,
           isConnected: true,
@@ -79,7 +79,7 @@ export function useWebSocketUnified() {
       };
 
       ws.current.onclose = (event) => {
-        console.log('WebSocket desconectado:', event.code, event.reason);
+        // console.log('WebSocket desconectado:', event.code, event.reason);
         setState(prev => ({
           ...prev,
           isConnected: false,
@@ -136,7 +136,7 @@ export function useWebSocketUnified() {
       case 'token.update':
       case 'TOKEN_REFRESHED':
         if (message.data?.token) {
-          console.log('WebSocket recibió token actualizado');
+          // console.log('WebSocket recibió token actualizado');
           // Aquí podrías actualizar el token en el contexto de autenticación
         }
         break;
@@ -151,13 +151,13 @@ export function useWebSocketUnified() {
         break;
 
       default:
-        console.log('Mensaje no manejado:', message);
+        // console.log('Mensaje no manejado:', message);
     }
   }, []);
 
   const scheduleReconnect = useCallback(() => {
     if (state.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-      console.log('Máximo número de intentos de reconexión alcanzado');
+      // console.log('Máximo número de intentos de reconexión alcanzado');
       setState(prev => ({
         ...prev,
         lastError: 'No se pudo reconectar después de múltiples intentos',

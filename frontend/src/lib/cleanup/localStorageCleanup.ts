@@ -28,7 +28,7 @@ export function cleanResearchFromLocalStorage(researchId: string): void {
       console.error('Error actualizando la lista de investigaciones:', e);
     }
     
-    console.log(`Limpieza de localStorage completada para investigación: ${researchId}`);
+    // console.log(`Limpieza de localStorage completada para investigación: ${researchId}`);
   } catch (error) {
     console.error('Error durante la limpieza de localStorage:', error);
   }
@@ -88,7 +88,7 @@ export async function cleanAllObsoleteResearch(): Promise<void> {
     // Actualizar la lista
     localStorage.setItem('research_list', JSON.stringify(updatedList));
     
-    console.log('Limpieza de investigaciones obsoletas completada');
+    // console.log('Limpieza de investigaciones obsoletas completada');
   } catch (error) {
     console.error('Error durante la limpieza de investigaciones obsoletas:', error);
   }
@@ -119,7 +119,7 @@ export function cleanAllResearchFromLocalStorage(): void {
     localStorage.removeItem('cached_research_timestamp');
     localStorage.removeItem('last_path');
     
-    console.log('Limpieza completa de investigaciones en localStorage completada');
+    // console.log('Limpieza completa de investigaciones en localStorage completada');
   } catch (error) {
     console.error('Error durante la limpieza completa de localStorage:', error);
   }

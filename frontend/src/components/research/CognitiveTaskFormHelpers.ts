@@ -62,23 +62,23 @@ export const logFormDebugInfo = (
   error?: any,
   extraInfo?: Record<string, any>
 ) => {
-  console.log(`[DEBUG:CognitiveTaskForm:${context}]`, {
-    timestamp: new Date().toISOString(),
-    hasData: !!data,
-    dataInfo: data ? {
-      researchId: data.researchId,
-      id: (data as any).id,
-      questionCount: data.questions?.length || 0,
-      questionsWithFiles: data.questions?.filter((q: Question) => q.files && q.files.length > 0).length || 0
-    } : null,
-    error: error ? {
-      name: error?.name,
-      message: error?.message,
-      statusCode: error?.statusCode,
-      stack: error?.stack
-    } : null,
-    ...extraInfo
-  });
+  // console.log(`[DEBUG:CognitiveTaskForm:${context}]`, {
+    // timestamp: new Date().toISOString(),
+    // hasData: !!data,
+    // dataInfo: data ? {
+      // researchId: data.researchId,
+      // id: (data as any).id,
+      // questionCount: data.questions?.length || 0,
+      // questionsWithFiles: data.questions?.filter((q: Question) => q.files && q.files.length > 0).length || 0
+    // } : null,
+    // error: error ? {
+      // name: error?.name,
+      // message: error?.message,
+      // statusCode: error?.statusCode,
+      // stack: error?.stack
+    // } : null,
+    // ...extraInfo
+  // });
 };
 
 // Helper para filtrar preguntas que tienen título (DEPRECATED)
@@ -280,13 +280,13 @@ export function saveCognitiveTask({
   modals: any;
 }) {
   // eslint-disable-next-line no-console
-  console.log(`[handleSave] Iniciando guardado. researchId: ${researchId}`);
+  // console.log(`[handleSave] Iniciando guardado. researchId: ${researchId}`);
   const errorsFound = validateCurrentForm();
   const isValid = errorsFound === null;
   // eslint-disable-next-line no-console
-  console.log(`[handleSave] Resultado de validateCurrentForm: ${isValid}`);
+  // console.log(`[handleSave] Resultado de validateCurrentForm: ${isValid}`);
   // eslint-disable-next-line no-console
-  console.log('[handleSave] Errores encontrados por validateCurrentForm:', errorsFound);
+  // console.log('[handleSave] Errores encontrados por validateCurrentForm:', errorsFound);
   if (isValid) {
     confirmAndSave();
   } else {

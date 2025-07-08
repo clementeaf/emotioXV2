@@ -203,14 +203,14 @@ export const debugQuestionsToSend = (formData: CognitiveTaskFormData): void => {
     const validationInfo = getQuestionsValidationInfo(formData);
 
     validationInfo.valid.forEach((q, index) => {
-      console.log(`  ${index + 1}. ${q.type}: "${q.title}"`);
+      // console.log(`  ${index + 1}. ${q.type}: "${q.title}"`);
     });
 
     if (validationInfo.invalid.length > 0) {
-      console.log('🚫 Preguntas inválidas (se omitirán):', validationInfo.invalid.length);
+      // console.log('🚫 Preguntas inválidas (se omitirán):', validationInfo.invalid.length);
       validationInfo.invalid.forEach(({ question, missingFields }, index) => {
-        console.log(`  ${index + 1}. ${question.type}: "${question.title || '(sin título)'}"`);
-        console.log(`     Campos faltantes: ${missingFields.join(', ')}`);
+        // console.log(`  ${index + 1}. ${question.type}: "${question.title || '(sin título)'}"`);
+        // console.log(`     Campos faltantes: ${missingFields.join(', ')}`);
       });
     }
 

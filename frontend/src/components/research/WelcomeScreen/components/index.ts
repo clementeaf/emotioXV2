@@ -2,9 +2,9 @@
  * Barrel file para los componentes de la pantalla de bienvenida
  */
 
-export { WelcomeScreenHeader } from './WelcomeScreenHeader';
-export { WelcomeScreenFooter } from './WelcomeScreenFooter';
-export { WelcomeScreenSettings } from './WelcomeScreenSettings';
+export { ErrorModal } from './ErrorModal';
+export { FormsSkeleton } from './FormsSkeleton';
 export { WelcomeScreenContent } from './WelcomeScreenContent';
-export { WelcomeScreenSkeleton } from './WelcomeScreenSkeleton';
-export { ErrorModal } from './ErrorModal'; 
+export { WelcomeScreenFooter } from './WelcomeScreenFooter';
+export { WelcomeScreenHeader } from './WelcomeScreenHeader';
+export { WelcomeScreenSettings } from './WelcomeScreenSettings';

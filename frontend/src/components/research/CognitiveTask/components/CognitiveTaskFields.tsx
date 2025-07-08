@@ -135,9 +135,9 @@ export const CognitiveTaskFields: React.FC<Props> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // LOG INICIAL AL RECIBIR PROPS
-  console.log('[CognitiveTaskFields] Props RECIBIDAS - questions:',
-    JSON.stringify(questions?.map(q => ({ id: q.id, type: q.type, title: q.title?.substring(0, 20) })) || [], null, 2)
-  );
+  // console.log('[CognitiveTaskFields] Props RECIBIDAS - questions:',
+  //   JSON.stringify(questions?.map(q => ({ id: q.id, type: q.type, title: q.title?.substring(0, 20) })) || [], null, 2)
+  // );
 
   return (
     <div style={{ maxWidth: '100%', overflowX: 'hidden' }}>

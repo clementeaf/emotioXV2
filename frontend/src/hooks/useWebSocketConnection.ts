@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 import { WebSocketEvent, WebSocketMessage } from '../../../shared/src/types/websocket.types';
 import { useAuth } from '../providers/AuthProvider';
@@ -18,7 +18,7 @@ export const useWebSocketConnection = () => {
     ws.current = new WebSocket(wsUrl);
 
     ws.current.onopen = () => {
-      console.log('WebSocket conectado');
+              // // console.log('WebSocket conectado');
       // Iniciar el intervalo de renovación del token
       tokenRefreshIntervalRef.current = setInterval(() => {
         if (ws.current?.readyState === WebSocket.OPEN) {
@@ -31,7 +31,7 @@ export const useWebSocketConnection = () => {
     };
 
     ws.current.onclose = () => {
-      console.log('WebSocket desconectado');
+              // // console.log('WebSocket desconectado');
       // Limpiar el intervalo de renovación del token
       if (tokenRefreshIntervalRef.current) {
         clearInterval(tokenRefreshIntervalRef.current);
@@ -49,11 +49,11 @@ export const useWebSocketConnection = () => {
     ws.current.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data) as WebSocketMessage;
-        
+
         switch (message.event) {
           case WebSocketEvent.TOKEN_REFRESHED:
             const { token: newToken } = message.data as { token: string };
-            console.log('WebSocket recibió token actualizado (no se actualizó en useAuth)');
+            // // console.log('WebSocket recibió token actualizado (no se actualizó en useAuth)');
             break;
           case WebSocketEvent.ERROR:
             console.error('Error del servidor:', message.data);
@@ -96,4 +96,4 @@ export const useWebSocketConnection = () => {
     sendMessage,
     isConnected: ws.current?.readyState === WebSocket.OPEN
   };
-}; 
+};

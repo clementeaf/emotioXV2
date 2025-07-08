@@ -27,7 +27,7 @@ const getToken = () => {
  * @returns Datos procesados o error
  */
 const handleWelcomeScreenResponse = async (response: Response) => {
-  console.log(`[WelcomeScreenAPI] Respuesta recibida: ${response.status} ${response.statusText}`);
+      // // console.log(`[WelcomeScreenAPI] Respuesta recibida: ${response.status} ${response.statusText}`);
 
   // Ya no lanzamos error para 404 aquí, porque lo manejamos en getByResearchId
 
@@ -57,7 +57,7 @@ const getAuthHeaders = () => {
     ? `${token.substring(0, 6)}...${token.substring(token.length - 4)}`
     : 'no hay token';
 
-  console.log(`[WelcomeScreenAPI] Usando token: ${tokenSummary}`);
+      // // console.log(`[WelcomeScreenAPI] Usando token: ${tokenSummary}`);
 
   return {
     'Content-Type': 'application/json',
@@ -81,7 +81,7 @@ export const welcomeScreenFixedAPI = {
     }
 
     const url = API_ENDPOINTS.welcomeScreen.getByResearch.replace('{id}', id);
-    console.log(`[WelcomeScreenAPI] Obteniendo pantalla con ID ${id}, URL: ${url}`);
+    // // console.log(`[WelcomeScreenAPI] Obteniendo pantalla con ID ${id}, URL: ${url}`);
 
     return {
       send: async () => {
@@ -107,8 +107,8 @@ export const welcomeScreenFixedAPI = {
     }
 
     const url = API_ENDPOINTS.welcomeScreen?.getByResearch?.replace('{researchId}', researchId) || `/welcome-screen/research/${researchId}`;
-    console.log(`[WelcomeScreenAPI] Obteniendo pantalla para investigación ${researchId}, URL: ${url}`);
-    console.log(`[WelcomeScreenAPI] URL completa: ${API_BASE_URL}${url}`);
+    // // console.log(`[WelcomeScreenAPI] Obteniendo pantalla para investigación ${researchId}, URL: ${url}`);
+    // // console.log(`[WelcomeScreenAPI] URL completa: ${API_BASE_URL}${url}`);
 
     return {
       send: async () => {
@@ -123,7 +123,7 @@ export const welcomeScreenFixedAPI = {
           const isKnownNonExistent = localStorage.getItem(cacheKey) === 'nonexistent';
 
           if (isKnownNonExistent) {
-            console.log(`[WelcomeScreenAPI] Usando respuesta en caché para ${researchId} - sabemos que no existe`);
+            // // console.log(`[WelcomeScreenAPI] Usando respuesta en caché para ${researchId} - sabemos que no existe`);
             return {
               notFound: true,
               data: null,
@@ -169,7 +169,7 @@ export const welcomeScreenFixedAPI = {
 
               // Si la imagen falló, entonces el recurso no existe
               if (!exists) {
-                console.log('[WelcomeScreenAPI] No se encontró la pantalla de bienvenida en la verificación con imagen');
+                // // console.log('[WelcomeScreenAPI] No se encontró la pantalla de bienvenida en la verificación con imagen');
                 localStorage.setItem(cacheKey, 'nonexistent');
                 return {
                   notFound: true,
@@ -182,7 +182,7 @@ export const welcomeScreenFixedAPI = {
                 };
               }
             } catch (e) {
-              console.log('[WelcomeScreenAPI] Error en la verificación con imagen:', e);
+              // // console.log('[WelcomeScreenAPI] Error en la verificación con imagen:', e);
               // Si hay un error, continuamos con el enfoque normal
             }
           }
@@ -202,7 +202,7 @@ export const welcomeScreenFixedAPI = {
 
             // Si es 404, guardamos que el recurso no existe para evitar solicitudes futuras
             if (response.status === 404) {
-              console.log('[WelcomeScreenAPI] No se encontró configuración de pantalla de bienvenida para esta investigación - esto es normal para nuevas investigaciones');
+              // // console.log('[WelcomeScreenAPI] No se encontró configuración de pantalla de bienvenida para esta investigación - esto es normal para nuevas investigaciones');
               localStorage.setItem(cacheKey, 'nonexistent');
 
               return {
@@ -220,11 +220,11 @@ export const welcomeScreenFixedAPI = {
             return handleWelcomeScreenResponse(response);
           } catch (fetchError) {
             // En caso de error de red, asumimos que es un problema temporal
-            console.log('[WelcomeScreenAPI] Error de red:', fetchError);
+            // // console.log('[WelcomeScreenAPI] Error de red:', fetchError);
             throw fetchError;
           }
         } catch (error) {
-          console.log('[WelcomeScreenAPI] Error al obtener pantalla de bienvenida por researchId:', error);
+          // // console.log('[WelcomeScreenAPI] Error al obtener pantalla de bienvenida por researchId:', error);
           throw error;
         }
       }
@@ -247,8 +247,8 @@ export const welcomeScreenFixedAPI = {
 
     // <<< Usar el endpoint CREATE >>>
     const url = API_ENDPOINTS.welcomeScreen.create.replace('{researchId}', researchId);
-    console.log(`[WelcomeScreenAPI] Creando (POST) pantalla para investigación ${researchId}, URL: ${url}`);
-    console.log('[WelcomeScreenAPI] Datos a enviar:', data);
+    // console.log(`[WelcomeScreenAPI] Creando (POST) pantalla para investigación ${researchId}, URL: ${url}`);
+    // console.log('[WelcomeScreenAPI] Datos a enviar:', data);
 
     return {
       send: async () => {
@@ -288,8 +288,8 @@ export const welcomeScreenFixedAPI = {
       .replace('{researchId}', researchId)
       .replace('{screenId}', screenId);
 
-    console.log(`[WelcomeScreenAPI] Actualizando (PUT) pantalla ${screenId} para investigación ${researchId}, URL: ${url}`);
-    console.log('[WelcomeScreenAPI] Datos a enviar:', data);
+    // console.log(`[WelcomeScreenAPI] Actualizando (PUT) pantalla ${screenId} para investigación ${researchId}, URL: ${url}`);
+    // console.log('[WelcomeScreenAPI] Datos a enviar:', data);
 
     return {
       send: async () => {
@@ -324,7 +324,7 @@ export const welcomeScreenFixedAPI = {
     const url = API_ENDPOINTS.welcomeScreen.delete
        .replace('{researchId}', researchId)
        .replace('{screenId}', screenId);
-    console.log(`[WelcomeScreenAPI] Eliminando (DELETE) pantalla ${screenId} para investigación ${researchId}, URL: ${url}`);
+    // console.log(`[WelcomeScreenAPI] Eliminando (DELETE) pantalla ${screenId} para investigación ${researchId}, URL: ${url}`);
 
     return {
       send: async () => {

@@ -1,6 +1,6 @@
 import React from 'react';
 
-export const WelcomeScreenSkeleton: React.FC = () => {
+export const FormsSkeleton: React.FC = () => {
   return (
     <div className="space-y-4 animate-pulse">
       {/* Header */}
@@ -43,4 +43,4 @@ export const WelcomeScreenSkeleton: React.FC = () => {
       </div>
     </div>
   );
-}; 
+};

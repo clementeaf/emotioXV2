@@ -72,7 +72,7 @@ const DEFAULT_ENDPOINTS: DynamicEndpoints = {
                    'http://localhost:4700';
     const url = `${baseUrl}/${researchID}`;
 
-    console.log(`🌐 Navegando a public-tests: ${url}`);
+    // console.log(`🌐 Navegando a public-tests: ${url}`);
     window.open(url, '_blank');
   }
 };
@@ -155,7 +155,7 @@ export async function loadDynamicEndpoints(): Promise<DynamicEndpoints> {
                                'http://localhost:4700';
                 const url = `${baseUrl}/${researchID}`;
 
-                console.log(`🌐 Navegando a public-tests: ${url}`);
+                // console.log(`🌐 Navegando a public-tests: ${url}`);
                 window.open(url, '_blank');
               }
             };

@@ -22,9 +22,6 @@ export const SECURE_API_BASE_URL = API_BASE_URL.includes('localhost') || API_BAS
   ? FALLBACK_API_URL
   : API_BASE_URL;
 
-console.log('🔧 [API Config] URL Base AWS Lambda:', SECURE_API_BASE_URL);
-console.log('🔧 [API Config] WebSocket URL AWS Lambda:', WS_BASE_URL);
-
 /**
  * Configuración de endpoints simplificada
  */
@@ -135,7 +132,6 @@ export class ApiClient {
       'Accept': 'application/json',
     };
 
-    // Validación estricta - BLOQUEAR localhost completamente
     if (this.baseUrl.includes('localhost') || this.baseUrl.includes('127.0.0.1')) {
       console.error('🚨 ERROR CRÍTICO: ApiClient inicializado con localhost!');
       console.error('🚨 URL detectada:', this.baseUrl);
@@ -147,17 +143,13 @@ export class ApiClient {
     if (!this.baseUrl.includes('execute-api.us-east-1.amazonaws.com')) {
       console.warn('⚠️  ADVERTENCIA: URL no parece ser de AWS Lambda:', this.baseUrl);
     }
-
-    console.log('🔧 [ApiClient] Inicializado con URL AWS Lambda:', this.baseUrl);
   }
 
   /**
    * Establece el token de autenticación
    */
   setAuthToken(token: string): void {
-    console.log('🔑 [ApiClient] setAuthToken llamado con:', token.substring(0, 20) + '...');
     this.defaultHeaders.Authorization = `Bearer ${token}`;
-    console.log('🔑 [ApiClient] Headers actualizados:', this.defaultHeaders);
   }
 
   /**
@@ -179,21 +171,18 @@ export class ApiClient {
       });
     }
 
-    // Verificar que no queden parámetros sin reemplazar
     if (/\{[^\/]+\}/.test(url)) {
       throw new Error(`Parámetros no reemplazados en URL: ${url}`);
     }
 
     const fullUrl = url.startsWith('/') ? `${this.baseUrl}${url}` : `${this.baseUrl}/${url}`;
 
-    // Validación final de seguridad - BLOQUEAR localhost
     if (fullUrl.includes('localhost') || fullUrl.includes('127.0.0.1')) {
       console.error('🚨 ERROR CRÍTICO: URL construida apunta a localhost!');
       console.error('🚨 URL detectada:', fullUrl);
       throw new Error('URL de API no puede ser localhost - Solo AWS Lambda permitido');
     }
 
-    // Verificar que la URL sea de AWS Lambda
     if (!fullUrl.includes('execute-api.us-east-1.amazonaws.com')) {
       console.warn('⚠️  ADVERTENCIA: URL construida no parece ser de AWS Lambda:', fullUrl);
     }
@@ -227,19 +216,13 @@ export class ApiClient {
       ? `${url}?${new URLSearchParams(queryParams)}`
       : url;
 
-    console.log(`🔍 [ApiClient] GET ${finalUrl}`);
-    console.log(`🔍 [ApiClient] Headers:`, this.defaultHeaders);
-    console.log(`🔍 [ApiClient] Token presente:`, !!this.defaultHeaders.Authorization);
-
     const response = await fetch(finalUrl, {
       method: 'GET',
       headers: this.defaultHeaders,
     });
 
-    console.log(`🔍 [ApiClient] Response status: ${response.status}`);
     if (!response.ok) {
       const errorText = await response.text();
-      console.log(`🔍 [ApiClient] Error response:`, errorText);
     }
 
     return this.handleResponse<T>(response);
@@ -360,14 +343,12 @@ export function getApiUrl(path: string): string {
   const cleanPath = path.startsWith('/') ? path.substring(1) : path;
   const fullUrl = `${SECURE_API_BASE_URL}/${cleanPath}`;
 
-  // Validación estricta - BLOQUEAR localhost
   if (fullUrl.includes('localhost') || fullUrl.includes('127.0.0.1')) {
     console.error('🚨 ERROR CRÍTICO: getApiUrl generó URL localhost!');
     console.error('🚨 URL detectada:', fullUrl);
     return `${FALLBACK_API_URL}/${cleanPath}`;
   }
 
-  // Verificar que la URL sea de AWS Lambda
   if (!fullUrl.includes('execute-api.us-east-1.amazonaws.com')) {
     console.warn('⚠️  ADVERTENCIA: getApiUrl generó URL que no parece ser de AWS Lambda:', fullUrl);
   }
@@ -379,7 +360,6 @@ export function getApiUrl(path: string): string {
  * Función helper para obtener URL de WebSocket
  */
 export function getWebsocketUrl(): string {
-  // Validar que la URL de WebSocket sea segura
   if (WS_BASE_URL.includes('localhost') || WS_BASE_URL.includes('127.0.0.1')) {
     console.error('🚨 ERROR CRÍTICO: WebSocket URL apunta a localhost!');
     console.error('🚨 URL detectada:', WS_BASE_URL);
@@ -402,14 +382,11 @@ export function validateApiConfiguration(): boolean {
     console.error('🚨 URL actual:', SECURE_API_BASE_URL);
     console.error('🚨 Debe apuntar a AWS Lambda');
     return false;
-  } else {
-    console.log('✅ Configuración API es segura - Apunta a AWS Lambda');
   }
 
   return isSecure;
 }
 
-// Validación automática al cargar el módulo
 if (typeof window !== 'undefined') {
   validateApiConfiguration();
 }

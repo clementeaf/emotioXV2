@@ -84,10 +84,10 @@ export const useSmartVOCMutations = (researchId: string, smartVocId?: string) =>
       };
       // Lógica condicional: Si tenemos un smartVocId, actualizamos (PUT). Si no, creamos (POST).
       if (data.smartVocId) {
-        console.log(`[SmartVOCForm] Actualizando (PUT) formulario existente con ID: ${data.smartVocId}`);
+        // console.log(`[SmartVOCForm] Actualizando (PUT) formulario existente con ID: ${data.smartVocId}`);
         return smartVocFixedAPI.update(researchId, data.smartVocId, cleanedData);
       } else {
-        console.log(`[SmartVOCForm] Creando (POST) nuevo formulario para researchId: ${researchId}`);
+        // console.log(`[SmartVOCForm] Creando (POST) nuevo formulario para researchId: ${researchId}`);
         return smartVocFixedAPI.create(cleanedData);
       }
     },
@@ -102,7 +102,7 @@ export const useSmartVOCMutations = (researchId: string, smartVocId?: string) =>
 
       const responseWithId = savedData as SmartVOCFormData & { id?: string };
       if (responseWithId?.id) {
-        console.log('[SmartVOCForm] SmartVOC ID actualizado/obtenido:', responseWithId.id);
+        // console.log('[SmartVOCForm] SmartVOC ID actualizado/obtenido:', responseWithId.id);
       }
 
       showModal({
@@ -147,7 +147,7 @@ export const useSmartVOCMutations = (researchId: string, smartVocId?: string) =>
   const deleteMutation = useMutation({
     mutationFn: async () => {
       // Usar deleteByResearchId que solo requiere researchId, no un formId específico
-      console.log(`[SmartVOCForm] Eliminando SmartVOC para researchId: ${researchId}`);
+      // console.log(`[SmartVOCForm] Eliminando SmartVOC para researchId: ${researchId}`);
       const success = await smartVocFixedAPI.deleteByResearchId(researchId);
 
       if (!success) {

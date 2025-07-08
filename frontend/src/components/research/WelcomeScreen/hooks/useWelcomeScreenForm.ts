@@ -158,7 +158,7 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
 
       // Usar existingScreen.id para determinar si es UPDATE
       if (existingScreen?.id && actualResearchId) {
-        console.log(`Llamando a updateForResearch con screenId: ${existingScreen.id}`);
+        // console.log(`Llamando a updateForResearch con screenId: ${existingScreen.id}`);
         // Pasar solo los datos de formData al servicio update
         resultRecord = await welcomeScreenService.updateForResearch(
           actualResearchId,
@@ -166,7 +166,7 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
           dataToSubmit // Enviar solo los campos editables
         );
       } else if (actualResearchId) {
-        console.log(`Llamando a createForResearch para researchId: ${actualResearchId}`);
+        // console.log(`Llamando a createForResearch para researchId: ${actualResearchId}`);
         // Crear el payload completo para create
         const createPayload: WelcomeScreenData = {
           ...INITIAL_FORM_DATA, // Empezar con defaults

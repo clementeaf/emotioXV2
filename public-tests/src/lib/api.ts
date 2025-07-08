@@ -1,13 +1,13 @@
 import { useParticipantStore } from '../stores/participantStore';
 import {
-    APIResponse,
-    CognitiveTaskFormData,
-    EyeTrackingFormData,
-    ParticipantRegistration,
-    SmartVOCFormData,
-    Step,
-    ThankYouScreenFormData,
-    WelcomeScreenResponse
+  APIResponse,
+  CognitiveTaskFormData,
+  EyeTrackingFormData,
+  ParticipantRegistration,
+  SmartVOCFormData,
+  Step,
+  ThankYouScreenFormData,
+  WelcomeScreenResponse
 } from './types';
 
 // Estados de respuesta de la API
@@ -265,19 +265,12 @@ export class ApiClient {
     response: unknown,
     metadata?: unknown
   }): Promise<APIResponse<unknown>> {
-    console.log(`🔍 [ApiClient] saveModuleResponse called with payload:`, {
-      ...payload,
-      responseType: typeof payload.response,
-      responseKeys: typeof payload.response === 'object' && payload.response ? Object.keys(payload.response) : 'not object',
-      hasMetadata: !!payload.metadata
-    });
 
     const result = await this.request<unknown>('/module-responses', {
       method: 'POST',
       body: JSON.stringify(payload)
     });
 
-    console.log(`📋 [ApiClient] saveModuleResponse result:`, result);
     return result;
   }
 

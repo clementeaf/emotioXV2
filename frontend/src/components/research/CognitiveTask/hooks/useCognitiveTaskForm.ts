@@ -153,13 +153,13 @@ export const useCognitiveTaskForm = (
   const { user, token } = useAuth();
   const isAuthenticated = !!user && !!token;
 
-  console.log('[useCognitiveTaskForm] Estado de autenticación:', {
-    user: !!user,
-    token: !!token,
-    isAuthenticated,
-    researchId,
-    tokenLength: token?.length
-  });
+        // console.log('[useCognitiveTaskForm] Estado de autenticación:', {
+      //   user: !!user,
+      //   token: !!token,
+      //   isAuthenticated,
+      //   researchId,
+      //   tokenLength: token?.length
+      // });
 
   // <<< Usar hook de estado >>>
   const {
@@ -455,24 +455,24 @@ export const useCognitiveTaskForm = (
 
     // 🎯 LOG: Mostrar información de debug sobre qué se envía
     debugQuestionsToSend(formData);
-    console.log(`🔧 [handleSave] ANTES del filtrado: ${formData.questions.length} preguntas totales`);
-    console.log(`🔧 [handleSave] DESPUÉS del filtrado: ${dataToSend.questions.length} preguntas válidas a enviar`);
+    // console.log(`🔧 [handleSave] ANTES del filtrado: ${formData.questions.length} preguntas totales`);
+    // console.log(`🔧 [handleSave] DESPUÉS del filtrado: ${dataToSend.questions.length} preguntas válidas a enviar`);
 
     // Log detallado de preguntas válidas que se enviarán
     dataToSend.questions.forEach((q: Question, index: number) => {
-      console.log(`🔧 [handleSave] Pregunta válida ${index + 1}: ${q.id} - "${q.title}" (${q.type})`);
+      // console.log(`🔧 [handleSave] Pregunta válida ${index + 1}: ${q.id} - "${q.title}" (${q.type})`);
     });
 
     // 🎯 LOG TEMPORAL: Verificar qué datos se envían exactamente (archivos)
     const questionsWithFiles = dataToSend.questions.filter((q: Question) => q.files && q.files.length > 0);
     if (questionsWithFiles.length > 0) {
-      console.log(`🎯 [handleSave] Enviando ${questionsWithFiles.length} preguntas con archivos`);
+      // console.log(`🎯 [handleSave] Enviando ${questionsWithFiles.length} preguntas con archivos`);
       questionsWithFiles.forEach((q: Question) => {
         const filesWithHitZones = q.files?.filter((f: any) => f.hitZones && f.hitZones.length > 0) || [];
-        console.log(`🎯 [handleSave] Pregunta ${q.id}: ${q.files?.length || 0} archivos total, ${filesWithHitZones.length} con hitZones`);
+        // console.log(`🎯 [handleSave] Pregunta ${q.id}: ${q.files?.length || 0} archivos total, ${filesWithHitZones.length} con hitZones`);
         if (filesWithHitZones.length > 0) {
           filesWithHitZones.forEach((f: any, i: number) => {
-            console.log(`🎯 [handleSave] Archivo ${i} (${f.name}) hitZones:`, f.hitZones);
+            // console.log(`🎯 [handleSave] Archivo ${i} (${f.name}) hitZones:`, f.hitZones);
           });
         }
       });

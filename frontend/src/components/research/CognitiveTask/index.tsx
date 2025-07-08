@@ -3,7 +3,7 @@
 import { Loader2 } from 'lucide-react';
 import React from 'react';
 
-import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
+import { FormsSkeleton } from '@/components/research/WelcomeScreen/components/FormsSkeleton';
 import { Spinner } from '@/components/ui/Spinner';
 import { cn } from '@/lib/utils';
 
@@ -83,23 +83,23 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
   // Registrar información importante para debugging
   React.useEffect(() => {
     if (cognitiveTaskId) {
-      console.log('[CognitiveTaskForm] Editando tarea cognitiva existente:', cognitiveTaskId);
+      // console.log('[CognitiveTaskForm] Editando tarea cognitiva existente:', cognitiveTaskId);
 
       // Registrar información sobre archivos en las preguntas
       const questionsWithFiles = formData.questions.filter(q => q.files && q.files.length > 0);
       if (questionsWithFiles.length > 0) {
-        console.log('[CognitiveTaskForm] Preguntas con archivos:', questionsWithFiles.length);
+        // console.log('[CognitiveTaskForm] Preguntas con archivos:', questionsWithFiles.length);
         questionsWithFiles.forEach(q => {
-          console.log(`[CognitiveTaskForm] Pregunta ${q.id} (${q.type}) tiene ${q.files?.length || 0} archivos:`,
-            q.files?.map(f => ({id: f.id, name: f.name, url: f.url, s3Key: f.s3Key})));
+          // console.log(`[CognitiveTaskForm] Pregunta ${q.id} (${q.type}) tiene ${q.files?.length || 0} archivos:`,
+        //   q.files?.map(f => ({id: f.id, name: f.name, url: f.url, s3Key: f.s3Key})));
         });
       }
     } else {
-      console.log('[CognitiveTaskForm] Creando nueva tarea cognitiva');
+      // console.log('[CognitiveTaskForm] Creando nueva tarea cognitiva');
     }
 
     // Mostrar el modo actual del botón de guardar
-    console.log('[CognitiveTaskForm] Estado del botón de guardar:', isSaving ? 'Guardando...' : cognitiveTaskId ? 'Actualizar' : 'Guardar y Continuar');
+    // console.log('[CognitiveTaskForm] Estado del botón de guardar:', isSaving ? 'Guardando...' : cognitiveTaskId ? 'Actualizar' : 'Guardar y Continuar');
   }, [cognitiveTaskId, formData.questions, isSaving]);
 
   // Listener para guardado automático cuando se definen hitzones
@@ -137,7 +137,7 @@ export const CognitiveTaskForm: React.FC<CognitiveTaskFormProps> = ({
     return (
       <div style={containerStyle}>
         <div style={innerContainerStyle}>
-          <LoadingSkeleton variant="form" rows={6} />
+          <FormsSkeleton />
         </div>
       </div>
     );

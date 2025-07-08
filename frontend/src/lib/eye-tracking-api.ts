@@ -20,7 +20,7 @@ const getToken = () => {
  * @returns Datos procesados o error
  */
 const handleEyeTrackingResponse = async (response: Response) => {
-  console.log(`[EyeTrackingAPI] Respuesta recibida: ${response.status} ${response.statusText}`);
+      // // console.log(`[EyeTrackingAPI] Respuesta recibida: ${response.status} ${response.statusText}`);
 
   // Ya no lanzamos error para 404 aquí, porque lo manejamos en getByResearchId
   // Intentar obtener el cuerpo como JSON
@@ -49,7 +49,7 @@ const getAuthHeaders = () => {
     ? `${token.substring(0, 6)}...${token.substring(token.length - 4)}`
     : 'no hay token';
 
-  console.log(`[EyeTrackingAPI] Usando token: ${tokenSummary}`);
+      // // console.log(`[EyeTrackingAPI] Usando token: ${tokenSummary}`);
 
   return {
     'Content-Type': 'application/json',
@@ -73,8 +73,8 @@ export const eyeTrackingFixedAPI = {
     }
 
     const url = API_ENDPOINTS.eyeTracking?.getByResearch?.replace('{id}', id) || `/eye-tracking/${id}`;
-    console.log(`[EyeTrackingAPI] Obteniendo EyeTracking con ID ${id}, URL: ${url}`);
-    console.log(`[EyeTrackingAPI] URL completa: ${API_BASE_URL}${url}`);
+    // console.log(`[EyeTrackingAPI] Obteniendo EyeTracking con ID ${id}, URL: ${url}`);
+    // console.log(`[EyeTrackingAPI] URL completa: ${API_BASE_URL}${url}`);
 
     return {
       send: async () => {
@@ -101,7 +101,7 @@ export const eyeTrackingFixedAPI = {
 
     const url = API_ENDPOINTS.eyeTracking?.getByResearch?.replace('{researchId}', researchId) || `/eye-tracking/research/${researchId}`;
 
-    console.log(`[EyeTrackingAPI] Obteniendo config por researchId ${researchId}, URL: ${url}`);
+    // console.log(`[EyeTrackingAPI] Obteniendo config por researchId ${researchId}, URL: ${url}`);
 
     return {
       send: async () => {
@@ -113,16 +113,16 @@ export const eyeTrackingFixedAPI = {
           });
 
           if (!response.ok) {
-            console.log(`[EyeTrackingAPI] Error en respuesta: ${response.status} ${response.statusText}`);
+            // console.log(`[EyeTrackingAPI] Error en respuesta: ${response.status} ${response.statusText}`);
 
             // Si no hay datos simplemente devolvemos objeto vacío
             if (response.status === 404) {
-              console.log('[EyeTrackingAPI] No se encontraron datos (404)');
+              // console.log('[EyeTrackingAPI] No se encontraron datos (404)');
               throw { statusCode: 404, message: 'No se encontró configuración de EyeTracking' };
             }
 
             const errorText = await response.text();
-            console.log(`[EyeTrackingAPI] Texto de error: ${errorText}`);
+            // console.log(`[EyeTrackingAPI] Texto de error: ${errorText}`);
 
             let error;
             try {
@@ -139,10 +139,10 @@ export const eyeTrackingFixedAPI = {
           }
 
           const data = await response.json();
-          console.log('[EyeTrackingAPI] Datos obtenidos:', data);
+          // console.log('[EyeTrackingAPI] Datos obtenidos:', data);
           return data;
         } catch (error) {
-          console.log('[EyeTrackingAPI] Error en fetch:', error);
+          // console.log('[EyeTrackingAPI] Error en fetch:', error);
           throw error;
         }
       }
@@ -160,9 +160,9 @@ export const eyeTrackingFixedAPI = {
     }
 
     const url = API_ENDPOINTS.eyeTracking?.create || '/eye-tracking';
-    console.log(`[EyeTrackingAPI] Creando EyeTracking para investigación ${data.researchId}, URL: ${url}`);
-    console.log(`[EyeTrackingAPI] URL completa: ${API_BASE_URL}${url}`);
-    console.log('[EyeTrackingAPI] Datos a enviar:', data);
+    // console.log(`[EyeTrackingAPI] Creando EyeTracking para investigación ${data.researchId}, URL: ${url}`);
+    // console.log(`[EyeTrackingAPI] URL completa: ${API_BASE_URL}${url}`);
+    // console.log('[EyeTrackingAPI] Datos a enviar:', data);
 
     return {
       send: async () => {
@@ -191,7 +191,7 @@ export const eyeTrackingFixedAPI = {
             // Clasificar y manejar los errores
             if (response.status === 404) {
               // URL inexistente - mostrar error
-              console.log(`[EyeTrackingAPI] Error 404: URL no encontrada: ${url}`);
+              // console.log(`[EyeTrackingAPI] Error 404: URL no encontrada: ${url}`);
               throw new Error(`La URL de la API no existe: ${errorMessage}`);
             } else if (response.status === 400 || response.status === 422) {
               // Datos incompatibles - mostrar error
@@ -230,9 +230,9 @@ export const eyeTrackingFixedAPI = {
     }
 
     const url = (API_ENDPOINTS.eyeTracking?.update || '/eye-tracking/{id}').replace('{id}', id);
-    console.log(`[EyeTrackingAPI] Actualizando EyeTracking con ID ${id}, URL: ${url}`);
-    console.log(`[EyeTrackingAPI] URL completa: ${API_BASE_URL}${url}`);
-    console.log('[EyeTrackingAPI] Datos a enviar:', data);
+    // console.log(`[EyeTrackingAPI] Actualizando EyeTracking con ID ${id}, URL: ${url}`);
+    // console.log(`[EyeTrackingAPI] URL completa: ${API_BASE_URL}${url}`);
+    // console.log('[EyeTrackingAPI] Datos a enviar:', data);
 
     return {
       send: async () => {
@@ -258,7 +258,7 @@ export const eyeTrackingFixedAPI = {
             // Clasificar y manejar los errores
             if (response.status === 404) {
               // URL inexistente o recurso no encontrado - mostrar error
-              console.log(`[EyeTrackingAPI] Error 404: Recurso no encontrado con ID ${id}`);
+              // console.log(`[EyeTrackingAPI] Error 404: Recurso no encontrado con ID ${id}`);
               throw new Error(`No se encontró el EyeTracking con ID ${id}: ${errorMessage}`);
             } else if (response.status === 400 || response.status === 422) {
               // Datos incompatibles - mostrar error
@@ -293,7 +293,7 @@ export const eyeTrackingFixedAPI = {
 
     // Usar el controlador de eye-tracking normal
     const url = `/research/${researchId}/eye-tracking`;
-    console.log(`[EyeTrackingAPI] Obteniendo config de reclutamiento para researchId ${researchId}, URL: ${url}`);
+    // console.log(`[EyeTrackingAPI] Obteniendo config de reclutamiento para researchId ${researchId}, URL: ${url}`);
 
     return {
       send: async () => {
@@ -305,22 +305,22 @@ export const eyeTrackingFixedAPI = {
           });
 
           if (!response.ok) {
-            console.log(`[EyeTrackingAPI] Error en respuesta: ${response.status} ${response.statusText}`);
+            // console.log(`[EyeTrackingAPI] Error en respuesta: ${response.status} ${response.statusText}`);
 
             // Si no hay datos simplemente devolvemos null
             if (response.status === 404) {
-              console.log('[EyeTrackingAPI] No se encontraron datos de reclutamiento (404)');
+              // console.log('[EyeTrackingAPI] No se encontraron datos de reclutamiento (404)');
               return null;
             }
 
             // Manejar caso donde no hay contenido (204)
             if (response.status === 204) {
-              console.log('[EyeTrackingAPI] Sin contenido (204)');
+              // console.log('[EyeTrackingAPI] Sin contenido (204)');
               return null;
             }
 
             const errorText = await response.text();
-            console.log(`[EyeTrackingAPI] Texto de error: ${errorText}`);
+            // console.log(`[EyeTrackingAPI] Texto de error: ${errorText}`);
 
             let error;
             try {
@@ -338,21 +338,21 @@ export const eyeTrackingFixedAPI = {
 
           // Manejar caso donde la respuesta está vacía
           if (response.headers.get('content-length') === '0') {
-            console.log('[EyeTrackingAPI] Respuesta vacía pero exitosa');
+            // console.log('[EyeTrackingAPI] Respuesta vacía pero exitosa');
             return null;
           }
 
           // Intentar parsear la respuesta JSON
           try {
             const data = await response.json();
-            console.log('[EyeTrackingAPI] Datos de reclutamiento obtenidos:', data);
+            // console.log('[EyeTrackingAPI] Datos de reclutamiento obtenidos:', data);
             return data; // Devolvemos directamente los datos, sin envolverlos en un objeto config
           } catch (e) {
-            console.log('[EyeTrackingAPI] Error al parsear JSON:', e);
+            // console.log('[EyeTrackingAPI] Error al parsear JSON:', e);
             return null;
           }
         } catch (error) {
-          console.log('[EyeTrackingAPI] Error en fetch:', error);
+          // console.log('[EyeTrackingAPI] Error en fetch:', error);
           throw error;
         }
       }
@@ -371,8 +371,8 @@ export const eyeTrackingFixedAPI = {
 
     // Usar el controlador de eye-tracking normal
     const url = `/research/${data.researchId}/eye-tracking`;
-    console.log(`[EyeTrackingAPI] Guardando config de reclutamiento para investigación ${data.researchId}, URL: ${url}`);
-    console.log('[EyeTrackingAPI] Datos a enviar:', data);
+    // console.log(`[EyeTrackingAPI] Guardando config de reclutamiento para investigación ${data.researchId}, URL: ${url}`);
+    // console.log('[EyeTrackingAPI] Datos a enviar:', data);
 
     return {
       send: async () => {
@@ -397,7 +397,7 @@ export const eyeTrackingFixedAPI = {
 
             // Manejar caso de 204 No Content (aunque es técnicamente un éxito)
             if (response.status === 204) {
-              console.log('[EyeTrackingAPI] Guardado exitoso (sin contenido)');
+              // console.log('[EyeTrackingAPI] Guardado exitoso (sin contenido)');
               return { success: true };
             }
 
@@ -415,18 +415,18 @@ export const eyeTrackingFixedAPI = {
 
           // Manejar respuesta exitosa pero vacía
           if (response.headers.get('content-length') === '0') {
-            console.log('[EyeTrackingAPI] Guardado exitoso (respuesta vacía)');
+            // console.log('[EyeTrackingAPI] Guardado exitoso (respuesta vacía)');
             return { success: true };
           }
 
           // Intentar procesar respuesta JSON
           try {
             const result = await response.json();
-            console.log('[EyeTrackingAPI] Guardado exitoso:', result);
+            // console.log('[EyeTrackingAPI] Guardado exitoso:', result);
             return result;
           } catch (e) {
             // Si no hay JSON pero la respuesta fue exitosa
-            console.log('[EyeTrackingAPI] Guardado exitoso (sin JSON)');
+            // console.log('[EyeTrackingAPI] Guardado exitoso (sin JSON)');
             return { success: true };
           }
         } catch (error) {

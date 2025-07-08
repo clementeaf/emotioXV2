@@ -48,7 +48,7 @@ export function useApi<T = any>(defaultOptions: UseApiOptions = {}) {
           mode: 'cors',
         };
 
-        console.log('Fetching URL:', url, 'with options:', fetchOptions);
+        // // console.log('Fetching URL:', url, 'with options:', fetchOptions);
 
         const response = await fetch(url, fetchOptions);
 

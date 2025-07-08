@@ -76,7 +76,7 @@ export function EmotionsList() {
     }
     */
     // Placeholder para simular carga y posible error
-    console.log('Funcionalidad loadEmotions comentada temporalmente');
+    // console.log('Funcionalidad loadEmotions comentada temporalmente');
     dispatch({ type: 'FETCH_ERROR', payload: 'Carga de emociones deshabilitada temporalmente' });
 
   //}, [api.emotions]); // <<< Eliminar dependencia
@@ -94,7 +94,7 @@ export function EmotionsList() {
       dispatch({ type: 'DELETE_SUCCESS', payload: id });
     }
     */
-    console.log('Funcionalidad handleDelete comentada temporalmente');
+    // console.log('Funcionalidad handleDelete comentada temporalmente');
     // Simular que no se pudo borrar
 
   //}, [api.emotions]); // <<< Eliminar dependencia

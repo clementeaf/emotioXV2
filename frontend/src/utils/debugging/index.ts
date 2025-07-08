@@ -26,24 +26,24 @@ if (typeof window !== 'undefined') {
   // Habilitar el debugger
   window.enableApiDebugger = () => {
     if (!restoreOriginalMethods) {
-      console.log('🔍 [API-DEBUG] Activando debugger de API...');
+      // console.log('🔍 [API-DEBUG] Activando debugger de API...');
       const { restoreOriginalMethods: restore } = patchApiClientWithDebugger();
       restoreOriginalMethods = restore;
-      console.log('🔍 [API-DEBUG] Debugger de API activado. Todas las llamadas serán registradas.');
+      // console.log('🔍 [API-DEBUG] Debugger de API activado. Todas las llamadas serán registradas.');
     } else {
-      console.log('🔍 [API-DEBUG] El debugger de API ya está activado.');
+      // console.log('🔍 [API-DEBUG] El debugger de API ya está activado.');
     }
   };
 
   // Deshabilitar el debugger
   window.disableApiDebugger = () => {
     if (restoreOriginalMethods) {
-      console.log('🔍 [API-DEBUG] Desactivando debugger de API...');
+      // console.log('🔍 [API-DEBUG] Desactivando debugger de API...');
       restoreOriginalMethods();
       restoreOriginalMethods = null;
-      console.log('🔍 [API-DEBUG] Debugger de API desactivado.');
+      // console.log('🔍 [API-DEBUG] Debugger de API desactivado.');
     } else {
-      console.log('🔍 [API-DEBUG] El debugger de API no está activado.');
+      // console.log('🔍 [API-DEBUG] El debugger de API no está activado.');
     }
   };
 
@@ -54,7 +54,7 @@ if (typeof window !== 'undefined') {
   window.clearApiLogs = clearApiDebugLogs;
 
   // Mensaje informativo
-  console.log('🔍 [API-DEBUG] Utilidades de depuración cargadas. Ejecute window.enableApiDebugger() para activar.');
+  // console.log('🔍 [API-DEBUG] Utilidades de depuración cargadas. Ejecute window.enableApiDebugger() para activar.');
 }
 
 export {

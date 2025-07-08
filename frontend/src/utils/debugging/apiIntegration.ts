@@ -13,13 +13,13 @@ export const patchApiClientWithDebugger = () => {
 
   // Sobreescribir el método POST
   apiClient.post = async function<T, D, P>(category: P, operation: any, data: D, params?: Record<string, string>): Promise<T> {
-    console.log('🔍 [API-DEBUG] Interceptando POST a categoria:', category, 'operación:', operation);
-    console.log('🔍 [API-DEBUG] Datos:', data);
+    // console.log('🔍 [API-DEBUG] Interceptando POST a categoria:', category, 'operación:', operation);
+    // console.log('🔍 [API-DEBUG] Datos:', data);
 
     try {
       // Usar la implementación original pero con logging adicional
       const result = await originalPost(category as string, operation, data, params);
-      console.log('🔍 [API-DEBUG] POST exitoso:', result);
+      // console.log('🔍 [API-DEBUG] POST exitoso:', result);
       return result;
     } catch (error) {
       console.error('🔍 [API-DEBUG] Error en POST interceptado:', error);
@@ -29,13 +29,13 @@ export const patchApiClientWithDebugger = () => {
 
   // Sobreescribir el método PUT
   apiClient.put = async function<T, D, P>(category: P, operation: any, data: D, params?: Record<string, string>): Promise<T> {
-    console.log('🔍 [API-DEBUG] Interceptando PUT a categoria:', category, 'operación:', operation);
-    console.log('🔍 [API-DEBUG] Datos:', data);
+    // console.log('🔍 [API-DEBUG] Interceptando PUT a categoria:', category, 'operación:', operation);
+    // console.log('🔍 [API-DEBUG] Datos:', data);
 
     try {
       // Usar la implementación original pero con logging adicional
       const result = await originalPut(category as string, operation, data, params);
-      console.log('🔍 [API-DEBUG] PUT exitoso:', result);
+      // console.log('🔍 [API-DEBUG] PUT exitoso:', result);
       return result;
     } catch (error) {
       console.error('🔍 [API-DEBUG] Error en PUT interceptado:', error);

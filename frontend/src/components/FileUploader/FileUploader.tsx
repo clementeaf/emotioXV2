@@ -59,7 +59,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
         files: fileInfos
       }));
       
-      console.log('FileUploader: Archivos seleccionados guardados en localStorage', {
+      // console.log('FileUploader: Archivos seleccionados guardados en localStorage', {
         count: files.length,
         storageKey
       });
@@ -76,7 +76,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
       
       if (savedData) {
         const parsed = JSON.parse(savedData);
-        console.log('FileUploader: Información de archivos recuperada de localStorage', {
+        // console.log('FileUploader: Información de archivos recuperada de localStorage', {
           storageKey,
           filesCount: parsed.files?.length || 0
         });
@@ -122,7 +122,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
             // Eliminamos del localStorage primero
             localStorage.removeItem(completedStorageKey);
             
-            console.log('FileUploader: Procesando datos completados desde localStorage', {
+            // console.log('FileUploader: Procesando datos completados desde localStorage', {
               key: completedStorageKey,
               data: parsedData
             });
@@ -232,7 +232,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
       // incluso si el usuario navega fuera antes de que se complete el callback
       const completedStorageKey = `fileuploader_completed_${researchId}_${folder}`;
       localStorage.setItem(completedStorageKey, JSON.stringify(result));
-      console.log('FileUploader: Guardado resultado en localStorage', {
+      // console.log('FileUploader: Guardado resultado en localStorage', {
         completedStorageKey,
         result
       });
@@ -253,7 +253,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
       try {
         const storageKey = getStorageKey(researchId, folder);
         localStorage.removeItem(storageKey);
-        console.log('FileUploader: Se limpió localStorage después de subida exitosa', {
+        // console.log('FileUploader: Se limpió localStorage después de subida exitosa', {
           storageKey
         });
       } catch (error) {

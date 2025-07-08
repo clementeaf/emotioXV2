@@ -25,7 +25,7 @@ const Checkbox = React.forwardRef<HTMLButtonElement, CheckboxProps>(
 
     // Función de manejador de clic mejorada
     const handleClick = () => {
-      console.log('Checkbox clicked, current state:', isChecked);
+      // console.log('Checkbox clicked, current state:', isChecked);
       if (onCheckedChange) {
         onCheckedChange(!isChecked);
       }
@@ -136,7 +136,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           type="checkbox"
                           checked={demographicQuestionsEnabled}
                           onChange={(e) => {
-                            console.log('Demográficas cambiado:', e.target.checked);
+                            // console.log('Demográficas cambiado:', e.target.checked);
                             setDemographicQuestionsEnabled(e.target.checked);
                           }}
                           className="w-5 h-5 mr-3 cursor-pointer"
@@ -153,7 +153,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           id="age"
                           checked={formData.demographicQuestions.age.enabled}
                           onChange={(e) => {
-                            console.log('Edad cambiado:', e.target.checked);
+                            // console.log('Edad cambiado:', e.target.checked);
                             handleDemographicChange('age' as DemographicQuestionKeys, e.target.checked);
                           }}
                           disabled={!demographicQuestionsEnabled}
@@ -168,7 +168,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           id="country"
                           checked={formData.demographicQuestions.country.enabled}
                           onChange={(e) => {
-                            console.log('País cambiado:', e.target.checked);
+                            // console.log('País cambiado:', e.target.checked);
                             handleDemographicChange('country' as DemographicQuestionKeys, e.target.checked);
                           }}
                           disabled={!demographicQuestionsEnabled}
@@ -258,7 +258,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           type="checkbox"
                           checked={linkConfigEnabled}
                           onChange={(e) => {
-                            console.log('Configuración enlace cambiado:', e.target.checked);
+                            // console.log('Configuración enlace cambiado:', e.target.checked);
                             setLinkConfigEnabled(e.target.checked);
                           }}
                           className="w-5 h-5 mr-3 cursor-pointer"
@@ -275,7 +275,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           id="allowMobile"
                           checked={formData.linkConfig.allowMobile}
                           onChange={(e) => {
-                            console.log('Dispositivos móviles clicado:', e.target.checked);
+                            // console.log('Dispositivos móviles clicado:', e.target.checked);
                             handleLinkConfigChange('allowMobile', e.target.checked);
                           }}
                           disabled={!linkConfigEnabled}
@@ -317,7 +317,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           type="checkbox"
                           checked={formData.participantLimit.enabled}
                           onChange={(e) => {
-                            console.log('Límite cambiado:', e.target.checked);
+                            // console.log('Límite cambiado:', e.target.checked);
                             setLimitParticipants(e.target.checked);
                           }}
                           className="w-5 h-5 mr-3 cursor-pointer"

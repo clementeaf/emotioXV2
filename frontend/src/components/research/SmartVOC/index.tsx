@@ -1,12 +1,13 @@
 import React from 'react';
 
+import { FormsSkeleton } from '@/components/research/WelcomeScreen/components/FormsSkeleton';
 import {
-    ConfirmationModal,
-    ErrorModal,
-    SmartVOCFooter,
-    SmartVOCHeader,
-    SmartVOCQuestions,
-    SmartVOCSettings,
+  ConfirmationModal,
+  ErrorModal,
+  SmartVOCFooter,
+  SmartVOCHeader,
+  SmartVOCQuestions,
+  SmartVOCSettings,
 } from './components';
 import { UI_TEXTS } from './constants';
 import { useSmartVOCForm } from './hooks/useSmartVOCForm';
@@ -84,24 +85,8 @@ export const SmartVOCForm: React.FC<SmartVOCFormProps> = ({
   // Mientras carga, mostrar un indicador de carga
   if (isLoading) {
     return (
-      <div className={`${className} flex flex-col items-center justify-center`}>
-        <div className="animate-pulse flex flex-col items-center space-y-4 w-full">
-          <div className="h-6 bg-gray-200 rounded w-1/2"></div>
-          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-          <div className="h-10 bg-gray-200 rounded w-full mt-4"></div>
-          <div className="space-y-2 w-full">
-            <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-            <div className="h-10 bg-gray-200 rounded w-full"></div>
-          </div>
-          <div className="space-y-2 w-full">
-            <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-            <div className="h-24 bg-gray-200 rounded w-full"></div>
-          </div>
-          <div className="flex justify-end space-x-2 w-full">
-            <div className="h-10 bg-gray-200 rounded w-24"></div>
-            <div className="h-10 bg-blue-200 rounded w-32"></div>
-          </div>
-        </div>
+      <div className={className}>
+        <FormsSkeleton />
       </div>
     );
   }

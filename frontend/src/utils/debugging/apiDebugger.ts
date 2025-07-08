@@ -3,18 +3,18 @@
  */
 
 export const debugFetch = async (url: string, options: RequestInit = {}) => {
-  console.log(`🔍 [API-DEBUG] Enviando solicitud a: ${url}`);
-  console.log('🔍 [API-DEBUG] Método:', options.method || 'GET');
-  console.log('🔍 [API-DEBUG] Cabeceras:', options.headers);
+  // console.log(`🔍 [API-DEBUG] Enviando solicitud a: ${url}`);
+  // console.log('🔍 [API-DEBUG] Método:', options.method || 'GET');
+  // console.log('🔍 [API-DEBUG] Cabeceras:', options.headers);
   
   if (options.body) {
     try {
       const bodyData = typeof options.body === 'string' 
         ? JSON.parse(options.body) 
         : options.body;
-      console.log('🔍 [API-DEBUG] Cuerpo:', bodyData);
+      // console.log('🔍 [API-DEBUG] Cuerpo:', bodyData);
     } catch (e) {
-      console.log('🔍 [API-DEBUG] Cuerpo (no JSON):', options.body);
+      // console.log('🔍 [API-DEBUG] Cuerpo (no JSON):', options.body);
     }
   }
   
@@ -27,7 +27,7 @@ export const debugFetch = async (url: string, options: RequestInit = {}) => {
     // Clonar la respuesta para no consumirla
     const clonedResponse = response.clone();
     
-    console.log(`🔍 [API-DEBUG] Respuesta status: ${response.status} (${response.statusText})`);
+    // console.log(`🔍 [API-DEBUG] Respuesta status: ${response.status} (${response.statusText})`);
     const responseHeadersObj: { [key: string]: string } = {};
     response.headers.forEach((value, key) => {
       responseHeadersObj[key] = value;
@@ -35,10 +35,10 @@ export const debugFetch = async (url: string, options: RequestInit = {}) => {
     
     try {
       const responseData = await clonedResponse.json();
-      console.log('🔍 [API-DEBUG] Datos respuesta:', responseData);
+      // console.log('🔍 [API-DEBUG] Datos respuesta:', responseData);
     } catch (e) {
       const text = await clonedResponse.text();
-      console.log('🔍 [API-DEBUG] Respuesta texto:', text.substring(0, 500) + (text.length > 500 ? '...' : ''));
+      // console.log('🔍 [API-DEBUG] Respuesta texto:', text.substring(0, 500) + (text.length > 500 ? '...' : ''));
     }
     
     return response;
@@ -47,7 +47,7 @@ export const debugFetch = async (url: string, options: RequestInit = {}) => {
     console.error('🔍 [API-DEBUG] Error en la solicitud:', e);
     throw e;
   } finally {
-    console.log('🔍 [API-DEBUG] Solicitud finalizada');
+    // console.log('🔍 [API-DEBUG] Solicitud finalizada');
     
     // Registrar a localStorage para inspección
     if (typeof window !== 'undefined') {
@@ -87,7 +87,7 @@ export const debugFetch = async (url: string, options: RequestInit = {}) => {
 export const clearApiDebugLogs = () => {
   if (typeof window !== 'undefined') {
     localStorage.removeItem('api_debug_logs');
-    console.log('🔍 [API-DEBUG] Logs de API borrados');
+    // console.log('🔍 [API-DEBUG] Logs de API borrados');
   }
 };
 

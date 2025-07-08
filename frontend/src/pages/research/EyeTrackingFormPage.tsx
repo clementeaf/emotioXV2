@@ -55,7 +55,7 @@ const EyeTrackingFormPage: React.FC = () => {
         const data = await eyeTrackingService.getByResearchId(researchId);
         setFormData(data);
       } catch (error) {
-        console.log('No se encontró configuración existente, usando valores predeterminados');
+        // console.log('No se encontró configuración existente, usando valores predeterminados');
         // Si no hay configuración existente, usar valores predeterminados
         setFormData({
           ...DEFAULT_EYE_TRACKING_CONFIG,

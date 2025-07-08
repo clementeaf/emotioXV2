@@ -10,7 +10,7 @@ const Switch = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root>
 >(({ className, ...props }, ref) => {
   const handleCheckedChange = (checked: boolean) => {
-    console.log('Switch toggled:', checked);
+    // console.log('Switch toggled:', checked);
     
     if (props.onCheckedChange) {
       props.onCheckedChange(checked);

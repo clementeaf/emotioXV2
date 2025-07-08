@@ -46,12 +46,12 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
   // Añadimos log de estado de autenticación para depuración
   useEffect(() => {
     const isTokenInStorage = !!localStorage.getItem('token') || !!sessionStorage.getItem('token');
-    console.log('[ThankYouScreenForm] Estado de autenticación:', {
-      isAuthenticated,
-      tokenInHook: !!token,
-      tokenInStorage: isTokenInStorage,
-      user: !!user
-    });
+    // console.log('[ThankYouScreenForm] Estado de autenticación:', {
+    //   isAuthenticated,
+    //   tokenInHook: !!token,
+    //   tokenInStorage: isTokenInStorage,
+    //   user: !!user
+    // });
   }, [isAuthenticated, token, user]);
 
   // Handlers para el modal
@@ -168,7 +168,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
 
     if (!researchId) {
       errors.researchId = ERROR_MESSAGES.VALIDATION_ERRORS.RESEARCH_ID_REQUIRED;
-      console.log('[useThankYouScreenForm] Error de validación: ID de investigación requerido');
+      // console.log('[useThankYouScreenForm] Error de validación: ID de investigación requerido');
     }
 
     // Solo validar título y mensaje si la pantalla está habilitada

@@ -27,7 +27,7 @@ const getToken = () => {
  * @returns Datos procesados o error
  */
 const handleThankYouScreenResponse = async (response: Response) => {
-  console.log(`[ThankYouScreenAPI] Respuesta recibida: ${response.status} ${response.statusText}`);
+  // console.log(`[ThankYouScreenAPI] Respuesta recibida: ${response.status} ${response.statusText}`);
 
   // Ya no lanzamos error para 404 aquí, porque lo manejamos en getByResearchId
   // Intentar obtener el cuerpo como JSON
@@ -56,7 +56,7 @@ const getAuthHeaders = () => {
     ? `${token.substring(0, 6)}...${token.substring(token.length - 4)}`
     : 'no hay token';
 
-  console.log(`[ThankYouScreenAPI] Usando token: ${tokenSummary}`);
+  // console.log(`[ThankYouScreenAPI] Usando token: ${tokenSummary}`);
 
   return {
     'Content-Type': 'application/json',
@@ -80,8 +80,8 @@ export const thankYouScreenFixedAPI = {
     }
 
     const url = API_ENDPOINTS.thankYouScreen?.getByResearch?.replace('{id}', id) || `/thank-you-screen/${id}`;
-    console.log(`[ThankYouScreenAPI] Obteniendo ThankYouScreen con ID ${id}, URL: ${url}`);
-    console.log(`[ThankYouScreenAPI] URL completa: ${API_BASE_URL}${url}`);
+    // console.log(`[ThankYouScreenAPI] Obteniendo ThankYouScreen con ID ${id}, URL: ${url}`);
+    // console.log(`[ThankYouScreenAPI] URL completa: ${API_BASE_URL}${url}`);
 
     return {
       send: async () => {
@@ -107,8 +107,8 @@ export const thankYouScreenFixedAPI = {
     }
 
     const url = API_ENDPOINTS.thankYouScreen?.getByResearch?.replace('{researchId}', researchId) || `/thank-you-screen/research/${researchId}`;
-    console.log(`[ThankYouScreenAPI] Obteniendo ThankYouScreen para investigación ${researchId}, URL: ${url}`);
-    console.log(`[ThankYouScreenAPI] URL completa: ${API_BASE_URL}${url}`);
+    // console.log(`[ThankYouScreenAPI] Obteniendo ThankYouScreen para investigación ${researchId}, URL: ${url}`);
+    // console.log(`[ThankYouScreenAPI] URL completa: ${API_BASE_URL}${url}`);
 
     return {
       send: async () => {
@@ -120,7 +120,7 @@ export const thankYouScreenFixedAPI = {
           });
 
           if (response.status === 404) {
-            console.log('[ThankYouScreenAPI] No se encontró configuración de ThankYouScreen para esta investigación');
+            // console.log('[ThankYouScreenAPI] No se encontró configuración de ThankYouScreen para esta investigación');
             return {
               notFound: true,
               data: null,
@@ -132,7 +132,7 @@ export const thankYouScreenFixedAPI = {
 
           return handleThankYouScreenResponse(response);
         } catch (error) {
-          console.log('[ThankYouScreenAPI] Error al obtener ThankYouScreen por researchId:', error);
+          // console.log('[ThankYouScreenAPI] Error al obtener ThankYouScreen por researchId:', error);
           throw error;
         }
       }
@@ -154,9 +154,9 @@ export const thankYouScreenFixedAPI = {
     // Reemplazar el placeholder con el researchId real
     const url = urlTemplate.replace('{researchId}', data.researchId.trim());
 
-    console.log(`[ThankYouScreenAPI] Creando ThankYouScreen para investigación ${data.researchId}, URL plantilla: ${urlTemplate}, URL final: ${url}`);
-    console.log(`[ThankYouScreenAPI] URL completa: ${API_BASE_URL}${url}`);
-    console.log('[ThankYouScreenAPI] Datos a enviar:', data);
+    // console.log(`[ThankYouScreenAPI] Creando ThankYouScreen para investigación ${data.researchId}, URL plantilla: ${urlTemplate}, URL final: ${url}`);
+    // console.log(`[ThankYouScreenAPI] URL completa: ${API_BASE_URL}${url}`);
+    // console.log('[ThankYouScreenAPI] Datos a enviar:', data);
 
     return {
       send: async () => {
@@ -186,7 +186,7 @@ export const thankYouScreenFixedAPI = {
             // Clasificar y manejar los errores
             if (response.status === 404) {
               // URL inexistente - mostrar error
-              console.log(`[ThankYouScreenAPI] Error 404: URL no encontrada: ${url}`);
+              // console.log(`[ThankYouScreenAPI] Error 404: URL no encontrada: ${url}`);
               throw new Error(`La URL de la API no existe: ${errorMessage}`);
             } else if (response.status === 400 || response.status === 422) {
               // Datos incompatibles - mostrar error
@@ -230,10 +230,10 @@ export const thankYouScreenFixedAPI = {
       .replace('{researchId}', data.researchId)
       .replace('{screenId}', screenId);
 
-    console.log(`[ThankYouScreenAPI] Actualizando ThankYouScreen con ID ${screenId} para investigación ${data.researchId}`);
-    console.log(`[ThankYouScreenAPI] URL plantilla: ${urlTemplate}, URL final: ${url}`);
-    console.log(`[ThankYouScreenAPI] URL completa: ${API_BASE_URL}${url}`);
-    console.log('[ThankYouScreenAPI] Datos a enviar:', data);
+    // console.log(`[ThankYouScreenAPI] Actualizando ThankYouScreen con ID ${screenId} para investigación ${data.researchId}`);
+    // console.log(`[ThankYouScreenAPI] URL plantilla: ${urlTemplate}, URL final: ${url}`);
+    // console.log(`[ThankYouScreenAPI] URL completa: ${API_BASE_URL}${url}`);
+    // console.log('[ThankYouScreenAPI] Datos a enviar:', data);
 
     return {
       send: async () => {
@@ -259,7 +259,7 @@ export const thankYouScreenFixedAPI = {
             // Clasificar y manejar los errores
             if (response.status === 404) {
               // URL inexistente o recurso no encontrado - mostrar error
-              console.log(`[ThankYouScreenAPI] Error 404: Recurso no encontrado con ID ${screenId}`);
+              // console.log(`[ThankYouScreenAPI] Error 404: Recurso no encontrado con ID ${screenId}`);
               throw new Error(`No se encontró la pantalla de agradecimiento con ID ${screenId}: ${errorMessage}`);
             } else if (response.status === 400 || response.status === 422) {
               // Datos incompatibles - mostrar error
@@ -293,8 +293,8 @@ export const thankYouScreenFixedAPI = {
     }
 
     const url = (API_ENDPOINTS.thankYouScreen?.delete || '/thank-you-screen/{id}').replace('{id}', id);
-    console.log(`[ThankYouScreenAPI] Eliminando ThankYouScreen con ID ${id}, URL: ${url}`);
-    console.log(`[ThankYouScreenAPI] URL completa: ${API_BASE_URL}${url}`);
+    // console.log(`[ThankYouScreenAPI] Eliminando ThankYouScreen con ID ${id}, URL: ${url}`);
+    // console.log(`[ThankYouScreenAPI] URL completa: ${API_BASE_URL}${url}`);
 
     return {
       send: async () => {

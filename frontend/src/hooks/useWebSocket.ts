@@ -22,12 +22,12 @@ export function useWebSocket() {
     ws.current = new WebSocket(wsUrl);
 
     ws.current.onopen = () => {
-      console.log('WebSocket connected');
+      // console.log('WebSocket connected');
       reconnectAttempts.current = 0;
     };
 
     ws.current.onclose = () => {
-      console.log('WebSocket disconnected');
+      // console.log('WebSocket disconnected');
       scheduleReconnect();
     };
 
@@ -42,12 +42,12 @@ export function useWebSocket() {
         switch (message.action) {
           case 'token.update':
             if (message.token) {
-              console.log('WebSocket recibió acción token.update (no se actualizó en useAuth)');
+              // console.log('WebSocket recibió acción token.update (no se actualizó en useAuth)');
             }
             break;
           // Manejar otros tipos de mensajes aquí
           default:
-            console.log('Unhandled message type:', message);
+            // console.log('Unhandled message type:', message);
         }
       } catch (error) {
         console.error('Error processing message:', error);
@@ -57,7 +57,7 @@ export function useWebSocket() {
 
   const scheduleReconnect = useCallback(() => {
     if (reconnectAttempts.current >= maxReconnectAttempts) {
-      console.log('Max reconnection attempts reached');
+      // console.log('Max reconnection attempts reached');
       return;
     }
 

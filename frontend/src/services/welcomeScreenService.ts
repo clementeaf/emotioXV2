@@ -59,7 +59,7 @@ export const welcomeScreenService = {
       return result;
     } catch (error: any) {
       if (error && typeof error === 'object' && 'statusCode' in error && (error as any).statusCode === 404) {
-        console.log(`[Service] No se encontró pantalla (404), devolviendo null.`);
+        // // console.log(`[Service] No se encontró pantalla (404), devolviendo null.`);
         return null;
       }
       console.error(`Error al obtener pantalla de bienvenida para investigación ${researchId}:`, error);
@@ -89,7 +89,7 @@ export const welcomeScreenService = {
     if (!researchId || !screenId) {
       throw new Error('researchId y screenId son requeridos para actualizar.');
     }
-    console.log(`[Service DEBUG] Actualizando pantalla con screenId: ${screenId}, researchId: ${researchId}`);
+    // // console.log(`[Service DEBUG] Actualizando pantalla con screenId: ${screenId}, researchId: ${researchId}`);
     const response = await welcomeScreenFixedAPI.update(researchId, screenId, data).send();
     return response;
   },
