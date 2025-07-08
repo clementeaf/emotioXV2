@@ -35,7 +35,7 @@ const ParticipantFlow: React.FC = () => {
         currentStepIndex,
         isFlowLoading,
         navigateToStep,
-        responsesData: responsesDataFromFlow,
+        // responsesData: responsesDataFromFlow, // Comentado porque no se usa
         getStepResponse: getStepResponseFromManager,
         loadExistingResponses,
         participantId
@@ -64,10 +64,10 @@ const ParticipantFlow: React.FC = () => {
         return savedResponse;
     }, [memoizedCurrentExpandedStep, getStepResponseFromManager, getStepResponseFromStore, currentStepIndex]);
 
-    const memoizedResponsesDataProp = useMemo(() => {
-        const isThankYou = memoizedCurrentExpandedStep?.type === 'thankyou' || currentStep === ParticipantFlowStep.DONE;
-        return isThankYou ? (responsesData as any) : undefined;
-    }, [memoizedCurrentExpandedStep, currentStep, responsesData]);
+    // const memoizedResponsesDataProp = useMemo(() => {
+    //     const isThankYou = memoizedCurrentExpandedStep?.type === 'thankyou' || currentStep === ParticipantFlowStep.DONE;
+    //     return isThankYou ? (responsesData as any) : undefined;
+    // }, [memoizedCurrentExpandedStep, currentStep, responsesData]);
 
     const showSidebar = ![
         ParticipantFlowStep.LOGIN,
@@ -123,12 +123,17 @@ const ParticipantFlow: React.FC = () => {
     const eyeTrackingConfig = useMemo(() => {
         if (
             responsesData &&
-            responsesData.modules &&
-            Array.isArray(responsesData.modules.eye_tracking) &&
-            responsesData.modules.eye_tracking.length > 0
+            Array.isArray(responsesData) &&
+            responsesData.length > 0
         ) {
-            const first = responsesData.modules.eye_tracking[0];
-            return first && typeof first === 'object' && 'config' in first && first.config ? first.config : first;
+                        // Buscar respuesta de eye tracking en el array
+            const eyeTrackingResponse = responsesData.find(response =>
+                response && typeof response === 'object' &&
+                (response.stepType === 'eye_tracking' || (response as any).type === 'eye_tracking')
+            );
+            if (eyeTrackingResponse && typeof eyeTrackingResponse === 'object' && 'config' in eyeTrackingResponse) {
+                return eyeTrackingResponse.config;
+            }
         }
         // Fallback: buscar en expandedSteps si está disponible
         if (expandedSteps && expandedSteps.length > 0) {

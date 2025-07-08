@@ -71,26 +71,25 @@ const CurrentStepRenderer: React.FC<CurrentStepProps & { responsesData?: any }> 
     }
 
     if (stepType === 'demographic') {
-        // 🔧 FIX: Esperar a que responsesData tenga datos antes de renderizar
         if (!responsesData || !Array.isArray(responsesData)) {
             return <div className="w-full max-w-lg mx-auto bg-white p-6 rounded-lg shadow-md text-center">Cargando datos demográficos...</div>;
         }
-
-        // Si responsesData está vacío, también mostrar loading
-        if (responsesData.length === 0) {
-            return <div className="w-full max-w-lg mx-auto bg-white p-6 rounded-lg shadow-md text-center">Cargando datos demográficos...</div>;
-        }
-
-        if (!demographicSavedResponse) {
-            return <div className="w-full max-w-lg mx-auto bg-white p-6 rounded-lg shadow-md text-center">Cargando datos demográficos...</div>;
+        // Extracción robusta de respuesta previa
+        let initialValues = {};
+        if (demographicSavedResponse && typeof demographicSavedResponse === 'object' && 'response' in demographicSavedResponse) {
+            initialValues = demographicSavedResponse.response;
+        } else if (savedResponse && typeof savedResponse === 'object' && 'response' in savedResponse) {
+            initialValues = savedResponse.response;
+        } else if (savedResponse !== undefined) {
+            initialValues = savedResponse;
         }
         const finalProps = {
             ...restOfStepProps,
             stepType,
             stepConfig,
             config: stepConfig,
-            initialValues: demographicSavedResponse,
-            savedResponse: demographicSavedResponse,
+            initialValues,
+            savedResponse: initialValues,
             onNext: onStepComplete,
             onSubmit: onStepComplete,
             onStepComplete: onStepComplete,
@@ -109,19 +108,22 @@ const CurrentStepRenderer: React.FC<CurrentStepProps & { responsesData?: any }> 
         if (!responsesData || !Array.isArray(responsesData)) {
             return <div className="w-full max-w-lg mx-auto bg-white p-6 rounded-lg shadow-md text-center">Cargando datos de preferencia...</div>;
         }
-        if (responsesData.length === 0) {
-            return <div className="w-full max-w-lg mx-auto bg-white p-6 rounded-lg shadow-md text-center">Cargando datos de preferencia...</div>;
-        }
-        if (!preferenceSavedResponse) {
-            return <div className="w-full max-w-lg mx-auto bg-white p-6 rounded-lg shadow-md text-center">Cargando datos de preferencia...</div>;
+        // Extracción robusta de respuesta previa
+        let initialValues = {};
+        if (preferenceSavedResponse && typeof preferenceSavedResponse === 'object' && 'response' in preferenceSavedResponse) {
+            initialValues = preferenceSavedResponse.response;
+        } else if (savedResponse && typeof savedResponse === 'object' && 'response' in savedResponse) {
+            initialValues = savedResponse.response;
+        } else if (savedResponse !== undefined) {
+            initialValues = savedResponse;
         }
         const finalProps = {
             ...restOfStepProps,
             stepType,
             stepConfig,
             config: stepConfig,
-            initialValues: preferenceSavedResponse,
-            savedResponse: preferenceSavedResponse,
+            initialValues,
+            savedResponse: initialValues,
             onNext: onStepComplete,
             onSubmit: onStepComplete,
             onStepComplete: onStepComplete,
