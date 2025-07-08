@@ -93,20 +93,20 @@ export const useResponseManager = ({
 
             const modulesDataFromApi = (apiResponse as { responses: unknown }).responses;
 
-            if (
+            // 🔥 FIX: Si responses es un array, úsalo directamente
+            if (Array.isArray(modulesDataFromApi)) {
+                storeSetLoadedResponses(modulesDataFromApi);
+            } else if (
                 modulesDataFromApi &&
                 typeof modulesDataFromApi === 'object' &&
-                !Array.isArray(modulesDataFromApi) &&
                 'all_steps' in modulesDataFromApi &&
                 Array.isArray((modulesDataFromApi as { all_steps?: unknown }).all_steps)
             ) {
                 storeSetLoadedResponses((modulesDataFromApi as { all_steps: unknown[] }).all_steps as ModuleResponse[]);
-            } else if (Array.isArray(modulesDataFromApi)) {
-                storeSetLoadedResponses(modulesDataFromApi);
             } else {
                 // Solo advertir si modulesDataFromApi no es null/undefined (que es esperado para nuevos participantes)
                 if (modulesDataFromApi !== null && modulesDataFromApi !== undefined) {
-                    console.warn('[useResponseManager] modulesDataFromApi no tiene el formato esperado. Recibido:', modulesDataFromApi);
+                    // No console.log
                 }
                 storeSetLoadedResponses([]);
             }

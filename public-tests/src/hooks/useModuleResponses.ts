@@ -30,16 +30,20 @@ export const useModuleResponses = ({
   // Efecto para sincronizar los datos de la API con el store de Zustand
   useEffect(() => {
     if (data?.data) {
-      const responseDataObject = data.data as { data?: { responses?: unknown[] } };
-      const responses = responseDataObject?.data?.responses || [];
+      // La estructura real es: { data: { responses: [...] } }
+      const responseDataObject = data.data as { responses?: unknown[] };
+      const responses = responseDataObject?.responses || [];
       if (responses.length > 0) {
         setLoadedResponses(responses as ModuleResponse[]);
       }
     }
   }, [data, setLoadedResponses]);
 
+  // DEVOLVER SIEMPRE EL ARRAY DE RESPUESTAS
   return {
-    data: data?.data ? (data.data as { data?: { responses?: unknown[] } })?.data?.responses : [],
+    data: data?.data && Array.isArray((data.data as { responses?: unknown[] }).responses)
+      ? (data.data as { responses?: unknown[] }).responses
+      : [],
     isLoading,
     error: error ? (error as Error).message : null,
     refetch,

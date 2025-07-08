@@ -35,9 +35,14 @@ const ParticipantFlow: React.FC = () => {
         currentStepIndex,
         isFlowLoading,
         navigateToStep,
-        responsesData,
+        responsesData: responsesDataFromFlow,
         getStepResponse: getStepResponseFromManager,
+        loadExistingResponses,
+        participantId
     } = useParticipantFlow(researchId);
+
+    // Obtener SIEMPRE el array actualizado del store
+    const responsesData = useParticipantStore(state => state.responsesData.modules.all_steps || []);
 
     // Obtener función getStepResponse del store (para backup/debugging)
     const getStepResponseFromStore = useParticipantStore(state => state.getStepResponse);
@@ -175,6 +180,14 @@ const ParticipantFlow: React.FC = () => {
             isFirstVisit
         });
     }, [reentryCount, sessionStartTime, lastVisitTime, totalSessionTime, isFirstVisit]);
+
+    // Forzar fetch de respuestas cuando ambos IDs estén listos
+    useEffect(() => {
+        if (researchId && participantId) {
+            loadExistingResponses();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [researchId, participantId]);
 
     // BLOQUEO MEJORADO: Si no se permite móvil y el usuario está en móvil/tablet
     if (shouldBlock) {
@@ -351,7 +364,7 @@ const ParticipantFlow: React.FC = () => {
                                         handleLoginSuccess={handleLoginSuccess}
                                         handleStepComplete={handleStepComplete}
                                         handleError={handleError}
-                                        responsesData={memoizedResponsesDataProp as any}
+                                        responsesData={responsesData}
                                         savedResponse={savedResponseForCurrentStep}
                                     />
                                 </div>

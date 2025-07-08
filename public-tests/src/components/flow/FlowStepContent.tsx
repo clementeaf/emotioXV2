@@ -6,7 +6,7 @@ import CurrentStepRenderer from './CurrentStepRenderer';
 // import { FlowStepContentProps as OldFlowStepContentProps } from './types';
 import { FlowStepContentComponentProps } from '../../types/flow.types';
 
-const FlowStepContent: React.FC<FlowStepContentComponentProps> = (props) => {
+const FlowStepContent: React.FC<Omit<FlowStepContentComponentProps, 'responsesData'> & { responsesData?: any }> = (props) => {
     // Declarar todas las props al inicio
     const {
         currentStepEnum,

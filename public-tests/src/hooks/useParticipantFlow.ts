@@ -257,6 +257,8 @@ export const useParticipantFlow = (researchId: string | undefined) => {
         getAnsweredStepIndices,
         getStepResponse,
         maxVisitedIndex: maxVisitedIndexFromStore,
-        loadedApiResponses: loadedApiResponsesFromStore
+        loadedApiResponses: loadedApiResponsesFromStore,
+        loadExistingResponses,
+        participantId
     };
 };

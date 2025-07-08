@@ -228,16 +228,11 @@ export const useParticipantStore = create(
         newResponsesData.participantId = state.participantId || newResponsesData.participantId;
 
         if (Array.isArray(loadedStepResponses)) {
-          const existingSteps = newResponsesData.modules.all_steps || [];
-          const combinedSteps = [...existingSteps, ...loadedStepResponses];
-
-          const uniqueSteps = combinedSteps.filter((response, index, self) =>
-             response.id && index === self.findIndex((r) => r.id === response.id)
-          );
-
+          // 🔥 FIX: Reemplazar completamente all_steps con el array de la API
+          // NO hacer merge, NO filtrar por id único
           newResponsesData.modules = {
             ...newResponsesData.modules,
-            all_steps: uniqueSteps,
+            all_steps: loadedStepResponses,
           };
         } else {
            console.warn("[ParticipantStore] setLoadedResponses esperaba un array pero recibió:", loadedStepResponses);
