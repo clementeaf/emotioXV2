@@ -70,6 +70,64 @@ const CurrentStepRenderer: React.FC<CurrentStepProps & { responsesData?: any }> 
         }
     }
 
+    // Lógica robusta para formularios que esperan 'savedResponses' en config
+    const stepTypesWithSavedResponses = [
+        'cognitive_short_text',
+        'cognitive_long_text',
+        'cognitive_single_choice',
+        'cognitive_multiple_choice',
+        'cognitive_linear_scale',
+        'cognitive_ranking',
+        'smartvoc_feedback',
+        'feedback',
+        'image_feedback',
+        'multiple_choice',
+        'single_choice',
+        'long_text',
+        'short_text',
+        'ranking',
+        'linear_scale',
+    ];
+
+    if (stepTypesWithSavedResponses.includes(stepType)) {
+        // Buscar respuesta previa en responsesData
+        let savedResponses = undefined;
+        if (responsesData && Array.isArray(responsesData)) {
+            const found = responsesData.find(
+                (r) =>
+                    (r.stepType === stepType || r.type === stepType) &&
+                    r.response !== undefined
+            );
+            if (found && found.response !== undefined) {
+                savedResponses = found.response;
+            }
+        } else if (savedResponse !== undefined) {
+            savedResponses = savedResponse;
+        }
+        // Inyectar savedResponses en el config del paso
+        const configWithSaved = {
+            ...(stepConfig || {}),
+            savedResponses,
+        };
+        const finalProps = {
+            ...restOfStepProps,
+            stepType,
+            stepConfig: configWithSaved,
+            config: configWithSaved,
+            savedResponse: savedResponses,
+            onNext: onStepComplete,
+            onSubmit: onStepComplete,
+            onStepComplete: onStepComplete,
+            initialValue: initialValueToPass,
+            ...mappedProps,
+        };
+        return (
+            <Suspense fallback={<div className="flex items-center justify-center h-full">Cargando paso...</div>}>
+                <ComponentToRender {...finalProps as any} />
+            </Suspense>
+        );
+    }
+
     if (stepType === 'demographic') {
         if (!responsesData || !Array.isArray(responsesData)) {
             return <div className="w-full max-w-lg mx-auto bg-white p-6 rounded-lg shadow-md text-center">Cargando datos demográficos...</div>;
