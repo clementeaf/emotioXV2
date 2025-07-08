@@ -51,10 +51,12 @@ const CurrentStepRenderer: React.FC<CurrentStepProps & { responsesData?: any }> 
     }
 
     let demographicSavedResponse = savedResponse;
+    let demographicResponseId = undefined;
     if (stepType === 'demographic' && responsesData && Array.isArray(responsesData)) {
         const found = responsesData.find((r) => r && typeof r === 'object' && r.stepType === 'demographic' && 'response' in r);
         if (found && typeof found.response === 'object') {
             demographicSavedResponse = found.response;
+            demographicResponseId = found.id;
         }
     }
 
@@ -71,9 +73,14 @@ const CurrentStepRenderer: React.FC<CurrentStepProps & { responsesData?: any }> 
         initialValue: initialValueToPass,
         ...mappedProps,
     };
+    const keyForDemographic = stepType === 'demographic' ? (demographicResponseId || 'empty') : undefined;
     return (
         <Suspense fallback={<div className="flex items-center justify-center h-full">Cargando paso...</div>}>
-            <ComponentToRender {...finalProps as any} />
+            {keyForDemographic ? (
+                <ComponentToRender key={keyForDemographic} {...finalProps as any} />
+            ) : (
+                <ComponentToRender {...finalProps as any} />
+            )}
         </Suspense>
     );
 };

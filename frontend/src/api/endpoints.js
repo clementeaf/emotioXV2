@@ -17,7 +17,7 @@ export const API_ENDPOINTS = {
 // URLs de desarrollo local
 export const LOCAL_URLS = {
   "frontend": "http://localhost:3000",
-  "publicTests": "http://localhost:4700"
+  "publicTests": "http://localhost:5173"
 };
 
 // Constantes para uso más fácil
@@ -43,7 +43,7 @@ export function getPublicTestsUrl() {
 
 // Función para navegar a public-tests con researchID
 export function navigateToPublicTests(researchID) {
-  const url = `${getPublicTestsUrl()}/${researchID}`;
+  const url = `${getPublicTestsUrl()}/?researchId=${researchID}`;
   window.open(url, '_blank');
 }
 
