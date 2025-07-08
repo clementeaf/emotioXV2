@@ -9,7 +9,11 @@ interface PreferenceFile {
   size: number;
 }
 
-const PreferenceTestTask: React.FC<MappedStepComponentProps> = ({ stepConfig, onStepComplete, savedResponse }) => {
+interface PreferenceTestTaskProps extends MappedStepComponentProps {
+  responsesData?: any[];
+}
+
+const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({ stepConfig, onStepComplete, savedResponse, responsesData }) => {
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hasBeenSaved, setHasBeenSaved] = useState<boolean>(false);
@@ -40,47 +44,29 @@ const PreferenceTestTask: React.FC<MappedStepComponentProps> = ({ stepConfig, on
   const config = preferenceQuestion || stepConfig;
   const images = config?.files || [];
 
+  // Buscar respuesta previa en responsesData si existe
+  const preferenceSavedResponse = React.useMemo(() => {
+    if (!responsesData || !Array.isArray(responsesData)) return null;
+    return responsesData.find(
+      r =>
+        (r.stepType === 'cognitive_preference_test' || r.type === 'cognitive_preference_test') &&
+        (r.stepTitle === 'Preferencia' || r.name === 'Preferencia') &&
+        r.response
+    );
+  }, [responsesData]);
+
   React.useEffect(() => {
-    if (savedResponse) {
-      let extractedImageId: string | null = null;
-
-      if (typeof savedResponse === 'object' && 'selectedImageId' in savedResponse) {
-        extractedImageId = (savedResponse as { selectedImageId: string }).selectedImageId;
-      }
-      else if (typeof savedResponse === 'object' && 'response' in savedResponse) {
-        const response = (savedResponse as { response: unknown }).response;
-        if (typeof response === 'object' && response && 'selectedImageId' in response) {
-          extractedImageId = (response as { selectedImageId: string }).selectedImageId;
-        }
-      }
-      else if (typeof savedResponse === 'string') {
-        extractedImageId = savedResponse;
-      }
-      else if (typeof savedResponse === 'object') {
-        const searchForImageId = (obj: any): string | null => {
-          if (!obj || typeof obj !== 'object') return null;
-
-          for (const [_key, value] of Object.entries(obj)) {
-            if (typeof value === 'string' && images.some((img: any) => img.id === value)) {
-              return value;
-            }
-            if (typeof value === 'object' && value !== null) {
-              const nested = searchForImageId(value);
-              if (nested) return nested;
-            }
-          }
-          return null;
-        };
-
-        extractedImageId = searchForImageId(savedResponse);
-      }
-
-      if (extractedImageId && images.some((img: any) => img.id === extractedImageId)) {
-        setSelectedImageId(extractedImageId);
-        setHasBeenSaved(true);
-      }
+    // Prioridad: savedResponse (prop directa), luego responsesData
+    const responseToUse = savedResponse || preferenceSavedResponse?.response;
+    let extractedImageId: string | null = null;
+    if (typeof responseToUse === 'object' && responseToUse && 'selectedImageId' in responseToUse) {
+      extractedImageId = (responseToUse as { selectedImageId: string }).selectedImageId;
     }
-  }, [savedResponse, images]);
+    if (extractedImageId && images.some((img: any) => img.id === extractedImageId)) {
+      setSelectedImageId(extractedImageId);
+      setHasBeenSaved(true);
+    }
+  }, [savedResponse, preferenceSavedResponse, images]);
 
   // Reset zoom y pan al cambiar de imagen
   useEffect(() => {

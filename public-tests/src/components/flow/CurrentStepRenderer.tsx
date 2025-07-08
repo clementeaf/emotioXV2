@@ -60,6 +60,16 @@ const CurrentStepRenderer: React.FC<CurrentStepProps & { responsesData?: any }> 
         }
     }
 
+    let preferenceSavedResponse = undefined;
+    let preferenceResponseId = undefined;
+    if (stepType === 'cognitive_preference_test' && responsesData && Array.isArray(responsesData)) {
+        const found = responsesData.find((r) => r && typeof r === 'object' && (r.stepType === 'cognitive_preference_test' || r.type === 'cognitive_preference_test') && 'response' in r);
+        if (found && typeof found.response === 'object') {
+            preferenceSavedResponse = found.response;
+            preferenceResponseId = found.id;
+        }
+    }
+
     if (stepType === 'demographic') {
         // 🔧 FIX: Esperar a que responsesData tenga datos antes de renderizar
         if (!responsesData || !Array.isArray(responsesData)) {
@@ -91,6 +101,37 @@ const CurrentStepRenderer: React.FC<CurrentStepProps & { responsesData?: any }> 
         return (
             <Suspense fallback={<div className="flex items-center justify-center h-full">Cargando paso...</div>}>
                 <ComponentToRender key={keyForDemographic} {...finalProps as any} />
+            </Suspense>
+        );
+    }
+
+    if (stepType === 'cognitive_preference_test') {
+        if (!responsesData || !Array.isArray(responsesData)) {
+            return <div className="w-full max-w-lg mx-auto bg-white p-6 rounded-lg shadow-md text-center">Cargando datos de preferencia...</div>;
+        }
+        if (responsesData.length === 0) {
+            return <div className="w-full max-w-lg mx-auto bg-white p-6 rounded-lg shadow-md text-center">Cargando datos de preferencia...</div>;
+        }
+        if (!preferenceSavedResponse) {
+            return <div className="w-full max-w-lg mx-auto bg-white p-6 rounded-lg shadow-md text-center">Cargando datos de preferencia...</div>;
+        }
+        const finalProps = {
+            ...restOfStepProps,
+            stepType,
+            stepConfig,
+            config: stepConfig,
+            initialValues: preferenceSavedResponse,
+            savedResponse: preferenceSavedResponse,
+            onNext: onStepComplete,
+            onSubmit: onStepComplete,
+            onStepComplete: onStepComplete,
+            initialValue: initialValueToPass,
+            ...mappedProps,
+        };
+        const keyForPreference = preferenceResponseId || 'empty';
+        return (
+            <Suspense fallback={<div className="flex items-center justify-center h-full">Cargando paso...</div>}>
+                <ComponentToRender key={keyForPreference} {...finalProps as any} />
             </Suspense>
         );
     }
