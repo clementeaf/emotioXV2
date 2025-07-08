@@ -129,6 +129,9 @@ export function useStandardizedForm<T>(
     autoFetch: !!(researchId && participantId && !isMock)
   });
 
+  // Usar moduleResponsesArray para evitar el warning de TypeScript
+  const responses = moduleResponsesArray || [];
+
   const setValue = useCallback((newValue: T, isUserInteraction: boolean = false) => {
     if (value !== newValue) {
       if (isUserInteraction) {
@@ -187,8 +190,8 @@ export function useStandardizedForm<T>(
       console.log('[useStandardizedForm] Prellenado mock:', { value: savedResponse ? extractedValue : initialValue });
       return;
     }
-    if (moduleResponsesArray && Array.isArray(moduleResponsesArray)) {
-      const foundResponse = moduleResponsesArray.find((r: unknown) => {
+    if (responses && Array.isArray(responses)) {
+      const foundResponse = responses.find((r: unknown) => {
         if (typeof r !== 'object' || r === null) return false;
         const response = r as { stepType?: string; stepId?: string; stepTitle?: string; id?: string };
         return response.stepType === stepType && response.stepTitle === stepName;
@@ -214,7 +217,7 @@ export function useStandardizedForm<T>(
     setHasExistingData(false);
     initialLoadComplete.current = true;
     console.log('[useStandardizedForm] Sin respuesta previa, valor inicial:', { value: initialValue });
-  }, [participantId, researchId, isLoadingResponses, savedResponse, isMock, extractedValue, initialValue, value, isDataLoaded, moduleResponsesArray, stepType, stepName, extractValueFromResponse]);
+  }, [participantId, researchId, isLoadingResponses, savedResponse, isMock, extractedValue, initialValue, value, isDataLoaded, responses, stepType, stepName, extractValueFromResponse]);
 
   const validateValue = useCallback((valueToValidate: T): string | null => {
     if (required) {
