@@ -14,7 +14,6 @@ const SmartVocFeedbackQuestion = React.lazy(() => import('../questions/SmartVocF
 const LinearScaleQuestion = React.lazy(() => import('../questions/LineaScaleQuestion').then(module => ({ default: module.LineaScaleQuestion })));
 const MultipleChoiceQuestion = React.lazy(() => import('../questions/MultipleChoiceQuestion').then(module => ({ default: module.MultipleChoiceQuestion })));
 const SingleChoiceQuestion = React.lazy(() => import('../questions/SingleChoiceQuestion').then(module => ({ default: module.SingleChoiceQuestion })));
-const LongTextQuestion = React.lazy(() => import('../questions/LongTextQuestion').then(module => ({ default: module.LongTextQuestion })));
 const ShortTextQuestion = React.lazy(() => import('../questions/ShortTextQuestion').then(module => ({ default: module.ShortTextQuestion })));
 const DemographicStep = React.lazy(() => import('../questions/DemographicStep').then(module => ({ default: module.DemographicStep })));
 const NPSView = React.lazy(() => import('../../smartVoc/NPSView'));
@@ -52,7 +51,6 @@ export const stepComponentMap: StepComponentMap = {
     'smartvoc_nps': NPSView,
     'multiple_choice': MultipleChoiceQuestion,
     'single_choice': SingleChoiceQuestion,
-    'long_text': LongTextQuestion,
     'short_text': ShortTextQuestion,
     'demographic': DemographicStep,
     'thankyou': ThankYouView,

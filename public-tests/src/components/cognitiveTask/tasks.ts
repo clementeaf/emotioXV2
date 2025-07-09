@@ -1,17 +1,17 @@
-import TransactionAuthTask from './TransactionAuthTask';
-import PrioritizationTask from './PrioritizationTask';
-import NavigationFlowTask from './NavigationFlowTask';
-import { ShortTextView } from './questions/ShortTextView';
-import { LongTextView } from './questions/LongTextView';
-import { SingleChoiceView } from './questions/SingleChoiceView';
-import { MultiChoiceView } from './questions/MultiChoiceView';
-import { LinearScaleView } from './questions/LinearScaleView';
 import { TaskDefinition } from '../../types';
+import NavigationFlowTask from './NavigationFlowTask';
+import PrioritizationTask from './PrioritizationTask';
+import { LinearScaleView } from './questions/LinearScaleView';
+import { LongTextView } from './questions/LongTextView';
+import { MultiChoiceView } from './questions/MultiChoiceView';
+import { ShortTextView } from './questions/ShortTextView';
+import { SingleChoiceView } from './questions/SingleChoiceView';
+import TransactionAuthTask from './TransactionAuthTask';
 
 // Mapeo dinámico de tipos de pregunta a componentes
 export const QUESTION_TYPE_COMPONENTS: Record<string, React.ComponentType<unknown>> = {
   'short_text': ShortTextView as React.ComponentType<unknown>,
-  'long_text': LongTextView as React.ComponentType<unknown>,
+  'cognitive_long_text': LongTextView as React.ComponentType<unknown>,
   'single_choice': SingleChoiceView as React.ComponentType<unknown>,
   'multiple_choice': MultiChoiceView as React.ComponentType<unknown>,
   'linear_scale': LinearScaleView as React.ComponentType<unknown>,
@@ -22,11 +22,11 @@ export const QUESTION_TYPE_COMPONENTS: Record<string, React.ComponentType<unknow
 
 // Props por defecto para cada tipo (opcional)
 export const DEFAULT_QUESTION_PROPS: Record<string, Record<string, unknown>> = {
-  'short_text': { 
+  'short_text': {
     placeholder: 'Escribe tu respuesta...',
     maxLength: 500
   },
-  'long_text': { 
+  'cognitive_long_text': {
     placeholder: 'Escribe tu respuesta detallada aquí...',
     minLength: 50,
     maxLength: 2000
@@ -39,11 +39,11 @@ export const DEFAULT_QUESTION_PROPS: Record<string, Record<string, unknown>> = {
     maxSelections: null,
     allowOther: false
   },
-  'linear_scale': { 
+  'linear_scale': {
     showNumbers: true,
     showLabels: true
   },
-  'ranking': { 
+  'ranking': {
     enableDragAndDrop: true,
     showNumbers: true
   },
@@ -52,7 +52,7 @@ export const DEFAULT_QUESTION_PROPS: Record<string, Record<string, unknown>> = {
     footerText: 'Revisa todas las pantallas antes de elegir una únicamente',
     deviceFrame: true
   },
-  'preference_test': { 
+  'preference_test': {
     viewFormat: 'desktop-image',
     deviceFrame: true,
     allowComments: true
@@ -63,7 +63,7 @@ export const DEFAULT_QUESTION_PROPS: Record<string, Record<string, unknown>> = {
 export const createTaskDefinition = (question: any): TaskDefinition | null => {
   const questionType = question.type;
   const component = QUESTION_TYPE_COMPONENTS[questionType];
-  
+
   if (!component) {
     console.warn(`[tasks.ts] Tipo de pregunta no soportado: ${questionType}`);
     return null;
@@ -88,21 +88,21 @@ export const TASKS: TaskDefinition[] = [];
 // Función para construir TASKS dinámicamente desde configuración
 export const buildTasksFromConfig = (questions: any[]): TaskDefinition[] => {
   const tasks: TaskDefinition[] = [];
-  
+
   for (const question of questions) {
     const taskDef = createTaskDefinition(question);
     if (taskDef) {
       tasks.push(taskDef);
     }
   }
-  
+
   return tasks;
 };
 
 export const getTaskProgress = (currentTaskIndex: number, totalTasks: number): number => {
   if (currentTaskIndex < 0 || !totalTasks) return 0;
-  
+
   if (currentTaskIndex === 0) return 0;
-  
+
   return Math.round(((currentTaskIndex) / (totalTasks - 1)) * 100);
-}; 
+};

@@ -39,8 +39,18 @@ export const SmartVocFeedbackQuestion: React.FC<MappedStepComponentProps> = ({
 
   const finalInstructions = cfg.instructions || instructions;
 
+  // Utilidad para extraer el string de la respuesta
+  function extractStringResponse(resp: any): string {
+    if (typeof resp === 'string') return resp;
+    if (resp && typeof resp === 'object') {
+      if ('value' in resp && typeof resp.value === 'string') return resp.value;
+      if ('response' in resp && typeof resp.response === 'string') return resp.response;
+    }
+    return '';
+  }
+
   const [currentResponse, setCurrentResponse] = useState(() => {
-    return cfg.savedResponses || '';
+    return extractStringResponse(cfg.savedResponses);
   });
   const [isSubmittingToServer, setIsSubmittingToServer] = useState(false);
 
@@ -66,23 +76,12 @@ export const SmartVocFeedbackQuestion: React.FC<MappedStepComponentProps> = ({
 
     // useEffect para respuestas del useStepResponseManager
   useEffect(() => {
-    if (responseData && typeof responseData === 'string') {
-      setCurrentResponse(responseData);
-    } else if (responseData) {
-      if (typeof responseData === 'object' && responseData !== null && 'value' in responseData) {
-        const extractedValue = (responseData as { value?: unknown }).value;
-        if (typeof extractedValue === 'string') {
-          setCurrentResponse(extractedValue);
-        }
-      }
-    }
+    setCurrentResponse(extractStringResponse(responseData));
   }, [responseData]);
 
   // useEffect para respuestas guardadas desde CurrentStepRenderer
   useEffect(() => {
-    if (cfg.savedResponses !== undefined) {
-      setCurrentResponse(cfg.savedResponses);
-    }
+    setCurrentResponse(extractStringResponse(cfg.savedResponses));
   }, [cfg.savedResponses]);
 
 
@@ -100,7 +99,7 @@ export const SmartVocFeedbackQuestion: React.FC<MappedStepComponentProps> = ({
       return;
     }
 
-    if (!currentResponse.trim() && cfg.required) {
+    if (!extractStringResponse(currentResponse).trim() && cfg.required) {
       logger.warn('Respuesta requerida pero vacía');
       return;
     }
@@ -208,7 +207,7 @@ export const SmartVocFeedbackQuestion: React.FC<MappedStepComponentProps> = ({
         <div className="flex justify-end">
           <button
             type="submit"
-            disabled={isSaving || isLoading || isSubmittingToServer || (!currentResponse.trim() && cfg.required)}
+            disabled={isSaving || isLoading || isSubmittingToServer || (!extractStringResponse(currentResponse).trim() && cfg.required)}
             className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
           >
             {buttonText}

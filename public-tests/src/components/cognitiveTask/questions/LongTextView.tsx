@@ -28,8 +28,16 @@ export const LongTextView: React.FC<MappedStepComponentProps> = (props) => {
     required
   };
 
+  // Determinar el valor inicial a partir de la respuesta previa
+  let initialValue = '';
+  if (savedResponse && typeof savedResponse === 'object' && 'response' in savedResponse && typeof savedResponse.response === 'string') {
+    initialValue = savedResponse.response;
+  } else if (typeof savedResponse === 'string') {
+    initialValue = savedResponse;
+  }
+
   const [state, actions] = useStandardizedForm<string>(standardProps, {
-    initialValue: '',
+    initialValue,
     extractValueFromResponse: valueExtractors.textValue,
     validationRules: required ? [validationRules.required('Por favor, escribe una respuesta.')] : []
   });
@@ -51,7 +59,7 @@ export const LongTextView: React.FC<MappedStepComponentProps> = (props) => {
   const buttonText = getStandardButtonText({
     isSaving,
     isLoading,
-    hasExistingData: hasExistingData || !!value.trim()
+    hasExistingData
   });
 
   const isButtonDisabled = getButtonDisabledState({
