@@ -15,6 +15,16 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
     responsesData = [],
     ...restOfStepProps
 }) => {
+    // Log específico para LongText al inicio
+    if (stepType === 'long_text') {
+        console.log('🚀 [DEBUG LongText] CurrentStepRenderer iniciado:', {
+            stepType,
+            responsesData,
+            responsesDataLength: responsesData?.length,
+            responsesDataType: typeof responsesData,
+            isArray: Array.isArray(responsesData)
+        });
+    }
     const ComponentToRender = stepComponentMap[stepType];
 
     if (!ComponentToRender) {
@@ -67,6 +77,15 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
     }
 
     const responsesDataAny: any[] = Array.isArray(responsesData) ? responsesData : [];
+
+    // Log específico para LongText después de la verificación
+    if (stepType === 'long_text') {
+        console.log('🔍 [DEBUG LongText] Después de verificación de array:', {
+            originalResponsesData: responsesData,
+            responsesDataAny,
+            responsesDataAnyLength: responsesDataAny.length
+        });
+    }
 
     // 1. DemographicsForm y Preferencias: lógica robusta específica
     if (stepType === 'demographic') {
@@ -166,31 +185,123 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
     ];
 
     if (stepTypesWithSavedResponses.includes(stepType)) {
+        // Componente de debug temporal para LongText
+        if (stepType === 'long_text') {
+            return (
+                <div className="bg-red-100 p-4 rounded-lg border-2 border-red-500">
+                    <h3 className="text-red-800 font-bold mb-2">🔍 DEBUG LongText</h3>
+                    <div className="text-sm text-red-700">
+                        <p><strong>stepType:</strong> {stepType}</p>
+                        <p><strong>responsesData:</strong> {JSON.stringify(responsesData, null, 2)}</p>
+                        <p><strong>stepConfig:</strong> {JSON.stringify(stepConfig, null, 2)}</p>
+                        <p><strong>savedResponse:</strong> {JSON.stringify(savedResponse, null, 2)}</p>
+                        <p><strong>responsesDataAny:</strong> {JSON.stringify(responsesDataAny, null, 2)}</p>
+                        <p><strong>Array.isArray(responsesData):</strong> {Array.isArray(responsesData).toString()}</p>
+                        <p><strong>responsesData.length:</strong> {responsesData?.length || 'undefined'}</p>
+                    </div>
+                    <button
+                        onClick={() => onStepComplete?.('test')}
+                        className="mt-2 bg-red-600 text-white px-4 py-2 rounded"
+                    >
+                        Continuar (Test)
+                    </button>
+                </div>
+            );
+        }
         // Buscar respuesta previa en responsesData
         let savedResponses = undefined;
         const dataArray = responsesDataAny;
 
-        if (dataArray.length > 0) {
-            const found = (dataArray as any[]).find((r: any) => {
-                // Coincidencia flexible: stepType, type, title, questionText, stepTitle
-                const matchesType = r.stepType === stepType || r.type === stepType;
-                const matchesTitle = typeof r["title"] === "string" && stepConfig && (r["title"] === (stepConfig as any)["title"] || r["title"] === (stepConfig as any)["questionText"]);
-                const matchesQuestionText = typeof r["questionText"] === "string" && stepConfig && (r["questionText"] === (stepConfig as any)["title"] || r["questionText"] === (stepConfig as any)["questionText"]);
-                const matchesStepTitle = typeof r["stepTitle"] === "string" && stepConfig && (r["stepTitle"] === (stepConfig as any)["title"] || r["stepTitle"] === (stepConfig as any)["questionText"]);
-
-                return (matchesType || matchesTitle || matchesQuestionText || matchesStepTitle) && r.response !== undefined;
+        // Log específico para LongText
+        if (stepType === 'long_text') {
+            console.log('🔍 [DEBUG LongText] Buscando respuesta previa:', {
+                stepType,
+                dataArrayLength: dataArray.length,
+                dataArray: dataArray,
+                stepConfig: stepConfig,
+                stepConfigTitle: (stepConfig as any)?.title,
+                stepConfigQuestionText: (stepConfig as any)?.questionText
             });
+        }
 
-            if (found && found.response !== undefined) {
-                // Extraer string real si la respuesta es un objeto con campo 'value'
-                if (typeof found.response === 'object' && found.response !== null && 'value' in found.response) {
-                    savedResponses = found.response.value;
-                } else {
-                    savedResponses = found.response;
+        if (dataArray.length > 0) {
+            // Para LongText, buscar primero por stepType exacto
+            if (stepType === 'long_text') {
+                const foundByStepType = (dataArray as any[]).find((r: any) => {
+                    const exactMatch = r.stepType === 'long_text' && r.response !== undefined;
+                    console.log('🔍 [DEBUG LongText] Búsqueda por stepType exacto:', {
+                        r_stepType: r.stepType,
+                        r_response: r.response,
+                        exactMatch
+                    });
+                    return exactMatch;
+                });
+
+                if (foundByStepType) {
+                    console.log('✅ [DEBUG LongText] Encontrado por stepType exacto:', foundByStepType);
+                    savedResponses = foundByStepType.response;
+                }
+            }
+
+            // Si no se encontró por stepType exacto, usar la lógica flexible
+            if (!savedResponses) {
+                const found = (dataArray as any[]).find((r: any) => {
+                    // Coincidencia flexible: stepType, type, title, questionText, stepTitle
+                    const matchesType = r.stepType === stepType || r.type === stepType;
+                    const matchesTitle = typeof r["title"] === "string" && stepConfig && (r["title"] === (stepConfig as any)["title"] || r["title"] === (stepConfig as any)["questionText"]);
+                    const matchesQuestionText = typeof r["questionText"] === "string" && stepConfig && (r["questionText"] === (stepConfig as any)["title"] || r["questionText"] === (stepConfig as any)["questionText"]);
+                    const matchesStepTitle = typeof r["stepTitle"] === "string" && stepConfig && (r["stepTitle"] === (stepConfig as any)["title"] || r["stepTitle"] === (stepConfig as any)["questionText"] || r["stepTitle"] === (stepConfig as any)["stepTitle"]);
+
+                    // Log específico para LongText
+                    if (stepType === 'long_text') {
+                        console.log('🔍 [DEBUG LongText] Evaluando respuesta (lógica flexible):', {
+                            r_stepType: r.stepType,
+                            r_type: r.type,
+                            r_title: r.title,
+                            r_questionText: r.questionText,
+                            r_stepTitle: r.stepTitle,
+                            r_response: r.response,
+                            stepType,
+                            stepConfigTitle: (stepConfig as any)?.title,
+                            stepConfigQuestionText: (stepConfig as any)?.questionText,
+                            stepConfigStepTitle: (stepConfig as any)?.stepTitle,
+                            matchesType,
+                            matchesTitle,
+                            matchesQuestionText,
+                            matchesStepTitle,
+                            finalMatch: (matchesType || matchesTitle || matchesQuestionText || matchesStepTitle) && r.response !== undefined
+                        });
+                    }
+
+                    return (matchesType || matchesTitle || matchesQuestionText || matchesStepTitle) && r.response !== undefined;
+                });
+
+                // Log específico para LongText
+                if (stepType === 'long_text') {
+                    console.log('🔍 [DEBUG LongText] Respuesta encontrada (lógica flexible):', found);
+                }
+
+                if (found && found.response !== undefined) {
+                    // Extraer string real si la respuesta es un objeto con campo 'value'
+                    if (typeof found.response === 'object' && found.response !== null && 'value' in found.response) {
+                        savedResponses = found.response.value;
+                    } else {
+                        savedResponses = found.response;
+                    }
+
+                    // Log específico para LongText
+                    if (stepType === 'long_text') {
+                        console.log('✅ [DEBUG LongText] Respuesta extraída (lógica flexible):', savedResponses);
+                    }
                 }
             }
         } else if (savedResponse !== undefined) {
             savedResponses = savedResponse;
+        }
+
+        // Log específico para LongText
+        if (stepType === 'long_text') {
+            console.log('🔍 [DEBUG LongText] savedResponses final:', savedResponses);
         }
 
         // Inyectar savedResponses en el config del paso

@@ -29,6 +29,12 @@ export const LongTextQuestion: React.FC<LongTextQuestionProps> = ({
     const answerPlaceholder = cfg.answerPlaceholder || '';
     const savedResponses = cfg.savedResponses;
 
+    console.log('🔍 [DEBUG LongTextQuestion] Componente recibió:', {
+        stepName,
+        savedResponses,
+        configCompleta: cfg
+    });
+
     // Inicializar con respuestas guardadas o string vacío
     const [currentResponse, setCurrentResponse] = useState(() => {
         return savedResponses || '';
