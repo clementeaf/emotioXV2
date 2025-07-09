@@ -48,6 +48,9 @@ const FlowStepContent: React.FC<Omit<FlowStepContentComponentProps, 'responsesDa
         return `${currentStepEnum}-${Date.now()}`;
     }, [currentExpandedStep, currentStepEnum]);
 
+    // Forzar tipado a any[] para evitar errores de TS en CurrentStepRenderer
+    const responsesDataArray: any[] = Array.isArray(responsesData) ? responsesData : [];
+
     if (!researchId) {
         return <ErrorDisplay title="Error Crítico" message="ID de investigación no encontrado en la URL." />;
     }
@@ -91,7 +94,7 @@ const FlowStepContent: React.FC<Omit<FlowStepContentComponentProps, 'responsesDa
                 onStepComplete={handleStepComplete}
                 onError={handleRendererError}
                 savedResponse={savedResponse}
-                responsesData={responsesData}
+                responsesData={responsesDataArray}
             />
         );
     }

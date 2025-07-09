@@ -138,11 +138,15 @@ export const LineaScaleQuestion: React.FC<ComponentLinearScaleQuestionProps> = (
             }, [researchId, participantId, stepName, isMock, savedResponses]);
 
     // Replace the manual button text logic (around line 139) with:
+    const hasExistingData = !!moduleResponseId && selectedValue !== null;
+
     const buttonText = getStandardButtonText({
         isSaving: isSaving,
         isLoading: false,
-        hasExistingData: !!moduleResponseId && selectedValue !== null,
-        isNavigating: isNavigating
+        hasExistingData,
+        isNavigating: isNavigating,
+        customCreateText: 'Guardar y continuar',
+        customUpdateText: 'Actualizar y continuar'
     });
 
     const handleSaveAndProceed = async () => {

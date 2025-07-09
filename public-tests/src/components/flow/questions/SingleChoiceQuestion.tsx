@@ -107,10 +107,14 @@ export const SingleChoiceQuestion: React.FC<ComponentSingleChoiceQuestionProps> 
         }
     };
 
+    const hasExistingDataForButton = hasExistingData && !!value;
+
     const buttonText = getStandardButtonText({
         isSaving,
         isLoading,
-        hasExistingData: hasExistingData && !!value // ✅ SOLO considerar existente si HAY datos Y valor actual válido
+        hasExistingData: hasExistingDataForButton,
+        customCreateText: 'Guardar y continuar',
+        customUpdateText: 'Actualizar y continuar'
     });
 
     const isButtonDisabled = getButtonDisabledState({

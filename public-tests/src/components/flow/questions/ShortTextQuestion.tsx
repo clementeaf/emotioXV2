@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ComponentShortTextQuestionProps } from '../../../types/flow.types';
+import { getStandardButtonText } from '../../../utils/formHelpers';
 
 export const ShortTextQuestion: React.FC<ComponentShortTextQuestionProps> = ({
     config,
@@ -31,6 +32,17 @@ export const ShortTextQuestion: React.FC<ComponentShortTextQuestionProps> = ({
         onStepComplete(currentResponse);
     };
 
+    // Determinar si hay datos previos
+    const hasExistingData = !!savedResponses && currentResponse !== '';
+
+    const buttonText = getStandardButtonText({
+        isSaving: false,
+        isLoading: false,
+        hasExistingData,
+        customCreateText: 'Guardar y continuar',
+        customUpdateText: 'Actualizar y continuar'
+    });
+
     return (
         <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full">
             <h2 className="text-xl font-medium mb-1 text-neutral-800">{title}</h2>
@@ -47,7 +59,7 @@ export const ShortTextQuestion: React.FC<ComponentShortTextQuestionProps> = ({
                 onClick={handleSubmit}
                 className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
             >
-                Siguiente
+                {buttonText}
             </button>
         </div>
     );

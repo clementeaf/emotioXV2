@@ -29,14 +29,6 @@ export const LongTextQuestion: React.FC<LongTextQuestionProps> = ({
     const answerPlaceholder = cfg.answerPlaceholder || '';
     const savedResponses = cfg.savedResponses;
 
-    console.log(`🔍 [LongTextQuestion] Inicializando componente:`, {
-        stepName,
-        title,
-        savedResponses,
-        configCompleta: cfg,
-        hasSavedResponses: !!savedResponses
-    });
-
     // Inicializar con respuestas guardadas o string vacío
     const [currentResponse, setCurrentResponse] = useState(() => {
         return savedResponses || '';
@@ -44,26 +36,23 @@ export const LongTextQuestion: React.FC<LongTextQuestionProps> = ({
 
     // Si cambian las respuestas guardadas en config, actualizar el estado
     useEffect(() => {
-        console.log(`🔍 [LongTextQuestion] useEffect savedResponses:`, {
-            savedResponses,
-            savedResponsesType: typeof savedResponses,
-            willUpdate: savedResponses !== undefined
-        });
         if (savedResponses !== undefined) {
-            console.log(`✅ [LongTextQuestion] Actualizando currentResponse a:`, savedResponses);
             setCurrentResponse(savedResponses);
         }
     }, [savedResponses]);
 
     const handleSubmit = () => {
-        console.log('[LongTextQuestion] Guardando respuesta:', currentResponse);
         onStepComplete(currentResponse);
     };
+
+    const hasExistingData = !!savedResponses && currentResponse !== '';
 
     const buttonText = getStandardButtonText({
         isSaving: false,
         isLoading: false,
-        hasExistingData: !!savedResponses && currentResponse !== ''
+        hasExistingData,
+        customCreateText: 'Guardar y continuar',
+        customUpdateText: 'Actualizar y continuar'
     });
 
     return (

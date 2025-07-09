@@ -153,10 +153,14 @@ export const RankingQuestion: React.FC<{
             });
     }, [researchId, participantId, stepType, isApiDisabled, itemsFromConfig]);
 
+    const hasExistingData = !!moduleResponseId && rankedItems.length > 0;
+
     const buttonText = getStandardButtonText({
         isSaving: isSaving,
         isLoading: false,
-        hasExistingData: !!moduleResponseId && rankedItems.length > 0
+        hasExistingData,
+        customCreateText: 'Guardar y continuar',
+        customUpdateText: 'Actualizar y continuar'
     });
 
     const handleSaveAndProceed = async () => {

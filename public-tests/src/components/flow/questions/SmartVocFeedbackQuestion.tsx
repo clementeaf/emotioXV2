@@ -134,10 +134,12 @@ export const SmartVocFeedbackQuestion: React.FC<MappedStepComponentProps> = ({
     }
   };
 
+  const hasExistingData = !!responseSpecificId || !!cfg.savedResponses;
+
   const buttonText = getStandardButtonText({
     isSaving: isSaving,
     isLoading: isSubmittingToServer,
-    hasExistingData: !!responseSpecificId || !!cfg.savedResponses,
+    hasExistingData,
     isNavigating: isSubmittingToServer,
     customCreateText: 'Guardar y continuar',
     customUpdateText: 'Actualizar y continuar'

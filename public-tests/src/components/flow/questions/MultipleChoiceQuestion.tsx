@@ -236,10 +236,12 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
     };
 
     // Usar sistema estandarizado para determinar texto del botón
+    const hasExistingData = (!isMock && dataExisted) || selectedOptions.length > 0;
+
     const buttonText = getStandardButtonText({
         isSaving: isSaving || isApiLoading,
         isLoading: dataLoading,
-        hasExistingData: (!isMock && dataExisted) || selectedOptions.length > 0, // Considerar existente si hay datos cargados O opciones seleccionadas
+        hasExistingData,
         isNavigating,
         customSavingText: 'Guardando...',
         customUpdateText: 'Actualizar y continuar',
@@ -255,7 +257,7 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
         moduleResponseId,
         dataLoading,
         isSaving,
-        hasExistingData: (!isMock && dataExisted) || selectedOptions.length > 0,
+        hasExistingData,
         buttonText,
         displayOptions: displayOptions.slice(0, 3), // Solo las primeras 3 para no saturar
         searchCriteria: {

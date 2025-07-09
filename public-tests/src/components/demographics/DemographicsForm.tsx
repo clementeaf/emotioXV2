@@ -75,8 +75,7 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
     isLoading,
     isSaving,
     error: stepResponseError,
-    saveCurrentStepResponse,
-    responseSpecificId: useStepResponseManagerReturnedSpecificId
+    saveCurrentStepResponse
   } = useStepResponseManager<DemographicResponses>({
     stepId: stepId,
     stepType: 'demographic',

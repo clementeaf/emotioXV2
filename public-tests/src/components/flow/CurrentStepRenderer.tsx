@@ -3,18 +3,16 @@ import { RenderError } from './RenderError';
 import { stepComponentMap } from './steps';
 import { CurrentStepProps } from './types';
 
-/**
- * Componente que actúa como un "router" para renderizar el paso actual del flujo.
- * Lee el `stepType` y, usando el `stepComponentMap`, renderiza el componente de UI correspondiente.
- * También es responsable de mapear las propiedades genéricas del paso (como `title` o `instructions`
- * desde `stepConfig`) a las props específicas que cada componente de UI espera (como `questionText`).
- */
-const CurrentStepRenderer: React.FC<CurrentStepProps & { responsesData?: any }> = ({
+interface CurrentStepRendererProps extends CurrentStepProps {
+    responsesData?: any[];
+}
+
+const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
     stepType,
     stepConfig,
     savedResponse,
     onStepComplete,
-    responsesData,
+    responsesData = [],
     ...restOfStepProps
 }) => {
     const ComponentToRender = stepComponentMap[stepType];
@@ -67,6 +65,8 @@ const CurrentStepRenderer: React.FC<CurrentStepProps & { responsesData?: any }> 
             preferenceResponseId = found.id;
         }
     }
+
+    const responsesDataAny: any[] = Array.isArray(responsesData) ? responsesData : [];
 
     // 1. DemographicsForm y Preferencias: lógica robusta específica
     if (stepType === 'demographic') {
@@ -168,18 +168,31 @@ const CurrentStepRenderer: React.FC<CurrentStepProps & { responsesData?: any }> 
     if (stepTypesWithSavedResponses.includes(stepType)) {
         // Buscar respuesta previa en responsesData
         let savedResponses = undefined;
-        if (responsesData && Array.isArray(responsesData)) {
-            const found = responsesData.find(
-                (r) =>
-                    (r.stepType === stepType || r.type === stepType) &&
-                    r.response !== undefined
-            );
+        const dataArray = responsesDataAny;
+
+        if (dataArray.length > 0) {
+            const found = (dataArray as any[]).find((r: any) => {
+                // Coincidencia flexible: stepType, type, title, questionText, stepTitle
+                const matchesType = r.stepType === stepType || r.type === stepType;
+                const matchesTitle = typeof r["title"] === "string" && stepConfig && (r["title"] === (stepConfig as any)["title"] || r["title"] === (stepConfig as any)["questionText"]);
+                const matchesQuestionText = typeof r["questionText"] === "string" && stepConfig && (r["questionText"] === (stepConfig as any)["title"] || r["questionText"] === (stepConfig as any)["questionText"]);
+                const matchesStepTitle = typeof r["stepTitle"] === "string" && stepConfig && (r["stepTitle"] === (stepConfig as any)["title"] || r["stepTitle"] === (stepConfig as any)["questionText"]);
+
+                return (matchesType || matchesTitle || matchesQuestionText || matchesStepTitle) && r.response !== undefined;
+            });
+
             if (found && found.response !== undefined) {
-                savedResponses = found.response;
+                // Extraer string real si la respuesta es un objeto con campo 'value'
+                if (typeof found.response === 'object' && found.response !== null && 'value' in found.response) {
+                    savedResponses = found.response.value;
+                } else {
+                    savedResponses = found.response;
+                }
             }
         } else if (savedResponse !== undefined) {
             savedResponses = savedResponse;
         }
+
         // Inyectar savedResponses en el config del paso
         const configWithSaved = {
             ...(stepConfig || {}),
