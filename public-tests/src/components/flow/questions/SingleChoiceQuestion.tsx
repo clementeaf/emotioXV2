@@ -36,7 +36,6 @@ export const SingleChoiceQuestion: React.FC<ComponentSingleChoiceQuestionProps> 
         label: choice.text
     }));
 
-    // Valor inicial: si es id, úsalo; si es texto, busca el id correspondiente
     const initialValue = (() => {
         if (!cfg.savedResponses) return null;
         if (options.some(opt => opt.value === cfg.savedResponses)) return cfg.savedResponses;
@@ -45,8 +44,6 @@ export const SingleChoiceQuestion: React.FC<ComponentSingleChoiceQuestionProps> 
     })();
     const [selectedValue, setSelectedValue] = useState<string | null>(initialValue);
     const [isSaving, setIsSaving] = useState(false);
-
-    console.log('[SingleChoiceQuestion] SIMPLE:', { savedResponses: cfg.savedResponses, selectedValue, options });
 
     const handleSubmit = async () => {
         if (!selectedValue && required) return;
@@ -57,7 +54,6 @@ export const SingleChoiceQuestion: React.FC<ComponentSingleChoiceQuestionProps> 
         setIsSaving(false);
     };
 
-    // Texto del botón según si hay respuesta previa
     const buttonText = initialValue ? 'Actualizar y continuar' : 'Guardar y continuar';
 
     return (
