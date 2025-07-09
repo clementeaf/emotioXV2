@@ -57,6 +57,9 @@ export const SingleChoiceQuestion: React.FC<ComponentSingleChoiceQuestionProps> 
         setIsSaving(false);
     };
 
+    // Texto del botón según si hay respuesta previa
+    const buttonText = initialValue ? 'Actualizar y continuar' : 'Guardar y continuar';
+
     return (
         <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-sm">
             <h2 className="text-xl font-medium text-neutral-800 mb-4">{title}</h2>
@@ -87,7 +90,7 @@ export const SingleChoiceQuestion: React.FC<ComponentSingleChoiceQuestionProps> 
                 onClick={handleSubmit}
                 disabled={isSaving || (required && !selectedValue)}
             >
-                {isSaving ? 'Guardando...' : 'Continuar'}
+                {isSaving ? 'Guardando...' : buttonText}
             </button>
         </div>
     );

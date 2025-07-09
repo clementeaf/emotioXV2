@@ -15,9 +15,6 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
     responsesData = [],
     ...restOfStepProps
 }) => {
-    if (stepType === 'single_choice' || stepType === 'cognitive_single_choice') {
-        console.log('[DEBUG CurrentStepRenderer] stepConfig para single_choice:', stepConfig);
-    }
     const ComponentToRender = stepComponentMap[stepType];
 
     if (!ComponentToRender) {
@@ -170,51 +167,37 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
     ];
 
     if (stepTypesWithSavedResponses.includes(stepType)) {
-        // Buscar respuesta previa en responsesData
         let savedResponses = undefined;
         const dataArray = responsesDataAny;
 
-        console.log(`[CurrentStepRenderer] 🔍 Buscando respuesta previa para stepType: ${stepType}`);
-        console.log(`[CurrentStepRenderer] 🔍 stepConfig.id: ${(stepConfig as any)?.id}`);
-        console.log(`[CurrentStepRenderer] 🔍 dataArray length: ${dataArray.length}`);
-        // console.log(`[CurrentStepRenderer] 🔍 dataArray:`, dataArray);
-
         if (dataArray.length > 0) {
-            // Buscar primero por id exacto
             let foundById;
             if (stepConfig && (stepConfig as any).id) {
                 foundById = (dataArray as any[]).find((r: any) => {
                     const match = r.id === (stepConfig as any).id && r.response !== undefined;
-                    // console.log(`[CurrentStepRenderer] 🔍 Comparando r.id: ${r.id} con stepConfig.id: ${(stepConfig as any).id} - match: ${match}`);
                     return match;
                 });
             }
             if (foundById) {
-                console.log(`[CurrentStepRenderer] ✅ Encontrado por ID:`, foundById);
                 savedResponses = foundById.response;
             }
 
-            // Si no se encontró por ID, buscar por stepType y stepTitle
             if (!savedResponses && stepConfig) {
                 const stepTitle = (stepConfig as any)?.title || (stepConfig as any)?.name;
-                console.log(`[CurrentStepRenderer] 🔍 Buscando por stepType: ${stepType} y stepTitle: ${stepTitle}`);
 
                 const foundByTypeAndTitle = (dataArray as any[]).find((r: any) => {
                     const typeMatch = r.stepType === stepType;
                     const titleMatch = r.stepTitle === stepTitle;
                     const hasResponse = r.response !== undefined;
                     const match = typeMatch && titleMatch && hasResponse;
-                    // console.log(`[CurrentStepRenderer] 🔍 Comparando r.stepType: ${r.stepType}, r.stepTitle: ${r.stepTitle} con stepType: ${stepType}, stepTitle: ${stepTitle} - match: ${match}`);
                     return match;
                 });
 
                 if (foundByTypeAndTitle) {
-                    console.log(`[CurrentStepRenderer] ✅ Encontrado por stepType y stepTitle:`, foundByTypeAndTitle);
                     savedResponses = foundByTypeAndTitle.response;
                 }
             }
 
-            // Buscar por stepType exacto si no se encontró por id
             let foundByStepType;
             if (!savedResponses && stepType === 'cognitive_long_text') {
                 foundByStepType = (dataArray as any[]).find((r: any) => {
@@ -228,21 +211,17 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
             if (!savedResponses) {
                 const allLongTextResponses = (dataArray as any[]).filter((r: any) => r.stepType === 'cognitive_long_text' && r.response !== undefined);
                 if (allLongTextResponses.length > 0) {
-                    // Tomar la más reciente por createdAt
                     allLongTextResponses.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
                     savedResponses = allLongTextResponses[0].response;
                 }
             }
         }
 
-        console.log(`[CurrentStepRenderer] 🔍 savedResponses encontrado:`, savedResponses);
-
-        // Inyectar savedResponses en el config del paso
         const configWithSaved = {
             ...(stepConfig || {}),
             savedResponses,
         };
-        // Filtrar onLoginSuccess y onError para evitar conflicto de tipos
+
         const { onLoginSuccess, onError, ...safeStepProps } = restOfStepProps;
         return (
             <ComponentToRender
