@@ -5,15 +5,17 @@ import { StandardizedFormProps } from "../../../types/hooks.types";
 import { formSpacing, getButtonDisabledState, getErrorDisplayProps, getFormContainerClass, getMockOptions, getStandardButtonText } from "../../../utils/formHelpers";
 
 export const SingleChoiceQuestion: React.FC<ComponentSingleChoiceQuestionProps> = ({
-    config,
+    stepConfig,
     stepName,
     onStepComplete,
     isMock,
     ...standardProps
 }) => {
-    // Unificar todas las props de config en un solo objeto seguro
-    const cfg = (typeof config === 'object' && config !== null)
-      ? config as {
+    // Log temporal para ver el contenido real de stepConfig
+    console.log('[SingleChoiceQuestion] stepConfig recibido:', stepConfig);
+    // Unificar todas las props de stepConfig en un solo objeto seguro
+    const cfg = (typeof stepConfig === 'object' && stepConfig !== null)
+      ? stepConfig as {
           title?: string;
           description?: string;
           questionText?: string;
@@ -28,30 +30,46 @@ export const SingleChoiceQuestion: React.FC<ComponentSingleChoiceQuestionProps> 
     const questionText = cfg.questionText ?? '';
     const required = cfg.required !== false; // Asumir requerido por defecto
 
-    // Generar opciones de display - moviendo la lógica dentro del useMemo
+    // Utilidad para extraer el texto de una opción
+    function getOptionText(option: any, index: number): string {
+        if (typeof option === 'string' && option.trim() !== '') return option;
+        if (option && typeof option === 'object' && 'text' in option && typeof option.text === 'string') return option.text;
+        return `Opción ${String.fromCharCode(65 + index)} (sin texto)`;
+    }
+
+    // Utilidad para extraer el valor de la respuesta previa
+    function extractStringResponse(resp: any): string | null {
+        if (typeof resp === 'string') return resp;
+        if (resp && typeof resp === 'object') {
+            if ('value' in resp && typeof resp.value === 'string') return resp.value;
+            if ('response' in resp && typeof resp.response === 'string') return resp.response;
+        }
+        return null;
+    }
+
+    // Generar opciones de display usando el texto real
     const displayOptions = useMemo(() => {
         const choices = Array.isArray(cfg.choices) ? cfg.choices : [];
         if (choices.length === 0) {
             if (isMock) {
-                return getMockOptions<string>('single', 3, 'Opción');
+                return getMockOptions<string>('single', 3, 'Opción').map((opt) => ({ value: opt, label: opt }));
             }
-            return ['Opción A (sin texto)', 'Opción B (sin texto)', 'Opción C (sin texto)'];
+            return [
+                { value: 'Opción A (sin texto)', label: 'Opción A (sin texto)' },
+                { value: 'Opción B (sin texto)', label: 'Opción B (sin texto)' },
+                { value: 'Opción C (sin texto)', label: 'Opción C (sin texto)' }
+            ];
         }
-
-        // Convertir objetos a strings si es necesario, pero generar nombres consistentes
         return choices.map((choice, index) => {
-            if (typeof choice === 'string' && choice.trim() !== '') return choice;
-            if (typeof choice === 'object' && choice !== null) {
-                const obj = choice as { text?: string; id?: string };
-                if (obj.text && obj.text.trim() !== '') return obj.text;
-            }
-            // Si no hay texto válido, generar el formato que está guardado en DB
-            const letter = String.fromCharCode(65 + index); // A, B, C...
-            return `Opción ${letter} (sin texto)`;
+            if (typeof choice === 'string') return { value: choice, label: choice };
+            if (choice && typeof choice === 'object' && 'text' in choice) return { value: choice.text, label: choice.text };
+            return { value: `Opción ${String.fromCharCode(65 + index)} (sin texto)`, label: `Opción ${String.fromCharCode(65 + index)} (sin texto)` };
         });
     }, [cfg.choices, isMock]);
 
-    // Props estandarizadas para el hook
+    // Inicializar el valor con la respuesta previa real
+    const initialValue = extractStringResponse(cfg.savedResponses);
+
     const formProps: StandardizedFormProps = {
         stepId: stepName || 'single-choice',
         stepType: stepName || 'single-choice',
@@ -62,7 +80,7 @@ export const SingleChoiceQuestion: React.FC<ComponentSingleChoiceQuestionProps> 
     };
 
     const [state, actions] = useStandardizedForm<string | null>(formProps, {
-        initialValue: null,
+        initialValue,
         extractValueFromResponse: valueExtractors.singleChoice,
         validationRules: required ? [validationRules.required('Por favor, selecciona una opción.')] : []
     });
@@ -89,7 +107,7 @@ export const SingleChoiceQuestion: React.FC<ComponentSingleChoiceQuestionProps> 
     // Limpiar valor si no coincide con las opciones actuales - VERSION AGRESIVA
     useEffect(() => {
 
-        if (value && !displayOptions.includes(value)) {
+        if (value && !displayOptions.some(option => option.value === value)) {
             setValue(null);
         }
     }, [value, displayOptions, setValue]);
@@ -157,7 +175,7 @@ export const SingleChoiceQuestion: React.FC<ComponentSingleChoiceQuestionProps> 
             {/* Opciones */}
             <div className={`space-y-3 ${formSpacing.section}`}>
                 {displayOptions.map((option, index) => {
-                    const optionValue = typeof option === 'string' ? option : `Opción ${index + 1}`;
+                    const optionValue = String(option.value);
                     const isSelected = value === optionValue;
 
                     return (
@@ -178,7 +196,7 @@ export const SingleChoiceQuestion: React.FC<ComponentSingleChoiceQuestionProps> 
                                 disabled={isSaving || isLoading}
                                 className="mr-3 text-indigo-600 focus:ring-indigo-500"
                             />
-                            <span className="text-neutral-700">{optionValue}</span>
+                            <span className="text-neutral-700">{String(option.label)}</span>
                         </label>
                     );
                 })}

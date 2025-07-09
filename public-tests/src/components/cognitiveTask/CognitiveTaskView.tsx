@@ -1,13 +1,13 @@
-import React, { useState, useMemo } from 'react';
-import { 
-  CognitiveTaskViewProps,
+import React, { useMemo, useState } from 'react';
+import { useResponseAPI } from '../../hooks/useResponseAPI';
+import {
   CognitiveQuestion,
+  CognitiveTaskViewProps,
   TaskDefinition
 } from '../../types';
+import TaskProgressBar from './common/TaskProgressBar';
 import { buildTasksFromConfig } from './tasks';
 import ThankYouView from './ThankYouView';
-import TaskProgressBar from './common/TaskProgressBar';
-import { useResponseAPI } from '../../hooks/useResponseAPI';
 
 const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, participantId, stepConfig, onComplete, onError }) => {
   const [currentTaskIndex, setCurrentTaskIndex] = useState(0);
@@ -20,6 +20,8 @@ const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, parti
     setError: setApiError
   } = useResponseAPI({ researchId, participantId });
 
+  // Log temporal para ver el contenido real de las preguntas
+  console.log('[CognitiveTaskView] stepConfig.questions:', stepConfig?.questions);
   // Construir tareas dinámicamente desde la configuración
   const dynamicTasks = useMemo(() => {
     if (!stepConfig?.questions || !Array.isArray(stepConfig.questions)) {
@@ -31,7 +33,7 @@ const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, parti
   // Obtener la configuración de la tarea actual
   const totalRealTasks = dynamicTasks.length;
   const currentTaskDefinition = currentTaskIndex < totalRealTasks ? dynamicTasks[currentTaskIndex] : null;
-  
+
   // Buscar la configuración específica de la pregunta usando el ID directo
   const questionConfig = currentTaskDefinition ? stepConfig.questions.find(
     (q: CognitiveQuestion) => q.id === currentTaskDefinition.id
@@ -44,14 +46,14 @@ const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, parti
       const subTaskId = subTaskDefinition.id;
       const subTaskType = subTaskDefinition.questionType || subTaskDefinition.id;
       const subTaskName = questionConfig?.title || subTaskDefinition.title;
-      
+
       console.log(`[CognitiveTaskView] Guardando respuesta para pregunta ${subTaskId}:`, {
         responseData,
         subTaskType,
         subTaskName,
         existingResponseId
       });
-      
+
       const result = await saveOrUpdateResponse(
         subTaskId,
         subTaskType,
@@ -78,14 +80,14 @@ const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, parti
       setShowThankYou(true);
     }
   };
-  
+
   const handleThankYouComplete = () => {
     onComplete();
   };
-  
+
   if (showThankYou) {
     return (
-      <ThankYouView 
+      <ThankYouView
         onComplete={handleThankYouComplete}
         title="¡Gracias por completar las tareas!"
         message="Su participación es muy valiosa para nuestra investigación y nos ayudará a mejorar la experiencia de futuros usuarios."
@@ -103,7 +105,7 @@ const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, parti
     onError("Error interno: No se pudieron generar tareas desde la configuración.");
     return <div className="p-4 text-red-600 bg-red-100 border border-red-300 rounded">Error: No hay tareas válidas configuradas.</div>;
   }
-  
+
   if (currentTaskIndex >= totalRealTasks) {
     onError("Error interno: Índice de tarea cognitiva fuera de rango.");
     return <div className="p-4 text-center">Error interno en Tarea Cognitiva. Por favor, recarga.</div>;
@@ -115,7 +117,7 @@ const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, parti
   }
 
   const CurrentTaskComponent = currentTaskDefinition.component;
-  
+
   // Si no se encuentra la configuración específica, usar valores de la task definition
   const defaultQuestionConfig = {
     id: currentTaskDefinition.id,
@@ -132,10 +134,10 @@ const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, parti
   };
 
   // Combinar configuración del frontend con props por defecto de la tarea
-  const taskProps = { 
+  const taskProps = {
     ...currentTaskDefinition.props,
-    config: questionConfig || defaultQuestionConfig,
-    question: questionConfig || defaultQuestionConfig,
+    config: defaultQuestionConfig,
+    question: defaultQuestionConfig,
     stepConfig: stepConfig,
     questionId: currentTaskDefinition.id,
     questionType: currentTaskDefinition.questionType
@@ -163,4 +165,4 @@ const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, parti
   );
 };
 
-export default CognitiveTaskView; 
+export default CognitiveTaskView;

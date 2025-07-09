@@ -381,7 +381,8 @@ export interface ComponentShortTextQuestionProps extends Omit<any, 'id' | 'title
 }
 
 export interface ComponentSingleChoiceQuestionProps {
-  config: unknown;
+  stepConfig?: unknown;
+  config?: unknown;
   stepName?: string;
   onStepComplete: (answer: unknown) => void;
   isMock: boolean;

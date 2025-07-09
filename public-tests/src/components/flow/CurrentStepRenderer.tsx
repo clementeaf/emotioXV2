@@ -15,15 +15,8 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
     responsesData = [],
     ...restOfStepProps
 }) => {
-    // Log específico para LongText al inicio
-    if (stepType === 'long_text') {
-        console.log('🚀 [DEBUG LongText] CurrentStepRenderer iniciado:', {
-            stepType,
-            responsesData,
-            responsesDataLength: responsesData?.length,
-            responsesDataType: typeof responsesData,
-            isArray: Array.isArray(responsesData)
-        });
+    if (stepType === 'single_choice' || stepType === 'cognitive_single_choice') {
+        console.log('[DEBUG CurrentStepRenderer] stepConfig para single_choice:', stepConfig);
     }
     const ComponentToRender = stepComponentMap[stepType];
 
