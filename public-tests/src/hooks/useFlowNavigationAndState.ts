@@ -52,22 +52,15 @@ export const useFlowNavigationAndState = ({
     }, [expandedSteps, isFlowLoading, currentStep, maxVisitedIndexFromStore, researchId, loadExistingResponses, participantId, setCurrentStepIndex, setCurrentStep]);
 
     const goToNextStep = useCallback(async (answer?: unknown) => {
-        console.log('[useFlowNavigationAndState] ➡️ goToNextStep llamado.', {
-            isFlowLoading,
-            currentStepIndex,
-            totalSteps: expandedSteps.length
-        });
 
         if (!isFlowLoading && currentStepIndex < expandedSteps.length - 1) {
             const nextIndex = currentStepIndex + 1;
-            console.log(`[useFlowNavigationAndState] 🚀 Avanzando del paso ${currentStepIndex} al ${nextIndex}.`);
             if (answer !== undefined) {
                 await saveStepResponse(answer);
             }
             setCurrentStepIndex(nextIndex);
             setError(null);
         } else {
-            console.log(`[useFlowNavigationAndState] 🛑 Fin del flujo o carga en progreso. Step: ${currentStepIndex}`);
             if (!isFlowLoading) {
                 if (answer !== undefined) {
                     await saveStepResponse(answer);
@@ -81,68 +74,45 @@ export const useFlowNavigationAndState = ({
     }, [currentStepIndex, expandedSteps, isFlowLoading, saveStepResponse, markResponsesAsCompleted, setCurrentStepIndex, setError, setCurrentStep]);
 
     const navigateToStep = useCallback((targetIndex: number) => {
-        // Validaciones básicas
         if (isFlowLoading) {
-            console.log('[navigateToStep] ❌ Bloqueado: isFlowLoading=true');
             return;
         }
 
         if (targetIndex < 0 || targetIndex >= expandedSteps.length) {
-            console.log('[navigateToStep] ❌ Bloqueado: índice fuera de rango', { targetIndex, totalSteps: expandedSteps.length });
             return;
         }
 
         if (targetIndex === currentStepIndex) {
-            console.log('[navigateToStep] ❌ Bloqueado: ya estás en ese step');
+
             return;
         }
 
-        // Lógica simplificada: Si el sidebar permitió la navegación, confiar en esa decisión
-        // Solo bloquear navegación hacia adelante más allá del máximo visitado + 1
         const maxVisited = Math.max(maxVisitedIndexFromStore || 0, currentStepIndex);
         const isForwardNavigation = targetIndex > maxVisited + 1;
 
         if (isForwardNavigation) {
-            console.log('[navigateToStep] ❌ Bloqueado: navegación hacia adelante no permitida', { targetIndex, maxVisited });
             return;
         }
 
-        console.log('[navigateToStep] 🔍 Iniciando navegación:', {
-            targetIndex,
-            currentStepIndex,
-            stepId: expandedSteps[targetIndex]?.id,
-            stepName: expandedSteps[targetIndex]?.name
-        });
-
-        // Realizar la navegación
-        // Cargar respuesta guardada si existe
         const savedResponse = getStepResponse(targetIndex);
-        console.log('[navigateToStep] 🔍 getStepResponse resultado:', savedResponse);
 
         if (savedResponse !== null && savedResponse !== undefined && setExternalExpandedSteps) {
-            console.log('[navigateToStep] ✅ Aplicando savedResponse al config del step');
             setExternalExpandedSteps((prevSteps: ExpandedStep[]) => prevSteps.map((step: ExpandedStep, index: number) => {
                 if (index === targetIndex) {
                     const prevConfig = (typeof step.config === 'object' && step.config !== null) ? step.config : {};
                     const newConfig = { ...prevConfig, savedResponses: savedResponse };
-                    console.log('[navigateToStep] 🔍 Nuevo config para step:', { stepId: step.id, prevConfig, newConfig });
                     return { ...step, config: newConfig };
                 }
                 return step;
             }));
-        } else {
-            console.log('[navigateToStep] ❌ No hay savedResponse o setExternalExpandedSteps no está disponible');
         }
 
-        // Actualizar el índice del paso actual
         setCurrentStepIndex(targetIndex);
 
-        // Asegurar que estamos en el estado correcto del flujo
         if (currentStep !== ParticipantFlowStep.WELCOME && currentStep !== ParticipantFlowStep.DONE) {
             setCurrentStep(ParticipantFlowStep.WELCOME);
         }
 
-        // Limpiar errores
         setError(null);
     }, [
         isFlowLoading,

@@ -29,14 +29,6 @@ export const SmartVocFeedbackQuestion: React.FC<MappedStepComponentProps> = ({
       }
     : {};
 
-    console.log('[SmartVocFeedbackQuestion] Configuración completa:', {
-      stepConfigInstructions: cfg.instructions,
-      stepPropsInstructions: instructions,
-      stepConfigDescription: cfg.description,
-      stepName,
-      title: cfg.title
-    });
-
   const finalInstructions = cfg.instructions || instructions;
 
   // Utilidad para extraer el string de la respuesta
