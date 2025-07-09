@@ -55,18 +55,48 @@ const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({ stepConfig, onS
     );
   }, [responsesData]);
 
+  // Efecto robusto para inicializar la selección previa
   React.useEffect(() => {
     // Prioridad: savedResponse (prop directa), luego responsesData
     const responseToUse = savedResponse || preferenceSavedResponse?.response;
     let extractedImageId: string | null = null;
-    if (typeof responseToUse === 'object' && responseToUse && 'selectedImageId' in responseToUse) {
-      extractedImageId = (responseToUse as { selectedImageId: string }).selectedImageId;
+    let extractedImageName: string | null = null;
+    if (typeof responseToUse === 'object' && responseToUse) {
+      if ('selectedImageId' in responseToUse) {
+        extractedImageId = (responseToUse as { selectedImageId: string }).selectedImageId;
+      }
+      if ('selectedImageName' in responseToUse) {
+        extractedImageName = (responseToUse as { selectedImageName: string }).selectedImageName;
+      }
     }
-    if (extractedImageId && images.some((img: any) => img.id === extractedImageId)) {
-      setSelectedImageId(extractedImageId);
-      setHasBeenSaved(true);
+    // Debug visual
+    console.log('[PreferenceTestTask] Efecto selección previa:', {
+      savedResponse,
+      preferenceSavedResponse,
+      responseToUse,
+      extractedImageId,
+      extractedImageName,
+      images: images.map((img: any) => ({ id: img.id, name: img.name })),
+      selectedImageId
+    });
+    // Buscar coincidencia exacta por id
+    let match = images.find((img: any) => img.id === extractedImageId);
+    // Si no hay match, intentar por nombre de archivo (si es único)
+    if (!match && extractedImageName) {
+      match = images.find((img: any) => img.name === extractedImageName);
     }
-  }, [savedResponse, preferenceSavedResponse, images]);
+    if (match) {
+      if (selectedImageId !== match.id) {
+        setSelectedImageId(match.id);
+        setHasBeenSaved(true);
+      }
+    } else {
+      if (selectedImageId !== null) {
+        setSelectedImageId(null);
+        setHasBeenSaved(false);
+      }
+    }
+  }, [savedResponse, preferenceSavedResponse, images, config?.id]);
 
   // Reset zoom y pan al cambiar de imagen
   useEffect(() => {

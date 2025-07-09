@@ -120,8 +120,8 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
         }
         // Extracción robusta de respuesta previa
         let initialValues = {};
-        if (preferenceSavedResponse && typeof preferenceSavedResponse === 'object' && 'response' in preferenceSavedResponse) {
-            initialValues = preferenceSavedResponse.response;
+        if (preferenceSavedResponse && typeof preferenceSavedResponse === 'object') {
+            initialValues = preferenceSavedResponse;
         } else if (savedResponse && typeof savedResponse === 'object' && 'response' in savedResponse) {
             initialValues = savedResponse.response;
         } else if (savedResponse !== undefined) {
