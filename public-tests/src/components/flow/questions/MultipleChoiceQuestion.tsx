@@ -248,25 +248,6 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
         customCreateText: 'Guardar y continuar'
     });
 
-    // 🔍 LOGGING TEMPORAL para debugging MultipleChoiceQuestion
-    console.log('[MultipleChoiceQuestion] estado actual:', {
-        stepType,
-        stepId: stepIdFromProps,
-        selectedOptions,
-        dataExisted,
-        moduleResponseId,
-        dataLoading,
-        isSaving,
-        hasExistingData,
-        buttonText,
-        displayOptions: displayOptions.slice(0, 3), // Solo las primeras 3 para no saturar
-        searchCriteria: {
-            stepId: stepIdFromProps || stepType,
-            stepType,
-            stepName: componentTitle
-        }
-    });
-
     if (dataLoading && !isMock) {
         return (
             <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full text-center">

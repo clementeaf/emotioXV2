@@ -6,14 +6,12 @@ import { ComponentLinearScaleQuestionProps } from '../../../types/flow.types';
 import { getStandardButtonText } from '../../../utils/formHelpers';
 import { StarRating } from '../../smartVoc/StarRating';
 
-// Componente para Linear Scale
 export const LineaScaleQuestion: React.FC<ComponentLinearScaleQuestionProps> = ({
     config,
     stepName,
     onStepComplete,
     isMock
 }) => {
-    // Unificar todas las props de config en un solo objeto seguro
     const cfg = (typeof config === 'object' && config !== null)
       ? config as {
           title?: string;
@@ -31,16 +29,10 @@ export const LineaScaleQuestion: React.FC<ComponentLinearScaleQuestionProps> = (
         }
       : {};
 
-    // 🔍 DEBUG: Ver qué datos llegan
-    console.log('🔍 [LineaScaleQuestion] config:', config);
-    console.log('🔍 [LineaScaleQuestion] cfg.scaleConfig:', cfg.scaleConfig);
-
     const useStars = cfg.type === 'stars';
     const componentTitle = stepName || cfg.title || '';
     const description = cfg.description;
     const questionText = cfg.questionText ?? '';
-
-    // Usar scaleConfig del formato del backend
     const minValue = cfg.scaleConfig?.startValue ?? 1;
     const maxValue = cfg.scaleConfig?.endValue ?? 5;
     const minLabel = cfg.scaleConfig?.startLabel ?? '';
