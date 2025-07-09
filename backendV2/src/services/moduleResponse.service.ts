@@ -327,14 +327,16 @@ export class ModuleResponseService {
     try {
       const result = await this.dynamoClient.send(command);
       const updatedDocument = result.Attributes as ParticipantResponsesDocument;
+
       // Deserializar metadata antes de devolver
       const updatedResponses = (updatedDocument.responses || []).map(r => ({
         ...r,
         metadata: deserializeMetadata(r.metadata)
       }));
+
       return updatedResponses[responseIndex];
     } catch (error: any) {
-      console.error('[ModuleResponseService.updateModuleResponse] Error:', error);
+      console.error('[ModuleResponseService.updateModuleResponse] DynamoDB Error:', error);
       throw new ApiError(`Database Error: Could not update module response - ${error.message}`, 500);
     }
   }

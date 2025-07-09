@@ -26,17 +26,8 @@ export const useRankingData = ({
     const researchId = useParticipantStore(state => state.researchId);
     const participantId = useParticipantStore(state => state.participantId);
 
-    console.log('[useRankingData] Hook initialized with:', {
-        itemsFromConfig,
-        stepType,
-        isApiDisabled,
-        researchId,
-        participantId
-    });
-
     useEffect(() => {
         if (isApiDisabled) {
-            console.log('[useRankingData] API disabled, using config items');
             setRankedItems([...itemsFromConfig]);
             setModuleResponseId(null);
             setDataLoading(false);
@@ -76,14 +67,10 @@ export const useRankingData = ({
                         if (savedOrderFromApi.every(item => typeof item === 'string')) {
                             finalOrderToSet = savedOrderFromApi;
                             setModuleResponseId(foundStepData.id || null);
-                            console.log('[useRankingData] Using saved order from API:', finalOrderToSet);
                         } else {
                              console.warn('[useRankingData] API response for step exists, but response format is invalid (not array of strings). Using order from config as fallback.');
                              setModuleResponseId(null);
                         }
-                    } else {
-                        setModuleResponseId(null);
-                        console.log('[useRankingData] No saved data found for step type:', stepType);
                     }
                 } else {
                     if (apiResponse.apiStatus !== APIStatus.NOT_FOUND) {

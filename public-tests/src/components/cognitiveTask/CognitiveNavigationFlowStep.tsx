@@ -4,21 +4,16 @@ import { MappedStepComponentProps } from '../../types/flow.types';
 
 // Función para convertir hitZones del backend a coordenadas absolutas en píxeles
 const convertHitZonesToPixelCoordinates = (hitZones: any[]) => {
-  console.log('[convertHitZonesToPixelCoordinates] hitZones recibidos:', hitZones);
 
   if (!Array.isArray(hitZones)) {
     console.warn('[convertHitZonesToPixelCoordinates] hitZones no es un array:', hitZones);
     return [];
   }
 
-  return hitZones.map((zone, index) => {
-    console.log(`[convertHitZonesToPixelCoordinates] Procesando zona ${index}:`, zone);
-
-    // Manejar diferentes estructuras de hitZones
+  return hitZones.map((zone) => {
     let coordinates;
 
     if (zone.region) {
-      // Estructura: { id, region: { x, y, width, height } }
       coordinates = {
         id: zone.id,
         x: zone.region.x,
@@ -27,7 +22,6 @@ const convertHitZonesToPixelCoordinates = (hitZones: any[]) => {
         height: zone.region.height
       };
     } else if (zone.x !== undefined) {
-      // Estructura: { id, x, y, width, height }
       coordinates = {
         id: zone.id,
         x: zone.x,
@@ -39,8 +33,6 @@ const convertHitZonesToPixelCoordinates = (hitZones: any[]) => {
       console.warn('[convertHitZonesToPixelCoordinates] Estructura de zona no reconocida:', zone);
       return null;
     }
-
-    console.log(`[convertHitZonesToPixelCoordinates] Coordenadas procesadas:`, coordinates);
     return coordinates;
   }).filter(Boolean); // Filtrar valores null
 };
@@ -68,26 +60,6 @@ const CognitiveNavigationFlowStep: React.FC<MappedStepComponentProps> = (props) 
 
   const imageFiles = navigationQuestion?.files || [];
 
-  // Logs de depuración MEJORADOS
-  console.log('[CognitiveNavigationFlowStep] stepConfig recibido:', stepConfig);
-  console.log('[CognitiveNavigationFlowStep] navigationQuestion extraída:', navigationQuestion);
-  console.log('[CognitiveNavigationFlowStep] imageFiles encontrados:', imageFiles);
-
-  // LOG ESPECÍFICO PARA HITZONES DEBUG
-  if (imageFiles && imageFiles.length > 0) {
-    imageFiles.forEach((file: any, index: number) => {
-      console.log(`[CognitiveNavigationFlowStep] 🎯 HITZONE DEBUG File ${index}:`);
-      console.log(`  - File ID: ${file.id}`);
-      console.log(`  - File name: ${file.name}`);
-      console.log(`  - hitZones field exists: ${file.hasOwnProperty('hitZones')}`);
-      console.log(`  - hitZones value: ${file.hitZones}`);
-      console.log(`  - hitZones type: ${typeof file.hitZones}`);
-      console.log(`  - hitZones isArray: ${Array.isArray(file.hitZones)}`);
-      console.log(`  - All file keys:`, Object.keys(file));
-      console.log(`  - Full file object:`, JSON.stringify(file, null, 2));
-    });
-  }
-
   const [selectedHitzone, setSelectedHitzone] = useState<string | null>(null);
   const [imgSize, setImgSize] = useState<{width: number, height: number} | null>(null);
   const [imgNatural, setImgNatural] = useState<{width: number, height: number} | null>(null);
@@ -99,11 +71,6 @@ const CognitiveNavigationFlowStep: React.FC<MappedStepComponentProps> = (props) 
 
   const selectedImage = images[currentImageIndex];
   const availableHitzones = selectedImage?.hitZones ? convertHitZonesToPixelCoordinates(selectedImage.hitZones) : [];
-
-  // Logs específicos para hitzones
-  console.log('[CognitiveNavigationFlowStep] selectedImage:', selectedImage);
-  console.log('[CognitiveNavigationFlowStep] selectedImage?.hitZones:', selectedImage?.hitZones);
-  console.log('[CognitiveNavigationFlowStep] availableHitzones procesados:', availableHitzones);
 
   function getImageDrawRect(imgNatural: {width: number, height: number}, container: {width: number, height: number}) {
     const imgRatio = imgNatural.width / imgNatural.height;

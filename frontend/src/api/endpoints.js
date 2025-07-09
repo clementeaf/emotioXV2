@@ -1,6 +1,6 @@
 // ARCHIVO GENERADO AUTOMÁTICAMENTE
 // NO MODIFICAR MANUALMENTE
-// Generado: 2025-07-07T20:23:03.728Z
+// Generado: 2025-07-09T20:28:34.326Z
 
 // Endpoints de API exportados desde backend
 export const API_ENDPOINTS = {
@@ -17,7 +17,7 @@ export const API_ENDPOINTS = {
 // URLs de desarrollo local
 export const LOCAL_URLS = {
   "frontend": "http://localhost:3000",
-  "publicTests": "http://localhost:5173"
+  "publicTests": "http://localhost:4700"
 };
 
 // Constantes para uso más fácil
@@ -38,12 +38,12 @@ export function getWebsocketUrl() {
 
 // Función para obtener URL de public-tests
 export function getPublicTestsUrl() {
-  return LOCAL_URLS.publicTests || 'http://localhost:5173';
+  return LOCAL_URLS.publicTests || 'http://localhost:4700';
 }
 
 // Función para navegar a public-tests con researchID
 export function navigateToPublicTests(researchID) {
-  const url = `${getPublicTestsUrl()}/?researchId=${researchID}`;
+  const url = `${getPublicTestsUrl()}/${researchID}`;
   window.open(url, '_blank');
 }
 

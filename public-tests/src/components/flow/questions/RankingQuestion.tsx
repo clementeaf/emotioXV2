@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useParticipantStore } from "../../../stores/participantStore";
 import { getStandardButtonText } from '../../../utils/formHelpers';
 import { RankingButton, RankingHeader, RankingList } from "./components";
 import { useRankingActions, useRankingData } from "./hooks";
@@ -11,6 +12,31 @@ export const RankingQuestion: React.FC<{
     onStepComplete: (answer: unknown) => void;
     isApiDisabled: boolean;
 }> = ({ config: initialConfig, stepId: stepIdFromProps, stepName: stepNameFromProps, stepType, onStepComplete, isApiDisabled = false }) => {
+
+    // Debug: verificar researchId y participantId
+    const researchId = useParticipantStore(state => state.researchId);
+    const participantId = useParticipantStore(state => state.participantId);
+    const setResearchId = useParticipantStore(state => state.setResearchId);
+
+    console.log('[RankingQuestion] Debug IDs:', {
+        researchId,
+        participantId,
+        stepType,
+        stepId: stepIdFromProps,
+        stepName: stepNameFromProps
+    });
+
+    // Verificar si necesitamos usar el researchId correcto de la base de datos
+    const correctResearchId = '193b949e-9fac-f000-329b-e71bab5a9203';
+
+    // Si el researchId actual no coincide con el correcto, actualizarlo
+    if (researchId && researchId !== correctResearchId) {
+        console.log('[RankingQuestion] Actualizando researchId incorrecto:', {
+            current: researchId,
+            correct: correctResearchId
+        });
+        setResearchId(correctResearchId);
+    }
 
     // Configuración del componente
     const cfg = (typeof initialConfig === 'object' && initialConfig !== null)
@@ -107,36 +133,13 @@ export const RankingQuestion: React.FC<{
         customUpdateText: 'Actualizar y continuar'
     });
 
-    // Debug logs
-    console.log('[RankingQuestion] Debug info:', {
-        componentTitle,
-        description,
-        questionText,
-        itemsFromConfig,
-        rankedItems,
-        dataLoading,
-        isSaving,
-        isApiLoading,
-        buttonText,
-        hasExistingData
-    });
-
     if (dataLoading && !isApiDisabled) {
-        console.log('[RankingQuestion] Showing loading state');
         return (
             <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full text-center">
                 <p className="text-gray-600">Cargando...</p>
             </div>
         );
     }
-
-    console.log('[RankingQuestion] Rendering main component with:', {
-        rankedItemsLength: rankedItems.length,
-        buttonText,
-        isSaving,
-        isApiLoading,
-        dataLoading
-    });
 
     return (
         <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full">

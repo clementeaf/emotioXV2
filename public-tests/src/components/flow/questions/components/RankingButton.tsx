@@ -11,12 +11,6 @@ export const RankingButton: React.FC<RankingButtonProps> = ({
     disabled,
     text
 }) => {
-    console.log('[RankingButton] Rendering with:', {
-        text,
-        disabled,
-        hasOnClick: !!onClick
-    });
-
     return (
         <button
             onClick={onClick}

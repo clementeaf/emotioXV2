@@ -357,8 +357,10 @@ export class ModuleResponseController {
  */
 export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const controller = new ModuleResponseController();
-  const path = event.resource;
+  const resource = event.resource;
   const method = event.httpMethod;
+  const actualPath = event.path;
+  const pathParameters = event.pathParameters;
 
   // Agregar encabezados CORS a las respuestas OPTIONS
   if (method === 'OPTIONS') {
@@ -371,28 +373,33 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
 
   try {
     // Rutas para respuestas de módulos
-    if (path === '/module-responses' && method === 'POST') {
+    if (resource === '/module-responses' && method === 'POST') {
       return await controller.saveResponse(event);
     }
 
-    if (path === '/module-responses/{id}' && method === 'PUT') {
+    if (resource === '/module-responses/{id}' && method === 'PUT') {
       return await controller.updateResponse(event);
     }
 
-    if (path === '/module-responses' && method === 'GET') {
+    if (resource === '/module-responses' && method === 'GET') {
       return await controller.getResponses(event);
     }
 
-    if (path === '/module-responses/complete' && method === 'POST') {
+    if (resource === '/module-responses/complete' && method === 'POST') {
       return await controller.markAsCompleted(event);
     }
 
-    if (path === '/module-responses/research/{id}' && method === 'GET') {
+    if (resource === '/module-responses/research/{id}' && method === 'GET') {
       return await controller.getResponsesByResearch(event);
     }
 
-    if (path === '/module-responses' && method === 'DELETE') {
+    if (resource === '/module-responses' && method === 'DELETE') {
       return await controller.deleteAllResponses(event);
+    }
+
+    // Fallback: intentar con actualPath si resource no coincide
+    if (actualPath.startsWith('/module-responses/') && method === 'PUT') {
+      return await controller.updateResponse(event);
     }
 
     // Si no se encuentra la ruta
@@ -401,7 +408,13 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
       headers: getCorsHeaders(event),
       body: JSON.stringify({
         error: 'Ruta no encontrada',
-        status: 404
+        status: 404,
+        debug: {
+          resource,
+          method,
+          actualPath,
+          pathParameters: event.pathParameters
+        }
       })
     };
   } catch (error: any) {

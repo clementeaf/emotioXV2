@@ -17,13 +17,6 @@ export const RankingList: React.FC<RankingListProps> = ({
     isApiLoading,
     dataLoading
 }) => {
-    console.log('[RankingList] Rendering with:', {
-        itemsLength: items.length,
-        items,
-        isSaving,
-        isApiLoading,
-        dataLoading
-    });
 
     return (
         <div className="mb-4">
