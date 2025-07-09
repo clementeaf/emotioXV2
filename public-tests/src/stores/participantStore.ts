@@ -491,11 +491,24 @@ export const useParticipantStore = create(
       // Obtener respuesta de un paso por ID
       getStepResponseById: (stepId) => {
         const { responsesData } = get();
+        // console.log(`[getStepResponseById] 🔍 Buscando respuesta para stepId: ${stepId}`);
+        // console.log(`[getStepResponseById] 🔍 responsesData:`, responsesData);
+
         if (!responsesData || !responsesData.modules || !Array.isArray(responsesData.modules.all_steps)) {
           console.warn("[getStepResponseById] La estructura de respuestas no es válida o está vacía.");
           return null;
         }
-        const response = responsesData.modules.all_steps.find(r => r.id === stepId);
+
+        // console.log(`[getStepResponseById] 🔍 all_steps length: ${responsesData.modules.all_steps.length}`);
+        // console.log(`[getStepResponseById] 🔍 all_steps:`, responsesData.modules.all_steps);
+
+        const response = responsesData.modules.all_steps.find(r => {
+          const match = r.id === stepId;
+          // console.log(`[getStepResponseById] 🔍 Comparando r.id: ${r.id} con stepId: ${stepId} - match: ${match}`);
+          return match;
+        });
+
+        // console.log(`[getStepResponseById] 🔍 response encontrado:`, response);
         return response ? response.response : null;
       },
 

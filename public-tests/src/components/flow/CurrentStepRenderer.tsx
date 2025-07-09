@@ -174,17 +174,46 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
         let savedResponses = undefined;
         const dataArray = responsesDataAny;
 
+        console.log(`[CurrentStepRenderer] 🔍 Buscando respuesta previa para stepType: ${stepType}`);
+        console.log(`[CurrentStepRenderer] 🔍 stepConfig.id: ${(stepConfig as any)?.id}`);
+        console.log(`[CurrentStepRenderer] 🔍 dataArray length: ${dataArray.length}`);
+        // console.log(`[CurrentStepRenderer] 🔍 dataArray:`, dataArray);
+
         if (dataArray.length > 0) {
             // Buscar primero por id exacto
             let foundById;
             if (stepConfig && (stepConfig as any).id) {
                 foundById = (dataArray as any[]).find((r: any) => {
-                    return r.id === (stepConfig as any).id && r.response !== undefined;
+                    const match = r.id === (stepConfig as any).id && r.response !== undefined;
+                    // console.log(`[CurrentStepRenderer] 🔍 Comparando r.id: ${r.id} con stepConfig.id: ${(stepConfig as any).id} - match: ${match}`);
+                    return match;
                 });
             }
             if (foundById) {
+                console.log(`[CurrentStepRenderer] ✅ Encontrado por ID:`, foundById);
                 savedResponses = foundById.response;
             }
+
+            // Si no se encontró por ID, buscar por stepType y stepTitle
+            if (!savedResponses && stepConfig) {
+                const stepTitle = (stepConfig as any)?.title || (stepConfig as any)?.name;
+                console.log(`[CurrentStepRenderer] 🔍 Buscando por stepType: ${stepType} y stepTitle: ${stepTitle}`);
+
+                const foundByTypeAndTitle = (dataArray as any[]).find((r: any) => {
+                    const typeMatch = r.stepType === stepType;
+                    const titleMatch = r.stepTitle === stepTitle;
+                    const hasResponse = r.response !== undefined;
+                    const match = typeMatch && titleMatch && hasResponse;
+                    // console.log(`[CurrentStepRenderer] 🔍 Comparando r.stepType: ${r.stepType}, r.stepTitle: ${r.stepTitle} con stepType: ${stepType}, stepTitle: ${stepTitle} - match: ${match}`);
+                    return match;
+                });
+
+                if (foundByTypeAndTitle) {
+                    console.log(`[CurrentStepRenderer] ✅ Encontrado por stepType y stepTitle:`, foundByTypeAndTitle);
+                    savedResponses = foundByTypeAndTitle.response;
+                }
+            }
+
             // Buscar por stepType exacto si no se encontró por id
             let foundByStepType;
             if (!savedResponses && stepType === 'cognitive_long_text') {
@@ -205,6 +234,8 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
                 }
             }
         }
+
+        console.log(`[CurrentStepRenderer] 🔍 savedResponses encontrado:`, savedResponses);
 
         // Inyectar savedResponses en el config del paso
         const configWithSaved = {
