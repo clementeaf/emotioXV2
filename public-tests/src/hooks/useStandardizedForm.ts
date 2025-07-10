@@ -205,11 +205,14 @@ export function useStandardizedForm<T>(
       console.log('[useStandardizedForm] 🔍 Buscando respuesta previa:', {
         stepType,
         stepName,
+        stepId,
         responsesCount: responses.length,
         responses: responses.map((r: any) => ({
           stepType: r.stepType,
           stepTitle: r.stepTitle,
-          id: r.id
+          stepId: r.stepId,
+          id: r.id,
+          response: r.response
         }))
       });
 
@@ -217,21 +220,24 @@ export function useStandardizedForm<T>(
         if (typeof r !== 'object' || r === null) return false;
         const response = r as { stepType?: string; stepId?: string; stepTitle?: string; id?: string };
 
-        // Búsqueda más flexible: primero por stepType exacto, luego por stepType que contenga
-        const exactMatch = response.stepType === stepType;
-        const containsMatch = response.stepType && response.stepType.includes(stepType);
+        // Búsqueda simplificada: priorizar stepType exacto
+        const exactStepTypeMatch = response.stepType === stepType;
         const stepTitleMatch = response.stepTitle === stepName;
+        const stepIdMatch = response.stepId === stepId;
 
-        const match = exactMatch || (containsMatch && stepTitleMatch);
+        // Coincidencia: stepType exacto Y (stepTitle O stepId)
+        const match = exactStepTypeMatch && (stepTitleMatch || stepIdMatch);
 
         console.log('[useStandardizedForm] 🔍 Comparando:', {
           responseStepType: response.stepType,
           expectedStepType: stepType,
           responseStepTitle: response.stepTitle,
           expectedStepName: stepName,
-          exactMatch,
-          containsMatch,
+          responseStepId: response.stepId,
+          expectedStepId: stepId,
+          exactStepTypeMatch,
           stepTitleMatch,
+          stepIdMatch,
           match
         });
         return match;

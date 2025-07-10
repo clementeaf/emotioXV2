@@ -60,6 +60,7 @@ const CSATView: React.FC<MappedStepComponentProps> = ({
   } = useStepResponseManager<number>({
     stepId: question.id || '',
     stepType: mappedStepType,
+    stepName: question.title || questionText || question.id || '',
     initialData: null
   });
 

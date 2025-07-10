@@ -1,9 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { useModuleResponses } from '../../../hooks/useModuleResponses';
-import { useResponseAPI } from '../../../hooks/useResponseAPI';
-import { useParticipantStore } from '../../../stores/participantStore';
+import { useStepResponseManager } from '../../../hooks/useStepResponseManager';
 import { NEVQuestionComponentProps } from '../../../types/smart-voc.types';
 import { getStandardButtonText } from '../../../utils/formHelpers';
+
+// Mapeo de tipos SmartVOC para asegurar consistencia
+const smartVOCTypeMap: { [key: string]: string } = {
+  'CSAT': 'smartvoc_csat',
+  'CES': 'smartvoc_ces',
+  'CV': 'smartvoc_cv',
+  'NPS': 'smartvoc_nps',
+  'NEV': 'smartvoc_nev',
+  'VOC': 'smartvoc_feedback',
+};
 
 const emojiOptions = [
   { value: 'negative', label: '😞', numValue: -1 },
@@ -11,129 +19,75 @@ const emojiOptions = [
   { value: 'positive', label: '😊', numValue: 1 },
 ];
 
-export const NEVQuestion: React.FC<NEVQuestionComponentProps> = ({ questionConfig, researchId, moduleId, onSaveSuccess }) => {
+export const NEVQuestion: React.FC<NEVQuestionComponentProps> = ({ questionConfig, onSaveSuccess }) => {
   const { id: questionId, description, type: questionType, title: questionTitle } = questionConfig;
-  const participantId = useParticipantStore(state => state.participantId);
 
-  const [selectedValue, setSelectedValue] = useState<number | null>(null);
-  const [internalModuleResponseId, setInternalModuleResponseId] = useState<string | null>(null);
+  // Aplicar mapeo correcto del stepType
+  const mappedStepType = smartVOCTypeMap[questionType || 'NEV'] || 'smartvoc_nev';
 
   const {
-    data: moduleResponsesArray,
-    isLoading: isLoadingInitialData,
-    error: loadingError
-  } = useModuleResponses({
-    researchId,
-    participantId: participantId || undefined,
-    autoFetch: !!(researchId && participantId)
+    responseData,
+    saveCurrentStepResponse,
+    isSaving,
+    isLoading,
+    error,
+    hasExistingData
+  } = useStepResponseManager<number>({
+    stepId: questionId || '',
+    stepType: mappedStepType,
+    stepName: questionTitle || description || questionId,
+    initialData: null
   });
 
-  const {
-    saveOrUpdateResponse,
-    isLoading: isSubmitting,
-    error: submissionError,
-    setError: setSubmissionError
-  } = useResponseAPI({ researchId, participantId: participantId || '' });
+  const [selectedValue, setSelectedValue] = useState<number | null>(null);
 
-  // Cargar valor inicial desde la API
   useEffect(() => {
-    if (!isLoadingInitialData && !loadingError && moduleResponsesArray && Array.isArray(moduleResponsesArray)) {
-      const foundResponse = moduleResponsesArray.find((r: unknown) => {
-        if (typeof r !== 'object' || r === null) return false;
-        const resp = r as {
-          stepType?: unknown;
-          stepTitle?: unknown;
-          id?: unknown;
-          stepId?: unknown;
-          moduleId?: unknown
-        };
-
-        // Buscar por múltiples criterios para máxima compatibilidad
-        return (
-          // Por stepType + moduleId (nuevo formato)
-          (resp.stepType === questionType && resp.moduleId === moduleId) ||
-          // Por stepId + moduleId (formato anterior)
-          (resp.stepId === questionId && resp.moduleId === moduleId) ||
-          // Por stepType solamente si coincide con el questionType
-          (resp.stepType === questionType) ||
-          // Por stepTitle si contiene el questionId
-          (typeof resp.stepTitle === 'string' && resp.stepTitle.includes(questionId)) ||
-          // Por id si coincide con questionId
-          (resp.id === questionId)
-        );
-      });
-
-      if (
-        foundResponse &&
-        typeof foundResponse === 'object' &&
-        foundResponse !== null &&
-        'response' in foundResponse &&
-        typeof (foundResponse as { response?: unknown }).response === 'object' &&
-        (foundResponse as { response?: { value?: unknown } }).response !== null &&
-        typeof (foundResponse as { response?: { value?: unknown } }).response?.value === 'number'
-      ) {
-        const responseValue = (foundResponse as { response: { value: number } }).response.value;
-        console.log(`[NEVQuestion] Cargando respuesta existente para ${questionId}:`, responseValue);
-        setSelectedValue(responseValue);
-        setInternalModuleResponseId(
-          'id' in foundResponse && typeof (foundResponse as { id?: unknown }).id === 'string'
-            ? (foundResponse as { id: string }).id
-            : null
-        );
-      } else {
-        console.log(`[NEVQuestion] No se encontró respuesta previa para ${questionId}`);
-        setSelectedValue(null);
-        setInternalModuleResponseId(null);
-      }
+    let initialValue: number | null = null;
+    if (typeof responseData === 'number') {
+      initialValue = responseData;
+    } else if (
+      typeof responseData === 'string' && String(responseData).length >= 1
+    ) {
+      const found = emojiOptions.find(opt => opt.label === responseData || opt.label.trim() === String(responseData).trim());
+      if (found) initialValue = found.numValue;
+    } else if (
+      typeof responseData === 'object' &&
+      responseData !== null &&
+      'value' in responseData &&
+      typeof (responseData as any).value === 'number'
+    ) {
+      initialValue = (responseData as any).value;
+    } else if (
+      typeof responseData === 'object' &&
+      responseData !== null &&
+      Object.values(responseData).length === 1 &&
+      typeof Object.values(responseData)[0] === 'number'
+    ) {
+      initialValue = Object.values(responseData)[0] as number;
     }
-  }, [moduleResponsesArray, isLoadingInitialData, loadingError, questionId, moduleId, questionType]);
+    setSelectedValue(initialValue);
+  }, [responseData]);
 
   const handleSelect = (numValue: number) => {
     setSelectedValue(numValue);
-    if (submissionError) setSubmissionError(null);
   };
 
-  const handleSaveOrUpdateClick = async () => {
-    if (!participantId || participantId.trim() === '') {
-      setSubmissionError('Error: participantId vacío.');
-      return;
-    }
+  const handleSave = async () => {
     if (selectedValue === null) {
-      setSubmissionError('Por favor, selecciona una opción.');
+      alert('Por favor, selecciona una opción.');
       return;
     }
-    const responseData = { value: selectedValue };
-    const result = await saveOrUpdateResponse(
-      questionId,
-      questionType || '',
-      questionTitle || description || questionId,
-      responseData,
-      internalModuleResponseId || undefined,
-      moduleId
-    );
-    if (result && !submissionError) {
-      let newId: string | null = null;
-      if (
-        typeof result === 'object' &&
-        result !== null &&
-        'id' in result &&
-        typeof (result as { id?: unknown }).id === 'string'
-      ) {
-        newId = (result as { id: string }).id;
-        if (!internalModuleResponseId) {
-          setInternalModuleResponseId(newId);
-        }
-      }
-      onSaveSuccess(questionId, selectedValue, newId || internalModuleResponseId || null);
-    } else if (!result && !submissionError) {
-      setSubmissionError('Ocurrió un error desconocido al guardar.');
+
+    const result = await saveCurrentStepResponse(selectedValue);
+    if (result.success) {
+      onSaveSuccess && onSaveSuccess(questionId, selectedValue, result.id || null);
     }
   };
 
   const buttonText = getStandardButtonText({
-    isSaving: isSubmitting,
-    isLoading: isLoadingInitialData,
-    hasExistingData: !!internalModuleResponseId && selectedValue !== null
+    isSaving,
+    isLoading,
+    hasExistingData
   });
 
   // Usar el título de la pregunta configurado, con fallback a description
@@ -143,7 +97,7 @@ export const NEVQuestion: React.FC<NEVQuestionComponentProps> = ({ questionConfi
     return <div className="text-red-600">Error: Falta el texto de la pregunta.</div>;
   }
 
-  if (isLoadingInitialData) {
+  if (isLoading) {
     return <div className="p-4 text-center text-gray-500">Cargando pregunta...</div>;
   }
 
@@ -164,19 +118,19 @@ export const NEVQuestion: React.FC<NEVQuestionComponentProps> = ({ questionConfi
                 : 'bg-gray-100 hover:bg-gray-200'
               }`}
             aria-label={`Seleccionar ${option.value}`}
-            disabled={isSubmitting || isLoadingInitialData}
+            disabled={isSaving || isLoading}
           >
             <span className="text-3xl md:text-4xl">{option.label}</span>
           </button>
         ))}
       </div>
-      {(submissionError || loadingError) && (
-        <p className="text-sm text-red-600 my-2 text-center">Error: {submissionError || loadingError}</p>
+      {error && (
+        <p className="text-sm text-red-600 my-2 text-center">Error: {error}</p>
       )}
       <button
         className="mt-6 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-10 rounded-md w-fit transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-        onClick={handleSaveOrUpdateClick}
-        disabled={isSubmitting || isLoadingInitialData || selectedValue === null}
+        onClick={handleSave}
+        disabled={isSaving || isLoading || selectedValue === null}
       >
         {buttonText}
       </button>

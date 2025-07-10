@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useStandardizedForm } from '../../hooks/useStandardizedForm';
 import { StandardizedFormProps } from '../../types/hooks.types';
 import { BasicEmoji, EmotionSelectionViewComponentProps } from '../../types/smart-voc.types';
@@ -168,6 +168,37 @@ const EmotionSelectionView: React.FC<EmotionSelectionViewComponentProps> = ({
     if (isSaving) return 'Guardando...';
     return hasExistingData ? 'Actualizar y continuar' : 'Guardar y continuar';
   };
+
+  useEffect(() => {
+    // Log de depuración explícito
+    console.log('[EmotionSelectionView] 🟡 savedResponse recibido:', savedResponse);
+    console.log('[EmotionSelectionView] 🟡 emojiOptions:', emojis.map(opt => opt.label));
+
+    if (typeof savedResponse === 'number') {
+      setValue(emojis[savedResponse].emoji, true); // Assuming savedResponse is an index for emotionalScaleEmojis
+    } else if (
+      typeof savedResponse === 'string' && String(savedResponse).length >= 1
+    ) {
+      // Buscar el valor numérico correspondiente al emoji
+      const found = emojis.find(opt => opt.label === savedResponse);
+      console.log('[EmotionSelectionView] 🟡 Resultado búsqueda emoji:', { savedResponse, found });
+      if (found) setValue(found.emoji, true);
+    } else if (
+      typeof savedResponse === 'object' &&
+      savedResponse !== null &&
+      'value' in savedResponse &&
+      typeof (savedResponse as any).value === 'number'
+    ) {
+      setValue(emojis[(savedResponse as any).value].emoji, true);
+    } else if (
+      typeof savedResponse === 'object' &&
+      savedResponse !== null &&
+      Object.values(savedResponse).length === 1 &&
+      typeof Object.values(savedResponse)[0] === 'number'
+    ) {
+      setValue(emojis[Object.values(savedResponse)[0] as number].emoji, true);
+    }
+  }, [savedResponse, emojis, setValue]);
 
   return (
     <div className="flex flex-col items-center justify-center w-full h-full bg-white p-8">
