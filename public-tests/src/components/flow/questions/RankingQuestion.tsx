@@ -120,7 +120,6 @@ export const RankingQuestion: React.FC<{
         rankedItems,
         stepType,
         stepId: stepIdFromProps,
-        stepName: componentTitle,
         onStepComplete,
         isApiDisabled
     });

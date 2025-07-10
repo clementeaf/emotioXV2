@@ -1,40 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ModuleResponse } from '../stores/participantStore';
+import { ModuleResponse, ResponsesData } from '../stores/participantStore';
 import { UseResponseAPIReturn, UseResponseManagerProps, UseResponseManagerReturn } from '../types/hooks.types';
-import { ResponsesData } from '../types/store.types';
-
-// Función auxiliar para sanear objetos antes de JSON.stringify (copiada del store)
-const sanitizeForJSON = (obj: unknown): unknown => {
-  if (!obj) return obj;
-
-  const seen = new WeakSet();
-  return JSON.parse(JSON.stringify(obj, (key, value) => {
-    // Ignorar propiedades que empiezan con "__react" (internas de React)
-    if (key.startsWith('__react')) return undefined;
-
-    // Manejar posibles referencias circulares
-    if (typeof value === 'object' && value !== null) {
-      if (seen.has(value)) {
-        return '[Referencia Circular]';
-      }
-      seen.add(value);
-
-      // Eliminar propiedades específicas que causan problemas
-      if (typeof window !== 'undefined' &&
-          (value instanceof Element || value instanceof HTMLElement)) {
-        return '[Elemento DOM]';
-      }
-
-      // Si es un objeto con la propiedad "current" (posible React ref)
-      if ('current' in value && typeof window !== 'undefined' &&
-          (value.current instanceof Element || value.current instanceof HTMLElement)) {
-        return '[React Ref]';
-      }
-    }
-
-    return value;
-  }));
-};
 
 export const useResponseManager = ({
     researchId,
@@ -127,55 +93,69 @@ export const useResponseManager = ({
         return undefined;
     }, [responsesData.modules.all_steps]);
 
+    // NUEVO: Función para generar questionKey único
+    const generateQuestionKey = useCallback((stepId: string, stepType: string, questionIndex?: number): string => {
+        const baseKey = `${stepId}_${stepType}`;
+        return questionIndex !== undefined ? `${baseKey}_q${questionIndex}` : baseKey;
+    }, []);
+
+    // NUEVO: Función para validar questionKey
+    const validateQuestionKey = useCallback((questionKey: string, expectedStepId: string, expectedStepType: string): boolean => {
+        const parts = questionKey.split('_');
+        if (parts.length < 2) return false;
+
+        const stepId = parts[0];
+        const stepType = parts[1];
+
+        return stepId === expectedStepId && stepType === expectedStepType;
+    }, []);
+
     const saveStepResponse = useCallback(async (
         stepId: string,
         responseData: unknown,
         stepType?: string,
-        stepName?: string
+        stepName?: string,
+        questionIndex?: number // NUEVO: Índice de pregunta para questionKey único
     ) => {
-        // Buscar información del paso
-        let currentStepInfo;
-        if (stepType && stepName) {
-            currentStepInfo = { id: stepId, type: stepType, name: stepName };
-        } else {
-            if (currentStepIndex < 0 || currentStepIndex >= expandedSteps.length) return;
-            currentStepInfo = expandedSteps[currentStepIndex];
-            if (!currentStepInfo) return;
-        }
+        const currentStep = expandedSteps[currentStepIndex];
+        const currentStepType = stepType || currentStep?.type || 'unknown';
+        const currentStepName = stepName || currentStep?.name || stepId;
 
-        const { id: currentStepId, type: currentStepType, name: currentStepName } = currentStepInfo;
+        // NUEVO: Generar questionKey único
+        const questionKey = generateQuestionKey(stepId, currentStepType, questionIndex);
 
-        if ((currentStepType === 'welcome' || currentStepType === 'thankyou') && responseData === undefined) {
-            if (currentStepType === 'thankyou') {
-                setResponsesData(prev => ({ ...prev, endTime: Date.now() }));
-            }
+        console.log(`[useResponseManager] 🔑 Guardando respuesta con questionKey: ${questionKey}`, {
+            stepId,
+            stepType: currentStepType,
+            stepName: currentStepName,
+            questionIndex,
+            questionKey
+        });
+
+        // Validar que el questionKey sea válido
+        if (!validateQuestionKey(questionKey, stepId, currentStepType)) {
+            console.error(`[useResponseManager] ❌ questionKey inválido: ${questionKey}`);
+            setError('Error: Identificador de pregunta inválido');
             return;
         }
 
         const isCognitive = currentStepType.startsWith('cognitive_');
         const isSmartVOC = currentStepType.startsWith('smartvoc_');
-        let effectiveAnswer = responseData;
-
-        if (effectiveAnswer === undefined && (isCognitive || isSmartVOC)) {
-            effectiveAnswer = isCognitive ? { text: "" } : { value: 0 };
-        }
 
         const now = new Date().toISOString();
         const moduleResponse: ModuleResponse = {
-            id: currentStepId,
+            id: stepId,
             stepType: currentStepType,
-            stepTitle: currentStepName || '',
-            response: effectiveAnswer,
+            stepTitle: currentStepName,
+            response: responseData,
             createdAt: now,
             updatedAt: now,
+            questionKey: questionKey, // NUEVO: Incluir questionKey en la respuesta
+            participantId: participantId || undefined,
+            researchId: researchId || undefined
         };
 
-        try {
-            moduleResponse.response = sanitizeForJSON(moduleResponse.response);
-        } catch {
-            moduleResponse.response = String(moduleResponse.response);
-        }
-
+        // Validar que la respuesta no esté vacía
         if (moduleResponse.response === undefined || moduleResponse.response === null) {
             const fallbackText = "Respuesta no capturada";
             if (isCognitive) moduleResponse.response = { text: fallbackText };
@@ -184,10 +164,10 @@ export const useResponseManager = ({
         }
 
         try {
-            const firestoreResponseDocumentId = findExistingResponseId(currentStepId);
+            const firestoreResponseDocumentId = findExistingResponseId(stepId);
 
             await (responseAPI as UseResponseAPIReturn).saveOrUpdateResponse(
-                currentStepId,
+                stepId,
                 currentStepType,
                 currentStepName || '',
                 moduleResponse.response,
@@ -205,7 +185,11 @@ export const useResponseManager = ({
                 newData.modules.all_steps = [];
             }
 
-            const existingIndex = newData.modules.all_steps.findIndex(r => r.id === currentStepId);
+            // NUEVO: Buscar por questionKey en lugar de solo stepId
+            const existingIndex = newData.modules.all_steps.findIndex(r =>
+                r.questionKey === questionKey || r.id === stepId
+            );
+
             if (existingIndex >= 0) {
                 newData.modules.all_steps[existingIndex] = moduleResponse;
             } else {
@@ -214,18 +198,26 @@ export const useResponseManager = ({
 
             return newData;
         });
-    }, [currentStepIndex, expandedSteps, responseAPI, findExistingResponseId]);
+    }, [currentStepIndex, expandedSteps, responseAPI, findExistingResponseId, generateQuestionKey, validateQuestionKey, researchId, participantId]);
 
-    const getStepResponse = useCallback((stepId: string): unknown => {
+    const getStepResponse = useCallback((stepId: string, questionIndex?: number): unknown => {
         if (responsesData.modules.all_steps) {
+            // NUEVO: Buscar por questionKey si se proporciona questionIndex
+            if (questionIndex !== undefined) {
+                const questionKey = generateQuestionKey(stepId, 'unknown', questionIndex);
+                const response = responsesData.modules.all_steps.find(r => r.questionKey === questionKey);
+                return response?.response;
+            }
+
+            // Fallback: buscar por stepId
             const response = responsesData.modules.all_steps.find(r => r.id === stepId);
             return response?.response;
         }
         return undefined;
-    }, [responsesData.modules.all_steps]);
+    }, [responsesData.modules.all_steps, generateQuestionKey]);
 
-    const hasStepBeenAnswered = useCallback((stepId: string): boolean => {
-        return getStepResponse(stepId) !== undefined;
+    const hasStepBeenAnswered = useCallback((stepId: string, questionIndex?: number): boolean => {
+        return getStepResponse(stepId, questionIndex) !== undefined;
     }, [getStepResponse]);
 
     const getResponsesJson = useCallback((): string => {

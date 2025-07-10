@@ -102,6 +102,7 @@ export interface MappedStepComponentProps {
   savedResponse?: unknown;
   savedResponseId?: string;
   instructions?: string;
+  questionKey?: string; // NUEVO: questionKey para identificación única de preguntas
 }
 
 // Tipos para preguntas específicas del flujo

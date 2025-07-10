@@ -194,7 +194,6 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
             return;
         }
         const currentStepIdForApi = stepIdFromProps || stepType;
-        const currentStepNameForApi = componentTitle;
         setIsSaving(true);
         setApiError(null);
         try {
@@ -204,7 +203,7 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
                 await updateResponse(moduleResponseId, payload.response);
                 if (apiHookError) setApiError(apiHookError); else success = true;
             } else {
-                const result = await saveResponse(currentStepIdForApi, stepType, currentStepNameForApi, payload.response);
+                const result = await saveResponse(currentStepIdForApi, stepType, payload.response);
                 if (apiHookError) setApiError(apiHookError);
                 else if (
                   result &&

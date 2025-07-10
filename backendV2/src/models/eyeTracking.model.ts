@@ -1,24 +1,24 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { 
-  DynamoDBDocumentClient, 
-  PutCommand, 
-  GetCommand, 
-  QueryCommand, 
-  DeleteCommand, 
-  UpdateCommand,
-  ScanCommand
+import {
+    DeleteCommand,
+    DynamoDBDocumentClient,
+    GetCommand,
+    PutCommand,
+    QueryCommand,
+    ScanCommand,
+    UpdateCommand
 } from '@aws-sdk/lib-dynamodb';
 import { v4 as uuidv4 } from 'uuid';
-import { structuredLog } from '../utils/logging.util';
-import { ApiError } from '../utils/errors';
 import {
-  DemographicQuestions,
-  LinkConfig,
-  ParticipantLimit,
-  Backlinks,
-  ParameterOptions,
-  EyeTrackingRecruitConfig
+    Backlinks,
+    DemographicQuestions,
+    EyeTrackingRecruitConfig,
+    LinkConfig,
+    ParameterOptions,
+    ParticipantLimit
 } from '../../../shared/interfaces/eyeTrackingRecruit.interface';
+import { ApiError } from '../utils/errors';
+import { structuredLog } from '../utils/logging.util';
 
 /**
  * Estructura principal de la configuración de Eye Tracking
@@ -110,12 +110,12 @@ export interface EyeTrackingRecord extends EyeTrackingFormData {
    * ID único del registro
    */
   id: string;
-  
+
   /**
    * Fecha de creación
    */
   createdAt: Date;
-  
+
   /**
    * Fecha de última actualización
    */
@@ -130,22 +130,22 @@ export interface EyeTrackingResponse {
    * ID de la configuración
    */
   id?: string;
-  
+
   /**
    * Datos de la configuración
    */
   data?: EyeTrackingFormData;
-  
+
   /**
    * Indicador de éxito
    */
   success?: boolean;
-  
+
   /**
    * Mensaje de error si corresponde
    */
   error?: string;
-  
+
   /**
    * Indicador de que el recurso no se encontró
    */
@@ -166,6 +166,8 @@ export interface EyeTrackingDynamoItem {
   researchUrl: string;
   parameterOptions: string; // Serializado
   metadata: string;  // Serializado
+  // NUEVO: questionKey para identificación única de preguntas
+  questionKey?: string;
   createdAt: string; // ISO String
   updatedAt: string; // ISO String
 }
@@ -199,7 +201,7 @@ export class EyeTrackingModel {
       const backlinks = JSON.parse(item.backlinks || '{}') as Backlinks;
       const parameterOptions = JSON.parse(item.parameterOptions || '{}') as ParameterOptions;
       const metadata = JSON.parse(item.metadata || '{}');
-      
+
       return {
         id: item.id,
         researchId: item.researchId,
@@ -225,7 +227,7 @@ export class EyeTrackingModel {
 
     const eyeTrackingId = uuidv4();
     const now = new Date().toISOString();
-    
+
     const item: EyeTrackingDynamoItem = {
       id: eyeTrackingId,
       sk: EyeTrackingModel.SORT_KEY_VALUE,
@@ -240,7 +242,7 @@ export class EyeTrackingModel {
       createdAt: now,
       updatedAt: now
     };
-    
+
     const command = new PutCommand({ TableName: this.tableName, Item: item });
 
     try {
@@ -315,7 +317,7 @@ export class EyeTrackingModel {
     if (!currentRecord) {
       throw new ApiError(`EYE_TRACKING_CONFIG_NOT_FOUND: Configuración con ID ${id} no encontrada.`, 404);
     }
-    
+
     const now = new Date().toISOString();
     let updateExpression = 'SET updatedAt = :updatedAt';
     const expressionAttributeValues: Record<string, any> = { ':updatedAt': now };
@@ -344,7 +346,7 @@ export class EyeTrackingModel {
       updateExpression += ', parameterOptions = :parameterOptions';
       expressionAttributeValues[':parameterOptions'] = JSON.stringify(data.parameterOptions);
     }
-    
+
     const currentMetadataObject = currentRecord.metadata || {};
     const incomingMetadata = data.metadata || {};
     const newMetadata = {
@@ -366,7 +368,7 @@ export class EyeTrackingModel {
       ExpressionAttributeValues: expressionAttributeValues,
       ReturnValues: 'ALL_NEW'
     });
-    
+
     try {
       const result = await this.docClient.send(command);
       if (!result.Attributes) {
@@ -398,7 +400,7 @@ export class EyeTrackingModel {
         sk: EyeTrackingModel.SORT_KEY_VALUE
       }
     });
-    
+
     try {
       await this.docClient.send(command);
       structuredLog('info', `${this.modelName}.${context}`, 'Configuración eliminada', { id });
@@ -421,7 +423,7 @@ export class EyeTrackingModel {
         ':skVal': EyeTrackingModel.SORT_KEY_VALUE
       }
     });
-    
+
     try {
       const result = await this.docClient.send(command);
       const items = result.Items || [];
@@ -435,4 +437,4 @@ export class EyeTrackingModel {
 }
 
 // Exportar instancia
-export const eyeTrackingModel = new EyeTrackingModel(); 
+export const eyeTrackingModel = new EyeTrackingModel();

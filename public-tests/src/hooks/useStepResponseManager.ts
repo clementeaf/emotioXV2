@@ -21,7 +21,6 @@ export function useStepResponseManager<TResponseData = unknown>({
     required: false // Por defecto false para mantener compatibilidad
   }), [stepId, stepType, stepName, propResearchId, propParticipantId]);
 
-
   const [state, actions] = useStandardizedForm<TResponseData>(
     {
       ...standardizedProps,

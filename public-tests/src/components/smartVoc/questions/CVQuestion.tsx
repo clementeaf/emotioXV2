@@ -102,15 +102,13 @@ export const CVQuestion: React.FC<CVQuestionComponentProps> = ({
     }
 
     const responseData = { value: selectedValue };
-    const stepNameForApi = question;
+    // const stepNameForApi = question; // Eliminada porque no se usa
 
     const result = await saveOrUpdateResponse(
       question,
       'cv',
-      stepNameForApi,
       responseData,
-      internalModuleResponseId || undefined,
-      moduleId
+      internalModuleResponseId || undefined
     );
 
     if (result && !submissionError) {

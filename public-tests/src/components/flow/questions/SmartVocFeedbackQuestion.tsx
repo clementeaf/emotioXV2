@@ -60,10 +60,11 @@ export const SmartVocFeedbackQuestion: React.FC<MappedStepComponentProps> = ({
     saveCurrentStepResponse,
     responseSpecificId
   } = useStepResponseManager<string>({
-    stepId: 'smartvoc_feedback',
-    stepType: 'smartvoc_feedback',
-    stepName: stepName || cfg.title || 'Voice of Customer (VOC)',
-    initialData: ''
+    stepId: 'smartvoc-feedback',
+    stepType: 'smart-voc-feedback',
+    stepName: 'Comentarios',
+    researchId: undefined,
+    participantId: undefined,
   });
 
     // useEffect para respuestas del useStepResponseManager

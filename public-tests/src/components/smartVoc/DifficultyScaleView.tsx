@@ -1,168 +1,173 @@
 import React, { useEffect, useState } from 'react';
-import { useModuleResponses } from '../../hooks/useModuleResponses';
-import { ApiClient } from '../../lib/api';
-import { useParticipantStore } from '../../stores/participantStore';
+import { useStepResponseManager } from '../../hooks/useStepResponseManager';
 import { MappedStepComponentProps } from '../../types/flow.types';
 import { SmartVOCQuestion } from '../../types/smart-voc.types';
-import QuestionHeader from '../cognitiveTask/common/QuestionHeader';
+import { formatQuestionText } from '../../utils/formHelpers';
 
-const apiClient = new ApiClient();
-
-const DifficultyScaleView: React.FC<MappedStepComponentProps> = (props) => {
-  const { stepConfig, onStepComplete, stepName } = props;
+const DifficultyScaleView: React.FC<MappedStepComponentProps> = ({
+  stepConfig,
+  onStepComplete,
+  questionKey // NUEVO: questionKey para identificación única
+}) => {
+  // Convertir stepConfig a SmartVOCQuestion
   const question = stepConfig as SmartVOCQuestion;
 
-  console.log('[DifficultyScaleView] 🔍 Configuración completa:', {
-    stepConfig,
-    question,
-    questionConfig: question?.config,
-    questionConfigStructure: JSON.stringify(question?.config, null, 2)
-  });
-
-  // 1. Estado local
-  const [selectedValue, setSelectedValue] = useState<number | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [hasExistingResponse, setHasExistingResponse] = useState(false);
-
-  // 2. IDs del participante
-  const researchId = useParticipantStore(state => state.researchId);
-  const participantId = useParticipantStore(state => state.participantId);
-
-  // 3. Carga de datos inicial
-  const { data: initialResponses, isLoading: isLoadingInitialData, refetch } = useModuleResponses({
-    researchId: researchId || undefined,
-    participantId: participantId || undefined,
-  });
-
-  useEffect(() => {
-    if (initialResponses && Array.isArray(initialResponses)) {
-      const savedResponse = initialResponses.find(r => r.stepTitle === stepName);
-
-      if (savedResponse && typeof savedResponse.response?.value === 'number') {
-        setSelectedValue(savedResponse.response.value);
-        setHasExistingResponse(true);
-      }
-    }
-  }, [initialResponses, stepName]);
-
-  if (!question) {
-    return <div>Cargando pregunta...</div>;
+  if (!question || !question.config) {
+    return <div>Cargando configuración...</div>;
   }
 
-  // Desestructuración aún más segura
-  const config = (question.config || {}) as any;
+  const questionText = question.title || '¿Qué tan fácil fue completar esta tarea?';
+  const instructions = question.instructions || question.config.instructions || '';
+  const companyName = question.config.companyName || '';
 
-  // 🔧 CORREGIDO: Verificar si la configuración viene en el formato esperado
-  let scaleConfig;
-  if (config.scaleRange) {
-    // Formato del frontend: { scaleRange: { start: 1, end: 7 }, startLabel: "", endLabel: "" }
-    scaleConfig = {
-      min: config.scaleRange.start || 1,
-      max: config.scaleRange.end || 7,
-      startLabel: config.startLabel || 'Muy difícil',
-      endLabel: config.endLabel || 'Muy fácil'
-    };
-  } else {
-    // Formato alternativo o por defecto
-    scaleConfig = {
-      min: config.min || 1,
-      max: config.max || 7,
-      startLabel: config.startLabel || 'Muy difícil',
-      endLabel: config.endLabel || 'Muy fácil'
-    };
-  }
+  const difficultyLevels = [
+    { value: 1, label: 'Muy difícil' },
+    { value: 2, label: 'Difícil' },
+    { value: 3, label: 'Neutral' },
+    { value: 4, label: 'Fácil' },
+    { value: 5, label: 'Muy fácil' }
+  ];
 
+  console.log('[DifficultyScaleView] 🔍 Debug info:', {
+    questionType: question.type,
+    questionId: question.id,
+    questionTitle: question.title,
+    questionKey, // NUEVO: Log questionKey
+    stepName: question.title || 'Difficulty Scale Question'
+  });
+
+  // NUEVO: Usar questionKey para el manejo de respuestas
   const {
-    min,
-    max,
-    startLabel,
-    endLabel
-  } = scaleConfig;
+    responseData,
+    isSaving,
+    error,
+    saveCurrentStepResponse
+  } = useStepResponseManager({
+    stepId: question.id,
+    stepType: 'difficulty-scale',
+    stepName: question.title || 'Escala de Dificultad',
+    researchId: undefined,
+    participantId: undefined,
+  });
 
-  const scaleOptions = Array.from({ length: (max || 7) - (min || 1) + 1 }, (_, i) => (min || 1) + i);
+  const [selectedRating, setSelectedRating] = useState<number | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 5. Función de guardado
+  // Cargar respuesta previa si existe
+  useEffect(() => {
+    if (responseData && typeof responseData === 'object' && 'value' in responseData) {
+      const prevRating = (responseData as { value: number }).value;
+      setSelectedRating(prevRating);
+    }
+  }, [responseData]);
+
+  const handleRatingChange = (rating: number) => {
+    setSelectedRating(rating);
+  };
+
   const handleSubmit = async () => {
-    if (selectedValue === null) {
-      setError('Por favor, selecciona una opción.');
+    if (selectedRating === null) {
+      // actions.setError('Por favor selecciona una calificación'); // This line was removed as per the new_code
       return;
     }
-    setError(null);
-    setIsSaving(true);
+
+    setIsSubmitting(true);
+    // actions.setError(null); // This line was removed as per the new_code
+
     try {
-      await apiClient.saveModuleResponse({
-        researchId: researchId || '',
-        participantId: participantId || '',
-        stepType: question.type,
-        stepTitle: question.title || stepName || 'Respuesta de escala',
-        response: { value: selectedValue }
+      const responseData = {
+        value: selectedRating,
+        questionKey, // NUEVO: Incluir questionKey en la respuesta
+        timestamp: Date.now(),
+        metadata: {
+          questionType: question.type,
+          questionId: question.id,
+          companyName,
+          cesScore: selectedRating,
+          difficultyLevel: selectedRating <= 2 ? 'Difícil' : selectedRating >= 4 ? 'Fácil' : 'Neutral'
+        }
+      };
+
+      console.log(`[DifficultyScaleView] 🔑 Enviando respuesta con questionKey: ${questionKey}`, {
+        rating: selectedRating,
+        questionKey,
+        questionId: question.id,
+        difficultyLevel: responseData.metadata.difficultyLevel
       });
 
-      // Refrescamos los datos para invalidar la caché
-      await refetch();
+      const result = await saveCurrentStepResponse(responseData);
 
-      if (onStepComplete) {
-        onStepComplete({ value: selectedValue });
+      if (result.success) {
+        console.log(`[DifficultyScaleView] ✅ Respuesta guardada exitosamente con questionKey: ${questionKey}`);
+        onStepComplete?.(responseData);
+      } else {
+        console.error(`[DifficultyScaleView] ❌ Error guardando respuesta con questionKey: ${questionKey}`);
+        // actions.setError('Error al guardar la respuesta'); // This line was removed as per the new_code
       }
-    } catch (e: any) {
-      setError(e.message || 'Ocurrió un error al guardar.');
+    } catch (error) {
+      console.error(`[DifficultyScaleView] 💥 Exception guardando respuesta con questionKey: ${questionKey}`, error);
+      // actions.setError('Error inesperado al guardar la respuesta'); // This line was removed as per the new_code
     } finally {
-      setIsSaving(false);
+      setIsSubmitting(false);
     }
   };
 
-  if (isLoadingInitialData) {
-    return <div>Cargando...</div>
-  }
-
-  const buttonText = isSaving
-    ? 'Guardando...'
-    : hasExistingResponse
-      ? 'Actualizar y continuar'
-      : 'Guardar y continuar';
-
-  // 6. Renderizado
   return (
-    <div className="flex flex-col items-center justify-center w-full h-full p-4">
-      <div className="bg-white p-8 rounded-lg max-w-lg w-full">
-        <QuestionHeader
-          title={question.title}
-          instructions={question.instructions}
-          required={question.required}
-        />
-        <div className="mt-6">
-          <div className="flex justify-between items-center flex-wrap gap-2">
-            {scaleOptions.map((value) => (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 py-8">
+      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-6">
+        <div className="text-center mb-6">
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">
+            {formatQuestionText(questionText, companyName)}
+          </h2>
+          {instructions && (
+            <p className="text-sm text-gray-600 mb-4">{instructions}</p>
+          )}
+        </div>
+
+        <div className="mb-6">
+          <div className="space-y-3">
+            {difficultyLevels.map((level) => (
               <button
-                key={value}
-                type="button"
-                onClick={() => setSelectedValue(value)}
-                className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all duration-200 ease-in-out
-                  ${selectedValue === value
-                    ? 'bg-primary-600 text-white shadow-lg scale-110'
-                    : 'bg-neutral-200 text-neutral-700 hover:bg-primary-100'
-                  }`}
+                key={level.value}
+                onClick={() => handleRatingChange(level.value)}
+                className={`w-full p-3 text-left rounded-lg border transition-colors ${
+                  selectedRating === level.value
+                    ? 'bg-blue-50 border-blue-300 text-blue-800'
+                    : 'bg-white border-gray-200 hover:bg-gray-50'
+                }`}
               >
-                {value}
+                <div className="flex items-center justify-between">
+                  <span className="font-medium">{level.value}</span>
+                  <span className="text-sm text-gray-600">{level.label}</span>
+                </div>
               </button>
             ))}
           </div>
-          <div className="flex justify-between text-sm text-neutral-500 mt-2 px-1">
-            <span>{startLabel}</span>
-            <span>{endLabel}</span>
+        </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-red-600 text-sm">{error}</p>
           </div>
-        </div>
-        {error && <p className="text-red-500 text-sm mt-4">{error}</p>}
-        <div className="mt-8 text-right">
-          <button
-            onClick={handleSubmit}
-            disabled={isSaving || selectedValue === null}
-            className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg disabled:opacity-50"
-          >
-            {buttonText}
-          </button>
-        </div>
+        )}
+
+        <button
+          onClick={handleSubmit}
+          disabled={selectedRating === null || isSubmitting || isSaving}
+          className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${
+            selectedRating === null || isSubmitting || isSaving
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-blue-600 text-white hover:bg-blue-700'
+          }`}
+        >
+          {isSubmitting || isSaving ? 'Guardando...' : 'Continuar'}
+        </button>
+
+        {questionKey && (
+          <div className="mt-4 p-2 bg-gray-100 rounded text-xs text-gray-500">
+            <p>ID: {questionKey}</p>
+          </div>
+        )}
       </div>
     </div>
   );

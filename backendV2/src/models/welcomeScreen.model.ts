@@ -1,11 +1,11 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand, GetCommand, UpdateCommand, DeleteCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { DeleteCommand, DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { v4 as uuidv4 } from 'uuid';
-import { 
-  WelcomeScreenConfig, 
-  WelcomeScreenRecord, 
-  WelcomeScreenFormData,
-  DEFAULT_WELCOME_SCREEN_CONFIG 
+import {
+    DEFAULT_WELCOME_SCREEN_CONFIG,
+    WelcomeScreenConfig,
+    WelcomeScreenFormData,
+    WelcomeScreenRecord
 } from '../../../shared/interfaces/welcome-screen.interface';
 import { ApiError } from '../utils/errors';
 import { structuredLog } from '../utils/logging.util';
@@ -15,11 +15,11 @@ import { structuredLog } from '../utils/logging.util';
  */
 export interface WelcomeScreenDynamoItem {
   // Clave primaria (UUID único)
-  id: string; 
+  id: string;
   // Clave de ordenación (constante para este tipo de item)
-  sk: string; 
+  sk: string;
   // Atributo para búsqueda por researchId (potencial GSI)
-  researchId: string; 
+  researchId: string;
   // Propiedades de la pantalla de bienvenida
   isEnabled: boolean;
   title: string;
@@ -27,6 +27,8 @@ export interface WelcomeScreenDynamoItem {
   startButtonText: string;
   // Metadata serializado
   metadata: string;
+  // NUEVO: questionKey para identificación única de preguntas
+  questionKey?: string;
   // Fechas
   createdAt: string;
   updatedAt: string;
@@ -68,10 +70,10 @@ export class WelcomeScreenModel {
     }
 
     // Generar un ID único para la pantalla
-    const screenId = uuidv4(); 
+    const screenId = uuidv4();
     const now = new Date().toISOString();
     const skValue = 'WELCOME_SCREEN'; // Valor constante para la Sort Key
-    
+
     // Combinar con valores por defecto
     const config: WelcomeScreenConfig = {
       isEnabled: data.isEnabled ?? DEFAULT_WELCOME_SCREEN_CONFIG.isEnabled,
@@ -94,7 +96,7 @@ export class WelcomeScreenModel {
       title: config.title,
       message: config.message,
       startButtonText: config.startButtonText,
-      metadata: JSON.stringify(config.metadata), 
+      metadata: JSON.stringify(config.metadata),
       createdAt: now,
       updatedAt: now
     };
@@ -103,18 +105,18 @@ export class WelcomeScreenModel {
     const command = new PutCommand({
       TableName: this.tableName,
       Item: item,
-      // Ya no necesitamos ConditionExpression si la PK es id/sk, 
+      // Ya no necesitamos ConditionExpression si la PK es id/sk,
       // aunque podrías mantenerla en 'id' si quisieras asegurar unicidad del UUID
-      // ConditionExpression: 'attribute_not_exists(id)' 
+      // ConditionExpression: 'attribute_not_exists(id)'
     });
 
     try {
       await this.docClient.send(command);
-      
+
       // Devolver el objeto creado con el ID correcto
       const createdRecord = {
-        id: screenId, 
-        researchId: researchId, 
+        id: screenId,
+        researchId: researchId,
         isEnabled: config.isEnabled,
         title: config.title,
         message: config.message,
@@ -151,28 +153,28 @@ export class WelcomeScreenModel {
     const command = new GetCommand({
       TableName: this.tableName,
       Key: {
-        id: id, 
+        id: id,
         sk: skValue // Añadir sk a la clave de búsqueda
       }
     });
 
     try {
       const result = await this.docClient.send(command);
-      
+
       if (!result.Item) {
         return null;
       }
 
       const item = result.Item as WelcomeScreenDynamoItem;
-      
+
       const record = {
-        id: item.id, 
-        researchId: item.researchId, 
+        id: item.id,
+        researchId: item.researchId,
         isEnabled: item.isEnabled,
         title: item.title,
         message: item.message,
         startButtonText: item.startButtonText,
-        metadata: JSON.parse(item.metadata || '{}'), 
+        metadata: JSON.parse(item.metadata || '{}'),
         createdAt: new Date(item.createdAt),
         updatedAt: new Date(item.updatedAt)
       };
@@ -201,21 +203,21 @@ export class WelcomeScreenModel {
       FilterExpression: 'sk = :skVal',
       ExpressionAttributeValues: {
         ':rid': researchId,
-        ':skVal': skValue 
+        ':skVal': skValue
       },
       // Quitar Limit: 1 para asegurar que el filtro se aplique a todos los items posibles
-      // Limit: 1 
+      // Limit: 1
     });
 
     try {
       const result = await this.docClient.send(command);
-      
-      if (!result.Items || result.Items.length === 0) { 
+
+      if (!result.Items || result.Items.length === 0) {
         return null;
       }
 
-      const item = result.Items[0] as WelcomeScreenDynamoItem; 
-      
+      const item = result.Items[0] as WelcomeScreenDynamoItem;
+
       // Ya no es necesario verificar sk aquí porque el filtro lo hizo
       /*
       if (item.sk !== skValue) {
@@ -223,7 +225,7 @@ export class WelcomeScreenModel {
           return null; // No es el tipo de item correcto
       }
       */
-      
+
       // Si el SK es correcto, convertir y devolver
       const record = {
         id: item.id,
@@ -260,7 +262,7 @@ export class WelcomeScreenModel {
     // Verificar que existe usando la clave completa
     const existingScreen = await this.getById(id); // getById ahora usa id y sk internamente
     if (!existingScreen) {
-      throw new ApiError(`WELCOME_SCREEN_NOT_FOUND: No existe una pantalla de bienvenida con ID ${id}`, 404); 
+      throw new ApiError(`WELCOME_SCREEN_NOT_FOUND: No existe una pantalla de bienvenida con ID ${id}`, 404);
     }
 
     const now = new Date().toISOString();
@@ -273,11 +275,11 @@ export class WelcomeScreenModel {
     const addUpdate = (field: keyof WelcomeScreenFormData, alias: string) => {
        if (data[field] !== undefined) {
          const placeholder = `:${alias}`;
-         updateExpression += `, ${field} = ${placeholder}`; 
+         updateExpression += `, ${field} = ${placeholder}`;
          expressionAttributeValues[placeholder] = data[field];
        }
     };
-    
+
     addUpdate('isEnabled', 'isEnabled');
     addUpdate('title', 'title');
     addUpdate('message', 'message');
@@ -285,7 +287,7 @@ export class WelcomeScreenModel {
 
     if (data.metadata !== undefined) {
        updateExpression += ', metadata = :metadata';
-       expressionAttributeValues[':metadata'] = JSON.stringify({ 
+       expressionAttributeValues[':metadata'] = JSON.stringify({
            ...(existingScreen.metadata || {}),
            ...data.metadata,
            lastUpdated: new Date(),
@@ -306,12 +308,12 @@ export class WelcomeScreenModel {
       },
       UpdateExpression: updateExpression,
       ExpressionAttributeValues: expressionAttributeValues,
-      ReturnValues: 'ALL_NEW' 
+      ReturnValues: 'ALL_NEW'
     });
 
     try {
       const result = await this.docClient.send(command);
-      
+
       const updatedAttributes = result.Attributes as WelcomeScreenDynamoItem;
       if (!updatedAttributes) {
          throw new ApiError('DATABASE_ERROR: La actualización no devolvió los atributos actualizados.', 500);
@@ -336,7 +338,7 @@ export class WelcomeScreenModel {
       throw new ApiError(`DATABASE_ERROR: Error al guardar cambios de la pantalla: ${error.message}`, 500);
     }
   }
-  
+
   /**
    * Elimina una pantalla de bienvenida por su ID único (UUID)
    * @param id ID único (UUID) de la pantalla
@@ -402,9 +404,9 @@ export class WelcomeScreenModel {
    */
   async getAll(): Promise<WelcomeScreenRecord[]> {
      structuredLog('warn', `${this.modelName}.getAll`, 'getAll() llamado - Operación Scan ineficiente.');
-     return []; 
+     return [];
   }
 }
 
 // Exportar una instancia única del modelo
-export const welcomeScreenModel = new WelcomeScreenModel(); 
+export const welcomeScreenModel = new WelcomeScreenModel();

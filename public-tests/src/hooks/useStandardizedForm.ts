@@ -317,10 +317,8 @@ export function useStandardizedForm<T>(
       const result = await saveOrUpdateResponse(
         stepId,
         stepType,
-        stepName || stepId,
         finalValue,
-        responseId || undefined,
-        moduleId
+        responseId || undefined
       );
 
       if (result === null || result === undefined) {

@@ -1,4 +1,4 @@
-import { QuestionDictionary, QuestionModule } from '../interfaces/question-dictionary.interface';
+import { QuestionDictionary, QuestionModule } from '../../../shared/interfaces/question-dictionary.interface';
 
 /**
  * Infiero el módulo a partir de la estructura de la pregunta si no viene explícito
@@ -32,19 +32,19 @@ function buildQuestionKey(module: string, type: string, id: string): string {
 }
 
 /**
- * Construye el diccionario global de preguntas a partir de una lista de pasos
- * @param allSteps Lista de pasos de todos los módulos
+ * Construye el diccionario global de preguntas a partir de una lista de formularios
+ * @param forms Lista de formularios de todos los módulos
  */
-export function buildQuestionDictionary(allSteps: any[]): QuestionDictionary {
+export function buildQuestionDictionary(forms: any[]): QuestionDictionary {
   const dict: QuestionDictionary = {};
 
-  allSteps.forEach((step, stepIdx) => {
-    // NUEVO: Procesar cada pregunta individual dentro del paso
-    if (step.config && step.config.questions && Array.isArray(step.config.questions)) {
-      step.config.questions.forEach((question: any, questionIndex: number) => {
+  forms.forEach((form, formIdx) => {
+    // NUEVO: Procesar cada pregunta individual dentro del formulario
+    if (form.questions && Array.isArray(form.questions)) {
+      form.questions.forEach((question: any, questionIndex: number) => {
         const module = inferModule(question);
         const type = inferType(question);
-        const id = question.id || `q_${stepIdx}_${questionIndex}`;
+        const id = question.id || `q_${formIdx}_${questionIndex}`;
         const questionKey = buildQuestionKey(module, type, id);
 
         dict[questionKey] = {
@@ -64,10 +64,10 @@ export function buildQuestionDictionary(allSteps: any[]): QuestionDictionary {
         };
       });
     } else {
-      // FALLBACK: Si no hay questions array, tratar el paso como una pregunta
-      const module = inferModule(step);
-      const type = inferType(step);
-      const id = step.id || `step_${stepIdx}`;
+      // FALLBACK: Si no hay questions array, tratar el formulario como una pregunta
+      const module = inferModule(form);
+      const type = inferType(form);
+      const id = form.id || form.questionId || `form_${formIdx}`;
       const questionKey = buildQuestionKey(module, type, id);
 
       dict[questionKey] = {
@@ -75,15 +75,15 @@ export function buildQuestionDictionary(allSteps: any[]): QuestionDictionary {
         id,
         module,
         type,
-        title: step.title || step.name || '',
-        description: step.description,
-        placeholder: step.placeholder,
-        labels: step.labels,
-        images: step.images,
-        hitzones: step.hitzones,
-        config: step.config,
-        renderComponent: step.renderComponent || inferRenderComponent(type, module),
-        ...step // Otros props custom
+        title: form.title || form.name || '',
+        description: form.description,
+        placeholder: form.placeholder,
+        labels: form.labels,
+        images: form.images,
+        hitzones: form.hitzones,
+        config: form.config,
+        renderComponent: form.renderComponent || inferRenderComponent(type, module),
+        ...form // Otros props custom
       };
     }
   });

@@ -1,5 +1,5 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, DeleteCommand, ScanCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { DeleteCommand, DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand, ScanCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { v4 as uuidv4 } from 'uuid';
 import { SmartVOCFormData, SmartVOCQuestion } from '../../../shared/interfaces/smart-voc.interface';
 
@@ -31,6 +31,8 @@ export interface SmartVOCFormDynamoItem {
   smartVocRequired: boolean;
   // Metadata (serializado a JSON string)
   metadata: string;
+  // NUEVO: questionKey para identificación única de preguntas
+  questionKey?: string;
   // Fechas
   createdAt: string;
   updatedAt: string;
@@ -61,7 +63,7 @@ export class SmartVOCFormModel {
     // Asegurarse de que los campos booleanos tengan valores por defecto si son undefined en DynamoDB
     const randomizeQuestions = typeof item.randomizeQuestions === 'boolean' ? item.randomizeQuestions : false;
     const smartVocRequired = typeof item.smartVocRequired === 'boolean' ? item.smartVocRequired : false;
-    
+
     return {
       id: item.id,
       researchId: item.researchId,
@@ -80,10 +82,11 @@ export class SmartVOCFormModel {
    * Crea un nuevo formulario SmartVOC en DynamoDB.
    * @param formData Datos del formulario.
    * @param researchId ID de la investigación asociada.
+   * @param questionKey Clave única para identificación de preguntas.
    * @returns El registro del formulario creado.
    * @throws Error si falla la operación en DynamoDB.
    */
-  async create(formData: SmartVOCFormData, researchId: string): Promise<SmartVOCFormRecord> {
+  async create(formData: SmartVOCFormData, researchId: string, questionKey?: string): Promise<SmartVOCFormRecord> {
     const now = new Date().toISOString();
     const formId = uuidv4(); // Generar ID único aquí
 
@@ -93,10 +96,11 @@ export class SmartVOCFormModel {
       sk: SmartVOCFormModel.SORT_KEY_VALUE,
       researchId: researchId,
       // Asegurarse que los campos booleanos y arrays tengan valores por defecto
-      questions: JSON.stringify(formData.questions || []), 
+      questions: JSON.stringify(formData.questions || []),
       randomizeQuestions: formData.randomizeQuestions ?? false,
       smartVocRequired: formData.smartVocRequired ?? false,
       metadata: JSON.stringify(formData.metadata || { version: '1.0.0', lastUpdated: now, lastModifiedBy: 'system' }),
+      questionKey: questionKey, // NUEVO: Guardar questionKey
       createdAt: now,
       updatedAt: now
     };
@@ -109,20 +113,13 @@ export class SmartVOCFormModel {
     });
 
     try {
-      console.log(`[SmartVOCFormModel.create] Intentando crear item: ${formId}`);
       await this.dynamoClient.send(command);
-      console.log(`[SmartVOCFormModel.create] Item creado exitosamente: ${formId}`);
-      return this.mapToRecord(item); // Devolver el item mapeado
+      console.log(`[SmartVOCFormModel.create] ✅ Formulario creado exitosamente con questionKey: ${questionKey}`);
+      return this.mapToRecord(item);
     } catch (error: any) {
       console.error('[SmartVOCFormModel.create] ERROR DETALLADO DynamoDB:', JSON.stringify(error, null, 2));
-      if (error.name === 'ConditionalCheckFailedException') {
-          console.error(`[SmartVOCFormModel.create] Error: Ya existe un formulario con ID ${formId}`);
-          // Lanzar error con código específico en el mensaje
-          throw new Error('SMART_VOC_FORM_ALREADY_EXISTS'); 
-      }
-      console.error(`[SmartVOCFormModel.create] Error al crear SmartVOCForm (${formId}):`, error.message);
-      // Incluir código de error genérico de DB
-      throw new Error(`DATABASE_ERROR: Error al crear el formulario SmartVOC - ${error.message}`); 
+      console.error('[SmartVOCFormModel.create] Error en PutCommand:', error.message);
+      throw new Error(`DATABASE_ERROR: Error al crear formulario SmartVOC - ${error.message}`);
     }
   }
 
@@ -135,9 +132,9 @@ export class SmartVOCFormModel {
   async getById(id: string): Promise<SmartVOCFormRecord | null> {
     const command = new GetCommand({
       TableName: this.tableName,
-      Key: { 
+      Key: {
         id: id,
-        sk: SmartVOCFormModel.SORT_KEY_VALUE 
+        sk: SmartVOCFormModel.SORT_KEY_VALUE
       }
     });
 
@@ -154,7 +151,7 @@ export class SmartVOCFormModel {
       console.error('[SmartVOCFormModel.getById] ERROR DETALLADO DynamoDB:', JSON.stringify(error, null, 2));
       console.error(`[SmartVOCFormModel.getById] Error al obtener SmartVOCForm por ID ${id}:`, error.message);
        // Incluir código de error genérico de DB
-      throw new Error(`DATABASE_ERROR: Error al obtener el formulario SmartVOC por ID - ${error.message}`); 
+      throw new Error(`DATABASE_ERROR: Error al obtener el formulario SmartVOC por ID - ${error.message}`);
     }
   }
 
@@ -178,9 +175,9 @@ export class SmartVOCFormModel {
     });
 
     try {
-      console.log(`[SmartVOCFormModel.getByResearchId] SUPER_DEBUG: Buscando por researchId: ${researchId} usando índice 'researchId-index' SIN filtro SK y SIN límite`); 
+      console.log(`[SmartVOCFormModel.getByResearchId] SUPER_DEBUG: Buscando por researchId: ${researchId} usando índice 'researchId-index' SIN filtro SK y SIN límite`);
       const result = await this.dynamoClient.send(command);
-      
+
       // Imprimir cuántos items devuelve la consulta SIN límite
       console.log(`[SmartVOCFormModel.getByResearchId] SUPER_DEBUG: Query devolvió ${result.Items?.length ?? 0} items.`);
 
@@ -188,7 +185,7 @@ export class SmartVOCFormModel {
         console.log(`[SmartVOCFormModel.getByResearchId] SUPER_DEBUG: Ningún item encontrado para researchId: ${researchId} usando índice 'researchId-index' SIN filtro SK y SIN límite`);
         return null;
       }
-      
+
       // Iterar sobre los resultados para encontrar el correcto
       for (const item of result.Items) {
           const dynamoItem = item as SmartVOCFormDynamoItem;
@@ -224,9 +221,9 @@ export class SmartVOCFormModel {
    */
   async update(id: string, formData: Partial<SmartVOCFormData>): Promise<SmartVOCFormRecord> {
     const now = new Date().toISOString();
-    
+
     // Nota: La verificación de existencia se hace implícitamente con ConditionExpression abajo
-    // Si se quiere un error 404 explícito antes de intentar actualizar, 
+    // Si se quiere un error 404 explícito antes de intentar actualizar,
     // se podría llamar a this.getById(id) primero, pero aumenta el coste.
 
     let updateExpression = 'SET updatedAt = :updatedAt';
@@ -250,14 +247,14 @@ export class SmartVOCFormModel {
 
     const command = new UpdateCommand({
       TableName: this.tableName,
-      Key: { 
+      Key: {
         id: id,
-        sk: SmartVOCFormModel.SORT_KEY_VALUE 
+        sk: SmartVOCFormModel.SORT_KEY_VALUE
       },
       UpdateExpression: updateExpression,
       ExpressionAttributeValues: expressionAttributeValues,
       // ConditionExpression para asegurar que el item existe antes de actualizar
-      ConditionExpression: 'attribute_exists(id)', 
+      ConditionExpression: 'attribute_exists(id)',
       ReturnValues: 'ALL_NEW' // Devolver el item completo actualizado
     });
 
@@ -277,11 +274,11 @@ export class SmartVOCFormModel {
       if (error.name === 'ConditionalCheckFailedException') {
           console.error(`[SmartVOCFormModel.update] Error: No se encontró el formulario con ID ${id} para actualizar.`);
           // Lanzar error con código específico en el mensaje
-          throw new Error('SMART_VOC_FORM_NOT_FOUND'); 
+          throw new Error('SMART_VOC_FORM_NOT_FOUND');
       }
       console.error(`[SmartVOCFormModel.update] Error al actualizar SmartVOCForm con ID ${id}:`, error.message);
        // Incluir código de error genérico de DB
-      throw new Error(`DATABASE_ERROR: Error al actualizar el formulario SmartVOC - ${error.message}`); 
+      throw new Error(`DATABASE_ERROR: Error al actualizar el formulario SmartVOC - ${error.message}`);
     }
   }
 
@@ -296,9 +293,9 @@ export class SmartVOCFormModel {
 
     const command = new DeleteCommand({
       TableName: this.tableName,
-      Key: { 
+      Key: {
         id: id,
-        sk: SmartVOCFormModel.SORT_KEY_VALUE 
+        sk: SmartVOCFormModel.SORT_KEY_VALUE
       }
       // Se podría añadir ConditionExpression: 'attribute_exists(id)' si se quiere error si no existe
     });
@@ -310,7 +307,7 @@ export class SmartVOCFormModel {
       console.error('[SmartVOCFormModel.delete] ERROR DETALLADO DynamoDB:', JSON.stringify(error, null, 2));
       console.error(`[SmartVOCFormModel.delete] Error al eliminar SmartVOCForm con ID ${id}:`, error.message);
       // Incluir código de error genérico de DB
-      throw new Error(`DATABASE_ERROR: Error al eliminar el formulario SmartVOC - ${error.message}`); 
+      throw new Error(`DATABASE_ERROR: Error al eliminar el formulario SmartVOC - ${error.message}`);
     }
   }
 
@@ -324,23 +321,23 @@ export class SmartVOCFormModel {
   async deleteByResearchId(researchId: string): Promise<boolean> {
     try {
       console.log(`[SmartVOCFormModel.deleteByResearchId] Buscando formulario para eliminar por researchId: ${researchId}`);
-      
+
       // Primero obtener el formulario por researchId para conseguir su ID
       const form = await this.getByResearchId(researchId);
-      
+
       if (!form) {
         console.log(`[SmartVOCFormModel.deleteByResearchId] No se encontró formulario SmartVOC para researchId: ${researchId}`);
         return false; // No existe, pero no es un error
       }
 
       console.log(`[SmartVOCFormModel.deleteByResearchId] Formulario encontrado con ID: ${form.id}, procediendo a eliminar`);
-      
+
       // Eliminar usando el ID del formulario
       const command = new DeleteCommand({
         TableName: this.tableName,
-        Key: { 
+        Key: {
           id: form.id,
-          sk: SmartVOCFormModel.SORT_KEY_VALUE 
+          sk: SmartVOCFormModel.SORT_KEY_VALUE
         },
         ConditionExpression: 'attribute_exists(id)' // Asegurar que existe antes de eliminar
       });
@@ -354,7 +351,7 @@ export class SmartVOCFormModel {
         console.warn(`[SmartVOCFormModel.deleteByResearchId] El formulario ya no existe para researchId: ${researchId}`);
         return false; // Ya fue eliminado o no existe
       }
-      
+
       console.error('[SmartVOCFormModel.deleteByResearchId] ERROR DETALLADO DynamoDB:', JSON.stringify(error, null, 2));
       console.error(`[SmartVOCFormModel.deleteByResearchId] Error al eliminar SmartVOCForm para researchId ${researchId}:`, error.message);
       throw new Error(`DATABASE_ERROR: Error al eliminar el formulario SmartVOC por Research ID - ${error.message}`);
@@ -383,7 +380,7 @@ export class SmartVOCFormModel {
       console.error('[SmartVOCFormModel.getAll] ERROR DETALLADO DynamoDB:', JSON.stringify(error, null, 2));
       console.error('[SmartVOCFormModel.getAll] Error en ScanCommand:', error.message);
       // Incluir código de error genérico de DB
-      throw new Error(`DATABASE_ERROR: Error al obtener todos los formularios SmartVOC - ${error.message}`); 
+      throw new Error(`DATABASE_ERROR: Error al obtener todos los formularios SmartVOC - ${error.message}`);
     }
   }
-} 
+}

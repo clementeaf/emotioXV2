@@ -3,6 +3,7 @@ import { Choice, COGNITIVE_TASK_VALIDATION, CognitiveTaskFormData, Question, Sca
 import { NotFoundError } from '../errors';
 import { CognitiveTaskModel, CognitiveTaskRecord } from '../models/cognitiveTask.model';
 import { FileType, PresignedUrlParams, S3Service } from '../services/s3.service';
+import { buildQuestionDictionary } from '../utils/buildQuestionDictionary';
 import { handleDbError } from '../utils/dbError.util';
 import { ApiError } from '../utils/errors';
 import { structuredLog } from '../utils/logging.util';
@@ -388,47 +389,51 @@ export class CognitiveTaskService {
   }
 
   /**
-   * Crea un formulario CognitiveTask.
-   * Genera el ID lógico (UUID) aquí.
+   * Crea un nuevo formulario CognitiveTask
+   * @param formData Datos del formulario
+   * @param researchId ID de la investigación
+   * @param userId ID del usuario que crea el formulario
+   * @returns El formulario creado
    */
-  async create(researchId: string, data: CognitiveTaskFormData): Promise<CognitiveTaskRecord> {
+  async create(formData: CognitiveTaskFormData, researchId: string, userId: string): Promise<CognitiveTaskRecord> {
     const context = 'create';
+
     try {
-      if (!researchId) {
-        throw new ApiError(
-          `${CognitiveTaskError.RESEARCH_REQUIRED}: Se requiere ID de investigación para crear un formulario CognitiveTask`,
-          400
-        );
+      // Verificar si ya existe un formulario para esta investigación
+      const existingForm = await this.model.getByResearchId(researchId);
+      if (existingForm) {
+        throw new ApiError(`COGNITIVE_TASK_FORM_EXISTS: Ya existe un formulario CognitiveTask para la investigación ${researchId}`, 409);
       }
 
-      this.validateFormData(data);
-      structuredLog('info', `${this.serviceName}.${context}`, 'Verificando si ya existe formulario CognitiveTask', { researchId });
+      // NUEVO: Generar questionKeys para cada pregunta individual
+      const questionDictionary = buildQuestionDictionary([formData]);
+      const questionKeys = Object.keys(questionDictionary);
 
-      try {
-        const existingForm = await this.model.getByResearchId(researchId);
-        if (existingForm) {
-          structuredLog('warn', `${this.serviceName}.${context}`, 'Ya existe un formulario para esta investigación', { researchId, formId: existingForm.id });
-          throw new ApiError(
-            `Ya existe un formulario Cognitive Task para la investigación con ID: ${researchId}`,
-            409 // Código de Conflicto
-          );
-        }
-      } catch (error) {
-        if (!(error instanceof NotFoundError)) {
-          throw error;
-        }
-      }
+      structuredLog('info', `${this.serviceName}.${context}`, 'Generando questionKeys para preguntas individuales', {
+        researchId,
+        totalQuestions: formData.questions?.length || 0,
+        questionKeysGenerated: questionKeys.length,
+        questionKeys: questionKeys
+      });
 
-      const formId = data.id || uuidv4();
-      structuredLog('info', `${this.serviceName}.${context}`, 'Creando nuevo formulario CognitiveTask', { researchId, formId });
+      // Crear el formulario con el primer questionKey como identificador principal
+      const primaryQuestionKey = questionKeys[0] || undefined;
+      const result = await this.model.create(formData, researchId, primaryQuestionKey);
 
-      const formDataWithId = { ...data, id: formId, researchId };
-      const result = await this.model.create(formDataWithId, researchId);
+      structuredLog('info', `${this.serviceName}.${context}`, 'Formulario CognitiveTask creado exitosamente', {
+        formId: result.id,
+        researchId,
+        primaryQuestionKey,
+        totalQuestionKeys: questionKeys.length
+      });
 
-      structuredLog('info', `${this.serviceName}.${context}`, 'Formulario CognitiveTask creado exitosamente', { researchId, formId: result.id });
       return result;
     } catch (error) {
-      throw handleDbError(error, context, this.serviceName, COGNITIVE_TASK_MODEL_ERRORS);
+      structuredLog('error', `${this.serviceName}.${context}`, 'Error al crear formulario CognitiveTask', {
+        researchId,
+        error: error instanceof Error ? error.message : 'Error desconocido'
+      });
+      throw error;
     }
   }
 

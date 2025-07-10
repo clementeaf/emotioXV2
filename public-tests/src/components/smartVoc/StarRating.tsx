@@ -1,9 +1,9 @@
 import React from 'react';
 
 interface StarRatingProps {
-  count: number;
-  value: number;
-  onChange: (value: number) => void;
+  rating: number;
+  onRatingChange: (rating: number) => void;
+  maxRating: number;
   disabled?: boolean;
 }
 
@@ -29,11 +29,10 @@ const Star = ({ filled, onClick, onMouseEnter, onMouseLeave }: { filled: boolean
   );
 };
 
-
-export const StarRating: React.FC<StarRatingProps> = ({ count, value, onChange, disabled = false }) => {
+export const StarRating: React.FC<StarRatingProps> = ({ rating, onRatingChange, maxRating, disabled = false }) => {
   const [hoverValue, setHoverValue] = React.useState<number | undefined>(undefined);
 
-  const stars = Array.from({ length: count }, (_, i) => i + 1);
+  const stars = Array.from({ length: maxRating }, (_, i) => i + 1);
 
   const handleMouseEnter = (newValue: number) => {
     if (!disabled) {
@@ -49,7 +48,7 @@ export const StarRating: React.FC<StarRatingProps> = ({ count, value, onChange, 
 
   const handleClick = (newValue: number) => {
     if (!disabled) {
-      onChange(newValue);
+      onRatingChange(newValue);
     }
   };
 
@@ -58,7 +57,7 @@ export const StarRating: React.FC<StarRatingProps> = ({ count, value, onChange, 
       {stars.map((starValue) => (
         <Star
           key={starValue}
-          filled={(hoverValue || value) >= starValue}
+          filled={(hoverValue || rating) >= starValue}
           onClick={() => handleClick(starValue)}
           onMouseEnter={() => handleMouseEnter(starValue)}
           onMouseLeave={handleMouseLeave}

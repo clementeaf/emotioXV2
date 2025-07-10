@@ -153,4 +153,49 @@ Para información más detallada sobre componentes específicos del sistema, con
 
 ## Licencia
 
-MIT 
+MIT
+
+## Migración de QuestionKeys
+
+Para preparar la tabla DynamoDB para el nuevo sistema de questionKeys, ejecuta:
+
+```bash
+# Migrar formularios existentes
+npm run migrate-question-keys
+
+# Verificar el estado de la migración
+aws dynamodb scan --table-name emotioxv2-backend-table-dev --filter-expression "attribute_exists(questionKey)"
+```
+
+### ¿Qué hace la migración?
+
+1. **Escanea** todos los formularios en DynamoDB
+2. **Genera** questionKeys únicos para cada formulario
+3. **Actualiza** los registros con los nuevos questionKeys
+4. **Reporta** el progreso y errores
+
+### Estructura de QuestionKeys
+
+Los questionKeys siguen el formato: `{módulo}:{tipo}:{id}`
+
+Ejemplos:
+- `smartvoc:VOC:abc123`
+- `cognitive_task:COGNITIVE_TASK:def456`
+- `welcome_screen:WELCOME_SCREEN:ghi789`
+
+### Verificación
+
+Después de la migración, puedes verificar que todos los formularios tengan questionKey:
+
+```bash
+# Contar formularios con questionKey
+aws dynamodb scan --table-name emotioxv2-backend-table-dev \
+  --filter-expression "attribute_exists(questionKey)" \
+  --select COUNT
+
+# Listar algunos ejemplos
+aws dynamodb scan --table-name emotioxv2-backend-table-dev \
+  --filter-expression "attribute_exists(questionKey)" \
+  --projection-expression "id, sk, questionKey" \
+  --limit 10
+```

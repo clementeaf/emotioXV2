@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { useResponseAPI } from '../../hooks/useResponseAPI';
 import {
-  CognitiveQuestion,
-  CognitiveTaskViewProps,
-  TaskDefinition
+    CognitiveQuestion,
+    CognitiveTaskViewProps,
+    TaskDefinition
 } from '../../types';
 import TaskProgressBar from './common/TaskProgressBar';
 import { buildTasksFromConfig } from './tasks';
@@ -57,7 +57,6 @@ const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, parti
       const result = await saveOrUpdateResponse(
         subTaskId,
         subTaskType,
-        subTaskName,
         responseData,
         existingResponseId
       );

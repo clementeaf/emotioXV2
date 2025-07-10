@@ -51,8 +51,8 @@ const CognitiveTaskQuestion: React.FC<CognitiveTaskQuestionProps> = ({
   useEffect(() => {
     if (!isAnswered) {
       const savedResponse = loadResponse(cognitiveQuestion.id);
-      if (savedResponse && savedResponse.answer) {
-        const answerData = savedResponse.answer as { text?: string; option?: string };
+      if (savedResponse && savedResponse.response) {
+        const answerData = savedResponse.response as { text?: string; option?: string };
         if (answerData.text) {
           setAnswer(answerData.text);
         } else if (answerData.option) {
@@ -80,10 +80,10 @@ const CognitiveTaskQuestion: React.FC<CognitiveTaskQuestionProps> = ({
 
     // Guardar automáticamente para textos largos
     if (newValue.length > 50) {
-      saveResponse(cognitiveQuestion.id, cognitiveQuestion.type, {
+      saveResponse(cognitiveQuestion.id, {
         text: newValue,
         timeLeft: timeoutState.timeRemaining
-      }, true);
+      });
     }
   };
 
@@ -91,10 +91,10 @@ const CognitiveTaskQuestion: React.FC<CognitiveTaskQuestionProps> = ({
   const handleOptionSelect = (option: string) => {
     setSelected(option);
     // Guardar selección inmediatamente
-    saveResponse(cognitiveQuestion.id, cognitiveQuestion.type, {
+    saveResponse(cognitiveQuestion.id, {
       option,
       timeLeft: timeoutState.timeRemaining
-    }, true);
+    });
   };
 
   // Enviar respuesta final

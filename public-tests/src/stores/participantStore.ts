@@ -3,6 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { QuestionDictionary } from '../../../shared/interfaces/question-dictionary.interface';
 import { buildQuestionDictionary } from '../../../shared/utils/buildQuestionDictionary';
 import { ParticipantFlowStep } from '../types/flow';
+import { ApiClient } from '../lib/api';
 
 export interface ModuleResponse {
   id: string;
@@ -503,7 +504,7 @@ export const useParticipantStore = create(
         }
 
         try {
-          const apiClient = new (await import('../lib/api')).ApiClient();
+          const apiClient = new ApiClient();
           const result = await apiClient.saveModuleResponse({
             researchId,
             participantId,

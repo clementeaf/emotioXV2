@@ -4,7 +4,9 @@ import { SmartVOCFormModel, SmartVOCFormRecord } from '../models/smartVocForm.mo
 // import { PutCommand, QueryCommand, DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 // import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 // import { v4 as uuidv4 } from 'uuid'; // UUID se maneja en el modelo
+import { buildQuestionDictionary } from '../utils/buildQuestionDictionary';
 import { ApiError } from '../utils/errors'; // Añadir ApiError
+import { structuredLog } from '../utils/logging.util';
 
 /**
  * Errores específicos del servicio SmartVOC
@@ -22,17 +24,11 @@ export enum SmartVOCError {
  * Clase que proporciona servicios para gestionar formularios SmartVOC
  */
 export class SmartVOCFormService {
-  // Ya no necesitamos tableName ni dynamoDBClient aquí
-  // private readonly tableName = process.env.SMART_VOC_FORM_TABLE_NAME;
-  // protected dynamoDBClient: DynamoDBDocumentClient;
-
-  // Declarar el tipo como la CLASE del modelo
   private model: SmartVOCFormModel;
+  private serviceName = 'SmartVOCFormService'; // Añadir serviceName
 
   constructor() {
-    // Instanciar la CLASE del modelo
     this.model = new SmartVOCFormModel();
-    // Ya no se inicializa el cliente DynamoDB aquí
   }
 
   /**
@@ -175,43 +171,51 @@ export class SmartVOCFormService {
   }
 
   /**
-   * Crea un nuevo formulario SmartVOC asociado a una investigación
+   * Crea un nuevo formulario SmartVOC
    * @param formData Datos del formulario
    * @param researchId ID de la investigación
-   * @param _userId ID del usuario (opcional, para auditoría futura)
+   * @param userId ID del usuario que crea el formulario
    * @returns El formulario creado
-   * @throws ApiError si los datos son inválidos, ya existe o hay error de DB
    */
-  async create(formData: SmartVOCFormData, researchId: string, _userId?: string): Promise<SmartVOCFormRecord> {
-    console.log('[SmartVOCFormService.create] Creando formulario para researchId:', researchId);
-    if (!researchId) {
-      throw new ApiError(`${SmartVOCError.RESEARCH_REQUIRED}: Se requiere ID de investigación`, 400);
-    }
-
-    // Validar datos primero
-    this.validateData(formData);
+  async create(formData: SmartVOCFormData, researchId: string, userId: string): Promise<SmartVOCFormRecord> {
+    const context = 'create';
 
     try {
-        // Verificar si ya existe uno para esta investigación (lógica movida desde el controlador)
-        const existing = await this.model.getByResearchId(researchId);
-        if (existing) {
-            throw new ApiError(`${SmartVOCError.ALREADY_EXISTS}: Ya existe un formulario SmartVOC para la investigación ${researchId}`, 409); // 409 Conflict
-        }
-        // Delegar la creación al modelo
-        return await this.model.create(formData, researchId);
-    } catch (error: any) {
-        if (error instanceof ApiError) { // Relanzar errores ApiError (como ALREADY_EXISTS)
-            throw error;
-        }
-        // Capturar error específico del modelo si existe (como el ALREADY_EXISTS lanzado por el modelo)
-        if (error.message === 'SMART_VOC_FORM_ALREADY_EXISTS') {
-             throw new ApiError(`${SmartVOCError.ALREADY_EXISTS}: Ya existe un formulario SmartVOC para la investigación ${researchId}`, 409);
-        }
-        console.error('[SmartVOCFormService.create] Error desde el modelo:', error);
-        throw new ApiError(
-            `${SmartVOCError.DATABASE_ERROR}: Error al crear formulario SmartVOC - ${error.message}`,
-            500
-        );
+      // Verificar si ya existe un formulario para esta investigación
+      const existingForm = await this.model.getByResearchId(researchId);
+      if (existingForm) {
+        throw new ApiError(`SMART_VOC_FORM_EXISTS: Ya existe un formulario SmartVOC para la investigación ${researchId}`, 409);
+      }
+
+      // NUEVO: Generar questionKeys para cada pregunta individual
+      const questionDictionary = buildQuestionDictionary([formData]);
+      const questionKeys = Object.keys(questionDictionary);
+
+      structuredLog('info', `${this.serviceName}.${context}`, 'Generando questionKeys para preguntas individuales', {
+        researchId,
+        totalQuestions: formData.questions?.length || 0,
+        questionKeysGenerated: questionKeys.length,
+        questionKeys: questionKeys
+      });
+
+      // Crear el formulario con el primer questionKey como identificador principal
+      const primaryQuestionKey = questionKeys[0] || undefined;
+      const result = await this.model.create(formData, researchId, primaryQuestionKey);
+
+      structuredLog('info', `${this.serviceName}.${context}`, 'Formulario SmartVOC creado exitosamente', {
+        formId: result.id,
+        researchId,
+        primaryQuestionKey,
+        totalQuestionKeys: questionKeys.length
+      });
+
+      return result;
+    } catch (error) {
+      structuredLog('error', `${this.serviceName}.${context}`, 'Error al crear formulario SmartVOC', {
+        researchId,
+        error: error instanceof Error ? error.message : 'Error desconocido'
+      });
+      throw error;
     }
   }
 

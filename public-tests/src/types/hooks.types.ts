@@ -70,18 +70,21 @@ export interface UseResponseManagerReturn {
 
 // Tipos para hooks de almacenamiento
 export interface ResponseData {
+  questionKey: string; // NUEVO: Identificador único de pregunta
   stepId: string;
   stepType: string;
-  answer: unknown;
+  response: unknown; // NUEVO: Cambiar 'answer' por 'response' para coincidir con el uso
   timestamp: number;
   partial?: boolean;
+  version: string; // NUEVO: Versión para compatibilidad
 }
 
 export interface UseResponseStorageReturn {
-  saveResponse: (stepId: string, stepType: string, answer: unknown, isPartial?: boolean) => void;
-  loadResponse: (stepId: string) => ResponseData | null;
-  clearResponse: (stepId: string) => void;
-  hasResponse: (stepId: string) => boolean;
+  saveResponse: (questionKey: string, responseData: unknown) => void;
+  loadResponse: (questionKey: string) => ResponseData | null;
+  clearResponse: (questionKey: string) => void;
+  hasResponse: (questionKey: string) => boolean;
+  clearAllResponses: () => void; // NUEVO: Limpiar todas las respuestas
 }
 
 // Tipos para hooks de módulos

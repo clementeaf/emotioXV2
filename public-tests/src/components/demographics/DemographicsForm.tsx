@@ -3,9 +3,9 @@ import { useModuleResponses } from '../../hooks/useModuleResponses';
 import { useStepResponseManager } from '../../hooks/useStepResponseManager';
 import { useParticipantStore } from '../../stores/participantStore';
 import {
-  DemographicResponses,
-  EDUCATION_OPTIONS,
-  GENDER_OPTIONS
+    DemographicResponses,
+    EDUCATION_OPTIONS,
+    GENDER_OPTIONS
 } from '../../types/demographics';
 import FormSubmitButton from '../common/FormSubmitButton';
 import { DemographicQuestion } from './DemographicQuestion';
@@ -55,7 +55,6 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
   initialValues = {},
   onSubmit,
   onCancel,
-  stepId = 'demographic',
 }) => {
 
   const { researchId, participantId } = useParticipantStore();
@@ -77,10 +76,11 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
     error: stepResponseError,
     saveCurrentStepResponse
   } = useStepResponseManager<DemographicResponses>({
-    stepId: stepId,
-    stepType: 'demographic',
-    stepName: config?.title || 'Preguntas Demográficas',
-    initialData: demographicInitialValues,
+    stepId: 'demographics-form',
+    stepType: 'demographics',
+    stepName: 'Información Demográfica',
+    researchId: undefined,
+    participantId: undefined,
   });
 
   useEffect(() => {

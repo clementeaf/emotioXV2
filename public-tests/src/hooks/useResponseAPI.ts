@@ -53,18 +53,16 @@ export const useResponseAPI = ({ researchId, participantId }: UseResponseAPIProp
   }, [researchId, participantId]);
 
   // Función para guardar una nueva respuesta
-  const saveResponse = useCallback(async (
+  const saveResponse = async (
     stepId: string,
     stepType: string,
-    stepName: string,
-    answer: unknown,
-    moduleId?: string
-  ) => {
+    responseData: unknown
+  ): Promise<{ success: boolean; id?: string }> => {
     if (!researchId || !participantId || !stepId || !stepType) {
       const errorMsg = 'Datos inválidos para guardar respuesta (faltan IDs/tipo)';
       console.error(`❌ [useResponseAPI] ${errorMsg}:`, { researchId, participantId, stepId, stepType });
       setError(errorMsg);
-      return null;
+      return { success: false };
     }
     setIsLoading(true);
     setError(null);
@@ -77,75 +75,88 @@ export const useResponseAPI = ({ researchId, participantId }: UseResponseAPIProp
         participantId,
         stepId,
         stepType,
-        stepTitle: stepName,
-        response: answer,
+        stepTitle: responseData as string, // Assuming stepName is passed as responseData
+        response: responseData,
         metadata,
-        ...(moduleId ? { moduleId } : {})
+        questionKey: stepId, // Assuming questionKey is stepId
+        ...(responseData as any)?.moduleId ? { moduleId: (responseData as any).moduleId } : {}
       };
+
+      console.log(`🔑 [useResponseAPI] Guardando respuesta con questionKey: ${stepId}`, {
+        stepId,
+        stepType,
+        questionKey: stepId,
+        hasAnswer: responseData !== undefined && responseData !== null
+      });
 
       const response = await apiClient.saveModuleResponse(payload);
 
       if (response.error || !response.data) {
         console.error('❌ [useResponseAPI] Error guardando respuesta:', response);
         setError(response.message || 'Error guardando respuesta');
-        return null;
+        return { success: false };
       }
       if (response && typeof response === 'object' && response !== null && 'data' in response) {
         const dataObj = (response as { data?: unknown }).data;
         if (dataObj && typeof dataObj === 'object' && dataObj !== null && 'data' in dataObj) {
-          return (dataObj as { data?: unknown }).data;
+          const result = (dataObj as { data?: unknown }).data;
+          return { success: true, id: result as string };
         }
       }
-      console.warn(`⚠️ [useResponseAPI] Unexpected response structure, returning null`);
-      return null;
+      console.warn(`⚠️ [useResponseAPI] Unexpected response structure, returning failure`);
+      return { success: false };
     } catch (error) {
       console.error('💥 [useResponseAPI] Exception in saveResponse:', error);
       setError(error instanceof Error ? error.message : 'Error desconocido');
-      return null;
+      return { success: false };
     } finally {
       setIsLoading(false);
     }
-  }, [researchId, participantId]);
+  };
 
-  // Ajuste en updateResponse para el linter
-  const updateResponse = useCallback(async (responseId: string, answer: unknown) => {
-
+  // Función para actualizar una respuesta existente
+  const updateResponse = useCallback(async (
+    responseId: string,
+    answer: unknown
+  ): Promise<{ success: boolean; id?: string }> => {
     if (!researchId || !participantId || !responseId) {
-      setError('Datos inválidos para actualizar respuesta (researchId, participantId, o responseId faltantes)');
-      return null;
+      const errorMsg = 'Datos inválidos para actualizar respuesta (faltan IDs)';
+      console.error(`❌ [useResponseAPI] ${errorMsg}:`, { researchId, participantId, responseId });
+      setError(errorMsg);
+      return { success: false };
     }
-
     setIsLoading(true);
     setError(null);
-
     try {
-      // Recolectar metadata antes de enviar
       const metadata = await collectResponseMetadata();
 
-      const payloadForBody = {
-        response: answer,
-        metadata
-      };
-
-      const response = await apiClient.updateModuleResponse(responseId, researchId, participantId, payloadForBody);
+      const response = await apiClient.updateModuleResponse(
+        responseId,
+        researchId,
+        participantId,
+        {
+          response: answer,
+          metadata
+        }
+      );
 
       if (response.error || !response.data) {
-        console.error('Error actualizando respuesta:', response);
+        console.error('❌ [useResponseAPI] Error actualizando respuesta:', response);
         setError(response.message || 'Error actualizando respuesta');
-        return null;
+        return { success: false };
       }
-
       if (response && typeof response === 'object' && response !== null && 'data' in response) {
         const dataObj = (response as { data?: unknown }).data;
         if (dataObj && typeof dataObj === 'object' && dataObj !== null && 'data' in dataObj) {
-          return (dataObj as { data?: unknown }).data;
+          const result = (dataObj as { data?: unknown }).data;
+          return { success: true, id: result as string };
         }
       }
-      return null;
+      return { success: false };
     } catch (error) {
-      console.error('Error en updateResponse:', error);
+      console.error('💥 [useResponseAPI] Exception in updateResponse:', error);
       setError(error instanceof Error ? error.message : 'Error desconocido');
-      return null;
+      return { success: false };
     } finally {
       setIsLoading(false);
     }
@@ -190,24 +201,22 @@ export const useResponseAPI = ({ researchId, participantId }: UseResponseAPIProp
   const saveOrUpdateResponse = useCallback(async (
     stepId: string,
     stepType: string,
-    stepName: string,
     answer: unknown,
-    existingResponseId?: string,
-    moduleId?: string,
+    existingResponseId?: string
   ) => {
 
     if (existingResponseId && existingResponseId.trim() !== '') {
       try {
         const result = await updateResponse(existingResponseId, answer);
-        if (result !== null) {
+        if (result.success) {
           return result;
         }
       } catch (updateError) {
         console.log(`❌ [useResponseAPI] Update failed, trying save instead:`, updateError);
       }
-      return saveResponse(stepId, stepType, stepName, answer, moduleId);
+      return saveResponse(stepId, stepType, answer);
     } else {
-      return saveResponse(stepId, stepType, stepName, answer, moduleId);
+      return saveResponse(stepId, stepType, answer);
     }
   }, [saveResponse, updateResponse]);
 

@@ -21,7 +21,9 @@
     "export-endpoints": "ts-node src/utils/endpoints-exporter.ts ../frontend/src/api/endpoints.js",
     "info": "serverless info",
     "logs": "serverless logs -f api -t",
-    "remove": "serverless remove"
+    "remove": "serverless remove",
+    "migrate-question-keys": "node scripts/migrate-question-keys.js",
+    "verify-question-keys": "node scripts/verify-question-keys.js"
   },
   "dependencies": {
     "@aws-sdk/client-apigatewaymanagementapi": "^3.190.0",

@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { useParticipantStore } from '../../../stores/participantStore';
+import React, { useEffect, useState } from 'react';
 import { useModuleResponses } from '../../../hooks/useModuleResponses';
 import { useResponseAPI } from '../../../hooks/useResponseAPI';
-import { getStandardButtonText } from '../../../utils/formHelpers';
+import { useParticipantStore } from '../../../stores/participantStore';
 import { NPSQuestionComponentProps } from '../../../types/smart-voc.types';
+import { getStandardButtonText } from '../../../utils/formHelpers';
 
 export const NPSQuestion: React.FC<NPSQuestionComponentProps> = ({
-  questionConfig, 
+  questionConfig,
   researchId,
   moduleId,
-  onSaveSuccess 
+  onSaveSuccess
 }) => {
   const { id: questionId, description, type: questionType, title: questionTitle, config } = questionConfig;
   const { scaleRange, startLabel, endLabel } = config;
@@ -40,14 +40,14 @@ export const NPSQuestion: React.FC<NPSQuestionComponentProps> = ({
     if (!isLoadingInitialData && !loadingError && moduleResponsesArray && Array.isArray(moduleResponsesArray)) {
       const foundResponse = moduleResponsesArray.find((r: unknown) => {
         if (typeof r !== 'object' || r === null) return false;
-        const resp = r as { 
-          stepType?: unknown; 
-          stepTitle?: unknown; 
+        const resp = r as {
+          stepType?: unknown;
+          stepTitle?: unknown;
           id?: unknown;
-          stepId?: unknown; 
-          moduleId?: unknown 
+          stepId?: unknown;
+          moduleId?: unknown
         };
-        
+
         // Buscar por múltiples criterios para máxima compatibilidad
         return (
           // Por stepType + moduleId (nuevo formato)
@@ -62,7 +62,7 @@ export const NPSQuestion: React.FC<NPSQuestionComponentProps> = ({
           (resp.id === questionId)
         );
       });
-      
+
       if (foundResponse && typeof foundResponse === 'object' && foundResponse !== null) {
         let value: number | null = null;
         if (
@@ -109,9 +109,8 @@ export const NPSQuestion: React.FC<NPSQuestionComponentProps> = ({
     }
     const responseData = { value: selectedValue };
     const result = await saveOrUpdateResponse(
-      questionId, 
-      questionType, 
-      questionTitle || description || questionId, 
+      questionId,
+      questionType,
       responseData,
       internalModuleResponseId === null ? undefined : internalModuleResponseId
     );
@@ -136,8 +135,8 @@ export const NPSQuestion: React.FC<NPSQuestionComponentProps> = ({
 
   const scaleOptions: number[] = [];
   const defaultNPSScale = { start: 0, end: 10 };
-  const currentScaleRange = (scaleRange && typeof scaleRange.start === 'number' && typeof scaleRange.end === 'number') 
-                            ? scaleRange 
+  const currentScaleRange = (scaleRange && typeof scaleRange.start === 'number' && typeof scaleRange.end === 'number')
+                            ? scaleRange
                             : defaultNPSScale;
 
   for (let i = currentScaleRange.start; i <= currentScaleRange.end; i++) {
@@ -146,7 +145,7 @@ export const NPSQuestion: React.FC<NPSQuestionComponentProps> = ({
   if (!(scaleRange && typeof scaleRange.start === 'number' && typeof scaleRange.end === 'number')){
       console.warn(`[NPSQuestion] scaleRange no definido correctamente para ${questionId}, usando ${defaultNPSScale.start}-${defaultNPSScale.end} por defecto.`);
   }
-  
+
   const buttonText = getStandardButtonText({
     isSaving: isSubmitting,
     isLoading: isLoadingInitialData,
@@ -160,21 +159,21 @@ export const NPSQuestion: React.FC<NPSQuestionComponentProps> = ({
   return (
     <div className="space-y-4 flex flex-col items-center">
       <p className="text-base md:text-lg font-medium text-gray-800 text-center">{description || questionTitle || '¿Qué tan probable es que recomiendes...?'} </p>
-      
+
       {(submissionError || loadingError) && (
           <p className="text-sm text-red-600 my-2 text-center">Error: {submissionError || loadingError}</p>
       )}
 
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full max-w-lg">
         {startLabel && <span className="text-sm text-gray-600">{startLabel}</span>}
-        
+
         <div className="flex flex-wrap justify-center gap-1 p-1 md:gap-2 md:p-2">
           {scaleOptions.map((optionValue) => (
-            <label 
+            <label
               key={optionValue}
-              className={`relative flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full cursor-pointer transition-colors duration-150 ease-in-out 
-                ${selectedValue === optionValue 
-                  ? 'bg-blue-600 text-white shadow-md scale-105' 
+              className={`relative flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full cursor-pointer transition-colors duration-150 ease-in-out
+                ${selectedValue === optionValue
+                  ? 'bg-blue-600 text-white shadow-md scale-105'
                   : 'bg-white text-gray-700 hover:bg-blue-100 border border-gray-300'
                 } ${isSubmitting || isLoadingInitialData ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
@@ -194,7 +193,7 @@ export const NPSQuestion: React.FC<NPSQuestionComponentProps> = ({
 
         {endLabel && <span className="text-sm text-gray-600">{endLabel}</span>}
       </div>
-      
+
       <button
         onClick={handleSaveOrUpdateClick}
         disabled={selectedValue === null || isSubmitting || isLoadingInitialData}
@@ -211,4 +210,4 @@ export const NPSQuestion: React.FC<NPSQuestionComponentProps> = ({
        )}
     </div>
   );
-}; 
+};

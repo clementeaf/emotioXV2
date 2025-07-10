@@ -1,17 +1,17 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import {
-  DeleteCommand,
-  DynamoDBDocumentClient,
-  PutCommand,
-  QueryCommand,
-  ScanCommand,
-  UpdateCommand
+    DeleteCommand,
+    DynamoDBDocumentClient,
+    PutCommand,
+    QueryCommand,
+    ScanCommand,
+    UpdateCommand
 } from '@aws-sdk/lib-dynamodb';
 import { v4 as uuidv4 } from 'uuid';
 import {
-  CognitiveTaskFormData,
-  Question,
-  CognitiveTaskModel as SharedCognitiveTaskModel
+    CognitiveTaskFormData,
+    Question,
+    CognitiveTaskModel as SharedCognitiveTaskModel
 } from '../../../shared/interfaces/cognitive-task.interface';
 import { NotFoundError } from '../errors';
 import { structuredLog } from '../utils/logging.util';
@@ -42,6 +42,8 @@ export interface CognitiveTaskDynamoItem {
   randomizeQuestions: boolean;
   // Metadata serializado (objeto JSON como string)
   metadata: string;
+  // NUEVO: questionKey para identificación única de preguntas
+  questionKey?: string;
   // Fechas (ISO string)
   createdAt: string;
   updatedAt: string;
@@ -98,7 +100,7 @@ export class CognitiveTaskModel {
    * Crea un nuevo formulario CognitiveTask para una investigación específica.
    * Utiliza researchId como PK.
    */
-  async create(data: CognitiveTaskFormData, researchId: string): Promise<CognitiveTaskRecord> {
+  async create(data: CognitiveTaskFormData, researchId: string, questionKey?: string): Promise<CognitiveTaskRecord> {
     const formId = data.id || uuidv4();
     const now = new Date().toISOString();
     const questions = data.questions || [];
@@ -125,11 +127,10 @@ export class CognitiveTaskModel {
       questions: JSON.stringify(questions),
       randomizeQuestions: data.randomizeQuestions ?? false,
       metadata: JSON.stringify(data.metadata ? { ...standardMetadata, ...data.metadata } : standardMetadata),
+      questionKey: questionKey, // NUEVO: Guardar questionKey
       createdAt: now,
       updatedAt: now
     };
-
-
 
     const command = new PutCommand({
       TableName: this.tableName,
@@ -138,6 +139,7 @@ export class CognitiveTaskModel {
 
     try {
       await this.dynamoClient.send(command);
+      console.log(`[CognitiveTaskModel.create] ✅ Formulario creado exitosamente con questionKey: ${questionKey}`);
       return this.mapToRecord(item);
     } catch (error: any) {
       console.error('ERROR DETALLADO de DynamoDB PutCommand (CognitiveTask):', JSON.stringify(error, null, 2));

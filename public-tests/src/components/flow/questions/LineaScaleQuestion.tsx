@@ -159,7 +159,6 @@ export const LineaScaleQuestion: React.FC<ComponentLinearScaleQuestionProps> = (
         }
 
         const currentStepIdForApi = stepName || 'linear-scale';
-        const currentStepNameForApi = componentTitle;
 
         setIsSaving(true);
         setApiError(null);
@@ -176,7 +175,7 @@ export const LineaScaleQuestion: React.FC<ComponentLinearScaleQuestionProps> = (
                     success = true;
                 }
             } else {
-                const result = await saveResponse(currentStepIdForApi, stepName || 'linear-scale', currentStepNameForApi, payload.response);
+                const result = await saveResponse(currentStepIdForApi, stepName || 'linear-scale', payload.response);
                 if (apiHookError) {
                     setApiError(apiHookError);
                 } else if (
@@ -254,9 +253,9 @@ export const LineaScaleQuestion: React.FC<ComponentLinearScaleQuestionProps> = (
             {useStars && (
                 <div className="mb-8 flex justify-center">
                     <StarRating
-                        count={maxValue}
-                        value={selectedValue || 0}
-                        onChange={(newValue) => setSelectedValue(newValue)}
+                        rating={selectedValue || 0}
+                        maxRating={maxValue}
+                        onRatingChange={(newValue: number) => setSelectedValue(newValue)}
                         disabled={isSaving || isApiLoading || dataLoading || isNavigating}
                     />
                 </div>

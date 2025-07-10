@@ -3,16 +3,6 @@ import { useStepResponseManager } from '../../../hooks/useStepResponseManager';
 import { NEVQuestionComponentProps } from '../../../types/smart-voc.types';
 import { getStandardButtonText } from '../../../utils/formHelpers';
 
-// Mapeo de tipos SmartVOC para asegurar consistencia
-const smartVOCTypeMap: { [key: string]: string } = {
-  'CSAT': 'smartvoc_csat',
-  'CES': 'smartvoc_ces',
-  'CV': 'smartvoc_cv',
-  'NPS': 'smartvoc_nps',
-  'NEV': 'smartvoc_nev',
-  'VOC': 'smartvoc_feedback',
-};
-
 const emojiOptions = [
   { value: 'negative', label: '😞', numValue: -1 },
   { value: 'neutral', label: '😐', numValue: 0 },
@@ -20,10 +10,7 @@ const emojiOptions = [
 ];
 
 export const NEVQuestion: React.FC<NEVQuestionComponentProps> = ({ questionConfig, onSaveSuccess }) => {
-  const { id: questionId, description, type: questionType, title: questionTitle } = questionConfig;
-
-  // Aplicar mapeo correcto del stepType
-  const mappedStepType = smartVOCTypeMap[questionType || 'NEV'] || 'smartvoc_nev';
+  const { id: questionId, description, title: questionTitle } = questionConfig;
 
   const {
     responseData,
@@ -32,11 +19,12 @@ export const NEVQuestion: React.FC<NEVQuestionComponentProps> = ({ questionConfi
     isLoading,
     error,
     hasExistingData
-  } = useStepResponseManager<number>({
-    stepId: questionId || '',
-    stepType: mappedStepType,
-    stepName: questionTitle || description || questionId,
-    initialData: null
+  } = useStepResponseManager({
+    stepId: questionId,
+    stepType: 'nev-question',
+    stepName: questionTitle || 'Pregunta NEV',
+    researchId: undefined,
+    participantId: undefined,
   });
 
   const [selectedValue, setSelectedValue] = useState<number | null>(null);

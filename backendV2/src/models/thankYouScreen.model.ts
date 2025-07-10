@@ -1,11 +1,11 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, UpdateCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
+import { DeleteCommand, DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { v4 as uuidv4 } from 'uuid';
 import {
-  ThankYouScreenConfig,
-  ThankYouScreenModel as SharedThankYouScreenModel,
-  ThankYouScreenFormData,
-  DEFAULT_THANK_YOU_SCREEN_CONFIG,
+    DEFAULT_THANK_YOU_SCREEN_CONFIG,
+    ThankYouScreenModel as SharedThankYouScreenModel,
+    ThankYouScreenConfig,
+    ThankYouScreenFormData,
 } from '../../../shared/interfaces/thank-you-screen.interface';
 import { ApiError } from '../utils/errors';
 import { structuredLog } from '../utils/logging.util';
@@ -27,6 +27,8 @@ export interface ThankYouScreenDynamoItem {
   redirectUrl?: string; // Hacer opcional si puede no estar
   // Metadata serializado
   metadata: string;
+  // NUEVO: questionKey para identificación única de preguntas
+  questionKey?: string;
   // Fechas
   createdAt: string;
   updatedAt: string;
@@ -34,15 +36,13 @@ export interface ThankYouScreenDynamoItem {
 
 // Re-exportamos los tipos compartidos
 export type {
-  ThankYouScreenConfig,
-  SharedThankYouScreenModel as ThankYouScreenRecord,
-  ThankYouScreenFormData
+    ThankYouScreenConfig, ThankYouScreenFormData, SharedThankYouScreenModel as ThankYouScreenRecord
 };
 
 // Re-exportamos las constantes compartidas
-export {
-  DEFAULT_THANK_YOU_SCREEN_CONFIG,
-};
+    export {
+        DEFAULT_THANK_YOU_SCREEN_CONFIG
+    };
 
 /**
  * Modelo para manejar las operaciones de pantallas de agradecimiento en DynamoDB
@@ -56,19 +56,19 @@ export class ThankYouScreenModel {
   constructor() {
     const context = 'constructor';
     structuredLog('info', `${this.modelName}.${context}`, 'Inicializando modelo');
-    
+
     // Obtenemos el nombre de la tabla desde variables de entorno o usamos un valor por defecto
     this.tableName = process.env.DYNAMODB_TABLE || 'emotioXV2-table-dev';
     structuredLog('info', `${this.modelName}.${context}`, `Usando tabla: ${this.tableName}`);
-    
+
     // Configuración para DynamoDB en AWS Cloud (producción)
     const options = {
       region: process.env.APP_REGION || 'us-east-1'
     };
-    
+
     structuredLog('info', `${this.modelName}.${context}`, 'Configuración DynamoDB', { options });
     structuredLog('info', `${this.modelName}.${context}`, 'SIEMPRE usando DynamoDB en AWS Cloud - NO LOCAL');
-    
+
     this.dynamoClient = DynamoDBDocumentClient.from(new DynamoDBClient(options));
   }
 
@@ -82,7 +82,7 @@ export class ThankYouScreenModel {
     const context = 'create';
     const screenId = uuidv4();
     const now = new Date().toISOString();
-    
+
     // Consistencia con welcomeScreen: usar valores por defecto si no se proporcionan
     const config: ThankYouScreenConfig = {
       isEnabled: data.isEnabled ?? DEFAULT_THANK_YOU_SCREEN_CONFIG.isEnabled,
@@ -119,7 +119,7 @@ export class ThankYouScreenModel {
 
     try {
       await this.dynamoClient.send(command);
-      
+
       // Devolver el objeto creado con su ID
       const createdRecord = {
         id: screenId,
@@ -130,7 +130,7 @@ export class ThankYouScreenModel {
         redirectUrl: config.redirectUrl,
         metadata: config.metadata, // Devolver objeto
         // Asegurar que createdAt/updatedAt sean string o Date según la interfaz
-        createdAt: now, 
+        createdAt: now,
         updatedAt: now
       };
       structuredLog('info', `${this.modelName}.${context}`, 'Pantalla de agradecimiento creada', { id: screenId, researchId });
@@ -159,13 +159,13 @@ export class ThankYouScreenModel {
 
     try {
       const result = await this.dynamoClient.send(command);
-      
+
       if (!result.Item) {
         return null;
       }
 
       const item = result.Item as ThankYouScreenDynamoItem;
-      
+
       // Convertir de formato DynamoDB
       const record = {
         id: item.id,
@@ -228,7 +228,7 @@ export class ThankYouScreenModel {
       }
 
       const item = result.Items[0] as ThankYouScreenDynamoItem;
-      
+
       // Convertir de formato DynamoDB
       const record = {
         id: item.id,
@@ -271,7 +271,7 @@ export class ThankYouScreenModel {
     }
 
     const now = new Date().toISOString();
-    
+
     let updateExpression = 'SET updatedAt = :updatedAt';
     const expressionAttributeValues: Record<string, any> = { ':updatedAt': now };
     // const expressionAttributeNames: Record<string, string> = {}; // Descomentar si se usan nombres reservados
@@ -296,10 +296,10 @@ export class ThankYouScreenModel {
     // Actualizar metadata de forma consistente
     if (data.metadata !== undefined) {
        updateExpression += ', metadata = :metadata';
-       expressionAttributeValues[':metadata'] = JSON.stringify({ 
-           ...(existingScreen.metadata || {}), 
+       expressionAttributeValues[':metadata'] = JSON.stringify({
+           ...(existingScreen.metadata || {}),
            ...data.metadata,
-           lastUpdated: new Date(), 
+           lastUpdated: new Date(),
        });
     } else {
         updateExpression += ', metadata = :metadata';
@@ -318,7 +318,7 @@ export class ThankYouScreenModel {
       UpdateExpression: updateExpression,
       ExpressionAttributeValues: expressionAttributeValues,
       // ExpressionAttributeNames: Object.keys(expressionAttributeNames).length > 0 ? expressionAttributeNames : undefined,
-      ReturnValues: 'ALL_NEW' 
+      ReturnValues: 'ALL_NEW'
     });
 
     try {
@@ -388,4 +388,4 @@ export class ThankYouScreenModel {
 }
 
 // Exportar una instancia única del modelo
-export const thankYouScreenModel = new ThankYouScreenModel(); 
+export const thankYouScreenModel = new ThankYouScreenModel();
