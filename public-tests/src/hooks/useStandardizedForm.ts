@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParticipantStore } from '../stores/participantStore';
 import {
-  StandardizedFormActions,
-  StandardizedFormProps,
-  StandardizedFormState,
-  UseStandardizedFormOptions,
-  ValidationRule
+    StandardizedFormActions,
+    StandardizedFormProps,
+    StandardizedFormState,
+    UseStandardizedFormOptions,
+    ValidationRule
 } from '../types/hooks.types';
 import { useModuleResponses } from './useModuleResponses';
 import { useResponseAPI } from './useResponseAPI';
@@ -132,6 +132,19 @@ export function useStandardizedForm<T>(
   // Usar moduleResponsesArray para evitar el warning de TypeScript
   const responses = moduleResponsesArray || [];
 
+  console.log('[useStandardizedForm] 🔍 Datos recibidos de useModuleResponses:', {
+    stepId,
+    stepType,
+    stepName,
+    researchId,
+    participantId,
+    moduleResponsesArray,
+    responses,
+    responsesCount: responses.length,
+    isLoadingResponses,
+    loadingError
+  });
+
   const setValue = useCallback((newValue: T, isUserInteraction: boolean = false) => {
     if (value !== newValue) {
       if (isUserInteraction) {
@@ -189,12 +202,43 @@ export function useStandardizedForm<T>(
       return;
     }
     if (responses && Array.isArray(responses)) {
+      console.log('[useStandardizedForm] 🔍 Buscando respuesta previa:', {
+        stepType,
+        stepName,
+        responsesCount: responses.length,
+        responses: responses.map((r: any) => ({
+          stepType: r.stepType,
+          stepTitle: r.stepTitle,
+          id: r.id
+        }))
+      });
+
       const foundResponse = responses.find((r: unknown) => {
         if (typeof r !== 'object' || r === null) return false;
         const response = r as { stepType?: string; stepId?: string; stepTitle?: string; id?: string };
-        return response.stepType === stepType && response.stepTitle === stepName;
+
+        // Búsqueda más flexible: primero por stepType exacto, luego por stepType que contenga
+        const exactMatch = response.stepType === stepType;
+        const containsMatch = response.stepType && response.stepType.includes(stepType);
+        const stepTitleMatch = response.stepTitle === stepName;
+
+        const match = exactMatch || (containsMatch && stepTitleMatch);
+
+        console.log('[useStandardizedForm] 🔍 Comparando:', {
+          responseStepType: response.stepType,
+          expectedStepType: stepType,
+          responseStepTitle: response.stepTitle,
+          expectedStepName: stepName,
+          exactMatch,
+          containsMatch,
+          stepTitleMatch,
+          match
+        });
+        return match;
       });
+
       if (foundResponse) {
+        console.log('[useStandardizedForm] ✅ Respuesta encontrada:', foundResponse);
         const foundResp = foundResponse as { response?: unknown; id?: string };
         try {
           const extractedVal = extractValueFromResponse(foundResp.response);
@@ -207,6 +251,8 @@ export function useStandardizedForm<T>(
         } catch (err) {
           console.warn('[useStandardizedForm] Error extracting value from API response:', err);
         }
+      } else {
+        console.log('[useStandardizedForm] ❌ No se encontró respuesta previa');
       }
     }
     setValue(initialValue, false);

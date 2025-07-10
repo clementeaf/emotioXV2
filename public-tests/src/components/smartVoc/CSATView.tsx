@@ -5,14 +5,22 @@ import { SmartVOCQuestion } from '../../types/smart-voc.types';
 import { formatQuestionText, formSpacing } from '../../utils/formHelpers';
 import { StarRating } from './StarRating';
 
+// Mapeo de tipos SmartVOC para asegurar consistencia
+const smartVOCTypeMap: { [key: string]: string } = {
+  'CSAT': 'smartvoc_csat',
+  'CES': 'smartvoc_ces',
+  'CV': 'smartvoc_cv',
+  'NPS': 'smartvoc_nps',
+  'NEV': 'smartvoc_nev',
+  'VOC': 'smartvoc_feedback',
+};
+
 const CSATView: React.FC<MappedStepComponentProps> = ({
   stepConfig,
   onStepComplete,
 }) => {
   // Convertir stepConfig a SmartVOCQuestion
   const question = stepConfig as SmartVOCQuestion;
-
-  console.log('[CSATView] 🔍 Props recibidas:', { stepConfig, question });
 
   if (!question || !question.config) {
     return <div>Cargando configuración...</div>;
@@ -31,6 +39,17 @@ const CSATView: React.FC<MappedStepComponentProps> = ({
     { value: 5, label: 'Muy satisfecho' }
   ];
 
+  // Aplicar mapeo correcto del stepType
+  const mappedStepType = smartVOCTypeMap[question.type || 'CSAT'] || 'smartvoc_csat';
+
+  console.log('[CSATView] 🔍 Debug info:', {
+    questionType: question.type,
+    mappedStepType,
+    questionId: question.id,
+    questionTitle: question.title,
+    stepName: question.title || 'Valora tu satisfacción'
+  });
+
   const {
     responseData,
     saveCurrentStepResponse,
@@ -40,15 +59,40 @@ const CSATView: React.FC<MappedStepComponentProps> = ({
     hasExistingData
   } = useStepResponseManager<number>({
     stepId: question.id || '',
-    stepType: question.type || 'CSAT',
+    stepType: mappedStepType,
     initialData: null
+  });
+
+  console.log('[CSATView] 🔍 Response data:', {
+    responseData,
+    hasExistingData,
+    isLoading,
+    error
   });
 
   const [selectedValue, setSelectedValue] = useState<number | null>(null);
 
   useEffect(() => {
-    if (responseData !== null && typeof responseData === 'number') {
-      setSelectedValue(responseData);
+    // Permitir inicializar desde distintos formatos de respuesta previa
+    if (responseData !== null && responseData !== undefined) {
+      if (typeof responseData === 'number') {
+        setSelectedValue(responseData);
+      } else if (
+        typeof responseData === 'object' &&
+        responseData !== null &&
+        'value' in responseData &&
+        typeof (responseData as any).value === 'number'
+      ) {
+        setSelectedValue((responseData as any).value);
+      } else if (
+        typeof responseData === 'object' &&
+        responseData !== null &&
+        Object.values(responseData).length === 1 &&
+        typeof Object.values(responseData)[0] === 'number'
+      ) {
+        // Si el objeto solo tiene un campo numérico, usarlo
+        setSelectedValue(Object.values(responseData)[0] as number);
+      }
     }
   }, [responseData]);
 

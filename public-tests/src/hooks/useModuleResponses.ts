@@ -30,9 +30,9 @@ export const useModuleResponses = ({
   // Efecto para sincronizar los datos de la API con el store de Zustand
   useEffect(() => {
     if (data?.data) {
-      // La estructura real es: { data: { responses: [...] } }
-      const responseDataObject = data.data as { responses?: unknown[] };
-      const responses = responseDataObject?.responses || [];
+      // La estructura real es: { data: { data: { responses: [...] } } }
+      const responseDataObject = data.data as { data?: { responses?: unknown[] } };
+      const responses = responseDataObject?.data?.responses || [];
       if (responses.length > 0) {
         setLoadedResponses(responses as ModuleResponse[]);
       }
@@ -40,12 +40,24 @@ export const useModuleResponses = ({
   }, [data, setLoadedResponses]);
 
   // DEVOLVER SIEMPRE EL ARRAY DE RESPUESTAS
-  return {
-    data: data?.data && Array.isArray((data.data as { responses?: unknown[] }).responses)
-      ? (data.data as { responses?: unknown[] }).responses
+  const result = {
+    data: data?.data && (data.data as { data?: { responses?: unknown[] } })?.data?.responses && Array.isArray((data.data as { data?: { responses?: unknown[] } }).data?.responses)
+      ? (data.data as { data?: { responses?: unknown[] } }).data?.responses
       : [],
     isLoading,
     error: error ? (error as Error).message : null,
     refetch,
   };
+
+  console.log('[useModuleResponses] 🔍 Datos devueltos:', {
+    researchId,
+    participantId,
+    rawData: data,
+    processedData: result.data,
+    dataCount: result.data?.length || 0,
+    isLoading,
+    error: result.error
+  });
+
+  return result;
 };
