@@ -1,4 +1,4 @@
-import type { CognitiveTaskFormData, HitZone, UploadedFile } from 'shared/interfaces/cognitive-task.interface';
+import type { HitZone, UploadedFile } from 'shared/interfaces/cognitive-task.interface';
 
 export interface Choice {
   id: string;
@@ -30,7 +30,7 @@ export interface ScaleConfig {
 
 export interface Question {
   id: string;
-  type: 'short_text' | 'long_text' | 'single_choice' | 'multiple_choice' | 'linear_scale' | 'ranking' | 'navigation_flow' | 'preference_test';
+  type: string; // Permitir string para soportar type enriquecido
   title: string;
   description?: string;
   required: boolean;
@@ -41,6 +41,7 @@ export interface Question {
   deviceFrame: boolean;
   answerPlaceholder?: string;
   hitZones?: HitZone[];
+  questionKey?: string; // NUEVO: Soporte para questionKey universal
 }
 
 export type ValidationErrors = Record<string, string>;
@@ -113,7 +114,7 @@ export interface AddQuestionModalProps {
 }
 
 export interface UseCognitiveTaskFormResult {
-  formData: CognitiveTaskFormData;
+  formData: UICognitiveTaskFormData; // Usar tipo local
   cognitiveTaskId: string | null;
   validationErrors: { [key: string]: string } | null;
   isLoading: boolean;
@@ -132,43 +133,49 @@ export interface UseCognitiveTaskFormResult {
   closeModal: () => void;
 }
 
+// Props para los tipos específicos de preguntas
 export interface TextQuestionProps {
-  question: Question;
+  question: Question; // Usar Question local en lugar de tipos estrictos
   onQuestionChange: (updates: Partial<Question>) => void;
   validationErrors: { [key: string]: string } | null;
   disabled?: boolean;
 }
 
 export interface ChoiceQuestionProps {
-  question: Question;
+  question: Question; // Usar Question local en lugar de tipos estrictos
   onQuestionChange: (updates: Partial<Question>) => void;
-  onAddChoice?: () => void;
-  onRemoveChoice?: (choiceId: string) => void;
+  onAddChoice: () => void;
+  onRemoveChoice: (choiceId: string) => void;
   validationErrors: { [key: string]: string } | null;
   disabled?: boolean;
 }
 
 export interface ScaleQuestionProps {
-  question: Question;
+  question: Question; // Usar Question local en lugar de tipos estrictos
   onQuestionChange: (updates: Partial<Question>) => void;
   validationErrors: { [key: string]: string } | null;
   disabled?: boolean;
 }
 
 export interface FileUploadQuestionProps {
-  question: Question;
+  question: Question; // Usar Question local en lugar de tipos estrictos
   onQuestionChange: (updates: Partial<Question>) => void;
-  onFileUpload?: (files: FileList) => void;
-  onFileDelete?: (fileId: string) => void;
-  validationErrors?: { [key: string]: string } | null;
+  onFileUpload: (files: FileList) => void;
+  onFileDelete: (fileId: string) => void;
+  validationErrors: { [key: string]: string } | null;
   disabled?: boolean;
   isUploading?: boolean;
   uploadProgress?: number;
 }
 
+export interface UICognitiveQuestion extends Omit<Question, 'type'> {
+  type: string;
+  questionKey?: string;
+}
+
 // Formularios ahora empiezan vacíos sin preguntas predeterminadas
 
-export const DEFAULT_COGNITIVE_TASK_CONFIG: CognitiveTaskFormData = {
+export const DEFAULT_COGNITIVE_TASK_CONFIG: UICognitiveTaskFormData = {
   researchId: '',
   questions: [],
   randomizeQuestions: false
@@ -205,4 +212,16 @@ export interface UseCognitiveTaskModalsResult {
   isDeleteModalOpen: boolean;
   openDeleteModal: () => void;
   closeDeleteModal: () => void;
+}
+
+// Tipo local para CognitiveTaskFormData que usa Question local
+export interface UICognitiveTaskFormData {
+  researchId: string;
+  questions: Question[]; // Usar Question local
+  randomizeQuestions: boolean;
+  metadata?: {
+    createdAt?: string;
+    updatedAt?: string;
+    version?: string;
+  };
 }

@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { useAuth } from '@/providers/AuthProvider';
 
-import type { CognitiveTaskFormData, Question } from 'shared/interfaces/cognitive-task.interface';
+import type { Question, UICognitiveTaskFormData } from '../types'; // Usar tipos locales
 
 // Definir tipos locales que faltan
 interface HitzoneArea {
@@ -56,8 +56,8 @@ const asUIFile = (file: any): UIFile => ({
 
 interface UseCognitiveTaskFileUploadProps {
   researchId?: string;
-  formData: CognitiveTaskFormData;
-  setFormData: Dispatch<SetStateAction<CognitiveTaskFormData>>;
+  formData: UICognitiveTaskFormData;
+  setFormData: Dispatch<SetStateAction<UICognitiveTaskFormData>>;
 }
 
 interface UseCognitiveTaskFileUploadResult {
@@ -142,7 +142,7 @@ export const useCognitiveTaskFileUpload = ({
       return;
     }
 
-    setFormData((prevData: CognitiveTaskFormData): CognitiveTaskFormData => {
+    setFormData((prevData: UICognitiveTaskFormData): UICognitiveTaskFormData => {
       const updatedQuestions = prevData.questions.map(q => {
         if (q.id === questionId && q.files && q.files.length > 0) {
           const cleanedFiles = q.files.filter(f => {
@@ -227,7 +227,7 @@ export const useCognitiveTaskFileUpload = ({
     });
     const tempFilesArray = Array.from(tempFilesMap.values());
 
-    setFormData((prevData: CognitiveTaskFormData): CognitiveTaskFormData => {
+    setFormData((prevData: UICognitiveTaskFormData): UICognitiveTaskFormData => {
       const updatedQuestions = [...prevData.questions];
       const questionIndex = updatedQuestions.findIndex(q => q.id === questionId);
       if (questionIndex === -1) {return prevData;}
@@ -312,7 +312,7 @@ export const useCognitiveTaskFileUpload = ({
         console.error(`[FileUploadHook ${questionId}] Error procesando archivo ${file.name}:`, error);
         toast.error(`Error subiendo ${file.name}: ${error.message || 'Error desconocido'}`);
         uploadError = true;
-        setFormData((prevData: CognitiveTaskFormData): CognitiveTaskFormData => {
+        setFormData((prevData: UICognitiveTaskFormData): UICognitiveTaskFormData => {
           const updatedQuestions = prevData.questions.map(q => {
             if (q.id === questionId && q.files) {
               const filesAsInfo: UIFile[] = q.files.map(asUIFile);
@@ -339,7 +339,7 @@ export const useCognitiveTaskFileUpload = ({
           hitZones: mapHitZonesToHitzoneAreas(finalUploadedFile.hitZones)
         };
 
-        setFormData((prevData: CognitiveTaskFormData): CognitiveTaskFormData => {
+        setFormData((prevData: UICognitiveTaskFormData): UICognitiveTaskFormData => {
           const updatedQuestions = [...prevData.questions];
           const questionIndex = updatedQuestions.findIndex(q => q.id === questionId);
           if (questionIndex !== -1 && updatedQuestions[questionIndex].files) {
@@ -372,7 +372,7 @@ export const useCognitiveTaskFileUpload = ({
     setIsUploading(false);
 
     if (successfulUploads > 0) {
-      setFormData((prevData: CognitiveTaskFormData): CognitiveTaskFormData => {
+      setFormData((prevData: UICognitiveTaskFormData): UICognitiveTaskFormData => {
         const updatedQuestions = prevData.questions.map(q => {
           if (q.id === questionId && q.files && q.files.length > 0) {
             const uniqueFileMap = new Map<string, UIFile>();
@@ -428,7 +428,7 @@ export const useCognitiveTaskFileUpload = ({
       return;
     }
 
-    setFormData((prevData: CognitiveTaskFormData): CognitiveTaskFormData => {
+    setFormData((prevData: UICognitiveTaskFormData): UICognitiveTaskFormData => {
       const updatedQuestions = prevData.questions.map((q: Question) => {
         if (q.id === questionId && q.files) {
           const updatedFiles = q.files.filter((f: UIFile) => f.id !== fileId);

@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { Question } from 'shared/interfaces/cognitive-task.interface'; // Necesario para formData
+import { useCallback, useState } from 'react';
+import { Question } from '../types'; // Usar Question local
 
 // Tipos locales necesarios
 type ValidationErrors = Record<string, string>;
@@ -34,16 +34,16 @@ export const useCognitiveTaskValidation = (): UseCognitiveTaskValidationResult =
 
   const validateForm = useCallback((formData: ValidationFormData, researchId?: string): ValidationErrors | null => {
     const errors: ValidationErrors = {};
-    
+
     // Validar researchId (si se pasa)
     if (researchId === undefined || researchId === '') { // Chequeo más robusto
       errors.researchId = VALIDATION_ERROR_MESSAGES.RESEARCH_ID_REQUIRED;
     }
-    
+
     // Validar que haya al menos una pregunta con título
     // Filtrar solo preguntas con título para validación
     const questionsWithTitle = formData.questions ? formData.questions.filter(q => q.title && q.title.trim() !== '') : [];
-  
+
     if (questionsWithTitle.length === 0) {
       errors.questions = 'Debe haber al menos una pregunta con título';
     }
@@ -54,7 +54,7 @@ export const useCognitiveTaskValidation = (): UseCognitiveTaskValidationResult =
       if (question.required && !question.title?.trim()) {
         errors[`question_${index}_title`] = VALIDATION_ERROR_MESSAGES.TITLE_REQUIRED;
       }
-      
+
       // Validar opciones para preguntas de elección (solo si están marcadas como required)
       if (question.required && ['single_choice', 'multiple_choice', 'ranking'].includes(question.type)) {
         if (!question.choices || question.choices.length === 0) {
@@ -67,7 +67,7 @@ export const useCognitiveTaskValidation = (): UseCognitiveTaskValidationResult =
           });
         }
       }
-      
+
       // Validar configuración de escala (solo si están marcadas como required)
       if (question.required && question.type === 'linear_scale' && question.scaleConfig) {
         const { startValue, endValue } = question.scaleConfig;
@@ -81,7 +81,7 @@ export const useCognitiveTaskValidation = (): UseCognitiveTaskValidationResult =
           errors[`question_${index}_scale`] = VALIDATION_ERROR_MESSAGES.SCALE_INVALID_RANGE;
         }
       }
-      
+
       // Validación de Archivos (Corregida)
       if (question.required && ['navigation_flow', 'preference_test'].includes(question.type)) {
         const fileCount = question.files?.length || 0; // Usar longitud directa del array
@@ -92,11 +92,11 @@ export const useCognitiveTaskValidation = (): UseCognitiveTaskValidationResult =
         }
       }
     });
-    
+
     const errorCount = Object.keys(errors).length;
     const result = errorCount > 0 ? errors : null;
     // console.log(`[useCognitiveTaskValidation] Validación completada. ${errorCount} errores encontrados:`, result || '{}');
-    
+
     setValidationErrors(result);
     return result;
   }, []);
@@ -105,4 +105,4 @@ export const useCognitiveTaskValidation = (): UseCognitiveTaskValidationResult =
     validationErrors,
     validateForm,
   };
-}; 
+};

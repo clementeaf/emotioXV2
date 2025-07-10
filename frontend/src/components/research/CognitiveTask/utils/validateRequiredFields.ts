@@ -1,5 +1,5 @@
 import { CognitiveTaskFormData } from 'shared/interfaces/cognitive-task.interface';
-import { Question } from '../types';
+import { Question, UICognitiveTaskFormData } from '../types';
 
 /**
  * Valida si una pregunta individual tiene todos los campos requeridos
@@ -201,6 +201,46 @@ export const debugQuestionsToSend = (formData: CognitiveTaskFormData): void => {
     console.group('🔍 [CognitiveTask] Debug de preguntas a enviar');
 
     const validationInfo = getQuestionsValidationInfo(formData);
+
+    validationInfo.valid.forEach((q, index) => {
+      // console.log(`  ${index + 1}. ${q.type}: "${q.title}"`);
+    });
+
+    if (validationInfo.invalid.length > 0) {
+      // console.log('🚫 Preguntas inválidas (se omitirán):', validationInfo.invalid.length);
+      validationInfo.invalid.forEach(({ question, missingFields }, index) => {
+        // console.log(`  ${index + 1}. ${question.type}: "${question.title || '(sin título)'}"`);
+        // console.log(`     Campos faltantes: ${missingFields.join(', ')}`);
+      });
+    }
+
+    console.groupEnd();
+  }
+};
+
+/**
+ * Filtra las preguntas que tienen todos los campos requeridos (versión local)
+ */
+export const filterValidQuestionsLocal = (formData: UICognitiveTaskFormData): UICognitiveTaskFormData => {
+  const validQuestions = formData.questions.filter(question => {
+    const validation = isQuestionValid(question);
+    return validation.isValid;
+  });
+
+  return {
+    ...formData,
+    questions: validQuestions
+  };
+};
+
+/**
+ * Log de debug para verificar las preguntas que se enviarán (versión local)
+ */
+export const debugQuestionsToSendLocal = (formData: UICognitiveTaskFormData): void => {
+  if (process.env.NODE_ENV === 'development') {
+    console.group('🔍 [CognitiveTask] Debug de preguntas a enviar');
+
+    const validationInfo = getQuestionsValidationInfo(formData as any);
 
     validationInfo.valid.forEach((q, index) => {
       // console.log(`  ${index + 1}. ${q.type}: "${q.title}"`);

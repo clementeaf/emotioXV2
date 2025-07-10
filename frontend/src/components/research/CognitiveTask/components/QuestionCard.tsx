@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Question } from 'shared/interfaces/cognitive-task.interface';
+import type { Question } from '../types';
 
 import { ChoiceQuestion } from './questions/ChoiceQuestion';
 import { FileUploadQuestion } from './questions/FileUploadQuestion';
@@ -40,12 +40,18 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
       validationErrors
     };
 
-    switch (question.type) {
+    // Normalizar type para los componentes hijos
+    const normalizedType = typeof question.type === 'string' && question.type.startsWith('cognitive_')
+      ? question.type.replace('cognitive_', '')
+      : question.type;
+    const questionForChild = { ...question, type: normalizedType };
+
+    switch (normalizedType) {
       case 'short_text':
       case 'long_text':
         return (
           <TextQuestion
-            question={question}
+            question={questionForChild}
             onQuestionChange={(updates) => onQuestionChange(question.id, updates)}
             {...baseProps}
           />
@@ -56,7 +62,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
       case 'ranking':
         return (
           <ChoiceQuestion
-            question={question}
+            question={questionForChild}
             onQuestionChange={(updates) => onQuestionChange(question.id, updates)}
             onAddChoice={() => onAddChoice && onAddChoice(question.id)}
             onRemoveChoice={(choiceId) => onRemoveChoice && onRemoveChoice(question.id, choiceId)}
@@ -67,7 +73,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
       case 'linear_scale':
         return (
           <ScaleQuestion
-            question={question}
+            question={questionForChild}
             onQuestionChange={(updates) => onQuestionChange(question.id, updates)}
             {...baseProps}
           />
@@ -77,7 +83,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
       case 'preference_test':
         return (
           <FileUploadQuestion
-            question={question}
+            question={questionForChild}
             onQuestionChange={(updates) => onQuestionChange(question.id, updates)}
             onFileUpload={(files) => onFileUpload && onFileUpload(question.id, files)}
             onFileDelete={(fileId) => onFileDelete && onFileDelete(question.id, fileId)}

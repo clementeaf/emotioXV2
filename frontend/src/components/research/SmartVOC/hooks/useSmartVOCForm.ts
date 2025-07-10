@@ -130,10 +130,13 @@ export const useSmartVOCForm = (researchId: string) => {
       return;
     }
 
+    // ENRIQUECER TODAS LAS PREGUNTAS ANTES DE ENVIAR
     const cleanedData: SmartVOCFormData = {
       ...formData,
       questions: editedQuestions.map((q) => ({
         ...q,
+        questionKey: q.questionKey || `smartvoc_${q.type}_${q.id}`,
+        type: `smartvoc_${q.type}`,
         description: q.description || q.title,
         required: q.type !== 'VOC',
       })),

@@ -1,15 +1,15 @@
 import { Dispatch, SetStateAction, useCallback, useState } from 'react';
-import type { CognitiveTaskFormData, Question } from 'shared/interfaces/cognitive-task.interface';
+import type { Question, UICognitiveTaskFormData } from '../types'; // Usar tipos locales
 
 // Interfaz para las props del hook de estado
 interface UseCognitiveTaskStateProps {
-  initialData?: Partial<CognitiveTaskFormData>; // Permitir datos iniciales
+  initialData?: Partial<UICognitiveTaskFormData>; // Permitir datos iniciales
 }
 
 // Interfaz para el resultado del hook de estado
 interface UseCognitiveTaskStateResult {
-  formData: CognitiveTaskFormData;
-  setFormData: Dispatch<SetStateAction<CognitiveTaskFormData>>;
+  formData: UICognitiveTaskFormData;
+  setFormData: Dispatch<SetStateAction<UICognitiveTaskFormData>>;
   handleQuestionChange: (questionId: string, updates: Partial<Question>) => void;
   handleAddChoice: (questionId: string) => void;
   handleRemoveChoice: (questionId: string, choiceId: string) => void;
@@ -17,7 +17,7 @@ interface UseCognitiveTaskStateResult {
 }
 
 // Constante para el estado inicial por defecto con las 8 preguntas originales (3.1-3.8)
-export const DEFAULT_STATE: CognitiveTaskFormData = {
+export const DEFAULT_STATE: UICognitiveTaskFormData = {
   researchId: '', // El researchId vendrá de props o se establecerá después
   questions: [
     {
@@ -122,7 +122,7 @@ export const DEFAULT_STATE: CognitiveTaskFormData = {
 export const useCognitiveTaskState = ({
   initialData,
 }: UseCognitiveTaskStateProps): UseCognitiveTaskStateResult => {
-  const [formData, setFormData] = useState<CognitiveTaskFormData>(() => ({
+  const [formData, setFormData] = useState<UICognitiveTaskFormData>(() => ({
     ...DEFAULT_STATE,
     ...(initialData || {}),
     questions: initialData?.questions || [], // Empezar siempre con datos iniciales o array vacío

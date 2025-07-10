@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { CognitiveTaskFormData } from 'shared/interfaces/cognitive-task.interface';
+import { UICognitiveTaskFormData } from './CognitiveTask/types'; // Usar tipo local
 
 import { CognitiveTaskForm as ModularForm } from './CognitiveTask';
 
@@ -9,7 +9,7 @@ import { CognitiveTaskForm as ModularForm } from './CognitiveTask';
 export interface CognitiveTaskFormProps {
   className?: string;
   researchId?: string;
-  onSave?: (data: CognitiveTaskFormData) => void;
+  onSave?: (data: UICognitiveTaskFormData) => void;
 }
 
 // Componente que usa la implementación modular del formulario

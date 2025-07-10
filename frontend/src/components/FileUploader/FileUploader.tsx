@@ -1,7 +1,5 @@
-import React, { useState, useRef, ChangeEvent, useEffect } from 'react';
-
+import React, { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { useFileUpload } from '../../hooks/useFileUpload';
-import './FileUploader.css';
 
 interface FileUploaderProps {
   researchId: string;
@@ -14,7 +12,7 @@ interface FileUploaderProps {
 }
 
 // Clave para localStorage por investigación y carpeta
-const getStorageKey = (researchId: string, folder: string) => 
+const getStorageKey = (researchId: string, folder: string) =>
   `fileuploader_selection_${researchId}_${folder}`;
 
 const FileUploader: React.FC<FileUploaderProps> = ({
@@ -30,17 +28,17 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [errors, setErrors] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  const { 
-    isUploading, 
-    progress, 
-    error, 
-    uploadedUrl, 
+
+  const {
+    isUploading,
+    progress,
+    error,
+    uploadedUrl,
     fileKey,
     uploadFile,
     resetState
   } = useFileUpload();
-  
+
   // Persistir archivos seleccionados en localStorage
   const persistSelectedFilesInfo = (files: File[]) => {
     try {
@@ -51,15 +49,15 @@ const FileUploader: React.FC<FileUploaderProps> = ({
         type: file.type,
         lastModified: file.lastModified
       }));
-      
+
       // Guardar en localStorage para recuperar la UI si el usuario navega fuera
       const storageKey = getStorageKey(researchId, folder);
       localStorage.setItem(storageKey, JSON.stringify({
         timestamp: new Date().toISOString(),
         files: fileInfos
       }));
-      
-      // console.log('FileUploader: Archivos seleccionados guardados en localStorage', {
+
+      console.log('FileUploader: Archivos seleccionados guardados en localStorage', {
         count: files.length,
         storageKey
       });
@@ -67,20 +65,20 @@ const FileUploader: React.FC<FileUploaderProps> = ({
       console.error('FileUploader: Error al persistir archivos seleccionados', error);
     }
   };
-  
+
   // Cargar estado persistido al montar el componente
   useEffect(() => {
     try {
       const storageKey = getStorageKey(researchId, folder);
       const savedData = localStorage.getItem(storageKey);
-      
+
       if (savedData) {
         const parsed = JSON.parse(savedData);
-        // console.log('FileUploader: Información de archivos recuperada de localStorage', {
+        console.log('FileUploader: Información de archivos recuperada de localStorage', {
           storageKey,
           filesCount: parsed.files?.length || 0
         });
-        
+
         // No podemos recuperar los File objects, pero podemos mostrar la UI
         // para indicar al usuario que tenía archivos seleccionados
         if (parsed.files?.length > 0) {
@@ -96,21 +94,21 @@ const FileUploader: React.FC<FileUploaderProps> = ({
       console.error('FileUploader: Error al recuperar estado persistido', error);
     }
   }, [researchId, folder, selectedFiles.length]);
-  
+
   // Creamos la referencia en el nivel superior del componente
   const processedRef = useRef(false);
-  
+
   // Este efecto maneja específicamente la recuperación de archivos completados
   useEffect(() => {
     if (!researchId || !folder || !onUploadComplete) {return;}
-    
+
     // Ya no creamos la referencia aquí, usamos la creada en el nivel superior
     if (processedRef.current) {return;}
-    
+
     const completedStorageKey = `fileuploader_completed_${researchId}_${folder}`;
     const processCompletedData = () => {
       if (processedRef.current) {return;}
-      
+
       try {
         const completedData = localStorage.getItem(completedStorageKey);
         if (completedData) {
@@ -118,15 +116,15 @@ const FileUploader: React.FC<FileUploaderProps> = ({
           if (parsedData.fileUrl && parsedData.key) {
             // Marcamos como procesado antes de cualquier operación para evitar repetición
             processedRef.current = true;
-            
+
             // Eliminamos del localStorage primero
             localStorage.removeItem(completedStorageKey);
-            
-            // console.log('FileUploader: Procesando datos completados desde localStorage', {
+
+            console.log('FileUploader: Procesando datos completados desde localStorage', {
               key: completedStorageKey,
               data: parsedData
             });
-            
+
             // Notificamos con pequeño retraso para dar tiempo al componente de estabilizarse
             setTimeout(() => {
               onUploadComplete(parsedData);
@@ -138,11 +136,11 @@ const FileUploader: React.FC<FileUploaderProps> = ({
         localStorage.removeItem(completedStorageKey);
       }
     };
-    
-    // Ejecutamos la función después de un breve retraso para permitir que el componente 
+
+    // Ejecutamos la función después de un breve retraso para permitir que el componente
     // termine su renderizado inicial
     const timer = setTimeout(processCompletedData, 100);
-    
+
     // Limpieza
     return () => {
       clearTimeout(timer);
@@ -161,19 +159,19 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   const validateAndSetFiles = (files: File[]) => {
     const validFiles: File[] = [];
     const errorMessages: string[] = [];
-    
+
     files.forEach(file => {
       // Validar tamaño
       if (file.size > maxSize) {
         errorMessages.push(`El archivo "${file.name}" excede el tamaño máximo permitido`);
         return;
       }
-      
+
       // Validar tipo (solo si accept no es '*/*')
       if (accept !== '*/*') {
         const acceptTypes = accept.split(',').map(type => type.trim());
         const fileType = file.type || '';
-        
+
         const matchesType = acceptTypes.some(type => {
           if (type.endsWith('/*')) {
             const baseType = type.split('/')[0];
@@ -181,16 +179,16 @@ const FileUploader: React.FC<FileUploaderProps> = ({
           }
           return type === fileType;
         });
-        
+
         if (!matchesType) {
           errorMessages.push(`El archivo "${file.name}" no es un tipo permitido`);
           return;
         }
       }
-      
+
       validFiles.push(file);
     });
-    
+
     setSelectedFiles(validFiles);
     setErrors(errorMessages);
   };
@@ -207,7 +205,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragging(false);
-    
+
     if (e.dataTransfer.files) {
       const files = Array.from(e.dataTransfer.files);
       validateAndSetFiles(files);
@@ -218,42 +216,42 @@ const FileUploader: React.FC<FileUploaderProps> = ({
 
   const handleUpload = async () => {
     if (selectedFiles.length === 0) {return;}
-    
+
     setErrors([]);
     resetState();
-    
+
     try {
       // Para simplificar, tomamos solo el primer archivo si no es multiple
       const fileToUpload = selectedFiles[0];
-      
+
       const result = await uploadFile(fileToUpload, researchId, folder);
-      
+
       // Guardar el resultado en localStorage para garantizar que se procese
       // incluso si el usuario navega fuera antes de que se complete el callback
       const completedStorageKey = `fileuploader_completed_${researchId}_${folder}`;
       localStorage.setItem(completedStorageKey, JSON.stringify(result));
-      // console.log('FileUploader: Guardado resultado en localStorage', {
+      console.log('FileUploader: Guardado resultado en localStorage', {
         completedStorageKey,
         result
       });
-      
+
       if (onUploadComplete) {
         onUploadComplete(result);
         // Eliminar después de procesar exitosamente
         localStorage.removeItem(completedStorageKey);
       }
-      
+
       // Limpiar selección después de subir exitosamente
       setSelectedFiles([]);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-      
+
       // Limpiar localStorage para este researchId y folder
       try {
         const storageKey = getStorageKey(researchId, folder);
         localStorage.removeItem(storageKey);
-        // console.log('FileUploader: Se limpió localStorage después de subida exitosa', {
+        console.log('FileUploader: Se limpió localStorage después de subida exitosa', {
           storageKey
         });
       } catch (error) {
@@ -261,11 +259,11 @@ const FileUploader: React.FC<FileUploaderProps> = ({
       }
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Error desconocido al subir');
-      
+
       if (onUploadError) {
         onUploadError(error);
       }
-      
+
       setErrors(prev => [...prev, error.message]);
     }
   };
@@ -278,7 +276,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
 
   return (
     <div className="file-uploader">
-      <div 
+      <div
         className={`dropzone ${dragging ? 'dragging' : ''}`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -293,7 +291,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
           accept={accept}
           multiple={multiple}
         />
-        
+
         {selectedFiles.length > 0 ? (
           <div className="selected-files">
             <p>Archivos seleccionados:</p>
@@ -309,8 +307,8 @@ const FileUploader: React.FC<FileUploaderProps> = ({
           <div className="dropzone-placeholder">
             <p>Arrastra y suelta archivos aquí o haz clic para seleccionar</p>
             <small>
-              {accept !== '*/*' 
-                ? `Tipos aceptados: ${accept}` 
+              {accept !== '*/*'
+                ? `Tipos aceptados: ${accept}`
                 : 'Todos los tipos de archivo'
               }
             </small>
@@ -318,7 +316,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
           </div>
         )}
       </div>
-      
+
       {errors.length > 0 && (
         <div className="upload-errors">
           {errors.map((error, index) => (
@@ -326,10 +324,10 @@ const FileUploader: React.FC<FileUploaderProps> = ({
           ))}
         </div>
       )}
-      
+
       {isUploading ? (
         <div className="upload-progress">
-          <div 
+          <div
             className="progress-bar"
             style={{ width: `${progress}%` }}
           />
@@ -337,7 +335,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
         </div>
       ) : (
         selectedFiles.length > 0 && (
-          <button 
+          <button
             className="upload-button"
             onClick={handleUpload}
             disabled={isUploading}
@@ -346,7 +344,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
           </button>
         )
       )}
-      
+
       {uploadedUrl && (
         <div className="upload-success">
           <p>¡Archivo subido con éxito!</p>
@@ -356,4 +354,4 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   );
 };
 
-export default FileUploader; 
+export default FileUploader;

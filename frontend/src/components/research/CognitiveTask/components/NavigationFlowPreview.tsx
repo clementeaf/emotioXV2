@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
-import { CognitiveTaskFormData, Question } from 'shared/interfaces/cognitive-task.interface';
+import { CognitiveTaskFormData } from 'shared/interfaces/cognitive-task.interface';
+import { Question } from '../types'; // Usar Question local
 
 import { HitZoneViewer } from './HitZoneViewer';
 

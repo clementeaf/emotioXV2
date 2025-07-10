@@ -81,7 +81,8 @@ export function useStandardizedForm<T>(
     savedResponse,
     savedResponseId,
     required = false,
-    isMock = false
+    isMock = false,
+    questionKey
   } = props;
 
   const {
@@ -216,30 +217,21 @@ export function useStandardizedForm<T>(
         }))
       });
 
+      // Obtener questionKey del paso actual si está disponible
       const foundResponse = responses.find((r: unknown) => {
         if (typeof r !== 'object' || r === null) return false;
-        const response = r as { stepType?: string; stepId?: string; stepTitle?: string; id?: string };
+        const response = r as { questionKey?: string; stepType?: string; stepId?: string; stepTitle?: string; id?: string };
 
-        // Búsqueda simplificada: priorizar stepType exacto
+        // 1. Buscar por questionKey si está disponible
+        if (questionKey && response.questionKey && response.questionKey === questionKey) {
+          return true;
+        }
+
+        // 2. Fallback legacy: stepType exacto Y (stepTitle O stepId)
         const exactStepTypeMatch = response.stepType === stepType;
         const stepTitleMatch = response.stepTitle === stepName;
         const stepIdMatch = response.stepId === stepId;
-
-        // Coincidencia: stepType exacto Y (stepTitle O stepId)
         const match = exactStepTypeMatch && (stepTitleMatch || stepIdMatch);
-
-        console.log('[useStandardizedForm] 🔍 Comparando:', {
-          responseStepType: response.stepType,
-          expectedStepType: stepType,
-          responseStepTitle: response.stepTitle,
-          expectedStepName: stepName,
-          responseStepId: response.stepId,
-          expectedStepId: stepId,
-          exactStepTypeMatch,
-          stepTitleMatch,
-          stepIdMatch,
-          match
-        });
         return match;
       });
 
@@ -265,7 +257,7 @@ export function useStandardizedForm<T>(
     setIsDataLoaded(true);
     setHasExistingData(false);
     initialLoadComplete.current = true;
-  }, [participantId, researchId, isLoadingResponses, savedResponse, isMock, extractedValue, initialValue, value, isDataLoaded, responses, stepType, stepName, extractValueFromResponse]);
+  }, [participantId, researchId, isLoadingResponses, savedResponse, isMock, extractedValue, initialValue, value, isDataLoaded, responses, stepType, stepName, extractValueFromResponse, questionKey]);
 
   const validateValue = useCallback((valueToValidate: T): string | null => {
     if (required) {

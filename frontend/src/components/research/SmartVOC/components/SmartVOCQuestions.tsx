@@ -54,6 +54,12 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
   // Determinar si el campo de companyName debe mostrarse
   const showCompanyNameInput = questions.some(q => ['CSAT', 'NEV', 'NPS'].includes(q.type));
 
+  // Normalizar preguntas para la UI (solo para el componente, no para el backend)
+  const questionsForUI = questions.map(q => ({
+    ...q,
+    type: typeof q.type === 'string' && q.type.startsWith('smartvoc_') ? q.type.replace('smartvoc_', '') : q.type
+  }));
+
 
   // Renderiza la configuración específica para cada tipo de pregunta
   const renderQuestionConfig = (question: SmartVOCQuestion) => {
@@ -311,7 +317,7 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
         </div>
       )}
 
-      {questions.map((question, index) => (
+      {questionsForUI.map((question, index) => (
         <div key={question.id || index} className="p-4 border border-neutral-200 rounded-lg bg-white">
           <div className="flex justify-between items-center mb-4">
             <h4 className="font-semibold text-neutral-900">{`Pregunta ${index + 1}: ${question.title}`}</h4>

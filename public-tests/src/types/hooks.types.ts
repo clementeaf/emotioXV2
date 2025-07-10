@@ -132,6 +132,7 @@ export interface StandardizedFormProps {
   savedResponseId?: string | null;
   required?: boolean;
   isMock?: boolean;
+  questionKey?: string; // NUEVO: Soporte universal para recuperación por questionKey
 }
 
 export interface ValidationRule<T> {

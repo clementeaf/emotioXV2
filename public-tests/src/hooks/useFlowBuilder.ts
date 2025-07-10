@@ -99,20 +99,7 @@ const processCognitiveTaskQuestions = (
             if (typeof question !== 'object' || question === null) continue;
             const q = question as { id?: string; title?: string; type?: string; instructions?: string };
             const originalQuestionType = q.type;
-            const upperOriginalType = typeof originalQuestionType === 'string' ? originalQuestionType.toUpperCase() : undefined;
-
-            if (upperOriginalType && smartVOCTypeMap[upperOriginalType]) {
-                steps.push({
-                    id: q.id || `${smartVOCTypeMap[upperOriginalType]}_${steps.length}`,
-                    name: q.title || `SmartVOC: ${originalQuestionType}`,
-                    type: smartVOCTypeMap[upperOriginalType],
-                    config: question,
-                    instructions: q.instructions,
-                    responseKey: parentModuleResponseKey
-                });
-                continue;
-            }
-
+            // Siempre usar el prefijo cognitive_ para preguntas cognitivas
             const frontendType = typeof originalQuestionType === 'string' ? `cognitive_${originalQuestionType.toLowerCase()}` : undefined;
             if (frontendType) {
                 steps.push({

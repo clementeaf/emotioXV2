@@ -1,6 +1,6 @@
 import { Info } from 'lucide-react';
 import React, { useState } from 'react';
-import type { Question } from 'shared/interfaces/cognitive-task.interface';
+import type { UICognitiveQuestion } from '../types';
 
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
@@ -42,7 +42,7 @@ const Tooltip = ({ content, children }: TooltipProps) => {
 interface AddQuestionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddQuestion: (type: Question['type']) => void;
+  onAddQuestion: (type: UICognitiveQuestion['type']) => void;
 }
 
 const AddQuestionModal: React.FC<AddQuestionModalProps> = ({ isOpen, onClose, onAddQuestion }) => {
@@ -59,7 +59,7 @@ const AddQuestionModal: React.FC<AddQuestionModalProps> = ({ isOpen, onClose, on
     { id: 'preference_test', label: 'Prueba de Preferencia', description: 'Prueba A/B de preferencia' }
   ] as const;
 
-  const handleSelect = (type: Question['type']) => {
+  const handleSelect = (type: UICognitiveQuestion['type']) => {
     onAddQuestion(type);
     onClose();
   };
@@ -85,7 +85,7 @@ const AddQuestionModal: React.FC<AddQuestionModalProps> = ({ isOpen, onClose, on
           {questionTypes.map((type) => (
             <button
               key={type.id}
-              onClick={() => handleSelect(type.id as Question['type'])}
+              onClick={() => handleSelect(type.id as UICognitiveQuestion['type'])}
               className="w-full text-left p-3 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors"
             >
               <div className="font-medium">{type.label}</div>
@@ -100,15 +100,15 @@ const AddQuestionModal: React.FC<AddQuestionModalProps> = ({ isOpen, onClose, on
 
 // Definición de props explícita para evitar problemas de tipos
 type Props = {
-  questions: Question[];
+  questions: UICognitiveQuestion[];
   randomizeQuestions: boolean;
-  onQuestionChange: (questionId: string, updates: Partial<Question>) => void;
+  onQuestionChange: (questionId: string, updates: Partial<UICognitiveQuestion>) => void;
   onAddChoice: (questionId: string) => void;
   onRemoveChoice: (questionId: string, choiceId: string) => void;
   onFileUpload: (questionId: string, files: FileList) => void;
   onFileDelete: (questionId: string, fileId: string) => void;
   setRandomizeQuestions: (checked: boolean) => void;
-  onAddQuestion: (type: Question['type']) => void;
+  onAddQuestion: (type: UICognitiveQuestion['type']) => void;
   disabled?: boolean;
   isUploading?: boolean;
   uploadProgress?: number;
@@ -179,6 +179,11 @@ export const CognitiveTaskFields: React.FC<Props> = ({
             </div>
           ) : (
             questions.map((question) => {
+              // Normalizar type para la UI (solo para el componente, no para el backend)
+              const normalizedType = typeof question.type === 'string' && question.type.startsWith('cognitive_')
+                ? question.type.replace('cognitive_', '')
+                : question.type;
+              const questionForUI: UICognitiveQuestion = { ...question, type: normalizedType };
 
               // <<< Código original descomentado >>>
               const questionErrors: ValidationErrors = {};
@@ -194,7 +199,7 @@ export const CognitiveTaskFields: React.FC<Props> = ({
               return (
                 <QuestionCard
                   key={question.id}
-                  question={question}
+                  question={questionForUI as any}
                   onQuestionChange={onQuestionChange}
                   onAddChoice={onAddChoice}
                   onRemoveChoice={onRemoveChoice}

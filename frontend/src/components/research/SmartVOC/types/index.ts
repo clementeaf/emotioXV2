@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { SmartVOCFormData as BaseSmartVOCFormData, SmartVOCQuestion as BaseSmartVOCQuestion } from 'shared/interfaces/smart-voc.interface';
+import { SmartVOCFormData as BaseSmartVOCFormData } from 'shared/interfaces/smart-voc.interface';
 
 /**
  * Tipos relacionados con el formulario SmartVOC
@@ -37,8 +37,17 @@ export interface QuestionConfig {
 /**
  * Extendemos la interfaz base de SmartVOCQuestion
  */
-export interface SmartVOCQuestion extends BaseSmartVOCQuestion {
+export interface SmartVOCQuestion {
+  id: string;
+  type: string; // Permitir string para soportar type enriquecido
+  title: string;
+  description: string;
   instructions?: string;
+  showConditionally: boolean;
+  config: Record<string, any>;
+  required: boolean;
+  questionKey?: string; // NUEVO: Soporte para questionKey universal
+  moduleResponseId?: string;
 }
 
 /**
