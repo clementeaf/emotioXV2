@@ -143,8 +143,16 @@ const EmotionSelectionView: React.FC<EmotionSelectionViewComponentProps> = ({
   const emojis = getEmojiSet();
 
   const handleSelect = (emoji: string) => {
+    console.log('[EmotionSelectionView] 🟡 handleSelect llamado con:', emoji);
     setValue(emoji, true); // true = user interaction
+    setTimeout(() => {
+      console.log('[EmotionSelectionView] 🟡 selectedEmoji después de setValue:', emoji, 'state:', state.value);
+    }, 100);
   };
+
+  useEffect(() => {
+    console.log('[EmotionSelectionView] 🟡 selectedEmoji actualizado:', state.value);
+  }, [state.value]);
 
   const handleNextClick = async () => {
     if (selectedEmoji !== null) {
@@ -166,37 +174,39 @@ const EmotionSelectionView: React.FC<EmotionSelectionViewComponentProps> = ({
   // Determinar el texto del botón basado en si hay datos existentes
   const getButtonText = () => {
     if (isSaving) return 'Guardando...';
-    return hasExistingData ? 'Actualizar y continuar' : 'Guardar y continuar';
+    // Si hay respuesta previa (hasExistingData) o hay un valor inicial seleccionado, mostrar 'Actualizar'
+    if (hasExistingData || selectedEmoji !== null) return 'Actualizar y continuar';
+    return 'Guardar y continuar';
   };
 
   useEffect(() => {
-    // Log de depuración explícito
+    // Solo inicializar si no hay selección previa del usuario
+    if (state.value !== null && state.value !== undefined) return;
     console.log('[EmotionSelectionView] 🟡 savedResponse recibido:', savedResponse);
     console.log('[EmotionSelectionView] 🟡 emojiOptions:', emojis.map(opt => opt.label));
 
     if (typeof savedResponse === 'number') {
-      setValue(emojis[savedResponse].emoji, true); // Assuming savedResponse is an index for emotionalScaleEmojis
+      setValue(emojis[savedResponse].emoji, false); // false = no user interaction
     } else if (
       typeof savedResponse === 'string' && String(savedResponse).length >= 1
     ) {
-      // Buscar el valor numérico correspondiente al emoji
-      const found = emojis.find(opt => opt.label === savedResponse);
+      const found = emojis.find(opt => opt.emoji === savedResponse);
       console.log('[EmotionSelectionView] 🟡 Resultado búsqueda emoji:', { savedResponse, found });
-      if (found) setValue(found.emoji, true);
+      if (found) setValue(found.emoji, false);
     } else if (
       typeof savedResponse === 'object' &&
       savedResponse !== null &&
       'value' in savedResponse &&
       typeof (savedResponse as any).value === 'number'
     ) {
-      setValue(emojis[(savedResponse as any).value].emoji, true);
+      setValue(emojis[(savedResponse as any).value].emoji, false);
     } else if (
       typeof savedResponse === 'object' &&
       savedResponse !== null &&
       Object.values(savedResponse).length === 1 &&
       typeof Object.values(savedResponse)[0] === 'number'
     ) {
-      setValue(emojis[Object.values(savedResponse)[0] as number].emoji, true);
+      setValue(emojis[Object.values(savedResponse)[0] as number].emoji, false);
     }
   }, [savedResponse, emojis, setValue]);
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useStandardizedForm } from '../../hooks/useStandardizedForm';
 import { NPSViewProps } from '../../types/smart-voc.types';
 import { formatQuestionText, formSpacing, getButtonDisabledState, getErrorDisplayProps, getStandardButtonText } from '../../utils/formHelpers';
@@ -56,6 +56,21 @@ const NPSView: React.FC<NPSViewProps> = ({
   const { value: selectedValue, isSaving, isLoading, error, hasExistingData } = state;
   const { setValue, validateAndSave } = actions;
 
+  // Efecto de inicialización robusto (igual que NEV)
+  useEffect(() => {
+    if (selectedValue !== null && selectedValue !== undefined) return;
+    if (typeof standardProps.savedResponse === 'number') {
+      setValue(standardProps.savedResponse, false);
+    } else if (
+      typeof standardProps.savedResponse === 'object' &&
+      standardProps.savedResponse !== null &&
+      'value' in standardProps.savedResponse &&
+      typeof (standardProps.savedResponse as any).value === 'number'
+    ) {
+      setValue((standardProps.savedResponse as any).value, false);
+    }
+  }, [standardProps.savedResponse, setValue, selectedValue]);
+
   const scaleButtons = Array.from({ length: 11 }, (_, i) => i); // Crea [0, 1, ..., 10]
 
   const handleSelect = (value: number) => {
@@ -87,6 +102,13 @@ const NPSView: React.FC<NPSViewProps> = ({
     hasError: !!error
   });
   const errorDisplay = getErrorDisplayProps(error);
+
+  // Determinar el texto del botón basado en si hay datos existentes
+  const getButtonText = () => {
+    if (isSaving) return 'Guardando...';
+    if (hasExistingData || selectedValue !== null) return 'Actualizar y continuar';
+    return 'Guardar y continuar';
+  };
 
   if (isLoading && !state.isDataLoaded) {
     return (
@@ -146,7 +168,7 @@ const NPSView: React.FC<NPSViewProps> = ({
           onClick={handleNextClick}
           disabled={isButtonDisabled}
         >
-          {buttonText}
+          {getButtonText()}
         </button>
       </div>
     </div>

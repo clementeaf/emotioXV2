@@ -35,6 +35,20 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
 
     if (stepType.startsWith('smartvoc_') && stepConfig && typeof stepConfig === 'object') {
         const config = stepConfig as any;
+        // Buscar respuesta previa en responsesData para smartvoc
+        let smartvocSavedResponse = undefined;
+        if (responsesData && Array.isArray(responsesData)) {
+            const stepTitle = config.title || config.description || config.questionText;
+            const found = responsesData.find((r: any) => {
+                const typeMatch = r.stepType === stepType;
+                const titleMatch = r.stepTitle === stepTitle;
+                const hasResponse = r.response !== undefined;
+                return typeMatch && titleMatch && hasResponse;
+            });
+            if (found) {
+                smartvocSavedResponse = found.response;
+            }
+        }
         mappedProps = {
             questionText: config.title || config.description || config.questionText,
             instructions: config.instructions,
@@ -43,7 +57,7 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
             stepId: config.id,
             stepName: config.title || config.description,
             required: config.required,
-            savedResponse: finalSavedResponse,
+            savedResponse: smartvocSavedResponse || finalSavedResponse,
             savedResponseId: config.savedResponseId,
         };
     }
