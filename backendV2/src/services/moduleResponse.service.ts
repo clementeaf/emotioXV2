@@ -1,17 +1,17 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import {
-  DeleteCommand,
-  DynamoDBDocumentClient,
-  PutCommand,
-  QueryCommand,
-  UpdateCommand,
+    DeleteCommand,
+    DynamoDBDocumentClient,
+    PutCommand,
+    QueryCommand,
+    UpdateCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { v4 as uuidv4 } from 'uuid';
 import {
-  CreateModuleResponseDto,
-  ModuleResponse,
-  ParticipantResponsesDocument,
-  UpdateModuleResponseDto
+    CreateModuleResponseDto,
+    ModuleResponse,
+    ParticipantResponsesDocument,
+    UpdateModuleResponseDto
 } from '../models/moduleResponse.model';
 import { ApiError } from '../utils/errors';
 
@@ -188,7 +188,7 @@ export class ModuleResponseService {
   async saveModuleResponse(
     createDto: CreateModuleResponseDto
   ): Promise<ModuleResponse> {
-    const { researchId, participantId, stepType, stepTitle, response, metadata } = createDto;
+    const { researchId, participantId, stepType, stepTitle, questionKey, response, metadata } = createDto;
 
     const existingDocument = await this.findByResearchAndParticipant(researchId, participantId);
 
@@ -199,6 +199,7 @@ export class ModuleResponseService {
       id: responseId,
       stepType,
       stepTitle,
+      questionKey, // NUEVO: incluir questionKey en la respuesta
       response,
       metadata: metadata || {},
       createdAt: now
@@ -210,9 +211,22 @@ export class ModuleResponseService {
       return newResponse;
     }
 
-    const existingResponseIndex = existingDocument.responses.findIndex(
-      r => r.stepType === stepType
-    );
+    // NUEVO: Buscar por questionKey primero (método preferido)
+    let existingResponseIndex = -1;
+    if (questionKey) {
+      existingResponseIndex = existingDocument.responses.findIndex(
+        r => r.questionKey === questionKey
+      );
+      console.log(`[ModuleResponseService.saveModuleResponse] 🔍 Buscando por questionKey: ${questionKey} - encontrado: ${existingResponseIndex >= 0}`);
+    }
+
+    // FALLBACK: Buscar por stepType si no se encontró por questionKey
+    if (existingResponseIndex === -1) {
+      existingResponseIndex = existingDocument.responses.findIndex(
+        r => r.stepType === stepType
+      );
+      console.log(`[ModuleResponseService.saveModuleResponse] ⚠️ Fallback: buscando por stepType: ${stepType} - encontrado: ${existingResponseIndex >= 0}`);
+    }
 
     let updateExpression: string;
     let expressionAttributeNames: Record<string, string> = {
@@ -227,16 +241,19 @@ export class ModuleResponseService {
       expressionAttributeNames['#nestedResponse'] = 'response'; // Alias para el campo 'response' anidado
       expressionAttributeNames['#nestedUpdatedAt'] = 'updatedAt'; // Alias para el campo 'updatedAt' anidado
       expressionAttributeNames['#nestedMetadata'] = 'metadata'; // Alias para el campo 'metadata' anidado
+      expressionAttributeNames['#nestedQuestionKey'] = 'questionKey'; // NUEVO: alias para questionKey
 
       updateExpression = `SET
         #responses[${existingResponseIndex}].#nestedResponse = :responseValue,
         #responses[${existingResponseIndex}].#nestedUpdatedAt = :responseNestedUpdatedAt,
         #responses[${existingResponseIndex}].#nestedMetadata = :responseMetadata,
+        #responses[${existingResponseIndex}].#nestedQuestionKey = :questionKeyValue,
         #updatedAt = :updatedAt`;
 
       expressionAttributeValues[':responseValue'] = response;
       expressionAttributeValues[':responseNestedUpdatedAt'] = now;
       expressionAttributeValues[':responseMetadata'] = serializeMetadata(metadata || {});
+      expressionAttributeValues[':questionKeyValue'] = questionKey || null; // NUEVO: actualizar questionKey
     } else {
       updateExpression = 'SET #responses = list_append(if_not_exists(#responses, :empty_list), :newResponse), #updatedAt = :updatedAt';
       expressionAttributeValues[':newResponse'] = [{ ...moduleResponse, metadata: serializeMetadata(moduleResponse.metadata) }];

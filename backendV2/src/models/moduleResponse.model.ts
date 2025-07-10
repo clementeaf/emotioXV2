@@ -67,6 +67,7 @@ export const ModuleResponseSchema = z.object({
   id: z.string().uuid(),
   stepType: z.string(),
   stepTitle: z.string(),
+  questionKey: z.string().optional(), // NUEVO: questionKey del diccionario global
   response: ModuleResponseValueSchema,
   metadata: ResponseMetadataSchema,
   createdAt: z.string(), // ISO date string
@@ -95,6 +96,7 @@ export const CreateModuleResponseDtoSchema = z.object({
   participantId: z.string(),
   stepType: z.string(),
   stepTitle: z.string(),
+  questionKey: z.string().optional(), // NUEVO: questionKey del diccionario global
   response: ModuleResponseValueSchema,
   metadata: ResponseMetadataSchema
 });

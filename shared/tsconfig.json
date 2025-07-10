@@ -16,7 +16,8 @@
   "include": [
     "src/**/*",
     "interfaces/**/*",
-    "types/**/*"
+    "types/**/*",
+    "utils/**/*"
   ],
   "exclude": [
     "node_modules",

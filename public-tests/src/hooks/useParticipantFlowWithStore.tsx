@@ -1,4 +1,6 @@
 import { useCallback, useEffect } from 'react';
+import { QuestionDictionary } from '../../../shared/interfaces/question-dictionary.interface';
+import { buildQuestionDictionary } from '../../../shared/utils/buildQuestionDictionary';
 import type { ParticipantInfo } from '../stores/participantStore';
 import { useParticipantStore } from '../stores/participantStore';
 import { ExpandedStep, ParticipantFlowStep } from '../types/flow';
@@ -98,12 +100,14 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
           // Iterar sobre elementos de eye-tracking
           for (const question of eyeTrackingQuestions) {
             const frontendType = eyeTrackingTypeMap[question.type?.toUpperCase()] || 'eye_tracking_general';
-            finalSteps.push({
+            const step = {
               id: question.id || `${frontendType}_${finalSteps.length}`,
               name: question.title || `Eye Tracking: ${question.type || 'Elemento'}`,
               type: frontendType,
               config: question
-            });
+            };
+            finalSteps.push(step);
+            console.log(`[useParticipantFlowWithStore] ➕ Agregando elemento eye-tracking: ${step.id} (${frontendType})`);
           }
         } else {
           console.warn(`[useParticipantFlowWithStore] Fetch Eye Tracking falló (${eyeTrackingResponse.status}), continuando con el flujo.`);
@@ -114,7 +118,7 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
       }
 
       // 3. SEGUNDO: Añadir Bienvenida
-      finalSteps.push({
+      const welcomeStep = {
         id: 'welcome',
         name: 'Bienvenida',
         type: 'welcome',
@@ -122,7 +126,9 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
           title: '¡Bienvenido!',
           message: 'Gracias por tu tiempo.'
         }
-      });
+      };
+      finalSteps.push(welcomeStep);
+      console.log(`[useParticipantFlowWithStore] ➕ Agregando paso de bienvenida: ${welcomeStep.id}`);
 
       // 4. Obtener estructura de flujo completo (todos los módulos)
       try {
@@ -177,12 +183,14 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
           // Iterar sobre preguntas cognitivas
           for (const question of realCognitiveQuestions) {
             const frontendType = `cognitive_${question.type}`;
-            finalSteps.push({
+            const step = {
               id: question.id || `${frontendType}_${finalSteps.length}`,
               name: question.title || `Cognitiva: ${question.type || 'Desconocido'}`,
               type: frontendType,
               config: question
-            });
+            };
+            finalSteps.push(step);
+            console.log(`[useParticipantFlowWithStore] ➕ Agregando pregunta cognitiva: ${step.id} (${frontendType})`);
           }
         } else {
           console.error(`[useParticipantFlowWithStore] Fetch Cognitive Task falló (${response.status} ${response.statusText}).`);
@@ -214,12 +222,14 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
               console.warn(`[useParticipantFlowWithStore] No hay mapeo frontend para tipo SmartVOC API: ${question.type}`);
               continue;
             }
-            finalSteps.push({
+            const step = {
               id: question.id || `${frontendType}_${finalSteps.length}`,
               name: question.title || `Feedback: ${question.type || 'Desconocido'}`,
               type: frontendType,
               config: question
-            });
+            };
+            finalSteps.push(step);
+            console.log(`[useParticipantFlowWithStore] ➕ Agregando pregunta SmartVOC: ${step.id} (${frontendType})`);
           }
         } else {
           console.error(`[useParticipantFlowWithStore] Fetch SmartVOC falló (${response.status} ${response.statusText}).`);
@@ -277,6 +287,7 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
                       type: frontendType,
                       config: question
                     });
+                    console.log(`[useParticipantFlowWithStore] ➕ Agregando pregunta de módulo: ${question.id || frontendType} (${frontendType})`);
                   }
                 }
               } catch (moduleError: unknown) {
@@ -397,7 +408,7 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
       );
 
       if (!hasFeedbackQuestion) {
-        finalSteps.push({
+        const feedbackStep = {
           id: moduleFeedbackConfig.id,
           name: moduleFeedbackConfig.title,
           type: 'feedback',
@@ -405,7 +416,9 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
             ...moduleFeedbackConfig,
             isHardcoded: isModuleFeedbackHardcoded
           }
-        });
+        };
+        finalSteps.push(feedbackStep);
+        console.log(`[useParticipantFlowWithStore] ➕ Agregando paso de feedback del módulo: ${feedbackStep.id}`);
 
         if (isModuleFeedbackHardcoded) {
           console.warn('[useParticipantFlowWithStore] ⚠️ Paso de feedback del módulo agregado con configuración HARDCODEADA');
@@ -422,7 +435,7 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
       );
 
       if (!hasImageQuestion) {
-        finalSteps.push({
+        const imageFeedbackStep = {
           id: imageFeedbackConfig.id,
           name: imageFeedbackConfig.title,
           type: 'image_feedback',
@@ -430,7 +443,9 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
             ...imageFeedbackConfig,
             isHardcoded: isImageFeedbackHardcoded
           }
-        });
+        };
+        finalSteps.push(imageFeedbackStep);
+        console.log(`[useParticipantFlowWithStore] ➕ Agregando paso de feedback de imagen: ${imageFeedbackStep.id}`);
 
         if (isImageFeedbackHardcoded) {
           console.warn('[useParticipantFlowWithStore] ⚠️ Paso de feedback de imagen agregado con configuración HARDCODEADA');
@@ -440,7 +455,7 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
       }
 
       // 10. Añadir Agradecimiento
-      finalSteps.push({
+      const thankYouStep = {
         id: 'thankyou',
         name: 'Agradecimiento',
         type: 'thankyou',
@@ -448,25 +463,52 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
           title: '¡Muchas Gracias!',
           message: 'Hemos recibido tus respuestas.'
         }
-      });
+      };
+      finalSteps.push(thankYouStep);
+      console.log(`[useParticipantFlowWithStore] ➕ Agregando paso de agradecimiento: ${thankYouStep.id}`);
 
       // Finalizar construcción
       if (finalSteps.length <= 2) {
         console.warn("[useParticipantFlowWithStore] No se generaron pasos de preguntas reales.");
       }
 
-      console.log(`[useParticipantFlowWithStore] Construcción finalizada. ${finalSteps.length} pasos totales.`);
+      // Construir el diccionario global de preguntas
+      const questionDictionary: QuestionDictionary = buildQuestionDictionary(finalSteps);
+
+      // NUEVO: Logs detallados del diccionario global
+      console.log(`[useParticipantFlowWithStore] 📚 DICCIONARIO GLOBAL CONSTRUIDO:`);
+      console.log(`  - Total de pasos: ${finalSteps.length}`);
+      console.log(`  - Entradas en diccionario: ${Object.keys(questionDictionary).length}`);
+
+      // Log de estadísticas por módulo
+      const moduleStats: Record<string, number> = {};
+      Object.values(questionDictionary).forEach(question => {
+        const module = question.module;
+        moduleStats[module] = (moduleStats[module] || 0) + 1;
+      });
+
+      console.log(`[useParticipantFlowWithStore] 📊 ESTADÍSTICAS POR MÓDULO:`);
+      Object.entries(moduleStats).forEach(([module, count]) => {
+        console.log(`  - ${module}: ${count} preguntas`);
+      });
+
+      // Log de tipos de preguntas únicos
+      const uniqueTypes = new Set(Object.values(questionDictionary).map(q => q.type));
+      console.log(`[useParticipantFlowWithStore] 🏷️ TIPOS DE PREGUNTAS ÚNICOS:`, Array.from(uniqueTypes));
+
+      // Exponer el diccionario global en el store o return (según arquitectura)
+      // Por ahora, lo devolvemos junto con los pasos
       setExpandedSteps(finalSteps as import('../stores/participantStore').ExpandedStep[]);
       setCurrentStepIndex(0);
       setCurrentStep(ParticipantFlowStep.WELCOME);
 
-      return finalSteps;
+      return { finalSteps, questionDictionary };
     } catch (error: unknown) {
       const errorMsg = (error && typeof error === 'object' && 'message' in error)
         ? (error as { message?: string }).message
         : 'Error construyendo los pasos del flujo.';
       handleError(errorMsg ?? 'Error construyendo los pasos del flujo.', ParticipantFlowStep.LOADING_SESSION);
-      return [];
+      return { finalSteps: [], questionDictionary: {} };
     }
   }, [handleError, setExpandedSteps, setCurrentStepIndex, setCurrentStep]);
 
@@ -552,6 +594,8 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
     hasStepBeenAnswered,
     getAnsweredStepIndices,
     getStepResponse,
-    maxVisitedIndex
+    maxVisitedIndex,
+    // Nuevo: exponer el diccionario global de preguntas
+    questionDictionary: buildQuestionDictionary(expandedSteps)
   };
 };

@@ -28,11 +28,34 @@ export class ModuleResponseController {
 
       const data = JSON.parse(event.body);
 
+      // NUEVO: Logs detallados para debugging
+      console.log(`[ModuleResponseController.saveResponse] 📝 Recibiendo respuesta:`, {
+        researchId: data.researchId,
+        participantId: data.participantId,
+        stepType: data.stepType,
+        stepTitle: data.stepTitle,
+        questionKey: data.questionKey,
+        hasQuestionKey: !!data.questionKey
+      });
+
       // Validar los datos utilizando el esquema
       const validatedData = CreateModuleResponseDtoSchema.parse(data);
 
+      // NUEVO: Log de método de búsqueda que se usará
+      if (validatedData.questionKey) {
+        console.log(`[ModuleResponseController.saveResponse] ✅ Guardando con questionKey: ${validatedData.questionKey}`);
+      } else {
+        console.log(`[ModuleResponseController.saveResponse] ⚠️ Guardando sin questionKey - usando stepType: ${validatedData.stepType}`);
+      }
+
       // Guardar la respuesta (el servicio decide si es crear o actualizar)
       const savedResponse = await moduleResponseService.saveModuleResponse(validatedData);
+
+      console.log(`[ModuleResponseController.saveResponse] ✅ Respuesta guardada exitosamente:`, {
+        responseId: savedResponse.id,
+        questionKey: savedResponse.questionKey,
+        stepType: savedResponse.stepType
+      });
 
       return {
         statusCode: 201,

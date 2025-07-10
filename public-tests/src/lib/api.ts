@@ -1,13 +1,13 @@
 import { useParticipantStore } from '../stores/participantStore';
 import {
-  APIResponse,
-  CognitiveTaskFormData,
-  EyeTrackingFormData,
-  ParticipantRegistration,
-  SmartVOCFormData,
-  Step,
-  ThankYouScreenFormData,
-  WelcomeScreenResponse
+    APIResponse,
+    CognitiveTaskFormData,
+    EyeTrackingFormData,
+    ModuleResponse,
+    SmartVOCFormData,
+    Step,
+    ThankYouScreenFormData,
+    WelcomeScreenResponse
 } from './types';
 
 // Estados de respuesta de la API
@@ -23,8 +23,8 @@ export enum APIStatus {
   TOKEN_EXPIRED = 'token_expired'
 }
 
-// Configuración base de la API
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev';
+// Constantes de configuración
+const API_BASE_URL = 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev';
 
 // Clase para manejar las peticiones a la API
 export class ApiClient {
@@ -33,16 +33,11 @@ export class ApiClient {
   }
 
   private getHeaders(): Record<string, string> {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
     const token = useParticipantStore.getState().token;
-
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    return headers;
+    return {
+      'Content-Type': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` })
+    };
   }
 
   private validateResearchId(researchId: string): boolean {
@@ -149,39 +144,37 @@ export class ApiClient {
   }
 
   // Método para registrar un participante
-  async registerParticipant(data: ParticipantRegistration): Promise<APIResponse<{ token: string }>> {
+  async registerParticipant(data: { name: string; email: string; researchId: string }): Promise<APIResponse<{ token: string }>> {
     try {
       const response = await fetch(`${API_BASE_URL}/eye-tracking-recruit/public/participant/start`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(data)
       });
 
-      const responseData = await response.json();
-
       if (!response.ok) {
+        const errorText = await response.text();
         return {
-          data: null,
           error: true,
           status: response.status,
-          apiStatus: APIStatus.ERROR,
-          message: responseData.message || 'Error al registrar participante'
+          message: `Error ${response.status}: ${errorText}`,
+          data: null
         };
       }
 
+      const result = await response.json();
       return {
-        data: { token: responseData.token },
-        status: response.status,
-        apiStatus: APIStatus.SUCCESS
+        data: result.data,
+        status: response.status
       };
     } catch (error) {
       return {
-        data: null,
         error: true,
-        apiStatus: APIStatus.ERROR,
-        message: error instanceof Error ? error.message : 'Error desconocido'
+        status: 500,
+        message: error instanceof Error ? error.message : 'Error desconocido',
+        data: null
       };
     }
   }
@@ -253,25 +246,72 @@ export class ApiClient {
   }
 
   /**
-   * Guarda una nueva respuesta de módulo
-   * @param payload Datos de la respuesta
-   * @returns Respuesta guardada
+   * Guarda una respuesta de módulo
    */
-  async saveModuleResponse(payload: {
-    researchId: string,
-    participantId: string,
-    stepType: string,
-    stepTitle: string,
-    response: unknown,
-    metadata?: unknown
-  }): Promise<APIResponse<unknown>> {
+  async saveModuleResponse(data: {
+    researchId: string;
+    participantId: string;
+    stepType: string;
+    stepTitle: string;
+    response: unknown;
+    metadata?: unknown;
+    questionKey?: string; // NUEVO: questionKey del diccionario global
+  }): Promise<APIResponse<ModuleResponse>> {
+    try {
+      console.log(`[ApiClient.saveModuleResponse] 📤 Enviando respuesta:`, {
+        stepType: data.stepType,
+        stepTitle: data.stepTitle,
+        questionKey: data.questionKey,
+        hasQuestionKey: !!data.questionKey
+      });
 
-    const result = await this.request<unknown>('/module-responses', {
-      method: 'POST',
-      body: JSON.stringify(payload)
-    });
+      const response = await fetch(`${API_BASE_URL}/module-responses`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getHeaders()
+        },
+        body: JSON.stringify({
+          researchId: data.researchId,
+          participantId: data.participantId,
+          stepType: data.stepType,
+          stepTitle: data.stepTitle,
+          questionKey: data.questionKey, // NUEVO: incluir questionKey en el payload
+          response: data.response,
+          metadata: data.metadata || {}
+        })
+      });
 
-    return result;
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[ApiClient.saveModuleResponse] ❌ Error ${response.status}:`, errorText);
+        return {
+          error: true,
+          status: response.status,
+          message: `Error ${response.status}: ${errorText}`,
+          data: null // NUEVO: agregar data: null para cumplir con APIResponse
+        };
+      }
+
+      const result = await response.json();
+      console.log(`[ApiClient.saveModuleResponse] ✅ Respuesta guardada exitosamente:`, {
+        responseId: result.data?.id,
+        questionKey: result.data?.questionKey
+      });
+
+      return {
+        data: result.data,
+        status: response.status
+      };
+    } catch (error) {
+      console.error('[ApiClient.saveModuleResponse] 💥 Exception:', error);
+      return {
+        error: true,
+        status: 500,
+        message: error instanceof Error ? error.message : 'Error desconocido',
+        data: null // NUEVO: agregar data: null para cumplir con APIResponse
+      };
+    }
   }
 
   /**

@@ -48,6 +48,18 @@ export interface ParticipantResponse {
   updatedAt: string;
 }
 
+// NUEVO: Interfaz para respuestas de módulos con questionKey
+export interface ModuleResponse {
+  id: string;
+  stepType: string;
+  stepTitle: string;
+  questionKey?: string; // NUEVO: questionKey del diccionario global
+  response: unknown;
+  metadata?: unknown;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 // Tipos para WelcomeScreen
 export interface WelcomeScreenResponse {
   id: string;
@@ -210,4 +222,4 @@ export interface ParticipantRegistration {
   name: string;
   email: string;
   researchId: string;
-} 
+}

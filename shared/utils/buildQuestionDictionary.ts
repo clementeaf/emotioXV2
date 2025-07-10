@@ -68,7 +68,7 @@ export function buildQuestionDictionary(allQuestions: any[]): QuestionDictionary
  * Mapea el tipo y módulo al nombre del componente React a renderizar
  * Puedes personalizar este mapeo según tu design system
  */
-function inferRenderComponent(type: string, module: string): string {
+function inferRenderComponent(type: string, _module: string): string {
   // Ejemplo simple, puedes expandirlo según tus componentes
   const map: Record<string, string> = {
     'VOC': 'VOCTextQuestion',

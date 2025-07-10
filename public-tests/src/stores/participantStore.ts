@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import { QuestionDictionary } from '../../../shared/interfaces/question-dictionary.interface';
+import { buildQuestionDictionary } from '../../../shared/utils/buildQuestionDictionary';
 import { ParticipantFlowStep } from '../types/flow';
 
 export interface ModuleResponse {
@@ -8,6 +10,7 @@ export interface ModuleResponse {
   updatedAt: string;
   stepTitle: string;
   stepType: string;
+  questionKey?: string; // NUEVO: questionKey del diccionario global
   response: unknown;
   participantId?: string;
   researchId?: string;
@@ -97,6 +100,12 @@ export interface ParticipantState {
   // <<< NUEVA ACCIÓN >>>
   setLoadedResponses: (loadedStepResponses: ModuleResponse[]) => void;
 
+  // NUEVO: Diccionario global de preguntas
+  questionDictionary: QuestionDictionary;
+  buildQuestionDictionary: () => void;
+  getQuestionKey: (stepId: string) => string | null;
+  getQuestionByKey: (questionKey: string) => any | null;
+
   // Limpieza de datos
   cleanupPreviousParticipantData: (currentResearchId: string, currentParticipantId: string) => void;
 
@@ -110,6 +119,9 @@ export interface ParticipantState {
   stopGlobalTimer: () => void;
   startSectionTimer: (sectionId: string) => void;
   stopSectionTimer: (sectionId: string) => void;
+
+  // NUEVO: Método para guardar respuesta usando API client con questionKey
+  saveStepResponseToAPI: (stepIndex: number, answer: unknown) => Promise<boolean>;
 }
 
 // Función auxiliar para sanear objetos antes de JSON.stringify
@@ -220,6 +232,16 @@ export const useParticipantStore = create(
           expandedSteps: steps,
           isFlowLoading: !(steps && steps.length > 0)
         });
+        // NUEVO: Construir automáticamente el diccionario global cuando se actualicen los pasos
+        if (steps.length > 0) {
+          const questionDictionary = buildQuestionDictionary(steps);
+
+          // NUEVO: Validaciones y logs de duplicados/inconsistencias
+          validateQuestionDictionary(questionDictionary, steps);
+
+          set({ questionDictionary });
+          console.log(`[setExpandedSteps] ✅ Diccionario global construido con ${Object.keys(questionDictionary).length} preguntas`);
+        }
       },
 
       // Set loaded responses from API and clean conflicting localStorage
@@ -425,10 +447,19 @@ export const useParticipantStore = create(
         if (stepIndex < 0 || stepIndex >= expandedSteps.length) return state;
 
         const step = expandedSteps[stepIndex];
+        const questionKey = get().getQuestionKey(step.id);
+
+        if (!questionKey) {
+          console.warn(`[saveStepResponse] ⚠️ No se encontró questionKey para stepId: ${step.id} - usando stepType/stepTitle`);
+        } else {
+          console.log(`[saveStepResponse] ✅ Guardando respuesta con questionKey: ${questionKey} para stepId: ${step.id}`);
+        }
+
         const newResponse: ModuleResponse = {
           id: step.id,
           stepTitle: step.name,
           stepType: step.type,
+          questionKey: questionKey || undefined, // Corregir tipo: null -> undefined
           response: sanitizeForJSON(answer),
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
@@ -439,8 +470,10 @@ export const useParticipantStore = create(
 
         if (existingResponseIndex > -1) {
           newAllSteps[existingResponseIndex] = newResponse;
+          console.log(`[saveStepResponse] 🔄 Actualizando respuesta existente para stepId: ${step.id}`);
         } else {
           newAllSteps.push(newResponse);
+          console.log(`[saveStepResponse] ➕ Agregando nueva respuesta para stepId: ${step.id}`);
         }
 
         const newResponsesData = {
@@ -455,6 +488,43 @@ export const useParticipantStore = create(
 
         return { responsesData: newResponsesData };
       }),
+
+      // NUEVO: Método para guardar respuesta usando API client con questionKey
+      saveStepResponseToAPI: async (stepIndex: number, answer: unknown) => {
+        const { expandedSteps, researchId, participantId } = get();
+        if (stepIndex < 0 || stepIndex >= expandedSteps.length) return false;
+
+        const step = expandedSteps[stepIndex];
+        const questionKey = get().getQuestionKey(step.id);
+
+        if (!researchId || !participantId) {
+          console.error('[saveStepResponseToAPI] ❌ Faltan researchId o participantId');
+          return false;
+        }
+
+        try {
+          const apiClient = new (await import('../lib/api')).ApiClient();
+          const result = await apiClient.saveModuleResponse({
+            researchId,
+            participantId,
+            stepType: step.type,
+            stepTitle: step.name,
+            questionKey: questionKey || undefined, // Corregir tipo: null -> undefined
+            response: answer
+          });
+
+          if (result.error) {
+            console.error('[saveStepResponseToAPI] ❌ Error guardando respuesta:', result.message);
+            return false;
+          }
+
+          console.log('[saveStepResponseToAPI] ✅ Respuesta guardada exitosamente en API');
+          return true;
+        } catch (error) {
+          console.error('[saveStepResponseToAPI] 💥 Exception:', error);
+          return false;
+        }
+      },
 
       getAnsweredStepIndices: () => {
         const { expandedSteps, responsesData } = get();
@@ -475,6 +545,7 @@ export const useParticipantStore = create(
         }
 
         const step = expandedSteps[stepIndex];
+        const questionKey = get().getQuestionKey(step.id);
 
         const allApiResponses = responsesData.modules.all_steps || [];
         if (!Array.isArray(allApiResponses)) {
@@ -482,9 +553,32 @@ export const useParticipantStore = create(
             return null;
         }
 
+        console.log(`[getStepResponse] 🔍 Buscando respuesta para stepIndex: ${stepIndex}, stepId: ${step.id}, stepType: ${step.type}`);
+
+        // NUEVO: Buscar por questionKey primero (método preferido)
+        if (questionKey) {
+          const response = allApiResponses.find(resp => resp.questionKey === questionKey);
+          if (response) {
+            console.log(`[getStepResponse] ✅ Respuesta encontrada por questionKey: ${questionKey}`);
+            return response.response;
+          } else {
+            console.log(`[getStepResponse] ❌ No se encontró respuesta por questionKey: ${questionKey}`);
+          }
+        } else {
+          console.log(`[getStepResponse] ⚠️ No hay questionKey disponible para stepId: ${step.id}`);
+        }
+
+        // FALLBACK: Buscar por stepType + stepTitle (método anterior)
         const response = allApiResponses.find(resp =>
           resp.stepType === step.type && resp.stepTitle === step.name
         );
+
+        if (response) {
+          console.log(`[getStepResponse] ⚠️ Respuesta encontrada por fallback (stepType + stepTitle)`);
+        } else {
+          console.log(`[getStepResponse] ❌ No se encontró respuesta por ningún método`);
+        }
+
         return response ? response.response : null;
       },
 
@@ -502,11 +596,34 @@ export const useParticipantStore = create(
         // console.log(`[getStepResponseById] 🔍 all_steps length: ${responsesData.modules.all_steps.length}`);
         // console.log(`[getStepResponseById] 🔍 all_steps:`, responsesData.modules.all_steps);
 
+        console.log(`[getStepResponseById] 🔍 Buscando respuesta para stepId: ${stepId}`);
+
+        // NUEVO: Buscar por questionKey primero (método preferido)
+        const questionKey = get().getQuestionKey(stepId);
+        if (questionKey) {
+          const response = responsesData.modules.all_steps.find(r => r.questionKey === questionKey);
+          if (response) {
+            console.log(`[getStepResponseById] ✅ Respuesta encontrada por questionKey: ${questionKey}`);
+            return response.response;
+          } else {
+            console.log(`[getStepResponseById] ❌ No se encontró respuesta por questionKey: ${questionKey}`);
+          }
+        } else {
+          console.log(`[getStepResponseById] ⚠️ No hay questionKey disponible para stepId: ${stepId}`);
+        }
+
+        // FALLBACK: Buscar por stepId (método anterior)
         const response = responsesData.modules.all_steps.find(r => {
           const match = r.id === stepId;
           // console.log(`[getStepResponseById] 🔍 Comparando r.id: ${r.id} con stepId: ${stepId} - match: ${match}`);
           return match;
         });
+
+        if (response) {
+          console.log(`[getStepResponseById] ⚠️ Respuesta encontrada por fallback (stepId)`);
+        } else {
+          console.log(`[getStepResponseById] ❌ No se encontró respuesta por ningún método`);
+        }
 
         // console.log(`[getStepResponseById] 🔍 response encontrado:`, response);
         return response ? response.response : null;
@@ -637,6 +754,27 @@ export const useParticipantStore = create(
           };
         });
       },
+
+      // NUEVO: Diccionario global de preguntas
+      questionDictionary: {},
+      buildQuestionDictionary: () => {
+        const { expandedSteps } = get();
+        set({ questionDictionary: buildQuestionDictionary(expandedSteps) });
+      },
+      getQuestionKey: (stepId: string) => {
+        const { questionDictionary } = get();
+        const question = questionDictionary[stepId];
+        return question ? question.questionKey : null;
+      },
+      getQuestionByKey: (questionKey: string) => {
+        const { questionDictionary } = get();
+        for (const key in questionDictionary) {
+          if (questionDictionary[key].questionKey === questionKey) {
+            return questionDictionary[key];
+          }
+        }
+        return null;
+      },
     }),
     {
       name: 'participantResponses',
@@ -672,3 +810,104 @@ export const useParticipantStore = create(
     }
   )
 );
+
+// NUEVA FUNCIÓN: Validaciones del diccionario global
+function validateQuestionDictionary(questionDictionary: QuestionDictionary, steps: ExpandedStep[]) {
+  console.log(`[validateQuestionDictionary] 🔍 Iniciando validación del diccionario global...`);
+
+  const questionKeys = new Set<string>();
+  const stepIds = new Set<string>();
+  const duplicates: { questionKey: string; stepIds: string[] }[] = [];
+  const inconsistencies: { stepId: string; issue: string }[] = [];
+
+  // Validar cada entrada del diccionario
+  for (const [stepId, question] of Object.entries(questionDictionary)) {
+    // Verificar duplicados de questionKey
+    if (questionKeys.has(question.questionKey)) {
+      const existingEntry = duplicates.find(d => d.questionKey === question.questionKey);
+      if (existingEntry) {
+        existingEntry.stepIds.push(stepId);
+      } else {
+        const existingStepId = Object.keys(questionDictionary).find(id =>
+          id !== stepId && questionDictionary[id].questionKey === question.questionKey
+        );
+        duplicates.push({
+          questionKey: question.questionKey,
+          stepIds: [existingStepId!, stepId]
+        });
+      }
+    } else {
+      questionKeys.add(question.questionKey);
+    }
+
+    // Verificar duplicados de stepId
+    if (stepIds.has(stepId)) {
+      inconsistencies.push({
+        stepId,
+        issue: 'stepId duplicado en el diccionario'
+      });
+    } else {
+      stepIds.add(stepId);
+    }
+
+    // Verificar inconsistencias de datos
+    if (!question.title || question.title.trim() === '') {
+      inconsistencies.push({
+        stepId,
+        issue: 'Título vacío o faltante'
+      });
+    }
+
+    if (!question.type || question.type.trim() === '') {
+      inconsistencies.push({
+        stepId,
+        issue: 'Tipo de pregunta vacío o faltante'
+      });
+    }
+
+    if (!question.module || question.module.trim() === '') {
+      inconsistencies.push({
+        stepId,
+        issue: 'Módulo vacío o faltante'
+      });
+    }
+  }
+
+  // Verificar que todos los steps estén en el diccionario
+  const stepsInDictionary = new Set(Object.keys(questionDictionary));
+  const missingSteps = steps.filter(step => !stepsInDictionary.has(step.id));
+
+  // Reportar resultados
+  if (duplicates.length > 0) {
+    console.warn(`[validateQuestionDictionary] ⚠️ DUPLICADOS ENCONTRADOS:`, duplicates);
+    duplicates.forEach(dup => {
+      console.warn(`  - questionKey "${dup.questionKey}" usado por stepIds: ${dup.stepIds.join(', ')}`);
+    });
+  }
+
+  if (inconsistencies.length > 0) {
+    console.warn(`[validateQuestionDictionary] ⚠️ INCONSISTENCIAS ENCONTRADAS:`, inconsistencies);
+    inconsistencies.forEach(inc => {
+      console.warn(`  - stepId "${inc.stepId}": ${inc.issue}`);
+    });
+  }
+
+  if (missingSteps.length > 0) {
+    console.warn(`[validateQuestionDictionary] ⚠️ STEPS FALTANTES EN DICCIONARIO:`, missingSteps.map(s => s.id));
+  }
+
+  // Log de estadísticas
+  console.log(`[validateQuestionDictionary] 📊 ESTADÍSTICAS:`);
+  console.log(`  - Total de steps: ${steps.length}`);
+  console.log(`  - Entradas en diccionario: ${Object.keys(questionDictionary).length}`);
+  console.log(`  - QuestionKeys únicos: ${questionKeys.size}`);
+  console.log(`  - Duplicados encontrados: ${duplicates.length}`);
+  console.log(`  - Inconsistencias encontradas: ${inconsistencies.length}`);
+  console.log(`  - Steps faltantes: ${missingSteps.length}`);
+
+  if (duplicates.length === 0 && inconsistencies.length === 0 && missingSteps.length === 0) {
+    console.log(`[validateQuestionDictionary] ✅ VALIDACIÓN EXITOSA: Diccionario global consistente`);
+  } else {
+    console.warn(`[validateQuestionDictionary] ⚠️ VALIDACIÓN CON PROBLEMAS: Revisar logs anteriores`);
+  }
+}

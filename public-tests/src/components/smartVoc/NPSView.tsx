@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useStandardizedForm } from '../../hooks/useStandardizedForm';
 import { NPSViewProps } from '../../types/smart-voc.types';
-import { formatQuestionText, formSpacing, getButtonDisabledState, getErrorDisplayProps, getStandardButtonText } from '../../utils/formHelpers';
+import { formatQuestionText, formSpacing, getButtonDisabledState, getErrorDisplayProps } from '../../utils/formHelpers';
 
 const NPSView: React.FC<NPSViewProps> = ({
   questionText,
@@ -89,11 +89,12 @@ const NPSView: React.FC<NPSViewProps> = ({
 
   // Formatear el texto de la pregunta
   const formattedQuestionText = formatQuestionText(questionText, companyName);
-  const buttonText = getStandardButtonText({
-    isSaving,
-    isLoading,
-    hasExistingData
-  });
+  // const _buttonText = getStandardButtonText({
+  //   isSaving,
+  //   isLoading,
+  //   isAnswered,
+  //   questionType: 'NPS'
+  // });
   const isButtonDisabled = getButtonDisabledState({
     isRequired: true,
     value: selectedValue,
