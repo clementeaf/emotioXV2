@@ -76,6 +76,7 @@ export interface CVConfig extends QuestionConfigBase {
 export interface NEVConfig extends QuestionConfigBase {
   type: 'emojis';
   companyName: string;
+  emotions?: string[];
 }
 
 /**
@@ -95,6 +96,7 @@ export interface NPSConfig extends QuestionConfigBase {
  */
 export interface VOCConfig extends QuestionConfigBase {
   type: 'text';
+  maxLength?: number;
 }
 
 /**

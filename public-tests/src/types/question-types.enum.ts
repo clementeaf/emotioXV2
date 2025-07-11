@@ -1,10 +1,12 @@
 export enum QuestionType {
-  // SmartVOC types
+  // SmartVOC types (solo válidos según requerimiento del usuario)
   SMARTVOC_CSAT = 'smartvoc_csat',
-  SMARTVOC_CV = 'smartvoc_cv',
-  SMARTVOC_NPS = 'smartvoc_nps',
   SMARTVOC_CES = 'smartvoc_ces',
-  SMARTVOC_OSAT = 'smartvoc_osat',
+  SMARTVOC_CV = 'smartvoc_cv',
+  SMARTVOC_NEV = 'smartvoc_nev',
+  SMARTVOC_NPS = 'smartvoc_nps',
+  SMARTVOC_VOC = 'smartvoc_voc',
+  SMARTVOC_NC = 'smartvoc_nc',
 
   // Cognitive Task types
   COGNITIVE_LONG_TEXT = 'cognitive_long_text',

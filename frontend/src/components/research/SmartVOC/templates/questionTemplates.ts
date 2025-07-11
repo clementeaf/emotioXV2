@@ -40,39 +40,54 @@ export const QUESTION_TEMPLATES: Partial<Record<QuestionType, Omit<SmartVOCQuest
       endLabel: 'Muy de acuerdo'
     }
   },
-  [QuestionType.SMARTVOC_OSAT]: {
-    type: QuestionType.SMARTVOC_OSAT,
-    title: 'Net Emotional Value (NEV)',
-    description: '¿Cómo se siente acerca de la experiencia ofrecida por [empresa]?',
-    instructions: '',
-    showConditionally: false,
-    config: {
-      type: 'emojis',
-      companyName: ''
-    }
-  },
   [QuestionType.SMARTVOC_NPS]: {
     type: QuestionType.SMARTVOC_NPS,
-    title: 'Net Promoter Score (NPS)',
-    description: 'En una escala de 0-10, ¿qué tan probable es que recomiende [empresa] a un amigo o colega?',
-    instructions: '',
+    title: 'NPS',
+    description: 'Net Promoter Score',
+    instructions: '¿Qué tan probable es que recomiendes nuestro producto/servicio?',
     showConditionally: false,
     config: {
       type: 'scale',
       scaleRange: { start: 0, end: 10 },
-      companyName: ''
+      startLabel: 'Muy improbable',
+      endLabel: 'Muy probable'
+    }
+  },
+  [QuestionType.SMARTVOC_NEV]: {
+    type: QuestionType.SMARTVOC_NEV,
+    title: 'NEV',
+    description: 'Net Emotional Value',
+    instructions: '¿Qué emoción experimentaste?',
+    showConditionally: false,
+    config: {
+      type: 'emojis',
+      emotions: ['Felicidad', 'Tristeza', 'Enojo', 'Miedo', 'Sorpresa', 'Disgusto']
     }
   },
   [QuestionType.SMARTVOC_VOC]: {
     type: QuestionType.SMARTVOC_VOC,
-    title: 'Voice of Customer (VOC)',
-    description: '¿Cómo podemos mejorar nuestro servicio?',
-    instructions: '',
+    title: 'VOC',
+    description: 'Voice of Customer',
+    instructions: 'Cuéntanos tu experiencia',
     showConditionally: false,
     config: {
-      type: 'text'
+      type: 'text',
+      maxLength: 500
     }
-  }
+  },
+  [QuestionType.SMARTVOC_NC]: {
+    type: QuestionType.SMARTVOC_NC,
+    title: 'NC',
+    description: 'Nivel de Confianza/Satisfacción',
+    instructions: '¿Qué tan satisfecho estás?',
+    showConditionally: false,
+    config: {
+      type: 'scale',
+      scaleRange: { start: 1, end: 5 },
+      startLabel: 'Muy insatisfecho',
+      endLabel: 'Muy satisfecho'
+    }
+  },
 };
 
 /**

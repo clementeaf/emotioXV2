@@ -2,8 +2,6 @@ import React from 'react';
 import { useStepResponseManager } from '../../../hooks/useStepResponseManager';
 import { MappedStepComponentProps, StepComponentMap } from '../../../types/flow.types';
 import { QuestionType } from '../../../types/question-types.enum';
-import CognitiveNavigationFlowStep from '../../cognitiveTask/CognitiveNavigationFlowStep';
-import PreferenceTestTask from '../../cognitiveTask/PreferenceTestTask';
 import { LinearScaleView } from '../../cognitiveTask/questions/LinearScaleView';
 import { LongTextView } from '../../cognitiveTask/questions/LongTextView';
 import { MultiChoiceView } from '../../cognitiveTask/questions/MultiChoiceView';
@@ -178,11 +176,7 @@ const CognitiveLinearScaleAdapter: React.FC<MappedStepComponentProps> = (props) 
 
   const {
     responseData,
-    isSaving,
-    isLoading,
-    error,
     saveCurrentStepResponse,
-    hasExistingData
   } = useStepResponseManager<number | undefined>({
     stepId: questionKey || config.id,
     stepType,
@@ -222,12 +216,14 @@ export const stepComponentMap: StepComponentMap = {
     [QuestionType.COGNITIVE_RATING]: CognitiveLinearScaleAdapter,
     [QuestionType.COGNITIVE_RANKING]: RankingQuestion,
 
-    // SmartVOC usando ENUM QuestionType
+    // SmartVOC usando ENUM QuestionType (solo tipos válidos)
     [QuestionType.SMARTVOC_CSAT]: CSATView,
-    [QuestionType.SMARTVOC_CV]: DifficultyScaleView,
-    [QuestionType.SMARTVOC_NPS]: NPSView,
     [QuestionType.SMARTVOC_CES]: AgreementScaleView,
-    [QuestionType.SMARTVOC_OSAT]: AgreementScaleView,
+    [QuestionType.SMARTVOC_CV]: DifficultyScaleView,
+    [QuestionType.SMARTVOC_NEV]: EmotionSelectionView,
+    [QuestionType.SMARTVOC_NPS]: NPSView,
+    [QuestionType.SMARTVOC_VOC]: SmartVocFeedbackQuestion,
+    [QuestionType.SMARTVOC_NC]: AgreementScaleView,
 
     // Demographics usando ENUM QuestionType
     [QuestionType.DEMOGRAPHICS]: DemographicStep,
@@ -235,20 +231,4 @@ export const stepComponentMap: StepComponentMap = {
     // Flow types usando ENUM QuestionType
     [QuestionType.WELCOME_SCREEN]: WelcomeScreenHandler,
     [QuestionType.THANK_YOU_SCREEN]: ThankYouView,
-
-    // Fallback components para compatibilidad
-    'cognitive_short_text': CognitiveShortTextAdapter,
-    'cognitive_linear_scale': CognitiveLinearScaleAdapter,
-    'cognitive_navigation_flow': CognitiveNavigationFlowStep,
-    'smartvoc_nev': EmotionSelectionView,
-    'smartvoc_feedback': SmartVocFeedbackQuestion,
-    'multiple_choice': MultipleChoiceQuestion,
-    'single_choice': SingleChoiceQuestion,
-    'short_text': ShortTextQuestion,
-    'demographic': DemographicStep,
-    'thankyou': ThankYouView,
-    'feedback': SmartVocFeedbackQuestion,
-    'image_feedback': SmartVocFeedbackQuestion,
-    'cognitive_preference_test': PreferenceTestTask,
-    'preference_test': PreferenceTestTask,
 };

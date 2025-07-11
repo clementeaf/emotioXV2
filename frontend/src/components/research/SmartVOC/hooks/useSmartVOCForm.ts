@@ -114,14 +114,28 @@ export const useSmartVOCForm = (researchId: string) => {
   const handleSave = useCallback(async () => {
     const editedQuestions = filterEditedQuestions(formData.questions);
 
+    // Fix: Copiar type desde config si falta
+    const fixedQuestions = editedQuestions.map(q => ({
+      ...q,
+      type: q.type || (q.config && q.config.type) || '',
+    }));
+
     // Añadir una validación inicial: no enviar si no hay preguntas editadas
-    if (editedQuestions.length === 0) {
+    if (fixedQuestions.length === 0) {
       toast.error('No has configurado ninguna pregunta. Añade contenido a al menos una pregunta para poder guardar.');
       return;
     }
 
+    // Validación dura: abortar si alguna pregunta no tiene type
+    const missingType = fixedQuestions.find((q, idx) => !q.type);
+    if (missingType) {
+      toast.error('Hay preguntas sin tipo definido. Corrige antes de guardar.');
+      console.error('[SmartVOCForm] ❌ No se puede guardar. Pregunta sin type:', missingType);
+      return;
+    }
+
     // Ahora, validar solo las preguntas que se van a guardar
-    const errors = validateForm(editedQuestions, formData);
+    const errors = validateForm(fixedQuestions, formData);
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
       const errorMessages = Object.values(errors).join('\n');
@@ -133,16 +147,22 @@ export const useSmartVOCForm = (researchId: string) => {
 
     // Función helper para mapear tipos SmartVOC al ENUM
     const getSmartVOCQuestionType = (type: string): string => {
+      if (!type || typeof type !== 'string') {
+        console.error('[getSmartVOCQuestionType] Tipo de pregunta SmartVOC indefinido o no es string:', type);
+        return 'smartvoc_unknown';
+      }
       // Si el tipo ya es un valor del enum, lo devolvemos tal cual
       if (Object.values(QuestionType).includes(type as QuestionType)) {
         return type;
       }
       switch (type.toUpperCase()) {
         case 'CSAT': return QuestionType.SMARTVOC_CSAT;
+        case 'CES': return QuestionType.SMARTVOC_CES;
         case 'CV': return QuestionType.SMARTVOC_CV;
+        case 'NEV': return QuestionType.SMARTVOC_NEV;
         case 'NPS': return QuestionType.SMARTVOC_NPS;
-        case 'ESAT': return QuestionType.SMARTVOC_CES;
-        case 'OSAT': return QuestionType.SMARTVOC_OSAT;
+        case 'VOC': return QuestionType.SMARTVOC_VOC;
+        case 'NC': return QuestionType.SMARTVOC_NC;
         default: return `smartvoc_${type}`;
       }
     };
@@ -150,13 +170,18 @@ export const useSmartVOCForm = (researchId: string) => {
     // ENRIQUECER TODAS LAS PREGUNTAS ANTES DE ENVIAR
     const cleanedData: SmartVOCFormData = {
       ...formData,
-      questions: editedQuestions.map((q) => ({
-        ...q,
-        questionKey: getSmartVOCQuestionType(q.type),
-        type: q.type as any, // Cast para evitar conflictos de tipos
-        description: q.description || q.title,
-        required: q.type !== QuestionType.SMARTVOC_VOC,
-      })),
+      questions: fixedQuestions.map((q, idx) => {
+        if (!q.type) {
+          console.error(`[SmartVOCForm] ❌ Pregunta sin type en índice ${idx}:`, q);
+        }
+        return {
+          ...q,
+          questionKey: getSmartVOCQuestionType(q.type),
+          type: q.type as any, // Cast para evitar conflictos de tipos
+          description: q.description || q.title,
+          required: q.type !== QuestionType.SMARTVOC_VOC,
+        };
+      }),
     };
 
     saveMutation.mutate({ ...cleanedData, smartVocId });

@@ -168,7 +168,7 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
           </div>
         );
 
-      case QuestionType.SMARTVOC_OSAT:
+      case QuestionType.SMARTVOC_NEV:
         return (
           <div className="space-y-4">
             <div className="flex items-center gap-4">

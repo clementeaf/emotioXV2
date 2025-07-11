@@ -15,100 +15,93 @@ export const useSmartVOCState = (researchId: string) => {
       {
         id: 'csat-template',
         type: QuestionType.SMARTVOC_CSAT,
-        title: 'Satisfacción del Cliente (CSAT)',
-        description: '',
-        instructions: '',
+        title: 'CSAT',
+        description: 'Customer Satisfaction',
+        instructions: '¿Qué tan satisfecho estás con nuestro servicio?',
         showConditionally: false,
         config: {
-          type: 'stars',
-          companyName: ''
+          type: 'scale',
+          scaleRange: { start: 1, end: 5 },
+          startLabel: 'Muy insatisfecho',
+          endLabel: 'Muy satisfecho'
         }
       },
       {
         id: 'ces-template',
         type: QuestionType.SMARTVOC_CES,
-        title: 'Esfuerzo del Cliente (CES)',
-        description: '',
-        instructions: '',
+        title: 'CES',
+        description: 'Customer Effort Score',
+        instructions: '¿Qué tan fácil fue completar tu tarea?',
         showConditionally: false,
         config: {
           type: 'scale',
-          scaleRange: {
-            start: 1,
-            end: 7
-          },
-          startLabel: '',
-          endLabel: ''
+          scaleRange: { start: 1, end: 7 },
+          startLabel: 'Muy difícil',
+          endLabel: 'Muy fácil'
         }
       },
       {
         id: 'cv-template',
         type: QuestionType.SMARTVOC_CV,
-        title: 'Valor Cognitivo (CV)',
-        description: '',
-        instructions: '',
+        title: 'CV',
+        description: 'Customer Value',
+        instructions: '¿Qué tan valioso fue para ti?',
         showConditionally: false,
         config: {
           type: 'scale',
-          scaleRange: {
-            start: 1,
-            end: 5
-          },
-          startLabel: '',
-          endLabel: ''
+          scaleRange: { start: 1, end: 5 },
+          startLabel: 'Sin valor',
+          endLabel: 'Muy valioso'
         }
       },
       {
         id: 'nev-template',
-        type: QuestionType.SMARTVOC_OSAT,
-        title: 'Valor Emocional Neto (NEV)',
-        description: '',
-        instructions: '',
+        type: QuestionType.SMARTVOC_NEV,
+        title: 'NEV',
+        description: 'Net Emotional Value',
+        instructions: '¿Qué emoción experimentaste?',
         showConditionally: false,
         config: {
-          type: 'emojis',
-          companyName: ''
+          type: 'emojis'
         }
       },
       {
         id: 'nps-template',
         type: QuestionType.SMARTVOC_NPS,
-        title: 'Net Promoter Score (NPS)',
-        description: '',
-        instructions: '',
+        title: 'NPS',
+        description: 'Net Promoter Score',
+        instructions: '¿Qué tan probable es que recomiendes nuestro producto/servicio?',
         showConditionally: false,
         config: {
           type: 'scale',
-          scaleRange: {
-            start: 0,
-            end: 10
-          },
-          companyName: '',
-          startLabel: '',
-          endLabel: ''
+          scaleRange: { start: 0, end: 10 },
+          startLabel: 'Muy improbable',
+          endLabel: 'Muy probable'
         }
       },
       {
         id: 'voc-template',
         type: QuestionType.SMARTVOC_VOC,
-        title: 'Voz del Cliente (VOC)',
-        description: '',
-        instructions: '',
+        title: 'VOC',
+        description: 'Voice of Customer',
+        instructions: 'Cuéntanos tu experiencia',
         showConditionally: false,
         config: {
           type: 'text'
         }
       },
       {
-        id: 'trust-template',
-        type: QuestionType.SMARTVOC_CSAT,
-        title: 'Nivel de Confianza',
-        description: '',
-        instructions: '',
+        id: 'nc-template',
+        type: QuestionType.SMARTVOC_NC,
+        title: 'NC',
+        description: 'Nivel de Confianza/Satisfacción',
+        instructions: '¿Qué tan satisfecho estás?',
         showConditionally: false,
         config: {
-          type: 'stars',
-          companyName: ''
+          type: 'scale',
+          scaleRange: { start: 1, end: 5 },
+          startLabel: 'Muy insatisfecho',
+          endLabel: 'Muy satisfecho'
         }
       }
     ],
@@ -163,65 +156,94 @@ export const useSmartVOCState = (researchId: string) => {
         {
           id: 'csat-template',
           type: QuestionType.SMARTVOC_CSAT,
-          title: 'Satisfacción del Cliente (CSAT)',
-          description: '',
-          instructions: '',
+          title: 'CSAT',
+          description: 'Customer Satisfaction',
+          instructions: '¿Qué tan satisfecho estás con nuestro servicio?',
           showConditionally: false,
-          config: { type: 'stars', companyName: '' }
+          config: {
+            type: 'scale',
+            scaleRange: { start: 1, end: 5 },
+            startLabel: 'Muy insatisfecho',
+            endLabel: 'Muy satisfecho'
+          }
         },
         {
           id: 'ces-template',
           type: QuestionType.SMARTVOC_CES,
-          title: 'Esfuerzo del Cliente (CES)',
-          description: '',
-          instructions: '',
+          title: 'CES',
+          description: 'Customer Effort Score',
+          instructions: '¿Qué tan fácil fue completar tu tarea?',
           showConditionally: false,
-          config: { type: 'scale', scaleRange: { start: 1, end: 7 }, startLabel: '', endLabel: '' }
+          config: {
+            type: 'scale',
+            scaleRange: { start: 1, end: 7 },
+            startLabel: 'Muy difícil',
+            endLabel: 'Muy fácil'
+          }
         },
         {
           id: 'cv-template',
           type: QuestionType.SMARTVOC_CV,
-          title: 'Valor Cognitivo (CV)',
-          description: '',
-          instructions: '',
+          title: 'CV',
+          description: 'Customer Value',
+          instructions: '¿Qué tan valioso fue para ti?',
           showConditionally: false,
-          config: { type: 'scale', scaleRange: { start: 1, end: 5 }, startLabel: '', endLabel: '' }
+          config: {
+            type: 'scale',
+            scaleRange: { start: 1, end: 5 },
+            startLabel: 'Sin valor',
+            endLabel: 'Muy valioso'
+          }
         },
         {
           id: 'nev-template',
-          type: QuestionType.SMARTVOC_OSAT,
-          title: 'Valor Emocional Neto (NEV)',
-          description: '',
-          instructions: '',
+          type: QuestionType.SMARTVOC_NEV,
+          title: 'NEV',
+          description: 'Net Emotional Value',
+          instructions: '¿Qué emoción experimentaste?',
           showConditionally: false,
-          config: { type: 'emojis', companyName: '' }
+          config: {
+            type: 'emojis'
+          }
         },
         {
           id: 'nps-template',
           type: QuestionType.SMARTVOC_NPS,
-          title: 'Net Promoter Score (NPS)',
-          description: '',
-          instructions: '',
+          title: 'NPS',
+          description: 'Net Promoter Score',
+          instructions: '¿Qué tan probable es que recomiendes nuestro producto/servicio?',
           showConditionally: false,
-          config: { type: 'scale', scaleRange: { start: 0, end: 10 }, companyName: '', startLabel: '', endLabel: '' }
+          config: {
+            type: 'scale',
+            scaleRange: { start: 0, end: 10 },
+            startLabel: 'Muy improbable',
+            endLabel: 'Muy probable'
+          }
         },
         {
           id: 'voc-template',
           type: QuestionType.SMARTVOC_VOC,
-          title: 'Voz del Cliente (VOC)',
-          description: '',
-          instructions: '',
+          title: 'VOC',
+          description: 'Voice of Customer',
+          instructions: 'Cuéntanos tu experiencia',
           showConditionally: false,
-          config: { type: 'text' }
+          config: {
+            type: 'text'
+          }
         },
         {
-          id: 'trust-template',
-          type: QuestionType.SMARTVOC_CSAT,
-          title: 'Nivel de Confianza',
-          description: '',
-          instructions: '',
+          id: 'nc-template',
+          type: QuestionType.SMARTVOC_NC,
+          title: 'NC',
+          description: 'Nivel de Confianza/Satisfacción',
+          instructions: '¿Qué tan satisfecho estás?',
           showConditionally: false,
-          config: { type: 'stars', companyName: '' }
+          config: {
+            type: 'scale',
+            scaleRange: { start: 1, end: 5 },
+            startLabel: 'Muy insatisfecho',
+            endLabel: 'Muy satisfecho'
+          }
         }
       ]
     }));
