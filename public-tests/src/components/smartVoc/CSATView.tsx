@@ -124,7 +124,7 @@ const CSATView: React.FC<MappedStepComponentProps> = ({
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 py-8">
+    <div className="flex flex-col items-center justify-center py-8">
       <div className="max-w-md w-full bg-white rounded-lg shadow-md p-6">
         <div className="text-center mb-6">
           <h2 className="text-xl font-semibold text-gray-800 mb-2">
@@ -181,12 +181,6 @@ const CSATView: React.FC<MappedStepComponentProps> = ({
         >
           {isSubmitting || isSaving ? 'Guardando...' : 'Continuar'}
         </button>
-
-        {questionKey && (
-          <div className="mt-4 p-2 bg-gray-100 rounded text-xs text-gray-500">
-            <p>ID: {questionKey}</p>
-          </div>
-        )}
       </div>
     </div>
   );

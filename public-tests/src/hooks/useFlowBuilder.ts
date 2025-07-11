@@ -66,11 +66,12 @@ const processSmartVocQuestions = (
     if (Array.isArray(moduleSpecificQuestions) && moduleSpecificQuestions.length > 0) {
         for (const question of moduleSpecificQuestions) {
             if (typeof question !== 'object' || question === null) continue;
-            const q = question as { id?: string; title?: string; type?: string; instructions?: string };
+            const q = question as { id?: string; title?: string; type?: string; instructions?: string; questionKey?: string };
             const originalQuestionType = q.type;
             const upperQuestionType = typeof originalQuestionType === 'string' ? originalQuestionType.toUpperCase() : undefined;
             const frontendType = upperQuestionType && smartVOCTypeMap[upperQuestionType] ? smartVOCTypeMap[upperQuestionType] : undefined;
-
+            // NUEVO: Usar questionKey del backend si existe, si no, fallback
+            const questionKey = q.questionKey || q.id || `${frontendType || 'smartvoc'}_${steps.length}`;
             if (frontendType) {
                 steps.push({
                     id: q.id || `${frontendType}_${steps.length}`,
@@ -78,7 +79,8 @@ const processSmartVocQuestions = (
                     type: frontendType,
                     config: question,
                     instructions: q.instructions,
-                    responseKey: parentModuleResponseKey
+                    responseKey: parentModuleResponseKey,
+                    questionKey // NUEVO
                 });
             } else {
                 console.warn(`[useFlowBuilder processSmartVocQuestions] No mapeado: tipo "${upperQuestionType}" (Q ID ${q.id})`);
@@ -97,12 +99,14 @@ const processCognitiveTaskQuestions = (
     if (Array.isArray(moduleSpecificQuestions) && moduleSpecificQuestions.length > 0) {
         for (const question of moduleSpecificQuestions) {
             if (typeof question !== 'object' || question === null) continue;
-            const q = question as { id?: string; title?: string; type?: string; instructions?: string };
+            const q = question as { id?: string; title?: string; type?: string; instructions?: string; questionKey?: string };
             const originalQuestionType = q.type;
             // NUEVO: Evitar doble prefijo cognitive_
             const frontendType = typeof originalQuestionType === 'string' && originalQuestionType.startsWith('cognitive_')
               ? originalQuestionType
               : typeof originalQuestionType === 'string' ? `cognitive_${originalQuestionType.toLowerCase()}` : undefined;
+            // NUEVO: Usar questionKey del backend si existe, si no, fallback
+            const questionKey = q.questionKey || q.id || `${frontendType || 'cognitive'}_${steps.length}`;
             if (frontendType) {
                 steps.push({
                     id: q.id || `${frontendType}_${steps.length}`,
@@ -110,7 +114,8 @@ const processCognitiveTaskQuestions = (
                     type: frontendType,
                     config: question,
                     instructions: q.instructions,
-                    responseKey: parentModuleResponseKey
+                    responseKey: parentModuleResponseKey,
+                    questionKey // NUEVO
                 });
             } else {
                 console.warn(`[useFlowBuilder processCognitiveTaskQuestions] No se pudo generar frontendType para tipo: "${originalQuestionType}" (Q ID ${q.id})`);
@@ -130,16 +135,19 @@ const processDefaultModuleQuestions = (
     if (Array.isArray(moduleSpecificQuestions) && moduleSpecificQuestions.length > 0) {
         for (const question of moduleSpecificQuestions) {
             if (typeof question !== 'object' || question === null) continue;
-            const q = question as { id?: string; title?: string; type?: string; instructions?: string };
+            const q = question as { id?: string; title?: string; type?: string; instructions?: string; questionKey?: string };
             const originalQuestionType = q.type;
             const frontendType = moduleSK && typeof originalQuestionType === 'string' ? `${moduleSK.toLowerCase()}_${originalQuestionType.toLowerCase()}` : `unknown_${typeof originalQuestionType === 'string' ? originalQuestionType.toLowerCase() : 'question'}`;
+            // NUEVO: Usar questionKey del backend si existe, si no, fallback
+            const questionKey = q.questionKey || q.id || `${frontendType}_${steps.length}`;
             steps.push({
                 id: q.id || `${frontendType}_${steps.length}`,
                 name: q.title || `${moduleTitleFromBackend || moduleSK || 'Módulo Desconocido'}: ${originalQuestionType || 'Pregunta'}`,
                 type: frontendType,
                 config: question,
                 instructions: q.instructions,
-                responseKey: parentModuleResponseKey
+                responseKey: parentModuleResponseKey,
+                questionKey // NUEVO
             });
         }
     }
@@ -225,21 +233,36 @@ export const useFlowBuilder = ({ researchFlowApiData, isLoading }: UseFlowBuilde
             const moduleSpecificQuestions = moduleData.questions || [];
             const moduleTitleFromBackend = moduleData.title || moduleData.name;
             const moduleResponseKey = processedModule.id;
+            const moduleQuestionKey = moduleData.questionKey;
 
-            switch (moduleSK) {
-                case 'EYE_TRACKING_CONFIG':
-                case 'WELCOME_SCREEN':
-                case 'THANK_YOU_SCREEN':
-                    break;
-                case 'SMART_VOC_FORM':
-                    finalSteps.push(...processSmartVocQuestions(moduleSpecificQuestions, moduleTitleFromBackend, moduleResponseKey));
-                    break;
-                case 'COGNITIVE_TASK':
-                    finalSteps.push(...processCognitiveTaskQuestions(moduleSpecificQuestions, moduleTitleFromBackend, moduleResponseKey));
-                    break;
-                default:
-                    finalSteps.push(...processDefaultModuleQuestions(moduleSpecificQuestions, moduleTitleFromBackend, moduleSK, moduleResponseKey));
-                    break;
+            // 1. Si hay preguntas, SOLO generar pasos para cada pregunta (NO para el módulo)
+            if (Array.isArray(moduleSpecificQuestions) && moduleSpecificQuestions.length > 0) {
+                for (const question of moduleSpecificQuestions) {
+                    if (typeof question !== 'object' || question === null) continue;
+                    const q = question as { id?: string; title?: string; type?: string; instructions?: string; questionKey?: string };
+                    const questionKey = q.questionKey || moduleQuestionKey || q.id || `${q.type || 'question'}_${finalSteps.length}`;
+                    const stepType = q.type || moduleSK || 'question'; // Usar el type de la pregunta directamente
+                    finalSteps.push({
+                        id: q.id || `${stepType}_${finalSteps.length}`,
+                        name: q.title || `${moduleTitleFromBackend || moduleSK || 'Módulo'}: ${q.type || 'Pregunta'}`,
+                        type: stepType,
+                        config: question,
+                        instructions: q.instructions,
+                        responseKey: moduleResponseKey,
+                        questionKey // SIEMPRE
+                    });
+                }
+            } else if (moduleQuestionKey) {
+                // 2. Si NO hay preguntas pero el módulo tiene questionKey, generar paso para el módulo
+                finalSteps.push({
+                    id: moduleData.id || moduleResponseKey || moduleQuestionKey,
+                    name: moduleTitleFromBackend || moduleSK || 'Módulo',
+                    type: moduleSK ? moduleSK.toLowerCase() : 'modulo',
+                    config: moduleData,
+                    instructions: moduleData.instructions,
+                    responseKey: moduleResponseKey,
+                    questionKey: moduleQuestionKey
+                });
             }
         }
 

@@ -25,5 +25,6 @@ export type ExpandedStep = SidebarStep & {
   type: string;       // Tipo específico del paso/pregunta (e.g., 'welcome', 'cognitive_short_text', 'smartvoc_csat')
   config?: unknown;   // Configuración específica del paso (datos de la pregunta, textos, etc.)
   responseKey?: string; // Identificador único del módulo para vincular respuestas
+  questionKey?: string; // NUEVO: Clave única de pregunta proveniente del backend
   // Podríamos añadir más campos si son necesarios para la lógica
 };
