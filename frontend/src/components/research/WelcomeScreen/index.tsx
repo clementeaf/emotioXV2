@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 import {
     ErrorModal,
@@ -31,17 +31,32 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
     handlePreview,
     closeModal,
     existingScreen,
-    isEmpty
+    isEmpty,
+    handleDelete,
+    isDeleting,
+    showDelete,
   } = useWelcomeScreenForm(researchId);
 
   // Determine if it's an existing config based on existingScreen data
   const isExisting = !!existingScreen?.id;
 
-  // <<< Lógica para el modal de confirmación (si se implementa) >>>
-  const confirmModalVisible = false; // Placeholder
-  const showConfirmModalAction = () => {}; // Placeholder
-  const closeConfirmModal = () => {}; // Placeholder
-  const confirmAction = handleSubmit; // Placeholder - llamar a handleSubmit al confirmar
+  // <<< Lógica para el modal de confirmación >>>
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
+
+  const showConfirmModal = () => {
+    setConfirmModalVisible(true);
+  };
+
+  const closeConfirmModal = () => {
+    setConfirmModalVisible(false);
+  };
+
+  const confirmDelete = async () => {
+    if (handleDelete) {
+      await handleDelete();
+      closeConfirmModal();
+    }
+  };
 
   if (isLoading) {
     return (
@@ -96,6 +111,10 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
         onSave={handleSubmit}
         onPreview={handlePreview}
         isUpdate={isExisting}
+        // NUEVO: Props para eliminar
+        onDelete={showConfirmModal}
+        isDeleting={isDeleting}
+        showDelete={isExisting}
       />
 
       {/* Modal para mostrar errores y mensajes */}
@@ -105,11 +124,36 @@ export const WelcomeScreenForm: React.FC<WelcomeScreenFormProps> = ({
         error={modalError}
       />
 
-      <ErrorModal
-        isOpen={confirmModalVisible}
-        onClose={closeConfirmModal}
-        error={modalError}
-      />
+      {/* Modal de confirmación para eliminar */}
+      {confirmModalVisible && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Confirmar eliminación
+            </h3>
+            <p className="text-gray-600 mb-6">
+              ¿Estás seguro de que quieres eliminar la pantalla de bienvenida? Esta acción no se puede deshacer.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                type="button"
+                onClick={closeConfirmModal}
+                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 text-red-600 border border-red-300 rounded-md hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isDeleting ? 'Eliminando...' : 'Eliminar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

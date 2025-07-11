@@ -133,6 +133,10 @@ export const useSmartVOCForm = (researchId: string) => {
 
     // Función helper para mapear tipos SmartVOC al ENUM
     const getSmartVOCQuestionType = (type: string): string => {
+      // Si el tipo ya es un valor del enum, lo devolvemos tal cual
+      if (Object.values(QuestionType).includes(type as QuestionType)) {
+        return type;
+      }
       switch (type.toUpperCase()) {
         case 'CSAT': return QuestionType.SMARTVOC_CSAT;
         case 'CV': return QuestionType.SMARTVOC_CV;
@@ -148,7 +152,7 @@ export const useSmartVOCForm = (researchId: string) => {
       ...formData,
       questions: editedQuestions.map((q) => ({
         ...q,
-        questionKey: (q as any).questionKey || `${getSmartVOCQuestionType(q.type)}_${q.id}`,
+        questionKey: getSmartVOCQuestionType(q.type),
         type: q.type as any, // Cast para evitar conflictos de tipos
         description: q.description || q.title,
         required: q.type !== QuestionType.SMARTVOC_VOC,

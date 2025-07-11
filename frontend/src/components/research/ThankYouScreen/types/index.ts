@@ -1,13 +1,15 @@
-import { 
-  ThankYouScreenConfig, 
-  ThankYouScreenFormData as BaseThankYouScreenFormData,
-  ThankYouScreenResponse,
-  DEFAULT_THANK_YOU_SCREEN_CONFIG,
-  DEFAULT_THANK_YOU_SCREEN_VALIDATION 
+import {
+    ThankYouScreenFormData as BaseThankYouScreenFormData,
+    DEFAULT_THANK_YOU_SCREEN_CONFIG,
+    DEFAULT_THANK_YOU_SCREEN_VALIDATION,
+    ThankYouScreenConfig,
+    ThankYouScreenResponse
 } from '@/types';
 
 // Extendemos el tipo base para agregar campos específicos para el formulario
-export interface ThankYouScreenFormData extends BaseThankYouScreenFormData {}
+export interface ThankYouScreenFormData extends BaseThankYouScreenFormData {
+  questionKey: string;
+}
 
 // Tipo para errores de validación
 export interface ValidationErrors {
@@ -42,6 +44,10 @@ export interface ThankYouScreenFooterProps {
   thankYouScreenId: string | null;
   onSave: () => void;
   onPreview: () => void;
+  // NUEVO: Props para eliminar
+  onDelete?: () => void;
+  isDeleting?: boolean;
+  showDelete?: boolean;
 }
 
 // Props para el modal de errores
@@ -85,12 +91,16 @@ export interface UseThankYouScreenFormResult {
   validateForm: () => boolean;
   closeModal: () => void;
   isExisting: boolean;
+  // NUEVO: Props para eliminar
+  handleDelete?: () => Promise<void>;
+  isDeleting?: boolean;
+  showDelete?: boolean;
 }
 
 // Exportamos tipos y constantes para acceso más fácil
-export { 
-  DEFAULT_THANK_YOU_SCREEN_CONFIG,
-  DEFAULT_THANK_YOU_SCREEN_VALIDATION,
-  type ThankYouScreenConfig,
-  type ThankYouScreenResponse 
-}; 
+export {
+    DEFAULT_THANK_YOU_SCREEN_CONFIG,
+    DEFAULT_THANK_YOU_SCREEN_VALIDATION,
+    type ThankYouScreenConfig,
+    type ThankYouScreenResponse
+};

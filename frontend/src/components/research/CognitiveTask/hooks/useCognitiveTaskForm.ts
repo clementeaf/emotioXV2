@@ -106,6 +106,10 @@ declare global {
 
 // Función helper para mapear tipos Cognitive Task al ENUM
 const getCognitiveQuestionType = (type: string): string => {
+  // Si el tipo ya es un valor del enum, lo devolvemos tal cual
+  if (Object.values(GlobalQuestionType).includes(type as GlobalQuestionType)) {
+    return type;
+  }
   switch (type) {
     case 'long_text': return GlobalQuestionType.COGNITIVE_LONG_TEXT;
     case 'multiple_choice': return GlobalQuestionType.COGNITIVE_MULTIPLE_CHOICE;
@@ -388,7 +392,7 @@ export const useCognitiveTaskForm = (
       ...dataToSend,
       questions: dataToSend.questions.map(q => ({
         ...q,
-        questionKey: q.questionKey || `${getCognitiveQuestionType(q.type)}_${q.id}`,
+        questionKey: getCognitiveQuestionType(q.type),
         type: `cognitive_${q.type}`
       }))
     };
@@ -412,7 +416,7 @@ export const useCognitiveTaskForm = (
         ...dataToSend,
         questions: dataToSend.questions.map(q => ({
           ...q,
-          questionKey: q.questionKey || `${getCognitiveQuestionType(q.type)}_${q.id}`,
+          questionKey: getCognitiveQuestionType(q.type),
           type: `cognitive_${q.type}`
         }))
       };

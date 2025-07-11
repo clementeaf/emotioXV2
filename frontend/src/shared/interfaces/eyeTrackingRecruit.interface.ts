@@ -49,6 +49,7 @@ export interface EyeTrackingRecruitFormData {
   backlinks: Backlinks;
   researchUrl: string;
   parameterOptions: ParameterOptions;
+  questionKey: string;
 }
 
 export type DemographicQuestionKeys = keyof DemographicQuestions;
@@ -90,4 +91,4 @@ export interface CreateEyeTrackingRecruitRequest {
   backlinks: Backlinks;
   researchUrl: string;
   parameterOptions: ParameterOptions;
-} 
+}

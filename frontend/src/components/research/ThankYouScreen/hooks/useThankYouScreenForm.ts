@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 import { thankYouScreenFixedAPI } from '@/lib/thank-you-screen-api';
 import { useAuth } from '@/providers/AuthProvider';
+import thankYouScreenService from '@/services/thankYouScreenService';
 import { QuestionType } from '../../../../../../shared/interfaces/question-types.enum';
 
 import {
@@ -31,6 +32,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
     message: '',
     redirectUrl: '',
     researchId,
+    questionKey: QuestionType.THANK_YOU_SCREEN,
     metadata: {
       version: '1.0.0'
     }
@@ -39,6 +41,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [modalError, setModalError] = useState<ErrorModalData | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { token, user, restoreSession } = useAuth();
 
   // Comprobamos si está autenticado (token existe)
@@ -92,7 +95,8 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
         redirectUrl: existingScreen.redirectUrl,
         metadata: existingScreen.metadata, // Asegúrate que metadata existe o maneja su ausencia
         // Mantener el researchId del prop, no el de la respuesta (por si acaso)
-        researchId
+        researchId,
+        questionKey: QuestionType.THANK_YOU_SCREEN
       });
       setThankYouScreenId(existingScreen.id);
     } else if (existingScreen?.notFound) {
@@ -145,6 +149,44 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
       });
     }
   });
+
+  // Handler para eliminar la pantalla de agradecimiento
+  const handleDelete = async () => {
+    if (!thankYouScreenId) return;
+    setIsDeleting(true);
+    try {
+      await thankYouScreenService.delete(thankYouScreenId);
+      setThankYouScreenId(null);
+      setFormData({
+        isEnabled: false,
+        title: '',
+        message: '',
+        redirectUrl: '',
+        researchId,
+        questionKey: QuestionType.THANK_YOU_SCREEN,
+        metadata: {
+          version: '1.0.0'
+        }
+      });
+      setModalError({
+        title: 'Eliminado',
+        message: 'La pantalla de agradecimiento fue eliminada correctamente.',
+        type: 'success'
+      });
+      setModalVisible(true);
+      // Invalidar la consulta para refrescar los datos
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.THANK_YOU_SCREEN, researchId] });
+    } catch (error: any) {
+      setModalError({
+        title: 'Error al eliminar',
+        message: error?.message || 'No se pudo eliminar la pantalla de agradecimiento.',
+        type: 'error'
+      });
+      setModalVisible(true);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // Función para manejar cambios en los campos del formulario
   const handleChange = (field: keyof ThankYouScreenConfig, value: any) => {
@@ -307,7 +349,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
       const dataToSave: ThankYouScreenFormData = {
         ...formData,
         researchId,
-        questionKey: QuestionType.THANK_YOU_SCREEN, // Agregar questionKey usando ENUM
+        questionKey: formData.questionKey === QuestionType.THANK_YOU_SCREEN ? formData.questionKey : QuestionType.THANK_YOU_SCREEN,
         metadata: {
           version: '1.0.0',
           updatedAt: new Date().toISOString()
@@ -547,6 +589,10 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
     handlePreview,
     validateForm,
     closeModal,
-    isExisting: !!thankYouScreenId
+    isExisting: !!thankYouScreenId,
+    // NUEVO: Props para eliminar
+    handleDelete,
+    isDeleting,
+    showDelete: !!thankYouScreenId,
   };
 };

@@ -495,7 +495,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       const dataToSave = {
         ...restFormData,
         researchId: actualResearchId,
-        questionKey: QuestionType.DEMOGRAPHICS // Agregar questionKey usando ENUM
+        questionKey: restFormData.questionKey === QuestionType.DEMOGRAPHICS ? restFormData.questionKey : QuestionType.DEMOGRAPHICS
       };
 
       // console.log('[useEyeTrackingRecruit] Guardando config con ID de investigación:', dataToSave.researchId);

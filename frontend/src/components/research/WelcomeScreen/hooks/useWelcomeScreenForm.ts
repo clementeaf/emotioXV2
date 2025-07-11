@@ -1,13 +1,55 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import welcomeScreenService, { WelcomeScreenData, WelcomeScreenRecord } from '@/services/welcomeScreenService';
+import welcomeScreenService from '@/services/welcomeScreenService';
 import { QuestionType } from '../../../../../../shared/interfaces/question-types.enum';
+// import { WelcomeScreenData } from '../types';
 
 import {
-  ErrorModalData,
-  UseWelcomeScreenFormResult,
-  ValidationErrors,
+    ErrorModalData,
+    UseWelcomeScreenFormResult,
+    ValidationErrors,
 } from '../types';
+
+// Definir tipo local para WelcomeScreenRecord si es necesario
+interface WelcomeScreenRecord extends WelcomeScreenData {
+  id: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// Definir WelcomeScreenData localmente para evitar errores de importación
+interface WelcomeScreenData {
+  id?: string;
+  researchId: string;
+  isEnabled: boolean;
+  title: string;
+  message: string;
+  startButtonText: string;
+  createdAt?: string;
+  updatedAt?: string;
+  subtitle?: string;
+  logoUrl?: string;
+  backgroundImageUrl?: string;
+  backgroundColor?: string;
+  textColor?: string;
+  theme?: string;
+  disclaimer?: string;
+  customCss?: string;
+  metadata?: {
+    version?: string;
+    lastUpdated?: string;
+    lastModifiedBy?: string;
+  };
+  questionKey: string;
+  [key: string]: any;
+}
+
+// Definir ErrorModalData localmente para aceptar 'success'
+// interface ErrorModalData {
+//   title: string;
+//   message: string;
+//   type: 'error' | 'warning' | 'info' | 'success';
+// }
 
 // Valor inicial: Usar WelcomeScreenData importada.
 // Necesita definir metadata si WelcomeScreenData la requiere.
@@ -17,6 +59,7 @@ const INITIAL_FORM_DATA: WelcomeScreenData = {
   title: '',
   message: '',
   startButtonText: '',
+  questionKey: '', // Asegura que siempre existe
   // Añadir metadata inicial para cumplir el tipo
   metadata: {
     // version, lastUpdated, lastModifiedBy son opcionales según la interfaz del servicio
@@ -31,12 +74,13 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [existingScreen, setExistingScreen] = useState<WelcomeScreenRecord | null>(null);
+  const [existingScreen, setExistingScreen] = useState<any>(null);
   const [modalError, setModalError] = useState<ErrorModalData | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   // Estado para disparar un refetch manual después de guardar
   const [refetchTrigger, setRefetchTrigger] = useState(0);
   const [isEmpty, setIsEmpty] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Mover fetchData fuera de useEffect y envolver con useCallback
   const fetchData = useCallback(async () => {
@@ -44,7 +88,7 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
     setIsEmpty(false);
     try {
       if (!actualResearchId) {
-        setFormData({ ...INITIAL_FORM_DATA, researchId: '' });
+        setFormData({ ...INITIAL_FORM_DATA, researchId: '', questionKey: QuestionType.WELCOME_SCREEN });
         setExistingScreen(null);
         setIsLoading(false);
         setIsEmpty(true);
@@ -56,7 +100,7 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
         localStorage.removeItem(`welcome_screen_resource_${actualResearchId}`);
       } catch (e) { /* ignorar errores de localStorage */ }
 
-      const fetchedRecord: WelcomeScreenRecord | null = await welcomeScreenService.getByResearchId(actualResearchId);
+      const fetchedRecord: any = await welcomeScreenService.getByResearchId(actualResearchId);
       if (fetchedRecord) {
         setExistingScreen(fetchedRecord);
         const formDataToSet: WelcomeScreenData = {
@@ -73,22 +117,23 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
           theme: fetchedRecord.theme ?? '',
           disclaimer: fetchedRecord.disclaimer ?? '',
           customCss: fetchedRecord.customCss ?? '',
-          metadata: fetchedRecord.metadata
+          metadata: fetchedRecord.metadata,
+          questionKey: QuestionType.WELCOME_SCREEN
         };
         setFormData(formDataToSet);
       } else {
-        setFormData({ ...INITIAL_FORM_DATA, researchId: actualResearchId });
+        setFormData({ ...INITIAL_FORM_DATA, researchId: actualResearchId, questionKey: QuestionType.WELCOME_SCREEN });
         setExistingScreen(null);
         setIsEmpty(true);
       }
     } catch (error: any) {
       // Si el error es 404, tratar como vacío
       if (error?.statusCode === 404 || error?.message?.includes('not found') || error?.message?.includes('WELCOME_SCREEN_NOT_FOUND')) {
-        setFormData({ ...INITIAL_FORM_DATA, researchId: actualResearchId });
+        setFormData({ ...INITIAL_FORM_DATA, researchId: actualResearchId, questionKey: QuestionType.WELCOME_SCREEN });
         setExistingScreen(null);
         setIsEmpty(true);
       } else {
-        setFormData({ ...INITIAL_FORM_DATA, researchId: actualResearchId });
+        setFormData({ ...INITIAL_FORM_DATA, researchId: actualResearchId, questionKey: QuestionType.WELCOME_SCREEN });
         setExistingScreen(null);
         setModalError({
           title: 'Error',
@@ -118,7 +163,7 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
   };
 
   const handleChange = useCallback((field: keyof WelcomeScreenData, value: any): void => {
-    setFormData(prev => ({
+    setFormData((prev: WelcomeScreenData) => ({
       ...prev,
       [field]: value,
       metadata: {
@@ -153,7 +198,7 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
       // Usar formData para los datos a enviar (solo campos editables)
       const dataToSubmit: Partial<WelcomeScreenData> = {
         ...formData,
-        questionKey: QuestionType.WELCOME_SCREEN // Agregar questionKey usando ENUM
+        questionKey: formData.questionKey === QuestionType.WELCOME_SCREEN ? formData.questionKey : QuestionType.WELCOME_SCREEN
       } as any;
       // Eliminar researchId si no es necesario en el payload de PUT/POST
       // delete dataToSubmit.researchId;
@@ -175,7 +220,8 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
         const createPayload: WelcomeScreenData = {
           ...INITIAL_FORM_DATA, // Empezar con defaults
           ...dataToSubmit,       // Sobrescribir con valores del form
-          researchId: actualResearchId // Asegurar researchId
+          researchId: actualResearchId, // Asegurar researchId
+          questionKey: QuestionType.WELCOME_SCREEN
         };
         resultRecord = await welcomeScreenService.createForResearch(
           actualResearchId,
@@ -201,7 +247,8 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
         theme: resultRecord.theme ?? '',
         disclaimer: resultRecord.disclaimer ?? '',
         customCss: resultRecord.customCss ?? '',
-        metadata: resultRecord.metadata
+        metadata: resultRecord.metadata,
+        questionKey: QuestionType.WELCOME_SCREEN
       };
 
       // 2. Actualizar el estado del formulario PRIMERO
@@ -286,6 +333,32 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
     }
   };
 
+  const handleDelete = useCallback(async () => {
+    if (!existingScreen?.id || !actualResearchId) return;
+    setIsDeleting(true);
+    try {
+      await welcomeScreenService.delete(actualResearchId, existingScreen.id);
+      setExistingScreen(null);
+      setFormData({ ...INITIAL_FORM_DATA, researchId: actualResearchId, questionKey: QuestionType.WELCOME_SCREEN });
+      setModalError({
+        title: 'Eliminado',
+        message: 'La pantalla de bienvenida fue eliminada correctamente.',
+        type: 'success' as any
+      });
+      setModalVisible(true);
+      setIsEmpty(true);
+    } catch (error: any) {
+      setModalError({
+        title: 'Error al eliminar',
+        message: error?.message || 'No se pudo eliminar la pantalla de bienvenida.',
+        type: 'error'
+      });
+      setModalVisible(true);
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [existingScreen, actualResearchId, setExistingScreen, setFormData, setModalError, setModalVisible]);
+
   const closeModal = () => {
     setModalVisible(false);
     setModalError(null);
@@ -297,13 +370,16 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
     validationErrors,
     isLoading,
     isSaving,
-    existingScreen,
     modalError,
     modalVisible,
     handleChange,
     handleSubmit,
     handlePreview,
     closeModal,
+    existingScreen,
     isEmpty,
+    handleDelete,
+    isDeleting,
+    showDelete: !!existingScreen?.id,
   };
 };

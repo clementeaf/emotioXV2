@@ -37,6 +37,7 @@ export interface WelcomeScreenData {
     lastUpdated?: string;
     lastModifiedBy?: string;
   };
+  questionKey: string;
   [key: string]: any;
 }
 
@@ -101,10 +102,13 @@ export interface WelcomeScreenFieldsProps {
 export interface WelcomeScreenFooterProps {
   onSave: () => void;
   onPreview: () => void;
-  isSaving: boolean;
-  isLoading: boolean;
-  isEnabled: boolean;
-  isExisting: boolean;
+  isSaving?: boolean;
+  disabled?: boolean;
+  isUpdate?: boolean;
+  // NUEVO: Props para eliminar
+  onDelete?: () => void;
+  isDeleting?: boolean;
+  showDelete?: boolean;
 }
 
 /**
@@ -152,4 +156,8 @@ export interface UseWelcomeScreenFormResult {
   closeErrorModal: () => void;
   existingScreen: WelcomeScreenData | null;
   handleCancel: () => void;
-} 
+  // NUEVO: Props para eliminar
+  handleDelete?: () => Promise<void>;
+  isDeleting?: boolean;
+  showDelete?: boolean;
+}
