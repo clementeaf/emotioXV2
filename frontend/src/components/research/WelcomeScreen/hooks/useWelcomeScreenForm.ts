@@ -21,7 +21,7 @@ interface WelcomeScreenRecord extends WelcomeScreenData {
 interface WelcomeScreenData {
   id?: string;
   researchId: string;
-  isEnabled: boolean;
+  isEnabled?: boolean;
   title: string;
   message: string;
   startButtonText: string;
@@ -133,6 +133,8 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
         setExistingScreen(null);
         setIsEmpty(true);
       } else {
+        // Solo mostrar en consola si NO es 404
+        console.error('[useWelcomeScreenForm] Error al cargar configuración:', error);
         setFormData({ ...INITIAL_FORM_DATA, researchId: actualResearchId, questionKey: QuestionType.WELCOME_SCREEN });
         setExistingScreen(null);
         setModalError({

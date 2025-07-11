@@ -1,4 +1,4 @@
-import { QuestionType } from '../interfaces/question-types.enum';
+import { QuestionType } from '../interfaces/question-types.enum.js';
 
 /**
  * Construye el diccionario global de preguntas usando el ENUM estándar
@@ -45,7 +45,7 @@ export function buildQuestionDictionary(expandedSteps: any[]): Record<string, an
             };
 
             // Alias para stepId si es paso core
-            if ([QuestionType.DEMOGRAPHICS, QuestionType.WELCOME_SCREEN, QuestionType.THANK_YOU_SCREEN].includes(stepType) ||
+            if ([QuestionType.DEMOGRAPHICS, QuestionType.WELCOME_SCREEN, QuestionType.THANK_YOU_SCREEN].includes(stepType as any) ||
                 ['demographic', 'demographics', 'welcome', 'welcome_screen', 'thankyou', 'thank_you_screen'].includes(stepId)) {
                 // Alias para todas las variantes posibles
                 if (stepId === 'demographic' || stepId === 'demographics') {
@@ -65,7 +65,7 @@ export function buildQuestionDictionary(expandedSteps: any[]): Record<string, an
             console.log(`[buildQuestionDictionary] ✅ Tipo válido: ${stepType}, questionKey: ${questionKey}`);
         } else {
             // 4. Intentar mapear tipos legacy a tipos del ENUM
-            const legacyMapping: Record<string, QuestionType> = {
+            const legacyMapping: Record<string, string> = {
                 'welcome': QuestionType.WELCOME_SCREEN,
                 'thankyou': QuestionType.THANK_YOU_SCREEN,
                 'demographic': QuestionType.DEMOGRAPHICS,
@@ -86,7 +86,7 @@ export function buildQuestionDictionary(expandedSteps: any[]): Record<string, an
                     originalType: stepType // Preservar el tipo original
                 };
                 // Alias para stepId si es paso core legacy
-                if ([QuestionType.DEMOGRAPHICS, QuestionType.WELCOME_SCREEN, QuestionType.THANK_YOU_SCREEN].includes(mappedType)) {
+                if ([QuestionType.DEMOGRAPHICS, QuestionType.WELCOME_SCREEN, QuestionType.THANK_YOU_SCREEN].includes(mappedType as any)) {
                     questionDictionary[stepId] = questionDictionary[questionKey];
                 }
                 console.log(`[buildQuestionDictionary] 🔄 Tipo legacy mapeado: ${stepType} → ${mappedType}, questionKey: ${questionKey}`);

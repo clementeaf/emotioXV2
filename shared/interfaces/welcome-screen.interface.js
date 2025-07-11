@@ -1,10 +1,7 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.DEFAULT_WELCOME_SCREEN_CONFIG = exports.DEFAULT_WELCOME_SCREEN_VALIDATION = void 0;
 /**
  * Default validation rules for Welcome Screen
  */
-exports.DEFAULT_WELCOME_SCREEN_VALIDATION = {
+export var DEFAULT_WELCOME_SCREEN_VALIDATION = {
     title: {
         minLength: 3,
         maxLength: 100,
@@ -24,7 +21,7 @@ exports.DEFAULT_WELCOME_SCREEN_VALIDATION = {
 /**
  * Default Welcome Screen configuration
  */
-exports.DEFAULT_WELCOME_SCREEN_CONFIG = {
+export var DEFAULT_WELCOME_SCREEN_CONFIG = {
     isEnabled: true,
     title: '',
     message: '',
@@ -33,4 +30,3 @@ exports.DEFAULT_WELCOME_SCREEN_CONFIG = {
         version: '1.0.0'
     }
 };
-//# sourceMappingURL=welcome-screen.interface.js.map

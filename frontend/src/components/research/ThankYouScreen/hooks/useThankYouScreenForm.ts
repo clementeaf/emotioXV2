@@ -77,7 +77,18 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
       if (!isAuthenticated || !token) {
         throw new Error('No autenticado');
       }
-      return await thankYouScreenFixedAPI.getByResearchId(researchId).send();
+      try {
+        return await thankYouScreenFixedAPI.getByResearchId(researchId).send();
+      } catch (error: any) {
+        // Si es 404, devolver objeto especial notFound
+        if (error?.statusCode === 404 || error?.message?.includes('not found') || error?.message?.includes('THANK_YOU_SCREEN_NOT_FOUND')) {
+          return { notFound: true };
+        } else {
+          // Solo mostrar en consola si NO es 404
+          console.error('[useThankYouScreenForm] Error al cargar configuración:', error);
+          throw error;
+        }
+      }
     },
     enabled: !!researchId && isAuthenticated
   });

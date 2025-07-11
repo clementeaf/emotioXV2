@@ -35,7 +35,10 @@ const handleWelcomeScreenResponse = async (response: Response) => {
   try {
     const data = await response.json();
     if (!response.ok) {
-      console.error(`[WelcomeScreenAPI] Error ${response.status}: `, data);
+      // Solo mostrar error en consola si NO es 404
+      if (response.status !== 404) {
+        console.error(`[WelcomeScreenAPI] Error ${response.status}: `, data);
+      }
       throw new Error(data.message || `Error ${response.status}: ${response.statusText}`);
     }
     return data;
@@ -43,6 +46,9 @@ const handleWelcomeScreenResponse = async (response: Response) => {
     // Si no es JSON o hay otro error
     const text = await response.text().catch(() => 'No se pudo obtener el cuerpo de la respuesta');
     if (!response.ok) {
+      if (response.status !== 404) {
+        console.error(`[WelcomeScreenAPI] Error ${response.status}: ${text}`);
+      }
       throw new Error(`Error ${response.status}: ${text}`);
     }
     return text;
@@ -187,22 +193,18 @@ export const welcomeScreenFixedAPI = {
             }
           }
 
-          // Usamos el método fetch con catch para capturar errores 404
           try {
             const response = await fetch(`${API_BASE_URL}${url}`, {
               method: 'GET',
               headers
             });
 
-            // Si la respuesta es exitosa, guardamos que el recurso existe y procesamos normalmente
             if (response.ok) {
-              localStorage.removeItem(cacheKey); // Ya no es "nonexistent"
+              localStorage.removeItem(cacheKey);
               return handleWelcomeScreenResponse(response);
             }
 
-            // Si es 404, guardamos que el recurso no existe para evitar solicitudes futuras
             if (response.status === 404) {
-              // // console.log('[WelcomeScreenAPI] No se encontró configuración de pantalla de bienvenida para esta investigación - esto es normal para nuevas investigaciones');
               localStorage.setItem(cacheKey, 'nonexistent');
 
               return {

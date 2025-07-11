@@ -157,10 +157,7 @@ export const useFlowBuilder = ({ researchFlowApiData, isLoading }: UseFlowBuilde
 
         // Si aún está cargando, devolver pasos vacíos sin warning
         if (isLoading) {
-            return [
-                { id: 'welcome', name: 'Bienvenida', type: 'welcome', config: { title: '¡Bienvenido!', message: 'Iniciando...'}, responseKey: 'welcome' },
-                { id: 'thankyou', name: 'Agradecimiento', type: 'thankyou', config: { title: '¡Muchas Gracias!', message: 'Fin.'}, responseKey: 'thankyou' }
-            ];
+            return [];
         }
 
         // Solo mostrar warning si ya terminó de cargar pero no hay datos válidos
@@ -175,17 +172,11 @@ export const useFlowBuilder = ({ researchFlowApiData, isLoading }: UseFlowBuilde
                 console.error('[useFlowBuilder] API Error:', (researchFlowApiData as { error?: unknown; message?: string }).message);
             }
 
-            return [
-                { id: 'welcome', name: 'Bienvenida', type: 'welcome', config: { title: '¡Bienvenido!', message: 'Iniciando...'}, responseKey: 'welcome' },
-                { id: 'thankyou', name: 'Agradecimiento', type: 'thankyou', config: { title: '¡Muchas Gracias!', message: 'Fin.'}, responseKey: 'thankyou' }
-            ];
+            return [];
         }
 
         if (!Array.isArray(flowDataModules) || flowDataModules.length === 0) {
-            return [
-                { id: 'welcome', name: 'Bienvenida', type: 'welcome', config: { title: '¡Bienvenido!', message: 'Iniciando...'}, responseKey: 'welcome' },
-                { id: 'thankyou', name: 'Agradecimiento', type: 'thankyou', config: { title: '¡Muchas Gracias!', message: 'Fin.'}, responseKey: 'thankyou' }
-            ];
+            return [];
         }
 
         const finalSteps: ExpandedStep[] = [];
@@ -210,63 +201,21 @@ export const useFlowBuilder = ({ researchFlowApiData, isLoading }: UseFlowBuilde
             });
         } else {
             console.warn('[useFlowBuilder] No se encontró configuración demográfica en el backend (EYE_TRACKING_CONFIG.demographicQuestions). No se añadirá el paso demográfico.');
-            console.info('[useFlowBuilder] 💡 Para mostrar preguntas demográficas: Ve al panel de administración > Eye Tracking > Recruit, y habilita las preguntas demográficas que desees incluir.');
-
-            // Temporal: En modo desarrollo, crear preguntas de prueba
-            if (import.meta.env?.DEV || window.location.hostname === 'localhost') {
-                console.info('[useFlowBuilder] 🧪 Modo desarrollo detectado: Creando paso demográfico de prueba');
-                const developmentDemoConfig = {
-                    questions: {
-                        age: {
-                            id: 'age',
-                            enabled: true,
-                            required: true,
-                            title: 'Edad',
-                            options: ['18-24', '25-34', '35-44', '45-54', '55+']
-                        },
-                        gender: {
-                            id: 'gender',
-                            enabled: true,
-                            required: true,
-                            title: 'Género',
-                            options: ['Masculino', 'Femenino', 'Otro', 'Prefiero no decir']
-                        },
-                        educationLevel: {
-                            id: 'educationLevel',
-                            enabled: true,
-                            required: false,
-                            title: 'Nivel de Educación',
-                            options: ['Primaria', 'Secundaria', 'Universitaria', 'Posgrado']
-                        }
-                    },
-                    title: 'Preguntas Demográficas (Modo Desarrollo)',
-                    description: 'Estas son preguntas de prueba para desarrollo. En producción, configúralas en el panel de administración.'
-                };
-
-                finalSteps.push({
-                    id: 'demographic',
-                    name: developmentDemoConfig.title,
-                    type: 'demographic',
-                    config: {
-                        title: developmentDemoConfig.title,
-                        description: developmentDemoConfig.description,
-                        demographicsConfig: developmentDemoConfig
-                    },
-                    responseKey: 'demographic'
-                });
-            }
+            // NO agregar ningún paso ni fallback ni mock
         }
 
         const resolvedWelcomeConfig = (welcomeConfigFromBackend && typeof welcomeConfigFromBackend === 'object' && welcomeConfigFromBackend !== null && 'title' in welcomeConfigFromBackend)
             ? welcomeConfigFromBackend as { title?: string; message?: string }
-            : { title: 'Bienvenida', message: 'Gracias por participar.' };
-        finalSteps.push({
-            id: 'welcome',
-            name: 'title' in resolvedWelcomeConfig && typeof resolvedWelcomeConfig.title === 'string' ? resolvedWelcomeConfig.title : 'Bienvenida',
-            type: 'welcome',
-            config: resolvedWelcomeConfig,
-            responseKey: 'welcome'
-        });
+            : null;
+        if (resolvedWelcomeConfig) {
+            finalSteps.push({
+                id: 'welcome',
+                name: 'title' in resolvedWelcomeConfig && typeof resolvedWelcomeConfig.title === 'string' ? resolvedWelcomeConfig.title : 'Bienvenida',
+                type: 'welcome',
+                config: resolvedWelcomeConfig,
+                responseKey: 'welcome'
+            });
+        }
 
         for (const processedModule of flowDataModules) {
             const moduleData = processedModule.config;
@@ -296,14 +245,16 @@ export const useFlowBuilder = ({ researchFlowApiData, isLoading }: UseFlowBuilde
 
         const resolvedThankYouConfig = (thankyouConfigFromBackend && typeof thankyouConfigFromBackend === 'object' && thankyouConfigFromBackend !== null && 'title' in thankyouConfigFromBackend)
             ? thankyouConfigFromBackend as { title?: string; message?: string }
-            : { title: 'Fin', message: 'Gracias por completar el estudio.' };
-        finalSteps.push({
-            id: 'thankyou',
-            name: 'title' in resolvedThankYouConfig && typeof resolvedThankYouConfig.title === 'string' ? resolvedThankYouConfig.title : 'Fin',
-            type: 'thankyou',
-            config: resolvedThankYouConfig,
-            responseKey: 'thankyou'
-        });
+            : null;
+        if (resolvedThankYouConfig) {
+            finalSteps.push({
+                id: 'thankyou',
+                name: 'title' in resolvedThankYouConfig && typeof resolvedThankYouConfig.title === 'string' ? resolvedThankYouConfig.title : 'Fin',
+                type: 'thankyou',
+                config: resolvedThankYouConfig,
+                responseKey: 'thankyou'
+            });
+        }
 
         return finalSteps;
     }, [researchFlowApiData, isLoading]);

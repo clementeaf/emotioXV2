@@ -31,6 +31,7 @@ interface UseEyeTrackingRecruitProps {
 interface EyeTrackingRecruitFormData {
   id?: string;
   researchId: string;
+  questionKey: string;
   demographicQuestions: {
     age: {
       enabled: boolean;
@@ -164,6 +165,7 @@ const ensureOptionsArray = (options?: string[]): string[] => {
 // Configuración sin opciones hardcodeadas - el usuario debe definir sus propias opciones
 const DEFAULT_CONFIG: EyeTrackingRecruitFormData = {
   researchId: '',
+  questionKey: QuestionType.DEMOGRAPHICS,
   demographicQuestions: {
     age: {
       enabled: false,

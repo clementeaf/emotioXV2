@@ -17,6 +17,7 @@ export interface WelcomeScreenData {
   disclaimer?: string;
   customCss?: string;
   researchId: string;
+  questionKey: string;
   metadata?: {
     version?: string;
     lastUpdated?: string;

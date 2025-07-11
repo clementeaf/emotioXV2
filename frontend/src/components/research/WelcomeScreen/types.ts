@@ -36,6 +36,9 @@ export interface UseWelcomeScreenFormResult {
   closeModal: () => void;
   handlePreview: () => void;
   isEmpty: boolean;
+  handleDelete?: () => Promise<void>;
+  isDeleting?: boolean;
+  showDelete?: boolean;
 }
 
 /**
