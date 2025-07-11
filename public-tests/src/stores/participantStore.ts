@@ -554,14 +554,12 @@ export const useParticipantStore = create(
             return null;
         }
 
-        console.log(`[getStepResponse] 🔍 Buscando respuesta para stepIndex: ${stepIndex}, stepId: ${step.id}, stepType: ${step.type}`);
-
         // NUEVO: Buscar por questionKey primero (método preferido)
         if (questionKey) {
           const response = allApiResponses.find(resp => resp.questionKey === questionKey);
           if (response) {
             console.log(`[getStepResponse] ✅ Respuesta encontrada por questionKey: ${questionKey}`);
-            return response.response;
+            return response.response; // DEVOLVER SOLO EL VALOR DE LA RESPUESTA
           } else {
             console.log(`[getStepResponse] ❌ No se encontró respuesta por questionKey: ${questionKey}`);
           }
@@ -576,11 +574,12 @@ export const useParticipantStore = create(
 
         if (response) {
           console.log(`[getStepResponse] ⚠️ Respuesta encontrada por fallback (stepType + stepTitle)`);
+          return response.response; // DEVOLVER SOLO EL VALOR DE LA RESPUESTA
         } else {
           console.log(`[getStepResponse] ❌ No se encontró respuesta por ningún método`);
         }
 
-        return response ? response.response : null;
+        return null;
       },
 
       // Obtener respuesta de un paso por ID

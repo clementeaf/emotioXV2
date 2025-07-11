@@ -70,8 +70,12 @@ const processSmartVocQuestions = (
             const originalQuestionType = q.type;
             const upperQuestionType = typeof originalQuestionType === 'string' ? originalQuestionType.toUpperCase() : undefined;
             const frontendType = upperQuestionType && smartVOCTypeMap[upperQuestionType] ? smartVOCTypeMap[upperQuestionType] : undefined;
-            // NUEVO: Usar questionKey del backend si existe, si no, fallback
+            // SOLO usar el questionKey del backend si existe, nunca generarlo si ya existe
+            if (!q.questionKey) {
+                console.warn(`[useFlowBuilder] ⚠️ Pregunta sin questionKey del backend. ID: ${q.id}, type: ${q.type}`);
+            }
             const questionKey = q.questionKey || q.id || `${frontendType || 'smartvoc'}_${steps.length}`;
+            console.log(`[useFlowBuilder] Paso SmartVOC: usando questionKey='${questionKey}' (backend='${q.questionKey}') para pregunta ID='${q.id}'`);
             if (frontendType) {
                 steps.push({
                     id: q.id || `${frontendType}_${steps.length}`,
@@ -80,7 +84,7 @@ const processSmartVocQuestions = (
                     config: question,
                     instructions: q.instructions,
                     responseKey: parentModuleResponseKey,
-                    questionKey // NUEVO
+                    questionKey // SIEMPRE propagar el del backend si existe
                 });
             } else {
                 console.warn(`[useFlowBuilder processSmartVocQuestions] No mapeado: tipo "${upperQuestionType}" (Q ID ${q.id})`);
@@ -105,8 +109,11 @@ const processCognitiveTaskQuestions = (
             const frontendType = typeof originalQuestionType === 'string' && originalQuestionType.startsWith('cognitive_')
               ? originalQuestionType
               : typeof originalQuestionType === 'string' ? `cognitive_${originalQuestionType.toLowerCase()}` : undefined;
-            // NUEVO: Usar questionKey del backend si existe, si no, fallback
+            if (!q.questionKey) {
+                console.warn(`[useFlowBuilder] ⚠️ Pregunta cognitiva sin questionKey del backend. ID: ${q.id}, type: ${q.type}`);
+            }
             const questionKey = q.questionKey || q.id || `${frontendType || 'cognitive'}_${steps.length}`;
+            console.log(`[useFlowBuilder] Paso Cognitivo: usando questionKey='${questionKey}' (backend='${q.questionKey}') para pregunta ID='${q.id}'`);
             if (frontendType) {
                 steps.push({
                     id: q.id || `${frontendType}_${steps.length}`,
@@ -115,7 +122,7 @@ const processCognitiveTaskQuestions = (
                     config: question,
                     instructions: q.instructions,
                     responseKey: parentModuleResponseKey,
-                    questionKey // NUEVO
+                    questionKey // SIEMPRE propagar el del backend si existe
                 });
             } else {
                 console.warn(`[useFlowBuilder processCognitiveTaskQuestions] No se pudo generar frontendType para tipo: "${originalQuestionType}" (Q ID ${q.id})`);
@@ -138,8 +145,11 @@ const processDefaultModuleQuestions = (
             const q = question as { id?: string; title?: string; type?: string; instructions?: string; questionKey?: string };
             const originalQuestionType = q.type;
             const frontendType = moduleSK && typeof originalQuestionType === 'string' ? `${moduleSK.toLowerCase()}_${originalQuestionType.toLowerCase()}` : `unknown_${typeof originalQuestionType === 'string' ? originalQuestionType.toLowerCase() : 'question'}`;
-            // NUEVO: Usar questionKey del backend si existe, si no, fallback
+            if (!q.questionKey) {
+                console.warn(`[useFlowBuilder] ⚠️ Pregunta default sin questionKey del backend. ID: ${q.id}, type: ${q.type}`);
+            }
             const questionKey = q.questionKey || q.id || `${frontendType}_${steps.length}`;
+            console.log(`[useFlowBuilder] Paso Default: usando questionKey='${questionKey}' (backend='${q.questionKey}') para pregunta ID='${q.id}'`);
             steps.push({
                 id: q.id || `${frontendType}_${steps.length}`,
                 name: q.title || `${moduleTitleFromBackend || moduleSK || 'Módulo Desconocido'}: ${originalQuestionType || 'Pregunta'}`,
@@ -147,7 +157,7 @@ const processDefaultModuleQuestions = (
                 config: question,
                 instructions: q.instructions,
                 responseKey: parentModuleResponseKey,
-                questionKey // NUEVO
+                questionKey // SIEMPRE propagar el del backend si existe
             });
         }
     }

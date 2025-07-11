@@ -4,7 +4,7 @@ export const QuestionType = {
   SMARTVOC_CSAT: 'smartvoc_csat',
   SMARTVOC_CV: 'smartvoc_cv',
   SMARTVOC_NPS: 'smartvoc_nps',
-  SMARTVOC_ESAT: 'smartvoc_esat',
+  SMARTVOC_CES: 'smartvoc_ces',
   SMARTVOC_OSAT: 'smartvoc_osat',
   SMARTVOC_VOC: 'smartvoc_voc',
 

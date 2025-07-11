@@ -3,13 +3,13 @@ import { useStepResponseManager } from '../../hooks/useStepResponseManager';
 import { MappedStepComponentProps } from '../../types/flow.types';
 import { SmartVOCQuestion } from '../../types/smart-voc.types';
 import { formatQuestionText } from '../../utils/formHelpers';
+import FormSubmitButton from '../common/FormSubmitButton';
 
 const AgreementScaleView: React.FC<MappedStepComponentProps> = ({
   stepConfig,
   onStepComplete,
-  questionKey // NUEVO: questionKey para identificación única
+  questionKey
 }) => {
-  // Convertir stepConfig a SmartVOCQuestion
   const question = stepConfig as SmartVOCQuestion;
 
   if (!question || !question.config) {
@@ -20,23 +20,17 @@ const AgreementScaleView: React.FC<MappedStepComponentProps> = ({
   const instructions = question.instructions || question.config.instructions || '';
   const companyName = question.config.companyName || '';
 
-  const agreementLevels = [
-    { value: 1, label: 'Totalmente en desacuerdo' },
-    { value: 2, label: 'En desacuerdo' },
-    { value: 3, label: 'Ni de acuerdo ni en desacuerdo' },
-    { value: 4, label: 'De acuerdo' },
-    { value: 5, label: 'Totalmente de acuerdo' }
-  ];
+  // Escala dinámica según config.scaleRange
+  const agreementLevels = (
+    typeof question?.config?.scaleRange?.start === 'number' &&
+    typeof question?.config?.scaleRange?.end === 'number'
+  )
+    ? Array.from(
+        { length: (question.config!.scaleRange!.end as number) - (question.config!.scaleRange!.start as number) + 1 },
+        (_, i) => (question.config!.scaleRange!.start as number) + i
+      )
+    : [1, 2, 3, 4, 5];
 
-  console.log('[AgreementScaleView] 🔍 Debug info:', {
-    questionType: question.type,
-    questionId: question.id,
-    questionTitle: question.title,
-    questionKey, // NUEVO: Log questionKey
-    stepName: question.title || 'Agreement Scale Question'
-  });
-
-  // NUEVO: Usar questionKey para el manejo de respuestas
   const {
     responseData,
     isSaving,
@@ -48,13 +42,12 @@ const AgreementScaleView: React.FC<MappedStepComponentProps> = ({
     stepName: question.title || 'Escala de Acuerdo',
     researchId: undefined,
     participantId: undefined,
-    questionKey, // NUEVO: Pasar questionKey del backend
+    questionKey,
   });
 
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Cargar respuesta previa si existe
   useEffect(() => {
     if (responseData && typeof responseData === 'object' && 'value' in responseData) {
       const prevRating = (responseData as { value: number }).value;
@@ -68,17 +61,16 @@ const AgreementScaleView: React.FC<MappedStepComponentProps> = ({
 
   const handleSubmit = async () => {
     if (selectedRating === null) {
-      // actions.setError('Por favor selecciona una opción'); // This line was removed as per the new_code
       return;
     }
 
     setIsSubmitting(true);
-    // actions.setError(null); // This line was removed as per the new_code
 
     try {
       const responseData = {
         value: selectedRating,
-        questionKey, // NUEVO: Incluir questionKey en la respuesta
+        score: selectedRating, // Nuevo: persistencia estándar como CSATView
+        questionKey,
         timestamp: Date.now(),
         metadata: {
           questionType: question.type,
@@ -89,13 +81,6 @@ const AgreementScaleView: React.FC<MappedStepComponentProps> = ({
         }
       };
 
-      console.log(`[AgreementScaleView] 🔑 Enviando respuesta con questionKey: ${questionKey}`, {
-        rating: selectedRating,
-        questionKey,
-        questionId: question.id,
-        agreementLevel: responseData.metadata.agreementLevel
-      });
-
       const result = await saveCurrentStepResponse(responseData);
 
       if (result.success) {
@@ -103,19 +88,19 @@ const AgreementScaleView: React.FC<MappedStepComponentProps> = ({
         onStepComplete?.(responseData);
       } else {
         console.error(`[AgreementScaleView] ❌ Error guardando respuesta con questionKey: ${questionKey}`);
-        // actions.setError('Error al guardar la respuesta'); // This line was removed as per the new_code
       }
     } catch (error) {
       console.error(`[AgreementScaleView] 💥 Exception guardando respuesta con questionKey: ${questionKey}`, error);
-      // actions.setError('Error inesperado al guardar la respuesta'); // This line was removed as per the new_code
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const hasExistingData = !!(responseData && typeof responseData === 'object' && 'value' in responseData && responseData.value !== null && responseData.value !== undefined);
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 py-8">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-6">
+    <div className="flex flex-col items-center justify-center py-8">
+      <div className="max-w-md w-full p-6">
         <div className="text-center mb-6">
           <h2 className="text-xl font-semibold text-gray-800 mb-2">
             {formatQuestionText(questionText, companyName)}
@@ -125,25 +110,22 @@ const AgreementScaleView: React.FC<MappedStepComponentProps> = ({
           )}
         </div>
 
-        <div className="mb-6">
-          <div className="space-y-3">
-            {agreementLevels.map((level) => (
-              <button
-                key={level.value}
-                onClick={() => handleRatingChange(level.value)}
-                className={`w-full p-3 text-left rounded-lg border transition-colors ${
-                  selectedRating === level.value
-                    ? 'bg-blue-50 border-blue-300 text-blue-800'
-                    : 'bg-white border-gray-200 hover:bg-gray-50'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">{level.value}</span>
-                  <span className="text-sm text-gray-600">{level.label}</span>
-                </div>
-              </button>
-            ))}
-          </div>
+        <div className="mb-6 flex flex-row items-center justify-center gap-4">
+          {agreementLevels.map((level) => (
+            <button
+              key={level}
+              type="button"
+              onClick={() => handleRatingChange(level)}
+              className={`w-12 h-12 flex items-center justify-center rounded-full border-2 transition-colors text-lg font-semibold focus:outline-none
+                ${selectedRating === level
+                  ? 'bg-blue-600 border-blue-700 text-white shadow-lg'
+                  : 'bg-white border-gray-300 text-gray-700 hover:bg-blue-50'}
+              `}
+              aria-label={`Seleccionar ${level}`}
+            >
+              {level}
+            </button>
+          ))}
         </div>
 
         {error && (
@@ -152,23 +134,17 @@ const AgreementScaleView: React.FC<MappedStepComponentProps> = ({
           </div>
         )}
 
-        <button
-          onClick={handleSubmit}
-          disabled={selectedRating === null || isSubmitting || isSaving}
-          className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${
-            selectedRating === null || isSubmitting || isSaving
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              : 'bg-blue-600 text-white hover:bg-blue-700'
-          }`}
-        >
-          {isSubmitting || isSaving ? 'Guardando...' : 'Continuar'}
-        </button>
-
-        {questionKey && (
-          <div className="mt-4 p-2 bg-gray-100 rounded text-xs text-gray-500">
-            <p>ID: {questionKey}</p>
-          </div>
-        )}
+        {/* Botón de submit usando FormSubmitButton */}
+        <div className="w-full flex justify-center mt-2">
+          <FormSubmitButton
+            isSaving={isSubmitting || isSaving}
+            hasExistingData={hasExistingData}
+            onClick={handleSubmit}
+            disabled={selectedRating === null}
+            customCreateText="Guardar y continuar"
+            customUpdateText="Actualizar y continuar"
+          />
+        </div>
       </div>
     </div>
   );

@@ -16,8 +16,8 @@ export const QUESTION_TEMPLATES: Partial<Record<QuestionType, Omit<SmartVOCQuest
       companyName: ''
     }
   },
-  [QuestionType.SMARTVOC_ESAT]: {
-    type: QuestionType.SMARTVOC_ESAT,
+  [QuestionType.SMARTVOC_CES]: {
+    type: QuestionType.SMARTVOC_CES,
     title: 'Customer Effort Score (CES)',
     description: 'Fue fácil para mí resolver mi problema hoy.',
     instructions: '',

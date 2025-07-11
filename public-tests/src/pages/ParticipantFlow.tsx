@@ -3,9 +3,7 @@ import { useParams } from 'react-router-dom';
 import LoadingIndicator from '../components/common/LoadingIndicator';
 import { LocationPermissionRequest } from '../components/common/LocationPermissionRequest';
 import { MobileBlockScreen } from '../components/common/MobileBlockScreen';
-import { ReentryInfo } from '../components/common/ReentryInfo';
 import { TimeProgress } from '../components/common/TimeProgress';
-import { TimingInfo } from '../components/common/TimingInfo';
 import FlowStepContent from '../components/flow/FlowStepContent';
 import { ProgressSidebar } from '../components/layout/ProgressSidebar';
 import { useLocationTracking } from '../hooks/useLocationTracking';
@@ -59,10 +57,15 @@ const ParticipantFlow: React.FC = () => {
         if (!memoizedCurrentExpandedStep) {
             return undefined;
         }
-        const savedResponse = getStepResponseFromManager(memoizedCurrentExpandedStep.id);
-
+        // Usar la función del store que devuelve el valor correcto
+        const savedResponse = getStepResponseFromStore(currentStepIndex);
+        console.log('[ParticipantFlow] 🔍 savedResponseForCurrentStep:', {
+            stepId: memoizedCurrentExpandedStep.id,
+            stepIndex: currentStepIndex,
+            savedResponse
+        });
         return savedResponse;
-    }, [memoizedCurrentExpandedStep, getStepResponseFromManager, getStepResponseFromStore, currentStepIndex]);
+    }, [memoizedCurrentExpandedStep, getStepResponseFromStore, currentStepIndex, responsesData]);
 
     // const memoizedResponsesDataProp = useMemo(() => {
     //     const isThankYou = memoizedCurrentExpandedStep?.type === 'thankyou' || currentStep === ParticipantFlowStep.DONE;
@@ -302,7 +305,8 @@ const ParticipantFlow: React.FC = () => {
                         <div className="w-full pt-4 pb-6 sm:pt-0 sm:pb-0 flex justify-center sm:block">
                             <div className="bg-white !shadow-none !border-0 rounded-none sm:rounded-tl-xl sm:shadow-lg sm:border-l sm:border-t sm:border-neutral-200 h-auto w-full sm:w-auto sm:h-auto flex justify-center sm:block">
                                 <div className="p-0 sm:p-8 w-full h-auto max-w-md mx-auto sm:max-w-none flex justify-center sm:block">
-                                    {/* Componente de información de reingresos (solo en desarrollo) */}
+                                    {/* Eliminar visualización de debug, pero mantener lógica de tracking */}
+                                    {/*
                                     <div className="mb-4">
                                         <ReentryInfo
                                             reentryCount={reentryCount}
@@ -313,7 +317,6 @@ const ParticipantFlow: React.FC = () => {
                                         />
                                     </div>
 
-                                    {/* Componente de información de timing (solo en desarrollo) */}
                                     <div className="mb-4">
                                         <TimingInfo
                                             isGlobalTimerRunning={isGlobalTimerRunning}
@@ -323,6 +326,7 @@ const ParticipantFlow: React.FC = () => {
                                             sectionTimings={sectionTimings}
                                         />
                                     </div>
+                                    */}
 
                                     {/* Componente de solicitud de ubicación si está habilitado */}
                                     {isLocationTrackingEnabled && (

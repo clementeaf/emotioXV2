@@ -26,7 +26,7 @@ export const useSmartVOCState = (researchId: string) => {
       },
       {
         id: 'ces-template',
-        type: QuestionType.SMARTVOC_ESAT,
+        type: QuestionType.SMARTVOC_CES,
         title: 'Esfuerzo del Cliente (CES)',
         description: '',
         instructions: '',
@@ -171,7 +171,7 @@ export const useSmartVOCState = (researchId: string) => {
         },
         {
           id: 'ces-template',
-          type: QuestionType.SMARTVOC_ESAT,
+          type: QuestionType.SMARTVOC_CES,
           title: 'Esfuerzo del Cliente (CES)',
           description: '',
           instructions: '',

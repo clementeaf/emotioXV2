@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useStepResponseManager } from '../../hooks/useStepResponseManager';
+import { useParticipantStore } from '../../stores/participantStore';
 import { MappedStepComponentProps } from '../../types/flow.types';
-import { SmartVOCQuestion } from '../../types/smart-voc.types';
 import { formatQuestionText } from '../../utils/formHelpers';
+import FormSubmitButton from '../common/FormSubmitButton';
 import { StarRating } from './StarRating';
 
 // Mapeo de tipos SmartVOC para asegurar consistencia
@@ -15,13 +16,13 @@ const smartVOCTypeMap: { [key: string]: string } = {
   'VOC': 'smartvoc_feedback',
 };
 
-const CSATView: React.FC<MappedStepComponentProps> = ({
-  stepConfig,
-  onStepComplete,
-  questionKey // NUEVO: questionKey para identificación única
-}) => {
-  // Convertir stepConfig a SmartVOCQuestion
-  const question = stepConfig as SmartVOCQuestion;
+interface CSATViewProps extends MappedStepComponentProps {
+  savedResponse?: any;
+}
+
+const CSATView: React.FC<CSATViewProps> = (props) => {
+  const { stepConfig, onStepComplete, savedResponse } = props;
+  const question = stepConfig as any;
 
   if (!question || !question.config) {
     return <div>Cargando configuración...</div>;
@@ -48,7 +49,7 @@ const CSATView: React.FC<MappedStepComponentProps> = ({
     mappedStepType,
     questionId: question.id,
     questionTitle: question.title,
-    questionKey, // NUEVO: Log questionKey
+    questionKey: question.questionKey, // NUEVO: Log questionKey
     stepName: question.title || 'Valora tu satisfacción'
   });
 
@@ -64,36 +65,75 @@ const CSATView: React.FC<MappedStepComponentProps> = ({
     stepName: question.title || 'Valora tu satisfacción',
     researchId: undefined,
     participantId: undefined,
-    questionKey, // NUEVO: Pasar questionKey del backend
+    questionKey: question.questionKey, // NUEVO: Pasar questionKey del backend
   });
 
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setError] = useState<string | null>(null);
 
-  // Cargar respuesta previa si existe
+  // Sincronizar selectedRating con savedResponse y responseData
   useEffect(() => {
-    if (responseData && typeof responseData === 'object' && 'value' in responseData) {
-      const prevRating = (responseData as { value: number }).value;
-      setSelectedRating(prevRating);
-    }
-  }, [responseData]);
+    // Función auxiliar para extraer el valor de la respuesta
+    const extractRatingValue = (response: any): number | null => {
+      if (!response) return null;
+
+      // Si es un objeto ModuleResponse (del store), extraer de response.response
+      if (typeof response === 'object' && response !== null) {
+        // Caso 1: Es un ModuleResponse con response.response
+        if ('response' in response && typeof response.response === 'object' && response.response !== null) {
+          if ('value' in response.response) {
+            return response.response.value;
+          }
+        }
+
+        // Caso 2: Es directamente el objeto de respuesta con value
+        if ('value' in response) {
+          return response.value;
+        }
+
+        // Caso 3: Es un número directo
+        if (typeof response === 'number') {
+          return response;
+        }
+      }
+
+      // Caso 4: Es un número directo
+      if (typeof response === 'number') {
+        return response;
+      }
+
+      return null;
+    };
+
+    // Prioridad: savedResponse (prop) > responseData (hook)
+    let rating = extractRatingValue(savedResponse) || extractRatingValue(responseData);
+
+    console.log('[CSATView] 🔍 Extrayendo rating:', {
+      savedResponse,
+      responseData,
+      extractedRating: rating
+    });
+
+    setSelectedRating(rating);
+  }, [savedResponse, responseData]);
 
   const handleRatingChange = (rating: number) => {
     setSelectedRating(rating);
   };
 
   const handleSubmit = async () => {
-    if (selectedRating === null) {
-      return;
-    }
+    if (selectedRating === null) return;
 
     setIsSubmitting(true);
+    setError(null);
 
     try {
       const responseData = {
         value: selectedRating,
-        questionKey, // NUEVO: Incluir questionKey en la respuesta
+        questionKey: question.questionKey, // Usar SIEMPRE el de la pregunta
         timestamp: Date.now(),
+        stepTitle: question.title || '', // Asegurar string
         metadata: {
           questionType: question.type,
           questionId: question.id,
@@ -102,22 +142,58 @@ const CSATView: React.FC<MappedStepComponentProps> = ({
         }
       };
 
-      console.log(`[CSATView] 🔑 Enviando respuesta con questionKey: ${questionKey}`, {
-        rating: selectedRating,
-        questionKey,
-        questionId: question.id
-      });
-
       const result = await saveCurrentStepResponse(responseData);
 
       if (result.success) {
-        console.log(`[CSATView] ✅ Respuesta guardada exitosamente con questionKey: ${questionKey}`);
+        setSelectedRating(selectedRating); // Actualiza el estado local inmediatamente
+
+        // NUEVO: Actualizar el store usando el setter de Zustand
+        const store = useParticipantStore.getState();
+        const setParticipantStore = useParticipantStore.setState;
+        const currentResponses = store.responsesData.modules.all_steps || [];
+
+        // Buscar si ya existe una respuesta con este questionKey
+        const existingIndex = currentResponses.findIndex(r => r.questionKey === question.questionKey);
+
+        const newResponse = {
+          id: question.id || question.questionKey || 'unknown',
+          stepTitle: question.title || '',
+          stepType: question.type || 'smartvoc_csat',
+          questionKey: question.questionKey || 'unknown',
+          response: responseData,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          participantId: store.participantId || undefined,
+          researchId: store.researchId || undefined
+        };
+
+        let updatedResponses;
+        if (existingIndex >= 0) {
+          // Actualizar respuesta existente
+          updatedResponses = [...currentResponses];
+          updatedResponses[existingIndex] = newResponse;
+        } else {
+          // Agregar nueva respuesta
+          updatedResponses = [...currentResponses, newResponse];
+        }
+
+        setParticipantStore(state => ({
+          responsesData: {
+            ...state.responsesData,
+            modules: {
+              ...state.responsesData.modules,
+              all_steps: updatedResponses
+            }
+          }
+        }));
+
         onStepComplete?.(responseData);
       } else {
-        console.error(`[CSATView] ❌ Error guardando respuesta con questionKey: ${questionKey}`);
+        console.error(`[CSATView] ❌ Error guardando respuesta con questionKey: ${question.questionKey}`);
       }
     } catch (error) {
-      console.error(`[CSATView] 💥 Exception guardando respuesta con questionKey: ${questionKey}`, error);
+      console.error('[CSATView] Error guardando respuesta:', error);
+      setError('Error guardando la respuesta. Por favor, intenta de nuevo.');
     } finally {
       setIsSubmitting(false);
     }
@@ -125,7 +201,7 @@ const CSATView: React.FC<MappedStepComponentProps> = ({
 
   return (
     <div className="flex flex-col items-center justify-center py-8">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-6">
+      <div className="max-w-md w-full p-6">
         <div className="text-center mb-6">
           <h2 className="text-xl font-semibold text-gray-800 mb-2">
             {formatQuestionText(questionText, companyName)}
@@ -164,23 +240,22 @@ const CSATView: React.FC<MappedStepComponentProps> = ({
           )}
         </div>
 
-        {error && (
+        {errorMessage && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-red-600 text-sm">{error}</p>
+            <p className="text-red-600 text-sm">{errorMessage}</p>
           </div>
         )}
 
-        <button
+        <div className='w-full flex justify-center'>
+          <FormSubmitButton
+          isSaving={isSubmitting || isSaving}
+          hasExistingData={!!(responseData && typeof responseData === 'object' && 'value' in responseData)}
           onClick={handleSubmit}
-          disabled={selectedRating === null || isSubmitting || isSaving}
-          className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${
-            selectedRating === null || isSubmitting || isSaving
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              : 'bg-blue-600 text-white hover:bg-blue-700'
-          }`}
-        >
-          {isSubmitting || isSaving ? 'Guardando...' : 'Continuar'}
-        </button>
+          disabled={selectedRating === null}
+          customCreateText="Guardar y continuar"
+          customUpdateText="Actualizar y continuar"
+        />
+        </div>
       </div>
     </div>
   );

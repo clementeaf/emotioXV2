@@ -75,10 +75,10 @@ export const useResponseAPI = ({ researchId, participantId }: UseResponseAPIProp
         participantId,
         stepId,
         stepType,
-        stepTitle: responseData as string, // Assuming stepName is passed as responseData
+        stepTitle: (responseData as any)?.stepTitle || '', // Siempre string
         response: responseData,
         metadata,
-        questionKey: stepId, // Assuming questionKey is stepId
+        questionKey: (responseData as any)?.questionKey || stepId, // Usar questionKey real si existe
         ...(responseData as any)?.moduleId ? { moduleId: (responseData as any).moduleId } : {}
       };
 

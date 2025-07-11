@@ -40,13 +40,21 @@ const FlowStepContent: React.FC<Omit<FlowStepContentComponentProps, 'responsesDa
 
     const currentQuestionKey = useMemo(() => {
         if (!currentExpandedStep) return '';
-
+        // Prioridad: questionKey en config > questionKey en step > getQuestionKey > id
+        const configQuestionKey = (currentExpandedStep.config && (currentExpandedStep.config as any).questionKey) || null;
+        if (configQuestionKey) {
+            console.log(`[FlowStepContent] ✅ Usando questionKey de config: ${configQuestionKey}`);
+            return configQuestionKey;
+        }
+        if (currentExpandedStep.questionKey) {
+            console.log(`[FlowStepContent] ✅ Usando questionKey de step: ${currentExpandedStep.questionKey}`);
+            return currentExpandedStep.questionKey;
+        }
         const questionKey = getQuestionKey(currentExpandedStep.id);
         if (questionKey) {
-            console.log(`[FlowStepContent] 🔑 Obtenido questionKey: ${questionKey} para stepId: ${currentExpandedStep.id}`);
+            console.log(`[FlowStepContent] 🔑 Obtenido questionKey del diccionario: ${questionKey} para stepId: ${currentExpandedStep.id}`);
             return questionKey;
         }
-
         if (!currentExpandedStep.id.includes('unknown_') && !currentExpandedStep.id.includes('temp_') && !currentExpandedStep.id.includes('debug_')) {
             console.warn(`[FlowStepContent] ⚠️ No se encontró questionKey para stepId: ${currentExpandedStep.id}, usando stepId como fallback`);
         }

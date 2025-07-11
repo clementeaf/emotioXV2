@@ -309,7 +309,7 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
                 stepConfig={configWithSaved}
                 savedResponse={savedResponses}
                 onStepComplete={onStepComplete}
-                questionKey={questionKey || stepType} // NUEVO: Pasar questionKey con fallback
+                questionKey={(stepConfig && (stepConfig as any).questionKey) || questionKey}
                 {...mappedProps}
             />
         );
@@ -330,7 +330,7 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
     };
     return (
         <Suspense fallback={<div className="flex items-center justify-center h-full">Cargando paso...</div>}>
-            <ComponentToRender {...finalProps as any} questionKey={questionKey || stepType} />
+            <ComponentToRender {...finalProps as any} questionKey={(stepConfig && (stepConfig as any).questionKey) || questionKey} />
         </Suspense>
     );
 };

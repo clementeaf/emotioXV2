@@ -226,7 +226,7 @@ export const stepComponentMap: StepComponentMap = {
     [QuestionType.SMARTVOC_CSAT]: CSATView,
     [QuestionType.SMARTVOC_CV]: DifficultyScaleView,
     [QuestionType.SMARTVOC_NPS]: NPSView,
-    [QuestionType.SMARTVOC_ESAT]: AgreementScaleView,
+    [QuestionType.SMARTVOC_CES]: AgreementScaleView,
     [QuestionType.SMARTVOC_OSAT]: AgreementScaleView,
 
     // Demographics usando ENUM QuestionType
@@ -242,7 +242,6 @@ export const stepComponentMap: StepComponentMap = {
     'cognitive_navigation_flow': CognitiveNavigationFlowStep,
     'smartvoc_nev': EmotionSelectionView,
     'smartvoc_feedback': SmartVocFeedbackQuestion,
-    'smartvoc_ces': DifficultyScaleView,
     'multiple_choice': MultipleChoiceQuestion,
     'single_choice': SingleChoiceQuestion,
     'short_text': ShortTextQuestion,

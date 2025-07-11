@@ -1,199 +1,152 @@
 import React, { useEffect, useState } from 'react';
-import { useModuleResponses } from '../../../hooks/useModuleResponses';
-import { useResponseAPI } from '../../../hooks/useResponseAPI';
-import { useParticipantStore } from '../../../stores/participantStore';
-import { CVQuestionComponentProps } from '../../../types/smart-voc.types';
-import { getStandardButtonText } from '../../../utils/formHelpers';
+import { useStepResponseManager } from '../../../hooks/useStepResponseManager';
+import { MappedStepComponentProps } from '../../../types/flow.types';
+import { SmartVOCQuestion } from '../../../types/smart-voc.types';
+import { formatQuestionText } from '../../../utils/formHelpers';
+import FormSubmitButton from '../../common/FormSubmitButton';
 
-export const CVQuestion: React.FC<CVQuestionComponentProps> = ({
-  questionConfig,
-  researchId,
-  moduleId,
-  onSaveSuccess
+const CVQuestion: React.FC<MappedStepComponentProps> = ({
+  stepConfig,
+  onStepComplete,
+  questionKey
 }) => {
-  const { question, minValue, maxValue, minLabel, maxLabel } = questionConfig;
-  const mainQuestionText = question || '¿Cómo calificarías el valor recibido?';
+  const question = stepConfig as SmartVOCQuestion;
 
-  const scaleRange = { start: minValue, end: maxValue };
-  const leftLabel = minLabel || "Poco valor";
-  const rightLabel = maxLabel || "Mucho valor";
+  if (!question || !question.config) {
+    return <div>Cargando configuración...</div>;
+  }
 
-  const participantIdFromStore = useParticipantStore(state => state.participantId);
+  const questionText = question.title || '¿Cómo calificarías el valor recibido?';
+  const instructions = question.instructions || question.config.instructions || '';
+  const companyName = question.config.companyName || '';
 
-  const [selectedValue, setSelectedValue] = useState<number | null>(null);
-  const [internalModuleResponseId, setInternalModuleResponseId] = useState<string | null>(null);
+  // Escala dinámica según config.scaleRange
+  const agreementLevels = (
+    typeof question?.config?.scaleRange?.start === 'number' &&
+    typeof question?.config?.scaleRange?.end === 'number'
+  )
+    ? Array.from(
+        { length: (question.config!.scaleRange!.end as number) - (question.config!.scaleRange!.start as number) + 1 },
+        (_, i) => (question.config!.scaleRange!.start as number) + i
+      )
+    : [1, 2, 3, 4, 5];
 
   const {
-    data: moduleResponsesArray,
-    isLoading: isLoadingInitialData,
-    error: loadingError
-  } = useModuleResponses({
-    researchId,
-    participantId: participantIdFromStore || undefined,
-    autoFetch: !!(researchId && participantIdFromStore)
+    responseData,
+    isSaving,
+    error,
+    saveCurrentStepResponse
+  } = useStepResponseManager({
+    stepId: question.id,
+    stepType: 'cv-question',
+    stepName: question.title || 'Pregunta CV',
+    researchId: undefined,
+    participantId: undefined,
+    questionKey,
   });
 
-  const {
-    saveOrUpdateResponse,
-    isLoading: isSubmitting,
-    error: submissionError,
-    setError: setSubmissionError
-  } = useResponseAPI({ researchId, participantId: participantIdFromStore || '' });
+  const [selectedRating, setSelectedRating] = useState<number | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!isLoadingInitialData && !loadingError && moduleResponsesArray && Array.isArray(moduleResponsesArray)) {
-      const foundResponse = moduleResponsesArray.find((r: unknown) => {
-        if (typeof r !== 'object' || r === null) return false;
-        const resp = r as {
-          stepType?: unknown;
-          stepTitle?: unknown;
-          id?: unknown;
-          stepId?: unknown;
-          moduleId?: unknown
-        };
-
-        return (
-          (resp.stepType === 'cv' && resp.moduleId === moduleId) ||
-          (resp.stepId === question && resp.moduleId === moduleId) ||
-          (resp.stepType === 'cv') ||
-          (typeof resp.stepTitle === 'string' && resp.stepTitle.includes(question)) ||
-          (resp.id === question)
-        );
-      });
-
-      if (
-        foundResponse &&
-        typeof foundResponse === 'object' &&
-        foundResponse !== null &&
-        'response' in foundResponse &&
-        typeof (foundResponse as { response?: unknown }).response === 'object' &&
-        (foundResponse as { response?: { value?: unknown } }).response !== null &&
-        typeof (foundResponse as { response?: { value?: unknown } }).response?.value === 'number'
-      ) {
-        const responseValue = (foundResponse as { response: { value: number } }).response.value;
-        console.log(`[CVQuestion] Cargando respuesta existente para ${question}:`, responseValue);
-        setSelectedValue(responseValue);
-        setInternalModuleResponseId(
-          'id' in foundResponse && typeof (foundResponse as { id?: unknown }).id === 'string'
-            ? (foundResponse as { id: string }).id
-            : null
-        );
-      } else {
-        console.log(`[CVQuestion] No se encontró respuesta previa para ${question}`);
-        setSelectedValue(null);
-        setInternalModuleResponseId(null);
-      }
+    if (responseData && typeof responseData === 'object' && 'value' in responseData) {
+      const prevRating = (responseData as { value: number }).value;
+      setSelectedRating(prevRating);
     }
-  }, [moduleResponsesArray, isLoadingInitialData, loadingError, question, moduleId]);
+  }, [responseData]);
 
-  const handleSelect = (value: number) => {
-    setSelectedValue(value);
-    if (submissionError) setSubmissionError(null);
+  const handleRatingChange = (rating: number) => {
+    setSelectedRating(rating);
   };
 
-  const handleSaveOrUpdateClick = async () => {
-    if (!participantIdFromStore || participantIdFromStore.trim() === '') {
-      setSubmissionError("Error: participantIdFromStore vacío.");
-      return;
-    }
-    if (selectedValue === null) {
-      setSubmissionError("Por favor, selecciona una opción.");
+  const handleSubmit = async () => {
+    if (selectedRating === null) {
       return;
     }
 
-    const responseData = { value: selectedValue };
-    // const stepNameForApi = question; // Eliminada porque no se usa
+    setIsSubmitting(true);
 
-    const result = await saveOrUpdateResponse(
-      question,
-      'cv',
-      responseData,
-      internalModuleResponseId || undefined
-    );
-
-    if (result && !submissionError) {
-      let newId: string | null = null;
-      if (
-        typeof result === 'object' &&
-        result !== null &&
-        'id' in result &&
-        typeof (result as { id?: unknown }).id === 'string'
-      ) {
-        newId = (result as { id: string }).id;
-        if (!internalModuleResponseId) {
-          setInternalModuleResponseId(newId);
+    try {
+      const responseData = {
+        value: selectedRating,
+        questionKey,
+        timestamp: Date.now(),
+        metadata: {
+          questionType: question.type,
+          questionId: question.id,
+          companyName,
+          cvScore: selectedRating,
+          agreementLevel: selectedRating <= 2 ? 'Desacuerdo' : selectedRating >= 4 ? 'Acuerdo' : 'Neutral'
         }
+      };
+
+      const result = await saveCurrentStepResponse(responseData);
+
+      if (result.success) {
+        console.log(`[CVQuestion] ✅ Respuesta guardada exitosamente con questionKey: ${questionKey}`);
+        onStepComplete?.(responseData);
+      } else {
+        console.error(`[CVQuestion] ❌ Error guardando respuesta con questionKey: ${questionKey}`);
       }
-      onSaveSuccess(question, selectedValue, newId || internalModuleResponseId || null);
-    } else if (!result && !submissionError) {
-      setSubmissionError("Ocurrió un error desconocido al guardar la respuesta (CVQuestion).");
+    } catch (error) {
+      console.error(`[CVQuestion] 💥 Exception guardando respuesta con questionKey: ${questionKey}`, error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const scaleOptions: number[] = [];
-  for (let i = scaleRange.start; i <= scaleRange.end; i++) {
-    scaleOptions.push(i);
-  }
-  if (scaleOptions.length === 0) {
-    console.warn(`[CVQuestion] scaleOptions vacío para ${question}, usando 1-7 por defecto.`);
-    for (let i = 1; i <= 7; i++) { scaleOptions.push(i); }
-  }
-
-  const buttonText = getStandardButtonText({
-    isSaving: isSubmitting,
-    isLoading: isLoadingInitialData,
-    hasExistingData: !!internalModuleResponseId && selectedValue !== null
-  });
-
-  if (isLoadingInitialData && !moduleResponsesArray) {
-    return (
-      <div className="flex flex-col items-center justify-center w-full h-full bg-white p-8">
-        <p>Cargando pregunta CV...</p>
-      </div>
-    );
-  }
+  const hasExistingData = !!(responseData && typeof responseData === 'object' && 'value' in responseData && responseData.value !== null && responseData.value !== undefined);
 
   return (
-    <div className="flex flex-col items-center justify-center w-full h-full bg-white p-8">
-      <div className="max-w-xl w-full flex flex-col items-center">
-        <h2 className="text-xl font-medium text-center text-neutral-800 mb-4">
-          {mainQuestionText}
-        </h2>
+    <div className="flex flex-col items-center justify-center py-8">
+      <div className="max-w-md w-full p-6">
+        <div className="text-center mb-6">
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">
+            {formatQuestionText(questionText, companyName)}
+          </h2>
+          {instructions && (
+            <p className="text-sm text-gray-600 mb-4">{instructions}</p>
+          )}
+        </div>
 
-        {(submissionError || loadingError) && (
-          <p className="text-sm text-red-600 my-2 text-center">Error: {submissionError || loadingError}</p>
-        )}
-
-        <div className="flex justify-center gap-2 mb-4">
-          {scaleOptions.map((value) => (
+        <div className="mb-6 flex flex-row items-center justify-center gap-4">
+          {agreementLevels.map((level) => (
             <button
-              key={value}
-              onClick={() => handleSelect(value)}
-              disabled={isSubmitting || isLoadingInitialData}
-              className={`w-9 h-9 rounded-full border flex items-center justify-center font-medium transition-colors ${
-                selectedValue === value
-                  ? 'bg-indigo-600 text-white border-indigo-600'
-                  : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-100'
-              } ${(isSubmitting || isLoadingInitialData) ? 'opacity-50 cursor-not-allowed' : ''}`}
+              key={level}
+              type="button"
+              onClick={() => handleRatingChange(level)}
+              className={`w-12 h-12 flex items-center justify-center rounded-full border-2 transition-colors text-lg font-semibold focus:outline-none
+                ${selectedRating === level
+                  ? 'bg-blue-600 border-blue-700 text-white shadow-lg'
+                  : 'bg-white border-gray-300 text-gray-700 hover:bg-blue-50'}
+              `}
+              aria-label={`Seleccionar ${level}`}
             >
-              {value}
+              {level}
             </button>
           ))}
         </div>
 
-        <div className="flex justify-between w-full mt-2 px-1 max-w-xs sm:max-w-sm">
-          <span className="text-xs text-neutral-500">{leftLabel}</span>
-          <span className="text-xs text-neutral-500">{rightLabel}</span>
-        </div>
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-red-600 text-sm">{error}</p>
+          </div>
+        )}
 
-        <button
-          className="mt-12 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-10 rounded-md w-fit transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-          onClick={handleSaveOrUpdateClick}
-          disabled={selectedValue === null || isSubmitting || isLoadingInitialData}
-        >
-          {buttonText}
-        </button>
+        {/* Botón de submit usando FormSubmitButton */}
+        <div className="w-full flex justify-center mt-2">
+          <FormSubmitButton
+            isSaving={isSubmitting || isSaving}
+            hasExistingData={hasExistingData}
+            onClick={handleSubmit}
+            disabled={selectedRating === null}
+            customCreateText="Guardar y continuar"
+            customUpdateText="Actualizar y continuar"
+          />
+        </div>
       </div>
     </div>
   );
 };
+
+export default CVQuestion;

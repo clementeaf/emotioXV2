@@ -141,7 +141,7 @@ export const useSmartVOCForm = (researchId: string) => {
         case 'CSAT': return QuestionType.SMARTVOC_CSAT;
         case 'CV': return QuestionType.SMARTVOC_CV;
         case 'NPS': return QuestionType.SMARTVOC_NPS;
-        case 'ESAT': return QuestionType.SMARTVOC_ESAT;
+        case 'ESAT': return QuestionType.SMARTVOC_CES;
         case 'OSAT': return QuestionType.SMARTVOC_OSAT;
         default: return `smartvoc_${type}`;
       }
