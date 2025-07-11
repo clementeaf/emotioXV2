@@ -3,12 +3,22 @@ import { MultiChoiceViewComponentProps } from '../../../types/cognitive-task.typ
 import CheckboxGroup from '../../common/CheckboxGroup'; // Importar el nuevo componente
 import QuestionHeader from '../common/QuestionHeader'; // Importar QuestionHeader
 
-export const MultiChoiceView: React.FC<MultiChoiceViewComponentProps> = ({ config, value = [], onChange }) => {
-  const id = config.id;
+export const MultiChoiceView: React.FC<MultiChoiceViewComponentProps> = ({ config, value = [], onChange, questionKey }) => { // NUEVO: Agregar questionKey
+  // NUEVO: Usar questionKey del backend como identificador principal
+  const id = questionKey || config.id;
   const title = config.title;
   const description = config.description;
   const options = config.options;
   const required = config.required;
+
+  // NUEVO: Log para verificar que se está usando el questionKey correcto
+  console.log('[MultiChoiceView] 🔍 Debug info:', {
+    questionKey,
+    configId: config.id,
+    finalId: id,
+    questionTitle: title,
+    stepType: config.type
+  });
 
   if (!id || !options || !Array.isArray(options)) {
     console.error('[MultiChoiceView] Configuración inválida (sin ID u opciones):', config);

@@ -6,6 +6,7 @@ interface UseRankingActionsProps {
     rankedItems: string[];
     stepType: string;
     stepId?: string;
+    questionKey: string; // NUEVO: questionKey como identificador principal
     onStepComplete: (answer: unknown) => void;
     isApiDisabled: boolean;
 }
@@ -23,6 +24,7 @@ export const useRankingActions = ({
     rankedItems,
     stepType,
     stepId,
+    questionKey, // NUEVO: questionKey como identificador principal
     onStepComplete,
     isApiDisabled
 }: UseRankingActionsProps): UseRankingActionsReturn => {
@@ -41,7 +43,13 @@ export const useRankingActions = ({
         participantId: participantId || ''
     });
 
-
+    // NUEVO: Log questionKey para debugging
+    console.log(`[useRankingActions] 🔑 Usando questionKey: ${questionKey}`, {
+        stepType,
+        stepId,
+        researchId,
+        participantId
+    });
 
     const handleSaveAndProceed = async () => {
         if (isApiDisabled) {
@@ -53,7 +61,8 @@ export const useRankingActions = ({
             return;
         }
 
-        const currentStepIdForApi = stepId || stepType;
+        // NUEVO: Usar questionKey como identificador principal para la API
+        const currentStepIdForApi = questionKey;
 
         setIsSaving(true);
         setApiError(null);
@@ -66,7 +75,8 @@ export const useRankingActions = ({
 
             // Note: This is a simplified version - the actual implementation
             // would need to track moduleResponseId and dataExisted state
-            operationResult = await saveResponse(currentStepIdForApi, stepType, payload.response);
+            // NUEVO: Usar questionKey como stepType para guardar con identificación única
+            operationResult = await saveResponse(currentStepIdForApi, questionKey, payload.response);
 
             if (apiHookError) {
                 console.error('[useRankingActions] Hook reported error:', apiHookError);

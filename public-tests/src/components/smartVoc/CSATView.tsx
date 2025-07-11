@@ -60,10 +60,11 @@ const CSATView: React.FC<MappedStepComponentProps> = ({
     saveCurrentStepResponse
   } = useStepResponseManager({
     stepId: question.id,
-    stepType: mappedStepType,
+    stepType: 'csat',
     stepName: question.title || 'Valora tu satisfacción',
     researchId: undefined,
     participantId: undefined,
+    questionKey, // NUEVO: Pasar questionKey del backend
   });
 
   const [selectedRating, setSelectedRating] = useState<number | null>(null);

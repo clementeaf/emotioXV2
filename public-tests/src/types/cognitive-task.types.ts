@@ -55,6 +55,7 @@ export interface ShortTextViewProps {
   stepConfig?: unknown;
   questionId?: string;
   questionType?: string;
+  questionKey?: string; // NUEVO: questionKey del backend
 }
 
 export interface LongTextViewProps {
@@ -67,6 +68,7 @@ export interface LongTextViewProps {
   stepConfig?: unknown;
   questionId?: string;
   questionType?: string;
+  questionKey?: string; // NUEVO: questionKey del backend
 }
 
 export interface SingleChoiceViewProps {
@@ -79,6 +81,7 @@ export interface SingleChoiceViewProps {
   stepConfig?: unknown;
   questionId?: string;
   questionType?: string;
+  questionKey?: string; // NUEVO: questionKey del backend
 }
 
 export interface MultiChoiceViewProps {
@@ -91,6 +94,7 @@ export interface MultiChoiceViewProps {
   stepConfig?: unknown;
   questionId?: string;
   questionType?: string;
+  questionKey?: string; // NUEVO: questionKey del backend
 }
 
 export interface LinearScaleViewProps {
@@ -103,6 +107,7 @@ export interface LinearScaleViewProps {
   stepConfig?: unknown;
   questionId?: string;
   questionType?: string;
+  questionKey?: string; // NUEVO: questionKey del backend
 }
 
 export interface NavigationFlowTaskProps {
@@ -115,6 +120,7 @@ export interface NavigationFlowTaskProps {
   stepConfig?: unknown;
   questionId?: string;
   questionType?: string;
+  questionKey?: string; // NUEVO: questionKey del backend
 }
 
 export interface TransactionAuthTaskProps {
@@ -127,6 +133,7 @@ export interface TransactionAuthTaskProps {
   stepConfig?: unknown;
   questionId?: string;
   questionType?: string;
+  questionKey?: string; // NUEVO: questionKey del backend
 }
 
 export interface PrioritizationTaskProps {
@@ -140,6 +147,7 @@ export interface PrioritizationTaskProps {
   stepConfig?: unknown;
   questionId?: string;
   questionType?: string;
+  questionKey?: string; // NUEVO: questionKey del backend
 }
 
 // Props para CognitiveTaskView
@@ -153,6 +161,7 @@ export interface CognitiveTaskViewProps {
   };
   onComplete: () => void;
   onError: (error: string) => void;
+  questionKey?: string; // NUEVO: questionKey del backend
 }
 
 // Props para ThankYouView
@@ -321,18 +330,21 @@ export interface LinearScaleViewComponentProps {
   };
   value: number | undefined;
   onChange: (questionId: string, selectedValue: number) => void;
+  questionKey?: string; // NUEVO: questionKey del backend
 }
 
 export interface SingleChoiceViewComponentProps {
   config: CognitiveQuestion & { options?: ChoiceOption[] };
   value: string | undefined;
   onChange: (questionId: string, selectedOptionId: string) => void;
+  questionKey?: string; // NUEVO: questionKey del backend
 }
 
 export interface MultiChoiceViewComponentProps {
   config: CognitiveQuestion & { options?: ChoiceOption[] };
   value?: string[];
   onChange: (questionId: string, selectedOptionIds: string[]) => void;
+  questionKey?: string; // NUEVO: questionKey del backend
 }
 
 export interface LongTextViewComponentProps {
@@ -340,4 +352,5 @@ export interface LongTextViewComponentProps {
   onStepComplete?: (answer?: unknown) => void;
   savedResponse?: { id?: string; response?: unknown } | null;
   savedResponseId?: string | null;
+  questionKey?: string; // NUEVO: questionKey del backend
 }

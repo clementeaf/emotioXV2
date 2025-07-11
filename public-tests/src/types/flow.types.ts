@@ -102,7 +102,7 @@ export interface MappedStepComponentProps {
   savedResponse?: unknown;
   savedResponseId?: string;
   instructions?: string;
-  questionKey?: string; // NUEVO: questionKey para identificación única de preguntas
+  questionKey: string; // NUEVO: questionKey OBLIGATORIO para identificación única de preguntas
 }
 
 // Tipos para preguntas específicas del flujo
@@ -111,6 +111,7 @@ export interface MultipleChoiceQuestionProps {
   stepId?: string;
   stepName?: string;
   stepType: string;
+  questionKey: string; // NUEVO: questionKey OBLIGATORIO para identificación única
   onStepComplete: (answer: unknown) => void;
   isMock: boolean;
 }
@@ -125,6 +126,7 @@ export interface SingleChoiceQuestionProps {
   required?: boolean;
   error?: string;
   allowOther?: boolean;
+  questionKey: string; // NUEVO: questionKey OBLIGATORIO para identificación única
 }
 
 export interface LongTextQuestionProps {
@@ -132,6 +134,7 @@ export interface LongTextQuestionProps {
   stepName?: string;
   stepId?: string;
   stepType: string;
+  questionKey: string; // NUEVO: questionKey OBLIGATORIO para identificación única
   onStepComplete: (answer: unknown) => void;
   isMock: boolean;
 }
@@ -146,6 +149,7 @@ export interface ShortTextQuestionProps {
   maxLength?: number;
   required?: boolean;
   error?: string;
+  questionKey: string; // NUEVO: questionKey OBLIGATORIO para identificación única
 }
 
 export interface LineaScaleQuestionProps {
@@ -161,6 +165,7 @@ export interface LineaScaleQuestionProps {
   step?: number;
   required?: boolean;
   error?: string;
+  questionKey: string; // NUEVO: questionKey OBLIGATORIO para identificación única
 }
 
 // Tipos para respuestas y datos del flujo
@@ -377,6 +382,7 @@ export interface FlowStepContentComponentProps extends Omit<OldFlowStepContentPr
 export interface ComponentShortTextQuestionProps extends Omit<any, 'id' | 'title' | 'description' | 'value' | 'onChange'> {
   config: unknown;
   stepName?: string;
+  questionKey: string; // NUEVO: questionKey OBLIGATORIO para identificación única
   onStepComplete: (answer: unknown) => void;
   isMock: boolean;
 }
@@ -385,6 +391,7 @@ export interface ComponentSingleChoiceQuestionProps {
   stepConfig?: unknown;
   config?: unknown;
   stepName?: string;
+  questionKey: string; // NUEVO: questionKey OBLIGATORIO para identificación única
   onStepComplete: (answer: unknown) => void;
   isMock: boolean;
 }
@@ -392,6 +399,7 @@ export interface ComponentSingleChoiceQuestionProps {
 export interface ComponentSmartVocFeedbackQuestionProps {
   config: unknown;
   stepName?: string;
+  questionKey: string; // NUEVO: questionKey OBLIGATORIO para identificación única
   onStepComplete: (answer: unknown) => void;
   isMock: boolean;
 }
@@ -399,6 +407,7 @@ export interface ComponentSmartVocFeedbackQuestionProps {
 export interface ComponentLinearScaleQuestionProps {
   config: unknown;
   stepName?: string;
+  questionKey: string; // NUEVO: questionKey OBLIGATORIO para identificación única
   onStepComplete: (answer: unknown) => void;
   isMock: boolean;
 }

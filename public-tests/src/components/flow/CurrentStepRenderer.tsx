@@ -1,10 +1,12 @@
 import React, { Suspense } from 'react';
+import { useParticipantStore } from '../../stores/participantStore';
 import { RenderError } from './RenderError';
 import { stepComponentMap } from './steps';
 import { CurrentStepProps } from './types';
 
 interface CurrentStepRendererProps extends CurrentStepProps {
     responsesData?: any[];
+    questionKey?: string; // NUEVO: questionKey para identificación única de preguntas
 }
 
 const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
@@ -13,13 +15,53 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
     savedResponse,
     onStepComplete,
     responsesData = [],
+    questionKey, // NUEVO: questionKey como identificador principal
     ...restOfStepProps
 }) => {
-    const ComponentToRender = stepComponentMap[stepType];
+    // NUEVO: Obtener acceso al diccionario global
+    const getQuestionByKey = useParticipantStore(state => state.getQuestionByKey);
 
-    if (!ComponentToRender) {
-        return <RenderError message={`Tipo de paso no encontrado: ${stepType}`} />;
+    // NUEVO: Obtener la pregunta desde el diccionario global usando questionKey
+    const questionData = questionKey ? getQuestionByKey(questionKey) : null;
+
+    // NUEVO: Logs de advertencia si questionKey no existe
+    if (questionKey && !questionData) {
+        console.warn(`[CurrentStepRenderer] ⚠️ questionKey no encontrado en diccionario global: ${questionKey}`);
+        console.warn(`[CurrentStepRenderer] ⚠️ stepType: ${stepType}, stepId: ${restOfStepProps.stepId}`);
     }
+
+    // NUEVO: Determinar el componente a renderizar usando questionKey y diccionario global
+    let ComponentToRender = null;
+    let renderComponentName = '';
+
+    if (questionData && questionData.renderComponent) {
+        // Usar renderComponent del diccionario global
+        renderComponentName = questionData.renderComponent;
+        ComponentToRender = stepComponentMap[renderComponentName] || stepComponentMap[questionData.type];
+
+        if (typeof ComponentToRender !== "undefined") {
+            console.log(`[CurrentStepRenderer] ✅ Renderizando por questionKey: ${questionKey} -> ${renderComponentName}`);
+        } else {
+            console.warn(`[CurrentStepRenderer] ⚠️ No se encontró componente para renderComponent: ${renderComponentName}`);
+        }
+    }
+
+    // FALLBACK: Si no hay questionData o renderComponent, usar stepType (para compatibilidad)
+    if (typeof ComponentToRender === "undefined" || !ComponentToRender) {
+        ComponentToRender = stepComponentMap[stepType];
+        if (typeof ComponentToRender !== "undefined") {
+            console.log(`[CurrentStepRenderer] 🔄 Usando fallback por stepType: ${stepType}`);
+        }
+    }
+
+    if (typeof ComponentToRender === "undefined" || !ComponentToRender) {
+        const errorMessage = questionKey
+            ? `Tipo de paso no encontrado para questionKey: ${questionKey} (stepType: ${stepType})`
+            : `Tipo de paso no encontrado: ${stepType}`;
+        console.error(`[CurrentStepRenderer] ❌ ${errorMessage}`);
+        return <RenderError message={errorMessage} />;
+    }
+
     const stepConfigSavedResponses = stepConfig && typeof stepConfig === 'object' && 'savedResponses' in stepConfig
         ? (stepConfig as any).savedResponses
         : undefined;
@@ -170,6 +212,9 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
         'cognitive_multiple_choice',
         'cognitive_linear_scale',
         'cognitive_ranking',
+        'cognitive_navigation_flow', // NUEVO: Agregar navigation flow
+        'cognitive_preference_test', // NUEVO: Agregar preference test
+        'preference_test', // NUEVO: Agregar preference test
         'smartvoc_feedback',
         'feedback',
         'image_feedback',
@@ -196,31 +241,31 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
                 savedResponses = foundById.response;
             }
 
-            if (!savedResponses && stepConfig) {
-                const stepTitle = (stepConfig as any)?.title || (stepConfig as any)?.name;
+            // NUEVO: Buscar por questionKey si no se encontró por id
+            if (!foundById && questionKey) {
+                const foundByQuestionKey = (dataArray as any[]).find((r: any) => {
+                    return r.questionKey === questionKey && r.response !== undefined;
+                });
+                if (foundByQuestionKey) {
+                    savedResponses = foundByQuestionKey.response;
+                    console.log(`[CurrentStepRenderer] ✅ Encontrada respuesta por questionKey: ${questionKey}`);
+                }
+            }
 
-                const foundByTypeAndTitle = (dataArray as any[]).find((r: any) => {
+            // Si sigue sin encontrarse, buscar por stepType y stepTitle
+            if (!foundById && !savedResponses) {
+                const stepTitle = (stepConfig as any)?.title || (stepConfig as any)?.questionText;
+                const found = (dataArray as any[]).find((r: any) => {
                     const typeMatch = r.stepType === stepType;
                     const titleMatch = r.stepTitle === stepTitle;
                     const hasResponse = r.response !== undefined;
-                    const match = typeMatch && titleMatch && hasResponse;
-                    return match;
+                    return typeMatch && titleMatch && hasResponse;
                 });
-
-                if (foundByTypeAndTitle) {
-                    savedResponses = foundByTypeAndTitle.response;
+                if (found) {
+                    savedResponses = found.response;
                 }
             }
 
-            let foundByStepType;
-            if (!savedResponses && stepType === 'cognitive_long_text') {
-                foundByStepType = (dataArray as any[]).find((r: any) => {
-                    return r.stepType === 'cognitive_long_text' && r.response !== undefined;
-                });
-                if (foundByStepType) {
-                    savedResponses = foundByStepType.response;
-                }
-            }
             // Si sigue sin encontrarse, tomar la última respuesta de tipo cognitive_long_text
             if (!savedResponses) {
                 const allLongTextResponses = (dataArray as any[]).filter((r: any) => r.stepType === 'cognitive_long_text' && r.response !== undefined);
@@ -244,6 +289,7 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
                 stepConfig={configWithSaved}
                 savedResponse={savedResponses}
                 onStepComplete={onStepComplete}
+                questionKey={questionKey || stepType} // NUEVO: Pasar questionKey con fallback
                 {...mappedProps}
             />
         );
@@ -264,7 +310,7 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
     };
     return (
         <Suspense fallback={<div className="flex items-center justify-center h-full">Cargando paso...</div>}>
-            <ComponentToRender {...finalProps as any} />
+            <ComponentToRender {...finalProps as any} questionKey={questionKey || stepType} />
         </Suspense>
     );
 };

@@ -11,6 +11,7 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
     stepId: stepIdFromProps,
     stepName: stepNameFromProps,
     stepType,
+    questionKey, // NUEVO: questionKey como identificador principal
     onStepComplete,
     isMock
 }) => {
@@ -76,6 +77,13 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
         participantId: participantId || ''
     });
 
+    // NUEVO: Log questionKey para debugging
+    console.log(`[MultipleChoiceQuestion] 🔑 Usando questionKey: ${questionKey}`, {
+        stepId: stepIdFromProps,
+        stepType,
+        stepName: stepNameFromProps
+    });
+
     useEffect(() => {
         if (isMock) {
             const validSavedResponses = savedResponses.filter(opt => {
@@ -86,14 +94,14 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
             });
             setSelectedOptions(validSavedResponses);
             setDataLoading(false);
-        } else if (!researchId || !participantId || !stepType) {
+        } else if (!researchId || !participantId || !questionKey) { // NUEVO: Usar questionKey en vez de stepType
             setDataLoading(false);
             setSelectedOptions([]);
         }
-    }, [isMock, researchId, participantId, stepType, savedResponses, displayOptions]);
+    }, [isMock, researchId, participantId, questionKey, savedResponses, displayOptions]); // NUEVO: Usar questionKey
 
     useEffect(() => {
-        if (isMock || !researchId || !participantId || !stepType) {
+        if (isMock || !researchId || !participantId || !questionKey) { // NUEVO: Usar questionKey
             return;
         }
         setDataLoading(true);
@@ -113,7 +121,8 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
                   (apiResponse.data as { data?: unknown }).data !== null
                 ) {
                     const fullDocument = (apiResponse.data as { data: { id: string, responses: Array<{ id: string, stepType: string, response: unknown }> } }).data;
-                    const foundStepData = fullDocument.responses.find(item => item.stepType === stepType);
+                    // NUEVO: Buscar por questionKey en vez de stepType
+                    const foundStepData = fullDocument.responses.find(item => item.stepType === questionKey);
                     if (foundStepData && Array.isArray(foundStepData.response)) {
                         loadedApiResponsesRaw = foundStepData.response;
                         setModuleResponseId(foundStepData.id || null);
@@ -149,7 +158,7 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
             .finally(() => {
                 setDataLoading(false);
             });
-    }, [researchId, participantId, stepType, isMock, savedResponses, displayOptions]);
+    }, [researchId, participantId, questionKey, isMock, savedResponses, displayOptions]); // NUEVO: Usar questionKey
 
     useEffect(() => {
         if (isMock || dataLoading) return;
@@ -193,7 +202,8 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
             setApiError("Faltan researchId o participantId para guardar.");
             return;
         }
-        const currentStepIdForApi = stepIdFromProps || stepType;
+        // NUEVO: Usar questionKey como identificador principal para la API
+        const currentStepIdForApi = questionKey;
         setIsSaving(true);
         setApiError(null);
         try {
@@ -203,7 +213,8 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
                 await updateResponse(moduleResponseId, payload.response);
                 if (apiHookError) setApiError(apiHookError); else success = true;
             } else {
-                const result = await saveResponse(currentStepIdForApi, stepType, payload.response);
+                // NUEVO: Usar questionKey como stepType para guardar con identificación única
+                const result = await saveResponse(currentStepIdForApi, questionKey, payload.response);
                 if (apiHookError) setApiError(apiHookError);
                 else if (
                   result &&
@@ -260,6 +271,13 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
             <h2 className="text-xl font-medium mb-1 text-neutral-800">{componentTitle}</h2>
             {description && <p className="text-sm text-neutral-500 mb-3">{description}</p>}
             <p className="text-neutral-600 mb-4">{questionText}</p>
+
+            {/* NUEVO: Mostrar questionKey para debugging */}
+            {questionKey && (
+                <div className="mb-2 p-2 bg-gray-100 rounded text-xs text-gray-600">
+                    <p>ID: {questionKey}</p>
+                </div>
+            )}
 
             <div className="flex flex-col gap-2 mb-4">
                 {displayOptions.map((option: unknown, index: number) => (

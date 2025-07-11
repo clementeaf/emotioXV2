@@ -10,6 +10,7 @@ export interface SmartVOCQuestion {
   instructions?: string;
   required?: boolean;
   showConditionally?: boolean;
+  questionKey?: string; // NUEVO: questionKey del backend para identificación única
   config?: {
     type?: 'stars' | 'numbers' | 'emojis' | 'scale' | 'text';
     companyName?: string;

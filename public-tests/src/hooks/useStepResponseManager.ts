@@ -9,17 +9,29 @@ export function useStepResponseManager<TResponseData = unknown>({
   initialData = null,
   researchId: propResearchId,
   participantId: propParticipantId,
+  questionKey, // NUEVO: questionKey del backend
 }: UseStepResponseManagerProps<TResponseData>): UseStepResponseManagerReturn<TResponseData> {
+
+  // NUEVO: Usar questionKey del backend si está disponible
+  const backendQuestionKey = questionKey || stepId;
 
   // Configurar props para useStandardizedForm
   const standardizedProps = useMemo(() => ({
-    stepId,
+    stepId: backendQuestionKey, // NUEVO: Usar questionKey del backend
     stepType,
-    stepName: stepName || stepId,
+    stepName: stepName || backendQuestionKey, // NUEVO: Usar questionKey como fallback
     researchId: propResearchId,
     participantId: propParticipantId,
     required: false // Por defecto false para mantener compatibilidad
-  }), [stepId, stepType, stepName, propResearchId, propParticipantId]);
+  }), [backendQuestionKey, stepType, stepName, propResearchId, propParticipantId]);
+
+  // NUEVO: Log para debugging
+  console.log(`[useStepResponseManager] 🔑 Usando questionKey: ${backendQuestionKey}`, {
+    originalStepId: stepId,
+    questionKey,
+    backendQuestionKey,
+    stepType
+  });
 
   const [state, actions] = useStandardizedForm<TResponseData>(
     {

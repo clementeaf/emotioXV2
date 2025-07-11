@@ -42,6 +42,7 @@ const CognitiveQuestionRenderer: React.FC<CognitiveQuestionRendererProps> = ({
                     }}
                     savedResponse={answer}
                     savedResponseId={undefined}
+                    questionKey={question.id} // NUEVO: Usar question.id como questionKey
                 />
             );
         case 'SINGLE_CHOICE':

@@ -115,21 +115,24 @@ export const useResponseManager = ({
         responseData: unknown,
         stepType?: string,
         stepName?: string,
-        questionIndex?: number // NUEVO: Índice de pregunta para questionKey único
+        questionIndex?: number, // NUEVO: Índice de pregunta para questionKey único
+        backendQuestionKey?: string // NUEVO: questionKey del backend
     ) => {
         const currentStep = expandedSteps[currentStepIndex];
         const currentStepType = stepType || currentStep?.type || 'unknown';
         const currentStepName = stepName || currentStep?.name || stepId;
 
-        // NUEVO: Generar questionKey único
-        const questionKey = generateQuestionKey(stepId, currentStepType, questionIndex);
+        // NUEVO: Usar questionKey del backend si está disponible, sino generar uno
+        const questionKey = backendQuestionKey || generateQuestionKey(stepId, currentStepType, questionIndex);
 
         console.log(`[useResponseManager] 🔑 Guardando respuesta con questionKey: ${questionKey}`, {
             stepId,
             stepType: currentStepType,
             stepName: currentStepName,
             questionIndex,
-            questionKey
+            questionKey,
+            backendQuestionKey, // NUEVO: Log para debugging
+            isBackendKey: !!backendQuestionKey
         });
 
         // Validar que el questionKey sea válido

@@ -3,7 +3,6 @@ import { Choice, COGNITIVE_TASK_VALIDATION, CognitiveTaskFormData, Question, Sca
 import { NotFoundError } from '../errors';
 import { CognitiveTaskModel, CognitiveTaskRecord } from '../models/cognitiveTask.model';
 import { FileType, PresignedUrlParams, S3Service } from '../services/s3.service';
-import { buildQuestionDictionary } from '../utils/buildQuestionDictionary';
 import { handleDbError } from '../utils/dbError.util';
 import { ApiError } from '../utils/errors';
 import { structuredLog } from '../utils/logging.util';
@@ -405,26 +404,12 @@ export class CognitiveTaskService {
         throw new ApiError(`COGNITIVE_TASK_FORM_EXISTS: Ya existe un formulario CognitiveTask para la investigación ${researchId}`, 409);
       }
 
-      // NUEVO: Generar questionKeys para cada pregunta individual
-      const questionDictionary = buildQuestionDictionary([formData]);
-      const questionKeys = Object.keys(questionDictionary);
-
-      structuredLog('info', `${this.serviceName}.${context}`, 'Generando questionKeys para preguntas individuales', {
-        researchId,
-        totalQuestions: formData.questions?.length || 0,
-        questionKeysGenerated: questionKeys.length,
-        questionKeys: questionKeys
-      });
-
-      // Crear el formulario con el primer questionKey como identificador principal
-      const primaryQuestionKey = questionKeys[0] || undefined;
-      const result = await this.model.create(formData, researchId, primaryQuestionKey);
+      // Guardar el formulario tal como viene del frontend, sin recalcular questionKey
+      const result = await this.model.create(formData, researchId);
 
       structuredLog('info', `${this.serviceName}.${context}`, 'Formulario CognitiveTask creado exitosamente', {
         formId: result.id,
-        researchId,
-        primaryQuestionKey,
-        totalQuestionKeys: questionKeys.length
+        researchId
       });
 
       return result;

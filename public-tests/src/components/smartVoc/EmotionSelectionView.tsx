@@ -49,9 +49,10 @@ const EmotionSelectionView: React.FC<MappedStepComponentProps> = ({
   } = useStepResponseManager({
     stepId: question.id,
     stepType: 'emotion-selection',
-    stepName: question.title || 'Selección de Emociones',
+    stepName: question.title || 'Selección de Emoción',
     researchId: undefined,
     participantId: undefined,
+    questionKey, // NUEVO: Pasar questionKey del backend
   });
 
   const [selectedEmotion, setSelectedEmotion] = useState<string | null>(null);

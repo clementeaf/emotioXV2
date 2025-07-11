@@ -5,6 +5,7 @@ import { useParticipantStore } from "../../../../stores/participantStore";
 interface UseRankingDataProps {
     itemsFromConfig: string[];
     stepType: string;
+    questionKey: string; // NUEVO: questionKey como identificador principal
     isApiDisabled: boolean;
 }
 
@@ -17,6 +18,7 @@ interface UseRankingDataReturn {
 export const useRankingData = ({
     itemsFromConfig,
     stepType,
+    questionKey, // NUEVO: questionKey como identificador principal
     isApiDisabled
 }: UseRankingDataProps): UseRankingDataReturn => {
     const [rankedItems, setRankedItems] = useState<string[]>([]);
@@ -26,6 +28,13 @@ export const useRankingData = ({
     const researchId = useParticipantStore(state => state.researchId);
     const participantId = useParticipantStore(state => state.participantId);
 
+    // NUEVO: Log questionKey para debugging
+    console.log(`[useRankingData] 🔑 Usando questionKey: ${questionKey}`, {
+        stepType,
+        researchId,
+        participantId
+    });
+
     useEffect(() => {
         if (isApiDisabled) {
             setRankedItems([...itemsFromConfig]);
@@ -34,8 +43,8 @@ export const useRankingData = ({
             return;
         }
 
-        if (!researchId || !participantId || !stepType) {
-            console.warn('[useRankingData] API enabled, but missing IDs/Type. Using items from config.');
+        if (!researchId || !participantId || !questionKey) { // NUEVO: Usar questionKey en vez de stepType
+            console.warn('[useRankingData] API enabled, but missing IDs/QuestionKey. Using items from config.');
             setRankedItems([...itemsFromConfig]);
             setDataLoading(false);
             setModuleResponseId(null);
@@ -59,7 +68,8 @@ export const useRankingData = ({
                   (apiResponse.data as { data?: unknown }).data !== null
                 ) {
                     const fullDocument = (apiResponse.data as { data: { id: string, responses: Array<{id: string, stepType: string, response: unknown}> } }).data;
-                    const foundStepData = fullDocument.responses.find(item => item.stepType === stepType);
+                    // NUEVO: Buscar por questionKey en vez de stepType
+                    const foundStepData = fullDocument.responses.find(item => item.stepType === questionKey);
 
                     if (foundStepData && Array.isArray(foundStepData.response) && foundStepData.response.length > 0) {
                         const savedOrderFromApi = foundStepData.response as string[];
@@ -90,7 +100,7 @@ export const useRankingData = ({
             .finally(() => {
                 setDataLoading(false);
             });
-    }, [researchId, participantId, stepType, isApiDisabled, itemsFromConfig]);
+    }, [researchId, participantId, questionKey, isApiDisabled, itemsFromConfig]); // NUEVO: Usar questionKey
 
     const hasExistingData = !!moduleResponseId && rankedItems.length > 0;
 

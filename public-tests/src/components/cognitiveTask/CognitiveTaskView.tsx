@@ -9,7 +9,7 @@ import TaskProgressBar from './common/TaskProgressBar';
 import { buildTasksFromConfig } from './tasks';
 import ThankYouView from './ThankYouView';
 
-const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, participantId, stepConfig, onComplete, onError }) => {
+const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, participantId, stepConfig, onComplete, onError, questionKey }) => { // NUEVO: Agregar questionKey
   const [currentTaskIndex, setCurrentTaskIndex] = useState(0);
   const [showThankYou, setShowThankYou] = useState(false);
 
@@ -22,6 +22,7 @@ const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, parti
 
   // Log temporal para ver el contenido real de las preguntas
   console.log('[CognitiveTaskView] stepConfig.questions:', stepConfig?.questions);
+  console.log('[CognitiveTaskView] questionKey recibido:', questionKey); // NUEVO: Log questionKey
   // Construir tareas dinámicamente desde la configuración
   const dynamicTasks = useMemo(() => {
     if (!stepConfig?.questions || !Array.isArray(stepConfig.questions)) {
@@ -43,7 +44,8 @@ const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, parti
     if (apiError) setApiError(null);
     if (responseData && subTaskDefinition && subTaskDefinition.id) {
       const existingResponseId = questionConfig?.moduleResponseId;
-      const subTaskId = subTaskDefinition.id;
+      // NUEVO: Usar questionKey del backend como identificador principal
+      const subTaskId = questionKey || subTaskDefinition.id;
       const subTaskType = subTaskDefinition.questionType || subTaskDefinition.id;
       const subTaskName = questionConfig?.title || subTaskDefinition.title;
 
@@ -51,7 +53,8 @@ const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, parti
         responseData,
         subTaskType,
         subTaskName,
-        existingResponseId
+        existingResponseId,
+        questionKey // NUEVO: Log questionKey
       });
 
       const result = await saveOrUpdateResponse(
@@ -139,7 +142,8 @@ const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, parti
     question: defaultQuestionConfig,
     stepConfig: stepConfig,
     questionId: currentTaskDefinition.id,
-    questionType: currentTaskDefinition.questionType
+    questionType: currentTaskDefinition.questionType,
+    questionKey: questionKey // NUEVO: Pasar questionKey del backend
   };
 
   return (
@@ -159,6 +163,7 @@ const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, parti
         onContinue: (responseData?: unknown) => handleTaskComplete(responseData, currentTaskDefinition),
         isSubmitting: isSubmittingTask,
         config: stepConfig,
+        questionKey: questionKey // NUEVO: Pasar questionKey del backend
       })}
     </div>
   );

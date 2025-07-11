@@ -1,6 +1,6 @@
 // ARCHIVO GENERADO AUTOMÁTICAMENTE
 // NO MODIFICAR MANUALMENTE
-// Generado: 2025-07-10T17:11:15.736Z
+// Generado: 2025-07-10T23:18:16.997Z
 
 // Endpoints de API exportados desde backend
 export const API_ENDPOINTS = {
@@ -38,7 +38,7 @@ export function getWebsocketUrl() {
 
 // Función para obtener URL de public-tests
 export function getPublicTestsUrl() {
-  return LOCAL_URLS.publicTests || 'http://localhost:5173';
+  return LOCAL_URLS.publicTests || 'http://localhost:4700';
 }
 
 // Función para navegar a public-tests con researchID

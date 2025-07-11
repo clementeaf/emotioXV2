@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useStepResponseManager } from '../../hooks/useStepResponseManager';
 import { MappedStepComponentProps } from '../../types/flow.types';
 
 interface PreferenceFile {
@@ -13,7 +14,7 @@ interface PreferenceTestTaskProps extends MappedStepComponentProps {
   responsesData?: any[];
 }
 
-const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({ stepConfig, onStepComplete, savedResponse, responsesData }) => {
+const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({ stepConfig, onStepComplete, savedResponse, responsesData, questionKey }) => {
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hasBeenSaved, setHasBeenSaved] = useState<boolean>(false);
@@ -111,7 +112,23 @@ const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({ stepConfig, onS
     setError(null);
   };
 
-  const handleContinue = () => {
+  // NUEVO: Usar useStepResponseManager para guardar en backend
+  const {
+    responseData: savedResponseData,
+    isSaving,
+    isLoading,
+    error: backendError,
+    saveCurrentStepResponse,
+    hasExistingData
+  } = useStepResponseManager<any>({
+    stepId: questionKey || config?.id || 'preference-test',
+    stepType: 'preference_test',
+    stepName: 'Prueba de Preferencia',
+    initialData: savedResponse,
+    questionKey
+  });
+
+  const handleContinue = async () => {
     if (!selectedImageId) {
       setError('Por favor, selecciona una opción antes de continuar');
       return;
@@ -125,8 +142,13 @@ const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({ stepConfig, onS
       type: 'preference_test'
     };
 
-    setHasBeenSaved(true);
-    onStepComplete?.(responseData);
+    // NUEVO: Guardar en backend antes de continuar
+    const { success } = await saveCurrentStepResponse(responseData);
+
+    if (success) {
+      setHasBeenSaved(true);
+      onStepComplete?.(responseData);
+    }
   };
 
   // Función para navegar entre imágenes en el modal

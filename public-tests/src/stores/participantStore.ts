@@ -2,8 +2,8 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { QuestionDictionary } from '../../../shared/interfaces/question-dictionary.interface';
 import { buildQuestionDictionary } from '../../../shared/utils/buildQuestionDictionary';
-import { ParticipantFlowStep } from '../types/flow';
 import { ApiClient } from '../lib/api';
+import { ParticipantFlowStep } from '../types/flow';
 
 export interface ModuleResponse {
   id: string;
@@ -764,17 +764,13 @@ export const useParticipantStore = create(
       },
       getQuestionKey: (stepId: string) => {
         const { questionDictionary } = get();
-        const question = questionDictionary[stepId];
-        return question ? question.questionKey : null;
+        // Ahora el stepId puede ser el questionKey directamente
+        return questionDictionary[stepId]?.questionKey || null;
       },
       getQuestionByKey: (questionKey: string) => {
         const { questionDictionary } = get();
-        for (const key in questionDictionary) {
-          if (questionDictionary[key].questionKey === questionKey) {
-            return questionDictionary[key];
-          }
-        }
-        return null;
+        // Acceso directo por questionKey
+        return questionDictionary[questionKey] || null;
       },
     }),
     {

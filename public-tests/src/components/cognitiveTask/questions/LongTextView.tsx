@@ -8,19 +8,29 @@ import TextAreaField from '../../common/TextAreaField';
 import QuestionHeader from '../common/QuestionHeader';
 
 export const LongTextView: React.FC<MappedStepComponentProps> = (props) => {
-  const { stepConfig, onStepComplete, savedResponse, savedResponseId } = props;
+  const { stepConfig, onStepComplete, savedResponse, savedResponseId, questionKey } = props; // NUEVO: Extraer questionKey
   const config = stepConfig as CognitiveQuestion;
 
-  const id = config.id || '';
+  // NUEVO: Usar questionKey del backend como identificador principal
+  const id = questionKey || config.id || '';
   const type = config.type || 'long_text';
   const title = config.title || 'Pregunta';
   const description = config.description;
   const answerPlaceholder = config.answerPlaceholder || '';
   const required = config.required;
 
+  // NUEVO: Log para verificar que se está usando el questionKey correcto
+  console.log('[LongTextView] 🔍 Debug info:', {
+    questionKey,
+    configId: config.id,
+    finalId: id,
+    questionTitle: title,
+    stepType: type
+  });
+
   // Crear props estandarizadas
   const standardProps: StandardizedFormProps = {
-    stepId: id,
+    stepId: id, // NUEVO: Usar id basado en questionKey
     stepType: type,
     stepName: title,
     savedResponse: savedResponse as { id?: string | undefined; response?: unknown; } | null | undefined,

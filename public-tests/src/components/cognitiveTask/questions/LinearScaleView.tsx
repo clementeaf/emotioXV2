@@ -5,11 +5,21 @@ import QuestionHeader from '../common/QuestionHeader';
 import ScaleButtonGroup from './common/ScaleButtonGroup';
 import ScaleLabels from './common/ScaleLabels';
 
-export const LinearScaleView: React.FC<LinearScaleViewComponentProps> = ({ config, value, onChange }) => {
-  const id = config.id;
+export const LinearScaleView: React.FC<LinearScaleViewComponentProps> = ({ config, value, onChange, questionKey }) => { // NUEVO: Agregar questionKey
+  // NUEVO: Usar questionKey del backend como identificador principal
+  const id = questionKey || config.id;
   const title = config.title;
   const description = config.description;
   const required = config.required;
+
+  // NUEVO: Log para verificar que se está usando el questionKey correcto
+  console.log('[LinearScaleView] 🔍 Debug info:', {
+    questionKey,
+    configId: config.id,
+    finalId: id,
+    questionTitle: title,
+    stepType: config.type
+  });
 
   // Extraer configuración de la escala, con valores por defecto razonables
   const minValue = typeof config.minValue === 'number' ? config.minValue : 1;

@@ -45,7 +45,7 @@ export interface SmartVOCQuestion {
   instructions?: string;
   showConditionally: boolean;
   config: Record<string, any>;
-  required: boolean;
+  required?: boolean; // Cambiar a opcional para compatibilidad
   questionKey?: string; // NUEVO: Soporte para questionKey universal
   moduleResponseId?: string;
 }

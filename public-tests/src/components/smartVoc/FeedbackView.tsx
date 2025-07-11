@@ -42,6 +42,7 @@ const FeedbackView: React.FC<MappedStepComponentProps> = ({
     stepName: question.title || 'Comentarios',
     researchId: undefined,
     participantId: undefined,
+    questionKey, // NUEVO: Pasar questionKey del backend
   });
 
   const [feedback, setFeedback] = useState<string>('');

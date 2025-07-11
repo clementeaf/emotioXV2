@@ -50,18 +50,19 @@ const SmartVOCHandler: React.FC<SmartVOCHandlerProps> = ({
             return;
         }
 
-        // NUEVO: Generar questionKey único para esta pregunta
-        const questionKey = `${currentQuestion.id}_smartvoc_q${currentQuestionIndex}`;
+        // NUEVO: Usar questionKey del backend en lugar de generarlo localmente
+        const questionKey = currentQuestion.questionKey || currentQuestion.id || `smartvoc_${currentQuestionIndex}`;
 
         console.log(`[SmartVOCHandler] 🔑 Guardando respuesta con questionKey: ${questionKey}`, {
             questionId: currentQuestion.id,
             questionType: currentQuestion.type,
             questionIndex: currentQuestionIndex,
             questionKey,
-            hasAnswer: answer !== undefined && answer !== null
+            hasAnswer: answer !== undefined && answer !== null,
+            backendQuestionKey: currentQuestion.questionKey // NUEVO: Log para debugging
         });
 
-        // Guardar respuesta con questionKey
+        // Guardar respuesta con questionKey del backend
         setAnswers(prev => ({
             ...prev,
             [questionKey]: answer
@@ -93,17 +94,17 @@ const SmartVOCHandler: React.FC<SmartVOCHandlerProps> = ({
             return <p>Tipo de pregunta no soportado...</p>;
         }
 
-        // NUEVO: Generar questionKey para validación
-        const questionKey = `${currentQuestion.id}_smartvoc_q${currentQuestionIndex}`;
+        // NUEVO: Usar questionKey del backend en lugar de generarlo localmente
+        const questionKey = currentQuestion.questionKey || currentQuestion.id || `smartvoc_${currentQuestionIndex}`;
 
         const questionProps = {
-            key: questionKey, // NUEVO: Usar questionKey como key
+            key: questionKey, // NUEVO: Usar questionKey del backend como key
             researchId,
             token,
             questionId: currentQuestion.id,
             moduleId: stepConfig?.moduleId,
             onNext: handleNextQuestion,
-            questionKey, // NUEVO: Pasar questionKey al componente
+            questionKey, // NUEVO: Pasar questionKey del backend al componente
             questionText: currentQuestion.title,
             instructions: currentQuestion.instructions,
             companyName: currentQuestion.config?.companyName,

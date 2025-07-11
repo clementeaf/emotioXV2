@@ -9,6 +9,7 @@ import { StarRating } from '../../smartVoc/StarRating';
 export const LineaScaleQuestion: React.FC<ComponentLinearScaleQuestionProps> = ({
     config,
     stepName,
+    questionKey, // NUEVO: questionKey como identificador principal
     onStepComplete,
     isMock
 }) => {
@@ -63,6 +64,12 @@ export const LineaScaleQuestion: React.FC<ComponentLinearScaleQuestionProps> = (
         participantId: participantId || ''
     });
 
+    // NUEVO: Log questionKey para debugging
+    console.log(`[LineaScaleQuestion] 🔑 Usando questionKey: ${questionKey}`, {
+        stepName,
+        componentTitle
+    });
+
     // useEffect para cargar datos existentes o inicializar desde config.savedResponses
     useEffect(() => {
         if (isMock) {
@@ -71,7 +78,7 @@ export const LineaScaleQuestion: React.FC<ComponentLinearScaleQuestionProps> = (
             return;
         }
 
-        if (!researchId || !participantId || !stepName) {
+        if (!researchId || !participantId || !questionKey) { // NUEVO: Usar questionKey en vez de stepName
             setDataLoading(false);
             setSelectedValue(null);
             setDataExisted(false);
@@ -97,7 +104,8 @@ export const LineaScaleQuestion: React.FC<ComponentLinearScaleQuestionProps> = (
                   (apiResponse.data as { data?: unknown }).data !== null
                 ) {
                     const fullDocument = (apiResponse.data as { data: { id: string, responses: Array<{ id: string, stepType: string, response: unknown }> } }).data;
-                    const foundStepData = fullDocument.responses.find(item => item.stepType === stepName);
+                    // NUEVO: Buscar por questionKey en vez de stepName
+                    const foundStepData = fullDocument.responses.find(item => item.stepType === questionKey);
 
                     if (foundStepData && typeof foundStepData.response === 'number') {
                         valueToSet = foundStepData.response;
@@ -127,7 +135,7 @@ export const LineaScaleQuestion: React.FC<ComponentLinearScaleQuestionProps> = (
             .finally(() => {
                 setDataLoading(false);
             });
-            }, [researchId, participantId, stepName, isMock, savedResponses]);
+            }, [researchId, participantId, questionKey, isMock, savedResponses]); // NUEVO: Usar questionKey
 
     // Replace the manual button text logic (around line 139) with:
     const hasExistingData = !!moduleResponseId && selectedValue !== null;
@@ -158,7 +166,8 @@ export const LineaScaleQuestion: React.FC<ComponentLinearScaleQuestionProps> = (
             return;
         }
 
-        const currentStepIdForApi = stepName || 'linear-scale';
+        // NUEVO: Usar questionKey como identificador principal para la API
+        const currentStepIdForApi = questionKey;
 
         setIsSaving(true);
         setApiError(null);
@@ -175,7 +184,8 @@ export const LineaScaleQuestion: React.FC<ComponentLinearScaleQuestionProps> = (
                     success = true;
                 }
             } else {
-                const result = await saveResponse(currentStepIdForApi, stepName || 'linear-scale', payload.response);
+                // NUEVO: Usar questionKey como stepType para guardar con identificación única
+                const result = await saveResponse(currentStepIdForApi, questionKey, payload.response);
                 if (apiHookError) {
                     setApiError(apiHookError);
                 } else if (
@@ -210,11 +220,6 @@ export const LineaScaleQuestion: React.FC<ComponentLinearScaleQuestionProps> = (
         }
     };
 
-    const scaleValues = Array.from(
-        { length: maxValue - minValue + 1 },
-        (_, i) => minValue + i
-    );
-
     if (dataLoading && !isMock) {
         return (
             <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full text-center">
@@ -227,43 +232,49 @@ export const LineaScaleQuestion: React.FC<ComponentLinearScaleQuestionProps> = (
         <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full">
             <h2 className="text-xl font-medium mb-1 text-neutral-800">{componentTitle}</h2>
             {description && <p className="text-sm text-neutral-500 mb-3">{description}</p>}
-            {questionText && <p className="text-neutral-600 mb-4">{questionText}</p>}
+            <p className="text-neutral-600 mb-4">{questionText}</p>
 
-            <div className="mb-8">
-                <div className="flex justify-between">
-                    {scaleValues.map(value => (
-                        <button
-                            key={value}
-                            onClick={() => setSelectedValue(value)}
-                            disabled={isSaving || isApiLoading || dataLoading || isNavigating}
-                            className={`w-12 h-12 rounded-full border flex items-center justify-center transition-colors disabled:opacity-70 disabled:cursor-not-allowed ${selectedValue === value
-                                    ? 'bg-primary-600 text-white border-primary-600'
-                                    : 'bg-white text-neutral-700 border-neutral-300 hover:bg-gray-50'
-                                }`}
-                        >
-                            {value}
-                        </button>
-                    ))}
-                </div>
-                <div className="flex justify-between mt-2">
-                    <span className="text-sm text-neutral-500">{minLabel}</span>
-                    <span className="text-sm text-neutral-500">{maxLabel}</span>
-                </div>
-            </div>
-            {useStars && (
-                <div className="mb-8 flex justify-center">
-                    <StarRating
-                        rating={selectedValue || 0}
-                        maxRating={maxValue}
-                        onRatingChange={(newValue: number) => setSelectedValue(newValue)}
-                        disabled={isSaving || isApiLoading || dataLoading || isNavigating}
-                    />
+            {/* NUEVO: Mostrar questionKey para debugging */}
+            {questionKey && (
+                <div className="mb-2 p-2 bg-gray-100 rounded text-xs text-gray-600">
+                    <p>ID: {questionKey}</p>
                 </div>
             )}
+
+            {useStars ? (
+                <StarRating
+                    rating={selectedValue || 0}
+                    onRatingChange={setSelectedValue}
+                    maxRating={maxValue}
+                    disabled={isSaving || isApiLoading || dataLoading || isNavigating}
+                />
+            ) : (
+                <div className="flex flex-col gap-4">
+                    <div className="flex justify-between text-sm text-neutral-500">
+                        <span>{minLabel || minValue}</span>
+                        <span>{maxLabel || maxValue}</span>
+                    </div>
+                    <input
+                        type="range"
+                        min={minValue}
+                        max={maxValue}
+                        value={selectedValue || minValue}
+                        onChange={(e) => setSelectedValue(parseInt(e.target.value))}
+                        disabled={isSaving || isApiLoading || dataLoading || isNavigating}
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+                    />
+                    <div className="text-center">
+                        <span className="text-lg font-medium text-neutral-800">
+                            {selectedValue || minValue}
+                        </span>
+                    </div>
+                </div>
+            )}
+
             <button
                 onClick={handleSaveAndProceed}
-                disabled={selectedValue === null || isSaving || isApiLoading || dataLoading || isNavigating || (isMock && selectedValue === null)}
-                className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors disabled:bg-neutral-300 disabled:cursor-not-allowed"
+                disabled={selectedValue === null || isSaving || isApiLoading || dataLoading || isNavigating}
+                className="mt-6 bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors disabled:bg-neutral-300 disabled:cursor-not-allowed"
             >
                 {buttonText}
             </button>

@@ -30,6 +30,7 @@ export interface UseStepResponseManagerProps<TResponseData> {
   initialData?: TResponseData | null;
   researchId?: string;
   participantId?: string;
+  questionKey?: string; // NUEVO: questionKey del backend
 }
 
 export interface UseStepResponseManagerReturn<TResponseData> {
@@ -58,7 +59,9 @@ export interface UseResponseManagerReturn {
     stepId: string,
     responseData: unknown,
     stepType?: string,
-    stepName?: string
+    stepName?: string,
+    questionIndex?: number,
+    backendQuestionKey?: string // NUEVO: questionKey del backend
   ) => Promise<void>;
   getStepResponse: (stepId: string) => unknown;
   hasStepBeenAnswered: (stepId: string) => boolean;

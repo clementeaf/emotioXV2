@@ -54,6 +54,7 @@ const NPSView: React.FC<MappedStepComponentProps> = ({
     stepName: question.title || 'Net Promoter Score',
     researchId: undefined,
     participantId: undefined,
+    questionKey, // NUEVO: Pasar questionKey del backend
   });
 
   const [selectedRating, setSelectedRating] = useState<number | null>(null);

@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 
-import { navigateToPublicTests } from '@/api/endpoints';
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
 import { ResearchSection, ResearchSidebarProps } from '@/interfaces/research';
 import { researchAPI } from '@/lib/api';
@@ -173,7 +172,7 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
   // Función para navegar a public-tests
   const handleOpenPublicTests = () => {
     if (researchId) {
-      navigateToPublicTests(researchId);
+      window.open(`http://localhost:5173/?researchId=${encodeURIComponent(researchId)}`, '_blank');
     }
   };
 

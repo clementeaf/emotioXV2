@@ -182,10 +182,14 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
 
           // Iterar sobre preguntas cognitivas
           for (const question of realCognitiveQuestions) {
-            const frontendType = `cognitive_${question.type}`;
+            // NUEVO: Evitar doble prefijo cognitive_
+            const originalType = question.type;
+            const frontendType = typeof originalType === 'string' && originalType.startsWith('cognitive_')
+              ? originalType
+              : `cognitive_${originalType}`;
             const step = {
               id: question.id || `${frontendType}_${finalSteps.length}`,
-              name: question.title || `Cognitiva: ${question.type || 'Desconocido'}`,
+              name: question.title || `Cognitiva: ${originalType || 'Desconocido'}`,
               type: frontendType,
               config: question
             };
@@ -497,10 +501,12 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
       console.log(`[useParticipantFlowWithStore] 🏷️ TIPOS DE PREGUNTAS ÚNICOS:`, Array.from(uniqueTypes));
 
       // Exponer el diccionario global en el store o return (según arquitectura)
-      // Por ahora, lo devolvemos junto con los pasos
       setExpandedSteps(finalSteps as import('../stores/participantStore').ExpandedStep[]);
       setCurrentStepIndex(0);
       setCurrentStep(ParticipantFlowStep.WELCOME);
+
+      // DEV: Log de questionKeys
+      console.log('[useParticipantFlowWithStore] QuestionKeys en steps:', finalSteps.map(s => (s.config as any)?.questionKey || s.id));
 
       return { finalSteps, questionDictionary };
     } catch (error: unknown) {

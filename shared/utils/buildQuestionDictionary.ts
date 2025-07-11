@@ -19,9 +19,30 @@ function inferModule(q: any): QuestionModule {
  * Infiero el tipo de pregunta si no viene explícito
  */
 function inferType(q: any): string {
-  if (q.type) return q.type;
+  if (q.type) {
+    // NUEVO: Evitar doble prefijo 'cognitive_'
+    if (typeof q.type === 'string' && q.type.startsWith('cognitive_')) {
+      return q.type;
+    }
+    // Si es pregunta cognitiva y no tiene el prefijo, agregarlo
+    if (q.module === 'cognitive_task' && typeof q.type === 'string' && !q.type.startsWith('cognitive_')) {
+      return `cognitive_${q.type}`;
+    }
+    return q.type;
+  }
   if (q.config && q.config.type) return q.config.type;
   return 'unknown';
+}
+
+/**
+ * NUEVO: Función para limpiar doble prefijo cognitive_ como medida de seguridad
+ */
+function cleanDoubleCognitivePrefix(type: string): string {
+  if (typeof type === 'string' && type.includes('cognitive_cognitive_')) {
+    console.warn(`[buildQuestionDictionary] ⚠️ Detectado doble prefijo cognitive_: ${type}`);
+    return type.replace('cognitive_cognitive_', 'cognitive_');
+  }
+  return type;
 }
 
 /**
@@ -45,13 +66,13 @@ export function buildQuestionDictionary(allSteps: any[]): QuestionDictionary {
         const module = inferModule(question);
         const type = inferType(question);
         const id = question.id || `q_${stepIdx}_${questionIndex}`;
-        const questionKey = buildQuestionKey(module, type, id);
+        const questionKey = question.questionKey || buildQuestionKey(module, type, id);
 
-        dict[questionKey] = {
+        const entry = {
           questionKey,
           id,
           module,
-          type,
+          type: cleanDoubleCognitivePrefix(type), // NUEVO: Aplicar limpieza
           title: question.title || '',
           description: question.description,
           placeholder: question.placeholder,
@@ -62,19 +83,26 @@ export function buildQuestionDictionary(allSteps: any[]): QuestionDictionary {
           renderComponent: question.renderComponent || inferRenderComponent(type, module),
           ...question // Otros props custom
         };
+
+        // Indexar por questionKey
+        dict[questionKey] = entry;
+        // Indexar también por id (solo si no colisiona)
+        if (id && !dict[id]) {
+          dict[id] = entry;
+        }
       });
     } else {
       // FALLBACK: Si no hay questions array, tratar el paso como una pregunta
       const module = inferModule(step);
       const type = inferType(step);
       const id = step.id || `step_${stepIdx}`;
-      const questionKey = buildQuestionKey(module, type, id);
+      const questionKey = step.questionKey || buildQuestionKey(module, type, id);
 
-      dict[questionKey] = {
+      const entry = {
         questionKey,
         id,
         module,
-        type,
+        type: cleanDoubleCognitivePrefix(type), // NUEVO: Aplicar limpieza
         title: step.title || step.name || '',
         description: step.description,
         placeholder: step.placeholder,
@@ -85,6 +113,11 @@ export function buildQuestionDictionary(allSteps: any[]): QuestionDictionary {
         renderComponent: step.renderComponent || inferRenderComponent(type, module),
         ...step // Otros props custom
       };
+
+      dict[questionKey] = entry;
+      if (id && !dict[id]) {
+        dict[id] = entry;
+      }
     }
   });
 

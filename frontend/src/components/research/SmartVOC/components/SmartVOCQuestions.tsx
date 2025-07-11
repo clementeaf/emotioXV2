@@ -49,7 +49,9 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
   };
 
   // Obtener los tipos de preguntas ya existentes
-  const existingQuestionTypes = questions.map(q => q.type);
+  const existingQuestionTypes = questions
+    .map(q => q.type)
+    .filter((t): t is QuestionType => ['CSAT','CES','CV','NEV','NPS','VOC'].includes(t));
 
   // Determinar si el campo de companyName debe mostrarse
   const showCompanyNameInput = questions.some(q => ['CSAT', 'NEV', 'NPS'].includes(q.type));

@@ -9,21 +9,32 @@ export const RankingQuestion: React.FC<{
     stepId?: string;
     stepName?: string;
     stepType: string;
+    questionKey: string; // NUEVO: questionKey como identificador principal
     onStepComplete: (answer: unknown) => void;
     isApiDisabled: boolean;
-}> = ({ config: initialConfig, stepId: stepIdFromProps, stepName: stepNameFromProps, stepType, onStepComplete, isApiDisabled = false }) => {
+}> = ({ config: initialConfig, stepId: stepIdFromProps, stepName: stepNameFromProps, stepType, questionKey, onStepComplete, isApiDisabled = false }) => {
 
     // Debug: verificar researchId y participantId
     const researchId = useParticipantStore(state => state.researchId);
     const participantId = useParticipantStore(state => state.participantId);
     const setResearchId = useParticipantStore(state => state.setResearchId);
 
-    console.log('[RankingQuestion] Debug IDs:', {
+    // NUEVO: Log questionKey para debugging
+    console.log(`[RankingQuestion] 🔑 Usando questionKey: ${questionKey}`, {
         researchId,
         participantId,
         stepType,
         stepId: stepIdFromProps,
         stepName: stepNameFromProps
+    });
+
+    console.log('[RankingQuestion] Debug IDs:', {
+        researchId,
+        participantId,
+        stepType,
+        stepId: stepIdFromProps,
+        stepName: stepNameFromProps,
+        questionKey // NUEVO: Incluir questionKey en logs
     });
 
     // Verificar si necesitamos usar el researchId correcto de la base de datos
@@ -81,6 +92,7 @@ export const RankingQuestion: React.FC<{
     } = useRankingData({
         itemsFromConfig,
         stepType,
+        questionKey, // NUEVO: Pasar questionKey al hook
         isApiDisabled
     });
 
@@ -120,6 +132,7 @@ export const RankingQuestion: React.FC<{
         rankedItems,
         stepType,
         stepId: stepIdFromProps,
+        questionKey, // NUEVO: Pasar questionKey al hook
         onStepComplete,
         isApiDisabled
     });
@@ -147,6 +160,13 @@ export const RankingQuestion: React.FC<{
                 description={description}
                 questionText={questionText}
             />
+
+            {/* NUEVO: Mostrar questionKey para debugging */}
+            {questionKey && (
+                <div className="mb-2 p-2 bg-gray-100 rounded text-xs text-gray-600">
+                    <p>ID: {questionKey}</p>
+                </div>
+            )}
 
             <RankingList
                 items={rankedItems}

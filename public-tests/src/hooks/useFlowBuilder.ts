@@ -99,8 +99,10 @@ const processCognitiveTaskQuestions = (
             if (typeof question !== 'object' || question === null) continue;
             const q = question as { id?: string; title?: string; type?: string; instructions?: string };
             const originalQuestionType = q.type;
-            // Siempre usar el prefijo cognitive_ para preguntas cognitivas
-            const frontendType = typeof originalQuestionType === 'string' ? `cognitive_${originalQuestionType.toLowerCase()}` : undefined;
+            // NUEVO: Evitar doble prefijo cognitive_
+            const frontendType = typeof originalQuestionType === 'string' && originalQuestionType.startsWith('cognitive_')
+              ? originalQuestionType
+              : typeof originalQuestionType === 'string' ? `cognitive_${originalQuestionType.toLowerCase()}` : undefined;
             if (frontendType) {
                 steps.push({
                     id: q.id || `${frontendType}_${steps.length}`,

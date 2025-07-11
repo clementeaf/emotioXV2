@@ -48,6 +48,7 @@ const DifficultyScaleView: React.FC<MappedStepComponentProps> = ({
     stepName: question.title || 'Escala de Dificultad',
     researchId: undefined,
     participantId: undefined,
+    questionKey, // NUEVO: Pasar questionKey del backend
   });
 
   const [selectedRating, setSelectedRating] = useState<number | null>(null);

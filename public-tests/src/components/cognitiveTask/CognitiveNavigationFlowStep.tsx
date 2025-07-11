@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { useStepResponseManager } from '../../hooks/useStepResponseManager';
 import { CognitiveQuestion } from '../../types/cognitive-task.types';
 import { MappedStepComponentProps } from '../../types/flow.types';
 
@@ -39,8 +40,24 @@ const convertHitZonesToPixelCoordinates = (hitZones: any[]) => {
 
 const CognitiveNavigationFlowStep: React.FC<MappedStepComponentProps> = (props) => {
   // 1. Extraemos las props del objeto genérico
-  const { stepConfig, onStepComplete } = props;
+  const { stepConfig, onStepComplete, questionKey, savedResponse } = props;
   const onContinue = onStepComplete; // 2. Renombramos para compatibilidad interna
+
+  // NUEVO: Usar useStepResponseManager para guardar en backend
+  const {
+    responseData,
+    isSaving,
+    isLoading,
+    error,
+    saveCurrentStepResponse,
+    hasExistingData
+  } = useStepResponseManager<any>({
+    stepId: questionKey || 'navigation-flow',
+    stepType: 'navigation_flow',
+    stepName: 'Prueba de Navegación',
+    initialData: savedResponse,
+    questionKey
+  });
 
   // 3. Lógica de estado y del componente original - CORREGIDA
   // Manejar tanto el caso de array de preguntas como pregunta individual
@@ -50,13 +67,29 @@ const CognitiveNavigationFlowStep: React.FC<MappedStepComponentProps> = (props) 
     // Caso 1: stepConfig es un array de preguntas (formato anterior)
     if ('questions' in stepConfig && Array.isArray((stepConfig as any).questions)) {
       const config = stepConfig as { questions: CognitiveQuestion[] };
-      navigationQuestion = config.questions.find(q => q.type === 'navigation_flow' || q.type === 'preference_test');
+      navigationQuestion = config.questions.find(q =>
+        q.type === 'navigation_flow' ||
+        q.type === 'cognitive_navigation_flow' ||
+        q.type === 'preference_test'
+      );
     }
     // Caso 2: stepConfig es directamente la pregunta (formato actual del log)
-    else if ('type' in stepConfig && ((stepConfig as any).type === 'navigation_flow' || (stepConfig as any).type === 'preference_test')) {
+    else if ('type' in stepConfig && (
+      (stepConfig as any).type === 'navigation_flow' ||
+      (stepConfig as any).type === 'cognitive_navigation_flow' ||
+      (stepConfig as any).type === 'preference_test'
+    )) {
       navigationQuestion = stepConfig;
     }
   }
+
+  // NUEVO: Debug logs para verificar la configuración
+  console.log('[CognitiveNavigationFlowStep] 🔍 Debug info:', {
+    stepConfig,
+    navigationQuestion,
+    hasFiles: navigationQuestion?.files?.length > 0,
+    filesCount: navigationQuestion?.files?.length || 0
+  });
 
   const imageFiles = navigationQuestion?.files || [];
 
@@ -102,9 +135,35 @@ const CognitiveNavigationFlowStep: React.FC<MappedStepComponentProps> = (props) 
       <div className="w-full max-w-lg mx-auto bg-white p-6 rounded-lg shadow-md text-center">
         <h2 className="text-2xl font-bold text-gray-800 mb-4">Error de Configuración</h2>
         <p className="text-gray-600">No se pudo cargar la configuración de la tarea de navegación.</p>
+        <div className="mt-4 text-sm text-gray-500">
+          <p>Debug info:</p>
+          <p>stepConfig type: {typeof stepConfig}</p>
+          <p>stepConfig keys: {stepConfig ? Object.keys(stepConfig).join(', ') : 'null'}</p>
+          <p>navigationQuestion found: {navigationQuestion ? 'Sí' : 'No'}</p>
+          <p>files count: {imageFiles.length}</p>
+        </div>
       </div>
     );
   }
+
+  const handleNavigationComplete = async () => {
+    if (!selectedHitzone) return;
+
+    // NUEVO: Guardar la respuesta en backend antes de continuar
+    const responseData = {
+      selectedHitzone,
+      currentImageIndex,
+      totalImages: images.length,
+      imageId: selectedImage?.id,
+      type: 'navigation_flow'
+    };
+
+    const { success } = await saveCurrentStepResponse(responseData);
+
+    if (success && onContinue) {
+      onContinue();
+    }
+  };
 
   return (
     <div className="py-6">
@@ -189,14 +248,10 @@ const CognitiveNavigationFlowStep: React.FC<MappedStepComponentProps> = (props) 
             ) : (
               <button
                 className="mt-4 px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 text-lg font-medium w-full"
-                onClick={() => {
-                  setShowSuccessModal(false);
-                  if (onContinue) { // 5. Llamada segura a la función de callback
-                    onContinue();
-                  }
-                }}
+                onClick={handleNavigationComplete}
+                disabled={isSaving}
               >
-                Finalizar
+                {isSaving ? 'Guardando...' : 'Finalizar'}
               </button>
             )}
           </div>

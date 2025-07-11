@@ -4,7 +4,6 @@ import { SmartVOCFormModel, SmartVOCFormRecord } from '../models/smartVocForm.mo
 // import { PutCommand, QueryCommand, DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 // import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 // import { v4 as uuidv4 } from 'uuid'; // UUID se maneja en el modelo
-import { buildQuestionDictionary } from '../utils/buildQuestionDictionary';
 import { ApiError } from '../utils/errors'; // Añadir ApiError
 import { structuredLog } from '../utils/logging.util';
 
@@ -187,26 +186,12 @@ export class SmartVOCFormService {
         throw new ApiError(`SMART_VOC_FORM_EXISTS: Ya existe un formulario SmartVOC para la investigación ${researchId}`, 409);
       }
 
-      // NUEVO: Generar questionKeys para cada pregunta individual
-      const questionDictionary = buildQuestionDictionary([formData]);
-      const questionKeys = Object.keys(questionDictionary);
-
-      structuredLog('info', `${this.serviceName}.${context}`, 'Generando questionKeys para preguntas individuales', {
-        researchId,
-        totalQuestions: formData.questions?.length || 0,
-        questionKeysGenerated: questionKeys.length,
-        questionKeys: questionKeys
-      });
-
-      // Crear el formulario con el primer questionKey como identificador principal
-      const primaryQuestionKey = questionKeys[0] || undefined;
-      const result = await this.model.create(formData, researchId, primaryQuestionKey);
+      // Guardar el formulario tal como viene del frontend, sin recalcular questionKey
+      const result = await this.model.create(formData, researchId);
 
       structuredLog('info', `${this.serviceName}.${context}`, 'Formulario SmartVOC creado exitosamente', {
         formId: result.id,
-        researchId,
-        primaryQuestionKey,
-        totalQuestionKeys: questionKeys.length
+        researchId
       });
 
       return result;

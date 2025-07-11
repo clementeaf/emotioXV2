@@ -4,6 +4,7 @@ import ErrorDisplay from '../common/ErrorDisplay';
 import LoadingIndicator from '../common/LoadingIndicator';
 import CurrentStepRenderer from './CurrentStepRenderer';
 // import { FlowStepContentProps as OldFlowStepContentProps } from './types';
+import { useParticipantStore } from '../../stores/participantStore';
 import { FlowStepContentComponentProps } from '../../types/flow.types';
 
 const FlowStepContent: React.FC<Omit<FlowStepContentComponentProps, 'responsesData'> & { responsesData?: any }> = (props) => {
@@ -22,6 +23,9 @@ const FlowStepContent: React.FC<Omit<FlowStepContentComponentProps, 'responsesDa
         savedResponse,
     } = props;
 
+    // NUEVO: Obtener questionKey desde el store
+    const getQuestionKey = useParticipantStore(state => state.getQuestionKey);
+
     // Memoizar la lógica de stepConfig ANTES de cualquier return condicional
     const memoizedStepConfig = useMemo(() => {
         if (!currentExpandedStep) {
@@ -39,6 +43,22 @@ const FlowStepContent: React.FC<Omit<FlowStepContentComponentProps, 'responsesDa
         }
         return currentExpandedStep.config;
     }, [currentExpandedStep, currentStepEnum, responsesData]);
+
+    // NUEVO: Obtener questionKey para el paso actual
+    const currentQuestionKey = useMemo(() => {
+        if (!currentExpandedStep) return '';
+
+        // Intentar obtener questionKey del diccionario global
+        const questionKey = getQuestionKey(currentExpandedStep.id);
+        if (questionKey) {
+            console.log(`[FlowStepContent] 🔑 Obtenido questionKey: ${questionKey} para stepId: ${currentExpandedStep.id}`);
+            return questionKey;
+        }
+
+        // Fallback: usar stepId como questionKey si no está en el diccionario
+        console.warn(`[FlowStepContent] ⚠️ No se encontró questionKey para stepId: ${currentExpandedStep.id}, usando stepId como fallback`);
+        return currentExpandedStep.id;
+    }, [currentExpandedStep, getQuestionKey]);
 
     // Crear una key única para forzar re-renderizado cuando cambia el step
     const stepKey = useMemo(() => {
@@ -76,6 +96,7 @@ const FlowStepContent: React.FC<Omit<FlowStepContentComponentProps, 'responsesDa
                 researchId={researchId}
                 onLoginSuccess={handleLoginSuccess}
                 onError={handleRendererError}
+                questionKey="login" // NUEVO: questionKey para login
             />
         );
     }
@@ -95,6 +116,7 @@ const FlowStepContent: React.FC<Omit<FlowStepContentComponentProps, 'responsesDa
                 onError={handleRendererError}
                 savedResponse={savedResponse}
                 responsesData={responsesDataArray}
+                questionKey={currentQuestionKey} // NUEVO: Pasar questionKey obtenido del store
             />
         );
     }

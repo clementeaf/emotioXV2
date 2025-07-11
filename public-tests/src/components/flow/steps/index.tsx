@@ -1,8 +1,13 @@
 import React from 'react';
+import { useStepResponseManager } from '../../../hooks/useStepResponseManager';
 import { MappedStepComponentProps, StepComponentMap } from '../../../types/flow.types';
 import CognitiveNavigationFlowStep from '../../cognitiveTask/CognitiveNavigationFlowStep';
 import PreferenceTestTask from '../../cognitiveTask/PreferenceTestTask';
+import { LinearScaleView } from '../../cognitiveTask/questions/LinearScaleView';
 import { LongTextView } from '../../cognitiveTask/questions/LongTextView';
+import { MultiChoiceView } from '../../cognitiveTask/questions/MultiChoiceView';
+import { ShortTextView } from '../../cognitiveTask/questions/ShortTextView';
+import { SingleChoiceView } from '../../cognitiveTask/questions/SingleChoiceView';
 
 const ParticipantLogin = React.lazy(() => import('../../auth/ParticipantLogin').then(module => ({ default: module.ParticipantLogin })));
 const WelcomeScreenHandler = React.lazy(() => import('../WelcomeScreenHandler'));
@@ -11,7 +16,6 @@ const ThankYouView = React.lazy(() => import('../../ThankYouScreen'));
 const DifficultyScaleView = React.lazy(() => import('../../smartVoc/DifficultyScaleView'));
 const RankingQuestion = React.lazy(() => import('../questions/RankingQuestion').then(module => ({ default: module.RankingQuestion })));
 const SmartVocFeedbackQuestion = React.lazy(() => import('../questions/SmartVocFeedbackQuestion').then(module => ({ default: module.SmartVocFeedbackQuestion })));
-const LinearScaleQuestion = React.lazy(() => import('../questions/LineaScaleQuestion').then(module => ({ default: module.LineaScaleQuestion })));
 const MultipleChoiceQuestion = React.lazy(() => import('../questions/MultipleChoiceQuestion').then(module => ({ default: module.MultipleChoiceQuestion })));
 const SingleChoiceQuestion = React.lazy(() => import('../questions/SingleChoiceQuestion').then(module => ({ default: module.SingleChoiceQuestion })));
 const ShortTextQuestion = React.lazy(() => import('../questions/ShortTextQuestion').then(module => ({ default: module.ShortTextQuestion })));
@@ -32,23 +36,198 @@ const InstructionStep: React.FC<MappedStepComponentProps> = ({ stepConfig, onSte
     );
 };
 
+// NUEVO: Adaptadores para componentes de Cognitive Tasks
+const CognitiveShortTextAdapter: React.FC<MappedStepComponentProps> = (props) => {
+  const { stepConfig, onStepComplete, questionKey, savedResponse } = props;
+
+  const config = stepConfig as any;
+  const stepType = config.type || 'cognitive_short_text';
+  const stepName = config.title || 'Pregunta corta';
+
+  const {
+    responseData,
+    isSaving,
+    isLoading,
+    error,
+    saveCurrentStepResponse,
+    hasExistingData
+  } = useStepResponseManager<string>({
+    stepId: questionKey || config.id,
+    stepType,
+    stepName,
+    initialData: savedResponse as string | null | undefined,
+    questionKey
+  });
+
+  // Handler para cambio de valor
+  const handleChange = (_questionId: string, value: string) => {
+    // El valor se maneja internamente por el hook
+  };
+
+  // Handler para submit (firma compatible con onContinue)
+  const handleSubmit = async (responseData?: unknown) => {
+    const value = typeof responseData === 'string' ? responseData : '';
+    const result = await saveCurrentStepResponse(value);
+    if (result.success) {
+      onStepComplete?.(value);
+    }
+    // Si falla, el error se muestra por el hook
+  };
+
+  return (
+    <ShortTextView
+      config={config}
+      value={typeof responseData === 'string' ? responseData : ''}
+      onChange={handleChange}
+      questionKey={questionKey}
+      onContinue={handleSubmit}
+    />
+  );
+};
+
+const CognitiveSingleChoiceAdapter: React.FC<MappedStepComponentProps> = (props) => {
+  const { stepConfig, onStepComplete, questionKey, savedResponse } = props;
+
+  const config = stepConfig as any;
+  const stepType = config.type || 'cognitive_single_choice';
+  const stepName = config.title || 'Pregunta de opción única';
+
+  const {
+    responseData,
+    isSaving,
+    isLoading,
+    error,
+    saveCurrentStepResponse,
+    hasExistingData
+  } = useStepResponseManager<string>({
+    stepId: questionKey || config.id,
+    stepType,
+    stepName,
+    initialData: savedResponse as string | null | undefined,
+    questionKey
+  });
+
+  // Handler para cambio de valor y submit inmediato
+  const handleChange = async (_questionId: string, value: string) => {
+    const result = await saveCurrentStepResponse(value);
+    if (result.success) {
+      onStepComplete?.(value);
+    }
+    // Si falla, el error se muestra por el hook
+  };
+
+  return (
+    <SingleChoiceView
+      config={config}
+      value={typeof responseData === 'string' ? responseData : ''}
+      onChange={handleChange}
+      questionKey={questionKey}
+    />
+  );
+};
+
+const CognitiveMultiChoiceAdapter: React.FC<MappedStepComponentProps> = (props) => {
+  const { stepConfig, onStepComplete, questionKey, savedResponse } = props;
+
+  const config = stepConfig as any;
+  const stepType = config.type || 'cognitive_multiple_choice';
+  const stepName = config.title || 'Pregunta de opción múltiple';
+
+  const {
+    responseData,
+    isSaving,
+    isLoading,
+    error,
+    saveCurrentStepResponse,
+    hasExistingData
+  } = useStepResponseManager<string[]>({
+    stepId: questionKey || config.id,
+    stepType,
+    stepName,
+    initialData: savedResponse as string[] | null | undefined,
+    questionKey
+  });
+
+  // Handler para cambio de valor y submit inmediato
+  const handleChange = async (_questionId: string, value: string[]) => {
+    const result = await saveCurrentStepResponse(value);
+    if (result.success) {
+      onStepComplete?.(value);
+    }
+    // Si falla, el error se muestra por el hook
+  };
+
+  return (
+    <MultiChoiceView
+      config={config}
+      value={Array.isArray(responseData) ? responseData : []}
+      onChange={handleChange}
+      questionKey={questionKey}
+    />
+  );
+};
+
+const CognitiveLinearScaleAdapter: React.FC<MappedStepComponentProps> = (props) => {
+  const { stepConfig, onStepComplete, questionKey, savedResponse } = props;
+
+  const config = stepConfig as any;
+  const stepType = config.type || 'cognitive_linear_scale';
+  const stepName = config.title || 'Pregunta de escala lineal';
+
+  const {
+    responseData,
+    isSaving,
+    isLoading,
+    error,
+    saveCurrentStepResponse,
+    hasExistingData
+  } = useStepResponseManager<number | undefined>({
+    stepId: questionKey || config.id,
+    stepType,
+    stepName,
+    initialData: savedResponse as number | undefined,
+    questionKey
+  });
+
+  // Handler para cambio de valor y submit inmediato
+  const handleChange = async (_questionId: string, value: number) => {
+    const result = await saveCurrentStepResponse(value);
+    if (result.success) {
+      onStepComplete?.(value);
+    }
+    // Si falla, el error se muestra por el hook
+  };
+
+  return (
+    <LinearScaleView
+      config={config}
+      value={typeof responseData === 'number' ? responseData : undefined}
+      onChange={handleChange}
+      questionKey={questionKey}
+    />
+  );
+};
+
 export const stepComponentMap: StepComponentMap = {
     'login': ParticipantLogin,
     'welcome': WelcomeScreenHandler,
     'instruction': InstructionStep,
-    'cognitive_short_text': SmartVocFeedbackQuestion,
+    // NUEVO: Mapeo correcto para Cognitive Tasks con adaptadores
+    'cognitive_short_text': CognitiveShortTextAdapter,
     'cognitive_long_text': LongTextView,
-    'cognitive_single_choice': SingleChoiceQuestion,
-    'cognitive_multiple_choice': MultipleChoiceQuestion,
-    'cognitive_linear_scale': LinearScaleQuestion,
+    'cognitive_single_choice': CognitiveSingleChoiceAdapter,
+    'cognitive_multiple_choice': CognitiveMultiChoiceAdapter,
+    'cognitive_linear_scale': CognitiveLinearScaleAdapter,
     'cognitive_ranking': RankingQuestion,
     'cognitive_navigation_flow': CognitiveNavigationFlowStep,
+    // SmartVOC components
     'smartvoc_csat': CSATView,
     'smartvoc_cv': DifficultyScaleView,
     'smartvoc_nev': EmotionSelectionView,
     'smartvoc_feedback': SmartVocFeedbackQuestion,
     'smartvoc_ces': DifficultyScaleView,
     'smartvoc_nps': NPSView,
+    // Generic components (fallback)
     'multiple_choice': MultipleChoiceQuestion,
     'single_choice': SingleChoiceQuestion,
     'short_text': ShortTextQuestion,

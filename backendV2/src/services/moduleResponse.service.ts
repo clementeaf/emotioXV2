@@ -110,11 +110,40 @@ export class ModuleResponseService {
 
     try {
       await this.dynamoClient.send(command);
-      // Recuperar el documento recién creado para asegurar deserialización correcta
-      const createdDoc = await this.findByResearchAndParticipant(researchId, participantId);
-      if (!createdDoc || !createdDoc.responses || createdDoc.responses.length === 0) throw new ApiError('No se pudo recuperar la respuesta recién creada', 500);
-      // Devolver la primera respuesta (la recién creada) con metadata deserializada
-      return createdDoc.responses[0];
+
+      // NUEVO: Manejar consistencia eventual de DynamoDB con retry
+      let createdDoc: ParticipantResponsesDocument | null = null;
+      let retryCount = 0;
+      const maxRetries = 3;
+
+      while (retryCount < maxRetries && !createdDoc) {
+        try {
+          // Pequeño delay para permitir que DynamoDB propague la escritura
+          if (retryCount > 0) {
+            await new Promise(resolve => setTimeout(resolve, 100 * retryCount));
+          }
+
+          createdDoc = await this.findByResearchAndParticipant(researchId, participantId);
+
+          if (createdDoc && createdDoc.responses && createdDoc.responses.length > 0) {
+            console.log(`[ModuleResponseService.createNewDocument] ✅ Documento recuperado exitosamente en intento ${retryCount + 1}`);
+            return createdDoc.responses[0];
+          }
+        } catch (retryError) {
+          console.warn(`[ModuleResponseService.createNewDocument] ⚠️ Intento ${retryCount + 1} falló:`, retryError);
+        }
+
+        retryCount++;
+      }
+
+      // Si llegamos aquí, no pudimos recuperar el documento después de los retries
+      console.error(`[ModuleResponseService.createNewDocument] ❌ No se pudo recuperar el documento después de ${maxRetries} intentos`);
+
+      // NUEVO: En lugar de fallar, devolver la respuesta que acabamos de crear
+      // Esto es más robusto que fallar completamente
+      console.log(`[ModuleResponseService.createNewDocument] 🔄 Devolviendo respuesta creada sin recuperación de DynamoDB`);
+      return initialResponse;
+
     } catch (error: any) {
       console.error('[ModuleResponseService.createNewDocument] Error:', error);
       if (error.name === 'ConditionalCheckFailedException') {
@@ -148,11 +177,18 @@ export class ModuleResponseService {
       console.log(`[ModuleResponseService.findByResearchAndParticipant] Query result items count: ${result.Items?.length || 0}`);
 
       if (!result.Items || result.Items.length === 0) {
+        console.log(`[ModuleResponseService.findByResearchAndParticipant] No documents found for researchId=${researchId}, participantId=${participantId}`);
         return null;
       }
 
       const rawDocument = result.Items[0] as ParticipantResponsesDocument;
       console.log(`[ModuleResponseService.findByResearchAndParticipant] Raw document metadata:`, rawDocument.metadata);
+
+      // NUEVO: Validación adicional para asegurar que el documento tiene la estructura esperada
+      if (!rawDocument.responses || !Array.isArray(rawDocument.responses)) {
+        console.warn(`[ModuleResponseService.findByResearchAndParticipant] ⚠️ Documento encontrado pero sin array de respuestas válido`);
+        return null;
+      }
 
       // Deserializar metadata del documento y de cada respuesta
       const processedDocument = {
@@ -172,7 +208,19 @@ export class ModuleResponseService {
       console.error('[ModuleResponseService.findByResearchAndParticipant] Full DDB Error object:', JSON.stringify(error, null, 2));
       console.error('[ModuleResponseService.findByResearchAndParticipant] DDB Error Name:', error.name);
       console.error('[ModuleResponseService.findByResearchAndParticipant] DDB Error Message:', error.message);
-      // Propagar un error más detallado, sin pasar el objeto error original al constructor si no lo soporta.
+
+      // NUEVO: Manejar errores específicos de DynamoDB de manera más granular
+      if (error.name === 'ResourceNotFoundException') {
+        console.error('[ModuleResponseService.findByResearchAndParticipant] Table or index not found');
+        throw new ApiError('Database configuration error: Table or index not found', 500);
+      }
+
+      if (error.name === 'ValidationException') {
+        console.error('[ModuleResponseService.findByResearchAndParticipant] Invalid query parameters');
+        throw new ApiError('Database query error: Invalid parameters', 500);
+      }
+
+      // Para otros errores, propagar un error más detallado
       throw new ApiError(
         `Database Query Failed in findByResearchAndParticipant: ${error.name} - ${error.message}`,
         500

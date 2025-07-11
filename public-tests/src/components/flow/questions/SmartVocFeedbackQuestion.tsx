@@ -13,6 +13,9 @@ export const SmartVocFeedbackQuestion: React.FC<MappedStepComponentProps> = ({
   stepName,
   onStepComplete,
   instructions,
+  questionKey, // NUEVO: questionKey del backend
+  stepId, // NUEVO: stepId del backend
+  stepType, // NUEVO: stepType del backend
 }) => {
 
   const cfg = (typeof stepConfig === 'object' && stepConfig !== null)
@@ -26,10 +29,17 @@ export const SmartVocFeedbackQuestion: React.FC<MappedStepComponentProps> = ({
         isHardcoded?: boolean;
         savedResponses?: string;
         savedResponseId?: string;
+        questionKey?: string; // NUEVO: questionKey del backend
       }
     : {};
 
   const finalInstructions = cfg.instructions || instructions;
+
+  // NUEVO: Usar questionKey del backend si está disponible
+  const backendQuestionKey = questionKey || cfg.questionKey || stepId || 'smartvoc-feedback';
+
+  // NUEVO: Usar stepType del backend en lugar de hardcodear
+  const backendStepType = stepType || 'smart-voc-feedback';
 
   // Utilidad para extraer el string de la respuesta
   function extractStringResponse(resp: any): string {
@@ -60,11 +70,21 @@ export const SmartVocFeedbackQuestion: React.FC<MappedStepComponentProps> = ({
     saveCurrentStepResponse,
     responseSpecificId
   } = useStepResponseManager<string>({
-    stepId: 'smartvoc-feedback',
-    stepType: 'smart-voc-feedback',
+    stepId: backendQuestionKey, // NUEVO: Usar questionKey del backend
+    stepType: backendStepType, // NUEVO: Usar stepType del backend
     stepName: 'Comentarios',
     researchId: undefined,
     participantId: undefined,
+  });
+
+  // NUEVO: Log para debugging
+  console.log(`[SmartVocFeedbackQuestion] 🔑 Usando questionKey: ${backendQuestionKey}, stepType: ${backendStepType}`, {
+    questionKey,
+    cfgQuestionKey: cfg.questionKey,
+    stepId,
+    backendQuestionKey,
+    stepType,
+    backendStepType
   });
 
     // useEffect para respuestas del useStepResponseManager
