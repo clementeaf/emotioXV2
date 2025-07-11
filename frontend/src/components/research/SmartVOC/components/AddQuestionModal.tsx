@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 
 import { UI_TEXTS } from '../constants';
-import { QUESTION_TEMPLATES, getAvailableQuestionTypes, createQuestionFromTemplate } from '../templates/questionTemplates';
+import { QUESTION_TEMPLATES, createQuestionFromTemplate, getAvailableQuestionTypes } from '../templates/questionTemplates';
 import { QuestionType, SmartVOCQuestion } from '../types';
 
 interface AddQuestionModalProps {
@@ -30,10 +30,10 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
 
   const handleAddQuestion = () => {
     if (!selectedType) {return;}
-    
+
     const questionTemplate = createQuestionFromTemplate(selectedType, instructions);
     onAddQuestion(questionTemplate);
-    
+
     // Resetear estado
     setSelectedType(null);
     setInstructions('');
@@ -50,7 +50,7 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
           <p className="text-sm text-neutral-500">
             {UI_TEXTS.ADD_QUESTION_MODAL.DESCRIPTION}
           </p>
-          
+
           {availableQuestionTypes.length === 0 ? (
             <div className="p-4 bg-amber-50 rounded-md">
               <p className="text-sm text-amber-800">Ya has añadido todos los tipos de preguntas disponibles.</p>
@@ -60,13 +60,17 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
               <div className="grid grid-cols-2 gap-4">
                 {availableQuestionTypes.map((questionType) => {
                   const template = QUESTION_TEMPLATES[questionType];
+                  if (!template) {
+                    console.warn(`[AddQuestionModal] Template no encontrado para tipo: ${questionType}`);
+                    return null;
+                  }
                   return (
                     <div
                       key={questionType}
                       onClick={() => setSelectedType(questionType)}
                       className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                        selectedType === questionType 
-                          ? 'border-blue-500 bg-blue-50' 
+                        selectedType === questionType
+                          ? 'border-blue-500 bg-blue-50'
                           : 'hover:border-blue-300 hover:bg-blue-50/50'
                       }`}
                     >
@@ -76,7 +80,7 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
                   );
                 })}
               </div>
-              
+
               {selectedType && (
                 <div className="mt-4">
                   <label className="block text-sm font-medium text-neutral-700 mb-1">
@@ -94,13 +98,13 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
           )}
         </div>
         <div className="flex justify-end gap-2">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={onClose}
           >
             {UI_TEXTS.ADD_QUESTION_MODAL.CLOSE_BUTTON}
           </Button>
-          <Button 
+          <Button
             onClick={handleAddQuestion}
             disabled={!selectedType || availableQuestionTypes.length === 0}
           >
@@ -110,4 +114,4 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
       </DialogContent>
     </Dialog>
   );
-}; 
+};

@@ -1,5 +1,6 @@
 import React, { Suspense } from 'react';
 import { useParticipantStore } from '../../stores/participantStore';
+import { QuestionType } from '../../types/question-types.enum';
 import { RenderError } from './RenderError';
 import { stepComponentMap } from './steps';
 import { CurrentStepProps } from './types';
@@ -24,32 +25,51 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
     // NUEVO: Obtener la pregunta desde el diccionario global usando questionKey
     const questionData = questionKey ? getQuestionByKey(questionKey) : null;
 
-    // NUEVO: Logs de advertencia si questionKey no existe
+    // NUEVO: Logs de advertencia solo para questionKeys críticos
     if (questionKey && !questionData) {
-        console.warn(`[CurrentStepRenderer] ⚠️ questionKey no encontrado en diccionario global: ${questionKey}`);
-        console.warn(`[CurrentStepRenderer] ⚠️ stepType: ${stepType}, stepId: ${restOfStepProps.stepId}`);
+        // Solo mostrar warning para questionKeys que no sean fallbacks o temporales
+        if (!questionKey.includes('unknown_') && !questionKey.includes('temp_') && !questionKey.includes('debug_')) {
+            console.warn(`[CurrentStepRenderer] ⚠️ questionKey no encontrado en diccionario global: ${questionKey}`);
+            console.warn(`[CurrentStepRenderer] ⚠️ stepType: ${stepType}, stepId: ${restOfStepProps.stepId}`);
+        }
     }
 
-    // NUEVO: Determinar el componente a renderizar usando questionKey y diccionario global
+    // NUEVO: Determinar el componente a renderizar usando ENUM QuestionType
     let ComponentToRender = null;
     let renderComponentName = '';
 
-    if (questionData && questionData.renderComponent) {
-        // Usar renderComponent del diccionario global
+    // Intentar mapear usando el ENUM QuestionType primero
+    if (questionKey) {
+        // Buscar en el ENUM si el questionKey coincide con algún valor
+        const enumValues = Object.values(QuestionType);
+        const matchingEnumValue = enumValues.find(value => questionKey.includes(value as string));
+
+        if (matchingEnumValue) {
+            renderComponentName = matchingEnumValue as string;
+            ComponentToRender = stepComponentMap[matchingEnumValue as string];
+
+            if (ComponentToRender !== undefined) {
+                console.log(`[CurrentStepRenderer] ✅ Renderizando por ENUM QuestionType: ${questionKey} -> ${matchingEnumValue}`);
+            }
+        }
+    }
+
+    // FALLBACK: Si no se encontró por ENUM, usar questionData.renderComponent
+    if (!ComponentToRender && questionData && questionData.renderComponent) {
         renderComponentName = questionData.renderComponent;
         ComponentToRender = stepComponentMap[renderComponentName] || stepComponentMap[questionData.type];
 
-        if (typeof ComponentToRender !== "undefined") {
-            console.log(`[CurrentStepRenderer] ✅ Renderizando por questionKey: ${questionKey} -> ${renderComponentName}`);
+        if (ComponentToRender !== undefined) {
+            console.log(`[CurrentStepRenderer] ✅ Renderizando por questionData: ${questionKey} -> ${renderComponentName}`);
         } else {
             console.warn(`[CurrentStepRenderer] ⚠️ No se encontró componente para renderComponent: ${renderComponentName}`);
         }
     }
 
-    // FALLBACK: Si no hay questionData o renderComponent, usar stepType (para compatibilidad)
-    if (typeof ComponentToRender === "undefined" || !ComponentToRender) {
+    // FALLBACK FINAL: Si no hay questionData o renderComponent, usar stepType (para compatibilidad)
+    if (!ComponentToRender) {
         ComponentToRender = stepComponentMap[stepType];
-        if (typeof ComponentToRender !== "undefined") {
+        if (ComponentToRender !== undefined) {
             console.log(`[CurrentStepRenderer] 🔄 Usando fallback por stepType: ${stepType}`);
         }
     }

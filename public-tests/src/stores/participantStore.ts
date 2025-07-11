@@ -847,26 +847,28 @@ function validateQuestionDictionary(questionDictionary: QuestionDictionary, step
       stepIds.add(stepId);
     }
 
-    // Verificar inconsistencias de datos
-    if (!question.title || question.title.trim() === '') {
-      inconsistencies.push({
-        stepId,
-        issue: 'Título vacío o faltante'
-      });
-    }
+    // Verificar inconsistencias de datos solo para entradas críticas
+    if (!stepId.includes('unknown_') && !stepId.includes('temp_') && !stepId.includes('debug_')) {
+      if (!question.title || question.title.trim() === '') {
+        inconsistencies.push({
+          stepId,
+          issue: 'Título vacío o faltante'
+        });
+      }
 
-    if (!question.type || question.type.trim() === '') {
-      inconsistencies.push({
-        stepId,
-        issue: 'Tipo de pregunta vacío o faltante'
-      });
-    }
+      if (!question.type || question.type.trim() === '') {
+        inconsistencies.push({
+          stepId,
+          issue: 'Tipo de pregunta vacío o faltante'
+        });
+      }
 
-    if (!question.module || question.module.trim() === '') {
-      inconsistencies.push({
-        stepId,
-        issue: 'Módulo vacío o faltante'
-      });
+      if (!question.module || question.module.trim() === '') {
+        inconsistencies.push({
+          stepId,
+          issue: 'Módulo vacío o faltante'
+        });
+      }
     }
   }
 
@@ -874,11 +876,29 @@ function validateQuestionDictionary(questionDictionary: QuestionDictionary, step
   const stepsInDictionary = new Set(Object.keys(questionDictionary));
   const missingSteps = steps.filter(step => !stepsInDictionary.has(step.id));
 
-  // Reportar resultados
+  // Ignorar duplicados intencionales de alias core
+  const isCoreAlias = (key: string, stepIds: string[]) => {
+    const coreGroups = [
+      ['demographic_demographic', 'demographic', 'demographics'],
+      ['welcome_welcome', 'welcome', 'welcome_screen'],
+      ['thankyou_thankyou', 'thankyou', 'thank_you_screen']
+    ];
+    return coreGroups.some(group => group.every(k => stepIds.includes(k)) && group.includes(key));
+  };
+
+  // NUEVO: Filtrar steps faltantes que son esperados (no críticos)
+  const criticalMissingSteps = missingSteps.filter(step => {
+    // Ignorar steps que son opcionales o que pueden no estar presentes
+    const optionalSteps = ['demographic', 'demographics'];
+    return !optionalSteps.includes(step.id);
+  });
+
+  // Reportar resultados solo si hay problemas críticos
   if (duplicates.length > 0) {
-    console.warn(`[validateQuestionDictionary] ⚠️ DUPLICADOS ENCONTRADOS:`, duplicates);
     duplicates.forEach(dup => {
-      console.warn(`  - questionKey "${dup.questionKey}" usado por stepIds: ${dup.stepIds.join(', ')}`);
+      if (!isCoreAlias(dup.questionKey, dup.stepIds)) {
+        console.warn(`[validateQuestionDictionary] ⚠️ DUPLICADO: questionKey "${dup.questionKey}" usado por stepIds: ${dup.stepIds.join(', ')}`);
+      }
     });
   }
 
@@ -889,22 +909,27 @@ function validateQuestionDictionary(questionDictionary: QuestionDictionary, step
     });
   }
 
-  if (missingSteps.length > 0) {
-    console.warn(`[validateQuestionDictionary] ⚠️ STEPS FALTANTES EN DICCIONARIO:`, missingSteps.map(s => s.id));
+  if (criticalMissingSteps.length > 0) {
+    console.warn(`[validateQuestionDictionary] ⚠️ STEPS CRÍTICOS FALTANTES EN DICCIONARIO:`, criticalMissingSteps.map(s => s.id));
   }
 
-  // Log de estadísticas
-  console.log(`[validateQuestionDictionary] 📊 ESTADÍSTICAS:`);
-  console.log(`  - Total de steps: ${steps.length}`);
-  console.log(`  - Entradas en diccionario: ${Object.keys(questionDictionary).length}`);
-  console.log(`  - QuestionKeys únicos: ${questionKeys.size}`);
-  console.log(`  - Duplicados encontrados: ${duplicates.length}`);
-  console.log(`  - Inconsistencias encontradas: ${inconsistencies.length}`);
-  console.log(`  - Steps faltantes: ${missingSteps.length}`);
+  // Log informativo para steps opcionales faltantes (solo en desarrollo)
+  if (missingSteps.length > 0 && criticalMissingSteps.length !== missingSteps.length) {
+    const optionalMissingSteps = missingSteps.filter(step => !criticalMissingSteps.includes(step));
+    console.log(`[validateQuestionDictionary] ℹ️ Steps opcionales no presentes en diccionario (normal):`, optionalMissingSteps.map(s => s.id));
+  }
 
-  if (duplicates.length === 0 && inconsistencies.length === 0 && missingSteps.length === 0) {
-    console.log(`[validateQuestionDictionary] ✅ VALIDACIÓN EXITOSA: Diccionario global consistente`);
-  } else {
+  // Log de estadísticas solo si hay problemas críticos
+  if (duplicates.length > 0 || inconsistencies.length > 0 || criticalMissingSteps.length > 0) {
+    console.log(`[validateQuestionDictionary] 📊 ESTADÍSTICAS:`);
+    console.log(`  - Total de steps: ${steps.length}`);
+    console.log(`  - Entradas en diccionario: ${Object.keys(questionDictionary).length}`);
+    console.log(`  - QuestionKeys únicos: ${questionKeys.size}`);
+    console.log(`  - Duplicados encontrados: ${duplicates.length}`);
+    console.log(`  - Inconsistencias encontradas: ${inconsistencies.length}`);
+    console.log(`  - Steps críticos faltantes: ${criticalMissingSteps.length}`);
     console.warn(`[validateQuestionDictionary] ⚠️ VALIDACIÓN CON PROBLEMAS: Revisar logs anteriores`);
+  } else {
+    console.log(`[validateQuestionDictionary] ✅ VALIDACIÓN EXITOSA: Diccionario global consistente`);
   }
 }

@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Switch } from '@/components/ui/Switch';
 
+import { QuestionType } from '../../../../../../shared/interfaces/question-types.enum';
 import { UI_TEXTS } from '../constants';
 import { SmartVOCQuestion, SmartVOCQuestionsProps } from '../types';
 
@@ -59,14 +60,15 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
   // Normalizar preguntas para la UI (solo para el componente, no para el backend)
   const questionsForUI = questions.map(q => ({
     ...q,
-    type: typeof q.type === 'string' && q.type.startsWith('smartvoc_') ? q.type.replace('smartvoc_', '') : q.type
+    // Mantener el tipo original para renderQuestionConfig
+    type: q.type
   }));
 
 
   // Renderiza la configuración específica para cada tipo de pregunta
   const renderQuestionConfig = (question: SmartVOCQuestion) => {
     switch (question.type) {
-      case 'CSAT':
+      case QuestionType.SMARTVOC_CSAT:
         return (
           <div className="flex items-center gap-4">
             <span className="text-sm font-medium text-neutral-900">Tipo de visualización</span>
@@ -84,7 +86,7 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
           </div>
         );
 
-      case 'CES':
+      case QuestionType.SMARTVOC_ESAT:
         return (
           <div className="flex items-center gap-4">
             <span className="text-sm font-medium text-neutral-900">CES</span>
@@ -105,7 +107,7 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
           </div>
         );
 
-      case 'CV':
+      case QuestionType.SMARTVOC_CV:
         return (
           <div className="space-y-4">
             <div className="flex items-center gap-4">
@@ -166,7 +168,7 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
           </div>
         );
 
-      case 'NEV':
+      case QuestionType.SMARTVOC_OSAT:
         return (
           <div className="space-y-4">
             <div className="flex items-center gap-4">
@@ -219,7 +221,7 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
           </div>
         );
 
-      case 'NPS':
+      case QuestionType.SMARTVOC_NPS:
         return (
           <div className="space-y-4">
             <div className="flex items-center gap-4">
@@ -263,7 +265,7 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
           </div>
         );
 
-      case 'VOC':
+      case QuestionType.SMARTVOC_VOC:
         return (
           <div className="flex items-center gap-4">
             <span className="text-sm font-medium text-neutral-900">Texto largo</span>

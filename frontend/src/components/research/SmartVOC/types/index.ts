@@ -1,14 +1,15 @@
 import { ReactNode } from 'react';
-import { SmartVOCFormData as BaseSmartVOCFormData } from 'shared/interfaces/smart-voc.interface';
+import { QuestionType } from 'shared/interfaces/question-types.enum';
+import { SmartVOCFormData as BaseSmartVOCFormData, SmartVOCQuestion } from 'shared/interfaces/smart-voc.interface';
 
 /**
  * Tipos relacionados con el formulario SmartVOC
  */
 
 /**
- * Tipos de pregunta soportados
+ * Tipos de pregunta soportados - Usando el ENUM global
  */
-export type QuestionType = 'CSAT' | 'CES' | 'CV' | 'NEV' | 'NPS' | 'VOC';
+export { QuestionType };
 
 /**
  * Tipos de visualización para las preguntas
@@ -35,20 +36,9 @@ export interface QuestionConfig {
 }
 
 /**
- * Extendemos la interfaz base de SmartVOCQuestion
+ * Re-exportar SmartVOCQuestion desde shared para consistencia
  */
-export interface SmartVOCQuestion {
-  id: string;
-  type: string; // Permitir string para soportar type enriquecido
-  title: string;
-  description: string;
-  instructions?: string;
-  showConditionally: boolean;
-  config: Record<string, any>;
-  required?: boolean; // Cambiar a opcional para compatibilidad
-  questionKey?: string; // NUEVO: Soporte para questionKey universal
-  moduleResponseId?: string;
-}
+export type { SmartVOCQuestion };
 
 /**
  * Valores por defecto para SmartVOC

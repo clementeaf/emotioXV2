@@ -4,6 +4,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import toast from 'react-hot-toast';
+import { QuestionType } from 'shared/interfaces/question-types.enum';
 import { SmartVOCFormData } from 'shared/interfaces/smart-voc.interface';
 
 import { smartVocFixedAPI } from '@/lib/smart-voc-api';
@@ -68,7 +69,7 @@ export const useSmartVOCMutations = (researchId: string, smartVocId?: string) =>
           // 1. Asegurar que 'description' no esté vacío
           const description = q.description || q.title || ' ';
           // 2. Añadir el campo 'required'
-          const required = q.type !== 'VOC';
+          const required = q.type !== QuestionType.SMARTVOC_VOC;
           // 3. Limpiar 'companyName' si está vacío en la configuración
           const config = { ...q.config };
           if ('companyName' in config && config.companyName === '') {

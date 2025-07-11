@@ -1,3 +1,6 @@
+
+import { QuestionType } from './question-types.enum';
+
 /**
  * Interface definitions for Smart VOC (Voice of Customer) feature
  */
@@ -10,7 +13,7 @@ export interface QuestionConfigBase {
    * Input type for the question
    */
   type?: 'stars' | 'numbers' | 'emojis' | 'scale' | 'text';
-  
+
   /**
    * Scale range configuration for questions with scale type
    */
@@ -18,17 +21,17 @@ export interface QuestionConfigBase {
     start: number;
     end: number;
   };
-  
+
   /**
    * Company name for questions that reference a company
    */
   companyName?: string;
-  
+
   /**
    * Start label for scale questions (e.g. "Not at all")
    */
   startLabel?: string;
-  
+
   /**
    * End label for scale questions (e.g. "Very much")
    */
@@ -107,37 +110,37 @@ export interface SmartVOCQuestion {
    * Unique identifier for the question
    */
   id: string;
-  
+
   /**
-   * Type of question (CSAT, CES, etc.)
+   * Type of question using the global QuestionType enum
    */
-  type: 'CSAT' | 'CES' | 'CV' | 'NEV' | 'NPS' | 'VOC';
-  
+  type: QuestionType;
+
   /**
    * Title of the question
    */
   title: string;
-  
+
   /**
    * Description/text of the question
    */
   description: string;
-  
+
   /**
    * Optional instructions or additional information for participants
    */
   instructions?: string;
-  
+
   /**
    * Whether this question should be shown conditionally
    */
   showConditionally: boolean;
-  
+
   /**
    * Configuration specific to the question type
    */
   config: QuestionConfig;
-  
+
   /**
    * Optional module response ID
    */
@@ -153,12 +156,12 @@ export interface ConditionalLogic {
    * ID of the question this condition depends on
    */
   questionId: string;
-  
+
   /**
    * Operator for the condition
    */
   operator: 'equals' | 'not_equals' | 'greater_than' | 'less_than' | 'contains';
-  
+
   /**
    * Value to compare against
    */
@@ -173,22 +176,22 @@ export interface SmartVOCFormData {
    * ID of the research this form belongs to
    */
   researchId: string;
-  
+
   /**
    * Array of questions in the form
    */
   questions: SmartVOCQuestion[];
-  
+
   /**
    * Whether to randomize the order of questions
    */
   randomizeQuestions: boolean;
-  
+
   /**
    * Whether the Smart VOC section is required for participants
    */
   smartVocRequired: boolean;
-  
+
   /**
    * Additional metadata (optional)
    */
@@ -197,12 +200,12 @@ export interface SmartVOCFormData {
      * Estimated completion time in minutes
      */
     estimatedCompletionTime?: string;
-    
+
     /**
      * Created date
      */
     createdAt?: string;
-    
+
     /**
      * Last updated date
      */
@@ -218,17 +221,17 @@ export interface SmartVOCFormResponse {
    * Unique identifier of the saved form (optional for error responses)
    */
   id?: string;
-  
+
   /**
    * Success status
    */
   success: boolean;
-  
+
   /**
    * Error message if any
    */
   error?: string;
-  
+
   /**
    * Form data that was saved
    */
@@ -248,7 +251,7 @@ export const DEFAULT_SMART_VOC_FORM: SmartVOCFormData = {
   questions: [
     {
       id: 'csat',
-      type: 'CSAT',
+      type: QuestionType.SMARTVOC_CSAT,
       title: 'Customer Satisfaction Score (CSAT)',
       description: 'How would you rate your overall satisfaction level with [company]?',
       showConditionally: false,
@@ -264,4 +267,4 @@ export const DEFAULT_SMART_VOC_FORM: SmartVOCFormData = {
   metadata: {
     estimatedCompletionTime: '3-5 minutes'
   }
-}; 
+};

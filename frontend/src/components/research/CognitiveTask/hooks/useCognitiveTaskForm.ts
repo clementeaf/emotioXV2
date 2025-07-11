@@ -1,23 +1,24 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useState } from 'react';
 import {
-  CognitiveTaskFormData,
-  UploadedFile
+    CognitiveTaskFormData,
+    UploadedFile
 } from 'shared/interfaces/cognitive-task.interface';
 
 import { useAuth } from '@/providers/AuthProvider';
 import { cognitiveTaskService } from '@/services/cognitiveTaskService';
 
 import {
-  logFormDebugInfo
+    logFormDebugInfo
 } from '../../CognitiveTaskFormHelpers';
 import {
-  QUERY_KEYS
+    QUERY_KEYS
 } from '../constants';
 import type { ErrorModalData, Question, UICognitiveTaskFormData } from '../types';
 import { ValidationErrors } from '../types';
 import { debugQuestionsToSendLocal, filterValidQuestionsLocal } from '../utils/validateRequiredFields';
 
+import { QuestionType as GlobalQuestionType } from '../../../../../../shared/interfaces/question-types.enum';
 import { useCognitiveTaskFileUpload } from './useCognitiveTaskFileUpload';
 import { useCognitiveTaskModals } from './useCognitiveTaskModals';
 import { DEFAULT_STATE as DEFAULT_COGNITIVE_TASK_STATE, useCognitiveTaskState } from './useCognitiveTaskState';
@@ -102,6 +103,18 @@ declare global {
     _lastMutationTimestamp?: number;
   }
 }
+
+// Función helper para mapear tipos Cognitive Task al ENUM
+const getCognitiveQuestionType = (type: string): string => {
+  switch (type) {
+    case 'long_text': return GlobalQuestionType.COGNITIVE_LONG_TEXT;
+    case 'multiple_choice': return GlobalQuestionType.COGNITIVE_MULTIPLE_CHOICE;
+    case 'single_choice': return GlobalQuestionType.COGNITIVE_SINGLE_CHOICE;
+    case 'rating': return GlobalQuestionType.COGNITIVE_RATING;
+    case 'ranking': return GlobalQuestionType.COGNITIVE_RANKING;
+    default: return `cognitive_${type}`;
+  }
+};
 
 export const useCognitiveTaskForm = (
   researchId?: string,
@@ -313,7 +326,7 @@ export const useCognitiveTaskForm = (
       required: true,
       showConditionally: false,
       deviceFrame: false,
-      questionKey: `cognitive_${type}_q_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      questionKey: `${getCognitiveQuestionType(type)}_q_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       ...(type === 'single_choice' || type === 'multiple_choice' || type === 'ranking' ? {
         choices: [
           { id: '1', text: '', isQualify: false, isDisqualify: false },
@@ -375,7 +388,7 @@ export const useCognitiveTaskForm = (
       ...dataToSend,
       questions: dataToSend.questions.map(q => ({
         ...q,
-        questionKey: q.questionKey || `cognitive_${q.type}_${q.id}`,
+        questionKey: q.questionKey || `${getCognitiveQuestionType(q.type)}_${q.id}`,
         type: `cognitive_${q.type}`
       }))
     };
@@ -399,7 +412,7 @@ export const useCognitiveTaskForm = (
         ...dataToSend,
         questions: dataToSend.questions.map(q => ({
           ...q,
-          questionKey: q.questionKey || `cognitive_${q.type}_${q.id}`,
+          questionKey: q.questionKey || `${getCognitiveQuestionType(q.type)}_${q.id}`,
           type: `cognitive_${q.type}`
         }))
       };

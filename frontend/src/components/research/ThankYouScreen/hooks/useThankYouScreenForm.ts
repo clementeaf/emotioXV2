@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 import { thankYouScreenFixedAPI } from '@/lib/thank-you-screen-api';
 import { useAuth } from '@/providers/AuthProvider';
+import { QuestionType } from '../../../../../../shared/interfaces/question-types.enum';
 
 import {
     ERROR_MESSAGES,
@@ -306,11 +307,12 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
       const dataToSave: ThankYouScreenFormData = {
         ...formData,
         researchId,
+        questionKey: QuestionType.THANK_YOU_SCREEN, // Agregar questionKey usando ENUM
         metadata: {
           version: '1.0.0',
           updatedAt: new Date().toISOString()
         }
-      };
+      } as any;
 
       // Ejecutar la mutación para guardar directamente sin mostrar toasts
       mutate(dataToSave);

@@ -78,7 +78,7 @@ export class ThankYouScreenModel {
    * @param researchId ID de la investigación asociada
    * @returns La configuración creada con su ID generado
    */
-  async create(data: ThankYouScreenFormData, researchId: string): Promise<SharedThankYouScreenModel> {
+  async create(data: ThankYouScreenFormData, researchId: string, questionKey?: string): Promise<SharedThankYouScreenModel> {
     const context = 'create';
     const screenId = uuidv4();
     const now = new Date().toISOString();
@@ -106,6 +106,7 @@ export class ThankYouScreenModel {
       message: config.message,
       redirectUrl: config.redirectUrl,
       metadata: JSON.stringify(config.metadata),
+      questionKey: questionKey, // NUEVO: Guardar questionKey
       createdAt: now,
       updatedAt: now
     };

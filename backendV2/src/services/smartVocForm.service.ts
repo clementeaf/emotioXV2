@@ -186,12 +186,16 @@ export class SmartVOCFormService {
         throw new ApiError(`SMART_VOC_FORM_EXISTS: Ya existe un formulario SmartVOC para la investigación ${researchId}`, 409);
       }
 
-      // Guardar el formulario tal como viene del frontend, sin recalcular questionKey
-      const result = await this.model.create(formData, researchId);
+      // Extraer questionKey del frontend si existe en las preguntas
+      const questionKey = formData.questions?.[0]?.questionKey || null;
+
+      // Guardar el formulario preservando el questionKey del frontend
+      const result = await this.model.create(formData, researchId, questionKey);
 
       structuredLog('info', `${this.serviceName}.${context}`, 'Formulario SmartVOC creado exitosamente', {
         formId: result.id,
-        researchId
+        researchId,
+        questionKey
       });
 
       return result;

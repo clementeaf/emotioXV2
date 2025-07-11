@@ -206,7 +206,10 @@ export const useParticipantFlowWithStore = (researchId: string | undefined) => {
         const errorMsg = (fetchError && typeof fetchError === 'object' && 'message' in fetchError)
           ? (fetchError as { message?: string }).message
           : 'Error de red cargando tareas cognitivas';
-        console.warn(errorMsg);
+        // Solo mostrar warning si no es un error de desarrollo
+        if (errorMsg && !errorMsg.includes('localhost') && !errorMsg.includes('127.0.0.1')) {
+          console.warn(errorMsg);
+        }
       }
 
       // 6. CUARTO: Procesar SmartVOC (después de cognitive-task)

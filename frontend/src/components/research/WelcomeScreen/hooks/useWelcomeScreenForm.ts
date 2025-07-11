@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import welcomeScreenService, { WelcomeScreenData, WelcomeScreenRecord } from '@/services/welcomeScreenService';
+import { QuestionType } from '../../../../../../shared/interfaces/question-types.enum';
 
 import {
   ErrorModalData,
@@ -150,7 +151,10 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
     setIsSaving(true);
     try {
       // Usar formData para los datos a enviar (solo campos editables)
-      const dataToSubmit: Partial<WelcomeScreenData> = { ...formData };
+      const dataToSubmit: Partial<WelcomeScreenData> = {
+        ...formData,
+        questionKey: QuestionType.WELCOME_SCREEN // Agregar questionKey usando ENUM
+      } as any;
       // Eliminar researchId si no es necesario en el payload de PUT/POST
       // delete dataToSubmit.researchId;
 

@@ -1,14 +1,14 @@
-import { 
-  welcomeScreenModel
-} from '../models/welcomeScreen.model';
-import { 
-  WelcomeScreenFormData, 
-  WelcomeScreenRecord, 
-  DEFAULT_WELCOME_SCREEN_CONFIG 
+import {
+    DEFAULT_WELCOME_SCREEN_CONFIG,
+    WelcomeScreenFormData,
+    WelcomeScreenRecord
 } from '../../../shared/interfaces/welcome-screen.interface';
-import { ApiError } from '../utils/errors';
 import { NotFoundError } from '../errors';
+import {
+    welcomeScreenModel
+} from '../models/welcomeScreen.model';
 import { handleDbError } from '../utils/dbError.util';
+import { ApiError } from '../utils/errors';
 import { structuredLog } from '../utils/logging.util';
 
 /**
@@ -101,7 +101,11 @@ export class WelcomeScreenService {
         message: data.message || DEFAULT_WELCOME_SCREEN_CONFIG.message,
         startButtonText: data.startButtonText || DEFAULT_WELCOME_SCREEN_CONFIG.startButtonText
       };
-      return await welcomeScreenModel.create(screenData, researchId);
+
+      // Extraer questionKey del frontend si existe
+      const questionKey = (data as any).questionKey || null;
+
+      return await welcomeScreenModel.create(screenData, researchId, questionKey);
     } catch (error) {
       throw handleDbError(error, context, this.serviceName, {});
     }
@@ -142,7 +146,7 @@ export class WelcomeScreenService {
       }
       structuredLog('info', `${this.serviceName}.${context}`, 'Buscando welcome screen', { researchId });
       const welcomeScreen = await welcomeScreenModel.getByResearchId(researchId);
-      
+
       if (!welcomeScreen) {
         structuredLog('warn', `${this.serviceName}.${context}`, 'No se encontró welcome screen', { researchId });
         throw new NotFoundError(WelcomeScreenError.NOT_FOUND);
@@ -288,4 +292,4 @@ export class WelcomeScreenService {
 }
 
 // Exportar una instancia única del servicio
-export const welcomeScreenService = new WelcomeScreenService(); 
+export const welcomeScreenService = new WelcomeScreenService();

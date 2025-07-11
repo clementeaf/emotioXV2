@@ -1,7 +1,8 @@
 import { useCallback, useState } from 'react';
-import { SmartVOCFormData } from 'shared/interfaces/smart-voc.interface';
+import { QuestionType } from 'shared/interfaces/question-types.enum';
+import { SmartVOCFormData, SmartVOCQuestion } from 'shared/interfaces/smart-voc.interface';
 
-import { SmartVOCQuestion, ValidationErrors } from '../types';
+import { ValidationErrors } from '../types';
 
 /**
  * Hook para gestión de estado del formulario SmartVOC
@@ -13,7 +14,7 @@ export const useSmartVOCState = (researchId: string) => {
     questions: [
       {
         id: 'csat-template',
-        type: 'CSAT',
+        type: QuestionType.SMARTVOC_CSAT,
         title: 'Satisfacción del Cliente (CSAT)',
         description: '',
         instructions: '',
@@ -25,7 +26,7 @@ export const useSmartVOCState = (researchId: string) => {
       },
       {
         id: 'ces-template',
-        type: 'CES',
+        type: QuestionType.SMARTVOC_ESAT,
         title: 'Esfuerzo del Cliente (CES)',
         description: '',
         instructions: '',
@@ -42,7 +43,7 @@ export const useSmartVOCState = (researchId: string) => {
       },
       {
         id: 'cv-template',
-        type: 'CV',
+        type: QuestionType.SMARTVOC_CV,
         title: 'Valor Cognitivo (CV)',
         description: '',
         instructions: '',
@@ -59,7 +60,7 @@ export const useSmartVOCState = (researchId: string) => {
       },
       {
         id: 'nev-template',
-        type: 'NEV',
+        type: QuestionType.SMARTVOC_OSAT,
         title: 'Valor Emocional Neto (NEV)',
         description: '',
         instructions: '',
@@ -71,7 +72,7 @@ export const useSmartVOCState = (researchId: string) => {
       },
       {
         id: 'nps-template',
-        type: 'NPS',
+        type: QuestionType.SMARTVOC_NPS,
         title: 'Net Promoter Score (NPS)',
         description: '',
         instructions: '',
@@ -89,7 +90,7 @@ export const useSmartVOCState = (researchId: string) => {
       },
       {
         id: 'voc-template',
-        type: 'VOC',
+        type: QuestionType.SMARTVOC_VOC,
         title: 'Voz del Cliente (VOC)',
         description: '',
         instructions: '',
@@ -100,7 +101,7 @@ export const useSmartVOCState = (researchId: string) => {
       },
       {
         id: 'trust-template',
-        type: 'CSAT',
+        type: QuestionType.SMARTVOC_CSAT,
         title: 'Nivel de Confianza',
         description: '',
         instructions: '',
@@ -161,7 +162,7 @@ export const useSmartVOCState = (researchId: string) => {
       questions: [
         {
           id: 'csat-template',
-          type: 'CSAT',
+          type: QuestionType.SMARTVOC_CSAT,
           title: 'Satisfacción del Cliente (CSAT)',
           description: '',
           instructions: '',
@@ -170,7 +171,7 @@ export const useSmartVOCState = (researchId: string) => {
         },
         {
           id: 'ces-template',
-          type: 'CES',
+          type: QuestionType.SMARTVOC_ESAT,
           title: 'Esfuerzo del Cliente (CES)',
           description: '',
           instructions: '',
@@ -179,7 +180,7 @@ export const useSmartVOCState = (researchId: string) => {
         },
         {
           id: 'cv-template',
-          type: 'CV',
+          type: QuestionType.SMARTVOC_CV,
           title: 'Valor Cognitivo (CV)',
           description: '',
           instructions: '',
@@ -188,7 +189,7 @@ export const useSmartVOCState = (researchId: string) => {
         },
         {
           id: 'nev-template',
-          type: 'NEV',
+          type: QuestionType.SMARTVOC_OSAT,
           title: 'Valor Emocional Neto (NEV)',
           description: '',
           instructions: '',
@@ -197,7 +198,7 @@ export const useSmartVOCState = (researchId: string) => {
         },
         {
           id: 'nps-template',
-          type: 'NPS',
+          type: QuestionType.SMARTVOC_NPS,
           title: 'Net Promoter Score (NPS)',
           description: '',
           instructions: '',
@@ -206,7 +207,7 @@ export const useSmartVOCState = (researchId: string) => {
         },
         {
           id: 'voc-template',
-          type: 'VOC',
+          type: QuestionType.SMARTVOC_VOC,
           title: 'Voz del Cliente (VOC)',
           description: '',
           instructions: '',
@@ -215,7 +216,7 @@ export const useSmartVOCState = (researchId: string) => {
         },
         {
           id: 'trust-template',
-          type: 'CSAT',
+          type: QuestionType.SMARTVOC_CSAT,
           title: 'Nivel de Confianza',
           description: '',
           instructions: '',

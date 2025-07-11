@@ -3,7 +3,6 @@ import { DeleteCommand, DynamoDBDocumentClient, GetCommand, PutCommand, QueryCom
 import { v4 as uuidv4 } from 'uuid';
 import {
     DEFAULT_WELCOME_SCREEN_CONFIG,
-    WelcomeScreenConfig,
     WelcomeScreenFormData,
     WelcomeScreenRecord
 } from '../../../shared/interfaces/welcome-screen.interface';
@@ -61,21 +60,14 @@ export class WelcomeScreenModel {
    * @param researchId ID de la investigación asociada
    * @returns La configuración creada con su ID generado
    */
-  async create(data: WelcomeScreenFormData, researchId: string): Promise<WelcomeScreenRecord> {
+  async create(data: WelcomeScreenFormData, researchId: string, questionKey?: string): Promise<WelcomeScreenRecord> {
     const context = 'create';
-    // Primero verificamos si ya existe una pantalla de bienvenida para este researchId
-    const existingScreen = await this.getByResearchId(researchId);
-    if (existingScreen) {
-      throw new ApiError(`WELCOME_SCREEN_EXISTS: Ya existe una pantalla de bienvenida para la investigación ${researchId}`, 409); // 409 Conflict
-    }
-
-    // Generar un ID único para la pantalla
-    const screenId = uuidv4();
+    const screenId = uuidv4(); // Generar UUID único
+    const skValue = 'WELCOME_SCREEN'; // SK constante
     const now = new Date().toISOString();
-    const skValue = 'WELCOME_SCREEN'; // Valor constante para la Sort Key
 
-    // Combinar con valores por defecto
-    const config: WelcomeScreenConfig = {
+    // Configurar datos con valores por defecto
+    const config = {
       isEnabled: data.isEnabled ?? DEFAULT_WELCOME_SCREEN_CONFIG.isEnabled,
       title: data.title || DEFAULT_WELCOME_SCREEN_CONFIG.title,
       message: data.message || DEFAULT_WELCOME_SCREEN_CONFIG.message,
@@ -97,6 +89,7 @@ export class WelcomeScreenModel {
       message: config.message,
       startButtonText: config.startButtonText,
       metadata: JSON.stringify(config.metadata),
+      questionKey: questionKey, // NUEVO: Guardar questionKey
       createdAt: now,
       updatedAt: now
     };

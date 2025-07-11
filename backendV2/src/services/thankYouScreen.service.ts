@@ -1,14 +1,14 @@
-import { 
-  ThankYouScreenConfig,
-  ThankYouScreenFormData, 
-  ThankYouScreenModel as SharedThankYouScreenModel,
-  DEFAULT_THANK_YOU_SCREEN_CONFIG,
-  DEFAULT_THANK_YOU_SCREEN_VALIDATION
+import {
+    DEFAULT_THANK_YOU_SCREEN_CONFIG,
+    DEFAULT_THANK_YOU_SCREEN_VALIDATION,
+    ThankYouScreenModel as SharedThankYouScreenModel,
+    ThankYouScreenConfig,
+    ThankYouScreenFormData
 } from '../../../shared/interfaces/thank-you-screen.interface';
 import { ThankYouScreenModel } from '../models/thankYouScreen.model';
+import { handleDbError } from '../utils/dbError.util';
 import { ApiError } from '../utils/errors';
 import { structuredLog } from '../utils/logging.util';
-import { handleDbError } from '../utils/dbError.util';
 
 // Instancia del modelo
 const thankYouScreenModel = new ThankYouScreenModel();
@@ -26,9 +26,7 @@ export enum ThankYouScreenError {
 
 // Re-exportamos los tipos compartidos para mantener compatibilidad
 export type {
-  ThankYouScreenConfig,
-  SharedThankYouScreenModel as ThankYouScreenRecord,
-  ThankYouScreenFormData
+    ThankYouScreenConfig, ThankYouScreenFormData, SharedThankYouScreenModel as ThankYouScreenRecord
 };
 
 /**
@@ -70,7 +68,7 @@ export class ThankYouScreenService {
 
     // Validar URL de redirección si está presente
     if (data.redirectUrl && data.redirectUrl.trim() !== '') {
-      if (DEFAULT_THANK_YOU_SCREEN_VALIDATION.redirectUrl.pattern && 
+      if (DEFAULT_THANK_YOU_SCREEN_VALIDATION.redirectUrl.pattern &&
           !DEFAULT_THANK_YOU_SCREEN_VALIDATION.redirectUrl.pattern.test(data.redirectUrl)) {
         errors.redirectUrl = 'La URL de redirección no tiene un formato válido';
       } else if (data.redirectUrl.length < DEFAULT_THANK_YOU_SCREEN_VALIDATION.redirectUrl.minLength) {
@@ -121,8 +119,11 @@ export class ThankYouScreenService {
         redirectUrl: data.redirectUrl || DEFAULT_THANK_YOU_SCREEN_CONFIG.redirectUrl
       };
 
+      // Extraer questionKey del frontend si existe
+      const questionKey = (data as any).questionKey || null;
+
       // Crear en el modelo
-      const thankYouScreen = await thankYouScreenModel.create(screenData, researchId);
+      const thankYouScreen = await thankYouScreenModel.create(screenData, researchId, questionKey);
       return thankYouScreen;
     } catch (error) {
       // Usar handleDbError para consistencia, pasando {} explícitamente como 4to arg
@@ -139,7 +140,7 @@ export class ThankYouScreenService {
     const context = 'getById'; // Contexto para logging
     try {
       const thankYouScreen = await thankYouScreenModel.getById(id);
-      
+
       if (!thankYouScreen) {
         // Lanzar ApiError directamente para que lo capture handleDbError
         throw new ApiError(
@@ -172,7 +173,7 @@ export class ThankYouScreenService {
       }
 
       const thankYouScreen = await thankYouScreenModel.getByResearchId(researchId);
-      
+
       // Throw ApiError if not found (reverting previous change)
       if (!thankYouScreen) {
         structuredLog('warn', `${this.serviceName}.${context}`, 'No se encontró ThankYouScreen', { researchId });
@@ -204,11 +205,11 @@ export class ThankYouScreenService {
       this.validateData(data);
 
       // Verificar existencia (getById lanzará ApiError si no existe)
-      await this.getById(id); 
+      await this.getById(id);
 
       // Actualizar en el modelo
       const updatedScreen = await thankYouScreenModel.update(id, data);
-      
+
       // Si update devuelve null o undefined (aunque no debería si existe)
       if (!updatedScreen) {
          throw new ApiError(
@@ -216,7 +217,7 @@ export class ThankYouScreenService {
           500
         );
       }
-      
+
       return updatedScreen;
     } catch (error) {
        // Usar handleDbError, pasando {} explícitamente como 4to arg
@@ -243,7 +244,7 @@ export class ThankYouScreenService {
       this.validateData(data); // Validar datos entrantes
 
       const existing = await thankYouScreenModel.getByResearchId(researchId);
-      
+
       if (existing) {
         structuredLog('info', `${this.serviceName}.${context}`, 'Actualizando pantalla existente', { researchId, screenId: existing.id });
         return await this.update(existing.id, data, _userId);
@@ -266,11 +267,11 @@ export class ThankYouScreenService {
     const context = 'delete'; // Contexto para logging
     try {
       // Verificar existencia (getById lanzará ApiError si no existe)
-      await this.getById(id); 
+      await this.getById(id);
 
       // Eliminar en el modelo
       const success = await thankYouScreenModel.delete(id);
-      
+
       // Si delete devuelve false (indicando fallo)
       if (!success) {
         throw new ApiError(
@@ -301,4 +302,4 @@ export class ThankYouScreenService {
 }
 
 // Exportar una instancia única del servicio
-export const thankYouScreenService = new ThankYouScreenService(); 
+export const thankYouScreenService = new ThankYouScreenService();

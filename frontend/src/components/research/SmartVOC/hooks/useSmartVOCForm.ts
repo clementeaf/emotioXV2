@@ -5,6 +5,7 @@ import { SmartVOCFormData } from 'shared/interfaces/smart-voc.interface';
 import { useAuth } from '@/providers/AuthProvider';
 
 
+import { QuestionType } from '../../../../../../shared/interfaces/question-types.enum';
 import { SmartVOCQuestion } from '../types';
 
 import { useSmartVOCMutations } from './useSmartVOCMutations';
@@ -130,15 +131,27 @@ export const useSmartVOCForm = (researchId: string) => {
       return;
     }
 
+    // Función helper para mapear tipos SmartVOC al ENUM
+    const getSmartVOCQuestionType = (type: string): string => {
+      switch (type.toUpperCase()) {
+        case 'CSAT': return QuestionType.SMARTVOC_CSAT;
+        case 'CV': return QuestionType.SMARTVOC_CV;
+        case 'NPS': return QuestionType.SMARTVOC_NPS;
+        case 'ESAT': return QuestionType.SMARTVOC_ESAT;
+        case 'OSAT': return QuestionType.SMARTVOC_OSAT;
+        default: return `smartvoc_${type}`;
+      }
+    };
+
     // ENRIQUECER TODAS LAS PREGUNTAS ANTES DE ENVIAR
     const cleanedData: SmartVOCFormData = {
       ...formData,
       questions: editedQuestions.map((q) => ({
         ...q,
-        questionKey: q.questionKey || `smartvoc_${q.type}_${q.id}`,
-        type: `smartvoc_${q.type}`,
+        questionKey: (q as any).questionKey || `${getSmartVOCQuestionType(q.type)}_${q.id}`,
+        type: q.type as any, // Cast para evitar conflictos de tipos
         description: q.description || q.title,
-        required: q.type !== 'VOC',
+        required: q.type !== QuestionType.SMARTVOC_VOC,
       })),
     };
 

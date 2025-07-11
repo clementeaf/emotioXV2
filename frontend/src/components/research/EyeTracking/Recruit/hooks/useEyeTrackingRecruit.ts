@@ -13,6 +13,7 @@ import {
 
 import { useErrorLog } from '@/components/utils/ErrorLogger';
 import { eyeTrackingFixedAPI } from '@/lib/eye-tracking-api';
+import { QuestionType } from '../../../../../../../shared/interfaces/question-types.enum';
 
 
 // Interfaces
@@ -493,7 +494,8 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
       const { id, ...restFormData } = formData;
       const dataToSave = {
         ...restFormData,
-        researchId: actualResearchId
+        researchId: actualResearchId,
+        questionKey: QuestionType.DEMOGRAPHICS // Agregar questionKey usando ENUM
       };
 
       // console.log('[useEyeTrackingRecruit] Guardando config con ID de investigación:', dataToSave.researchId);

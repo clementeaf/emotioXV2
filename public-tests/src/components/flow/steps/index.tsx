@@ -1,6 +1,7 @@
 import React from 'react';
 import { useStepResponseManager } from '../../../hooks/useStepResponseManager';
 import { MappedStepComponentProps, StepComponentMap } from '../../../types/flow.types';
+import { QuestionType } from '../../../types/question-types.enum';
 import CognitiveNavigationFlowStep from '../../cognitiveTask/CognitiveNavigationFlowStep';
 import PreferenceTestTask from '../../cognitiveTask/PreferenceTestTask';
 import { LinearScaleView } from '../../cognitiveTask/questions/LinearScaleView';
@@ -8,6 +9,7 @@ import { LongTextView } from '../../cognitiveTask/questions/LongTextView';
 import { MultiChoiceView } from '../../cognitiveTask/questions/MultiChoiceView';
 import { ShortTextView } from '../../cognitiveTask/questions/ShortTextView';
 import { SingleChoiceView } from '../../cognitiveTask/questions/SingleChoiceView';
+import AgreementScaleView from '../../smartVoc/AgreementScaleView';
 
 const ParticipantLogin = React.lazy(() => import('../../auth/ParticipantLogin').then(module => ({ default: module.ParticipantLogin })));
 const WelcomeScreenHandler = React.lazy(() => import('../WelcomeScreenHandler'));
@@ -212,22 +214,35 @@ export const stepComponentMap: StepComponentMap = {
     'login': ParticipantLogin,
     'welcome': WelcomeScreenHandler,
     'instruction': InstructionStep,
-    // NUEVO: Mapeo correcto para Cognitive Tasks con adaptadores
+
+    // Cognitive Tasks usando ENUM QuestionType
+    [QuestionType.COGNITIVE_LONG_TEXT]: LongTextView,
+    [QuestionType.COGNITIVE_MULTIPLE_CHOICE]: CognitiveMultiChoiceAdapter,
+    [QuestionType.COGNITIVE_SINGLE_CHOICE]: CognitiveSingleChoiceAdapter,
+    [QuestionType.COGNITIVE_RATING]: CognitiveLinearScaleAdapter,
+    [QuestionType.COGNITIVE_RANKING]: RankingQuestion,
+
+    // SmartVOC usando ENUM QuestionType
+    [QuestionType.SMARTVOC_CSAT]: CSATView,
+    [QuestionType.SMARTVOC_CV]: DifficultyScaleView,
+    [QuestionType.SMARTVOC_NPS]: NPSView,
+    [QuestionType.SMARTVOC_ESAT]: AgreementScaleView,
+    [QuestionType.SMARTVOC_OSAT]: AgreementScaleView,
+
+    // Demographics usando ENUM QuestionType
+    [QuestionType.DEMOGRAPHICS]: DemographicStep,
+
+    // Flow types usando ENUM QuestionType
+    [QuestionType.WELCOME_SCREEN]: WelcomeScreenHandler,
+    [QuestionType.THANK_YOU_SCREEN]: ThankYouView,
+
+    // Fallback components para compatibilidad
     'cognitive_short_text': CognitiveShortTextAdapter,
-    'cognitive_long_text': LongTextView,
-    'cognitive_single_choice': CognitiveSingleChoiceAdapter,
-    'cognitive_multiple_choice': CognitiveMultiChoiceAdapter,
     'cognitive_linear_scale': CognitiveLinearScaleAdapter,
-    'cognitive_ranking': RankingQuestion,
     'cognitive_navigation_flow': CognitiveNavigationFlowStep,
-    // SmartVOC components
-    'smartvoc_csat': CSATView,
-    'smartvoc_cv': DifficultyScaleView,
     'smartvoc_nev': EmotionSelectionView,
     'smartvoc_feedback': SmartVocFeedbackQuestion,
     'smartvoc_ces': DifficultyScaleView,
-    'smartvoc_nps': NPSView,
-    // Generic components (fallback)
     'multiple_choice': MultipleChoiceQuestion,
     'single_choice': SingleChoiceQuestion,
     'short_text': ShortTextQuestion,

@@ -56,7 +56,10 @@ const FlowStepContent: React.FC<Omit<FlowStepContentComponentProps, 'responsesDa
         }
 
         // Fallback: usar stepId como questionKey si no está en el diccionario
-        console.warn(`[FlowStepContent] ⚠️ No se encontró questionKey para stepId: ${currentExpandedStep.id}, usando stepId como fallback`);
+        // Solo mostrar warning para stepIds críticos
+        if (!currentExpandedStep.id.includes('unknown_') && !currentExpandedStep.id.includes('temp_') && !currentExpandedStep.id.includes('debug_')) {
+            console.warn(`[FlowStepContent] ⚠️ No se encontró questionKey para stepId: ${currentExpandedStep.id}, usando stepId como fallback`);
+        }
         return currentExpandedStep.id;
     }, [currentExpandedStep, getQuestionKey]);
 

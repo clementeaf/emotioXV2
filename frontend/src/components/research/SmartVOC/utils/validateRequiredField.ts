@@ -1,3 +1,4 @@
+import { QuestionType } from 'shared/interfaces/question-types.enum';
 import { SmartVOCFormData } from 'shared/interfaces/smart-voc.interface';
 
 import { SmartVOCQuestion } from '../types';
@@ -7,28 +8,28 @@ import { SmartVOCQuestion } from '../types';
  */
 export const isQuestionValid = (question: SmartVOCQuestion): { isValid: boolean; missingFields: string[] } => {
   const missingFields: string[] = [];
-  
+
   // Validar campos básicos requeridos
   if (!question.id || question.id.trim() === '') {
     missingFields.push('id');
   }
-  
+
   if (!question.type) {
     missingFields.push('type');
   }
-  
+
   if (!question.title || question.title.trim() === '') {
     missingFields.push('title');
   }
-  
+
   if (!question.description || question.description.trim() === '') {
     missingFields.push('description');
   }
-  
+
   if (question.showConditionally === undefined || question.showConditionally === null) {
     missingFields.push('showConditionally');
   }
-  
+
   if (!question.config) {
     missingFields.push('config');
   } else {
@@ -36,7 +37,7 @@ export const isQuestionValid = (question: SmartVOCQuestion): { isValid: boolean;
     const configMissingFields = validateQuestionConfig(question.type, question.config);
     missingFields.push(...configMissingFields);
   }
-  
+
   return {
     isValid: missingFields.length === 0,
     missingFields
@@ -48,13 +49,13 @@ export const isQuestionValid = (question: SmartVOCQuestion): { isValid: boolean;
  */
 const validateQuestionConfig = (questionType: SmartVOCQuestion['type'], config: any): string[] => {
   const missingFields: string[] = [];
-  
+
   if (!config.type) {
     missingFields.push('config.type');
   }
-  
+
   switch (questionType) {
-    case 'CSAT':
+    case QuestionType.SMARTVOC_CSAT:
       if (!config.companyName || config.companyName.trim() === '') {
         missingFields.push('config.companyName');
       }
@@ -62,8 +63,10 @@ const validateQuestionConfig = (questionType: SmartVOCQuestion['type'], config: 
         missingFields.push('config.type (debe ser stars, numbers o emojis)');
       }
       break;
-      
-    case 'CES':
+    // case QuestionType.SMARTVOC_CES:
+    //   // No existe en el ENUM global. Si lo necesitas, agrégalo a shared/interfaces/question-types.enum.ts
+    //   break;
+    case QuestionType.SMARTVOC_CV:
       if (config.type !== 'scale') {
         missingFields.push('config.type (debe ser scale)');
       }
@@ -71,26 +74,10 @@ const validateQuestionConfig = (questionType: SmartVOCQuestion['type'], config: 
         missingFields.push('config.scaleRange');
       }
       break;
-      
-    case 'CV':
-      if (config.type !== 'scale') {
-        missingFields.push('config.type (debe ser scale)');
-      }
-      if (!config.scaleRange || typeof config.scaleRange.start !== 'number' || typeof config.scaleRange.end !== 'number') {
-        missingFields.push('config.scaleRange');
-      }
-      break;
-      
-    case 'NEV':
-      if (!config.companyName || config.companyName.trim() === '') {
-        missingFields.push('config.companyName');
-      }
-      if (config.type !== 'emojis') {
-        missingFields.push('config.type (debe ser emojis)');
-      }
-      break;
-      
-    case 'NPS':
+    // case QuestionType.SMARTVOC_NEV:
+    //   // No existe en el ENUM global. Si lo necesitas, agrégalo a shared/interfaces/question-types.enum.ts
+    //   break;
+    case QuestionType.SMARTVOC_NPS:
       if (!config.companyName || config.companyName.trim() === '') {
         missingFields.push('config.companyName');
       }
@@ -101,14 +88,13 @@ const validateQuestionConfig = (questionType: SmartVOCQuestion['type'], config: 
         missingFields.push('config.scaleRange');
       }
       break;
-      
-    case 'VOC':
+    case QuestionType.SMARTVOC_VOC:
       if (config.type !== 'text') {
         missingFields.push('config.type (debe ser text)');
       }
       break;
   }
-  
+
   return missingFields;
 };
 
@@ -120,7 +106,7 @@ export const filterValidQuestions = (formData: SmartVOCFormData): SmartVOCFormDa
     const validation = isQuestionValid(question);
     return validation.isValid;
   });
-  
+
   return {
     ...formData,
     questions: validQuestions
@@ -144,16 +130,16 @@ export const validateForm = (formData: SmartVOCFormData): {
   issues: string[];
 } => {
   const issues: string[] = [];
-  
+
   const validQuestions = formData.questions.filter(question => {
     const validation = isQuestionValid(question);
     return validation.isValid;
   });
-  
+
   if (validQuestions.length === 0) {
     issues.push('Debe haber al menos una pregunta válida con todos los campos requeridos');
   }
-  
+
   return {
     isValid: issues.length === 0,
     issues
@@ -170,7 +156,7 @@ export const getQuestionsValidationInfo = (formData: SmartVOCFormData): {
 } => {
   const valid: SmartVOCQuestion[] = [];
   const invalid: { question: SmartVOCQuestion; missingFields: string[] }[] = [];
-  
+
   formData.questions.forEach(question => {
     const validation = isQuestionValid(question);
     if (validation.isValid) {
@@ -179,7 +165,7 @@ export const getQuestionsValidationInfo = (formData: SmartVOCFormData): {
       invalid.push({ question, missingFields: validation.missingFields });
     }
   });
-  
+
   return {
     total: formData.questions.length,
     valid,
@@ -193,16 +179,16 @@ export const getQuestionsValidationInfo = (formData: SmartVOCFormData): {
 export const debugQuestionsToSend = (formData: SmartVOCFormData): void => {
   if (process.env.NODE_ENV === 'development') {
     console.group('🔍 [SmartVOC] Debug de preguntas a enviar');
-    
+
     const validationInfo = getQuestionsValidationInfo(formData);
-    
+
     // console.log('Total de preguntas:', validationInfo.total);
     // console.log('✅ Preguntas válidas (se enviarán):', validationInfo.valid.length);
-    
+
     validationInfo.valid.forEach((q, index) => {
       // console.log(`  ${index + 1}. ${q.type}: "${q.title}"`);
     });
-    
+
     if (validationInfo.invalid.length > 0) {
       // console.log('🚫 Preguntas inválidas (se omitirán):', validationInfo.invalid.length);
       validationInfo.invalid.forEach(({ question, missingFields }, index) => {
@@ -210,7 +196,7 @@ export const debugQuestionsToSend = (formData: SmartVOCFormData): void => {
         // console.log(`     Campos faltantes: ${missingFields.join(', ')}`);
       });
     }
-    
+
     console.groupEnd();
   }
-}; 
+};
