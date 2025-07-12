@@ -304,3 +304,29 @@ export interface UseSmartVOCConfigReturn {
 export interface SmartVOCFormResponse {
   // ... existing code ...
 }
+
+// Respuesta estándar para CSAT/SmartVOC
+export interface CSATResponse {
+  value: number;
+  questionKey: string;
+  timestamp: number;
+  stepTitle: string;
+  metadata: {
+    questionType?: string;
+    questionId?: string;
+    companyName?: string;
+    useStars?: boolean;
+  };
+}
+
+// Definir interfaz estricta para la configuración de la escala
+export interface SmartVOCScaleConfig {
+  scaleRange: { start: number; end: number };
+  startLabel: string;
+  endLabel: string;
+  type?: string;
+  title?: string;
+  description?: string;
+  instructions?: string;
+  companyName?: string;
+}

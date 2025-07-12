@@ -48,9 +48,6 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
             renderComponentName = matchingEnumValue as string;
             ComponentToRender = stepComponentMap[matchingEnumValue as string];
 
-            if (ComponentToRender !== undefined) {
-                console.log(`[CurrentStepRenderer] ✅ Renderizando por ENUM QuestionType: ${questionKey} -> ${matchingEnumValue}`);
-            }
         }
     }
 
@@ -58,20 +55,11 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
     if (!ComponentToRender && questionData && questionData.renderComponent) {
         renderComponentName = questionData.renderComponent;
         ComponentToRender = stepComponentMap[renderComponentName] || stepComponentMap[questionData.type];
-
-        if (ComponentToRender !== undefined) {
-            console.log(`[CurrentStepRenderer] ✅ Renderizando por questionData: ${questionKey} -> ${renderComponentName}`);
-        } else {
-            console.warn(`[CurrentStepRenderer] ⚠️ No se encontró componente para renderComponent: ${renderComponentName}`);
-        }
     }
 
     // FALLBACK FINAL: Si no hay questionData o renderComponent, usar stepType (para compatibilidad)
     if (!ComponentToRender) {
         ComponentToRender = stepComponentMap[stepType];
-        if (ComponentToRender !== undefined) {
-            console.log(`[CurrentStepRenderer] 🔄 Usando fallback por stepType: ${stepType}`);
-        }
     }
 
     if (typeof ComponentToRender === "undefined" || !ComponentToRender) {
@@ -268,7 +256,6 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
                 });
                 if (foundByQuestionKey) {
                     savedResponses = foundByQuestionKey.response;
-                    console.log(`[CurrentStepRenderer] ✅ Encontrada respuesta por questionKey: ${questionKey}`);
                 }
             }
 

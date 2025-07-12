@@ -8,12 +8,12 @@ import { MultiChoiceView } from '../../cognitiveTask/questions/MultiChoiceView';
 import { ShortTextView } from '../../cognitiveTask/questions/ShortTextView';
 import { SingleChoiceView } from '../../cognitiveTask/questions/SingleChoiceView';
 import AgreementScaleView from '../../smartVoc/AgreementScaleView';
+import DifficultyScaleView from '../../smartVoc/DifficultyScaleView';
 
 const ParticipantLogin = React.lazy(() => import('../../auth/ParticipantLogin').then(module => ({ default: module.ParticipantLogin })));
 const WelcomeScreenHandler = React.lazy(() => import('../WelcomeScreenHandler'));
 const CSATView = React.lazy(() => import('../../smartVoc/CSATView'));
 const ThankYouView = React.lazy(() => import('../../ThankYouScreen'));
-const DifficultyScaleView = React.lazy(() => import('../../smartVoc/DifficultyScaleView'));
 const RankingQuestion = React.lazy(() => import('../questions/RankingQuestion').then(module => ({ default: module.RankingQuestion })));
 const SmartVocFeedbackQuestion = React.lazy(() => import('../questions/SmartVocFeedbackQuestion').then(module => ({ default: module.SmartVocFeedbackQuestion })));
 const MultipleChoiceQuestion = React.lazy(() => import('../questions/MultipleChoiceQuestion').then(module => ({ default: module.MultipleChoiceQuestion })));

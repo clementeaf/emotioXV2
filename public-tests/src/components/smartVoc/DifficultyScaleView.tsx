@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useStepResponseManager } from '../../hooks/useStepResponseManager';
+import { useParticipantStore } from '../../stores/participantStore';
 import { MappedStepComponentProps } from '../../types/flow.types';
 import { SmartVOCQuestion } from '../../types/smart-voc.types';
 import { formatQuestionText } from '../../utils/formHelpers';
@@ -16,11 +17,12 @@ const DifficultyScaleView: React.FC<MappedStepComponentProps> = ({
     return <div>Cargando configuración...</div>;
   }
 
-  const questionText = question.title || '¿Qué tan fácil fue completar esta tarea?';
+  // Definir questionText e instructions igual que CSATView/AgreementScaleView
+  const configTitle = ('title' in question.config && typeof question.config.title === 'string') ? question.config.title : '';
+  const configDescription = ('description' in question.config && typeof question.config.description === 'string') ? question.config.description : '';
+  const questionText = question.title || configTitle || configDescription || '¿Qué tan fácil fue completar esta tarea?';
   const instructions = question.instructions || question.config.instructions || '';
   const companyName = question.config.companyName || '';
-
-  // Escala de dificultad (1-5) con labels para accesibilidad
   const difficultyLevels = [
     { value: 1, label: 'Muy difícil' },
     { value: 2, label: 'Difícil' },
@@ -29,12 +31,26 @@ const DifficultyScaleView: React.FC<MappedStepComponentProps> = ({
     { value: 5, label: 'Muy fácil' }
   ];
 
-  const {
-    responseData,
-    isSaving,
-    error,
-    saveCurrentStepResponse
-  } = useStepResponseManager({
+  // Buscar la respuesta persistida directamente en el store Zustand
+  const allSteps = useParticipantStore(state => state.responsesData.modules.all_steps || []);
+  const moduleResponse = allSteps.find(r => r.questionKey === questionKey) || null;
+  const extractSelectedRating = (resp: any): number | null => {
+    if (resp && typeof resp === 'object' && resp.response && typeof resp.response === 'object' && 'value' in resp.response) {
+      return resp.response.value;
+    }
+    return null;
+  };
+  const persistedRating = extractSelectedRating(moduleResponse);
+  const [selectedRating, setSelectedRating] = useState<number | null>(persistedRating);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setError] = useState<string | null>(null);
+
+  // Sincroniza el estado local solo cuando cambia la respuesta persistida (ej: cambio de step)
+  useEffect(() => {
+    setSelectedRating(persistedRating);
+  }, [persistedRating, questionKey]);
+
+  const { isSaving, saveCurrentStepResponse } = useStepResponseManager({
     stepId: question.id,
     stepType: 'difficulty-scale',
     stepName: question.title || 'Escala de Dificultad',
@@ -43,32 +59,20 @@ const DifficultyScaleView: React.FC<MappedStepComponentProps> = ({
     questionKey,
   });
 
-  const [selectedRating, setSelectedRating] = useState<number | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (responseData && typeof responseData === 'object' && 'value' in responseData) {
-      const prevRating = (responseData as { value: number }).value;
-      setSelectedRating(prevRating);
-    }
-  }, [responseData]);
-
   const handleRatingChange = (rating: number) => {
     setSelectedRating(rating);
   };
 
   const handleSubmit = async () => {
-    if (selectedRating === null) {
-      return;
-    }
-
+    if (selectedRating === null) return;
     setIsSubmitting(true);
-
+    setError(null);
     try {
       const responseData = {
         value: selectedRating,
         questionKey,
         timestamp: Date.now(),
+        stepTitle: question.title || '',
         metadata: {
           questionType: question.type,
           questionId: question.id,
@@ -77,23 +81,14 @@ const DifficultyScaleView: React.FC<MappedStepComponentProps> = ({
           difficultyLevel: selectedRating <= 2 ? 'Difícil' : selectedRating >= 4 ? 'Fácil' : 'Neutral'
         }
       };
-
-      const result = await saveCurrentStepResponse(responseData);
-
-      if (result.success) {
-        console.log(`[DifficultyScaleView] ✅ Respuesta guardada exitosamente con questionKey: ${questionKey}`);
-        onStepComplete?.(responseData);
-      } else {
-        console.error(`[DifficultyScaleView] ❌ Error guardando respuesta con questionKey: ${questionKey}`);
-      }
-    } catch (error) {
-      console.error(`[DifficultyScaleView] 💥 Exception guardando respuesta con questionKey: ${questionKey}`, error);
+      await saveCurrentStepResponse(responseData);
+      onStepComplete?.(responseData);
+    } catch (e) {
+      setError('Error guardando la respuesta. Por favor, intenta de nuevo.');
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  const hasExistingData = !!(responseData && typeof responseData === 'object' && 'value' in responseData && responseData.value !== null && responseData.value !== undefined);
 
   return (
     <div className="flex flex-col items-center justify-center py-8">
@@ -126,19 +121,18 @@ const DifficultyScaleView: React.FC<MappedStepComponentProps> = ({
           ))}
         </div>
 
-        {error && (
+        {errorMessage && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-red-600 text-sm">{error}</p>
+            <p className="text-red-600 text-sm">{errorMessage}</p>
           </div>
         )}
 
-        {/* Botón de submit usando FormSubmitButton */}
         <div className="w-full flex justify-center mt-2">
           <FormSubmitButton
             isSaving={isSubmitting || isSaving}
-            hasExistingData={hasExistingData}
+            hasExistingData={!!(persistedRating !== null)}
             onClick={handleSubmit}
-            disabled={selectedRating === null}
+            disabled={selectedRating === null || isSubmitting}
             customCreateText="Guardar y continuar"
             customUpdateText="Actualizar y continuar"
           />

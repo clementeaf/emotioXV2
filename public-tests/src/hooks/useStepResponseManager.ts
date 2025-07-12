@@ -25,14 +25,6 @@ export function useStepResponseManager<TResponseData = unknown>({
     required: false // Por defecto false para mantener compatibilidad
   }), [backendQuestionKey, stepType, stepName, propResearchId, propParticipantId]);
 
-  // NUEVO: Log para debugging
-  console.log(`[useStepResponseManager] 🔑 Usando questionKey: ${backendQuestionKey}`, {
-    originalStepId: stepId,
-    questionKey,
-    backendQuestionKey,
-    stepType
-  });
-
   const [state, actions] = useStandardizedForm<TResponseData>(
     {
       ...standardizedProps,

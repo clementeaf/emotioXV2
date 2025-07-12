@@ -62,9 +62,7 @@ export function buildQuestionDictionary(expandedSteps: any[]): Record<string, an
                 }
             }
 
-            console.log(`[buildQuestionDictionary] ✅ Tipo válido: ${stepType}, questionKey: ${questionKey}`);
         } else {
-            // 4. Intentar mapear tipos legacy a tipos del ENUM
             const legacyMapping: Record<string, string> = {
                 'welcome': QuestionType.WELCOME_SCREEN,
                 'thankyou': QuestionType.THANK_YOU_SCREEN,
@@ -89,7 +87,6 @@ export function buildQuestionDictionary(expandedSteps: any[]): Record<string, an
                 if ([QuestionType.DEMOGRAPHICS, QuestionType.WELCOME_SCREEN, QuestionType.THANK_YOU_SCREEN].includes(mappedType as any)) {
                     questionDictionary[stepId] = questionDictionary[questionKey];
                 }
-                console.log(`[buildQuestionDictionary] 🔄 Tipo legacy mapeado: ${stepType} → ${mappedType}, questionKey: ${questionKey}`);
             } else {
                 // 5. Tipo no soportado - marcar como error pero no romper
                 const fallbackQuestionKey = `unknown_${stepId}`;

@@ -49,15 +49,5 @@ export const useModuleResponses = ({
     refetch,
   };
 
-  console.log('[useModuleResponses] 🔍 Datos devueltos:', {
-    researchId,
-    participantId,
-    rawData: data,
-    processedData: result.data,
-    dataCount: result.data?.length || 0,
-    isLoading,
-    error: result.error
-  });
-
   return result;
 };

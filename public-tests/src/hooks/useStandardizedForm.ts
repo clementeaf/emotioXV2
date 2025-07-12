@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParticipantStore } from '../stores/participantStore';
 import {
-    StandardizedFormActions,
-    StandardizedFormProps,
-    StandardizedFormState,
-    UseStandardizedFormOptions,
-    ValidationRule
+  StandardizedFormActions,
+  StandardizedFormProps,
+  StandardizedFormState,
+  UseStandardizedFormOptions,
+  ValidationRule
 } from '../types/hooks.types';
 import { useModuleResponses } from './useModuleResponses';
 import { useResponseAPI } from './useResponseAPI';
@@ -133,19 +133,6 @@ export function useStandardizedForm<T>(
   // Usar moduleResponsesArray para evitar el warning de TypeScript
   const responses = moduleResponsesArray || [];
 
-  console.log('[useStandardizedForm] 🔍 Datos recibidos de useModuleResponses:', {
-    stepId,
-    stepType,
-    stepName,
-    researchId,
-    participantId,
-    moduleResponsesArray,
-    responses,
-    responsesCount: responses.length,
-    isLoadingResponses,
-    loadingError
-  });
-
   const setValue = useCallback((newValue: T, isUserInteraction: boolean = false) => {
     if (value !== newValue) {
       if (isUserInteraction) {
@@ -203,21 +190,6 @@ export function useStandardizedForm<T>(
       return;
     }
     if (responses && Array.isArray(responses)) {
-      console.log('[useStandardizedForm] 🔍 Buscando respuesta previa:', {
-        stepType,
-        stepName,
-        stepId,
-        responsesCount: responses.length,
-        responses: responses.map((r: any) => ({
-          stepType: r.stepType,
-          stepTitle: r.stepTitle,
-          stepId: r.stepId,
-          id: r.id,
-          response: r.response
-        }))
-      });
-
-      // Obtener questionKey del paso actual si está disponible
       const foundResponse = responses.find((r: unknown) => {
         if (typeof r !== 'object' || r === null) return false;
         const response = r as { questionKey?: string; stepType?: string; stepId?: string; stepTitle?: string; id?: string };
@@ -236,7 +208,6 @@ export function useStandardizedForm<T>(
       });
 
       if (foundResponse) {
-        console.log('[useStandardizedForm] ✅ Respuesta encontrada:', foundResponse);
         const foundResp = foundResponse as { response?: unknown; id?: string };
         try {
           const extractedVal = extractValueFromResponse(foundResp.response);
@@ -249,8 +220,6 @@ export function useStandardizedForm<T>(
         } catch (err) {
           console.warn('[useStandardizedForm] Error extracting value from API response:', err);
         }
-      } else {
-        console.log('[useStandardizedForm] ❌ No se encontró respuesta previa');
       }
     }
     setValue(initialValue, false);

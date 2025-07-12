@@ -57,20 +57,9 @@ const ParticipantFlow: React.FC = () => {
         if (!memoizedCurrentExpandedStep) {
             return undefined;
         }
-        // Usar la función del store que devuelve el valor correcto
         const savedResponse = getStepResponseFromStore(currentStepIndex);
-        console.log('[ParticipantFlow] 🔍 savedResponseForCurrentStep:', {
-            stepId: memoizedCurrentExpandedStep.id,
-            stepIndex: currentStepIndex,
-            savedResponse
-        });
         return savedResponse;
     }, [memoizedCurrentExpandedStep, getStepResponseFromStore, currentStepIndex, responsesData]);
-
-    // const memoizedResponsesDataProp = useMemo(() => {
-    //     const isThankYou = memoizedCurrentExpandedStep?.type === 'thankyou' || currentStep === ParticipantFlowStep.DONE;
-    //     return isThankYou ? (responsesData as any) : undefined;
-    // }, [memoizedCurrentExpandedStep, currentStep, responsesData]);
 
     const showSidebar = ![
         ParticipantFlowStep.LOGIN,

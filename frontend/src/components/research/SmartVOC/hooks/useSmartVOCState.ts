@@ -16,8 +16,8 @@ export const useSmartVOCState = (researchId: string) => {
         id: 'csat-template',
         type: QuestionType.SMARTVOC_CSAT,
         title: 'CSAT',
-        description: 'Customer Satisfaction',
-        instructions: '¿Qué tan satisfecho estás con nuestro servicio?',
+        description: '',
+        instructions: '',
         showConditionally: false,
         config: {
           type: 'scale',
@@ -30,8 +30,8 @@ export const useSmartVOCState = (researchId: string) => {
         id: 'ces-template',
         type: QuestionType.SMARTVOC_CES,
         title: 'CES',
-        description: 'Customer Effort Score',
-        instructions: '¿Qué tan fácil fue completar tu tarea?',
+        description: '',
+        instructions: '',
         showConditionally: false,
         config: {
           type: 'scale',
@@ -44,8 +44,8 @@ export const useSmartVOCState = (researchId: string) => {
         id: 'cv-template',
         type: QuestionType.SMARTVOC_CV,
         title: 'CV',
-        description: 'Customer Value',
-        instructions: '¿Qué tan valioso fue para ti?',
+        description: '',
+        instructions: '',
         showConditionally: false,
         config: {
           type: 'scale',
@@ -58,8 +58,8 @@ export const useSmartVOCState = (researchId: string) => {
         id: 'nev-template',
         type: QuestionType.SMARTVOC_NEV,
         title: 'NEV',
-        description: 'Net Emotional Value',
-        instructions: '¿Qué emoción experimentaste?',
+        description: '',
+        instructions: '',
         showConditionally: false,
         config: {
           type: 'emojis'
@@ -69,8 +69,8 @@ export const useSmartVOCState = (researchId: string) => {
         id: 'nps-template',
         type: QuestionType.SMARTVOC_NPS,
         title: 'NPS',
-        description: 'Net Promoter Score',
-        instructions: '¿Qué tan probable es que recomiendes nuestro producto/servicio?',
+        description: '',
+        instructions: '',
         showConditionally: false,
         config: {
           type: 'scale',
@@ -83,8 +83,8 @@ export const useSmartVOCState = (researchId: string) => {
         id: 'voc-template',
         type: QuestionType.SMARTVOC_VOC,
         title: 'VOC',
-        description: 'Voice of Customer',
-        instructions: 'Cuéntanos tu experiencia',
+        description: '',
+        instructions: '',
         showConditionally: false,
         config: {
           type: 'text'
@@ -94,8 +94,8 @@ export const useSmartVOCState = (researchId: string) => {
         id: 'nc-template',
         type: QuestionType.SMARTVOC_NC,
         title: 'NC',
-        description: 'Nivel de Confianza/Satisfacción',
-        instructions: '¿Qué tan satisfecho estás?',
+        description: '',
+        instructions: '',
         showConditionally: false,
         config: {
           type: 'scale',
@@ -157,8 +157,8 @@ export const useSmartVOCState = (researchId: string) => {
           id: 'csat-template',
           type: QuestionType.SMARTVOC_CSAT,
           title: 'CSAT',
-          description: 'Customer Satisfaction',
-          instructions: '¿Qué tan satisfecho estás con nuestro servicio?',
+          description: '',
+          instructions: '',
           showConditionally: false,
           config: {
             type: 'scale',
@@ -171,8 +171,8 @@ export const useSmartVOCState = (researchId: string) => {
           id: 'ces-template',
           type: QuestionType.SMARTVOC_CES,
           title: 'CES',
-          description: 'Customer Effort Score',
-          instructions: '¿Qué tan fácil fue completar tu tarea?',
+          description: '',
+          instructions: '',
           showConditionally: false,
           config: {
             type: 'scale',
@@ -185,8 +185,8 @@ export const useSmartVOCState = (researchId: string) => {
           id: 'cv-template',
           type: QuestionType.SMARTVOC_CV,
           title: 'CV',
-          description: 'Customer Value',
-          instructions: '¿Qué tan valioso fue para ti?',
+          description: '',
+          instructions: '',
           showConditionally: false,
           config: {
             type: 'scale',
@@ -199,8 +199,8 @@ export const useSmartVOCState = (researchId: string) => {
           id: 'nev-template',
           type: QuestionType.SMARTVOC_NEV,
           title: 'NEV',
-          description: 'Net Emotional Value',
-          instructions: '¿Qué emoción experimentaste?',
+          description: '',
+          instructions: '',
           showConditionally: false,
           config: {
             type: 'emojis'
@@ -210,8 +210,8 @@ export const useSmartVOCState = (researchId: string) => {
           id: 'nps-template',
           type: QuestionType.SMARTVOC_NPS,
           title: 'NPS',
-          description: 'Net Promoter Score',
-          instructions: '¿Qué tan probable es que recomiendes nuestro producto/servicio?',
+          description: '',
+          instructions: '',
           showConditionally: false,
           config: {
             type: 'scale',
@@ -224,8 +224,8 @@ export const useSmartVOCState = (researchId: string) => {
           id: 'voc-template',
           type: QuestionType.SMARTVOC_VOC,
           title: 'VOC',
-          description: 'Voice of Customer',
-          instructions: 'Cuéntanos tu experiencia',
+          description: '',
+          instructions: '',
           showConditionally: false,
           config: {
             type: 'text'
@@ -235,8 +235,8 @@ export const useSmartVOCState = (researchId: string) => {
           id: 'nc-template',
           type: QuestionType.SMARTVOC_NC,
           title: 'NC',
-          description: 'Nivel de Confianza/Satisfacción',
-          instructions: '¿Qué tan satisfecho estás?',
+          description: '',
+          instructions: '',
           showConditionally: false,
           config: {
             type: 'scale',

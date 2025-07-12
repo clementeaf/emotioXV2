@@ -7,8 +7,8 @@ import { QuestionType, SmartVOCQuestion } from '../types';
 export const QUESTION_TEMPLATES: Partial<Record<QuestionType, Omit<SmartVOCQuestion, 'id'>>> = {
   [QuestionType.SMARTVOC_CSAT]: {
     type: QuestionType.SMARTVOC_CSAT,
-    title: 'Customer Satisfaction Score (CSAT)',
-    description: '¿Cómo calificaría su nivel general de satisfacción con [empresa]?',
+    title: '',
+    description: '',
     instructions: '',
     showConditionally: false,
     config: {
@@ -18,8 +18,8 @@ export const QUESTION_TEMPLATES: Partial<Record<QuestionType, Omit<SmartVOCQuest
   },
   [QuestionType.SMARTVOC_CES]: {
     type: QuestionType.SMARTVOC_CES,
-    title: 'Customer Effort Score (CES)',
-    description: 'Fue fácil para mí resolver mi problema hoy.',
+    title: '',
+    description: '',
     instructions: '',
     showConditionally: false,
     config: {
@@ -29,8 +29,8 @@ export const QUESTION_TEMPLATES: Partial<Record<QuestionType, Omit<SmartVOCQuest
   },
   [QuestionType.SMARTVOC_CV]: {
     type: QuestionType.SMARTVOC_CV,
-    title: 'Cognitive Value (CV)',
-    description: 'Esta experiencia superó mis expectativas.',
+    title: '',
+    description: '',
     instructions: '',
     showConditionally: false,
     config: {
@@ -43,8 +43,8 @@ export const QUESTION_TEMPLATES: Partial<Record<QuestionType, Omit<SmartVOCQuest
   [QuestionType.SMARTVOC_NPS]: {
     type: QuestionType.SMARTVOC_NPS,
     title: 'NPS',
-    description: 'Net Promoter Score',
-    instructions: '¿Qué tan probable es que recomiendes nuestro producto/servicio?',
+    description: '',
+    instructions: '',
     showConditionally: false,
     config: {
       type: 'scale',
@@ -56,8 +56,8 @@ export const QUESTION_TEMPLATES: Partial<Record<QuestionType, Omit<SmartVOCQuest
   [QuestionType.SMARTVOC_NEV]: {
     type: QuestionType.SMARTVOC_NEV,
     title: 'NEV',
-    description: 'Net Emotional Value',
-    instructions: '¿Qué emoción experimentaste?',
+    description: '',
+    instructions: '',
     showConditionally: false,
     config: {
       type: 'emojis',
@@ -67,8 +67,8 @@ export const QUESTION_TEMPLATES: Partial<Record<QuestionType, Omit<SmartVOCQuest
   [QuestionType.SMARTVOC_VOC]: {
     type: QuestionType.SMARTVOC_VOC,
     title: 'VOC',
-    description: 'Voice of Customer',
-    instructions: 'Cuéntanos tu experiencia',
+    description: '',
+    instructions: '',
     showConditionally: false,
     config: {
       type: 'text',
@@ -78,8 +78,8 @@ export const QUESTION_TEMPLATES: Partial<Record<QuestionType, Omit<SmartVOCQuest
   [QuestionType.SMARTVOC_NC]: {
     type: QuestionType.SMARTVOC_NC,
     title: 'NC',
-    description: 'Nivel de Confianza/Satisfacción',
-    instructions: '¿Qué tan satisfecho estás?',
+    description: '',
+    instructions: '',
     showConditionally: false,
     config: {
       type: 'scale',

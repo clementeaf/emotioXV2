@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useState } from 'react';
 
 // Importar todos los componentes de vista de preguntas
 import { useSmartVOCData } from '../../hooks/useSmartVOCData'; // <<< Importar el hook
-import AgreementScaleView from '../smartVoc/AgreementScaleView'; // Para CV
 import CSATView from '../smartVoc/CSATView';
 import DifficultyScaleView from '../smartVoc/DifficultyScaleView'; // Para CES
 import EmotionSelectionView from '../smartVoc/EmotionSelectionView'; // Para NEV
@@ -15,7 +14,7 @@ import { Answers, SmartVOCHandlerProps } from './types';
 const questionComponentsMap: { [key: string]: React.ComponentType<any> } = {
     'CSAT': CSATView,
     'CES': DifficultyScaleView,
-    'CV': AgreementScaleView,
+    'CV': DifficultyScaleView, // Unificado: CV usa DifficultyScaleView
     'NEV': EmotionSelectionView,
     'NPS': NPSView,
     'VOC': FeedbackView,
