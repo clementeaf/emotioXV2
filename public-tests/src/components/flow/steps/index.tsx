@@ -2,6 +2,8 @@ import React from 'react';
 import { useStepResponseManager } from '../../../hooks/useStepResponseManager';
 import { MappedStepComponentProps, StepComponentMap } from '../../../types/flow.types';
 import { QuestionType } from '../../../types/question-types.enum';
+import NavigationFlowTask from '../../cognitiveTask/NavigationFlowTask';
+import PreferenceTestTask from '../../cognitiveTask/PreferenceTestTask';
 import { LinearScaleView } from '../../cognitiveTask/questions/LinearScaleView';
 import { LongTextView } from '../../cognitiveTask/questions/LongTextView';
 import { MultiChoiceView } from '../../cognitiveTask/questions/MultiChoiceView';
@@ -224,6 +226,14 @@ const CognitiveLinearScaleAdapter: React.FC<MappedStepComponentProps> = (props) 
   );
 };
 
+// Adaptador para NavigationFlowTask
+const CognitiveNavigationFlowAdapter: React.FC<MappedStepComponentProps> = (props) => {
+  const { stepConfig, onStepComplete } = props;
+  // Fallback: función vacía si onStepComplete no está definida
+  const handleContinue = onStepComplete || (() => {});
+  return <NavigationFlowTask config={stepConfig} onContinue={handleContinue} />;
+};
+
 export const stepComponentMap: StepComponentMap = {
     'login': ParticipantLogin,
     'welcome': WelcomeScreenHandler,
@@ -234,6 +244,9 @@ export const stepComponentMap: StepComponentMap = {
     [QuestionType.COGNITIVE_LONG_TEXT]: LongTextView,
     [QuestionType.COGNITIVE_MULTIPLE_CHOICE]: CognitiveMultiChoiceAdapter,
     [QuestionType.COGNITIVE_SINGLE_CHOICE]: CognitiveSingleChoiceAdapter,
+    [QuestionType.COGNITIVE_LINEAR_SCALE]: CognitiveLinearScaleAdapter,
+    [QuestionType.COGNITIVE_NAVIGATION_FLOW]: CognitiveNavigationFlowAdapter,
+    [QuestionType.COGNITIVE_PREFERENCE_TEST]: PreferenceTestTask,
     [QuestionType.COGNITIVE_RATING]: CognitiveLinearScaleAdapter,
     [QuestionType.COGNITIVE_RANKING]: RankingQuestion,
 

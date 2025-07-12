@@ -13,6 +13,9 @@ export enum QuestionType {
   COGNITIVE_LONG_TEXT = 'cognitive_long_text',
   COGNITIVE_MULTIPLE_CHOICE = 'cognitive_multiple_choice',
   COGNITIVE_SINGLE_CHOICE = 'cognitive_single_choice',
+  COGNITIVE_LINEAR_SCALE = 'cognitive_linear_scale',
+  COGNITIVE_NAVIGATION_FLOW = 'cognitive_navigation_flow',
+  COGNITIVE_PREFERENCE_TEST = 'cognitive_preference_test',
   COGNITIVE_RATING = 'cognitive_rating',
   COGNITIVE_RANKING = 'cognitive_ranking',
 
