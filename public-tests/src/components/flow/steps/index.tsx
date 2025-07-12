@@ -92,6 +92,16 @@ const CognitiveSingleChoiceAdapter: React.FC<MappedStepComponentProps> = (props)
   const stepType = config.type || 'cognitive_single_choice';
   const stepName = config.title || 'Pregunta de opción única';
 
+  // ADAPTAR: Si existe config.choices pero no config.options, crear options
+  const options = config.options || (Array.isArray(config.choices)
+    ? config.choices.map((c: any) => ({
+        id: c.id,
+        label: c.text || c.label || c.id,
+        isQualify: c.isQualify,
+        isDisqualify: c.isDisqualify
+      }))
+    : []);
+
   const {
     responseData,
     isSaving,
@@ -118,7 +128,7 @@ const CognitiveSingleChoiceAdapter: React.FC<MappedStepComponentProps> = (props)
 
   return (
     <SingleChoiceView
-      config={config}
+      config={{ ...config, options }} // <-- Pasar options adaptado
       value={typeof responseData === 'string' ? responseData : ''}
       onChange={handleChange}
       questionKey={questionKey}
@@ -132,6 +142,16 @@ const CognitiveMultiChoiceAdapter: React.FC<MappedStepComponentProps> = (props) 
   const config = stepConfig as any;
   const stepType = config.type || 'cognitive_multiple_choice';
   const stepName = config.title || 'Pregunta de opción múltiple';
+
+  // ADAPTAR: Si existe config.choices pero no config.options, crear options
+  const options = config.options || (Array.isArray(config.choices)
+    ? config.choices.map((c: any) => ({
+        id: c.id,
+        label: c.text || c.label || c.id,
+        isQualify: c.isQualify,
+        isDisqualify: c.isDisqualify
+      }))
+    : []);
 
   const {
     responseData,
@@ -159,7 +179,7 @@ const CognitiveMultiChoiceAdapter: React.FC<MappedStepComponentProps> = (props) 
 
   return (
     <MultiChoiceView
-      config={config}
+      config={{ ...config, options }} // <-- Pasar options adaptado
       value={Array.isArray(responseData) ? responseData : []}
       onChange={handleChange}
       questionKey={questionKey}
@@ -210,6 +230,7 @@ export const stepComponentMap: StepComponentMap = {
     'instruction': InstructionStep,
 
     // Cognitive Tasks usando ENUM QuestionType
+    [QuestionType.COGNITIVE_SHORT_TEXT]: CognitiveShortTextAdapter,
     [QuestionType.COGNITIVE_LONG_TEXT]: LongTextView,
     [QuestionType.COGNITIVE_MULTIPLE_CHOICE]: CognitiveMultiChoiceAdapter,
     [QuestionType.COGNITIVE_SINGLE_CHOICE]: CognitiveSingleChoiceAdapter,
