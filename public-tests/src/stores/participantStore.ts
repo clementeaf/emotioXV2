@@ -1,7 +1,6 @@
+import { QuestionDictionary, buildQuestionDictionary } from '@emotiox/shared';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { QuestionDictionary } from '../../../shared/interfaces/question-dictionary.interface';
-import { buildQuestionDictionary } from '../../../shared/utils/buildQuestionDictionary';
 import { ApiClient } from '../lib/api';
 import { ParticipantFlowStep } from '../types/flow';
 

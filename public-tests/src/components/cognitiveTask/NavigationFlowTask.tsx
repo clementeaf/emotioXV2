@@ -1,134 +1,294 @@
-import React, { useState } from 'react';
-import { NavigationFlowTaskProps } from '../../types/cognitive-task.types';
+import React, { useEffect, useRef, useState } from 'react';
+import { useStepResponseManager } from '../../hooks/useStepResponseManager';
+import { MappedStepComponentProps } from '../../types/flow.types';
+import FormSubmitButton from '../common/FormSubmitButton';
 
-// Función para convertir hitZones del backend a formato de coordenadas
-const convertHitZonesToCoordinates = (hitZones: any[]) => {
-  return hitZones.map(zone => ({
-    id: zone.id,
-    x: zone.region.x,
-    y: zone.region.y,
-    width: zone.region.width,
-    height: zone.region.height
-  }));
+// Función mejorada para convertir hitZones de pixeles a porcentaje
+const convertHitZonesToPercentageCoordinates = (hitZones: any[], imageNaturalSize?: { width: number; height: number }) => {
+  if (!hitZones || !Array.isArray(hitZones) || hitZones.length === 0) {
+    return [];
+  }
+
+  return hitZones.map(zone => {
+    // Extraer coordenadas del formato del backend
+    const region = zone.region || zone;
+    const x = region.x || 0;
+    const y = region.y || 0;
+    const width = region.width || 0;
+    const height = region.height || 0;
+
+    // Si tenemos el tamaño natural de la imagen, convertir a porcentaje
+    if (imageNaturalSize && imageNaturalSize.width > 0 && imageNaturalSize.height > 0) {
+      return {
+        id: zone.id,
+        x: (x / imageNaturalSize.width) * 100,
+        y: (y / imageNaturalSize.height) * 100,
+        width: (width / imageNaturalSize.width) * 100,
+        height: (height / imageNaturalSize.height) * 100,
+        // Mantener coordenadas originales para debug si es necesario
+        originalCoords: { x, y, width, height }
+      };
+    }
+
+    // Si no tenemos el tamaño natural, asumir que ya están en porcentaje
+    return {
+      id: zone.id,
+      x,
+      y,
+      width,
+      height
+    };
+  });
 };
 
-const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ onContinue, config }) => {
-  // Loggear la información recibida del backend/config
-  console.log('[NavigationFlowTask] config recibido:', config);
-  // Buscar pregunta de tipo navigation_flow en la configuración
-  const navigationQuestion = config?.questions?.find(q => q.type === 'navigation_flow');
-  console.log('[NavigationFlowTask] navigationQuestion:', navigationQuestion);
-  const imageFiles = navigationQuestion?.files || [];
+export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) => {
+  const { stepConfig, onStepComplete, savedResponse, questionKey } = props;
+  const navigationQuestion =
+    stepConfig?.questions && Array.isArray(stepConfig.questions) && stepConfig.questions.length > 0
+      ? stepConfig.questions[0]
+      : stepConfig;
 
-  // Estado para manejar la selección
-  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
-  const [selectedHitzone, setSelectedHitzone] = useState<string | null>(null);
+  const id = questionKey || navigationQuestion.id || '';
+  const title = navigationQuestion.title || 'Flujo de Navegación';
+  const description = navigationQuestion.description || '¿En cuál de las siguientes pantallas encuentras el objetivo indicado?';
+  const imageFiles = navigationQuestion.files || [];
 
-  // Eliminar fallbackImages y lógica asociada
+  const {
+    responseData,
+    isSaving,
+    isLoading,
+    error,
+    saveCurrentStepResponse,
+    hasExistingData
+  } = useStepResponseManager<any>({
+    stepId: id,
+    stepType: navigationQuestion.type === 'cognitive_navigation_flow' || navigationQuestion.type === 'navigation_flow' ? navigationQuestion.type : 'cognitive_navigation_flow',
+    stepName: title,
+    initialData: savedResponse,
+    questionKey: id
+  });
+
+  const [localSelectedImageIndex, setLocalSelectedImageIndex] = useState<number>(0); // Por defecto mostrar la primera imagen
+  const [localSelectedHitzone, setLocalSelectedHitzone] = useState<string | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [imageNaturalSize, setImageNaturalSize] = useState<{ width: number; height: number } | null>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
+
+  // Sincronizar valor local con respuesta persistida
+  useEffect(() => {
+    if (responseData) {
+      setLocalSelectedImageIndex(responseData.selectedImage || 0);
+      setLocalSelectedHitzone(responseData.selectedHitzone || null);
+    }
+  }, [responseData]);
+
   const images = imageFiles;
 
   const handleImageClick = (imageIndex: number) => {
-    setSelectedImageIndex(imageIndex);
-    setSelectedHitzone(null);
+    setLocalSelectedImageIndex(imageIndex);
+    setLocalSelectedHitzone(null);
+    setLocalError(null);
   };
 
   const handleHitzoneClick = (hitzoneId: string) => {
-    console.log(`[NavigationFlowTask] Hitzone clicked: ${hitzoneId}`);
-    setSelectedHitzone(hitzoneId);
+    setLocalSelectedHitzone(hitzoneId);
+    setLocalError(null);
+  };
 
-    // Enviar respuesta inmediatamente al hacer clic en hitzone
+  // Elimina containerRef y containerSize, usa el tamaño real de la imagen renderizada
+  const [imgRenderSize, setImgRenderSize] = useState<{ width: number; height: number } | null>(null);
+
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const { naturalWidth, naturalHeight, width, height } = e.currentTarget;
+    setImageNaturalSize({ width: naturalWidth, height: naturalHeight });
+    setImgRenderSize({ width, height });
+  };
+
+  const handleSubmit = async () => {
+    if (!localSelectedHitzone) {
+      setLocalError('Por favor, selecciona una zona interactiva.');
+      return;
+    }
+
     const responseData = {
       type: 'navigation_flow',
-      selectedImage: selectedImageIndex,
-      selectedHitzone: hitzoneId,
+      selectedImage: localSelectedImageIndex,
+      selectedHitzone: localSelectedHitzone,
       timestamp: Date.now()
     };
 
-    onContinue(responseData);
+    const result = await saveCurrentStepResponse(responseData);
+    if (result.success && onStepComplete) {
+      onStepComplete(responseData);
+    }
   };
 
-  const selectedImage = selectedImageIndex !== null ? images[selectedImageIndex] : null;
-  const availableHitzones = selectedImage?.hitZones ? convertHitZonesToCoordinates(selectedImage.hitZones) : [];
+  // Navegación entre imágenes
+  const handlePrevImage = () => {
+    if (localSelectedImageIndex > 0) {
+      setLocalSelectedImageIndex(localSelectedImageIndex - 1);
+      setLocalSelectedHitzone(null);
+      setLocalError(null);
+    }
+  };
+  const handleNextImage = () => {
+    if (localSelectedImageIndex < images.length - 1) {
+      setLocalSelectedImageIndex(localSelectedImageIndex + 1);
+      setLocalSelectedHitzone(null);
+      setLocalError(null);
+    }
+  };
+
+  const selectedImage = images[localSelectedImageIndex];
+  const availableHitzones = selectedImage?.hitZones
+    ? convertHitZonesToPercentageCoordinates(selectedImage.hitZones, imageNaturalSize || undefined)
+    : [];
+
+  // Cálculo de aspect ratio y centrado igual que el editor de hitzones
+  function getImageDrawRect(imgNatural: {width: number, height: number}, imgRender: {width: number, height: number}) {
+    const imgRatio = imgNatural.width / imgNatural.height;
+    const renderRatio = imgRender.width / imgRender.height;
+    let drawWidth = imgRender.width;
+    let drawHeight = imgRender.height;
+    let offsetX = 0;
+    let offsetY = 0;
+    if (imgRatio > renderRatio) {
+      drawWidth = imgRender.width;
+      drawHeight = imgRender.width / imgRatio;
+      offsetY = (imgRender.height - drawHeight) / 2;
+    } else {
+      drawHeight = imgRender.height;
+      drawWidth = imgRender.height * imgRatio;
+      offsetX = (imgRender.width - drawWidth) / 2;
+    }
+    return { drawWidth, drawHeight, offsetX, offsetY };
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-white p-6">
-      <div className="w-full max-w-6xl">
+      <div className="w-full flex flex-col items-center">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-gray-800 mb-4">
-            {navigationQuestion?.title || 'Flujo de Navegación - Desktop'}
+            {title}
           </h1>
           <p className="text-gray-600 mb-2">
-            {navigationQuestion?.description || '¿En cuál de las siguientes pantallas encuentras el objetivo indicado?'}
+            {description}
           </p>
           <p className="text-sm text-gray-500 italic">
-            Haz clic en una opción para ver en detalle
+            Haz clic en una zona interactiva para seleccionarla
           </p>
         </div>
 
-        {/* Grid de imágenes en miniatura */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {images.map((image, index) => (
-            <div
-              key={image.id}
-              className={`relative cursor-pointer border-4 rounded-lg overflow-hidden transition-all duration-200 ${
-                selectedImageIndex === index
-                  ? 'border-blue-500 shadow-lg scale-105'
-                  : 'border-gray-200 hover:border-gray-400'
-              }`}
-              onClick={() => handleImageClick(index)}
+        {/* Controles de navegación de imágenes */}
+        {images.length > 1 && (
+          <div className="flex justify-center items-center gap-4 mb-4">
+            <button
+              className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+              onClick={handlePrevImage}
+              disabled={localSelectedImageIndex === 0}
             >
-              <img
-                src={image.url}
-                alt={image.name || `Imagen ${index + 1}`}
-                className="w-full h-48 object-cover"
-              />
-              <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-2">
-                <p className="text-sm font-medium">
-                  {image.name || `Vista ${index + 1}`}
-                </p>
-                {image.hitZones && image.hitZones.length > 0 && (
-                  <p className="text-xs opacity-75">
-                    {image.hitZones.length} zona(s) interactiva(s)
-                  </p>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Vista detallada de imagen seleccionada */}
-        {selectedImage && (
-          <div className="flex justify-center py-8">
-            <div className="relative w-full max-w-3xl bg-white rounded-lg shadow-lg overflow-hidden">
-              <img
-                src={selectedImage.url}
-                alt={selectedImage.name || `Imagen detallada ${selectedImageIndex! + 1}`}
-                className="w-full h-auto max-h-[80vh] object-contain bg-gray-100"
-                loading="lazy"
-                style={{ display: 'block' }}
-              />
-              {/* Renderizar hitzones */}
-              {availableHitzones.map((hitzone) => (
-                <div
-                  key={hitzone.id}
-                  className={`absolute cursor-pointer transition-all duration-200 ${
-                    selectedHitzone === hitzone.id
-                      ? 'bg-green-500 bg-opacity-40 border-2 border-green-600'
-                      : 'bg-blue-500 bg-opacity-20 border-2 border-blue-400 hover:bg-opacity-30'
-                  }`}
-                  style={{
-                    left: `${hitzone.x}%`,
-                    top: `${hitzone.y}%`,
-                    width: `${hitzone.width}%`,
-                    height: `${hitzone.height}%`,
-                  }}
-                  onClick={() => handleHitzoneClick(hitzone.id)}
-                  title={`Zona interactiva: ${hitzone.id}`}
-                />
-              ))}
-            </div>
+              Anterior
+            </button>
+            <span className="text-sm text-gray-600">
+              Imagen {localSelectedImageIndex + 1} de {images.length}
+            </span>
+            <button
+              className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+              onClick={handleNextImage}
+              disabled={localSelectedImageIndex === images.length - 1}
+            >
+              Siguiente
+            </button>
           </div>
         )}
+
+        {/* Imagen principal con overlay de hitzones */}
+        <div
+          className="relative w-[80vw] max-w-4xl max-h-[80vh] bg-white rounded-lg shadow-lg overflow-hidden"
+          style={{ aspectRatio: imageNaturalSize ? `${imageNaturalSize.width} / ${imageNaturalSize.height}` : undefined }}
+        >
+          <img
+            ref={imageRef}
+            src={selectedImage.url}
+            alt={selectedImage.name || `Imagen detallada ${localSelectedImageIndex + 1}`}
+            className="w-full h-auto max-h-[80vh] object-contain bg-white"
+            loading="lazy"
+            style={{ display: 'block' }}
+            onLoad={handleImageLoad}
+          />
+          {/* Overlay de hitzones con escalado absoluto usando el tamaño real de la imagen */}
+          {imageNaturalSize && imgRenderSize && (
+            (() => {
+              const { drawWidth, drawHeight, offsetX, offsetY } = getImageDrawRect(imageNaturalSize, imgRenderSize);
+              return (
+                <div
+                  className="absolute top-0 left-0"
+                  style={{ width: imgRenderSize.width, height: imgRenderSize.height, pointerEvents: 'none' }}
+                >
+                  {availableHitzones.map((hitzone: any) => {
+                    // Convertir coords naturales a coords absolutas escaladas
+                    const left = offsetX + (hitzone.originalCoords?.x ?? 0) * (drawWidth / imageNaturalSize.width);
+                    const top = offsetY + (hitzone.originalCoords?.y ?? 0) * (drawHeight / imageNaturalSize.height);
+                    const width = (hitzone.originalCoords?.width ?? 0) * (drawWidth / imageNaturalSize.width);
+                    const height = (hitzone.originalCoords?.height ?? 0) * (drawHeight / imageNaturalSize.height);
+                    return (
+                      <div
+                        key={hitzone.id}
+                        className={`absolute transition-all duration-300 border-2 ${
+                          localSelectedHitzone === hitzone.id
+                            ? 'border-green-600 bg-green-500 bg-opacity-20 shadow-lg'
+                            : 'border-blue-400 bg-blue-500 bg-opacity-10 hover:bg-blue-500 hover:bg-opacity-20'
+                        }`}
+                        style={{
+                          left,
+                          top,
+                          width,
+                          height,
+                          pointerEvents: 'auto',
+                          cursor: 'pointer',
+                        }}
+                        onClick={() => handleHitzoneClick(hitzone.id)}
+                        title={`Zona interactiva: ${hitzone.id}`}
+                      >
+                        {localSelectedHitzone === hitzone.id && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="bg-green-600 text-white text-xs px-2 py-1 rounded-full font-medium">
+                              ✓ Seleccionado
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {availableHitzones.length === 0 && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+                      <div className="bg-white rounded-lg p-4 text-center">
+                        <p className="text-gray-600">Esta imagen no tiene zonas interactivas configuradas.</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()
+          )}
+        </div>
+
+        {/* Error display */}
+        {(localError || error) && (
+          <div className="text-red-600 text-sm mt-2 text-center bg-red-50 p-3 rounded-lg">
+            {localError || error}
+          </div>
+        )}
+
+        {/* FormSubmitButton para feedback visual consistente */}
+        <div className="flex justify-center mt-6">
+          <FormSubmitButton
+            isSaving={!!isSaving || !!isLoading}
+            hasExistingData={!!hasExistingData}
+            onClick={handleSubmit}
+            disabled={isSaving || isLoading || !localSelectedHitzone}
+          />
+        </div>
 
         {/* Instrucciones finales */}
         <div className="text-center mt-6">

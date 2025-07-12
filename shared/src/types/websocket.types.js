@@ -1,7 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.isWebSocketMessage = exports.isWebSocketEvent = exports.errorMessageSchema = exports.tokenRefreshResponseSchema = exports.webSocketConfigSchema = exports.WebSocketEvent = void 0;
-const zod_1 = require("zod");
+var zod_1 = require("zod");
+// WebSocket Events
 var WebSocketEvent;
 (function (WebSocketEvent) {
     WebSocketEvent["PING"] = "PING";
@@ -10,13 +11,17 @@ var WebSocketEvent;
     WebSocketEvent["TOKEN_REFRESH"] = "TOKEN_REFRESH";
     WebSocketEvent["TOKEN_REFRESHED"] = "TOKEN_REFRESHED";
     WebSocketEvent["ERROR"] = "ERROR";
+    // Authentication events
     WebSocketEvent["TOKEN_UPDATE"] = "token.update";
+    // Connection events
     WebSocketEvent["CONNECT"] = "connect";
     WebSocketEvent["DISCONNECT"] = "disconnect";
+    // Emotion events
     WebSocketEvent["EMOTION_CREATED"] = "emotion.created";
     WebSocketEvent["EMOTION_UPDATED"] = "emotion.updated";
     WebSocketEvent["EMOTION_DELETED"] = "emotion.deleted";
-})(WebSocketEvent = exports.WebSocketEvent || (exports.WebSocketEvent = {}));
+})(WebSocketEvent || (exports.WebSocketEvent = WebSocketEvent = {}));
+// Validation Schemas
 exports.webSocketConfigSchema = zod_1.z.object({
     url: zod_1.z.string(),
     token: zod_1.z.string().optional(),
@@ -38,12 +43,16 @@ exports.errorMessageSchema = zod_1.z.object({
     code: zod_1.z.string(),
     message: zod_1.z.string()
 });
-const isWebSocketEvent = (value) => typeof value === 'string' && Object.values(WebSocketEvent).includes(value);
+// Type Guards
+var isWebSocketEvent = function (value) {
+    return typeof value === 'string' && Object.values(WebSocketEvent).includes(value);
+};
 exports.isWebSocketEvent = isWebSocketEvent;
-const isWebSocketMessage = (value) => typeof value === 'object' &&
-    value !== null &&
-    'event' in value &&
-    'data' in value &&
-    (0, exports.isWebSocketEvent)(value.event);
+var isWebSocketMessage = function (value) {
+    return typeof value === 'object' &&
+        value !== null &&
+        'event' in value &&
+        'data' in value &&
+        (0, exports.isWebSocketEvent)(value.event);
+};
 exports.isWebSocketMessage = isWebSocketMessage;
-//# sourceMappingURL=websocket.types.js.map

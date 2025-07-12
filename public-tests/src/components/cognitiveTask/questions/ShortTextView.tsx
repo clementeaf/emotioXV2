@@ -1,10 +1,16 @@
 import React, { useState } from 'react';
-import { ShortTextViewProps } from '../../../types';
+import { ShortTextViewProps as BaseShortTextViewProps } from '../../../types';
+import FormSubmitButton from '../../common/FormSubmitButton';
 import TextAreaField from '../../common/TextAreaField';
 import QuestionHeader from '../common/QuestionHeader';
 
-export const ShortTextView: React.FC<ShortTextViewProps> = ({ config, value, onChange, onContinue, questionKey }) => {
-  // Usar questionKey del backend como identificador principal
+export interface ShortTextViewProps extends BaseShortTextViewProps {
+  isSubmitting?: boolean;
+  error?: string | null;
+  hasExistingData?: boolean;
+}
+
+export const ShortTextView: React.FC<ShortTextViewProps> = ({ config, value, onChange, onContinue, questionKey, isSubmitting, error, hasExistingData }) => {
   const id = questionKey || config.id;
   const title = config.title;
   const description = config.description;
@@ -12,8 +18,7 @@ export const ShortTextView: React.FC<ShortTextViewProps> = ({ config, value, onC
   const required = config.required;
 
   const [localValue, setLocalValue] = useState(value || '');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
 
   if (!id) {
     console.error('[ShortTextView] Configuración inválida (sin ID):', config);
@@ -22,26 +27,22 @@ export const ShortTextView: React.FC<ShortTextViewProps> = ({ config, value, onC
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setLocalValue(e.target.value);
-    setError(null);
+    setLocalError(null);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (required && !localValue.trim()) {
-      setError('Por favor, escribe una respuesta.');
+      setLocalError('Por favor, escribe una respuesta.');
       return;
     }
-    setIsSubmitting(true);
     onChange?.(id, localValue);
     if (onContinue) {
       onContinue(localValue);
     }
-    setIsSubmitting(false);
   };
 
-  // Detectar si ya existe una respuesta previa
-  const hasExistingData = !!(value && value.trim());
-  const buttonText = hasExistingData ? 'Actualizar y continuar' : 'Guardar y continuar';
+  const showHasExistingData = typeof hasExistingData === 'boolean' ? hasExistingData : !!(value && value.trim());
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
@@ -60,16 +61,15 @@ export const ShortTextView: React.FC<ShortTextViewProps> = ({ config, value, onC
         disabled={isSubmitting}
         required={required}
       />
-      {error && (
-        <div className="text-red-600 text-sm">{error}</div>
+      {(localError || error) && (
+        <div className="text-red-600 text-sm">{localError || error}</div>
       )}
-      <button
-        type="submit"
-        className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+      <FormSubmitButton
+        isSaving={!!isSubmitting}
+        hasExistingData={!!showHasExistingData}
+        onClick={handleSubmit}
         disabled={isSubmitting || (required && !localValue.trim())}
-      >
-        {buttonText}
-      </button>
+      />
     </form>
   );
 };

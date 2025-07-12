@@ -1,7 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.isUser = exports.authResponseSchema = exports.validateOTPSchema = exports.requestOTPSchema = void 0;
-const zod_1 = require("zod");
+var zod_1 = require("zod");
+// Zod schemas
 exports.requestOTPSchema = zod_1.z.object({
     email: zod_1.z.string().email('Invalid email format')
 });
@@ -11,13 +12,15 @@ exports.validateOTPSchema = zod_1.z.object({
 });
 exports.authResponseSchema = zod_1.z.object({
     token: zod_1.z.string(),
+    refreshToken: zod_1.z.string(),
     user: zod_1.z.object({
         id: zod_1.z.string(),
         name: zod_1.z.string(),
         email: zod_1.z.string().email()
     })
 });
-const isUser = (value) => {
+// Type guards
+var isUser = function (value) {
     return (typeof value === 'object' &&
         value !== null &&
         'id' in value &&
@@ -26,4 +29,3 @@ const isUser = (value) => {
         'updatedAt' in value);
 };
 exports.isUser = isUser;
-//# sourceMappingURL=auth.types.js.map

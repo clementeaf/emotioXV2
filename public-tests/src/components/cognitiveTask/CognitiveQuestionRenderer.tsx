@@ -50,9 +50,18 @@ const CognitiveQuestionRenderer: React.FC<CognitiveQuestionRendererProps> = ({
             return (
                 <SingleChoiceView
                     key={question.id}
-                    config={question}
-                    value={typeof answer === 'string' ? answer : undefined}
-                    onChange={onChange as (questionId: string, selectedOptionId: string) => void}
+                    stepConfig={question}
+                    onStepComplete={(data) => {
+                        // Adapter para convertir desde MappedStepComponentProps a las props esperadas
+                        if (onChange && question.id) {
+                            onChange(question.id, data as string);
+                        }
+                    }}
+                    savedResponse={answer}
+                    questionKey={question.id} // NUEVO: Usar question.id como questionKey
+                    stepType={question.type}
+                    researchId=""
+                    participantId=""
                 />
             );
         case 'MULTI_CHOICE':
@@ -60,9 +69,18 @@ const CognitiveQuestionRenderer: React.FC<CognitiveQuestionRendererProps> = ({
             return (
                 <MultiChoiceView
                     key={question.id}
-                    config={question}
-                    value={Array.isArray(answer) ? answer as string[] : []}
-                    onChange={onChange as (questionId: string, selectedOptionIds: string[]) => void}
+                    stepConfig={question}
+                    onStepComplete={(data) => {
+                        // Adapter para convertir desde MappedStepComponentProps a las props esperadas
+                        if (onChange && question.id) {
+                            onChange(question.id, data as string[]);
+                        }
+                    }}
+                    savedResponse={answer}
+                    questionKey={question.id} // NUEVO: Usar question.id como questionKey
+                    stepType={question.type}
+                    researchId=""
+                    participantId=""
                 />
             );
         case 'LINEAR_SCALE':
@@ -70,9 +88,18 @@ const CognitiveQuestionRenderer: React.FC<CognitiveQuestionRendererProps> = ({
             return (
                 <LinearScaleView
                     key={question.id}
-                    config={question}
-                    value={typeof answer === 'number' ? answer : undefined}
-                    onChange={onChange as (questionId: string, selectedValue: number) => void}
+                    stepConfig={question}
+                    onStepComplete={(data) => {
+                        // Adapter para convertir desde MappedStepComponentProps a las props esperadas
+                        if (onChange && question.id) {
+                            onChange(question.id, data as number);
+                        }
+                    }}
+                    savedResponse={answer}
+                    questionKey={question.id} // NUEVO: Usar question.id como questionKey
+                    stepType={question.type}
+                    researchId=""
+                    participantId=""
                 />
             );
         default:

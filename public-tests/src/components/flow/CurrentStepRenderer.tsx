@@ -1,6 +1,6 @@
+import { QuestionType } from '@emotiox/shared';
 import React, { Suspense } from 'react';
 import { useParticipantStore } from '../../stores/participantStore';
-import { QuestionType } from '../../types/question-types.enum';
 import { RenderError } from './RenderError';
 import { stepComponentMap } from './steps';
 import { CurrentStepProps } from './types';

@@ -1,7 +1,10 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.DEFAULT_WELCOME_SCREEN_CONFIG = exports.DEFAULT_WELCOME_SCREEN_VALIDATION = void 0;
 /**
  * Default validation rules for Welcome Screen
  */
-export var DEFAULT_WELCOME_SCREEN_VALIDATION = {
+exports.DEFAULT_WELCOME_SCREEN_VALIDATION = {
     title: {
         minLength: 3,
         maxLength: 100,
@@ -21,7 +24,7 @@ export var DEFAULT_WELCOME_SCREEN_VALIDATION = {
 /**
  * Default Welcome Screen configuration
  */
-export var DEFAULT_WELCOME_SCREEN_CONFIG = {
+exports.DEFAULT_WELCOME_SCREEN_CONFIG = {
     isEnabled: true,
     title: '',
     message: '',

@@ -13,6 +13,8 @@ const CheckboxGroup: React.FC<CheckboxGroupProps> = ({
   inputClassName = 'focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded cursor-pointer',
   labelClassName = 'font-medium text-gray-700 cursor-pointer',
 }) => {
+  // Asegurar que selectedIds siempre sea un array
+  const safeSelectedIds = Array.isArray(selectedIds) ? selectedIds : [];
   return (
     <fieldset className={className} disabled={disabled}>
       <legend className="sr-only">Opciones</legend> {/* Leyenda para accesibilidad */}
@@ -23,7 +25,7 @@ const CheckboxGroup: React.FC<CheckboxGroupProps> = ({
               id={`option-${name}-${option.id}`} // ID único
               name={`${name}-${option.id}`} // Nombre único, aunque no es crucial para checkboxes individuales fuera de un form tradicional
               type="checkbox"
-              checked={selectedIds.includes(option.id)}
+              checked={safeSelectedIds.includes(option.id)}
               onChange={(e) => onChange(option.id, e.target.checked)}
               className={inputClassName}
               disabled={disabled} // Propagar disabled al input
@@ -45,4 +47,4 @@ const CheckboxGroup: React.FC<CheckboxGroupProps> = ({
   );
 };
 
-export default CheckboxGroup; 
+export default CheckboxGroup;

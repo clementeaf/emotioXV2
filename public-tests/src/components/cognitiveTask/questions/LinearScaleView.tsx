@@ -1,25 +1,44 @@
-import React from 'react';
-// Importar los nuevos subcomponentes
-import { LinearScaleViewComponentProps } from '../../../types/cognitive-task.types';
+import React, { useEffect, useState } from 'react';
+import { useStepResponseManager } from '../../../hooks/useStepResponseManager';
+import { MappedStepComponentProps } from '../../../types/flow.types';
+import FormSubmitButton from '../../common/FormSubmitButton';
 import QuestionHeader from '../common/QuestionHeader';
 import ScaleButtonGroup from './common/ScaleButtonGroup';
 import ScaleLabels from './common/ScaleLabels';
 
-export const LinearScaleView: React.FC<LinearScaleViewComponentProps> = ({ config, value, onChange, questionKey }) => { // NUEVO: Agregar questionKey
-  // NUEVO: Usar questionKey del backend como identificador principal
-  const id = questionKey || config.id;
-  const title = config.title;
+export const LinearScaleView: React.FC<MappedStepComponentProps> = (props) => {
+  const { stepConfig, onStepComplete, savedResponse, questionKey } = props;
+  const config = stepConfig as any;
+
+  const id = questionKey || config.id || '';
+  const title = config.title || 'Pregunta';
   const description = config.description;
   const required = config.required;
 
-  // NUEVO: Log para verificar que se está usando el questionKey correcto
-  console.log('[LinearScaleView] 🔍 Debug info:', {
-    questionKey,
-    configId: config.id,
-    finalId: id,
-    questionTitle: title,
-    stepType: config.type
+  // Hook de persistencia igual que SmartVOC/ShortTextView/LongTextView/SingleChoiceView/MultiChoiceView
+  const {
+    responseData,
+    isSaving,
+    isLoading,
+    error,
+    saveCurrentStepResponse,
+    hasExistingData
+  } = useStepResponseManager<number>({
+    stepId: id,
+    stepType: config.type || 'cognitive_linear_scale',
+    stepName: title,
+    initialData: savedResponse as number | null | undefined,
+    questionKey: id
   });
+
+  // Estado local para la selección
+  const [localValue, setLocalValue] = useState<number | undefined>(responseData || undefined);
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  // Sincronizar valor local con respuesta persistida
+  useEffect(() => {
+    setLocalValue(responseData || undefined);
+  }, [responseData]);
 
   // Extraer configuración de la escala, con valores por defecto razonables
   const minValue = typeof config.minValue === 'number' ? config.minValue : 1;
@@ -36,26 +55,45 @@ export const LinearScaleView: React.FC<LinearScaleViewComponentProps> = ({ confi
   const scaleButtons = Array.from({ length: maxValue - minValue + 1 }, (_, i) => minValue + i);
 
   const handleSelection = (selectedValue: number) => {
-    onChange(id, selectedValue);
+    setLocalValue(selectedValue);
+    setLocalError(null);
+  };
+
+  const handleSubmit = async () => {
+    if (required && localValue === undefined) {
+      setLocalError('Por favor, selecciona un valor en la escala.');
+      return;
+    }
+    const result = await saveCurrentStepResponse(localValue || 0);
+    if (result.success && onStepComplete) {
+      onStepComplete(localValue);
+    }
   };
 
   return (
-    <div className="space-y-4">
-      <QuestionHeader
-        title={title}
-        instructions={description}
-        required={required}
-      />
+    <div className="max-w-xl mx-auto">
+      <QuestionHeader title={title} instructions={description} required={required} />
 
       <ScaleButtonGroup
         buttons={scaleButtons}
-        selectedValue={value}
+        selectedValue={localValue}
         onSelect={handleSelection}
       />
 
       <ScaleLabels
         minLabel={minLabel}
         maxLabel={maxLabel}
+      />
+
+      {(localError || error) && (
+        <div className="text-red-600 text-sm mt-2">{localError || error}</div>
+      )}
+
+      <FormSubmitButton
+        isSaving={!!isSaving || !!isLoading}
+        hasExistingData={!!hasExistingData}
+        onClick={handleSubmit}
+        disabled={isSaving || isLoading || (required && localValue === undefined)}
       />
     </div>
   );

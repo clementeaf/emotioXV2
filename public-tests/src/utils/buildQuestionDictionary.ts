@@ -1,4 +1,4 @@
-import { QuestionType } from '../interfaces/question-types.enum';
+import { QuestionType } from '../../../shared/interfaces/question-types.enum';
 
 /**
  * Construye el diccionario global de preguntas usando el ENUM estándar

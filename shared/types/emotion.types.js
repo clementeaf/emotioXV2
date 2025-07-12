@@ -1,19 +1,21 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.isEmotionCategory = exports.isEmotionIntensity = exports.updateEmotionSchema = exports.createEmotionSchema = exports.emotionBaseSchema = exports.EmotionCategory = exports.EmotionIntensity = void 0;
-const zod_1 = require("zod");
+var zod_1 = require("zod");
+// Enums
 var EmotionIntensity;
 (function (EmotionIntensity) {
     EmotionIntensity["LOW"] = "low";
     EmotionIntensity["MEDIUM"] = "medium";
     EmotionIntensity["HIGH"] = "high";
-})(EmotionIntensity = exports.EmotionIntensity || (exports.EmotionIntensity = {}));
+})(EmotionIntensity || (exports.EmotionIntensity = EmotionIntensity = {}));
 var EmotionCategory;
 (function (EmotionCategory) {
     EmotionCategory["BASIC"] = "basic";
     EmotionCategory["COMPLEX"] = "complex";
     EmotionCategory["SOCIAL"] = "social";
-})(EmotionCategory = exports.EmotionCategory || (exports.EmotionCategory = {}));
+})(EmotionCategory || (exports.EmotionCategory = EmotionCategory = {}));
+// Zod schemas for validation
 exports.emotionBaseSchema = zod_1.z.object({
     name: zod_1.z.string()
         .min(2, 'Name must be at least 2 characters')
@@ -29,12 +31,12 @@ exports.emotionBaseSchema = zod_1.z.object({
 });
 exports.createEmotionSchema = exports.emotionBaseSchema;
 exports.updateEmotionSchema = exports.emotionBaseSchema.partial();
-const isEmotionIntensity = (value) => {
+// Type guards
+var isEmotionIntensity = function (value) {
     return Object.values(EmotionIntensity).includes(value);
 };
 exports.isEmotionIntensity = isEmotionIntensity;
-const isEmotionCategory = (value) => {
+var isEmotionCategory = function (value) {
     return Object.values(EmotionCategory).includes(value);
 };
 exports.isEmotionCategory = isEmotionCategory;
-//# sourceMappingURL=emotion.types.js.map

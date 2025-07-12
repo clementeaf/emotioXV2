@@ -1,35 +1,42 @@
+"use strict";
 /**
  * Modelo de datos para la investigación
  * Este archivo define las interfaces que se utilizan tanto en el frontend como en el backend
  */
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ResearchStatus = exports.ResearchTechnique = exports.ResearchType = void 0;
+exports.generateResearchId = generateResearchId;
+exports.createMockResearch = createMockResearch;
+exports.isAIMFrameworkResearch = isAIMFrameworkResearch;
+exports.isAIMFrameworkConfig = isAIMFrameworkConfig;
 /**
  * Tipos de investigación soportados
  */
-export var ResearchType;
+var ResearchType;
 (function (ResearchType) {
     ResearchType["EYE_TRACKING"] = "eye-tracking";
     ResearchType["ATTENTION_PREDICTION"] = "attention-prediction";
     ResearchType["COGNITIVE_ANALYSIS"] = "cognitive-analysis";
     ResearchType["BEHAVIOURAL"] = "behavioural";
-})(ResearchType || (ResearchType = {}));
+})(ResearchType || (exports.ResearchType = ResearchType = {}));
 /**
  * Técnicas de investigación disponibles
  */
-export var ResearchTechnique;
+var ResearchTechnique;
 (function (ResearchTechnique) {
     ResearchTechnique["BIOMETRIC"] = "biometric";
     ResearchTechnique["AIM_FRAMEWORK"] = "aim-framework";
-})(ResearchTechnique || (ResearchTechnique = {}));
+})(ResearchTechnique || (exports.ResearchTechnique = ResearchTechnique = {}));
 /**
  * Estados posibles de una investigación
  */
-export var ResearchStatus;
+var ResearchStatus;
 (function (ResearchStatus) {
     ResearchStatus["DRAFT"] = "draft";
     ResearchStatus["IN_PROGRESS"] = "in-progress";
     ResearchStatus["COMPLETED"] = "completed";
     ResearchStatus["ARCHIVED"] = "archived";
-})(ResearchStatus || (ResearchStatus = {}));
+})(ResearchStatus || (exports.ResearchStatus = ResearchStatus = {}));
 /**
  * Funciones de utilidad para trabajar con investigaciones
  */
@@ -37,7 +44,7 @@ export var ResearchStatus;
  * Genera un ID de investigación único
  * @returns Un ID único para la investigación
  */
-export function generateResearchId() {
+function generateResearchId() {
     return "research-".concat(Date.now(), "-").concat(Math.floor(Math.random() * 1000));
 }
 /**
@@ -45,7 +52,7 @@ export function generateResearchId() {
  * @param data Los datos básicos para crear la investigación
  * @returns Una respuesta simulada de creación exitosa
  */
-export function createMockResearch(data) {
+function createMockResearch(data) {
     return {
         id: generateResearchId(),
         name: data.name,
@@ -62,7 +69,7 @@ export function createMockResearch(data) {
  * @param research La investigación a verificar
  * @returns true si la investigación utiliza la técnica AIM Framework
  */
-export function isAIMFrameworkResearch(research) {
+function isAIMFrameworkResearch(research) {
     // Si es el tipo completo Research
     if ('basic' in research && research.basic && 'technique' in research.basic) {
         return research.basic.technique === ResearchTechnique.AIM_FRAMEWORK;
@@ -79,6 +86,6 @@ export function isAIMFrameworkResearch(research) {
  * @param config La configuración a verificar
  * @returns true si la configuración es para AIM Framework
  */
-export function isAIMFrameworkConfig(config) {
+function isAIMFrameworkConfig(config) {
     return 'smartVOC' in config || 'welcomeScreen' in config;
 }

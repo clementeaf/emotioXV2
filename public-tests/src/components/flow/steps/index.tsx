@@ -1,7 +1,7 @@
+import { QuestionType } from '@emotiox/shared';
 import React from 'react';
 import { useStepResponseManager } from '../../../hooks/useStepResponseManager';
 import { MappedStepComponentProps, StepComponentMap } from '../../../types/flow.types';
-import { QuestionType } from '../../../types/question-types.enum';
 import NavigationFlowTask from '../../cognitiveTask/NavigationFlowTask';
 import PreferenceTestTask from '../../cognitiveTask/PreferenceTestTask';
 import { LinearScaleView } from '../../cognitiveTask/questions/LinearScaleView';
@@ -46,6 +46,7 @@ const CognitiveShortTextAdapter: React.FC<MappedStepComponentProps> = (props) =>
   const stepType = config.type || 'cognitive_short_text';
   const stepName = config.title || 'Pregunta corta';
 
+  // Usar useStepResponseManager igual que los componentes SmartVOC
   const {
     responseData,
     isSaving,
@@ -66,7 +67,7 @@ const CognitiveShortTextAdapter: React.FC<MappedStepComponentProps> = (props) =>
     // El valor se maneja internamente por el hook
   };
 
-  // Handler para submit (firma compatible con onContinue)
+  // Handler para submit (igual que SmartVOC)
   const handleSubmit = async (responseData?: unknown) => {
     const value = typeof responseData === 'string' ? responseData : '';
     const result = await saveCurrentStepResponse(value);
@@ -81,8 +82,11 @@ const CognitiveShortTextAdapter: React.FC<MappedStepComponentProps> = (props) =>
       config={config}
       value={typeof responseData === 'string' ? responseData : ''}
       onChange={handleChange}
-      questionKey={questionKey}
       onContinue={handleSubmit}
+      questionKey={questionKey}
+      isSubmitting={isSaving || isLoading}
+      error={error as string | null}
+      hasExistingData={hasExistingData}
     />
   );
 };
@@ -130,10 +134,13 @@ const CognitiveSingleChoiceAdapter: React.FC<MappedStepComponentProps> = (props)
 
   return (
     <SingleChoiceView
-      config={{ ...config, options }} // <-- Pasar options adaptado
-      value={typeof responseData === 'string' ? responseData : ''}
-      onChange={handleChange}
+      stepConfig={{ ...config, options }} // <-- Pasar stepConfig con options adaptado
+      onStepComplete={onStepComplete}
+      savedResponse={responseData}
       questionKey={questionKey}
+      stepType={stepType}
+      researchId=""
+      participantId=""
     />
   );
 };
@@ -181,10 +188,13 @@ const CognitiveMultiChoiceAdapter: React.FC<MappedStepComponentProps> = (props) 
 
   return (
     <MultiChoiceView
-      config={{ ...config, options }} // <-- Pasar options adaptado
-      value={Array.isArray(responseData) ? responseData : []}
-      onChange={handleChange}
+      stepConfig={{ ...config, options }} // <-- Pasar stepConfig con options adaptado
+      onStepComplete={onStepComplete}
+      savedResponse={responseData}
       questionKey={questionKey}
+      stepType={stepType}
+      researchId=""
+      participantId=""
     />
   );
 };
@@ -218,20 +228,37 @@ const CognitiveLinearScaleAdapter: React.FC<MappedStepComponentProps> = (props) 
 
   return (
     <LinearScaleView
-      config={config}
-      value={typeof responseData === 'number' ? responseData : undefined}
-      onChange={handleChange}
+      stepConfig={config}
+      onStepComplete={onStepComplete}
+      savedResponse={responseData}
       questionKey={questionKey}
+      stepType={stepType}
+      researchId=""
+      participantId=""
     />
   );
 };
 
 // Adaptador para NavigationFlowTask
 const CognitiveNavigationFlowAdapter: React.FC<MappedStepComponentProps> = (props) => {
-  const { stepConfig, onStepComplete } = props;
-  // Fallback: función vacía si onStepComplete no está definida
-  const handleContinue = onStepComplete || (() => {});
-  return <NavigationFlowTask config={stepConfig} onContinue={handleContinue} />;
+  let { stepConfig, ...rest } = props;
+
+  // Si stepConfig es un objeto plano de navigation_flow, lo envolvemos en questions[]
+  if (
+    stepConfig &&
+    typeof stepConfig === 'object' &&
+    (!('questions' in stepConfig) || !Array.isArray(stepConfig.questions)) &&
+    (stepConfig.type === 'navigation_flow' || stepConfig.type === 'cognitive_navigation_flow')
+  ) {
+    stepConfig = { questions: [stepConfig] };
+  }
+
+  return (
+    <NavigationFlowTask
+      stepConfig={stepConfig}
+      {...rest}
+    />
+  );
 };
 
 export const stepComponentMap: StepComponentMap = {

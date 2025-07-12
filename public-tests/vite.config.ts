@@ -1,5 +1,6 @@
-import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react';
+import path from 'path';
+import { defineConfig } from 'vite';
 
 // Generar un hash simple basado en la fecha/hora del build
 const buildHash = Date.now().toString(36)
@@ -17,6 +18,11 @@ export default defineConfig({
   ],
   define: {
     'import.meta.env.VITE_BUILD_HASH': JSON.stringify(buildHash),
+  },
+  resolve: {
+    alias: {
+      '@shared': path.resolve(__dirname, '../shared'),
+    },
   },
   build: {
     rollupOptions: {

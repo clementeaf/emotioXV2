@@ -1,187 +1,120 @@
-import { useMemo, useState } from "react";
-import { useParticipantStore } from "../../../stores/participantStore";
-import { getStandardButtonText } from '../../../utils/formHelpers';
-import { RankingButton, RankingHeader, RankingList } from "./components";
-import { useRankingActions, useRankingData } from "./hooks";
+import React, { useEffect, useMemo, useState } from "react";
+import { useStepResponseManager } from "../../../hooks/useStepResponseManager";
+import { MappedStepComponentProps } from "../../../types/flow.types";
+import FormSubmitButton from "../../common/FormSubmitButton";
+import { RankingHeader, RankingList } from "./components";
 
-export const RankingQuestion: React.FC<{
-    config: unknown;
-    stepId?: string;
-    stepName?: string;
-    stepType: string;
-    questionKey: string; // NUEVO: questionKey como identificador principal
-    onStepComplete: (answer: unknown) => void;
-    isApiDisabled: boolean;
-}> = ({ config: initialConfig, stepId: stepIdFromProps, stepName: stepNameFromProps, stepType, questionKey, onStepComplete, isApiDisabled = false }) => {
+export const RankingQuestion: React.FC<MappedStepComponentProps> = (props) => {
+  const { stepConfig, onStepComplete, savedResponse, questionKey } = props;
+  const config = stepConfig as any;
 
-    // Debug: verificar researchId y participantId
-    const researchId = useParticipantStore(state => state.researchId);
-    const participantId = useParticipantStore(state => state.participantId);
-    const setResearchId = useParticipantStore(state => state.setResearchId);
+  const id = questionKey || config.id || '';
+  const title = config.title || 'Ranking Question';
+  const description = config.description || 'Ordena las opciones según tu preferencia';
+  const questionText = config.questionText || '¿Cuál es tu orden de preferencia?';
+  const required = config.required;
 
-    // NUEVO: Log questionKey para debugging
-    console.log(`[RankingQuestion] 🔑 Usando questionKey: ${questionKey}`, {
-        researchId,
-        participantId,
-        stepType,
-        stepId: stepIdFromProps,
-        stepName: stepNameFromProps
-    });
+  const {
+    responseData,
+    isSaving,
+    isLoading,
+    error,
+    saveCurrentStepResponse,
+    hasExistingData
+  } = useStepResponseManager<string[]>({
+    stepId: id,
+    stepType: config.type || 'cognitive_ranking',
+    stepName: title,
+    initialData: savedResponse as string[] | null | undefined,
+    questionKey: id
+  });
 
-    console.log('[RankingQuestion] Debug IDs:', {
-        researchId,
-        participantId,
-        stepType,
-        stepId: stepIdFromProps,
-        stepName: stepNameFromProps,
-        questionKey // NUEVO: Incluir questionKey en logs
-    });
-
-    // Verificar si necesitamos usar el researchId correcto de la base de datos
-    const correctResearchId = '193b949e-9fac-f000-329b-e71bab5a9203';
-
-    // Si el researchId actual no coincide con el correcto, actualizarlo
-    if (researchId && researchId !== correctResearchId) {
-        console.log('[RankingQuestion] Actualizando researchId incorrecto:', {
-            current: researchId,
-            correct: correctResearchId
-        });
-        setResearchId(correctResearchId);
+  // Extraer items de configuración
+  const itemsFromConfig = useMemo(() => {
+    if (Array.isArray(config.options)) {
+      return config.options.filter((item: any) => typeof item === 'string' && item.trim() !== '');
     }
-
-    // Configuración del componente
-    const cfg = (typeof initialConfig === 'object' && initialConfig !== null)
-      ? initialConfig as {
-          title?: string;
-          description?: string;
-          questionText?: string;
-          options?: string[];
-          savedResponses?: string[];
-          required?: boolean;
-        }
-      : {};
-
-    const componentTitle = cfg.title || stepNameFromProps || 'Ranking Question';
-    const description = cfg.description || 'Ordena las opciones según tu preferencia';
-    const questionText = cfg.questionText || '¿Cuál es tu orden de preferencia?';
-
-    // Extraer items de configuración
-    const itemsFromConfig = useMemo(() => {
-        if (Array.isArray(cfg.options)) {
-            return cfg.options.filter((item): item is string => typeof item === 'string');
-        }
-
-        const choices = (cfg as any).choices;
-        if (Array.isArray(choices)) {
-            return choices.map((choice: any) => {
-                if (typeof choice === 'string') return choice;
-                if (choice && typeof choice.text === 'string') return choice.text;
-                return '';
-            }).filter((item: string) => item.trim() !== '');
-        }
-
-        // Datos de fallback si no hay configuración
-        return ['Opción A', 'Opción B', 'Opción C'];
-    }, [cfg.options, (cfg as any).choices]);
-
-    // Hook personalizado para gestión de datos
-    const {
-        initialRankedItems,
-        isLoading: dataLoading,
-        hasExistingData
-    } = useRankingData({
-        itemsFromConfig,
-        stepType,
-        questionKey, // NUEVO: Pasar questionKey al hook
-        isApiDisabled
-    });
-
-    // Estado local para los items rankeados
-    const [rankedItems, setRankedItems] = useState<string[]>(initialRankedItems);
-
-    // Actualizar rankedItems cuando cambien los datos iniciales
-    useMemo(() => {
-        setRankedItems(initialRankedItems);
-    }, [initialRankedItems]);
-
-    // Funciones de movimiento
-    const moveItemUp = (index: number) => {
-        if (index > 0) {
-            const currentItems = [...rankedItems];
-            const itemToMove = currentItems.splice(index, 1)[0];
-            currentItems.splice(index - 1, 0, itemToMove);
-            setRankedItems(currentItems);
-        }
-    };
-
-    const moveItemDown = (index: number) => {
-        if (index < rankedItems.length - 1) {
-            const currentItems = [...rankedItems];
-            const itemToMove = currentItems.splice(index, 1)[0];
-            currentItems.splice(index + 1, 0, itemToMove);
-            setRankedItems(currentItems);
-        }
-    };
-
-    // Hook personalizado para acciones
-    const {
-        handleSaveAndProceed,
-        isSaving,
-        isApiLoading
-    } = useRankingActions({
-        rankedItems,
-        stepType,
-        stepId: stepIdFromProps,
-        questionKey, // NUEVO: Pasar questionKey al hook
-        onStepComplete,
-        isApiDisabled
-    });
-
-    const buttonText = getStandardButtonText({
-        isSaving,
-        isLoading: false,
-        hasExistingData,
-        customCreateText: 'Guardar y continuar',
-        customUpdateText: 'Actualizar y continuar'
-    });
-
-    if (dataLoading && !isApiDisabled) {
-        return (
-            <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full text-center">
-                <p className="text-gray-600">Cargando...</p>
-            </div>
-        );
+    if (Array.isArray(config.choices)) {
+      return config.choices
+        .map((choice: any) => (typeof choice === 'string' ? choice : choice.text || choice.label || choice.id))
+        .filter((item: string) => typeof item === 'string' && item.trim() !== '');
     }
+    return [];
+  }, [config.options, config.choices]);
 
-    return (
-        <div className="bg-white p-8 rounded-lg shadow-md max-w-lg w-full">
-            <RankingHeader
-                title={componentTitle}
-                description={description}
-                questionText={questionText}
-            />
+  // Estado local para los items rankeados
+  const [rankedItems, setRankedItems] = useState<string[]>(responseData || itemsFromConfig);
+  const [localError, setLocalError] = useState<string | null>(null);
 
-            {/* NUEVO: Mostrar questionKey para debugging */}
-            {questionKey && (
-                <div className="mb-2 p-2 bg-gray-100 rounded text-xs text-gray-600">
-                    <p>ID: {questionKey}</p>
-                </div>
-            )}
+  // Sincronizar valor local con respuesta persistida
+  useEffect(() => {
+    setRankedItems(responseData || itemsFromConfig);
+  }, [responseData, itemsFromConfig]);
 
-            <RankingList
-                items={rankedItems}
-                onMoveUp={moveItemUp}
-                onMoveDown={moveItemDown}
-                isSaving={isSaving}
-                isApiLoading={isApiLoading}
-                dataLoading={dataLoading}
-            />
+  if (!id) {
+    console.error('[RankingQuestion] Configuración inválida (sin ID):', config);
+    return <div className="p-4 text-red-600">Error: Pregunta mal configurada.</div>;
+  }
 
-            <RankingButton
-                onClick={handleSaveAndProceed}
-                disabled={isSaving || isApiLoading || dataLoading}
-                text={buttonText}
-            />
-        </div>
-    );
+  // Funciones de movimiento
+  const moveItemUp = (index: number) => {
+    if (index > 0) {
+      const currentItems = [...rankedItems];
+      const itemToMove = currentItems.splice(index, 1)[0];
+      currentItems.splice(index - 1, 0, itemToMove);
+      setRankedItems(currentItems);
+      setLocalError(null);
+    }
+  };
+
+  const moveItemDown = (index: number) => {
+    if (index < rankedItems.length - 1) {
+      const currentItems = [...rankedItems];
+      const itemToMove = currentItems.splice(index, 1)[0];
+      currentItems.splice(index + 1, 0, itemToMove);
+      setRankedItems(currentItems);
+      setLocalError(null);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (required && rankedItems.length === 0) {
+      setLocalError('Por favor, ordena al menos una opción.');
+      return;
+    }
+    const result = await saveCurrentStepResponse(rankedItems);
+    if (result.success && onStepComplete) {
+      onStepComplete(rankedItems);
+    }
+  };
+
+  return (
+    <div className="max-w-xl mx-auto">
+      <RankingHeader
+        title={title}
+        description={description}
+        questionText={questionText}
+      />
+
+      <RankingList
+        items={itemsFromConfig}
+        onMoveUp={moveItemUp}
+        onMoveDown={moveItemDown}
+        isSaving={isSaving}
+        isApiLoading={isLoading}
+        dataLoading={false}
+      />
+
+      {(localError || error) && (
+        <div className="text-red-600 text-sm mt-2">{localError || error}</div>
+      )}
+
+      <FormSubmitButton
+        isSaving={!!isSaving || !!isLoading}
+        hasExistingData={!!hasExistingData}
+        onClick={handleSubmit}
+        disabled={isSaving || isLoading || (required && rankedItems.length === 0)}
+      />
+    </div>
+  );
 };

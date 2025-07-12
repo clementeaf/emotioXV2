@@ -1,51 +1,91 @@
-import React from 'react';
-import { MultiChoiceViewComponentProps } from '../../../types/cognitive-task.types';
-import CheckboxGroup from '../../common/CheckboxGroup'; // Importar el nuevo componente
-import QuestionHeader from '../common/QuestionHeader'; // Importar QuestionHeader
+import React, { useEffect, useState } from 'react';
+import { useStepResponseManager } from '../../../hooks/useStepResponseManager';
+import { MappedStepComponentProps } from '../../../types/flow.types';
+import CheckboxGroup from '../../common/CheckboxGroup';
+import FormSubmitButton from '../../common/FormSubmitButton';
+import QuestionHeader from '../common/QuestionHeader';
 
-export const MultiChoiceView: React.FC<MultiChoiceViewComponentProps> = ({ config, value = [], onChange, questionKey }) => { // NUEVO: Agregar questionKey
-  // NUEVO: Usar questionKey del backend como identificador principal
-  const id = questionKey || config.id;
-  const title = config.title;
+export const MultiChoiceView: React.FC<MappedStepComponentProps> = (props) => {
+  const { stepConfig, onStepComplete, savedResponse, questionKey } = props;
+  const config = stepConfig as any;
+
+  const id = questionKey || config.id || '';
+  const title = config.title || 'Pregunta';
   const description = config.description;
-  const options = config.options;
+  const options = config.options || config.choices || [];
   const required = config.required;
 
-  // NUEVO: Log para verificar que se está usando el questionKey correcto
-  console.log('[MultiChoiceView] 🔍 Debug info:', {
-    questionKey,
-    configId: config.id,
-    finalId: id,
-    questionTitle: title,
-    stepType: config.type
+  // Hook de persistencia igual que SmartVOC/ShortTextView/LongTextView/SingleChoiceView
+  const {
+    responseData,
+    isSaving,
+    isLoading,
+    error,
+    saveCurrentStepResponse,
+    hasExistingData
+  } = useStepResponseManager<string[]>({
+    stepId: id,
+    stepType: config.type || 'cognitive_multiple_choice',
+    stepName: title,
+    initialData: savedResponse as string[] | null | undefined,
+    questionKey: id
   });
+
+  // Estado local para las selecciones
+  const [localValue, setLocalValue] = useState<string[]>(Array.isArray(responseData) ? responseData : []);
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  // Sincronizar valor local con respuesta persistida
+  useEffect(() => {
+    setLocalValue(Array.isArray(responseData) ? responseData : []);
+  }, [responseData]);
 
   if (!id || !options || !Array.isArray(options)) {
     console.error('[MultiChoiceView] Configuración inválida (sin ID u opciones):', config);
-    return <div>Error: Pregunta mal configurada.</div>;
+    return <div className="p-4 text-red-600">Error: Pregunta mal configurada.</div>;
   }
 
-  // La lógica para manejar el cambio ahora es más directa gracias a CheckboxGroup
   const handleCheckboxChange = (optionId: string, isChecked: boolean) => {
     let newSelectedIds: string[];
     if (isChecked) {
       // Añadir el ID si no está ya presente (importante evitar duplicados)
-      newSelectedIds = value.includes(optionId) ? value : [...value, optionId];
+      newSelectedIds = localValue.includes(optionId) ? localValue : [...localValue, optionId];
     } else {
       // Eliminar el ID
-      newSelectedIds = value.filter(selectedId => selectedId !== optionId);
+      newSelectedIds = localValue.filter(selectedId => selectedId !== optionId);
     }
-    onChange(id, newSelectedIds);
+    setLocalValue(newSelectedIds);
+    setLocalError(null);
+  };
+
+  const handleSubmit = async () => {
+    if (required && localValue.length === 0) {
+      setLocalError('Por favor, selecciona al menos una opción.');
+      return;
+    }
+    const result = await saveCurrentStepResponse(localValue);
+    if (result.success && onStepComplete) {
+      onStepComplete(localValue);
+    }
   };
 
   return (
-    <div className="space-y-4">
+    <div className="max-w-xl mx-auto">
       <QuestionHeader title={title} instructions={description} required={required} />
       <CheckboxGroup
         name={`question-${id}`}
         options={options}
-        selectedIds={value}
+        selectedIds={localValue}
         onChange={handleCheckboxChange}
+      />
+      {(localError || error) && (
+        <div className="text-red-600 text-sm mt-2">{localError || error}</div>
+      )}
+      <FormSubmitButton
+        isSaving={!!isSaving || !!isLoading}
+        hasExistingData={!!hasExistingData}
+        onClick={handleSubmit}
+        disabled={isSaving || isLoading || (required && localValue.length === 0)}
       />
     </div>
   );
