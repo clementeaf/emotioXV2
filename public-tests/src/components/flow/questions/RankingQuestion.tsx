@@ -49,7 +49,18 @@ export const RankingQuestion: React.FC<MappedStepComponentProps> = (props) => {
 
   // Estado local para los items rankeados (solo inicializar una vez)
   const [rankedItems, setRankedItems] = useState<string[]>(itemsFromConfig);
+  const [localValue, setLocalValue] = useState(savedResponse || []);
   const [localError, setLocalError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (Array.isArray(savedResponse)) {
+      setLocalValue(savedResponse);
+    } else {
+      setLocalValue([]);
+    }
+  }, [savedResponse]);
+
+  const localHasExistingData = Array.isArray(savedResponse) && savedResponse.length > 0;
 
   // Sincronizar rankedItems con responseData si es un array válido
   useEffect(() => {
@@ -120,7 +131,7 @@ export const RankingQuestion: React.FC<MappedStepComponentProps> = (props) => {
 
       <FormSubmitButton
         isSaving={!!isSaving || !!isLoading}
-        hasExistingData={!!hasExistingData}
+        hasExistingData={localHasExistingData}
         onClick={handleSubmit}
         disabled={isSaving || isLoading}
       />

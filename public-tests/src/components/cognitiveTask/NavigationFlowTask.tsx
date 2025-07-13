@@ -69,6 +69,7 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
 
   const [localSelectedImageIndex, setLocalSelectedImageIndex] = useState<number>(0);
   const [localSelectedHitzone, setLocalSelectedHitzone] = useState<string | null>(null);
+  const [localValue, setLocalValue] = useState(savedResponse || {});
   const [localError, setLocalError] = useState<string | null>(null);
   const [imageNaturalSize, setImageNaturalSize] = useState<{ width: number; height: number } | null>(null);
   const [imageSelections, setImageSelections] = useState<Record<number, { hitzoneId: string, click: ClickPosition }>>({});
@@ -103,6 +104,16 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
       setLocalSelectedImageIndex(responseData.selectedImage);
     }
   }, [responseData]);
+
+  useEffect(() => {
+    if (typeof savedResponse === 'object' && savedResponse !== null) {
+      setLocalValue(savedResponse);
+    } else {
+      setLocalValue({});
+    }
+  }, [savedResponse]);
+
+  const localHasExistingData = typeof savedResponse === 'object' && savedResponse !== null && Object.keys(savedResponse).length > 0;
 
   const images = imageFiles;
 
@@ -339,7 +350,7 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
         <div className="flex justify-center mt-6">
           <FormSubmitButton
             isSaving={!!isSaving || !!isLoading}
-            hasExistingData={!!hasExistingData}
+            hasExistingData={localHasExistingData}
             onClick={handleSubmit}
             disabled={isSaving || isLoading}
           />

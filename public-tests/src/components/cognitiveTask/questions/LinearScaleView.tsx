@@ -32,13 +32,18 @@ export const LinearScaleView: React.FC<MappedStepComponentProps> = (props) => {
   });
 
   // Estado local para la selección
-  const [localValue, setLocalValue] = useState<number | undefined>(responseData || undefined);
+  const [localValue, setLocalValue] = useState(savedResponse || 0);
   const [localError, setLocalError] = useState<string | null>(null);
 
-  // Sincronizar valor local con respuesta persistida
   useEffect(() => {
-    setLocalValue(responseData || undefined);
-  }, [responseData]);
+    if (typeof savedResponse === 'number') {
+      setLocalValue(savedResponse);
+    } else {
+      setLocalValue(0);
+    }
+  }, [savedResponse]);
+
+  const localHasExistingData = typeof savedResponse === 'number' && !isNaN(savedResponse);
 
   // Extraer configuración de la escala, con valores por defecto razonables
   const minValue = typeof config.minValue === 'number' ? config.minValue : 1;
@@ -91,7 +96,7 @@ export const LinearScaleView: React.FC<MappedStepComponentProps> = (props) => {
 
       <FormSubmitButton
         isSaving={!!isSaving || !!isLoading}
-        hasExistingData={!!hasExistingData}
+        hasExistingData={localHasExistingData}
         onClick={handleSubmit}
         disabled={isSaving || isLoading}
       />

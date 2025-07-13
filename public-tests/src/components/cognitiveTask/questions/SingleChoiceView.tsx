@@ -32,13 +32,18 @@ export const SingleChoiceView: React.FC<MappedStepComponentProps> = (props) => {
   });
 
   // Estado local para la selección
-  const [localValue, setLocalValue] = useState(responseData || '');
+  const [localValue, setLocalValue] = useState(savedResponse || '');
   const [localError, setLocalError] = useState<string | null>(null);
 
-  // Sincronizar valor local con respuesta persistida
   useEffect(() => {
-    setLocalValue(responseData || '');
-  }, [responseData]);
+    if (typeof savedResponse === 'string') {
+      setLocalValue(savedResponse);
+    } else {
+      setLocalValue('');
+    }
+  }, [savedResponse]);
+
+  const localHasExistingData = typeof savedResponse === 'string' && savedResponse.trim() !== '';
 
   if (!id || !options || !Array.isArray(options)) {
     console.error('[SingleChoiceView] Configuración inválida (sin ID u opciones):', config);
@@ -75,7 +80,7 @@ export const SingleChoiceView: React.FC<MappedStepComponentProps> = (props) => {
       )}
       <FormSubmitButton
         isSaving={!!isSaving || !!isLoading}
-        hasExistingData={!!hasExistingData}
+        hasExistingData={localHasExistingData}
         onClick={handleSubmit}
         disabled={isSaving || isLoading || (required && !localValue)}
       />

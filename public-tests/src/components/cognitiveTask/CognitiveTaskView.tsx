@@ -162,8 +162,9 @@ const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, parti
         ...taskProps,
         onContinue: (responseData?: unknown) => handleTaskComplete(responseData, currentTaskDefinition),
         isSubmitting: isSubmittingTask,
-        config: stepConfig,
-        questionKey: questionKey // NUEVO: Pasar questionKey del backend
+        config: defaultQuestionConfig, // Compatibilidad legacy
+        stepConfig: defaultQuestionConfig, // Compatibilidad nueva
+        questionKey: questionKey
       })}
     </div>
   );

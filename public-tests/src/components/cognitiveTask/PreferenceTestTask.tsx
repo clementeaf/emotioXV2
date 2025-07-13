@@ -16,7 +16,7 @@ interface PreferenceTestTaskProps extends MappedStepComponentProps {
 }
 
 const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({ stepConfig, onStepComplete, savedResponse, responsesData, questionKey }) => {
-  const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
+  const [selectedImageId, setSelectedImageId] = useState(savedResponse?.selectedImageId || null);
   const [error, setError] = useState<string | null>(null);
   const [hasBeenSaved, setHasBeenSaved] = useState<boolean>(false);
   // Estado para zoom modal
@@ -230,6 +230,8 @@ const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({ stepConfig, onS
     );
   }
 
+  const localHasExistingData = savedResponse && typeof savedResponse === 'object' && 'selectedImageId' in savedResponse && !!savedResponse.selectedImageId;
+
   return (
     <div className="p-4">
       <div className="max-w-6xl mx-auto">
@@ -396,7 +398,7 @@ const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({ stepConfig, onS
         <div className="text-center">
           <FormSubmitButton
             isSaving={!!isSaving || !!isLoading}
-            hasExistingData={!!hasExistingData}
+            hasExistingData={localHasExistingData}
             onClick={handleContinue}
             disabled={isSaving || isLoading || !selectedImageId}
           />

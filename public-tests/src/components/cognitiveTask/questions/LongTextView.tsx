@@ -32,20 +32,18 @@ export const LongTextView: React.FC<MappedStepComponentProps> = (props) => {
   });
 
   // Estado local para el textarea
-  const [localValue, setLocalValue] = useState(responseData || '');
+  const [localValue, setLocalValue] = useState(savedResponse || '');
   const [localError, setLocalError] = useState<string | null>(null);
 
-  // Sincronizar valor local con respuesta persistida
   useEffect(() => {
-    if (typeof responseData === 'string') {
-      setLocalValue(responseData);
-    } else if (responseData && typeof responseData === 'object') {
-      // Si la respuesta es un objeto, intenta extraer el valor o lo convierte a string vacío
-      setLocalValue('');
+    if (typeof savedResponse === 'string') {
+      setLocalValue(savedResponse);
     } else {
       setLocalValue('');
     }
-  }, [responseData]);
+  }, [savedResponse]);
+
+  const localHasExistingData = typeof savedResponse === 'string' && savedResponse.trim() !== '';
 
   if (!id) {
     console.error('[LongTextView] Configuración inválida (sin ID):', config);
@@ -86,7 +84,7 @@ export const LongTextView: React.FC<MappedStepComponentProps> = (props) => {
       )}
       <FormSubmitButton
         isSaving={!!isSaving || !!isLoading}
-        hasExistingData={!!hasExistingData}
+        hasExistingData={localHasExistingData}
         onClick={handleSubmit}
         disabled={isSaving || isLoading || (required && !localValue.trim())}
       />

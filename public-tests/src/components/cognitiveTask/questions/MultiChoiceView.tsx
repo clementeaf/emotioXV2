@@ -32,13 +32,18 @@ export const MultiChoiceView: React.FC<MappedStepComponentProps> = (props) => {
   });
 
   // Estado local para las selecciones
-  const [localValue, setLocalValue] = useState<string[]>(Array.isArray(responseData) ? responseData : []);
+  const [localValue, setLocalValue] = useState(savedResponse || []);
   const [localError, setLocalError] = useState<string | null>(null);
 
-  // Sincronizar valor local con respuesta persistida
   useEffect(() => {
-    setLocalValue(Array.isArray(responseData) ? responseData : []);
-  }, [responseData]);
+    if (Array.isArray(savedResponse)) {
+      setLocalValue(savedResponse);
+    } else {
+      setLocalValue([]);
+    }
+  }, [savedResponse]);
+
+  const localHasExistingData = Array.isArray(savedResponse) && savedResponse.length > 0;
 
   if (!id || !options || !Array.isArray(options)) {
     console.error('[MultiChoiceView] Configuración inválida (sin ID u opciones):', config);
@@ -83,7 +88,7 @@ export const MultiChoiceView: React.FC<MappedStepComponentProps> = (props) => {
       )}
       <FormSubmitButton
         isSaving={!!isSaving || !!isLoading}
-        hasExistingData={!!hasExistingData}
+        hasExistingData={localHasExistingData}
         onClick={handleSubmit}
         disabled={isSaving || isLoading || (required && !localValue.length)}
       />
