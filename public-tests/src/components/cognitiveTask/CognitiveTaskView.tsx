@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { useResponseAPI } from '../../hooks/useResponseAPI';
 import {
-    CognitiveQuestion,
-    CognitiveTaskViewProps,
-    TaskDefinition
+  CognitiveQuestion,
+  CognitiveTaskViewProps,
+  TaskDefinition
 } from '../../types';
 import TaskProgressBar from './common/TaskProgressBar';
 import { buildTasksFromConfig } from './tasks';
@@ -41,6 +41,14 @@ const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, parti
   ) : null;
 
   const handleTaskComplete = async (responseData?: unknown, subTaskDefinition?: TaskDefinition) => {
+    console.log('🔍 [DIAGNÓSTICO] handleTaskComplete llamado con:', {
+      responseData,
+      subTaskDefinition,
+      currentTaskIndex,
+      totalRealTasks,
+      apiError
+    });
+
     if (apiError) setApiError(null);
     if (responseData && subTaskDefinition && subTaskDefinition.id) {
       const existingResponseId = questionConfig?.moduleResponseId;
@@ -49,7 +57,7 @@ const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, parti
       const subTaskType = subTaskDefinition.questionType || subTaskDefinition.id;
       const subTaskName = questionConfig?.title || subTaskDefinition.title;
 
-      console.log(`[CognitiveTaskView] Guardando respuesta para pregunta ${subTaskId}:`, {
+      console.log(`🔍 [DIAGNÓSTICO] Guardando respuesta para pregunta ${subTaskId}:`, {
         responseData,
         subTaskType,
         subTaskName,
@@ -63,23 +71,44 @@ const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, parti
         responseData,
         existingResponseId
       );
+
+      console.log('🔍 [DIAGNÓSTICO] Resultado de saveOrUpdateResponse:', result);
+
       if (result && !apiError) {
-        console.log(`[CognitiveTaskView] Respuesta para subtarea ${subTaskId} enviada/actualizada correctamente:`, result);
+        console.log(`✅ [DIAGNÓSTICO] Respuesta para subtarea ${subTaskId} enviada/actualizada correctamente:`, result);
       } else if (!result && !apiError) {
+        console.error('❌ [DIAGNÓSTICO] Error: saveOrUpdateResponse falló');
         setApiError("Ocurrió un error desconocido al guardar la respuesta de la tarea.");
         onError("Ocurrió un error desconocido al guardar la respuesta de la tarea.");
         return;
       }
       if (apiError) {
+        console.error('❌ [DIAGNÓSTICO] Error de API:', apiError);
         onError(apiError);
         return;
       }
+    } else {
+      console.warn('⚠️ [DIAGNÓSTICO] handleTaskComplete llamado sin datos válidos:', {
+        hasResponseData: !!responseData,
+        hasSubTaskDefinition: !!subTaskDefinition,
+        hasSubTaskId: !!(subTaskDefinition?.id)
+      });
     }
+
     const nextTaskIndex = currentTaskIndex + 1;
+    console.log('🔍 [DIAGNÓSTICO] Avanzando de step:', {
+      currentTaskIndex,
+      nextTaskIndex,
+      totalRealTasks,
+      willShowThankYou: nextTaskIndex >= totalRealTasks
+    });
+
     if (nextTaskIndex < totalRealTasks) {
       setCurrentTaskIndex(nextTaskIndex);
+      console.log('✅ [DIAGNÓSTICO] Step avanzado a:', nextTaskIndex);
     } else {
       setShowThankYou(true);
+      console.log('✅ [DIAGNÓSTICO] Mostrando pantalla de agradecimiento');
     }
   };
 
@@ -161,10 +190,11 @@ const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, parti
       {React.createElement(CurrentTaskComponent as React.ComponentType<any>, {
         ...taskProps,
         onContinue: (responseData?: unknown) => handleTaskComplete(responseData, currentTaskDefinition),
+        onStepComplete: (responseData?: unknown) => handleTaskComplete(responseData, currentTaskDefinition), // Compatibilidad para ambos nombres
         isSubmitting: isSubmittingTask,
         config: defaultQuestionConfig, // Compatibilidad legacy
         stepConfig: defaultQuestionConfig, // Compatibilidad nueva
-        questionKey: questionKey
+        questionKey: `${defaultQuestionConfig.type}_${currentTaskDefinition.id}` // Key combinada para el diccionario global
       })}
     </div>
   );

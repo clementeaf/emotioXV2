@@ -32,9 +32,12 @@ export const LongTextView: React.FC<MappedStepComponentProps> = (props) => {
   });
 
   // Estado local para el textarea
-  const [localValue, setLocalValue] = useState(savedResponse || '');
+  const [localValue, setLocalValue] = useState<string>(
+    typeof savedResponse === 'string' ? savedResponse : ''
+  );
   const [localError, setLocalError] = useState<string | null>(null);
 
+  // Sincronizar valor local con respuesta persistida
   useEffect(() => {
     if (typeof savedResponse === 'string') {
       setLocalValue(savedResponse);

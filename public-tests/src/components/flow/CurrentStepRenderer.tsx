@@ -22,14 +22,18 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
     // NUEVO: Obtener acceso al diccionario global
     const getQuestionByKey = useParticipantStore(state => state.getQuestionByKey);
 
-    // NUEVO: Obtener la pregunta desde el diccionario global usando questionKey
-    const questionData = questionKey ? getQuestionByKey(questionKey) : null;
+    // Si el questionKey no contiene "_", combínalo con el stepId
+    let combinedKey = questionKey;
+    if (questionKey && !questionKey.includes('_') && restOfStepProps.stepId) {
+        combinedKey = `${questionKey}_${restOfStepProps.stepId}`;
+    }
+    const questionData = combinedKey ? getQuestionByKey(combinedKey) : null;
 
     // NUEVO: Logs de advertencia solo para questionKeys críticos
-    if (questionKey && !questionData) {
+    if (combinedKey && !questionData) {
         // Solo mostrar warning para questionKeys que no sean fallbacks o temporales
-        if (!questionKey.includes('unknown_') && !questionKey.includes('temp_') && !questionKey.includes('debug_')) {
-            console.warn(`[CurrentStepRenderer] ⚠️ questionKey no encontrado en diccionario global: ${questionKey}`);
+        if (!combinedKey.includes('unknown_') && !combinedKey.includes('temp_') && !combinedKey.includes('debug_')) {
+            console.warn(`[CurrentStepRenderer] ⚠️ questionKey no encontrado en diccionario global: ${combinedKey}`);
             console.warn(`[CurrentStepRenderer] ⚠️ stepType: ${stepType}, stepId: ${restOfStepProps.stepId}`);
         }
     }

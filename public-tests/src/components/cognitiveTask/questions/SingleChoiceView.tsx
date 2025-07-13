@@ -31,10 +31,13 @@ export const SingleChoiceView: React.FC<MappedStepComponentProps> = (props) => {
     questionKey: id
   });
 
-  // Estado local para la selección
-  const [localValue, setLocalValue] = useState(savedResponse || '');
+  // Estado local para la opción seleccionada
+  const [localValue, setLocalValue] = useState<string>(
+    typeof savedResponse === 'string' ? savedResponse : ''
+  );
   const [localError, setLocalError] = useState<string | null>(null);
 
+  // Sincronizar valor local con respuesta persistida
   useEffect(() => {
     if (typeof savedResponse === 'string') {
       setLocalValue(savedResponse);

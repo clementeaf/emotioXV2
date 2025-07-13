@@ -31,10 +31,13 @@ export const LinearScaleView: React.FC<MappedStepComponentProps> = (props) => {
     questionKey: id
   });
 
-  // Estado local para la selección
-  const [localValue, setLocalValue] = useState(savedResponse || 0);
+  // Estado local para el valor seleccionado
+  const [localValue, setLocalValue] = useState<number>(
+    typeof savedResponse === 'number' ? savedResponse : 0
+  );
   const [localError, setLocalError] = useState<string | null>(null);
 
+  // Sincronizar valor local con respuesta persistida
   useEffect(() => {
     if (typeof savedResponse === 'number') {
       setLocalValue(savedResponse);
@@ -43,7 +46,7 @@ export const LinearScaleView: React.FC<MappedStepComponentProps> = (props) => {
     }
   }, [savedResponse]);
 
-  const localHasExistingData = typeof savedResponse === 'number' && !isNaN(savedResponse);
+  const localHasExistingData = typeof savedResponse === 'number' && savedResponse > 0;
 
   // Extraer configuración de la escala, con valores por defecto razonables
   const minValue = typeof config.minValue === 'number' ? config.minValue : 1;

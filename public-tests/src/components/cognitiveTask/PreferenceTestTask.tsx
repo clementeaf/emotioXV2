@@ -16,7 +16,9 @@ interface PreferenceTestTaskProps extends MappedStepComponentProps {
 }
 
 const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({ stepConfig, onStepComplete, savedResponse, responsesData, questionKey }) => {
-  const [selectedImageId, setSelectedImageId] = useState(savedResponse?.selectedImageId || null);
+  const [selectedImageId, setSelectedImageId] = useState(
+    (savedResponse as any)?.selectedImageId || null
+  );
   const [error, setError] = useState<string | null>(null);
   const [hasBeenSaved, setHasBeenSaved] = useState<boolean>(false);
   // Estado para zoom modal
@@ -26,6 +28,7 @@ const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({ stepConfig, onS
   const [dragging, setDragging] = useState(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   const imgContainerRef = useRef<HTMLDivElement>(null);
+  const [localHasExistingData, setLocalHasExistingData] = useState(false);
 
   // Extraer la configuración de la pregunta - MEJORADO para compatibilidad
   let preferenceQuestion: any = null;
@@ -99,6 +102,17 @@ const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({ stepConfig, onS
       }
     }
   }, [savedResponse, preferenceSavedResponse, images, config?.id]);
+
+  // Sincronizar con respuesta guardada
+  useEffect(() => {
+    if (savedResponse && typeof savedResponse === 'object' && 'selectedImageId' in savedResponse) {
+      setSelectedImageId((savedResponse as any).selectedImageId);
+      setLocalHasExistingData(true);
+    } else {
+      setSelectedImageId(null);
+      setLocalHasExistingData(false);
+    }
+  }, [savedResponse]);
 
   // Reset zoom y pan al cambiar de imagen
   useEffect(() => {
@@ -229,8 +243,6 @@ const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({ stepConfig, onS
       </div>
     );
   }
-
-  const localHasExistingData = savedResponse && typeof savedResponse === 'object' && 'selectedImageId' in savedResponse && !!savedResponse.selectedImageId;
 
   return (
     <div className="p-4">

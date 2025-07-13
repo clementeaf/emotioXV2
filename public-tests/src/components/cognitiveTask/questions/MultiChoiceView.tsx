@@ -31,10 +31,13 @@ export const MultiChoiceView: React.FC<MappedStepComponentProps> = (props) => {
     questionKey: id
   });
 
-  // Estado local para las selecciones
-  const [localValue, setLocalValue] = useState(savedResponse || []);
+  // Estado local para las opciones seleccionadas
+  const [localValue, setLocalValue] = useState<string[]>(
+    Array.isArray(savedResponse) ? savedResponse : []
+  );
   const [localError, setLocalError] = useState<string | null>(null);
 
+  // Sincronizar valor local con respuesta persistida
   useEffect(() => {
     if (Array.isArray(savedResponse)) {
       setLocalValue(savedResponse);
