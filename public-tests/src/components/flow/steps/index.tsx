@@ -85,7 +85,7 @@ const CognitiveShortTextAdapter: React.FC<MappedStepComponentProps> = (props) =>
       stepConfig={config}
       onStepComplete={onStepComplete}
       savedResponse={responseData}
-      questionKey={combinedQuestionKey}
+      questionKey={config.id} // Solo el id
       stepType={stepType}
       researchId=""
       participantId=""

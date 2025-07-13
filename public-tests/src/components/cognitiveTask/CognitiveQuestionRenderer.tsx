@@ -26,7 +26,7 @@ const CognitiveQuestionRenderer: React.FC<CognitiveQuestionRendererProps> = ({
                         }
                     }}
                     savedResponse={answer}
-                    questionKey={`${question.id}_${question.type}`} // NUEVO: Usar combinación id_tipo
+                    questionKey={question.id} // Solo el id
                     stepType={question.type}
                     researchId=""
                     participantId=""
@@ -51,7 +51,7 @@ const CognitiveQuestionRenderer: React.FC<CognitiveQuestionRendererProps> = ({
                     }}
                     savedResponse={answer}
                     savedResponseId={undefined}
-                    questionKey={`${question.id}_${question.type}`} // NUEVO: Usar combinación id_tipo
+                    questionKey={question.id} // Solo el id
                 />
             );
         case 'SINGLE_CHOICE':
