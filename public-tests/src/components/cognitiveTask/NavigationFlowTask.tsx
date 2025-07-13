@@ -3,21 +3,18 @@ import { useStepResponseManager } from '../../hooks/useStepResponseManager';
 import { MappedStepComponentProps } from '../../types/flow.types';
 import FormSubmitButton from '../common/FormSubmitButton';
 
-// Función mejorada para convertir hitZones de pixeles a porcentaje
 const convertHitZonesToPercentageCoordinates = (hitZones: any[], imageNaturalSize?: { width: number; height: number }) => {
   if (!hitZones || !Array.isArray(hitZones) || hitZones.length === 0) {
     return [];
   }
 
   return hitZones.map(zone => {
-    // Extraer coordenadas del formato del backend
     const region = zone.region || zone;
     const x = region.x || 0;
     const y = region.y || 0;
     const width = region.width || 0;
     const height = region.height || 0;
 
-    // Si tenemos el tamaño natural de la imagen, convertir a porcentaje
     if (imageNaturalSize && imageNaturalSize.width > 0 && imageNaturalSize.height > 0) {
       return {
         id: zone.id,
@@ -25,12 +22,10 @@ const convertHitZonesToPercentageCoordinates = (hitZones: any[], imageNaturalSiz
         y: (y / imageNaturalSize.height) * 100,
         width: (width / imageNaturalSize.width) * 100,
         height: (height / imageNaturalSize.height) * 100,
-        // Mantener coordenadas originales para debug si es necesario
         originalCoords: { x, y, width, height }
       };
     }
 
-    // Si no tenemos el tamaño natural, asumir que ya están en porcentaje
     return {
       id: zone.id,
       x,
@@ -68,7 +63,7 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
     questionKey: id
   });
 
-  const [localSelectedImageIndex, setLocalSelectedImageIndex] = useState<number>(0); // Por defecto mostrar la primera imagen
+  const [localSelectedImageIndex, setLocalSelectedImageIndex] = useState<number>(0);
   const [localSelectedHitzone, setLocalSelectedHitzone] = useState<string | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
   const [imageNaturalSize, setImageNaturalSize] = useState<{ width: number; height: number } | null>(null);
@@ -76,7 +71,6 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
   const [showClickModal, setShowClickModal] = useState(false);
   const imageRef = useRef<HTMLImageElement>(null);
 
-  // Sincronizar valor local con respuesta persistida
   useEffect(() => {
     if (responseData) {
       setLocalSelectedImageIndex(responseData.selectedImage || 0);
@@ -92,7 +86,6 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
     setLocalError(null);
   };
 
-  // Modificado: ahora acepta la posición del click
   const handleHitzoneClick = (hitzoneId: string, clickPos?: { x: number; y: number }) => {
     setLocalSelectedHitzone(hitzoneId);
     setLocalError(null);
@@ -102,7 +95,6 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
     }
   };
 
-  // Elimina containerRef y containerSize, usa el tamaño real de la imagen renderizada
   const [imgRenderSize, setImgRenderSize] = useState<{ width: number; height: number } | null>(null);
 
   const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -121,7 +113,7 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
       type: 'navigation_flow',
       selectedImage: localSelectedImageIndex,
       selectedHitzone: localSelectedHitzone,
-      clickPosition: lastClickPosition, // Guardar la posición del click
+      clickPosition: lastClickPosition,
       timestamp: Date.now()
     };
 
@@ -131,7 +123,6 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
     }
   };
 
-  // Navegación entre imágenes
   const handlePrevImage = () => {
     if (localSelectedImageIndex > 0) {
       setLocalSelectedImageIndex(localSelectedImageIndex - 1);
@@ -139,6 +130,7 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
       setLocalError(null);
     }
   };
+
   const handleNextImage = () => {
     if (localSelectedImageIndex < images.length - 1) {
       setLocalSelectedImageIndex(localSelectedImageIndex + 1);
@@ -152,7 +144,6 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
     ? convertHitZonesToPercentageCoordinates(selectedImage.hitZones, imageNaturalSize || undefined)
     : [];
 
-  // Cálculo de aspect ratio y centrado igual que el editor de hitzones
   function getImageDrawRect(imgNatural: {width: number, height: number}, imgRender: {width: number, height: number}) {
     const imgRatio = imgNatural.width / imgNatural.height;
     const renderRatio = imgRender.width / imgRender.height;
@@ -173,18 +164,16 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-white p-6">
-      {/* MODAL para mostrar el hitzone y el punto del click */}
+    <div className="flex flex-col bg-white p-6">
       {showClickModal && localSelectedHitzone && lastClickPosition && (
         (() => {
-          // Buscar el hitzone seleccionado y sus dimensiones reales
           const selectedHitzoneObj = availableHitzones.find(hz => hz.id === localSelectedHitzone);
           const hitzoneWidth = selectedHitzoneObj?.originalCoords?.width || 1;
           const hitzoneHeight = selectedHitzoneObj?.originalCoords?.height || 1;
-          const modalBoxSize = 200; // px
-          // Calcular la posición proporcional del punto
-          const px = (lastClickPosition.x / hitzoneWidth) * modalBoxSize;
-          const py = (lastClickPosition.y / hitzoneHeight) * modalBoxSize;
+          const modalBoxWidth = 220;
+          const modalBoxHeight = Math.round((hitzoneHeight / hitzoneWidth) * modalBoxWidth) || 120;
+          const px = (lastClickPosition.x / hitzoneWidth) * modalBoxWidth;
+          const py = (lastClickPosition.y / hitzoneHeight) * modalBoxHeight;
           return (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
               <div className="bg-white rounded-lg shadow-lg p-6 relative max-w-md w-full">
@@ -202,8 +191,7 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
                 <div className="mb-4 text-sm">
                   <strong>Posición dentro del hitzone:</strong> x: {Math.round(lastClickPosition.x)}, y: {Math.round(lastClickPosition.y)}
                 </div>
-                {/* Visualización precisa del hitzone y el punto */}
-                <div className="relative border bg-gray-100 rounded overflow-hidden flex items-center justify-center" style={{ width: modalBoxSize, height: modalBoxSize }}>
+                <div className="relative border bg-gray-100 rounded overflow-hidden flex items-center justify-center" style={{ width: modalBoxWidth, height: modalBoxHeight }}>
                   <div className="absolute left-0 top-0 w-full h-full border-2 border-blue-400 rounded" />
                   <div
                     className="absolute bg-red-600 rounded-full"
@@ -234,7 +222,6 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
           </p>
         </div>
 
-        {/* Controles de navegación de imágenes */}
         {images.length > 1 && (
           <div className="flex justify-center items-center gap-4 mb-4">
             <button
@@ -257,7 +244,6 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
           </div>
         )}
 
-        {/* Imagen principal con overlay de hitzones */}
         <div
           className="relative w-[80vw] max-w-4xl max-h-[80vh] bg-white rounded-lg shadow-lg overflow-hidden"
           style={{ aspectRatio: imageNaturalSize ? `${imageNaturalSize.width} / ${imageNaturalSize.height}` : undefined }}
@@ -271,7 +257,6 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
             style={{ display: 'block' }}
             onLoad={handleImageLoad}
           />
-          {/* Overlay de hitzones con escalado absoluto usando el tamaño real de la imagen */}
           {imageNaturalSize && imgRenderSize && (
             (() => {
               const { drawWidth, drawHeight, offsetX, offsetY } = getImageDrawRect(imageNaturalSize, imgRenderSize);
@@ -281,7 +266,6 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
                   style={{ width: imgRenderSize.width, height: imgRenderSize.height, pointerEvents: 'none' }}
                 >
                   {availableHitzones.map((hitzone: any) => {
-                    // Convertir coords naturales a coords absolutas escaladas
                     const left = offsetX + (hitzone.originalCoords?.x ?? 0) * (drawWidth / imageNaturalSize.width);
                     const top = offsetY + (hitzone.originalCoords?.y ?? 0) * (drawHeight / imageNaturalSize.height);
                     const width = (hitzone.originalCoords?.width ?? 0) * (drawWidth / imageNaturalSize.width);
@@ -304,10 +288,14 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
                         }}
                         onClick={e => {
                           e.stopPropagation();
-                          const rect = (e.target as HTMLDivElement).getBoundingClientRect();
-                          const x = e.clientX - rect.left;
-                          const y = e.clientY - rect.top;
-                          handleHitzoneClick(hitzone.id, { x, y });
+                          const imgRect = imageRef.current?.getBoundingClientRect();
+                          const clickX = e.clientX - (imgRect?.left ?? 0);
+                          const clickY = e.clientY - (imgRect?.top ?? 0);
+                          const left = offsetX + (hitzone.originalCoords?.x ?? 0) * (drawWidth / imageNaturalSize.width);
+                          const top = offsetY + (hitzone.originalCoords?.y ?? 0) * (drawHeight / imageNaturalSize.height);
+                          const relX = ((clickX - left) / (drawWidth / imageNaturalSize.width)) * (imageNaturalSize.width / imageNaturalSize.width) * (hitzone.originalCoords?.width ?? 1);
+                          const relY = ((clickY - top) / (drawHeight / imageNaturalSize.height)) * (imageNaturalSize.height / imageNaturalSize.height) * (hitzone.originalCoords?.height ?? 1);
+                          handleHitzoneClick(hitzone.id, { x: relX, y: relY });
                         }}
                         title={`Zona interactiva: ${hitzone.id}`}
                       >
@@ -334,14 +322,12 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
           )}
         </div>
 
-        {/* Error display */}
         {(localError || error) && (
           <div className="text-red-600 text-sm mt-2 text-center bg-red-50 p-3 rounded-lg">
             {localError || error}
           </div>
         )}
 
-        {/* FormSubmitButton para feedback visual consistente */}
         <div className="flex justify-center mt-6">
           <FormSubmitButton
             isSaving={!!isSaving || !!isLoading}
@@ -351,7 +337,6 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
           />
         </div>
 
-        {/* Instrucciones finales */}
         <div className="text-center mt-6">
           <p className="text-sm text-gray-500">
             Revisa todas las pantallas antes de elegir una únicamente
