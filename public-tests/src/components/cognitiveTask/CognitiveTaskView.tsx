@@ -5,7 +5,9 @@ import {
   CognitiveTaskViewProps,
   TaskDefinition
 } from '../../types';
+import CognitiveQuestionRenderer from './CognitiveQuestionRenderer';
 import TaskProgressBar from './common/TaskProgressBar';
+import { ShortTextView } from './questions/ShortTextView';
 import { buildTasksFromConfig } from './tasks';
 import ThankYouView from './ThankYouView';
 
@@ -149,6 +151,25 @@ const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, parti
 
   const CurrentTaskComponent = currentTaskDefinition.component;
 
+  console.log('🔍 [DIAGNÓSTICO] Componente a crear:', {
+    componentName: CurrentTaskComponent?.name || 'Unknown',
+    componentType: typeof CurrentTaskComponent,
+    isShortTextView: CurrentTaskComponent === ShortTextView,
+    isCognitiveQuestionRenderer: CurrentTaskComponent === CognitiveQuestionRenderer,
+    currentTaskDefinition: {
+      id: currentTaskDefinition.id,
+      questionType: currentTaskDefinition.questionType,
+      component: CurrentTaskComponent?.name
+    }
+  });
+
+  // VERIFICAR SI EL COMPONENTE SE ESTÁ CREANDO REALMENTE
+  console.log('🔍 [DIAGNÓSTICO] ¿Se está creando el componente dinámicamente?', {
+    willCreateComponent: !!CurrentTaskComponent,
+    componentExists: typeof CurrentTaskComponent === 'function',
+    isReactComponent: CurrentTaskComponent && typeof CurrentTaskComponent === 'function'
+  });
+
   // Si no se encuentra la configuración específica, usar valores de la task definition
   const defaultQuestionConfig = {
     id: currentTaskDefinition.id,
@@ -164,7 +185,25 @@ const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, parti
     answerPlaceholder: questionConfig?.answerPlaceholder || currentTaskDefinition.props?.placeholder
   };
 
+  console.log('🔍 [DIAGNÓSTICO CognitiveTaskView] defaultQuestionConfig:', {
+    id: defaultQuestionConfig.id,
+    type: defaultQuestionConfig.type,
+    questionType: currentTaskDefinition.questionType,
+    currentTaskDefinitionId: currentTaskDefinition.id
+  });
+
   // Combinar configuración del frontend con props por defecto de la tarea
+  // Construir key combinada tipo+id para todas las preguntas
+  const combinedQuestionKey = defaultQuestionConfig.id && defaultQuestionConfig.type ? `${defaultQuestionConfig.id}_${defaultQuestionConfig.type}` : '';
+
+  console.log('🔍 [DIAGNÓSTICO CognitiveTaskView] Construyendo combinedQuestionKey:', {
+    id: defaultQuestionConfig.id,
+    type: defaultQuestionConfig.type,
+    combinedQuestionKey,
+    hasId: !!defaultQuestionConfig.id,
+    hasType: !!defaultQuestionConfig.type
+  });
+
   const taskProps = {
     ...currentTaskDefinition.props,
     config: defaultQuestionConfig,
@@ -172,8 +211,18 @@ const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, parti
     stepConfig: stepConfig,
     questionId: currentTaskDefinition.id,
     questionType: currentTaskDefinition.questionType,
-    questionKey: questionKey // NUEVO: Pasar questionKey del backend
+    questionKey: combinedQuestionKey // Usar key combinada siempre
   };
+
+  console.log('[CognitiveTaskView] Props que se pasan al componente:', {
+    ...taskProps,
+    onContinue: 'function',
+    onStepComplete: 'function',
+    isSubmitting: isSubmittingTask,
+    config: defaultQuestionConfig,
+    stepConfig: defaultQuestionConfig,
+    questionKey: combinedQuestionKey
+  });
 
   return (
     <div className="flex flex-col items-center justify-center w-full min-h-screen bg-white pt-10 pb-10">
@@ -194,7 +243,7 @@ const CognitiveTaskView: React.FC<CognitiveTaskViewProps> = ({ researchId, parti
         isSubmitting: isSubmittingTask,
         config: defaultQuestionConfig, // Compatibilidad legacy
         stepConfig: defaultQuestionConfig, // Compatibilidad nueva
-        questionKey: `${defaultQuestionConfig.type}_${currentTaskDefinition.id}` // Key combinada para el diccionario global
+        questionKey: combinedQuestionKey // Usar key combinada siempre
       })}
     </div>
   );

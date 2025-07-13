@@ -13,14 +13,14 @@ export const ShortTextView: React.FC<any> = (props) => {
     hasOnContinue: !!props.onContinue,
     hasSavedResponse: !!props.savedResponse,
     hasQuestionKey: !!props.questionKey,
-    allProps: Object.keys(props)
+    allProps: Object.keys(props),
+    questionKey: props.questionKey,
+    onStepComplete: !!props.onStepComplete,
+    onContinue: !!props.onContinue
   });
 
-  // Compatibilidad: aceptar config o stepConfig
   const config = props.stepConfig || props.config;
   const { onStepComplete, onContinue, savedResponse, questionKey } = props;
-
-  // Usar onStepComplete si está disponible, sino usar onContinue como fallback
   const callback = onStepComplete || onContinue;
 
   if (!config) {
@@ -28,17 +28,29 @@ export const ShortTextView: React.FC<any> = (props) => {
     return <div className="p-4 text-red-600">Error: Configuración no disponible.</div>;
   }
 
-  // Usar el questionKey que viene del flujo padre (NO construir localmente)
   const id = config?.id || '';
   const type = config?.type || 'cognitive_short_text';
-  const combinedKey = questionKey || `${type}_${id}`; // Usar questionKey del padre si está disponible
+  let combinedKey: string;
+  if (questionKey) {
+    combinedKey = questionKey;
+  } else {
+    combinedKey = `${type}_${id}`;
+    console.warn('[ShortTextView] ⚠️ questionKey no definido, usando fallback:', combinedKey);
+  }
+
+  console.log('🔍 [DIAGNÓSTICO ShortTextView] Construyendo combinedKey:', {
+    questionKey,
+    type,
+    id,
+    combinedKey,
+    fallbackKey: `${type}_${id}`
+  });
 
   const title = config?.title || 'Pregunta';
   const description = config?.description;
   const answerPlaceholder = config?.answerPlaceholder || '';
   const required = config?.required;
 
-  // Buscar la respuesta persistida directamente en el store Zustand (igual que CSATView)
   const allSteps = useParticipantStore(state => state.responsesData.modules.all_steps || []);
   const moduleResponse = allSteps.find(r => r.questionKey === combinedKey) || null;
   const extractSavedResponse = (resp: any): string | null => {
@@ -49,7 +61,6 @@ export const ShortTextView: React.FC<any> = (props) => {
   };
   const persistedResponse = extractSavedResponse(moduleResponse);
 
-  // Hook de persistencia igual que otros componentes corregidos
   const {
     responseData,
     isSaving,
@@ -58,19 +69,17 @@ export const ShortTextView: React.FC<any> = (props) => {
     saveCurrentStepResponse,
     hasExistingData
   } = useStepResponseManager<string>({
-    stepId: combinedKey, // Usar la key combinada
+    stepId: combinedKey,
     stepType: type,
     stepName: title,
     initialData: savedResponse as string | null | undefined,
-    questionKey: combinedKey // Usar la key combinada
+    questionKey: combinedKey
   });
 
-  // Estado local para el textarea (igual que CSATView)
   const [localValue, setLocalValue] = useState<string>(persistedResponse || '');
   const [localError, setLocalError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Sincronizar valor local con respuesta persistida (igual que CSATView)
   useEffect(() => {
     setLocalValue(persistedResponse || '');
   }, [persistedResponse, combinedKey]);

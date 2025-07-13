@@ -46,6 +46,9 @@ const CognitiveShortTextAdapter: React.FC<MappedStepComponentProps> = (props) =>
   const stepType = config.type || 'cognitive_short_text';
   const stepName = config.title || 'Pregunta corta';
 
+  // Construir questionKey combinado correcto
+  const combinedQuestionKey = config.id && stepType ? `${config.id}_${stepType}` : questionKey;
+
   // Usar useStepResponseManager igual que los componentes SmartVOC
   const {
     responseData,
@@ -55,11 +58,11 @@ const CognitiveShortTextAdapter: React.FC<MappedStepComponentProps> = (props) =>
     saveCurrentStepResponse,
     hasExistingData
   } = useStepResponseManager<string>({
-    stepId: questionKey || config.id,
+    stepId: combinedQuestionKey || config.id,
     stepType,
     stepName,
     initialData: savedResponse as string | null | undefined,
-    questionKey
+    questionKey: combinedQuestionKey
   });
 
   // Handler para cambio de valor
@@ -83,7 +86,7 @@ const CognitiveShortTextAdapter: React.FC<MappedStepComponentProps> = (props) =>
       value={typeof responseData === 'string' ? responseData : ''}
       onChange={handleChange}
       onContinue={handleSubmit}
-      questionKey={questionKey}
+      questionKey={combinedQuestionKey}
       isSubmitting={isSaving || isLoading}
       error={error as string | null}
       hasExistingData={hasExistingData}

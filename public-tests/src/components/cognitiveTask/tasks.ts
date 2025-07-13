@@ -10,7 +10,7 @@ import TransactionAuthTask from './TransactionAuthTask';
 
 // Mapeo dinámico de tipos de pregunta a componentes
 export const QUESTION_TYPE_COMPONENTS: Record<string, React.ComponentType<unknown>> = {
-  'short_text': ShortTextView as React.ComponentType<unknown>,
+  'cognitive_short_text': ShortTextView as React.ComponentType<unknown>,
   'cognitive_long_text': LongTextView as React.ComponentType<unknown>,
   'single_choice': SingleChoiceView as React.ComponentType<unknown>,
   'multiple_choice': MultiChoiceView as React.ComponentType<unknown>,
@@ -22,7 +22,7 @@ export const QUESTION_TYPE_COMPONENTS: Record<string, React.ComponentType<unknow
 
 // Props por defecto para cada tipo (opcional)
 export const DEFAULT_QUESTION_PROPS: Record<string, Record<string, unknown>> = {
-  'short_text': {
+  'cognitive_short_text': {
     placeholder: 'Escribe tu respuesta...',
     maxLength: 500
   },

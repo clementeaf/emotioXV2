@@ -21,6 +21,17 @@ const CognitiveQuestionRenderer: React.FC<CognitiveQuestionRendererProps> = ({
                     config={question}
                     value={typeof answer === 'string' ? answer : ''}
                     onChange={onChange as (questionId: string, value: string) => void}
+                    onStepComplete={(data: unknown) => {
+                        // Adapter para convertir desde MappedStepComponentProps a las props esperadas
+                        if (onChange && question.id) {
+                            onChange(question.id, data as string);
+                        }
+                    }}
+                    savedResponse={answer}
+                    questionKey={`${question.id}_${question.type}`} // NUEVO: Usar combinación id_tipo
+                    stepType={question.type}
+                    researchId=""
+                    participantId=""
                 />
             );
         case 'LONG_TEXT':
@@ -42,7 +53,7 @@ const CognitiveQuestionRenderer: React.FC<CognitiveQuestionRendererProps> = ({
                     }}
                     savedResponse={answer}
                     savedResponseId={undefined}
-                    questionKey={question.id} // NUEVO: Usar question.id como questionKey
+                    questionKey={`${question.id}_${question.type}`} // NUEVO: Usar combinación id_tipo
                 />
             );
         case 'SINGLE_CHOICE':
@@ -58,7 +69,7 @@ const CognitiveQuestionRenderer: React.FC<CognitiveQuestionRendererProps> = ({
                         }
                     }}
                     savedResponse={answer}
-                    questionKey={question.id} // NUEVO: Usar question.id como questionKey
+                    questionKey={`${question.id}_${question.type}`} // NUEVO: Usar combinación id_tipo
                     stepType={question.type}
                     researchId=""
                     participantId=""
@@ -77,7 +88,7 @@ const CognitiveQuestionRenderer: React.FC<CognitiveQuestionRendererProps> = ({
                         }
                     }}
                     savedResponse={answer}
-                    questionKey={question.id} // NUEVO: Usar question.id como questionKey
+                    questionKey={`${question.id}_${question.type}`} // NUEVO: Usar combinación id_tipo
                     stepType={question.type}
                     researchId=""
                     participantId=""
@@ -96,7 +107,7 @@ const CognitiveQuestionRenderer: React.FC<CognitiveQuestionRendererProps> = ({
                         }
                     }}
                     savedResponse={answer}
-                    questionKey={question.id} // NUEVO: Usar question.id como questionKey
+                    questionKey={`${question.id}_${question.type}`} // NUEVO: Usar combinación id_tipo
                     stepType={question.type}
                     researchId=""
                     participantId=""
