@@ -76,9 +76,15 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
   const imageRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
-    if (responseData) {
-      setLocalSelectedImageIndex(responseData.selectedImage || 0);
-      setLocalSelectedHitzone(responseData.selectedHitzone || null);
+    if (responseData && responseData.selectedHitzone && responseData.selectedImage !== undefined) {
+      setImageSelections(prev => ({
+        ...prev,
+        [responseData.selectedImage]: {
+          hitzoneId: responseData.selectedHitzone.id,
+          click: responseData.selectedHitzone.click
+        }
+      }));
+      setLocalSelectedImageIndex(responseData.selectedImage);
     }
   }, [responseData]);
 
