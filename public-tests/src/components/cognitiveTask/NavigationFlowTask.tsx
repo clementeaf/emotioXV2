@@ -176,38 +176,50 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
     <div className="flex flex-col items-center justify-center min-h-screen bg-white p-6">
       {/* MODAL para mostrar el hitzone y el punto del click */}
       {showClickModal && localSelectedHitzone && lastClickPosition && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-          <div className="bg-white rounded-lg shadow-lg p-6 relative max-w-md w-full">
-            <button
-              className="absolute top-2 right-2 text-gray-500 hover:text-gray-800"
-              onClick={() => setShowClickModal(false)}
-              aria-label="Cerrar modal"
-            >
-              ✕
-            </button>
-            <h2 className="text-lg font-bold mb-2">Detalle del click</h2>
-            <div className="mb-2 text-sm">
-              <strong>Hitzone ID:</strong> {localSelectedHitzone}
+        (() => {
+          // Buscar el hitzone seleccionado y sus dimensiones reales
+          const selectedHitzoneObj = availableHitzones.find(hz => hz.id === localSelectedHitzone);
+          const hitzoneWidth = selectedHitzoneObj?.originalCoords?.width || 1;
+          const hitzoneHeight = selectedHitzoneObj?.originalCoords?.height || 1;
+          const modalBoxSize = 200; // px
+          // Calcular la posición proporcional del punto
+          const px = (lastClickPosition.x / hitzoneWidth) * modalBoxSize;
+          const py = (lastClickPosition.y / hitzoneHeight) * modalBoxSize;
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+              <div className="bg-white rounded-lg shadow-lg p-6 relative max-w-md w-full">
+                <button
+                  className="absolute top-2 right-2 text-gray-500 hover:text-gray-800"
+                  onClick={() => setShowClickModal(false)}
+                  aria-label="Cerrar modal"
+                >
+                  ✕
+                </button>
+                <h2 className="text-lg font-bold mb-2">Detalle del click</h2>
+                <div className="mb-2 text-sm">
+                  <strong>Hitzone ID:</strong> {localSelectedHitzone}
+                </div>
+                <div className="mb-4 text-sm">
+                  <strong>Posición dentro del hitzone:</strong> x: {Math.round(lastClickPosition.x)}, y: {Math.round(lastClickPosition.y)}
+                </div>
+                {/* Visualización precisa del hitzone y el punto */}
+                <div className="relative border bg-gray-100 rounded overflow-hidden flex items-center justify-center" style={{ width: modalBoxSize, height: modalBoxSize }}>
+                  <div className="absolute left-0 top-0 w-full h-full border-2 border-blue-400 rounded" />
+                  <div
+                    className="absolute bg-red-600 rounded-full"
+                    style={{
+                      left: `calc(${px}px - 6px)`,
+                      top: `calc(${py}px - 6px)`,
+                      width: 12,
+                      height: 12
+                    }}
+                    title="Punto de click"
+                  />
+                </div>
+              </div>
             </div>
-            <div className="mb-4 text-sm">
-              <strong>Posición dentro del hitzone:</strong> x: {Math.round(lastClickPosition.x)}, y: {Math.round(lastClickPosition.y)}
-            </div>
-            {/* Visualización simple del hitzone y el punto */}
-            <div className="relative w-64 h-40 border bg-gray-100 rounded overflow-hidden flex items-center justify-center">
-              <div className="absolute left-0 top-0 w-full h-full border-2 border-blue-400 rounded" />
-              <div
-                className="absolute bg-red-600 rounded-full"
-                style={{
-                  left: `calc(${(lastClickPosition.x / 256) * 100}% - 6px)`, // 256 = w-64 px aprox
-                  top: `calc(${(lastClickPosition.y / 160) * 100}% - 6px)`, // 160 = h-40 px aprox
-                  width: 12,
-                  height: 12
-                }}
-                title="Punto de click"
-              />
-            </div>
-          </div>
-        </div>
+          );
+        })()
       )}
       <div className="w-full flex flex-col items-center">
         <div className="text-center mb-8">
