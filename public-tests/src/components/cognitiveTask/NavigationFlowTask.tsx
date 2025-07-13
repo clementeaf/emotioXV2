@@ -71,8 +71,8 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
   const [localSelectedHitzone, setLocalSelectedHitzone] = useState<string | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
   const [imageNaturalSize, setImageNaturalSize] = useState<{ width: number; height: number } | null>(null);
-  const [lastClickPosition, setLastClickPosition] = useState<ClickPosition | null>(null);
-  const [showClickModal, setShowClickModal] = useState(false);
+  const [imageSelections, setImageSelections] = useState<Record<number, { hitzoneId: string, click: ClickPosition }>>({});
+  // Modal eliminado, ya no se usa
   const imageRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
@@ -85,11 +85,13 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
   const images = imageFiles;
 
   const handleHitzoneClick = (hitzoneId: string, clickPos?: ClickPosition) => {
-    setLocalSelectedHitzone(hitzoneId);
     setLocalError(null);
     if (clickPos && typeof clickPos.hitzoneWidth === 'number' && typeof clickPos.hitzoneHeight === 'number') {
-      setLastClickPosition(clickPos);
-      setShowClickModal(true);
+      setImageSelections(prev => ({
+        ...prev,
+        [localSelectedImageIndex]: { hitzoneId, click: clickPos }
+      }));
+      // Modal eliminado, ya no se usa
     }
   };
 
@@ -102,21 +104,20 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
   };
 
   const handleSubmit = async () => {
-    if (!localSelectedHitzone) {
+    const selection = imageSelections[localSelectedImageIndex];
+    if (!selection) {
       setLocalError('Por favor, selecciona una zona interactiva.');
       return;
     }
-
     const responseData = {
       type: 'navigation_flow',
       selectedImage: localSelectedImageIndex,
       selectedHitzone: {
-        id: localSelectedHitzone,
-        click: lastClickPosition
+        id: selection.hitzoneId,
+        click: selection.click
       },
       timestamp: Date.now()
     };
-
     const result = await saveCurrentStepResponse(responseData);
     if (result.success && onStepComplete) {
       onStepComplete(responseData);
@@ -260,27 +261,28 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
                         }}
                         title={`Zona interactiva: ${hitzone.id}`}
                       >
-                        {localSelectedHitzone === hitzone.id && lastClickPosition && (
-                          (() => {
-                            // Mostrar el punto rojo en la posición exacta dentro del hitzone
-                            const px = (lastClickPosition.x / (lastClickPosition.hitzoneWidth || 1)) * width;
-                            const py = (lastClickPosition.y / (lastClickPosition.hitzoneHeight || 1)) * height;
-                            return (
-                              <div className="absolute left-0 top-0 w-full h-full pointer-events-none">
-                                <div
-                                  className="absolute bg-red-600 rounded-full border-2 border-white shadow"
-                                  style={{
-                                    left: `calc(${px}px - 6px)`,
-                                    top: `calc(${py}px - 6px)`,
-                                    width: 12,
-                                    height: 12
-                                  }}
-                                  title="Punto de click"
-                                />
-                              </div>
-                            );
-                          })()
-                        )}
+                        {(() => {
+                          const selection = imageSelections[localSelectedImageIndex];
+                          if (!selection) return null;
+                          if (selection.hitzoneId !== hitzone.id) return null;
+                          const { click } = selection;
+                          const px = (click.x / (click.hitzoneWidth || 1)) * width;
+                          const py = (click.y / (click.hitzoneHeight || 1)) * height;
+                          return (
+                            <div className="absolute left-0 top-0 w-full h-full pointer-events-none">
+                              <div
+                                className="absolute bg-red-600 rounded-full border-2 border-white shadow"
+                                style={{
+                                  left: `calc(${px}px - 6px)`,
+                                  top: `calc(${py}px - 6px)`,
+                                  width: 12,
+                                  height: 12
+                                }}
+                                title="Punto de click"
+                              />
+                            </div>
+                          );
+                        })()}
                       </div>
                     );
                   })}
@@ -318,6 +320,7 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
           </p>
         </div>
       </div>
+      {/* Modal eliminado */}
     </div>
   );
 };
