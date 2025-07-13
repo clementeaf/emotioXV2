@@ -18,9 +18,7 @@ const CognitiveQuestionRenderer: React.FC<CognitiveQuestionRendererProps> = ({
             return (
                 <ShortTextView
                     key={question.id}
-                    config={question}
-                    value={typeof answer === 'string' ? answer : ''}
-                    onChange={onChange as (questionId: string, value: string) => void}
+                    stepConfig={question}
                     onStepComplete={(data: unknown) => {
                         // Adapter para convertir desde MappedStepComponentProps a las props esperadas
                         if (onChange && question.id) {

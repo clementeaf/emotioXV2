@@ -1,66 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { useStepResponseManager } from '../../../hooks/useStepResponseManager';
-import { useParticipantStore } from '../../../stores/participantStore';
+import { MappedStepComponentProps } from '../../../types/flow.types';
 import FormSubmitButton from '../../common/FormSubmitButton';
 import TextAreaField from '../../common/TextAreaField';
 import QuestionHeader from '../common/QuestionHeader';
 
-export const ShortTextView: React.FC<any> = (props) => {
-  console.log('🔍 [DIAGNÓSTICO ShortTextView] Props recibidas:', {
-    hasStepConfig: !!props.stepConfig,
-    hasConfig: !!props.config,
-    hasOnStepComplete: !!props.onStepComplete,
-    hasOnContinue: !!props.onContinue,
-    hasSavedResponse: !!props.savedResponse,
-    hasQuestionKey: !!props.questionKey,
-    allProps: Object.keys(props),
-    questionKey: props.questionKey,
-    onStepComplete: !!props.onStepComplete,
-    onContinue: !!props.onContinue
-  });
+export const ShortTextView: React.FC<MappedStepComponentProps> = (props) => {
+  const { stepConfig, onStepComplete, savedResponse, questionKey } = props;
+  const config = stepConfig as any;
 
-  const config = props.stepConfig || props.config;
-  const { onStepComplete, onContinue, savedResponse, questionKey } = props;
-  const callback = onStepComplete || onContinue;
+  const id = questionKey || config.id || '';
+  const title = config.title || 'Pregunta';
+  const description = config.description;
+  const answerPlaceholder = config.answerPlaceholder || '';
+  const required = config.required;
 
-  if (!config) {
-    console.error('[ShortTextView] config/stepConfig es undefined');
-    return <div className="p-4 text-red-600">Error: Configuración no disponible.</div>;
-  }
-
-  const id = config?.id || '';
-  const type = config?.type || 'cognitive_short_text';
-  let combinedKey: string;
-  if (questionKey) {
-    combinedKey = questionKey;
-  } else {
-    combinedKey = `${type}_${id}`;
-    console.warn('[ShortTextView] ⚠️ questionKey no definido, usando fallback:', combinedKey);
-  }
-
-  console.log('🔍 [DIAGNÓSTICO ShortTextView] Construyendo combinedKey:', {
-    questionKey,
-    type,
-    id,
-    combinedKey,
-    fallbackKey: `${type}_${id}`
-  });
-
-  const title = config?.title || 'Pregunta';
-  const description = config?.description;
-  const answerPlaceholder = config?.answerPlaceholder || '';
-  const required = config?.required;
-
-  const allSteps = useParticipantStore(state => state.responsesData.modules.all_steps || []);
-  const moduleResponse = allSteps.find(r => r.questionKey === combinedKey) || null;
-  const extractSavedResponse = (resp: any): string | null => {
-    if (resp && typeof resp === 'object' && resp.response && typeof resp.response === 'string') {
-      return resp.response;
-    }
-    return null;
-  };
-  const persistedResponse = extractSavedResponse(moduleResponse);
-
+  // Hook de persistencia igual que LongTextView
   const {
     responseData,
     isSaving,
@@ -69,111 +24,72 @@ export const ShortTextView: React.FC<any> = (props) => {
     saveCurrentStepResponse,
     hasExistingData
   } = useStepResponseManager<string>({
-    stepId: combinedKey,
-    stepType: type,
+    stepId: id,
+    stepType: config.type || 'cognitive_short_text',
     stepName: title,
     initialData: savedResponse as string | null | undefined,
-    questionKey: combinedKey
+    questionKey: id
   });
 
-  const [localValue, setLocalValue] = useState<string>(persistedResponse || '');
+  // Estado local para el textarea
+  const [localValue, setLocalValue] = useState<string>(
+    typeof savedResponse === 'string' ? savedResponse : ''
+  );
   const [localError, setLocalError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Sincronizar valor local con respuesta persistida
   useEffect(() => {
-    setLocalValue(persistedResponse || '');
-  }, [persistedResponse, combinedKey]);
+    if (typeof savedResponse === 'string') {
+      setLocalValue(savedResponse);
+    } else {
+      setLocalValue('');
+    }
+  }, [savedResponse]);
 
-  const localHasExistingData = !!(persistedResponse !== null);
+  const localHasExistingData = typeof savedResponse === 'string' && savedResponse.trim() !== '';
+
+  if (!id) {
+    console.error('[ShortTextView] Configuración inválida (sin ID):', config);
+    return <div className="p-4 text-red-600">Error: Pregunta mal configurada.</div>;
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setLocalValue(e.target.value);
+    setLocalError(null);
+  };
 
   const handleSubmit = async () => {
-    console.log('🔍 [DIAGNÓSTICO ShortTextView] handleSubmit iniciado');
-
     if (required && !localValue.trim()) {
       setLocalError('Por favor, escribe una respuesta.');
       return;
     }
-
-    setIsSubmitting(true);
-    setLocalError(null);
-
-    try {
-      const responseData = {
-        response: localValue,
-        questionKey: combinedKey,
-        stepType: type,
-        stepTitle: title || 'Pregunta de texto corto',
-        stepId: id,
-        timestamp: Date.now()
-      };
-
-      console.log('🔍 [DIAGNÓSTICO ShortTextView] Llamando saveCurrentStepResponse con:', localValue);
-
-      const result = await saveCurrentStepResponse(localValue);
-
-      console.log('🔍 [DIAGNÓSTICO ShortTextView] Resultado de saveCurrentStepResponse:', result);
-
-      console.log('🔍 [DIAGNÓSTICO ShortTextView] Verificando callback:', {
-        resultSuccess: result.success,
-        hasOnStepComplete: !!onStepComplete,
-        hasOnContinue: !!onContinue,
-        hasCallback: !!callback,
-        callbackType: typeof callback
-      });
-
-      if (result.success && callback) {
-        console.log('🔍 [DIAGNÓSTICO ShortTextView] Llamando callback con:', responseData);
-        console.log('🔍 [DIAGNÓSTICO ShortTextView] Callback es:', callback.toString().substring(0, 100));
-        callback(responseData);
-        console.log('✅ [DIAGNÓSTICO ShortTextView] callback ejecutado');
-      } else {
-        console.warn('⚠️ [DIAGNÓSTICO ShortTextView] No se llamó callback:', {
-          resultSuccess: result.success,
-          hasCallback: !!callback
-        });
-      }
-    } catch (e) {
-      console.error('❌ [DIAGNÓSTICO ShortTextView] Error en handleSubmit:', e);
-      setLocalError('Error guardando la respuesta. Por favor, intenta de nuevo.');
-    } finally {
-      setIsSubmitting(false);
+    const result = await saveCurrentStepResponse(localValue);
+    if (result.success && onStepComplete) {
+      onStepComplete(localValue);
     }
   };
 
-  const handleChange = (value: string) => {
-    setLocalValue(value);
-    setLocalError(null);
-  };
-
-  if (isLoading) {
-    return <div className="p-4">Cargando...</div>;
-  }
-
   return (
-    <div className="space-y-4">
-      <QuestionHeader
-        title={title}
-        instructions={description}
-        required={required}
-      />
-
+    <div className="max-w-xl mx-auto">
+      <QuestionHeader title={title} instructions={description} required={required} />
       <TextAreaField
         id={`short-text-${id}`}
-        label={title || 'Respuesta'}
-        value={localValue}
-        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleChange(e.target.value)}
+        name={`short-text-${id}`}
+        label={title}
+        value={typeof localValue === 'string' ? localValue : ''}
+        onChange={handleChange}
         placeholder={answerPlaceholder}
-        error={localError || error || undefined}
-        disabled={isSaving || isSubmitting}
+        disabled={isSaving || isLoading}
+        required={required}
       />
-
+      {(localError || error) && (
+        <div className="text-red-600 text-sm mt-2">{localError || error}</div>
+      )}
       <FormSubmitButton
-        onClick={handleSubmit}
-        isSaving={isSaving || isSubmitting}
+        isSaving={!!isSaving || !!isLoading}
         hasExistingData={localHasExistingData}
-        disabled={required && !localValue.trim()}
-        customCreateText="Guardar y continuar"
-        customUpdateText="Actualizar y continuar"
+        onClick={handleSubmit}
+        disabled={isSaving || isLoading || (required && !localValue.trim())}
       />
     </div>
   );

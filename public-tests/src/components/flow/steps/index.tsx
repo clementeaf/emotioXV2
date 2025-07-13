@@ -82,14 +82,13 @@ const CognitiveShortTextAdapter: React.FC<MappedStepComponentProps> = (props) =>
 
   return (
     <ShortTextView
-      config={config}
-      value={typeof responseData === 'string' ? responseData : ''}
-      onChange={handleChange}
-      onContinue={handleSubmit}
+      stepConfig={config}
+      onStepComplete={onStepComplete}
+      savedResponse={responseData}
       questionKey={combinedQuestionKey}
-      isSubmitting={isSaving || isLoading}
-      error={error as string | null}
-      hasExistingData={hasExistingData}
+      stepType={stepType}
+      researchId=""
+      participantId=""
     />
   );
 };
