@@ -45,7 +45,9 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
       ? stepConfig.questions[0]
       : stepConfig;
 
-  const id = questionKey || navigationQuestion.id || '';
+  const id = navigationQuestion.id || '';
+  const type = navigationQuestion.type || 'cognitive_navigation_flow';
+  const qKey = questionKey || `${id}_${type}`;
   const title = navigationQuestion.title || 'Flujo de Navegación';
   const description = navigationQuestion.description || '¿En cuál de las siguientes pantallas encuentras el objetivo indicado?';
   const imageFiles = navigationQuestion.files || [];
@@ -59,10 +61,10 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
     hasExistingData
   } = useStepResponseManager<any>({
     stepId: id,
-    stepType: navigationQuestion.type === 'cognitive_navigation_flow' || navigationQuestion.type === 'navigation_flow' ? navigationQuestion.type : 'cognitive_navigation_flow',
+    stepType: type,
     stepName: title,
     initialData: savedResponse,
-    questionKey: id
+    questionKey: qKey
   });
 
   const [localSelectedImageIndex, setLocalSelectedImageIndex] = useState<number>(0);
