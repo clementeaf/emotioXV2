@@ -45,9 +45,9 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
       ? stepConfig.questions[0]
       : stepConfig;
 
-  const id = navigationQuestion.id || '';
-  const type = navigationQuestion.type || 'cognitive_navigation_flow';
-  const qKey = questionKey || `${id}_${type}`;
+  const id = String(navigationQuestion.id || '').trim();
+  const type = String(navigationQuestion.type || 'cognitive_navigation_flow').trim();
+  const qKey = String(questionKey || `${id}_${type}`).trim();
   const title = navigationQuestion.title || 'Flujo de Navegación';
   const description = navigationQuestion.description || '¿En cuál de las siguientes pantallas encuentras el objetivo indicado?';
   const imageFiles = navigationQuestion.files || [];
@@ -76,7 +76,23 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
   const imageRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
-    if (responseData && responseData.selectedHitzone && responseData.selectedImage !== undefined) {
+    if (responseData && Array.isArray(responseData.selectedImages)) {
+      // Restaurar todas las selecciones
+      const restored: Record<number, { hitzoneId: string, click: ClickPosition }> = {};
+      responseData.selectedImages.forEach((img: any) => {
+        if (img && typeof img.imageIndex === 'number' && img.selectedHitzone) {
+          restored[img.imageIndex] = {
+            hitzoneId: img.selectedHitzone.id,
+            click: img.selectedHitzone.click
+          };
+        }
+      });
+      setImageSelections(restored);
+      // Opcional: posicionar en la primera imagen con selección
+      const firstSelected = responseData.selectedImages.find((img: any) => img && typeof img.imageIndex === 'number');
+      if (firstSelected) setLocalSelectedImageIndex(firstSelected.imageIndex);
+    } else if (responseData && responseData.selectedHitzone && responseData.selectedImage !== undefined) {
+      // Compatibilidad retro: solo una imagen
       setImageSelections(prev => ({
         ...prev,
         [responseData.selectedImage]: {
@@ -110,18 +126,27 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
   };
 
   const handleSubmit = async () => {
-    const selection = imageSelections[localSelectedImageIndex];
-    if (!selection) {
-      setLocalError('Por favor, selecciona una zona interactiva.');
+    // DEBUG: log de valores clave para depuración de questionKey
+    console.log('[DEBUG NavigationFlowTask] handleSubmit', {
+      stepId: id,
+      stepType: type,
+      questionKey: qKey
+    });
+    // Construir array de selecciones
+    const selectedImages = Object.entries(imageSelections).map(([imageIndex, sel]) => ({
+      imageIndex: Number(imageIndex),
+      selectedHitzone: {
+        id: sel.hitzoneId,
+        click: sel.click
+      }
+    }));
+    if (selectedImages.length === 0) {
+      setLocalError('Por favor, selecciona al menos una zona interactiva.');
       return;
     }
     const responseData = {
       type: 'navigation_flow',
-      selectedImage: localSelectedImageIndex,
-      selectedHitzone: {
-        id: selection.hitzoneId,
-        click: selection.click
-      },
+      selectedImages,
       timestamp: Date.now()
     };
     const result = await saveCurrentStepResponse(responseData);
@@ -316,7 +341,7 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
             isSaving={!!isSaving || !!isLoading}
             hasExistingData={!!hasExistingData}
             onClick={handleSubmit}
-            disabled={isSaving || isLoading || !imageSelections[localSelectedImageIndex]}
+            disabled={isSaving || isLoading || Object.keys(imageSelections).length === 0}
           />
         </div>
 
