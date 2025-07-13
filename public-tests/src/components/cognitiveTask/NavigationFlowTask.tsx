@@ -3,6 +3,8 @@ import { useStepResponseManager } from '../../hooks/useStepResponseManager';
 import { MappedStepComponentProps } from '../../types/flow.types';
 import FormSubmitButton from '../common/FormSubmitButton';
 
+type ClickPosition = { x: number; y: number; hitzoneWidth: number; hitzoneHeight: number };
+
 const convertHitZonesToPercentageCoordinates = (hitZones: any[], imageNaturalSize?: { width: number; height: number }) => {
   if (!hitZones || !Array.isArray(hitZones) || hitZones.length === 0) {
     return [];
@@ -67,7 +69,7 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
   const [localSelectedHitzone, setLocalSelectedHitzone] = useState<string | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
   const [imageNaturalSize, setImageNaturalSize] = useState<{ width: number; height: number } | null>(null);
-  const [lastClickPosition, setLastClickPosition] = useState<{ x: number; y: number } | null>(null);
+  const [lastClickPosition, setLastClickPosition] = useState<ClickPosition | null>(null);
   const [showClickModal, setShowClickModal] = useState(false);
   const imageRef = useRef<HTMLImageElement>(null);
 
@@ -86,10 +88,10 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
     setLocalError(null);
   };
 
-  const handleHitzoneClick = (hitzoneId: string, clickPos?: { x: number; y: number }) => {
+  const handleHitzoneClick = (hitzoneId: string, clickPos?: ClickPosition) => {
     setLocalSelectedHitzone(hitzoneId);
     setLocalError(null);
-    if (clickPos) {
+    if (clickPos && typeof clickPos.hitzoneWidth === 'number' && typeof clickPos.hitzoneHeight === 'number') {
       setLastClickPosition(clickPos);
       setShowClickModal(true);
     }
@@ -168,10 +170,11 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
       {showClickModal && localSelectedHitzone && lastClickPosition && (
         (() => {
           const selectedHitzoneObj = availableHitzones.find(hz => hz.id === localSelectedHitzone);
-          const hitzoneWidth = selectedHitzoneObj?.originalCoords?.width || 1;
-          const hitzoneHeight = selectedHitzoneObj?.originalCoords?.height || 1;
+          const hitzoneWidth = lastClickPosition.hitzoneWidth || 1;
+          const hitzoneHeight = lastClickPosition.hitzoneHeight || 1;
           const modalBoxWidth = 220;
           const modalBoxHeight = Math.round((hitzoneHeight / hitzoneWidth) * modalBoxWidth) || 120;
+          // Calcular la posición proporcional del punto
           const px = (lastClickPosition.x / hitzoneWidth) * modalBoxWidth;
           const py = (lastClickPosition.y / hitzoneHeight) * modalBoxHeight;
           return (
@@ -288,14 +291,19 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
                         }}
                         onClick={e => {
                           e.stopPropagation();
+                          // 1. Posición del click respecto a la imagen
                           const imgRect = imageRef.current?.getBoundingClientRect();
                           const clickX = e.clientX - (imgRect?.left ?? 0);
                           const clickY = e.clientY - (imgRect?.top ?? 0);
+                          // 2. Posición del hitzone dentro de la imagen renderizada
                           const left = offsetX + (hitzone.originalCoords?.x ?? 0) * (drawWidth / imageNaturalSize.width);
                           const top = offsetY + (hitzone.originalCoords?.y ?? 0) * (drawHeight / imageNaturalSize.height);
-                          const relX = ((clickX - left) / (drawWidth / imageNaturalSize.width)) * (imageNaturalSize.width / imageNaturalSize.width) * (hitzone.originalCoords?.width ?? 1);
-                          const relY = ((clickY - top) / (drawHeight / imageNaturalSize.height)) * (imageNaturalSize.height / imageNaturalSize.height) * (hitzone.originalCoords?.height ?? 1);
-                          handleHitzoneClick(hitzone.id, { x: relX, y: relY });
+                          const width = (hitzone.originalCoords?.width ?? 0) * (drawWidth / imageNaturalSize.width);
+                          const height = (hitzone.originalCoords?.height ?? 0) * (drawHeight / imageNaturalSize.height);
+                          // 3. Posición relativa al hitzone (en píxeles dentro del hitzone renderizado)
+                          const relX = clickX - left;
+                          const relY = clickY - top;
+                          handleHitzoneClick(hitzone.id, { x: relX, y: relY, hitzoneWidth: width, hitzoneHeight: height });
                         }}
                         title={`Zona interactiva: ${hitzone.id}`}
                       >
