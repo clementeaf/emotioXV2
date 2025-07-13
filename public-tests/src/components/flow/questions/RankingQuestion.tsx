@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useStepResponseManager } from "../../../hooks/useStepResponseManager";
 import { MappedStepComponentProps } from "../../../types/flow.types";
 import FormSubmitButton from "../../common/FormSubmitButton";
@@ -14,6 +14,11 @@ export const RankingQuestion: React.FC<MappedStepComponentProps> = (props) => {
   const questionText = config.questionText || '¿Cuál es tu orden de preferencia?';
   const required = config.required;
 
+  // Separar correctamente stepId, stepType y questionKey
+  const stepId = config.id || '';
+  const stepType = config.type || 'cognitive_ranking';
+  const qKey = questionKey || `${stepId}_${stepType}`;
+
   const {
     responseData,
     isSaving,
@@ -22,11 +27,11 @@ export const RankingQuestion: React.FC<MappedStepComponentProps> = (props) => {
     saveCurrentStepResponse,
     hasExistingData
   } = useStepResponseManager<string[]>({
-    stepId: id,
-    stepType: config.type || 'cognitive_ranking',
+    stepId,
+    stepType,
     stepName: title,
     initialData: savedResponse as string[] | null | undefined,
-    questionKey: id
+    questionKey: qKey
   });
 
   // Extraer items de configuración
@@ -45,6 +50,13 @@ export const RankingQuestion: React.FC<MappedStepComponentProps> = (props) => {
   // Estado local para los items rankeados (solo inicializar una vez)
   const [rankedItems, setRankedItems] = useState<string[]>(itemsFromConfig);
   const [localError, setLocalError] = useState<string | null>(null);
+
+  // Sincronizar rankedItems con responseData si es un array válido
+  useEffect(() => {
+    if (Array.isArray(responseData) && responseData.length > 0) {
+      setRankedItems(responseData);
+    }
+  }, [responseData]);
 
   // Eliminar el useEffect de sincronización para NO sobrescribir el estado local
 
@@ -108,7 +120,7 @@ export const RankingQuestion: React.FC<MappedStepComponentProps> = (props) => {
 
       <FormSubmitButton
         isSaving={!!isSaving || !!isLoading}
-        hasExistingData={!!hasExistingData}
+        hasExistingData={!!(Array.isArray(responseData) && responseData.length > 0)}
         onClick={handleSubmit}
         disabled={isSaving || isLoading || (required && rankedItems.length === 0)}
       />

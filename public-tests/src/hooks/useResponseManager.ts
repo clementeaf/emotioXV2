@@ -109,7 +109,7 @@ export const useResponseManager = ({
         const parts = questionKey.split('_');
         if (parts.length < 2) return false;
         const stepId = parts[0];
-        const stepType = parts[1];
+        const stepType = parts[parts.length - 1]; // Usa la última parte como tipo
         return stepId === expectedStepId && stepType === expectedStepType;
     }, []);
 
