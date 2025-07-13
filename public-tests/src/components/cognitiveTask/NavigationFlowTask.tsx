@@ -341,7 +341,7 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
             isSaving={!!isSaving || !!isLoading}
             hasExistingData={!!hasExistingData}
             onClick={handleSubmit}
-            disabled={isSaving || isLoading || Object.keys(imageSelections).length === 0}
+            disabled={isSaving || isLoading}
           />
         </div>
 

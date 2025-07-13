@@ -291,7 +291,7 @@ export function useStandardizedForm<T>(
         return { success: false, error: finalError, data: null };
       }
 
-      if (result && typeof result === 'object' && 'id' in result && !responseId) {
+      if (result && typeof result === 'object' && 'id' in result) {
         const newId = (result as { id: string }).id;
         setResponseId(newId);
         setHasExistingData(true);

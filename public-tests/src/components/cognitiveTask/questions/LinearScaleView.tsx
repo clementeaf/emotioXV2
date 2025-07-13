@@ -93,7 +93,7 @@ export const LinearScaleView: React.FC<MappedStepComponentProps> = (props) => {
         isSaving={!!isSaving || !!isLoading}
         hasExistingData={!!hasExistingData}
         onClick={handleSubmit}
-        disabled={isSaving || isLoading || (required && localValue === undefined)}
+        disabled={isSaving || isLoading}
       />
     </div>
   );

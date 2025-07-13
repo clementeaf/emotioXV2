@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ShortTextViewProps as BaseShortTextViewProps } from '../../../types';
 import FormSubmitButton from '../../common/FormSubmitButton';
 import TextAreaField from '../../common/TextAreaField';
@@ -17,8 +17,18 @@ export const ShortTextView: React.FC<ShortTextViewProps> = ({ config, value, onC
   const answerPlaceholder = config.answerPlaceholder;
   const required = config.required;
 
+  // Estado local para el textarea
   const [localValue, setLocalValue] = useState(value || '');
   const [localError, setLocalError] = useState<string | null>(null);
+
+  // Sincronizar valor local con respuesta persistida
+  useEffect(() => {
+    if (typeof value === 'string') {
+      setLocalValue(value);
+    } else {
+      setLocalValue('');
+    }
+  }, [value]);
 
   if (!id) {
     console.error('[ShortTextView] Configuración inválida (sin ID):', config);
@@ -42,7 +52,7 @@ export const ShortTextView: React.FC<ShortTextViewProps> = ({ config, value, onC
     }
   };
 
-  const showHasExistingData = typeof hasExistingData === 'boolean' ? hasExistingData : !!(value && value.trim());
+  const localHasExistingData = typeof value === 'string' && value.trim() !== '';
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
@@ -66,7 +76,7 @@ export const ShortTextView: React.FC<ShortTextViewProps> = ({ config, value, onC
       )}
       <FormSubmitButton
         isSaving={!!isSubmitting}
-        hasExistingData={!!showHasExistingData}
+        hasExistingData={localHasExistingData}
         onClick={handleSubmit}
         disabled={isSubmitting || (required && !localValue.trim())}
       />

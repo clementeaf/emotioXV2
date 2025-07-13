@@ -120,9 +120,9 @@ export const RankingQuestion: React.FC<MappedStepComponentProps> = (props) => {
 
       <FormSubmitButton
         isSaving={!!isSaving || !!isLoading}
-        hasExistingData={!!(Array.isArray(responseData) && responseData.length > 0)}
+        hasExistingData={!!hasExistingData}
         onClick={handleSubmit}
-        disabled={isSaving || isLoading || (required && rankedItems.length === 0)}
+        disabled={isSaving || isLoading}
       />
     </div>
   );

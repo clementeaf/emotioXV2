@@ -85,7 +85,7 @@ export const MultiChoiceView: React.FC<MappedStepComponentProps> = (props) => {
         isSaving={!!isSaving || !!isLoading}
         hasExistingData={!!hasExistingData}
         onClick={handleSubmit}
-        disabled={isSaving || isLoading || (required && localValue.length === 0)}
+        disabled={isSaving || isLoading || (required && !localValue.length)}
       />
     </div>
   );

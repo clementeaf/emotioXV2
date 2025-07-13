@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useStepResponseManager } from '../../hooks/useStepResponseManager';
 import { MappedStepComponentProps } from '../../types/flow.types';
+import FormSubmitButton from '../common/FormSubmitButton';
 
 interface PreferenceFile {
   id: string;
@@ -113,6 +114,7 @@ const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({ stepConfig, onS
   };
 
   // NUEVO: Usar useStepResponseManager para guardar en backend
+  const id = questionKey || (config && config.id) || '';
   const {
     responseData: savedResponseData,
     isSaving,
@@ -121,11 +123,11 @@ const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({ stepConfig, onS
     saveCurrentStepResponse,
     hasExistingData
   } = useStepResponseManager<any>({
-    stepId: questionKey || config?.id || 'preference-test',
-    stepType: 'preference_test',
+    stepId: id,
+    stepType: 'cognitive_preference_test',
     stepName: 'Prueba de Preferencia',
     initialData: savedResponse,
-    questionKey
+    questionKey: questionKey
   });
 
   const handleContinue = async () => {
@@ -392,12 +394,12 @@ const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({ stepConfig, onS
 
         {/* Continue button */}
         <div className="text-center">
-          <button
+          <FormSubmitButton
+            isSaving={!!isSaving || !!isLoading}
+            hasExistingData={!!hasExistingData}
             onClick={handleContinue}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-8 rounded-lg transition-colors shadow-sm disabled:opacity-50"
-          >
-            {hasBeenSaved ? 'Actualizar y continuar' : 'Guardar y continuar'}
-          </button>
+            disabled={isSaving || isLoading || !selectedImageId}
+          />
         </div>
       </div>
     </div>
