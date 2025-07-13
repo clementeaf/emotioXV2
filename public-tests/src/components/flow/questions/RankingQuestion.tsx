@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useStepResponseManager } from "../../../hooks/useStepResponseManager";
 import { MappedStepComponentProps } from "../../../types/flow.types";
 import FormSubmitButton from "../../common/FormSubmitButton";
@@ -42,14 +42,11 @@ export const RankingQuestion: React.FC<MappedStepComponentProps> = (props) => {
     return [];
   }, [config.options, config.choices]);
 
-  // Estado local para los items rankeados
-  const [rankedItems, setRankedItems] = useState<string[]>(responseData || itemsFromConfig);
+  // Estado local para los items rankeados (solo inicializar una vez)
+  const [rankedItems, setRankedItems] = useState<string[]>(itemsFromConfig);
   const [localError, setLocalError] = useState<string | null>(null);
 
-  // Sincronizar valor local con respuesta persistida
-  useEffect(() => {
-    setRankedItems(responseData || itemsFromConfig);
-  }, [responseData, itemsFromConfig]);
+  // Eliminar el useEffect de sincronización para NO sobrescribir el estado local
 
   if (!id) {
     console.error('[RankingQuestion] Configuración inválida (sin ID):', config);
@@ -97,7 +94,7 @@ export const RankingQuestion: React.FC<MappedStepComponentProps> = (props) => {
       />
 
       <RankingList
-        items={itemsFromConfig}
+        items={rankedItems}
         onMoveUp={moveItemUp}
         onMoveDown={moveItemDown}
         isSaving={isSaving}

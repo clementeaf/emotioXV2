@@ -101,12 +101,15 @@ export const useResponseManager = ({
 
     // NUEVO: Función para validar questionKey
     const validateQuestionKey = useCallback((questionKey: string, expectedStepId: string, expectedStepType: string): boolean => {
+        // Si el questionKey es exactamente el id del backend, es válido
+        if (questionKey === expectedStepId) return true;
+        // Si el questionKey es un string largo (ej: uuid), también lo aceptamos
+        if (questionKey.length > 20 && !questionKey.includes('_')) return true;
+        // Si es formato compuesto, validar partes
         const parts = questionKey.split('_');
         if (parts.length < 2) return false;
-
         const stepId = parts[0];
         const stepType = parts[1];
-
         return stepId === expectedStepId && stepType === expectedStepType;
     }, []);
 
