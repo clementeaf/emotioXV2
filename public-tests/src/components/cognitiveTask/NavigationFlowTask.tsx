@@ -82,12 +82,6 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
 
   const images = imageFiles;
 
-  const handleImageClick = (imageIndex: number) => {
-    setLocalSelectedImageIndex(imageIndex);
-    setLocalSelectedHitzone(null);
-    setLocalError(null);
-  };
-
   const handleHitzoneClick = (hitzoneId: string, clickPos?: ClickPosition) => {
     setLocalSelectedHitzone(hitzoneId);
     setLocalError(null);
@@ -114,8 +108,10 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
     const responseData = {
       type: 'navigation_flow',
       selectedImage: localSelectedImageIndex,
-      selectedHitzone: localSelectedHitzone,
-      clickPosition: lastClickPosition,
+      selectedHitzone: {
+        id: localSelectedHitzone,
+        click: lastClickPosition
+      },
       timestamp: Date.now()
     };
 
@@ -167,51 +163,6 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
 
   return (
     <div className="flex flex-col bg-white p-6">
-      {showClickModal && localSelectedHitzone && lastClickPosition && (
-        (() => {
-          const selectedHitzoneObj = availableHitzones.find(hz => hz.id === localSelectedHitzone);
-          const hitzoneWidth = lastClickPosition.hitzoneWidth || 1;
-          const hitzoneHeight = lastClickPosition.hitzoneHeight || 1;
-          const modalBoxWidth = 220;
-          const modalBoxHeight = Math.round((hitzoneHeight / hitzoneWidth) * modalBoxWidth) || 120;
-          // Calcular la posición proporcional del punto
-          const px = (lastClickPosition.x / hitzoneWidth) * modalBoxWidth;
-          const py = (lastClickPosition.y / hitzoneHeight) * modalBoxHeight;
-          return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-              <div className="bg-white rounded-lg shadow-lg p-6 relative max-w-md w-full">
-                <button
-                  className="absolute top-2 right-2 text-gray-500 hover:text-gray-800"
-                  onClick={() => setShowClickModal(false)}
-                  aria-label="Cerrar modal"
-                >
-                  ✕
-                </button>
-                <h2 className="text-lg font-bold mb-2">Detalle del click</h2>
-                <div className="mb-2 text-sm">
-                  <strong>Hitzone ID:</strong> {localSelectedHitzone}
-                </div>
-                <div className="mb-4 text-sm">
-                  <strong>Posición dentro del hitzone:</strong> x: {Math.round(lastClickPosition.x)}, y: {Math.round(lastClickPosition.y)}
-                </div>
-                <div className="relative border bg-gray-100 rounded overflow-hidden flex items-center justify-center" style={{ width: modalBoxWidth, height: modalBoxHeight }}>
-                  <div className="absolute left-0 top-0 w-full h-full border-2 border-blue-400 rounded" />
-                  <div
-                    className="absolute bg-red-600 rounded-full"
-                    style={{
-                      left: `calc(${px}px - 6px)`,
-                      top: `calc(${py}px - 6px)`,
-                      width: 12,
-                      height: 12
-                    }}
-                    title="Punto de click"
-                  />
-                </div>
-              </div>
-            </div>
-          );
-        })()
-      )}
       <div className="w-full flex flex-col items-center">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-gray-800 mb-4">
@@ -307,12 +258,26 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
                         }}
                         title={`Zona interactiva: ${hitzone.id}`}
                       >
-                        {localSelectedHitzone === hitzone.id && (
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="bg-green-600 text-white text-xs px-2 py-1 rounded-full font-medium">
-                              ✓ Seleccionado
-                            </div>
-                          </div>
+                        {localSelectedHitzone === hitzone.id && lastClickPosition && (
+                          (() => {
+                            // Mostrar el punto rojo en la posición exacta dentro del hitzone
+                            const px = (lastClickPosition.x / (lastClickPosition.hitzoneWidth || 1)) * width;
+                            const py = (lastClickPosition.y / (lastClickPosition.hitzoneHeight || 1)) * height;
+                            return (
+                              <div className="absolute left-0 top-0 w-full h-full pointer-events-none">
+                                <div
+                                  className="absolute bg-red-600 rounded-full border-2 border-white shadow"
+                                  style={{
+                                    left: `calc(${px}px - 6px)`,
+                                    top: `calc(${py}px - 6px)`,
+                                    width: 12,
+                                    height: 12
+                                  }}
+                                  title="Punto de click"
+                                />
+                              </div>
+                            );
+                          })()
                         )}
                       </div>
                     );
