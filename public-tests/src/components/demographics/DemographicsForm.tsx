@@ -3,9 +3,9 @@ import { useModuleResponses } from '../../hooks/useModuleResponses';
 import { useStepResponseManager } from '../../hooks/useStepResponseManager';
 import { useParticipantStore } from '../../stores/participantStore';
 import {
-    DemographicResponses,
-    EDUCATION_OPTIONS,
-    GENDER_OPTIONS
+  DemographicResponses,
+  EDUCATION_OPTIONS,
+  GENDER_OPTIONS
 } from '../../types/demographics';
 import FormSubmitButton from '../common/FormSubmitButton';
 import { DemographicQuestion } from './DemographicQuestion';
@@ -31,22 +31,33 @@ const labelTranslations: Record<string, string> = {
 
 // Extraer respuesta previa plana del array si es necesario
 function extractDemographicInitialValues(initialValues: any): DemographicResponses {
-  // Si es un array, buscar la respuesta demográfica
+  if (initialValues && typeof initialValues === 'object' && !Array.isArray(initialValues)) {
+
+    const hasDemographicFields = Object.keys(initialValues).some(key =>
+      ['age', 'gender', 'education', 'educationLevel', 'occupation', 'income', 'householdIncome', 'location', 'ethnicity', 'language', 'country', 'employmentStatus', 'dailyHoursOnline', 'technicalProficiency'].includes(key)
+    );
+
+    if (hasDemographicFields) {
+      return initialValues;
+    }
+  }
+
   if (Array.isArray(initialValues) && initialValues.length > 0) {
-    // Buscar el primer objeto que tenga stepType 'demographic' y campo 'response'
     const found = initialValues.find((r) => r && typeof r === 'object' && r.stepType === 'demographic' && 'response' in r);
     if (found && typeof found.response === 'object') {
       return found.response;
     }
-    // Fallback: buscar el primer objeto que tenga un campo 'response'
+
     const fallback = initialValues.find((r) => r && typeof r === 'object' && 'response' in r);
     if (fallback && typeof fallback.response === 'object') {
       return fallback.response;
     }
   }
+
   if (initialValues && typeof initialValues === 'object' && 'response' in initialValues) {
     return initialValues.response;
   }
+
   return initialValues || {};
 }
 
@@ -69,6 +80,10 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [isSubmittingToServer, setIsSubmittingToServer] = useState(false);
 
+  useEffect(() => {
+    setFormFieldResponses(demographicInitialValues);
+  }, [demographicInitialValues]);
+
   const {
     responseData,
     isLoading,
@@ -84,25 +99,15 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
   });
 
   useEffect(() => {
-    if (responseData && Object.keys(responseData).length > 0) {
-      setFormFieldResponses(prev => ({
-        ...responseData,
-        ...prev
-      }));
-    } else if (demographicInitialValues && Object.keys(demographicInitialValues).length > 0) {
-      setFormFieldResponses(prev => ({
-        ...demographicInitialValues,
-        ...prev
-      }));
+    if (demographicInitialValues && Object.keys(demographicInitialValues).length > 0) {
+      setFormFieldResponses(demographicInitialValues);
+    } else if (responseData && Object.keys(responseData).length > 0) {
+      setFormFieldResponses(responseData);
     }
     // eslint-disable-next-line
   }, [responseData, demographicInitialValues]);
 
-  // Determinar si hay datos existentes correctamente
-  const hasExistingData = !!(
-    (responseData && Object.keys(responseData).length > 0) ||
-    (demographicInitialValues && Object.keys(demographicInitialValues).length > 0)
-  );
+  const hasExistingData = initialValues && Object.keys(initialValues).length > 0;
 
   if (!config || !config.questions) {
     return (
@@ -195,7 +200,7 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
     });
 
   return (
-    <div className="w-full max-w-lg mx-auto bg-white p-6 sm:rounded-lg sm:shadow-md">
+    <div className="w-full max-w-lg mx-auto p-6">
       <h2 className="text-2xl font-bold text-center text-gray-800 mb-4">{config?.title || 'Preguntas Demográficas'}</h2>
       {config?.description && (
         <p className="text-gray-600 text-center mb-6">{config.description}</p>
@@ -205,13 +210,20 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
           <p className="text-sm">Error: {stepResponseError}</p>
         </div>
       )}
+      {/* LOG DE DEPURACIÓN DEL RENDER */}
+      <div style={{display: 'none'}}>
+        <p>formFieldResponses: {JSON.stringify(formFieldResponses)}</p>
+        <p>demographicInitialValues: {JSON.stringify(demographicInitialValues)}</p>
+      </div>
       <form onSubmit={handleSubmit}>
-        {enabledQuestions.map(({ key, config: adaptedQuestionConfig }) => (
-          <div key={key} className={formErrors[key] ? 'has-error' : ''}>
-            <DemographicQuestion config={adaptedQuestionConfig} value={formFieldResponses[key] as string | number | boolean | undefined} onChange={handleChange} />
-            {formErrors[key] && <p className="text-red-500 text-xs mt-1">{formErrors[key]}</p>}
-          </div>
-        ))}
+        {enabledQuestions.map(({ key, config: adaptedQuestionConfig }) => {
+          return (
+            <div key={key} className={formErrors[key] ? 'has-error' : ''}>
+              <DemographicQuestion config={adaptedQuestionConfig} value={formFieldResponses[key] as string | number | boolean | undefined} onChange={handleChange} />
+              {formErrors[key] && <p className="text-red-500 text-xs mt-1">{formErrors[key]}</p>}
+            </div>
+          );
+        })}
         <div className="flex justify-between mt-8">
           {onCancel && (
             <button type="button" onClick={onCancel} disabled={isSaving || isLoading || isSubmittingToServer}

@@ -7,7 +7,7 @@ import { CurrentStepProps } from './types';
 
 interface CurrentStepRendererProps extends CurrentStepProps {
     responsesData?: any[];
-    questionKey?: string; // NUEVO: questionKey para identificación única de preguntas
+    questionKey?: string;
 }
 
 const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
@@ -16,10 +16,9 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
     savedResponse,
     onStepComplete,
     responsesData = [],
-    questionKey, // NUEVO: questionKey como identificador principal
+    questionKey,
     ...restOfStepProps
 }) => {
-    // NUEVO: Obtener acceso al diccionario global
     const getQuestionByKey = useParticipantStore(state => state.getQuestionByKey);
 
     // Si el questionKey no contiene "_", combínalo con el stepId
@@ -28,15 +27,6 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
         combinedKey = `${questionKey}_${restOfStepProps.stepId}`;
     }
     const questionData = combinedKey ? getQuestionByKey(combinedKey) : null;
-
-    // NUEVO: Logs de advertencia solo para questionKeys críticos
-    if (combinedKey && !questionData) {
-        // Solo mostrar warning para questionKeys que no sean fallbacks o temporales
-        if (!combinedKey.includes('unknown_') && !combinedKey.includes('temp_') && !combinedKey.includes('debug_')) {
-            console.warn(`[CurrentStepRenderer] ⚠️ questionKey no encontrado en diccionario global: ${combinedKey}`);
-            console.warn(`[CurrentStepRenderer] ⚠️ stepType: ${stepType}, stepId: ${restOfStepProps.stepId}`);
-        }
-    }
 
     // NUEVO: Determinar el componente a renderizar usando ENUM QuestionType
     let ComponentToRender = null;
@@ -61,7 +51,6 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
         ComponentToRender = stepComponentMap[renderComponentName] || stepComponentMap[questionData.type];
     }
 
-    // FALLBACK FINAL: Si no hay questionData o renderComponent, usar stepType (para compatibilidad)
     if (!ComponentToRender) {
         ComponentToRender = stepComponentMap[stepType];
     }
@@ -161,6 +150,13 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
         } else if (savedResponse !== undefined) {
             initialValues = savedResponse;
         }
+
+        // LOGS DE DEPURACIÓN
+        console.log('CurrentStepRenderer - demographic responsesData:', responsesData);
+        console.log('CurrentStepRenderer - demographic responsesData structure:', JSON.stringify(responsesData, null, 2));
+        console.log('CurrentStepRenderer - demographic demographicObj:', demographicObj);
+        console.log('CurrentStepRenderer - demographic initialValues:', initialValues);
+
         const finalProps = {
             ...restOfStepProps,
             stepType,
@@ -168,6 +164,7 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
             config: stepConfig,
             initialValues,
             savedResponse: demographicObj || savedResponse || initialValues,
+            responsesData, // Pasar responsesData completo
             onNext: onStepComplete,
             onSubmit: onStepComplete,
             onStepComplete: onStepComplete,

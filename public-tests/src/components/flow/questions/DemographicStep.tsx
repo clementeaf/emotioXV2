@@ -3,36 +3,50 @@ import { DemographicResponses, DemographicsSection } from "../../../types/demogr
 import { DemographicsForm } from "../../demographics/DemographicsForm";
 import { DemographicStepProps } from "./types";
 
-function extractDemographicInitialValues(initialValues: any): DemographicResponses {
-    // Si es un array, buscar el primer objeto con campo 'response'
-    if (Array.isArray(initialValues) && initialValues.length > 0) {
-        const found = initialValues.find((r) => r && typeof r === 'object' && 'response' in r);
-        if (found && typeof found.response === 'object') {
-            return found.response;
-        }
-    }
-    // Si es un objeto con campo 'response', usar ese campo
-    if (initialValues && typeof initialValues === 'object' && 'response' in initialValues) {
-        return initialValues.response;
-    }
-    // Si es un objeto plano (ej: {age: 30}), usarlo directamente
-    if (initialValues && typeof initialValues === 'object') {
-        return initialValues;
-    }
-    // Si no hay nada, devolver objeto vacío
-    return {};
-}
-
-export const DemographicStep: React.FC<DemographicStepProps & { savedResponse?: any }> = ({
+export const DemographicStep: React.FC<DemographicStepProps & { savedResponse?: any, responsesData?: any[] }> = ({
     stepConfig,
     stepId,
     onStepComplete,
     onError,
-    savedResponse
+    savedResponse,
+    responsesData = []
 }) => {
     const [loading, setLoading] = useState(false);
-    const initialFormValues = extractDemographicInitialValues(savedResponse);
     const formConfig = (stepConfig as { demographicsConfig?: DemographicsSection })?.demographicsConfig as DemographicsSection | undefined;
+
+    // LOGS DE DEPURACIÓN
+    console.log('DemographicStep - responsesData:', responsesData);
+    console.log('DemographicStep - stepId:', stepId);
+
+    // Buscar la respuesta demográfica de manera más flexible
+    const demographicObj = Array.isArray(responsesData)
+      ? responsesData.find((r) => {
+          console.log('DemographicStep - checking response:', r);
+          // Buscar por stepType que sea 'demographic' (como se guarda en el backend)
+          const stepTypeMatch = r.stepType === 'demographic';
+          // O buscar por questionKey que contenga 'demographics' o 'demographic'
+          const questionKeyMatch = r.questionKey && (
+            r.questionKey === 'demographics-form' ||
+            r.questionKey.includes('demographics') ||
+            r.questionKey.includes('demographic')
+          );
+
+          const hasResponse = r.response;
+          const result = (stepTypeMatch || questionKeyMatch) && hasResponse;
+          console.log('DemographicStep - match result:', result, 'for response:', r);
+          return result;
+        })
+      : undefined;
+    const initialFormValues = demographicObj ? demographicObj.response : {};
+
+    // LOGS DE DEPURACIÓN
+    console.log('DemographicStep - demographicObj:', demographicObj);
+    console.log('DemographicStep - initialFormValues:', initialFormValues);
+
+    // Usar id de la respuesta guardada si existe, si no, stepId o 'demographic'
+    const demographicResponseId = (demographicObj && demographicObj.id)
+      ? demographicObj.id
+      : stepId || 'demographic';
 
     const handleDemographicSubmit = async (responses: DemographicResponses) => {
         setLoading(true);
@@ -51,6 +65,7 @@ export const DemographicStep: React.FC<DemographicStepProps & { savedResponse?: 
 
     return (
         <DemographicsForm
+            key={demographicResponseId}
             config={formConfig}
             initialValues={initialFormValues}
             onSubmit={handleDemographicSubmit}

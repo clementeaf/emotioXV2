@@ -1,11 +1,11 @@
 import React from 'react';
-import { DemographicQuestionProps } from './types';
 import { GenericSelectQuestion } from './GenericSelectQuestion';
+import { DemographicQuestionProps } from './types';
 
-export const DemographicQuestion: React.FC<DemographicQuestionProps> = ({ 
-  config, 
-  value, 
-  onChange 
+export const DemographicQuestion: React.FC<DemographicQuestionProps> = ({
+  config,
+  value,
+  onChange
 }) => {
   if (!config.enabled) {
     return null;
@@ -24,7 +24,7 @@ export const DemographicQuestion: React.FC<DemographicQuestionProps> = ({
       return <TextQuestion config={config} value={value} onChange={onChange} />;
     case 'occupation':
       return <TextQuestion config={config} value={value} onChange={onChange} />;
-    case 'income': 
+    case 'income':
     case 'householdIncome':
       if (Array.isArray(config.options) && config.options.length > 0) {
         return <GenericSelectQuestion config={config} value={typeof value === 'boolean' ? undefined : value} onChange={onChange} />;
@@ -51,11 +51,16 @@ export const DemographicQuestion: React.FC<DemographicQuestionProps> = ({
   }
 };
 
-export const AgeQuestion: React.FC<DemographicQuestionProps> = ({ 
-  config, 
-  value, 
-  onChange 
+export const AgeQuestion: React.FC<DemographicQuestionProps> = ({
+  config,
+  value,
+  onChange
 }) => {
+  // LOG DE DEPURACIÓN
+  console.log('AgeQuestion', config.id, 'value received:', value);
+  console.log('AgeQuestion', config.id, 'value type:', typeof value);
+  console.log('AgeQuestion', config.id, 'value for input:', value !== undefined && value !== null ? String(value) : '');
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(config.id, e.target.value);
   };
@@ -68,7 +73,7 @@ export const AgeQuestion: React.FC<DemographicQuestionProps> = ({
       <input
         type="number"
         id={config.id}
-        value={typeof value === 'boolean' ? '' : value || ''}
+        value={value !== undefined && value !== null ? String(value) : ''}
         onChange={handleChange}
         min="0"
         max="120"
@@ -83,11 +88,16 @@ export const AgeQuestion: React.FC<DemographicQuestionProps> = ({
   );
 };
 
-export const TextQuestion: React.FC<DemographicQuestionProps> = ({ 
-  config, 
-  value, 
-  onChange 
+export const TextQuestion: React.FC<DemographicQuestionProps> = ({
+  config,
+  value,
+  onChange
 }) => {
+  // LOG DE DEPURACIÓN
+  console.log('TextQuestion', config.id, 'value received:', value);
+  console.log('TextQuestion', config.id, 'value type:', typeof value);
+  console.log('TextQuestion', config.id, 'value for input:', value !== undefined && value !== null ? String(value) : '');
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(config.id, e.target.value);
   };
@@ -100,7 +110,7 @@ export const TextQuestion: React.FC<DemographicQuestionProps> = ({
       <input
         type="text"
         id={config.id}
-        value={typeof value === 'boolean' ? '' : value || ''}
+        value={value !== undefined && value !== null ? String(value) : ''}
         onChange={handleChange}
         className="w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
         required={config.required}
@@ -111,4 +121,4 @@ export const TextQuestion: React.FC<DemographicQuestionProps> = ({
       )}
     </div>
   );
-}; 
+};
