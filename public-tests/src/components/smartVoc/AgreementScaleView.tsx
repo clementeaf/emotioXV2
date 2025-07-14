@@ -1,46 +1,48 @@
 import React, { useEffect, useState } from 'react';
 import { useStepResponseManager } from '../../hooks/useStepResponseManager';
+import type { ModuleResponse } from '../../stores/participantStore';
 import { useParticipantStore } from '../../stores/participantStore';
 import { MappedStepComponentProps } from '../../types/flow.types';
-import { SmartVOCQuestion } from '../../types/smart-voc.types';
+import type { AgreementScaleResponse } from '../../types/smart-voc.types';
 import { formatQuestionText } from '../../utils/formHelpers';
+import { generateSatisfactionLevels } from '../../utils/smartVocUtils';
 import FormSubmitButton from '../common/FormSubmitButton';
+import { SatisfactionButton } from './SatisfactionButton';
+import { StarRating } from './StarRating';
 
-const AgreementScaleView: React.FC<MappedStepComponentProps> = ({
-  stepConfig,
-  onStepComplete,
-  questionKey
-}) => {
-  const question = stepConfig as SmartVOCQuestion;
+interface SmartVOCScaleConfig {
+  scaleRange: { start: number; end: number };
+  startLabel: string;
+  endLabel: string;
+  type?: string;
+  title?: string;
+  description?: string;
+  instructions?: string;
+  companyName?: string;
+}
+
+interface AgreementScaleViewProps extends MappedStepComponentProps {}
+
+const AgreementScaleView: React.FC<AgreementScaleViewProps> = (props) => {
+  const { stepConfig, onStepComplete } = props;
+  const question = stepConfig as { config: SmartVOCScaleConfig; [key: string]: any };
 
   if (!question || !question.config) {
     return <div>Cargando configuración...</div>;
   }
 
-  // Título e instrucciones dinámicos
-  const configTitle = ('title' in question.config && typeof question.config.title === 'string') ? question.config.title : '';
-  const configDescription = ('description' in question.config && typeof question.config.description === 'string') ? question.config.description : '';
-  const questionText = question.title || configTitle || configDescription || '¿Qué tan de acuerdo estás con esta afirmación?';
-  const instructions = question.instructions || question.config.instructions || '';
-  const companyName = question.config.companyName || '';
-
-  // Escala dinámica según config.scaleRange
-  const scaleRange = question.config.scaleRange;
-  const agreementLevels = (
-    scaleRange && typeof scaleRange.start === 'number' && typeof scaleRange.end === 'number'
-  )
-    ? Array.from(
-        { length: scaleRange.end - scaleRange.start + 1 },
-        (_, i) => scaleRange.start + i
-      )
-    : [1, 2, 3, 4, 5];
+  const questionText = question.config?.title || question.config?.description || question.title || '¿Qué tan de acuerdo estás con esta afirmación?';
+  const instructions = question.config?.instructions || question.instructions || '';
+  const companyName = question.config?.companyName || '';
+  const useStars = question.config?.type === 'stars';
+  const satisfactionLevels = generateSatisfactionLevels(question.config);
 
   // Buscar la respuesta persistida directamente en el store Zustand
   const allSteps = useParticipantStore(state => state.responsesData.modules.all_steps || []);
-  const moduleResponse = allSteps.find(r => r.questionKey === questionKey) || null;
-  const extractSelectedRating = (resp: any): number | null => {
+  const moduleResponse = allSteps.find(r => r.questionKey === question.questionKey) || null;
+  const extractSelectedRating = (resp: ModuleResponse | null | undefined): number | null => {
     if (resp && typeof resp === 'object' && resp.response && typeof resp.response === 'object' && 'value' in resp.response) {
-      return resp.response.value;
+      return (resp.response as AgreementScaleResponse).value;
     }
     return null;
   };
@@ -49,10 +51,9 @@ const AgreementScaleView: React.FC<MappedStepComponentProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setError] = useState<string | null>(null);
 
-  // Sincroniza el estado local solo cuando cambia la respuesta persistida o el questionKey (cambio de formulario)
   useEffect(() => {
     setSelectedRating(persistedRating);
-  }, [persistedRating, questionKey]);
+  }, [persistedRating, question.questionKey]);
 
   const { isSaving, saveCurrentStepResponse } = useStepResponseManager({
     stepId: question.id,
@@ -60,7 +61,7 @@ const AgreementScaleView: React.FC<MappedStepComponentProps> = ({
     stepName: question.title || 'Escala de Acuerdo',
     researchId: undefined,
     participantId: undefined,
-    questionKey,
+    questionKey: question.questionKey,
   });
 
   const handleRatingChange = (rating: number) => {
@@ -72,15 +73,18 @@ const AgreementScaleView: React.FC<MappedStepComponentProps> = ({
     setIsSubmitting(true);
     setError(null);
     try {
-      const responseData = {
+      const responseData: AgreementScaleResponse = {
         value: selectedRating,
-        questionKey,
+        questionKey: question.questionKey,
         timestamp: Date.now(),
         stepTitle: question.title || '',
         metadata: {
           questionType: question.type,
           questionId: question.id,
-          companyName
+          companyName,
+          scaleRange: question.config.scaleRange,
+          startLabel: question.config.startLabel,
+          endLabel: question.config.endLabel
         }
       };
       await saveCurrentStepResponse(responseData);
@@ -104,23 +108,27 @@ const AgreementScaleView: React.FC<MappedStepComponentProps> = ({
           )}
         </div>
 
-        <div className="mb-6 flex flex-row items-center justify-center gap-4">
-          {agreementLevels.map((level, idx) => (
-            <div key={level} className="flex flex-col items-center">
-              <button
-                type="button"
-                onClick={() => handleRatingChange(level)}
-                className={`w-12 h-12 flex items-center justify-center rounded-full border-2 transition-colors text-lg font-semibold focus:outline-none
-                  ${selectedRating === level
-                    ? 'bg-blue-600 border-blue-700 text-white shadow-lg'
-                    : 'bg-white border-gray-300 text-gray-700 hover:bg-blue-50'}
-                `}
-                aria-label={`Seleccionar ${level}`}
-              >
-                {level}
-              </button>
+        <div className="mb-6">
+          {useStars ? (
+            <StarRating
+              rating={selectedRating || 0}
+              onRatingChange={handleRatingChange}
+              maxRating={5}
+              disabled={isSubmitting}
+            />
+          ) : (
+            <div className="flex flex-row justify-between items-end gap-4 w-full">
+              {satisfactionLevels.map((level) => (
+                <SatisfactionButton
+                  key={level.value}
+                  value={level.value}
+                  label={level.label}
+                  selected={selectedRating === level.value}
+                  onClick={isSubmitting ? () => {} : handleRatingChange}
+                />
+              ))}
             </div>
-          ))}
+          )}
         </div>
 
         {errorMessage && (
@@ -129,7 +137,7 @@ const AgreementScaleView: React.FC<MappedStepComponentProps> = ({
           </div>
         )}
 
-        <div className="w-full flex justify-center mt-2">
+        <div className='w-full flex justify-center'>
           <FormSubmitButton
             isSaving={isSubmitting || isSaving}
             hasExistingData={!!(persistedRating !== null)}

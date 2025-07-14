@@ -105,6 +105,8 @@ export const useResponseManager = ({
         if (questionKey === expectedStepId) return true;
         // Si el questionKey es un string largo (ej: uuid), también lo aceptamos
         if (questionKey.length > 20 && !questionKey.includes('_')) return true;
+        // Si contiene el stepType en cualquier parte, es válido
+        if (questionKey.includes(expectedStepType)) return true;
         // Si es formato compuesto, validar partes
         const parts = questionKey.split('_');
         if (parts.length < 2) return false;

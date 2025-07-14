@@ -205,7 +205,7 @@ export const useResponseAPI = ({ researchId, participantId }: UseResponseAPIProp
     existingResponseId?: string
   ) => {
 
-    if (existingResponseId && existingResponseId.trim() !== '') {
+    if (existingResponseId && typeof existingResponseId === 'string' && existingResponseId.trim() !== '') {
       try {
         const result = await updateResponse(existingResponseId, answer);
         if (result.success) {

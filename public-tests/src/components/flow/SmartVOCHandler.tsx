@@ -5,9 +5,9 @@ import { useSmartVOCData } from '../../hooks/useSmartVOCData'; // <<< Importar e
 import CSATView from '../smartVoc/CSATView';
 import DifficultyScaleView from '../smartVoc/DifficultyScaleView'; // Para CES
 import EmotionSelectionView from '../smartVoc/EmotionSelectionView'; // Para NEV
-import FeedbackView from '../smartVoc/FeedbackView'; // Para VOC (Texto libre)
 import NPSView from '../smartVoc/NPSView';
 import { QuestionKeyValidator } from './QuestionKeyValidator'; // NUEVO: Importar validador
+import { SmartVocFeedbackQuestion } from './questions/SmartVocFeedbackQuestion'; // Para VOC (Texto libre)
 import { Answers, SmartVOCHandlerProps } from './types';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -17,7 +17,7 @@ const questionComponentsMap: { [key: string]: React.ComponentType<any> } = {
     'CV': DifficultyScaleView, // Unificado: CV usa DifficultyScaleView
     'NEV': EmotionSelectionView,
     'NPS': NPSView,
-    'VOC': FeedbackView,
+    'VOC': SmartVocFeedbackQuestion,
 };
 
 const SmartVOCHandler: React.FC<SmartVOCHandlerProps> = ({

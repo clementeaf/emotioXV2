@@ -210,11 +210,6 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
           <p className="text-sm">Error: {stepResponseError}</p>
         </div>
       )}
-      {/* LOG DE DEPURACIÓN DEL RENDER */}
-      <div style={{display: 'none'}}>
-        <p>formFieldResponses: {JSON.stringify(formFieldResponses)}</p>
-        <p>demographicInitialValues: {JSON.stringify(demographicInitialValues)}</p>
-      </div>
       <form onSubmit={handleSubmit}>
         {enabledQuestions.map(({ key, config: adaptedQuestionConfig }) => {
           return (

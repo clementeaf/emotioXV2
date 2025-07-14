@@ -319,6 +319,22 @@ export interface CSATResponse {
   };
 }
 
+// Respuesta estándar para AgreementScale/SmartVOC
+export interface AgreementScaleResponse {
+  value: number;
+  questionKey: string;
+  timestamp: number;
+  stepTitle: string;
+  metadata: {
+    questionType?: string;
+    questionId?: string;
+    companyName?: string;
+    scaleRange?: { start: number; end: number };
+    startLabel?: string;
+    endLabel?: string;
+  };
+}
+
 // Definir interfaz estricta para la configuración de la escala
 export interface SmartVOCScaleConfig {
   scaleRange: { start: number; end: number };
