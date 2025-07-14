@@ -1,9 +1,9 @@
-import { Participant } from '../../../../shared/interfaces/participant';
-import { useParticipantLogin } from '../../hooks/useParticipantLogin';
-import { AuthHeader } from './AuthHeader';
-import FormField from '../common/FormField';
-import { AuthSubmitButton } from './AuthSubmitButton';
-import { AuthLegalText } from './AuthLegalText';
+import { Participant } from '../../../shared/interfaces/participant';
+import { AuthHeader } from '../components/auth/AuthHeader';
+import { AuthLegalText } from '../components/auth/AuthLegalText';
+import { AuthSubmitButton } from '../components/auth/AuthSubmitButton';
+import FormField from '../components/common/FormField';
+import { useParticipantLogin } from '../hooks/useParticipantLogin';
 
 export interface ParticipantLoginProps {
   researchId: string;
@@ -13,11 +13,11 @@ export interface ParticipantLoginProps {
 
 export const ParticipantLogin = ({ onLoginSuccess, researchId }: ParticipantLoginProps) => {
   const {
-    participant,      
-    errors,           
-    isLoading,        
+    participant,
+    errors,
+    isLoading,
     handleInputChange,
-    handleSubmit,     
+    handleSubmit,
   } = useParticipantLogin({ researchId, onLogin: onLoginSuccess });
 
   return (
@@ -39,7 +39,7 @@ export const ParticipantLogin = ({ onLoginSuccess, researchId }: ParticipantLogi
               ))}
             </div>
           )}
-          
+
           <FormField
             id="name"
             label="Nombre"
@@ -64,8 +64,8 @@ export const ParticipantLogin = ({ onLoginSuccess, researchId }: ParticipantLogi
             disabled={isLoading}
           />
 
-          <AuthSubmitButton 
-            isLoading={isLoading} 
+          <AuthSubmitButton
+            isLoading={isLoading}
             loadingText="Iniciando sesión..."
             text="Continuar"
             className="mt-6"
@@ -76,4 +76,6 @@ export const ParticipantLogin = ({ onLoginSuccess, researchId }: ParticipantLogi
       </div>
     </div>
   );
-}; 
+};
+
+export default ParticipantLogin;

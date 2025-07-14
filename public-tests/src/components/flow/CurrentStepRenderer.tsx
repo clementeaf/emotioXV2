@@ -207,7 +207,6 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
         );
     }
 
-    // 2. Formularios genéricos: lógica robusta para savedResponses en config
     const stepTypesWithSavedResponses = [
         'cognitive_short_text',
         'cognitive_long_text',
@@ -215,9 +214,9 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
         'cognitive_multiple_choice',
         'cognitive_linear_scale',
         'cognitive_ranking',
-        'cognitive_navigation_flow', // NUEVO: Agregar navigation flow
-        'cognitive_preference_test', // NUEVO: Agregar preference test
-        'preference_test', // NUEVO: Agregar preference test
+        'cognitive_navigation_flow',
+        'cognitive_preference_test',
+        'preference_test',
         'smartvoc_feedback',
         'feedback',
         'image_feedback',

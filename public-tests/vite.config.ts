@@ -60,7 +60,7 @@ export default defineConfig({
             './src/hooks/useFlowBuilder.ts'
           ],
           'auth': [
-            './src/components/auth/ParticipantLogin.tsx',
+            './src/pages/ParticipantLogin.tsx',
             './src/components/auth/AuthSubmitButton.tsx',
             './src/components/auth/AuthLegalText.tsx',
             './src/components/auth/AuthHeader.tsx',

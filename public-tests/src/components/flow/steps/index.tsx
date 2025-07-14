@@ -12,7 +12,6 @@ import { SingleChoiceView } from '../../cognitiveTask/questions/SingleChoiceView
 import AgreementScaleView from '../../smartVoc/AgreementScaleView';
 import DifficultyScaleView from '../../smartVoc/DifficultyScaleView';
 
-const ParticipantLogin = React.lazy(() => import('../../auth/ParticipantLogin').then(module => ({ default: module.ParticipantLogin })));
 const WelcomeScreenHandler = React.lazy(() => import('../WelcomeScreenHandler'));
 const CSATView = React.lazy(() => import('../../smartVoc/CSATView'));
 const ThankYouView = React.lazy(() => import('../../ThankYouScreen'));
@@ -264,7 +263,6 @@ const CognitiveNavigationFlowAdapter: React.FC<MappedStepComponentProps> = (prop
 };
 
 export const stepComponentMap: StepComponentMap = {
-    'login': ParticipantLogin,
     'welcome': WelcomeScreenHandler,
     'instruction': InstructionStep,
 

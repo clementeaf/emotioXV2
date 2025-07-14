@@ -172,7 +172,8 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
   // Función para navegar a public-tests
   const handleOpenPublicTests = () => {
     if (researchId) {
-      window.open(`http://localhost:5173/?researchId=${encodeURIComponent(researchId)}`, '_blank');
+      console.log('researchId', researchId);
+      window.open(`http://localhost:5173/?researchId=${researchId}`, '_blank');
     }
   };
 

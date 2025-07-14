@@ -12,6 +12,8 @@ import { useResponseManager } from './useResponseManager';
 const useStoreSetLoadedResponses = () => useParticipantStore(state => state.setLoadedResponses);
 
 export const useParticipantFlow = (researchId: string | undefined) => {
+    console.log('[useParticipantFlow] Hook llamado con researchId:', researchId);
+
     const storeSetResearchId = useParticipantStore(state => state.setResearchId);
     const storeSetLoadedResponsesFromStore = useStoreSetLoadedResponses();
 
@@ -152,9 +154,12 @@ export const useParticipantFlow = (researchId: string | undefined) => {
     }, [setNavigationError, setCurrentStep, setNavigationIsLoading]);
 
     useEffect(() => {
+        console.log('[useParticipantFlow] useEffect ejecutándose con researchId:', researchId);
         setNavigationIsLoading(isResearchFlowHookLoading);
+
+        // No ejecutar lógica si researchId no está disponible aún
         if (!researchId) {
-            handleError("ID de investigación no encontrado.", "Initialization");
+            console.log('[useParticipantFlow] ResearchId no disponible aún, esperando...');
             return;
         }
 
