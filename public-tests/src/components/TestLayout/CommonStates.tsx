@@ -9,3 +9,11 @@ export function ErrorState() {
 export function EmptyState() {
   return <div className='flex flex-col items-center justify-center h-full'>No hay datos</div>;
 }
+
+export function NoStepSelected() {
+  return <div className='flex flex-col items-center justify-center h-full'>No step selected</div>;
+}
+
+export function NoStepData() {
+  return <div className='flex flex-col items-center justify-center h-full'>No se encontró información para este step</div>;
+}

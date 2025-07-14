@@ -91,3 +91,13 @@ export function findStepByQuestionKey(
   }
   return undefined;
 }
+
+export function getStepType(obj: StepSearchResult): 'parent' | 'demographics' | 'screen' | 'question' | 'unknown' {
+  if (obj && typeof obj === 'object') {
+    if ('demographicQuestions' in obj) return 'demographics';
+    if ('parentStep' in obj) return 'parent';
+    if ('questionKey' in obj && (obj.questionKey === 'welcome_screen' || obj.questionKey === 'thank_you_screen')) return 'screen';
+    if ('questionKey' in obj) return 'question';
+  }
+  return 'unknown';
+}

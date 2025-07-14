@@ -1,6 +1,8 @@
 export interface Question {
   title?: string;
   questionKey?: string;
+  config?: Record<string, unknown>;
+  choices?: Choice[];
 }
 
 export interface SidebarStep {
@@ -67,4 +69,29 @@ export interface DemographicQuestion {
   required: boolean;
   options: Array<string | { value: string; label: string }>;
   // Puedes agregar más campos según tu estructura real
+}
+
+export type StepType = 'screen' | 'demographics' | 'parent' | 'question' | 'unknown';
+
+
+export interface ScaleRangeQuestionProps {
+  min?: number;
+  max?: number;
+  leftLabel?: string;
+  rightLabel?: string;
+  value?: number;
+  onChange?: (value: number) => void;
+}
+export interface Choice {
+  id: string;
+  text: string;
+  isQualify?: boolean;
+  isDisqualify?: boolean;
+}
+
+export interface SingleAndMultipleChoiceQuestionProps {
+  choices: Choice[];
+  value: string | string[];
+  onChange: (value: string | string[]) => void;
+  multiple?: boolean;
 }

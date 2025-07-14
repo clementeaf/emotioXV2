@@ -1,23 +1,15 @@
 import React from 'react';
 import { useStepStore } from '../../stores/useStepStore';
-import { ErrorState, LoadingState } from './CommonStates';
+import { ErrorState, LoadingState, NoStepData, NoStepSelected } from './CommonStates';
 import { DemographicForm } from './DemographicForm';
-import { ParentStepComponent, QuestionComponent, ScreenComponent, UnknownStepComponent } from './StepsComponents';
-import { DemographicQuestion, Question, ScreenStep, StepData, StepSearchResult, TestLayoutRendererProps } from './types';
-import { findStepByQuestionKey } from './utils';
-
-function getStepType(obj: StepSearchResult): 'parent' | 'demographics' | 'screen' | 'question' | 'unknown' {
-  if (obj && typeof obj === 'object') {
-    if ('demographicQuestions' in obj) return 'demographics';
-    if ('parentStep' in obj) return 'parent';
-    if ('questionKey' in obj && (obj.questionKey === 'welcome_screen' || obj.questionKey === 'thank_you_screen')) return 'screen';
-    if ('questionKey' in obj) return 'question';
-  }
-  return 'unknown';
-}
+import { QuestionComponent, ScreenComponent, UnknownStepComponent } from './StepsComponents';
+import { DemographicQuestion, Question, ScreenStep, TestLayoutRendererProps } from './types';
+import { findStepByQuestionKey, getStepType } from './utils';
 
 const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({ data, isLoading, error }) => {
+
   const currentStepKey = useStepStore(state => state.currentStepKey);
+  const hasPreviousResponse = false;
 
   if (isLoading) {
     return <LoadingState />;
@@ -29,30 +21,51 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({ data, isLoading
   const currentStepData = findStepByQuestionKey(data, currentStepKey);
 
   if (!currentStepKey) {
-    return <div className='flex flex-col items-center justify-center h-full'>No step selected</div>;
+    return <NoStepSelected />;
   }
   if (!currentStepData) {
-    return <div className='flex flex-col items-center justify-center h-full'>No se encontró información para este step</div>;
+    return <NoStepData />;
   }
 
-  switch (getStepType(currentStepData)) {
-    case 'parent': {
-      const { parentStep, ...question } = currentStepData as Question & { parentStep: StepData };
-      return <ParentStepComponent parent={parentStep} question={question} />;
-    }
+  const stepType = getStepType(currentStepData);
+  let renderedForm: React.ReactNode = null;
+
+  switch (stepType) {
     case 'demographics': {
       const { demographicQuestions } = currentStepData as { demographicQuestions: DemographicQuestion[] };
-      return <DemographicForm questions={demographicQuestions} />;
+      renderedForm = <DemographicForm questions={demographicQuestions} />;
+      break;
     }
     case 'screen': {
-      return <ScreenComponent data={currentStepData as ScreenStep} />;
+      renderedForm = <ScreenComponent data={currentStepData as ScreenStep} />;
+      break;
     }
     case 'question': {
-      return <QuestionComponent question={currentStepData as Question} />;
+      renderedForm = <QuestionComponent question={currentStepData as Question} currentStepKey={currentStepKey} />;
+      break;
     }
     default:
-      return <UnknownStepComponent data={currentStepData} />;
+      renderedForm = <UnknownStepComponent data={currentStepData} />;
   }
+
+  const showGlobalButton = stepType !== 'screen';
+
+  return (
+    <div className="relative flex flex-col items-center justify-center h-full w-full">
+      {renderedForm}
+      {showGlobalButton && (
+        <button
+          type="button"
+          className="mt-8 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded transition w-full max-w-lg"
+          onClick={() => {
+            // Aquí puedes disparar el submit del formulario activo
+          }}
+        >
+          {hasPreviousResponse ? 'Actualizar y continuar' : 'Guardar y continuar'}
+        </button>
+      )}
+    </div>
+  );
 };
 
 export default TestLayoutRenderer;
