@@ -1,8 +1,8 @@
 import React from 'react';
-import { RankingList } from '../flow/questions/components/RankingList';
 import { NavigationFlowTask } from './NavigationFlowTask';
 import PreferenceTestTask from './PreferenceTestTask';
 import { EmojiRangeQuestion, ScaleRangeQuestion, SingleAndMultipleChoiceQuestion, VOCTextQuestion } from './QuestionesComponents';
+import { RankingList } from './RankingList';
 import { Question as OriginalQuestion, ScreenStep } from './types';
 
 // Extiendo la interfaz Question para incluir 'files' opcional
@@ -12,6 +12,16 @@ export interface Question extends OriginalQuestion {
 
 export const QuestionComponent: React.FC<{ question: Question; currentStepKey: string }> = ({ question, currentStepKey }) => {
   console.log('question', question);
+
+  // Función para mapear Question a NavigationQuestion
+  const mapToNavigationQuestion = (question: Question) => ({
+    id: question.questionKey || '',
+    type: 'cognitive_navigation_flow',
+    title: question.title || '',
+    description: question.title || '¿En cuál de las siguientes pantallas encuentras el objetivo indicado?',
+    files: question.files || []
+  });
+
   if (
     currentStepKey === 'smartvoc_csat' ||
     currentStepKey === 'smartvoc_ces' ||
@@ -110,7 +120,7 @@ export const QuestionComponent: React.FC<{ question: Question; currentStepKey: s
     );
   }
   if (currentStepKey === 'cognitive_navigation_flow' && question.files) {
-    return <NavigationFlowTask stepConfig={question} />;
+    return <NavigationFlowTask stepConfig={mapToNavigationQuestion(question) as any} />;
   }
   if (currentStepKey === 'cognitive_preference_test' && question.files) {
     const [selectedImageId, setSelectedImageId] = React.useState<string | null>(null);
