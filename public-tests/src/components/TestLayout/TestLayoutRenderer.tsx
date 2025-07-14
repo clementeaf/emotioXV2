@@ -1,5 +1,6 @@
 import React from 'react';
-import { useModuleResponse } from '../../hooks/useModuleResponse';
+import { useParticipantData } from '../../hooks/useParticipantData';
+import { useParticipantStore } from '../../stores/participantStore';
 import { useStepStore } from '../../stores/useStepStore';
 import { ErrorState, LoadingState, NoStepData, NoStepSelected } from './CommonStates';
 import { DemographicForm } from './DemographicForm';
@@ -10,7 +11,8 @@ import { findStepByQuestionKey, getStepType } from './utils';
 const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({ data, isLoading, error }) => {
 
   const currentStepKey = useStepStore(state => state.currentStepKey);
-  const { sendResponse, getResponse, updateResponse, deleteAllResponses, researchId, participantId } = useModuleResponse();
+  const { researchId, participantId } = useParticipantStore();
+  const { sendResponse, getResponse, updateResponse, deleteAllResponses, metadata } = useParticipantData();
   const hasPreviousResponse = false;
 
   if (isLoading) {

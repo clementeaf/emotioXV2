@@ -1,5 +1,6 @@
 import React from 'react';
-import { useModuleResponse } from '../../hooks/useModuleResponse';
+import { useParticipantData } from '../../hooks/useParticipantData';
+import { useParticipantStore } from '../../stores/participantStore';
 import { NavigationFlowTask } from './NavigationFlowTask';
 import PreferenceTestTask from './PreferenceTestTask';
 import { EmojiRangeQuestion, ScaleRangeQuestion, SingleAndMultipleChoiceQuestion, VOCTextQuestion } from './QuestionesComponents';
@@ -14,8 +15,9 @@ export interface Question extends OriginalQuestion {
 export const QuestionComponent: React.FC<{ question: Question; currentStepKey: string }> = ({ question, currentStepKey }) => {
   console.log('question', question);
 
-  // Usar el hook para manejar respuestas
-  const { sendResponse, getResponse, updateResponse, deleteAllResponses, researchId, participantId } = useModuleResponse();
+  // Usar el hook consolidado para manejar respuestas y metadata
+  const { researchId, participantId } = useParticipantStore();
+  const { sendResponse, getResponse, updateResponse, deleteAllResponses, metadata } = useParticipantData();
 
   // Función para mapear Question a NavigationQuestion
   const mapToNavigationQuestion = (question: Question) => ({
