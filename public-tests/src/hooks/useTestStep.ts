@@ -1,19 +1,2 @@
-import { useCallback, useState } from 'react';
-
-export const useTestStep = () => {
-  const [currentStepKey, setCurrentStepKey] = useState<string>('');
-
-  const setStep = useCallback((questionKey: string) => {
-    setCurrentStepKey(questionKey);
-  }, []);
-
-  const getCurrentStep = useCallback(() => {
-    return currentStepKey;
-  }, [currentStepKey]);
-
-  return {
-    currentStepKey,
-    setStep,
-    getCurrentStep
-  };
-};
+// Este archivo ya no es necesario. El hook useTestStep ahora está en contexts/TestStepContext.tsx
+// Puedes eliminar este archivo para evitar confusión.
