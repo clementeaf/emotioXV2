@@ -1,5 +1,5 @@
 import { TaskDefinition } from '../../types';
-import NavigationFlowTask from './NavigationFlowTask';
+import NavigationFlowTask from '../TestLayout/NavigationFlowTask';
 import PrioritizationTask from './PrioritizationTask';
 import { LinearScaleView } from './questions/LinearScaleView';
 import { LongTextView } from './questions/LongTextView';

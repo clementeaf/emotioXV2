@@ -1,17 +1,65 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { useStepResponseManager } from '../../hooks/useStepResponseManager';
-import { MappedStepComponentProps } from '../../types/flow.types';
-import FormSubmitButton from '../common/FormSubmitButton';
+import React, { useRef, useState } from 'react';
 
-type ClickPosition = { x: number; y: number; hitzoneWidth: number; hitzoneHeight: number };
+interface ClickPosition {
+  x: number;
+  y: number;
+  hitzoneWidth: number;
+  hitzoneHeight: number;
+}
 
-const convertHitZonesToPercentageCoordinates = (hitZones: any[], imageNaturalSize?: { width: number; height: number }) => {
+interface HitZone {
+  id: string;
+  region: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+}
+
+interface ConvertedHitZone {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  originalCoords?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+}
+
+interface ImageFile {
+  id: string;
+  name: string;
+  url: string;
+  hitZones?: HitZone[];
+}
+
+interface NavigationQuestion {
+  id: string | number;
+  type: string;
+  title: string;
+  description: string;
+  files: ImageFile[];
+}
+
+interface NavigationFlowTaskProps {
+  stepConfig: NavigationQuestion;
+}
+
+const convertHitZonesToPercentageCoordinates = (
+  hitZones: HitZone[] | undefined,
+  imageNaturalSize?: { width: number; height: number }
+): ConvertedHitZone[] => {
   if (!hitZones || !Array.isArray(hitZones) || hitZones.length === 0) {
     return [];
   }
 
   return hitZones.map(zone => {
-    const region = zone.region || zone;
+    const region = zone.region;
     const x = region.x || 0;
     const y = region.y || 0;
     const width = region.width || 0;
@@ -38,156 +86,61 @@ const convertHitZonesToPercentageCoordinates = (hitZones: any[], imageNaturalSiz
   });
 };
 
-export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) => {
-  const { stepConfig, onStepComplete, savedResponse, questionKey } = props;
-  const navigationQuestion =
-    stepConfig?.questions && Array.isArray(stepConfig.questions) && stepConfig.questions.length > 0
-      ? stepConfig.questions[0]
-      : stepConfig;
-
+export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConfig }) => {
+  const navigationQuestion = stepConfig;
   const id = String(navigationQuestion.id || '').trim();
   const type = String(navigationQuestion.type || 'cognitive_navigation_flow').trim();
-  const qKey = String(questionKey || `${id}_${type}`).trim();
   const title = navigationQuestion.title || 'Flujo de Navegación';
   const description = navigationQuestion.description || '¿En cuál de las siguientes pantallas encuentras el objetivo indicado?';
-  const imageFiles = navigationQuestion.files || [];
-
-  const {
-    responseData,
-    isSaving,
-    isLoading,
-    error,
-    saveCurrentStepResponse,
-    hasExistingData
-  } = useStepResponseManager<any>({
-    stepId: id,
-    stepType: type,
-    stepName: title,
-    initialData: savedResponse,
-    questionKey: qKey
-  });
+  const imageFiles: ImageFile[] = navigationQuestion.files || [];
 
   const [localSelectedImageIndex, setLocalSelectedImageIndex] = useState<number>(0);
   const [localSelectedHitzone, setLocalSelectedHitzone] = useState<string | null>(null);
-  const [localValue, setLocalValue] = useState(savedResponse || {});
-  const [localError, setLocalError] = useState<string | null>(null);
   const [imageNaturalSize, setImageNaturalSize] = useState<{ width: number; height: number } | null>(null);
+  const [imgRenderSize, setImgRenderSize] = useState<{ width: number; height: number } | null>(null);
   const [imageSelections, setImageSelections] = useState<Record<number, { hitzoneId: string, click: ClickPosition }>>({});
-  // Modal eliminado, ya no se usa
   const imageRef = useRef<HTMLImageElement>(null);
 
-  useEffect(() => {
-    if (responseData && Array.isArray(responseData.selectedImages)) {
-      // Restaurar todas las selecciones
-      const restored: Record<number, { hitzoneId: string, click: ClickPosition }> = {};
-      responseData.selectedImages.forEach((img: any) => {
-        if (img && typeof img.imageIndex === 'number' && img.selectedHitzone) {
-          restored[img.imageIndex] = {
-            hitzoneId: img.selectedHitzone.id,
-            click: img.selectedHitzone.click
-          };
-        }
-      });
-      setImageSelections(restored);
-      // Opcional: posicionar en la primera imagen con selección
-      const firstSelected = responseData.selectedImages.find((img: any) => img && typeof img.imageIndex === 'number');
-      if (firstSelected) setLocalSelectedImageIndex(firstSelected.imageIndex);
-    } else if (responseData && responseData.selectedHitzone && responseData.selectedImage !== undefined) {
-      // Compatibilidad retro: solo una imagen
-      setImageSelections(prev => ({
-        ...prev,
-        [responseData.selectedImage]: {
-          hitzoneId: responseData.selectedHitzone.id,
-          click: responseData.selectedHitzone.click
-        }
-      }));
-      setLocalSelectedImageIndex(responseData.selectedImage);
-    }
-  }, [responseData]);
+  const images: ImageFile[] = imageFiles;
 
-  useEffect(() => {
-    if (typeof savedResponse === 'object' && savedResponse !== null) {
-      setLocalValue(savedResponse);
-    } else {
-      setLocalValue({});
-    }
-  }, [savedResponse]);
-
-  const localHasExistingData = typeof savedResponse === 'object' && savedResponse !== null && Object.keys(savedResponse).length > 0;
-
-  const images = imageFiles;
-
-  const handleHitzoneClick = (hitzoneId: string, clickPos?: ClickPosition) => {
-    setLocalError(null);
+  const handleHitzoneClick = (hitzoneId: string, clickPos?: ClickPosition): void => {
     if (clickPos && typeof clickPos.hitzoneWidth === 'number' && typeof clickPos.hitzoneHeight === 'number') {
       setImageSelections(prev => ({
         ...prev,
         [localSelectedImageIndex]: { hitzoneId, click: clickPos }
       }));
-      // Modal eliminado, ya no se usa
     }
   };
 
-  const [imgRenderSize, setImgRenderSize] = useState<{ width: number; height: number } | null>(null);
-
-  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>): void => {
     const { naturalWidth, naturalHeight, width, height } = e.currentTarget;
     setImageNaturalSize({ width: naturalWidth, height: naturalHeight });
     setImgRenderSize({ width, height });
   };
 
-  const handleSubmit = async () => {
-    // DEBUG: log de valores clave para depuración de questionKey
-    console.log('[DEBUG NavigationFlowTask] handleSubmit', {
-      stepId: id,
-      stepType: type,
-      questionKey: qKey
-    });
-    // Construir array de selecciones
-    const selectedImages = Object.entries(imageSelections).map(([imageIndex, sel]) => ({
-      imageIndex: Number(imageIndex),
-      selectedHitzone: {
-        id: sel.hitzoneId,
-        click: sel.click
-      }
-    }));
-    if (selectedImages.length === 0) {
-      setLocalError('Por favor, selecciona al menos una zona interactiva.');
-      return;
-    }
-    const responseData = {
-      type: 'navigation_flow',
-      selectedImages,
-      timestamp: Date.now()
-    };
-    const result = await saveCurrentStepResponse(responseData);
-    if (result.success && onStepComplete) {
-      onStepComplete(responseData);
-    }
-  };
-
-  const handlePrevImage = () => {
+  const handlePrevImage = (): void => {
     if (localSelectedImageIndex > 0) {
       setLocalSelectedImageIndex(localSelectedImageIndex - 1);
       setLocalSelectedHitzone(null);
-      setLocalError(null);
     }
   };
 
-  const handleNextImage = () => {
+  const handleNextImage = (): void => {
     if (localSelectedImageIndex < images.length - 1) {
       setLocalSelectedImageIndex(localSelectedImageIndex + 1);
       setLocalSelectedHitzone(null);
-      setLocalError(null);
     }
   };
 
-  const selectedImage = images[localSelectedImageIndex];
-  const availableHitzones = selectedImage?.hitZones
+  const selectedImage: ImageFile = images[localSelectedImageIndex];
+  const availableHitzones: ConvertedHitZone[] = selectedImage?.hitZones
     ? convertHitZonesToPercentageCoordinates(selectedImage.hitZones, imageNaturalSize || undefined)
     : [];
 
-  function getImageDrawRect(imgNatural: {width: number, height: number}, imgRender: {width: number, height: number}) {
+  function getImageDrawRect(
+    imgNatural: {width: number, height: number},
+    imgRender: {width: number, height: number}
+  ): { drawWidth: number; drawHeight: number; offsetX: number; offsetY: number } {
     const imgRatio = imgNatural.width / imgNatural.height;
     const renderRatio = imgRender.width / imgRender.height;
     let drawWidth = imgRender.width;
@@ -264,7 +217,7 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
                   className="absolute top-0 left-0"
                   style={{ width: imgRenderSize.width, height: imgRenderSize.height, pointerEvents: 'none' }}
                 >
-                  {availableHitzones.map((hitzone: any) => {
+                  {availableHitzones.map((hitzone: ConvertedHitZone) => {
                     const left = offsetX + (hitzone.originalCoords?.x ?? 0) * (drawWidth / imageNaturalSize.width);
                     const top = offsetY + (hitzone.originalCoords?.y ?? 0) * (drawHeight / imageNaturalSize.height);
                     const width = (hitzone.originalCoords?.width ?? 0) * (drawWidth / imageNaturalSize.width);
@@ -303,6 +256,7 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
                         }}
                         title={`Zona interactiva: ${hitzone.id}`}
                       >
+                        {/* Visualización de selección local */}
                         {(() => {
                           const selection = imageSelections[localSelectedImageIndex];
                           if (!selection) return null;
@@ -340,29 +294,7 @@ export const NavigationFlowTask: React.FC<MappedStepComponentProps> = (props) =>
             })()
           )}
         </div>
-
-        {(localError || error) && (
-          <div className="text-red-600 text-sm mt-2 text-center bg-red-50 p-3 rounded-lg">
-            {localError || error}
-          </div>
-        )}
-
-        <div className="flex justify-center mt-6">
-          <FormSubmitButton
-            isSaving={!!isSaving || !!isLoading}
-            hasExistingData={localHasExistingData}
-            onClick={handleSubmit}
-            disabled={isSaving || isLoading}
-          />
-        </div>
-
-        <div className="text-center mt-6">
-          <p className="text-sm text-gray-500">
-            Revisa todas las pantallas antes de elegir una únicamente
-          </p>
-        </div>
       </div>
-      {/* Modal eliminado */}
     </div>
   );
 };

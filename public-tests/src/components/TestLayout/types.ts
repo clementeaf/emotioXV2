@@ -95,3 +95,17 @@ export interface SingleAndMultipleChoiceQuestionProps {
   onChange: (value: string | string[]) => void;
   multiple?: boolean;
 }
+
+export interface PreferenceFile {
+  id: string;
+  name: string;
+  url: string;
+  type: string;
+  size: number;
+}
+
+export interface PreferenceTestTaskProps {
+  stepConfig: any;
+  selectedImageId?: string | null;
+  onImageSelect?: (imageId: string) => void;
+}

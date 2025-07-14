@@ -1,6 +1,14 @@
 import React from 'react';
+import { RankingList } from '../flow/questions/components/RankingList';
+import { NavigationFlowTask } from './NavigationFlowTask';
+import PreferenceTestTask from './PreferenceTestTask';
 import { EmojiRangeQuestion, ScaleRangeQuestion, SingleAndMultipleChoiceQuestion, VOCTextQuestion } from './QuestionesComponents';
-import { Question, ScreenStep } from './types';
+import { Question as OriginalQuestion, ScreenStep } from './types';
+
+// Extiendo la interfaz Question para incluir 'files' opcional
+export interface Question extends OriginalQuestion {
+  files?: unknown[];
+}
 
 export const QuestionComponent: React.FC<{ question: Question; currentStepKey: string }> = ({ question, currentStepKey }) => {
   console.log('question', question);
@@ -50,7 +58,10 @@ export const QuestionComponent: React.FC<{ question: Question; currentStepKey: s
       </div>
     );
   }
-  if (currentStepKey === 'cognitive_single_choice' && Array.isArray(question.choices) || currentStepKey === 'cognitive_multiple_choice' && Array.isArray(question.choices)) {
+  if (
+    (currentStepKey === 'cognitive_single_choice' && Array.isArray(question.choices)) ||
+    (currentStepKey === 'cognitive_multiple_choice' && Array.isArray(question.choices))
+  ) {
     const [selected, setSelected] = React.useState<string>('');
     const handleChange = (value: string | string[]) => {
       if (typeof value === 'string') setSelected(value);
@@ -64,6 +75,54 @@ export const QuestionComponent: React.FC<{ question: Question; currentStepKey: s
           onChange={handleChange}
         />
       </div>
+    );
+  }
+  if (currentStepKey === 'cognitive_ranking' && Array.isArray(question.choices)) {
+    const [ranking, setRanking] = React.useState<string[]>(
+      (question.choices ?? []).map((c) => c.id)
+    );
+    const handleMoveUp = (index: number) => {
+      if (index === 0) return;
+      const newRanking = [...ranking];
+      [newRanking[index - 1], newRanking[index]] = [newRanking[index], newRanking[index - 1]];
+      setRanking(newRanking);
+    };
+    const handleMoveDown = (index: number) => {
+      if (index === ranking.length - 1) return;
+      const newRanking = [...ranking];
+      [newRanking[index], newRanking[index + 1]] = [newRanking[index + 1], newRanking[index]];
+      setRanking(newRanking);
+    };
+    const orderedItems = ranking
+      .map(id => (question.choices ?? []).find(c => c.id === id)?.text || '');
+    return (
+      <div className='flex flex-col items-center justify-center h-full gap-10'>
+        <div className='mb-2'>Pregunta: {question.title || question.questionKey}</div>
+        <RankingList
+          items={orderedItems}
+          onMoveUp={handleMoveUp}
+          onMoveDown={handleMoveDown}
+          isSaving={false}
+          isApiLoading={false}
+          dataLoading={false}
+        />
+      </div>
+    );
+  }
+  if (currentStepKey === 'cognitive_navigation_flow' && question.files) {
+    return <NavigationFlowTask stepConfig={question} />;
+  }
+  if (currentStepKey === 'cognitive_preference_test' && question.files) {
+    const [selectedImageId, setSelectedImageId] = React.useState<string | null>(null);
+    const handleImageSelect = (imageId: string) => {
+      setSelectedImageId(imageId);
+    };
+    return (
+      <PreferenceTestTask
+        stepConfig={question}
+        selectedImageId={selectedImageId}
+        onImageSelect={handleImageSelect}
+      />
     );
   }
   return (

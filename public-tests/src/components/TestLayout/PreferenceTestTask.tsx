@@ -1,26 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useStepResponseManager } from '../../hooks/useStepResponseManager';
-import { MappedStepComponentProps } from '../../types/flow.types';
-import FormSubmitButton from '../common/FormSubmitButton';
+import { PreferenceFile, PreferenceTestTaskProps } from './types';
 
-interface PreferenceFile {
-  id: string;
-  name: string;
-  url: string;
-  type: string;
-  size: number;
-}
-
-interface PreferenceTestTaskProps extends MappedStepComponentProps {
-  responsesData?: any[];
-}
-
-const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({ stepConfig, onStepComplete, savedResponse, responsesData, questionKey }) => {
-  const [selectedImageId, setSelectedImageId] = useState(
-    (savedResponse as any)?.selectedImageId || null
-  );
+const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({
+  stepConfig,
+  selectedImageId: externalSelectedImageId = null,
+  onImageSelect
+}) => {
+  const [selectedImageId, setSelectedImageId] = useState<string | null>(externalSelectedImageId);
   const [error, setError] = useState<string | null>(null);
-  const [hasBeenSaved, setHasBeenSaved] = useState<boolean>(false);
+
   // Estado para zoom modal
   const [zoomImage, setZoomImage] = useState<PreferenceFile | null>(null);
   const [zoom, setZoom] = useState(1);
@@ -28,9 +16,8 @@ const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({ stepConfig, onS
   const [dragging, setDragging] = useState(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   const imgContainerRef = useRef<HTMLDivElement>(null);
-  const [localHasExistingData, setLocalHasExistingData] = useState(false);
 
-  // Extraer la configuración de la pregunta - MEJORADO para compatibilidad
+  // Extraer la configuración de la pregunta
   let preferenceQuestion: any = null;
 
   if (stepConfig && typeof stepConfig === 'object') {
@@ -49,70 +36,12 @@ const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({ stepConfig, onS
   const config = preferenceQuestion || stepConfig;
   const images = config?.files || [];
 
-  // Buscar respuesta previa en responsesData si existe
-  const preferenceSavedResponse = React.useMemo(() => {
-    if (!responsesData || !Array.isArray(responsesData)) return null;
-    return responsesData.find(
-      r =>
-        (r.stepType === 'cognitive_preference_test' || r.type === 'cognitive_preference_test') &&
-        (r.stepTitle === 'Preferencia' || r.name === 'Preferencia') &&
-        r.response
-    );
-  }, [responsesData]);
-
-  // Efecto robusto para inicializar la selección previa
-  React.useEffect(() => {
-    // Prioridad: savedResponse (prop directa), luego responsesData
-    const responseToUse = savedResponse || preferenceSavedResponse?.response;
-    let extractedImageId: string | null = null;
-    let extractedImageName: string | null = null;
-    if (typeof responseToUse === 'object' && responseToUse) {
-      if ('selectedImageId' in responseToUse) {
-        extractedImageId = (responseToUse as { selectedImageId: string }).selectedImageId;
-      }
-      if ('selectedImageName' in responseToUse) {
-        extractedImageName = (responseToUse as { selectedImageName: string }).selectedImageName;
-      }
-    }
-    // Debug visual
-    console.log('[PreferenceTestTask] Efecto selección previa:', {
-      savedResponse,
-      preferenceSavedResponse,
-      responseToUse,
-      extractedImageId,
-      extractedImageName,
-      images: images.map((img: any) => ({ id: img.id, name: img.name })),
-      selectedImageId
-    });
-    // Buscar coincidencia exacta por id
-    let match = images.find((img: any) => img.id === extractedImageId);
-    // Si no hay match, intentar por nombre de archivo (si es único)
-    if (!match && extractedImageName) {
-      match = images.find((img: any) => img.name === extractedImageName);
-    }
-    if (match) {
-      if (selectedImageId !== match.id) {
-        setSelectedImageId(match.id);
-        setHasBeenSaved(true);
-      }
-    } else {
-      if (selectedImageId !== null) {
-        setSelectedImageId(null);
-        setHasBeenSaved(false);
-      }
-    }
-  }, [savedResponse, preferenceSavedResponse, images, config?.id]);
-
-  // Sincronizar con respuesta guardada
+  // Sincronizar con prop externa
   useEffect(() => {
-    if (savedResponse && typeof savedResponse === 'object' && 'selectedImageId' in savedResponse) {
-      setSelectedImageId((savedResponse as any).selectedImageId);
-      setLocalHasExistingData(true);
-    } else {
-      setSelectedImageId(null);
-      setLocalHasExistingData(false);
+    if (externalSelectedImageId !== selectedImageId) {
+      setSelectedImageId(externalSelectedImageId);
     }
-  }, [savedResponse]);
+  }, [externalSelectedImageId]);
 
   // Reset zoom y pan al cambiar de imagen
   useEffect(() => {
@@ -125,46 +54,7 @@ const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({ stepConfig, onS
   const handleImageSelect = (imageId: string) => {
     setSelectedImageId(imageId);
     setError(null);
-  };
-
-  // NUEVO: Usar useStepResponseManager para guardar en backend
-  const id = questionKey || (config && config.id) || '';
-  const {
-    responseData: savedResponseData,
-    isSaving,
-    isLoading,
-    error: backendError,
-    saveCurrentStepResponse,
-    hasExistingData
-  } = useStepResponseManager<any>({
-    stepId: id,
-    stepType: 'cognitive_preference_test',
-    stepName: 'Prueba de Preferencia',
-    initialData: savedResponse,
-    questionKey: questionKey
-  });
-
-  const handleContinue = async () => {
-    if (!selectedImageId) {
-      setError('Por favor, selecciona una opción antes de continuar');
-      return;
-    }
-
-    const selectedImage = images.find((img: any) => img.id === selectedImageId);
-    const responseData = {
-      questionId: config.id,
-      selectedImageId,
-      selectedImageName: selectedImage?.name,
-      type: 'preference_test'
-    };
-
-    // NUEVO: Guardar en backend antes de continuar
-    const { success } = await saveCurrentStepResponse(responseData);
-
-    if (success) {
-      setHasBeenSaved(true);
-      onStepComplete?.(responseData);
-    }
+    onImageSelect?.(imageId);
   };
 
   // Función para navegar entre imágenes en el modal
@@ -405,16 +295,6 @@ const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({ stepConfig, onS
             </p>
           </div>
         )}
-
-        {/* Continue button */}
-        <div className="text-center">
-          <FormSubmitButton
-            isSaving={!!isSaving || !!isLoading}
-            hasExistingData={localHasExistingData}
-            onClick={handleContinue}
-            disabled={isSaving || isLoading || !selectedImageId}
-          />
-        </div>
       </div>
     </div>
   );
