@@ -7,10 +7,6 @@ export const GenericSelectQuestion: React.FC<GenericSelectQuestionProps> = ({
   value,
   onChange,
 }) => {
-  // LOG DE DEPURACIÓN
-  console.log('GenericSelectQuestion', config.id, 'value received:', value);
-  console.log('GenericSelectQuestion', config.id, 'value type:', typeof value);
-  console.log('GenericSelectQuestion', config.id, 'value for select:', value !== undefined && value !== null ? String(value) : '');
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newValue = e.target.value;

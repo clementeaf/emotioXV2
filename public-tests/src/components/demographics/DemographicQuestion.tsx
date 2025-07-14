@@ -56,11 +56,6 @@ export const AgeQuestion: React.FC<DemographicQuestionProps> = ({
   value,
   onChange
 }) => {
-  // LOG DE DEPURACIÓN
-  console.log('AgeQuestion', config.id, 'value received:', value);
-  console.log('AgeQuestion', config.id, 'value type:', typeof value);
-  console.log('AgeQuestion', config.id, 'value for input:', value !== undefined && value !== null ? String(value) : '');
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(config.id, e.target.value);
   };
@@ -93,10 +88,6 @@ export const TextQuestion: React.FC<DemographicQuestionProps> = ({
   value,
   onChange
 }) => {
-  // LOG DE DEPURACIÓN
-  console.log('TextQuestion', config.id, 'value received:', value);
-  console.log('TextQuestion', config.id, 'value type:', typeof value);
-  console.log('TextQuestion', config.id, 'value for input:', value !== undefined && value !== null ? String(value) : '');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(config.id, e.target.value);

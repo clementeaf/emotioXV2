@@ -151,12 +151,6 @@ const CurrentStepRenderer: React.FC<CurrentStepRendererProps> = ({
             initialValues = savedResponse;
         }
 
-        // LOGS DE DEPURACIÓN
-        console.log('CurrentStepRenderer - demographic responsesData:', responsesData);
-        console.log('CurrentStepRenderer - demographic responsesData structure:', JSON.stringify(responsesData, null, 2));
-        console.log('CurrentStepRenderer - demographic demographicObj:', demographicObj);
-        console.log('CurrentStepRenderer - demographic initialValues:', initialValues);
-
         const finalProps = {
             ...restOfStepProps,
             stepType,
