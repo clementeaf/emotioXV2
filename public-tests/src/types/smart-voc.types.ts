@@ -84,20 +84,7 @@ export interface SmartVocFeedbackQuestionProps {
   error?: string;
 }
 
-export interface UseSmartVOCDataReturn {
-  questions: SmartVOCQuestion[];
-  answers: Answers;
-  currentQuestionIndex: number;
-  currentQuestion: SmartVOCQuestion | null;
-  isLoading: boolean;
-  error: string | null;
-  handleAnswerChange: (questionId: string, value: unknown) => void;
-  goToNextQuestion: () => void;
-  goToPrevQuestion: () => void;
-  isFirstQuestion: boolean;
-  isLastQuestion: boolean;
-  submitResponses: () => Promise<void>;
-}
+
 
 // Additional SmartVOC Component Interfaces
 export interface AgreementScaleViewProps {
@@ -292,7 +279,7 @@ export interface VOCTextData {
   value: string;
 }
 
-// Interface para useSmartVOCData hook (diferente de UseSmartVOCDataReturn)
+
 export interface UseSmartVOCConfigReturn {
   isLoading: boolean;
   questions: SmartVOCQuestion[];

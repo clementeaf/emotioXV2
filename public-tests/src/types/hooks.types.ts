@@ -23,25 +23,7 @@ export interface UseResponseAPIReturn {
   setError: (error: string | null) => void;
 }
 
-export interface UseStepResponseManagerProps<TResponseData> {
-  stepId: string;
-  stepType: string;
-  stepName?: string;
-  initialData?: TResponseData | null;
-  researchId?: string;
-  participantId?: string;
-  questionKey?: string; // NUEVO: questionKey del backend
-}
 
-export interface UseStepResponseManagerReturn<TResponseData> {
-  responseData: TResponseData | null;
-  isLoading: boolean;
-  isSaving: boolean;
-  error: string | null;
-  responseSpecificId: string | null;
-  saveCurrentStepResponse: (dataToSave: TResponseData) => Promise<{ success: boolean; id?: string | null }>;
-  hasExistingData: boolean;
-}
 
 export interface UseResponseManagerProps {
   researchId: string;
@@ -82,27 +64,9 @@ export interface ResponseData {
   version: string; // NUEVO: Versión para compatibilidad
 }
 
-export interface UseResponseStorageReturn {
-  saveResponse: (questionKey: string, responseData: unknown) => void;
-  loadResponse: (questionKey: string) => ResponseData | null;
-  clearResponse: (questionKey: string) => void;
-  hasResponse: (questionKey: string) => boolean;
-  clearAllResponses: () => void; // NUEVO: Limpiar todas las respuestas
-}
 
-// Tipos para hooks de módulos
-export interface UseModuleResponsesProps {
-  researchId?: string;
-  participantId?: string;
-  autoFetch?: boolean;
-}
 
-export interface UseModuleResponsesReturn {
-  data: any;
-  isLoading: boolean;
-  error: string | null;
-  refetch: () => Promise<any>;
-}
+
 
 // Tipos para hooks de login de participante
 export interface UseParticipantLoginProps {
@@ -172,13 +136,7 @@ export interface UseStandardizedFormOptions<T> {
   moduleId?: string;
 }
 
-// Tipos para hooks de eye tracking
-export interface UseEyeTrackingResult {
-  data: any | null;
-  isLoading: boolean;
-  error: string | null;
-  refresh: () => Promise<void>;
-}
+
 
 // Tipos para hooks de investigación
 export interface RawResearchModule {
@@ -219,11 +177,4 @@ export interface UseFlowNavigationAndStateProps {
   setExternalExpandedSteps?: (updater: (prevSteps: ExpandedStep[]) => ExpandedStep[]) => void;
   currentStepIndexState: number;
   setCurrentStepIndexFunc: React.Dispatch<React.SetStateAction<number>>;
-}
-
-export interface UseSmartVOCDataReturn {
-  questions: any[];
-  isLoading: boolean;
-  error: string | null;
-  fetchQuestions: () => Promise<void>;
 }

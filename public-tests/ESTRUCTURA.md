@@ -23,7 +23,7 @@ Este archivo documenta los componentes y hooks encargados de la lógica de formu
 - RankingQuestion
 - NavigationFlowTask
 - PreferenceTestTask
-- WelcomeScreenHandler (o WelcomeScreen)
+- WelcomeScreenHanudler (o WelcomeScreen)
 - ThankYouView (o ThankYouScreen)
 
 ## Hooks

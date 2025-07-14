@@ -9,8 +9,7 @@ export * from './hooks.types';
 
 // Re-exportar tipos específicos para evitar conflictos
 export type {
-    Answers, NPSViewProps, SmartVOCConfig, SmartVOCFormData, SmartVOCHandlerProps as SmartVOCHandlerPropsType, SmartVOCQuestion as SmartVOCQuestionType, SmartVOCSettings, SmartVocFeedbackQuestionProps,
-    UseSmartVOCDataReturn
+    Answers, NPSViewProps, SmartVOCConfig, SmartVOCFormData, SmartVOCHandlerProps as SmartVOCHandlerPropsType, SmartVOCQuestion as SmartVOCQuestionType, SmartVOCSettings, SmartVocFeedbackQuestionProps
 } from './smart-voc.types';
 
 export type {

@@ -195,13 +195,7 @@ export interface CognitiveAnswers {
   [questionId: string]: unknown;
 }
 
-// Props para hooks
-export interface UseCognitiveTaskProps {
-  researchId: string;
-  token: string | null; // Permitir null para la comprobación inicial
-  onComplete: () => void;
-  onError: (message: string) => void;
-}
+
 
 // Additional Cognitive Task Components (non-conflicting)
 export interface GenderSelectionTaskProps {

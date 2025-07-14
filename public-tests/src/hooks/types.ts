@@ -28,21 +28,3 @@ export enum ResearchLoadStatus {
 export interface UseFlowBuilderProps {
     researchFlowApiData: unknown;
 }
-
-export interface UseStepResponseManagerProps<TResponseData> {
-    stepId: string;
-    stepType: string;
-    stepName?: string;
-    initialData?: TResponseData | null;
-    researchId?: string;
-    participantId?: string;
-  }
-  
-  export interface UseStepResponseManagerReturn<TResponseData> {
-    responseData: TResponseData | null;
-    isLoading: boolean;
-    isSaving: boolean;
-    error: string | null;
-    responseSpecificId: string | null; 
-    saveCurrentStepResponse: (dataToSave: TResponseData) => Promise<{ success: boolean; id?: string | null }>;
-  }
