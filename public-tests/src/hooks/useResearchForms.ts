@@ -7,8 +7,8 @@ const apiClient = new ApiClient();
 import { RawResearchModule } from '../types/hooks.types';
 
 export interface ProcessedResearchFormConfig {
-  id: string;        
-  originalSk: string; 
+  id: string;
+  originalSk: string;
   derivedType: string;
   config: RawResearchModule;
 }
@@ -19,7 +19,9 @@ export function useLoadResearchFormsConfig(
   researchId: string,
   options?: Omit<UseQueryOptions<APIResponse<TransformedData>, Error, APIResponse<TransformedData>, readonly ['researchFormsConfig', string]>, 'queryKey' | 'queryFn'>
 ) {
+
   return useQuery<APIResponse<TransformedData>, Error, APIResponse<TransformedData>, readonly ['researchFormsConfig', string]>({
+
     queryKey: ['researchFormsConfig', researchId] as const,
     queryFn: async () => {
       const apiResponse = await apiClient.getResearchFlow(researchId) as unknown as APIResponse<RawResearchModule[]>;
@@ -43,13 +45,13 @@ export function useLoadResearchFormsConfig(
 
       const processedModules: ProcessedResearchFormConfig[] = rawModules.map((module, index) => {
         const stepId = module.id || `${module.sk}_${index}`;
-        const derivedType = module.sk.toLowerCase(); 
+        const derivedType = module.sk.toLowerCase();
 
         return {
           id: stepId,
           originalSk: module.sk,
           derivedType: derivedType,
-          config: module, 
+          config: module,
         };
       });
 
