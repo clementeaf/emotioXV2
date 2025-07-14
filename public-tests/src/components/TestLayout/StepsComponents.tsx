@@ -1,4 +1,5 @@
 import React from 'react';
+import { useModuleResponse } from '../../hooks/useModuleResponse';
 import { NavigationFlowTask } from './NavigationFlowTask';
 import PreferenceTestTask from './PreferenceTestTask';
 import { EmojiRangeQuestion, ScaleRangeQuestion, SingleAndMultipleChoiceQuestion, VOCTextQuestion } from './QuestionesComponents';
@@ -13,6 +14,9 @@ export interface Question extends OriginalQuestion {
 export const QuestionComponent: React.FC<{ question: Question; currentStepKey: string }> = ({ question, currentStepKey }) => {
   console.log('question', question);
 
+  // Usar el hook para manejar respuestas
+  const { sendResponse, getResponse, updateResponse, deleteAllResponses, researchId, participantId } = useModuleResponse();
+
   // Función para mapear Question a NavigationQuestion
   const mapToNavigationQuestion = (question: Question) => ({
     id: question.questionKey || '',
@@ -21,6 +25,115 @@ export const QuestionComponent: React.FC<{ question: Question; currentStepKey: s
     description: question.title || '¿En cuál de las siguientes pantallas encuentras el objetivo indicado?',
     files: question.files || []
   });
+
+  // Función para manejar respuestas de escala
+  const handleScaleResponse = async (value: number) => {
+    if (!researchId || !participantId) {
+      console.error('[QuestionComponent] ❌ Faltan researchId o participantId');
+      return;
+    }
+
+    const response = { value, timestamp: new Date().toISOString() };
+
+    // 1. ENVIAR RESPUESTA
+    const sentResponse = await sendResponse(currentStepKey, response);
+
+    if (sentResponse) {
+      console.log('[QuestionComponent] ✅ Respuesta de escala enviada:', sentResponse);
+
+      // 2. RECIBIR DE VUELTA LO ENVIADO
+      const receivedResponse = await getResponse(currentStepKey);
+      if (receivedResponse) {
+        console.log('[QuestionComponent] ✅ Respuesta recibida de vuelta:', receivedResponse);
+      }
+    } else {
+      console.error('[QuestionComponent] ❌ Error enviando respuesta de escala');
+    }
+  };
+
+  // Función para manejar respuestas de texto
+  const handleTextResponse = async (text: string) => {
+    if (!researchId || !participantId) {
+      console.error('[QuestionComponent] ❌ Faltan researchId o participantId');
+      return;
+    }
+
+    const response = { text, timestamp: new Date().toISOString() };
+
+    // 1. ENVIAR RESPUESTA
+    const sentResponse = await sendResponse(currentStepKey, response);
+
+    if (sentResponse) {
+      console.log('[QuestionComponent] ✅ Respuesta de texto enviada:', sentResponse);
+
+      // 2. RECIBIR DE VUELTA LO ENVIADO
+      const receivedResponse = await getResponse(currentStepKey);
+      if (receivedResponse) {
+        console.log('[QuestionComponent] ✅ Respuesta recibida de vuelta:', receivedResponse);
+      }
+    } else {
+      console.error('[QuestionComponent] ❌ Error enviando respuesta de texto');
+    }
+  };
+
+  // Función para manejar respuestas de selección
+  const handleSelectionResponse = async (selectedValue: string | string[]) => {
+    if (!researchId || !participantId) {
+      console.error('[QuestionComponent] ❌ Faltan researchId o participantId');
+      return;
+    }
+
+    const response = { selectedValue, timestamp: new Date().toISOString() };
+
+    // 1. ENVIAR RESPUESTA
+    const sentResponse = await sendResponse(currentStepKey, response);
+
+    if (sentResponse) {
+      console.log('[QuestionComponent] ✅ Respuesta de selección enviada:', sentResponse);
+
+      // 2. RECIBIR DE VUELTA LO ENVIADO
+      const receivedResponse = await getResponse(currentStepKey);
+      if (receivedResponse) {
+        console.log('[QuestionComponent] ✅ Respuesta recibida de vuelta:', receivedResponse);
+      }
+    } else {
+      console.error('[QuestionComponent] ❌ Error enviando respuesta de selección');
+    }
+  };
+
+  // Función para actualizar respuesta existente
+  const handleUpdateResponse = async (newResponse: unknown) => {
+    if (!researchId || !participantId) {
+      console.error('[QuestionComponent] ❌ Faltan researchId o participantId');
+      return;
+    }
+
+    // 3. ACTUALIZAR RESPUESTA
+    const updatedResponse = await updateResponse(currentStepKey, newResponse);
+
+    if (updatedResponse) {
+      console.log('[QuestionComponent] ✅ Respuesta actualizada:', updatedResponse);
+    } else {
+      console.error('[QuestionComponent] ❌ Error actualizando respuesta');
+    }
+  };
+
+  // Función para eliminar todas las respuestas
+  const handleDeleteAllResponses = async () => {
+    if (!researchId || !participantId) {
+      console.error('[QuestionComponent] ❌ Faltan researchId o participantId');
+      return;
+    }
+
+    // 4. ELIMINAR TODAS LAS RESPUESTAS
+    const deleted = await deleteAllResponses();
+
+    if (deleted) {
+      console.log('[QuestionComponent] ✅ Todas las respuestas eliminadas exitosamente');
+    } else {
+      console.error('[QuestionComponent] ❌ Error eliminando respuestas');
+    }
+  };
 
   if (
     currentStepKey === 'smartvoc_csat' ||

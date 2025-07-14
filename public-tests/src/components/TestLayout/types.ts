@@ -109,3 +109,14 @@ export interface PreferenceTestTaskProps {
   selectedImageId?: string | null;
   onImageSelect?: (imageId: string) => void;
 }
+
+/**
+ * Interfaz para la respuesta de un módulo
+ * ESTRUCTURA EXACTA REQUERIDA:
+ */
+export interface ModuleResponseData {
+  participantId: string;    // ✅ ID del participante
+  researchId: string;       // ✅ Research ID
+  questionKey: string;      // ✅ Para identificar el formulario
+  response: unknown;        // ✅ Respuesta dinámica del componente
+}
