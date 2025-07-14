@@ -1,11 +1,12 @@
+import { QuestionType } from '@shared/interfaces/question-types.enum';
 import React, { useEffect, useState } from 'react';
 import { useModuleResponses } from '../../hooks/useModuleResponses';
 import { useStepResponseManager } from '../../hooks/useStepResponseManager';
 import { useParticipantStore } from '../../stores/participantStore';
 import {
-  DemographicResponses,
-  EDUCATION_OPTIONS,
-  GENDER_OPTIONS
+    DemographicResponses,
+    EDUCATION_OPTIONS,
+    GENDER_OPTIONS
 } from '../../types/demographics';
 import FormSubmitButton from '../common/FormSubmitButton';
 import { DemographicQuestion } from './DemographicQuestion';
@@ -91,11 +92,12 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
     error: stepResponseError,
     saveCurrentStepResponse
   } = useStepResponseManager<DemographicResponses>({
-    stepId: 'demographics-form',
-    stepType: 'demographics',
+    stepId: QuestionType.DEMOGRAPHICS,
+    stepType: QuestionType.DEMOGRAPHICS,
     stepName: 'Información Demográfica',
     researchId: undefined,
     participantId: undefined,
+    questionKey: QuestionType.DEMOGRAPHICS,
   });
 
   useEffect(() => {

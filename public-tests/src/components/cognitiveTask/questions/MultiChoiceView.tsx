@@ -23,11 +23,11 @@ export const MultiChoiceView: React.FC<MappedStepComponentProps> = (props) => {
     error,
     saveCurrentStepResponse,
     hasExistingData
-  } = useStepResponseManager<string[]>({
+  } = useStepResponseManager<string>({
     stepId: id,
     stepType: config.type || 'cognitive_multiple_choice',
     stepName: title,
-    initialData: savedResponse as string[] | null | undefined,
+    initialData: savedResponse as string | null | undefined,
     questionKey: id
   });
 
@@ -71,9 +71,11 @@ export const MultiChoiceView: React.FC<MappedStepComponentProps> = (props) => {
       setLocalError('Por favor, selecciona al menos una opción.');
       return;
     }
-    const result = await saveCurrentStepResponse(localValue);
+    // Enviar solo la primera opción seleccionada como string
+    const valueToSend = Array.isArray(localValue) ? localValue[0] || '' : '';
+    const result = await saveCurrentStepResponse(valueToSend);
     if (result.success && onStepComplete) {
-      onStepComplete(localValue);
+      onStepComplete(valueToSend);
     }
   };
 
