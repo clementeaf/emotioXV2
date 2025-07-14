@@ -1,9 +1,0 @@
-{
-  "name": "Amplify Build Trigger",
-  "active": true,
-  "events": ["push"],
-  "config": {
-    "url": "https://webhooks.amplify.us-east-1.amazonaws.com/prod/webhooks?id=e72f4d8d-ce51-487f-936d-2cba3b094970&token=ss0sh6LLSBRZSCBdLaONjp2iieROVjhOHOR0sQnpE8E",
-    "content_type": "application/json"
-  }
-}

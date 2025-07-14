@@ -1,6 +1,6 @@
+import { buildQuestionDictionary } from '@shared/utils/buildQuestionDictionary';
 import { useCallback, useEffect } from 'react';
 import { QuestionDictionary } from '../../../shared/interfaces/question-dictionary.interface';
-import { buildQuestionDictionary } from '../../../shared/utils/buildQuestionDictionary';
 import type { ParticipantInfo } from '../stores/participantStore';
 import { useParticipantStore } from '../stores/participantStore';
 import { ExpandedStep, ParticipantFlowStep } from '../types/flow';

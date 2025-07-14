@@ -1,6 +1,7 @@
+import { DEFAULT_EYE_TRACKING_CONFIG, EyeTrackingConfig, EyeTrackingFormData, EyeTrackingStimulus } from '@shared/interfaces/eye-tracking.interface';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { DEFAULT_EYE_TRACKING_CONFIG, EyeTrackingConfig, EyeTrackingFormData, EyeTrackingStimulus } from 'shared/interfaces/eye-tracking.interface';
+import { QuestionType } from '../../../../../../shared/interfaces/question-types.enum';
 
 import { useErrorLog } from '@/components/utils/ErrorLogger';
 import { useFileUpload } from '@/hooks';
@@ -569,7 +570,10 @@ export function useEyeTrackingForm({
 
     try {
       // Preparar datos para guardar
-      const dataToSave = formDataRef.current;
+      const dataToSave = {
+        ...formDataRef.current,
+        questionKey: QuestionType.DEMOGRAPHICS // Forzar siempre el valor correcto
+      };
 
       // Verificar si hay imágenes temporales
       const tempItems = dataToSave.stimuli?.items?.filter(

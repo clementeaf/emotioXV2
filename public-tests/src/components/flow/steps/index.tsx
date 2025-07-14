@@ -1,4 +1,4 @@
-import { QuestionType } from '@emotiox/shared';
+import { QuestionType } from '@shared/interfaces/question-types.enum';
 import React from 'react';
 import { useStepResponseManager } from '../../../hooks/useStepResponseManager';
 import { MappedStepComponentProps, StepComponentMap } from '../../../types/flow.types';

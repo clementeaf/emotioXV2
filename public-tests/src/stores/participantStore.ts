@@ -1,4 +1,5 @@
-import { QuestionDictionary, buildQuestionDictionary } from '@emotiox/shared';
+import { QuestionDictionary } from '@emotiox/shared';
+import { buildQuestionDictionary } from '@shared/utils/buildQuestionDictionary';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { ApiClient } from '../lib/api';

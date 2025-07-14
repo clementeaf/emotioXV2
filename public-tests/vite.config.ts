@@ -21,8 +21,9 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@shared': path.resolve(__dirname, '../shared'),
+      '@shared': path.resolve(__dirname, '../shared/dist'),
     },
+    extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json'],
   },
   build: {
     rollupOptions: {
@@ -115,6 +116,7 @@ export default defineConfig({
       '@tanstack/react-query',
       'zustand',
       'date-fns'
-    ]
+    ],
+    exclude: ['../shared']
   }
 })

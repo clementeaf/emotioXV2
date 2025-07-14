@@ -1,7 +1,7 @@
+import { buildQuestionDictionary } from '@shared/utils/buildQuestionDictionary';
 import { QuestionDictionary } from 'shared/interfaces/question-dictionary.interface';
 import { CognitiveTaskType } from 'shared/types/cognitive-task.types';
 import { SmartVOCType } from 'shared/types/smart-voc.types';
-import { buildQuestionDictionary } from 'shared/utils/buildQuestionDictionary';
 
 // Mapeo de tipos legacy o alternativos a los tipos técnicos estándar para Cognitive Task
 const cognitiveTypeMap: Record<string, CognitiveTaskType> = {

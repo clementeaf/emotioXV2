@@ -37,7 +37,6 @@ const CSATView: React.FC<CSATViewProps> = (props) => {
   const useStars = question.config?.type === 'stars';
   const satisfactionLevels = generateSatisfactionLevels(question.config);
 
-  // Buscar la respuesta persistida directamente en el store Zustand
   const allSteps = useParticipantStore(state => state.responsesData.modules.all_steps || []);
   const moduleResponse = allSteps.find(r => r.questionKey === question.questionKey) || null;
   const extractSelectedRating = (resp: ModuleResponse | null | undefined): number | null => {

@@ -5,7 +5,7 @@ export * from './src/types/websocket.types';
 export { isUserBySchema, userSchema };
 export type { User };
 
-// Tipos de usuario con manejo de conflictos
+// Tipos de usuario
     import { isUser as isUserBySchema, User, userSchema } from './src/types/user.types';
 
 // Re-exportar todos los modelos de research
@@ -34,9 +34,16 @@ export type {
     export * from './interfaces/welcome-screen.interface';
     export * from './utils';
 
-// Exportar explícitamente buildQuestionDictionary y QuestionDictionary
+// Exportar explícitamente QuestionDictionary
 export type { QuestionDictionary } from './interfaces/question-dictionary.interface';
-export { buildQuestionDictionary } from './utils/buildQuestionDictionary';
+// TODO: Rehabilitar buildQuestionDictionary cuando se resuelva el problema de Vite/Rollup
+// export { buildQuestionDictionary } from './utils/buildQuestionDictionary';
 
 // Exportar QuestionType enum
 export { QuestionType } from './interfaces/question-types.enum';
+
+// Exportar todas las interfaces
+export * from './interfaces/eye-tracking.interface';
+export * from './interfaces/newResearch.interface';
+export * from './interfaces/smart-voc.interface';
+export * from './interfaces/thank-you-screen.interface';

@@ -282,6 +282,31 @@ export const eyeTrackingFixedAPI = {
   },
 
   /**
+   * Elimina la configuración de EyeTracking por researchId
+   * @param researchId ID de la investigación
+   * @returns Objeto con método send
+   */
+  delete: (researchId: string) => {
+    if (!researchId) {
+      throw new Error('Se requiere un ID de investigación para eliminar la configuración de EyeTracking');
+    }
+    const url = API_ENDPOINTS.eyeTracking?.delete?.replace('{researchId}', researchId) || `/research/${researchId}/eye-tracking`;
+    return {
+      send: async () => {
+        const headers = getAuthHeaders();
+        const response = await fetch(`${API_BASE_URL}${url}`, {
+          method: 'DELETE',
+          headers
+        });
+        if (!response.ok && response.status !== 204) {
+          throw new Error(`Error al eliminar configuración: ${response.statusText}`);
+        }
+        return;
+      }
+    };
+  },
+
+  /**
    * Obtiene la configuración de reclutamiento para EyeTracking
    * @param researchId ID de la investigación
    * @returns Objeto con método send

@@ -11,6 +11,8 @@ import { StimuliTab } from '../StimuliTab/StimuliTab';
 import { CalibrationTab } from './CalibrationTab';
 import { SettingsTab } from './SettingsTab';
 
+import { eyeTrackingService } from '@/services/eyeTrackingService';
+import { toast } from 'react-hot-toast';
 import { useEyeTrackingForm } from './hooks/useEyeTrackingForm';
 
 interface EyeTrackingFormProps {
@@ -61,6 +63,8 @@ export const EyeTrackingForm: React.FC<EyeTrackingFormProps> = ({
       }
     };
   });
+
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Referencias para evitar problemas en efectos
   const formDataRef = useRef(formData);
@@ -147,6 +151,43 @@ export const EyeTrackingForm: React.FC<EyeTrackingFormProps> = ({
       logError('EyeTrackingForm - Error al guardar formulario', err);
     }
   }, [onSave, logDebug, logError]);
+
+  const handleDelete = useCallback(async () => {
+    if (!researchId) return;
+    setIsDeleting(true);
+    try {
+      await eyeTrackingService.deleteByResearchId(researchId);
+      toast.success('Configuración de EyeTracking eliminada correctamente.');
+      setFormData({
+        stimuli: {
+          items: [],
+          settings: {
+            displayMode: 'sequential',
+            stimulusDuration: 5,
+            interStimulusDuration: 0.5
+          }
+        },
+        calibration: {
+          type: 'standard',
+          pointCount: 5,
+          targetSize: 'medium',
+          targetColor: '#FF0000',
+          backgroundColor: '#FFFFFF'
+        },
+        settings: {
+          captureMode: 'continuous',
+          sampleRate: 60,
+          recordAudio: false,
+          showGaze: false,
+          allowPause: true
+        }
+      });
+    } catch (error: any) {
+      toast.error(error?.message || 'No se pudo eliminar la configuración.');
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [researchId]);
 
   const {
     formData: eyeTrackingFormData,
@@ -250,6 +291,16 @@ export const EyeTrackingForm: React.FC<EyeTrackingFormProps> = ({
               </>
             )}
           </Button>
+          {eyeTrackingId && (
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Eliminando...' : 'Eliminar'}
+            </Button>
+          )}
         </div>
       </div>
     </Card>

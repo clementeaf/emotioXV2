@@ -1,3 +1,5 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Configuración para exportación estática
@@ -14,13 +16,19 @@ const nextConfig = {
     externalDir: true
   },
   // Transpilación de paquetes externos
-  // transpilePackages: ['../shared'], // Comentado temporalmente para deployment
+  transpilePackages: ['../shared'], // Habilitado para resolver imports
   webpack: (config) => {
     // Resolver correctamente los módulos compartidos
     config.resolve.fallback = {
       ...config.resolve.fallback,
       fs: false,
       path: false,
+    };
+
+    // AGREGAR ALIAS @shared
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      '@shared': path.resolve(__dirname, '../shared'),
     };
 
     return config;

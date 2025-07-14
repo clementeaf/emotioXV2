@@ -80,8 +80,7 @@ export const eyeTrackingService = {
    * @returns Confirmación de eliminación
    */
   async deleteByResearchId(researchId: string): Promise<void> {
-    // Nota: eyeTrackingFixedAPI no tiene método delete, usar update con status deleted o implementar
-    throw new Error('Método delete no implementado en la API actual');
+    await eyeTrackingFixedAPI.delete(researchId).send();
   },
 
   /**
