@@ -244,7 +244,9 @@ const processApiResponse = (response: any): EyeTrackingRecruitFormData => {
 
   try {
     // ID
-    if (response.id) {safeResponse.id = response.id;}
+    if (response.id && typeof response.id === 'string' && response.id.length > 0) {
+      safeResponse.id = response.id;
+    }
 
     // Preguntas demográficas
     if (response.demographicQuestions) {
