@@ -1,5 +1,6 @@
 export interface Question {
   title?: string;
+  questionKey?: string;
 }
 
 export interface SidebarStep {
@@ -13,9 +14,19 @@ export interface StepData {
   config: {
     title?: string;
     questions?: Question[];
+    questionKey?: string;
     [key: string]: unknown;
   };
+  questionKey?: string;
 }
+
+export type StepSearchResult =
+  | StepData
+  | (Question & { parentStep: StepData })
+  | Question
+  | StepData['config']
+  | { demographicQuestions: Question[]; parentStep: StepData }
+  | undefined;
 
 export interface StepItemProps {
   step: SidebarStep;
@@ -25,6 +36,18 @@ export interface StepItemProps {
 
 export interface StepsListProps {
   steps: SidebarStep[];
-  currentStep: number;
+  currentStepKey: string;
   onStepClick?: (step: SidebarStep, index: number) => void;
+}
+
+export interface TestLayoutRendererProps {
+  data: StepData[] | undefined;
+  isLoading: boolean;
+  error: any;
+}
+
+export interface TestLayoutSidebarProps {
+  steps: SidebarStep[];
+  isLoading: boolean;
+  error: any;
 }

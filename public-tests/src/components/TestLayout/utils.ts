@@ -1,12 +1,6 @@
-import { SidebarStep, StepData } from './types';
+import { Question, SidebarStep, StepData, StepSearchResult } from './types';
 
 export const MOCK_CURRENT_STEP = 1;
-
-export interface Question {
-  title?: string;
-  questionKey?: string;
-  // otros campos si los necesitas
-}
 
 const ORDER = [
   'WELCOME_SCREEN',
@@ -40,4 +34,59 @@ export function getSidebarSteps(data: StepData[] | undefined): SidebarStep[] {
         questionKey: String(step.config?.questionKey || '')
       }];
     });
+}
+
+export function findStepByQuestionKey(
+  data: StepData[] | undefined,
+  questionKey: string
+): StepSearchResult {
+  if (!data) return undefined;
+  for (const step of data) {
+    // 1. Buscar en el nivel raíz
+    if (step.questionKey === questionKey) {
+      return step;
+    }
+    // 2. Buscar en config.questionKey
+    if (step.config && step.config.questionKey === questionKey) {
+      return step.config;
+    }
+    // 3. Caso especial: EYE_TRACKING_CONFIG y demographics
+    if (
+      step.originalSk === 'EYE_TRACKING_CONFIG' &&
+      questionKey === 'demographics' &&
+      step.config && step.config.demographicQuestions &&
+      typeof step.config.demographicQuestions === 'object'
+    ) {
+      const questionsObj = step.config.demographicQuestions;
+      const demographicQuestions = Array.isArray(questionsObj)
+        ? questionsObj
+        : Object.values(questionsObj);
+      return {
+        demographicQuestions,
+        parentStep: step
+      };
+    }
+    // 4. Buscar en preguntas anidadas para cognitive_task y smart_voc_form
+    if (
+      (step.originalSk === 'SMART_VOC_FORM' || step.originalSk === 'COGNITIVE_TASK') &&
+      step.config && Array.isArray(step.config.questions)
+    ) {
+      const found = (step.config.questions as Question[]).find(
+        (q) => q.questionKey === questionKey
+      );
+      if (found) {
+        return { ...found, parentStep: step };
+      }
+    }
+    // 5. Buscar en preguntas anidadas genérico
+    if (step.config && Array.isArray(step.config.questions)) {
+      const found = (step.config.questions as Question[]).find(
+        (q) => q.questionKey === questionKey
+      );
+      if (found) {
+        return found;
+      }
+    }
+  }
+  return undefined;
 }

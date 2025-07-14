@@ -1,23 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { useLoadResearchFormsConfig } from '../../hooks/useResearchForms';
-import { useParticipantStore } from '../../stores/participantStore';
 import { useStepStore } from '../../stores/useStepStore';
 import BurgerMenuButton from './BurgerMenuButton';
 import MobileOverlay from './MobileOverlay';
 import ProgressDisplay from './ProgressDisplay';
 import SidebarContainer from './SidebarContainer';
 import StepsList from './StepsList';
-import { getSidebarSteps, MOCK_CURRENT_STEP } from './utils';
+import { TestLayoutSidebarProps } from './types';
+import { MOCK_CURRENT_STEP } from './utils';
 
-const TestLayoutSidebar: React.FC = () => {
+const TestLayoutSidebar: React.FC<TestLayoutSidebarProps> = ({ steps, isLoading, error }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const researchId = useParticipantStore(state => state.researchId);
   const setStep = useStepStore(state => state.setStep);
   const currentStepKey = useStepStore(state => state.currentStepKey);
-
-  const { data, isLoading, error } = useLoadResearchFormsConfig(researchId || '');
-
-  const steps = getSidebarSteps(data?.data ?? undefined);
   const totalSteps = steps.length;
 
   useEffect(() => {
@@ -47,7 +41,7 @@ const TestLayoutSidebar: React.FC = () => {
             <ProgressDisplay current={MOCK_CURRENT_STEP} total={totalSteps} />
             <StepsList
               steps={steps}
-              currentStep={MOCK_CURRENT_STEP}
+              currentStepKey={currentStepKey}
               onStepClick={handleStepClick}
             />
           </>
