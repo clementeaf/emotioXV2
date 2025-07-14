@@ -7,6 +7,9 @@ import { Spinner } from '@/components/ui/Spinner';
 import { cn } from '@/lib/utils';
 import { BacklinkKeys, DemographicQuestionKeys, ParameterOptionKeys } from '@/shared/interfaces/eyeTrackingRecruit.interface';
 
+import { eyeTrackingFixedAPI } from '@/lib/eye-tracking-api';
+import { Trash2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { ErrorModal } from './components';
 import { useEyeTrackingRecruit } from './hooks/useEyeTrackingRecruit';
 
@@ -96,6 +99,8 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
     closeModal
   } = useEyeTrackingRecruit({ researchId });
 
+  const [isDeleting, setIsDeleting] = React.useState(false);
+
   // Function to determine the save button text
   const getSaveButtonText = () => {
     if (saving) {
@@ -107,6 +112,25 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
     }
     // Otherwise, it's a new creation
     return 'Guardar';
+  };
+
+  const handleDelete = async () => {
+    if (!researchId) {
+      toast.error('No hay datos para eliminar.');
+      return;
+    }
+    const confirmed = window.confirm('¿Estás seguro de que deseas eliminar todos los datos de reclutamiento ocular (demographics) de esta investigación? Esta acción no se puede deshacer.');
+    if (!confirmed) return;
+    setIsDeleting(true);
+    try {
+      await eyeTrackingFixedAPI.delete(researchId).send();
+      toast.success('Datos de reclutamiento ocular eliminados correctamente.');
+      window.location.reload();
+    } catch (error: any) {
+      toast.error(error?.message || 'No se pudo eliminar la configuración.');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   if (loading) {
@@ -538,12 +562,24 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                     <label htmlFor="saveUserJourney" className="text-xs text-blue-600 cursor-pointer">Guardar recorrido del usuario</label>
                   </div>
                 </div>
-                <div className="flex justify-end self-end">
+                <div className="flex justify-end self-end gap-4">
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    disabled={isDeleting || !formData.id}
+                    className="px-4 py-2 h-[40px] rounded-lg bg-red-600 text-white shadow hover:bg-red-700 text-sm font-medium disabled:opacity-50 flex items-center justify-center min-w-[180px] mt-8"
+                  >
+                    {isDeleting ? (
+                      <span className="flex items-center gap-2"><Spinner size="sm" /> Eliminando...</span>
+                    ) : (
+                      <span className="flex items-center gap-2"><Trash2 size={18} /> Eliminar datos</span>
+                    )}
+                  </button>
                   <button
                     type="button"
                     onClick={saveForm}
                     disabled={saving}
-                    className="px-4 py-2 rounded-lg bg-neutral-900 text-white shadow hover:bg-neutral-800 text-sm font-medium disabled:opacity-50 flex items-center justify-center min-w-[160px] mt-8"
+                    className="px-4 py-2 h-[40px] rounded-lg bg-neutral-900 text-white shadow hover:bg-neutral-800 text-sm font-medium disabled:opacity-50 flex items-center justify-center min-w-[180px] mt-8"
                   >
                     {saving ? (
                       <div className="flex items-center gap-2">
