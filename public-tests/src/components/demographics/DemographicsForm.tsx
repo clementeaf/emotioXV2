@@ -1,6 +1,5 @@
 import { QuestionType } from '@shared/interfaces/question-types.enum';
 import React, { useEffect, useState } from 'react';
-import { useModuleResponses } from '../../hooks/useModuleResponses';
 import { useStepResponseManager } from '../../hooks/useStepResponseManager';
 import { useParticipantStore } from '../../stores/participantStore';
 import {
@@ -70,11 +69,7 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
 }) => {
 
   const { researchId, participantId } = useParticipantStore();
-  const { refetch: refetchModuleResponses } = useModuleResponses({
-    researchId: researchId ?? undefined,
-    participantId: participantId ?? undefined,
-    autoFetch: false
-  });
+
 
   const demographicInitialValues = extractDemographicInitialValues(initialValues);
   const [formFieldResponses, setFormFieldResponses] = useState<DemographicResponses>(demographicInitialValues);
@@ -154,7 +149,6 @@ export const DemographicsForm: React.FC<DemographicsFormProps> = ({
     const { success } = await saveCurrentStepResponse(formFieldResponses);
 
     if (success) {
-      await refetchModuleResponses();
       onSubmit(formFieldResponses);
     }
     setIsSubmittingToServer(false);

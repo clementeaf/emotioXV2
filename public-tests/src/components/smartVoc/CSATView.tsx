@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { useStepResponseManager } from '../../hooks/useStepResponseManager';
 import type { ModuleResponse } from '../../stores/participantStore';
 import { useParticipantStore } from '../../stores/participantStore';
 import { MappedStepComponentProps } from '../../types/flow.types';
 import type { CSATResponse } from '../../types/smart-voc.types';
 import { formatQuestionText } from '../../utils/formHelpers';
-import { generateSatisfactionLevels } from '../../utils/smartVocUtils';
-import FormSubmitButton from '../common/FormSubmitButton';
+
 import { SatisfactionButton } from './SatisfactionButton';
 import { StarRating } from './StarRating';
 
@@ -35,7 +33,13 @@ const CSATView: React.FC<CSATViewProps> = (props) => {
   const instructions = question.config?.instructions || question.instructions || '';
   const companyName = question.config?.companyName || '';
   const useStars = question.config?.type === 'stars';
-  const satisfactionLevels = generateSatisfactionLevels(question.config);
+  const satisfactionLevels = [
+    { value: 1, label: 'Muy insatisfecho' },
+    { value: 2, label: 'Insatisfecho' },
+    { value: 3, label: 'Neutral' },
+    { value: 4, label: 'Satisfecho' },
+    { value: 5, label: 'Muy satisfecho' }
+  ];
 
   const allSteps = useParticipantStore(state => state.responsesData.modules.all_steps || []);
   const moduleResponse = allSteps.find(r => r.questionKey === question.questionKey) || null;
@@ -54,43 +58,8 @@ const CSATView: React.FC<CSATViewProps> = (props) => {
     setSelectedRating(persistedRating);
   }, [persistedRating, question.questionKey]);
 
-  const { isSaving, saveCurrentStepResponse } = useStepResponseManager({
-    stepId: question.id,
-    stepType: 'csat',
-    stepName: question.title || 'Valora tu satisfacción',
-    researchId: undefined,
-    participantId: undefined,
-    questionKey: question.questionKey,
-  });
-
   const handleRatingChange = (rating: number) => {
     setSelectedRating(rating);
-  };
-
-  const handleSubmit = async () => {
-    if (selectedRating === null) return;
-    setIsSubmitting(true);
-    setError(null);
-    try {
-      const responseData: CSATResponse = {
-        value: selectedRating,
-        questionKey: question.questionKey,
-        timestamp: Date.now(),
-        stepTitle: question.title || '',
-        metadata: {
-          questionType: question.type,
-          questionId: question.id,
-          companyName,
-          useStars
-        }
-      };
-      await saveCurrentStepResponse(responseData);
-      onStepComplete?.(responseData);
-    } catch (e) {
-      setError('Error guardando la respuesta. Por favor, intenta de nuevo.');
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   return (
@@ -135,14 +104,6 @@ const CSATView: React.FC<CSATViewProps> = (props) => {
         )}
 
         <div className='w-full flex justify-center'>
-          <FormSubmitButton
-          isSaving={isSubmitting || isSaving}
-          hasExistingData={!!(persistedRating !== null)}
-          onClick={handleSubmit}
-          disabled={selectedRating === null || isSubmitting}
-          customCreateText="Guardar y continuar"
-          customUpdateText="Actualizar y continuar"
-        />
         </div>
       </div>
     </div>

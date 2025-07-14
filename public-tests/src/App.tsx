@@ -1,10 +1,9 @@
 import { useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { Route, BrowserRouter as Router, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { ApiTester } from './components/ApiTester';
+
 import './index.css';
-import GDPRTestPage from './pages/GDPRTestPage';
-import ParticipantFlow from './pages/ParticipantFlow';
+
 import PrivacyNoticePage from './pages/PrivacyNoticePage';
 
 function LoginRedirect() {
@@ -64,9 +63,9 @@ function App() {
         <Route path="/" element={<LoginRedirect />} />
         <Route path="/login" element={<LoginRedirect />} />
         <Route path="/error-no-research-id" element={<NoResearchIdError />} />
-        <Route path="/api-test" element={<ApiTester />} />
-        <Route path="/link/:researchId" element={<ParticipantFlow />} />
-        <Route path="/gdpr-test" element={<GDPRTestPage />} />
+
+
+
         <Route path="/privacy" element={<PrivacyNoticePage />} />
         {/* Catch-all route for any unmatched paths including /index.html */}
         <Route path="*" element={<LoginRedirect />} />

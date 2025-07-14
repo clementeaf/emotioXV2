@@ -5,7 +5,7 @@ import { useParticipantStore } from '../../stores/participantStore';
 import { MappedStepComponentProps } from '../../types/flow.types';
 import type { AgreementScaleResponse } from '../../types/smart-voc.types';
 import { formatQuestionText } from '../../utils/formHelpers';
-import { generateSatisfactionLevels } from '../../utils/smartVocUtils';
+
 import FormSubmitButton from '../common/FormSubmitButton';
 import { SatisfactionButton } from './SatisfactionButton';
 import { StarRating } from './StarRating';
@@ -35,7 +35,13 @@ const AgreementScaleView: React.FC<AgreementScaleViewProps> = (props) => {
   const instructions = question.config?.instructions || question.instructions || '';
   const companyName = question.config?.companyName || '';
   const useStars = question.config?.type === 'stars';
-  const satisfactionLevels = generateSatisfactionLevels(question.config);
+  const satisfactionLevels = [
+    { value: 1, label: 'Muy insatisfecho' },
+    { value: 2, label: 'Insatisfecho' },
+    { value: 3, label: 'Neutral' },
+    { value: 4, label: 'Satisfecho' },
+    { value: 5, label: 'Muy satisfecho' }
+  ];
 
   // Buscar la respuesta persistida directamente en el store Zustand
   const allSteps = useParticipantStore(state => state.responsesData.modules.all_steps || []);
