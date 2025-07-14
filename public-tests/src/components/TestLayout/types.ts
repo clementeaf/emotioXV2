@@ -28,6 +28,15 @@ export type StepSearchResult =
   | { demographicQuestions: Question[]; parentStep: StepData }
   | undefined;
 
+export interface ScreenStep {
+  title?: string;
+  description?: string;
+  message?: string;
+  startButtonText?: string;
+  questionKey?: string;
+  [key: string]: unknown;
+}
+
 export interface StepItemProps {
   step: SidebarStep;
   isActive: boolean;
@@ -50,4 +59,12 @@ export interface TestLayoutSidebarProps {
   steps: SidebarStep[];
   isLoading: boolean;
   error: any;
+}
+
+export interface DemographicQuestion {
+  key: string;
+  enabled: boolean;
+  required: boolean;
+  options: Array<string | { value: string; label: string }>;
+  // Puedes agregar más campos según tu estructura real
 }

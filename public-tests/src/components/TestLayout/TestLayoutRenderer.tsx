@@ -1,15 +1,19 @@
 import React from 'react';
 import { useStepStore } from '../../stores/useStepStore';
 import { ErrorState, LoadingState } from './CommonStates';
-import { Question, StepData, StepSearchResult, TestLayoutRendererProps } from './types';
+import { DemographicForm } from './DemographicForm';
+import { ParentStepComponent, QuestionComponent, ScreenComponent, UnknownStepComponent } from './StepsComponents';
+import { DemographicQuestion, Question, ScreenStep, StepData, StepSearchResult, TestLayoutRendererProps } from './types';
 import { findStepByQuestionKey } from './utils';
 
-function isParentStepResult(obj: StepSearchResult): obj is (Question & { parentStep: StepData }) {
-  return obj !== undefined && typeof obj === 'object' && 'parentStep' in obj && !!obj.parentStep && !('demographicQuestions' in obj);
-}
-
-function isDemographicsResult(obj: StepSearchResult): obj is { demographicQuestions: Question[]; parentStep: StepData } {
-  return obj !== undefined && typeof obj === 'object' && 'demographicQuestions' in obj;
+function getStepType(obj: StepSearchResult): 'parent' | 'demographics' | 'screen' | 'question' | 'unknown' {
+  if (obj && typeof obj === 'object') {
+    if ('demographicQuestions' in obj) return 'demographics';
+    if ('parentStep' in obj) return 'parent';
+    if ('questionKey' in obj && (obj.questionKey === 'welcome_screen' || obj.questionKey === 'thank_you_screen')) return 'screen';
+    if ('questionKey' in obj) return 'question';
+  }
+  return 'unknown';
 }
 
 const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({ data, isLoading, error }) => {
@@ -31,35 +35,24 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({ data, isLoading
     return <div className='flex flex-col items-center justify-center h-full'>No se encontró información para este step</div>;
   }
 
-  // Caso: pregunta de SmartVoc o Cognitive con contexto de módulo padre
-  if (isParentStepResult(currentStepData)) {
-    const parent: StepData = currentStepData.parentStep;
-    const question: Question = currentStepData;
-    return (
-      <div className='flex flex-col items-center justify-center h-full'>
-        <div className='mb-2 font-semibold'>Módulo: {parent.derivedType || parent.originalSk}</div>
-        <div className='mb-2'>Pregunta: {question.title || question.questionKey}</div>
-        <pre className='text-xs bg-gray-100 p-2 rounded'>{JSON.stringify(question, null, 2)}</pre>
-      </div>
-    );
+  switch (getStepType(currentStepData)) {
+    case 'parent': {
+      const { parentStep, ...question } = currentStepData as Question & { parentStep: StepData };
+      return <ParentStepComponent parent={parentStep} question={question} />;
+    }
+    case 'demographics': {
+      const { demographicQuestions } = currentStepData as { demographicQuestions: DemographicQuestion[] };
+      return <DemographicForm questions={demographicQuestions} />;
+    }
+    case 'screen': {
+      return <ScreenComponent data={currentStepData as ScreenStep} />;
+    }
+    case 'question': {
+      return <QuestionComponent question={currentStepData as Question} />;
+    }
+    default:
+      return <UnknownStepComponent data={currentStepData} />;
   }
-
-  // Caso: demographics
-  if (isDemographicsResult(currentStepData)) {
-    return (
-      <div className='flex flex-col items-center justify-center h-full'>
-        <div className='mb-2 font-semibold'>Preguntas demográficas</div>
-        <pre className='text-xs bg-gray-100 p-2 rounded'>{JSON.stringify(currentStepData.demographicQuestions, null, 2)}</pre>
-      </div>
-    );
-  }
-
-  // Caso genérico
-  return (
-    <div className='flex flex-col items-center justify-center h-full'>
-      <pre className='text-xs bg-gray-100 p-2 rounded'>{JSON.stringify(currentStepData, null, 2)}</pre>
-    </div>
-  );
 };
 
 export default TestLayoutRenderer;
