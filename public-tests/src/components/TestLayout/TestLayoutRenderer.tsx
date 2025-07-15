@@ -9,37 +9,59 @@ import { QuestionComponent, ScreenComponent, UnknownStepComponent } from './Step
 import { DemographicQuestion, Question, ScreenStep, TestLayoutRendererProps } from './types';
 import { findStepByQuestionKey, getStepType } from './utils';
 
-const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({ data, isLoading, error, sidebarSteps = [] }) => {
-
+const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({
+  data,
+  isLoading,
+  error,
+  sidebarSteps = []
+}) => {
+  // ========================================
+  // 🎯 ESTADOS Y HOOKS
+  // ========================================
   const currentStepKey = useStepStore(state => state.currentStepKey);
   const setStep = useStepStore(state => state.setStep);
   const { researchId, participantId } = useParticipantStore();
-  const { sendResponse, getResponse, updateResponse, deleteAllResponses, metadata } = useParticipantData();
+  const { sendResponse, getResponse, updateResponse } = useParticipantData();
+
+  // Estados locales
   const [hasPreviousResponse, setHasPreviousResponse] = useState(false);
   const [previousResponse, setPreviousResponse] = useState<Record<string, unknown> | undefined>(undefined);
-
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
+    // ========================================
+  // 🔍 VERIFICACIÓN DE RESPUESTAS PREVIAS
+  // ========================================
   useEffect(() => {
+    console.log('[TestLayoutRenderer] 🔍 useEffect ejecutado para currentStepKey:', currentStepKey);
+
     const checkPreviousResponse = async () => {
       if (!currentStepKey) return;
 
       try {
-        // Obtener la respuesta usando el currentStepKey específico
         const previousResponse = await getResponse(currentStepKey);
 
         if (previousResponse) {
+          console.log('[TestLayoutRenderer] ✅ Respuesta previa encontrada para:', currentStepKey);
           setHasPreviousResponse(true);
           setPreviousResponse(previousResponse as Record<string, unknown>);
-          console.log(`[TestLayoutRenderer] ✅ Respuesta para ${currentStepKey} encontrada:`, previousResponse);
         } else {
+          console.log('[TestLayoutRenderer] ❌ No hay respuesta previa para:', currentStepKey);
           setHasPreviousResponse(false);
           setPreviousResponse(undefined);
-          console.log(`[TestLayoutRenderer] No hay respuesta previa para ${currentStepKey}`);
+
+          // Fallback SOLO para demographics, NO para otras preguntas
+          if (currentStepKey === 'demographics') {
+            const fallbackResponse = await getResponse('demographics');
+            if (fallbackResponse) {
+              console.log('[TestLayoutRenderer] ✅ Fallback demographics encontrado');
+              setHasPreviousResponse(true);
+              setPreviousResponse(fallbackResponse as Record<string, unknown>);
+            }
+          }
         }
       } catch (error) {
-        console.error(`[TestLayoutRenderer] Error verificando respuesta previa para ${currentStepKey}:`, error);
+        console.error(`[TestLayoutRenderer] ❌ Error verificando respuesta previa para ${currentStepKey}:`, error);
         setHasPreviousResponse(false);
         setPreviousResponse(undefined);
       }
@@ -48,6 +70,9 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({ data, isLoading
     checkPreviousResponse();
   }, [currentStepKey, getResponse]);
 
+  // ========================================
+  // 🚀 NAVEGACIÓN
+  // ========================================
   const goToNextStep = () => {
     if (!sidebarSteps || sidebarSteps.length === 0 || !currentStepKey) return;
 
@@ -55,32 +80,17 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({ data, isLoading
     if (currentIndex >= 0 && currentIndex < sidebarSteps.length - 1) {
       const nextStepKey = sidebarSteps[currentIndex + 1].questionKey;
       if (typeof nextStepKey === 'string') {
-        console.log('[TestLayoutRenderer] Avanzando de', currentStepKey, 'a', nextStepKey);
         setStep(nextStepKey);
       }
     }
   };
 
-  if (isLoading) {
-    return <LoadingState />;
-  }
-  if (error) {
-    return <ErrorState />;
-  }
-
-  const currentStepData = findStepByQuestionKey(data, currentStepKey);
-
-  if (!currentStepKey) {
-    return <NoStepSelected />;
-  }
-  if (!currentStepData) {
-    return <NoStepData />;
-  }
-
-  const stepType = getStepType(currentStepData);
-  let renderedForm: React.ReactNode = null;
-
+  // ========================================
+  // 📝 OBTENCIÓN DE VALORES DEL FORMULARIO
+  // ========================================
   const getFormValues = (): unknown => {
+    console.log('[TestLayoutRenderer] 🔍 getFormValues llamado');
+
     const formData = new FormData(document.querySelector('form') as HTMLFormElement);
     const values: Record<string, unknown> = {};
 
@@ -90,25 +100,37 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({ data, isLoading
       }
     }
 
+    console.log('[TestLayoutRenderer] 📋 Valores del formulario:', values);
+
     if (Object.keys(values).length === 0) {
-      return {
+      const emptyResponse = {
         submitted: true,
         timestamp: new Date().toISOString(),
-        stepType: stepType,
+        stepType: getStepType(currentStepData),
         stepTitle: currentStepKey
       };
+      console.log('[TestLayoutRenderer] 📤 Respuesta vacía:', emptyResponse);
+      return emptyResponse;
     }
 
-    return {
+    const response = {
       ...values,
       submitted: true,
       timestamp: new Date().toISOString(),
-      stepType: stepType,
+      stepType: getStepType(currentStepData),
       stepTitle: currentStepKey
     };
+
+    console.log('[TestLayoutRenderer] 📤 Respuesta con valores:', response);
+    return response;
   };
 
+  // ========================================
+  // 💾 MANEJO DE RESPUESTAS
+  // ========================================
   const handleSubmitResponse = async (response?: unknown) => {
+    console.log('[TestLayoutRenderer] 🔍 handleSubmitResponse llamado para:', currentStepKey);
+
     if (!researchId || !participantId) {
       console.error('[TestLayoutRenderer] ❌ Faltan researchId o participantId para guardar respuesta');
       toast.error('Error: Faltan datos de investigación o participante');
@@ -120,26 +142,19 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({ data, isLoading
 
     try {
       const responseData = response || getFormValues();
+      console.log('[TestLayoutRenderer] 📤 Enviando respuesta:', responseData);
 
       const sentResponse = await sendResponse(currentStepKey, responseData);
 
       if (sentResponse) {
-        console.log('[TestLayoutRenderer] ✅ Respuesta enviada exitosamente:', sentResponse);
-
+        console.log('[TestLayoutRenderer] ✅ Respuesta enviada exitosamente');
         toast.success('Respuesta guardada exitosamente');
-
         setIsSuccess(true);
 
         setTimeout(() => {
           setIsSuccess(false);
           goToNextStep();
-          console.log('[TestLayoutRenderer] Pasando a la siguiente pregunta...');
-        }, 1500);
-
-        const receivedResponse = await getResponse(currentStepKey);
-        if (receivedResponse) {
-          console.log('[TestLayoutRenderer] ✅ Respuesta recibida de vuelta:', receivedResponse);
-        }
+        }, 1000);
       } else {
         console.error('[TestLayoutRenderer] ❌ Error enviando respuesta');
         toast.error('Error al enviar respuesta');
@@ -153,18 +168,30 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({ data, isLoading
   };
 
   const handleUpdateResponse = async (newResponse: unknown) => {
+    console.log('[TestLayoutRenderer] 🔍 handleUpdateResponse llamado para:', currentStepKey);
+
     if (!researchId || !participantId) {
       console.error('[TestLayoutRenderer] ❌ Faltan researchId o participantId para actualizar respuesta');
       return;
     }
 
     setIsSubmitting(true);
+    setIsSuccess(false);
 
     try {
+      console.log('[TestLayoutRenderer] 📤 Actualizando respuesta:', newResponse);
+
       const updatedResponse = await updateResponse(currentStepKey, newResponse);
 
       if (updatedResponse) {
+        console.log('[TestLayoutRenderer] ✅ Respuesta actualizada exitosamente');
         toast.success('Respuesta actualizada exitosamente');
+        setIsSuccess(true);
+
+        setTimeout(() => {
+          setIsSuccess(false);
+          goToNextStep();
+        }, 1000);
       } else {
         console.error('[TestLayoutRenderer] ❌ Error actualizando respuesta');
         toast.error('Error al actualizar respuesta');
@@ -177,10 +204,25 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({ data, isLoading
     }
   };
 
+  // ========================================
+  // 🚨 VALIDACIONES INICIALES
+  // ========================================
+  if (isLoading) return <LoadingState />;
+  if (error) return <ErrorState />;
+  if (!currentStepKey) return <NoStepSelected />;
+
+  const currentStepData = findStepByQuestionKey(data, currentStepKey);
+  if (!currentStepData) return <NoStepData />;
+
+  // ========================================
+  // 🎨 RENDERIZADO DE COMPONENTES
+  // ========================================
+  const stepType = getStepType(currentStepData);
+  let renderedForm: React.ReactNode = null;
+
   switch (stepType) {
     case 'demographics': {
       const { demographicQuestions } = currentStepData as { demographicQuestions: DemographicQuestion[] };
-      console.log('[TestLayoutRenderer] Renderizando demographics con previousResponse:', previousResponse);
       renderedForm = <DemographicForm questions={demographicQuestions} previousResponse={previousResponse} />;
       break;
     }
@@ -207,23 +249,36 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({ data, isLoading
       renderedForm = <UnknownStepComponent data={currentStepData} />;
   }
 
+  // ========================================
+  // 🎛️ CONFIGURACIÓN DEL BOTÓN
+  // ========================================
   const showGlobalButton = stepType !== 'screen';
 
   const getButtonText = () => {
-    if (isSubmitting) {
-      return 'Guardando...';
-    }
-    if (isSuccess) {
-      return 'Pasando a la siguiente pregunta...';
-    }
+    if (isSubmitting) return 'Guardando...';
+    if (isSuccess) return 'Pasando a la siguiente pregunta...';
     return hasPreviousResponse ? 'Actualizar y continuar' : 'Guardar y continuar';
   };
 
   const isButtonDisabled = isSubmitting || isSuccess;
 
+  const handleButtonClick = () => {
+    console.log('[TestLayoutRenderer] 🔍 handleButtonClick ejecutado, hasPreviousResponse:', hasPreviousResponse);
+
+    if (hasPreviousResponse) {
+      handleUpdateResponse(getFormValues());
+    } else {
+      handleSubmitResponse();
+    }
+  };
+
+  // ========================================
+  // 🎯 RENDERIZADO FINAL
+  // ========================================
   return (
     <div className="relative flex flex-col items-center justify-center h-full w-full">
       {renderedForm}
+
       {showGlobalButton && (
         <button
           type="button"
@@ -233,13 +288,7 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({ data, isLoading
               ? 'bg-gray-400 cursor-not-allowed text-white'
               : 'bg-blue-600 hover:bg-blue-700 text-white'
           }`}
-          onClick={() => {
-            if (hasPreviousResponse) {
-              handleUpdateResponse(getFormValues());
-            } else {
-              handleSubmitResponse();
-            }
-          }}
+          onClick={handleButtonClick}
         >
           {isSubmitting && (
             <div className="flex items-center justify-center gap-2">

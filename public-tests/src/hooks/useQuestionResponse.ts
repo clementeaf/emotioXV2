@@ -8,9 +8,13 @@ export const useQuestionResponse = ({
 }: UseQuestionResponseProps): UseQuestionResponseReturn => {
   const [selectedValue, setSelectedValue] = useState<string>('');
   const [textValue, setTextValue] = useState<string>('');
+  const [demographicsValues, setDemographicsValues] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (previousResponse) {
+      console.log(`[useQuestionResponse] Procesando respuesta previa para ${currentStepKey}:`, previousResponse);
+
+      // Manejar respuestas de tipo choice (single/multiple choice)
       if (questionType === 'choice') {
         const prevChoice = previousResponse.choice ||
                           previousResponse.selected ||
@@ -20,10 +24,12 @@ export const useQuestionResponse = ({
         if (typeof prevChoice === 'string') {
           setSelectedValue(prevChoice);
         } else if (Array.isArray(prevChoice) && prevChoice.length > 0) {
+          // Para múltiples selecciones, tomar la primera
           setSelectedValue(String(prevChoice[0]));
         }
       }
 
+      // Manejar respuestas de tipo text (VOCTextQuestion)
       if (questionType === 'text') {
         const prevText = previousResponse.text ||
                         previousResponse.value ||
@@ -35,6 +41,7 @@ export const useQuestionResponse = ({
         }
       }
 
+      // Manejar respuestas de tipo scale (ScaleRangeQuestion)
       if (questionType === 'scale') {
         const prevScale = previousResponse.scale ||
                          previousResponse.value ||
@@ -48,7 +55,8 @@ export const useQuestionResponse = ({
         }
       }
 
-            if (questionType === 'emoji') {
+      // Manejar respuestas de tipo emoji (EmojiRangeQuestion)
+      if (questionType === 'emoji') {
         const prevEmoji = previousResponse.emoji ||
                          previousResponse.value ||
                          previousResponse.answer ||
@@ -65,14 +73,18 @@ export const useQuestionResponse = ({
       if (currentStepKey === 'demographics') {
         console.log(`[useQuestionResponse] Procesando demographics para ${currentStepKey}:`, previousResponse);
 
+        const demographicsData: Record<string, string> = {};
+
         // Para demographics, usar directamente los valores del formulario
         Object.entries(previousResponse).forEach(([key, value]) => {
           if (typeof value === 'string' && key !== 'submitted' && key !== 'timestamp' && key !== 'stepType' && key !== 'stepTitle') {
             console.log(`[useQuestionResponse] Campo demographics: ${key} = ${value}`);
-            // Para campos de demographics, usar setSelectedValue
-            setSelectedValue(value);
+            demographicsData[key] = value;
           }
         });
+
+        console.log(`[useQuestionResponse] Valores demographics procesados:`, demographicsData);
+        setDemographicsValues(demographicsData);
       }
     }
   }, [previousResponse, questionType, currentStepKey]);
@@ -82,7 +94,7 @@ export const useQuestionResponse = ({
     (questionType === 'text' && !!textValue) ||
     (questionType === 'scale' && !!selectedValue) ||
     (questionType === 'emoji' && !!selectedValue) ||
-    (currentStepKey === 'demographics' && !!selectedValue)
+    (currentStepKey === 'demographics' && Object.keys(demographicsValues).length > 0)
   );
 
   return {
@@ -90,6 +102,7 @@ export const useQuestionResponse = ({
     textValue,
     setSelectedValue,
     setTextValue,
-    hasPreviousResponse
+    hasPreviousResponse,
+    demographicsValues
   };
 };

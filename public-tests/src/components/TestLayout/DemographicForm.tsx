@@ -1,30 +1,34 @@
 import { useEffect, useState } from 'react';
+import { useQuestionResponse } from '../../hooks/useQuestionResponse';
 import { DemographicFormProps } from './types';
 
 export function DemographicForm({ questions, previousResponse }: DemographicFormProps) {
   const [formValues, setFormValues] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    console.log('[DemographicForm] previousResponse recibido:', previousResponse);
+  const { demographicsValues } = useQuestionResponse({
+    currentStepKey: 'demographics',
+    previousResponse,
+    questionType: 'demographics'
+  });
 
-    if (previousResponse) {
+  useEffect(() => {
+
+    if (Object.keys(demographicsValues).length > 0) {
+      setFormValues(demographicsValues);
+    } else if (previousResponse) {
       const initialValues: Record<string, string> = {};
 
       Object.entries(previousResponse).forEach(([key, value]) => {
-        console.log(`[DemographicForm] Procesando campo: ${key} = ${value} (tipo: ${typeof value})`);
         if (typeof value === 'string' && key !== 'submitted' && key !== 'timestamp' && key !== 'stepType' && key !== 'stepTitle') {
           initialValues[key] = value;
-          console.log(`[DemographicForm] ✅ Campo válido agregado: ${key} = ${value}`);
         }
       });
 
-      console.log('[DemographicForm] Valores iniciales:', initialValues);
       setFormValues(initialValues);
     } else {
-      console.log('[DemographicForm] No hay previousResponse');
       setFormValues({});
     }
-  }, [previousResponse]);
+  }, [previousResponse, demographicsValues]);
 
   const handleInputChange = (key: string, value: string) => {
     setFormValues(prev => ({
@@ -32,8 +36,6 @@ export function DemographicForm({ questions, previousResponse }: DemographicForm
       [key]: value
     }));
   };
-
-  console.log('[DemographicForm] Renderizando con formValues:', formValues);
 
   return (
     <form className="w-full max-w-lg mx-auto flex flex-col gap-4">

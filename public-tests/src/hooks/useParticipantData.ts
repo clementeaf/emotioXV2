@@ -1,84 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ApiClient } from '../lib/api';
 import { useParticipantStore } from '../stores/participantStore';
-
-// Tipos para metadata consolidada
-interface DeviceInfo {
-  deviceType: 'mobile' | 'tablet' | 'desktop';
-  userAgent: string;
-  screenWidth: number;
-  screenHeight: number;
-  platform: string;
-  language: string;
-  browser: string;
-  browserVersion: string;
-  os: string;
-  osVersion: string;
-  connectionType?: string;
-  timezone: string;
-}
-
-interface LocationInfo {
-  latitude?: number;
-  longitude?: number;
-  accuracy?: number;
-  city?: string;
-  country?: string;
-  region?: string;
-  ipAddress?: string;
-  method: 'gps' | 'ip' | 'none';
-  timestamp: number;
-}
-
-interface SessionInfo {
-  reentryCount: number;
-  sessionStartTime: number;
-  lastVisitTime: number;
-  totalSessionTime: number;
-  isFirstVisit: boolean;
-  currentStepKey: string;
-  stepProgress: number;
-}
-
-interface TimingInfo {
-  startTime: number;
-  endTime?: number;
-  duration?: number;
-  sectionTimings: Array<{
-    sectionId: string;
-    startTime: number;
-    endTime?: number;
-    duration?: number;
-  }>;
-}
-
-interface ConsolidatedMetadata {
-  deviceInfo: DeviceInfo;
-  locationInfo: LocationInfo;
-  sessionInfo: SessionInfo;
-  timingInfo: TimingInfo;
-}
-
-interface ParticipantDataReturn {
-  // Métodos de respuestas
-  sendResponse: (questionKey: string, response: unknown) => Promise<boolean>;
-  getResponse: (questionKey: string) => Promise<unknown | null>;
-  updateResponse: (questionKey: string, newResponse: unknown) => Promise<boolean>;
-  deleteAllResponses: () => Promise<boolean>;
-
-  // Metadata automática
-  metadata: ConsolidatedMetadata;
-
-  // Estados
-  isLoading: boolean;
-  error: string | null;
-
-  // Métodos de control
-  startSession: () => void;
-  endSession: () => void;
-  updateCurrentStep: (stepKey: string) => void;
-  updateProgress: (progress: number) => void;
-}
+import { ConsolidatedMetadata, DeviceInfo, LocationInfo, ParticipantDataReturn, SessionInfo } from './types';
 
 /**
  * Hook consolidado que maneja respuestas y metadata automáticamente
@@ -95,7 +18,6 @@ export const useParticipantData = (): ParticipantDataReturn => {
     timingInfo: { startTime: Date.now(), sectionTimings: [] }
   }));
 
-  // Obtener información del dispositivo
   function getDeviceInfo(): DeviceInfo {
     const userAgent = navigator.userAgent;
     const screen = window.screen;
@@ -155,7 +77,6 @@ export const useParticipantData = (): ParticipantDataReturn => {
     };
   }
 
-  // Obtener información de sesión
   function getSessionInfo(): SessionInfo {
     const storageKey = `session_${researchId || 'unknown'}_${participantId || 'unknown'}`;
     const stored = localStorage.getItem(storageKey);
@@ -184,7 +105,6 @@ export const useParticipantData = (): ParticipantDataReturn => {
     return sessionInfo;
   }
 
-  // Obtener ubicación automáticamente
   const getLocationInfo = useCallback(async (): Promise<LocationInfo> => {
     try {
       // Intentar GPS primero
@@ -235,7 +155,6 @@ export const useParticipantData = (): ParticipantDataReturn => {
     };
   }, []);
 
-  // Actualizar metadata automáticamente
   useEffect(() => {
     const updateMetadata = async () => {
       const locationInfo = await getLocationInfo();
@@ -253,8 +172,9 @@ export const useParticipantData = (): ParticipantDataReturn => {
     updateMetadata();
   }, [getLocationInfo]);
 
-  // Enviar respuesta con metadata automática
   const sendResponse = useCallback(async (questionKey: string, response: unknown): Promise<boolean> => {
+    console.log('[useParticipantData] 🔍 sendResponse llamado para:', questionKey, 'con respuesta:', response);
+
     if (!researchId || !participantId || !questionKey) {
       console.error('[useParticipantData] ❌ Faltan datos requeridos');
       return false;
@@ -276,6 +196,8 @@ export const useParticipantData = (): ParticipantDataReturn => {
         }
       };
 
+      console.log('[useParticipantData] 📤 Enviando respuesta a la API...');
+
       const result = await apiClient.saveModuleResponse({
         researchId,
         participantId,
@@ -292,12 +214,7 @@ export const useParticipantData = (): ParticipantDataReturn => {
         return false;
       }
 
-      console.log('[useParticipantData] ✅ Respuesta enviada con metadata:', {
-        questionKey,
-        responseId: result.data?.id,
-        metadata: updatedMetadata
-      });
-
+      console.log('[useParticipantData] ✅ Respuesta enviada exitosamente');
       return true;
     } catch (error) {
       console.error('[useParticipantData] 💥 Exception:', error);
@@ -308,15 +225,15 @@ export const useParticipantData = (): ParticipantDataReturn => {
     }
   }, [researchId, participantId, metadata]);
 
-  // Obtener respuesta
   const getResponse = useCallback(async (questionKey: string): Promise<unknown | null> => {
     if (!researchId || !participantId || !questionKey) {
-      console.error('[useParticipantData] ❌ Faltan datos requeridos');
+      console.error('[useParticipantData] ❌ Faltan datos requeridos:', { researchId, participantId, questionKey });
       return null;
     }
 
     try {
       const apiClient = new ApiClient();
+
       const result = await apiClient.getModuleResponses(researchId, participantId);
 
       if (result.error) {
@@ -324,11 +241,11 @@ export const useParticipantData = (): ParticipantDataReturn => {
         return null;
       }
 
-      const responses = (result.data as any)?.responses || [];
+      const responses = (result.data as any)?.data?.responses || (result.data as any)?.responses || [];
+
       const foundResponse = responses.find((r: any) => r.questionKey === questionKey);
 
       if (foundResponse) {
-        console.log('[useParticipantData] ✅ Respuesta encontrada:', foundResponse);
         return foundResponse.response;
       }
 
@@ -339,12 +256,10 @@ export const useParticipantData = (): ParticipantDataReturn => {
     }
   }, [researchId, participantId]);
 
-  // Actualizar respuesta
   const updateResponse = useCallback(async (questionKey: string, newResponse: unknown): Promise<boolean> => {
     return sendResponse(questionKey, newResponse);
   }, [sendResponse]);
 
-  // Eliminar todas las respuestas
   const deleteAllResponses = useCallback(async (): Promise<boolean> => {
     if (!researchId || !participantId) {
       console.error('[useParticipantData] ❌ Faltan researchId o participantId');
@@ -360,7 +275,6 @@ export const useParticipantData = (): ParticipantDataReturn => {
         return false;
       }
 
-      console.log('[useParticipantData] ✅ Todas las respuestas eliminadas');
       return true;
     } catch (error) {
       console.error('[useParticipantData] 💥 Error eliminando respuestas:', error);
@@ -368,7 +282,6 @@ export const useParticipantData = (): ParticipantDataReturn => {
     }
   }, [researchId, participantId]);
 
-  // Iniciar sesión
   const startSession = useCallback(() => {
     const sessionInfo: SessionInfo = {
       reentryCount: 0,
@@ -389,12 +302,10 @@ export const useParticipantData = (): ParticipantDataReturn => {
       }
     }));
 
-    // Guardar en localStorage
     const storageKey = `session_${researchId || 'unknown'}_${participantId || 'unknown'}`;
     localStorage.setItem(storageKey, JSON.stringify(sessionInfo));
   }, [researchId, participantId]);
 
-  // Finalizar sesión
   const endSession = useCallback(() => {
     setMetadata(prev => ({
       ...prev,
@@ -406,7 +317,6 @@ export const useParticipantData = (): ParticipantDataReturn => {
     }));
   }, []);
 
-  // Actualizar paso actual
   const updateCurrentStep = useCallback((stepKey: string) => {
     setMetadata(prev => ({
       ...prev,
@@ -417,7 +327,6 @@ export const useParticipantData = (): ParticipantDataReturn => {
     }));
   }, []);
 
-  // Actualizar progreso
   const updateProgress = useCallback((progress: number) => {
     setMetadata(prev => ({
       ...prev,
