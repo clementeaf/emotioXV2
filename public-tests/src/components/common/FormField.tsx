@@ -1,5 +1,18 @@
 import React from 'react';
-import { FormFieldProps } from '../../types/common.types';
+
+interface FormFieldProps {
+  id: string;
+  label: string;
+  name: string;
+  type?: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  placeholder?: string;
+  error?: string;
+  disabled?: boolean;
+  required?: boolean;
+  className?: string;
+}
 
 const FormField: React.FC<FormFieldProps> = ({
     id,
@@ -11,7 +24,7 @@ const FormField: React.FC<FormFieldProps> = ({
     placeholder,
     error,
     disabled = false,
-    required = false, // <-- Añadir valor por defecto
+    required = false,
     className = ''
 }) => {
     const baseInputClasses = "w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-neutral-900";
@@ -19,9 +32,9 @@ const FormField: React.FC<FormFieldProps> = ({
     const normalInputClasses = "border-neutral-300";
 
     return (
-        <div className={`mb-4 ${className}`}> {/* Añadir margen inferior por defecto */}
-            <label 
-              htmlFor={id} 
+        <div className={`mb-4 ${className}`}>
+            <label
+              htmlFor={id}
               className="block text-sm font-medium text-neutral-700 mb-1"
             >
               {label}
@@ -35,7 +48,7 @@ const FormField: React.FC<FormFieldProps> = ({
               className={`${baseInputClasses} ${error ? errorInputClasses : normalInputClasses}`}
               placeholder={placeholder}
               disabled={disabled}
-              aria-required={required} // <-- Usar la prop para aria-required
+              aria-required={required}
             />
             {error && (
               <p className="mt-1 text-sm text-red-500">{error}</p>
@@ -44,4 +57,4 @@ const FormField: React.FC<FormFieldProps> = ({
     );
 };
 
-export default FormField; 
+export default FormField;

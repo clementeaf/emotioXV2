@@ -1,0 +1,14 @@
+{
+  "lastSync": "2025-07-15T15:24:49.000Z",
+  "stage": "prod",
+  "forceSync": false,
+  "verbose": true,
+  "filesGenerated": [
+    "dynamic-endpoints.js",
+    "centralized-config.ts",
+    "sync-status.json"
+  ],
+  "backendVersion": "0.1.0",
+  "projectRoot": "/Users/clementefalcone/Desktop/Personal/emotioXV2",
+  "configDir": "/Users/clementefalcone/Desktop/Personal/emotioXV2/config/endpoints"
+}

@@ -1,5 +1,11 @@
+/**
+ * 🧪 HOOK SIMPLIFICADO PARA CONSENTIMIENTO GDPR
+ *
+ * Este hook maneja solo el consentimiento GDPR local,
+ * sin lógica de backend. Usa localStorage para persistencia.
+ */
+
 import { useCallback, useEffect, useState } from 'react';
-import { useGDPRPreferences } from './useGDPRPreferences';
 
 export interface GDPRConsentState {
   hasConsented: boolean | null;
@@ -19,14 +25,6 @@ export const useGDPRConsent = (researchId?: string) => {
   });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [rememberDecision, setRememberDecision] = useState(true);
-
-  const {
-    shouldShowConsent,
-    markAsShown,
-    getStoredConsent,
-    preferences
-  } = useGDPRPreferences();
 
   // Cargar estado inicial desde localStorage
   useEffect(() => {
@@ -44,31 +42,6 @@ export const useGDPRConsent = (researchId?: string) => {
     }
   }, []);
 
-  // Verificar consentimiento almacenado si recordar decisión está habilitado
-  useEffect(() => {
-    if (researchId && preferences.rememberDecision) {
-      const storedConsent = getStoredConsent(researchId);
-
-      if (storedConsent === 'granted') {
-        setConsentState(prev => ({
-          ...prev,
-          hasConsented: true,
-          hasRejected: false,
-          timestamp: Date.now(),
-          researchId
-        }));
-      } else if (storedConsent === 'denied') {
-        setConsentState(prev => ({
-          ...prev,
-          hasConsented: false,
-          hasRejected: true,
-          timestamp: Date.now(),
-          researchId
-        }));
-      }
-    }
-  }, [researchId, preferences.rememberDecision, getStoredConsent]);
-
   // Guardar estado en localStorage
   const saveConsentState = useCallback((newState: Partial<GDPRConsentState>) => {
     const updatedState = { ...consentState, ...newState };
@@ -81,27 +54,6 @@ export const useGDPRConsent = (researchId?: string) => {
     }
   }, [consentState]);
 
-  // Guardar consentimiento en historial si recordar decisión está habilitado
-  const saveConsentToHistory = useCallback((status: 'granted' | 'denied') => {
-    if (researchId && preferences.rememberDecision) {
-      try {
-        const history = localStorage.getItem('emotio_gdpr_consent_history');
-        const consentHistory = history ? JSON.parse(history) : {};
-
-        consentHistory[researchId] = {
-          status,
-          timestamp: Date.now(),
-          researchId,
-          rememberDecision: preferences.rememberDecision
-        };
-
-        localStorage.setItem('emotio_gdpr_consent_history', JSON.stringify(consentHistory));
-      } catch (error) {
-        console.warn('Error saving consent to history:', error);
-      }
-    }
-  }, [researchId, preferences.rememberDecision]);
-
   // Manejar aceptación del consentimiento
   const handleAccept = useCallback(() => {
     saveConsentState({
@@ -111,16 +63,8 @@ export const useGDPRConsent = (researchId?: string) => {
       researchId
     });
 
-    // Guardar en historial si recordar decisión está habilitado
-    saveConsentToHistory('granted');
-
-    // Marcar como mostrado
-    if (researchId) {
-      markAsShown(researchId);
-    }
-
     setIsModalOpen(false);
-  }, [saveConsentState, researchId, saveConsentToHistory, markAsShown]);
+  }, [saveConsentState, researchId]);
 
   // Manejar rechazo del consentimiento
   const handleReject = useCallback(() => {
@@ -131,33 +75,13 @@ export const useGDPRConsent = (researchId?: string) => {
       researchId
     });
 
-    // Guardar en historial si recordar decisión está habilitado
-    saveConsentToHistory('denied');
-
-    // Marcar como mostrado
-    if (researchId) {
-      markAsShown(researchId);
-    }
-
     setIsModalOpen(false);
-  }, [saveConsentState, researchId, saveConsentToHistory, markAsShown]);
+  }, [saveConsentState, researchId]);
 
   // Abrir modal de consentimiento
   const requestConsent = useCallback(() => {
-    // Verificar si debe mostrar el consentimiento según las preferencias
-    if (researchId && !shouldShowConsent(researchId)) {
-      // Si auto-aceptar está habilitado, aceptar automáticamente
-      if (preferences.autoAccept) {
-        handleAccept();
-        return;
-      }
-
-      // Si no debe mostrar, no hacer nada
-      return;
-    }
-
     setIsModalOpen(true);
-  }, [researchId, shouldShowConsent, preferences.autoAccept, handleAccept]);
+  }, []);
 
   // Cerrar modal
   const closeModal = useCallback(() => {
@@ -171,81 +95,66 @@ export const useGDPRConsent = (researchId?: string) => {
       return false;
     }
 
-    // Si ha rechazado, verificar preferencias de frecuencia
+    // Si ha rechazado, no mostrar de nuevo
     if (consentState.hasRejected === true) {
-      if (preferences.notificationFrequency === 'never') {
-        return false;
-      }
-      if (preferences.notificationFrequency === 'once' && researchId) {
-        // Verificar si ya se mostró para esta investigación
-        try {
-          const history = localStorage.getItem('emotio_gdpr_consent_history');
-          if (history) {
-            const consentHistory = JSON.parse(history);
-            const researchConsent = consentHistory[researchId];
-            if (researchConsent && researchConsent.shown) {
-              return false;
-            }
-          }
-        } catch (error) {
-          console.warn('Error checking consent history:', error);
-        }
-      }
+      return false;
     }
 
     // Si no hay estado guardado, necesita consentimiento
     return consentState.hasConsented === null;
-  }, [consentState, preferences.notificationFrequency, researchId]);
+  }, [consentState]);
 
   // Verificar si puede usar geolocalización
   const canUseGeolocation = useCallback(() => {
     return consentState.hasConsented === true;
   }, [consentState]);
 
-  // Resetear consentimiento (útil para testing)
-  const resetConsent = useCallback(() => {
-    const resetState = {
-      hasConsented: null,
-      hasRejected: false,
-      timestamp: null,
-      researchId
-    };
-    setConsentState(resetState);
-    localStorage.removeItem(GDPR_STORAGE_KEY);
-  }, [researchId]);
+  // Verificar si puede usar cookies
+  const canUseCookies = useCallback(() => {
+    return consentState.hasConsented === true;
+  }, [consentState]);
 
-  // Obtener información del consentimiento para logging
-  const getConsentInfo = useCallback(() => {
-    return {
-      hasConsented: consentState.hasConsented,
-      hasRejected: consentState.hasRejected,
-      timestamp: consentState.timestamp,
-      researchId: consentState.researchId,
-      needsConsent: needsConsent(),
-      canUseGeolocation: canUseGeolocation(),
-      rememberDecision,
-      preferences
-    };
-  }, [consentState, needsConsent, canUseGeolocation, rememberDecision, preferences]);
+  // Verificar si puede usar analytics
+  const canUseAnalytics = useCallback(() => {
+    return consentState.hasConsented === true;
+  }, [consentState]);
+
+  // Limpiar consentimiento
+  const clearConsent = useCallback(() => {
+    try {
+      localStorage.removeItem(GDPR_STORAGE_KEY);
+      setConsentState({
+        hasConsented: null,
+        hasRejected: false,
+        timestamp: null,
+        researchId
+      });
+    } catch (error) {
+      console.warn('Error clearing GDPR consent:', error);
+    }
+  }, [researchId]);
 
   return {
     // Estado
     consentState,
     isModalOpen,
-    rememberDecision,
 
     // Acciones
-    requestConsent,
     handleAccept,
     handleReject,
+    requestConsent,
     closeModal,
-    resetConsent,
-    setRememberDecision,
+    clearConsent,
+
+    // Verificaciones
+    needsConsent,
+    canUseGeolocation,
+    canUseCookies,
+    canUseAnalytics,
 
     // Utilidades
-    needsConsent: needsConsent(),
-    canUseGeolocation: canUseGeolocation(),
-    getConsentInfo,
-    preferences
+    hasConsented: consentState.hasConsented === true,
+    hasRejected: consentState.hasRejected,
+    timestamp: consentState.timestamp,
   };
 };

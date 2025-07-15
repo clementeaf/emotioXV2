@@ -1,11 +1,36 @@
-import { create } from 'zustand';
+/**
+ * 🧪 STORE SIMPLIFICADO PARA PASOS
+ *
+ * Este store maneja solo el estado del paso actual,
+ * usando el store principal useTestStore.
+ */
 
-interface StepStoreState {
-  currentStepKey: string;
-  setStep: (key: string) => void;
-}
+import { useTestStore } from './useTestStore';
 
-export const useStepStore = create<StepStoreState>((set) => ({
-  currentStepKey: '',
-  setStep: (key) => set({ currentStepKey: key }),
-}));
+// Hook que usa el store principal
+export const useStepStore = () => {
+  const {
+    currentStepIndex,
+    steps,
+    setCurrentStep,
+    getCurrentStep,
+  } = useTestStore();
+
+  const currentStep = getCurrentStep();
+  const currentStepKey = currentStep?.id || '';
+
+  const setStep = (stepKey: string) => {
+    const stepIndex = steps.findIndex(step => step.id === stepKey);
+    if (stepIndex !== -1) {
+      setCurrentStep(stepIndex);
+    }
+  };
+
+  return {
+    currentStepKey,
+    setStep,
+    currentStep,
+    currentStepIndex,
+    steps,
+  };
+};

@@ -45,7 +45,7 @@ export function buildQuestionDictionary(expandedSteps: any[]): Record<string, an
             };
 
             // Alias para stepId si es paso core
-            if ([QuestionType.DEMOGRAPHICS, QuestionType.WELCOME_SCREEN, QuestionType.THANK_YOU_SCREEN].includes(stepType as any) ||
+            if ([QuestionType.DEMOGRAPHICS, QuestionType.WELCOME_SCREEN, QuestionType.THANK_YOU_SCREEN].includes(stepType as QuestionType) ||
                 ['demographic', 'demographics', 'welcome', 'welcome_screen', 'thankyou', 'thank_you_screen'].includes(stepId)) {
                 // Alias para todas las variantes posibles
                 if (stepId === 'demographic' || stepId === 'demographics') {
@@ -84,7 +84,7 @@ export function buildQuestionDictionary(expandedSteps: any[]): Record<string, an
                     originalType: stepType // Preservar el tipo original
                 };
                 // Alias para stepId si es paso core legacy
-                if ([QuestionType.DEMOGRAPHICS, QuestionType.WELCOME_SCREEN, QuestionType.THANK_YOU_SCREEN].includes(mappedType as any)) {
+                if ([QuestionType.DEMOGRAPHICS, QuestionType.WELCOME_SCREEN, QuestionType.THANK_YOU_SCREEN].includes(mappedType as QuestionType)) {
                     questionDictionary[stepId] = questionDictionary[questionKey];
                 }
             } else {

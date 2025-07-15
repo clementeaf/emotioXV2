@@ -1,5 +1,9 @@
 import React from 'react';
-import { AuthLegalTextProps } from '../../types/flow.types';
+
+interface AuthLegalTextProps {
+  termsUrl?: string;
+  privacyUrl?: string;
+}
 
 export const AuthLegalText: React.FC<AuthLegalTextProps> = ({ termsUrl = "#", privacyUrl = "#" }) => {
     return (
@@ -14,4 +18,4 @@ export const AuthLegalText: React.FC<AuthLegalTextProps> = ({ termsUrl = "#", pr
           </a>
         </p>
     );
-}; 
+};

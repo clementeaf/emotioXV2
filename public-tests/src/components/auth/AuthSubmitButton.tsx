@@ -1,5 +1,11 @@
 import React from 'react';
-import { AuthSubmitButtonProps } from '../../types/flow.types';
+
+interface AuthSubmitButtonProps {
+  isLoading: boolean;
+  loadingText?: string;
+  text?: string;
+  className?: string;
+}
 
 export const AuthSubmitButton: React.FC<AuthSubmitButtonProps> = ({
     isLoading,
@@ -18,4 +24,4 @@ export const AuthSubmitButton: React.FC<AuthSubmitButtonProps> = ({
             {isLoading ? loadingText : text}
         </button>
     );
-}; 
+};

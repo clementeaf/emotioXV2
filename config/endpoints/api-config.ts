@@ -1,21 +1,37 @@
-// 🔄 ARCHIVO DE ENDPOINTS DINÁMICOS PARA PUBLIC-TESTS
-// Este archivo carga los endpoints desde el servidor para mantener sincronización
-// con el backend desplegado en AWS Lambda
+/**
+ * 🔄 CONFIGURACIÓN CENTRALIZADA DE ENDPOINTS - EmotioXV2
+ *
+ * Este archivo centraliza toda la configuración de endpoints del proyecto,
+ * integrando con el sistema dinámico de backendV2 para mantener sincronización
+ * automática entre todos los componentes.
+ */
 
-// Interfaz para los endpoints
-interface ApiEndpoints {
+// Interfaz para configuración de endpoints
+export interface ApiConfig {
   http: string;
   ws: string;
   stage: string;
-}
-
-interface LocalUrls {
   frontend: string;
   publicTests: string;
   generatedAt: string;
 }
 
-interface DynamicEndpoints {
+// Interfaz para endpoints específicos
+export interface ApiEndpoints {
+  http: string;
+  ws: string;
+  stage: string;
+}
+
+// URLs locales por defecto
+export interface LocalUrls {
+  frontend: string;
+  publicTests: string;
+  generatedAt: string;
+}
+
+// Configuración dinámica completa
+export interface DynamicEndpoints {
   API_ENDPOINTS: ApiEndpoints;
   LOCAL_URLS: LocalUrls;
   API_HTTP_ENDPOINT: string;
@@ -29,8 +45,8 @@ interface DynamicEndpoints {
 // Endpoints por defecto (fallback)
 const DEFAULT_ENDPOINTS: DynamicEndpoints = {
   API_ENDPOINTS: {
-    http: import.meta.env.VITE_API_URL || 'http://localhost:3001',
-    ws: import.meta.env.VITE_WS_URL || 'ws://localhost:3001',
+    http: process.env.NEXT_PUBLIC_API_URL || 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev',
+    ws: process.env.NEXT_PUBLIC_WS_URL || 'wss://w8dj7wxnl9.execute-api.us-east-1.amazonaws.com/dev',
     stage: 'dev'
   },
   LOCAL_URLS: {
@@ -38,13 +54,13 @@ const DEFAULT_ENDPOINTS: DynamicEndpoints = {
     publicTests: 'http://localhost:4700',
     generatedAt: new Date().toISOString()
   },
-  API_HTTP_ENDPOINT: import.meta.env.VITE_API_URL || 'http://localhost:3001',
-  API_WEBSOCKET_ENDPOINT: import.meta.env.VITE_WS_URL || 'ws://localhost:3001',
+  API_HTTP_ENDPOINT: process.env.NEXT_PUBLIC_API_URL || 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev',
+  API_WEBSOCKET_ENDPOINT: process.env.NEXT_PUBLIC_WS_URL || 'wss://w8dj7wxnl9.execute-api.us-east-1.amazonaws.com/dev',
   getApiUrl: (path: string) => {
     const cleanPath = path.startsWith('/') ? path.substring(1) : path;
-    return `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/${cleanPath}`;
+    return `${process.env.NEXT_PUBLIC_API_URL || 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev'}/${cleanPath}`;
   },
-  getWebsocketUrl: () => import.meta.env.VITE_WS_URL || 'ws://localhost:3001',
+  getWebsocketUrl: () => process.env.NEXT_PUBLIC_WS_URL || 'wss://w8dj7wxnl9.execute-api.us-east-1.amazonaws.com/dev',
   getPublicTestsUrl: () => 'http://localhost:4700',
   navigateToPublicTests: (researchID: string) => {
     const url = `http://localhost:4700/${researchID}`;
@@ -52,13 +68,16 @@ const DEFAULT_ENDPOINTS: DynamicEndpoints = {
   }
 };
 
-// Función para cargar endpoints dinámicamente
+/**
+ * Función para cargar endpoints dinámicamente desde diferentes fuentes
+ */
 export async function loadDynamicEndpoints(): Promise<DynamicEndpoints> {
   try {
     // Intentar cargar desde diferentes ubicaciones
     const endpointsUrls = [
-      '/config/endpoints.js',
+      '/config/endpoints/dynamic-endpoints.js',
       '/api/endpoints.js',
+      '/config/endpoints.js',
       '/endpoints.js'
     ];
 
@@ -127,11 +146,45 @@ export async function loadDynamicEndpoints(): Promise<DynamicEndpoints> {
   }
 }
 
-// Función para obtener endpoints con caché
+/**
+ * Función para obtener configuración de API con caché
+ */
 let cachedEndpoints: DynamicEndpoints | null = null;
 let lastFetchTime = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
 
+export async function getApiConfig(): Promise<ApiConfig> {
+  const now = Date.now();
+
+  // Usar caché si está disponible y no ha expirado
+  if (cachedEndpoints && (now - lastFetchTime) < CACHE_DURATION) {
+    return {
+      http: cachedEndpoints.API_HTTP_ENDPOINT,
+      ws: cachedEndpoints.API_WEBSOCKET_ENDPOINT,
+      stage: cachedEndpoints.API_ENDPOINTS.stage,
+      frontend: cachedEndpoints.LOCAL_URLS.frontend,
+      publicTests: cachedEndpoints.LOCAL_URLS.publicTests,
+      generatedAt: cachedEndpoints.LOCAL_URLS.generatedAt
+    };
+  }
+
+  // Cargar endpoints frescos
+  cachedEndpoints = await loadDynamicEndpoints();
+  lastFetchTime = now;
+
+  return {
+    http: cachedEndpoints.API_HTTP_ENDPOINT,
+    ws: cachedEndpoints.API_WEBSOCKET_ENDPOINT,
+    stage: cachedEndpoints.API_ENDPOINTS.stage,
+    frontend: cachedEndpoints.LOCAL_URLS.frontend,
+    publicTests: cachedEndpoints.LOCAL_URLS.publicTests,
+    generatedAt: cachedEndpoints.LOCAL_URLS.generatedAt
+  };
+}
+
+/**
+ * Función para obtener endpoints dinámicos completos
+ */
 export async function getDynamicEndpoints(): Promise<DynamicEndpoints> {
   const now = Date.now();
 
@@ -147,12 +200,21 @@ export async function getDynamicEndpoints(): Promise<DynamicEndpoints> {
   return cachedEndpoints;
 }
 
-// Función para forzar recarga de endpoints
-export async function refreshEndpoints(): Promise<DynamicEndpoints> {
-  cachedEndpoints = null;
-  lastFetchTime = 0;
-  return await getDynamicEndpoints();
-}
+// Exportar configuración por defecto para uso inmediato
+export const API_CONFIG: ApiConfig = {
+  http: DEFAULT_ENDPOINTS.API_HTTP_ENDPOINT,
+  ws: DEFAULT_ENDPOINTS.API_WEBSOCKET_ENDPOINT,
+  stage: DEFAULT_ENDPOINTS.API_ENDPOINTS.stage,
+  frontend: DEFAULT_ENDPOINTS.LOCAL_URLS.frontend,
+  publicTests: DEFAULT_ENDPOINTS.LOCAL_URLS.publicTests,
+  generatedAt: DEFAULT_ENDPOINTS.LOCAL_URLS.generatedAt
+};
 
-// Exportar endpoints por defecto para compatibilidad
-export default DEFAULT_ENDPOINTS;
+// Exportar funciones de utilidad
+export const getApiUrl = DEFAULT_ENDPOINTS.getApiUrl;
+export const getWebsocketUrl = DEFAULT_ENDPOINTS.getWebsocketUrl;
+export const getPublicTestsUrl = DEFAULT_ENDPOINTS.getPublicTestsUrl;
+export const navigateToPublicTests = DEFAULT_ENDPOINTS.navigateToPublicTests;
+
+// Exportar configuración completa por defecto
+export default API_CONFIG;

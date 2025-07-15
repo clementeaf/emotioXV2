@@ -30,11 +30,14 @@ log_info "Borrando build anterior (dist/)..."
 rm -rf public-tests/$BUILD_DIR
 log_success "Directorio dist/ eliminado."
 
-log_info "Exportar endpoints reales antes del build"
-API_ENDPOINT="https://api.emotioxv2.com/prod" \
-WEBSOCKET_ENDPOINT="wss://ws.emotioxv2.com/prod" \
-STAGE="production" \
-npx ts-node backendV2/src/utils/endpoints-exporter.ts public-tests/src/config/endpoints.js
+# 🆕 SINCRONIZAR ENDPOINTS DINÁMICOS ANTES DEL BUILD
+log_info "🔄 Sincronizando endpoints dinámicos desde backendV2..."
+if [ -f "config/endpoints/sync-script.sh" ]; then
+    ./config/endpoints/sync-script.sh --stage prod --verbose
+    log_success "✅ Endpoints dinámicos sincronizados"
+else
+    log_warning "⚠️ Script de sincronización no encontrado, usando endpoints por defecto"
+fi
 
 log_info "Construyendo public-tests (Vite)..."
 npm --prefix public-tests install
@@ -45,18 +48,32 @@ log_info "Subiendo archivos a S3..."
 aws s3 sync public-tests/$BUILD_DIR s3://$BUCKET --delete --region $REGION || { log_error "Error al subir archivos a S3"; exit 1; }
 log_success "Archivos subidos a S3."
 
+# 🆕 COPIAR ENDPOINTS DINÁMICOS AL BUCKET
 log_info "Copiando endpoints dinámicos al bucket..."
 # Crear directorio config si no existe
 aws s3api put-object --bucket $BUCKET --key config/ --region $REGION 2>/dev/null || true
 
 # Copiar endpoints dinámicos si existen
-if [ -f "public-tests/src/config/endpoints.js" ]; then
-    aws s3 cp public-tests/src/config/endpoints.js s3://$BUCKET/config/endpoints.js --region $REGION
+if [ -f "config/endpoints/dynamic-endpoints.js" ]; then
+    aws s3 cp config/endpoints/dynamic-endpoints.js s3://$BUCKET/config/endpoints.js --region $REGION
     log_success "Endpoints dinámicos copiados a S3."
 else
-    log_warning "No se encontró endpoints.js, se usará la configuración por defecto."
+    log_warning "No se encontró endpoints dinámicos, se usará la configuración por defecto."
 fi
 
-log_info "Invalidando caché de CloudFront..."
-aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*" || { log_warning "No se pudo invalidar CloudFront automáticamente. Hazlo manual si ves problemas de caché."; }
-log_success "Deploy limpio completado."
+log_info "Invalidando CloudFront..."
+aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*" --region $REGION || { log_error "Error al invalidar CloudFront"; exit 1; }
+log_success "CloudFront invalidado."
+
+log_info "Verificando deployment..."
+sleep 10
+if curl -s -o /dev/null -w "%{http_code}" "https://emotioxv2-public-tests.s3.amazonaws.com" | grep -q "200\|302"; then
+    log_success "✅ Deployment verificado - Public-tests accesible"
+else
+    log_warning "⚠️ Deployment puede estar propagándose - Verificar en unos minutos"
+fi
+
+log_success "🎉 Deployment de public-tests completado exitosamente!"
+log_info "🌐 URL: https://emotioxv2-public-tests.s3.amazonaws.com"
+log_info "📁 Bucket: s3://$BUCKET"
+log_info "🔄 CloudFront Distribution: $DISTRIBUTION_ID"

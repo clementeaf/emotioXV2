@@ -130,8 +130,34 @@ export const thankYouScreenFixedAPI = {
             };
           }
 
+          // Si la respuesta no es exitosa, manejar el error
+          if (!response.ok) {
+            try {
+              const errorData = await response.json();
+              throw new Error(errorData.message || errorData.error || `Error ${response.status}: ${response.statusText}`);
+            } catch (parseError) {
+              // Si no se puede parsear como JSON, usar el texto
+              const errorText = await response.text().catch(() => 'No se pudo obtener el cuerpo de la respuesta');
+              throw new Error(`Error ${response.status}: ${errorText}`);
+            }
+          }
+
           return handleThankYouScreenResponse(response);
         } catch (error) {
+          // Si el error incluye "not found" o "404", devolver objeto notFound
+          if (error instanceof Error && (
+            error.message.includes('not found') ||
+            error.message.includes('THANK_YOU_SCREEN_NOT_FOUND') ||
+            error.message.includes('No se pudo obtener el cuerpo de la respuesta')
+          )) {
+            return {
+              notFound: true,
+              data: null,
+              ok: false,
+              status: 404,
+              statusText: 'Not Found'
+            };
+          }
           // console.log('[ThankYouScreenAPI] Error al obtener ThankYouScreen por researchId:', error);
           throw error;
         }

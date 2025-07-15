@@ -1,9 +1,7 @@
 import React, { useCallback, useEffect } from 'react';
-import { useParticipantData } from '../../hooks/useParticipantData';
-import { useQuestionResponse } from '../../hooks/useQuestionResponse';
-import { useParticipantStore } from '../../stores/participantStore';
-import { useResponsesStore } from '../../stores/useResponsesStore';
+import { toast } from 'react-hot-toast';
 import { useStepStore } from '../../stores/useStepStore';
+import { useTestStore } from '../../stores/useTestStore';
 import { ErrorState, LoadingState, NoStepData, NoStepSelected } from './CommonStates';
 import { DemographicForm } from './DemographicForm';
 import { QuestionComponent, ScreenComponent, UnknownStepComponent } from './StepsComponents';
@@ -17,192 +15,30 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({
   sidebarSteps = []
 }) => {
   // ========================================
-  // 🎯 ESTADOS Y HOOKS
+  // 🎯 ESTADOS BÁSICOS
   // ========================================
-  const currentStepKey = useStepStore(state => state.currentStepKey);
-  const setStep = useStepStore(state => state.setStep);
-
-  // NUEVO: Forzar el paso activo basándose en el contenido actual
-  useEffect(() => {
-    if (currentStepKey === 'welcome_screen' && sidebarSteps.length > 1) {
-      // Si estamos en welcome_screen pero el contenido es demográficas, cambiar a demographics
-      const demographicsStep = sidebarSteps.find(step => step.questionKey === 'demographics');
-      if (demographicsStep) {
-        setStep('demographics');
-      }
-    }
-  }, [currentStepKey, sidebarSteps, setStep]);
-  const { researchId, participantId } = useParticipantStore();
-  const { sendResponse, getResponse, updateResponse } = useParticipantData(researchId, participantId);
+  const { currentStepKey, setStep } = useStepStore();
+  const { saveResponse, getResponse, hasResponse } = useTestStore();
 
   // ========================================
-  // 🎯 MANEJO DE RESPUESTAS CON PERSISTENCIA LOCAL
-  // ========================================
-  const {
-    response: currentResponse,
-    hasResponse: hasCurrentResponse,
-    hasBackendResponse, // NUEVO: Usar hasBackendResponse
-    saveResponse,
-    updateResponse: updateLocalResponse,
-    deleteResponse,
-    markAsBackendSent, // NUEVO: Método para marcar como enviado
-    isLoading: isResponseLoading,
-    error: responseError
-  } = useQuestionResponse({
-    questionKey: currentStepKey,
-    stepType: 'module_response',
-    stepTitle: currentStepKey,
-    onResponseChange: (response) => {
-      console.log(`[TestLayoutRenderer] Respuesta cambiada para ${currentStepKey}:`, response);
-    }
-  });
-
-  // NUEVO: Obtener markAsBackendSent del store
-  const { markAsBackendSent: markStoreAsBackendSent } = useResponsesStore();
-
-  // ========================================
-  // 🎯 MANEJO DE NAVEGACIÓN
+  // 🎯 NAVEGACIÓN
   // ========================================
   const goToNextStep = useCallback(() => {
-    console.log('[TestLayoutRenderer] goToNextStep llamado');
-    console.log('[TestLayoutRenderer] currentStepKey:', currentStepKey);
-    console.log('[TestLayoutRenderer] sidebarSteps:', sidebarSteps.map(s => s.questionKey));
-
     const currentIndex = sidebarSteps.findIndex(step => step.questionKey === currentStepKey);
-    console.log('[TestLayoutRenderer] currentIndex:', currentIndex);
 
     if (currentIndex < sidebarSteps.length - 1) {
       const nextStep = sidebarSteps[currentIndex + 1];
-      console.log('[TestLayoutRenderer] nextStep:', nextStep);
       setStep(nextStep.questionKey);
-      console.log(`[TestLayoutRenderer] Navegando al siguiente paso: ${nextStep.questionKey}`);
+      toast.success(`Navegando a: ${nextStep.label || nextStep.questionKey}`);
     } else {
-      console.log('[TestLayoutRenderer] No hay siguiente paso disponible');
+      toast.success('¡Has completado todos los pasos!');
     }
   }, [currentStepKey, sidebarSteps, setStep]);
 
   // ========================================
-  // 🎯 MANEJO DE ENVÍO DE RESPUESTAS
+  // 🎯 OBTENCIÓN DE VALORES DEL FORMULARIO
   // ========================================
-  const handleSaveResponse = useCallback(async (response: unknown): Promise<boolean> => {
-    if (!currentStepKey) {
-      console.error('[TestLayoutRenderer] ❌ No hay paso actual seleccionado');
-      return false;
-    }
-
-    console.log(`[TestLayoutRenderer] 📤 Guardando respuesta para ${currentStepKey}:`, response);
-
-    // Guardar localmente primero
-    const localSuccess = await saveResponse(response);
-    if (!localSuccess) {
-      console.error('[TestLayoutRenderer] ❌ Error guardando localmente');
-      return false;
-    }
-
-    // Enviar al backend
-    const backendSuccess = await sendResponse(currentStepKey, response);
-    if (!backendSuccess) {
-      console.error('[TestLayoutRenderer] ❌ Error enviando al backend');
-      return false;
-    }
-
-    // NUEVO: Marcar como enviado al backend
-    markStoreAsBackendSent(currentStepKey);
-
-    console.log(`[TestLayoutRenderer] ✅ Respuesta guardada exitosamente: ${currentStepKey}`);
-    return true;
-  }, [currentStepKey, saveResponse, sendResponse, markStoreAsBackendSent]);
-
-  const handleUpdateResponse = useCallback(async (response: unknown): Promise<boolean> => {
-    if (!currentStepKey) {
-      console.error('[TestLayoutRenderer] ❌ No hay paso actual seleccionado');
-      return false;
-    }
-
-    console.log(`[TestLayoutRenderer] 📤 Actualizando respuesta para ${currentStepKey}:`, response);
-
-    // Actualizar localmente
-    const localSuccess = await updateLocalResponse(response);
-    if (!localSuccess) {
-      console.error('[TestLayoutRenderer] ❌ Error actualizando localmente');
-      return false;
-    }
-
-    // Enviar al backend
-    const backendSuccess = await sendResponse(currentStepKey, response);
-    if (!backendSuccess) {
-      console.error('[TestLayoutRenderer] ❌ Error enviando al backend');
-      return false;
-    }
-
-    // NUEVO: Marcar como enviado al backend
-    markStoreAsBackendSent(currentStepKey);
-
-    // Navegar al siguiente paso después de actualizar
-    goToNextStep();
-
-    console.log(`[TestLayoutRenderer] ✅ Respuesta actualizada exitosamente: ${currentStepKey}`);
-    return true;
-  }, [currentStepKey, updateLocalResponse, sendResponse, markStoreAsBackendSent, goToNextStep]);
-
-  const handleDeleteResponse = useCallback(async (): Promise<boolean> => {
-    if (!currentStepKey) {
-      console.error('[TestLayoutRenderer] ❌ No hay paso actual seleccionado');
-      return false;
-    }
-
-    console.log(`[TestLayoutRenderer] 🗑️ Eliminando respuesta para ${currentStepKey}`);
-
-    const success = await deleteResponse();
-    if (success) {
-      console.log(`[TestLayoutRenderer] ✅ Respuesta eliminada exitosamente: ${currentStepKey}`);
-    } else {
-      console.error('[TestLayoutRenderer] ❌ Error eliminando respuesta');
-    }
-
-    return success;
-  }, [currentStepKey, deleteResponse]);
-
-  // ========================================
-  // 🔍 VERIFICACIÓN DE RESPUESTAS PREVIAS
-  // ========================================
-  useEffect(() => {
-    const checkPreviousResponse = async () => {
-      if (!currentStepKey) return;
-
-      try {
-        const previousResponse = await getResponse(currentStepKey);
-
-        if (previousResponse) {
-          // setHasPreviousResponse(true); // This state is no longer managed by useQuestionResponse
-          // setPreviousResponse(previousResponse as Record<string, unknown>); // This state is no longer managed by useQuestionResponse
-        } else {
-          // setHasPreviousResponse(false); // This state is no longer managed by useQuestionResponse
-          // setPreviousResponse(undefined); // This state is no longer managed by useQuestionResponse
-
-          // Fallback SOLO para demographics, NO para otras preguntas
-          if (currentStepKey === 'demographics') {
-            const fallbackResponse = await getResponse('demographics');
-            if (fallbackResponse) {
-              // setHasPreviousResponse(true); // This state is no longer managed by useQuestionResponse
-              // setPreviousResponse(fallbackResponse as Record<string, unknown>); // This state is no longer managed by useQuestionResponse
-            }
-          }
-        }
-      } catch (error) {
-        console.error(`[TestLayoutRenderer] ❌ Error verificando respuesta previa para ${currentStepKey}:`, error);
-        // setHasPreviousResponse(false); // This state is no longer managed by useQuestionResponse
-        // setPreviousResponse(undefined); // This state is no longer managed by useQuestionResponse
-      }
-    };
-
-    checkPreviousResponse();
-  }, [currentStepKey, getResponse]);
-
-  // ========================================
-  // 📝 OBTENCIÓN DE VALORES DEL FORMULARIO
-  // ========================================
-    const getFormValues = (): unknown => {
+  const getFormValues = (): unknown => {
     const values: Record<string, unknown> = {};
 
     // Intentar obtener valores de un formulario tradicional
@@ -211,6 +47,25 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({
       const formData = new FormData(form);
       for (const [key, value] of formData.entries()) {
         values[key] = value;
+      }
+    }
+
+    // Para preguntas SmartVOC, obtener valores del estado del componente
+    if (Object.keys(values).length === 0 && stepType === 'smart-voc') {
+      const questionComponent = document.querySelector('[data-question-key]') as HTMLElement;
+      if (questionComponent) {
+        const questionKey = questionComponent.getAttribute('data-question-key');
+        if (questionKey === currentStepKey) {
+          const selectedValue = questionComponent.getAttribute('data-selected-value');
+          const textValue = questionComponent.getAttribute('data-text-value');
+
+          if (selectedValue) {
+            values.selectedValue = selectedValue;
+          }
+          if (textValue) {
+            values.textValue = textValue;
+          }
+        }
       }
     }
 
@@ -234,7 +89,53 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({
   };
 
   // ========================================
-  // 🚨 VALIDACIONES INICIALES
+  // 🎯 GUARDADO DE RESPUESTAS
+  // ========================================
+  const handleSaveResponse = useCallback(async (response: unknown): Promise<boolean> => {
+    if (!currentStepKey) {
+      toast.error('No hay paso actual seleccionado');
+      return false;
+    }
+
+    try {
+      saveResponse(currentStepKey, response, getStepType(currentStepData), currentStepKey);
+      toast.success(`Respuesta guardada: ${currentStepKey}`);
+      goToNextStep();
+      return true;
+    } catch (error) {
+      toast.error('Error guardando respuesta');
+      return false;
+    }
+  }, [currentStepKey, saveResponse, goToNextStep]);
+
+  const handleUpdateResponse = useCallback(async (response: unknown): Promise<boolean> => {
+    if (!currentStepKey) {
+      toast.error('No hay paso actual seleccionado');
+      return false;
+    }
+
+    try {
+      saveResponse(currentStepKey, response, getStepType(currentStepData), currentStepKey);
+      toast.success(`Respuesta actualizada: ${currentStepKey}`);
+      goToNextStep();
+      return true;
+    } catch (error) {
+      toast.error('Error actualizando respuesta');
+      return false;
+    }
+  }, [currentStepKey, saveResponse, goToNextStep]);
+
+  // ========================================
+  // 🔄 INICIALIZACIÓN
+  // ========================================
+  useEffect(() => {
+    if (!currentStepKey && sidebarSteps.length > 0) {
+      setStep(sidebarSteps[0].questionKey);
+    }
+  }, [currentStepKey, sidebarSteps, setStep]);
+
+  // ========================================
+  // 🚨 VALIDACIONES
   // ========================================
   if (isLoading) return <LoadingState />;
   if (error) return <ErrorState />;
@@ -244,7 +145,7 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({
   if (!currentStepData) return <NoStepData />;
 
   // ========================================
-  // 🎨 RENDERIZADO DE COMPONENTES
+  // 🎨 RENDERIZADO
   // ========================================
   const stepType = getStepType(currentStepData);
   let renderedForm: React.ReactNode = null;
@@ -252,7 +153,7 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({
   switch (stepType) {
     case 'demographics': {
       const { demographicQuestions } = currentStepData as { demographicQuestions: DemographicQuestion[] };
-      renderedForm = <DemographicForm questions={demographicQuestions} previousResponse={currentResponse as Record<string, unknown> | undefined} />;
+      renderedForm = <DemographicForm questions={demographicQuestions} />;
       break;
     }
     case 'smart-voc': {
@@ -260,7 +161,6 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({
         <QuestionComponent
           question={currentStepData as Question}
           currentStepKey={currentStepKey}
-          previousResponse={currentResponse as Record<string, unknown> | undefined}
         />
       );
       break;
@@ -279,7 +179,6 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({
         <QuestionComponent
           question={currentStepData as Question}
           currentStepKey={currentStepKey}
-          previousResponse={currentResponse as Record<string, unknown> | undefined}
         />
       );
       break;
@@ -289,54 +188,40 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({
   }
 
   // ========================================
-  // 🎛️ CONFIGURACIÓN DEL BOTÓN
+  // 🎛️ BOTÓN GLOBAL
   // ========================================
   const showGlobalButton = stepType !== 'screen';
+  const hasCurrentResponse = hasResponse(currentStepKey);
 
   const getButtonText = () => {
-    // NUEVO: Usar hasBackendResponse para determinar el texto del botón
-    return hasBackendResponse ? 'Actualizar y continuar' : 'Guardar y continuar';
+    if (hasCurrentResponse) return 'Actualizar y Continuar';
+    return 'Guardar y Continuar';
   };
 
-  // isButtonDisabled state is no longer managed by useQuestionResponse
-  const isButtonDisabled = isResponseLoading; // Use isResponseLoading from useQuestionResponse
-
-    const handleButtonClick = () => {
-    if (hasBackendResponse) {
-      handleUpdateResponse(getFormValues());
+  const handleButtonClick = () => {
+    const response = getFormValues();
+    if (hasCurrentResponse) {
+      handleUpdateResponse(response);
     } else {
-      handleSaveResponse(getFormValues());
+      handleSaveResponse(response);
     }
   };
 
-  // ========================================
-  // 🎯 RENDERIZADO FINAL
-  // ========================================
   return (
-    <div className="relative flex flex-col items-center justify-center h-full w-full">
-      {renderedForm}
+    <div className="flex flex-col h-full">
+      <div className="flex-1">
+        {renderedForm}
+      </div>
 
       {showGlobalButton && (
-        <button
-          type="button"
-          disabled={isButtonDisabled}
-          className={`mt-8 font-semibold py-2 px-6 rounded transition w-full max-w-lg ${
-            isButtonDisabled
-              ? 'bg-gray-400 cursor-not-allowed text-white'
-              : 'bg-blue-600 hover:bg-blue-700 text-white'
-          }`}
-          onClick={handleButtonClick}
-        >
-          {/* isSubmitting and isSuccess states are no longer managed by useQuestionResponse */}
-          {/* {isSubmitting && ( */}
-          {/*   <div className="flex items-center justify-center gap-2"> */}
-          {/*     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> */}
-          {/*     {getButtonText()} */}
-          {/*   </div> */}
-          {/* )} */}
-          {/* {!isSubmitting && getButtonText()} */}
-          {getButtonText()}
-        </button>
+        <div className="mt-6 p-4 border-t border-gray-200">
+          <button
+            onClick={handleButtonClick}
+            className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors"
+          >
+            {getButtonText()}
+          </button>
+        </div>
       )}
     </div>
   );

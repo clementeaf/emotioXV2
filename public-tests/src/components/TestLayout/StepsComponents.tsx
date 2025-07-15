@@ -1,43 +1,27 @@
-import React from 'react';
-import { useNavigationState } from '../../hooks/useNavigationState';
-import { useQuestionResponse } from '../../hooks/useQuestionResponse';
+import React, { useState } from 'react';
 import { EmojiRangeQuestion, ScaleRangeQuestion, SingleAndMultipleChoiceQuestion, VOCTextQuestion } from './QuestionesComponents';
 import { QuestionComponentProps, ScreenStep } from './types';
 import { QUESTION_TYPE_MAP } from './utils';
 
 export const QuestionComponent: React.FC<QuestionComponentProps> = ({
   question,
-  currentStepKey,
-  previousResponse
+  currentStepKey
 }) => {
   const questionType = QUESTION_TYPE_MAP[currentStepKey as keyof typeof QUESTION_TYPE_MAP] || 'pending';
-
-  const {
-    selectedValue,
-    textValue,
-    setSelectedValue,
-    setTextValue,
-    hasPreviousResponse
-  } = useQuestionResponse({
-    currentStepKey,
-    previousResponse,
-    questionType
-  });
+  const [selectedValue, setSelectedValue] = useState<string>('');
+  const [textValue, setTextValue] = useState<string>('');
 
   const QuestionWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <div className='flex flex-col items-center justify-center h-full gap-10'>
+    <div
+      className='flex flex-col items-center justify-center h-full gap-10'
+      data-question-key={currentStepKey}
+      data-selected-value={selectedValue}
+      data-text-value={textValue}
+    >
       <div className='mb-2 text-center'>
         <h3 className='text-lg font-semibold mb-2'>
           {question.title || question.questionKey || 'Pregunta'}
         </h3>
-        {hasPreviousResponse && (
-          <div className="flex items-center justify-center gap-2 text-sm text-green-600 font-medium bg-green-50 px-3 py-1 rounded-full">
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-            </svg>
-            Respuesta guardada
-          </div>
-        )}
       </div>
       {children}
     </div>
@@ -140,16 +124,11 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
 };
 
 export const ScreenComponent: React.FC<{ data: ScreenStep; onContinue?: () => void }> = ({ data, onContinue }) => {
-  const {
-    isNavigating,
-    isSuccess,
-    buttonText,
-    isButtonDisabled,
-    handleContinue
-  } = useNavigationState({
-    onContinue,
-    buttonText: data.startButtonText || 'Continuar'
-  });
+  const handleContinue = () => {
+    if (onContinue) {
+      onContinue();
+    }
+  };
 
   return (
     <div className='flex flex-col items-center justify-center h-full w-full'>
@@ -157,22 +136,11 @@ export const ScreenComponent: React.FC<{ data: ScreenStep; onContinue?: () => vo
       <p>{data.message || ''}</p>
       {data.startButtonText && (
         <button
-          disabled={isButtonDisabled}
-          className={`mt-8 font-semibold py-2 px-6 rounded transition w-full max-w-lg ${
-            isButtonDisabled
-              ? 'bg-gray-400 cursor-not-allowed text-white'
-              : 'bg-blue-600 hover:bg-blue-700 text-white'
-          }`}
+          className='mt-8 font-semibold py-2 px-6 rounded transition w-full max-w-lg bg-blue-600 hover:bg-blue-700 text-white'
           style={{ minHeight: 48 }}
           onClick={handleContinue}
         >
-          {isNavigating && (
-            <div className="flex items-center justify-center gap-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-              {buttonText}
-            </div>
-          )}
-          {!isNavigating && buttonText}
+          {data.startButtonText}
         </button>
       )}
     </div>

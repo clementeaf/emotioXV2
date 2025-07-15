@@ -1,269 +1,178 @@
-import { useCallback, useEffect } from 'react';
-import { Participant } from '../../../shared/interfaces/participant';
-import { useParticipantStore } from '../stores/participantStore';
-import { ParticipantFlowStep } from '../types/flow';
-import { useFlowBuilder } from './useFlowBuilder';
-import { useFlowNavigationAndState } from './useFlowNavigationAndState';
-import { useParticipantSession } from './useParticipantSession';
-import { useLoadResearchFormsConfig } from './useResearchForms';
-import { useResponseAPI } from './useResponseAPI';
-import { useResponseManager } from './useResponseManager';
+/**
+ * 🧪 HOOK SIMPLIFICADO PARA FLUJO DE PARTICIPANTE
+ *
+ * Este hook maneja solo la lógica de UI del flujo de participante,
+ * sin llamadas al backend. Usa el store simplificado useTestStore.
+ */
 
-const useStoreSetLoadedResponses = () => useParticipantStore(state => state.setLoadedResponses);
+import { useCallback, useEffect, useState } from 'react';
+import { useTestStore } from '../stores/useTestStore';
+
+// Tipos simplificados
+export interface FlowStep {
+  id: string;
+  type: string;
+  name: string;
+  completed: boolean;
+  current: boolean;
+}
+
+export interface FlowState {
+  currentStep: FlowStep | null;
+  isLoading: boolean;
+  error: string | null;
+  progress: number;
+  totalSteps: number;
+  completedSteps: number;
+}
 
 export const useParticipantFlow = (researchId: string | undefined) => {
-    console.log('[useParticipantFlow] Hook llamado con researchId:', researchId);
+  const {
+    // Estado del store
+    currentStepIndex,
+    steps,
+    responses,
+    isSessionActive,
 
-    const storeSetResearchId = useParticipantStore(state => state.setResearchId);
-    const storeSetLoadedResponsesFromStore = useStoreSetLoadedResponses();
+    // Métodos del store
+    setCurrentStep,
+    completeStep,
+    saveResponse,
+    getResponse,
+    hasResponse,
+    startSession,
+    getProgress,
+    getCurrentStep,
+    getCompletedSteps,
+    clearResponses,
+  } = useTestStore();
 
-    const {
-        token,
-        participantIdFromStore,
-        handleLoginSuccess: handleLoginSuccessFromSession,
-    } = useParticipantSession();
+  // Estado local del hook
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-    const participantId = participantIdFromStore;
-    const loadedApiResponsesFromStore = useParticipantStore(state => state.responsesData.modules.all_steps);
-    const maxVisitedIndexFromStore = useParticipantStore(state => state.maxVisitedIndex);
+  // Inicializar sesión si no está activa
+  useEffect(() => {
+    if (!isSessionActive && researchId) {
+      startSession();
+    }
+  }, [researchId, isSessionActive, startSession]);
 
-    const currentStepIndex = useParticipantStore(state => state.currentStepIndex);
-    const setCurrentStepIndex = useParticipantStore(state => state.setCurrentStepIndex);
-    const storeNavigateToStep = useParticipantStore(state => state.navigateToStep);
-    const storeSetExpandedSteps = useParticipantStore(state => state.setExpandedSteps);
-    const storeIsFlowLoading = useParticipantStore(state => state.isFlowLoading);
-    const storeSetIsFlowLoading = useParticipantStore(state => state.setIsFlowLoading);
+  // Crear pasos de ejemplo si no existen
+  useEffect(() => {
+    if (steps.length === 0 && researchId) {
+      const exampleSteps: FlowStep[] = [
+        { id: 'welcome', type: 'screen', name: 'Bienvenido', completed: false, current: true },
+        { id: 'demographics', type: 'form', name: 'Preguntas demográficas', completed: false, current: false },
+        { id: 'smartvoc', type: 'form', name: 'SmartVOC', completed: false, current: false },
+        { id: 'thankyou', type: 'screen', name: 'Gracias', completed: false, current: false },
+      ];
 
-    const {
-        data: researchFlowApiData,
-        isLoading: isResearchFlowHookLoading,
-        isError: isResearchFlowError,
-        error: researchFlowErrorObject
-    } = useLoadResearchFormsConfig(researchId || '', {
-        enabled: !!researchId && !!token,
-    });
+      useTestStore.setState({
+        steps: exampleSteps,
+        totalSteps: exampleSteps.length,
+        currentStepIndex: 0,
+      });
+    }
+  }, [steps.length, researchId]);
 
-    const demographicQuestionsFound: unknown[] = [];
-
-    if (researchFlowApiData && researchFlowApiData.data && Array.isArray(researchFlowApiData.data)) {
-        for (const processedModule of researchFlowApiData.data) {
-            if (processedModule.originalSk === 'EYE_TRACKING_CONFIG') {
-                if (processedModule.config && typeof processedModule.config.demographicQuestions === 'object' && processedModule.config.demographicQuestions !== null) {
-                    demographicQuestionsFound.push(processedModule.config.demographicQuestions);
-                } else if (Array.isArray(processedModule.config.demographicQuestions)) {
-                    demographicQuestionsFound.push(...processedModule.config.demographicQuestions);
-                }
-            }
-        }
+  // Navegar al siguiente paso
+  const goToNextStep = useCallback(() => {
+    const currentStep = getCurrentStep();
+    if (currentStep) {
+      completeStep(currentStep.id);
     }
 
-    // Solo construir el flujo si hay token (evita warnings durante login)
-    const shouldBuildFlow = !!token;
-    const builtExpandedSteps = useFlowBuilder({
-        researchFlowApiData: shouldBuildFlow ? researchFlowApiData : null,
-        isLoading: isResearchFlowHookLoading || !shouldBuildFlow
+    const nextIndex = currentStepIndex + 1;
+    if (nextIndex < steps.length) {
+      setCurrentStep(nextIndex);
+    }
+  }, [currentStepIndex, steps.length, getCurrentStep, completeStep, setCurrentStep]);
+
+  // Navegar al paso anterior
+  const goToPreviousStep = useCallback(() => {
+    const prevIndex = currentStepIndex - 1;
+    if (prevIndex >= 0) {
+      setCurrentStep(prevIndex);
+    }
+  }, [currentStepIndex, setCurrentStep]);
+
+  // Guardar respuesta del paso actual
+  const saveCurrentStepResponse = useCallback((response: unknown) => {
+    const currentStep = getCurrentStep();
+    if (currentStep) {
+      saveResponse(
+        currentStep.id,
+        response,
+        currentStep.type,
+        currentStep.name
+      );
+    }
+  }, [getCurrentStep, saveResponse]);
+
+  // Obtener respuesta del paso actual
+  const getCurrentStepResponse = useCallback(() => {
+    const currentStep = getCurrentStep();
+    if (currentStep) {
+      return getResponse(currentStep.id);
+    }
+    return null;
+  }, [getCurrentStep, getResponse]);
+
+  // Verificar si el paso actual tiene respuesta
+  const hasCurrentStepResponse = useCallback(() => {
+    const currentStep = getCurrentStep();
+    if (currentStep) {
+      return hasResponse(currentStep.id);
+    }
+    return false;
+  }, [getCurrentStep, hasResponse]);
+
+  // Reiniciar el flujo
+  const resetFlow = useCallback(() => {
+    clearResponses();
+    useTestStore.setState({
+      currentStepIndex: 0,
+      completedSteps: 0,
+      steps: steps.map(step => ({ ...step, completed: false, current: step.id === 'welcome' })),
     });
-    const expandedSteps = builtExpandedSteps;
+  }, [clearResponses, steps]);
 
-    const responseAPI = useResponseAPI({
-        researchId: researchId || '',
-        participantId: participantId || ''
-    });
+  // Estado del flujo
+  const flowState: FlowState = {
+    currentStep: getCurrentStep(),
+    isLoading,
+    error,
+    progress: getProgress(),
+    totalSteps: steps.length,
+    completedSteps: getCompletedSteps().length,
+  };
 
-    const {
-        responsesData,
-        loadExistingResponses,
-        saveStepResponse,
-        getStepResponse,
-        hasStepBeenAnswered,
-        getResponsesJson,
-        markResponsesAsCompleted,
-    } = useResponseManager({
-        researchId: researchId || '',
-        participantId: participantId === null ? undefined : participantId,
-        expandedSteps,
-        currentStepIndex,
-        responseAPI: responseAPI as any,
-        storeSetLoadedResponses: storeSetLoadedResponsesFromStore as (responses: unknown[]) => void
-    });
+  return {
+    // Estado
+    ...flowState,
 
-    // Adaptadores para las firmas esperadas por useFlowNavigationAndState
-    const adaptedSaveStepResponse = useCallback(async (answer?: unknown) => {
-        if (currentStepIndex >= 0 && currentStepIndex < expandedSteps.length) {
-            const currentStep = expandedSteps[currentStepIndex];
-            if (currentStep) {
-                await saveStepResponse(
-                    currentStep.id,
-                    answer,
-                    currentStep.type,
-                    currentStep.name
-                );
-            }
-        }
-    }, [saveStepResponse, currentStepIndex, expandedSteps]);
+    // Pasos
+    steps,
+    currentStepIndex,
 
-    const adaptedGetStepResponse = useCallback((stepIndex: number): unknown => {
-        if (stepIndex >= 0 && stepIndex < expandedSteps.length) {
-            const step = expandedSteps[stepIndex];
-            if (step) {
-                return getStepResponse(step.id);
-            }
-        }
-        return null;
-    }, [getStepResponse, expandedSteps]);
+    // Navegación
+    goToNextStep,
+    goToPreviousStep,
 
-    const {
-        currentStep,
-        setCurrentStep,
-        error: navigationError,
-        setError: setNavigationError,
-        isFlowLoading: navigationIsLoading,
-        setIsFlowLoading: setNavigationIsLoading,
-        completedRelevantSteps,
-        totalRelevantSteps,
-        goToNextStep
-    } = useFlowNavigationAndState({
-        expandedSteps,
-        initialResearchDataLoading: isResearchFlowHookLoading,
-        researchId,
-        participantId: participantId === null ? undefined : participantId,
-        maxVisitedIndexFromStore: maxVisitedIndexFromStore,
-        saveStepResponse: adaptedSaveStepResponse,
-        markResponsesAsCompleted: markResponsesAsCompleted,
-        getStepResponse: adaptedGetStepResponse,
-        loadExistingResponses: loadExistingResponses,
-        handleErrorProp: (errMsg: string, errStep: any) => handleError(errMsg, errStep),
-        setExternalExpandedSteps: () => expandedSteps,
-        currentStepIndexState: currentStepIndex,
-        setCurrentStepIndexFunc: (value: any) => {
-          if (typeof value === 'function') {
-            const next = value(currentStepIndex);
-            setCurrentStepIndex(next);
-          } else {
-            setCurrentStepIndex(value);
-          }
-        }
-    });
+    // Respuestas
+    saveCurrentStepResponse,
+    getCurrentStepResponse,
+    hasCurrentStepResponse,
 
-    const handleError = useCallback((errorMessage: string, step: ParticipantFlowStep | string) => {
-        const stepName = typeof step === 'string' ? step : ParticipantFlowStep[step];
-        console.error(`[useParticipantFlow] Error en ${stepName}:`, errorMessage);
-        setNavigationError(errorMessage);
-        setCurrentStep(ParticipantFlowStep.ERROR);
-        setNavigationIsLoading(false);
-    }, [setNavigationError, setCurrentStep, setNavigationIsLoading]);
+    // Control
+    resetFlow,
+    clearResponses,
 
-    useEffect(() => {
-        console.log('[useParticipantFlow] useEffect ejecutándose con researchId:', researchId);
-        setNavigationIsLoading(isResearchFlowHookLoading);
-
-        // No ejecutar lógica si researchId no está disponible aún
-        if (!researchId) {
-            console.log('[useParticipantFlow] ResearchId no disponible aún, esperando...');
-            return;
-        }
-
-        if (!token && currentStep !== ParticipantFlowStep.LOGIN && currentStep !== ParticipantFlowStep.ERROR) {
-            setCurrentStep(ParticipantFlowStep.LOGIN);
-            return;
-        }
-
-        if (researchId && token && !isResearchFlowHookLoading) {
-            storeSetResearchId(researchId);
-            if (isResearchFlowError) {
-                handleError(researchFlowErrorObject?.message || "Error al cargar la configuración del estudio.", "ResearchFlowInit");
-                return;
-            }
-        } else if (researchId && !token && currentStep !== ParticipantFlowStep.LOGIN && currentStep !== ParticipantFlowStep.ERROR) {
-            setCurrentStep(ParticipantFlowStep.LOGIN);
-        }
-    }, [
-        researchId, token, storeSetResearchId, handleError,
-        isResearchFlowHookLoading, isResearchFlowError, researchFlowApiData, researchFlowErrorObject,
-        currentStep, setCurrentStep, setNavigationIsLoading
-    ]);
-
-    useEffect(() => {
-        if (expandedSteps && expandedSteps.length > 0 && !navigationIsLoading && currentStep === ParticipantFlowStep.LOADING_SESSION) {
-            setCurrentStepIndex(0);
-            setCurrentStep(ParticipantFlowStep.WELCOME);
-            if (researchId && participantId) {
-                loadExistingResponses();
-            }
-            setNavigationIsLoading(false);
-        } else if (expandedSteps && expandedSteps.length === 0 && !navigationIsLoading && currentStep === ParticipantFlowStep.LOADING_SESSION && researchId && !isResearchFlowError) {
-            setCurrentStep(ParticipantFlowStep.WELCOME);
-            setNavigationIsLoading(false);
-        }
-    }, [
-        expandedSteps, navigationIsLoading, currentStep, researchId,
-        loadExistingResponses, participantId, isResearchFlowError, setCurrentStepIndex, setCurrentStep,
-        setNavigationIsLoading
-    ]);
-
-    const handleLoginSuccess = useCallback(async (participant: Participant & { id: string }) => {
-        handleLoginSuccessFromSession(participant);
-        setNavigationError(null);
-        setCurrentStep(ParticipantFlowStep.LOADING_SESSION);
-        setNavigationIsLoading(true);
-        if (researchId && participant.id) {
-            loadExistingResponses();
-        }
-    }, [handleLoginSuccessFromSession, setNavigationError, setCurrentStep, setNavigationIsLoading, researchId, loadExistingResponses]);
-
-    const getAnsweredStepIndices = useCallback((): number[] => {
-        const completedStepIndices = new Set<number>();
-        expandedSteps.forEach((step, index) => {
-            const { type: stepType } = step;
-            if (stepType === 'welcome' || stepType === 'thankyou') {
-                completedStepIndices.add(index);
-                return;
-            }
-            if (hasStepBeenAnswered(index.toString())) {
-                completedStepIndices.add(index);
-            }
-        });
-        for (let i = 0; i <= (maxVisitedIndexFromStore || 0); i++) {
-            completedStepIndices.add(i);
-        }
-        return Array.from(completedStepIndices).sort((a, b) => a - b);
-    }, [expandedSteps, maxVisitedIndexFromStore, hasStepBeenAnswered]);
-
-    useEffect(() => {
-        storeSetIsFlowLoading(isResearchFlowHookLoading);
-    }, [isResearchFlowHookLoading, storeSetIsFlowLoading]);
-
-    useEffect(() => {
-        if (expandedSteps && expandedSteps.length > 0) {
-            storeSetExpandedSteps(expandedSteps as import('../stores/participantStore').ExpandedStep[]);
-
-            if (currentStep === ParticipantFlowStep.LOADING_SESSION && !navigationIsLoading) {
-                setCurrentStep(ParticipantFlowStep.WELCOME);
-            }
-        }
-    }, [expandedSteps, storeSetExpandedSteps, currentStep, navigationIsLoading, setCurrentStep]);
-
-    return {
-        currentStep,
-        token: token,
-        error: navigationError,
-        handleLoginSuccess,
-        handleStepComplete: goToNextStep,
-        handleError,
-        expandedSteps,
-        currentStepIndex,
-        isFlowLoading: storeIsFlowLoading,
-        navigateToStep: storeNavigateToStep,
-        completedRelevantSteps,
-        totalRelevantSteps,
-        responsesData,
-        getResponsesJson,
-        hasStepBeenAnswered,
-        getAnsweredStepIndices,
-        getStepResponse,
-        maxVisitedIndex: maxVisitedIndexFromStore,
-        loadedApiResponses: loadedApiResponsesFromStore,
-        loadExistingResponses,
-        participantId
-    };
+    // Utilidades
+    isFirstStep: currentStepIndex === 0,
+    isLastStep: currentStepIndex === steps.length - 1,
+    canGoNext: currentStepIndex < steps.length - 1,
+    canGoPrevious: currentStepIndex > 0,
+  };
 };

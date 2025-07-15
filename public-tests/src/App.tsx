@@ -4,10 +4,9 @@ import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import './index.css';
 
 import LoginRedirect from './components/common/LoginRedirect';
-import ParticipantFlow from './components/ParticipantFlow';
+import { TestLayout } from './pages';
 import NoResearchIdError from './pages/NoResearchIdError';
 import PrivacyNoticePage from './pages/PrivacyNoticePage';
-import { TestLayout } from './pages';
 
 function App() {
   return (

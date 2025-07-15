@@ -1,26 +1,21 @@
 import React from 'react';
-import { useResponsesStore } from '../../stores/useResponsesStore';
+import { useTestStore } from '../../stores/useTestStore';
 import { StepItemProps } from './types';
 
 const StepItem: React.FC<StepItemProps> = ({ step, isActive, onClick, isDisabled }) => {
-  // NUEVO: Verificar si tiene respuesta enviada al backend
-  const { hasBackendResponse } = useResponsesStore();
-  const hasResponse = hasBackendResponse(step.questionKey);
+  // Usar el store simplificado
+  const { hasResponse } = useTestStore();
+  const hasStepResponse = hasResponse(step.questionKey);
 
-    // NUEVO: Determinar el estado del paso según las reglas especificadas
+  // Determinar el estado del paso según las reglas especificadas
   const getStepState = () => {
     if (isDisabled) return 'disabled';
 
     // Si el usuario está actualmente en este paso, debe estar en azul (PRIORIDAD MÁXIMA)
     if (isActive) return 'active';
 
-    // Caso especial: Pasos de bienvenida siempre se consideran completados (solo si no es activo)
-    if (step.questionKey === 'welcome_screen' || step.questionKey === 'welcome') {
-      return 'completed';
-    }
-
     // Si el paso ha sido respondido, debe estar en verde
-    if (hasResponse) return 'completed';
+    if (hasStepResponse) return 'completed';
 
     // Si no tiene respuesta previa, debe estar en gris
     return 'available';
@@ -28,7 +23,7 @@ const StepItem: React.FC<StepItemProps> = ({ step, isActive, onClick, isDisabled
 
   const stepState = getStepState();
 
-  // NUEVO: Estilos según el estado
+  // Estilos según el estado
   const getStepStyles = () => {
     switch (stepState) {
       case 'disabled':
@@ -56,7 +51,7 @@ const StepItem: React.FC<StepItemProps> = ({ step, isActive, onClick, isDisabled
       onClick={handleClick}
     >
       <span className="flex items-center gap-2">
-        {/* NUEVO: Indicador de estado */}
+        {/* Indicador de estado */}
         {stepState === 'disabled' && (
           <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />

@@ -129,7 +129,6 @@ export interface ModuleResponseData {
 export interface QuestionComponentProps {
   question: Question;
   currentStepKey: string;
-  previousResponse?: Record<string, unknown>;
 }
 
 export interface DemographicFormProps {
