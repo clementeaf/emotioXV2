@@ -1,108 +1,198 @@
-import { useEffect, useState } from 'react';
-import { UseQuestionResponseProps, UseQuestionResponseReturn } from './types';
+import { useCallback, useEffect, useState } from 'react';
+import { useResponsesStore } from '../stores/useResponsesStore';
+
+interface UseQuestionResponseProps {
+  questionKey: string;
+  stepType: string;
+  stepTitle: string;
+  onResponseChange?: (response: unknown) => void;
+}
+
+interface UseQuestionResponseReturn {
+  // Estado de la respuesta
+  response: unknown;
+  hasResponse: boolean;
+  hasBackendResponse: boolean; // NUEVO: Indica si la respuesta fue enviada al backend
+  isLoading: boolean;
+  error: string | null;
+
+  // Métodos para manejar la respuesta
+  saveResponse: (response: unknown) => Promise<boolean>;
+  updateResponse: (response: unknown) => Promise<boolean>;
+  deleteResponse: () => Promise<boolean>;
+  clearResponse: () => void;
+  markAsBackendSent: () => void; // NUEVO: Marcar como enviado al backend
+
+  // Estado del formulario
+  isDirty: boolean;
+  setIsDirty: (dirty: boolean) => void;
+}
 
 export const useQuestionResponse = ({
-  currentStepKey,
-  previousResponse,
-  questionType
+  questionKey,
+  stepType,
+  stepTitle,
+  onResponseChange
 }: UseQuestionResponseProps): UseQuestionResponseReturn => {
-  const [selectedValue, setSelectedValue] = useState<string>('');
-  const [textValue, setTextValue] = useState<string>('');
-  const [demographicsValues, setDemographicsValues] = useState<Record<string, string>>({});
+  const [response, setResponse] = useState<unknown>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+  const [hasBackendResponse, setHasBackendResponse] = useState(false); // NUEVO: Estado para respuestas del backend
 
+  const {
+    saveLocalResponse,
+    getLocalResponse,
+    hasLocalResponse,
+    updateLocalResponse,
+    deleteLocalResponse
+  } = useResponsesStore();
+
+  // Cargar respuesta existente al montar el componente
   useEffect(() => {
-    if (previousResponse) {
-      console.log(`[useQuestionResponse] Procesando respuesta previa para ${currentStepKey}:`, previousResponse);
-
-      // Manejar respuestas de tipo choice (single/multiple choice)
-      if (questionType === 'choice') {
-        const prevChoice = previousResponse.choice ||
-                          previousResponse.selected ||
-                          previousResponse.value ||
-                          previousResponse.answer;
-
-        if (typeof prevChoice === 'string') {
-          setSelectedValue(prevChoice);
-        } else if (Array.isArray(prevChoice) && prevChoice.length > 0) {
-          // Para múltiples selecciones, tomar la primera
-          setSelectedValue(String(prevChoice[0]));
-        }
+    const loadExistingResponse = () => {
+      const existingResponse = getLocalResponse(questionKey);
+      if (existingResponse) {
+        setResponse(existingResponse.response);
+        // NUEVO: Si hay respuesta local, asumir que fue enviada al backend
+        setHasBackendResponse(true);
+        console.log(`[useQuestionResponse] ✅ Respuesta cargada localmente: ${questionKey}`);
       }
+    };
 
-      // Manejar respuestas de tipo text (VOCTextQuestion)
-      if (questionType === 'text') {
-        const prevText = previousResponse.text ||
-                        previousResponse.value ||
-                        previousResponse.answer ||
-                        previousResponse.response;
+    loadExistingResponse();
+  }, [questionKey, getLocalResponse]);
 
-        if (typeof prevText === 'string') {
-          setTextValue(prevText);
-        }
-      }
-
-      // Manejar respuestas de tipo scale (ScaleRangeQuestion)
-      if (questionType === 'scale') {
-        const prevScale = previousResponse.scale ||
-                         previousResponse.value ||
-                         previousResponse.answer ||
-                         previousResponse.rating;
-
-        if (typeof prevScale === 'number') {
-          setSelectedValue(String(prevScale));
-        } else if (typeof prevScale === 'string') {
-          setSelectedValue(prevScale);
-        }
-      }
-
-      // Manejar respuestas de tipo emoji (EmojiRangeQuestion)
-      if (questionType === 'emoji') {
-        const prevEmoji = previousResponse.emoji ||
-                         previousResponse.value ||
-                         previousResponse.answer ||
-                         previousResponse.rating;
-
-        if (typeof prevEmoji === 'string') {
-          setSelectedValue(prevEmoji);
-        } else if (typeof prevEmoji === 'number') {
-          setSelectedValue(String(prevEmoji));
-        }
-      }
-
-      // Manejar respuestas de demographics (formularios)
-      if (currentStepKey === 'demographics') {
-        console.log(`[useQuestionResponse] Procesando demographics para ${currentStepKey}:`, previousResponse);
-
-        const demographicsData: Record<string, string> = {};
-
-        // Para demographics, usar directamente los valores del formulario
-        Object.entries(previousResponse).forEach(([key, value]) => {
-          if (typeof value === 'string' && key !== 'submitted' && key !== 'timestamp' && key !== 'stepType' && key !== 'stepTitle') {
-            console.log(`[useQuestionResponse] Campo demographics: ${key} = ${value}`);
-            demographicsData[key] = value;
-          }
-        });
-
-        console.log(`[useQuestionResponse] Valores demographics procesados:`, demographicsData);
-        setDemographicsValues(demographicsData);
-      }
+  const saveResponse = useCallback(async (newResponse: unknown): Promise<boolean> => {
+    if (!questionKey) {
+      console.error('[useQuestionResponse] ❌ questionKey requerido');
+      return false;
     }
-  }, [previousResponse, questionType, currentStepKey]);
 
-  const hasPreviousResponse = !!previousResponse && (
-    (questionType === 'choice' && !!selectedValue) ||
-    (questionType === 'text' && !!textValue) ||
-    (questionType === 'scale' && !!selectedValue) ||
-    (questionType === 'emoji' && !!selectedValue) ||
-    (currentStepKey === 'demographics' && Object.keys(demographicsValues).length > 0)
-  );
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Guardar localmente
+      saveLocalResponse(questionKey, newResponse, stepType, stepTitle);
+
+      // Actualizar estado local
+      setResponse(newResponse);
+      setIsDirty(false);
+      setHasBackendResponse(false); // NUEVO: Aún no enviado al backend
+
+      // Notificar cambio si hay callback
+      if (onResponseChange) {
+        onResponseChange(newResponse);
+      }
+
+      console.log(`[useQuestionResponse] ✅ Respuesta guardada localmente: ${questionKey}`);
+      return true;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      setError(errorMessage);
+      console.error(`[useQuestionResponse] ❌ Error guardando respuesta: ${errorMessage}`);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [questionKey, stepType, stepTitle, saveLocalResponse, onResponseChange]);
+
+  const updateResponse = useCallback(async (newResponse: unknown): Promise<boolean> => {
+    if (!questionKey) {
+      console.error('[useQuestionResponse] ❌ questionKey requerido');
+      return false;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Actualizar localmente
+      updateLocalResponse(questionKey, newResponse);
+
+      // Actualizar estado local
+      setResponse(newResponse);
+      setIsDirty(false);
+      setHasBackendResponse(false); // NUEVO: Aún no enviado al backend
+
+      // Notificar cambio si hay callback
+      if (onResponseChange) {
+        onResponseChange(newResponse);
+      }
+
+      console.log(`[useQuestionResponse] ✅ Respuesta actualizada localmente: ${questionKey}`);
+      return true;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      setError(errorMessage);
+      console.error(`[useQuestionResponse] ❌ Error actualizando respuesta: ${errorMessage}`);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [questionKey, updateLocalResponse, onResponseChange]);
+
+  const deleteResponse = useCallback(async (): Promise<boolean> => {
+    if (!questionKey) {
+      console.error('[useQuestionResponse] ❌ questionKey requerido');
+      return false;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Eliminar localmente
+      deleteLocalResponse(questionKey);
+
+      // Limpiar estado local
+      setResponse(null);
+      setIsDirty(false);
+      setHasBackendResponse(false); // NUEVO: Resetear estado
+
+      // Notificar cambio si hay callback
+      if (onResponseChange) {
+        onResponseChange(null);
+      }
+
+      console.log(`[useQuestionResponse] ✅ Respuesta eliminada: ${questionKey}`);
+      return true;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      setError(errorMessage);
+      console.error(`[useQuestionResponse] ❌ Error eliminando respuesta: ${errorMessage}`);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [questionKey, deleteLocalResponse, onResponseChange]);
+
+  const clearResponse = useCallback(() => {
+    setResponse(null);
+    setIsDirty(false);
+    setError(null);
+    setHasBackendResponse(false); // NUEVO: Resetear estado
+  }, []);
+
+  // NUEVO: Método para marcar como enviado al backend
+  const markAsBackendSent = useCallback(() => {
+    setHasBackendResponse(true);
+    console.log(`[useQuestionResponse] ✅ Marcado como enviado al backend: ${questionKey}`);
+  }, [questionKey]);
 
   return {
-    selectedValue,
-    textValue,
-    setSelectedValue,
-    setTextValue,
-    hasPreviousResponse,
-    demographicsValues
+    response,
+    hasResponse: hasLocalResponse(questionKey),
+    hasBackendResponse, // NUEVO: Retornar el estado
+    isLoading,
+    error,
+    saveResponse,
+    updateResponse,
+    deleteResponse,
+    clearResponse,
+    markAsBackendSent, // NUEVO: Retornar el método
+    isDirty,
+    setIsDirty
   };
 };

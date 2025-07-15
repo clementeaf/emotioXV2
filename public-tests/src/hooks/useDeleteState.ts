@@ -4,7 +4,8 @@ import { UseDeleteStateProps, UseDeleteStateReturn } from './types';
 
 export const useDeleteState = ({
   onSuccess,
-  buttonText = 'Limpiar todas las respuestas'
+  buttonText = 'Limpiar todas las respuestas',
+  showToasts = false // NUEVO: Controlar si mostrar toasts
 }: UseDeleteStateProps): UseDeleteStateReturn => {
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -13,14 +14,22 @@ export const useDeleteState = ({
 
     try {
       await deleteFn();
-      toast.success('Todas las respuestas eliminadas exitosamente');
+
+      // NUEVO: Solo mostrar toast si está habilitado
+      if (showToasts) {
+        toast.success('Todas las respuestas eliminadas exitosamente');
+      }
 
       if (onSuccess) onSuccess();
       console.log('[useDeleteState] Respuestas eliminadas exitosamente');
 
     } catch (error) {
       console.error('[useDeleteState] ❌ Error:', error);
-      toast.error('Error al eliminar respuestas');
+
+      // NUEVO: Solo mostrar toast si está habilitado
+      if (showToasts) {
+        toast.error('Error al eliminar respuestas');
+      }
     } finally {
       setIsDeleting(false);
     }

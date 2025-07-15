@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ApiClient } from '../lib/api';
-import { useParticipantStore } from '../stores/participantStore';
-import { ConsolidatedMetadata, DeviceInfo, LocationInfo, ParticipantDataReturn, SessionInfo } from './types';
+import { useResponsesStore } from '../stores/useResponsesStore';
+import { ConsolidatedMetadata, DeviceInfo, LocationInfo, SessionInfo } from './types';
 
 /**
  * Hook consolidado que maneja respuestas y metadata automáticamente
  * Reemplaza múltiples hooks duplicados
  */
-export const useParticipantData = (): ParticipantDataReturn => {
-  const { researchId, participantId, deviceType } = useParticipantStore();
+export const useParticipantData = (
+  researchId: string | null,
+  participantId: string | null
+) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [metadata, setMetadata] = useState<ConsolidatedMetadata>(() => ({
@@ -17,6 +19,16 @@ export const useParticipantData = (): ParticipantDataReturn => {
     sessionInfo: getSessionInfo(),
     timingInfo: { startTime: Date.now(), sectionTimings: [] }
   }));
+
+  // NUEVO: Usar el store local de respuestas
+  const {
+    saveLocalResponse,
+    getLocalResponse,
+    hasLocalResponse,
+    updateLocalResponse,
+    deleteLocalResponse,
+    clearAllResponses: clearLocalResponses
+  } = useResponsesStore();
 
   function getDeviceInfo(): DeviceInfo {
     const userAgent = navigator.userAgent;
@@ -62,7 +74,7 @@ export const useParticipantData = (): ParticipantDataReturn => {
     const connectionType = connection ? connection.effectiveType || connection.type : undefined;
 
     return {
-      deviceType: deviceType || 'desktop',
+      deviceType: 'desktop', // Assuming deviceType is not passed as an argument
       userAgent,
       screenWidth: screen.width,
       screenHeight: screen.height,
@@ -167,7 +179,7 @@ export const useParticipantData = (): ParticipantDataReturn => {
     }));
   }, []);
 
-    const sendResponse = useCallback(async (questionKey: string, response: unknown): Promise<boolean> => {
+  const sendResponse = useCallback(async (questionKey: string, response: unknown): Promise<boolean> => {
     if (!researchId || !participantId || !questionKey) {
       console.error('[useParticipantData] ❌ Faltan datos requeridos');
       return false;
@@ -193,6 +205,8 @@ export const useParticipantData = (): ParticipantDataReturn => {
         }
       };
 
+      console.log('[useParticipantData] 📤 Enviando respuesta con questionKey:', questionKey, 'response:', response);
+
       const result = await apiClient.saveModuleResponse({
         researchId,
         participantId,
@@ -203,11 +217,17 @@ export const useParticipantData = (): ParticipantDataReturn => {
         metadata: updatedMetadata
       });
 
+      console.log('[useParticipantData] 📥 Respuesta del backend:', result);
+
       if (result.error) {
         console.error('[useParticipantData] ❌ Error enviando respuesta:', result.message);
         setError(result.message || 'Error desconocido');
         return false;
       }
+
+      // NUEVO: Guardar respuesta localmente después de enviarla exitosamente
+      saveLocalResponse(questionKey, response, 'module_response', questionKey);
+      console.log(`[useParticipantData] ✅ Respuesta guardada localmente: ${questionKey}`);
 
       return true;
     } catch (error) {
@@ -217,7 +237,7 @@ export const useParticipantData = (): ParticipantDataReturn => {
     } finally {
       setIsLoading(false);
     }
-  }, [researchId, participantId, metadata, getLocationInfo]);
+  }, [researchId, participantId, metadata, getLocationInfo, saveLocalResponse]);
 
   const getResponse = useCallback(async (questionKey: string): Promise<unknown | null> => {
     if (!researchId || !participantId || !questionKey) {
@@ -226,8 +246,15 @@ export const useParticipantData = (): ParticipantDataReturn => {
     }
 
     try {
-      const apiClient = new ApiClient();
+      // NUEVO: Primero buscar en respuestas locales
+      const localResponse = getLocalResponse(questionKey);
+      if (localResponse) {
+        console.log(`[useParticipantData] ✅ Respuesta encontrada localmente: ${questionKey}`);
+        return localResponse.response;
+      }
 
+      // Si no está localmente, buscar en el backend
+      const apiClient = new ApiClient();
       const result = await apiClient.getModuleResponses(researchId, participantId);
 
       if (result.error) {
@@ -237,9 +264,16 @@ export const useParticipantData = (): ParticipantDataReturn => {
 
       const responses = (result.data as any)?.data?.responses || (result.data as any)?.responses || [];
 
+      console.log('[useParticipantData] 📋 Todas las respuestas obtenidas del backend:', responses);
+      console.log('[useParticipantData] 🔍 Buscando questionKey:', questionKey);
+
       const foundResponse = responses.find((r: any) => r.questionKey === questionKey);
 
+      console.log('[useParticipantData] ✅ Respuesta encontrada en backend:', foundResponse);
+
       if (foundResponse) {
+        // NUEVO: Guardar en local storage para futuras consultas
+        saveLocalResponse(questionKey, foundResponse.response, foundResponse.stepType, foundResponse.stepTitle);
         return foundResponse.response;
       }
 
@@ -248,11 +282,16 @@ export const useParticipantData = (): ParticipantDataReturn => {
       console.error('[useParticipantData] 💥 Error obteniendo respuesta:', error);
       return null;
     }
-  }, [researchId, participantId]);
+  }, [researchId, participantId, getLocalResponse, saveLocalResponse]);
 
   const updateResponse = useCallback(async (questionKey: string, newResponse: unknown): Promise<boolean> => {
-    return sendResponse(questionKey, newResponse);
-  }, [sendResponse]);
+    const success = await sendResponse(questionKey, newResponse);
+    if (success) {
+      // NUEVO: Actualizar también en local storage
+      updateLocalResponse(questionKey, newResponse);
+    }
+    return success;
+  }, [sendResponse, updateLocalResponse]);
 
   const deleteAllResponses = useCallback(async (): Promise<boolean> => {
     if (!researchId || !participantId) {
@@ -269,12 +308,16 @@ export const useParticipantData = (): ParticipantDataReturn => {
         return false;
       }
 
+      // NUEVO: Limpiar también respuestas locales
+      clearLocalResponses();
+      console.log('[useParticipantData] ✅ Respuestas locales eliminadas');
+
       return true;
     } catch (error) {
       console.error('[useParticipantData] 💥 Error eliminando respuestas:', error);
       return false;
     }
-  }, [researchId, participantId]);
+  }, [researchId, participantId, clearLocalResponses]);
 
   const startSession = useCallback(() => {
     const sessionInfo: SessionInfo = {
@@ -332,13 +375,13 @@ export const useParticipantData = (): ParticipantDataReturn => {
   }, []);
 
   return {
+    isLoading,
+    error,
+    metadata,
     sendResponse,
     getResponse,
     updateResponse,
     deleteAllResponses,
-    metadata,
-    isLoading,
-    error,
     startSession,
     endSession,
     updateCurrentStep,

@@ -5,36 +5,70 @@ import { DemographicFormProps } from './types';
 export function DemographicForm({ questions, previousResponse }: DemographicFormProps) {
   const [formValues, setFormValues] = useState<Record<string, string>>({});
 
-  const { demographicsValues } = useQuestionResponse({
-    currentStepKey: 'demographics',
-    previousResponse,
-    questionType: 'demographics'
+  // NUEVO: Logs de debug
+  console.log('[DemographicForm] Renderizando con:', { questions, previousResponse });
+
+  const { response, hasResponse, saveResponse, updateResponse } = useQuestionResponse({
+    questionKey: 'demographics',
+    stepType: 'module_response',
+    stepTitle: 'demographics',
+    onResponseChange: (response) => {
+      console.log('[DemographicForm] Respuesta cambiada:', response);
+    }
   });
 
-  useEffect(() => {
+  // NUEVO: Log de debug para response
+  console.log('[DemographicForm] Response del hook:', response, 'hasResponse:', hasResponse);
 
-    if (Object.keys(demographicsValues).length > 0) {
-      setFormValues(demographicsValues);
-    } else if (previousResponse) {
+  useEffect(() => {
+    // NUEVO: Manejar respuesta del nuevo hook con validaciones adicionales
+    if (response && typeof response === 'object' && response !== null) {
+      const responseData = response as Record<string, unknown>;
       const initialValues: Record<string, string> = {};
 
-      Object.entries(previousResponse).forEach(([key, value]) => {
-        if (typeof value === 'string' && key !== 'submitted' && key !== 'timestamp' && key !== 'stepType' && key !== 'stepTitle') {
-          initialValues[key] = value;
-        }
-      });
+      // NUEVO: Validación adicional para asegurar que responseData sea un objeto válido
+      if (responseData && typeof responseData === 'object') {
+        Object.entries(responseData).forEach(([key, value]) => {
+          if (typeof value === 'string' && key !== 'submitted' && key !== 'timestamp' && key !== 'stepType' && key !== 'stepTitle') {
+            initialValues[key] = value;
+          }
+        });
+      }
 
       setFormValues(initialValues);
+      console.log('[DemographicForm] Valores cargados desde hook:', initialValues);
+    } else if (previousResponse && typeof previousResponse === 'object' && previousResponse !== null) {
+      // Fallback para respuesta previa con validación adicional
+      const initialValues: Record<string, string> = {};
+
+      // NUEVO: Validación adicional para asegurar que previousResponse sea un objeto válido
+      if (previousResponse && typeof previousResponse === 'object') {
+        Object.entries(previousResponse).forEach(([key, value]) => {
+          if (typeof value === 'string' && key !== 'submitted' && key !== 'timestamp' && key !== 'stepType' && key !== 'stepTitle') {
+            initialValues[key] = value;
+          }
+        });
+      }
+
+      setFormValues(initialValues);
+      console.log('[DemographicForm] Valores cargados desde previousResponse:', initialValues);
     } else {
       setFormValues({});
+      console.log('[DemographicForm] Sin valores previos, formulario vacío');
     }
-  }, [previousResponse, demographicsValues]);
+  }, [response, previousResponse]);
 
   const handleInputChange = (key: string, value: string) => {
-    setFormValues(prev => ({
-      ...prev,
+    const newValues = {
+      ...formValues,
       [key]: value
-    }));
+    };
+
+    setFormValues(newValues);
+
+    // NUEVO: Solo actualizar el estado local, NO guardar automáticamente
+    // El guardado se hará cuando el usuario haga click en el botón
+    console.log('[DemographicForm] Valor cambiado:', key, value);
   };
 
   return (
@@ -57,10 +91,6 @@ export function DemographicForm({ questions, previousResponse }: DemographicForm
                   : <option key={i} value={opt.value}>{opt.label}</option>
               )}
             </select>
-            {/* Debug info */}
-            <small className="text-xs text-gray-500">
-              Valor actual: {formValues[q.key] || 'vacío'}
-            </small>
           </div>
         ) : null
       )}

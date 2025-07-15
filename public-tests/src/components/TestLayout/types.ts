@@ -1,6 +1,7 @@
 export interface Question {
   title?: string;
   questionKey?: string;
+  type?: string; // NUEVO: tipo de pregunta (csat, ces, cv, etc.)
   config?: Record<string, unknown>;
   choices?: Choice[];
   files?: unknown[];
@@ -43,12 +44,14 @@ export interface ScreenStep {
 export interface StepItemProps {
   step: SidebarStep;
   isActive: boolean;
+  isDisabled?: boolean;
   onClick: () => void;
 }
 
 export interface StepsListProps {
   steps: SidebarStep[];
   currentStepKey: string;
+  isStepEnabled?: (index: number) => boolean;
   onStepClick?: (step: SidebarStep, index: number) => void;
 }
 
@@ -73,7 +76,7 @@ export interface DemographicQuestion {
   // Puedes agregar más campos según tu estructura real
 }
 
-export type StepType = 'screen' | 'demographics' | 'parent' | 'question' | 'unknown';
+export type StepType = 'screen' | 'demographics' | 'parent' | 'question' | 'smart-voc' | 'unknown';
 
 
 export interface ScaleRangeQuestionProps {

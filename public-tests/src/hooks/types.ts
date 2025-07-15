@@ -43,6 +43,7 @@ export interface UseSubmitStateReturn {
 export interface UseDeleteStateProps {
   onSuccess?: () => void;
   buttonText?: string;
+  showToasts?: boolean;
 }
 
 export interface UseDeleteStateReturn {

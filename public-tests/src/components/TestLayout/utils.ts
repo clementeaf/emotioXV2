@@ -52,10 +52,27 @@ export function getSidebarSteps(data: StepData[] | undefined): SidebarStep[] {
         (step.originalSk === 'SMART_VOC_FORM' || step.originalSk === 'COGNITIVE_TASK') &&
         Array.isArray(step.config?.questions)
       ) {
-        return (step.config.questions as Question[]).map(q => ({
-          label: q.title || 'Pregunta',
-          questionKey: q.questionKey || ''
-        }));
+        return (step.config.questions as Question[]).map((q, index) => {
+          // NUEVO: Generar questionKey único para cada pregunta SmartVOC
+          let questionKey = q.questionKey || '';
+
+          // Si no hay questionKey, generarlo basándose en el tipo de pregunta
+          if (!questionKey && q.type) {
+            const type = q.type.toLowerCase();
+            if (type === 'csat') questionKey = 'smartvoc_csat';
+            else if (type === 'ces') questionKey = 'smartvoc_ces';
+            else if (type === 'cv') questionKey = 'smartvoc_cv';
+            else if (type === 'nps') questionKey = 'smartvoc_nps';
+            else if (type === 'nev') questionKey = 'smartvoc_nev';
+            else if (type === 'voc') questionKey = 'smartvoc_voc';
+            else questionKey = `smartvoc_${type}_${index}`;
+          }
+
+          return {
+            label: q.title || 'Pregunta',
+            questionKey
+          };
+        });
       }
       // WELCOME_SCREEN y THANK_YOU_SCREEN
       return [{
@@ -71,7 +88,6 @@ export function findStepByQuestionKey(
 ): StepSearchResult {
   if (!data) return undefined;
   for (const step of data) {
-    // 1. Buscar en preguntas anidadas para cognitive_task y smart_voc_form (PRIORIDAD)
     if (
       (step.originalSk === 'SMART_VOC_FORM' || step.originalSk === 'COGNITIVE_TASK') &&
       step.config && Array.isArray(step.config.questions)
@@ -121,11 +137,12 @@ export function findStepByQuestionKey(
   return undefined;
 }
 
-export function getStepType(obj: StepSearchResult): 'parent' | 'demographics' | 'screen' | 'question' | 'unknown' {
+export function getStepType(obj: StepSearchResult): 'parent' | 'demographics' | 'screen' | 'question' | 'smart-voc' | 'unknown' {
   if (obj && typeof obj === 'object') {
     if ('demographicQuestions' in obj) return 'demographics';
     if ('parentStep' in obj) return 'parent';
     if ('questionKey' in obj && (obj.questionKey === 'welcome_screen' || obj.questionKey === 'thank_you_screen')) return 'screen';
+    if ('questionKey' in obj && obj.questionKey?.startsWith('smartvoc_')) return 'smart-voc';
     if ('questionKey' in obj) return 'question';
   }
   return 'unknown';

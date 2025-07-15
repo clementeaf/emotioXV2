@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useDeleteState } from '../../hooks/useDeleteState';
+import { useParticipantStore } from '../../stores/participantStore';
+import { useResponsesStore } from '../../stores/useResponsesStore';
 import { useStepStore } from '../../stores/useStepStore';
 import BurgerMenuButton from './BurgerMenuButton';
 import MobileOverlay from './MobileOverlay';
@@ -31,7 +33,9 @@ const TestLayoutSidebar: React.FC<TestLayoutSidebarPropsExtended> = ({
     buttonText: deleteButtonText,
     isButtonDisabled: isDeleteDisabled,
     handleDelete
-  } = useDeleteState({});
+  } = useDeleteState({
+    showToasts: false // NUEVO: No mostrar toasts aquí, se manejan en TestLayoutMain
+  });
   const currentStepKey = useStepStore(state => state.currentStepKey);
   const totalSteps = steps.length;
   const stepsNotifiedRef = useRef(false);
@@ -52,7 +56,37 @@ const TestLayoutSidebar: React.FC<TestLayoutSidebarPropsExtended> = ({
   const toggleSidebar = () => setIsOpen(!isOpen);
   const closeSidebar = () => setIsOpen(false);
 
+  // NUEVO: Usar el store de respuestas para mostrar indicadores
+  const { hasBackendResponse, getResponsesCount } = useResponsesStore();
+
+  // NUEVO: Verificar si hay datos válidos para eliminar respuestas
+  const { researchId, participantId } = useParticipantStore();
+  const canDeleteResponses = !!(researchId && participantId);
+
+  // NUEVO: Función para determinar si un paso está habilitado
+  const isStepEnabled = (stepIndex: number): boolean => {
+    // El primer paso siempre está habilitado
+    if (stepIndex === 0) return true;
+
+    // Para los demás pasos, verificar que todos los pasos anteriores tengan respuesta enviada al backend
+    for (let i = 0; i < stepIndex; i++) {
+      const previousStep = steps[i];
+      if (!hasBackendResponse(previousStep.questionKey)) {
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  // NUEVO: Función para manejar clicks en pasos
   const handleStepClick = (step: SidebarStep, index: number) => {
+    // Solo permitir click si el paso está habilitado
+    if (!isStepEnabled(index)) {
+      console.log(`[TestLayoutSidebar] Paso bloqueado: ${step.questionKey}`);
+      return;
+    }
+
     setStep(step.questionKey);
     if (onNavigateToStep) {
       onNavigateToStep(step.questionKey);
@@ -61,6 +95,14 @@ const TestLayoutSidebar: React.FC<TestLayoutSidebarPropsExtended> = ({
 
   const handleDeleteAllResponses = async () => {
     if (!onDeleteAllResponses) return;
+
+    // NUEVO: Validar que haya researchId y participantId antes de intentar eliminar
+    const { researchId, participantId } = useParticipantStore.getState();
+    if (!researchId || !participantId) {
+      console.error('[TestLayoutSidebar] ❌ No se pueden eliminar respuestas: researchId o participantId no disponibles');
+      console.log('[TestLayoutSidebar] Debug - researchId:', researchId, 'participantId:', participantId);
+      return;
+    }
 
     await handleDelete(async () => {
       await onDeleteAllResponses();
@@ -82,15 +124,16 @@ const TestLayoutSidebar: React.FC<TestLayoutSidebarPropsExtended> = ({
             <StepsList
               steps={steps}
               currentStepKey={currentStepKey}
+              isStepEnabled={isStepEnabled}
               onStepClick={handleStepClick}
             />
             {/* Botón para eliminar todas las respuestas */}
             <div className="mt-6 p-4 border-t border-gray-200">
               <button
                 onClick={handleDeleteAllResponses}
-                disabled={isDeleteDisabled}
+                disabled={isDeleteDisabled || !canDeleteResponses}
                 className={`w-full px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                  isDeleteDisabled
+                  isDeleteDisabled || !canDeleteResponses
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     : 'bg-red-600 hover:bg-red-700 text-white'
                 }`}
@@ -100,6 +143,8 @@ const TestLayoutSidebar: React.FC<TestLayoutSidebarPropsExtended> = ({
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                     {deleteButtonText}
                   </div>
+                ) : !canDeleteResponses ? (
+                  'Esperando datos...'
                 ) : (
                   deleteButtonText
                 )}

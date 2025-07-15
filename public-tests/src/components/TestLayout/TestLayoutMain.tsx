@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'react-hot-toast';
 import { useParticipantData } from '../../hooks/useParticipantData';
 import { useLoadResearchFormsConfig } from '../../hooks/useResearchForms';
 import { useParticipantStore } from '../../stores/participantStore';
@@ -10,8 +11,12 @@ import { getSidebarSteps } from './utils';
 const TestLayoutMain: React.FC = () => {
   const researchId = useParticipantStore(state => state.researchId);
   const participantId = useParticipantStore(state => state.participantId);
+
   const { data, isLoading, error } = useLoadResearchFormsConfig(researchId || '');
-  const { deleteAllResponses } = useParticipantData();
+
+  const participantData = useParticipantData(researchId, participantId);
+  const { deleteAllResponses } = researchId && participantId ? participantData : { deleteAllResponses: async () => false };
+
   const [sidebarSteps, setSidebarSteps] = useState<SidebarStep[]>([]);
 
   const steps = getSidebarSteps(data?.data ?? undefined);
@@ -23,23 +28,29 @@ const TestLayoutMain: React.FC = () => {
   const handleNavigateToStep = (stepKey: string) => {
   };
 
-  const handleDeleteAllResponses = async () => {
+  const handleDeleteAllResponses = async (): Promise<void> => {
     if (!researchId || !participantId) {
-      console.error('[TestLayoutMain] ❌ Faltan researchId o participantId para eliminar respuestas');
+      toast.error('No se pueden eliminar las respuestas: datos de sesión incompletos');
       return;
     }
 
     try {
+      toast.loading('Eliminando todas las respuestas...');
+
       const deleted = await deleteAllResponses();
+
       if (deleted) {
-        console.log('[TestLayoutMain] ✅ Todas las respuestas eliminadas exitosamente');
+        toast.dismiss();
+        toast.success('Todas las respuestas han sido eliminadas exitosamente');
       } else {
         console.error('[TestLayoutMain] ❌ Error eliminando respuestas');
-        throw new Error('Error al eliminar respuestas');
+        toast.dismiss();
+        toast.error('Error al eliminar las respuestas. Inténtalo de nuevo.');
       }
     } catch (error) {
       console.error('[TestLayoutMain] ❌ Error:', error);
-      throw error;
+      toast.dismiss();
+      toast.error('Error inesperado al eliminar las respuestas');
     }
   };
 

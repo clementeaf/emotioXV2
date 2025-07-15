@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { toast } from 'react-hot-toast';
+import React, { useCallback, useEffect } from 'react';
 import { useParticipantData } from '../../hooks/useParticipantData';
+import { useQuestionResponse } from '../../hooks/useQuestionResponse';
 import { useParticipantStore } from '../../stores/participantStore';
+import { useResponsesStore } from '../../stores/useResponsesStore';
 import { useStepStore } from '../../stores/useStepStore';
 import { ErrorState, LoadingState, NoStepData, NoStepSelected } from './CommonStates';
 import { DemographicForm } from './DemographicForm';
@@ -21,15 +22,128 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({
   const currentStepKey = useStepStore(state => state.currentStepKey);
   const setStep = useStepStore(state => state.setStep);
   const { researchId, participantId } = useParticipantStore();
-  const { sendResponse, getResponse, updateResponse } = useParticipantData();
+  const { sendResponse, getResponse, updateResponse } = useParticipantData(researchId, participantId);
 
-  // Estados locales
-  const [hasPreviousResponse, setHasPreviousResponse] = useState(false);
-  const [previousResponse, setPreviousResponse] = useState<Record<string, unknown> | undefined>(undefined);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
+  // ========================================
+  // 🎯 MANEJO DE RESPUESTAS CON PERSISTENCIA LOCAL
+  // ========================================
+  const {
+    response: currentResponse,
+    hasResponse: hasCurrentResponse,
+    hasBackendResponse, // NUEVO: Usar hasBackendResponse
+    saveResponse,
+    updateResponse: updateLocalResponse,
+    deleteResponse,
+    markAsBackendSent, // NUEVO: Método para marcar como enviado
+    isLoading: isResponseLoading,
+    error: responseError
+  } = useQuestionResponse({
+    questionKey: currentStepKey,
+    stepType: 'module_response',
+    stepTitle: currentStepKey,
+    onResponseChange: (response) => {
+      console.log(`[TestLayoutRenderer] Respuesta cambiada para ${currentStepKey}:`, response);
+    }
+  });
 
-      // ========================================
+  // NUEVO: Obtener markAsBackendSent del store
+  const { markAsBackendSent: markStoreAsBackendSent } = useResponsesStore();
+
+  // ========================================
+  // 🎯 MANEJO DE NAVEGACIÓN
+  // ========================================
+  const goToNextStep = useCallback(() => {
+    const currentIndex = sidebarSteps.findIndex(step => step.questionKey === currentStepKey);
+    if (currentIndex < sidebarSteps.length - 1) {
+      const nextStep = sidebarSteps[currentIndex + 1];
+      setStep(nextStep.questionKey);
+      console.log(`[TestLayoutRenderer] Navegando al siguiente paso: ${nextStep.questionKey}`);
+    }
+  }, [currentStepKey, sidebarSteps, setStep]);
+
+  // ========================================
+  // 🎯 MANEJO DE ENVÍO DE RESPUESTAS
+  // ========================================
+  const handleSaveResponse = useCallback(async (response: unknown): Promise<boolean> => {
+    if (!currentStepKey) {
+      console.error('[TestLayoutRenderer] ❌ No hay paso actual seleccionado');
+      return false;
+    }
+
+    console.log(`[TestLayoutRenderer] 📤 Guardando respuesta para ${currentStepKey}:`, response);
+
+    // Guardar localmente primero
+    const localSuccess = await saveResponse(response);
+    if (!localSuccess) {
+      console.error('[TestLayoutRenderer] ❌ Error guardando localmente');
+      return false;
+    }
+
+    // Enviar al backend
+    const backendSuccess = await sendResponse(currentStepKey, response);
+    if (!backendSuccess) {
+      console.error('[TestLayoutRenderer] ❌ Error enviando al backend');
+      return false;
+    }
+
+    // NUEVO: Marcar como enviado al backend
+    markStoreAsBackendSent(currentStepKey);
+
+    console.log(`[TestLayoutRenderer] ✅ Respuesta guardada exitosamente: ${currentStepKey}`);
+    return true;
+  }, [currentStepKey, saveResponse, sendResponse, markStoreAsBackendSent]);
+
+  const handleUpdateResponse = useCallback(async (response: unknown): Promise<boolean> => {
+    if (!currentStepKey) {
+      console.error('[TestLayoutRenderer] ❌ No hay paso actual seleccionado');
+      return false;
+    }
+
+    console.log(`[TestLayoutRenderer] 📤 Actualizando respuesta para ${currentStepKey}:`, response);
+
+    // Actualizar localmente
+    const localSuccess = await updateLocalResponse(response);
+    if (!localSuccess) {
+      console.error('[TestLayoutRenderer] ❌ Error actualizando localmente');
+      return false;
+    }
+
+    // Enviar al backend
+    const backendSuccess = await sendResponse(currentStepKey, response);
+    if (!backendSuccess) {
+      console.error('[TestLayoutRenderer] ❌ Error enviando al backend');
+      return false;
+    }
+
+    // NUEVO: Marcar como enviado al backend
+    markStoreAsBackendSent(currentStepKey);
+
+    // Navegar al siguiente paso después de actualizar
+    goToNextStep();
+
+    console.log(`[TestLayoutRenderer] ✅ Respuesta actualizada exitosamente: ${currentStepKey}`);
+    return true;
+  }, [currentStepKey, updateLocalResponse, sendResponse, markStoreAsBackendSent, goToNextStep]);
+
+  const handleDeleteResponse = useCallback(async (): Promise<boolean> => {
+    if (!currentStepKey) {
+      console.error('[TestLayoutRenderer] ❌ No hay paso actual seleccionado');
+      return false;
+    }
+
+    console.log(`[TestLayoutRenderer] 🗑️ Eliminando respuesta para ${currentStepKey}`);
+
+    const success = await deleteResponse();
+    if (success) {
+      console.log(`[TestLayoutRenderer] ✅ Respuesta eliminada exitosamente: ${currentStepKey}`);
+    } else {
+      console.error('[TestLayoutRenderer] ❌ Error eliminando respuesta');
+    }
+
+    return success;
+  }, [currentStepKey, deleteResponse]);
+
+  // ========================================
   // 🔍 VERIFICACIÓN DE RESPUESTAS PREVIAS
   // ========================================
   useEffect(() => {
@@ -40,25 +154,25 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({
         const previousResponse = await getResponse(currentStepKey);
 
         if (previousResponse) {
-          setHasPreviousResponse(true);
-          setPreviousResponse(previousResponse as Record<string, unknown>);
+          // setHasPreviousResponse(true); // This state is no longer managed by useQuestionResponse
+          // setPreviousResponse(previousResponse as Record<string, unknown>); // This state is no longer managed by useQuestionResponse
         } else {
-          setHasPreviousResponse(false);
-          setPreviousResponse(undefined);
+          // setHasPreviousResponse(false); // This state is no longer managed by useQuestionResponse
+          // setPreviousResponse(undefined); // This state is no longer managed by useQuestionResponse
 
           // Fallback SOLO para demographics, NO para otras preguntas
           if (currentStepKey === 'demographics') {
             const fallbackResponse = await getResponse('demographics');
             if (fallbackResponse) {
-              setHasPreviousResponse(true);
-              setPreviousResponse(fallbackResponse as Record<string, unknown>);
+              // setHasPreviousResponse(true); // This state is no longer managed by useQuestionResponse
+              // setPreviousResponse(fallbackResponse as Record<string, unknown>); // This state is no longer managed by useQuestionResponse
             }
           }
         }
       } catch (error) {
         console.error(`[TestLayoutRenderer] ❌ Error verificando respuesta previa para ${currentStepKey}:`, error);
-        setHasPreviousResponse(false);
-        setPreviousResponse(undefined);
+        // setHasPreviousResponse(false); // This state is no longer managed by useQuestionResponse
+        // setPreviousResponse(undefined); // This state is no longer managed by useQuestionResponse
       }
     };
 
@@ -66,21 +180,6 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({
   }, [currentStepKey, getResponse]);
 
   // ========================================
-  // 🚀 NAVEGACIÓN
-  // ========================================
-  const goToNextStep = () => {
-    if (!sidebarSteps || sidebarSteps.length === 0 || !currentStepKey) return;
-
-    const currentIndex = sidebarSteps.findIndex(step => step.questionKey === currentStepKey);
-    if (currentIndex >= 0 && currentIndex < sidebarSteps.length - 1) {
-      const nextStepKey = sidebarSteps[currentIndex + 1].questionKey;
-      if (typeof nextStepKey === 'string') {
-        setStep(nextStepKey);
-      }
-    }
-  };
-
-    // ========================================
   // 📝 OBTENCIÓN DE VALORES DEL FORMULARIO
   // ========================================
     const getFormValues = (): unknown => {
@@ -115,76 +214,6 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({
   };
 
   // ========================================
-  // 💾 MANEJO DE RESPUESTAS
-  // ========================================
-    const handleSubmitResponse = async (response?: unknown) => {
-    if (!researchId || !participantId) {
-      console.error('[TestLayoutRenderer] ❌ Faltan researchId o participantId para guardar respuesta');
-      toast.error('Error: Faltan datos de investigación o participante');
-      return;
-    }
-
-    setIsSubmitting(true);
-    setIsSuccess(false);
-
-    try {
-      const responseData = response || getFormValues();
-
-      const sentResponse = await sendResponse(currentStepKey, responseData);
-
-      if (sentResponse) {
-        toast.success('Respuesta guardada exitosamente');
-        setIsSuccess(true);
-
-        setTimeout(() => {
-          setIsSuccess(false);
-          goToNextStep();
-        }, 1000);
-      } else {
-        console.error('[TestLayoutRenderer] ❌ Error enviando respuesta');
-        toast.error('Error al enviar respuesta');
-      }
-    } catch (error) {
-      console.error('[TestLayoutRenderer] ❌ Error:', error);
-      toast.error('Error al enviar respuesta');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-    const handleUpdateResponse = async (newResponse: unknown) => {
-    if (!researchId || !participantId) {
-      console.error('[TestLayoutRenderer] ❌ Faltan researchId o participantId para actualizar respuesta');
-      return;
-    }
-
-    setIsSubmitting(true);
-    setIsSuccess(false);
-
-    try {
-      const updatedResponse = await updateResponse(currentStepKey, newResponse);
-
-      if (updatedResponse) {
-        toast.success('Respuesta actualizada exitosamente');
-        setIsSuccess(true);
-
-        setTimeout(() => {
-          setIsSuccess(false);
-          goToNextStep();
-        }, 1000);
-      } else {
-        console.error('[TestLayoutRenderer] ❌ Error actualizando respuesta');
-        toast.error('Error al actualizar respuesta');
-      }
-    } catch (error) {
-      console.error('[TestLayoutRenderer] ❌ Error:', error);
-      toast.error('Error al actualizar respuesta');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // ========================================
   // 🚨 VALIDACIONES INICIALES
   // ========================================
   if (isLoading) return <LoadingState />;
@@ -203,7 +232,17 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({
   switch (stepType) {
     case 'demographics': {
       const { demographicQuestions } = currentStepData as { demographicQuestions: DemographicQuestion[] };
-      renderedForm = <DemographicForm questions={demographicQuestions} previousResponse={previousResponse} />;
+      renderedForm = <DemographicForm questions={demographicQuestions} previousResponse={currentResponse as Record<string, unknown> | undefined} />;
+      break;
+    }
+    case 'smart-voc': {
+      renderedForm = (
+        <QuestionComponent
+          question={currentStepData as Question}
+          currentStepKey={currentStepKey}
+          previousResponse={currentResponse as Record<string, unknown> | undefined}
+        />
+      );
       break;
     }
     case 'screen': {
@@ -220,7 +259,7 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({
         <QuestionComponent
           question={currentStepData as Question}
           currentStepKey={currentStepKey}
-          previousResponse={previousResponse}
+          previousResponse={currentResponse as Record<string, unknown> | undefined}
         />
       );
       break;
@@ -235,18 +274,18 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({
   const showGlobalButton = stepType !== 'screen';
 
   const getButtonText = () => {
-    if (isSubmitting) return 'Guardando...';
-    if (isSuccess) return 'Pasando a la siguiente pregunta...';
-    return hasPreviousResponse ? 'Actualizar y continuar' : 'Guardar y continuar';
+    // NUEVO: Usar hasBackendResponse para determinar el texto del botón
+    return hasBackendResponse ? 'Actualizar y continuar' : 'Guardar y continuar';
   };
 
-  const isButtonDisabled = isSubmitting || isSuccess;
+  // isButtonDisabled state is no longer managed by useQuestionResponse
+  const isButtonDisabled = isResponseLoading; // Use isResponseLoading from useQuestionResponse
 
     const handleButtonClick = () => {
-    if (hasPreviousResponse) {
+    if (hasBackendResponse) {
       handleUpdateResponse(getFormValues());
     } else {
-      handleSubmitResponse();
+      handleSaveResponse(getFormValues());
     }
   };
 
@@ -268,13 +307,15 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({
           }`}
           onClick={handleButtonClick}
         >
-          {isSubmitting && (
-            <div className="flex items-center justify-center gap-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-              {getButtonText()}
-            </div>
-          )}
-          {!isSubmitting && getButtonText()}
+          {/* isSubmitting and isSuccess states are no longer managed by useQuestionResponse */}
+          {/* {isSubmitting && ( */}
+          {/*   <div className="flex items-center justify-center gap-2"> */}
+          {/*     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> */}
+          {/*     {getButtonText()} */}
+          {/*   </div> */}
+          {/* )} */}
+          {/* {!isSubmitting && getButtonText()} */}
+          {getButtonText()}
         </button>
       )}
     </div>
