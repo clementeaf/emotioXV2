@@ -3,6 +3,21 @@ import { ApiClient } from '../lib/api';
 import { useResponsesStore } from '../stores/useResponsesStore';
 import { ConsolidatedMetadata, DeviceInfo, LocationInfo, SessionInfo } from './types';
 
+// Interfaces para tipado de respuestas
+interface ModuleResponse {
+  questionKey: string;
+  response: unknown;
+  stepType: string;
+  stepTitle: string;
+}
+
+interface ApiResponseData {
+  data?: {
+    responses?: ModuleResponse[];
+  };
+  responses?: ModuleResponse[];
+}
+
 /**
  * Hook consolidado que maneja respuestas y metadata automáticamente
  * Reemplaza múltiples hooks duplicados
@@ -70,7 +85,7 @@ export const useParticipantData = (
     }
 
     // Detectar tipo de conexión
-    const connection = (navigator as any).connection;
+    const connection = (navigator as Navigator & { connection?: { effectiveType?: string; type?: string } }).connection;
     const connectionType = connection ? connection.effectiveType || connection.type : undefined;
 
     return {
@@ -190,11 +205,8 @@ export const useParticipantData = (
 
     try {
       const apiClient = new ApiClient();
-
-      // Solo obtener geolocalización cuando se envía una respuesta (acción del usuario)
       const locationInfo = await getLocationInfo();
 
-      // Actualizar metadata antes de enviar
       const updatedMetadata = {
         ...metadata,
         locationInfo,
@@ -204,8 +216,6 @@ export const useParticipantData = (
           totalSessionTime: Date.now() - metadata.sessionInfo.sessionStartTime
         }
       };
-
-      console.log('[useParticipantData] 📤 Enviando respuesta con questionKey:', questionKey, 'response:', response);
 
       const result = await apiClient.saveModuleResponse({
         researchId,
@@ -217,17 +227,13 @@ export const useParticipantData = (
         metadata: updatedMetadata
       });
 
-      console.log('[useParticipantData] 📥 Respuesta del backend:', result);
-
       if (result.error) {
         console.error('[useParticipantData] ❌ Error enviando respuesta:', result.message);
         setError(result.message || 'Error desconocido');
         return false;
       }
 
-      // NUEVO: Guardar respuesta localmente después de enviarla exitosamente
       saveLocalResponse(questionKey, response, 'module_response', questionKey);
-      console.log(`[useParticipantData] ✅ Respuesta guardada localmente: ${questionKey}`);
 
       return true;
     } catch (error) {
@@ -246,10 +252,8 @@ export const useParticipantData = (
     }
 
     try {
-      // NUEVO: Primero buscar en respuestas locales
       const localResponse = getLocalResponse(questionKey);
       if (localResponse) {
-        console.log(`[useParticipantData] ✅ Respuesta encontrada localmente: ${questionKey}`);
         return localResponse.response;
       }
 
@@ -262,14 +266,10 @@ export const useParticipantData = (
         return null;
       }
 
-      const responses = (result.data as any)?.data?.responses || (result.data as any)?.responses || [];
+            const responses = (result.data as ApiResponseData)?.data?.responses ||
+                       (result.data as ApiResponseData)?.responses || [];
 
-      console.log('[useParticipantData] 📋 Todas las respuestas obtenidas del backend:', responses);
-      console.log('[useParticipantData] 🔍 Buscando questionKey:', questionKey);
-
-      const foundResponse = responses.find((r: any) => r.questionKey === questionKey);
-
-      console.log('[useParticipantData] ✅ Respuesta encontrada en backend:', foundResponse);
+      const foundResponse = responses.find((r: ModuleResponse) => r.questionKey === questionKey);
 
       if (foundResponse) {
         // NUEVO: Guardar en local storage para futuras consultas
@@ -308,9 +308,7 @@ export const useParticipantData = (
         return false;
       }
 
-      // NUEVO: Limpiar también respuestas locales
       clearLocalResponses();
-      console.log('[useParticipantData] ✅ Respuestas locales eliminadas');
 
       return true;
     } catch (error) {

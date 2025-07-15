@@ -10,18 +10,26 @@ export const useNavigationState = ({
   const [isSuccess, setIsSuccess] = useState(false);
 
   const handleContinue = async () => {
+    console.log('[useNavigationState] Iniciando navegación...');
     setIsNavigating(true);
     setIsSuccess(false);
 
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
 
+      console.log('[useNavigationState] Mostrando toast de éxito');
       toast.success('Pasando al siguiente paso');
       setIsSuccess(true);
 
       setTimeout(() => {
+        console.log('[useNavigationState] Ejecutando onContinue...');
         setIsSuccess(false);
-        if (onContinue) onContinue();
+        if (onContinue) {
+          console.log('[useNavigationState] Llamando a onContinue');
+          onContinue();
+        } else {
+          console.warn('[useNavigationState] onContinue no está definido');
+        }
       }, 1500);
 
     } catch (error) {

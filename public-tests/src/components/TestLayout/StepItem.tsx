@@ -7,20 +7,26 @@ const StepItem: React.FC<StepItemProps> = ({ step, isActive, onClick, isDisabled
   const { hasBackendResponse } = useResponsesStore();
   const hasResponse = hasBackendResponse(step.questionKey);
 
-  // NUEVO: Determinar el estado del paso basándose en respuestas del backend
+    // NUEVO: Determinar el estado del paso según las reglas especificadas
   const getStepState = () => {
     if (isDisabled) return 'disabled';
-    if (isActive) return 'active'; // Prioridad al paso activo
-    if (hasResponse) return 'completed'; // Solo si fue enviado al backend
+
+    // Si el usuario está actualmente en este paso, debe estar en azul (PRIORIDAD MÁXIMA)
+    if (isActive) return 'active';
+
+    // Caso especial: Pasos de bienvenida siempre se consideran completados (solo si no es activo)
+    if (step.questionKey === 'welcome_screen' || step.questionKey === 'welcome') {
+      return 'completed';
+    }
+
+    // Si el paso ha sido respondido, debe estar en verde
+    if (hasResponse) return 'completed';
+
+    // Si no tiene respuesta previa, debe estar en gris
     return 'available';
   };
 
   const stepState = getStepState();
-
-  // DEBUG: Log para verificar el estado del paso
-  if (isActive) {
-    console.log(`[StepItem] Paso activo detectado: ${step.questionKey}, estado: ${stepState}`);
-  }
 
   // NUEVO: Estilos según el estado
   const getStepStyles = () => {

@@ -49,6 +49,7 @@ const TestLayoutSidebar: React.FC<TestLayoutSidebarPropsExtended> = ({
 
   useEffect(() => {
     if (steps.length > 0 && !currentStepKey) {
+      // SIEMPRE comenzar por el primer paso (Bienvenido)
       setStep(steps[0].questionKey);
     }
   }, [steps, currentStepKey, setStep]);
@@ -71,6 +72,12 @@ const TestLayoutSidebar: React.FC<TestLayoutSidebarPropsExtended> = ({
     // Para los demás pasos, verificar que todos los pasos anteriores tengan respuesta enviada al backend
     for (let i = 0; i < stepIndex; i++) {
       const previousStep = steps[i];
+
+      // Caso especial: Pasos de bienvenida se consideran automáticamente como completados
+      if (previousStep.questionKey === 'welcome_screen' || previousStep.questionKey === 'welcome') {
+        continue; // Saltar la verificación para pasos de bienvenida
+      }
+
       if (!hasBackendResponse(previousStep.questionKey)) {
         return false;
       }

@@ -5,70 +5,36 @@ import { DemographicFormProps } from './types';
 export function DemographicForm({ questions, previousResponse }: DemographicFormProps) {
   const [formValues, setFormValues] = useState<Record<string, string>>({});
 
-  // NUEVO: Logs de debug
-  console.log('[DemographicForm] Renderizando con:', { questions, previousResponse });
-
-  const { response, hasResponse, saveResponse, updateResponse } = useQuestionResponse({
+  const { response } = useQuestionResponse({
     questionKey: 'demographics',
     stepType: 'module_response',
-    stepTitle: 'demographics',
-    onResponseChange: (response) => {
-      console.log('[DemographicForm] Respuesta cambiada:', response);
-    }
+    stepTitle: 'demographics'
   });
 
-  // NUEVO: Log de debug para response
-  console.log('[DemographicForm] Response del hook:', response, 'hasResponse:', hasResponse);
-
   useEffect(() => {
-    // NUEVO: Manejar respuesta del nuevo hook con validaciones adicionales
-    if (response && typeof response === 'object' && response !== null) {
-      const responseData = response as Record<string, unknown>;
+    // Cargar valores desde la respuesta del hook o respuesta previa
+    const sourceData = response || previousResponse;
+
+    if (sourceData && typeof sourceData === 'object') {
       const initialValues: Record<string, string> = {};
 
-      // NUEVO: Validación adicional para asegurar que responseData sea un objeto válido
-      if (responseData && typeof responseData === 'object') {
-        Object.entries(responseData).forEach(([key, value]) => {
-          if (typeof value === 'string' && key !== 'submitted' && key !== 'timestamp' && key !== 'stepType' && key !== 'stepTitle') {
-            initialValues[key] = value;
-          }
-        });
-      }
+      Object.entries(sourceData).forEach(([key, value]) => {
+        if (typeof value === 'string' && !['submitted', 'timestamp', 'stepType', 'stepTitle'].includes(key)) {
+          initialValues[key] = value;
+        }
+      });
 
       setFormValues(initialValues);
-      console.log('[DemographicForm] Valores cargados desde hook:', initialValues);
-    } else if (previousResponse && typeof previousResponse === 'object' && previousResponse !== null) {
-      // Fallback para respuesta previa con validación adicional
-      const initialValues: Record<string, string> = {};
-
-      // NUEVO: Validación adicional para asegurar que previousResponse sea un objeto válido
-      if (previousResponse && typeof previousResponse === 'object') {
-        Object.entries(previousResponse).forEach(([key, value]) => {
-          if (typeof value === 'string' && key !== 'submitted' && key !== 'timestamp' && key !== 'stepType' && key !== 'stepTitle') {
-            initialValues[key] = value;
-          }
-        });
-      }
-
-      setFormValues(initialValues);
-      console.log('[DemographicForm] Valores cargados desde previousResponse:', initialValues);
     } else {
       setFormValues({});
-      console.log('[DemographicForm] Sin valores previos, formulario vacío');
     }
   }, [response, previousResponse]);
 
   const handleInputChange = (key: string, value: string) => {
-    const newValues = {
-      ...formValues,
+    setFormValues(prev => ({
+      ...prev,
       [key]: value
-    };
-
-    setFormValues(newValues);
-
-    // NUEVO: Solo actualizar el estado local, NO guardar automáticamente
-    // El guardado se hará cuando el usuario haga click en el botón
-    console.log('[DemographicForm] Valor cambiado:', key, value);
+    }));
   };
 
   return (

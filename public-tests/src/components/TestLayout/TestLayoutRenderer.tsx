@@ -21,6 +21,17 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({
   // ========================================
   const currentStepKey = useStepStore(state => state.currentStepKey);
   const setStep = useStepStore(state => state.setStep);
+
+  // NUEVO: Forzar el paso activo basándose en el contenido actual
+  useEffect(() => {
+    if (currentStepKey === 'welcome_screen' && sidebarSteps.length > 1) {
+      // Si estamos en welcome_screen pero el contenido es demográficas, cambiar a demographics
+      const demographicsStep = sidebarSteps.find(step => step.questionKey === 'demographics');
+      if (demographicsStep) {
+        setStep('demographics');
+      }
+    }
+  }, [currentStepKey, sidebarSteps, setStep]);
   const { researchId, participantId } = useParticipantStore();
   const { sendResponse, getResponse, updateResponse } = useParticipantData(researchId, participantId);
 
@@ -53,11 +64,20 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({
   // 🎯 MANEJO DE NAVEGACIÓN
   // ========================================
   const goToNextStep = useCallback(() => {
+    console.log('[TestLayoutRenderer] goToNextStep llamado');
+    console.log('[TestLayoutRenderer] currentStepKey:', currentStepKey);
+    console.log('[TestLayoutRenderer] sidebarSteps:', sidebarSteps.map(s => s.questionKey));
+
     const currentIndex = sidebarSteps.findIndex(step => step.questionKey === currentStepKey);
+    console.log('[TestLayoutRenderer] currentIndex:', currentIndex);
+
     if (currentIndex < sidebarSteps.length - 1) {
       const nextStep = sidebarSteps[currentIndex + 1];
+      console.log('[TestLayoutRenderer] nextStep:', nextStep);
       setStep(nextStep.questionKey);
       console.log(`[TestLayoutRenderer] Navegando al siguiente paso: ${nextStep.questionKey}`);
+    } else {
+      console.log('[TestLayoutRenderer] No hay siguiente paso disponible');
     }
   }, [currentStepKey, sidebarSteps, setStep]);
 

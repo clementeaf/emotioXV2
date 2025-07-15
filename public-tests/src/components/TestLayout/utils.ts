@@ -77,7 +77,9 @@ export function getSidebarSteps(data: StepData[] | undefined): SidebarStep[] {
       // WELCOME_SCREEN y THANK_YOU_SCREEN
       return [{
         label: String(step.config?.title || step.derivedType || 'Paso'),
-        questionKey: String(step.config?.questionKey || '')
+        questionKey: step.originalSk === 'WELCOME_SCREEN' ? 'welcome_screen' :
+                   step.originalSk === 'THANK_YOU_SCREEN' ? 'thank_you_screen' :
+                   String(step.config?.questionKey || '')
       }];
     });
 }
