@@ -172,9 +172,7 @@ export const useParticipantData = (): ParticipantDataReturn => {
     updateMetadata();
   }, [getLocationInfo]);
 
-  const sendResponse = useCallback(async (questionKey: string, response: unknown): Promise<boolean> => {
-    console.log('[useParticipantData] 🔍 sendResponse llamado para:', questionKey, 'con respuesta:', response);
-
+    const sendResponse = useCallback(async (questionKey: string, response: unknown): Promise<boolean> => {
     if (!researchId || !participantId || !questionKey) {
       console.error('[useParticipantData] ❌ Faltan datos requeridos');
       return false;
@@ -196,8 +194,6 @@ export const useParticipantData = (): ParticipantDataReturn => {
         }
       };
 
-      console.log('[useParticipantData] 📤 Enviando respuesta a la API...');
-
       const result = await apiClient.saveModuleResponse({
         researchId,
         participantId,
@@ -214,7 +210,6 @@ export const useParticipantData = (): ParticipantDataReturn => {
         return false;
       }
 
-      console.log('[useParticipantData] ✅ Respuesta enviada exitosamente');
       return true;
     } catch (error) {
       console.error('[useParticipantData] 💥 Exception:', error);

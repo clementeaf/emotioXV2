@@ -36,8 +36,8 @@ export const QUESTION_TEMPLATES: Partial<Record<QuestionType, Omit<SmartVOCQuest
     config: {
       type: 'scale',
       scaleRange: { start: 1, end: 7 },
-      startLabel: 'Muy en desacuerdo',
-      endLabel: 'Muy de acuerdo'
+      startLabel: '',
+      endLabel: ''
     }
   },
   [QuestionType.SMARTVOC_NPS]: {
@@ -49,8 +49,8 @@ export const QUESTION_TEMPLATES: Partial<Record<QuestionType, Omit<SmartVOCQuest
     config: {
       type: 'scale',
       scaleRange: { start: 0, end: 10 },
-      startLabel: 'Muy improbable',
-      endLabel: 'Muy probable'
+      startLabel: '',
+      endLabel: ''
     }
   },
   [QuestionType.SMARTVOC_NEV]: {

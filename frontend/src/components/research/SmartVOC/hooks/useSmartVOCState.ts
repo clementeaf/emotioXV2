@@ -22,8 +22,8 @@ export const useSmartVOCState = (researchId: string) => {
         config: {
           type: 'scale',
           scaleRange: { start: 1, end: 5 },
-          startLabel: 'Muy insatisfecho',
-          endLabel: 'Muy satisfecho'
+          startLabel: '',
+          endLabel: ''
         }
       },
       {
@@ -36,8 +36,8 @@ export const useSmartVOCState = (researchId: string) => {
         config: {
           type: 'scale',
           scaleRange: { start: 1, end: 7 },
-          startLabel: 'Muy difícil',
-          endLabel: 'Muy fácil'
+          startLabel: '',
+          endLabel: ''
         }
       },
       {
@@ -50,8 +50,8 @@ export const useSmartVOCState = (researchId: string) => {
         config: {
           type: 'scale',
           scaleRange: { start: 1, end: 5 },
-          startLabel: 'Sin valor',
-          endLabel: 'Muy valioso'
+          startLabel: '',
+          endLabel: ''
         }
       },
       {
@@ -75,8 +75,8 @@ export const useSmartVOCState = (researchId: string) => {
         config: {
           type: 'scale',
           scaleRange: { start: 0, end: 10 },
-          startLabel: 'Muy improbable',
-          endLabel: 'Muy probable'
+          startLabel: '',
+          endLabel: ''
         }
       },
       {
@@ -100,8 +100,8 @@ export const useSmartVOCState = (researchId: string) => {
         config: {
           type: 'scale',
           scaleRange: { start: 1, end: 5 },
-          startLabel: 'Muy insatisfecho',
-          endLabel: 'Muy satisfecho'
+          startLabel: '',
+          endLabel: ''
         }
       }
     ],
@@ -163,8 +163,8 @@ export const useSmartVOCState = (researchId: string) => {
           config: {
             type: 'scale',
             scaleRange: { start: 1, end: 5 },
-            startLabel: 'Muy insatisfecho',
-            endLabel: 'Muy satisfecho'
+            startLabel: '',
+            endLabel: ''
           }
         },
         {
@@ -177,8 +177,8 @@ export const useSmartVOCState = (researchId: string) => {
           config: {
             type: 'scale',
             scaleRange: { start: 1, end: 7 },
-            startLabel: 'Muy difícil',
-            endLabel: 'Muy fácil'
+            startLabel: '',
+            endLabel: ''
           }
         },
         {
@@ -191,8 +191,8 @@ export const useSmartVOCState = (researchId: string) => {
           config: {
             type: 'scale',
             scaleRange: { start: 1, end: 5 },
-            startLabel: 'Sin valor',
-            endLabel: 'Muy valioso'
+            startLabel: '',
+            endLabel: ''
           }
         },
         {
@@ -216,8 +216,8 @@ export const useSmartVOCState = (researchId: string) => {
           config: {
             type: 'scale',
             scaleRange: { start: 0, end: 10 },
-            startLabel: 'Muy improbable',
-            endLabel: 'Muy probable'
+            startLabel: '',
+            endLabel: ''
           }
         },
         {
@@ -241,8 +241,8 @@ export const useSmartVOCState = (researchId: string) => {
           config: {
             type: 'scale',
             scaleRange: { start: 1, end: 5 },
-            startLabel: 'Muy insatisfecho',
-            endLabel: 'Muy satisfecho'
+            startLabel: '',
+            endLabel: ''
           }
         }
       ]

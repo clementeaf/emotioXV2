@@ -29,12 +29,10 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-    // ========================================
+      // ========================================
   // 🔍 VERIFICACIÓN DE RESPUESTAS PREVIAS
   // ========================================
   useEffect(() => {
-    console.log('[TestLayoutRenderer] 🔍 useEffect ejecutado para currentStepKey:', currentStepKey);
-
     const checkPreviousResponse = async () => {
       if (!currentStepKey) return;
 
@@ -42,11 +40,9 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({
         const previousResponse = await getResponse(currentStepKey);
 
         if (previousResponse) {
-          console.log('[TestLayoutRenderer] ✅ Respuesta previa encontrada para:', currentStepKey);
           setHasPreviousResponse(true);
           setPreviousResponse(previousResponse as Record<string, unknown>);
         } else {
-          console.log('[TestLayoutRenderer] ❌ No hay respuesta previa para:', currentStepKey);
           setHasPreviousResponse(false);
           setPreviousResponse(undefined);
 
@@ -54,7 +50,6 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({
           if (currentStepKey === 'demographics') {
             const fallbackResponse = await getResponse('demographics');
             if (fallbackResponse) {
-              console.log('[TestLayoutRenderer] ✅ Fallback demographics encontrado');
               setHasPreviousResponse(true);
               setPreviousResponse(fallbackResponse as Record<string, unknown>);
             }
@@ -85,52 +80,44 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({
     }
   };
 
-  // ========================================
+    // ========================================
   // 📝 OBTENCIÓN DE VALORES DEL FORMULARIO
   // ========================================
-  const getFormValues = (): unknown => {
-    console.log('[TestLayoutRenderer] 🔍 getFormValues llamado');
-
-    const formData = new FormData(document.querySelector('form') as HTMLFormElement);
+    const getFormValues = (): unknown => {
     const values: Record<string, unknown> = {};
 
-    if (formData) {
+    // Intentar obtener valores de un formulario tradicional
+    const form = document.querySelector('form');
+    if (form) {
+      const formData = new FormData(form);
       for (const [key, value] of formData.entries()) {
         values[key] = value;
       }
     }
 
-    console.log('[TestLayoutRenderer] 📋 Valores del formulario:', values);
-
+    // Si no hay valores del formulario, crear una respuesta básica
     if (Object.keys(values).length === 0) {
-      const emptyResponse = {
+      return {
         submitted: true,
         timestamp: new Date().toISOString(),
         stepType: getStepType(currentStepData),
         stepTitle: currentStepKey
       };
-      console.log('[TestLayoutRenderer] 📤 Respuesta vacía:', emptyResponse);
-      return emptyResponse;
     }
 
-    const response = {
+    return {
       ...values,
       submitted: true,
       timestamp: new Date().toISOString(),
       stepType: getStepType(currentStepData),
       stepTitle: currentStepKey
     };
-
-    console.log('[TestLayoutRenderer] 📤 Respuesta con valores:', response);
-    return response;
   };
 
   // ========================================
   // 💾 MANEJO DE RESPUESTAS
   // ========================================
-  const handleSubmitResponse = async (response?: unknown) => {
-    console.log('[TestLayoutRenderer] 🔍 handleSubmitResponse llamado para:', currentStepKey);
-
+    const handleSubmitResponse = async (response?: unknown) => {
     if (!researchId || !participantId) {
       console.error('[TestLayoutRenderer] ❌ Faltan researchId o participantId para guardar respuesta');
       toast.error('Error: Faltan datos de investigación o participante');
@@ -142,12 +129,10 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({
 
     try {
       const responseData = response || getFormValues();
-      console.log('[TestLayoutRenderer] 📤 Enviando respuesta:', responseData);
 
       const sentResponse = await sendResponse(currentStepKey, responseData);
 
       if (sentResponse) {
-        console.log('[TestLayoutRenderer] ✅ Respuesta enviada exitosamente');
         toast.success('Respuesta guardada exitosamente');
         setIsSuccess(true);
 
@@ -167,9 +152,7 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({
     }
   };
 
-  const handleUpdateResponse = async (newResponse: unknown) => {
-    console.log('[TestLayoutRenderer] 🔍 handleUpdateResponse llamado para:', currentStepKey);
-
+    const handleUpdateResponse = async (newResponse: unknown) => {
     if (!researchId || !participantId) {
       console.error('[TestLayoutRenderer] ❌ Faltan researchId o participantId para actualizar respuesta');
       return;
@@ -179,12 +162,9 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({
     setIsSuccess(false);
 
     try {
-      console.log('[TestLayoutRenderer] 📤 Actualizando respuesta:', newResponse);
-
       const updatedResponse = await updateResponse(currentStepKey, newResponse);
 
       if (updatedResponse) {
-        console.log('[TestLayoutRenderer] ✅ Respuesta actualizada exitosamente');
         toast.success('Respuesta actualizada exitosamente');
         setIsSuccess(true);
 
@@ -262,9 +242,7 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({
 
   const isButtonDisabled = isSubmitting || isSuccess;
 
-  const handleButtonClick = () => {
-    console.log('[TestLayoutRenderer] 🔍 handleButtonClick ejecutado, hasPreviousResponse:', hasPreviousResponse);
-
+    const handleButtonClick = () => {
     if (hasPreviousResponse) {
       handleUpdateResponse(getFormValues());
     } else {
