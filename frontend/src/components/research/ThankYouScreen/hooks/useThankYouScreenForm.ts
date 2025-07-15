@@ -1,10 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
-
-
 import { thankYouScreenFixedAPI } from '@/lib/thank-you-screen-api';
 import { useAuth } from '@/providers/AuthProvider';
 import thankYouScreenService from '@/services/thankYouScreenService';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 import { QuestionType } from '../../../../../../shared/interfaces/question-types.enum';
 
 import {
@@ -21,9 +19,6 @@ import {
   ValidationErrors
 } from '../types';
 
-/**
- * Hook personalizado para gestionar la lógica del formulario de pantalla de agradecimiento
- */
 export const useThankYouScreenForm = (researchId: string): UseThankYouScreenFormResult => {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState<ThankYouScreenFormData>({
@@ -133,7 +128,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
       // Si existe un ID, actualizamos, si no, creamos
       if (thankYouScreenId) {
         // Asegurarse que researchId esté en los datos para la actualización
-        return await thankYouScreenFixedAPI.update(researchId, {
+        return await thankYouScreenFixedAPI.update(thankYouScreenId, {
           ...data,
           researchId // Asegurar que el researchId está incluido
         }).send();
