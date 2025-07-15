@@ -3,6 +3,7 @@ export interface Question {
   questionKey?: string;
   config?: Record<string, unknown>;
   choices?: Choice[];
+  files?: unknown[];
 }
 
 export interface SidebarStep {
@@ -55,6 +56,7 @@ export interface TestLayoutRendererProps {
   data: StepData[] | undefined;
   isLoading: boolean;
   error: any;
+  sidebarSteps?: SidebarStep[]; // Steps del sidebar para coordinación de navegación
 }
 
 export interface TestLayoutSidebarProps {
@@ -119,4 +121,15 @@ export interface ModuleResponseData {
   researchId: string;       // ✅ Research ID
   questionKey: string;      // ✅ Para identificar el formulario
   response: unknown;        // ✅ Respuesta dinámica del componente
+}
+
+export interface QuestionComponentProps {
+  question: Question;
+  currentStepKey: string;
+  previousResponse?: Record<string, unknown>;
+}
+
+export interface DemographicFormProps {
+  questions: DemographicQuestion[];
+  previousResponse?: Record<string, unknown>;
 }

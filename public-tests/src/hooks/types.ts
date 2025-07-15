@@ -1,30 +1,52 @@
-import { ModuleResponse as StoreModuleResponse } from '../stores/participantStore';
-
-export type ModuleResponse = StoreModuleResponse;
-
-export interface ResponsesData {
-    participantId?: string;
-    researchId: string;
-    startTime: number;
-    endTime?: number;
-    modules: {
-        demographic?: ModuleResponse;
-        feedback?: ModuleResponse;
-        welcome?: ModuleResponse;
-        cognitive_task: ModuleResponse[];
-        smartvoc: ModuleResponse[];
-        all_steps: ModuleResponse[];
-        [key: string]: ModuleResponse | ModuleResponse[] | undefined;
-    };
+export interface UseQuestionResponseProps {
+  currentStepKey: string;
+  previousResponse?: Record<string, unknown>;
+  questionType: string;
 }
 
-export enum ResearchLoadStatus {
-    NOT_STARTED = 'not_started',
-    LOADING = 'loading',
-    LOADED = 'loaded',
-    ERROR = 'error'
+export interface UseQuestionResponseReturn {
+  selectedValue: string;
+  textValue: string;
+  setSelectedValue: (value: string) => void;
+  setTextValue: (value: string) => void;
+  hasPreviousResponse: boolean;
 }
 
-export interface UseFlowBuilderProps {
-    researchFlowApiData: unknown;
+export interface UseNavigationStateProps {
+  onContinue?: () => void;
+  buttonText?: string;
+}
+
+export interface UseNavigationStateReturn {
+  isNavigating: boolean;
+  isSuccess: boolean;
+  buttonText: string;
+  isButtonDisabled: boolean;
+  handleContinue: () => Promise<void>;
+}
+
+export interface UseSubmitStateProps {
+  onSuccess?: () => void;
+  buttonText?: string;
+  hasPreviousResponse?: boolean;
+}
+
+export interface UseSubmitStateReturn {
+  isSubmitting: boolean;
+  isSuccess: boolean;
+  buttonText: string;
+  isButtonDisabled: boolean;
+  handleSubmit: (submitFn: () => Promise<void>) => Promise<void>;
+}
+
+export interface UseDeleteStateProps {
+  onSuccess?: () => void;
+  buttonText?: string;
+}
+
+export interface UseDeleteStateReturn {
+  isDeleting: boolean;
+  buttonText: string;
+  isButtonDisabled: boolean;
+  handleDelete: (deleteFn: () => Promise<void>) => Promise<void>;
 }

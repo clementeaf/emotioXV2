@@ -10,6 +10,35 @@ const ORDER = [
   'THANK_YOU_SCREEN'
 ];
 
+export const QUESTION_TYPE_MAP = {
+  // SmartVOC - Escalas
+  smartvoc_csat: 'scale',
+  smartvoc_ces: 'scale',
+  smartvoc_cv: 'scale',
+  smartvoc_nps: 'scale',
+  smartvoc_nc: 'scale',
+  cognitive_linear_scale: 'scale',
+
+  // SmartVOC - Emoji
+  smartvoc_nev: 'emoji',
+
+  // SmartVOC - Texto
+  smartvoc_voc: 'text',
+  cognitive_short_text: 'text',
+  cognitive_long_text: 'text',
+
+  // Opciones
+  cognitive_single_choice: 'choice',
+  cognitive_multiple_choice: 'choice',
+
+  // Pendientes
+  cognitive_ranking: 'pending',
+  cognitive_navigation_flow: 'pending',
+  cognitive_preference_test: 'pending'
+} as const;
+
+export type QuestionType = typeof QUESTION_TYPE_MAP[keyof typeof QUESTION_TYPE_MAP];
+
 export function getSidebarSteps(data: StepData[] | undefined): SidebarStep[] {
   if (!data) return [];
   return data
