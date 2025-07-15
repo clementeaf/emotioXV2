@@ -21,7 +21,6 @@ const TestLayoutMain: React.FC = () => {
   };
 
   const handleNavigateToStep = (stepKey: string) => {
-    console.log('[TestLayoutMain] Navegando a step:', stepKey);
   };
 
   const handleDeleteAllResponses = async () => {

@@ -155,22 +155,17 @@ export const useParticipantData = (): ParticipantDataReturn => {
     };
   }, []);
 
+  // Inicializar metadata sin geolocalización automática
   useEffect(() => {
-    const updateMetadata = async () => {
-      const locationInfo = await getLocationInfo();
-      setMetadata(prev => ({
-        ...prev,
-        locationInfo,
-        sessionInfo: {
-          ...prev.sessionInfo,
-          currentStepKey: '',
-          totalSessionTime: Date.now() - prev.sessionInfo.sessionStartTime
-        }
-      }));
-    };
-
-    updateMetadata();
-  }, [getLocationInfo]);
+    setMetadata(prev => ({
+      ...prev,
+      sessionInfo: {
+        ...prev.sessionInfo,
+        currentStepKey: '',
+        totalSessionTime: Date.now() - prev.sessionInfo.sessionStartTime
+      }
+    }));
+  }, []);
 
     const sendResponse = useCallback(async (questionKey: string, response: unknown): Promise<boolean> => {
     if (!researchId || !participantId || !questionKey) {
@@ -184,9 +179,13 @@ export const useParticipantData = (): ParticipantDataReturn => {
     try {
       const apiClient = new ApiClient();
 
+      // Solo obtener geolocalización cuando se envía una respuesta (acción del usuario)
+      const locationInfo = await getLocationInfo();
+
       // Actualizar metadata antes de enviar
       const updatedMetadata = {
         ...metadata,
+        locationInfo,
         sessionInfo: {
           ...metadata.sessionInfo,
           currentStepKey: '',
@@ -218,7 +217,7 @@ export const useParticipantData = (): ParticipantDataReturn => {
     } finally {
       setIsLoading(false);
     }
-  }, [researchId, participantId, metadata]);
+  }, [researchId, participantId, metadata, getLocationInfo]);
 
   const getResponse = useCallback(async (questionKey: string): Promise<unknown | null> => {
     if (!researchId || !participantId || !questionKey) {
