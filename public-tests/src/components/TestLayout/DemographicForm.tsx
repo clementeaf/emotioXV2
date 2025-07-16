@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { useModuleResponsesQuery } from '../../hooks/useApiQueries';
 import { useFormDataStore } from '../../stores/useFormDataStore';
+import { useTestStore } from '../../stores/useTestStore';
 import { DemographicFormProps } from './types';
 
 export const DemographicForm: React.FC<DemographicFormProps> = ({
@@ -7,15 +9,43 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
   onSubmit
 }) => {
   const { setFormData, getFormData } = useFormDataStore();
+  const { researchId, participantId } = useTestStore();
   const [formValues, setFormValues] = useState<Record<string, string>>({});
 
-  // Cargar datos existentes del store
+  // Query para obtener respuestas existentes del backend
+  const { data: moduleResponses } = useModuleResponsesQuery(
+    researchId || '',
+    participantId || ''
+  );
+
+  // Cargar datos existentes del backend o del store local
   useEffect(() => {
+    console.log('🔍 DEBUG DemographicForm - moduleResponses:', moduleResponses);
+
+    // Buscar respuesta existente para demographics en el backend
+    if (moduleResponses?.responses && Array.isArray(moduleResponses.responses)) {
+      const demographicsResponse = (moduleResponses.responses as any[]).find(
+        (response: any) => response.questionKey === 'demographics'
+      );
+
+      console.log('🔍 DEBUG DemographicForm - demographicsResponse:', demographicsResponse);
+
+      if (demographicsResponse?.response) {
+        console.log('🔍 DEBUG DemographicForm - Cargando datos del backend:', demographicsResponse.response);
+        setFormValues(demographicsResponse.response as Record<string, string>);
+        // También guardar en el store local para persistencia
+        setFormData('demographics', demographicsResponse.response as Record<string, string>);
+        return;
+      }
+    }
+
+    // Si no hay datos en el backend, cargar del store local
     const existingData = getFormData('demographics');
     if (existingData && Object.keys(existingData).length > 0) {
+      console.log('🔍 DEBUG DemographicForm - Cargando datos del store local:', existingData);
       setFormValues(existingData);
     }
-  }, [getFormData]);
+  }, [moduleResponses, getFormData, setFormData]);
 
   const handleInputChange = (key: string, value: string) => {
     const newValues = {

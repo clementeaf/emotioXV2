@@ -184,6 +184,19 @@ export const useStepStates = (currentQuestionKey: string, steps: Array<{ questio
       }
     }
 
+    // Si no encontramos ningún step completado en el orden, buscar el último response real
+    if (!lastCompletedStep && completedQuestionKeys.length > 0) {
+      lastCompletedStep = completedQuestionKeys[completedQuestionKeys.length - 1];
+      console.log(`🔍 DEBUG determineCurrentState - Usando último response real como lastCompletedStep: ${lastCompletedStep}`);
+
+      // Encontrar el siguiente step en el orden
+      const lastCompletedIndex = stepOrder.indexOf(lastCompletedStep);
+      if (lastCompletedIndex !== -1 && lastCompletedIndex + 1 < stepOrder.length) {
+        nextStep = stepOrder[lastCompletedIndex + 1];
+        console.log(`🔍 DEBUG determineCurrentState - Siguiente step basado en último response: ${nextStep}`);
+      }
+    }
+
     const result = {
       lastCompletedStep,
       nextStep,

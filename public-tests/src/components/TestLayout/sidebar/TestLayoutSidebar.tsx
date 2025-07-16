@@ -86,17 +86,17 @@ const TestLayoutSidebar: React.FC<Props> = ({
 
   // Determinar el step activo basado en las respuestas del backend
   const effectiveCurrentStepKey = React.useMemo(() => {
-    // Si hay respuestas en el backend, usar el siguiente step
-    if (totalResponses > 0 && nextStep) {
-      console.log('🔍 DEBUG Sidebar - Usando nextStep del backend:', nextStep);
-      return nextStep;
+    // Si hay respuestas en el backend, usar el último response como step activo
+    if (totalResponses > 0 && lastCompletedStep) {
+      console.log('🔍 DEBUG Sidebar - Usando último response como step activo:', lastCompletedStep);
+      return lastCompletedStep;
     }
 
     // Si no hay respuestas, usar el step inicial
     const initialStep = getInitialStep();
     console.log('🔍 DEBUG Sidebar - Usando step inicial:', initialStep);
     return initialStep;
-  }, [totalResponses, nextStep, getInitialStep]);
+  }, [totalResponses, lastCompletedStep, getInitialStep]);
 
   // Sincronizar el step activo con el store
   React.useEffect(() => {
