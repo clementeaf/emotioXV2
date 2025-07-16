@@ -1,21 +1,23 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CustomStep, SidebarStep, UseSidebarLogicProps, UseSidebarLogicReturn } from '../components/TestLayout/types';
+import { SidebarStep, UseSidebarLogicProps, UseSidebarLogicReturn } from '../components/TestLayout/types';
 import { StepConfiguration } from '../lib/types';
-import { useTestStore } from '../stores/useTestStore';
+import { useStepStore } from '../stores/useStepStore';
 import { useAvailableFormsQuery } from './useApiQueries';
 import { useDeleteState } from './useDeleteState';
+import { useStepStates } from './useStepStates';
 
 export const useSidebarLogic = ({
   researchId,
   onStepsReady,
   onDeleteAllResponses
 }: UseSidebarLogicProps): UseSidebarLogicReturn => {
-  const { hasResponse } = useTestStore();
-
   const [isOpen, setIsOpen] = useState(false);
   const [selectedQuestionKey, setSelectedQuestionKey] = useState<string>('');
   const stepsNotifiedRef = useRef(false);
   const hasInitializedRef = useRef(false);
+
+  // Usar el store global para currentQuestionKey
+  const { currentQuestionKey, setCurrentQuestionKey } = useStepStore();
 
   const {
     data: formsData,
@@ -34,11 +36,9 @@ export const useSidebarLogic = ({
     showToasts: false
   });
 
-  // STEPS DESDE API
   const steps = useMemo(() => {
     if (formsData?.stepsConfiguration && formsData.stepsConfiguration.length > 0) {
       return formsData.stepsConfiguration.map((stepConfig: StepConfiguration, index: number) => {
-        // Generar título específico según el questionKey
         let title = '';
 
         switch (stepConfig.questionKey) {
@@ -69,40 +69,24 @@ export const useSidebarLogic = ({
 
   const totalSteps = steps.length;
 
+  const effectiveCurrentQuestionKey = currentQuestionKey || selectedQuestionKey;
+
+  const { getInitialStep, canAccessStep } = useStepStates(effectiveCurrentQuestionKey, steps);
+
   // INICIALIZACIÓN DEL PASO ACTIVO
   const initializeActiveStep = useCallback(() => {
-    if (steps.length > 0 && !selectedQuestionKey && !hasInitializedRef.current) {
-      // Verificar si hay respuestas locales
-      const hasAnyResponses = steps.some((step: CustomStep) => {
-        return hasResponse(step.questionKey);
-      });
 
-      if (hasAnyResponses) {
-        // Si hay respuestas, comenzar por el primer paso que no tenga respuesta
-        const firstUnansweredStep = steps.find((step: CustomStep) => {
-          return !hasResponse(step.questionKey);
-        });
-
-        if (firstUnansweredStep) {
-          setSelectedQuestionKey(firstUnansweredStep.questionKey);
-        } else {
-          setSelectedQuestionKey(steps[0].questionKey);
-        }
-      } else {
-        setSelectedQuestionKey(steps[0].questionKey);
-      }
-
+    if (steps.length > 0 && !effectiveCurrentQuestionKey && !hasInitializedRef.current) {
+      const initialStep = getInitialStep();
+      setSelectedQuestionKey(initialStep);
+      setCurrentQuestionKey(initialStep);
       hasInitializedRef.current = true;
     }
-  }, [steps, selectedQuestionKey, hasResponse]);
+  }, [steps, selectedQuestionKey, currentQuestionKey, effectiveCurrentQuestionKey, getInitialStep, setCurrentQuestionKey]);
 
-  // ========================================
-  // 🎯 EFECTOS (OPTIMIZADOS)
-  // ========================================
   useEffect(() => {
     if (steps.length > 0 && onStepsReady && !stepsNotifiedRef.current) {
       stepsNotifiedRef.current = true;
-      // Convertir CustomStep a SidebarStep para mantener compatibilidad
       const sidebarSteps: SidebarStep[] = steps.map(step => ({
         label: step.title,
         questionKey: step.questionKey
@@ -122,21 +106,13 @@ export const useSidebarLogic = ({
   // ========================================
   // 🎯 FUNCIONES DE NAVEGACIÓN (MEMOIZADAS)
   const isStepEnabled = useCallback((stepIndex: number): boolean => {
-    if (stepIndex === 0) return true;
-
-    for (let i = 0; i < stepIndex; i++) {
-      const previousStep = steps[i];
-      if (!hasResponse(previousStep.questionKey)) {
-        return false;
-      }
-    }
-    return true;
-  }, [steps, hasResponse]);
+    return canAccessStep(stepIndex);
+  }, [canAccessStep]);
 
   const handleStepClick = useCallback((questionKey: string) => {
     setSelectedQuestionKey(questionKey);
-    console.log('Selected questionKey:', questionKey);
-  }, []);
+    setCurrentQuestionKey(questionKey);
+  }, [setCurrentQuestionKey]);
 
   // FUNCIONES DE ELIMINACIÓN
   const handleDeleteAllResponses = useCallback(async () => {
@@ -161,7 +137,7 @@ export const useSidebarLogic = ({
     setIsOpen,
     toggleSidebar,
     closeSidebar,
-    selectedQuestionKey,
+    selectedQuestionKey: effectiveCurrentQuestionKey, // Usar el efectivo
     isStepEnabled,
     handleStepClick,
     handleDeleteAllResponses,

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useSidebarLogic } from '../../../hooks/useSidebarLogic';
+import { useStepStore } from '../../../stores/useStepStore';
 import { useTestStore } from '../../../stores/useTestStore';
 import BurgerMenuButton from '../BurgerMenuButton';
 import MobileOverlay from '../MobileOverlay';
@@ -19,6 +20,7 @@ const TestLayoutSidebar: React.FC<Props> = ({
   onDeleteAllResponses
 }) => {
   const { researchId } = useTestStore();
+  const { currentQuestionKey, setCurrentQuestionKey } = useStepStore();
 
   const {
     steps,
@@ -41,6 +43,26 @@ const TestLayoutSidebar: React.FC<Props> = ({
     onStepsReady,
     onDeleteAllResponses
   });
+
+  // Sincronizar selectedQuestionKey con currentQuestionKey del store
+  React.useEffect(() => {
+    if (selectedQuestionKey && selectedQuestionKey !== currentQuestionKey) {
+      console.log('🔍 DEBUG Sidebar: Sincronizando selectedQuestionKey -> currentQuestionKey:', selectedQuestionKey);
+      setCurrentQuestionKey(selectedQuestionKey);
+    }
+  }, [selectedQuestionKey, currentQuestionKey, setCurrentQuestionKey]);
+
+  // Sincronizar currentQuestionKey con selectedQuestionKey del sidebar
+  React.useEffect(() => {
+    if (currentQuestionKey && currentQuestionKey !== selectedQuestionKey) {
+      console.log('🔍 DEBUG Sidebar: Sincronizando currentQuestionKey -> selectedQuestionKey:', currentQuestionKey);
+      // Nota: No podemos modificar selectedQuestionKey directamente desde aquí
+      // porque está en el scope del useSidebarLogic
+    }
+  }, [currentQuestionKey, selectedQuestionKey]);
+
+  // Usar currentQuestionKey del store para el StepsList
+  const effectiveCurrentStepKey = currentQuestionKey || selectedQuestionKey || '';
 
   return (
     <>
@@ -68,7 +90,7 @@ const TestLayoutSidebar: React.FC<Props> = ({
             <ProgressDisplay current={1} total={totalSteps} />
             <StepsList
               steps={steps}
-              currentStepKey={selectedQuestionKey || ''}
+              currentStepKey={effectiveCurrentStepKey}
               isStepEnabled={isStepEnabled}
             />
             {/* Botón para eliminar todas las respuestas */}

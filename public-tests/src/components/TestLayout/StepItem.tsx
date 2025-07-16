@@ -1,23 +1,22 @@
 import React from 'react';
-import { useTestStore } from '../../stores/useTestStore';
+import { StepState } from '../../hooks/useStepStates';
 import { StepItemProps } from './types';
 
-const StepItem: React.FC<StepItemProps> = ({ step, isActive, onClick, isDisabled }) => {
-  const { hasResponse } = useTestStore();
-  const hasStepResponse = hasResponse(step.questionKey);
+interface StepItemPropsWithState extends StepItemProps {
+  stepState: StepState;
+  canAccess: boolean;
+}
 
-  // Determinar el estado del paso según las reglas especificadas
-  const getStepState = () => {
-    if (isDisabled) return 'disabled';
-
-    if (isActive) return 'active';
-
-    if (hasStepResponse) return 'completed';
-
-    return 'available';
-  };
-
-  const stepState = getStepState();
+const StepItem: React.FC<StepItemPropsWithState> = ({
+  step,
+  isActive,
+  onClick,
+  isDisabled,
+  stepState,
+  canAccess
+}) => {
+  // Determinar si el step puede ser clickeado
+  const canClick = canAccess && !isDisabled;
 
   // Estilos según el estado
   const getStepStyles = () => {
@@ -25,25 +24,25 @@ const StepItem: React.FC<StepItemProps> = ({ step, isActive, onClick, isDisabled
       case 'disabled':
         return 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200';
       case 'completed':
-        return 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100';
+        return 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 cursor-pointer';
       case 'active':
-        return 'bg-blue-100 text-blue-800 border-2 border-blue-400 font-semibold';
+        return 'bg-blue-100 text-blue-800 border-2 border-blue-400 font-semibold cursor-pointer';
       case 'available':
-        return 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200';
+        return 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200 cursor-pointer';
       default:
-        return 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200';
+        return 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200 cursor-pointer';
     }
   };
 
   const handleClick = () => {
-    if (!isDisabled) {
+    if (canClick) {
       onClick();
     }
   };
 
   return (
     <li
-      className={`px-3 py-2 rounded text-sm font-medium transition-colors cursor-pointer flex items-center justify-between ${getStepStyles()}`}
+      className={`px-3 py-2 rounded text-sm font-medium transition-colors ${getStepStyles()}`}
       onClick={handleClick}
     >
       <span className="flex items-center gap-2">

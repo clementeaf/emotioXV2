@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useModuleResponsesQuery, useSaveModuleResponseMutation, useUpdateModuleResponseMutation } from '../../hooks/useApiQueries';
 import { useFlowNavigationAndState } from '../../hooks/useFlowNavigationAndState';
 import { CreateModuleResponseDto, UpdateModuleResponseDto } from '../../lib/types';
+import { useStepStore } from '../../stores/useStepStore';
 import { useTestStore } from '../../stores/useTestStore';
 import { ButtonStepsProps } from './types';
 
@@ -12,6 +13,7 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
 }) => {
   const { researchId, participantId } = useTestStore();
   const { goToNextStep } = useFlowNavigationAndState();
+  const { setCurrentQuestionKey } = useStepStore();
   const [isSaving, setIsSaving] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
   const { data: moduleResponses } = useModuleResponsesQuery(
@@ -23,6 +25,8 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
     onSuccess: () => {
       setIsSaving(false);
       setIsNavigating(true);
+
+      // Navegar automáticamente al siguiente step después de guardar
       setTimeout(() => {
         setIsNavigating(false);
         goToNextStep();
@@ -38,6 +42,8 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
     onSuccess: () => {
       setIsSaving(false);
       setIsNavigating(true);
+
+      // Navegar automáticamente al siguiente step después de actualizar
       setTimeout(() => {
         setIsNavigating(false);
         goToNextStep();
@@ -90,7 +96,7 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
     try {
       const timestamp = new Date().toISOString();
 
-            if (existingResponse) {
+      if (existingResponse) {
         // UPDATE: Reemplazar solo la response del questionKey específico
         // Obtener todas las responses de todos los ModuleResponse
         const allExistingResponses = moduleResponses?.responses?.flatMap(mr => mr.responses) || [];

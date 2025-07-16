@@ -6,6 +6,7 @@
  */
 
 import { useCallback, useState } from 'react';
+import { useStepStore } from '../stores/useStepStore';
 import { useTestStore } from '../stores/useTestStore';
 
 // Tipos simplificados
@@ -34,27 +35,43 @@ export const useFlowNavigationAndState = () => {
     getProgress,
   } = useTestStore();
 
+  const { setCurrentQuestionKey } = useStepStore();
   const [error, setError] = useState<string | null>(null);
 
-  // Navegar al siguiente paso
+    // Navegar al siguiente paso
   const goToNextStep = useCallback(() => {
     if (currentStepIndex < steps.length - 1) {
       const currentStep = steps[currentStepIndex];
       if (currentStep) {
         completeStep(currentStep.id);
       }
-      setCurrentStep(currentStepIndex + 1);
+
+      const nextStepIndex = currentStepIndex + 1;
+      setCurrentStep(nextStepIndex);
+
+      // Sincronizar con el sidebar usando el nombre del step
+      if (steps[nextStepIndex]) {
+        setCurrentQuestionKey(steps[nextStepIndex].name);
+      }
+
       setError(null);
     }
-  }, [currentStepIndex, steps, completeStep, setCurrentStep]);
+  }, [currentStepIndex, steps, completeStep, setCurrentStep, setCurrentQuestionKey]);
 
   // Navegar al paso anterior
   const goToPreviousStep = useCallback(() => {
     if (currentStepIndex > 0) {
-      setCurrentStep(currentStepIndex - 1);
+      const prevStepIndex = currentStepIndex - 1;
+      setCurrentStep(prevStepIndex);
+
+      // Sincronizar con el sidebar usando el nombre del step
+      if (steps[prevStepIndex]) {
+        setCurrentQuestionKey(steps[prevStepIndex].name);
+      }
+
       setError(null);
     }
-  }, [currentStepIndex, setCurrentStep]);
+  }, [currentStepIndex, steps, setCurrentStep, setCurrentQuestionKey]);
 
   // Navegar a un paso específico
   const navigateToStep = useCallback((targetIndex: number) => {
@@ -77,8 +94,14 @@ export const useFlowNavigationAndState = () => {
     }
 
     setCurrentStep(targetIndex);
+
+    // Sincronizar con el sidebar usando el nombre del step
+    if (steps[targetIndex]) {
+      setCurrentQuestionKey(steps[targetIndex].name);
+    }
+
     setError(null);
-  }, [currentStepIndex, steps.length, setCurrentStep]);
+  }, [currentStepIndex, steps, setCurrentStep, setCurrentQuestionKey]);
 
   // Estado de navegación
   const navigationState: NavigationState = {

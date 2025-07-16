@@ -1,5 +1,4 @@
 import React from 'react';
-import { useAvailableFormsQuery } from '../../hooks/useApiQueries';
 import { useSidebarLogic } from '../../hooks/useSidebarLogic';
 import BurgerMenuButton from './BurgerMenuButton';
 import MobileOverlay from './MobileOverlay';
@@ -48,12 +47,6 @@ const TestLayoutSidebar: React.FC<TestLayoutSidebarProps> = ({
     onNavigateToStep,
     onDeleteAllResponses
   });
-
-    const {
-    data: apiData,
-    isLoading: apiLoading,
-    error: apiError
-  } = useAvailableFormsQuery(researchId || '');
 
   return (
     <>

@@ -23,9 +23,6 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
         startButtonText: String(contentConfiguration?.startButtonText || 'Comenzar'),
         questionKey: currentQuestionKey
       }}
-      onContinue={() => {
-        console.log('Continuar desde', currentQuestionKey);
-      }}
     />
   ),
   demographics: ({ contentConfiguration }) => {
@@ -41,9 +38,6 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
     return (
       <DemographicForm
         demographicQuestions={demographicQuestions as Record<string, DemographicQuestionData>}
-        onSubmit={(values) => {
-          console.log('Demographics submitted:', values);
-        }}
       />
     );
   },
@@ -82,7 +76,9 @@ const TestLayoutRenderer: React.FC = () => {
 
   if (isLoading) return <div>Cargando...</div>;
   if (error) return <div>Error: {error.message}</div>;
-  if (!currentQuestionKey) return <div>No se encontró información para este step</div>;
+  if (!currentQuestionKey) {
+    return <div>No se encontró información para este step</div>;
+  }
 
   const currentStepData = getCurrentStepData(formsData, currentQuestionKey);
 
