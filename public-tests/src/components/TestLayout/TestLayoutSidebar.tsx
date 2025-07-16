@@ -6,14 +6,7 @@ import MobileOverlay from './MobileOverlay';
 import ProgressDisplay from './ProgressDisplay';
 import SidebarContainer from './SidebarContainer';
 import StepsList from './StepsList';
-import { SidebarStep } from './types';
-
-interface TestLayoutSidebarProps {
-  researchId?: string;
-  onStepsReady?: (steps: SidebarStep[]) => void;
-  onNavigateToStep?: (stepKey: string) => void;
-  onDeleteAllResponses?: () => Promise<void>;
-}
+import { TestLayoutSidebarProps } from './types';
 
 const TestLayoutSidebar: React.FC<TestLayoutSidebarProps> = ({
   researchId,
@@ -61,10 +54,6 @@ const TestLayoutSidebar: React.FC<TestLayoutSidebarProps> = ({
     isLoading: apiLoading,
     error: apiError
   } = useAvailableFormsQuery(researchId || '');
-
-  if (apiData) {
-    console.log('[TestLayoutSidebar] 📊 API Forms Data:', apiData);
-  }
 
   return (
     <>

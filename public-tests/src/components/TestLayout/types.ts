@@ -3,10 +3,11 @@ import { AvailableFormsResponse } from '../../lib/types';
 export interface Question {
   title?: string;
   questionKey?: string;
-  type?: string; // NUEVO: tipo de pregunta (csat, ces, cv, etc.)
+  type?: string;
   config?: Record<string, unknown>;
   choices?: Choice[];
   files?: unknown[];
+  description?: string;
 }
 
 export interface SidebarStep {
@@ -112,25 +113,16 @@ export interface PreferenceTestTaskProps {
   onImageSelect?: (imageId: string) => void;
 }
 
-/**
- * Interfaz para la respuesta de un módulo
- * ESTRUCTURA EXACTA REQUERIDA:
- */
 export interface ModuleResponseData {
-  participantId: string;    // ✅ ID del participante
-  researchId: string;       // ✅ Research ID
-  questionKey: string;      // ✅ Para identificar el formulario
-  response: unknown;        // ✅ Respuesta dinámica del componente
+  participantId: string;
+  researchId: string;
+  questionKey: string;
+  response: unknown;
 }
 
 export interface QuestionComponentProps {
   question: Question;
   currentStepKey: string;
-}
-
-export interface DemographicFormProps {
-  questions: DemographicQuestion[];
-  previousResponse?: Record<string, unknown>;
 }
 
 export interface UseSidebarLogicProps {
@@ -146,37 +138,25 @@ export interface CustomStep {
 }
 
 export interface UseSidebarLogicReturn {
-  // Estado de la API
-  formsData: AvailableFormsResponse | undefined; // Datos tal como llegan de la API
-  steps: CustomStep[]; // Array con {title, questionKey}
+  formsData: AvailableFormsResponse | undefined;
+  steps: CustomStep[];
   totalSteps: number;
   isLoading: boolean;
   error: Error | null;
-
-  // Estado del sidebar
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
   toggleSidebar: () => void;
   closeSidebar: () => void;
-
-  // Estado del paso actual
   selectedQuestionKey: string;
-
-  // Funciones de navegación
   isStepEnabled: (stepIndex: number) => boolean;
   handleStepClick: (questionKey: string) => void;
-
-  // Funciones de eliminación
   handleDeleteAllResponses: () => Promise<void>;
   isDeleting: boolean;
   deleteButtonText: string;
   isDeleteDisabled: boolean;
-
-  // Funciones de API
   refetchForms: () => void;
 }
 
-// Tipo para los steps que vienen del hook
 export interface CustomStep {
   title: string;
   questionKey: string;
@@ -186,4 +166,28 @@ export interface CustomStepsListProps {
   steps: CustomStep[];
   currentStepKey: string;
   isStepEnabled?: (index: number) => boolean;
+}
+
+export interface TestLayoutSidebarProps {
+  researchId?: string;
+  onStepsReady?: (steps: SidebarStep[]) => void;
+  onNavigateToStep?: (stepKey: string) => void;
+  onDeleteAllResponses?: () => Promise<void>;
+}
+
+export interface DemographicQuestionData {
+  enabled: boolean;
+  required: boolean;
+  options: string[];
+}
+
+export interface DemographicFormProps {
+  demographicQuestions: Record<string, DemographicQuestionData>;
+  onSubmit?: (values: Record<string, string>) => void;
+}
+
+export interface ButtonStepsProps {
+  currentQuestionKey: string;
+  formData?: Record<string, unknown>;
+  isWelcomeScreen?: boolean;
 }

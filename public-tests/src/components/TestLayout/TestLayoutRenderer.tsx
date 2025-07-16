@@ -1,57 +1,120 @@
 import React from 'react';
 import { useAvailableFormsQuery } from '../../hooks/useApiQueries';
-import { StepConfiguration } from '../../lib/types';
 import { useStepStore } from '../../stores/useStepStore';
 import { useTestStore } from '../../stores/useTestStore';
-import { ScreenComponent } from './StepsComponents';
+import { ButtonSteps } from './ButtonSteps';
+import { DemographicForm } from './DemographicForm';
+import { QuestionComponent, ScreenComponent, UnknownStepComponent } from './StepsComponents';
+import { DemographicQuestionData } from './types';
+import { getCurrentStepData, getQuestionType } from './utils';
+
+interface RendererArgs {
+  contentConfiguration: Record<string, unknown>;
+  currentQuestionKey: string;
+}
+
+const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
+  screen: ({ contentConfiguration, currentQuestionKey }) => (
+    <ScreenComponent
+      data={{
+        title: String(contentConfiguration?.title || 'Bienvenido'),
+        description: String(contentConfiguration?.description || 'Gracias por participar en este estudio'),
+        message: String(contentConfiguration?.message || 'Estás a punto de comenzar una experiencia única'),
+        startButtonText: String(contentConfiguration?.startButtonText || 'Comenzar'),
+        questionKey: currentQuestionKey
+      }}
+      onContinue={() => {
+        console.log('Continuar desde', currentQuestionKey);
+      }}
+    />
+  ),
+  demographics: ({ contentConfiguration }) => {
+    const demographicQuestions = contentConfiguration?.demographicQuestions || {};
+    if (Object.keys(demographicQuestions).length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full">
+          <h2 className="text-2xl font-bold mb-4">Preguntas Demográficas</h2>
+          <p className="text-gray-600">No hay preguntas demográficas configuradas.</p>
+        </div>
+      );
+    }
+    return (
+      <DemographicForm
+        demographicQuestions={demographicQuestions as Record<string, DemographicQuestionData>}
+        onSubmit={(values) => {
+          console.log('Demographics submitted:', values);
+        }}
+      />
+    );
+  },
+  smartvoc: ({ contentConfiguration, currentQuestionKey }) => (
+    <QuestionComponent
+      question={{
+        title: String(contentConfiguration?.title || 'Pregunta SmartVOC'),
+        questionKey: currentQuestionKey,
+        type: currentQuestionKey,
+        config: contentConfiguration,
+        choices: Array.isArray(contentConfiguration?.choices) ? contentConfiguration.choices : [],
+        description: String(contentConfiguration?.description || '')
+      }}
+      currentStepKey={currentQuestionKey}
+    />
+  ),
+  cognitive: ({ contentConfiguration, currentQuestionKey }) => (
+    <QuestionComponent
+      question={{
+        title: String(contentConfiguration?.title || 'Pregunta Cognitive Task'),
+        questionKey: currentQuestionKey,
+        type: currentQuestionKey,
+        config: contentConfiguration,
+        choices: Array.isArray(contentConfiguration?.choices) ? contentConfiguration.choices : [],
+        description: String(contentConfiguration?.description || '')
+      }}
+      currentStepKey={currentQuestionKey}
+    />
+  ),
+};
 
 const TestLayoutRenderer: React.FC = () => {
   const currentQuestionKey = useStepStore(state => state.currentQuestionKey);
   const { researchId } = useTestStore();
-
-  // Consumir API de forms con researchId real
   const { data: formsData, isLoading, error } = useAvailableFormsQuery(researchId || '');
 
   if (isLoading) return <div>Cargando...</div>;
   if (error) return <div>Error: {error.message}</div>;
   if (!currentQuestionKey) return <div>No se encontró información para este step</div>;
 
-  // Buscar el step que haga match con currentQuestionKey
-  const currentStepData = formsData?.stepsConfiguration?.find(
-    (step: StepConfiguration) => step.questionKey === currentQuestionKey
-  );
+  const currentStepData = getCurrentStepData(formsData, currentQuestionKey);
 
   if (!currentStepData) {
     return <div>No se encontró información para este step</div>;
   }
 
-  // Extraer contentConfiguration con tipado específico
   const { contentConfiguration } = currentStepData;
+  const questionType = getQuestionType(currentQuestionKey);
 
-  let renderedForm: React.ReactNode = null;
+  const renderedForm =
+    RENDERERS[questionType]?.({ contentConfiguration, currentQuestionKey }) ||
+    <UnknownStepComponent
+      data={{
+        questionKey: currentQuestionKey,
+        contentConfiguration,
+        message: `No se encontró un componente específico para: ${currentQuestionKey}`
+      }}
+    />;
 
-  if (currentQuestionKey === 'welcome_screen') {
-    renderedForm = (
-      <ScreenComponent
-        data={{
-          title: String(contentConfiguration?.title || 'Bienvenido'),
-          description: String(contentConfiguration?.description || 'Gracias por participar en este estudio'),
-          message: String(contentConfiguration?.message || 'Estás a punto de comenzar una experiencia única'),
-          startButtonText: String(contentConfiguration?.startButtonText || 'Comenzar'),
-          questionKey: currentQuestionKey
-        }}
-        onContinue={() => {}}
-      />
-    );
-  } else {
-    renderedForm = <div>No se encontró información para este step</div>;
-  }
+  const isWelcomeScreen = currentQuestionKey === 'welcome_screen';
 
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1">
         {renderedForm}
       </div>
+      <ButtonSteps
+        currentQuestionKey={currentQuestionKey}
+        formData={{}}
+        isWelcomeScreen={isWelcomeScreen}
+      />
     </div>
   );
 };

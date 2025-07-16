@@ -102,12 +102,25 @@ function extractThankYouScreenConfig(item: DynamoDBItem): StepConfiguration | nu
  * Función para extraer configuración de Eye Tracking (Demographics)
  */
 function extractEyeTrackingConfig(item: DynamoDBItem): StepConfiguration | null {
+  // Parsear demographicQuestions del item
+  const allDemographicQuestions = parseJsonField(item.demographicQuestions) || {};
+
+  // Filtrar solo las preguntas que están habilitadas (enabled: true)
+  const enabledDemographicQuestions: Record<string, any> = {};
+
+  Object.entries(allDemographicQuestions).forEach(([key, questionData]: [string, any]) => {
+    if (questionData && typeof questionData === 'object' && questionData.enabled === true) {
+      enabledDemographicQuestions[key] = questionData;
+    }
+  });
+
   const config = {
     config: parseJsonField(item.config) || {},
     stimuli: parseJsonField(item.stimuli) || { items: [] },
     areasOfInterest: parseJsonField(item.areasOfInterest) || { areas: [] },
     deviceFrame: item.deviceFrame || false,
-    metadata: parseJsonField(item.metadata) || {}
+    metadata: parseJsonField(item.metadata) || {},
+    demographicQuestions: enabledDemographicQuestions
   };
 
   return {

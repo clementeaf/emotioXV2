@@ -12,10 +12,14 @@ export interface StepConfiguration {
 
 export interface ModuleResponse {
   id: string;
-  stepType: string;
-  stepTitle: string;
+  researchId: string;
+  participantId: string;
   questionKey: string;
-  response: Record<string, unknown>;
+  responses: Array<{
+    questionKey: string;
+    response: Record<string, unknown>;
+    timestamp: string;
+  }>;
   metadata: Record<string, unknown>;
   createdAt: string;
   updatedAt?: string;
@@ -35,16 +39,22 @@ export interface ParticipantResponsesDocument {
 export interface CreateModuleResponseDto {
   researchId: string;
   participantId: string;
-  stepType: string;
-  stepTitle: string;
   questionKey: string;
-  response: Record<string, unknown>;
+  responses: Array<{
+    questionKey: string;
+    response: Record<string, unknown>;
+    timestamp: string;
+  }>;
   metadata: Record<string, unknown>;
 }
 
 export interface UpdateModuleResponseDto {
   questionKey: string;
-  response: Record<string, unknown>;
+  responses: Array<{
+    questionKey: string;
+    response: Record<string, unknown>;
+    timestamp: string;
+  }>;
   metadata: Record<string, unknown>;
 }
 

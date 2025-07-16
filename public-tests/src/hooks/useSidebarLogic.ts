@@ -38,8 +38,25 @@ export const useSidebarLogic = ({
   const steps = useMemo(() => {
     if (formsData?.stepsConfiguration && formsData.stepsConfiguration.length > 0) {
       return formsData.stepsConfiguration.map((stepConfig: StepConfiguration, index: number) => {
-        // Extraer el title de contentConfiguration y asegurar que sea string
-        const title = String(stepConfig.contentConfiguration?.title || `Paso ${index + 1}`);
+        // Generar título específico según el questionKey
+        let title = '';
+
+        switch (stepConfig.questionKey) {
+          case 'demographics':
+            title = 'Peguntas demográficas';
+            break;
+          case 'welcome_screen':
+            title = 'Bienvenido';
+            break;
+          case 'thank_you_screen':
+            title = 'Gracias por participar';
+            break;
+          case 'smartvoc_csat':
+            title = 'Pregunta CSAT';
+            break;
+          default:
+            title = String(stepConfig.contentConfiguration?.title || `Paso ${index + 1}`);
+        }
 
         return {
           title: title,
