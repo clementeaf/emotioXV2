@@ -40,21 +40,33 @@ export const useFlowNavigationAndState = () => {
 
     // Navegar al siguiente paso
   const goToNextStep = useCallback(() => {
+    console.log('🔍 DEBUG goToNextStep:', {
+      currentStepIndex,
+      totalSteps: steps.length,
+      currentStep: steps[currentStepIndex],
+      nextStepIndex: currentStepIndex + 1,
+      nextStep: steps[currentStepIndex + 1]
+    });
+
     if (currentStepIndex < steps.length - 1) {
       const currentStep = steps[currentStepIndex];
       if (currentStep) {
+        console.log('✅ Completando step actual:', currentStep.id);
         completeStep(currentStep.id);
       }
 
       const nextStepIndex = currentStepIndex + 1;
       setCurrentStep(nextStepIndex);
 
-      // Sincronizar con el sidebar usando el nombre del step
+      // Sincronizar con el sidebar usando el id del step (questionKey)
       if (steps[nextStepIndex]) {
-        setCurrentQuestionKey(steps[nextStepIndex].name);
+        console.log('🔄 Navegando a siguiente step:', steps[nextStepIndex].id);
+        setCurrentQuestionKey(steps[nextStepIndex].id);
       }
 
       setError(null);
+    } else {
+      console.log('⚠️ No hay siguiente step disponible');
     }
   }, [currentStepIndex, steps, completeStep, setCurrentStep, setCurrentQuestionKey]);
 

@@ -50,6 +50,7 @@ export interface TestState {
   // Métodos
   setParticipant: (id: string, name: string, email: string, researchId: string) => void;
   setCurrentStep: (index: number) => void;
+  setSteps: (steps: TestStep[]) => void;
   completeStep: (stepId: string) => void;
   saveResponse: (questionKey: string, response: unknown, stepType: string, stepTitle: string) => void;
   getResponse: (questionKey: string) => TestResponse | null;
@@ -105,6 +106,16 @@ export const useTestStore = create<TestState>()(
             })),
           });
         }
+      },
+
+      // Establecer steps
+      setSteps: (newSteps: TestStep[]) => {
+        set({
+          steps: newSteps,
+          totalSteps: newSteps.length,
+          currentStepIndex: 0,
+          completedSteps: 0,
+        });
       },
 
       // Completar un paso

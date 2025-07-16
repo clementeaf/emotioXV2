@@ -11,7 +11,7 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
   formData = {},
   isWelcomeScreen = false
 }) => {
-  const { researchId, participantId } = useTestStore();
+  const { researchId, participantId, steps, currentStepIndex, setCurrentStep, completeStep } = useTestStore();
   const { goToNextStep } = useFlowNavigationAndState();
   const { setCurrentQuestionKey } = useStepStore();
   const [isSaving, setIsSaving] = useState(false);
@@ -23,11 +23,20 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
 
   const saveMutation = useSaveModuleResponseMutation({
     onSuccess: () => {
+      console.log('✅ Respuesta guardada exitosamente, iniciando navegación...');
       setIsSaving(false);
       setIsNavigating(true);
 
+      // Completar el step actual en useTestStore
+      const currentStep = steps[currentStepIndex];
+      if (currentStep) {
+        console.log('✅ Completando step actual en useTestStore:', currentStep.id);
+        completeStep(currentStep.id);
+      }
+
       // Navegar automáticamente al siguiente step después de guardar
       setTimeout(() => {
+        console.log('🔄 Ejecutando goToNextStep...');
         setIsNavigating(false);
         goToNextStep();
       }, 1000);
@@ -42,6 +51,12 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
     onSuccess: () => {
       setIsSaving(false);
       setIsNavigating(true);
+
+      // Completar el step actual en useTestStore
+      const currentStep = steps[currentStepIndex];
+      if (currentStep) {
+        completeStep(currentStep.id);
+      }
 
       // Navegar automáticamente al siguiente step después de actualizar
       setTimeout(() => {

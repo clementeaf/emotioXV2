@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SidebarStep, UseSidebarLogicProps, UseSidebarLogicReturn } from '../components/TestLayout/types';
 import { StepConfiguration } from '../lib/types';
 import { useStepStore } from '../stores/useStepStore';
+import { useTestStore } from '../stores/useTestStore';
 import { useAvailableFormsQuery } from './useApiQueries';
 import { useDeleteState } from './useDeleteState';
 import { useStepStates } from './useStepStates';
@@ -18,6 +19,9 @@ export const useSidebarLogic = ({
 
   // Usar el store global para currentQuestionKey
   const { currentQuestionKey, setCurrentQuestionKey } = useStepStore();
+
+  // Usar el store de test para sincronizar steps
+  const { setCurrentStep, completeStep, setSteps } = useTestStore();
 
   const {
     data: formsData,
@@ -38,31 +42,48 @@ export const useSidebarLogic = ({
 
   const steps = useMemo(() => {
     if (formsData?.stepsConfiguration && formsData.stepsConfiguration.length > 0) {
-      return formsData.stepsConfiguration.map((stepConfig: StepConfiguration, index: number) => {
-        let title = '';
+      // Ordenar los steps según la lógica correcta del flujo
+      const stepOrder = ['welcome_screen', 'demographics', 'smartvoc_csat', 'thank_you_screen'];
 
-        switch (stepConfig.questionKey) {
-          case 'demographics':
-            title = 'Peguntas demográficas';
-            break;
-          case 'welcome_screen':
-            title = 'Bienvenido';
-            break;
-          case 'thank_you_screen':
-            title = 'Gracias por participar';
-            break;
-          case 'smartvoc_csat':
-            title = 'Pregunta CSAT';
-            break;
-          default:
-            title = String(stepConfig.contentConfiguration?.title || `Paso ${index + 1}`);
-        }
-
-        return {
-          title: title,
-          questionKey: stepConfig.questionKey
-        };
+      // Crear un mapa de configuración por questionKey para acceso rápido
+      const configMap = new Map();
+      formsData.stepsConfiguration.forEach((stepConfig: StepConfiguration) => {
+        configMap.set(stepConfig.questionKey, stepConfig);
       });
+
+      // Construir steps en el orden correcto
+      const orderedSteps = stepOrder
+        .map(questionKey => {
+          const stepConfig = configMap.get(questionKey);
+          if (!stepConfig) return null;
+
+          let title = '';
+          switch (questionKey) {
+            case 'demographics':
+              title = 'Preguntas demográficas';
+              break;
+            case 'welcome_screen':
+              title = 'Bienvenido';
+              break;
+            case 'thank_you_screen':
+              title = 'Gracias por participar';
+              break;
+            case 'smartvoc_csat':
+              title = 'Pregunta CSAT';
+              break;
+            default:
+              title = String(stepConfig.contentConfiguration?.title || questionKey);
+          }
+
+          return {
+            title: title,
+            questionKey: stepConfig.questionKey
+          };
+        })
+        .filter(step => step !== null); // Filtrar steps que no existen
+
+      console.log('🔄 Steps ordenados correctamente:', orderedSteps);
+      return orderedSteps;
     }
     return [];
   }, [formsData?.stepsConfiguration]);
@@ -72,6 +93,27 @@ export const useSidebarLogic = ({
   const effectiveCurrentQuestionKey = currentQuestionKey || selectedQuestionKey;
 
   const { getInitialStep, canAccessStep } = useStepStates(effectiveCurrentQuestionKey, steps);
+
+  // SINCRONIZAR STEPS CON useTestStore
+  useEffect(() => {
+    if (steps.length > 0) {
+      // Convertir steps a formato TestStep para useTestStore
+      const testSteps = steps.map((step, index) => ({
+        id: step.questionKey,
+        type: step.questionKey,
+        name: step.title,
+        completed: false,
+        current: index === 0
+      }));
+
+      // Actualizar el store de test con los steps
+      setSteps(testSteps);
+      console.log('🔄 Sincronizando steps con useTestStore:', {
+        stepsCount: testSteps.length,
+        steps: testSteps.map(s => ({ id: s.id, name: s.name, current: s.current }))
+      });
+    }
+  }, [steps, setSteps]);
 
   // INICIALIZACIÓN DEL PASO ACTIVO
   const initializeActiveStep = useCallback(() => {
