@@ -14,41 +14,98 @@ export interface StepStateInfo {
 export const useStepStates = (currentQuestionKey: string, steps: Array<{ questionKey: string; title: string }>) => {
   const { researchId, participantId } = useTestStore();
 
-  const { data: moduleResponses } = useModuleResponsesQuery(
+  const { data: moduleResponses, isLoading, error } = useModuleResponsesQuery(
     researchId || '',
     participantId || ''
   );
 
   // Obtener todas las responses del backend
   const backendResponses = useMemo(() => {
-    if (!moduleResponses?.responses) return [];
+    if (!moduleResponses?.responses) {
+      return [];
+    }
 
     // Extraer todas las responses de todos los ModuleResponse
-    return moduleResponses.responses.flatMap(mr => mr.responses);
+    const responses = moduleResponses.responses.flatMap(mr => mr.responses);
+
+    // Filtrar responses válidas
+    const validResponses = responses.filter(response => {
+      if (!response || typeof response !== 'object') {
+        console.warn('🔍 DEBUG useStepStates - Response inválida filtrada:', response);
+        return false;
+      }
+
+      if (!response.questionKey) {
+        console.warn('🔍 DEBUG useStepStates - Response sin questionKey filtrada:', response);
+        return false;
+      }
+
+      return true;
+    });
+
+    console.log('🔍 DEBUG useStepStates - Responses válidas:', validResponses);
+    console.log('🔍 DEBUG useStepStates - Cantidad de responses válidas:', validResponses.length);
+
+    // Log detallado de cada response válida
+    validResponses.forEach((response, index) => {
+      console.log(`🔍 DEBUG useStepStates - Response válida ${index}:`, {
+        questionKey: response.questionKey,
+        response: response.response,
+        timestamp: response.timestamp
+      });
+    });
+
+    return validResponses;
   }, [moduleResponses]);
 
   // Verificar si un step tiene respuesta en el backend
   const hasBackendResponse = (questionKey: string): boolean => {
-    return backendResponses.some(response => response.questionKey === questionKey);
+    const hasResponse = backendResponses.some(response => {
+      // Validar que response existe y tiene questionKey
+      if (!response || typeof response !== 'object') {
+        console.warn('🔍 DEBUG hasBackendResponse - Response inválida:', response);
+        return false;
+      }
+
+      if (!response.questionKey) {
+        console.warn('🔍 DEBUG hasBackendResponse - Response sin questionKey:', response);
+        return false;
+      }
+
+      return response.questionKey === questionKey;
+    });
+
+    console.log(`🔍 DEBUG hasBackendResponse para "${questionKey}":`, hasResponse);
+    return hasResponse;
   };
 
-  // Verificar si un step puede ser accedido (todos los anteriores completados)
+  const isStepCompleted = (questionKey: string): boolean => {
+    if (questionKey === 'welcome_screen') {
+      const isCompleted = currentQuestionKey !== 'welcome_screen' && currentQuestionKey !== '';
+      return isCompleted;
+    }
+
+    const isCompleted = hasBackendResponse(questionKey);
+    return isCompleted;
+  };
+
   const canAccessStep = (stepIndex: number): boolean => {
     if (stepIndex === 0) return true;
 
     for (let i = 0; i < stepIndex; i++) {
       const previousStep = steps[i];
-      if (!hasBackendResponse(previousStep.questionKey)) {
+      if (!isStepCompleted(previousStep.questionKey)) {
         return false;
       }
     }
+
     return true;
   };
 
   // Obtener estado de un step específico
   const getStepState = (stepIndex: number): StepStateInfo => {
     const step = steps[stepIndex];
-    const hasResponse = hasBackendResponse(step.questionKey);
+    const hasResponse = isStepCompleted(step.questionKey);
     const canAccess = canAccessStep(stepIndex);
     const isCurrentStep = step.questionKey === currentQuestionKey;
 
@@ -83,7 +140,8 @@ export const useStepStates = (currentQuestionKey: string, steps: Array<{ questio
 
     // Buscar el primer step sin respuesta
     const firstUnansweredStep = steps.find(step => !hasBackendResponse(step.questionKey));
-    return firstUnansweredStep?.questionKey || steps[0].questionKey;
+    const initialStep = firstUnansweredStep?.questionKey || steps[0].questionKey;
+    return initialStep;
   };
 
   return {

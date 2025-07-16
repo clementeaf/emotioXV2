@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useFlowNavigationAndState } from '../../hooks/useFlowNavigationAndState';
 import { EmojiRangeQuestion, ScaleRangeQuestion, SingleAndMultipleChoiceQuestion, VOCTextQuestion } from './QuestionesComponents';
 import { QuestionComponentProps, ScreenStep } from './types';
 import { QUESTION_TYPE_MAP } from './utils';
@@ -100,6 +101,34 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
         </QuestionWrapper>
       );
 
+    case 'smartvoc':
+      return (
+        <QuestionWrapper>
+          <div className='text-center'>
+            <h3 className='text-lg font-semibold text-blue-600 mb-2'>
+              {question.title || 'Pregunta SmartVOC'}
+            </h3>
+            <div className='bg-gray-50 p-4 rounded-lg'>
+              <div className='mt-4 space-y-2'>
+                {[1, 2, 3, 4, 5].map((option) => (
+                  <button
+                    key={option}
+                    onClick={() => setSelectedValue(String(option))}
+                    className={`w-full p-3 rounded border transition-colors ${
+                      selectedValue === String(option)
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    Opción {option}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </QuestionWrapper>
+      );
+
     case 'pending':
       return (
         <QuestionWrapper>
@@ -123,9 +152,14 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
 };
 
 export const ScreenComponent: React.FC<{ data: ScreenStep; onContinue?: () => void }> = ({ data, onContinue }) => {
+  const { goToNextStep } = useFlowNavigationAndState();
+
   const handleContinue = () => {
     if (onContinue) {
       onContinue();
+    } else {
+      // Navegar al siguiente step automáticamente
+      goToNextStep();
     }
   };
 

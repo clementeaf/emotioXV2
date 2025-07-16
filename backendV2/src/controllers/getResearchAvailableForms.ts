@@ -34,6 +34,7 @@ interface Question {
   type?: string;
   title?: string;
   description?: string;
+  instructions?: string;
   required?: boolean;
   choices?: any[];
   scaleConfig?: any;
@@ -141,6 +142,7 @@ function extractSmartVOCConfig(item: DynamoDBItem): StepConfiguration[] {
       const config = {
         title: question.title || '',
         description: question.description || '',
+        instructions: question.instructions || '',
         type: question.type || '',
         companyName: question.companyName || '',
         required: question.required !== false,

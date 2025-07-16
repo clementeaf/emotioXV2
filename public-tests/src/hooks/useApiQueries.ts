@@ -45,9 +45,26 @@ export function useAvailableFormsQuery(researchId: string, options?: UseQueryOpt
 }
 
 export function useModuleResponsesQuery(researchId: string, participantId: string, options?: UseQueryOptions<ParticipantResponsesDocument, Error>) {
+  console.log('🔍 DEBUG useModuleResponsesQuery - Parámetros:', { researchId, participantId });
+
   return useQuery<ParticipantResponsesDocument, Error>({
     queryKey: ['moduleResponses', researchId, participantId],
-    queryFn: () => getModuleResponses(researchId, participantId),
+    queryFn: async () => {
+      console.log('🔄 Fetching module responses:', { researchId, participantId });
+      try {
+        const result = await getModuleResponses(researchId, participantId);
+        console.log('✅ Module responses recibidas del backend:', result);
+
+        // Extraer el campo data de la respuesta del backend
+        const actualData = (result as any).data || result;
+        console.log('✅ Datos extraídos del backend:', actualData);
+
+        return actualData;
+      } catch (error) {
+        console.error('❌ Error al obtener module responses:', error);
+        throw error;
+      }
+    },
     enabled: !!researchId && !!participantId,
     staleTime: 1000 * 60 * 2, // 2 minutos
     gcTime: 1000 * 60 * 5, // 5 minutos
@@ -67,7 +84,6 @@ export function useSaveModuleResponseMutation(options?: UseMutationOptions<Modul
       queryClient.invalidateQueries({
         queryKey: ['moduleResponses', variables.researchId, variables.participantId],
       });
-      options?.onSuccess?.(data, variables, undefined as any);
     },
     ...options,
   });
@@ -110,7 +126,6 @@ export function useDeleteAllResponsesMutation(options?: UseMutationOptions<{ mes
       queryClient.invalidateQueries({
         queryKey: ['moduleResponses', variables.researchId, variables.participantId],
       });
-      console.log('[useDeleteAllResponsesMutation] ✅ Respuestas eliminadas exitosamente');
       options?.onSuccess?.(data, variables, undefined as any);
     },
     onError: (error, variables, context) => {

@@ -1,20 +1,29 @@
 import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useTestStore } from '../../stores/useTestStore';
 
 const LoginRedirect: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { setParticipant } = useTestStore();
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const researchId = params.get('researchId');
+    const participantId = params.get('participantId') || 'test-participant-' + Date.now();
 
     if (researchId) {
-      console.log('[LoginRedirect] ResearchId encontrado:', researchId);
+
+      setParticipant(
+        participantId,
+        'Test Participant',
+        'test@example.com',
+        researchId
+      );
     } else {
       navigate('/error-no-research-id');
     }
-  }, [location, navigate]);
+  }, [location, navigate, setParticipant]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">

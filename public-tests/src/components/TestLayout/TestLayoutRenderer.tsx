@@ -91,6 +91,18 @@ const TestLayoutRenderer: React.FC = () => {
   const { contentConfiguration } = currentStepData;
   const questionType = getQuestionType(currentQuestionKey);
 
+  // Debug logs para verificar datos recibidos
+  console.log('🔍 DEBUG TestLayoutRenderer:', {
+    currentQuestionKey,
+    questionType,
+    formsData: formsData ? {
+      steps: formsData.steps,
+      stepsConfigurationCount: formsData.stepsConfiguration?.length || 0
+    } : null,
+    currentStepData,
+    contentConfiguration
+  });
+
   const renderedForm =
     RENDERERS[questionType]?.({ contentConfiguration, currentQuestionKey }) ||
     <UnknownStepComponent
@@ -111,11 +123,14 @@ const TestLayoutRenderer: React.FC = () => {
       <div className="flex-1">
         {renderedForm}
       </div>
-      <ButtonSteps
-        currentQuestionKey={currentQuestionKey}
-        formData={formData}
-        isWelcomeScreen={isWelcomeScreen}
-      />
+      {/* No mostrar ButtonSteps para welcome_screen ya que ScreenComponent tiene su propio botón */}
+      {!isWelcomeScreen && (
+        <ButtonSteps
+          currentQuestionKey={currentQuestionKey}
+          formData={formData}
+          isWelcomeScreen={isWelcomeScreen}
+        />
+      )}
     </div>
   );
 };

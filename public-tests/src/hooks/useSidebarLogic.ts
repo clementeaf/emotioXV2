@@ -90,6 +90,7 @@ export const useSidebarLogic = ({
 
   const totalSteps = steps.length;
 
+  // Usar currentQuestionKey del store como fuente de verdad
   const effectiveCurrentQuestionKey = currentQuestionKey || selectedQuestionKey;
 
   const { getInitialStep, canAccessStep } = useStepStates(effectiveCurrentQuestionKey, steps);
@@ -117,14 +118,21 @@ export const useSidebarLogic = ({
 
   // INICIALIZACIÓN DEL PASO ACTIVO
   const initializeActiveStep = useCallback(() => {
+    console.log('🔍 DEBUG initializeActiveStep:', {
+      stepsLength: steps.length,
+      effectiveCurrentQuestionKey,
+      hasInitialized: hasInitializedRef.current
+    });
 
     if (steps.length > 0 && !effectiveCurrentQuestionKey && !hasInitializedRef.current) {
       const initialStep = getInitialStep();
+      console.log('🔍 DEBUG initializeActiveStep - Step inicial:', initialStep);
+
       setSelectedQuestionKey(initialStep);
       setCurrentQuestionKey(initialStep);
       hasInitializedRef.current = true;
     }
-  }, [steps, selectedQuestionKey, currentQuestionKey, effectiveCurrentQuestionKey, getInitialStep, setCurrentQuestionKey]);
+  }, [steps, effectiveCurrentQuestionKey, getInitialStep, setCurrentQuestionKey]);
 
   useEffect(() => {
     if (steps.length > 0 && onStepsReady && !stepsNotifiedRef.current) {
@@ -145,6 +153,14 @@ export const useSidebarLogic = ({
     return () => clearTimeout(timeoutId);
   }, [initializeActiveStep]);
 
+  // SINCRONIZAR currentQuestionKey CON selectedQuestionKey
+  useEffect(() => {
+    if (currentQuestionKey && currentQuestionKey !== selectedQuestionKey) {
+      console.log('🔍 DEBUG SidebarLogic: Sincronizando currentQuestionKey -> selectedQuestionKey:', currentQuestionKey);
+      setSelectedQuestionKey(currentQuestionKey);
+    }
+  }, [currentQuestionKey, selectedQuestionKey]);
+
   // ========================================
   // 🎯 FUNCIONES DE NAVEGACIÓN (MEMOIZADAS)
   const isStepEnabled = useCallback((stepIndex: number): boolean => {
@@ -152,7 +168,6 @@ export const useSidebarLogic = ({
   }, [canAccessStep]);
 
   const handleStepClick = useCallback((questionKey: string) => {
-    setSelectedQuestionKey(questionKey);
     setCurrentQuestionKey(questionKey);
   }, [setCurrentQuestionKey]);
 
