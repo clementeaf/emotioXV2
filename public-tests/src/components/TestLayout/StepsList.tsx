@@ -1,8 +1,8 @@
 import React from 'react';
 import StepItem from './StepItem';
-import { StepsListProps } from './types';
+import { CustomStepsListProps } from './types';
 
-const StepsList: React.FC<StepsListProps> = ({ steps, currentStepKey, onStepClick, isStepEnabled }) => (
+const StepsList: React.FC<CustomStepsListProps> = ({ steps, currentStepKey, onStepClick, isStepEnabled }) => (
   <ul className="space-y-1 max-h-[550px] overflow-y-auto">
     {steps.map((step, idx) => (
       <StepItem
@@ -10,7 +10,7 @@ const StepsList: React.FC<StepsListProps> = ({ steps, currentStepKey, onStepClic
         step={step}
         isActive={step.questionKey === currentStepKey}
         isDisabled={isStepEnabled ? !isStepEnabled(idx) : false}
-        onClick={() => onStepClick?.(step, idx)}
+        onClick={() => onStepClick?.(step.questionKey)}
       />
     ))}
   </ul>

@@ -4,9 +4,10 @@ import {
   Context,
 } from 'aws-lambda';
 import { type Logger as PinoLogger } from 'pino';
-import { ROUTE_DEFINITIONS } from './routeDefinitions';
 import { getHandler } from './dispatcher';
 import { HttpError, InternalServerError, NotFoundError } from './errors';
+import { corsMiddleware, getCorsHeaders } from './middlewares/cors';
+import { ROUTE_DEFINITIONS } from './routeDefinitions';
 
 // Manejo de solicitudes HTTP
 export async function handleHttpRequest(
@@ -14,25 +15,18 @@ export async function handleHttpRequest(
   context: Context,
   requestLogger: PinoLogger
 ): Promise<APIGatewayProxyResult> {
-  // Configura headers CORS por defecto
+  // Aplicar middleware de CORS
+  const corsResponse = await corsMiddleware(event);
+  if (corsResponse) {
+    return corsResponse;
+  }
+
+  // Obtener headers CORS dinámicos
+  const corsHeaders = getCorsHeaders(event);
   const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Credentials': true,
+    ...corsHeaders,
     'Content-Type': 'application/json',
   };
-
-  // Responde a solicitudes preflight OPTIONS
-  if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers: {
-        ...headers,
-        'Access-Control-Allow-Methods': 'GET, PUT, POST, DELETE, PATCH, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token, X-Requested-With',
-      },
-      body: '',
-    };
-  }
 
   try {
     const path = event.path || '';
@@ -104,4 +98,4 @@ export async function handleHttpRequest(
       }),
     };
   }
-} 
+}

@@ -58,24 +58,6 @@ export const useParticipantFlow = (researchId: string | undefined) => {
     }
   }, [researchId, isSessionActive, startSession]);
 
-  // Crear pasos de ejemplo si no existen
-  useEffect(() => {
-    if (steps.length === 0 && researchId) {
-      const exampleSteps: FlowStep[] = [
-        { id: 'welcome', type: 'screen', name: 'Bienvenido', completed: false, current: true },
-        { id: 'demographics', type: 'form', name: 'Preguntas demográficas', completed: false, current: false },
-        { id: 'smartvoc', type: 'form', name: 'SmartVOC', completed: false, current: false },
-        { id: 'thankyou', type: 'screen', name: 'Gracias', completed: false, current: false },
-      ];
-
-      useTestStore.setState({
-        steps: exampleSteps,
-        totalSteps: exampleSteps.length,
-        currentStepIndex: 0,
-      });
-    }
-  }, [steps.length, researchId]);
-
   // Navegar al siguiente paso
   const goToNextStep = useCallback(() => {
     const currentStep = getCurrentStep();

@@ -18,23 +18,23 @@ const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({
   const imgContainerRef = useRef<HTMLDivElement>(null);
 
   // Extraer la configuración de la pregunta
-  let preferenceQuestion: any = null;
+  let preferenceQuestion: Record<string, unknown> | null = null;
 
   if (stepConfig && typeof stepConfig === 'object') {
-    if ('questions' in stepConfig && Array.isArray((stepConfig as any).questions)) {
-      const config = stepConfig as { questions: any[] };
-      preferenceQuestion = config.questions.find(q => q.type === 'preference_test');
+    if ('questions' in stepConfig && Array.isArray((stepConfig as Record<string, unknown>).questions)) {
+      const config = stepConfig as { questions: Record<string, unknown>[] };
+      preferenceQuestion = config.questions.find(q => (q as Record<string, unknown>).type === 'preference_test') as Record<string, unknown> | undefined || null;
     }
-    else if ('type' in stepConfig && (stepConfig as any).type === 'preference_test') {
+    else if ('type' in stepConfig && (stepConfig as Record<string, unknown>).type === 'preference_test') {
       preferenceQuestion = stepConfig;
     }
     else if ('config' in stepConfig) {
-      preferenceQuestion = (stepConfig as any).config;
+      preferenceQuestion = (stepConfig as Record<string, unknown>).config as Record<string, unknown>;
     }
   }
 
   const config = preferenceQuestion || stepConfig;
-  const images = config?.files || [];
+  const images = (config?.files as PreferenceFile[]) || [];
 
   // Sincronizar con prop externa
   useEffect(() => {
@@ -60,7 +60,7 @@ const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({
   // Función para navegar entre imágenes en el modal
   const handleZoomNav = (direction: 'prev' | 'next') => {
     if (!zoomImage) return;
-    const currentIdx = images.findIndex((img: any) => img.id === zoomImage.id);
+    const currentIdx = images.findIndex((img: PreferenceFile) => img.id === zoomImage.id);
     if (direction === 'prev' && currentIdx > 0) {
       setZoomImage(images[currentIdx - 1]);
     } else if (direction === 'next' && currentIdx < images.length - 1) {
@@ -140,18 +140,18 @@ const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4">
-            {config?.title || 'Pregunta de Preferencia'}
+            {(config?.title as string) || 'Pregunta de Preferencia'}
           </h1>
-          {config?.description && (
+          {(config?.description as string) && (
             <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              {config.description}
+              {config.description as string}
             </p>
           )}
         </div>
 
         {/* Images Grid */}
         <div className="flex flex-row gap-4 justify-center mb-8">
-          {images.map((image: any, index: number) => (
+          {images.map((image: PreferenceFile, index: number) => (
             <div
               key={image.id}
               className={`relative rounded-lg shadow-lg overflow-hidden cursor-pointer transition-all duration-300 transform hover:scale-[1.02] ${
@@ -198,65 +198,72 @@ const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({
               </div>
 
               {/* Image info */}
-              <div className="p-4">
-                <h3 className="font-medium text-gray-800 truncate">
-                  {image.name || `Imagen ${index + 1}`}
-                </h3>
+              <div className="p-4 bg-white">
+                <h3 className="font-semibold text-gray-800 mb-1">{image.name}</h3>
+                <p className="text-sm text-gray-500">
+                  {image.type} • {(image.size / 1024 / 1024).toFixed(1)} MB
+                </p>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Modal de zoom custom con navegación y zoom/pan manual */}
+        {/* Error message */}
+        {error && (
+          <div className="text-center mb-4">
+            <p className="text-red-600 font-medium">{error}</p>
+          </div>
+        )}
+
+        {/* Zoom Modal */}
         {zoomImage && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60" onClick={() => setZoomImage(null)}>
-            <div className="bg-white rounded-lg shadow-2xl p-4 max-w-7xl w-full relative flex flex-col items-center" onClick={e => e.stopPropagation()}>
+          <div className="fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center p-4">
+            <div className="relative w-full h-full flex items-center justify-center">
+              {/* Close button */}
               <button
-                className="absolute top-2 right-2 text-gray-600 hover:text-red-500 bg-white bg-opacity-80 rounded-full p-2 shadow"
+                type="button"
+                className="absolute top-4 right-4 z-10 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full p-3 text-white transition-all"
                 onClick={() => setZoomImage(null)}
-                title="Cerrar"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
               </button>
-              {/* Flecha izquierda */}
-              {images.findIndex((img: any) => img.id === zoomImage.id) > 0 && (
+
+              {/* Navigation buttons */}
+              {images.findIndex((img: PreferenceFile) => img.id === zoomImage.id) > 0 && (
                 <button
-                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-white bg-opacity-80 rounded-full p-2 shadow hover:bg-opacity-100 focus:outline-none"
+                  type="button"
+                  className="absolute left-4 z-10 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full p-3 text-white transition-all"
                   onClick={() => handleZoomNav('prev')}
-                  title="Anterior"
-                  style={{ zIndex: 10 }}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <polyline points="15 19 8 12 15 5" />
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <polyline points="15,18 9,12 15,6" />
                   </svg>
                 </button>
               )}
-              {/* Flecha derecha */}
-              {images.findIndex((img: any) => img.id === zoomImage.id) < images.length - 1 && (
+
+              {images.findIndex((img: PreferenceFile) => img.id === zoomImage.id) < images.length - 1 && (
                 <button
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-white bg-opacity-80 rounded-full p-2 shadow hover:bg-opacity-100 focus:outline-none"
+                  type="button"
+                  className="absolute right-4 z-10 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full p-3 text-white transition-all"
                   onClick={() => handleZoomNav('next')}
-                  title="Siguiente"
-                  style={{ zIndex: 10 }}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <polyline points="9 5 16 12 9 19" />
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <polyline points="9,18 15,12 9,6" />
                   </svg>
                 </button>
               )}
-              {/* Imagen con zoom y pan manual */}
+
+              {/* Image container */}
               <div
                 ref={imgContainerRef}
-                className="w-full h-full flex items-center justify-center overflow-hidden"
-                style={{ maxHeight: '100vh', maxWidth: '100%', cursor: dragging ? 'grabbing' : 'grab', background: '#f9f9f9' }}
+                className="relative w-full h-full flex items-center justify-center overflow-hidden"
                 onWheel={handleWheel}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
@@ -264,35 +271,39 @@ const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({
                 <img
                   src={zoomImage.url}
                   alt={zoomImage.name}
-                  draggable={false}
+                  className="max-w-full max-h-full object-contain cursor-grab active:cursor-grabbing"
                   style={{
-                    transform: `scale(${zoom}) translate(${offset.x / zoom}px, ${offset.y / zoom}px)` ,
-                    transition: dragging ? 'none' : 'transform 0.2s',
-                    maxWidth: '100%',
-                    maxHeight: '100vh',
-                    userSelect: 'none',
-                    pointerEvents: 'auto',
+                    transform: `scale(${zoom}) translate(${offset.x / zoom}px, ${offset.y / zoom}px)`,
+                    transition: dragging ? 'none' : 'transform 0.1s ease-out'
                   }}
+                  draggable={false}
                 />
               </div>
-              <div className="mt-2 text-center text-gray-700 text-sm">{zoomImage.name}</div>
-              {/* Controles de zoom */}
-              <div className="flex gap-2 mt-2">
-                <button className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300" onClick={() => setZoom(z => Math.max(1, z - 0.2))}>-</button>
-                <span className="px-2">{(zoom * 100).toFixed(0)}%</span>
-                <button className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300" onClick={() => setZoom(z => Math.min(5, z + 0.2))}>+</button>
-                <button className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300" onClick={() => { setZoom(1); setOffset({ x: 0, y: 0 }); }}>Reset</button>
+
+              {/* Zoom controls */}
+              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10 bg-black bg-opacity-50 rounded-lg p-2 flex items-center gap-2">
+                <button
+                  type="button"
+                  className="bg-white bg-opacity-20 hover:bg-opacity-30 rounded p-2 text-white"
+                  onClick={() => setZoom(Math.max(1, zoom - 0.5))}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                </button>
+                <span className="text-white text-sm px-2">{Math.round(zoom * 100)}%</span>
+                <button
+                  type="button"
+                  className="bg-white bg-opacity-20 hover:bg-opacity-30 rounded p-2 text-white"
+                  onClick={() => setZoom(Math.min(5, zoom + 0.5))}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                </button>
               </div>
             </div>
-          </div>
-        )}
-
-        {/* Error message */}
-        {error && (
-          <div className="text-center mb-6">
-            <p className="text-red-500 text-sm bg-red-50 border border-red-200 rounded-lg py-2 px-4 inline-block">
-              {error}
-            </p>
           </div>
         )}
       </div>

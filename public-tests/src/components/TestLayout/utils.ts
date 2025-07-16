@@ -1,7 +1,5 @@
 import { DemographicQuestion, Question, SidebarStep, StepData, StepSearchResult } from './types';
 
-export const MOCK_CURRENT_STEP = 1;
-
 const ORDER = [
   'WELCOME_SCREEN',
   'EYE_TRACKING_CONFIG',

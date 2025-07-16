@@ -3,7 +3,6 @@ import { useTestStore } from '../../stores/useTestStore';
 import { StepItemProps } from './types';
 
 const StepItem: React.FC<StepItemProps> = ({ step, isActive, onClick, isDisabled }) => {
-  // Usar el store simplificado
   const { hasResponse } = useTestStore();
   const hasStepResponse = hasResponse(step.questionKey);
 
@@ -11,13 +10,10 @@ const StepItem: React.FC<StepItemProps> = ({ step, isActive, onClick, isDisabled
   const getStepState = () => {
     if (isDisabled) return 'disabled';
 
-    // Si el usuario está actualmente en este paso, debe estar en azul (PRIORIDAD MÁXIMA)
     if (isActive) return 'active';
 
-    // Si el paso ha sido respondido, debe estar en verde
     if (hasStepResponse) return 'completed';
 
-    // Si no tiene respuesta previa, debe estar en gris
     return 'available';
   };
 
@@ -76,7 +72,7 @@ const StepItem: React.FC<StepItemProps> = ({ step, isActive, onClick, isDisabled
           </svg>
         )}
 
-        {step.label}
+        {step.title}
       </span>
     </li>
   );

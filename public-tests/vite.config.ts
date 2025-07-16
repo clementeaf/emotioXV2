@@ -50,6 +50,9 @@ export default defineConfig({
           'test-layout': [
             './src/components/TestLayout/TestLayoutMain.tsx',
             './src/components/TestLayout/TestLayoutSidebar.tsx',
+            './src/components/TestLayout/sidebar/TestLayoutSidebarContainer.tsx',
+            './src/components/TestLayout/sidebar/TestLayoutSidebar.tsx',
+            './src/components/TestLayout/sidebar/useSidebarSteps.ts',
             './src/components/TestLayout/TestLayoutRenderer.tsx',
             './src/components/TestLayout/StepItem.tsx'
           ]

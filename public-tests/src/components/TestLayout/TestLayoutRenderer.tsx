@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
+import { useSaveModuleResponseMutation, useUpdateModuleResponseMutation } from '../../hooks/useApiQueries';
 import { useStepStore } from '../../stores/useStepStore';
 import { useTestStore } from '../../stores/useTestStore';
 import { ErrorState, LoadingState, NoStepData, NoStepSelected } from './CommonStates';
@@ -18,7 +19,18 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({
   // 🎯 ESTADOS BÁSICOS
   // ========================================
   const { currentStepKey, setStep } = useStepStore();
-  const { saveResponse, getResponse, hasResponse } = useTestStore();
+  const { saveResponse, getResponse, hasResponse, researchId, participantId } = useTestStore();
+
+  // ========================================
+  // 🎯 MUTACIONES DE LA API
+  // ========================================
+  const saveMutation = useSaveModuleResponseMutation();
+  const updateMutation = useUpdateModuleResponseMutation();
+
+  // ========================================
+  // 🎯 DATOS DEL PASO ACTUAL
+  // ========================================
+  const currentStepData = currentStepKey ? findStepByQuestionKey(data, currentStepKey) : null;
 
   // ========================================
   // 🎯 NAVEGACIÓN
@@ -51,7 +63,7 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({
     }
 
     // Para preguntas SmartVOC, obtener valores del estado del componente
-    if (Object.keys(values).length === 0 && stepType === 'smart-voc') {
+    if (Object.keys(values).length === 0 && currentStepData && getStepType(currentStepData) === 'smart-voc') {
       const questionComponent = document.querySelector('[data-question-key]') as HTMLElement;
       if (questionComponent) {
         const questionKey = questionComponent.getAttribute('data-question-key');
@@ -74,7 +86,7 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({
       return {
         submitted: true,
         timestamp: new Date().toISOString(),
-        stepType: getStepType(currentStepData),
+        stepType: currentStepData ? getStepType(currentStepData) : 'unknown',
         stepTitle: currentStepKey
       };
     }
@@ -83,7 +95,7 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({
       ...values,
       submitted: true,
       timestamp: new Date().toISOString(),
-      stepType: getStepType(currentStepData),
+      stepType: currentStepData ? getStepType(currentStepData) : 'unknown',
       stepTitle: currentStepKey
     };
   };
@@ -92,38 +104,76 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({
   // 🎯 GUARDADO DE RESPUESTAS
   // ========================================
   const handleSaveResponse = useCallback(async (response: unknown): Promise<boolean> => {
-    if (!currentStepKey) {
-      toast.error('No hay paso actual seleccionado');
+    if (!currentStepKey || !researchId || !participantId || !currentStepData) {
+      toast.error('Faltan datos requeridos para guardar la respuesta');
       return false;
     }
 
     try {
+      // Guardar localmente
       saveResponse(currentStepKey, response, getStepType(currentStepData), currentStepKey);
+
+      // Enviar al backend
+      await saveMutation.mutateAsync({
+        researchId,
+        participantId,
+        stepType: getStepType(currentStepData),
+        stepTitle: currentStepKey,
+        questionKey: currentStepKey,
+        response: response as Record<string, unknown>,
+        metadata: {
+          timestamp: new Date().toISOString(),
+          stepType: getStepType(currentStepData),
+          stepTitle: currentStepKey
+        }
+      });
+
       toast.success(`Respuesta guardada: ${currentStepKey}`);
       goToNextStep();
       return true;
     } catch (error) {
+      console.error('Error guardando respuesta:', error);
       toast.error('Error guardando respuesta');
       return false;
     }
-  }, [currentStepKey, saveResponse, goToNextStep]);
+  }, [currentStepKey, researchId, participantId, currentStepData, saveResponse, saveMutation, goToNextStep]);
 
   const handleUpdateResponse = useCallback(async (response: unknown): Promise<boolean> => {
-    if (!currentStepKey) {
-      toast.error('No hay paso actual seleccionado');
+    if (!currentStepKey || !researchId || !participantId || !currentStepData) {
+      toast.error('Faltan datos requeridos para actualizar la respuesta');
       return false;
     }
 
     try {
+      // Guardar localmente
       saveResponse(currentStepKey, response, getStepType(currentStepData), currentStepKey);
+
+      // Enviar al backend (asumiendo que tenemos el responseId)
+      // Por ahora, usamos la misma mutación que save ya que el backend puede manejar duplicados
+      await saveMutation.mutateAsync({
+        researchId,
+        participantId,
+        stepType: getStepType(currentStepData),
+        stepTitle: currentStepKey,
+        questionKey: currentStepKey,
+        response: response as Record<string, unknown>,
+        metadata: {
+          timestamp: new Date().toISOString(),
+          stepType: getStepType(currentStepData),
+          stepTitle: currentStepKey,
+          isUpdate: true
+        }
+      });
+
       toast.success(`Respuesta actualizada: ${currentStepKey}`);
       goToNextStep();
       return true;
     } catch (error) {
+      console.error('Error actualizando respuesta:', error);
       toast.error('Error actualizando respuesta');
       return false;
     }
-  }, [currentStepKey, saveResponse, goToNextStep]);
+  }, [currentStepKey, researchId, participantId, currentStepData, saveResponse, saveMutation, goToNextStep]);
 
   // ========================================
   // 🔄 INICIALIZACIÓN
@@ -141,7 +191,6 @@ const TestLayoutRenderer: React.FC<TestLayoutRendererProps> = ({
   if (error) return <ErrorState />;
   if (!currentStepKey) return <NoStepSelected />;
 
-  const currentStepData = findStepByQuestionKey(data, currentStepKey);
   if (!currentStepData) return <NoStepData />;
 
   // ========================================

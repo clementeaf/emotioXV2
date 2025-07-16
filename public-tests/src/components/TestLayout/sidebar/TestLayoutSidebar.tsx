@@ -1,81 +1,48 @@
 import React from 'react';
-import { useAvailableFormsQuery } from '../../hooks/useApiQueries';
-import { useSidebarLogic } from '../../hooks/useSidebarLogic';
-import BurgerMenuButton from './BurgerMenuButton';
-import MobileOverlay from './MobileOverlay';
-import ProgressDisplay from './ProgressDisplay';
-import SidebarContainer from './SidebarContainer';
-import StepsList from './StepsList';
-import { SidebarStep } from './types';
+import { useSidebarLogic } from '../../../hooks/useSidebarLogic';
+import { useTestStore } from '../../../stores/useTestStore';
+import BurgerMenuButton from '../BurgerMenuButton';
+import MobileOverlay from '../MobileOverlay';
+import ProgressDisplay from '../ProgressDisplay';
+import SidebarContainer from '../SidebarContainer';
+import StepsList from '../StepsList';
+import { SidebarStep } from '../types';
 
-interface TestLayoutSidebarProps {
-  researchId?: string;
+interface Props {
   onStepsReady?: (steps: SidebarStep[]) => void;
   onNavigateToStep?: (stepKey: string) => void;
   onDeleteAllResponses?: () => Promise<void>;
 }
 
-const TestLayoutSidebar: React.FC<TestLayoutSidebarProps> = ({
-  researchId,
+const TestLayoutSidebar: React.FC<Props> = ({
   onStepsReady,
   onNavigateToStep,
   onDeleteAllResponses
 }) => {
+  const { researchId } = useTestStore();
 
   const {
-    // Estado de la API
     steps,
     totalSteps,
     isLoading,
     error,
-
-    // Estado del sidebar
     isOpen,
     toggleSidebar,
     closeSidebar,
-
-    // Estado del paso actual
     currentStepKey,
-
-    // Funciones de navegación
     isStepEnabled,
     handleStepClick,
-
-    // Funciones de eliminación
     handleDeleteAllResponses,
     isDeleting,
     deleteButtonText,
     isDeleteDisabled,
-
-    // Funciones de API
     refetchForms
   } = useSidebarLogic({
-    researchId,
+    researchId: researchId || '',
     onStepsReady,
     onNavigateToStep,
     onDeleteAllResponses
   });
-
-    const {
-    data: apiData,
-    isLoading: apiLoading,
-    error: apiError
-  } = useAvailableFormsQuery(researchId || '');
-
-  console.log('[TestLayoutSidebar] 🔍 Debug API Forms:', {
-    researchId,
-    researchIdType: typeof researchId,
-    researchIdLength: researchId?.length || 0,
-    hasData: !!apiData,
-    dataLength: apiData?.steps?.length || 0,
-    isLoading: apiLoading,
-    error: apiError?.message || null,
-    timestamp: new Date().toISOString()
-  });
-
-  if (apiData) {
-    console.log('[TestLayoutSidebar] 📊 API Forms Data:', apiData);
-  }
 
   return (
     <>
@@ -91,7 +58,7 @@ const TestLayoutSidebar: React.FC<TestLayoutSidebarProps> = ({
             Error al cargar pasos: {error.message}
             {researchId && (
               <button
-                onClick={() => {}}
+                onClick={() => refetchForms()}
                 className="ml-2 text-blue-500 hover:text-blue-700 underline"
               >
                 Reintentar

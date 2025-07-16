@@ -37,25 +37,25 @@ export enum ResearchStatus {
 export interface ResearchBasicData {
   /** Nombre de la investigación */
   name: string;
-  
+
   /** Empresa o cliente para el que se realiza la investigación */
   enterprise: string;
-  
+
   /** Tipo de investigación seleccionado en el Paso 2 */
   type?: ResearchType;
-  
+
   /** Técnica de investigación seleccionada en el Paso 3 */
   technique?: string;
-  
+
   /** Número objetivo de participantes (opcional) */
   targetParticipants?: number;
-  
+
   /** Objetivos de la investigación (opcional) */
   objectives?: string[];
-  
+
   /** Etiquetas para clasificar la investigación (opcional) */
   tags?: string[];
-  
+
   /** Descripción detallada de la investigación (opcional) */
   description?: string;
 }
@@ -75,7 +75,7 @@ export interface AIMFrameworkConfig {
     /** Texto del botón de inicio */
     buttonText: string;
   };
-  
+
   /** Configuración del Smart VOC */
   smartVOC?: {
     /** Si Smart VOC está habilitado */
@@ -90,7 +90,7 @@ export interface AIMFrameworkConfig {
       type: string;
     }>;
   };
-  
+
   /** Configuración de tareas cognitivas */
   cognitiveTask?: {
     /** Si las tareas cognitivas están habilitadas */
@@ -115,7 +115,7 @@ export interface BiometricConfig {
     /** Duración de la sesión en segundos */
     duration: number;
   };
-  
+
   /** Configuración de asociación implícita */
   implicitAssociation?: {
     /** Si la asociación implícita está habilitada */
@@ -123,7 +123,7 @@ export interface BiometricConfig {
     /** Categorías para la prueba */
     categories: string[];
   };
-  
+
   /** Configuración de tareas cognitivas */
   cognitiveTask?: {
     /** Si las tareas cognitivas están habilitadas */
@@ -141,28 +141,28 @@ export interface BiometricConfig {
 export interface Research {
   /** ID único de la investigación */
   id: string;
-  
+
   /** Nombre de la investigación */
   name: string;
-  
+
   /** Datos básicos de la investigación */
   basic: ResearchBasicData;
-  
+
   /** Configuración específica según la técnica seleccionada */
   config: AIMFrameworkConfig | BiometricConfig;
-  
+
   /** Estado actual de la investigación */
   status: ResearchStatus;
-  
+
   /** Fecha y hora de creación en formato ISO */
   createdAt: string;
-  
+
   /** Fecha y hora de última actualización en formato ISO */
   updatedAt: string;
-  
+
   /** ID del usuario que creó la investigación */
   createdBy?: string;
-  
+
   /** Porcentaje de progreso de la investigación (0-100) */
   progress?: number;
 }
@@ -174,10 +174,10 @@ export interface Research {
 export interface CreateResearchRequest {
   /** Datos básicos recogidos en el Paso 1 y 2 */
   basic: ResearchBasicData;
-  
+
   /** Estado inicial de la investigación (opcional, por defecto DRAFT) */
   status?: ResearchStatus;
-  
+
   /** Información del usuario que crea la investigación */
   user?: {
     /** ID del usuario */
@@ -185,7 +185,7 @@ export interface CreateResearchRequest {
     /** Email del usuario */
     email: string;
   };
-  
+
   /** Configuración técnica específica según el tipo seleccionado */
   config?: {
     /** Tipo de configuración (determina qué estructura se utiliza) */
@@ -193,7 +193,7 @@ export interface CreateResearchRequest {
     /** Configuración específica, puede ser AIMFrameworkConfig o BiometricConfig */
     data: Partial<AIMFrameworkConfig | BiometricConfig>;
   };
-  
+
   /** Metadatos adicionales para la creación */
   metadata?: {
     /** Plataforma desde la que se crea (web, mobile, etc.) */
@@ -211,28 +211,28 @@ export interface CreateResearchRequest {
 export interface CreateResearchResponse {
   /** ID único generado para la investigación */
   id: string;
-  
+
   /** Nombre de la investigación */
   name: string;
-  
+
   /** Empresa para la que se realiza */
   enterprise: string;
-  
+
   /** Tipo de investigación */
   type: string;
-  
+
   /** Técnica seleccionada */
   technique: string;
-  
+
   /** Estado inicial */
   status: string;
-  
+
   /** Fecha y hora de creación en formato ISO */
   createdAt: string;
-  
+
   /** URL para acceder a la investigación (opcional) */
   accessUrl?: string;
-  
+
   /** Información adicional específica según la técnica */
   additionalInfo?: {
     /** Siguiente paso recomendado */
@@ -248,15 +248,15 @@ export interface CreateResearchResponse {
 export interface CreateResearchError {
   /** Código de error */
   code: string;
-  
+
   /** Mensaje de error */
   message: string;
-  
+
   /** Errores específicos por campo */
   fieldErrors?: {
     [fieldName: string]: string;
   };
-  
+
   /** Información adicional para depuración */
   details?: any;
 }
@@ -273,23 +273,7 @@ export function generateResearchId(): string {
   return `research-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 }
 
-/**
- * Crea una investigación simulada
- * @param data Los datos básicos para crear la investigación
- * @returns Una respuesta simulada de creación exitosa
- */
-export function createMockResearch(data: ResearchBasicData): CreateResearchResponse {
-  return {
-    id: generateResearchId(),
-    name: data.name,
-    enterprise: data.enterprise,
-    type: data.type || ResearchType.BEHAVIOURAL,
-    technique: data.technique || '',
-    status: ResearchStatus.DRAFT,
-    createdAt: new Date().toISOString(),
-    accessUrl: `/dashboard?research=${generateResearchId()}`
-  };
-}
+
 
 /**
  * Verifica si una investigación es de tipo AIM Framework
@@ -301,12 +285,12 @@ export function isAIMFrameworkResearch(research: Research | { technique?: string
   if ('basic' in research && research.basic && 'technique' in research.basic) {
     return research.basic.technique === ResearchTechnique.AIM_FRAMEWORK;
   }
-  
+
   // Si es el tipo simplificado con technique directamente
   if ('technique' in research && research.technique) {
     return research.technique === ResearchTechnique.AIM_FRAMEWORK;
   }
-  
+
   // Si no hay técnica, no es AIM Framework
   return false;
 }
@@ -318,4 +302,4 @@ export function isAIMFrameworkResearch(research: Research | { technique?: string
  */
 export function isAIMFrameworkConfig(config: AIMFrameworkConfig | BiometricConfig): config is AIMFrameworkConfig {
   return 'smartVOC' in config || 'welcomeScreen' in config;
-} 
+}

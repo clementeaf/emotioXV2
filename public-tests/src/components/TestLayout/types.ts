@@ -42,7 +42,7 @@ export interface ScreenStep {
 }
 
 export interface StepItemProps {
-  step: SidebarStep;
+  step: { title: string; questionKey: string };
   isActive: boolean;
   isDisabled?: boolean;
   onClick: () => void;
@@ -58,14 +58,14 @@ export interface StepsListProps {
 export interface TestLayoutRendererProps {
   data: StepData[] | undefined;
   isLoading: boolean;
-  error: any;
+  error: Error | null;
   sidebarSteps?: SidebarStep[]; // Steps del sidebar para coordinación de navegación
 }
 
 export interface TestLayoutSidebarProps {
   steps: SidebarStep[];
   isLoading: boolean;
-  error: any;
+  error: Error | null;
 }
 
 export interface DemographicQuestion {
@@ -110,7 +110,7 @@ export interface PreferenceFile {
 }
 
 export interface PreferenceTestTaskProps {
-  stepConfig: any;
+  stepConfig: Record<string, unknown>;
   selectedImageId?: string | null;
   onImageSelect?: (imageId: string) => void;
 }
@@ -134,4 +134,60 @@ export interface QuestionComponentProps {
 export interface DemographicFormProps {
   questions: DemographicQuestion[];
   previousResponse?: Record<string, unknown>;
+}
+
+export interface UseSidebarLogicProps {
+  researchId?: string;
+  onStepsReady?: (steps: SidebarStep[]) => void;
+  onNavigateToStep?: (stepKey: string) => void;
+  onDeleteAllResponses?: () => Promise<void>;
+}
+
+export interface CustomStep {
+  title: string;
+  questionKey: string;
+}
+
+export interface UseSidebarLogicReturn {
+  // Estado de la API
+  formsData: any; // Datos tal como llegan de la API
+  steps: CustomStep[]; // Array con {title, questionKey}
+  totalSteps: number;
+  isLoading: boolean;
+  error: Error | null;
+
+  // Estado del sidebar
+  isOpen: boolean;
+  setIsOpen: (open: boolean) => void;
+  toggleSidebar: () => void;
+  closeSidebar: () => void;
+
+  // Estado del paso actual
+  currentStepKey: string | null;
+
+  // Funciones de navegación
+  isStepEnabled: (stepIndex: number) => boolean;
+  handleStepClick: (questionKey: string) => void;
+
+  // Funciones de eliminación
+  handleDeleteAllResponses: () => Promise<void>;
+  isDeleting: boolean;
+  deleteButtonText: string;
+  isDeleteDisabled: boolean;
+
+  // Funciones de API
+  refetchForms: () => void;
+}
+
+// Tipo para los steps que vienen del hook
+export interface CustomStep {
+  title: string;
+  questionKey: string;
+}
+
+export interface CustomStepsListProps {
+  steps: CustomStep[];
+  currentStepKey: string;
+  isStepEnabled?: (index: number) => boolean;
+  onStepClick?: (questionKey: string) => void;
 }

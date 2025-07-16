@@ -16,6 +16,9 @@ interface ApiResponse {
   data?: any;
   status?: number;
   id?: string;
+  uploadUrl?: string;
+  fileUrl?: string;
+  key?: string;
 }
 
 // Interfaz para representar un API simple
@@ -266,33 +269,49 @@ export function useEyeTrackingData({
               // Obtener el archivo desde la URL temporal
               logger.info(`Subiendo imagen temporal: ${stimulus.fileName}`);
 
-              // Subir el archivo a S3 (simulado con timer para demo)
-              const fakeUploadWithProgress = (onProgress: (progress: number) => void): Promise<UploadResult> => {
-                let progress = 0;
-                const interval = setInterval(() => {
-                  progress += 10;
-                  onProgress(progress);
-                  logger.debug(`Progreso de subida ${stimulus.fileName}: ${progress}%`);
+              // Subir el archivo a S3 usando la API real
+              const uploadToS3 = async (file: File): Promise<UploadResult> => {
+                try {
+                  // Obtener URL de subida desde el backend
+                  const uploadUrlResponse = await api.post(`/research/${researchId}/eye-tracking/upload-url`, {
+                    fileName: stimulus.fileName,
+                    fileType: file.type
+                  });
 
-                  if (progress >= 100) {
-                    clearInterval(interval);
+                  if (!uploadUrlResponse?.uploadUrl) {
+                    throw new Error('No se pudo obtener URL de subida');
                   }
-                }, 300);
 
-                return new Promise(resolve => {
-                  setTimeout(() => {
-                    resolve({
-                      fileUrl: `https://example.com/eye-tracking-stimuli/${stimulus.fileName}`,
-                      key: `eye-tracking-stimuli/${researchId}/${stimulus.fileName}`
-                    });
-                  }, 3000);
-                });
+                  // Subir archivo directamente a S3
+                  const uploadResponse = await fetch(uploadUrlResponse.uploadUrl, {
+                    method: 'PUT',
+                    body: file,
+                    headers: {
+                      'Content-Type': file.type
+                    }
+                  });
+
+                  if (!uploadResponse.ok) {
+                    throw new Error(`Error al subir archivo: ${uploadResponse.statusText}`);
+                  }
+
+                  return {
+                    fileUrl: uploadUrlResponse.fileUrl || '',
+                    key: uploadUrlResponse.key || ''
+                  };
+                } catch (error) {
+                  logger.error('Error en subida a S3:', error);
+                  throw error;
+                }
               };
 
-              // Ejecutar la subida con progreso
-              const uploadResult = await fakeUploadWithProgress((progress: number) => {
-                // Reportar progreso (no implementado en este ejemplo)
-              });
+              // Obtener el archivo desde la URL temporal
+              const response = await fetch(stimulus.fileUrl);
+              const blob = await response.blob();
+              const file = new File([blob], stimulus.fileName, { type: blob.type });
+
+              // Ejecutar la subida real
+              const uploadResult = await uploadToS3(file);
 
               logger.info(`Imagen subida con éxito: ${uploadResult.fileUrl}`);
 
