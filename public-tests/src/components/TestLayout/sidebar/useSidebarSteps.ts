@@ -10,7 +10,7 @@ export function useSidebarSteps(
   localSteps: SidebarStep[],
   onStepsReady?: (steps: SidebarStep[]) => void
 ) {
-  const { setStep, currentStepKey } = useStepStore();
+  const { setCurrentQuestionKey, currentQuestionKey } = useStepStore();
   const { hasResponse } = useTestStore();
   const queryClient = useQueryClient();
   const { data, isLoading, error, refetch } = useAvailableFormsQuery(researchId);
@@ -43,11 +43,11 @@ export function useSidebarSteps(
     if (steps.length > 0 && !hasInitializedRef.current) {
       const firstStep = steps[0];
       if (firstStep && !hasResponse(firstStep.questionKey)) {
-        setStep(firstStep.questionKey);
+        setCurrentQuestionKey(firstStep.questionKey);
         hasInitializedRef.current = true;
       }
     }
-  }, [steps, hasResponse, setStep]);
+  }, [steps, hasResponse, setCurrentQuestionKey]);
 
   // Notificar cuando los steps estén listos
   const stepsNotifiedRef = useRef(false);

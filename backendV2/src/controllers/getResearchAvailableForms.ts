@@ -146,6 +146,44 @@ function extractSmartVOCConfig(item: DynamoDBItem): StepConfiguration[] {
 }
 
 /**
+ * Función para aplicar el orden específico de los steps según las reglas establecidas
+ * 1. demographics siempre primero (posición 0)
+ * 2. welcome_screen segundo (posición 1, o 0 si no hay demographics)
+ * 3. thank_you_screen siempre último
+ * 4. Preguntas de smartvoc y cognitive_task van en el medio
+ */
+function applySpecificOrder(steps: string[]): string[] {
+  const orderedSteps: string[] = [];
+
+  // 1. demographics siempre primero
+  if (steps.includes('demographics')) {
+    orderedSteps.push('demographics');
+  }
+
+  // 2. welcome_screen segundo (o primero si no hay demographics)
+  if (steps.includes('welcome_screen')) {
+    orderedSteps.push('welcome_screen');
+  }
+
+  // 3. Preguntas de smartvoc y cognitive_task van en el medio
+  const middleSteps = steps.filter(step =>
+    step !== 'demographics' &&
+    step !== 'welcome_screen' &&
+    step !== 'thank_you_screen'
+  );
+
+  // Agregar los steps del medio en el orden que vengan
+  orderedSteps.push(...middleSteps);
+
+  // 4. thank_you_screen siempre último
+  if (steps.includes('thank_you_screen')) {
+    orderedSteps.push('thank_you_screen');
+  }
+
+  return orderedSteps;
+}
+
+/**
  * Función para extraer configuración de Cognitive Task
  */
 function extractCognitiveTaskConfig(item: DynamoDBItem): StepConfiguration[] {
@@ -231,8 +269,9 @@ async function getAvailableFormTypesAndConfigurations(researchId: string): Promi
 
         case 'COGNITIVE_TASK':
           // Para cognitive task, extraer questionKey y configuración de cada pregunta
-          if (item.questions && Array.isArray(item.questions)) {
-            item.questions.forEach((question: Question) => {
+          const parsedCognitiveQuestions = parseJsonField(item.questions);
+          if (parsedCognitiveQuestions && Array.isArray(parsedCognitiveQuestions)) {
+            parsedCognitiveQuestions.forEach((question: Question) => {
               if (question.questionKey) {
                 availableTypes.push(question.questionKey);
               }
@@ -242,10 +281,12 @@ async function getAvailableFormTypesAndConfigurations(researchId: string): Promi
           }
           break;
 
-        case 'SMART_VOC':
+                case 'SMART_VOC_FORM':
           // Para smart voc, extraer questionKey y configuración de cada pregunta
-          if (item.questions && Array.isArray(item.questions)) {
-            item.questions.forEach((question: Question) => {
+          const parsedQuestions = parseJsonField(item.questions);
+
+          if (parsedQuestions && Array.isArray(parsedQuestions)) {
+            parsedQuestions.forEach((question: Question) => {
               if (question.questionKey) {
                 availableTypes.push(question.questionKey);
               }
@@ -261,14 +302,18 @@ async function getAvailableFormTypesAndConfigurations(researchId: string): Promi
       }
     });
 
-    // Eliminar duplicados y ordenar
-    const uniqueTypes = [...new Set(availableTypes)].sort();
+    // Eliminar duplicados
+    const uniqueTypes = [...new Set(availableTypes)];
+
+    // Aplicar orden específico según las reglas
+    const orderedSteps = applySpecificOrder(uniqueTypes);
 
     console.log(`[getAvailableFormTypesAndConfigurations] Tipos encontrados: ${uniqueTypes.join(', ')}`);
+    console.log(`[getAvailableFormTypesAndConfigurations] Tipos ordenados: ${orderedSteps.join(', ')}`);
     console.log(`[getAvailableFormTypesAndConfigurations] Configuraciones encontradas: ${configurations.length}`);
 
     return {
-      steps: uniqueTypes,
+      steps: orderedSteps,
       stepsConfiguration: configurations
     };
 

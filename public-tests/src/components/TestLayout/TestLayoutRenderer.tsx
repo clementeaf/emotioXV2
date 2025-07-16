@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAvailableFormsQuery } from '../../hooks/useApiQueries';
+import { StepConfiguration } from '../../lib/types';
 import { useStepStore } from '../../stores/useStepStore';
 import { useTestStore } from '../../stores/useTestStore';
 import { ScreenComponent } from './StepsComponents';
@@ -17,14 +18,14 @@ const TestLayoutRenderer: React.FC = () => {
 
   // Buscar el step que haga match con currentQuestionKey
   const currentStepData = formsData?.stepsConfiguration?.find(
-    (step: any) => step.questionKey === currentQuestionKey
+    (step: StepConfiguration) => step.questionKey === currentQuestionKey
   );
 
   if (!currentStepData) {
     return <div>No se encontró información para este step</div>;
   }
 
-  // Extraer contentConfiguration
+  // Extraer contentConfiguration con tipado específico
   const { contentConfiguration } = currentStepData;
 
   let renderedForm: React.ReactNode = null;

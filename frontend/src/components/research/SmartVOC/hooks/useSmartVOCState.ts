@@ -13,9 +13,9 @@ export const useSmartVOCState = (researchId: string) => {
     researchId,
     questions: [
       {
-        id: 'csat-template',
+        id: QuestionType.SMARTVOC_CSAT,
         type: QuestionType.SMARTVOC_CSAT,
-        title: 'CSAT',
+        title: '',
         description: '',
         instructions: '',
         showConditionally: false,
@@ -27,9 +27,9 @@ export const useSmartVOCState = (researchId: string) => {
         }
       },
       {
-        id: 'ces-template',
+        id: QuestionType.SMARTVOC_CES,
         type: QuestionType.SMARTVOC_CES,
-        title: 'CES',
+        title: '',
         description: '',
         instructions: '',
         showConditionally: false,
@@ -41,9 +41,9 @@ export const useSmartVOCState = (researchId: string) => {
         }
       },
       {
-        id: 'cv-template',
+        id: QuestionType.SMARTVOC_CV,
         type: QuestionType.SMARTVOC_CV,
-        title: 'CV',
+        title: '',
         description: '',
         instructions: '',
         showConditionally: false,
@@ -55,9 +55,9 @@ export const useSmartVOCState = (researchId: string) => {
         }
       },
       {
-        id: 'nev-template',
+        id: QuestionType.SMARTVOC_NEV,
         type: QuestionType.SMARTVOC_NEV,
-        title: 'NEV',
+        title: '',
         description: '',
         instructions: '',
         showConditionally: false,
@@ -66,9 +66,9 @@ export const useSmartVOCState = (researchId: string) => {
         }
       },
       {
-        id: 'nps-template',
+        id: QuestionType.SMARTVOC_NPS,
         type: QuestionType.SMARTVOC_NPS,
-        title: 'NPS',
+        title: '',
         description: '',
         instructions: '',
         showConditionally: false,
@@ -80,9 +80,9 @@ export const useSmartVOCState = (researchId: string) => {
         }
       },
       {
-        id: 'voc-template',
+        id: QuestionType.SMARTVOC_VOC,
         type: QuestionType.SMARTVOC_VOC,
-        title: 'VOC',
+        title: '',
         description: '',
         instructions: '',
         showConditionally: false,
@@ -91,9 +91,9 @@ export const useSmartVOCState = (researchId: string) => {
         }
       },
       {
-        id: 'nc-template',
+        id: QuestionType.SMARTVOC_NC,
         type: QuestionType.SMARTVOC_NC,
-        title: 'NC',
+        title: '',
         description: '',
         instructions: '',
         showConditionally: false,

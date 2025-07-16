@@ -1,3 +1,5 @@
+import { AvailableFormsResponse } from '../../lib/types';
+
 export interface Question {
   title?: string;
   questionKey?: string;
@@ -145,7 +147,7 @@ export interface CustomStep {
 
 export interface UseSidebarLogicReturn {
   // Estado de la API
-  formsData: any; // Datos tal como llegan de la API
+  formsData: AvailableFormsResponse | undefined; // Datos tal como llegan de la API
   steps: CustomStep[]; // Array con {title, questionKey}
   totalSteps: number;
   isLoading: boolean;

@@ -28,7 +28,7 @@ const TestLayoutSidebar: React.FC<Props> = ({
     isOpen,
     toggleSidebar,
     closeSidebar,
-    currentStepKey,
+    selectedQuestionKey,
     isStepEnabled,
     handleStepClick,
     handleDeleteAllResponses,
@@ -68,9 +68,8 @@ const TestLayoutSidebar: React.FC<Props> = ({
             <ProgressDisplay current={1} total={totalSteps} />
             <StepsList
               steps={steps}
-              currentStepKey={currentStepKey || ''}
+              currentStepKey={selectedQuestionKey || ''}
               isStepEnabled={isStepEnabled}
-              onStepClick={handleStepClick}
             />
             {/* Botón para eliminar todas las respuestas */}
             <div className="mt-6 p-4 border-t border-gray-200">

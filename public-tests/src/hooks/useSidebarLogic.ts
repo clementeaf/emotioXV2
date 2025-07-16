@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CustomStep, SidebarStep, UseSidebarLogicProps, UseSidebarLogicReturn } from '../components/TestLayout/types';
+import { StepConfiguration } from '../lib/types';
 import { useTestStore } from '../stores/useTestStore';
 import { useAvailableFormsQuery } from './useApiQueries';
 import { useDeleteState } from './useDeleteState';
@@ -36,9 +37,9 @@ export const useSidebarLogic = ({
   // STEPS DESDE API
   const steps = useMemo(() => {
     if (formsData?.stepsConfiguration && formsData.stepsConfiguration.length > 0) {
-      return formsData.stepsConfiguration.map((stepConfig: any, index: number) => {
-        // Extraer el title de contentConfiguration
-        const title = stepConfig.contentConfiguration?.title || `Paso ${index + 1}`;
+      return formsData.stepsConfiguration.map((stepConfig: StepConfiguration, index: number) => {
+        // Extraer el title de contentConfiguration y asegurar que sea string
+        const title = String(stepConfig.contentConfiguration?.title || `Paso ${index + 1}`);
 
         return {
           title: title,
