@@ -9,8 +9,7 @@ interface SidebarContainerProps {
 const SidebarContainer: React.FC<SidebarContainerProps> = ({ isOpen, onClose, children }) => (
   <aside className={`
     fixed md:static inset-y-0 left-0 z-40
-    w-64 bg-white border-r border-gray-200 p-4 bg-white border
-    transform transition-transform duration-300 ease-in-out
+    w-64 p-4 transform transition-transform duration-300 ease-in-out
     ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
   `}>
     {/* Close button para móvil */}

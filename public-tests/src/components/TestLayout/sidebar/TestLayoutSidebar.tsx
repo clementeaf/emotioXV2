@@ -1,7 +1,6 @@
 import React from 'react';
 import { useDeleteAllResponsesMutation } from '../../../hooks/useApiQueries';
 import { useSidebarLogic } from '../../../hooks/useSidebarLogic';
-import { useStepStoreWithBackend } from '../../../hooks/useStepStoreWithBackend';
 import { useFormDataStore } from '../../../stores/useFormDataStore';
 import { useStepStore } from '../../../stores/useStepStore';
 import { useTestStore } from '../../../stores/useTestStore';
@@ -18,18 +17,9 @@ const TestLayoutSidebar: React.FC<Props> = ({
   const { researchId, participantId } = useTestStore();
   const {
     currentQuestionKey,
-    setCurrentQuestionKey,
-    setSteps,
-    getTotalResponses,
-    getLastCompletedStep,
-    getNextStep,
-    getCompletedSteps,
     backendResponses
   } = useStepStore();
   const { clearAllFormData } = useFormDataStore();
-
-  // Integrar con respuestas del backend
-  const { isLoading: isLoadingResponses, error: responsesError } = useStepStoreWithBackend();
 
   const deleteMutation = useDeleteAllResponsesMutation({
     onSuccess: () => {
