@@ -6,46 +6,33 @@ import { useTestStore } from '../../stores/useTestStore';
 import { ButtonSteps } from './ButtonSteps';
 import { DemographicForm } from './DemographicForm';
 import { QuestionComponent, ScreenComponent, UnknownStepComponent } from './StepsComponents';
-import { DemographicQuestionData } from './types';
+import { DemographicQuestionData, RendererArgs } from './types';
 import { getCurrentStepData, getQuestionType } from './utils';
 
-interface RendererArgs {
-  contentConfiguration: Record<string, unknown>;
-  currentQuestionKey: string;
-}
-
 const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
-  screen: ({ contentConfiguration, currentQuestionKey }) => (
+  welcome_screen: ({ contentConfiguration, currentQuestionKey }) => (
     <ScreenComponent
       data={{
-        title: String(contentConfiguration?.title || 'Bienvenido'),
-        description: String(contentConfiguration?.description || 'Gracias por participar en este estudio'),
-        message: String(contentConfiguration?.message || 'Estás a punto de comenzar una experiencia única'),
-        startButtonText: String(contentConfiguration?.startButtonText || 'Comenzar'),
-        questionKey: currentQuestionKey
+        questionKey: currentQuestionKey,
+        contentConfiguration,
+        message: 'Bienvenido'
       }}
     />
   ),
-  demographics: ({ contentConfiguration }) => {
+
+  demographics: ({ contentConfiguration, currentQuestionKey }) => {
     const demographicQuestions = contentConfiguration?.demographicQuestions || {};
-    if (Object.keys(demographicQuestions).length === 0) {
-      return (
-        <div className="flex flex-col items-center justify-center h-full">
-          <h2 className="text-2xl font-bold mb-4">Preguntas Demográficas</h2>
-          <p className="text-gray-600">No hay preguntas demográficas configuradas.</p>
-        </div>
-      );
-    }
     return (
       <DemographicForm
         demographicQuestions={demographicQuestions as Record<string, DemographicQuestionData>}
       />
     );
   },
+
   smartvoc: ({ contentConfiguration, currentQuestionKey }) => (
     <QuestionComponent
       question={{
-        title: String(contentConfiguration?.title || 'Pregunta SmartVOC'),
+        title: String(contentConfiguration?.title || 'Pregunta CSAT'),
         questionKey: currentQuestionKey,
         type: currentQuestionKey,
         config: contentConfiguration,
@@ -55,6 +42,18 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
       currentStepKey={currentQuestionKey}
     />
   ),
+
+  thank_you_screen: ({ contentConfiguration, currentQuestionKey }) => (
+    <div className='flex flex-col items-center justify-center h-full w-full'>
+      <h2 className='text-2xl font-bold mb-2'>
+        {String(contentConfiguration?.title || 'Gracias por participar')}
+      </h2>
+      <p className='text-center text-gray-600'>
+        {String(contentConfiguration?.message || 'Agradecemos tus respuestas')}
+      </p>
+    </div>
+  ),
+
   cognitive: ({ contentConfiguration, currentQuestionKey }) => (
     <QuestionComponent
       question={{
@@ -72,6 +71,7 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
 
 const TestLayoutRenderer: React.FC = () => {
   const currentQuestionKey = useStepStore(state => state.currentQuestionKey);
+  console.log('[TestLayoutRenderer] currentQuestionKey (store):', currentQuestionKey);
   const { researchId } = useTestStore();
   const { getFormData } = useFormDataStore();
   const { data: formsData, isLoading, error } = useAvailableFormsQuery(researchId || '');
@@ -103,7 +103,6 @@ const TestLayoutRenderer: React.FC = () => {
 
   const isWelcomeScreen = currentQuestionKey === 'welcome_screen';
 
-  // Obtener los datos del formulario del store
   const formData = getFormData(currentQuestionKey);
 
   return (
@@ -111,7 +110,6 @@ const TestLayoutRenderer: React.FC = () => {
       <div className="flex-1">
         {renderedForm}
       </div>
-      {/* No mostrar ButtonSteps para welcome_screen ya que ScreenComponent tiene su propio botón */}
       {!isWelcomeScreen && (
         <ButtonSteps
           currentQuestionKey={currentQuestionKey}

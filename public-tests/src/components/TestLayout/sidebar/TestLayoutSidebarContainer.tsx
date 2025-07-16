@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React from 'react';
 import { SidebarStep } from '../types';
 import TestLayoutSidebar from './TestLayoutSidebar';
 
@@ -8,13 +8,9 @@ interface Props {
 
 const TestLayoutSidebarContainer: React.FC<Props> = ({ onStepsReady }) => {
 
-  const handleDeleteAllResponses = useCallback(async () => {
-  }, []);
-
   return (
     <TestLayoutSidebar
       onStepsReady={onStepsReady}
-      onDeleteAllResponses={handleDeleteAllResponses}
     />
   );
 };

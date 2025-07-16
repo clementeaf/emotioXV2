@@ -10,28 +10,18 @@ import MobileOverlay from '../MobileOverlay';
 import ProgressDisplay from '../ProgressDisplay';
 import SidebarContainer from '../SidebarContainer';
 import StepsList from '../StepsList';
-import { SidebarStep } from '../types';
-
-interface Props {
-  onStepsReady?: (steps: SidebarStep[]) => void;
-  onNavigateToStep?: (stepKey: string) => void;
-  onDeleteAllResponses?: () => Promise<void>;
-}
+import { Props } from '../types';
 
 const TestLayoutSidebar: React.FC<Props> = ({
   onStepsReady,
-  onDeleteAllResponses
 }) => {
   const { researchId, participantId } = useTestStore();
-  const { currentQuestionKey, setCurrentQuestionKey } = useStepStore();
+  const { currentQuestionKey, setCurrentQuestionKey, setSteps } = useStepStore();
   const { clearAllFormData } = useFormDataStore();
 
   const deleteMutation = useDeleteAllResponsesMutation({
     onSuccess: () => {
-      console.log('✅ Respuestas eliminadas exitosamente');
-      // Limpiar datos del formulario
       clearAllFormData();
-      // Resetear al primer step
       setCurrentQuestionKey('');
     },
     onError: (error) => {
@@ -47,9 +37,7 @@ const TestLayoutSidebar: React.FC<Props> = ({
     isOpen,
     toggleSidebar,
     closeSidebar,
-    selectedQuestionKey,
     isStepEnabled,
-    handleStepClick,
     handleDeleteAllResponses,
     isDeleting,
     deleteButtonText,
@@ -65,7 +53,6 @@ const TestLayoutSidebar: React.FC<Props> = ({
     }
   });
 
-  // Consumir el GET de module-responses para obtener el estado actual
   const {
     currentState,
     lastCompletedStep,
@@ -75,36 +62,51 @@ const TestLayoutSidebar: React.FC<Props> = ({
     getInitialStep
   } = useStepStates(currentQuestionKey, steps);
 
-  // Log del estado actual basado en las respuestas del backend
-  console.log('🔍 DEBUG Sidebar - Estado actual:', {
-    lastCompletedStep,
-    nextStep,
-    completedSteps,
-    totalResponses,
-    currentQuestionKey
-  });
+  // Log para depuración del sidebar
+  console.log('[TestLayoutSidebar] currentQuestionKey (store):', currentQuestionKey);
 
-  // Determinar el step activo basado en las respuestas del backend
-  const effectiveCurrentStepKey = React.useMemo(() => {
-    // Si hay respuestas en el backend, usar el último response como step activo
-    if (totalResponses > 0 && lastCompletedStep) {
-      console.log('🔍 DEBUG Sidebar - Usando último response como step activo:', lastCompletedStep);
-      return lastCompletedStep;
-    }
-
-    // Si no hay respuestas, usar el step inicial
-    const initialStep = getInitialStep();
-    console.log('🔍 DEBUG Sidebar - Usando step inicial:', initialStep);
-    return initialStep;
-  }, [totalResponses, lastCompletedStep, getInitialStep]);
-
-  // Sincronizar el step activo con el store
+  // Sincronizar steps con el store global cuando se cargan
   React.useEffect(() => {
-    if (effectiveCurrentStepKey && effectiveCurrentStepKey !== currentQuestionKey) {
-      console.log('🔍 DEBUG Sidebar: Sincronizando effectiveCurrentStepKey -> currentQuestionKey:', effectiveCurrentStepKey);
-      setCurrentQuestionKey(effectiveCurrentStepKey);
+    if (steps.length > 0) {
+      // Convertir steps a formato Step para el store
+      const storeSteps = steps.map((step, index) => ({
+        questionKey: step.questionKey,
+        title: step.title,
+        completed: false, // Inicialmente ninguno completado
+        current: index === 0 // Solo el primero activo
+      }));
+
+      console.log('[TestLayoutSidebar] Cargando steps en store:', storeSteps);
+      setSteps(storeSteps);
     }
-  }, [effectiveCurrentStepKey, currentQuestionKey, setCurrentQuestionKey]);
+  }, [steps, setSteps]);
+
+  // Obtener estados del store en lugar de useStepStates
+  const { getSteps, getCurrentStep, initializeFromBackendResponses, saveCurrentStepToLocalStorage } = useStepStore();
+  const storeSteps = getSteps();
+  const currentStep = getCurrentStep();
+
+  // Calcular estados basados en el store
+  const completedStepsFromStore = storeSteps.filter(step => step.completed);
+  const currentStepFromStore = storeSteps.find(step => step.current);
+
+  // Inicializar desde respuestas del backend cuando estén disponibles
+  React.useEffect(() => {
+    if (storeSteps.length > 0 && totalResponses > 0) {
+      console.log('[TestLayoutSidebar] Inicializando desde respuestas del backend:', totalResponses);
+      // Convertir completedSteps (string[]) a formato { questionKey: string }[]
+      const responses = completedSteps.map(questionKey => ({ questionKey }));
+      initializeFromBackendResponses(responses);
+    }
+  }, [storeSteps.length, totalResponses, completedSteps, initializeFromBackendResponses]);
+
+  // Guardar step actual en localStorage cuando cambie
+  React.useEffect(() => {
+    if (currentQuestionKey) {
+      console.log('[TestLayoutSidebar] Guardando step actual en localStorage:', currentQuestionKey);
+      saveCurrentStepToLocalStorage();
+    }
+  }, [currentQuestionKey, saveCurrentStepToLocalStorage]);
 
   return (
     <>
@@ -132,7 +134,7 @@ const TestLayoutSidebar: React.FC<Props> = ({
             <ProgressDisplay current={1} total={totalSteps} />
             <StepsList
               steps={steps}
-              currentStepKey={effectiveCurrentStepKey}
+              currentStepKey={currentQuestionKey} // SIEMPRE el del store global
               isStepEnabled={isStepEnabled}
             />
             {/* Información del estado actual */}

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useModuleResponsesQuery, useSaveModuleResponseMutation, useUpdateModuleResponseMutation } from '../../hooks/useApiQueries';
-import { useFlowNavigationAndState } from '../../hooks/useFlowNavigationAndState';
+import { useAvailableFormsQuery, useModuleResponsesQuery, useSaveModuleResponseMutation, useUpdateModuleResponseMutation } from '../../hooks/useApiQueries';
+import { useStepStates } from '../../hooks/useStepStates';
 import { CreateModuleResponseDto, UpdateModuleResponseDto } from '../../lib/types';
 import { useStepStore } from '../../stores/useStepStore';
 import { useTestStore } from '../../stores/useTestStore';
@@ -11,9 +11,8 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
   formData = {},
   isWelcomeScreen = false
 }) => {
-  const { researchId, participantId, steps, currentStepIndex, setCurrentStep, completeStep } = useTestStore();
-  const { goToNextStep } = useFlowNavigationAndState();
-  const { setCurrentQuestionKey } = useStepStore();
+  const { researchId, participantId } = useTestStore();
+  const { setCurrentQuestionKey, completeCurrentStepAndGoNext } = useStepStore();
   const [isSaving, setIsSaving] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
   const { data: moduleResponses } = useModuleResponsesQuery(
@@ -21,24 +20,69 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
     participantId || ''
   );
 
+  // Obtener los steps del backend
+  const { data: formsData } = useAvailableFormsQuery(researchId || '');
+
+  // Construir los steps en el orden correcto
+  const steps = React.useMemo(() => {
+    if (formsData?.stepsConfiguration && formsData.stepsConfiguration.length > 0) {
+      const stepOrder = ['welcome_screen', 'demographics', 'smartvoc_csat', 'thank_you_screen'];
+      const configMap = new Map();
+
+      formsData.stepsConfiguration.forEach((stepConfig: any) => {
+        configMap.set(stepConfig.questionKey, stepConfig);
+      });
+
+      return stepOrder
+        .map(questionKey => {
+          const stepConfig = configMap.get(questionKey);
+          if (!stepConfig) return null;
+
+          let title = '';
+          switch (questionKey) {
+            case 'demographics':
+              title = 'Preguntas demográficas';
+              break;
+            case 'welcome_screen':
+              title = 'Bienvenido';
+              break;
+            case 'thank_you_screen':
+              title = 'Gracias por participar';
+              break;
+            case 'smartvoc_csat':
+              title = 'Pregunta CSAT';
+              break;
+            default:
+              title = String(stepConfig.contentConfiguration?.title || questionKey);
+          }
+
+          return {
+            title: title,
+            questionKey: stepConfig.questionKey
+          };
+        })
+        .filter(step => step !== null);
+    }
+    return [];
+  }, [formsData?.stepsConfiguration]);
+
+  // Obtener el estado de los steps para navegación
+  const { nextStep } = useStepStates(currentQuestionKey, steps);
+
+  // Log para depuración
+  console.log('[ButtonSteps] currentQuestionKey:', currentQuestionKey);
+  console.log('[ButtonSteps] nextStep:', nextStep);
+
   const saveMutation = useSaveModuleResponseMutation({
     onSuccess: () => {
-      console.log('✅ Respuesta guardada exitosamente, iniciando navegación...');
       setIsSaving(false);
       setIsNavigating(true);
 
-      // Completar el step actual en useTestStore
-      const currentStep = steps[currentStepIndex];
-      if (currentStep) {
-        console.log('✅ Completando step actual en useTestStore:', currentStep.id);
-        completeStep(currentStep.id);
-      }
-
       // Navegar automáticamente al siguiente step después de guardar
       setTimeout(() => {
-        console.log('🔄 Ejecutando goToNextStep...');
+        console.log('[ButtonSteps] Navegando después de guardar, nextStep:', nextStep);
+        completeCurrentStepAndGoNext(); // Usar el método del store
         setIsNavigating(false);
-        goToNextStep();
       }, 1000);
     },
     onError: (error) => {
@@ -52,16 +96,11 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
       setIsSaving(false);
       setIsNavigating(true);
 
-      // Completar el step actual en useTestStore
-      const currentStep = steps[currentStepIndex];
-      if (currentStep) {
-        completeStep(currentStep.id);
-      }
-
       // Navegar automáticamente al siguiente step después de actualizar
       setTimeout(() => {
+        console.log('[ButtonSteps] Navegando después de actualizar, nextStep:', nextStep);
+        completeCurrentStepAndGoNext(); // Usar el método del store
         setIsNavigating(false);
-        goToNextStep();
       }, 1000);
     },
     onError: (error) => {
@@ -73,6 +112,9 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
   const existingResponse = moduleResponses?.responses?.find(
     response => response.questionKey === currentQuestionKey
   );
+
+  // Obtener el ID del documento principal para actualizaciones
+  const documentId = moduleResponses?.id;
 
   const getButtonText = (): string => {
     if (isWelcomeScreen) {
@@ -100,8 +142,10 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
     if (isWelcomeScreen) {
       setIsNavigating(true);
       setTimeout(() => {
+        if (nextStep) {
+          setCurrentQuestionKey(nextStep);
+        }
         setIsNavigating(false);
-        goToNextStep();
       }, 1000);
       return;
     }
@@ -129,7 +173,7 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
         };
 
         await updateMutation.mutateAsync({
-          responseId: existingResponse.id,
+          responseId: documentId || '',
           data: updateData
         });
       } else {

@@ -21,55 +21,36 @@ export const useStepStates = (currentQuestionKey: string, steps: Array<{ questio
 
   // Obtener todas las responses del backend
   const backendResponses = useMemo(() => {
-    console.log('🔍 DEBUG useStepStates - moduleResponses completo:', moduleResponses);
-    console.log('🔍 DEBUG useStepStates - moduleResponses.responses:', moduleResponses?.responses);
-
     if (!moduleResponses?.responses) {
-      console.log('🔍 DEBUG useStepStates - No hay responses en moduleResponses');
       return [];
     }
 
     // moduleResponses.responses es directamente un array de responses
     const responses = moduleResponses.responses.filter(response => response != null);
 
-    console.log('🔍 DEBUG useStepStates - Responses extraídas:', responses);
-    console.log('🔍 DEBUG useStepStates - Cantidad de responses extraídas:', responses.length);
-
     // Filtrar responses válidas
     const validResponses = responses.filter(response => {
-      console.log('🔍 DEBUG useStepStates - Procesando response:', response);
       if (!response || typeof response !== 'object') {
-        console.log('🔍 DEBUG useStepStates - Response inválida (null/undefined):', response);
         return false;
       }
 
       if (!response.questionKey) {
-        console.log('🔍 DEBUG useStepStates - Response sin questionKey:', response);
         return false;
       }
 
-      console.log('🔍 DEBUG useStepStates - Response válida encontrada:', response.questionKey);
       return true;
     });
-
-    console.log('🔍 DEBUG useStepStates - Responses válidas finales:', validResponses);
-    console.log('🔍 DEBUG useStepStates - Cantidad de responses válidas:', validResponses.length);
 
     return validResponses;
   }, [moduleResponses]);
 
   // Verificar si un step tiene respuesta en el backend
   const hasBackendResponse = (questionKey: string): boolean => {
-    console.log(`🔍 DEBUG hasBackendResponse - Verificando "${questionKey}"`);
-    console.log(`🔍 DEBUG hasBackendResponse - backendResponses disponibles:`, backendResponses.map(r => r.questionKey));
-
     const hasResponse = backendResponses.some(response => {
       const matches = response.questionKey === questionKey;
-      console.log(`🔍 DEBUG hasBackendResponse - Comparando "${response.questionKey}" === "${questionKey}": ${matches}`);
       return matches;
     });
 
-    console.log(`🔍 DEBUG hasBackendResponse para "${questionKey}":`, hasResponse);
     return hasResponse;
   };
 
@@ -138,13 +119,9 @@ export const useStepStates = (currentQuestionKey: string, steps: Array<{ questio
     return initialStep;
   };
 
-  // Determinar el estado actual basado en las respuestas existentes
   const determineCurrentState = useMemo(() => {
-    console.log('🔍 DEBUG determineCurrentState - Analizando respuestas existentes');
-    console.log('🔍 DEBUG determineCurrentState - backendResponses:', backendResponses);
-
     if (backendResponses.length === 0) {
-      console.log('🔍 DEBUG determineCurrentState - No hay respuestas, empezar desde welcome_screen');
+
       return {
         lastCompletedStep: null,
         nextStep: 'welcome_screen',
@@ -153,47 +130,33 @@ export const useStepStates = (currentQuestionKey: string, steps: Array<{ questio
     }
 
     const completedQuestionKeys = backendResponses.map(response => response.questionKey);
-    console.log('🔍 DEBUG determineCurrentState - QuestionKeys completados:', completedQuestionKeys);
 
-    // Determinar cuál es el último step completado y el siguiente
     const stepOrder = ['welcome_screen', 'demographics', 'smartvoc_csat', 'thank_you_screen'];
     let lastCompletedStep = null;
     let nextStep = 'welcome_screen';
 
-    // Buscar el último step completado en orden
     for (let i = 0; i < stepOrder.length; i++) {
       const stepKey = stepOrder[i];
       if (completedQuestionKeys.includes(stepKey)) {
         lastCompletedStep = stepKey;
-        console.log(`🔍 DEBUG determineCurrentState - Encontrado step completado: ${stepKey}`);
 
-        // El siguiente step será el que sigue en el orden
         if (i + 1 < stepOrder.length) {
           nextStep = stepOrder[i + 1];
-          console.log(`🔍 DEBUG determineCurrentState - Siguiente step será: ${nextStep}`);
         } else {
-          // Si es el último step, no hay siguiente
           nextStep = stepKey;
-          console.log(`🔍 DEBUG determineCurrentState - Es el último step, no hay siguiente`);
         }
       } else {
-        // Si encontramos un step no completado, ese será el siguiente
         nextStep = stepKey;
-        console.log(`🔍 DEBUG determineCurrentState - Encontrado step no completado: ${stepKey}, será el siguiente`);
         break;
       }
     }
 
-    // Si no encontramos ningún step completado en el orden, buscar el último response real
     if (!lastCompletedStep && completedQuestionKeys.length > 0) {
       lastCompletedStep = completedQuestionKeys[completedQuestionKeys.length - 1];
-      console.log(`🔍 DEBUG determineCurrentState - Usando último response real como lastCompletedStep: ${lastCompletedStep}`);
 
-      // Encontrar el siguiente step en el orden
       const lastCompletedIndex = stepOrder.indexOf(lastCompletedStep);
       if (lastCompletedIndex !== -1 && lastCompletedIndex + 1 < stepOrder.length) {
         nextStep = stepOrder[lastCompletedIndex + 1];
-        console.log(`🔍 DEBUG determineCurrentState - Siguiente step basado en último response: ${nextStep}`);
       }
     }
 
@@ -203,7 +166,6 @@ export const useStepStates = (currentQuestionKey: string, steps: Array<{ questio
       completedSteps: completedQuestionKeys
     };
 
-    console.log('🔍 DEBUG determineCurrentState - Resultado final:', result);
     return result;
   }, [backendResponses]);
 

@@ -18,9 +18,7 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
     participantId || ''
   );
 
-  // Cargar datos existentes del backend o del store local
   useEffect(() => {
-    console.log('🔍 DEBUG DemographicForm - moduleResponses:', moduleResponses);
 
     // Buscar respuesta existente para demographics en el backend
     if (moduleResponses?.responses && Array.isArray(moduleResponses.responses)) {
@@ -28,10 +26,8 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
         (response: any) => response.questionKey === 'demographics'
       );
 
-      console.log('🔍 DEBUG DemographicForm - demographicsResponse:', demographicsResponse);
 
       if (demographicsResponse?.response) {
-        console.log('🔍 DEBUG DemographicForm - Cargando datos del backend:', demographicsResponse.response);
         setFormValues(demographicsResponse.response as Record<string, string>);
         // También guardar en el store local para persistencia
         setFormData('demographics', demographicsResponse.response as Record<string, string>);
@@ -42,8 +38,7 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
     // Si no hay datos en el backend, cargar del store local
     const existingData = getFormData('demographics');
     if (existingData && Object.keys(existingData).length > 0) {
-      console.log('🔍 DEBUG DemographicForm - Cargando datos del store local:', existingData);
-      setFormValues(existingData);
+      setFormValues(existingData as Record<string, string>);
     }
   }, [moduleResponses, getFormData, setFormData]);
 

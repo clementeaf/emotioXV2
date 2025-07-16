@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 
 interface FormDataState {
-  formData: Record<string, any>;
-  setFormData: (questionKey: string, data: any) => void;
-  getFormData: (questionKey: string) => any;
+  formData: Record<string, Record<string, unknown>>;
+  setFormData: (questionKey: string, data: Record<string, unknown>) => void;
+  getFormData: (questionKey: string) => Record<string, unknown>;
   clearFormData: (questionKey: string) => void;
   clearAllFormData: () => void;
 }
@@ -11,7 +11,7 @@ interface FormDataState {
 export const useFormDataStore = create<FormDataState>((set, get) => ({
   formData: {},
 
-  setFormData: (questionKey: string, data: any) => {
+  setFormData: (questionKey: string, data: Record<string, unknown>) => {
     set((state) => ({
       formData: {
         ...state.formData,
@@ -20,7 +20,7 @@ export const useFormDataStore = create<FormDataState>((set, get) => ({
     }));
   },
 
-  getFormData: (questionKey: string) => {
+  getFormData: (questionKey: string): Record<string, unknown> => {
     return get().formData[questionKey] || {};
   },
 

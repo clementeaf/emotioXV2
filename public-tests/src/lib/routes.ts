@@ -24,7 +24,11 @@ export const saveModuleResponse = async (data: CreateModuleResponseDto): Promise
 };
 
 export const updateModuleResponse = async (responseId: string, data: UpdateModuleResponseDto): Promise<ModuleResponse> => {
-  return apiRequest<ModuleResponse>(`/module-responses/${responseId}`, {
+  const params = new URLSearchParams({
+    researchId: data.researchId,
+    participantId: data.participantId
+  });
+  return apiRequest<ModuleResponse>(`/module-responses/${responseId}?${params}`, {
     method: 'PUT',
     body: JSON.stringify(data)
   });

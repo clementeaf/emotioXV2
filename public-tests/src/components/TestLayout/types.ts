@@ -191,3 +191,13 @@ export interface ButtonStepsProps {
   formData?: Record<string, unknown>;
   isWelcomeScreen?: boolean;
 }
+
+export interface Props {
+  onStepsReady?: (steps: SidebarStep[]) => void;
+  onNavigateToStep?: (stepKey: string) => void;
+}
+
+export interface RendererArgs {
+  contentConfiguration: Record<string, unknown>;
+  currentQuestionKey: string;
+}
