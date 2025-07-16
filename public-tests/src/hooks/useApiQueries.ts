@@ -1,10 +1,10 @@
 import { useMutation, UseMutationOptions, useQuery, useQueryClient, UseQueryOptions } from '@tanstack/react-query';
+import { getApiUrl } from '../config/endpoints';
 import {
-  deleteAllResponses,
   getAvailableForms,
   getModuleResponses,
   saveModuleResponse,
-  updateModuleResponse,
+  updateModuleResponse
 } from '../lib/routes';
 import {
   AvailableFormsResponse,
@@ -91,12 +91,31 @@ export function useUpdateModuleResponseMutation(options?: UseMutationOptions<Mod
 export function useDeleteAllResponsesMutation(options?: UseMutationOptions<{ message: string; status: number }, Error, { researchId: string; participantId: string }>) {
   const queryClient = useQueryClient();
   return useMutation<{ message: string; status: number }, Error, { researchId: string; participantId: string }>({
-    mutationFn: ({ researchId, participantId }) => deleteAllResponses(researchId, participantId),
+    mutationFn: async ({ researchId, participantId }) => {
+      const response = await fetch(`${getApiUrl('module-responses')}?researchId=${researchId}&participantId=${participantId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return response.json();
+    },
     onSuccess: (data, variables) => {
+      // Invalidar queries relacionadas con las respuestas del módulo
       queryClient.invalidateQueries({
         queryKey: ['moduleResponses', variables.researchId, variables.participantId],
       });
+      console.log('[useDeleteAllResponsesMutation] ✅ Respuestas eliminadas exitosamente');
       options?.onSuccess?.(data, variables, undefined as any);
+    },
+    onError: (error, variables, context) => {
+      console.error('[useDeleteAllResponsesMutation] ❌ Error:', error);
+      options?.onError?.(error, variables, context);
     },
     ...options,
   });

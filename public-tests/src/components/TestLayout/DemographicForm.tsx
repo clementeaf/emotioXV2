@@ -1,17 +1,31 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useFormDataStore } from '../../stores/useFormDataStore';
 import { DemographicFormProps } from './types';
 
 export const DemographicForm: React.FC<DemographicFormProps> = ({
   demographicQuestions,
   onSubmit
 }) => {
+  const { setFormData, getFormData } = useFormDataStore();
   const [formValues, setFormValues] = useState<Record<string, string>>({});
 
+  // Cargar datos existentes del store
+  useEffect(() => {
+    const existingData = getFormData('demographics');
+    if (existingData && Object.keys(existingData).length > 0) {
+      setFormValues(existingData);
+    }
+  }, [getFormData]);
+
   const handleInputChange = (key: string, value: string) => {
-    setFormValues(prev => ({
-      ...prev,
+    const newValues = {
+      ...formValues,
       [key]: value
-    }));
+    };
+    setFormValues(newValues);
+
+    // Guardar en el store
+    setFormData('demographics', newValues);
   };
 
   const handleSubmit = (e: React.FormEvent) => {

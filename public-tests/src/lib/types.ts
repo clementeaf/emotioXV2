@@ -36,6 +36,7 @@ export interface ParticipantResponsesDocument {
   isCompleted: boolean;
 }
 
+// Corregido para coincidir exactamente con el backend
 export interface CreateModuleResponseDto {
   researchId: string;
   participantId: string;
@@ -44,16 +45,23 @@ export interface CreateModuleResponseDto {
     questionKey: string;
     response: Record<string, unknown>;
     timestamp: string;
+    createdAt: string;
+    updatedAt?: string;
   }>;
   metadata: Record<string, unknown>;
 }
 
+// Corregido para coincidir exactamente con el backend
 export interface UpdateModuleResponseDto {
+  researchId: string;
+  participantId: string;
   questionKey: string;
   responses: Array<{
     questionKey: string;
     response: Record<string, unknown>;
     timestamp: string;
+    createdAt: string;
+    updatedAt?: string;
   }>;
   metadata: Record<string, unknown>;
 }

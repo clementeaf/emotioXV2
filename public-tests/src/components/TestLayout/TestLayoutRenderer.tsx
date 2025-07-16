@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAvailableFormsQuery } from '../../hooks/useApiQueries';
+import { useFormDataStore } from '../../stores/useFormDataStore';
 import { useStepStore } from '../../stores/useStepStore';
 import { useTestStore } from '../../stores/useTestStore';
 import { ButtonSteps } from './ButtonSteps';
@@ -72,6 +73,7 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
 const TestLayoutRenderer: React.FC = () => {
   const currentQuestionKey = useStepStore(state => state.currentQuestionKey);
   const { researchId } = useTestStore();
+  const { getFormData } = useFormDataStore();
   const { data: formsData, isLoading, error } = useAvailableFormsQuery(researchId || '');
 
   if (isLoading) return <div>Cargando...</div>;
@@ -101,6 +103,9 @@ const TestLayoutRenderer: React.FC = () => {
 
   const isWelcomeScreen = currentQuestionKey === 'welcome_screen';
 
+  // Obtener los datos del formulario del store
+  const formData = getFormData(currentQuestionKey);
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1">
@@ -108,7 +113,7 @@ const TestLayoutRenderer: React.FC = () => {
       </div>
       <ButtonSteps
         currentQuestionKey={currentQuestionKey}
-        formData={{}}
+        formData={formData}
         isWelcomeScreen={isWelcomeScreen}
       />
     </div>

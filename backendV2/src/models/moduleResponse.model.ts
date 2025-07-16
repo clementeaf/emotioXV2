@@ -61,17 +61,15 @@ export const ResponseMetadataSchema = z.object({
 }).optional();
 
 /**
- * Esquema de validación para una respuesta individual de módulo
+ * Esquema de validación para una respuesta individual
  */
-export const ModuleResponseSchema = z.object({
-  id: z.string().uuid(),
-  stepType: z.string(),
-  stepTitle: z.string(),
-  questionKey: z.string().optional(), // NUEVO: questionKey del diccionario global
+export const IndividualResponseSchema = z.object({
+  questionKey: z.string(),
   response: ModuleResponseValueSchema,
-  metadata: ResponseMetadataSchema,
-  createdAt: z.string(), // ISO date string
-  updatedAt: z.string().optional() // ISO date string (opcional)
+  timestamp: z.string(), // ISO date string
+  createdAt: z.string(), // ISO date string - cuando se creó
+  updatedAt: z.string().optional(), // ISO date string - última actualización
+  metadata: ResponseMetadataSchema.optional()
 });
 
 /**
@@ -81,7 +79,7 @@ export const ParticipantResponsesDocumentSchema = z.object({
   id: z.string().uuid(), // ID único del documento
   researchId: z.string(), // ID del research
   participantId: z.string(), // ID del participante
-  responses: z.array(ModuleResponseSchema), // Array de respuestas
+  responses: z.array(IndividualResponseSchema), // Array de respuestas individuales
   metadata: ResponseMetadataSchema, // Metadata global del documento
   createdAt: z.string(), // ISO date string
   updatedAt: z.string(), // ISO date string
@@ -89,32 +87,29 @@ export const ParticipantResponsesDocumentSchema = z.object({
 });
 
 /**
- * Esquema para crear una nueva respuesta
+ * Esquema para crear una nueva respuesta (CORREGIDO)
  */
 export const CreateModuleResponseDtoSchema = z.object({
   researchId: z.string(),
   participantId: z.string(),
-  stepType: z.string(),
-  stepTitle: z.string(),
-  questionKey: z.string().optional(), // NUEVO: questionKey del diccionario global
-  response: ModuleResponseValueSchema,
+  questionKey: z.string(),
+  responses: z.array(IndividualResponseSchema),
   metadata: ResponseMetadataSchema
 });
 
 /**
- * Esquema para actualizar una respuesta existente
+ * Esquema para actualizar una respuesta existente (CORREGIDO)
  */
 export const UpdateModuleResponseDtoSchema = z.object({
-  response: ModuleResponseValueSchema,
+  researchId: z.string(),
+  participantId: z.string(),
+  questionKey: z.string(),
+  responses: z.array(IndividualResponseSchema),
   metadata: ResponseMetadataSchema
 });
 
-/**
- * Interfaces derivadas de los esquemas
- */
-export type ModuleResponseValue = z.infer<typeof ModuleResponseValueSchema>;
-export type ResponseMetadata = z.infer<typeof ResponseMetadataSchema>;
-export type ModuleResponse = z.infer<typeof ModuleResponseSchema>;
+// Tipos inferidos de los esquemas
+export type ModuleResponse = z.infer<typeof IndividualResponseSchema>;
 export type ParticipantResponsesDocument = z.infer<typeof ParticipantResponsesDocumentSchema>;
 export type CreateModuleResponseDto = z.infer<typeof CreateModuleResponseDtoSchema>;
 export type UpdateModuleResponseDto = z.infer<typeof UpdateModuleResponseDtoSchema>;

@@ -95,20 +95,21 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
 
     try {
       const timestamp = new Date().toISOString();
+      const now = new Date().toISOString();
 
       if (existingResponse) {
-        // UPDATE: Reemplazar solo la response del questionKey específico
-        // Obtener todas las responses de todos los ModuleResponse
-        const allExistingResponses = moduleResponses?.responses?.flatMap(mr => mr.responses) || [];
-        const updatedResponses = allExistingResponses.map(response =>
-          response.questionKey === currentQuestionKey
-            ? { questionKey: currentQuestionKey, response: formData, timestamp }
-            : response
-        );
-
+        // UPDATE: Actualizar la respuesta existente
         const updateData: UpdateModuleResponseDto = {
+          researchId: researchId || '',
+          participantId: participantId || '',
           questionKey: currentQuestionKey,
-          responses: updatedResponses,
+          responses: [{
+            questionKey: currentQuestionKey,
+            response: formData,
+            timestamp,
+            createdAt: existingResponse.createdAt || now,
+            updatedAt: now
+          }],
           metadata: {}
         };
 
@@ -117,19 +118,18 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
           data: updateData
         });
       } else {
-        // CREATE: Agregar la nueva response al array existente
-        // Obtener todas las responses de todos los ModuleResponse
-        const allExistingResponses = moduleResponses?.responses?.flatMap(mr => mr.responses) || [];
-        const newResponses = [
-          ...allExistingResponses,
-          { questionKey: currentQuestionKey, response: formData, timestamp }
-        ];
-
+        // CREATE: Crear nueva respuesta
         const createData: CreateModuleResponseDto = {
           researchId: researchId || '',
           participantId: participantId || '',
           questionKey: currentQuestionKey,
-          responses: newResponses,
+          responses: [{
+            questionKey: currentQuestionKey,
+            response: formData,
+            timestamp,
+            createdAt: now,
+            updatedAt: undefined
+          }],
           metadata: {}
         };
 

@@ -235,107 +235,20 @@ export class ModuleResponseService {
    */
   async saveModuleResponse(
     createDto: CreateModuleResponseDto
-  ): Promise<ModuleResponse> {
-    const { researchId, participantId, stepType, stepTitle, questionKey, response, metadata } = createDto;
+  ): Promise<ParticipantResponsesDocument> {
+    const { researchId, participantId, questionKey, responses, metadata } = createDto;
 
     const existingDocument = await this.findByResearchAndParticipant(researchId, participantId);
 
-    const responseId = uuidv4();
-    const now = new Date().toISOString();
-
-    const moduleResponse: ModuleResponse = {
-      id: responseId,
-      stepType,
-      stepTitle,
-      questionKey, // NUEVO: incluir questionKey en la respuesta
-      response,
-      metadata: metadata || {},
-      createdAt: now
-    };
-
     if (!existingDocument) {
-      // Crear nuevo documento usando el método privado
-      const newResponse = await this.createNewDocument(researchId, participantId, moduleResponse);
-      return newResponse;
+      // Crear nuevo documento con las responses
+      const newDocument = await this.createNewDocumentWithResponses(researchId, participantId, responses, metadata);
+      return newDocument;
     }
 
-    // NUEVO: Buscar por questionKey primero (método preferido)
-    let existingResponseIndex = -1;
-    if (questionKey) {
-      existingResponseIndex = existingDocument.responses.findIndex(
-        r => r.questionKey === questionKey
-      );
-      console.log(`[ModuleResponseService.saveModuleResponse] 🔍 Buscando por questionKey: ${questionKey} - encontrado: ${existingResponseIndex >= 0}`);
-    }
-
-    // FALLBACK: Buscar por stepType si no se encontró por questionKey
-    if (existingResponseIndex === -1) {
-      existingResponseIndex = existingDocument.responses.findIndex(
-        r => r.stepType === stepType
-      );
-      console.log(`[ModuleResponseService.saveModuleResponse] ⚠️ Fallback: buscando por stepType: ${stepType} - encontrado: ${existingResponseIndex >= 0}`);
-    }
-
-    let updateExpression: string;
-    let expressionAttributeNames: Record<string, string> = {
-      '#responses': 'responses',
-      '#updatedAt': 'updatedAt' // Para el updatedAt del documento principal
-    };
-    let expressionAttributeValues: Record<string, any> = {
-      ':updatedAt': now // Para el updatedAt del documento principal
-    };
-
-    if (existingResponseIndex >= 0) {
-      expressionAttributeNames['#nestedResponse'] = 'response'; // Alias para el campo 'response' anidado
-      expressionAttributeNames['#nestedUpdatedAt'] = 'updatedAt'; // Alias para el campo 'updatedAt' anidado
-      expressionAttributeNames['#nestedMetadata'] = 'metadata'; // Alias para el campo 'metadata' anidado
-      expressionAttributeNames['#nestedQuestionKey'] = 'questionKey'; // NUEVO: alias para questionKey
-
-      updateExpression = `SET
-        #responses[${existingResponseIndex}].#nestedResponse = :responseValue,
-        #responses[${existingResponseIndex}].#nestedUpdatedAt = :responseNestedUpdatedAt,
-        #responses[${existingResponseIndex}].#nestedMetadata = :responseMetadata,
-        #responses[${existingResponseIndex}].#nestedQuestionKey = :questionKeyValue,
-        #updatedAt = :updatedAt`;
-
-      expressionAttributeValues[':responseValue'] = response;
-      expressionAttributeValues[':responseNestedUpdatedAt'] = now;
-      expressionAttributeValues[':responseMetadata'] = serializeMetadata(metadata || {});
-      expressionAttributeValues[':questionKeyValue'] = questionKey || null; // NUEVO: actualizar questionKey
-    } else {
-      updateExpression = 'SET #responses = list_append(if_not_exists(#responses, :empty_list), :newResponse), #updatedAt = :updatedAt';
-      expressionAttributeValues[':newResponse'] = [{ ...moduleResponse, metadata: serializeMetadata(moduleResponse.metadata) }];
-      expressionAttributeValues[':empty_list'] = [];
-    }
-
-    const command = new UpdateCommand({
-      TableName: this.tableName,
-      Key: { id: existingDocument.id },
-      UpdateExpression: updateExpression,
-      ExpressionAttributeNames: expressionAttributeNames,
-      ExpressionAttributeValues: expressionAttributeValues,
-      ReturnValues: 'ALL_NEW'
-    });
-
-    try {
-      const result = await this.dynamoClient.send(command);
-      const updatedDocument = result.Attributes as ParticipantResponsesDocument;
-      // Deserializar metadata antes de devolver
-      const updatedResponses = (updatedDocument.responses || []).map(r => ({
-        ...r,
-        metadata: deserializeMetadata(r.metadata)
-      }));
-      if (existingResponseIndex >= 0) {
-        return updatedResponses[existingResponseIndex];
-      } else {
-        return updatedResponses[updatedResponses.length - 1];
-      }
-    } catch (error: any) {
-      console.error('[ModuleResponseService.saveModuleResponse] Error DDB Object:', JSON.stringify(error, null, 2));
-      console.error('[ModuleResponseService.saveModuleResponse] Error Name:', error.name);
-      console.error('[ModuleResponseService.saveModuleResponse] Error Message:', error.message);
-      throw new ApiError(`Database Error: Could not save module response - ${error.name}: ${error.message}`, 500);
-    }
+    // Actualizar documento existente con las nuevas responses
+    const updatedDocument = await this.updateDocumentWithResponses(existingDocument, responses, metadata);
+    return updatedDocument;
   }
 
   /**
@@ -346,7 +259,7 @@ export class ModuleResponseService {
     participantId: string,
     responseId: string,
     updateDto: UpdateModuleResponseDto
-  ): Promise<ModuleResponse | null> {
+  ): Promise<ParticipantResponsesDocument> {
     // Buscar documento existente
     const existingDocument = await this.findByResearchAndParticipant(researchId, participantId);
 
@@ -354,37 +267,113 @@ export class ModuleResponseService {
       throw new ApiError('Not Found: No document exists for this research and participant.', 404);
     }
 
-    // Buscar índice de la respuesta en el array
-    const responseIndex = existingDocument.responses.findIndex(r => r.id === responseId);
+    // Actualizar documento con las nuevas responses
+    const updatedDocument = await this.updateDocumentWithResponses(existingDocument, updateDto.responses, updateDto.metadata);
+    return updatedDocument;
+  }
 
-    if (responseIndex === -1) {
-      throw new ApiError('Not Found: Response ID not found in document.', 404);
-    }
-
+  /**
+   * Crea un nuevo documento con responses
+   */
+  private async createNewDocumentWithResponses(
+    researchId: string,
+    participantId: string,
+    responses: Array<{ questionKey: string; response: any; timestamp: string }>,
+    metadata: any
+  ): Promise<ParticipantResponsesDocument> {
+    const documentId = uuidv4();
     const now = new Date().toISOString();
 
-    // Actualizar el campo 'response', 'metadata' y el timestamp
-    const updateExpression = `SET
-      #responses[${responseIndex}].#nestedResponse = :newResponse,
-      #responses[${responseIndex}].#nestedUpdatedAt = :updatedAtTimestamp,
-      #responses[${responseIndex}].#nestedMetadata = :newMetadata,
-      #docUpdatedAt = :updatedAtTimestamp`;
+    const newDocument: ParticipantResponsesDocument = {
+      id: documentId,
+      researchId,
+      participantId,
+      responses: responses.map(r => ({
+        ...r,
+        createdAt: now, // Timestamp de creación
+        updatedAt: undefined, // No hay actualización en creación
+        metadata: {}
+      })),
+      metadata: metadata || {},
+      createdAt: now,
+      updatedAt: now,
+      isCompleted: false
+    };
 
+    const command = new PutCommand({
+      TableName: this.tableName,
+      Item: {
+        ...newDocument,
+        metadata: serializeMetadata(newDocument.metadata),
+        responses: newDocument.responses.map(r => ({
+          ...r,
+          metadata: serializeMetadata(r.metadata)
+        }))
+      }
+    });
+
+    try {
+      await this.dynamoClient.send(command);
+      console.log(`[ModuleResponseService.createNewDocumentWithResponses] ✅ Documento creado: ${documentId}`);
+      return newDocument;
+    } catch (error: any) {
+      console.error('[ModuleResponseService.createNewDocumentWithResponses] Error:', error);
+      throw new ApiError(`Database Error: Could not create new document - ${error.message}`, 500);
+    }
+  }
+
+  /**
+   * Actualiza un documento existente con nuevas responses
+   */
+  private async updateDocumentWithResponses(
+    existingDocument: ParticipantResponsesDocument,
+    newResponses: Array<{ questionKey: string; response: any; timestamp: string }>,
+    metadata: any
+  ): Promise<ParticipantResponsesDocument> {
+    const now = new Date().toISOString();
+
+    // Combinar responses existentes con nuevas responses
+    const updatedResponses = [...existingDocument.responses];
+
+    for (const newResponse of newResponses) {
+      const existingIndex = updatedResponses.findIndex(r => r.questionKey === newResponse.questionKey);
+
+      if (existingIndex >= 0) {
+        // Actualizar respuesta existente
+        updatedResponses[existingIndex] = {
+          ...updatedResponses[existingIndex],
+          response: newResponse.response,
+          timestamp: newResponse.timestamp,
+          updatedAt: now // Timestamp de actualización
+        };
+      } else {
+        // Agregar nueva respuesta
+        updatedResponses.push({
+          ...newResponse,
+          createdAt: now, // Timestamp de creación
+          updatedAt: undefined, // No hay actualización en creación
+          metadata: {}
+        });
+      }
+    }
+
+    const updateExpression = 'SET #responses = :responses, #updatedAt = :updatedAt, #metadata = :metadata';
     const command = new UpdateCommand({
       TableName: this.tableName,
       Key: { id: existingDocument.id },
       UpdateExpression: updateExpression,
       ExpressionAttributeNames: {
         '#responses': 'responses',
-        '#nestedResponse': 'response',
-        '#nestedUpdatedAt': 'updatedAt',
-        '#nestedMetadata': 'metadata',
-        '#docUpdatedAt': 'updatedAt'
+        '#updatedAt': 'updatedAt',
+        '#metadata': 'metadata'
       },
       ExpressionAttributeValues: {
-        ':newResponse': updateDto.response,
-        ':newMetadata': serializeMetadata(updateDto.metadata || {}),
-        ':updatedAtTimestamp': now
+        ':responses': updatedResponses.map(r => ({
+          ...r,
+          metadata: serializeMetadata(r.metadata)
+        })),
+        ':updatedAt': now,
+        ':metadata': serializeMetadata(metadata || existingDocument.metadata)
       },
       ReturnValues: 'ALL_NEW'
     });
@@ -394,15 +383,17 @@ export class ModuleResponseService {
       const updatedDocument = result.Attributes as ParticipantResponsesDocument;
 
       // Deserializar metadata antes de devolver
-      const updatedResponses = (updatedDocument.responses || []).map(r => ({
-        ...r,
-        metadata: deserializeMetadata(r.metadata)
-      }));
-
-      return updatedResponses[responseIndex];
+      return {
+        ...updatedDocument,
+        metadata: deserializeMetadata(updatedDocument.metadata),
+        responses: (updatedDocument.responses || []).map(r => ({
+          ...r,
+          metadata: deserializeMetadata(r.metadata)
+        }))
+      };
     } catch (error: any) {
-      console.error('[ModuleResponseService.updateModuleResponse] DynamoDB Error:', error);
-      throw new ApiError(`Database Error: Could not update module response - ${error.message}`, 500);
+      console.error('[ModuleResponseService.updateDocumentWithResponses] Error:', error);
+      throw new ApiError(`Database Error: Could not update document - ${error.message}`, 500);
     }
   }
 

@@ -1,5 +1,7 @@
 import React from 'react';
+import { useDeleteAllResponsesMutation } from '../../../hooks/useApiQueries';
 import { useSidebarLogic } from '../../../hooks/useSidebarLogic';
+import { useFormDataStore } from '../../../stores/useFormDataStore';
 import { useStepStore } from '../../../stores/useStepStore';
 import { useTestStore } from '../../../stores/useTestStore';
 import BurgerMenuButton from '../BurgerMenuButton';
@@ -19,8 +21,22 @@ const TestLayoutSidebar: React.FC<Props> = ({
   onStepsReady,
   onDeleteAllResponses
 }) => {
-  const { researchId } = useTestStore();
+  const { researchId, participantId } = useTestStore();
   const { currentQuestionKey, setCurrentQuestionKey } = useStepStore();
+  const { clearAllFormData } = useFormDataStore();
+
+  const deleteMutation = useDeleteAllResponsesMutation({
+    onSuccess: () => {
+      console.log('✅ Respuestas eliminadas exitosamente');
+      // Limpiar datos del formulario
+      clearAllFormData();
+      // Resetear al primer step
+      setCurrentQuestionKey('');
+    },
+    onError: (error) => {
+      console.error('❌ Error al eliminar respuestas:', error);
+    }
+  });
 
   const {
     steps,
@@ -41,7 +57,11 @@ const TestLayoutSidebar: React.FC<Props> = ({
   } = useSidebarLogic({
     researchId: researchId || '',
     onStepsReady,
-    onDeleteAllResponses
+    onDeleteAllResponses: async () => {
+      if (researchId && participantId) {
+        await deleteMutation.mutateAsync({ researchId, participantId });
+      }
+    }
   });
 
   // Sincronizar selectedQuestionKey con currentQuestionKey del store
@@ -97,17 +117,17 @@ const TestLayoutSidebar: React.FC<Props> = ({
             <div className="mt-6 p-4 border-t border-gray-200">
               <button
                 onClick={handleDeleteAllResponses}
-                disabled={isDeleteDisabled}
+                disabled={isDeleteDisabled || deleteMutation.isPending}
                 className={`w-full px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                  isDeleteDisabled
+                  isDeleteDisabled || deleteMutation.isPending
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     : 'bg-red-600 hover:bg-red-700 text-white'
                 }`}
               >
-                {isDeleting ? (
+                {isDeleting || deleteMutation.isPending ? (
                   <div className="flex items-center justify-center gap-2">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    {deleteButtonText}
+                    Eliminando...
                   </div>
                 ) : (
                   'Eliminar todas las respuestas'

@@ -32,21 +32,14 @@ export class ModuleResponseController {
       console.log(`[ModuleResponseController.saveResponse] 📝 Recibiendo respuesta:`, {
         researchId: data.researchId,
         participantId: data.participantId,
-        stepType: data.stepType,
-        stepTitle: data.stepTitle,
         questionKey: data.questionKey,
-        hasQuestionKey: !!data.questionKey
+        responsesCount: data.responses?.length || 0
       });
 
       // Validar los datos utilizando el esquema
       const validatedData = CreateModuleResponseDtoSchema.parse(data);
 
-      // NUEVO: Log de método de búsqueda que se usará
-      if (validatedData.questionKey) {
-        console.log(`[ModuleResponseController.saveResponse] ✅ Guardando con questionKey: ${validatedData.questionKey}`);
-      } else {
-        console.log(`[ModuleResponseController.saveResponse] ⚠️ Guardando sin questionKey - usando stepType: ${validatedData.stepType}`);
-      }
+      console.log(`[ModuleResponseController.saveResponse] ✅ Guardando con questionKey: ${validatedData.questionKey} y ${validatedData.responses.length} respuestas`);
 
       // Guardar la respuesta (el servicio decide si es crear o actualizar)
       const savedResponse = await moduleResponseService.saveModuleResponse(validatedData);
@@ -54,7 +47,7 @@ export class ModuleResponseController {
       console.log(`[ModuleResponseController.saveResponse] ✅ Respuesta guardada exitosamente:`, {
         responseId: savedResponse.id,
         questionKey: savedResponse.questionKey,
-        stepType: savedResponse.stepType
+        responsesCount: Array.isArray(savedResponse.responses) ? savedResponse.responses.length : 0
       });
 
       return {
@@ -227,9 +220,64 @@ export class ModuleResponseController {
   }
 
   /**
-   * Marcar las respuestas como completadas
+   * Marcar como completado
    */
   async markAsCompleted(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    try {
+      if (!event.body) {
+        return {
+          statusCode: 400,
+          headers: getCorsHeaders(event),
+          body: JSON.stringify({
+            error: 'Se requieren datos para marcar como completado',
+            status: 400
+          })
+        };
+      }
+
+      const data = JSON.parse(event.body);
+      const { researchId, participantId } = data;
+
+      if (!researchId || !participantId) {
+        return {
+          statusCode: 400,
+          headers: getCorsHeaders(event),
+          body: JSON.stringify({
+            error: 'Se requieren researchId y participantId',
+            status: 400
+          })
+        };
+      }
+
+      // Marcar como completado
+      const result = await moduleResponseService.markAsCompleted(researchId, participantId);
+
+      return {
+        statusCode: 200,
+        headers: getCorsHeaders(event),
+        body: JSON.stringify({
+          data: result,
+          status: 200
+        })
+      };
+    } catch (error: any) {
+      console.error('Error al marcar como completado:', error);
+
+      return {
+        statusCode: error.statusCode || 500,
+        headers: getCorsHeaders(event),
+        body: JSON.stringify({
+          error: error.message || 'Error al marcar como completado',
+          status: error.statusCode || 500
+        })
+      };
+    }
+  }
+
+  /**
+   * Eliminar todas las respuestas
+   */
+  async deleteAllResponses(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
     try {
       const researchId = event.queryStringParameters?.researchId;
       const participantId = event.queryStringParameters?.participantId;
@@ -245,28 +293,25 @@ export class ModuleResponseController {
         };
       }
 
-      // Marcar como completado
-      const completedDocument = await moduleResponseService.markAsCompleted(
-        researchId,
-        participantId
-      );
+      // Eliminar todas las respuestas
+      const result = await moduleResponseService.deleteAllResponses(researchId, participantId);
 
       return {
         statusCode: 200,
         headers: getCorsHeaders(event),
         body: JSON.stringify({
-          data: completedDocument,
+          data: result,
           status: 200
         })
       };
     } catch (error: any) {
-      console.error('Error al marcar como completado:', error);
+      console.error('Error al eliminar respuestas:', error);
 
       return {
         statusCode: error.statusCode || 500,
         headers: getCorsHeaders(event),
         body: JSON.stringify({
-          error: error.message || 'Error al marcar como completado',
+          error: error.message || 'Error al eliminar respuestas',
           status: error.statusCode || 500
         })
       };
@@ -310,64 +355,6 @@ export class ModuleResponseController {
         headers: getCorsHeaders(event),
         body: JSON.stringify({
           error: error.message || 'Error al obtener respuestas por research',
-          status: error.statusCode || 500
-        })
-      };
-    }
-  }
-
-  /**
-   * Eliminar todas las respuestas de un participante específico
-   */
-  async deleteAllResponses(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-    try {
-      const researchId = event.queryStringParameters?.researchId;
-      const participantId = event.queryStringParameters?.participantId;
-
-      if (!researchId || !participantId) {
-        return {
-          statusCode: 400,
-          headers: getCorsHeaders(event),
-          body: JSON.stringify({
-            error: 'Se requieren researchId y participantId',
-            status: 400
-          })
-        };
-      }
-
-      // Eliminar todas las respuestas
-      const deleted = await moduleResponseService.deleteAllResponses(
-        researchId,
-        participantId
-      );
-
-      if (deleted) {
-        return {
-          statusCode: 200,
-          headers: getCorsHeaders(event),
-          body: JSON.stringify({
-            message: 'Respuestas eliminadas exitosamente',
-            status: 200
-          })
-        };
-      } else {
-        return {
-          statusCode: 204,
-          headers: getCorsHeaders(event),
-          body: JSON.stringify({
-            message: 'No había respuestas para eliminar',
-            status: 204
-          })
-        };
-      }
-    } catch (error: any) {
-      console.error('Error al eliminar respuestas:', error);
-
-      return {
-        statusCode: error.statusCode || 500,
-        headers: getCorsHeaders(event),
-        body: JSON.stringify({
-          error: error.message || 'Error al eliminar respuestas',
           status: error.statusCode || 500
         })
       };
@@ -441,7 +428,8 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
       })
     };
   } catch (error: any) {
-    console.error('Error no controlado:', error);
+    console.error('Error en mainHandler:', error);
+
     return {
       statusCode: 500,
       headers: getCorsHeaders(event),
