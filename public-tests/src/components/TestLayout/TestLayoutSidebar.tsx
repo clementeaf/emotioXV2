@@ -62,17 +62,6 @@ const TestLayoutSidebar: React.FC<TestLayoutSidebarProps> = ({
     error: apiError
   } = useAvailableFormsQuery(researchId || '');
 
-  console.log('[TestLayoutSidebar] 🔍 Debug API Forms:', {
-    researchId,
-    researchIdType: typeof researchId,
-    researchIdLength: researchId?.length || 0,
-    hasData: !!apiData,
-    dataLength: apiData?.steps?.length || 0,
-    isLoading: apiLoading,
-    error: apiError?.message || null,
-    timestamp: new Date().toISOString()
-  });
-
   if (apiData) {
     console.log('[TestLayoutSidebar] 📊 API Forms Data:', apiData);
   }

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CustomStep, SidebarStep, UseSidebarLogicProps, UseSidebarLogicReturn } from '../components/TestLayout/types';
-import { useStepStore } from '../stores/useStepStore';
 import { useTestStore } from '../stores/useTestStore';
 import { useAvailableFormsQuery } from './useApiQueries';
 import { useDeleteState } from './useDeleteState';
@@ -8,13 +7,12 @@ import { useDeleteState } from './useDeleteState';
 export const useSidebarLogic = ({
   researchId,
   onStepsReady,
-  onNavigateToStep,
   onDeleteAllResponses
 }: UseSidebarLogicProps): UseSidebarLogicReturn => {
-  const { setStep, currentStepKey } = useStepStore();
   const { hasResponse } = useTestStore();
 
   const [isOpen, setIsOpen] = useState(false);
+  const [selectedQuestionKey, setSelectedQuestionKey] = useState<string>('');
   const stepsNotifiedRef = useRef(false);
   const hasInitializedRef = useRef(false);
 
@@ -55,7 +53,7 @@ export const useSidebarLogic = ({
 
   // INICIALIZACIÓN DEL PASO ACTIVO
   const initializeActiveStep = useCallback(() => {
-    if (steps.length > 0 && !currentStepKey && !hasInitializedRef.current) {
+    if (steps.length > 0 && !selectedQuestionKey && !hasInitializedRef.current) {
       // Verificar si hay respuestas locales
       const hasAnyResponses = steps.some((step: CustomStep) => {
         return hasResponse(step.questionKey);
@@ -68,17 +66,17 @@ export const useSidebarLogic = ({
         });
 
         if (firstUnansweredStep) {
-          setStep(firstUnansweredStep.questionKey);
+          setSelectedQuestionKey(firstUnansweredStep.questionKey);
         } else {
-          setStep(steps[0].questionKey);
+          setSelectedQuestionKey(steps[0].questionKey);
         }
       } else {
-        setStep(steps[0].questionKey);
+        setSelectedQuestionKey(steps[0].questionKey);
       }
 
       hasInitializedRef.current = true;
     }
-  }, [steps, currentStepKey, hasResponse, setStep]);
+  }, [steps, selectedQuestionKey, hasResponse]);
 
   // ========================================
   // 🎯 EFECTOS (OPTIMIZADOS)
@@ -118,11 +116,9 @@ export const useSidebarLogic = ({
   }, [steps, hasResponse]);
 
   const handleStepClick = useCallback((questionKey: string) => {
-    setStep(questionKey);
-    if (onNavigateToStep) {
-      onNavigateToStep(questionKey);
-    }
-  }, [setStep, onNavigateToStep]);
+    setSelectedQuestionKey(questionKey);
+    console.log('Selected questionKey:', questionKey);
+  }, []);
 
   // FUNCIONES DE ELIMINACIÓN
   const handleDeleteAllResponses = useCallback(async () => {
@@ -147,7 +143,7 @@ export const useSidebarLogic = ({
     setIsOpen,
     toggleSidebar,
     closeSidebar,
-    currentStepKey,
+    selectedQuestionKey,
     isStepEnabled,
     handleStepClick,
     handleDeleteAllResponses,

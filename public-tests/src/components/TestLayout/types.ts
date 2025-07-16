@@ -55,12 +55,7 @@ export interface StepsListProps {
   onStepClick?: (step: SidebarStep, index: number) => void;
 }
 
-export interface TestLayoutRendererProps {
-  data: StepData[] | undefined;
-  isLoading: boolean;
-  error: Error | null;
-  sidebarSteps?: SidebarStep[]; // Steps del sidebar para coordinación de navegación
-}
+
 
 export interface TestLayoutSidebarProps {
   steps: SidebarStep[];
@@ -163,7 +158,7 @@ export interface UseSidebarLogicReturn {
   closeSidebar: () => void;
 
   // Estado del paso actual
-  currentStepKey: string | null;
+  selectedQuestionKey: string;
 
   // Funciones de navegación
   isStepEnabled: (stepIndex: number) => boolean;
@@ -189,5 +184,4 @@ export interface CustomStepsListProps {
   steps: CustomStep[];
   currentStepKey: string;
   isStepEnabled?: (index: number) => boolean;
-  onStepClick?: (questionKey: string) => void;
 }

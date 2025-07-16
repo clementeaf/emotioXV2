@@ -16,12 +16,7 @@ const TestLayoutMain: React.FC = () => {
         onStepsReady={handleStepsReady}
       />
       <div className="bg-white shadow-lg rounded-lg p-4 sm:p-6 w-full max-w-2xl flex-1 flex flex-col justify-center mx-auto">
-        <TestLayoutRenderer
-          data={[]}
-          isLoading={false}
-          error={null}
-          sidebarSteps={sidebarSteps}
-        />
+        <TestLayoutRenderer />
       </div>
     </main>
   );

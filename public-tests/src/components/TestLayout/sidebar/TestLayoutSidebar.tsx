@@ -16,7 +16,6 @@ interface Props {
 
 const TestLayoutSidebar: React.FC<Props> = ({
   onStepsReady,
-  onNavigateToStep,
   onDeleteAllResponses
 }) => {
   const { researchId } = useTestStore();
@@ -40,7 +39,6 @@ const TestLayoutSidebar: React.FC<Props> = ({
   } = useSidebarLogic({
     researchId: researchId || '',
     onStepsReady,
-    onNavigateToStep,
     onDeleteAllResponses
   });
 
