@@ -13,7 +13,8 @@ function App() {
     <Router>
       <Toaster position="top-center" />
       <Routes>
-        <Route path="/" element={<TestLayout />} />
+        <Route path="/" element={<LoginRedirect />} />
+        <Route path="/test" element={<TestLayout />} />
         <Route path="/login" element={<LoginRedirect />} />
         <Route path="/error-no-research-id" element={<NoResearchIdError />} />
         <Route path="/privacy" element={<PrivacyNoticePage />} />

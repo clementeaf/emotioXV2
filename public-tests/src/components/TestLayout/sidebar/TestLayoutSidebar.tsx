@@ -87,24 +87,6 @@ const TestLayoutSidebar: React.FC<Props> = ({
               currentStepKey={currentQuestionKey}
               isStepEnabled={isStepEnabled}
             />
-            {/* Información del estado actual */}
-            <div className="mt-4 p-3 bg-blue-50 rounded border border-blue-200">
-              <h4 className="text-sm font-medium text-blue-800 mb-2">Estado Actual:</h4>
-              <div className="text-xs text-blue-700 space-y-1">
-                <div>Último completado: {getLastCompletedStep() || 'Ninguno'}</div>
-                <div>Siguiente step: {getNextStep()}</div>
-                <div>Respuestas: {getTotalResponses()}</div>
-                <div>Steps completados: {getCompletedSteps().join(', ') || 'Ninguno'}</div>
-              </div>
-              {/* 🎯 LOG PARA DEBUGGEAR LA INCONSISTENCIA */}
-              <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
-                <div><strong>DEBUG:</strong></div>
-                <div>currentQuestionKey: {currentQuestionKey}</div>
-                <div>backendResponses: {JSON.stringify(backendResponses.map(r => r.questionKey))}</div>
-                <div>steps: {JSON.stringify(steps.map(s => ({ questionKey: s.questionKey, title: s.title })))} </div>
-              </div>
-            </div>
-            {/* Botón para eliminar todas las respuestas */}
             <div className="mt-6 p-4 border-t border-gray-200">
               <button
                 onClick={handleDeleteAllResponses}
@@ -121,7 +103,7 @@ const TestLayoutSidebar: React.FC<Props> = ({
                     {deleteButtonText}
                   </div>
                 ) : (
-                  'Eliminar todas las respuestas'
+                  'Eliminar respuestas'
                 )}
               </button>
             </div>

@@ -227,6 +227,24 @@ const TestLayoutRenderer: React.FC = () => {
 
   const { researchId } = useTestStore();
   const { getFormData } = useFormDataStore();
+
+  // 🎯 VERIFICACIÓN DE AUTENTICACIÓN
+  if (!researchId) {
+    console.log('[TestLayoutRenderer] ❌ No hay researchId, redirigiendo a login');
+    // Obtener researchId de la URL si existe
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlResearchId = urlParams.get('researchId');
+
+    if (urlResearchId) {
+      // Redirigir a login CON el researchId
+      window.location.href = `/?researchId=${urlResearchId}`;
+    } else {
+      // Si no hay researchId en URL, ir a error
+      window.location.href = '/error-no-research-id';
+    }
+    return <div>Redirigiendo al login...</div>;
+  }
+
   const { data: formsData, isLoading, error } = useAvailableFormsQuery(researchId || '');
 
   if (isLoading) return <div>Cargando...</div>;

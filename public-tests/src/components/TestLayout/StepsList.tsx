@@ -11,7 +11,7 @@ const StepsList: React.FC<CustomStepsListProps> = ({ steps, currentStepKey, isSt
   };
 
   return (
-    <ul className="space-y-1 max-h-[550px] overflow-y-auto">
+    <ul className="space-y-1 h-[450px] overflow-y-auto">
       {steps.map((step, idx) => {
         const stepStateInfo = getStepState(idx);
         return (

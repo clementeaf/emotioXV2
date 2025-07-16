@@ -1,28 +1,61 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import ParticipantLogin from '../../pages/ParticipantLogin';
 import { useTestStore } from '../../stores/useTestStore';
+
+// Definir la interfaz Participant localmente
+interface Participant {
+  name: string;
+  email: string;
+}
 
 const LoginRedirect: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { setParticipant } = useTestStore();
+  const [showLogin, setShowLogin] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const researchId = params.get('researchId');
-    const participantId = params.get('participantId') || '';
+
+    if (researchId) {
+      // 🎯 MOSTRAR EL LOGIN REAL EN LUGAR DE CREDENCIALES AUTOMÁTICAS
+      setShowLogin(true);
+    } else {
+      navigate('/error-no-research-id');
+    }
+  }, [location, navigate]);
+
+  const handleLoginSuccess = (participant: Participant) => {
+    const params = new URLSearchParams(location.search);
+    const researchId = params.get('researchId');
+    const participantId = params.get('participantId') || 'real-participant-id';
 
     if (researchId) {
       setParticipant(
         participantId,
-        'Real Participant',
-        'real@example.com',
+        participant.name,
+        participant.email,
         researchId
       );
-    } else {
-      navigate('/error-no-research-id');
+      // Redirigir a las preguntas después del login exitoso
+      navigate('/test');
     }
-  }, [location, navigate, setParticipant]);
+  };
+
+  if (showLogin) {
+    const params = new URLSearchParams(location.search);
+    const researchId = params.get('researchId') || '';
+
+    return (
+      <ParticipantLogin
+        researchId={researchId}
+        onLoginSuccess={handleLoginSuccess}
+        onLogin={() => {}}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -32,9 +65,6 @@ const LoginRedirect: React.FC = () => {
         </h2>
         <p className="text-gray-600">
           Cargando la investigación...
-        </p>
-        <p className="text-sm text-gray-500 mt-2">
-          Usando participantId: {new URLSearchParams(location.search).get('participantId') || 'real-participant-id'}
         </p>
       </div>
     </div>
