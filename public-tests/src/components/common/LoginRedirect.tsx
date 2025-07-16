@@ -30,9 +30,12 @@ const LoginRedirect: React.FC = () => {
   const handleLoginSuccess = (participant: Participant) => {
     const params = new URLSearchParams(location.search);
     const researchId = params.get('researchId');
-    const participantId = params.get('participantId') || 'real-participant-id';
+    const participantId = (participant as any).id || 'real-participant-id';
 
     if (researchId) {
+      // 🎯 GUARDAR researchId EN LOCALSTORAGE PARA PERSISTENCIA
+      localStorage.setItem('researchId', researchId);
+
       setParticipant(
         participantId,
         participant.name,

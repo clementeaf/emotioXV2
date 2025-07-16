@@ -13,9 +13,7 @@ import { DemographicQuestionData, RendererArgs } from './types';
 import { getCurrentStepData, getQuestionType } from './utils';
 
 const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
-  // Renderer para screens (welcome_screen y thank_you_screen)
   screen: ({ contentConfiguration, currentQuestionKey }) => {
-    // Si es thank_you_screen, no mostrar botón
     if (currentQuestionKey === 'thank_you_screen') {
       return (
         <div className='flex flex-col items-center justify-center h-full w-full'>
@@ -231,15 +229,19 @@ const TestLayoutRenderer: React.FC = () => {
   // 🎯 VERIFICACIÓN DE AUTENTICACIÓN
   if (!researchId) {
     console.log('[TestLayoutRenderer] ❌ No hay researchId, redirigiendo a login');
-    // Obtener researchId de la URL si existe
+    // Obtener researchId de la URL o localStorage
     const urlParams = new URLSearchParams(window.location.search);
     const urlResearchId = urlParams.get('researchId');
+    const storedResearchId = localStorage.getItem('researchId');
 
     if (urlResearchId) {
-      // Redirigir a login CON el researchId
+      // Redirigir a login CON el researchId de la URL
       window.location.href = `/?researchId=${urlResearchId}`;
+    } else if (storedResearchId) {
+      // Redirigir a login CON el researchId del localStorage
+      window.location.href = `/?researchId=${storedResearchId}`;
     } else {
-      // Si no hay researchId en URL, ir a error
+      // Si no hay researchId en ningún lado, ir a error
       window.location.href = '/error-no-research-id';
     }
     return <div>Redirigiendo al login...</div>;

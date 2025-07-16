@@ -1,9 +1,11 @@
+import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Participant } from '../../../shared/interfaces/participant';
 import { AuthHeader } from '../components/auth/AuthHeader';
 import { AuthLegalText } from '../components/auth/AuthLegalText';
 import { AuthSubmitButton } from '../components/auth/AuthSubmitButton';
 import FormField from '../components/common/FormField';
+import { apiRequest } from '../lib/alova';
 
 export interface ParticipantLoginProps {
   researchId: string;
@@ -18,7 +20,6 @@ export const ParticipantLogin = ({ onLoginSuccess, researchId }: ParticipantLogi
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isLoading, setIsLoading] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -47,6 +48,28 @@ export const ParticipantLogin = ({ onLoginSuccess, researchId }: ParticipantLogi
     return Object.keys(newErrors).length === 0;
   };
 
+  const loginMutation = useMutation({
+    mutationFn: async (data: { name: string; email: string; researchId: string }) => {
+      return apiRequest<{ data: { participant: { id: string; name: string; email: string }; token: string } }>('participants/login', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      });
+    },
+    onSuccess: (data) => {
+      const participantData: Participant = {
+        id: data.data.participant.id,
+        name: data.data.participant.name,
+        email: data.data.participant.email,
+        token: data.data.token
+      };
+      onLoginSuccess(participantData);
+    },
+    onError: (error: Error) => {
+      console.error('Error en login:', error);
+      setErrors({ submit: error.message || 'Error al iniciar sesión. Intenta de nuevo.' });
+    }
+  });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -54,23 +77,11 @@ export const ParticipantLogin = ({ onLoginSuccess, researchId }: ParticipantLogi
       return;
     }
 
-    setIsLoading(true);
-
-    try {
-      // Simular delay de login
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const participantData: Participant = {
-        name: participant.name,
-        email: participant.email,
-      };
-
-      onLoginSuccess(participantData);
-    } catch (error) {
-      setErrors({ submit: 'Error al iniciar sesión. Intenta de nuevo.' });
-    } finally {
-      setIsLoading(false);
-    }
+    loginMutation.mutate({
+      name: participant.name,
+      email: participant.email,
+      researchId: researchId
+    });
   };
 
   return (
@@ -102,7 +113,7 @@ export const ParticipantLogin = ({ onLoginSuccess, researchId }: ParticipantLogi
             onChange={handleInputChange}
             placeholder="Tu nombre completo"
             error={errors.name}
-            disabled={isLoading}
+            disabled={loginMutation.isPending}
           />
 
           <FormField
@@ -114,11 +125,11 @@ export const ParticipantLogin = ({ onLoginSuccess, researchId }: ParticipantLogi
             onChange={handleInputChange}
             placeholder="tu@email.com"
             error={errors.email}
-            disabled={isLoading}
+            disabled={loginMutation.isPending}
           />
 
           <AuthSubmitButton
-            isLoading={isLoading}
+            isLoading={loginMutation.isPending}
             loadingText="Iniciando sesión..."
             text="Continuar"
             className="mt-6"
