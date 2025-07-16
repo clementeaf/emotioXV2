@@ -5,14 +5,9 @@
  * sin lógica de backend.
  */
 
-// Hooks principales
-export { useFlowNavigationAndState } from './useFlowNavigationAndState';
-export { useGDPRConsent } from './useGDPRConsent';
-export { useParticipantFlow } from './useParticipantFlow';
-
-// Hooks de utilidad
 export { useDeleteState } from './useDeleteState';
-export { useSubmitState } from './useSubmitState';
+export { useSidebarLogic } from './useSidebarLogic';
+export { useStepStoreWithBackend } from './useStepStoreWithBackend';
 
 // Tipos y utilidades
 export * from './types';

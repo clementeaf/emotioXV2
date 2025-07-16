@@ -2,10 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SidebarStep, UseSidebarLogicProps, UseSidebarLogicReturn } from '../components/TestLayout/types';
 import { StepConfiguration } from '../lib/types';
 import { useStepStore } from '../stores/useStepStore';
-import { useTestStore } from '../stores/useTestStore';
 import { useAvailableFormsQuery } from './useApiQueries';
 import { useDeleteState } from './useDeleteState';
-import { useStepStates } from './useStepStates';
 
 export const useSidebarLogic = ({
   researchId,
@@ -19,9 +17,6 @@ export const useSidebarLogic = ({
 
   // Usar el store global para currentQuestionKey
   const { currentQuestionKey, setCurrentQuestionKey } = useStepStore();
-
-  // Usar el store de test para sincronizar steps
-  const { setCurrentStep, completeStep, setSteps } = useTestStore();
 
   const {
     data: formsData,
@@ -42,8 +37,15 @@ export const useSidebarLogic = ({
 
   const steps = useMemo(() => {
     if (formsData?.stepsConfiguration && formsData.stepsConfiguration.length > 0) {
-      // Ordenar los steps según la lógica correcta del flujo
-      const stepOrder = ['welcome_screen', 'demographics', 'smartvoc_csat', 'thank_you_screen'];
+      // 🔍 LOG PARA DEBUGGEAR LOS STEPS DEL BACKEND
+      console.log('[useSidebarLogic] 📊 Steps del backend:', {
+        stepsFromBackend: formsData.steps,
+        stepsConfiguration: formsData.stepsConfiguration.map(s => s.questionKey),
+        count: formsData.count
+      });
+
+      // Usar TODOS los steps que llegan del backend en el orden que vienen
+      const backendStepOrder = formsData.steps || [];
 
       // Crear un mapa de configuración por questionKey para acceso rápido
       const configMap = new Map();
@@ -51,11 +53,14 @@ export const useSidebarLogic = ({
         configMap.set(stepConfig.questionKey, stepConfig);
       });
 
-      // Construir steps en el orden correcto
-      const orderedSteps = stepOrder
+      // Construir steps usando el orden del backend
+      const orderedSteps = backendStepOrder
         .map(questionKey => {
           const stepConfig = configMap.get(questionKey);
-          if (!stepConfig) return null;
+          if (!stepConfig) {
+            console.warn('[useSidebarLogic] ⚠️ Step no encontrado en configuración:', questionKey);
+            return null;
+          }
 
           let title = '';
           switch (questionKey) {
@@ -71,6 +76,9 @@ export const useSidebarLogic = ({
             case 'smartvoc_csat':
               title = 'Pregunta CSAT';
               break;
+            case 'cognitive_navigation_flow':
+              title = 'Navegación Cognitiva';
+              break;
             default:
               title = String(stepConfig.contentConfiguration?.title || questionKey);
           }
@@ -82,6 +90,12 @@ export const useSidebarLogic = ({
         })
         .filter(step => step !== null);
 
+      console.log('[useSidebarLogic] ✅ Steps procesados:', {
+        originalCount: formsData.count,
+        processedCount: orderedSteps.length,
+        steps: orderedSteps.map(s => ({ questionKey: s.questionKey, title: s.title }))
+      });
+
       return orderedSteps;
     }
     return [];
@@ -92,23 +106,27 @@ export const useSidebarLogic = ({
   // Usar currentQuestionKey del store como fuente de verdad
   const effectiveCurrentQuestionKey = currentQuestionKey || selectedQuestionKey;
 
-  const { getInitialStep, canAccessStep } = useStepStates(effectiveCurrentQuestionKey, steps);
+  const { getInitialStep, canAccessStep } = useStepStore();
 
-  // SINCRONIZAR STEPS CON useTestStore
+  // SINCRONIZAR STEPS CON EL STORE
   useEffect(() => {
     if (steps.length > 0) {
-      // Convertir steps a formato TestStep para useTestStore
-      const testSteps = steps.map((step, index) => ({
-        id: step.questionKey,
-        type: step.questionKey,
-        name: step.title,
-        completed: false,
-        current: index === 0
+      console.log('[useSidebarLogic] 🔄 Sincronizando steps con el store:', {
+        stepsCount: steps.length,
+        steps: steps.map(s => ({ questionKey: s.questionKey, title: s.title }))
+      });
+
+      // Convertir steps al formato del store
+      const storeSteps = steps.map((step) => ({
+        questionKey: step.questionKey,
+        title: step.title
       }));
 
-      setSteps(testSteps);
+      // Sincronizar con el store global
+      const { setSteps } = useStepStore.getState();
+      setSteps(storeSteps);
     }
-  }, [steps, setSteps]);
+  }, [steps]);
 
   // INICIALIZACIÓN DEL PASO ACTIVO
   const initializeActiveStep = useCallback(() => {
@@ -160,12 +178,23 @@ export const useSidebarLogic = ({
 
   // FUNCIONES DE ELIMINACIÓN
   const handleDeleteAllResponses = useCallback(async () => {
-    if (!onDeleteAllResponses) return;
+    console.log('[useSidebarLogic] 🗑️ handleDeleteAllResponses llamado');
+    console.log('[useSidebarLogic] Estado:', {
+      onDeleteAllResponses: !!onDeleteAllResponses,
+      researchId
+    });
 
+    if (!onDeleteAllResponses) {
+      console.error('[useSidebarLogic] ❌ onDeleteAllResponses no está definido');
+      return;
+    }
+
+    console.log('[useSidebarLogic] 🚀 Ejecutando onDeleteAllResponses...');
     await handleDelete(async () => {
+      console.log('[useSidebarLogic] 🔥 Dentro de handleDelete, ejecutando onDeleteAllResponses');
       await onDeleteAllResponses();
     });
-  }, [onDeleteAllResponses, handleDelete]);
+  }, [onDeleteAllResponses, handleDelete, researchId]);
 
   // FUNCIONES DEL SIDEBAR (MEMOIZADAS)
   const toggleSidebar = useCallback(() => setIsOpen(prev => !prev), []);

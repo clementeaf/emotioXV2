@@ -8,7 +8,7 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
   demographicQuestions,
   onSubmit
 }) => {
-  const { setFormData, getFormData } = useFormDataStore();
+  const { setFormData, getFormData, formData } = useFormDataStore();
   const { researchId, participantId } = useTestStore();
   const [formValues, setFormValues] = useState<Record<string, string>>({});
 
@@ -19,13 +19,11 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
   );
 
   useEffect(() => {
-
     // Buscar respuesta existente para demographics en el backend
     if (moduleResponses?.responses && Array.isArray(moduleResponses.responses)) {
       const demographicsResponse = (moduleResponses.responses as any[]).find(
         (response: any) => response.questionKey === 'demographics'
       );
-
 
       if (demographicsResponse?.response) {
         setFormValues(demographicsResponse.response as Record<string, string>);
@@ -41,6 +39,15 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
       setFormValues(existingData as Record<string, string>);
     }
   }, [moduleResponses, getFormData, setFormData]);
+
+  // Efecto para detectar cuando se limpia el store y resetear el estado local
+  useEffect(() => {
+    const demographicsData = formData['demographics'];
+    if (!demographicsData || Object.keys(demographicsData).length === 0) {
+      console.log('[DemographicForm] Store limpiado, reseteando estado local');
+      setFormValues({});
+    }
+  }, [formData]);
 
   const handleInputChange = (key: string, value: string) => {
     const newValues = {

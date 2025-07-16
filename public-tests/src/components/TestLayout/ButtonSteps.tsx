@@ -1,18 +1,21 @@
 import React, { useState } from 'react';
 import { useAvailableFormsQuery, useModuleResponsesQuery, useSaveModuleResponseMutation, useUpdateModuleResponseMutation } from '../../hooks/useApiQueries';
-import { useStepStates } from '../../hooks/useStepStates';
 import { CreateModuleResponseDto, UpdateModuleResponseDto } from '../../lib/types';
+import { useFormDataStore } from '../../stores/useFormDataStore';
 import { useStepStore } from '../../stores/useStepStore';
 import { useTestStore } from '../../stores/useTestStore';
 import { ButtonStepsProps } from './types';
 
 export const ButtonSteps: React.FC<ButtonStepsProps> = ({
   currentQuestionKey,
-  formData = {},
-  isWelcomeScreen = false
+  formData,
+  isWelcomeScreen
 }) => {
   const { researchId, participantId } = useTestStore();
-  const { setCurrentQuestionKey, completeCurrentStepAndGoNext } = useStepStore();
+  const { setCurrentQuestionKey, goToNextStep } = useStepStore();
+  const { clearFormData } = useFormDataStore();
+  const { getNextStep } = useStepStore();
+  const nextStep = getNextStep();
   const [isSaving, setIsSaving] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
   const { data: moduleResponses } = useModuleResponsesQuery(
@@ -23,20 +26,23 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
   // Obtener los steps del backend
   const { data: formsData } = useAvailableFormsQuery(researchId || '');
 
-  // Construir los steps en el orden correcto
+  // Construir los steps usando el orden del backend
   const steps = React.useMemo(() => {
-    if (formsData?.stepsConfiguration && formsData.stepsConfiguration.length > 0) {
-      const stepOrder = ['welcome_screen', 'demographics', 'smartvoc_csat', 'thank_you_screen'];
+    if (formsData?.steps && formsData.stepsConfiguration && formsData.stepsConfiguration.length > 0) {
       const configMap = new Map();
 
       formsData.stepsConfiguration.forEach((stepConfig: any) => {
         configMap.set(stepConfig.questionKey, stepConfig);
       });
 
-      return stepOrder
+      // Usar el orden que viene del backend
+      return formsData.steps
         .map(questionKey => {
           const stepConfig = configMap.get(questionKey);
-          if (!stepConfig) return null;
+          if (!stepConfig) {
+            console.warn('[ButtonSteps] ⚠️ Step no encontrado en configuración:', questionKey);
+            return null;
+          }
 
           let title = '';
           switch (questionKey) {
@@ -52,6 +58,9 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
             case 'smartvoc_csat':
               title = 'Pregunta CSAT';
               break;
+            case 'cognitive_navigation_flow':
+              title = 'Navegación Cognitiva';
+              break;
             default:
               title = String(stepConfig.contentConfiguration?.title || questionKey);
           }
@@ -64,30 +73,36 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
         .filter(step => step !== null);
     }
     return [];
-  }, [formsData?.stepsConfiguration]);
+  }, [formsData?.steps, formsData?.stepsConfiguration]);
 
   // Obtener el estado de los steps para navegación
-  const { nextStep } = useStepStates(currentQuestionKey, steps);
+  const { getNextStep: getStoreNextStep } = useStepStore();
+  const storeNextStep = getStoreNextStep();
 
   // Log para depuración
-  console.log('[ButtonSteps] currentQuestionKey:', currentQuestionKey);
-  console.log('[ButtonSteps] nextStep:', nextStep);
+  console.log('[ButtonSteps] Estado actual:', {
+    currentQuestionKey,
+    nextStep,
+    formData,
+    isWelcomeScreen
+  });
 
   const saveMutation = useSaveModuleResponseMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // 🚨 ACTUALIZAR EL STORE INMEDIATAMENTE PARA AVANZAR EL STEP
+      const store = useStepStore.getState();
+      store.updateBackendResponses([
+        ...store.backendResponses,
+        { questionKey: currentQuestionKey, response: formData || {} }
+      ]);
       setIsSaving(false);
-      setIsNavigating(true);
-
-      // Navegar automáticamente al siguiente step después de guardar
       setTimeout(() => {
-        console.log('[ButtonSteps] Navegando después de guardar, nextStep:', nextStep);
-        completeCurrentStepAndGoNext(); // Usar el método del store
-        setIsNavigating(false);
-      }, 1000);
+        goToNextStep();
+      }, 100);
     },
-    onError: (error) => {
-      console.error('Error al guardar:', error);
+    onError: () => {
       setIsSaving(false);
+      // Manejo de error
     }
   });
 
@@ -99,7 +114,7 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
       // Navegar automáticamente al siguiente step después de actualizar
       setTimeout(() => {
         console.log('[ButtonSteps] Navegando después de actualizar, nextStep:', nextStep);
-        completeCurrentStepAndGoNext(); // Usar el método del store
+        goToNextStep(); // Usar el método del store
         setIsNavigating(false);
       }, 1000);
     },
@@ -164,7 +179,7 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
           questionKey: currentQuestionKey,
           responses: [{
             questionKey: currentQuestionKey,
-            response: formData,
+            response: formData || {},
             timestamp,
             createdAt: existingResponse.createdAt || now,
             updatedAt: now
@@ -184,7 +199,7 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
           questionKey: currentQuestionKey,
           responses: [{
             questionKey: currentQuestionKey,
-            response: formData,
+            response: formData || {},
             timestamp,
             createdAt: now,
             updatedAt: undefined

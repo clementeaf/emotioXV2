@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useFlowNavigationAndState } from '../../hooks/useFlowNavigationAndState';
+import { useStepStore } from '../../stores/useStepStore';
 import { EmojiRangeQuestion, ScaleRangeQuestion, SingleAndMultipleChoiceQuestion, VOCTextQuestion } from './QuestionesComponents';
 import { QuestionComponentProps, ScreenStep } from './types';
 import { QUESTION_TYPE_MAP } from './utils';
@@ -152,14 +152,22 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
 };
 
 export const ScreenComponent: React.FC<{ data: ScreenStep; onContinue?: () => void }> = ({ data, onContinue }) => {
-  const { goToNextStep } = useFlowNavigationAndState();
-
   const handleContinue = () => {
-    if (onContinue) {
-      onContinue();
+    console.log('[ScreenComponent] Continuar clickeado');
+
+    // 🚨 ACTUALIZAR EL STORE PARA AVANZAR EL STEP
+    const store = useStepStore.getState();
+    const currentQuestionKey = store.currentQuestionKey;
+
+    // Para welcome_screen, agregar una respuesta vacía para marcarlo como completado
+    if (currentQuestionKey === 'welcome_screen') {
+      store.updateBackendResponses([
+        ...store.backendResponses,
+        { questionKey: currentQuestionKey, response: {} }
+      ]);
     } else {
-      // Navegar al siguiente step automáticamente
-      goToNextStep();
+      // Para otros screens, solo navegar
+      store.goToNextStep();
     }
   };
 

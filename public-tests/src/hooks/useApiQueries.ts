@@ -22,6 +22,18 @@ export function useAvailableFormsQuery(researchId: string, options?: UseQueryOpt
 
       try {
         const result = await getAvailableForms(researchId);
+
+        // 🔍 LOG DETALLADO DE LA RESPUESTA DE FORMS
+        console.log('[useAvailableFormsQuery] 📊 Datos completos de forms:', {
+          researchId,
+          steps: result.steps,
+          stepsConfiguration: result.stepsConfiguration,
+          count: result.count,
+          // Verificar si hay campos adicionales no tipados
+          allKeys: Object.keys(result),
+          fullResponse: result
+        });
+
         return result;
       } catch (error) {
         console.error('[useAvailableFormsQuery] ❌ Request falló:', {

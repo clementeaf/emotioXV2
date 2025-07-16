@@ -25,7 +25,7 @@ export const QUESTION_TYPE_MAP = {
   cognitive_linear_scale: 'cognitive',
   cognitive_rating: 'cognitive',
   cognitive_ranking: 'cognitive',
-  cognitive_navigation_flow: 'cognitive',
+  cognitive_navigation_flow: 'cognitive_navigation_flow',
   cognitive_preference_test: 'cognitive',
 
   // Tipos adicionales para StepsComponents

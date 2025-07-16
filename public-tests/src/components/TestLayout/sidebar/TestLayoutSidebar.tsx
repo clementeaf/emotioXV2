@@ -1,7 +1,7 @@
 import React from 'react';
 import { useDeleteAllResponsesMutation } from '../../../hooks/useApiQueries';
 import { useSidebarLogic } from '../../../hooks/useSidebarLogic';
-import { useStepStates } from '../../../hooks/useStepStates';
+import { useStepStoreWithBackend } from '../../../hooks/useStepStoreWithBackend';
 import { useFormDataStore } from '../../../stores/useFormDataStore';
 import { useStepStore } from '../../../stores/useStepStore';
 import { useTestStore } from '../../../stores/useTestStore';
@@ -16,34 +16,35 @@ const TestLayoutSidebar: React.FC<Props> = ({
   onStepsReady,
 }) => {
   const { researchId, participantId } = useTestStore();
-  const { currentQuestionKey, setCurrentQuestionKey, setSteps } = useStepStore();
+  const {
+    currentQuestionKey,
+    setCurrentQuestionKey,
+    setSteps,
+    getTotalResponses,
+    getLastCompletedStep,
+    getNextStep,
+    getCompletedSteps,
+    backendResponses
+  } = useStepStore();
   const { clearAllFormData } = useFormDataStore();
+
+  // Integrar con respuestas del backend
+  const { isLoading: isLoadingResponses, error: responsesError } = useStepStoreWithBackend();
 
   const deleteMutation = useDeleteAllResponsesMutation({
     onSuccess: () => {
+      console.log('[TestLayoutSidebar] ✅ Respuestas eliminadas exitosamente');
       clearAllFormData();
-      setCurrentQuestionKey('');
+      const { resetStore } = useStepStore.getState();
+      resetStore();
     },
     onError: (error) => {
       console.error('❌ Error al eliminar respuestas:', error);
     }
   });
 
-  const {
-    steps,
-    totalSteps,
-    isLoading,
-    error,
-    isOpen,
-    toggleSidebar,
-    closeSidebar,
-    isStepEnabled,
-    handleDeleteAllResponses,
-    isDeleting,
-    deleteButtonText,
-    isDeleteDisabled,
-    refetchForms
-  } = useSidebarLogic({
+  // Sincronizar steps del useSidebarLogic con el store
+  const { steps, totalSteps, isLoading, error, isOpen, toggleSidebar, closeSidebar, isStepEnabled, handleDeleteAllResponses, isDeleting, deleteButtonText, isDeleteDisabled, refetchForms } = useSidebarLogic({
     researchId: researchId || '',
     onStepsReady,
     onDeleteAllResponses: async () => {
@@ -53,63 +54,11 @@ const TestLayoutSidebar: React.FC<Props> = ({
     }
   });
 
-  const {
-    currentState,
-    lastCompletedStep,
-    nextStep,
-    completedSteps,
-    totalResponses,
-    getInitialStep
-  } = useStepStates(currentQuestionKey, steps);
-
-  // Log para depuración del sidebar
-  console.log('[TestLayoutSidebar] currentQuestionKey (store):', currentQuestionKey);
-
-  // Sincronizar steps con el store global cuando se cargan
-  React.useEffect(() => {
-    if (steps.length > 0) {
-      // Convertir steps a formato Step para el store
-      const storeSteps = steps.map((step, index) => ({
-        questionKey: step.questionKey,
-        title: step.title,
-        completed: false, // Inicialmente ninguno completado
-        current: index === 0 // Solo el primero activo
-      }));
-
-      console.log('[TestLayoutSidebar] Cargando steps en store:', storeSteps);
-      setSteps(storeSteps);
-    }
-  }, [steps, setSteps]);
-
-  // Obtener estados del store en lugar de useStepStates
-  const { getSteps, getCurrentStep, initializeFromBackendResponses, saveCurrentStepToLocalStorage } = useStepStore();
-  const storeSteps = getSteps();
-  const currentStep = getCurrentStep();
-
-  // Calcular estados basados en el store
-  const completedStepsFromStore = storeSteps.filter(step => step.completed);
-  const currentStepFromStore = storeSteps.find(step => step.current);
-
-  // Inicializar desde respuestas del backend cuando estén disponibles
-  React.useEffect(() => {
-    if (storeSteps.length > 0 && totalResponses > 0) {
-      console.log('[TestLayoutSidebar] Inicializando desde respuestas del backend:', totalResponses);
-      // Convertir completedSteps (string[]) a formato { questionKey: string }[]
-      const responses = completedSteps.map(questionKey => ({ questionKey }));
-      initializeFromBackendResponses(responses);
-    }
-  }, [storeSteps.length, totalResponses, completedSteps, initializeFromBackendResponses]);
-
-  // Guardar step actual en localStorage cuando cambie
-  React.useEffect(() => {
-    if (currentQuestionKey) {
-      console.log('[TestLayoutSidebar] Guardando step actual en localStorage:', currentQuestionKey);
-      saveCurrentStepToLocalStorage();
-    }
-  }, [currentQuestionKey, saveCurrentStepToLocalStorage]);
+  // Forzar re-render usando una key que depende del estado global
+  const sidebarKey = `${backendResponses.length}-${currentQuestionKey}`;
 
   return (
-    <>
+    <div key={sidebarKey}>
       <BurgerMenuButton onClick={toggleSidebar} />
       <MobileOverlay isOpen={isOpen} onClose={closeSidebar} />
       <SidebarContainer isOpen={isOpen} onClose={closeSidebar}>
@@ -133,18 +82,26 @@ const TestLayoutSidebar: React.FC<Props> = ({
           <>
             <ProgressDisplay current={1} total={totalSteps} />
             <StepsList
+              key={sidebarKey}
               steps={steps}
-              currentStepKey={currentQuestionKey} // SIEMPRE el del store global
+              currentStepKey={currentQuestionKey}
               isStepEnabled={isStepEnabled}
             />
             {/* Información del estado actual */}
             <div className="mt-4 p-3 bg-blue-50 rounded border border-blue-200">
               <h4 className="text-sm font-medium text-blue-800 mb-2">Estado Actual:</h4>
               <div className="text-xs text-blue-700 space-y-1">
-                <div>Último completado: {lastCompletedStep || 'Ninguno'}</div>
-                <div>Siguiente step: {nextStep}</div>
-                <div>Respuestas: {totalResponses}</div>
-                <div>Steps completados: {completedSteps.join(', ') || 'Ninguno'}</div>
+                <div>Último completado: {getLastCompletedStep() || 'Ninguno'}</div>
+                <div>Siguiente step: {getNextStep()}</div>
+                <div>Respuestas: {getTotalResponses()}</div>
+                <div>Steps completados: {getCompletedSteps().join(', ') || 'Ninguno'}</div>
+              </div>
+              {/* 🎯 LOG PARA DEBUGGEAR LA INCONSISTENCIA */}
+              <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
+                <div><strong>DEBUG:</strong></div>
+                <div>currentQuestionKey: {currentQuestionKey}</div>
+                <div>backendResponses: {JSON.stringify(backendResponses.map(r => r.questionKey))}</div>
+                <div>steps: {JSON.stringify(steps.map(s => ({ questionKey: s.questionKey, title: s.title })))} </div>
               </div>
             </div>
             {/* Botón para eliminar todas las respuestas */}
@@ -171,7 +128,7 @@ const TestLayoutSidebar: React.FC<Props> = ({
           </>
         )}
       </SidebarContainer>
-    </>
+    </div>
   );
 };
 

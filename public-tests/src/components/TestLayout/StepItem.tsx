@@ -1,5 +1,5 @@
 import React from 'react';
-import { StepState } from '../../hooks/useStepStates';
+import { StepState } from '../../stores/useStepStore';
 import { StepItemProps } from './types';
 
 interface StepItemPropsWithState extends StepItemProps {
