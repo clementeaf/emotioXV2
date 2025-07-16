@@ -10,14 +10,13 @@ const LoginRedirect: React.FC = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const researchId = params.get('researchId');
-    const participantId = params.get('participantId') || 'test-participant-' + Date.now();
+    const participantId = params.get('participantId') || '';
 
     if (researchId) {
-
       setParticipant(
         participantId,
-        'Test Participant',
-        'test@example.com',
+        'Real Participant',
+        'real@example.com',
         researchId
       );
     } else {
@@ -33,6 +32,9 @@ const LoginRedirect: React.FC = () => {
         </h2>
         <p className="text-gray-600">
           Cargando la investigación...
+        </p>
+        <p className="text-sm text-gray-500 mt-2">
+          Usando participantId: {new URLSearchParams(location.search).get('participantId') || 'real-participant-id'}
         </p>
       </div>
     </div>

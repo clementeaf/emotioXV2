@@ -80,9 +80,8 @@ export const useSidebarLogic = ({
             questionKey: stepConfig.questionKey
           };
         })
-        .filter(step => step !== null); // Filtrar steps que no existen
+        .filter(step => step !== null);
 
-      console.log('🔄 Steps ordenados correctamente:', orderedSteps);
       return orderedSteps;
     }
     return [];
@@ -107,26 +106,15 @@ export const useSidebarLogic = ({
         current: index === 0
       }));
 
-      // Actualizar el store de test con los steps
       setSteps(testSteps);
-      console.log('🔄 Sincronizando steps con useTestStore:', {
-        stepsCount: testSteps.length,
-        steps: testSteps.map(s => ({ id: s.id, name: s.name, current: s.current }))
-      });
     }
   }, [steps, setSteps]);
 
   // INICIALIZACIÓN DEL PASO ACTIVO
   const initializeActiveStep = useCallback(() => {
-    console.log('🔍 DEBUG initializeActiveStep:', {
-      stepsLength: steps.length,
-      effectiveCurrentQuestionKey,
-      hasInitialized: hasInitializedRef.current
-    });
 
     if (steps.length > 0 && !effectiveCurrentQuestionKey && !hasInitializedRef.current) {
       const initialStep = getInitialStep();
-      console.log('🔍 DEBUG initializeActiveStep - Step inicial:', initialStep);
 
       setSelectedQuestionKey(initialStep);
       setCurrentQuestionKey(initialStep);
@@ -156,7 +144,6 @@ export const useSidebarLogic = ({
   // SINCRONIZAR currentQuestionKey CON selectedQuestionKey
   useEffect(() => {
     if (currentQuestionKey && currentQuestionKey !== selectedQuestionKey) {
-      console.log('🔍 DEBUG SidebarLogic: Sincronizando currentQuestionKey -> selectedQuestionKey:', currentQuestionKey);
       setSelectedQuestionKey(currentQuestionKey);
     }
   }, [currentQuestionKey, selectedQuestionKey]);
