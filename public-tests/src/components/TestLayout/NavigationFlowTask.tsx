@@ -6,8 +6,15 @@ import { useStepStore } from '../../stores/useStepStore';
 interface BackendResponse {
   questionKey: string;
   response: {
-    selectedValue?: string;
-    textValue?: string;
+    selectedHitzone?: string;
+    selectedImageIndex?: number;
+    imageSelections?: Record<string, unknown>;
+    clickPosition?: {
+      x: number;
+      y: number;
+      hitzoneWidth: number;
+      hitzoneHeight: number;
+    };
     [key: string]: unknown;
   };
 }
@@ -112,7 +119,7 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
   const [localSelectedHitzone, setLocalSelectedHitzone] = useState<string | null>(null);
   const [imageNaturalSize, setImageNaturalSize] = useState<{ width: number; height: number } | null>(null);
   const [imgRenderSize, setImgRenderSize] = useState<{ width: number; height: number } | null>(null);
-  const [imageSelections, setImageSelections] = useState<Record<number, { hitzoneId: string, click: ClickPosition }>>({});
+  const [imageSelections, setImageSelections] = useState<Record<string, { hitzoneId: string, click: ClickPosition }>>({});
   const imageRef = useRef<HTMLImageElement>(null);
 
   const images: ImageFile[] = imageFiles;
@@ -127,16 +134,21 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
       );
 
       if (backendResponse?.response) {
+        const responseData = backendResponse.response;
+        console.log('🎯 NavigationFlowTask - Cargando datos del backend:', responseData);
 
         // Cargar valores desde la respuesta del backend
-        if (backendResponse.response.selectedImageIndex !== undefined) {
-          setLocalSelectedImageIndex(backendResponse.response.selectedImageIndex);
+        if (responseData.selectedImageIndex !== undefined) {
+          setLocalSelectedImageIndex(responseData.selectedImageIndex);
+          console.log('🎯 NavigationFlowTask - selectedImageIndex cargado:', responseData.selectedImageIndex);
         }
-        if (backendResponse.response.selectedHitzone) {
-          setLocalSelectedHitzone(backendResponse.response.selectedHitzone);
+        if (responseData.selectedHitzone) {
+          setLocalSelectedHitzone(responseData.selectedHitzone);
+          console.log('🎯 NavigationFlowTask - selectedHitzone cargado:', responseData.selectedHitzone);
         }
-        if (backendResponse.response.imageSelections) {
-          setImageSelections(backendResponse.response.imageSelections);
+        if (responseData.imageSelections) {
+          setImageSelections(responseData.imageSelections as Record<string, { hitzoneId: string, click: ClickPosition }>);
+          console.log('🎯 NavigationFlowTask - imageSelections cargado:', responseData.imageSelections);
         }
       }
     }
@@ -146,7 +158,7 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
     if (clickPos && typeof clickPos.hitzoneWidth === 'number' && typeof clickPos.hitzoneHeight === 'number') {
       setImageSelections(prev => ({
         ...prev,
-        [localSelectedImageIndex]: { hitzoneId, click: clickPos }
+        [localSelectedImageIndex.toString()]: { hitzoneId, click: clickPos }
       }));
 
       // 🎯 GUARDAR EN FORMDATA
@@ -158,7 +170,7 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
           clickPosition: clickPos,
           imageSelections: {
             ...imageSelections,
-            [localSelectedImageIndex]: { hitzoneId, click: clickPos }
+            [localSelectedImageIndex.toString()]: { hitzoneId, click: clickPos }
           }
         });
       }
@@ -311,12 +323,25 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
                       >
                         {/* Visualización de selección local */}
                         {(() => {
-                          const selection = imageSelections[localSelectedImageIndex];
-                          if (!selection) return null;
-                          if (selection.hitzoneId !== hitzone.id) return null;
+                          const selection = imageSelections[localSelectedImageIndex.toString()];
+                          console.log('🎯 NavigationFlowTask - Renderizando hitzone:', hitzone.id);
+                          console.log('🎯 NavigationFlowTask - imageSelections:', imageSelections);
+                          console.log('🎯 NavigationFlowTask - localSelectedImageIndex:', localSelectedImageIndex);
+                          console.log('🎯 NavigationFlowTask - selection para imagen:', selection);
+
+                          if (!selection) {
+                            console.log('🎯 NavigationFlowTask - No hay selection para esta imagen');
+                            return null;
+                          }
+                          if (selection.hitzoneId !== hitzone.id) {
+                            console.log('🎯 NavigationFlowTask - Selection no coincide con hitzone:', selection.hitzoneId, 'vs', hitzone.id);
+                            return null;
+                          }
                           const { click } = selection;
+                          console.log('🎯 NavigationFlowTask - Click data:', click);
                           const px = (click.x / (click.hitzoneWidth || 1)) * width;
                           const py = (click.y / (click.hitzoneHeight || 1)) * height;
+                          console.log('🎯 NavigationFlowTask - Posición calculada:', { px, py, width, height });
                           return (
                             <div className="absolute left-0 top-0 w-full h-full pointer-events-none">
                               <div

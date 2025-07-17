@@ -15,11 +15,7 @@ import { getCurrentStepData, getQuestionType } from './utils';
 // 🎯 INTERFAZ PARA RESPUESTAS DEL BACKEND
 interface BackendResponse {
   questionKey: string;
-  responses: Array<{
-    questionKey: string;
-    response: Record<string, unknown>;
-    timestamp: string;
-  }>;
+  response: Record<string, unknown>;
 }
 
 const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
@@ -249,11 +245,18 @@ const TestLayoutRenderer: React.FC = () => {
 
   useEffect(() => {
     if (moduleResponses?.responses && researchId && participantId) {
-      const backendResponses = moduleResponses.responses.map((response: BackendResponse) => ({
-        questionKey: response.questionKey,
-        response: response.responses?.[0]?.response || {}
-      }));
+      console.log('🎯 TestLayoutRenderer - moduleResponses completos:', moduleResponses);
+      console.log('🎯 TestLayoutRenderer - responses array:', moduleResponses.responses);
 
+      const backendResponses = moduleResponses.responses.map((response: any) => {
+        console.log('🎯 TestLayoutRenderer - Procesando response:', response);
+        return {
+          questionKey: response.questionKey,
+          response: response.response || {}
+        };
+      });
+
+      console.log('🎯 TestLayoutRenderer - backendResponses procesados:', backendResponses);
       updateBackendResponses(backendResponses);
     }
   }, [moduleResponses?.responses, researchId, participantId, updateBackendResponses]);
