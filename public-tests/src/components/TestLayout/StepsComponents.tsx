@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useFormDataStore } from '../../stores/useFormDataStore';
 import { useStepStore } from '../../stores/useStepStore';
 import { EmojiRangeQuestion, ScaleRangeQuestion, SingleAndMultipleChoiceQuestion, VOCTextQuestion } from './QuestionesComponents';
 import { QuestionComponentProps, ScreenStep } from './types';
@@ -11,6 +12,27 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
   const questionType = QUESTION_TYPE_MAP[currentStepKey as keyof typeof QUESTION_TYPE_MAP] || 'pending';
   const [selectedValue, setSelectedValue] = useState<string>('');
   const [textValue, setTextValue] = useState<string>('');
+
+  // 🎯 USAR EL STORE PARA GUARDAR RESPUESTAS
+  const { setFormData, getFormData } = useFormDataStore();
+  const formData = getFormData(currentStepKey);
+
+  // 🎯 INICIALIZAR VALORES DESDE EL STORE
+  useEffect(() => {
+    if (formData) {
+      if (formData.selectedValue && typeof formData.selectedValue === 'string') {
+        setSelectedValue(formData.selectedValue);
+      }
+      if (formData.textValue && typeof formData.textValue === 'string') {
+        setTextValue(formData.textValue);
+      }
+    }
+  }, [formData]);
+
+  // 🎯 FUNCIÓN PARA GUARDAR EN EL STORE
+  const saveToStore = (data: Record<string, unknown>) => {
+    setFormData(currentStepKey, data);
+  };
 
   const QuestionWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     <div
@@ -57,7 +79,11 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
             leftLabel={question.config?.startLabel as string}
             rightLabel={question.config?.endLabel as string}
             value={selectedValue ? parseInt(selectedValue, 10) : undefined}
-            onChange={(value) => setSelectedValue(String(value))}
+            onChange={(value) => {
+              const stringValue = String(value);
+              setSelectedValue(stringValue);
+              saveToStore({ selectedValue: stringValue });
+            }}
           />
         </QuestionWrapper>
       );
@@ -67,7 +93,11 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
         <QuestionWrapper>
           <EmojiRangeQuestion
             value={selectedValue ? parseInt(selectedValue, 10) : undefined}
-            onChange={(value) => setSelectedValue(String(value))}
+            onChange={(value) => {
+              const stringValue = String(value);
+              setSelectedValue(stringValue);
+              saveToStore({ selectedValue: stringValue });
+            }}
           />
         </QuestionWrapper>
       );
@@ -77,7 +107,10 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
         <QuestionWrapper>
           <VOCTextQuestion
             value={textValue}
-            onChange={setTextValue}
+            onChange={(value) => {
+              setTextValue(value);
+              saveToStore({ textValue: value });
+            }}
             placeholder={question.config?.placeholder as string}
           />
         </QuestionWrapper>
@@ -92,8 +125,11 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
             onChange={(value) => {
               if (typeof value === 'string') {
                 setSelectedValue(value);
+                saveToStore({ selectedValue: value });
               } else if (Array.isArray(value) && value.length > 0) {
-                setSelectedValue(String(value[0]));
+                const stringValue = String(value[0]);
+                setSelectedValue(stringValue);
+                saveToStore({ selectedValue: stringValue });
               }
             }}
             multiple={question.config?.multiple as boolean}
@@ -113,7 +149,11 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
                 {[1, 2, 3, 4, 5].map((option) => (
                   <button
                     key={option}
-                    onClick={() => setSelectedValue(String(option))}
+                    onClick={() => {
+                      const value = String(option);
+                      setSelectedValue(value);
+                      saveToStore({ selectedValue: value });
+                    }}
                     className={`w-full p-3 rounded border transition-colors ${
                       selectedValue === String(option)
                         ? 'bg-blue-600 text-white border-blue-600'

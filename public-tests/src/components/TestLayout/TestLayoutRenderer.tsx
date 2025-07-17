@@ -79,7 +79,6 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
   ),
 
   cognitive_navigation_flow: ({ contentConfiguration, currentQuestionKey }) => {
-    const { getFormData } = useFormDataStore();
     return (
       <NavigationFlowTask
         stepConfig={{
@@ -89,7 +88,6 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
           description: String(contentConfiguration?.description || '¿En cuál de las siguientes pantallas encuentras el objetivo indicado?'),
           files: Array.isArray(contentConfiguration?.files) ? contentConfiguration.files : []
         }}
-        formData={getFormData(currentQuestionKey)}
         currentQuestionKey={currentQuestionKey}
       />
     );
