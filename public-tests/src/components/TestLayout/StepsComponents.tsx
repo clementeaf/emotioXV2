@@ -27,6 +27,17 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
   const [selectedValue, setSelectedValue] = useState<string>('');
   const [textValue, setTextValue] = useState<string>('');
 
+  // 🎯 ESTABILIZAR LA FUNCIÓN DE CALLBACK PARA EVITAR BUCLE INFINITO
+  const handleDataLoaded = useCallback((data: Record<string, unknown>) => {
+    // Cargar valores específicos cuando se cargan los datos
+    if (data.selectedValue && typeof data.selectedValue === 'string') {
+      setSelectedValue(data.selectedValue);
+    }
+    if (data.textValue && typeof data.textValue === 'string') {
+      setTextValue(data.textValue);
+    }
+  }, [setSelectedValue, setTextValue]);
+
   // 🎯 USAR EL NUEVO HOOK DE LOADING STATE
   const {
     isLoading,
@@ -36,21 +47,20 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
     saveToStore
   } = useFormLoadingState({
     questionKey: currentStepKey,
-    onDataLoaded: (data) => {
-      // Cargar valores específicos cuando se cargan los datos
-      if (data.selectedValue && typeof data.selectedValue === 'string') {
-        setSelectedValue(data.selectedValue);
-      }
-      if (data.textValue && typeof data.textValue === 'string') {
-        setTextValue(data.textValue);
-      }
-    }
+    onDataLoaded: handleDataLoaded
   });
 
   // 🎯 FUNCIÓN PARA GUARDAR EN EL STORE (ESTABILIZADA CON USECALLBACK)
   const saveToStoreWithValues = useCallback((data: Record<string, unknown>) => {
     saveToStore(data);
   }, [saveToStore]);
+
+  // 🎯 LIMPIAR VALORES CUANDO CAMBIA LA PREGUNTA
+  useEffect(() => {
+    console.log(`[QuestionComponent] 🔄 Cambiando a pregunta: ${currentStepKey}`);
+    setSelectedValue('');
+    setTextValue('');
+  }, [currentStepKey]);
 
   // 🎯 INICIALIZAR VALORES DESDE EL STORE Y BACKEND
   useEffect(() => {
@@ -153,6 +163,113 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
             </div>
           </div>
         );
+      case 'demographics':
+        return (
+          <div className="flex flex-col items-center justify-center h-full gap-6">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold mb-4">{question.title}</h2>
+              <p className="text-gray-600 mb-6">{question.description}</p>
+              <div className="flex flex-col gap-4 w-full max-w-md">
+                {question.choices?.map((choice, index) => (
+                  <button
+                    key={choice.id}
+                    onClick={() => handleValueChange(choice.id)}
+                    className={`px-6 py-3 rounded-lg font-semibold transition-colors text-left ${
+                      selectedValue === choice.id
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    {choice.text}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      case 'cognitive':
+        return (
+          <div className="flex flex-col items-center justify-center h-full gap-6">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold mb-4">{question.title}</h2>
+              <p className="text-gray-600 mb-6">{question.description}</p>
+              {question.config?.type === 'text' ? (
+                <textarea
+                  value={textValue}
+                  onChange={(e) => handleTextChange(e.target.value)}
+                  placeholder={(question.config?.placeholder as string) || 'Escribe tu respuesta aquí...'}
+                  className="w-full max-w-md p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  rows={4}
+                />
+              ) : question.config?.type === 'choice' ? (
+                <div className="flex flex-col gap-3 w-full max-w-md">
+                  {question.choices?.map((choice, index) => (
+                    <button
+                      key={choice.id}
+                      onClick={() => handleValueChange(choice.id)}
+                      className={`px-6 py-3 rounded-lg font-semibold transition-colors text-left ${
+                        selectedValue === choice.id
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                    >
+                      {choice.text}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex gap-4">
+                  {[1, 2, 3, 4, 5].map((value) => (
+                    <button
+                      key={value}
+                      onClick={() => handleValueChange(value.toString())}
+                      className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
+                        selectedValue === value.toString()
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                    >
+                      {value}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      case 'cognitive_navigation_flow':
+        return (
+          <div className="flex flex-col items-center justify-center h-full gap-6">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold mb-4">{question.title}</h2>
+              <p className="text-gray-600 mb-6">{question.description}</p>
+              <div className="bg-gray-100 p-6 rounded-lg">
+                <p className="text-gray-700 mb-4">Componente de navegación en desarrollo</p>
+                <button
+                  onClick={() => handleValueChange('completed')}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                >
+                  Completar Navegación
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      case 'screen':
+        return (
+          <div className="flex flex-col items-center justify-center h-full gap-6">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold mb-4">{question.title}</h2>
+              <p className="text-gray-600 mb-6">{question.description}</p>
+              <button
+                onClick={() => handleValueChange('viewed')}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+              >
+                Continuar
+              </button>
+            </div>
+          </div>
+        );
       case 'pending':
       default:
         return (
@@ -162,6 +279,7 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
               <p className="text-gray-600">
                 El tipo de pregunta "{questionType}" aún no está implementado
               </p>
+              <p className="text-sm text-gray-500 mt-2">QuestionKey: {currentStepKey}</p>
             </div>
           </div>
         );

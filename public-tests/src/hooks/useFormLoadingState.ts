@@ -40,6 +40,14 @@ export const useFormLoadingState = ({
     }
   }, [onDataLoaded]);
 
+  // 🎯 RESET DEL ESTADO CUANDO CAMBIA LA PREGUNTA
+  useEffect(() => {
+    console.log(`[useFormLoadingState] 🔄 Cambiando questionKey a: ${questionKey}`);
+    setFormValues({});
+    setHasLoadedData(false);
+    setIsLoading(true);
+  }, [questionKey]);
+
   useEffect(() => {
     // Solo procesar si ya no estamos cargando las respuestas
     if (isLoadingResponses) {
@@ -61,8 +69,6 @@ export const useFormLoadingState = ({
       if (existingResponse?.response) {
         console.log(`[useFormLoadingState] ✅ Datos encontrados en backend para ${questionKey}:`, existingResponse.response);
         setFormValues(existingResponse.response as Record<string, unknown>);
-        // También guardar en el store local para persistencia
-        setFormData(questionKey, existingResponse.response as Record<string, unknown>);
         setHasLoadedData(true);
         setIsLoading(false);
 
@@ -101,6 +107,14 @@ export const useFormLoadingState = ({
       return newValues;
     });
   }, [questionKey]);
+
+  // 🎯 GUARDAR EN EL STORE DESPUÉS DEL RENDER PARA EVITAR CONFLICTOS
+  useEffect(() => {
+    if (formValues && Object.keys(formValues).length > 0) {
+      console.log(`[useFormLoadingState] 💾 Guardando en store para ${questionKey}:`, formValues);
+      setFormData(questionKey, formValues);
+    }
+  }, [formValues, questionKey, setFormData]);
 
   const saveToStore = useCallback((data: Record<string, unknown>) => {
     setFormData(questionKey, data);
