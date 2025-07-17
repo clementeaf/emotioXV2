@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useSaveModuleResponseMutation } from '../../hooks/useApiQueries';
+import { useFormLoadingState } from '../../hooks/useFormLoadingState';
 import { useFormDataStore } from '../../stores/useFormDataStore';
 import { useStepStore } from '../../stores/useStepStore';
 import { useTestStore } from '../../stores/useTestStore';
+import { LoadingModal } from './LoadingModal';
 import { EmojiRangeQuestion, ScaleRangeQuestion, SingleAndMultipleChoiceQuestion, VOCTextQuestion } from './QuestionesComponents';
 import { QuestionComponentProps, ScreenStep } from './types';
 import { QUESTION_TYPE_MAP } from './utils';
@@ -25,203 +27,159 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
   const [selectedValue, setSelectedValue] = useState<string>('');
   const [textValue, setTextValue] = useState<string>('');
 
-  // 🎯 USAR EL STORE PARA GUARDAR RESPUESTAS
-  const { setFormData, getFormData } = useFormDataStore();
-  const formData = getFormData(currentStepKey);
+  // 🎯 USAR EL NUEVO HOOK DE LOADING STATE
+  const {
+    isLoading,
+    hasLoadedData,
+    formValues,
+    handleInputChange,
+    saveToStore
+  } = useFormLoadingState({
+    questionKey: currentStepKey,
+    onDataLoaded: (data) => {
+      // Cargar valores específicos cuando se cargan los datos
+      if (data.selectedValue && typeof data.selectedValue === 'string') {
+        setSelectedValue(data.selectedValue);
+      }
+      if (data.textValue && typeof data.textValue === 'string') {
+        setTextValue(data.textValue);
+      }
+    }
+  });
 
   // 🎯 FUNCIÓN PARA GUARDAR EN EL STORE (ESTABILIZADA CON USECALLBACK)
-  const saveToStore = useCallback((data: Record<string, unknown>) => {
-    setFormData(currentStepKey, data);
-  }, [currentStepKey, setFormData]);
+  const saveToStoreWithValues = useCallback((data: Record<string, unknown>) => {
+    saveToStore(data);
+  }, [saveToStore]);
 
   // 🎯 INICIALIZAR VALORES DESDE EL STORE Y BACKEND
   useEffect(() => {
-    if (formData) {
-      if (formData.selectedValue && typeof formData.selectedValue === 'string') {
-        setSelectedValue(formData.selectedValue);
+    if (formValues) {
+      if (formValues.selectedValue && typeof formValues.selectedValue === 'string') {
+        setSelectedValue(formValues.selectedValue);
       }
-      if (formData.textValue && typeof formData.textValue === 'string') {
-        setTextValue(formData.textValue);
-      }
-    }
-  }, [formData]);
-
-  useEffect(() => {
-    // Buscar respuesta del backend para este step usando el store
-    const store = useStepStore.getState();
-    const backendResponse = store.backendResponses.find(
-      (r: BackendResponse) => r.questionKey === currentStepKey
-    );
-
-    if (backendResponse?.response) {
-
-      // Cargar valores desde la respuesta del backend
-      if (backendResponse.response.selectedValue && typeof backendResponse.response.selectedValue === 'string') {
-        setSelectedValue(backendResponse.response.selectedValue);
-        saveToStore({ selectedValue: backendResponse.response.selectedValue });
-      }
-      if (backendResponse.response.textValue && typeof backendResponse.response.textValue === 'string') {
-        setTextValue(backendResponse.response.textValue);
-        saveToStore({ textValue: backendResponse.response.textValue });
+      if (formValues.textValue && typeof formValues.textValue === 'string') {
+        setTextValue(formValues.textValue);
       }
     }
-  }, [currentStepKey, saveToStore]);
+  }, [formValues]);
 
-  const QuestionWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <div
-      className='flex flex-col items-center justify-center h-full gap-10'
-      data-question-key={currentStepKey}
-      data-selected-value={selectedValue}
-      data-text-value={textValue}
-    >
-      <div className='mb-2 text-center'>
-        <h3 className='text-lg font-semibold mb-2'>
-          {question.title || question.questionKey || 'Pregunta'}
-        </h3>
-      </div>
-      {children}
-    </div>
-  );
-
-  if (!questionType) {
-    return (
-      <div className='flex flex-col items-center justify-center h-full gap-4'>
-        <div className='text-center'>
-          <h3 className='text-lg font-semibold text-red-600 mb-2'>Tipo de pregunta no reconocido</h3>
-          <p className='text-sm text-gray-600'>No se pudo determinar el tipo de pregunta para: {currentStepKey}</p>
-        </div>
-      </div>
-    );
+  // 🎯 MODAL DE CARGA
+  if (isLoading) {
+    return <LoadingModal />;
   }
 
-  switch (questionType) {
-    case 'scale':
-      return (
-        <QuestionWrapper>
+  const handleValueChange = (value: string) => {
+    setSelectedValue(value);
+    saveToStoreWithValues({
+      selectedValue: value,
+      textValue: textValue
+    });
+  };
+
+  const handleTextChange = (value: string) => {
+    setTextValue(value);
+    saveToStoreWithValues({
+      selectedValue: selectedValue,
+      textValue: value
+    });
+  };
+
+  const renderQuestion = () => {
+    switch (questionType) {
+      case 'scale':
+        return (
           <ScaleRangeQuestion
-            min={
-              (question.config?.min as number) ||
-              ((question.config?.scaleRange as { start?: number })?.start as number) ||
-              1
-            }
-            max={
-              (question.config?.max as number) ||
-              ((question.config?.scaleRange as { end?: number })?.end as number) ||
-              10
-            }
-            leftLabel={question.config?.startLabel as string}
-            rightLabel={question.config?.endLabel as string}
+            min={(question.config?.min as number) || 1}
+            max={(question.config?.max as number) || 5}
+            leftLabel={(question.config?.startLabel as string) || 'Sí'}
+            rightLabel={(question.config?.endLabel as string) || 'No'}
             value={selectedValue ? parseInt(selectedValue, 10) : undefined}
-            onChange={(value) => {
-              const stringValue = String(value);
-              setSelectedValue(stringValue);
-              saveToStore({ selectedValue: stringValue });
-            }}
+            onChange={(value) => handleValueChange(value.toString())}
           />
-        </QuestionWrapper>
-      );
-
-    case 'emoji':
-      return (
-        <QuestionWrapper>
+        );
+      case 'emoji':
+        return (
           <EmojiRangeQuestion
+            emojis={(question.config?.emojis as string[]) || ['😡', '😕', '😐', '🙂', '😄']}
             value={selectedValue ? parseInt(selectedValue, 10) : undefined}
-            onChange={(value) => {
-              const stringValue = String(value);
-              setSelectedValue(stringValue);
-              saveToStore({ selectedValue: stringValue });
-            }}
+            onChange={(value) => handleValueChange(value.toString())}
           />
-        </QuestionWrapper>
-      );
-
-    case 'text':
-      return (
-        <QuestionWrapper>
+        );
+      case 'text':
+        return (
           <VOCTextQuestion
             value={textValue}
-            onChange={(value) => {
-              setTextValue(value);
-              saveToStore({ textValue: value });
-            }}
-            placeholder={question.config?.placeholder as string}
+            onChange={handleTextChange}
+            placeholder={(question.config?.placeholder as string) || 'Escribe tu respuesta aquí...'}
           />
-        </QuestionWrapper>
-      );
-
-    case 'choice':
-      return (
-        <QuestionWrapper>
+        );
+      case 'choice':
+        return (
           <SingleAndMultipleChoiceQuestion
             choices={question.choices || []}
             value={selectedValue}
             onChange={(value) => {
               if (typeof value === 'string') {
-                setSelectedValue(value);
-                saveToStore({ selectedValue: value });
+                handleValueChange(value);
               } else if (Array.isArray(value) && value.length > 0) {
-                const stringValue = String(value[0]);
-                setSelectedValue(stringValue);
-                saveToStore({ selectedValue: stringValue });
+                handleValueChange(value[0]);
               }
             }}
-            multiple={question.config?.multiple as boolean}
+            multiple={(question.config?.multiple as boolean) || false}
           />
-        </QuestionWrapper>
-      );
-
-    case 'smartvoc':
-      return (
-        <QuestionWrapper>
-          <div className='text-center'>
-            <h3 className='text-lg font-semibold text-blue-600 mb-2'>
-              {question.title || 'Pregunta SmartVOC'}
-            </h3>
-            <div className='bg-gray-50 p-4 rounded-lg'>
-              <div className='mt-4 space-y-2'>
-                {[1, 2, 3, 4, 5].map((option) => (
+        );
+      case 'smartvoc':
+        return (
+          <div className="flex flex-col items-center justify-center h-full gap-6">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold mb-4">{question.title}</h2>
+              <p className="text-gray-600 mb-6">{question.description}</p>
+              <div className="flex gap-4">
+                {[1, 2, 3, 4, 5].map((value) => (
                   <button
-                    key={option}
-                    onClick={() => {
-                      const value = String(option);
-                      setSelectedValue(value);
-                      saveToStore({ selectedValue: value });
-                    }}
-                    className={`w-full p-3 rounded border transition-colors ${
-                      selectedValue === String(option)
-                        ? 'bg-blue-600 text-white border-blue-600'
-                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                    key={value}
+                    onClick={() => handleValueChange(value.toString())}
+                    className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
+                      selectedValue === value.toString()
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}
                   >
-                    Opción {option}
+                    {value}
                   </button>
                 ))}
               </div>
             </div>
           </div>
-        </QuestionWrapper>
-      );
-
-    case 'pending':
-      return (
-        <QuestionWrapper>
-          <div className='text-center'>
-            <h3 className='text-lg font-semibold text-yellow-600 mb-2'>Componente en desarrollo</h3>
-            <p className='text-sm text-gray-600'>El componente para {currentStepKey} está pendiente de implementación</p>
+        );
+      case 'pending':
+      default:
+        return (
+          <div className="flex flex-col items-center justify-center h-full">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold mb-4">Componente en desarrollo</h2>
+              <p className="text-gray-600">
+                El tipo de pregunta "{questionType}" aún no está implementado
+              </p>
+            </div>
           </div>
-        </QuestionWrapper>
-      );
+        );
+    }
+  };
 
-    default:
-      return (
-        <QuestionWrapper>
-          <div className='text-center'>
-            <h3 className='text-lg font-semibold text-red-600 mb-2'>Componente no implementado</h3>
-            <p className='text-sm text-gray-600'>No existe implementación para el tipo: {questionType}</p>
-          </div>
-        </QuestionWrapper>
-      );
-  }
+  return (
+    <div className="flex flex-col items-center justify-center h-full">
+      <div className="text-center mb-6">
+        <h2 className="text-2xl font-bold mb-2">{question.title}</h2>
+        <p className="text-gray-600 mb-4">{question.description}</p>
+        {hasLoadedData && (
+          <p className="text-sm text-green-600">✓ Tus respuestas han sido cargadas</p>
+        )}
+      </div>
+      {renderQuestion()}
+    </div>
+  );
 };
 
 export const ScreenComponent: React.FC<{ data: ScreenStep; onContinue?: () => void }> = ({ data }) => {

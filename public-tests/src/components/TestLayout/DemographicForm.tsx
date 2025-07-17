@@ -1,69 +1,25 @@
-import React, { useEffect, useState } from 'react';
-import { useModuleResponsesQuery } from '../../hooks/useApiQueries';
-import { useFormDataStore } from '../../stores/useFormDataStore';
-import { useTestStore } from '../../stores/useTestStore';
+import React from 'react';
+import { useFormLoadingState } from '../../hooks/useFormLoadingState';
+import { LoadingModal } from './LoadingModal';
 import { DemographicFormProps } from './types';
 
 export const DemographicForm: React.FC<DemographicFormProps> = ({
   demographicQuestions,
   onSubmit
 }) => {
-  const { setFormData, getFormData, formData } = useFormDataStore();
-  const { researchId, participantId } = useTestStore();
-  const [formValues, setFormValues] = useState<Record<string, string>>({});
-
-  // Query para obtener respuestas existentes del backend
-  const { data: moduleResponses } = useModuleResponsesQuery(
-    researchId || '',
-    participantId || ''
-  );
-
-  useEffect(() => {
-    // Buscar respuesta existente para demographics en el backend
-    if (moduleResponses?.responses && Array.isArray(moduleResponses.responses)) {
-      const demographicsResponse = (moduleResponses.responses as any[]).find(
-        (response: any) => response.questionKey === 'demographics'
-      );
-
-      if (demographicsResponse?.response) {
-        setFormValues(demographicsResponse.response as Record<string, string>);
-        // También guardar en el store local para persistencia
-        setFormData('demographics', demographicsResponse.response as Record<string, string>);
-        return;
-      }
-    }
-
-    // Si no hay datos en el backend, cargar del store local
-    const existingData = getFormData('demographics');
-    if (existingData && Object.keys(existingData).length > 0) {
-      setFormValues(existingData as Record<string, string>);
-    }
-  }, [moduleResponses, getFormData, setFormData]);
-
-  // Efecto para detectar cuando se limpia el store y resetear el estado local
-  useEffect(() => {
-    const demographicsData = formData['demographics'];
-    if (!demographicsData || Object.keys(demographicsData).length === 0) {
-      console.log('[DemographicForm] Store limpiado, reseteando estado local');
-      setFormValues({});
-    }
-  }, [formData]);
-
-  const handleInputChange = (key: string, value: string) => {
-    const newValues = {
-      ...formValues,
-      [key]: value
-    };
-    setFormValues(newValues);
-
-    // Guardar en el store
-    setFormData('demographics', newValues);
-  };
+  const {
+    isLoading,
+    hasLoadedData,
+    formValues,
+    handleInputChange
+  } = useFormLoadingState({
+    questionKey: 'demographics'
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (onSubmit) {
-      onSubmit(formValues);
+      onSubmit(formValues as Record<string, string>);
     }
   };
 
@@ -76,11 +32,18 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
       options: questionData.options
     }));
 
+  // 🎯 MODAL DE CARGA
+  if (isLoading) {
+    return <LoadingModal />;
+  }
+
   return (
     <div className='flex flex-col items-center justify-center h-full gap-10'>
       <div className='mb-2 text-center'>
         <h3 className='text-lg font-semibold mb-2'>Preguntas Demográficas</h3>
-        <p className='text-sm text-gray-600'>Completa la información solicitada</p>
+        <p className='text-sm text-gray-600'>
+          {hasLoadedData ? 'Tus respuestas han sido cargadas' : 'Completa la información solicitada'}
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="w-full max-w-lg mx-auto flex flex-col gap-4">
@@ -92,7 +55,7 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
             </label>
             <select
               name={q.key}
-              value={formValues[q.key] || ''}
+              value={(formValues[q.key] as string) || ''}
               onChange={(e) => handleInputChange(q.key, e.target.value)}
               required={q.required}
               className="p-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
