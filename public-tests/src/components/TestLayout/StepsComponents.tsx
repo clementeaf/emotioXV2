@@ -54,7 +54,7 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
 
   // 🎯 INICIALIZAR VALORES DESDE EL STORE Y BACKEND
   useEffect(() => {
-    if (formValues) {
+    if (formValues && Object.keys(formValues).length > 0) {
       if (formValues.selectedValue && typeof formValues.selectedValue === 'string') {
         setSelectedValue(formValues.selectedValue);
       }

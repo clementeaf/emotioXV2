@@ -86,22 +86,25 @@ export const useFormLoadingState = ({
     }
 
     setIsLoading(false);
-  }, [moduleResponses, getFormData, setFormData, isLoadingResponses, questionKey, stableOnDataLoaded]);
+  }, [moduleResponses, isLoadingResponses, questionKey, stableOnDataLoaded]);
 
   const handleInputChange = useCallback((key: string, value: unknown) => {
-    const newValues = {
-      ...formValues,
-      [key]: value
-    };
-    setFormValues(newValues);
+    setFormValues(prevValues => {
+      const newValues = {
+        ...prevValues,
+        [key]: value
+      };
 
-    // Guardar en el store
-    setFormData(questionKey, newValues);
-  }, [formValues, setFormData, questionKey]);
+      // Guardar en el store
+      setFormData(questionKey, newValues);
+
+      return newValues;
+    });
+  }, [questionKey]);
 
   const saveToStore = useCallback((data: Record<string, unknown>) => {
     setFormData(questionKey, data);
-  }, [setFormData, questionKey]);
+  }, [questionKey]);
 
   return {
     isLoading: isLoading || isLoadingResponses,
