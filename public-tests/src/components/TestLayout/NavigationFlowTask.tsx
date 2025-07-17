@@ -1,5 +1,6 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useFormDataStore } from '../../stores/useFormDataStore';
+import { useStepStore } from '../../stores/useStepStore';
 
 interface ClickPosition {
   x: number;
@@ -105,6 +106,35 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
   const imageRef = useRef<HTMLImageElement>(null);
 
   const images: ImageFile[] = imageFiles;
+
+  // 🎯 CARGAR RESPUESTAS DEL BACKEND SI EXISTEN
+  useEffect(() => {
+    if (currentQuestionKey) {
+      // Buscar respuesta del backend para este step
+      const store = useStepStore.getState();
+      const backendResponse = store.backendResponses.find(
+        (r: any) => r.questionKey === currentQuestionKey
+      );
+
+      if (backendResponse?.response) {
+        console.log('[NavigationFlowTask] 🔄 Cargando respuesta del backend:', {
+          questionKey: currentQuestionKey,
+          response: backendResponse.response
+        });
+
+        // Cargar valores desde la respuesta del backend
+        if (backendResponse.response.selectedImageIndex !== undefined) {
+          setLocalSelectedImageIndex(backendResponse.response.selectedImageIndex);
+        }
+        if (backendResponse.response.selectedHitzone) {
+          setLocalSelectedHitzone(backendResponse.response.selectedHitzone);
+        }
+        if (backendResponse.response.imageSelections) {
+          setImageSelections(backendResponse.response.imageSelections);
+        }
+      }
+    }
+  }, [currentQuestionKey]);
 
   const handleHitzoneClick = (hitzoneId: string, clickPos?: ClickPosition): void => {
     if (clickPos && typeof clickPos.hitzoneWidth === 'number' && typeof clickPos.hitzoneHeight === 'number') {

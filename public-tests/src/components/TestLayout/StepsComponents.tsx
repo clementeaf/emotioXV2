@@ -17,7 +17,12 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
   const { setFormData, getFormData } = useFormDataStore();
   const formData = getFormData(currentStepKey);
 
-  // 🎯 INICIALIZAR VALORES DESDE EL STORE
+  // 🎯 FUNCIÓN PARA GUARDAR EN EL STORE (DECLARADA PRIMERO)
+  const saveToStore = (data: Record<string, unknown>) => {
+    setFormData(currentStepKey, data);
+  };
+
+  // 🎯 INICIALIZAR VALORES DESDE EL STORE Y BACKEND
   useEffect(() => {
     if (formData) {
       if (formData.selectedValue && typeof formData.selectedValue === 'string') {
@@ -29,10 +34,31 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
     }
   }, [formData]);
 
-  // 🎯 FUNCIÓN PARA GUARDAR EN EL STORE
-  const saveToStore = (data: Record<string, unknown>) => {
-    setFormData(currentStepKey, data);
-  };
+  // 🎯 CARGAR RESPUESTAS DEL BACKEND SI EXISTEN
+  useEffect(() => {
+    // Buscar respuesta del backend para este step usando el store
+    const store = useStepStore.getState();
+    const backendResponse = store.backendResponses.find(
+      (r: any) => r.questionKey === currentStepKey
+    );
+
+    if (backendResponse?.response) {
+      console.log('QuestionComponent] 🔄 Cargando respuesta del backend:', {
+        questionKey: currentStepKey,
+        response: backendResponse.response
+      });
+
+      // Cargar valores desde la respuesta del backend
+      if (backendResponse.response.selectedValue && typeof backendResponse.response.selectedValue === 'string') {
+        setSelectedValue(backendResponse.response.selectedValue);
+        saveToStore({ selectedValue: backendResponse.response.selectedValue });
+      }
+      if (backendResponse.response.textValue && typeof backendResponse.response.textValue === 'string') {
+        setTextValue(backendResponse.response.textValue);
+        saveToStore({ textValue: backendResponse.response.textValue });
+      }
+    }
+  }, [currentStepKey, saveToStore]);
 
   const QuestionWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     <div
