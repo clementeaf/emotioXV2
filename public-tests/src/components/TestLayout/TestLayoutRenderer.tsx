@@ -251,7 +251,7 @@ const TestLayoutRenderer: React.FC = () => {
     if (moduleResponses?.responses && researchId && participantId) {
       const backendResponses = moduleResponses.responses.map((response: BackendResponse) => ({
         questionKey: response.questionKey,
-        response: response.responses[0]?.response || {}
+        response: response.responses?.[0]?.response || {}
       }));
 
       updateBackendResponses(backendResponses);
