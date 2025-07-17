@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { useFormDataStore } from '../../stores/useFormDataStore';
 
 interface ClickPosition {
   x: number;
@@ -48,6 +49,8 @@ interface NavigationQuestion {
 
 interface NavigationFlowTaskProps {
   stepConfig: NavigationQuestion;
+  formData?: any;
+  currentQuestionKey?: string;
 }
 
 const convertHitZonesToPercentageCoordinates = (
@@ -86,7 +89,7 @@ const convertHitZonesToPercentageCoordinates = (
   });
 };
 
-export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConfig }) => {
+export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConfig, formData, currentQuestionKey }) => {
   const navigationQuestion = stepConfig;
   const id = String(navigationQuestion.id || '').trim();
   const type = String(navigationQuestion.type || 'cognitive_navigation_flow').trim();
@@ -109,6 +112,20 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
         ...prev,
         [localSelectedImageIndex]: { hitzoneId, click: clickPos }
       }));
+
+      // 🎯 GUARDAR EN FORMDATA
+      if (currentQuestionKey) {
+        const { setFormData } = useFormDataStore.getState();
+        setFormData(currentQuestionKey, {
+          selectedImageIndex: localSelectedImageIndex,
+          selectedHitzone: hitzoneId,
+          clickPosition: clickPos,
+          imageSelections: {
+            ...imageSelections,
+            [localSelectedImageIndex]: { hitzoneId, click: clickPos }
+          }
+        });
+      }
     }
   };
 

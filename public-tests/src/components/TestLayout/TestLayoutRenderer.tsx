@@ -1,5 +1,5 @@
-import React from 'react';
-import { useAvailableFormsQuery } from '../../hooks/useApiQueries';
+import React, { useEffect } from 'react';
+import { useAvailableFormsQuery, useModuleResponsesQuery } from '../../hooks/useApiQueries';
 import { useFormDataStore } from '../../stores/useFormDataStore';
 import { useStepStore } from '../../stores/useStepStore';
 import { useTestStore } from '../../stores/useTestStore';
@@ -78,17 +78,22 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
     />
   ),
 
-  cognitive_navigation_flow: ({ contentConfiguration, currentQuestionKey }) => (
-    <NavigationFlowTask
-      stepConfig={{
-        id: currentQuestionKey,
-        type: 'cognitive_navigation_flow',
-        title: String(contentConfiguration?.title || 'Flujo de Navegación'),
-        description: String(contentConfiguration?.description || '¿En cuál de las siguientes pantallas encuentras el objetivo indicado?'),
-        files: Array.isArray(contentConfiguration?.files) ? contentConfiguration.files : []
-      }}
-    />
-  ),
+  cognitive_navigation_flow: ({ contentConfiguration, currentQuestionKey }) => {
+    const { getFormData } = useFormDataStore();
+    return (
+      <NavigationFlowTask
+        stepConfig={{
+          id: currentQuestionKey,
+          type: 'cognitive_navigation_flow',
+          title: String(contentConfiguration?.title || 'Flujo de Navegación'),
+          description: String(contentConfiguration?.description || '¿En cuál de las siguientes pantallas encuentras el objetivo indicado?'),
+          files: Array.isArray(contentConfiguration?.files) ? contentConfiguration.files : []
+        }}
+        formData={getFormData(currentQuestionKey)}
+        currentQuestionKey={currentQuestionKey}
+      />
+    );
+  },
 
   cognitive_preference_test: ({ contentConfiguration, currentQuestionKey }) => (
     <PreferenceTestTask
@@ -210,8 +215,9 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
 
 const TestLayoutRenderer: React.FC = () => {
   const currentQuestionKey = useStepStore(state => state.currentQuestionKey);
-  const { getSteps, getStepState } = useStepStore();
+  const { getSteps, getStepState, updateBackendResponses } = useStepStore();
   const steps = getSteps();
+  const { getFormData } = useFormDataStore();
 
   console.log('[TestLayoutRenderer] 🔍 DEBUG RENDERER:', {
     currentQuestionKey,
@@ -223,8 +229,32 @@ const TestLayoutRenderer: React.FC = () => {
     }))
   });
 
-  const { researchId } = useTestStore();
-  const { getFormData } = useFormDataStore();
+  const { researchId, participantId } = useTestStore();
+
+  // 🎯 SINCRONIZAR RESPONSAS DEL BACKEND CON EL STORE
+  const { data: moduleResponses } = useModuleResponsesQuery(
+    researchId || '',
+    participantId || ''
+  );
+
+  useEffect(() => {
+    if (moduleResponses?.responses && researchId && participantId) {
+      console.log('[TestLayoutRenderer] 🔄 Sincronizando respuestas del backend:', {
+        responses: moduleResponses.responses.map((r: any) => r.questionKey),
+        researchId,
+        participantId
+      });
+
+      // Convertir las respuestas del backend al formato del store
+      const backendResponses = moduleResponses.responses.map((response: any) => ({
+        questionKey: response.questionKey,
+        response: response.response || {}
+      }));
+
+      // Actualizar el store con las respuestas del backend
+      updateBackendResponses(backendResponses);
+    }
+  }, [moduleResponses?.responses, researchId, participantId, updateBackendResponses]);
 
   // 🎯 VERIFICACIÓN DE AUTENTICACIÓN
   if (!researchId) {
