@@ -5,6 +5,16 @@ import { EmojiRangeQuestion, ScaleRangeQuestion, SingleAndMultipleChoiceQuestion
 import { QuestionComponentProps, ScreenStep } from './types';
 import { QUESTION_TYPE_MAP } from './utils';
 
+// 🎯 INTERFAZ PARA RESPUESTAS DEL BACKEND
+interface BackendResponse {
+  questionKey: string;
+  response: {
+    selectedValue?: string;
+    textValue?: string;
+    [key: string]: unknown;
+  };
+}
+
 export const QuestionComponent: React.FC<QuestionComponentProps> = ({
   question,
   currentStepKey
@@ -38,7 +48,7 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
     // Buscar respuesta del backend para este step usando el store
     const store = useStepStore.getState();
     const backendResponse = store.backendResponses.find(
-      (r: any) => r.questionKey === currentStepKey
+      (r: BackendResponse) => r.questionKey === currentStepKey
     );
 
     if (backendResponse?.response) {
