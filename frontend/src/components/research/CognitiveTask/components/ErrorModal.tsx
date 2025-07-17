@@ -2,7 +2,7 @@ import { Info } from 'lucide-react';
 import React from 'react';
 
 import { Button } from '@/components/ui/Button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/Dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 
 import { ErrorModalData } from '../types';
 
@@ -34,4 +34,4 @@ export const ErrorModal: React.FC<ErrorModalProps> = ({ isOpen, onClose, error }
       </DialogContent>
     </Dialog>
   );
-}; 
+};

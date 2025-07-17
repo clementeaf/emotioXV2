@@ -6,17 +6,17 @@ import { useEffect, useState } from 'react';
 import { QuestionType } from '../../../../../../shared/interfaces/question-types.enum';
 
 import {
-  ERROR_MESSAGES,
-  QUERY_KEYS,
-  SUCCESS_MESSAGES
+    ERROR_MESSAGES,
+    QUERY_KEYS,
+    SUCCESS_MESSAGES
 } from '../constants';
 import {
-  DEFAULT_THANK_YOU_SCREEN_VALIDATION,
-  ErrorModalData,
-  ThankYouScreenConfig,
-  ThankYouScreenFormData,
-  UseThankYouScreenFormResult,
-  ValidationErrors
+    DEFAULT_THANK_YOU_SCREEN_VALIDATION,
+    ErrorModalData,
+    ThankYouScreenConfig,
+    ThankYouScreenFormData,
+    UseThankYouScreenFormResult,
+    ValidationErrors
 } from '../types';
 
 export const useThankYouScreenForm = (researchId: string): UseThankYouScreenFormResult => {
@@ -166,7 +166,7 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
     if (!thankYouScreenId) return;
     setIsDeleting(true);
     try {
-      await thankYouScreenService.delete(thankYouScreenId);
+      await thankYouScreenService.delete(thankYouScreenId, researchId);
       setThankYouScreenId(null);
       setFormData({
         isEnabled: false,

@@ -74,9 +74,10 @@ export const thankYouScreenService = {
   /**
    * Elimina una pantalla de agradecimiento
    * @param id ID de la pantalla
+   * @param researchId ID de la investigación
    */
-  async delete(id: string): Promise<void> {
-    const response = await thankYouScreenFixedAPI.delete(id).send();
+  async delete(id: string, researchId: string): Promise<void> {
+    const response = await thankYouScreenFixedAPI.delete(id, researchId).send();
     return response;
   },
 

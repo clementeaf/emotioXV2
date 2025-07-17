@@ -311,15 +311,23 @@ export const thankYouScreenFixedAPI = {
   /**
    * Elimina un ThankYouScreen existente
    * @param id ID del ThankYouScreen
+   * @param researchId ID de la investigación (requerido para la ruta)
    * @returns Objeto con método send
    */
-  delete: (id: string) => {
+  delete: (id: string, researchId: string) => {
     if (!id) {
       throw new Error('Se requiere un ID para eliminar el ThankYouScreen');
     }
 
-    const url = (API_ENDPOINTS.thankYouScreen?.delete || '/thank-you-screen/{id}').replace('{id}', id);
-    // console.log(`[ThankYouScreenAPI] Eliminando ThankYouScreen con ID ${id}, URL: ${url}`);
+    if (!researchId) {
+      throw new Error('Se requiere un researchId para eliminar el ThankYouScreen');
+    }
+
+    const url = API_ENDPOINTS.thankYouScreen?.delete
+      ?.replace('{researchId}', researchId)
+      ?.replace('{screenId}', id) || `/research/${researchId}/thank-you-screen/${id}`;
+
+    // console.log(`[ThankYouScreenAPI] Eliminando ThankYouScreen con ID ${id} para researchId ${researchId}, URL: ${url}`);
     // console.log(`[ThankYouScreenAPI] URL completa: ${API_BASE_URL}${url}`);
 
     return {
