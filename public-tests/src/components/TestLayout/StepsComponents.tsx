@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useFormDataStore } from '../../stores/useFormDataStore';
 import { useStepStore } from '../../stores/useStepStore';
 import { EmojiRangeQuestion, ScaleRangeQuestion, SingleAndMultipleChoiceQuestion, VOCTextQuestion } from './QuestionesComponents';
@@ -17,10 +17,10 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
   const { setFormData, getFormData } = useFormDataStore();
   const formData = getFormData(currentStepKey);
 
-  // 🎯 FUNCIÓN PARA GUARDAR EN EL STORE (DECLARADA PRIMERO)
-  const saveToStore = (data: Record<string, unknown>) => {
+  // 🎯 FUNCIÓN PARA GUARDAR EN EL STORE (ESTABILIZADA CON USECALLBACK)
+  const saveToStore = useCallback((data: Record<string, unknown>) => {
     setFormData(currentStepKey, data);
-  };
+  }, [currentStepKey, setFormData]);
 
   // 🎯 INICIALIZAR VALORES DESDE EL STORE Y BACKEND
   useEffect(() => {
