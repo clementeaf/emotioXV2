@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useAvailableFormsQuery, useModuleResponsesQuery } from '../../hooks/useApiQueries';
+import { useAvailableFormsQuery, useModuleResponsesQuery, useSaveModuleResponseMutation } from '../../hooks/useApiQueries';
 import { useFormDataStore } from '../../stores/useFormDataStore';
 import { useStepStore } from '../../stores/useStepStore';
 import { useTestStore } from '../../stores/useTestStore';
@@ -12,24 +12,73 @@ import { QuestionComponent, ScreenComponent, UnknownStepComponent } from './Step
 import { DemographicQuestionData, RendererArgs } from './types';
 import { getCurrentStepData, getQuestionType } from './utils';
 
-// 🎯 INTERFAZ PARA RESPUESTAS DEL BACKEND
-interface BackendResponse {
-  questionKey: string;
-  response: Record<string, unknown>;
-}
+// 🎯 COMPONENTE PARA THANK YOU SCREEN CON AUTO-GUARDADO
+const ThankYouScreenComponent: React.FC<{
+  contentConfiguration: Record<string, unknown>;
+  currentQuestionKey: string;
+}> = ({ contentConfiguration, currentQuestionKey }) => {
+  const { setFormData } = useFormDataStore();
+  const { researchId, participantId } = useTestStore();
+  const saveModuleResponseMutation = useSaveModuleResponseMutation();
+
+  // 🎯 AUTO-GUARDAR CUANDO SE VISITA THANK YOU SCREEN
+  React.useEffect(() => {
+    if (currentQuestionKey === 'thank_you_screen' && researchId && participantId) {
+      // Guardar en formData
+      setFormData(currentQuestionKey, {
+        visited: true,
+        timestamp: new Date().toISOString()
+      });
+
+      // 🎯 ENVIAR A MODULE-RESPONSES API
+      const sendToAPI = async () => {
+        try {
+          const timestamp = new Date().toISOString();
+          const createData = {
+            researchId: researchId,
+            participantId: participantId,
+            questionKey: currentQuestionKey,
+            responses: [{
+              questionKey: currentQuestionKey,
+              response: { visited: true },
+              timestamp,
+              createdAt: timestamp,
+              updatedAt: undefined
+            }],
+            metadata: {}
+          };
+
+          await saveModuleResponseMutation.mutateAsync(createData);
+        } catch (error) {
+          console.error('❌ ThankYouScreenComponent - Error enviando a module-responses:', error);
+        }
+      };
+
+      sendToAPI();
+    }
+  }, [currentQuestionKey, setFormData, researchId, participantId]);
+
+  return (
+    <div className='flex flex-col items-center justify-center h-full w-full'>
+      <h2 className='text-2xl font-bold mb-2'>
+        {String(contentConfiguration?.title || 'Gracias por participar')}
+      </h2>
+      <p className='text-center text-gray-600'>
+        {String(contentConfiguration?.message || 'Agradecemos tus respuestas')}
+      </p>
+    </div>
+  );
+};
 
 const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
   screen: ({ contentConfiguration, currentQuestionKey }) => {
+    // 🎯 COMPONENTE PARA thank_you_screen CON AUTO-GUARDADO
     if (currentQuestionKey === 'thank_you_screen') {
       return (
-        <div className='flex flex-col items-center justify-center h-full w-full'>
-          <h2 className='text-2xl font-bold mb-2'>
-            {String(contentConfiguration?.title || 'Gracias por participar')}
-          </h2>
-          <p className='text-center text-gray-600'>
-            {String(contentConfiguration?.message || 'Agradecemos tus respuestas')}
-          </p>
-        </div>
+        <ThankYouScreenComponent
+          contentConfiguration={contentConfiguration}
+          currentQuestionKey={currentQuestionKey}
+        />
       );
     }
 
@@ -221,23 +270,10 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
 
 const TestLayoutRenderer: React.FC = () => {
   const currentQuestionKey = useStepStore(state => state.currentQuestionKey);
-  const { getSteps, getStepState, updateBackendResponses } = useStepStore();
-  const steps = getSteps();
+  const { updateBackendResponses } = useStepStore();
   const { getFormData } = useFormDataStore();
-
-  console.log('[TestLayoutRenderer] 🔍 DEBUG RENDERER:', {
-    currentQuestionKey,
-    totalSteps: steps.length,
-    steps: steps.map((step, idx) => ({
-      questionKey: step.questionKey,
-      title: step.title,
-      state: getStepState(idx)
-    }))
-  });
-
   const { researchId, participantId } = useTestStore();
 
-  // 🎯 SINCRONIZAR RESPONSAS DEL BACKEND CON EL STORE
   const { data: moduleResponses } = useModuleResponsesQuery(
     researchId || '',
     participantId || ''
@@ -245,26 +281,18 @@ const TestLayoutRenderer: React.FC = () => {
 
   useEffect(() => {
     if (moduleResponses?.responses && researchId && participantId) {
-      console.log('🎯 TestLayoutRenderer - moduleResponses completos:', moduleResponses);
-      console.log('🎯 TestLayoutRenderer - responses array:', moduleResponses.responses);
-
       const backendResponses = moduleResponses.responses.map((response: any) => {
-        console.log('🎯 TestLayoutRenderer - Procesando response:', response);
         return {
           questionKey: response.questionKey,
           response: response.response || {}
         };
       });
 
-      console.log('🎯 TestLayoutRenderer - backendResponses procesados:', backendResponses);
       updateBackendResponses(backendResponses);
     }
   }, [moduleResponses?.responses, researchId, participantId, updateBackendResponses]);
 
-  // 🎯 VERIFICACIÓN DE AUTENTICACIÓN
   if (!researchId) {
-    console.log('[TestLayoutRenderer] ❌ No hay researchId, redirigiendo a login');
-    // Obtener researchId de la URL o localStorage
     const urlParams = new URLSearchParams(window.location.search);
     const urlResearchId = urlParams.get('researchId');
     const storedResearchId = localStorage.getItem('researchId');
@@ -298,12 +326,6 @@ const TestLayoutRenderer: React.FC = () => {
 
   const { contentConfiguration } = currentStepData;
   const questionType = getQuestionType(currentQuestionKey);
-
-  console.log('[TestLayoutRenderer] 🎯 RENDERIZANDO:', {
-    currentQuestionKey,
-    questionType,
-    contentConfiguration: contentConfiguration ? 'SÍ' : 'NO'
-  });
 
   const renderedForm =
     RENDERERS[questionType]?.({ contentConfiguration, currentQuestionKey }) ||

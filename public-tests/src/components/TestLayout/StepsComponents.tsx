@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { useSaveModuleResponseMutation } from '../../hooks/useApiQueries';
 import { useFormDataStore } from '../../stores/useFormDataStore';
 import { useStepStore } from '../../stores/useStepStore';
+import { useTestStore } from '../../stores/useTestStore';
 import { EmojiRangeQuestion, ScaleRangeQuestion, SingleAndMultipleChoiceQuestion, VOCTextQuestion } from './QuestionesComponents';
 import { QuestionComponentProps, ScreenStep } from './types';
 import { QUESTION_TYPE_MAP } from './utils';
@@ -223,20 +225,45 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
 };
 
 export const ScreenComponent: React.FC<{ data: ScreenStep; onContinue?: () => void }> = ({ data }) => {
-  const handleContinue = () => {
+  const { setFormData } = useFormDataStore();
+  const { researchId, participantId } = useTestStore();
+  const saveModuleResponseMutation = useSaveModuleResponseMutation();
+
+  const handleContinue = async () => {
     const store = useStepStore.getState();
     const currentQuestionKey = store.currentQuestionKey;
 
-    // Para welcome_screen, agregar una respuesta vacía para marcarlo como completado
-    if (currentQuestionKey === 'welcome_screen') {
-      store.updateBackendResponses([
-        ...store.backendResponses,
-        { questionKey: currentQuestionKey, response: {} }
-      ]);
-    } else {
-      // Para otros screens, solo navegar
-      store.goToNextStep();
+    if (currentQuestionKey && researchId && participantId) {
+      // 🎯 GUARDAR EN FORMDATA
+      setFormData(currentQuestionKey, {
+        visited: true,
+        timestamp: new Date().toISOString()
+      });
+
+      try {
+        const timestamp = new Date().toISOString();
+        const createData = {
+          researchId: researchId,
+          participantId: participantId,
+          questionKey: currentQuestionKey,
+          responses: [{
+            questionKey: currentQuestionKey,
+            response: { visited: true },
+            timestamp,
+            createdAt: timestamp,
+            updatedAt: undefined
+          }],
+          metadata: {}
+        };
+
+        await saveModuleResponseMutation.mutateAsync(createData);
+      } catch (error) {
+        console.error('❌ ScreenComponent - Error enviando a module-responses:', error);
+      }
     }
+
+    // Navegar al siguiente step
+    store.goToNextStep();
   };
 
   return (
