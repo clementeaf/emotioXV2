@@ -34,7 +34,6 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
     }
   }, [formData]);
 
-  // 🎯 CARGAR RESPUESTAS DEL BACKEND SI EXISTEN
   useEffect(() => {
     // Buscar respuesta del backend para este step usando el store
     const store = useStepStore.getState();
@@ -43,10 +42,6 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
     );
 
     if (backendResponse?.response) {
-      console.log('QuestionComponent] 🔄 Cargando respuesta del backend:', {
-        questionKey: currentStepKey,
-        response: backendResponse.response
-      });
 
       // Cargar valores desde la respuesta del backend
       if (backendResponse.response.selectedValue && typeof backendResponse.response.selectedValue === 'string') {
@@ -217,11 +212,8 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
   }
 };
 
-export const ScreenComponent: React.FC<{ data: ScreenStep; onContinue?: () => void }> = ({ data, onContinue }) => {
+export const ScreenComponent: React.FC<{ data: ScreenStep; onContinue?: () => void }> = ({ data }) => {
   const handleContinue = () => {
-    console.log('[ScreenComponent] Continuar clickeado');
-
-    // 🚨 ACTUALIZAR EL STORE PARA AVANZAR EL STEP
     const store = useStepStore.getState();
     const currentQuestionKey = store.currentQuestionKey;
 

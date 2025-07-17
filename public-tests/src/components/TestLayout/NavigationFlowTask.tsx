@@ -117,10 +117,6 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
       );
 
       if (backendResponse?.response) {
-        console.log('[NavigationFlowTask] 🔄 Cargando respuesta del backend:', {
-          questionKey: currentQuestionKey,
-          response: backendResponse.response
-        });
 
         // Cargar valores desde la respuesta del backend
         if (backendResponse.response.selectedImageIndex !== undefined) {
