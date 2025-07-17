@@ -2,6 +2,16 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useFormDataStore } from '../../stores/useFormDataStore';
 import { useStepStore } from '../../stores/useStepStore';
 
+// 🎯 INTERFAZ PARA RESPUESTAS DEL BACKEND
+interface BackendResponse {
+  questionKey: string;
+  response: {
+    selectedValue?: string;
+    textValue?: string;
+    [key: string]: unknown;
+  };
+}
+
 interface ClickPosition {
   x: number;
   y: number;
@@ -50,7 +60,7 @@ interface NavigationQuestion {
 
 interface NavigationFlowTaskProps {
   stepConfig: NavigationQuestion;
-  formData?: any;
+  formData?: Record<string, unknown>;
   currentQuestionKey?: string;
 }
 
@@ -113,7 +123,7 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
       // Buscar respuesta del backend para este step
       const store = useStepStore.getState();
       const backendResponse = store.backendResponses.find(
-        (r: any) => r.questionKey === currentQuestionKey
+        (r: BackendResponse) => r.questionKey === currentQuestionKey
       );
 
       if (backendResponse?.response) {

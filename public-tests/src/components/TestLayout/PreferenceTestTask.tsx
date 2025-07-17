@@ -1,13 +1,27 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useFormDataStore } from '../../stores/useFormDataStore';
+import { useStepStore } from '../../stores/useStepStore';
 import { PreferenceFile, PreferenceTestTaskProps } from './types';
+
+// 🎯 INTERFAZ PARA RESPUESTAS DEL BACKEND
+interface BackendResponse {
+  questionKey: string;
+  response: {
+    selectedValue?: string;
+    textValue?: string;
+    [key: string]: unknown;
+  };
+}
 
 const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({
   stepConfig,
   selectedImageId: externalSelectedImageId = null,
-  onImageSelect
+  onImageSelect,
+  currentQuestionKey
 }) => {
   const [selectedImageId, setSelectedImageId] = useState<string | null>(externalSelectedImageId);
   const [error, setError] = useState<string | null>(null);
+  const { setFormData, getFormData } = useFormDataStore();
 
   // Estado para zoom modal
   const [zoomImage, setZoomImage] = useState<PreferenceFile | null>(null);
@@ -16,6 +30,28 @@ const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({
   const [dragging, setDragging] = useState(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   const imgContainerRef = useRef<HTMLDivElement>(null);
+
+  // 🎯 CARGAR RESPUESTA DEL BACKEND SI EXISTE
+  useEffect(() => {
+    if (currentQuestionKey) {
+      // Buscar respuesta del backend para este step
+      const store = useStepStore.getState();
+      const backendResponse = store.backendResponses.find(
+        (r: BackendResponse) => r.questionKey === currentQuestionKey
+      );
+
+      if (backendResponse?.response?.selectedValue) {
+        setSelectedImageId(backendResponse.response.selectedValue);
+        return;
+      }
+
+      // Si no hay respuesta del backend, cargar del store local
+      const localData = getFormData(currentQuestionKey);
+      if (localData?.selectedValue) {
+        setSelectedImageId(localData.selectedValue as string);
+      }
+    }
+  }, [currentQuestionKey, getFormData]);
 
   // Extraer la configuración de la pregunta
   let preferenceQuestion: Record<string, unknown> | null = null;
@@ -54,6 +90,14 @@ const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({
   const handleImageSelect = (imageId: string) => {
     setSelectedImageId(imageId);
     setError(null);
+
+    // 🎯 GUARDAR EN FORMDATA
+    if (currentQuestionKey) {
+      setFormData(currentQuestionKey, {
+        selectedValue: imageId
+      });
+    }
+
     onImageSelect?.(imageId);
   };
 

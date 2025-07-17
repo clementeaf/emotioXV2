@@ -12,6 +12,16 @@ import { QuestionComponent, ScreenComponent, UnknownStepComponent } from './Step
 import { DemographicQuestionData, RendererArgs } from './types';
 import { getCurrentStepData, getQuestionType } from './utils';
 
+// 🎯 INTERFAZ PARA RESPUESTAS DEL BACKEND
+interface BackendResponse {
+  questionKey: string;
+  responses: Array<{
+    questionKey: string;
+    response: Record<string, unknown>;
+    timestamp: string;
+  }>;
+}
+
 const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
   screen: ({ contentConfiguration, currentQuestionKey }) => {
     if (currentQuestionKey === 'thank_you_screen') {
@@ -102,6 +112,7 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
         description: String(contentConfiguration?.description || 'Selecciona tu preferencia'),
         files: Array.isArray(contentConfiguration?.files) ? contentConfiguration.files : []
       }}
+      currentQuestionKey={currentQuestionKey}
     />
   ),
 
@@ -121,6 +132,7 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
           isSaving={false}
           isApiLoading={false}
           dataLoading={false}
+          currentQuestionKey={currentQuestionKey}
         />
       </div>
     </div>
@@ -237,19 +249,11 @@ const TestLayoutRenderer: React.FC = () => {
 
   useEffect(() => {
     if (moduleResponses?.responses && researchId && participantId) {
-      console.log('[TestLayoutRenderer] 🔄 Sincronizando respuestas del backend:', {
-        responses: moduleResponses.responses.map((r: any) => r.questionKey),
-        researchId,
-        participantId
-      });
-
-      // Convertir las respuestas del backend al formato del store
-      const backendResponses = moduleResponses.responses.map((response: any) => ({
+      const backendResponses = moduleResponses.responses.map((response: BackendResponse) => ({
         questionKey: response.questionKey,
-        response: response.response || {}
+        response: response.responses[0]?.response || {}
       }));
 
-      // Actualizar el store con las respuestas del backend
       updateBackendResponses(backendResponses);
     }
   }, [moduleResponses?.responses, researchId, participantId, updateBackendResponses]);

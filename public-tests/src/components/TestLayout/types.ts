@@ -111,6 +111,7 @@ export interface PreferenceTestTaskProps {
   stepConfig: Record<string, unknown>;
   selectedImageId?: string | null;
   onImageSelect?: (imageId: string) => void;
+  currentQuestionKey?: string;
 }
 
 export interface ModuleResponseData {
