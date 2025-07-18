@@ -49,6 +49,7 @@ interface EyeTrackingRecruitFormData {
       enabled: boolean;
       required: boolean;
       options: string[];
+      disqualifyingGenders?: string[];
     };
     educationLevel: {
       enabled: boolean;
@@ -124,6 +125,8 @@ interface UseEyeTrackingRecruitResult {
   updateDisqualifyingAges: (disqualifyingAges: string[]) => void;
   updateCountryOptions: (options: string[]) => void;
   updateDisqualifyingCountries: (disqualifyingCountries: string[]) => void;
+  updateGenderOptions: (options: string[]) => void;
+  updateDisqualifyingGenders: (disqualifyingGenders: string[]) => void;
 
   // Acciones
   saveForm: () => void;
@@ -187,7 +190,8 @@ const DEFAULT_CONFIG: EyeTrackingRecruitFormData = {
     gender: {
       enabled: false,
       required: false,
-      options: []
+      options: [],
+      disqualifyingGenders: []
     },
     educationLevel: {
       enabled: false,
@@ -742,6 +746,34 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     }));
   }, []);
 
+  // Función para actualizar las opciones de géneros
+  const updateGenderOptions = useCallback((options: string[]) => {
+    setFormData(prevData => ({
+      ...prevData,
+      demographicQuestions: {
+        ...prevData.demographicQuestions,
+        gender: {
+          ...prevData.demographicQuestions.gender,
+          options: options
+        }
+      }
+    }));
+  }, []);
+
+  // Función para actualizar los géneros descalificantes
+  const updateDisqualifyingGenders = useCallback((disqualifyingGenders: string[]) => {
+    setFormData(prevData => ({
+      ...prevData,
+      demographicQuestions: {
+        ...prevData.demographicQuestions,
+        gender: {
+          ...prevData.demographicQuestions.gender,
+          disqualifyingGenders: disqualifyingGenders
+        }
+      }
+    }));
+  }, []);
+
   // Acciones
   const generateQRCode = useCallback(() => {
     const link = generateRecruitmentLink();
@@ -928,6 +960,8 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     updateDisqualifyingAges,
     updateCountryOptions,
     updateDisqualifyingCountries,
+    updateGenderOptions,
+    updateDisqualifyingGenders,
 
     // Acciones
     saveForm,

@@ -14,6 +14,7 @@ import { ErrorModal } from './components';
 import AgeConfigModal from './components/AgeConfigModal';
 import CountryConfigModal from './components/CountryConfigModal';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
+import { GenderConfigModal } from './components/GenderConfigModal';
 import { useEyeTrackingRecruit } from './hooks/useEyeTrackingRecruit';
 
 
@@ -97,6 +98,8 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
     updateDisqualifyingAges,
     updateCountryOptions,
     updateDisqualifyingCountries,
+    updateGenderOptions,
+    updateDisqualifyingGenders,
     saveForm,
     generateRecruitmentLink,
     generateQRCode,
@@ -109,6 +112,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [ageModalOpen, setAgeModalOpen] = React.useState(false);
   const [countryModalOpen, setCountryModalOpen] = React.useState(false);
+  const [genderModalOpen, setGenderModalOpen] = React.useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = React.useState(false);
 
   // Function to determine the save button text
@@ -163,6 +167,14 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
     updateDisqualifyingCountries(disqualifyingCountries);
     toast.success(`Configuración de países guardada con ${validCountries.length} países válidos y ${disqualifyingCountries.length} países descalificantes`);
     setCountryModalOpen(false);
+  };
+
+  const handleGenderConfigSave = (options: any[], disqualifyingGenders: string[]) => {
+    const optionNames = options.map(option => option.name);
+    updateGenderOptions(optionNames);
+    updateDisqualifyingGenders(disqualifyingGenders);
+    toast.success(`Configuración de géneros guardada con ${options.length} géneros válidos y ${disqualifyingGenders.length} géneros descalificantes`);
+    setGenderModalOpen(false);
   };
 
   if (loading) {
@@ -246,7 +258,13 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           type="checkbox"
                           id="gender"
                           checked={formData.demographicQuestions.gender.enabled}
-                          onChange={(e) => handleDemographicChange('gender' as DemographicQuestionKeys, e.target.checked)}
+                          onChange={(e) => {
+                            handleDemographicChange('gender' as DemographicQuestionKeys, e.target.checked);
+                            // Abrir automáticamente el modal cuando se marca el checkbox
+                            if (e.target.checked) {
+                              setGenderModalOpen(true);
+                            }
+                          }}
                           disabled={!demographicQuestionsEnabled}
                           className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                         />
@@ -658,6 +676,19 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
         onSave={handleCountryConfigSave}
         initialValidCountries={formData.demographicQuestions.country.options || []}
         initialDisqualifyingCountries={formData.demographicQuestions.country.disqualifyingCountries || []}
+      />
+
+      {/* Modal para configuración de géneros */}
+      <GenderConfigModal
+        isOpen={genderModalOpen}
+        onClose={() => setGenderModalOpen(false)}
+        onSave={handleGenderConfigSave}
+        currentOptions={[
+          { id: 'masculino', name: 'Masculino', isQualified: true },
+          { id: 'femenino', name: 'Femenino', isQualified: true },
+          { id: 'prefiero-no-especificar', name: 'Prefiero no especificar', isQualified: true }
+        ]}
+        currentDisqualified={formData.demographicQuestions.gender.disqualifyingGenders || []}
       />
 
       {/* Modal para confirmar eliminación */}
