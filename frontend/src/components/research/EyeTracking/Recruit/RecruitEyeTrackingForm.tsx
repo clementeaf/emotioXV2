@@ -11,6 +11,8 @@ import { eyeTrackingFixedAPI } from '@/lib/eye-tracking-api';
 import { Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { ErrorModal } from './components';
+import AgeConfigModal from './components/AgeConfigModal';
+import { DeleteConfirmModal } from './components/DeleteConfirmModal';
 import { useEyeTrackingRecruit } from './hooks/useEyeTrackingRecruit';
 
 
@@ -90,6 +92,8 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
     handleParamOptionChange,
     setLimitParticipants,
     setParticipantLimit,
+    updateAgeOptions,
+    updateDisqualifyingAges,
     saveForm,
     generateRecruitmentLink,
     generateQRCode,
@@ -100,6 +104,8 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
   } = useEyeTrackingRecruit({ researchId });
 
   const [isDeleting, setIsDeleting] = React.useState(false);
+  const [ageModalOpen, setAgeModalOpen] = React.useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = React.useState(false);
 
   // Function to determine the save button text
   const getSaveButtonText = () => {
@@ -118,8 +124,10 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
       toast.error('No hay datos para eliminar.');
       return;
     }
-    const confirmed = window.confirm('¿Estás seguro de que deseas eliminar todos los datos de reclutamiento ocular (demographics) de esta investigación? Esta acción no se puede deshacer.');
-    if (!confirmed) return;
+    setDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
     setIsDeleting(true);
     try {
       await eyeTrackingFixedAPI.delete(researchId).send();
@@ -129,7 +137,21 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
       toast.error(error?.message || 'No se pudo eliminar la configuración.');
     } finally {
       setIsDeleting(false);
+      setDeleteModalOpen(false);
     }
+  };
+
+  const handleAgeConfigClick = () => {
+    setAgeModalOpen(true);
+  };
+
+  const handleAgeConfigSave = (options: string[], disqualifyingAges: string[]) => {
+    updateAgeOptions(options);
+    updateDisqualifyingAges(disqualifyingAges);
+    // Aquí también actualizaríamos las edades descalificantes
+    // Por ahora solo mostramos un toast con ambas informaciones
+    toast.success(`Configuración de edad guardada con ${options.length} opciones válidas y ${disqualifyingAges.length} edades descalificantes`);
+    setAgeModalOpen(false);
   };
 
   if (loading) {
@@ -178,6 +200,10 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           onChange={(e) => {
                             // console.log('Edad cambiado:', e.target.checked);
                             handleDemographicChange('age' as DemographicQuestionKeys, e.target.checked);
+                            // Abrir automáticamente el modal cuando se marca el checkbox
+                            if (e.target.checked) {
+                              setAgeModalOpen(true);
+                            }
                           }}
                           disabled={!demographicQuestionsEnabled}
                           className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
@@ -599,6 +625,23 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
         isOpen={modalVisible}
         onClose={closeModal}
         error={modalError}
+      />
+
+      {/* Modal para configuración de edad */}
+      <AgeConfigModal
+        isOpen={ageModalOpen}
+        onClose={() => setAgeModalOpen(false)}
+        onSave={handleAgeConfigSave}
+        initialValidAges={formData.demographicQuestions.age.options || []}
+        initialDisqualifyingAges={formData.demographicQuestions.age.disqualifyingAges || []}
+      />
+
+      {/* Modal para confirmar eliminación */}
+      <DeleteConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={handleConfirmDelete}
+        isDeleting={isDeleting}
       />
     </>
   );

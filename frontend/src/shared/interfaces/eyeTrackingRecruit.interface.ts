@@ -2,6 +2,7 @@ export interface DemographicQuestion {
   enabled: boolean;
   required: boolean;
   options?: string[];
+  disqualifyingAges?: string[];
 }
 
 export interface DemographicQuestions {

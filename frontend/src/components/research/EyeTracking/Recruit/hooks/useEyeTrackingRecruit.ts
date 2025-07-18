@@ -37,6 +37,7 @@ interface EyeTrackingRecruitFormData {
       enabled: boolean;
       required: boolean;
       options: string[];
+      disqualifyingAges?: string[];
     };
     country: {
       enabled: boolean;
@@ -118,6 +119,8 @@ interface UseEyeTrackingRecruitResult {
   handleParamOptionChange: (key: ParameterOptionKeys, value: boolean) => void;
   setLimitParticipants: (value: boolean) => void;
   setParticipantLimit: (value: number) => void;
+  updateAgeOptions: (options: string[]) => void;
+  updateDisqualifyingAges: (disqualifyingAges: string[]) => void;
 
   // Acciones
   saveForm: () => void;
@@ -170,7 +173,8 @@ const DEFAULT_CONFIG: EyeTrackingRecruitFormData = {
     age: {
       enabled: false,
       required: false,
-      options: []
+      options: [],
+      disqualifyingAges: []
     },
     country: {
       enabled: false,
@@ -679,6 +683,34 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     }));
   }, []);
 
+  // Función para actualizar las opciones de edad
+  const updateAgeOptions = useCallback((options: string[]) => {
+    setFormData(prevData => ({
+      ...prevData,
+      demographicQuestions: {
+        ...prevData.demographicQuestions,
+        age: {
+          ...prevData.demographicQuestions.age,
+          options: options
+        }
+      }
+    }));
+  }, []);
+
+  // Función para actualizar las edades descalificantes
+  const updateDisqualifyingAges = useCallback((disqualifyingAges: string[]) => {
+    setFormData(prevData => ({
+      ...prevData,
+      demographicQuestions: {
+        ...prevData.demographicQuestions,
+        age: {
+          ...prevData.demographicQuestions.age,
+          disqualifyingAges: disqualifyingAges
+        }
+      }
+    }));
+  }, []);
+
   // Acciones
   const generateQRCode = useCallback(() => {
     const link = generateRecruitmentLink();
@@ -861,6 +893,8 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     handleParamOptionChange,
     setLimitParticipants,
     setParticipantLimit,
+    updateAgeOptions,
+    updateDisqualifyingAges,
 
     // Acciones
     saveForm,
