@@ -12,7 +12,6 @@ import { QuestionComponent, ScreenComponent, UnknownStepComponent } from './Step
 import { DemographicQuestionData, RendererArgs } from './types';
 import { getCurrentStepData, getQuestionType } from './utils';
 
-// 🎯 COMPONENTE PARA THANK YOU SCREEN CON AUTO-GUARDADO
 const ThankYouScreenComponent: React.FC<{
   contentConfiguration: Record<string, unknown>;
   currentQuestionKey: string;
@@ -312,10 +311,10 @@ const TestLayoutRenderer: React.FC = () => {
 
   const { data: formsData, isLoading, error } = useAvailableFormsQuery(researchId || '');
 
-  if (isLoading) return <div>Cargando...</div>;
-  if (error) return <div>Error: {error.message}</div>;
+  if (isLoading) return <div className='flex flex-col items-center justify-center h-full'>Cargando...</div>;
+  if (error) return <div className='flex flex-col items-center justify-center h-full'>Error: {error.message}</div>;
   if (!currentQuestionKey) {
-    return <div>No se encontró información para este step</div>;
+    return <div className='flex flex-col items-center justify-center h-full'>No se encontró información para este step</div>;
   }
 
   const currentStepData = getCurrentStepData(formsData, currentQuestionKey);
