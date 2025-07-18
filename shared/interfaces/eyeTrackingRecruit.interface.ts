@@ -5,27 +5,27 @@
  */
 
 // Tipos para las claves de las preguntas demográficas
-export type DemographicQuestionKeys = 
-  | 'age' 
-  | 'country' 
-  | 'gender' 
-  | 'educationLevel' 
-  | 'householdIncome' 
-  | 'employmentStatus' 
-  | 'dailyHoursOnline' 
+export type DemographicQuestionKeys =
+  | 'age'
+  | 'country'
+  | 'gender'
+  | 'educationLevel'
+  | 'householdIncome'
+  | 'employmentStatus'
+  | 'dailyHoursOnline'
   | 'technicalProficiency';
 
 // Tipos para las claves de la configuración del enlace
-export type LinkConfigKeys = 
-  | 'allowMobile' 
-  | 'trackLocation' 
+export type LinkConfigKeys =
+  | 'allowMobile'
+  | 'trackLocation'
   | 'allowMultipleAttempts';
 
 // Tipos para las claves de las opciones de parámetros
-export type ParameterOptionKeys = 
-  | 'saveDeviceInfo' 
-  | 'saveLocationInfo' 
-  | 'saveResponseTimes' 
+export type ParameterOptionKeys =
+  | 'saveDeviceInfo'
+  | 'saveLocationInfo'
+  | 'saveResponseTimes'
   | 'saveUserJourney';
 
 // Estructura para las preguntas demográficas
@@ -34,41 +34,49 @@ export interface DemographicQuestions {
     enabled: boolean;
     required: boolean;
     options?: string[]; // Rangos de edad predefinidos
+    disqualifyingAges?: string[]; // Edades que descalifican
   };
   country: {
     enabled: boolean;
     required: boolean;
     options?: string[]; // Lista de países o "all"
+    disqualifyingCountries?: string[]; // Países que descalifican
   };
   gender: {
     enabled: boolean;
     required: boolean;
     options?: string[]; // Lista de opciones de género
+    disqualifyingGenders?: string[]; // Géneros que descalifican
   };
   educationLevel: {
     enabled: boolean;
     required: boolean;
     options?: string[]; // Niveles de educación
+    disqualifyingEducation?: string[]; // Niveles educativos que descalifican
   };
   householdIncome: {
     enabled: boolean;
     required: boolean;
     options?: string[]; // Rangos de ingresos
+    disqualifyingIncomes?: string[]; // Ingresos que descalifican
   };
   employmentStatus: {
     enabled: boolean;
     required: boolean;
     options?: string[]; // Estados de empleo
+    disqualifyingEmploymentStatuses?: string[]; // Estados de empleo que descalifican
   };
   dailyHoursOnline: {
     enabled: boolean;
     required: boolean;
     options?: string[]; // Rangos de horas
+    disqualifyingHours?: string[]; // Horas que descalifican
   };
   technicalProficiency: {
     enabled: boolean;
     required: boolean;
     options?: string[]; // Niveles de habilidad técnica
+    disqualifyingProficiencies?: string[]; // Niveles de competencia que descalifican
   };
 }
 
@@ -201,4 +209,4 @@ export enum RecruitLinkType {
   STANDARD = 'standard', // Enlace estándar
   PREVIEW = 'preview', // Enlace de vista previa
   ADMIN = 'admin' // Enlace de administrador
-} 
+}

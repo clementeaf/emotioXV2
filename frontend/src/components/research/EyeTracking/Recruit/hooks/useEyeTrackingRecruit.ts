@@ -61,21 +61,25 @@ interface EyeTrackingRecruitFormData {
       enabled: boolean;
       required: boolean;
       options: string[];
+      disqualifyingIncomes?: string[];
     };
     employmentStatus: {
       enabled: boolean;
       required: boolean;
       options: string[];
+      disqualifyingEmploymentStatuses?: string[];
     };
     dailyHoursOnline: {
       enabled: boolean;
       required: boolean;
       options: string[];
+      disqualifyingHours?: string[];
     };
     technicalProficiency: {
       enabled: boolean;
       required: boolean;
       options: string[];
+      disqualifyingProficiencies?: string[];
     };
   };
   linkConfig: {
@@ -130,6 +134,14 @@ interface UseEyeTrackingRecruitResult {
   updateDisqualifyingGenders: (disqualifyingGenders: string[]) => void;
   updateEducationOptions: (options: string[]) => void;
   updateDisqualifyingEducation: (disqualifyingEducation: string[]) => void;
+  updateHouseholdIncomeOptions: (options: string[]) => void;
+  updateDisqualifyingHouseholdIncomes: (disqualifyingIncomes: string[]) => void;
+  updateEmploymentStatusOptions: (options: string[]) => void;
+  updateDisqualifyingEmploymentStatuses: (disqualifyingEmploymentStatuses: string[]) => void;
+  updateDailyHoursOnlineOptions: (options: string[]) => void;
+  updateDisqualifyingDailyHoursOnline: (disqualifyingHours: string[]) => void;
+  updateTechnicalProficiencyOptions: (options: string[]) => void;
+  updateDisqualifyingTechnicalProficiencies: (disqualifyingProficiencies: string[]) => void;
 
   // Acciones
   saveForm: () => void;
@@ -205,22 +217,26 @@ const DEFAULT_CONFIG: EyeTrackingRecruitFormData = {
     householdIncome: {
       enabled: false,
       required: false,
-      options: []
+      options: [],
+      disqualifyingIncomes: []
     },
     employmentStatus: {
       enabled: false,
       required: false,
-      options: []
+      options: [],
+      disqualifyingEmploymentStatuses: []
     },
     dailyHoursOnline: {
       enabled: false,
       required: false,
-      options: []
+      options: [],
+      disqualifyingHours: []
     },
     technicalProficiency: {
       enabled: false,
       required: false,
-      options: []
+      options: [],
+      disqualifyingProficiencies: []
     }
   },
   linkConfig: {
@@ -806,6 +822,118 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     }));
   }, []);
 
+  // Función para actualizar las opciones de ingresos familiares
+  const updateHouseholdIncomeOptions = useCallback((options: string[]) => {
+    setFormData(prevData => ({
+      ...prevData,
+      demographicQuestions: {
+        ...prevData.demographicQuestions,
+        householdIncome: {
+          ...prevData.demographicQuestions.householdIncome,
+          options: options
+        }
+      }
+    }));
+  }, []);
+
+  // Función para actualizar los ingresos familiares descalificantes
+  const updateDisqualifyingHouseholdIncomes = useCallback((disqualifyingIncomes: string[]) => {
+    setFormData(prevData => ({
+      ...prevData,
+      demographicQuestions: {
+        ...prevData.demographicQuestions,
+        householdIncome: {
+          ...prevData.demographicQuestions.householdIncome,
+          disqualifyingIncomes: disqualifyingIncomes
+        }
+      }
+    }));
+  }, []);
+
+  // Función para actualizar las opciones de situación laboral
+  const updateEmploymentStatusOptions = useCallback((options: string[]) => {
+    setFormData(prevData => ({
+      ...prevData,
+      demographicQuestions: {
+        ...prevData.demographicQuestions,
+        employmentStatus: {
+          ...prevData.demographicQuestions.employmentStatus,
+          options: options
+        }
+      }
+    }));
+  }, []);
+
+  // Función para actualizar las situaciones laborales descalificantes
+  const updateDisqualifyingEmploymentStatuses = useCallback((disqualifyingEmploymentStatuses: string[]) => {
+    setFormData(prevData => ({
+      ...prevData,
+      demographicQuestions: {
+        ...prevData.demographicQuestions,
+        employmentStatus: {
+          ...prevData.demographicQuestions.employmentStatus,
+          disqualifyingEmploymentStatuses: disqualifyingEmploymentStatuses
+        }
+      }
+    }));
+  }, []);
+
+  // Función para actualizar las opciones de horas diarias en línea
+  const updateDailyHoursOnlineOptions = useCallback((options: string[]) => {
+    setFormData(prevData => ({
+      ...prevData,
+      demographicQuestions: {
+        ...prevData.demographicQuestions,
+        dailyHoursOnline: {
+          ...prevData.demographicQuestions.dailyHoursOnline,
+          options: options
+        }
+      }
+    }));
+  }, []);
+
+  // Función para actualizar las horas diarias en línea descalificantes
+  const updateDisqualifyingDailyHoursOnline = useCallback((disqualifyingHours: string[]) => {
+    setFormData(prevData => ({
+      ...prevData,
+      demographicQuestions: {
+        ...prevData.demographicQuestions,
+        dailyHoursOnline: {
+          ...prevData.demographicQuestions.dailyHoursOnline,
+          disqualifyingHours: disqualifyingHours
+        }
+      }
+    }));
+  }, []);
+
+  // Función para actualizar las opciones de competencia técnica
+  const updateTechnicalProficiencyOptions = useCallback((options: string[]) => {
+    setFormData(prevData => ({
+      ...prevData,
+      demographicQuestions: {
+        ...prevData.demographicQuestions,
+        technicalProficiency: {
+          ...prevData.demographicQuestions.technicalProficiency,
+          options: options
+        }
+      }
+    }));
+  }, []);
+
+  // Función para actualizar las competencias técnicas descalificantes
+  const updateDisqualifyingTechnicalProficiencies = useCallback((disqualifyingProficiencies: string[]) => {
+    setFormData(prevData => ({
+      ...prevData,
+      demographicQuestions: {
+        ...prevData.demographicQuestions,
+        technicalProficiency: {
+          ...prevData.demographicQuestions.technicalProficiency,
+          disqualifyingProficiencies: disqualifyingProficiencies
+        }
+      }
+    }));
+  }, []);
+
   // Acciones
   const generateQRCode = useCallback(() => {
     const link = generateRecruitmentLink();
@@ -996,6 +1124,14 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     updateDisqualifyingGenders,
     updateEducationOptions,
     updateDisqualifyingEducation,
+    updateHouseholdIncomeOptions,
+    updateDisqualifyingHouseholdIncomes,
+    updateEmploymentStatusOptions,
+    updateDisqualifyingEmploymentStatuses,
+    updateDailyHoursOnlineOptions,
+    updateDisqualifyingDailyHoursOnline,
+    updateTechnicalProficiencyOptions,
+    updateDisqualifyingTechnicalProficiencies,
 
     // Acciones
     saveForm,

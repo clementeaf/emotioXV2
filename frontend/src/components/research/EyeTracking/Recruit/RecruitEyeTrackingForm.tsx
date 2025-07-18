@@ -13,9 +13,13 @@ import toast from 'react-hot-toast';
 import { ErrorModal } from './components';
 import AgeConfigModal from './components/AgeConfigModal';
 import CountryConfigModal from './components/CountryConfigModal';
+import { DailyHoursOnlineConfigModal } from './components/DailyHoursOnlineConfigModal';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
 import { EducationConfigModal } from './components/EducationConfigModal';
+import { EmploymentStatusConfigModal } from './components/EmploymentStatusConfigModal';
 import { GenderConfigModal } from './components/GenderConfigModal';
+import { HouseholdIncomeConfigModal } from './components/HouseholdIncomeConfigModal';
+import { TechnicalProficiencyConfigModal } from './components/TechnicalProficiencyConfigModal';
 import { useEyeTrackingRecruit } from './hooks/useEyeTrackingRecruit';
 
 
@@ -103,6 +107,14 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
     updateDisqualifyingGenders,
     updateEducationOptions,
     updateDisqualifyingEducation,
+    updateHouseholdIncomeOptions,
+    updateDisqualifyingHouseholdIncomes,
+    updateEmploymentStatusOptions,
+    updateDisqualifyingEmploymentStatuses,
+    updateDailyHoursOnlineOptions,
+    updateDisqualifyingDailyHoursOnline,
+    updateTechnicalProficiencyOptions,
+    updateDisqualifyingTechnicalProficiencies,
     saveForm,
     generateRecruitmentLink,
     generateQRCode,
@@ -117,6 +129,10 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
   const [countryModalOpen, setCountryModalOpen] = React.useState(false);
   const [genderModalOpen, setGenderModalOpen] = React.useState(false);
   const [educationModalOpen, setEducationModalOpen] = React.useState(false);
+  const [householdIncomeModalOpen, setHouseholdIncomeModalOpen] = React.useState(false);
+  const [employmentStatusModalOpen, setEmploymentStatusModalOpen] = React.useState(false);
+  const [dailyHoursOnlineModalOpen, setDailyHoursOnlineModalOpen] = React.useState(false);
+  const [technicalProficiencyModalOpen, setTechnicalProficiencyModalOpen] = React.useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = React.useState(false);
 
   // Function to determine the save button text
@@ -187,6 +203,38 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
     updateDisqualifyingEducation(disqualifyingEducation);
     toast.success(`Configuración de educación guardada con ${options.length} niveles válidos y ${disqualifyingEducation.length} niveles descalificantes`);
     setEducationModalOpen(false);
+  };
+
+  const handleHouseholdIncomeConfigSave = (options: any[], disqualifyingIncomes: string[]) => {
+    const optionNames = options.map(option => option.name);
+    updateHouseholdIncomeOptions(optionNames);
+    updateDisqualifyingHouseholdIncomes(disqualifyingIncomes);
+    toast.success(`Configuración de ingresos familiares guardada con ${options.length} niveles válidos y ${disqualifyingIncomes.length} niveles descalificantes`);
+    setHouseholdIncomeModalOpen(false);
+  };
+
+  const handleEmploymentStatusConfigSave = (options: any[], disqualifyingEmploymentStatuses: string[]) => {
+    const optionNames = options.map(option => option.name);
+    updateEmploymentStatusOptions(optionNames);
+    updateDisqualifyingEmploymentStatuses(disqualifyingEmploymentStatuses);
+    toast.success(`Configuración de situación laboral guardada con ${options.length} opciones válidas y ${disqualifyingEmploymentStatuses.length} opciones descalificantes`);
+    setEmploymentStatusModalOpen(false);
+  };
+
+  const handleDailyHoursOnlineConfigSave = (options: any[], disqualifyingHours: string[]) => {
+    const optionNames = options.map(option => option.name);
+    updateDailyHoursOnlineOptions(optionNames);
+    updateDisqualifyingDailyHoursOnline(disqualifyingHours);
+    toast.success(`Configuración de horas diarias en línea guardada con ${options.length} rangos válidos y ${disqualifyingHours.length} rangos descalificantes`);
+    setDailyHoursOnlineModalOpen(false);
+  };
+
+  const handleTechnicalProficiencyConfigSave = (options: any[], disqualifyingProficiencies: string[]) => {
+    const optionNames = options.map(option => option.name);
+    updateTechnicalProficiencyOptions(optionNames);
+    updateDisqualifyingTechnicalProficiencies(disqualifyingProficiencies);
+    toast.success(`Configuración de competencia técnica guardada con ${options.length} niveles válidos y ${disqualifyingProficiencies.length} niveles descalificantes`);
+    setTechnicalProficiencyModalOpen(false);
   };
 
   if (loading) {
@@ -306,7 +354,13 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           type="checkbox"
                           id="householdIncome"
                           checked={formData.demographicQuestions.householdIncome.enabled}
-                          onChange={(e) => handleDemographicChange('householdIncome' as DemographicQuestionKeys, e.target.checked)}
+                          onChange={(e) => {
+                            handleDemographicChange('householdIncome' as DemographicQuestionKeys, e.target.checked);
+                            // Abrir automáticamente el modal cuando se marca el checkbox
+                            if (e.target.checked) {
+                              setHouseholdIncomeModalOpen(true);
+                            }
+                          }}
                           disabled={!demographicQuestionsEnabled}
                           className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                         />
@@ -318,7 +372,13 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           type="checkbox"
                           id="employmentStatus"
                           checked={formData.demographicQuestions.employmentStatus.enabled}
-                          onChange={(e) => handleDemographicChange('employmentStatus' as DemographicQuestionKeys, e.target.checked)}
+                          onChange={(e) => {
+                            handleDemographicChange('employmentStatus' as DemographicQuestionKeys, e.target.checked);
+                            // Abrir automáticamente el modal cuando se marca el checkbox
+                            if (e.target.checked) {
+                              setEmploymentStatusModalOpen(true);
+                            }
+                          }}
                           disabled={!demographicQuestionsEnabled}
                           className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                         />
@@ -330,7 +390,13 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           type="checkbox"
                           id="dailyHoursOnline"
                           checked={formData.demographicQuestions.dailyHoursOnline.enabled}
-                          onChange={(e) => handleDemographicChange('dailyHoursOnline' as DemographicQuestionKeys, e.target.checked)}
+                          onChange={(e) => {
+                            handleDemographicChange('dailyHoursOnline' as DemographicQuestionKeys, e.target.checked);
+                            // Abrir automáticamente el modal cuando se marca el checkbox
+                            if (e.target.checked) {
+                              setDailyHoursOnlineModalOpen(true);
+                            }
+                          }}
                           disabled={!demographicQuestionsEnabled}
                           className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                         />
@@ -342,7 +408,13 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           type="checkbox"
                           id="technicalProficiency"
                           checked={formData.demographicQuestions.technicalProficiency.enabled}
-                          onChange={(e) => handleDemographicChange('technicalProficiency' as DemographicQuestionKeys, e.target.checked)}
+                          onChange={(e) => {
+                            handleDemographicChange('technicalProficiency' as DemographicQuestionKeys, e.target.checked);
+                            // Abrir automáticamente el modal cuando se marca el checkbox
+                            if (e.target.checked) {
+                              setTechnicalProficiencyModalOpen(true);
+                            }
+                          }}
                           disabled={!demographicQuestionsEnabled}
                           className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                         />
@@ -722,6 +794,64 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
           { id: 'doctorado', name: 'Doctorado', isQualified: true }
         ]}
         currentDisqualified={formData.demographicQuestions.educationLevel.disqualifyingEducation || []}
+      />
+
+      {/* Modal para configuración de ingresos familiares */}
+      <HouseholdIncomeConfigModal
+        isOpen={householdIncomeModalOpen}
+        onClose={() => setHouseholdIncomeModalOpen(false)}
+        onSave={handleHouseholdIncomeConfigSave}
+        currentOptions={[
+          { id: 'nivel-1', name: 'Menos de 20.000€', isQualified: true },
+          { id: 'nivel-2', name: '20.000€ - 40.000€', isQualified: true },
+          { id: 'nivel-3', name: '40.000€ - 60.000€', isQualified: true },
+          { id: 'nivel-4', name: '60.000€ - 80.000€', isQualified: true },
+          { id: 'nivel-5', name: 'Más de 80.000€', isQualified: true }
+        ]}
+        currentDisqualified={formData.demographicQuestions.householdIncome.disqualifyingIncomes || []}
+      />
+
+      {/* Modal para configuración de situación laboral */}
+      <EmploymentStatusConfigModal
+        isOpen={employmentStatusModalOpen}
+        onClose={() => setEmploymentStatusModalOpen(false)}
+        onSave={handleEmploymentStatusConfigSave}
+        currentOptions={[
+          { id: 'dependiente', name: 'Dependiente', isQualified: true },
+          { id: 'independiente', name: 'Independiente', isQualified: true },
+          { id: 'cesante', name: 'Cesante', isQualified: true },
+          { id: 'jubilado', name: 'Jubilado', isQualified: true }
+        ]}
+        currentDisqualified={formData.demographicQuestions.employmentStatus.disqualifyingEmploymentStatuses || []}
+      />
+
+      {/* Modal para configuración de horas diarias en línea */}
+      <DailyHoursOnlineConfigModal
+        isOpen={dailyHoursOnlineModalOpen}
+        onClose={() => setDailyHoursOnlineModalOpen(false)}
+        onSave={handleDailyHoursOnlineConfigSave}
+        currentOptions={[
+          { id: '0-2', name: '0-2 horas', isQualified: true },
+          { id: '2-4', name: '2-4 horas', isQualified: true },
+          { id: '4-6', name: '4-6 horas', isQualified: true },
+          { id: '6-8', name: '6-8 horas', isQualified: true },
+          { id: '8+', name: 'Más de 8 horas', isQualified: true }
+        ]}
+        currentDisqualified={formData.demographicQuestions.dailyHoursOnline.disqualifyingHours || []}
+      />
+
+      {/* Modal para configuración de competencia técnica */}
+      <TechnicalProficiencyConfigModal
+        isOpen={technicalProficiencyModalOpen}
+        onClose={() => setTechnicalProficiencyModalOpen(false)}
+        onSave={handleTechnicalProficiencyConfigSave}
+        currentOptions={[
+          { id: 'basico', name: 'Básico', isQualified: true },
+          { id: 'intermedio', name: 'Intermedio', isQualified: true },
+          { id: 'profesional', name: 'Profesional', isQualified: true },
+          { id: 'experto', name: 'Experto', isQualified: true }
+        ]}
+        currentDisqualified={formData.demographicQuestions.technicalProficiency.disqualifyingProficiencies || []}
       />
 
       {/* Modal para confirmar eliminación */}
