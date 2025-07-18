@@ -12,6 +12,7 @@ import { Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { ErrorModal } from './components';
 import AgeConfigModal from './components/AgeConfigModal';
+import CountryConfigModal from './components/CountryConfigModal';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
 import { useEyeTrackingRecruit } from './hooks/useEyeTrackingRecruit';
 
@@ -94,6 +95,8 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
     setParticipantLimit,
     updateAgeOptions,
     updateDisqualifyingAges,
+    updateCountryOptions,
+    updateDisqualifyingCountries,
     saveForm,
     generateRecruitmentLink,
     generateQRCode,
@@ -105,6 +108,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
 
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [ageModalOpen, setAgeModalOpen] = React.useState(false);
+  const [countryModalOpen, setCountryModalOpen] = React.useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = React.useState(false);
 
   // Function to determine the save button text
@@ -152,6 +156,13 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
     // Por ahora solo mostramos un toast con ambas informaciones
     toast.success(`Configuración de edad guardada con ${options.length} opciones válidas y ${disqualifyingAges.length} edades descalificantes`);
     setAgeModalOpen(false);
+  };
+
+  const handleCountryConfigSave = (validCountries: string[], disqualifyingCountries: string[]) => {
+    updateCountryOptions(validCountries);
+    updateDisqualifyingCountries(disqualifyingCountries);
+    toast.success(`Configuración de países guardada con ${validCountries.length} países válidos y ${disqualifyingCountries.length} países descalificantes`);
+    setCountryModalOpen(false);
   };
 
   if (loading) {
@@ -219,6 +230,10 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           onChange={(e) => {
                             // console.log('País cambiado:', e.target.checked);
                             handleDemographicChange('country' as DemographicQuestionKeys, e.target.checked);
+                            // Abrir automáticamente el modal cuando se marca el checkbox
+                            if (e.target.checked) {
+                              setCountryModalOpen(true);
+                            }
                           }}
                           disabled={!demographicQuestionsEnabled}
                           className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
@@ -634,6 +649,15 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
         onSave={handleAgeConfigSave}
         initialValidAges={formData.demographicQuestions.age.options || []}
         initialDisqualifyingAges={formData.demographicQuestions.age.disqualifyingAges || []}
+      />
+
+      {/* Modal para configuración de países */}
+      <CountryConfigModal
+        isOpen={countryModalOpen}
+        onClose={() => setCountryModalOpen(false)}
+        onSave={handleCountryConfigSave}
+        initialValidCountries={formData.demographicQuestions.country.options || []}
+        initialDisqualifyingCountries={formData.demographicQuestions.country.disqualifyingCountries || []}
       />
 
       {/* Modal para confirmar eliminación */}

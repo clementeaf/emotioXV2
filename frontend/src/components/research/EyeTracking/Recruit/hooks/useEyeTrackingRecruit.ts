@@ -43,6 +43,7 @@ interface EyeTrackingRecruitFormData {
       enabled: boolean;
       required: boolean;
       options: string[];
+      disqualifyingCountries?: string[];
     };
     gender: {
       enabled: boolean;
@@ -121,6 +122,8 @@ interface UseEyeTrackingRecruitResult {
   setParticipantLimit: (value: number) => void;
   updateAgeOptions: (options: string[]) => void;
   updateDisqualifyingAges: (disqualifyingAges: string[]) => void;
+  updateCountryOptions: (options: string[]) => void;
+  updateDisqualifyingCountries: (disqualifyingCountries: string[]) => void;
 
   // Acciones
   saveForm: () => void;
@@ -711,6 +714,34 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     }));
   }, []);
 
+  // Función para actualizar las opciones de países
+  const updateCountryOptions = useCallback((options: string[]) => {
+    setFormData(prevData => ({
+      ...prevData,
+      demographicQuestions: {
+        ...prevData.demographicQuestions,
+        country: {
+          ...prevData.demographicQuestions.country,
+          options: options
+        }
+      }
+    }));
+  }, []);
+
+  // Función para actualizar los países descalificantes
+  const updateDisqualifyingCountries = useCallback((disqualifyingCountries: string[]) => {
+    setFormData(prevData => ({
+      ...prevData,
+      demographicQuestions: {
+        ...prevData.demographicQuestions,
+        country: {
+          ...prevData.demographicQuestions.country,
+          disqualifyingCountries: disqualifyingCountries
+        }
+      }
+    }));
+  }, []);
+
   // Acciones
   const generateQRCode = useCallback(() => {
     const link = generateRecruitmentLink();
@@ -895,6 +926,8 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     setParticipantLimit,
     updateAgeOptions,
     updateDisqualifyingAges,
+    updateCountryOptions,
+    updateDisqualifyingCountries,
 
     // Acciones
     saveForm,
