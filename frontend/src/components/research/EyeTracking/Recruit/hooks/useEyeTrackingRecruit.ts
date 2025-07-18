@@ -55,6 +55,7 @@ interface EyeTrackingRecruitFormData {
       enabled: boolean;
       required: boolean;
       options: string[];
+      disqualifyingEducation?: string[];
     };
     householdIncome: {
       enabled: boolean;
@@ -127,6 +128,8 @@ interface UseEyeTrackingRecruitResult {
   updateDisqualifyingCountries: (disqualifyingCountries: string[]) => void;
   updateGenderOptions: (options: string[]) => void;
   updateDisqualifyingGenders: (disqualifyingGenders: string[]) => void;
+  updateEducationOptions: (options: string[]) => void;
+  updateDisqualifyingEducation: (disqualifyingEducation: string[]) => void;
 
   // Acciones
   saveForm: () => void;
@@ -196,7 +199,8 @@ const DEFAULT_CONFIG: EyeTrackingRecruitFormData = {
     educationLevel: {
       enabled: false,
       required: false,
-      options: []
+      options: [],
+      disqualifyingEducation: []
     },
     householdIncome: {
       enabled: false,
@@ -774,6 +778,34 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     }));
   }, []);
 
+  // Función para actualizar las opciones de niveles educativos
+  const updateEducationOptions = useCallback((options: string[]) => {
+    setFormData(prevData => ({
+      ...prevData,
+      demographicQuestions: {
+        ...prevData.demographicQuestions,
+        educationLevel: {
+          ...prevData.demographicQuestions.educationLevel,
+          options: options
+        }
+      }
+    }));
+  }, []);
+
+  // Función para actualizar los niveles educativos descalificantes
+  const updateDisqualifyingEducation = useCallback((disqualifyingEducation: string[]) => {
+    setFormData(prevData => ({
+      ...prevData,
+      demographicQuestions: {
+        ...prevData.demographicQuestions,
+        educationLevel: {
+          ...prevData.demographicQuestions.educationLevel,
+          disqualifyingEducation: disqualifyingEducation
+        }
+      }
+    }));
+  }, []);
+
   // Acciones
   const generateQRCode = useCallback(() => {
     const link = generateRecruitmentLink();
@@ -962,6 +994,8 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     updateDisqualifyingCountries,
     updateGenderOptions,
     updateDisqualifyingGenders,
+    updateEducationOptions,
+    updateDisqualifyingEducation,
 
     // Acciones
     saveForm,

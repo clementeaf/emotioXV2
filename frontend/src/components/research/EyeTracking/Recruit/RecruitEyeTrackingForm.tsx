@@ -14,6 +14,7 @@ import { ErrorModal } from './components';
 import AgeConfigModal from './components/AgeConfigModal';
 import CountryConfigModal from './components/CountryConfigModal';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
+import { EducationConfigModal } from './components/EducationConfigModal';
 import { GenderConfigModal } from './components/GenderConfigModal';
 import { useEyeTrackingRecruit } from './hooks/useEyeTrackingRecruit';
 
@@ -100,6 +101,8 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
     updateDisqualifyingCountries,
     updateGenderOptions,
     updateDisqualifyingGenders,
+    updateEducationOptions,
+    updateDisqualifyingEducation,
     saveForm,
     generateRecruitmentLink,
     generateQRCode,
@@ -113,6 +116,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
   const [ageModalOpen, setAgeModalOpen] = React.useState(false);
   const [countryModalOpen, setCountryModalOpen] = React.useState(false);
   const [genderModalOpen, setGenderModalOpen] = React.useState(false);
+  const [educationModalOpen, setEducationModalOpen] = React.useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = React.useState(false);
 
   // Function to determine the save button text
@@ -175,6 +179,14 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
     updateDisqualifyingGenders(disqualifyingGenders);
     toast.success(`Configuración de géneros guardada con ${options.length} géneros válidos y ${disqualifyingGenders.length} géneros descalificantes`);
     setGenderModalOpen(false);
+  };
+
+  const handleEducationConfigSave = (options: any[], disqualifyingEducation: string[]) => {
+    const optionNames = options.map(option => option.name);
+    updateEducationOptions(optionNames);
+    updateDisqualifyingEducation(disqualifyingEducation);
+    toast.success(`Configuración de educación guardada con ${options.length} niveles válidos y ${disqualifyingEducation.length} niveles descalificantes`);
+    setEducationModalOpen(false);
   };
 
   if (loading) {
@@ -276,7 +288,13 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           type="checkbox"
                           id="educationLevel"
                           checked={formData.demographicQuestions.educationLevel.enabled}
-                          onChange={(e) => handleDemographicChange('educationLevel' as DemographicQuestionKeys, e.target.checked)}
+                          onChange={(e) => {
+                            handleDemographicChange('educationLevel' as DemographicQuestionKeys, e.target.checked);
+                            // Abrir automáticamente el modal cuando se marca el checkbox
+                            if (e.target.checked) {
+                              setEducationModalOpen(true);
+                            }
+                          }}
                           disabled={!demographicQuestionsEnabled}
                           className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                         />
@@ -689,6 +707,21 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
           { id: 'prefiero-no-especificar', name: 'Prefiero no especificar', isQualified: true }
         ]}
         currentDisqualified={formData.demographicQuestions.gender.disqualifyingGenders || []}
+      />
+
+      {/* Modal para configuración de niveles educativos */}
+      <EducationConfigModal
+        isOpen={educationModalOpen}
+        onClose={() => setEducationModalOpen(false)}
+        onSave={handleEducationConfigSave}
+        currentOptions={[
+          { id: 'basica', name: 'Básica', isQualified: true },
+          { id: 'media', name: 'Media', isQualified: true },
+          { id: 'universitaria', name: 'Universitaria', isQualified: true },
+          { id: 'maestria', name: 'Maestría', isQualified: true },
+          { id: 'doctorado', name: 'Doctorado', isQualified: true }
+        ]}
+        currentDisqualified={formData.demographicQuestions.educationLevel.disqualifyingEducation || []}
       />
 
       {/* Modal para confirmar eliminación */}
