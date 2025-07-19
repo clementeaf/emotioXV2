@@ -300,5 +300,30 @@ S3PublicReadPolicy:
           Action: "s3:GetObject"
           Resource: !Sub "${StorageBucket.Arn}/cognitive-task-files/*"
 
+# Tabla para Location Tracking
+LocationTrackingTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    TableName: ${self:provider.environment.LOCATION_TRACKING_TABLE}
+    BillingMode: PAY_PER_REQUEST
+    AttributeDefinitions:
+      - AttributeName: id
+        AttributeType: S
+      - AttributeName: researchId
+        AttributeType: S
+    KeySchema:
+      - AttributeName: id
+        KeyType: HASH
+    GlobalSecondaryIndexes:
+      - IndexName: ResearchIdIndex
+        KeySchema:
+          - AttributeName: researchId
+            KeyType: HASH
+        Projection:
+          ProjectionType: ALL
+    PointInTimeRecoverySpecification:
+      PointInTimeRecoveryEnabled: true
+    SSESpecification:
+      SSEEnabled: true
+
 # --- Fin de las definiciones de Recursos ---
-# La sección Outputs se movió de nuevo a serverless.yml

@@ -48,6 +48,16 @@ custom:
     prod:
       apiGatewayCors: ${env:ALLOWED_ORIGIN, '*'}
 
+  # Configuración de esbuild
+  esbuild:
+    bundle: true
+    minify: false
+    sourcemap: true
+    exclude: ['aws-sdk']
+    target: 'node18'
+    platform: 'node'
+    concurrency: 10
+
 provider:
   name: aws
   runtime: nodejs18.x
@@ -72,72 +82,8 @@ provider:
   environment: ${file(./environment-variables.yml)}
   iam: ${file(./iam-permissions.yml)}
 
-  # Configuración de esbuild
-  esbuild:
-    bundle: true
-    minify: false
-    sourcemap: true
-    exclude: ['aws-sdk']
-    target: 'node18'
-    platform: 'node'
-    concurrency: 10
-
-functions:
-  # Location Tracking
-  saveLocation:
-    handler: src/controllers/locationTracking.controller.saveLocation
-    events:
-      - http:
-          path: location-tracking
-          method: post
-          cors: true
-          authorizer: aws_iam
-    environment:
-      LOCATION_TRACKING_TABLE: ${self:custom.environment.LOCATION_TRACKING_TABLE}
-
-  getLocationsByResearchId:
-    handler: src/controllers/locationTracking.controller.getLocationsByResearchId
-    events:
-      - http:
-          path: location-tracking/{researchId}
-          method: get
-          cors: true
-          authorizer: aws_iam
-    environment:
-      LOCATION_TRACKING_TABLE: ${self:custom.environment.LOCATION_TRACKING_TABLE}
-
-  getLocationStats:
-    handler: src/controllers/locationTracking.controller.getLocationStats
-    events:
-      - http:
-          path: location-tracking/{researchId}/stats
-          method: get
-          cors: true
-          authorizer: aws_iam
-    environment:
-      LOCATION_TRACKING_TABLE: ${self:custom.environment.LOCATION_TRACKING_TABLE}
+functions: ${file(./function-definitions.yml)}
 
 resources:
-  Resources:
-    # Location Tracking Table
-    LocationTrackingTable:
-      Type: AWS::DynamoDB::Table
-      Properties:
-        TableName: ${self:custom.environment.LOCATION_TRACKING_TABLE}
-        BillingMode: PAY_PER_REQUEST
-        AttributeDefinitions:
-          - AttributeName: id
-            AttributeType: S
-          - AttributeName: researchId
-            AttributeType: S
-        KeySchema:
-          - AttributeName: id
-            KeyType: HASH
-        GlobalSecondaryIndexes:
-          - IndexName: ResearchIdIndex
-            KeySchema:
-              - AttributeName: researchId
-                KeyType: HASH
-            Projection:
-              ProjectionType: ALL
+  Resources: ${file(./resources.yml)}
   Outputs: ${file(./outputs.yml)}
