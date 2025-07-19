@@ -105,9 +105,9 @@ function ResearchStageManagerContent({ researchId }: ResearchStageManagerProps) 
   };
 
   return (
-    <div className="liquid-glass flex-1 mt-8 ml-4 p-10 rounded-2xl mb-4 flex flex-col justify-start overflow-hidden h-[1050px]">
+    <div className="liquid-glass flex-1 mt-8 ml-4 p-10 rounded-2xl mb-4 flex flex-col justify-start">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-neutral-900 mb-2 overflow-y-auto">{getStageTitle()}</h1>
+        <h1 className="text-2xl font-semibold text-neutral-900 mb-2">{getStageTitle()}</h1>
       </div>
       <ConfigCard>
         {renderStageContent()}

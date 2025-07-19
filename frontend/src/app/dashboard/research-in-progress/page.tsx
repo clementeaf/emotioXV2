@@ -169,66 +169,6 @@ export default function ResearchInProgressPage() {
         </Button>
       </div>
 
-      {/* Status Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Estado</CardTitle>
-            <Activity className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <Badge variant="secondary" className="bg-green-100 text-green-800">
-                Activa
-              </Badge>
-            </div>
-            <p className="text-xs text-neutral-600 mt-1">
-              Los participantes pueden acceder
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Participantes</CardTitle>
-            <Users className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{status.participantCount}</div>
-            <p className="text-xs text-neutral-600">
-              {status.totalResponses} respuestas completadas
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tasa de completitud</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{status.completionRate}%</div>
-            <p className="text-xs text-neutral-600">
-              {status.pendingResponses} pendientes
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tiempo promedio</CardTitle>
-            <Clock className="h-4 w-4 text-orange-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{status.averageTime}</div>
-            <p className="text-xs text-neutral-600">
-              Última actividad: {status.lastActivity}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Tabs */}
       <Tabs defaultValue="participants" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
@@ -238,10 +178,73 @@ export default function ResearchInProgressPage() {
         </TabsList>
 
         <TabsContent value="participants" className="mt-6">
-          <ParticipantsTable
-            participants={participants}
-            onViewDetails={handleViewParticipantDetails}
-          />
+          <div className="space-y-6">
+            {/* Status Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Estado</CardTitle>
+                  <Activity className="h-4 w-4 text-green-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <Badge variant="secondary" className="bg-green-100 text-green-800">
+                      Activa
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-neutral-600 mt-1">
+                    Los participantes pueden acceder
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Participantes</CardTitle>
+                  <Users className="h-4 w-4 text-blue-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{status.participantCount}</div>
+                  <p className="text-xs text-neutral-600">
+                    {status.totalResponses} respuestas completadas
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Tasa de completitud</CardTitle>
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{status.completionRate}%</div>
+                  <p className="text-xs text-neutral-600">
+                    {status.pendingResponses} pendientes
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Tiempo promedio</CardTitle>
+                  <Clock className="h-4 w-4 text-orange-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{status.averageTime}</div>
+                  <p className="text-xs text-neutral-600">
+                    Última actividad: {status.lastActivity}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Participants Table */}
+            <ParticipantsTable
+              participants={participants}
+              onViewDetails={handleViewParticipantDetails}
+            />
+          </div>
         </TabsContent>
 
         <TabsContent value="analytics" className="mt-6">

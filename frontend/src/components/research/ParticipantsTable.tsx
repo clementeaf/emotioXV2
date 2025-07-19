@@ -106,7 +106,7 @@ export function ParticipantsTable({ participants, onViewDetails }: ParticipantsT
         </div>
 
         {/* Tabla */}
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-neutral-200">
