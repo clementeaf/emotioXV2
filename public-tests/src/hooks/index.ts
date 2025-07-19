@@ -9,6 +9,11 @@ export { useDeleteState } from './useDeleteState';
 export { useSidebarLogic } from './useSidebarLogic';
 export { useStepStoreWithBackend } from './useStepStoreWithBackend';
 
+// Mobile device detection
+export { useEyeTrackingConfigQuery } from './useEyeTrackingConfigQuery';
+export { useMobileDeviceCheck } from './useMobileDeviceCheck';
+export { useMobileStepVerification } from './useMobileStepVerification';
+
 // Tipos y utilidades
 export * from './types';
 export * from './utils';

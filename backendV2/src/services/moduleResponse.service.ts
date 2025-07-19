@@ -14,6 +14,7 @@ import {
     UpdateModuleResponseDto
 } from '../models/moduleResponse.model';
 import { ApiError } from '../utils/errors';
+import { quotaManager } from '../utils/quotaManager';
 
 const RESEARCH_INDEX = 'ResearchIndex';
 const RESEARCH_PARTICIPANT_INDEX = 'ResearchParticipantIndex';
@@ -240,15 +241,29 @@ export class ModuleResponseService {
 
     const existingDocument = await this.findByResearchAndParticipant(researchId, participantId);
 
+    let savedDocument: ParticipantResponsesDocument;
+
     if (!existingDocument) {
       // Crear nuevo documento con las responses
-      const newDocument = await this.createNewDocumentWithResponses(researchId, participantId, responses, metadata);
-      return newDocument;
+      savedDocument = await this.createNewDocumentWithResponses(researchId, participantId, responses, metadata);
+    } else {
+      // Actualizar documento existente con las nuevas responses
+      savedDocument = await this.updateDocumentWithResponses(existingDocument, responses, metadata);
     }
 
-    // Actualizar documento existente con las nuevas responses
-    const updatedDocument = await this.updateDocumentWithResponses(existingDocument, responses, metadata);
-    return updatedDocument;
+    // 🎯 VERIFICAR CUOTA SI ES THANK_YOU_SCREEN
+    if (questionKey === 'thank_you_screen') {
+      try {
+        console.log(`[ModuleResponseService] 🎯 Verificando cuota para participante ${participantId} en investigación ${researchId}`);
+        const quotaResult = await quotaManager.checkQuotaAndMarkParticipant(researchId, participantId);
+        console.log(`[ModuleResponseService.saveModuleResponse] ✅ Resultado de cuota:`, quotaResult);
+      } catch (error) {
+        console.error(`[ModuleResponseService.saveModuleResponse] ❌ Error verificando cuota:`, error);
+        // No fallar el guardado si falla la verificación de cuota
+      }
+    }
+
+    return savedDocument;
   }
 
   /**
