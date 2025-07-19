@@ -104,69 +104,71 @@ export function ParticipantsTable({ participants, onViewDetails }: ParticipantsT
         </div>
 
         {/* Tabla */}
-        <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-neutral-200">
-                <th className="text-left py-3 px-4 font-medium text-neutral-700">Participante</th>
-                <th className="text-left py-3 px-4 font-medium text-neutral-700">Estado</th>
-                <th className="text-left py-3 px-4 font-medium text-neutral-700">Progreso</th>
-                <th className="text-left py-3 px-4 font-medium text-neutral-700">Duración</th>
-                <th className="text-left py-3 px-4 font-medium text-neutral-700">Última actividad</th>
-                <th className="text-left py-3 px-4 font-medium text-neutral-700">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredParticipants.map((participant) => {
-                const status = getStatusConfig(participant.status);
-                const StatusIcon = status.icon;
+        <div className="overflow-x-auto">
+          <div className="max-h-[400px] overflow-y-auto">
+            <table className="w-full">
+              <thead className="sticky top-0 bg-white z-10">
+                <tr className="border-b border-neutral-200">
+                  <th className="text-left py-3 px-4 font-medium text-neutral-700 bg-white">Participante</th>
+                  <th className="text-left py-3 px-4 font-medium text-neutral-700 bg-white">Estado</th>
+                  <th className="text-left py-3 px-4 font-medium text-neutral-700 bg-white">Progreso</th>
+                  <th className="text-left py-3 px-4 font-medium text-neutral-700 bg-white">Duración</th>
+                  <th className="text-left py-3 px-4 font-medium text-neutral-700 bg-white">Última actividad</th>
+                  <th className="text-left py-3 px-4 font-medium text-neutral-700 bg-white">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredParticipants.map((participant) => {
+                  const status = getStatusConfig(participant.status);
+                  const StatusIcon = status.icon;
 
-                return (
-                  <tr key={participant.id} className="border-b border-neutral-100 hover:bg-neutral-50">
-                    <td className="py-3 px-4">
-                      <div>
-                        <div className="font-medium text-neutral-900">{participant.name}</div>
-                        <div className="text-sm text-neutral-500">{participant.email}</div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <Badge className={`${status.color} flex items-center gap-1 w-fit`}>
-                        <StatusIcon className="h-3 w-3" />
-                        {status.label}
-                      </Badge>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-16 bg-neutral-200 rounded-full h-2">
-                          <div
-                            className="bg-blue-600 h-2 rounded-full transition-all"
-                            style={{ width: `${participant.progress}%` }}
-                          ></div>
+                  return (
+                    <tr key={participant.id} className="border-b border-neutral-100 hover:bg-neutral-50">
+                      <td className="py-3 px-4">
+                        <div>
+                          <div className="font-medium text-neutral-900">{participant.name}</div>
+                          <div className="text-sm text-neutral-500">{participant.email}</div>
                         </div>
-                        <span className="text-sm text-neutral-600">{participant.progress}%</span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-sm text-neutral-600">
-                      {participant.duration || '--'}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-neutral-600">
-                      {participant.lastActivity}
-                    </td>
-                    <td className="py-3 px-4">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onViewDetails(participant.id)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                      </td>
+                      <td className="py-3 px-4">
+                        <Badge className={`${status.color} flex items-center gap-1 w-fit`}>
+                          <StatusIcon className="h-3 w-3" />
+                          {status.label}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 bg-neutral-200 rounded-full h-2">
+                            <div
+                              className="bg-blue-600 h-2 rounded-full transition-all"
+                              style={{ width: `${participant.progress}%` }}
+                            ></div>
+                          </div>
+                          <span className="text-sm text-neutral-600">{participant.progress}%</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-sm text-neutral-600">
+                        {participant.duration || '--'}
+                      </td>
+                      <td className="py-3 px-4 text-sm text-neutral-600">
+                        {participant.lastActivity}
+                      </td>
+                      <td className="py-3 px-4">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onViewDetails(participant.id)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {filteredParticipants.length === 0 && (
