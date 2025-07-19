@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react';
 import { useAvailableFormsQuery, useModuleResponsesQuery, useSaveModuleResponseMutation } from '../../hooks/useApiQueries';
+import { useEyeTrackingConfigQuery } from '../../hooks/useEyeTrackingConfigQuery';
 import { useMobileStepVerification } from '../../hooks/useMobileStepVerification';
+import { useUserJourneyTracking } from '../../hooks/useUserJourneyTracking';
 import { useFormDataStore } from '../../stores/useFormDataStore';
 import { useStepStore } from '../../stores/useStepStore';
 import { useTestStore } from '../../stores/useTestStore';
@@ -291,6 +293,16 @@ const TestLayoutRenderer: React.FC = () => {
     participantId || ''
   );
 
+  // 🎯 OBTENER CONFIGURACIÓN DE EYE-TRACKING
+  const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
+  const shouldTrackUserJourney = eyeTrackingConfig?.parameterOptions?.saveUserJourney || false;
+
+  // 🎯 TRACKING DE RECORRIDO NO INTRUSIVO
+  const { trackStepVisit, isTracking: isJourneyTracking } = useUserJourneyTracking({
+    enabled: shouldTrackUserJourney,
+    researchId
+  });
+
   useEffect(() => {
     if (moduleResponses?.responses && researchId && participantId) {
       const backendResponses = moduleResponses.responses.map((response: any) => {
@@ -303,6 +315,13 @@ const TestLayoutRenderer: React.FC = () => {
       updateBackendResponses(backendResponses);
     }
   }, [moduleResponses?.responses, researchId, participantId, updateBackendResponses]);
+
+  // 🎯 TRACKING DE VISITA DE STEP
+  useEffect(() => {
+    if (currentQuestionKey && shouldTrackUserJourney) {
+      trackStepVisit(currentQuestionKey, 'visit');
+    }
+  }, [currentQuestionKey, shouldTrackUserJourney, trackStepVisit]);
 
   if (!researchId) {
     const urlParams = new URLSearchParams(window.location.search);

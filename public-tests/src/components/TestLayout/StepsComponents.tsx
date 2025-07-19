@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useSaveModuleResponseMutation } from '../../hooks/useApiQueries';
+import { useEyeTrackingConfigQuery } from '../../hooks/useEyeTrackingConfigQuery';
 import { useFormLoadingState } from '../../hooks/useFormLoadingState';
+import { useUserJourneyTracking } from '../../hooks/useUserJourneyTracking';
 import { useFormDataStore } from '../../stores/useFormDataStore';
 import { useStepStore } from '../../stores/useStepStore';
 import { useTestStore } from '../../stores/useTestStore';
@@ -305,6 +307,16 @@ export const ScreenComponent: React.FC<{ data: ScreenStep; onContinue?: () => vo
   const { researchId, participantId } = useTestStore();
   const saveModuleResponseMutation = useSaveModuleResponseMutation();
 
+  // 🎯 OBTENER CONFIGURACIÓN DE EYE-TRACKING
+  const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
+  const shouldTrackUserJourney = eyeTrackingConfig?.parameterOptions?.saveUserJourney || false;
+
+  // 🎯 TRACKING DE RECORRIDO NO INTRUSIVO
+  const { trackStepVisit } = useUserJourneyTracking({
+    enabled: shouldTrackUserJourney,
+    researchId
+  });
+
   const handleContinue = async () => {
     const store = useStepStore.getState();
     const currentQuestionKey = store.currentQuestionKey;
@@ -315,6 +327,11 @@ export const ScreenComponent: React.FC<{ data: ScreenStep; onContinue?: () => vo
         visited: true,
         timestamp: new Date().toISOString()
       });
+
+      // 🎯 TRACKING DE RECORRIDO
+      if (shouldTrackUserJourney) {
+        trackStepVisit(currentQuestionKey, 'complete');
+      }
 
       try {
         const timestamp = new Date().toISOString();
@@ -341,6 +358,16 @@ export const ScreenComponent: React.FC<{ data: ScreenStep; onContinue?: () => vo
     // Navegar al siguiente step
     store.goToNextStep();
   };
+
+  // 🎯 TRACKING DE VISITA
+  useEffect(() => {
+    const store = useStepStore.getState();
+    const currentQuestionKey = store.currentQuestionKey;
+
+    if (currentQuestionKey && shouldTrackUserJourney) {
+      trackStepVisit(currentQuestionKey, 'visit');
+    }
+  }, [shouldTrackUserJourney, trackStepVisit]);
 
   return (
     <div className='flex flex-col items-center justify-center h-full w-full'>

@@ -20,4 +20,5 @@ export { useLocationTracking } from './useLocationTracking';
 // Tipos y utilidades
 export * from './types';
 export { useResponseTiming } from './useResponseTiming';
+export { useUserJourneyTracking } from './useUserJourneyTracking';
 export * from './utils';

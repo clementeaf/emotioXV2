@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { useAvailableFormsQuery, useModuleResponsesQuery, useSaveModuleResponseMutation, useUpdateModuleResponseMutation } from '../../hooks/useApiQueries';
 import { useEyeTrackingConfigQuery } from '../../hooks/useEyeTrackingConfigQuery';
 import { useResponseTiming } from '../../hooks/useResponseTiming';
+import { useUserJourneyTracking } from '../../hooks/useUserJourneyTracking';
 import { CreateModuleResponseDto, UpdateModuleResponseDto } from '../../lib/types';
 import { useFormDataStore } from '../../stores/useFormDataStore';
 import { useStepStore } from '../../stores/useStepStore';
 import { useTestStore } from '../../stores/useTestStore';
 import { buildTimingMetadata } from '../../utils/timingMetadata';
+import { buildUserJourneyMetadata } from '../../utils/userJourneyMetadata';
 import { ButtonStepsProps } from './types';
 
 export const ButtonSteps: React.FC<ButtonStepsProps> = ({
@@ -159,11 +161,18 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
   // 🎯 OBTENER CONFIGURACIÓN DE EYE-TRACKING
   const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
   const shouldTrackTiming = eyeTrackingConfig?.parameterOptions?.saveResponseTimes || false;
+  const shouldTrackUserJourney = eyeTrackingConfig?.parameterOptions?.saveUserJourney || false;
 
   // 🎯 CRONOMETRAJE NO INTRUSIVO
   const { startTiming, endTiming, getTimingData, isTracking } = useResponseTiming({
     questionKey: currentQuestionKey,
     enabled: shouldTrackTiming // 🎯 USAR CONFIGURACIÓN REAL
+  });
+
+  // 🎯 TRACKING DE RECORRIDO NO INTRUSIVO
+  const { trackStepVisit, getJourneyData, isTracking: isJourneyTracking } = useUserJourneyTracking({
+    enabled: shouldTrackUserJourney, // 🎯 USAR CONFIGURACIÓN REAL
+    researchId
   });
 
   const handleClick = async () => {
@@ -181,6 +190,9 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
     // 🎯 INICIAR CRONOMETRAJE (si está habilitado)
     startTiming();
 
+    // 🎯 TRACKING DE RECORRIDO (si está habilitado)
+    trackStepVisit(currentQuestionKey, 'complete');
+
     setIsSaving(true);
 
     try {
@@ -190,6 +202,10 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
       // 🎯 OBTENER DATOS DE TIMING
       const timingData = getTimingData();
       const enhancedMetadata = buildTimingMetadata(currentQuestionKey, timingData, {});
+
+      // 🎯 OBTENER DATOS DE RECORRIDO
+      const journeyData = getJourneyData();
+      const finalMetadata = buildUserJourneyMetadata(journeyData, enhancedMetadata);
 
       if (existingResponse) {
         // UPDATE: Actualizar la respuesta existente
@@ -204,7 +220,7 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
             createdAt: existingResponse.createdAt || now,
             updatedAt: now
           }],
-          metadata: enhancedMetadata // 🎯 METADATA CON TIMING
+          metadata: finalMetadata // 🎯 METADATA CON TIMING Y RECORRIDO
         };
 
         await updateMutation.mutateAsync({
@@ -224,7 +240,7 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
             createdAt: now,
             updatedAt: undefined
           }],
-          metadata: enhancedMetadata // 🎯 METADATA CON TIMING
+          metadata: finalMetadata // 🎯 METADATA CON TIMING Y RECORRIDO
         };
 
         await saveMutation.mutateAsync(createData);
@@ -240,18 +256,15 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
   };
 
   return (
-    <div className="flex justify-center mt-6">
+    <div className="flex justify-center mt-8">
       <button
         onClick={handleClick}
         disabled={isDisabled}
-        className={`
-          px-6 py-3 rounded-lg font-semibold transition-all duration-200
-          ${isDisabled
-            ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-            : 'bg-blue-600 hover:bg-blue-700 text-white hover:shadow-lg'
-          }
-          ${isSaving || isNavigating ? 'animate-pulse' : ''}
-        `}
+        className={`px-8 py-3 rounded-lg font-semibold transition-all duration-200 ${
+          isDisabled
+            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            : 'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800'
+        }`}
       >
         {getButtonText()}
       </button>
