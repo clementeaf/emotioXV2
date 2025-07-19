@@ -1,9 +1,11 @@
 'use client';
 
+import { ParticipantsTable } from '@/components/research/ParticipantsTable';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Activity, AlertCircle, CheckCircle, Clock, ExternalLink, Users } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
+import { Activity, CheckCircle, Clock, ExternalLink, Users } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -15,6 +17,18 @@ interface ResearchStatus {
   lastActivity: string;
   totalResponses: number;
   pendingResponses: number;
+}
+
+interface Participant {
+  id: string;
+  name: string;
+  email: string;
+  status: 'en-proceso' | 'por-iniciar' | 'completado';
+  startTime?: string;
+  endTime?: string;
+  duration?: string;
+  progress: number;
+  lastActivity: string;
 }
 
 export default function ResearchInProgressPage() {
@@ -31,11 +45,12 @@ export default function ResearchInProgressPage() {
     pendingResponses: 0
   });
 
+  const [participants, setParticipants] = useState<Participant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Simular carga de datos
-    const loadStatus = async () => {
+    const loadData = async () => {
       setIsLoading(true);
       try {
         // Aquí se cargarían los datos reales desde la API
@@ -50,15 +65,69 @@ export default function ResearchInProgressPage() {
           totalResponses: 45,
           pendingResponses: 5
         });
+
+        // Datos simulados de participantes
+        setParticipants([
+          {
+            id: '1',
+            name: 'María González',
+            email: 'maria.gonzalez@email.com',
+            status: 'completado',
+            startTime: '10:30 AM',
+            endTime: '10:45 AM',
+            duration: '15 min',
+            progress: 100,
+            lastActivity: 'Hace 2 horas'
+          },
+          {
+            id: '2',
+            name: 'Carlos Rodríguez',
+            email: 'carlos.rodriguez@email.com',
+            status: 'en-proceso',
+            startTime: '11:15 AM',
+            duration: '8 min',
+            progress: 65,
+            lastActivity: 'Hace 5 minutos'
+          },
+          {
+            id: '3',
+            name: 'Ana Martínez',
+            email: 'ana.martinez@email.com',
+            status: 'por-iniciar',
+            progress: 0,
+            lastActivity: 'No iniciado'
+          },
+          {
+            id: '4',
+            name: 'Luis Pérez',
+            email: 'luis.perez@email.com',
+            status: 'completado',
+            startTime: '09:20 AM',
+            endTime: '09:35 AM',
+            duration: '15 min',
+            progress: 100,
+            lastActivity: 'Hace 3 horas'
+          },
+          {
+            id: '5',
+            name: 'Sofia López',
+            email: 'sofia.lopez@email.com',
+            status: 'en-proceso',
+            startTime: '11:45 AM',
+            duration: '12 min',
+            progress: 45,
+            lastActivity: 'Hace 1 minuto'
+          }
+        ]);
       } catch (error) {
-        console.error('Error loading research status:', error);
+        console.error('Error loading research data:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
     if (researchId) {
-      loadStatus();
+      loadData();
     }
   }, [researchId]);
 
@@ -66,6 +135,11 @@ export default function ResearchInProgressPage() {
     if (researchId) {
       window.open(`http://localhost:5173/?researchId=${researchId}`, '_blank');
     }
+  };
+
+  const handleViewParticipantDetails = (participantId: string) => {
+    console.log('Ver detalles del participante:', participantId);
+    // Aquí se implementaría la lógica para ver detalles
   };
 
   if (isLoading) {
@@ -155,80 +229,49 @@ export default function ResearchInProgressPage() {
         </Card>
       </div>
 
-      {/* Detailed Information */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5" />
-              Actividad reciente
-            </CardTitle>
-            <CardDescription>
-              Últimas interacciones con la investigación
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-sm font-medium">Nuevo participante</span>
-                </div>
-                <span className="text-xs text-neutral-500">Hace 2 min</span>
-              </div>
+      {/* Tabs */}
+      <Tabs defaultValue="participants" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="participants">Participantes</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="settings">Configuración</TabsTrigger>
+        </TabsList>
 
-              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span className="text-sm font-medium">Respuesta completada</span>
-                </div>
-                <span className="text-xs text-neutral-500">Hace 5 min</span>
-              </div>
+        <TabsContent value="participants" className="mt-6">
+          <ParticipantsTable
+            participants={participants}
+            onViewDetails={handleViewParticipantDetails}
+          />
+        </TabsContent>
 
-              <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                  <span className="text-sm font-medium">Participante en progreso</span>
-                </div>
-                <span className="text-xs text-neutral-500">Hace 8 min</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <TabsContent value="analytics" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Analytics</CardTitle>
+              <CardDescription>
+                Análisis detallado de la investigación
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-neutral-600">Contenido de analytics próximamente...</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5" />
-              Acciones rápidas
-            </CardTitle>
-            <CardDescription>
-              Gestiona tu investigación desde aquí
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Button variant="outline" className="w-full justify-start">
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Ver respuestas en tiempo real
-            </Button>
-
-            <Button variant="outline" className="w-full justify-start">
-              <Users className="h-4 w-4 mr-2" />
-              Exportar datos
-            </Button>
-
-            <Button variant="outline" className="w-full justify-start">
-              <Clock className="h-4 w-4 mr-2" />
-              Pausar investigación
-            </Button>
-
-            <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700">
-              <AlertCircle className="h-4 w-4 mr-2" />
-              Finalizar investigación
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+        <TabsContent value="settings" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Configuración</CardTitle>
+              <CardDescription>
+                Configuración de la investigación
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-neutral-600">Configuración próximamente...</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

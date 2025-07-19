@@ -10,6 +10,7 @@ import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { CognitiveTaskForm } from './CognitiveTask';
 // import { EyeTrackingForm } from './EyeTracking/EyeTrackingForm';
 
+import ResearchInProgressPage from '@/app/dashboard/research-in-progress/page';
 import { CognitiveTaskResults } from './CognitiveTaskResults';
 import { RecruitEyeTrackingForm } from './EyeTracking/Recruit/RecruitEyeTrackingForm';
 import { SmartVOCForm } from './SmartVOC';
@@ -52,6 +53,8 @@ function ResearchStageManagerContent({ researchId }: ResearchStageManagerProps) 
         return <SmartVOCResults />;
       case 'cognitive-task-results':
         return <CognitiveTaskResults />;
+      case 'research-in-progress':
+        return <ResearchInProgressPage />;
       case 'configuration':
         return <div className="p-6 bg-white rounded-lg border border-neutral-200">
           <h2 className="text-lg font-medium mb-4">Configuración del Reclutamiento</h2>
@@ -94,6 +97,8 @@ function ResearchStageManagerContent({ researchId }: ResearchStageManagerProps) 
         return 'Resultados de SmartVOC';
       case 'cognitive-task-results':
         return 'Resultados de Tareas Cognitivas';
+      case 'research-in-progress':
+        return 'Investigación en curso';
       default:
         return 'Configuración de investigación';
     }
