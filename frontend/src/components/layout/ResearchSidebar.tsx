@@ -8,6 +8,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { withSearchParams } from '@/components/common/SearchParamsWrapper';
 import { ResearchSection, ResearchSidebarProps } from '@/interfaces/research';
 import { researchAPI } from '@/lib/api';
+import { eyeTrackingFixedAPI } from '@/lib/eye-tracking-api';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
 import { Research } from '../../../../shared/interfaces/research.model';
@@ -215,6 +216,61 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
     </div>
   );
 
+  // Función para verificar si hay contenido configurado
+  const checkIfResearchHasContent = async (): Promise<boolean> => {
+    if (!researchId) return false;
+
+    try {
+      // Verificar configuración de eye-tracking usando la API cliente existente
+      const response = await eyeTrackingFixedAPI.getRecruitConfig(researchId).send();
+
+      if (response) {
+        // Verificar si hay preguntas demográficas habilitadas
+        const hasDemographics = Object.values(response.demographicQuestions || {}).some((q: any) => q?.enabled);
+
+        // Verificar si hay configuración de enlaces habilitada
+        const hasLinkConfig = Object.values(response.linkConfig || {}).some(value => value);
+
+        // Verificar si hay parámetros habilitados
+        const hasParameters = Object.values(response.parameterOptions || {}).some(value => value);
+
+        return hasDemographics || hasLinkConfig || hasParameters;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Error verificando contenido:', error);
+      return false;
+    }
+  };
+
+  // Estado para el botón de publicación
+  const [isPublishEnabled, setIsPublishEnabled] = useState(false);
+  const [isCheckingContent, setIsCheckingContent] = useState(true);
+
+  // Verificar contenido al cargar
+  useEffect(() => {
+    const verifyContent = async () => {
+      setIsCheckingContent(true);
+      const hasContent = await checkIfResearchHasContent();
+      setIsPublishEnabled(hasContent);
+      setIsCheckingContent(false);
+    };
+
+    if (researchId) {
+      verifyContent();
+    }
+  }, [researchId]);
+
+  // Función para publicar investigación
+  const handlePublishResearch = () => {
+    if (researchId && isPublishEnabled) {
+      console.log('Publicando investigación:', researchId);
+      // TODO: Implementar lógica de publicación
+      alert('Función de publicación en desarrollo');
+    }
+  };
+
   // Menú/secciones
   const MenuBlock = (
     <nav className="space-y-6">
@@ -241,6 +297,37 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
           ))}
         </div>
       ))}
+
+      {/* 🎯 BOTÓN PUBLICAR INVESTIGACIÓN */}
+      <div className="space-y-1">
+        <div>
+          <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
+            Acciones
+          </h3>
+        </div>
+        <button
+          onClick={handlePublishResearch}
+          disabled={!isPublishEnabled || isCheckingContent}
+          className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors font-medium ${isPublishEnabled && !isCheckingContent
+            ? 'bg-green-600 hover:bg-green-700 text-white'
+            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
+        >
+          {isCheckingContent ? (
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500"></div>
+          ) : (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            </svg>
+          )}
+          {isCheckingContent ? 'Verificando...' : 'Publicar investigación'}
+        </button>
+        {!isPublishEnabled && !isCheckingContent && (
+          <p className="text-xs text-gray-500 mt-1">
+            Complete la configuración de Eye Tracking para habilitar la publicación
+          </p>
+        )}
+      </div>
     </nav>
   );
 

@@ -10,11 +10,86 @@ import { MobileStepBlockedScreen } from '../common/MobileStepBlockedScreen';
 import { ButtonSteps } from './ButtonSteps';
 import { DemographicForm } from './DemographicForm';
 import { NavigationFlowTask } from './NavigationFlowTask';
-import { PreferenceTestTask } from './PreferenceTestTask';
-import { QuestionComponent } from './QuestionComponent';
+import PreferenceTestTask from './PreferenceTestTask';
+import { EmojiRangeQuestion, ScaleRangeQuestion, SingleAndMultipleChoiceQuestion, VOCTextQuestion } from './QuestionesComponents';
 import { RankingList } from './RankingList';
 import { ScreenComponent } from './StepsComponents';
 import { getCurrentStepData, getQuestionType } from './utils';
+
+// 🎯 COMPONENTE WRAPPER PARA COMPATIBILIDAD
+const QuestionComponent: React.FC<{
+  question: {
+    title: string;
+    questionKey: string;
+    type: string;
+    config: any;
+    choices: any[];
+    description: string;
+  };
+  currentStepKey: string;
+}> = ({ question, currentStepKey }) => {
+  const { setFormData, getFormData } = useFormDataStore();
+  const [value, setValue] = React.useState<any>(null);
+
+  // Cargar valor guardado
+  React.useEffect(() => {
+    const savedData = getFormData(currentStepKey);
+    if (savedData) {
+      setValue(savedData.value || savedData.selectedValue || null);
+    }
+  }, [currentStepKey, getFormData]);
+
+  const handleChange = (newValue: any) => {
+    setValue(newValue);
+    setFormData(currentStepKey, { value: newValue });
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center h-full gap-6 p-8">
+      <h2 className="text-2xl font-bold text-gray-800 text-center">
+        {question.title}
+      </h2>
+      {question.description && (
+        <p className="text-gray-600 text-center max-w-2xl">
+          {question.description}
+        </p>
+      )}
+
+      <div className="w-full max-w-2xl">
+        {question.type === 'choice' && (
+          <SingleAndMultipleChoiceQuestion
+            choices={question.choices}
+            value={value}
+            onChange={handleChange}
+            multiple={question.config?.multiple || false}
+          />
+        )}
+        {question.type === 'scale' && (
+          <ScaleRangeQuestion
+            min={question.config?.min || 1}
+            max={question.config?.max || 5}
+            value={value}
+            onChange={handleChange}
+          />
+        )}
+        {question.type === 'emoji' && (
+          <EmojiRangeQuestion
+            emojis={question.config?.emojis}
+            value={value}
+            onChange={handleChange}
+          />
+        )}
+        {question.type === 'text' && (
+          <VOCTextQuestion
+            value={value}
+            onChange={handleChange}
+            placeholder={question.config?.placeholder}
+          />
+        )}
+      </div>
+    </div>
+  );
+};
 
 // 🎯 RENDERERS PARA DIFERENTES TIPOS DE COMPONENTES
 const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
@@ -95,18 +170,39 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
     );
   },
 
-  cognitive_preference_test: ({ contentConfiguration, currentQuestionKey }) => (
-    <PreferenceTestTask
-      stepConfig={{
-        id: currentQuestionKey,
-        type: 'cognitive_preference_test',
-        title: String(contentConfiguration?.title || 'Test de Preferencia'),
-        description: String(contentConfiguration?.description || 'Selecciona tu preferencia'),
-        files: Array.isArray(contentConfiguration?.files) ? contentConfiguration.files : []
-      }}
-      currentQuestionKey={currentQuestionKey}
-    />
-  ),
+  cognitive_preference_test: ({ contentConfiguration, currentQuestionKey }) => {
+    console.log('[TestLayoutRenderer] 🎯 Renderizando cognitive_preference_test:', {
+      currentQuestionKey,
+      contentConfiguration,
+      files: contentConfiguration?.files,
+      filesCount: Array.isArray(contentConfiguration?.files) ? contentConfiguration.files.length : 0
+    });
+
+    // 🎯 AGREGAR URLs A LAS IMÁGENES
+    const filesWithUrls = Array.isArray(contentConfiguration?.files)
+      ? contentConfiguration.files.map((file: any) => ({
+        ...file,
+        url: file.url || file.fileUrl || `https://emotiox-v2-dev-storage.s3.us-east-1.amazonaws.com/${file.s3Key || file.id}`,
+        fileUrl: file.fileUrl || file.url || `https://emotiox-v2-dev-storage.s3.us-east-1.amazonaws.com/${file.s3Key || file.id}`
+      }))
+      : [];
+
+    console.log('[TestLayoutRenderer] 🎯 Archivos con URLs:', filesWithUrls);
+    console.log('[TestLayoutRenderer] 🎯 Archivos originales:', contentConfiguration?.files);
+
+    return (
+      <PreferenceTestTask
+        stepConfig={{
+          id: currentQuestionKey,
+          type: 'cognitive_preference_test',
+          title: String(contentConfiguration?.title || 'Test de Preferencia'),
+          description: String(contentConfiguration?.description || 'Selecciona tu preferencia'),
+          files: filesWithUrls
+        }}
+        currentQuestionKey={currentQuestionKey}
+      />
+    );
+  },
 
   cognitive_ranking: ({ contentConfiguration, currentQuestionKey }) => (
     <div className='flex flex-col items-center justify-center h-full gap-6'>
@@ -361,6 +457,7 @@ const ThankYouScreenComponent: React.FC<{
 };
 
 const TestLayoutRenderer: React.FC = () => {
+  // 🎯 TODOS LOS HOOKS AL INICIO - NUNCA CONDICIONALES
   const currentQuestionKey = useStepStore(state => state.currentQuestionKey);
   const { updateBackendResponses } = useStepStore();
   const { getFormData } = useFormDataStore();
@@ -392,6 +489,10 @@ const TestLayoutRenderer: React.FC = () => {
     researchId
   });
 
+  // 🎯 QUERY DE FORMS - SIEMPRE EJECUTAR
+  const { data: formsData, isLoading, error } = useAvailableFormsQuery(researchId || '');
+
+  // 🎯 EFFECTS DESPUÉS DE TODOS LOS HOOKS
   useEffect(() => {
     if (moduleResponses?.responses && researchId && participantId) {
       const backendResponses = moduleResponses.responses.map((response: any) => {
@@ -412,6 +513,25 @@ const TestLayoutRenderer: React.FC = () => {
     }
   }, [currentQuestionKey, shouldTrackUserJourney, trackStepVisit]);
 
+  // 🎯 INICIALIZAR STEPS CUANDO SE OBTIENEN LOS FORMS
+  useEffect(() => {
+    if (formsData?.steps && formsData.steps.length > 0) {
+      console.log('[TestLayoutRenderer] 🎯 Inicializando steps:', {
+        steps: formsData.steps,
+        currentQuestionKey
+      });
+
+      const { setSteps } = useStepStore.getState();
+      // Convertir strings a Step objects
+      const stepObjects = formsData.steps.map(questionKey => ({
+        questionKey,
+        title: questionKey
+      }));
+      setSteps(stepObjects);
+    }
+  }, [formsData?.steps]);
+
+  // 🎯 LÓGICA DE REDIRECCIÓN DESPUÉS DE HOOKS
   if (!researchId) {
     const urlParams = new URLSearchParams(window.location.search);
     const urlResearchId = urlParams.get('researchId');
@@ -485,22 +605,46 @@ const TestLayoutRenderer: React.FC = () => {
     researchId
   });
 
-  const { data: formsData, isLoading, error } = useAvailableFormsQuery(researchId || '');
-
   if (isLoading) return <div className='flex flex-col items-center justify-center h-full'>Cargando...</div>;
   if (error) return <div className='flex flex-col items-center justify-center h-full'>Error: {error.message}</div>;
   if (!currentQuestionKey) {
+    console.log('[TestLayoutRenderer] ❌ No hay currentQuestionKey:', { currentQuestionKey });
     return <div className='flex flex-col items-center justify-center h-full'>No se encontró información para este step</div>;
   }
 
+  console.log('[TestLayoutRenderer] 🔍 Buscando step data:', {
+    currentQuestionKey,
+    formsData: formsData ? {
+      steps: formsData.steps?.length,
+      stepsConfiguration: formsData.stepsConfiguration?.length,
+      hasSteps: !!formsData.steps,
+      hasConfig: !!formsData.stepsConfiguration
+    } : 'NO DATA'
+  });
+
   const currentStepData = getCurrentStepData(formsData, currentQuestionKey);
 
+  console.log('[TestLayoutRenderer] 📊 Step data encontrado:', {
+    currentQuestionKey,
+    currentStepData: currentStepData ? {
+      questionKey: currentStepData.questionKey,
+      hasContent: !!currentStepData.contentConfiguration,
+      contentKeys: currentStepData.contentConfiguration ? Object.keys(currentStepData.contentConfiguration) : []
+    } : 'NO STEP DATA'
+  });
+
   if (!currentStepData) {
+    console.log('[TestLayoutRenderer] ❌ No se encontró step data para:', currentQuestionKey);
     return <div>No se encontró información para este step</div>;
   }
 
   const { contentConfiguration } = currentStepData;
   const questionType = getQuestionType(currentQuestionKey);
+
+  // 🎯 VERIFICAR SI HAY PREGUNTAS CONFIGURADAS PARA DEMOGRAPHICS
+  const hasConfiguredQuestions = questionType === 'demographics' ?
+    Object.values(contentConfiguration?.demographicQuestions || {}).some((q: any) => q?.enabled) :
+    true;
 
   const renderedForm =
     RENDERERS[questionType]?.({ contentConfiguration, currentQuestionKey }) ||
@@ -514,6 +658,7 @@ const TestLayoutRenderer: React.FC = () => {
 
   const isWelcomeScreen = currentQuestionKey === 'welcome_screen';
   const isThankYouScreen = currentQuestionKey === 'thank_you_screen';
+  const isConfigurationPending = questionType === 'demographics' && !hasConfiguredQuestions;
 
   const formData = getFormData(currentQuestionKey);
 
@@ -522,7 +667,8 @@ const TestLayoutRenderer: React.FC = () => {
       <div className="flex-1">
         {renderedForm}
       </div>
-      {!isWelcomeScreen && !isThankYouScreen && (
+      {/* 🎯 OCULTAR BOTÓN SI NO HAY CONFIGURACIÓN */}
+      {!isWelcomeScreen && !isThankYouScreen && !isConfigurationPending && (
         <ButtonSteps
           currentQuestionKey={currentQuestionKey}
           formData={formData}

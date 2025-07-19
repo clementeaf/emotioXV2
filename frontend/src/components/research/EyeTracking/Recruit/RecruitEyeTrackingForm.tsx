@@ -1,5 +1,6 @@
 'use client';
 
+import { useQueryClient } from '@tanstack/react-query';
 import React from 'react';
 
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
@@ -84,6 +85,8 @@ interface RecruitEyeTrackingFormProps {
 }
 
 export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrackingFormProps) {
+  const queryClient = useQueryClient();
+
   const {
     loading,
     saving,
@@ -121,7 +124,8 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
     copyLinkToClipboard,
     modalError,
     modalVisible,
-    closeModal
+    closeModal,
+    setFormData
   } = useEyeTrackingRecruit({ researchId });
 
   const [isDeleting, setIsDeleting] = React.useState(false);
@@ -160,7 +164,37 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
     try {
       await eyeTrackingFixedAPI.delete(researchId).send();
       toast.success('Datos de reclutamiento ocular eliminados correctamente.');
-      window.location.reload();
+
+      // Resetear el estado del formulario después de eliminar
+      const defaultConfig = {
+        id: undefined, // Importante: resetear el ID
+        researchId: researchId,
+        questionKey: 'demographics',
+        demographicQuestions: {
+          age: { enabled: false, required: false, options: [], disqualifyingAges: [] },
+          country: { enabled: false, required: false, options: [], disqualifyingCountries: [] },
+          gender: { enabled: false, required: false, options: [], disqualifyingGenders: [] },
+          educationLevel: { enabled: false, required: false, options: [], disqualifyingEducation: [] },
+          householdIncome: { enabled: false, required: false, options: [], disqualifyingIncomes: [] },
+          employmentStatus: { enabled: false, required: false, options: [], disqualifyingEmploymentStatuses: [] },
+          dailyHoursOnline: { enabled: false, required: false, options: [], disqualifyingHours: [] },
+          technicalProficiency: { enabled: false, required: false, options: [], disqualifyingProficiencies: [] }
+        },
+        linkConfig: { allowMobile: false, trackLocation: false, allowMultipleAttempts: false },
+        participantLimit: { enabled: false, value: 50 },
+        backlinks: { complete: '', disqualified: '', overquota: '' },
+        researchUrl: `https://useremotion.com/link/${researchId}`,
+        parameterOptions: { saveDeviceInfo: false, saveLocationInfo: false, saveResponseTimes: false, saveUserJourney: false }
+      };
+
+      // Actualizar el estado del formulario
+      setFormData(defaultConfig);
+      setDemographicQuestionsEnabled(false);
+      setLinkConfigEnabled(false);
+
+      // Invalidar la query para forzar recarga
+      queryClient.invalidateQueries({ queryKey: ['eyeTrackingRecruit', researchId] });
+
     } catch (error: any) {
       toast.error(error?.message || 'No se pudo eliminar la configuración.');
     } finally {

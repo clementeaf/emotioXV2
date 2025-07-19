@@ -388,9 +388,6 @@ export const ScreenComponent: React.FC<{ data: ScreenStep; onContinue?: () => vo
       try {
         const timestamp = new Date().toISOString();
 
-        // 🎯 OBTENER CONFIGURACIÓN DE EYE-TRACKING
-        const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
-
         // Capturar información real del dispositivo SOLO si está habilitado
         let deviceInfo = null;
         if (eyeTrackingConfig?.parameterOptions?.saveDeviceInfo) {

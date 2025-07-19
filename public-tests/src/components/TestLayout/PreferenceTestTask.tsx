@@ -72,6 +72,15 @@ const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({
   const config = preferenceQuestion || stepConfig;
   const images = (config?.files as PreferenceFile[]) || [];
 
+  // 🎯 DEBUGGING: LOGS PARA VERIFICAR CONFIGURACIÓN
+  console.log('[PreferenceTestTask] 🔍 Configuración recibida:', {
+    stepConfig,
+    preferenceQuestion,
+    config,
+    imagesCount: images.length,
+    images: images.map(img => ({ id: img.id, name: img.name, url: img.url }))
+  });
+
   // Sincronizar con prop externa
   useEffect(() => {
     if (externalSelectedImageId !== selectedImageId) {
@@ -198,11 +207,10 @@ const PreferenceTestTask: React.FC<PreferenceTestTaskProps> = ({
           {images.map((image: PreferenceFile, index: number) => (
             <div
               key={image.id}
-              className={`relative rounded-lg shadow-lg overflow-hidden cursor-pointer transition-all duration-300 transform hover:scale-[1.02] ${
-                selectedImageId === image.id
+              className={`relative rounded-lg shadow-lg overflow-hidden cursor-pointer transition-all duration-300 transform hover:scale-[1.02] ${selectedImageId === image.id
                   ? 'ring-4 ring-blue-500 shadow-2xl scale-[1.02]'
                   : 'hover:shadow-xl'
-              }`}
+                }`}
               onClick={() => handleImageSelect(image.id)}
             >
               {/* Botón de zoom (lupa) */}

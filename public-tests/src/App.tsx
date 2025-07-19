@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import { LocationConsentModal } from './components/common/LocationConsentModal';
 import LoginRedirect from './components/common/LoginRedirect';
+import TestLayoutMain from './components/TestLayout/TestLayoutMain';
 import { useEyeTrackingConfigQuery } from './hooks/useEyeTrackingConfigQuery';
 import { useLocationTracking } from './hooks/useLocationTracking';
 import './index.css';
@@ -43,8 +44,8 @@ function App() {
 
   // Determinar si el tracking de ubicación está habilitado
   const trackLocationEnabled = eyeTrackingConfig?.linkConfig?.trackLocation ||
-                              eyeTrackingConfig?.trackLocation ||
-                              false;
+    eyeTrackingConfig?.trackLocation ||
+    false;
 
   // Hook de tracking de ubicación
   const {
@@ -149,6 +150,7 @@ function App() {
           <Routes>
             <Route path="/" element={<LoginRedirect />} />
             <Route path="/error-no-research-id" element={<NoResearchIdError />} />
+            <Route path="/test" element={<TestLayoutMain />} />
           </Routes>
         </div>
       </Router>

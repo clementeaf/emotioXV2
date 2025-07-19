@@ -62,6 +62,15 @@ export const useSidebarLogic = ({
             return null;
           }
 
+          // 🎯 FILTRAR STEPS DE DEMOGRAPHICS SIN CONFIGURACIÓN
+          if (questionKey === 'demographics') {
+            const hasConfiguredQuestions = Object.values(stepConfig.contentConfiguration?.demographicQuestions || {}).some((q: any) => q?.enabled);
+            if (!hasConfiguredQuestions) {
+              console.log('[useSidebarLogic] 🚫 Filtrando step demographics sin configuración');
+              return null;
+            }
+          }
+
           let title = '';
           switch (questionKey) {
             case 'demographics':
