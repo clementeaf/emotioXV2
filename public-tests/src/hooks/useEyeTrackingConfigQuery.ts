@@ -1,7 +1,7 @@
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 import { getApiUrl } from '../config/endpoints.js';
 
-interface EyeTrackingConfig {
+export interface EyeTrackingConfig {
   id: string;
   researchId: string;
   linkConfig?: {
@@ -17,6 +17,12 @@ interface EyeTrackingConfig {
   };
   createdAt: string;
   updatedAt: string;
+  parameterOptions?: {
+    saveDeviceInfo?: boolean;
+    saveLocationInfo?: boolean;
+    saveResponseTimes?: boolean; // 🎯 NUEVA PROPIEDAD
+    saveUserJourney?: boolean;
+  };
 }
 
 /**

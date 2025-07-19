@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import { useAvailableFormsQuery, useModuleResponsesQuery, useSaveModuleResponseMutation, useUpdateModuleResponseMutation } from '../../hooks/useApiQueries';
+import { useEyeTrackingConfigQuery } from '../../hooks/useEyeTrackingConfigQuery';
+import { useResponseTiming } from '../../hooks/useResponseTiming';
 import { CreateModuleResponseDto, UpdateModuleResponseDto } from '../../lib/types';
 import { useFormDataStore } from '../../stores/useFormDataStore';
 import { useStepStore } from '../../stores/useStepStore';
 import { useTestStore } from '../../stores/useTestStore';
+import { buildTimingMetadata } from '../../utils/timingMetadata';
 import { ButtonStepsProps } from './types';
 
 export const ButtonSteps: React.FC<ButtonStepsProps> = ({
   currentQuestionKey,
-  formData,
-  isWelcomeScreen
+  formData = {},
+  isWelcomeScreen = false
 }) => {
   const { researchId, participantId } = useTestStore();
   const { setCurrentQuestionKey, goToNextStep } = useStepStore();
@@ -153,23 +156,40 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
 
   const isDisabled = isSaving || isNavigating;
 
+  // 🎯 OBTENER CONFIGURACIÓN DE EYE-TRACKING
+  const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
+  const shouldTrackTiming = eyeTrackingConfig?.parameterOptions?.saveResponseTimes || false;
+
+  // 🎯 CRONOMETRAJE NO INTRUSIVO
+  const { startTiming, endTiming, getTimingData, isTracking } = useResponseTiming({
+    questionKey: currentQuestionKey,
+    enabled: shouldTrackTiming // 🎯 USAR CONFIGURACIÓN REAL
+  });
+
   const handleClick = async () => {
     if (isWelcomeScreen) {
       setIsNavigating(true);
       setTimeout(() => {
-        if (nextStep) {
-          setCurrentQuestionKey(nextStep);
-        }
+        // Navegar al siguiente step usando el store
+        const store = useStepStore.getState();
+        store.goToNextStep();
         setIsNavigating(false);
       }, 1000);
       return;
     }
+
+    // 🎯 INICIAR CRONOMETRAJE (si está habilitado)
+    startTiming();
 
     setIsSaving(true);
 
     try {
       const timestamp = new Date().toISOString();
       const now = new Date().toISOString();
+
+      // 🎯 OBTENER DATOS DE TIMING
+      const timingData = getTimingData();
+      const enhancedMetadata = buildTimingMetadata(currentQuestionKey, timingData, {});
 
       if (existingResponse) {
         // UPDATE: Actualizar la respuesta existente
@@ -184,7 +204,7 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
             createdAt: existingResponse.createdAt || now,
             updatedAt: now
           }],
-          metadata: {}
+          metadata: enhancedMetadata // 🎯 METADATA CON TIMING
         };
 
         await updateMutation.mutateAsync({
@@ -204,11 +224,15 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
             createdAt: now,
             updatedAt: undefined
           }],
-          metadata: {}
+          metadata: enhancedMetadata // 🎯 METADATA CON TIMING
         };
 
         await saveMutation.mutateAsync(createData);
       }
+
+      // 🎯 FINALIZAR CRONOMETRAJE
+      endTiming();
+
     } catch (error) {
       console.error('Error en la operación:', error);
       setIsSaving(false);
