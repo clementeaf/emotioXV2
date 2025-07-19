@@ -82,8 +82,62 @@ provider:
     platform: 'node'
     concurrency: 10
 
-functions: ${file(./function-definitions.yml)}
+functions:
+  # Location Tracking
+  saveLocation:
+    handler: src/controllers/locationTracking.controller.saveLocation
+    events:
+      - http:
+          path: location-tracking
+          method: post
+          cors: true
+          authorizer: aws_iam
+    environment:
+      LOCATION_TRACKING_TABLE: ${self:custom.environment.LOCATION_TRACKING_TABLE}
+
+  getLocationsByResearchId:
+    handler: src/controllers/locationTracking.controller.getLocationsByResearchId
+    events:
+      - http:
+          path: location-tracking/{researchId}
+          method: get
+          cors: true
+          authorizer: aws_iam
+    environment:
+      LOCATION_TRACKING_TABLE: ${self:custom.environment.LOCATION_TRACKING_TABLE}
+
+  getLocationStats:
+    handler: src/controllers/locationTracking.controller.getLocationStats
+    events:
+      - http:
+          path: location-tracking/{researchId}/stats
+          method: get
+          cors: true
+          authorizer: aws_iam
+    environment:
+      LOCATION_TRACKING_TABLE: ${self:custom.environment.LOCATION_TRACKING_TABLE}
 
 resources:
-  Resources: ${file(./resources.yml)}
+  Resources:
+    # Location Tracking Table
+    LocationTrackingTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.environment.LOCATION_TRACKING_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: researchId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: ResearchIdIndex
+            KeySchema:
+              - AttributeName: researchId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
   Outputs: ${file(./outputs.yml)}

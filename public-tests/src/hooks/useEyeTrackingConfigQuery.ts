@@ -7,9 +7,11 @@ interface EyeTrackingConfig {
   linkConfig?: {
     allowMobile?: boolean;
     allowMobileDevices?: boolean;
+    trackLocation?: boolean;  // ✅ AGREGADO: Configuración de tracking de ubicación
   };
   allowMobile?: boolean;
   allowMobileDevices?: boolean;
+  trackLocation?: boolean;  // ✅ AGREGADO: Configuración de tracking de ubicación
   participantLimit?: {
     value: number;
   };
@@ -19,7 +21,7 @@ interface EyeTrackingConfig {
 
 /**
  * Hook para obtener la configuración de eye-tracking de una investigación
- * Incluye configuración de dispositivos móviles
+ * Incluye configuración de dispositivos móviles y tracking de ubicación
  */
 export const useEyeTrackingConfigQuery = (
   researchId: string,

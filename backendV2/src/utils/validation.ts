@@ -803,3 +803,52 @@ export const validateEyeTrackingRecruitData = (data: any): APIGatewayProxyResult
   // }
   return null; // Indica que la validación fue exitosa
 };
+
+/**
+ * Validar datos de ubicación
+ */
+export function validateLocationData(data: any): { isValid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  // Validar researchId
+  if (!data.researchId || typeof data.researchId !== 'string') {
+    errors.push('researchId es requerido y debe ser una cadena');
+  }
+
+  // Validar location
+  if (!data.location || typeof data.location !== 'object') {
+    errors.push('location es requerido y debe ser un objeto');
+  } else {
+    const location = data.location;
+
+    // Validar latitude
+    if (typeof location.latitude !== 'number' || location.latitude < -90 || location.latitude > 90) {
+      errors.push('latitude debe ser un número entre -90 y 90');
+    }
+
+    // Validar longitude
+    if (typeof location.longitude !== 'number' || location.longitude < -180 || location.longitude > 180) {
+      errors.push('longitude debe ser un número entre -180 y 180');
+    }
+
+    // Validar accuracy (opcional)
+    if (location.accuracy !== undefined && (typeof location.accuracy !== 'number' || location.accuracy < 0)) {
+      errors.push('accuracy debe ser un número positivo');
+    }
+
+    // Validar source
+    if (!location.source || !['gps', 'ip'].includes(location.source)) {
+      errors.push('source debe ser "gps" o "ip"');
+    }
+  }
+
+  // Validar timestamp (opcional)
+  if (data.timestamp && typeof data.timestamp !== 'string') {
+    errors.push('timestamp debe ser una cadena ISO');
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+}

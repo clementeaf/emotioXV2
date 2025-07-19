@@ -14,6 +14,9 @@ export { useEyeTrackingConfigQuery } from './useEyeTrackingConfigQuery';
 export { useMobileDeviceCheck } from './useMobileDeviceCheck';
 export { useMobileStepVerification } from './useMobileStepVerification';
 
+// Location tracking
+export { useLocationTracking } from './useLocationTracking';
+
 // Tipos y utilidades
 export * from './types';
 export * from './utils';
