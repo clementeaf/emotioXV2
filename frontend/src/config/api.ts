@@ -134,6 +134,7 @@ export const API_ENDPOINTS = {
     getParticipantsWithStatus: '/research/{researchId}/participants/status',
     getOverviewMetrics: '/research/{researchId}/metrics',
     getParticipantsByResearch: '/research/{researchId}/participants',
+    getParticipantDetails: '/research/{researchId}/participants/{participantId}',
   },
 } as const;
 
@@ -340,7 +341,21 @@ export class ApiClient {
     }
 
     try {
-      return await response.json();
+      const data = await response.json();
+
+      // Adaptar respuesta del backend al formato esperado por el frontend
+      if (data && typeof data === 'object' && 'data' in data && 'status' in data) {
+        // El backend devuelve { data: [...], status: 200 }
+        // Convertir a { success: true, data: [...] }
+        return {
+          success: data.status >= 200 && data.status < 300,
+          data: data.data,
+          message: data.message,
+          error: data.error
+        } as T;
+      }
+
+      return data;
     } catch (error) {
       throw new ApiError(
         'Error al parsear respuesta JSON',
@@ -408,8 +423,8 @@ export function getWebsocketUrl(): string {
  */
 export function validateApiConfiguration(): boolean {
   const isSecure = !SECURE_API_BASE_URL.includes('localhost') &&
-                   !SECURE_API_BASE_URL.includes('127.0.0.1') &&
-                   SECURE_API_BASE_URL.includes('execute-api.us-east-1.amazonaws.com');
+    !SECURE_API_BASE_URL.includes('127.0.0.1') &&
+    SECURE_API_BASE_URL.includes('execute-api.us-east-1.amazonaws.com');
 
   if (!isSecure) {
     console.error('🚨 ERROR CRÍTICO: Configuración API no es segura!');

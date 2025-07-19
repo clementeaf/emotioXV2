@@ -269,6 +269,154 @@ export class ResearchInProgressController {
   }
 
   /**
+   * Obtener detalles completos de un participante específico
+   */
+  async getParticipantDetails(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    try {
+      const researchId = event.pathParameters?.researchId;
+      const participantId = event.pathParameters?.participantId;
+
+      if (!researchId || !participantId) {
+        return {
+          statusCode: 400,
+          headers: getCorsHeaders(event),
+          body: JSON.stringify({
+            error: 'Se requiere researchId y participantId',
+            status: 400
+          })
+        };
+      }
+
+      // Obtener el participante
+      const participant = await participantService.findById(participantId);
+      if (!participant) {
+        return {
+          statusCode: 404,
+          headers: getCorsHeaders(event),
+          body: JSON.stringify({
+            error: 'Participante no encontrado',
+            status: 404
+          })
+        };
+      }
+
+      // Obtener respuestas del participante en este research
+      const participantResponses = await moduleResponseService.getResponsesForParticipant(researchId, participantId);
+
+      // Determinar estado y progreso
+      let status = 'Por iniciar';
+      let progress = 0;
+      let startTime = null;
+      let endTime = null;
+      let totalDuration = 0;
+      let responses: any[] = [];
+      let deviceInfo = null;
+      let location = null;
+
+      if (participantResponses && participantResponses.responses) {
+        responses = participantResponses.responses;
+
+        if (responses.length > 0) {
+          // Calcular progreso basado en número de respuestas
+          progress = Math.min((responses.length / 5) * 100, 90); // Estimación
+
+          // Verificar si completó
+          const hasCompleted = responses.some(r => r.questionKey === 'thank_you_screen');
+          if (hasCompleted) {
+            status = 'Completado';
+            progress = 100;
+          } else if (responses.length > 0) {
+            status = 'En proceso';
+          }
+
+          // Calcular tiempos
+          const sortedResponses = responses.sort((a, b) =>
+            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+          );
+
+          startTime = sortedResponses[0].timestamp;
+          endTime = sortedResponses[sortedResponses.length - 1].timestamp;
+
+          // Calcular duración total
+          if (responses.length > 1) {
+            const start = new Date(startTime).getTime();
+            const end = new Date(endTime).getTime();
+            totalDuration = Math.round((end - start) / 1000); // En segundos
+          }
+
+          // Extraer información de dispositivo y ubicación de las respuestas reales
+          const firstResponse = responses[0];
+          if (firstResponse.deviceInfo) {
+            deviceInfo = firstResponse.deviceInfo;
+          }
+          if (firstResponse.location) {
+            location = firstResponse.location;
+          }
+        }
+      }
+
+      // Si no hay datos reales, usar valores por defecto más apropiados
+      if (!deviceInfo) {
+        deviceInfo = {
+          type: 'desktop' as const,
+          browser: 'N/A',
+          os: 'N/A',
+          screenSize: 'N/A'
+        };
+      }
+
+      if (!location) {
+        location = {
+          country: 'Chile',
+          city: 'Valparaíso',
+          ip: 'N/A'
+        };
+      }
+
+      const participantDetails = {
+        id: participant.id,
+        name: participant.name,
+        email: participant.email,
+        status,
+        progress,
+        startTime,
+        endTime,
+        totalDuration,
+        deviceInfo,
+        location,
+        responses: responses.map(r => ({
+          questionKey: r.questionKey,
+          questionText: this.getQuestionText(r.questionKey),
+          response: r.response,
+          timestamp: r.timestamp,
+          duration: r.duration || 0
+        })),
+        disqualificationReason: null,
+        isDisqualified: false
+      };
+
+      return {
+        statusCode: 200,
+        headers: getCorsHeaders(event),
+        body: JSON.stringify({
+          data: participantDetails,
+          status: 200
+        })
+      };
+    } catch (error: any) {
+      console.error('Error al obtener detalles del participante:', error);
+      return {
+        statusCode: error.statusCode || 500,
+        headers: getCorsHeaders(event),
+        body: JSON.stringify({
+          error: error.message || 'Error al obtener detalles del participante',
+          status: error.statusCode || 500
+        })
+      };
+    }
+  }
+
+  /**
    * Formatear última actividad
    */
   private formatLastActivity(timestamp: string): string {
@@ -288,6 +436,24 @@ export class ResearchInProgressController {
     } else {
       return `Hace ${diffDays} ${diffDays === 1 ? 'día' : 'días'}`;
     }
+  }
+
+  /**
+   * Obtener texto de pregunta por clave
+   */
+  private getQuestionText(questionKey: string): string {
+    const questionTexts: Record<string, string> = {
+      'welcome_screen': 'Pantalla de bienvenida',
+      'smart_voc_question_1': '¿Qué piensas sobre este producto?',
+      'smart_voc_question_2': '¿Cómo mejorarías este servicio?',
+      'cognitive_task_1': 'Tarea cognitiva 1',
+      'cognitive_task_2': 'Tarea cognitiva 2',
+      'eye_tracking_calibration': 'Calibración de eye tracking',
+      'eye_tracking_task': 'Tarea de eye tracking',
+      'thank_you_screen': 'Pantalla de agradecimiento'
+    };
+
+    return questionTexts[questionKey] || questionKey;
   }
 }
 
@@ -311,12 +477,20 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
     const path = event.path.toLowerCase();
     const method = event.httpMethod;
 
+    console.log('[ResearchInProgressHandler] Procesando:', { method, path });
+
     // Enrutar según el método y path
     if (method === 'GET' && path.match(/^\/research\/[^\/]+\/participants\/status$/)) {
+      console.log('[ResearchInProgressHandler] Ejecutando getParticipantsWithStatus');
       return controller.getParticipantsWithStatus(event);
     } else if (method === 'GET' && path.match(/^\/research\/[^\/]+\/metrics$/)) {
+      console.log('[ResearchInProgressHandler] Ejecutando getOverviewMetrics');
       return controller.getOverviewMetrics(event);
+    } else if (method === 'GET' && path.match(/^\/research\/[^\/]+\/participants\/[^\/]+$/)) {
+      console.log('[ResearchInProgressHandler] Ejecutando getParticipantDetails');
+      return controller.getParticipantDetails(event);
     } else if (method === 'GET' && path.match(/^\/research\/[^\/]+\/participants$/)) {
+      console.log('[ResearchInProgressHandler] Ejecutando getParticipantsByResearch');
       return controller.getParticipantsByResearch(event);
     }
 

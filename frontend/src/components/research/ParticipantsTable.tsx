@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { researchInProgressAPI } from '@/lib/api';
 import {
   AlertCircle,
   CheckCircle,
@@ -14,6 +15,7 @@ import {
   Search
 } from 'lucide-react';
 import { useState } from 'react';
+import { ParticipantDetailsModal } from './ParticipantDetailsModal';
 
 interface Participant {
   id: string;
@@ -28,6 +30,7 @@ interface Participant {
 interface ParticipantsTableProps {
   participants: Participant[];
   onViewDetails: (participantId: string) => void;
+  researchId: string;
 }
 
 const statusConfig = {
@@ -48,9 +51,18 @@ const statusConfig = {
   }
 };
 
-export function ParticipantsTable({ participants, onViewDetails }: ParticipantsTableProps) {
+export function ParticipantsTable({ participants, onViewDetails, researchId }: ParticipantsTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [participantDetails, setParticipantDetails] = useState<any>(null);
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+
+  console.log('ParticipantsTable recibió participantes:', participants);
+  console.log('Longitud del array de participantes:', participants?.length);
+  console.log('Tipo de participantes:', typeof participants);
+  console.log('Es array?', Array.isArray(participants));
 
   const filteredParticipants = participants.filter(participant => {
     const matchesSearch = participant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -63,123 +75,177 @@ export function ParticipantsTable({ participants, onViewDetails }: ParticipantsT
     return statusConfig[status as keyof typeof statusConfig] || statusConfig['Por iniciar'];
   };
 
+  const handleParticipantClick = async (participant: Participant) => {
+    setSelectedParticipant(participant);
+    setIsModalOpen(true);
+    setIsLoadingDetails(true);
+
+    try {
+      console.log('Cargando detalles del participante:', participant.id);
+      console.log('ResearchId:', researchId);
+      console.log('ParticipantId:', participant.id);
+      const response = await researchInProgressAPI.getParticipantDetails(researchId, participant.id);
+      console.log('Respuesta de detalles:', response);
+
+      if (response.success) {
+        setParticipantDetails(response.data);
+      } else {
+        console.error('Error al cargar detalles:', response);
+      }
+    } catch (error) {
+      console.error('Error al cargar detalles del participante:', error);
+    } finally {
+      setIsLoadingDetails(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedParticipant(null);
+    setParticipantDetails(null);
+  };
+
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Eye className="h-5 w-5" />
-            Participantes ({participants.length})
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              Exportar
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {/* Filtros */}
-        <div className="flex items-center gap-4 mb-4">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-500" />
-            <Input
-              placeholder="Buscar participantes..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 border border-neutral-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">Todos los estados</option>
-            <option value="En proceso">En proceso</option>
-            <option value="Por iniciar">Por iniciar</option>
-            <option value="Completado">Completado</option>
-          </select>
-        </div>
-
-        {/* Tabla */}
-        <div className="overflow-x-auto">
-          <div className="max-h-[400px] overflow-y-auto">
-            <table className="w-full">
-              <thead className="sticky top-0 bg-white z-10">
-                <tr className="border-b border-neutral-200">
-                  <th className="text-left py-3 px-4 font-medium text-neutral-700 bg-white">Participante</th>
-                  <th className="text-left py-3 px-4 font-medium text-neutral-700 bg-white">Estado</th>
-                  <th className="text-left py-3 px-4 font-medium text-neutral-700 bg-white">Progreso</th>
-                  <th className="text-left py-3 px-4 font-medium text-neutral-700 bg-white">Duración</th>
-                  <th className="text-left py-3 px-4 font-medium text-neutral-700 bg-white">Última actividad</th>
-                  <th className="text-left py-3 px-4 font-medium text-neutral-700 bg-white">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredParticipants.map((participant) => {
-                  const status = getStatusConfig(participant.status);
-                  const StatusIcon = status.icon;
-
-                  return (
-                    <tr key={participant.id} className="border-b border-neutral-100 hover:bg-neutral-50">
-                      <td className="py-3 px-4">
-                        <div>
-                          <div className="font-medium text-neutral-900">{participant.name}</div>
-                          <div className="text-sm text-neutral-500">{participant.email}</div>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <Badge className={`${status.color} flex items-center gap-1 w-fit`}>
-                          <StatusIcon className="h-3 w-3" />
-                          {status.label}
-                        </Badge>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <div className="w-16 bg-neutral-200 rounded-full h-2">
-                            <div
-                              className="bg-blue-600 h-2 rounded-full transition-all"
-                              style={{ width: `${participant.progress}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-sm text-neutral-600">{participant.progress}%</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-sm text-neutral-600">
-                        {participant.duration || '--'}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-neutral-600">
-                        {participant.lastActivity}
-                      </td>
-                      <td className="py-3 px-4">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onViewDetails(participant.id)}
-                          className="h-8 w-8 p-0"
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {filteredParticipants.length === 0 && (
-          <div className="text-center py-8">
-            <div className="text-neutral-500 mb-2">No se encontraron participantes</div>
-            <div className="text-sm text-neutral-400">
-              {searchTerm ? 'Intenta con otros términos de búsqueda' : 'No hay participantes registrados'}
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5" />
+              Participantes ({participants.length})
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-2" />
+                Exportar
+              </Button>
             </div>
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </CardHeader>
+        <CardContent>
+          {/* Filtros */}
+          <div className="flex items-center gap-4 mb-4">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-500" />
+              <Input
+                placeholder="Buscar participantes..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 border border-neutral-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">Todos los estados</option>
+              <option value="En proceso">En proceso</option>
+              <option value="Por iniciar">Por iniciar</option>
+              <option value="Completado">Completado</option>
+            </select>
+          </div>
+
+          {/* Tabla */}
+          <div className="overflow-x-auto">
+            <div className="max-h-[400px] overflow-y-auto">
+              <table className="w-full">
+                <thead className="sticky top-0 bg-white z-10">
+                  <tr className="border-b border-neutral-200">
+                    <th className="text-left py-3 px-4 font-medium text-neutral-700 bg-white">Participante</th>
+                    <th className="text-left py-3 px-4 font-medium text-neutral-700 bg-white">Estado</th>
+                    <th className="text-left py-3 px-4 font-medium text-neutral-700 bg-white">Progreso</th>
+                    <th className="text-left py-3 px-4 font-medium text-neutral-700 bg-white">Duración</th>
+                    <th className="text-left py-3 px-4 font-medium text-neutral-700 bg-white">Última actividad</th>
+                    <th className="text-left py-3 px-4 font-medium text-neutral-700 bg-white">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredParticipants.map((participant) => {
+                    const status = getStatusConfig(participant.status);
+                    const StatusIcon = status.icon;
+
+                    return (
+                      <tr
+                        key={participant.id}
+                        className="border-b border-neutral-100 hover:bg-neutral-50 cursor-pointer"
+                        onClick={() => handleParticipantClick(participant)}
+                      >
+                        <td className="py-3 px-4">
+                          <div>
+                            <div className="font-medium text-neutral-900">{participant.name}</div>
+                            <div className="text-sm text-neutral-500">{participant.email}</div>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <Badge className={`${status.color} flex items-center gap-1 w-fit`}>
+                            <StatusIcon className="h-3 w-3" />
+                            {status.label}
+                          </Badge>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-16 bg-neutral-200 rounded-full h-2">
+                              <div
+                                className="bg-blue-600 h-2 rounded-full transition-all"
+                                style={{ width: `${participant.progress}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-sm text-neutral-600">{participant.progress}%</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-sm text-neutral-600">
+                          {participant.duration || '--'}
+                        </td>
+                        <td className="py-3 px-4 text-sm text-neutral-600">
+                          {participant.lastActivity}
+                        </td>
+                        <td className="py-3 px-4">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onViewDetails(participant.id);
+                            }}
+                            className="h-8 w-8 p-0"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {filteredParticipants.length === 0 && (
+            <div className="text-center py-8">
+              <div className="text-neutral-500 mb-2">No se encontraron participantes</div>
+              <div className="text-sm text-neutral-400">
+                {searchTerm ? 'Intenta con otros términos de búsqueda' : 'No hay participantes registrados'}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Modal de detalles del participante */}
+      <ParticipantDetailsModal
+        participant={participantDetails || (selectedParticipant ? {
+          id: selectedParticipant.id,
+          name: selectedParticipant.name,
+          email: selectedParticipant.email,
+          status: selectedParticipant.status,
+          progress: selectedParticipant.progress,
+          responses: [], // Por ahora vacío, se cargará desde el backend
+          isDisqualified: false
+        } : null)}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+      />
+    </>
   );
 }

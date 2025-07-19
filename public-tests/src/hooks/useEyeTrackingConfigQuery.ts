@@ -37,7 +37,8 @@ export const useEyeTrackingConfigQuery = (
     queryKey: ['eyeTrackingConfig', researchId],
     queryFn: async () => {
       try {
-        const response = await fetch(`${getApiUrl('eye-tracking')}/${researchId}`, {
+        // 🎯 CORREGIR: El endpoint espera /research/{researchId}/eye-tracking
+        const response = await fetch(`${getApiUrl('research')}/${researchId}/eye-tracking`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',

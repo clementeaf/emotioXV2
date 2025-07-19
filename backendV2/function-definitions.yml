@@ -76,6 +76,28 @@ api:
         method: DELETE
         cors: true
 
+    # --- RUTAS PARA EYE-TRACKING CONFIG ---
+    # Obtener configuración de eye-tracking
+    - http:
+        path: /research/{researchId}/eye-tracking
+        method: GET
+        cors: true
+    # Crear configuración de eye-tracking
+    - http:
+        path: /research/{researchId}/eye-tracking
+        method: POST
+        cors: true
+    # Actualizar configuración de eye-tracking
+    - http:
+        path: /research/{researchId}/eye-tracking
+        method: PUT
+        cors: true
+    # Eliminar configuración de eye-tracking
+    - http:
+        path: /research/{researchId}/eye-tracking
+        method: DELETE
+        cors: true
+
     # --- RUTA: Crear nueva investigación ---
     - http:
         path: /research
@@ -98,6 +120,31 @@ api:
     - http:
         path: /research/{researchId}
         method: DELETE
+        cors: true
+
+    # --- RUTAS PARA RESEARCH IN PROGRESS ---
+    # Obtener métricas de overview
+    - http:
+        path: /research/{researchId}/metrics
+        method: GET
+        cors: true
+
+    # Obtener participantes con estados
+    - http:
+        path: /research/{researchId}/participants/status
+        method: GET
+        cors: true
+
+    # Obtener participantes por research
+    - http:
+        path: /research/{researchId}/participants
+        method: GET
+        cors: true
+
+    # Obtener detalles de participante específico
+    - http:
+        path: /research/{researchId}/participants/{participantId}
+        method: GET
         cors: true
 
     # Ruta genérica para el resto

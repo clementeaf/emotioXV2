@@ -50,7 +50,7 @@ export const authAPI = {
     return apiClient.post('auth', 'logout', {});
   },
 
-  refreshToken: async (): Promise<APIResponse<{token: string, renewed: boolean, expiresAt: number, user: any}>> => {
+  refreshToken: async (): Promise<APIResponse<{ token: string, renewed: boolean, expiresAt: number, user: any }>> => {
     // Importación dinámica para evitar dependencia circular
     const { default: tokenService } = await import('@/services/tokenService');
     const token = tokenService.getToken();
@@ -380,6 +380,11 @@ export const researchInProgressAPI = {
   // Obtener participantes por research (si existe el endpoint)
   getParticipantsByResearch: async (researchId: string): Promise<APIResponse<any[]>> => {
     return apiClient.get('researchInProgress', 'getParticipantsByResearch', { researchId });
+  },
+
+  // Obtener detalles completos de un participante específico
+  getParticipantDetails: async (researchId: string, participantId: string): Promise<APIResponse<any>> => {
+    return apiClient.get('researchInProgress', 'getParticipantDetails', { researchId, participantId });
   },
 };
 

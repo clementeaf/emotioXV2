@@ -9,71 +9,15 @@ import { useTestStore } from '../../stores/useTestStore';
 import { MobileStepBlockedScreen } from '../common/MobileStepBlockedScreen';
 import { ButtonSteps } from './ButtonSteps';
 import { DemographicForm } from './DemographicForm';
-import NavigationFlowTask from './NavigationFlowTask';
-import PreferenceTestTask from './PreferenceTestTask';
+import { NavigationFlowTask } from './NavigationFlowTask';
+import { PreferenceTestTask } from './PreferenceTestTask';
+import { QuestionComponent } from './QuestionComponent';
 import { RankingList } from './RankingList';
-import { QuestionComponent, ScreenComponent, UnknownStepComponent } from './StepsComponents';
-import { DemographicQuestionData, RendererArgs } from './types';
+import { ScreenComponent } from './StepsComponents';
 import { getCurrentStepData, getQuestionType } from './utils';
 
-const ThankYouScreenComponent: React.FC<{
-  contentConfiguration: Record<string, unknown>;
-  currentQuestionKey: string;
-}> = ({ contentConfiguration, currentQuestionKey }) => {
-  const { setFormData } = useFormDataStore();
-  const { researchId, participantId } = useTestStore();
-  const saveModuleResponseMutation = useSaveModuleResponseMutation();
-
-  // 🎯 AUTO-GUARDAR CUANDO SE VISITA THANK YOU SCREEN
-  React.useEffect(() => {
-    if (currentQuestionKey === 'thank_you_screen' && researchId && participantId) {
-      // Guardar en formData
-      setFormData(currentQuestionKey, {
-        visited: true,
-        timestamp: new Date().toISOString()
-      });
-
-      // 🎯 ENVIAR A MODULE-RESPONSES API
-      const sendToAPI = async () => {
-        try {
-          const timestamp = new Date().toISOString();
-          const createData = {
-            researchId: researchId,
-            participantId: participantId,
-            questionKey: currentQuestionKey,
-            responses: [{
-              questionKey: currentQuestionKey,
-              response: { visited: true },
-              timestamp,
-              createdAt: timestamp,
-              updatedAt: undefined
-            }],
-            metadata: {}
-          };
-
-          await saveModuleResponseMutation.mutateAsync(createData);
-        } catch (error) {
-          console.error('❌ ThankYouScreenComponent - Error enviando a module-responses:', error);
-        }
-      };
-
-      sendToAPI();
-    }
-  }, [currentQuestionKey, setFormData, researchId, participantId]);
-
-  return (
-    <div className='flex flex-col items-center justify-center h-full w-full'>
-      <h2 className='text-2xl font-bold mb-2'>
-        {String(contentConfiguration?.title || 'Gracias por participar')}
-      </h2>
-      <p className='text-center text-gray-600'>
-        {String(contentConfiguration?.message || 'Agradecemos tus respuestas')}
-      </p>
-    </div>
-  );
-};
-
-const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
+// 🎯 RENDERERS PARA DIFERENTES TIPOS DE COMPONENTES
+const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
   screen: ({ contentConfiguration, currentQuestionKey }) => {
     // 🎯 COMPONENTE PARA thank_you_screen CON AUTO-GUARDADO
     if (currentQuestionKey === 'thank_you_screen') {
@@ -103,7 +47,7 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
     const demographicQuestions = contentConfiguration?.demographicQuestions || {};
     return (
       <DemographicForm
-        demographicQuestions={demographicQuestions as Record<string, DemographicQuestionData>}
+        demographicQuestions={demographicQuestions as Record<string, any>}
       />
     );
   },
@@ -175,8 +119,8 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
       <div className='w-full max-w-2xl'>
         <RankingList
           items={Array.isArray(contentConfiguration?.items) ? contentConfiguration.items : []}
-          onMoveUp={() => {}}
-          onMoveDown={() => {}}
+          onMoveUp={() => { }}
+          onMoveDown={() => { }}
           isSaving={false}
           isApiLoading={false}
           dataLoading={false}
@@ -271,6 +215,151 @@ const RENDERERS: Record<string, (args: RendererArgs) => React.ReactNode> = {
   ),
 };
 
+// 🎯 COMPONENTE PARA PASOS DESCONOCIDOS
+const UnknownStepComponent: React.FC<{ data: unknown }> = ({ data }) => (
+  <div className='flex flex-col items-center justify-center h-full gap-10'>
+    <h2 className='text-2xl font-bold'>Componente desconocido</h2>
+    <p>No se pudo renderizar este tipo de componente</p>
+    <pre className='text-sm text-gray-500'>{JSON.stringify(data, null, 2)}</pre>
+  </div>
+);
+
+const ThankYouScreenComponent: React.FC<{
+  contentConfiguration: Record<string, unknown>;
+  currentQuestionKey: string;
+}> = ({ contentConfiguration, currentQuestionKey }) => {
+  const { setFormData } = useFormDataStore();
+  const { researchId, participantId } = useTestStore();
+  const saveModuleResponseMutation = useSaveModuleResponseMutation();
+
+  // 🎯 AUTO-GUARDAR CUANDO SE VISITA THANK YOU SCREEN
+  React.useEffect(() => {
+    if (currentQuestionKey === 'thank_you_screen' && researchId && participantId) {
+      // Guardar en formData
+      setFormData(currentQuestionKey, {
+        visited: true,
+        timestamp: new Date().toISOString()
+      });
+
+      // 🎯 ENVIAR A MODULE-RESPONSES API
+      const sendToAPI = async () => {
+        try {
+          const timestamp = new Date().toISOString();
+
+          // 🎯 OBTENER CONFIGURACIÓN DE EYE-TRACKING
+          const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
+
+          // Capturar información real del dispositivo SOLO si está habilitado
+          let deviceInfo = null;
+          if (eyeTrackingConfig?.parameterOptions?.saveDeviceInfo) {
+            deviceInfo = {
+              type: getDeviceType(),
+              browser: getBrowserInfo(),
+              os: getOSInfo(),
+              screenSize: `${window.screen.width}x${window.screen.height}`
+            };
+          }
+
+          // Capturar información de ubicación SOLO si está habilitado
+          let location = null;
+          if (eyeTrackingConfig?.parameterOptions?.saveLocationInfo) {
+            location = await getLocationInfo();
+          }
+
+          const createData = {
+            researchId: researchId,
+            participantId: participantId,
+            questionKey: currentQuestionKey,
+            responses: [{
+              questionKey: currentQuestionKey,
+              response: { visited: true },
+              timestamp,
+              createdAt: timestamp,
+              updatedAt: undefined,
+              ...(deviceInfo && { deviceInfo }),
+              ...(location && { location })
+            }],
+            metadata: {}
+          };
+
+          await saveModuleResponseMutation.mutateAsync(createData);
+        } catch (error) {
+          console.error('❌ ThankYouScreenComponent - Error enviando a module-responses:', error);
+        }
+      };
+
+      // Funciones helper para capturar datos reales
+      const getDeviceType = (): 'desktop' | 'mobile' | 'tablet' => {
+        const width = window.screen.width;
+        const height = window.screen.height;
+        const ratio = width / height;
+
+        if (width >= 1024) return 'desktop';
+        if (width >= 768 && ratio > 1.2) return 'tablet';
+        return 'mobile';
+      };
+
+      const getBrowserInfo = (): string => {
+        const userAgent = navigator.userAgent;
+        if (userAgent.includes('Chrome')) return 'Chrome';
+        if (userAgent.includes('Firefox')) return 'Firefox';
+        if (userAgent.includes('Safari')) return 'Safari';
+        if (userAgent.includes('Edge')) return 'Edge';
+        return 'Unknown';
+      };
+
+      const getOSInfo = (): string => {
+        const userAgent = navigator.userAgent;
+        if (userAgent.includes('Windows')) return 'Windows';
+        if (userAgent.includes('Mac')) return 'macOS';
+        if (userAgent.includes('Linux')) return 'Linux';
+        if (userAgent.includes('Android')) return 'Android';
+        if (userAgent.includes('iOS')) return 'iOS';
+        return 'Unknown';
+      };
+
+      const getLocationInfo = async (): Promise<{ country: string, city: string, ip: string }> => {
+        try {
+          // Intentar obtener IP real
+          const response = await fetch('https://api.ipify.org?format=json');
+          const data = await response.json();
+          const ip = data.ip;
+
+          // Intentar obtener ubicación basada en IP
+          const geoResponse = await fetch(`https://ipapi.co/${ip}/json/`);
+          const geoData = await geoResponse.json();
+
+          return {
+            country: geoData.country_name || 'Chile',
+            city: geoData.city || 'Valparaíso',
+            ip: ip
+          };
+        } catch (error) {
+          console.warn('No se pudo obtener información de ubicación:', error);
+          return {
+            country: 'Chile',
+            city: 'Valparaíso',
+            ip: 'N/A'
+          };
+        }
+      };
+
+      sendToAPI();
+    }
+  }, [currentQuestionKey, setFormData, researchId, participantId]);
+
+  return (
+    <div className='flex flex-col items-center justify-center h-full w-full'>
+      <h2 className='text-2xl font-bold mb-2'>
+        {String(contentConfiguration?.title || 'Gracias por participar')}
+      </h2>
+      <p className='text-center text-gray-600'>
+        {String(contentConfiguration?.message || 'Agradecemos tus respuestas')}
+      </p>
+    </div>
+  );
+};
+
 const TestLayoutRenderer: React.FC = () => {
   const currentQuestionKey = useStepStore(state => state.currentQuestionKey);
   const { updateBackendResponses } = useStepStore();
@@ -341,7 +430,7 @@ const TestLayoutRenderer: React.FC = () => {
     return <div>Redirigiendo al login...</div>;
   }
 
-    // 🚨 BLOQUEAR STEPS SI ES MÓVIL NO PERMITIDO
+  // 🚨 BLOQUEAR STEPS SI ES MÓVIL NO PERMITIDO
   if (shouldShowBlockScreen && (deviceType === 'mobile' || deviceType === 'tablet')) {
     return (
       <MobileStepBlockedScreen

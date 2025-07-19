@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
-import { researchInProgressAPI } from '@/lib/api';
+import { researchInProgressAPI, setupAuthToken } from '@/lib/api';
 import { useAuth } from '@/providers/AuthProvider';
 import { Activity, CheckCircle, Clock, ExternalLink, Users } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
@@ -50,19 +50,24 @@ export default function ResearchInProgressPage() {
   const { token, authLoading } = useAuth();
 
   const [status, setStatus] = useState<ResearchStatus>({
-    status: { value: 'Activa', description: 'Los participantes pueden acceder', icon: 'chart-line' },
-    participants: { value: '0', description: '0 respuestas completadas', icon: 'users' },
-    completionRate: { value: '0%', description: '0 pendientes', icon: 'check-circle' },
-    averageTime: { value: '--', description: 'Sin actividad', icon: 'clock' }
+    status: { value: '--', description: 'Cargando...', icon: 'chart-line' },
+    participants: { value: '--', description: 'Cargando...', icon: 'users' },
+    completionRate: { value: '--', description: 'Cargando...', icon: 'check-circle' },
+    averageTime: { value: '--', description: 'Cargando...', icon: 'clock' }
   });
-
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  console.log('Estado actual de participantes:', participants);
+  console.log('Longitud del estado de participantes:', participants.length);
+
   useEffect(() => {
     const loadData = async () => {
       if (!researchId || authLoading || !token) return;
+
+      // Configurar el token de autenticación
+      setupAuthToken();
 
       setIsLoading(true);
       setError(null);
@@ -83,8 +88,13 @@ export default function ResearchInProgressPage() {
         console.log('Llamando a getParticipantsWithStatus...');
         const participantsResponse = await researchInProgressAPI.getParticipantsWithStatus(researchId);
         console.log('Respuesta de participantes:', participantsResponse);
+        console.log('Datos de participantes recibidos:', participantsResponse.data);
+        console.log('Longitud del array de participantes:', participantsResponse.data?.length);
         if (participantsResponse.success) {
-          setParticipants(participantsResponse.data);
+          console.log('Estableciendo participantes en el estado:', participantsResponse.data);
+          setParticipants(participantsResponse.data || []);
+        } else {
+          console.error('Error en la respuesta de participantes:', participantsResponse);
         }
       } catch (error: any) {
         console.error('Error loading research data:', error);
@@ -253,6 +263,7 @@ export default function ResearchInProgressPage() {
             <ParticipantsTable
               participants={participants}
               onViewDetails={handleViewParticipantDetails}
+              researchId={researchId}
             />
           </div>
         </TabsContent>

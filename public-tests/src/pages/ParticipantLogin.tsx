@@ -30,7 +30,7 @@ export const ParticipantLogin = ({ onLoginSuccess, researchId }: ParticipantLogi
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // 🎯 VERIFICACIÓN DE DISPOSITIVO MÓVIL
+  // 🎯 VERIFICACIÓN DE DISPOSITIVO MÓVIL - TODOS LOS HOOKS AL INICIO
   const { data: eyeTrackingConfig, isLoading: isLoadingConfig } = useEyeTrackingConfigQuery(researchId);
   const {
     isMobileOrTablet,
@@ -41,6 +41,28 @@ export const ParticipantLogin = ({ onLoginSuccess, researchId }: ParticipantLogi
     isLoading: isLoadingMobileCheck,
     error: mobileCheckError
   } = useMobileDeviceCheck(researchId, eyeTrackingConfig || null);
+
+  const loginMutation = useMutation({
+    mutationFn: async (data: { name: string; email: string; researchId: string }) => {
+      return apiRequest<{ data: { participant: { id: string; name: string; email: string }; token: string } }>('participants/login', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      });
+    },
+    onSuccess: (data) => {
+      const participantData: Participant = {
+        id: data.data.participant.id,
+        name: data.data.participant.name,
+        email: data.data.participant.email,
+        token: data.data.token
+      };
+      onLoginSuccess(participantData);
+    },
+    onError: (error: Error) => {
+      console.error('Error en login:', error);
+      setErrors({ submit: error.message || 'Error al iniciar sesión. Intenta de nuevo.' });
+    }
+  });
 
   // 🚨 BLOQUEAR ACCESO SI ES MÓVIL NO PERMITIDO
   if (shouldBlock && deviceType === 'mobile') {
@@ -131,28 +153,6 @@ export const ParticipantLogin = ({ onLoginSuccess, researchId }: ParticipantLogi
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-
-  const loginMutation = useMutation({
-    mutationFn: async (data: { name: string; email: string; researchId: string }) => {
-      return apiRequest<{ data: { participant: { id: string; name: string; email: string }; token: string } }>('participants/login', {
-        method: 'POST',
-        body: JSON.stringify(data)
-      });
-    },
-    onSuccess: (data) => {
-      const participantData: Participant = {
-        id: data.data.participant.id,
-        name: data.data.participant.name,
-        email: data.data.participant.email,
-        token: data.data.token
-      };
-      onLoginSuccess(participantData);
-    },
-    onError: (error: Error) => {
-      console.error('Error en login:', error);
-      setErrors({ submit: error.message || 'Error al iniciar sesión. Intenta de nuevo.' });
-    }
-  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

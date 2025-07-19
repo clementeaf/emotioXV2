@@ -11,6 +11,62 @@ import { EmojiRangeQuestion, ScaleRangeQuestion, SingleAndMultipleChoiceQuestion
 import { QuestionComponentProps, ScreenStep } from './types';
 import { QUESTION_TYPE_MAP } from './utils';
 
+// Funciones helper para capturar datos reales
+const getDeviceType = (): 'desktop' | 'mobile' | 'tablet' => {
+  const width = window.screen.width;
+  const height = window.screen.height;
+  const ratio = width / height;
+
+  if (width >= 1024) return 'desktop';
+  if (width >= 768 && ratio > 1.2) return 'tablet';
+  return 'mobile';
+};
+
+const getBrowserInfo = (): string => {
+  const userAgent = navigator.userAgent;
+  if (userAgent.includes('Chrome')) return 'Chrome';
+  if (userAgent.includes('Firefox')) return 'Firefox';
+  if (userAgent.includes('Safari')) return 'Safari';
+  if (userAgent.includes('Edge')) return 'Edge';
+  return 'Unknown';
+};
+
+const getOSInfo = (): string => {
+  const userAgent = navigator.userAgent;
+  if (userAgent.includes('Windows')) return 'Windows';
+  if (userAgent.includes('Mac')) return 'macOS';
+  if (userAgent.includes('Linux')) return 'Linux';
+  if (userAgent.includes('Android')) return 'Android';
+  if (userAgent.includes('iOS')) return 'iOS';
+  return 'Unknown';
+};
+
+const getLocationInfo = async (): Promise<{ country: string, city: string, ip: string }> => {
+  try {
+    // Intentar obtener IP real
+    const response = await fetch('https://api.ipify.org?format=json');
+    const data = await response.json();
+    const ip = data.ip;
+
+    // Intentar obtener ubicación basada en IP
+    const geoResponse = await fetch(`https://ipapi.co/${ip}/json/`);
+    const geoData = await geoResponse.json();
+
+    return {
+      country: geoData.country_name || 'Chile',
+      city: geoData.city || 'Valparaíso',
+      ip: ip
+    };
+  } catch (error) {
+    console.warn('No se pudo obtener información de ubicación:', error);
+    return {
+      country: 'Chile',
+      city: 'Valparaíso',
+      ip: 'N/A'
+    };
+  }
+};
+
 // 🎯 INTERFAZ PARA RESPUESTAS DEL BACKEND
 interface BackendResponse {
   questionKey: string;
@@ -152,11 +208,10 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
                   <button
                     key={value}
                     onClick={() => handleValueChange(value.toString())}
-                    className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
-                      selectedValue === value.toString()
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
+                    className={`px-6 py-3 rounded-lg font-semibold transition-colors ${selectedValue === value.toString()
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
                   >
                     {value}
                   </button>
@@ -176,11 +231,10 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
                   <button
                     key={choice.id}
                     onClick={() => handleValueChange(choice.id)}
-                    className={`px-6 py-3 rounded-lg font-semibold transition-colors text-left ${
-                      selectedValue === choice.id
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
+                    className={`px-6 py-3 rounded-lg font-semibold transition-colors text-left ${selectedValue === choice.id
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
                   >
                     {choice.text}
                   </button>
@@ -209,11 +263,10 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
                     <button
                       key={choice.id}
                       onClick={() => handleValueChange(choice.id)}
-                      className={`px-6 py-3 rounded-lg font-semibold transition-colors text-left ${
-                        selectedValue === choice.id
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
+                      className={`px-6 py-3 rounded-lg font-semibold transition-colors text-left ${selectedValue === choice.id
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
                     >
                       {choice.text}
                     </button>
@@ -225,11 +278,10 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
                     <button
                       key={value}
                       onClick={() => handleValueChange(value.toString())}
-                      className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
-                        selectedValue === value.toString()
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
+                      className={`px-6 py-3 rounded-lg font-semibold transition-colors ${selectedValue === value.toString()
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
                     >
                       {value}
                     </button>
@@ -335,6 +387,27 @@ export const ScreenComponent: React.FC<{ data: ScreenStep; onContinue?: () => vo
 
       try {
         const timestamp = new Date().toISOString();
+
+        // 🎯 OBTENER CONFIGURACIÓN DE EYE-TRACKING
+        const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
+
+        // Capturar información real del dispositivo SOLO si está habilitado
+        let deviceInfo = null;
+        if (eyeTrackingConfig?.parameterOptions?.saveDeviceInfo) {
+          deviceInfo = {
+            type: getDeviceType(),
+            browser: getBrowserInfo(),
+            os: getOSInfo(),
+            screenSize: `${window.screen.width}x${window.screen.height}`
+          };
+        }
+
+        // Capturar información de ubicación SOLO si está habilitado
+        let location = null;
+        if (eyeTrackingConfig?.parameterOptions?.saveLocationInfo) {
+          location = await getLocationInfo();
+        }
+
         const createData = {
           researchId: researchId,
           participantId: participantId,
@@ -344,7 +417,9 @@ export const ScreenComponent: React.FC<{ data: ScreenStep; onContinue?: () => vo
             response: { visited: true },
             timestamp,
             createdAt: timestamp,
-            updatedAt: undefined
+            updatedAt: undefined,
+            ...(deviceInfo && { deviceInfo }),
+            ...(location && { location })
           }],
           metadata: {}
         };

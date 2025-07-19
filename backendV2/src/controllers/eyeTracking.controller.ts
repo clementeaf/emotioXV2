@@ -1,16 +1,16 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { eyeTrackingService, EyeTrackingError } from '../services/eyeTracking.service';
-import { ApiError } from '../utils/errors';
 import { EyeTrackingFormData } from '../models/eyeTracking.model';
-import { 
-  createResponse, 
+import { EyeTrackingError, eyeTrackingService } from '../services/eyeTracking.service';
+import { createController, RouteMap } from '../utils/controller.decorator';
+import {
+  createResponse,
   errorResponse
 } from '../utils/controller.utils';
-import { createController, RouteMap } from '../utils/controller.decorator';
+import { ApiError } from '../utils/errors';
 import { structuredLog } from '../utils/logging.util';
-import { 
-  extractResearchId, 
+import {
   ERROR_MESSAGES,
+  extractResearchId,
   parseAndValidateBody,
   validateEyeTrackingData
 } from '../utils/validation';
@@ -23,20 +23,20 @@ export class EyeTrackingController {
    * Maneja errores en las operaciones del controlador (simplificado)
    */
   private handleError(error: any, context: string, extraData?: Record<string, any>): APIGatewayProxyResult {
-    structuredLog('error', `EyeTrackingController.${context}`, 'Error procesando la solicitud', { 
-        error: error instanceof Error ? { name: error.name, message: error.message } : error,
-        ...extraData
+    structuredLog('error', `EyeTrackingController.${context}`, 'Error procesando la solicitud', {
+      error: error instanceof Error ? { name: error.name, message: error.message } : error,
+      ...extraData
     });
 
     if (error instanceof ApiError) {
-      return errorResponse(error.message, error.statusCode); 
+      return errorResponse(error.message, error.statusCode);
     }
 
     if (error.message?.includes(EyeTrackingError.NOT_FOUND)) {
       return errorResponse(ERROR_MESSAGES.RESOURCE.NOT_FOUND('La configuración de eye tracking'), 404);
     }
     if (error.message?.includes(EyeTrackingError.INVALID_DATA) ||
-        error.message?.includes(EyeTrackingError.RESEARCH_REQUIRED)) {
+      error.message?.includes(EyeTrackingError.RESEARCH_REQUIRED)) {
       return errorResponse(error.message, 400);
     }
     if (error.message?.includes(EyeTrackingError.PERMISSION_DENIED)) {
@@ -56,13 +56,13 @@ export class EyeTrackingController {
       const idResult = extractResearchId(event);
       if ('statusCode' in idResult) return idResult;
       researchId = idResult.researchId;
-      
+
       structuredLog('info', `EyeTrackingController.${context}`, 'Obteniendo datos para investigación', { researchId });
       const eyeTracking = await eyeTrackingService.getByResearchId(researchId);
-      
+
       if (!eyeTracking) {
-         structuredLog('warn', `EyeTrackingController.${context}`, 'No se encontró configuración (explicit check)', { researchId });
-         return errorResponse(ERROR_MESSAGES.RESOURCE.NOT_FOUND('Configuración de Eye Tracking'), 404);
+        structuredLog('warn', `EyeTrackingController.${context}`, 'No se encontró configuración (explicit check)', { researchId });
+        return errorResponse(ERROR_MESSAGES.RESOURCE.NOT_FOUND('Configuración de Eye Tracking'), 404);
       }
 
       structuredLog('info', `EyeTrackingController.${context}`, 'Configuración encontrada/creada', { researchId, id: eyeTracking.id });
@@ -82,20 +82,20 @@ export class EyeTrackingController {
       const idResult = extractResearchId(event);
       if ('statusCode' in idResult) return idResult;
       researchId = idResult.researchId;
-      
+
       const bodyResult = parseAndValidateBody<EyeTrackingFormData>(event, validateEyeTrackingData);
       if ('statusCode' in bodyResult) return bodyResult;
       const configData = bodyResult.data;
-      
+
       configData.researchId = researchId;
 
       structuredLog('info', `EyeTrackingController.${context}`, 'Creando configuración de eye tracking', { researchId });
       const result = await eyeTrackingService.create(configData, researchId, userId);
-      
-      structuredLog('info', `EyeTrackingController.${context}`, 'Configuración creada', { researchId, id: result.id });      
-      return createResponse(201, { 
-          message: "Configuración de eye tracking creada exitosamente",
-          data: result 
+
+      structuredLog('info', `EyeTrackingController.${context}`, 'Configuración creada', { researchId, id: result.id });
+      return createResponse(201, {
+        message: "Configuración de eye tracking creada exitosamente",
+        data: result
       });
     } catch (error) {
       return this.handleError(error, context, { researchId });
@@ -112,21 +112,21 @@ export class EyeTrackingController {
       const idResult = extractResearchId(event);
       if ('statusCode' in idResult) return idResult;
       researchId = idResult.researchId;
-      
+
       const bodyResult = parseAndValidateBody<EyeTrackingFormData>(event, validateEyeTrackingData);
       if ('statusCode' in bodyResult) return bodyResult;
       const configData = bodyResult.data;
-      
+
       configData.researchId = researchId;
 
       structuredLog('info', `EyeTrackingController.${context}`, 'Actualizando configuración de eye tracking', { researchId });
-      
+
       const result = await eyeTrackingService.updateByResearchId(researchId, configData, userId);
-      
-      structuredLog('info', `EyeTrackingController.${context}`, 'Configuración actualizada', { researchId, id: result.id });            
+
+      structuredLog('info', `EyeTrackingController.${context}`, 'Configuración actualizada', { researchId, id: result.id });
       return createResponse(200, {
-          message: "Configuración de eye tracking actualizada exitosamente",
-          data: result
+        message: "Configuración de eye tracking actualizada exitosamente",
+        data: result
       });
     } catch (error) {
       return this.handleError(error, context, { researchId });
@@ -145,17 +145,17 @@ export class EyeTrackingController {
       researchId = idResult.researchId;
 
       structuredLog('info', `EyeTrackingController.${context}`, 'Eliminando configuración de eye tracking', { researchId });
-      
+
       const existingConfig = await eyeTrackingService.getByResearchId(researchId);
       if (!existingConfig || !existingConfig.id) {
-           structuredLog('error', `EyeTrackingController.${context}`, 'No se pudo obtener ID para eliminar', { researchId });
-           return errorResponse('No se encontró la configuración para eliminar.', 404);
+        structuredLog('error', `EyeTrackingController.${context}`, 'No se pudo obtener ID para eliminar', { researchId });
+        return errorResponse('No se encontró la configuración para eliminar.', 404);
       }
-      
+
       await eyeTrackingService.delete(existingConfig.id, userId);
-      
-      structuredLog('info', `EyeTrackingController.${context}`, 'Configuración eliminada', { researchId, id: existingConfig.id });                  
-      return createResponse(204, null); 
+
+      structuredLog('info', `EyeTrackingController.${context}`, 'Configuración eliminada', { researchId, id: existingConfig.id });
+      return createResponse(204, null);
     } catch (error) {
       return this.handleError(error, context, { researchId });
     }
@@ -175,5 +175,8 @@ const eyeTrackingRouteMap: RouteMap = {
 
 // Nueva exportación con el nombre estándar
 export const mainHandler = createController(eyeTrackingRouteMap, {
-    basePath: ''
-}); 
+  basePath: '',
+  publicRoutes: [
+    { path: '/research/{researchId}/eye-tracking', method: 'GET' }
+  ]
+});
