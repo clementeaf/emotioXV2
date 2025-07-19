@@ -10,9 +10,7 @@ import { ResearchSection, ResearchSidebarProps } from '@/interfaces/research';
 import { researchAPI } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
-
 import { Research } from '../../../../shared/interfaces/research.model';
-
 import { SidebarBase } from './SidebarBase';
 
 const sections: ResearchSection[] = [
@@ -50,7 +48,7 @@ const sections: ResearchSection[] = [
   },
 ];
 
-function ResearchSidebarContent({ researchId, activeStage, className }: ResearchSidebarProps) {
+function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, logout } = useAuth();
@@ -101,7 +99,7 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
     return (
       <button
         onClick={handleLogout}
-        className="w-full flex items-center gap-2 px-4 py-2 text-[15px] text-red-600 hover:bg-red-200 rounded-lg transition-colors border border-red-200 hover:border-red-300"
+        className="w-full flex items-center gap-2 px-4 py-2 ml-2 text-[15px] text-red-600 hover:bg-red-200 rounded-lg transition-colors border border-red-200 hover:border-red-300"
         title="Cerrar sesión"
       >
         <span className="font-[400]">Cerrar sesión</span>

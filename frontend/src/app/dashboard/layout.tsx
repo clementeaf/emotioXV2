@@ -10,12 +10,14 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const researchId = searchParams ? searchParams.get('research') : '';
 
   return (
-    <div className="flex h-screen bg-neutral-50">
-      {researchId ? (
-        <ResearchSidebar researchId={researchId} />
-      ) : (
-        <Sidebar />
-      )}
+    <div className="flex h-screen">
+      <div className="w-60 mt-10 mx-5">
+        {researchId ? (
+          <ResearchSidebar researchId={researchId} />
+        ) : (
+          <Sidebar />
+        )}
+      </div>
       <div className="flex-1 flex flex-col">
         <main className="flex-1 p-6">
           {children}

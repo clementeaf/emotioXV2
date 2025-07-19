@@ -19,25 +19,25 @@ export function SidebarBase({ userInfo, topBlock, children, footer, className }:
       )}
     >
       {/* Header usuario */}
-      <div className="px-6 pt-8 pb-6 border-b border-neutral-200">
+      <div className="px-6 pt-8 pb-6">
         {userInfo}
       </div>
 
       {/* Bloque superior opcional (logo, nombre proyecto, etc) */}
       {topBlock && (
-        <div className="px-6 pt-4 pb-3 border-b border-neutral-100">
+        <div className="px-6 pt-4 pb-3">
           {topBlock}
         </div>
       )}
 
       {/* Menú/secciones */}
-      <div className="flex-1 overflow-y-auto px-2 py-4">
+      <div className="flex-1 overflow-y-auto px-2 py-4 ml-4">
         {children}
       </div>
 
       {/* Footer (logout, etc) */}
       {footer && (
-        <div className="px-4 py-4 border-t border-neutral-200 mt-auto">
+        <div className="px-4 py-4 mt-auto">
           {footer}
         </div>
       )}
