@@ -40,7 +40,14 @@ const sections: ResearchSection[] = [
       { id: 'smart-voc-results', title: 'SmartVOC' },
       { id: 'cognitive-task-results', title: 'Cognitive Task' }
     ]
-  }
+  },
+  {
+    id: 'research-status',
+    title: 'Research Status',
+    stages: [
+      { id: 'research-in-progress', title: 'Investigación en curso' }
+    ]
+  },
 ];
 
 function ResearchSidebarContent({ researchId, activeStage, className }: ResearchSidebarProps) {
@@ -185,6 +192,9 @@ function ResearchSidebarContent({ researchId, activeStage, className }: Research
           {isLoading ? 'Cargando nombre...' : researchName}
         </h2>
       </div>
+
+
+
       <button
         onClick={handleBackToDashboard}
         className="py-2 text-sm text-neutral-700 font-medium transition-colors text-left"
