@@ -110,6 +110,31 @@ export const API_ENDPOINTS = {
     download: '/s3/download',
     deleteObject: '/s3/delete-object',
   },
+
+  // Module Responses (para datos de public-tests)
+  moduleResponses: {
+    getResponsesByResearch: '/research/{researchId}/module-responses',
+    getResponsesForParticipant: '/research/{researchId}/participant/{participantId}/responses',
+    saveResponse: '/module-responses',
+    updateResponse: '/module-responses/{responseId}',
+    deleteAllResponses: '/research/{researchId}/participant/{participantId}/responses',
+  },
+
+  // Participants (para datos de public-tests)
+  participants: {
+    getAll: '/participants',
+    getById: '/participants/{id}',
+    login: '/participants/login',
+    create: '/participants',
+    delete: '/participants/{id}',
+  },
+
+  // Research In Progress (para vista de investigación en curso)
+  researchInProgress: {
+    getParticipantsWithStatus: '/research/{researchId}/participants/status',
+    getOverviewMetrics: '/research/{researchId}/metrics',
+    getParticipantsByResearch: '/research/{researchId}/participants',
+  },
 } as const;
 
 /**
@@ -198,7 +223,16 @@ export class ApiClient {
     operation: string,
     params?: Record<string, string>
   ): string {
-    const endpoint = (API_ENDPOINTS as any)[category][operation] as string;
+    const categoryEndpoints = (API_ENDPOINTS as any)[category];
+    if (!categoryEndpoints) {
+      throw new Error(`Categoría de API no encontrada: ${category}. Categorías disponibles: ${Object.keys(API_ENDPOINTS).join(', ')}`);
+    }
+
+    const endpoint = categoryEndpoints[operation] as string;
+    if (!endpoint) {
+      throw new Error(`Operación '${operation}' no encontrada en categoría '${category}'. Operaciones disponibles: ${Object.keys(categoryEndpoints).join(', ')}`);
+    }
+
     return this.buildUrl(endpoint, params);
   }
 

@@ -1,13 +1,13 @@
-import { 
-  APIGatewayProxyEvent, 
-  APIGatewayProxyResult, 
-  Context
+import {
+    APIGatewayProxyEvent,
+    APIGatewayProxyResult,
+    Context
 } from 'aws-lambda';
-import logger from './logger';
 import { type Logger as PinoLogger } from 'pino';
-import { APIGatewayEventWebsocketRequestContext } from './types/websocket';
-import { ROUTE_DEFINITIONS } from './routeDefinitions';
 import { HttpError, InternalServerError, NotFoundError } from './errors';
+import logger from './logger';
+import { ROUTE_DEFINITIONS } from './routeDefinitions';
+import { APIGatewayEventWebsocketRequestContext } from './types/websocket';
 
 type ConnectionType = 'http' | 'websocket';
 
@@ -27,6 +27,7 @@ const controllerImports = {
   'participants': () => import('./controllers/participant.controller'),
   'researchForms': () => import('./controllers/getResearchAvailableForms'),
   'module-responses': () => import('./controllers/moduleResponse.controller'),
+  'researchInProgress': () => import('./controllers/researchInProgress.controller'),
 };
 
 // Función para obtener un handler de forma lazy (refactorizada)
@@ -73,7 +74,7 @@ async function getHandler(type: string): Promise<Function | null> {
     }
   } else {
     logger.error(`Unknown controller type requested: ${type}`);
-    return null; 
+    return null;
   }
 }
 
@@ -105,7 +106,7 @@ export const handler = async (
 
   } catch (error) {
     requestLogger.error({ err: error }, 'Error general no capturado en el handler principal');
-    
+
     // Formato de respuesta de error genérico
     return {
       statusCode: 500,
@@ -157,7 +158,7 @@ async function handleHttpRequest(
       return {
         statusCode: 200,
         headers,
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           status: 'online',
           version: process.env.npm_package_version || '1.0.0',
           environment: process.env.NODE_ENV || 'development',
@@ -191,7 +192,7 @@ async function handleHttpRequest(
 
     // Ejecuta el controlador con los parámetros adecuados
     // Los controladores creados con createController esperan solo (event)
-    return await controller(event); 
+    return await controller(event);
 
   } catch (error: unknown) {
     // <<< Bloque catch mejorado >>>
@@ -222,7 +223,7 @@ async function handleHttpRequest(
         ...(responseError.code && { code: responseError.code }),
         // Incluir stack trace solo en desarrollo
         ...(process.env.NODE_ENV !== 'production' && { stack: responseError.stack }),
-        requestId: context.awsRequestId, 
+        requestId: context.awsRequestId,
       }),
     };
   }

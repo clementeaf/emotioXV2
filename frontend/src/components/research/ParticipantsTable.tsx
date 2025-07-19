@@ -19,11 +19,9 @@ interface Participant {
   id: string;
   name: string;
   email: string;
-  status: 'en-proceso' | 'por-iniciar' | 'completado';
-  startTime?: string;
-  endTime?: string;
-  duration?: string;
+  status: string;
   progress: number;
+  duration: string;
   lastActivity: string;
 }
 
@@ -33,17 +31,17 @@ interface ParticipantsTableProps {
 }
 
 const statusConfig = {
-  'en-proceso': {
+  'En proceso': {
     label: 'En proceso',
     color: 'bg-blue-100 text-blue-800',
     icon: Clock
   },
-  'por-iniciar': {
+  'Por iniciar': {
     label: 'Por iniciar',
     color: 'bg-gray-100 text-gray-800',
     icon: AlertCircle
   },
-  'completado': {
+  'Completado': {
     label: 'Completado',
     color: 'bg-green-100 text-green-800',
     icon: CheckCircle
@@ -62,7 +60,7 @@ export function ParticipantsTable({ participants, onViewDetails }: ParticipantsT
   });
 
   const getStatusConfig = (status: string) => {
-    return statusConfig[status as keyof typeof statusConfig] || statusConfig['por-iniciar'];
+    return statusConfig[status as keyof typeof statusConfig] || statusConfig['Por iniciar'];
   };
 
   return (
@@ -99,9 +97,9 @@ export function ParticipantsTable({ participants, onViewDetails }: ParticipantsT
             className="px-3 py-2 border border-neutral-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">Todos los estados</option>
-            <option value="en-proceso">En proceso</option>
-            <option value="por-iniciar">Por iniciar</option>
-            <option value="completado">Completado</option>
+            <option value="En proceso">En proceso</option>
+            <option value="Por iniciar">Por iniciar</option>
+            <option value="Completado">Completado</option>
           </select>
         </div>
 

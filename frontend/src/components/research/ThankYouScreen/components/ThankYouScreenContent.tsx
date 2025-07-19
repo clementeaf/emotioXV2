@@ -23,10 +23,12 @@ export const ThankYouScreenContent: React.FC<ThankYouScreenContentProps> = ({
     <div className="space-y-4 p-4 bg-white rounded-lg border border-neutral-200">
       {/* Campo de título */}
       <div className="space-y-2">
+        <label className="block text-sm font-medium text-neutral-700 mb-1">
+          {UI_TEXTS.CONTENT.TITLE_LABEL}
+        </label>
         <Input
           id="thank-you-title"
           name="thank-you-title"
-          label={`${UI_TEXTS.CONTENT.TITLE_LABEL} `}
           value={title}
           onChange={(e) => onTitleChange(e.target.value)}
           disabled={disabled}
@@ -42,7 +44,7 @@ export const ThankYouScreenContent: React.FC<ThankYouScreenContentProps> = ({
         <Textarea
           id="thank-you-message"
           name="thank-you-message"
-          label={`${UI_TEXTS.CONTENT.MESSAGE_LABEL} `}
+          label={UI_TEXTS.CONTENT.MESSAGE_LABEL}
           value={message}
           onChange={(e) => onMessageChange(e.target.value)}
           rows={4}
@@ -56,10 +58,12 @@ export const ThankYouScreenContent: React.FC<ThankYouScreenContentProps> = ({
 
       {/* Campo de URL de redirección */}
       <div className="space-y-2">
+        <label className="block text-sm font-medium text-neutral-700 mb-1">
+          {UI_TEXTS.CONTENT.REDIRECT_URL_LABEL}
+        </label>
         <Input
           id="thank-you-redirect-url"
           name="thank-you-redirect-url"
-          label={`${UI_TEXTS.CONTENT.REDIRECT_URL_LABEL} `}
           value={redirectUrl}
           onChange={(e) => onRedirectUrlChange(e.target.value)}
           placeholder={UI_TEXTS.CONTENT.REDIRECT_URL_PLACEHOLDER}

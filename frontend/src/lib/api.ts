@@ -309,5 +309,79 @@ export const s3API = {
   },
 };
 
+// API de Module Responses (para datos de public-tests)
+export const moduleResponsesAPI = {
+  // Obtener todas las respuestas de un research
+  getResponsesByResearch: async (researchId: string): Promise<APIResponse<any[]>> => {
+    return apiClient.get('moduleResponses', 'getResponsesByResearch', { researchId });
+  },
+
+  // Obtener respuestas de un participante específico
+  getResponsesForParticipant: async (researchId: string, participantId: string): Promise<APIResponse<any>> => {
+    return apiClient.get('moduleResponses', 'getResponsesForParticipant', { researchId, participantId });
+  },
+
+  // Guardar respuesta
+  saveResponse: async (data: any): Promise<APIResponse<any>> => {
+    return apiClient.post('moduleResponses', 'saveResponse', data);
+  },
+
+  // Actualizar respuesta
+  updateResponse: async (responseId: string, data: any): Promise<APIResponse<any>> => {
+    return apiClient.put('moduleResponses', 'updateResponse', data, { responseId });
+  },
+
+  // Eliminar todas las respuestas de un participante
+  deleteAllResponses: async (researchId: string, participantId: string): Promise<APIResponse<boolean>> => {
+    return apiClient.delete('moduleResponses', 'deleteAllResponses', { researchId, participantId });
+  },
+};
+
+// API de Participants (para datos de public-tests)
+export const participantsAPI = {
+  // Obtener todos los participantes
+  getAll: async (): Promise<APIResponse<any[]>> => {
+    return apiClient.get('participants', 'getAll');
+  },
+
+  // Obtener participante por ID
+  getById: async (id: string): Promise<APIResponse<any>> => {
+    return apiClient.get('participants', 'getById', { id });
+  },
+
+  // Login de participante
+  login: async (data: { name: string; email: string; researchId: string }): Promise<APIResponse<any>> => {
+    return apiClient.post('participants', 'login', data);
+  },
+
+  // Crear participante
+  create: async (data: any): Promise<APIResponse<any>> => {
+    return apiClient.post('participants', 'create', data);
+  },
+
+  // Eliminar participante
+  delete: async (id: string): Promise<APIResponse<boolean>> => {
+    return apiClient.delete('participants', 'delete', { id });
+  },
+};
+
+// API combinada para Research In Progress
+export const researchInProgressAPI = {
+  // Obtener participantes con estados para un research
+  getParticipantsWithStatus: async (researchId: string): Promise<APIResponse<any[]>> => {
+    return apiClient.get('researchInProgress', 'getParticipantsWithStatus', { researchId });
+  },
+
+  // Obtener métricas de overview para un research
+  getOverviewMetrics: async (researchId: string): Promise<APIResponse<any>> => {
+    return apiClient.get('researchInProgress', 'getOverviewMetrics', { researchId });
+  },
+
+  // Obtener participantes por research (si existe el endpoint)
+  getParticipantsByResearch: async (researchId: string): Promise<APIResponse<any[]>> => {
+    return apiClient.get('researchInProgress', 'getParticipantsByResearch', { researchId });
+  },
+};
+
 // Exportar apiClient para uso en otros módulos
 export { apiClient };

@@ -51,5 +51,10 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
   // Participants
   { pathPattern: /^\/participants/, controllerType: 'participants' },
 
+  // Research In Progress (NUEVAS RUTAS)
+  { pathPattern: /^\/research\/[^\/]+\/participants\/status$/, controllerType: 'researchInProgress' },
+  { pathPattern: /^\/research\/[^\/]+\/metrics$/, controllerType: 'researchInProgress' },
+  { pathPattern: /^\/research\/[^\/]+\/participants$/, controllerType: 'researchInProgress' },
+
   // Añadir más definiciones de ruta aquí...
-]; 
+];

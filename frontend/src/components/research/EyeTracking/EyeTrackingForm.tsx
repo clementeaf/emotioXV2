@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { Tab, Tabs } from '@/components/ui/Tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { useErrorLog } from '@/components/utils/ErrorLogger';
 
 import { StimuliTab } from '../StimuliTab/StimuliTab';
@@ -230,28 +230,34 @@ export const EyeTrackingForm: React.FC<EyeTrackingFormProps> = ({
       </div>
       {/* --- Fin Información Contextual --- */}
 
-      <Tabs activeTab={activeTab} onChange={handleChangeTab}>
-        <Tab id="stimuli" label="Estímulos">
+      <Tabs value={activeTab} onValueChange={handleChangeTab}>
+        <TabsList>
+          <TabsTrigger value="stimuli">Estímulos</TabsTrigger>
+          <TabsTrigger value="calibration">Calibración</TabsTrigger>
+          <TabsTrigger value="settings">Configuración</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="stimuli">
           <StimuliTab
             formData={formData}
             onUpdate={handleUpdateData}
             researchId={researchId}
           />
-        </Tab>
+        </TabsContent>
 
-        <Tab id="calibration" label="Calibración">
+        <TabsContent value="calibration">
           <CalibrationTab
             formData={formData}
             onUpdate={handleUpdateData}
           />
-        </Tab>
+        </TabsContent>
 
-        <Tab id="settings" label="Configuración">
+        <TabsContent value="settings">
           <SettingsTab
             formData={formData}
             onUpdate={handleUpdateData}
           />
-        </Tab>
+        </TabsContent>
       </Tabs>
 
       <div className="flex justify-between items-center pt-6 border-t mt-8">
