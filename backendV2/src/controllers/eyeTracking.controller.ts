@@ -48,8 +48,9 @@ export class EyeTrackingController {
 
   /**
    * Obtiene una configuración de eye tracking según el ID de investigación
+   * MÉTODO PÚBLICO - NO REQUIERE AUTENTICACIÓN
    */
-  public async getEyeTracking(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  public async getEyeTracking(event: APIGatewayProxyEvent, userId?: string): Promise<APIGatewayProxyResult> {
     const context = 'getEyeTracking';
     let researchId: string | undefined;
     try {
@@ -57,7 +58,7 @@ export class EyeTrackingController {
       if ('statusCode' in idResult) return idResult;
       researchId = idResult.researchId;
 
-      structuredLog('info', `EyeTrackingController.${context}`, 'Obteniendo datos para investigación', { researchId });
+      structuredLog('info', `EyeTrackingController.${context}`, 'Obteniendo datos para investigación (PÚBLICO)', { researchId });
       const eyeTracking = await eyeTrackingService.getByResearchId(researchId);
 
       if (!eyeTracking) {

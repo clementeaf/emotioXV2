@@ -1,5 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { validateTokenAndSetupAuth, createResponse } from './controller.utils';
+import { createResponse, validateTokenAndSetupAuth } from './controller.utils';
 
 /**
  * Tipo para funciones que procesan eventos de API Gateway con un controlador
@@ -30,7 +30,7 @@ export interface ControllerOptions {
 
 /**
  * Crea un controlador API con manejo estándar de autenticación y CORS
- * 
+ *
  * @param routeMap Mapa de rutas que relaciona paths y métodos con funciones controladoras
  * @param options Opciones de configuración
  * @returns Función handler para usar con API Gateway
@@ -39,19 +39,19 @@ export function createController(
   routeMap: RouteMap,
   options: ControllerOptions
 ): (event: APIGatewayProxyEvent) => Promise<APIGatewayProxyResult> {
-  
+
   return async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
       // Extraer método y ruta
       const method = event.httpMethod;
       const path = event.path;
-      
+
       console.log(`CONTROLLER [${options.basePath}] - Solicitud recibida:`, {
         method,
         path,
         pathParameters: event.pathParameters
       });
-      
+
       // Para solicitudes OPTIONS (preflight CORS), responder inmediatamente
       if (method === 'OPTIONS') {
         console.log(`CONTROLLER [${options.basePath}] - Respondiendo a solicitud CORS preflight`);
@@ -73,31 +73,35 @@ export function createController(
           body: ''
         };
       }
-      
+
       // Comprobar si es una ruta pública (sin autenticación)
-      const isPublicRoute = options.publicRoutes?.some(
-        route => path.endsWith(route.path) && route.method === method
-      );
-      
+      const isPublicRoute = options.publicRoutes?.some(route => {
+        // Crear regex para el patrón de ruta pública
+        const publicRouteRegex = new RegExp(
+          `^${route.path.replace(/\/{([^\/]+)}/g, '/([^/]+)')}$`
+        );
+        return publicRouteRegex.test(path) && route.method === method;
+      });
+
       let userId: string | null = null;
-      
+
       // Si no es una ruta pública, validar autenticación
       if (!isPublicRoute) {
         const authResult = await validateTokenAndSetupAuth(event, path);
-        
+
         // Si el resultado es una respuesta de error, retornarla
         if ('statusCode' in authResult) {
           return authResult;
         }
-        
+
         // Si no hay error, extraer el userId
         userId = authResult.userId;
       }
-      
+
       // Encontrar el controlador para la ruta
       let controller: ControllerFunction | undefined;
       let matchedPath: string | undefined;
-      
+
       // Buscar coincidencia exacta primero
       if (routeMap[path] && routeMap[path][method]) {
         controller = routeMap[path][method];
@@ -110,21 +114,21 @@ export function createController(
           const fullRoutePattern = `${options.basePath.replace(/\/$/, '')}/${routePath.replace(/^\//, '')}`;
           console.log(`CONTROLLER [${options.basePath}] - Probando patrón: ${fullRoutePattern}`); // Log para ver patrón
           const routeRegex = new RegExp(
-             // Usar el patrón completo para la regex
-            `^${fullRoutePattern.replace(/\/{([^\/]+)}/g, '/([^/]+)')}$` 
+            // Usar el patrón completo para la regex
+            `^${fullRoutePattern.replace(/\/{([^\/]+)}/g, '/([^/]+)')}$`
           );
           console.log(`CONTROLLER [${options.basePath}] - Regex: ${routeRegex}`); // Log para ver regex
-          
+
           if (routeRegex.test(path) && routeMap[routePath][method]) {
             controller = routeMap[routePath][method];
             matchedPath = routePath; // Mantener el path relativo original para logs?
             console.log(`CONTROLLER [${options.basePath}] - Coincidencia encontrada con patrón: ${fullRoutePattern}`);
-            
+
             // Extraer parámetros de la URL usando la regex del patrón completo
             const paramNames = (fullRoutePattern.match(/\/{([^\/]+)}/g) || [])
-              .map(p => p.substring(2, p.length - 1)); 
+              .map(p => p.substring(2, p.length - 1));
             const paramValues = path.match(routeRegex)?.slice(1);
-            
+
             if (paramNames.length > 0 && paramValues) {
               event.pathParameters = event.pathParameters || {};
               paramNames.forEach((name, i) => {
@@ -133,12 +137,12 @@ export function createController(
                 }
               });
             }
-            
+
             break;
           }
         }
       }
-      
+
       // Si encontramos un controlador, ejecutarlo
       if (controller && userId !== null) {
         console.log(`CONTROLLER [${options.basePath}] - Ejecutando controlador para ruta: ${matchedPath}, método: ${method}`);
@@ -149,7 +153,7 @@ export function createController(
         console.log(`CONTROLLER [${options.basePath}] - Pasando pathParameters:`, JSON.stringify(event.pathParameters || {}));
         return await controller(event, '');
       }
-      
+
       // Si no hay controlador para esta ruta/método
       console.log(`CONTROLLER [${options.basePath}] - Ruta no encontrada:`, { path, method });
       return createResponse(404, {
@@ -158,7 +162,7 @@ export function createController(
         method: event.httpMethod,
         details: `No se encontró controlador para ${method} ${path}`
       });
-      
+
     } catch (error: any) {
       // Manejar errores generales
       console.error(`CONTROLLER [${options.basePath}] - Error no controlado:`, error);
@@ -168,4 +172,4 @@ export function createController(
       });
     }
   };
-} 
+}
