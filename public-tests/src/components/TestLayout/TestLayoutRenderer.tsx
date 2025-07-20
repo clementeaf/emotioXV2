@@ -489,6 +489,9 @@ const ThankYouScreenComponent: React.FC<{
   const { researchId, participantId } = useTestStore();
   const saveModuleResponseMutation = useSaveModuleResponseMutation();
 
+  // 🎯 MOVER HOOK AL NIVEL SUPERIOR
+  const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
+
   // 🎯 AUTO-GUARDAR CUANDO SE VISITA THANK YOU SCREEN
   React.useEffect(() => {
     if (currentQuestionKey === 'thank_you_screen' && researchId && participantId) {
@@ -502,9 +505,6 @@ const ThankYouScreenComponent: React.FC<{
       const sendToAPI = async () => {
         try {
           const timestamp = new Date().toISOString();
-
-          // 🎯 OBTENER CONFIGURACIÓN DE EYE-TRACKING
-          const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
 
           // Capturar información real del dispositivo SOLO si está habilitado
           let deviceInfo = null;
