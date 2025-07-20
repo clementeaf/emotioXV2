@@ -14,23 +14,7 @@ import { VOCQuestion } from './VOCQuestion';
 export function SmartVOCResults({ className }: SmartVOCResultsProps) {
   const [timeRange, setTimeRange] = useState<'Today' | 'Week' | 'Month'>('Today');
 
-  // Estado para indicar que no hay datos disponibles
-  const hasData = false; // Cambiar a true cuando se conecte con datos reales
 
-  if (!hasData) {
-    return (
-      <div className={cn('flex items-center justify-center p-8', className)}>
-        <div className="text-center">
-          <div className="text-gray-500 text-lg mb-4">
-            📊 No hay datos disponibles para mostrar
-          </div>
-          <p className="text-gray-400 text-sm">
-            Los resultados de SmartVOC aparecerán aquí cuando se complete la investigación
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className={cn('flex gap-8 p-8', className)}>

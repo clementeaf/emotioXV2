@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 import { cn } from '@/lib/utils';
 
@@ -30,7 +30,7 @@ interface AreaOfInterest {
   participants: string;
 }
 
-export function NavigationTestResults({ 
+export function NavigationTestResults({
   className,
   questionId = '3.7.-Navigation Test',
   questionType = 'Navigation Test',
@@ -39,7 +39,7 @@ export function NavigationTestResults({
 }: NavigationTestResultsProps) {
   const [selectedStep, setSelectedStep] = useState<number | null>(1);
   const [selectedMapView, setSelectedMapView] = useState<'heat' | 'click' | 'opacity' | 'scanPath' | 'image' | 'prediction'>('heat');
-  
+
   // Datos de ejemplo para los pasos
   const steps: Step[] = [
     {
@@ -120,8 +120,8 @@ export function NavigationTestResults({
 
   const renderStepCards = () => {
     return steps.map((step) => (
-      <div 
-        key={step.id} 
+      <div
+        key={step.id}
         className={cn(
           'border border-gray-200 rounded-lg overflow-hidden mb-4 cursor-pointer hover:shadow-md transition-shadow',
           selectedStep === step.id && 'ring-2 ring-blue-500'
@@ -132,15 +132,15 @@ export function NavigationTestResults({
           <div className="w-16 h-16 mr-4 flex-shrink-0 overflow-hidden rounded-md bg-gray-100 flex items-center justify-center">
             <div className="text-gray-400 text-xs">Step {step.id}</div>
           </div>
-          
+
           <div className="flex-grow">
             <div className="flex justify-between items-center mb-2">
               <div className="text-gray-500">Step</div>
               <div className="font-semibold text-lg">{step.id}</div>
             </div>
-            
+
             {getStepProgress(step)}
-            
+
             <div className="flex justify-between items-center mt-2">
               <div className="text-gray-700">{step.completionTime}</div>
               <div className="text-blue-600 font-semibold">{step.completionRate}%</div>
@@ -158,28 +158,26 @@ export function NavigationTestResults({
   };
 
   const renderStepDetail = () => {
-    if (selectedStep === null) {return null;}
-    
+    if (selectedStep === null) { return null; }
+
     const step = steps.find(s => s.id === selectedStep);
-    if (!step) {return null;}
-    
+    if (!step) { return null; }
+
     return (
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div className="p-4 border-b border-gray-200 flex justify-between items-center">
           <h3 className="font-medium text-lg">{step.description}</h3>
-          {step.areas && step.areas.length > 0 && (
-            <div className="bg-blue-50 text-blue-700 px-3 py-1 rounded-md text-sm">
-              New data was obtained. Please update graph
-              <button className="ml-2 bg-blue-600 text-white px-2 py-0.5 rounded text-xs">
-                Update
-              </button>
-            </div>
-          )}
+          <div className="bg-blue-50 text-blue-700 px-3 py-1 rounded-md text-sm">
+            New data was obtained. Please update graph
+            <button className="ml-2 bg-blue-600 text-white px-2 py-0.5 rounded text-xs">
+              Update
+            </button>
+          </div>
         </div>
-        
+
         <div className="p-2 border-b border-gray-200">
           <div className="flex space-x-1">
-            <button 
+            <button
               className={cn(
                 'px-3 py-1 rounded text-sm flex items-center',
                 selectedMapView === 'heat' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'
@@ -191,7 +189,7 @@ export function NavigationTestResults({
               </svg>
               Heat click map
             </button>
-            <button 
+            <button
               className={cn(
                 'px-3 py-1 rounded text-sm flex items-center',
                 selectedMapView === 'click' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'
@@ -203,7 +201,7 @@ export function NavigationTestResults({
               </svg>
               Click map
             </button>
-            <button 
+            <button
               className={cn(
                 'px-3 py-1 rounded text-sm flex items-center',
                 selectedMapView === 'opacity' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'
@@ -216,7 +214,7 @@ export function NavigationTestResults({
               </svg>
               Opacity map
             </button>
-            <button 
+            <button
               className={cn(
                 'px-3 py-1 rounded text-sm flex items-center',
                 selectedMapView === 'scanPath' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'
@@ -228,7 +226,7 @@ export function NavigationTestResults({
               </svg>
               Scan Path
             </button>
-            <button 
+            <button
               className={cn(
                 'px-3 py-1 rounded text-sm flex items-center',
                 selectedMapView === 'image' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'
@@ -240,7 +238,7 @@ export function NavigationTestResults({
               </svg>
               Image
             </button>
-            <button 
+            <button
               className={cn(
                 'px-3 py-1 rounded text-sm flex items-center',
                 selectedMapView === 'prediction' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'
@@ -254,7 +252,7 @@ export function NavigationTestResults({
             </button>
           </div>
         </div>
-        
+
         <div className="p-4">
           <div className="relative">
             {/* Simulación de mapa de calor usando un div con gradiente */}
@@ -262,7 +260,7 @@ export function NavigationTestResults({
               <div className={
                 cn(
                   'w-full h-full',
-                  selectedMapView === 'heat' ? 'bg-gradient-to-br from-red-500/30 via-yellow-500/20 to-blue-500/10' : 
+                  selectedMapView === 'heat' ? 'bg-gradient-to-br from-red-500/30 via-yellow-500/20 to-blue-500/10' :
                     selectedMapView === 'click' ? 'bg-blue-100' :
                       selectedMapView === 'opacity' ? 'bg-gradient-to-tr from-blue-200/50 to-blue-100/20' :
                         selectedMapView === 'scanPath' ? 'bg-blue-50' :
@@ -279,13 +277,13 @@ export function NavigationTestResults({
                     <circle cx="300" cy="100" r="5" fill="red" />
                   </svg>
                 )}
-                
+
                 {selectedMapView === 'prediction' && (
                   <div className="text-center text-gray-500">
                     Prediction model visualization
                   </div>
                 )}
-                
+
                 {selectedMapView === 'image' && (
                   <div className="text-center text-gray-500">
                     Original image
@@ -294,56 +292,54 @@ export function NavigationTestResults({
               </div>
             </div>
           </div>
-          
-          {step.areas && step.areas.length > 0 && (
-            <div className="mt-6 space-y-4">
-              {step.areas.map((area) => (
-                <div key={area.id} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center">
-                    <div className="w-12 h-12 flex-shrink-0 mr-4 bg-gray-100 rounded-md flex items-center justify-center">
-                      <span className="text-xs text-gray-500">AOI {area.id}</span>
+
+          <div className="mt-6 space-y-4">
+            {step.areas?.map((area) => (
+              <div key={area.id} className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center">
+                  <div className="w-12 h-12 flex-shrink-0 mr-4 bg-gray-100 rounded-md flex items-center justify-center">
+                    <span className="text-xs text-gray-500">AOI {area.id}</span>
+                  </div>
+
+                  <div className="flex-grow">
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="text-sm text-blue-600">
+                        {area.name}
+                      </div>
+                      <div className="font-medium text-sm text-gray-700">
+                        #{area.id}
+                      </div>
                     </div>
-                    
-                    <div className="flex-grow">
-                      <div className="flex justify-between items-center mb-2">
-                        <div className="text-sm text-blue-600">
-                          {area.name}
-                        </div>
-                        <div className="font-medium text-sm text-gray-700">
-                          #{area.id}
-                        </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center mr-4">
+                        <span className="text-sm font-medium text-blue-600">
+                          {area.viewTime}
+                        </span>
                       </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center mr-4">
-                          <span className="text-sm font-medium text-blue-600">
-                            {area.viewTime}
-                          </span>
-                        </div>
-                        
-                        <div className="flex items-center mr-4">
-                          <span className="text-sm font-medium text-blue-600">
-                            {area.percentage}%
-                          </span>
-                        </div>
-                        
-                        <div className="flex items-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                          </svg>
-                          <span className="text-sm">{area.participants}</span>
-                        </div>
-                        
-                        <button className="text-red-500 hover:text-red-700 text-sm">
-                          Remove AOI
-                        </button>
+
+                      <div className="flex items-center mr-4">
+                        <span className="text-sm font-medium text-blue-600">
+                          {area.percentage}%
+                        </span>
                       </div>
+
+                      <div className="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                        </svg>
+                        <span className="text-sm">{area.participants}</span>
+                      </div>
+
+                      <button className="text-red-500 hover:text-red-700 text-sm">
+                        Remove AOI
+                      </button>
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -365,20 +361,20 @@ export function NavigationTestResults({
             Required
           </span>
         </div>
-        
+
         <button className="text-gray-500 hover:text-gray-700">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clipRule="evenodd" />
           </svg>
         </button>
       </div>
-      
+
       <div className="flex space-x-6">
         {/* Columna de pasos */}
         <div className="w-1/4 space-y-4">
           {renderStepCards()}
         </div>
-        
+
         {/* Columna de detalles */}
         <div className="w-3/4">
           {renderStepDetail()}
@@ -386,4 +382,4 @@ export function NavigationTestResults({
       </div>
     </div>
   );
-} 
+}
