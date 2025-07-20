@@ -82,6 +82,8 @@ export interface ScaleRangeQuestionProps {
   max?: number;
   leftLabel?: string;
   rightLabel?: string;
+  startLabel?: string;
+  endLabel?: string;
   value?: number;
   onChange?: (value: number) => void;
 }

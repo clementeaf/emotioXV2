@@ -11,7 +11,7 @@ const TestLayoutMain: React.FC = () => {
   }, []);
 
   return (
-    <main className="flex-1 w-full flex flex-col items-center justify-center md:flex-row items-stretch px-2 sm:px-4 py-10">
+    <main className="flex-1 w-full flex flex-col items-center justify-center md:flex-row items-stretch px-2 sm:px-4 py-20">
       <TestLayoutSidebarContainer
         onStepsReady={handleStepsReady}
       />

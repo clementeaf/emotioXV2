@@ -134,6 +134,11 @@ export interface SmartVOCQuestion {
   instructions?: string;
 
   /**
+   * Whether this question is required
+   */
+  required?: boolean;
+
+  /**
    * Whether this question should be shown conditionally
    */
   showConditionally: boolean;
@@ -147,6 +152,11 @@ export interface SmartVOCQuestion {
    * Optional module response ID
    */
   moduleResponseId?: string;
+
+  /**
+   * Question key for identification
+   */
+  questionKey?: string;
 }
 
 /**

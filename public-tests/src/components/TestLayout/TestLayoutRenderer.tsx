@@ -29,15 +29,35 @@ const QuestionComponent: React.FC<{
   currentStepKey: string;
 }> = ({ question, currentStepKey }) => {
   const { setFormData, getFormData } = useFormDataStore();
-  const [value, setValue] = React.useState<any>(null);
+  const [value, setValue] = React.useState<any>(undefined);
 
   // Cargar valor guardado
   React.useEffect(() => {
     const savedData = getFormData(currentStepKey);
+    console.log('[QuestionComponent] 🔍 Cargando datos guardados:', {
+      currentStepKey,
+      savedData,
+      questionType: question.type
+    });
+
     if (savedData) {
-      setValue(savedData.value || savedData.selectedValue || null);
+      const savedValue = savedData.value || savedData.selectedValue;
+      // 🎯 MANEJAR VALORES NULL/UNDEFINED PARA TEXTAREA
+      if (question.type === 'text' && (savedValue === null || savedValue === undefined)) {
+        setValue('');
+      } else {
+        setValue(savedValue);
+      }
+
+      console.log('[QuestionComponent] ✅ Valor cargado:', {
+        currentStepKey,
+        savedValue,
+        questionType: question.type
+      });
+    } else {
+      console.log('[QuestionComponent] ⚠️ No hay datos guardados para:', currentStepKey);
     }
-  }, [currentStepKey, getFormData]);
+  }, [currentStepKey, getFormData, question.type]);
 
   const handleChange = (newValue: any) => {
     setValue(newValue);
@@ -68,6 +88,10 @@ const QuestionComponent: React.FC<{
           <ScaleRangeQuestion
             min={question.config?.min || 1}
             max={question.config?.max || 5}
+            startLabel={question.config?.startLabel}
+            endLabel={question.config?.endLabel}
+            leftLabel={question.config?.leftLabel}
+            rightLabel={question.config?.rightLabel}
             value={value}
             onChange={handleChange}
           />
@@ -136,6 +160,143 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
         config: contentConfiguration,
         choices: Array.isArray(contentConfiguration?.choices) ? contentConfiguration.choices : [],
         description: String(contentConfiguration?.description || '')
+      }}
+      currentStepKey={currentQuestionKey}
+    />
+  ),
+
+  smartvoc_csat: ({ contentConfiguration, currentQuestionKey }) => (
+    <QuestionComponent
+      question={{
+        title: String(contentConfiguration?.title || 'Pregunta CSAT'),
+        questionKey: currentQuestionKey,
+        type: 'scale',
+        config: {
+          min: 1,
+          max: 5,
+          leftLabel: 'Muy insatisfecho',
+          rightLabel: 'Muy satisfecho',
+          startLabel: 'Muy insatisfecho',
+          endLabel: 'Muy satisfecho'
+        },
+        choices: [],
+        description: String(contentConfiguration?.description || '¿Qué tan satisfecho estás con nuestro servicio?')
+      }}
+      currentStepKey={currentQuestionKey}
+    />
+  ),
+
+  smartvoc_ces: ({ contentConfiguration, currentQuestionKey }) => (
+    <QuestionComponent
+      question={{
+        title: String(contentConfiguration?.title || 'Pregunta CES'),
+        questionKey: currentQuestionKey,
+        type: 'scale',
+        config: {
+          min: 1,
+          max: 7,
+          leftLabel: 'Muy fácil',
+          rightLabel: 'Muy difícil',
+          startLabel: 'Muy fácil',
+          endLabel: 'Muy difícil'
+        },
+        choices: [],
+        description: String(contentConfiguration?.description || '¿Qué tan fácil fue completar esta tarea?')
+      }}
+      currentStepKey={currentQuestionKey}
+    />
+  ),
+
+  smartvoc_cv: ({ contentConfiguration, currentQuestionKey }) => (
+    <QuestionComponent
+      question={{
+        title: String(contentConfiguration?.title || 'Pregunta CV'),
+        questionKey: currentQuestionKey,
+        type: 'scale',
+        config: {
+          min: 1,
+          max: 5,
+          leftLabel: 'Muy bajo',
+          rightLabel: 'Muy alto',
+          startLabel: 'Muy bajo',
+          endLabel: 'Muy alto'
+        },
+        choices: [],
+        description: String(contentConfiguration?.description || '¿Qué tan valioso consideras este servicio?')
+      }}
+      currentStepKey={currentQuestionKey}
+    />
+  ),
+
+  smartvoc_nps: ({ contentConfiguration, currentQuestionKey }) => (
+    <QuestionComponent
+      question={{
+        title: String(contentConfiguration?.title || 'Pregunta NPS'),
+        questionKey: currentQuestionKey,
+        type: 'scale',
+        config: {
+          min: 0,
+          max: 10,
+          leftLabel: 'No lo recomendaría',
+          rightLabel: 'Lo recomendaría',
+          startLabel: 'No lo recomendaría',
+          endLabel: 'Lo recomendaría'
+        },
+        choices: [],
+        description: String(contentConfiguration?.description || '¿Qué tan probable es que recomiendes nuestro servicio?')
+      }}
+      currentStepKey={currentQuestionKey}
+    />
+  ),
+
+  smartvoc_nev: ({ contentConfiguration, currentQuestionKey }) => (
+    <QuestionComponent
+      question={{
+        title: String(contentConfiguration?.title || 'Pregunta NEV'),
+        questionKey: currentQuestionKey,
+        type: 'emoji',
+        config: {
+          emojis: ['😡', '😕', '😐', '🙂', '😄']
+        },
+        choices: [],
+        description: String(contentConfiguration?.description || '¿Cómo te sientes con nuestro servicio?')
+      }}
+      currentStepKey={currentQuestionKey}
+    />
+  ),
+
+  smartvoc_voc: ({ contentConfiguration, currentQuestionKey }) => (
+    <QuestionComponent
+      question={{
+        title: String(contentConfiguration?.title || 'Pregunta VOC'),
+        questionKey: currentQuestionKey,
+        type: 'text',
+        config: {
+          placeholder: 'Escribe tu opinión aquí...'
+        },
+        choices: [],
+        description: String(contentConfiguration?.description || '¿Qué opinas sobre nuestro servicio?')
+      }}
+      currentStepKey={currentQuestionKey}
+    />
+  ),
+
+  smartvoc_nc: ({ contentConfiguration, currentQuestionKey }) => (
+    <QuestionComponent
+      question={{
+        title: String(contentConfiguration?.title || 'Pregunta NC'),
+        questionKey: currentQuestionKey,
+        type: 'scale',
+        config: {
+          min: 0,
+          max: 10,
+          leftLabel: 'No lo recomendaría',
+          rightLabel: 'Lo recomendaría',
+          startLabel: 'No lo recomendaría',
+          endLabel: 'Lo recomendaría'
+        },
+        choices: [],
+        description: String(contentConfiguration?.description || '¿Qué tan probable es que recomiendes nuestro servicio?')
       }}
       currentStepKey={currentQuestionKey}
     />
@@ -503,6 +664,36 @@ const TestLayoutRenderer: React.FC = () => {
       });
 
       updateBackendResponses(backendResponses);
+
+      // 🎯 SINCRONIZAR CON FORM DATA STORE
+      const { setFormData } = useFormDataStore.getState();
+      backendResponses.forEach((backendResponse: any) => {
+        if (backendResponse.questionKey && backendResponse.response) {
+          // 🎯 EXTRAER VALOR DE LA RESPUESTA
+          let value = null;
+          if (backendResponse.response.value !== undefined) {
+            value = backendResponse.response.value;
+          } else if (backendResponse.response.selectedValue !== undefined) {
+            value = backendResponse.response.selectedValue;
+          } else if (backendResponse.response.response !== undefined) {
+            value = backendResponse.response.response;
+          }
+
+          // 🎯 GUARDAR EN FORM DATA STORE
+          setFormData(backendResponse.questionKey, {
+            value,
+            selectedValue: value,
+            response: backendResponse.response,
+            timestamp: backendResponse.response.timestamp || new Date().toISOString()
+          });
+
+          console.log('[TestLayoutRenderer] 🎯 Sincronizando respuesta:', {
+            questionKey: backendResponse.questionKey,
+            value,
+            response: backendResponse.response
+          });
+        }
+      });
     }
   }, [moduleResponses?.responses, researchId, participantId, updateBackendResponses]);
 

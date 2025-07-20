@@ -9,13 +9,13 @@ export const QUESTION_TYPE_MAP = {
   demographics: 'demographics',
 
   // SmartVOC questions
-  smartvoc_csat: 'smartvoc',
-  smartvoc_ces: 'smartvoc',
-  smartvoc_cv: 'smartvoc',
-  smartvoc_nps: 'smartvoc',
-  smartvoc_nc: 'smartvoc',
-  smartvoc_nev: 'smartvoc',
-  smartvoc_voc: 'smartvoc',
+  smartvoc_csat: 'smartvoc_csat',
+  smartvoc_ces: 'smartvoc_ces',
+  smartvoc_cv: 'smartvoc_cv',
+  smartvoc_nps: 'smartvoc_nps',
+  smartvoc_nc: 'smartvoc_nc',
+  smartvoc_nev: 'smartvoc_nev',
+  smartvoc_voc: 'smartvoc_voc',
 
   // Cognitive Task questions
   cognitive_short_text: 'cognitive',
