@@ -132,18 +132,21 @@ export const useStepStore = create<StepStore>((set, get) => ({
     const step = state.steps[stepIndex];
     if (!step) return false;
 
-    // Si tiene respuesta, es accesible
+    // 🎯 PERMITIR ACCESO A TODOS LOS STEPS COMPLETADOS
     if (state.hasBackendResponse(step.questionKey)) return true;
 
-    // Si es el siguiente después del último completado, es accesible
-    const lastCompletedIndex = state.steps.findIndex(s =>
-      state.hasBackendResponse(s.questionKey) &&
-      !state.steps.slice(stepIndex + 1).some(nextStep =>
-        state.hasBackendResponse(nextStep.questionKey)
-      )
+    // 🎯 PERMITIR ACCESO AL SIGUIENTE STEP DISPONIBLE
+    const previousStep = state.steps[stepIndex - 1];
+    if (previousStep && state.hasBackendResponse(previousStep.questionKey)) {
+      return true;
+    }
+
+    // 🎯 PERMITIR ACCESO SI NO HAY STEPS COMPLETADOS ANTES
+    const hasAnyCompletedBefore = state.steps.slice(0, stepIndex).some(s =>
+      state.hasBackendResponse(s.questionKey)
     );
 
-    return stepIndex === lastCompletedIndex + 1;
+    return !hasAnyCompletedBefore;
   },
 
   getStepState: (stepIndex: number): StepStateInfo => {
@@ -161,10 +164,10 @@ export const useStepStore = create<StepStore>((set, get) => ({
     const isCurrentStep = step.questionKey === state.currentQuestionKey;
 
     let stateType: StepState;
-    if (hasResponse) {
-      stateType = 'completed';
-    } else if (isCurrentStep) {
+    if (isCurrentStep) {
       stateType = 'active';
+    } else if (hasResponse) {
+      stateType = 'completed';
     } else if (!canAccess) {
       stateType = 'disabled';
     } else {
