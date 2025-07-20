@@ -154,21 +154,33 @@ export const useTrustFlowData = (researchId: string) => {
     defaultData: [
       {
         stage: '20 jul',
-        nps: 10,
-        nev: 5,
+        nps: 75,
+        nev: 45,
         count: 1
       },
       {
         stage: '21 jul',
-        nps: 8,
-        nev: 7,
+        nps: 82,
+        nev: 67,
         count: 2
       },
       {
         stage: '22 jul',
-        nps: 9,
-        nev: 6,
+        nps: 91,
+        nev: 76,
         count: 3
+      },
+      {
+        stage: '23 jul',
+        nps: 88,
+        nev: 83,
+        count: 4
+      },
+      {
+        stage: '24 jul',
+        nps: 95,
+        nev: 89,
+        count: 5
       }
     ]
   };

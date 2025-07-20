@@ -89,6 +89,14 @@ export const CPVCard = ({
 }: CPVCardProps) => {
   const percentChange = 2.5; // Valor de ejemplo para el cambio porcentual
 
+  // Debug logs para verificar datos
+  console.log('[CPVCard] 🔍 Props recibidas:', {
+    value,
+    trendDataLength: trendData.length,
+    trendData: trendData,
+    hasData: hasData
+  });
+
   // Si no hay datos, mostrar mensaje informativo
   if (!hasData) {
     return (

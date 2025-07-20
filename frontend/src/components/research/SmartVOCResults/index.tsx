@@ -39,11 +39,20 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
     error: smartVOCError
   } = useSmartVOCResponses(researchId);
 
+  // Forzar el uso de datos de prueba para demostración
+  const shouldUseTestData = true; // Temporalmente forzar datos de prueba
+
   // Preparar datos para CPVCard
   const cpvTrendData = trustFlowData.length > 0 ? trustFlowData.map(item => ({
     date: item.stage,
     value: (item.nps + item.nev) / 2 // Promedio de NPS y NEV
   })) : [];
+
+  // Usar datos de prueba para CPVCard también
+  const cpvTrendDataForDemo = shouldUseTestData ? trustFlowDefault.map(item => ({
+    date: item.stage,
+    value: (item.nps + item.nev) / 2 // Promedio de NPS y NEV
+  })) : cpvTrendData;
 
   // Usar datos reales o valores por defecto
   const finalCPVData = cpvData || cpvDefault;
@@ -52,6 +61,9 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
   // Determinar si hay datos reales
   const hasCPVData = cpvData !== null && !cpvError;
   const hasTrustFlowData = trustFlowData.length > 0 && !trustFlowError;
+
+  const finalTrustFlowDataForDemo = shouldUseTestData ? trustFlowDefault : finalTrustFlowData;
+  const hasTrustFlowDataForDemo = shouldUseTestData ? true : hasTrustFlowData;
 
   // Debug logs
   console.log('[SmartVOCResults] 📊 CPV Data:', cpvData ? '✅' : '❌', '| Loading:', cpvLoading, '| Error:', cpvError ? '❌' : '✅');
@@ -88,7 +100,7 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
                 value={finalCPVData.cpvValue}
                 timeRange={timeRange}
                 onTimeRangeChange={setTimeRange}
-                trendData={cpvTrendData}
+                trendData={cpvTrendDataForDemo}
                 satisfaction={finalCPVData.satisfaction}
                 retention={finalCPVData.retention}
                 impact={finalCPVData.impact}
@@ -116,8 +128,8 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
               </div>
             ) : (
               <TrustRelationshipFlow
-                data={finalTrustFlowData}
-                hasData={hasTrustFlowData}
+                data={finalTrustFlowDataForDemo}
+                hasData={hasTrustFlowDataForDemo}
               />
             )}
           </div>
