@@ -35,7 +35,7 @@ export default defineConfig({
           // Vendor chunks
           'vendor-react': ['react', 'react-dom'],
           'vendor-ui': ['@tanstack/react-query', 'zustand'],
-          'vendor-utils': ['date-fns', 'lodash'],
+
 
           // Feature chunks - solo archivos que existen
           'auth': [
@@ -88,8 +88,7 @@ export default defineConfig({
       'react',
       'react-dom',
       '@tanstack/react-query',
-      'zustand',
-      'date-fns'
+      'zustand'
     ],
     exclude: ['../shared']
   }
