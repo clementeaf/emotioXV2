@@ -98,6 +98,24 @@ api:
         method: DELETE
         cors: true
 
+    # --- RUTA: Obtener resultados procesados de SmartVOC ---
+    - http:
+        path: /module-responses/smartvoc/{researchId}
+        method: GET
+        cors: true
+
+    # --- RUTA: Obtener resultados específicos para CPVCard ---
+    - http:
+        path: /module-responses/cpv/{researchId}
+        method: GET
+        cors: true
+
+    # --- RUTA: Obtener resultados específicos para TrustRelationshipFlow ---
+    - http:
+        path: /module-responses/trustflow/{researchId}
+        method: GET
+        cors: true
+
     # --- RUTA: Crear nueva investigación ---
     - http:
         path: /research

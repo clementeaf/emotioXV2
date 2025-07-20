@@ -1,206 +1,321 @@
-import { moduleResponsesAPI } from '@/lib/api';
+import { moduleResponsesAPI } from '@/config/api';
 import { useEffect, useState } from 'react';
 
-interface SmartVOCResponse {
-  questionKey: string;
-  questionText: string;
-  response: any;
-  timestamp: string;
-  duration?: number;
-  participantId: string;
-  participantName: string;
-}
-
-interface SmartVOCMetrics {
+interface SmartVOCResults {
   totalResponses: number;
   uniqueParticipants: number;
+  npsScore: number;
   averageScore: number;
   promoters: number;
   detractors: number;
   neutrals: number;
-  npsScore: number;
-  responseDistribution: Record<string, number>;
+  cpvValue: number;
+  satisfaction: number;
+  retention: number;
+  impact: string;
+  trend: string;
   timeSeriesData: Array<{
     date: string;
     score: number;
+    nps: number;
+    nev: number;
     count: number;
   }>;
+  monthlyNPSData: Array<{
+    month: string;
+    promoters: number;
+    neutrals: number;
+    detractors: number;
+    npsRatio: number;
+  }>;
+  smartVOCResponses: Array<any>;
+  vocResponses: Array<{
+    text: string;
+    participantId: string;
+    participantName: string;
+    timestamp: string;
+  }>;
+  ncResponses: Array<{
+    text: string;
+    participantId: string;
+    participantName: string;
+    timestamp: string;
+  }>;
+  npsScores: number[];
+  csatScores: number[];
+  cesScores: number[];
+  nevScores: number[];
+  cvScores: number[];
 }
 
 export const useSmartVOCResponses = (researchId: string) => {
-  const [responses, setResponses] = useState<SmartVOCResponse[]>([]);
-  const [metrics, setMetrics] = useState<SmartVOCMetrics | null>(null);
+  const [data, setData] = useState<SmartVOCResults | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchSmartVOCResponses = async () => {
+    const fetchSmartVOCResults = async () => {
       if (!researchId) {
-        console.log('[useSmartVOCResponses] ⚠️ No researchId provided');
+        setError('Research ID es requerido');
+        setIsLoading(false);
         return;
       }
 
-      setIsLoading(true);
-      setError(null);
-
       try {
-        console.log('[useSmartVOCResponses] 🔍 Fetching SmartVOC responses for research:', researchId);
+        console.log(`[useSmartVOCResponses] 🔍 Obteniendo resultados SmartVOC para research: ${researchId}`);
 
-        // Obtener todas las respuestas del research usando moduleResponsesAPI
+        // TEMPORAL: Usar endpoint existente mientras se despliega el nuevo
         const response = await moduleResponsesAPI.getResponsesByResearch(researchId);
 
-        if (!response.success) {
-          console.error('[useSmartVOCResponses] ❌ API error:', response.error || response.message);
-          throw new Error(`Error al obtener respuestas del research: ${response.error || response.message || 'Unknown error'}`);
-        }
+        if (response.data) {
+          console.log(`[useSmartVOCResponses] ✅ Datos recibidos del endpoint existente`);
 
-        console.log('[useSmartVOCResponses] 📊 Raw module responses:', response.data?.length || 0, 'participants');
+          // Procesar datos SmartVOC desde las respuestas
+          const smartVOCData = processSmartVOCData(response.data);
 
-        // Extraer y filtrar respuestas SmartVOC
-        const smartVOCResponses: SmartVOCResponse[] = [];
-
-        if (response.data && Array.isArray(response.data)) {
-          response.data.forEach((participantResponse: any) => {
-            if (participantResponse.responses && Array.isArray(participantResponse.responses)) {
-              participantResponse.responses.forEach((response: any) => {
-                // Filtrar respuestas que contengan 'smartvoc' en questionKey
-                if (response.questionKey && response.questionKey.toLowerCase().includes('smartvoc')) {
-                  smartVOCResponses.push({
-                    questionKey: response.questionKey,
-                    questionText: response.questionText || response.questionKey,
-                    response: response.response,
-                    timestamp: response.timestamp,
-                    duration: response.duration || 0,
-                    participantId: participantResponse.participantId,
-                    participantName: participantResponse.participantName || 'Participante'
-                  });
-                }
-              });
-            }
+          console.log(`[useSmartVOCResponses] ✅ Datos procesados:`, {
+            totalResponses: smartVOCData.totalResponses,
+            uniqueParticipants: smartVOCData.uniqueParticipants,
+            npsScore: smartVOCData.npsScore,
+            cpvValue: smartVOCData.cpvValue
           });
+
+          setData(smartVOCData);
+        } else {
+          console.warn(`[useSmartVOCResponses] ⚠️ Respuesta sin datos:`, response);
+          setError('No se recibieron datos del servidor');
+        }
+      } catch (err: any) {
+        console.error('[useSmartVOCResponses] ❌ Error:', err);
+
+        // Mejorar mensajes de error
+        let errorMessage = 'Error al obtener resultados SmartVOC';
+
+        if (err.statusCode === 404) {
+          errorMessage = 'Endpoint no encontrado - Backend no desplegado';
+        } else if (err.statusCode === 500) {
+          errorMessage = 'Error interno del servidor';
+        } else if (err.message) {
+          errorMessage = err.message;
         }
 
-        console.log('[useSmartVOCResponses] 🎯 SmartVOC responses found:', smartVOCResponses.length);
-
-        setResponses(smartVOCResponses);
-
-        // Calcular métricas
-        const calculatedMetrics = calculateSmartVOCMetrics(smartVOCResponses);
-        setMetrics(calculatedMetrics);
-
-        console.log('[useSmartVOCResponses] 📈 Metrics calculated:', {
-          totalResponses: calculatedMetrics.totalResponses,
-          uniqueParticipants: calculatedMetrics.uniqueParticipants,
-          npsScore: calculatedMetrics.npsScore,
-          averageScore: calculatedMetrics.averageScore
-        });
-
-      } catch (error: any) {
-        console.error('[useSmartVOCResponses] ❌ Error:', error.message);
-        setError(error.message || 'Error al cargar respuestas SmartVOC');
+        setError(errorMessage);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchSmartVOCResponses();
+    fetchSmartVOCResults();
   }, [researchId]);
 
-  const calculateSmartVOCMetrics = (responses: SmartVOCResponse[]): SmartVOCMetrics => {
-    if (responses.length === 0) {
+  // Función para procesar datos SmartVOC desde respuestas existentes
+  const processSmartVOCData = (responses: any[]): SmartVOCResults => {
+    if (!responses || responses.length === 0) {
       return {
         totalResponses: 0,
         uniqueParticipants: 0,
+        npsScore: 0,
         averageScore: 0,
         promoters: 0,
         detractors: 0,
         neutrals: 0,
-        npsScore: 0,
-        responseDistribution: {},
-        timeSeriesData: []
+        cpvValue: 0,
+        satisfaction: 0,
+        retention: 0,
+        impact: 'Bajo',
+        trend: 'Negativa',
+        timeSeriesData: [],
+        monthlyNPSData: [],
+        smartVOCResponses: [],
+        vocResponses: [],
+        ncResponses: [],
+        npsScores: [],
+        csatScores: [],
+        cesScores: [],
+        nevScores: [],
+        cvScores: []
       };
     }
 
-    // Contar participantes únicos
-    const uniqueParticipants = new Set(responses.map(r => r.participantId)).size;
+    // Extraer todas las respuestas SmartVOC
+    const allSmartVOCResponses: any[] = [];
+    const npsScores: number[] = [];
+    const csatScores: number[] = [];
+    const cesScores: number[] = [];
+    const nevScores: number[] = [];
+    const cvScores: number[] = [];
+    const vocResponses: any[] = [];
+    const ncResponses: any[] = [];
 
-    // Procesar respuestas NPS (escala 0-10)
-    const npsResponses = responses.filter(r =>
-      r.questionKey.toLowerCase().includes('nps') ||
-      r.questionKey.toLowerCase().includes('promoter')
-    );
-
-    let promoters = 0;
-    let detractors = 0;
-    let neutrals = 0;
-    let totalScore = 0;
-    let validScores = 0;
-
-    npsResponses.forEach(response => {
-      const score = parseFloat(response.response);
-      if (!isNaN(score) && score >= 0 && score <= 10) {
-        totalScore += score;
-        validScores++;
-
-        if (score >= 9) {
-          promoters++;
-        } else if (score <= 6) {
-          detractors++;
-        } else {
-          neutrals++;
-        }
+    // Función para parsear valores
+    const parseResponseValue = (response: any): number => {
+      if (typeof response === 'number') return response;
+      if (typeof response === 'object' && response.value !== undefined) {
+        return typeof response.value === 'number' ? response.value : parseFloat(response.value) || 0;
       }
-    });
+      if (typeof response === 'string') {
+        const parsed = parseFloat(response);
+        return isNaN(parsed) ? 0 : parsed;
+      }
+      return 0;
+    };
 
-    const averageScore = validScores > 0 ? totalScore / validScores : 0;
-    const npsScore = validScores > 0 ? ((promoters - detractors) / validScores) * 100 : 0;
+    const parseResponseText = (response: any): string => {
+      if (typeof response === 'string') return response;
+      if (typeof response === 'object' && response.value !== undefined) {
+        return String(response.value);
+      }
+      if (typeof response === 'object') {
+        return JSON.stringify(response);
+      }
+      return String(response);
+    };
 
-    // Distribución de respuestas por pregunta
-    const responseDistribution: Record<string, number> = {};
-    responses.forEach(response => {
-      const key = response.questionKey;
-      responseDistribution[key] = (responseDistribution[key] || 0) + 1;
-    });
+    // Procesar cada participante
+    responses.forEach(participant => {
+      if (participant.responses && Array.isArray(participant.responses)) {
+        participant.responses.forEach((response: any) => {
+          if (response.questionKey && response.questionKey.toLowerCase().includes('smartvoc')) {
+            const smartVOCResponse = {
+              ...response,
+              participantId: participant.participantId,
+              participantName: 'Participante',
+              timestamp: response.timestamp || new Date().toISOString()
+            };
 
-    // Datos de series temporales (agrupados por día)
-    const timeSeriesData = responses.reduce((acc: any[], response) => {
-      const date = new Date(response.timestamp).toISOString().split('T')[0];
-      const existingDate = acc.find(item => item.date === date);
+            allSmartVOCResponses.push(smartVOCResponse);
 
-      if (existingDate) {
-        existingDate.count++;
-        const score = parseFloat(response.response);
-        if (!isNaN(score)) {
-          existingDate.score = (existingDate.score + score) / 2; // Promedio
-        }
-      } else {
-        const score = parseFloat(response.response);
-        acc.push({
-          date,
-          score: isNaN(score) ? 0 : score,
-          count: 1
+            const responseValue = parseResponseValue(response.response);
+
+            // Categorizar por tipo de pregunta
+            if (response.questionKey.toLowerCase().includes('nps')) {
+              if (responseValue > 0) {
+                npsScores.push(responseValue);
+              }
+            } else if (response.questionKey.toLowerCase().includes('csat')) {
+              if (responseValue > 0) {
+                csatScores.push(responseValue);
+              }
+            } else if (response.questionKey.toLowerCase().includes('ces')) {
+              if (responseValue > 0) {
+                cesScores.push(responseValue);
+              }
+            } else if (response.questionKey.toLowerCase().includes('nev')) {
+              if (responseValue > 0) {
+                nevScores.push(responseValue);
+              }
+            } else if (response.questionKey.toLowerCase().includes('cv')) {
+              if (responseValue > 0) {
+                cvScores.push(responseValue);
+              }
+            } else if (response.questionKey.toLowerCase().includes('voc')) {
+              vocResponses.push({
+                text: parseResponseText(response.response),
+                participantId: participant.participantId,
+                participantName: 'Participante',
+                timestamp: response.timestamp
+              });
+            } else if (response.questionKey.toLowerCase().includes('nc')) {
+              ncResponses.push({
+                text: parseResponseText(response.response),
+                participantId: participant.participantId,
+                participantName: 'Participante',
+                timestamp: response.timestamp
+              });
+            }
+          }
         });
       }
+    });
 
-      return acc;
-    }, []).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    // Calcular métricas
+    const totalResponses = allSmartVOCResponses.length;
+    const uniqueParticipants = responses.length;
+
+    // Calcular NPS
+    const promoters = npsScores.filter(score => score >= 9).length;
+    const detractors = npsScores.filter(score => score <= 6).length;
+    const neutrals = npsScores.filter(score => score > 6 && score < 9).length;
+    const npsScore = npsScores.length > 0 ? Math.round(((promoters - detractors) / npsScores.length) * 100) : 0;
+
+    // Calcular promedio de scores
+    const allScores = [...csatScores, ...cesScores, ...nevScores, ...cvScores].filter(score => score > 0);
+    const averageScore = allScores.length > 0 ? Math.round((allScores.reduce((a, b) => a + b, 0) / allScores.length) * 10) / 10 : 0;
+
+    // Generar time series data
+    const responsesByDate: { [key: string]: any[] } = {};
+    allSmartVOCResponses.forEach(response => {
+      const dateKey = new Date(response.timestamp || new Date()).toISOString().split('T')[0];
+      if (!responsesByDate[dateKey]) {
+        responsesByDate[dateKey] = [];
+      }
+      responsesByDate[dateKey].push(response);
+    });
+
+    const timeSeriesData = Object.keys(responsesByDate).map(date => {
+      const dateResponses = responsesByDate[date];
+      const dateNpsScores = dateResponses
+        .filter(r => r.questionKey.toLowerCase().includes('nps'))
+        .map(r => parseResponseValue(r.response))
+        .filter(score => score > 0);
+
+      const dateNevScores = dateResponses
+        .filter(r => r.questionKey.toLowerCase().includes('nev'))
+        .map(r => parseResponseValue(r.response))
+        .filter(score => score > 0);
+
+      const avgNps = dateNpsScores.length > 0 ? dateNpsScores.reduce((a, b) => a + b, 0) / dateNpsScores.length : 0;
+      const avgNev = dateNevScores.length > 0 ? dateNevScores.reduce((a, b) => a + b, 0) / dateNevScores.length : 0;
+
+      return {
+        date,
+        score: averageScore,
+        nps: avgNps,
+        nev: avgNev,
+        count: dateResponses.length
+      };
+    }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    // Generar datos para CPVCard
+    const cpvValue = csatScores.length > 0 ? Math.round((csatScores.reduce((a, b) => a + b, 0) / csatScores.length) * 10) / 10 : 0;
+
+    // Generar datos para NPSQuestion
+    const monthlyNPSData = timeSeriesData.map(item => ({
+      month: new Date(item.date).toLocaleDateString('es-ES', { month: 'short' }),
+      promoters: totalResponses > 0 ? Math.round((promoters / totalResponses) * item.count) : 0,
+      neutrals: totalResponses > 0 ? Math.round((neutrals / totalResponses) * item.count) : 0,
+      detractors: totalResponses > 0 ? Math.round((detractors / totalResponses) * item.count) : 0,
+      npsRatio: npsScore
+    }));
 
     return {
-      totalResponses: responses.length,
+      totalResponses,
       uniqueParticipants,
+      npsScore,
       averageScore,
       promoters,
       detractors,
       neutrals,
-      npsScore,
-      responseDistribution,
-      timeSeriesData
+      cpvValue,
+      satisfaction: csatScores.length > 0 ? Math.round((csatScores.reduce((a, b) => a + b, 0) / csatScores.length) * 10) / 10 : 0,
+      retention: totalResponses > 0 ? Math.round(((promoters + neutrals) / totalResponses) * 100) : 0,
+      impact: totalResponses > 0 && promoters > detractors ? 'Alto' : totalResponses > 0 ? 'Medio' : 'Bajo',
+      trend: totalResponses > 0 && promoters > detractors ? 'Positiva' : totalResponses > 0 ? 'Neutral' : 'Negativa',
+      timeSeriesData,
+      monthlyNPSData,
+      smartVOCResponses: allSmartVOCResponses,
+      vocResponses,
+      ncResponses,
+      npsScores,
+      csatScores,
+      cesScores,
+      nevScores,
+      cvScores
     };
   };
 
   return {
-    responses,
-    metrics,
+    data,
     isLoading,
     error
   };

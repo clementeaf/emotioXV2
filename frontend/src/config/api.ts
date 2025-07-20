@@ -118,6 +118,7 @@ export const API_ENDPOINTS = {
     saveResponse: '/module-responses',
     updateResponse: '/module-responses/{responseId}',
     deleteAllResponses: '/research/{researchId}/participant/{participantId}/responses',
+    getSmartVOCResults: '/module-responses/smartvoc/{researchId}',
   },
 
   // Participants (para datos de public-tests)
@@ -384,6 +385,45 @@ export class ApiError extends Error {
  * Instancia global del cliente API
  */
 export const apiClient = new ApiClient();
+
+/**
+ * Cliente específico para Module Responses
+ */
+export const moduleResponsesAPI = {
+  // Obtener respuestas por research
+  getResponsesByResearch: async (researchId: string) => {
+    const response = await apiClient.get('moduleResponses', 'getResponsesByResearch', { researchId });
+    return response;
+  },
+
+  // Obtener resultados específicos para CPVCard
+  getCPVResults: async (researchId: string) => {
+    const response = await apiClient.get('moduleResponses', 'getCPVResults', { researchId });
+    return response;
+  },
+
+  // Obtener resultados específicos para TrustRelationshipFlow
+  getTrustFlowResults: async (researchId: string) => {
+    const response = await apiClient.get('moduleResponses', 'getTrustFlowResults', { researchId });
+    return response;
+  },
+
+  // Obtener respuestas para un participante en una investigación
+  getResponsesForParticipant: (researchId: string, participantId: string) =>
+    apiClient.get('moduleResponses', 'getResponsesForParticipant', { researchId, participantId }),
+
+  saveResponse: (data: any) =>
+    apiClient.post('moduleResponses', 'saveResponse', data),
+
+  updateResponse: (responseId: string, data: any) =>
+    apiClient.put('moduleResponses', 'updateResponse', data, { responseId }),
+
+  deleteAllResponses: (researchId: string, participantId: string) =>
+    apiClient.delete('moduleResponses', 'deleteAllResponses', { researchId, participantId }),
+
+  getSmartVOCResults: (researchId: string) =>
+    apiClient.get('moduleResponses', 'getSmartVOCResults', { researchId }),
+};
 
 /**
  * Función helper para obtener URL completa - SEGURA

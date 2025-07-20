@@ -17,7 +17,9 @@ export interface MetricCardProps {
 
 export interface TrustFlowData {
   stage: string;
-  value: number;
+  nps: number;
+  nev: number;
+  count?: number;
 }
 
 export interface CPVChartData {

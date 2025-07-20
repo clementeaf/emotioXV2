@@ -1,17 +1,17 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import {
-    DeleteCommand,
-    DynamoDBDocumentClient,
-    PutCommand,
-    QueryCommand,
-    UpdateCommand,
+  DeleteCommand,
+  DynamoDBDocumentClient,
+  PutCommand,
+  QueryCommand,
+  UpdateCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { v4 as uuidv4 } from 'uuid';
 import {
-    CreateModuleResponseDto,
-    ModuleResponse,
-    ParticipantResponsesDocument,
-    UpdateModuleResponseDto
+  CreateModuleResponseDto,
+  ModuleResponse,
+  ParticipantResponsesDocument,
+  UpdateModuleResponseDto
 } from '../models/moduleResponse.model';
 import { ApiError } from '../utils/errors';
 import { quotaManager } from '../utils/quotaManager';
@@ -529,6 +529,55 @@ export class ModuleResponseService {
     } catch (error: any) {
       console.error('[ModuleResponseService.deleteAllResponses] Error:', error);
       throw new ApiError(`Database Error: Could not delete responses - ${error.message}`, 500);
+    }
+  }
+
+  /**
+   * Obtener todos los participantes de una investigación
+   */
+  async getParticipantsByResearch(researchId: string): Promise<Array<{ id: string; name?: string; email?: string; status?: string; progress?: number }>> {
+    try {
+      console.log(`[ModuleResponseService.getParticipantsByResearch] 🔍 Obteniendo participantes para research: ${researchId}`);
+
+      const command = new QueryCommand({
+        TableName: this.tableName,
+        IndexName: RESEARCH_INDEX,
+        KeyConditionExpression: 'researchId = :rid',
+        ExpressionAttributeValues: {
+          ':rid': researchId
+        }
+      });
+
+      const result = await this.dynamoClient.send(command);
+
+      if (!result.Items || result.Items.length === 0) {
+        console.log(`[ModuleResponseService.getParticipantsByResearch] 📭 No se encontraron participantes para research: ${researchId}`);
+        return [];
+      }
+
+      // Extraer participantes únicos
+      const participantsMap = new Map<string, { id: string; name?: string; email?: string; status?: string; progress?: number }>();
+
+      for (const item of result.Items) {
+        const participantId = item.participantId;
+        if (participantId && !participantsMap.has(participantId)) {
+          participantsMap.set(participantId, {
+            id: participantId,
+            name: item.participantName || 'Participante',
+            email: item.participantEmail,
+            status: item.isCompleted ? 'Completado' : 'En progreso',
+            progress: item.responses ? Math.round((item.responses.length / 12) * 100) : 0 // Asumiendo 12 preguntas totales
+          });
+        }
+      }
+
+      const participants = Array.from(participantsMap.values());
+      console.log(`[ModuleResponseService.getParticipantsByResearch] ✅ Encontrados ${participants.length} participantes únicos`);
+
+      return participants;
+    } catch (error: any) {
+      console.error('[ModuleResponseService.getParticipantsByResearch] Error:', error);
+      throw new ApiError(`Database Error: Could not get participants - ${error.message}`, 500);
     }
   }
 }
