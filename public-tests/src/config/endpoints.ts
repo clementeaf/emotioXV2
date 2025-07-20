@@ -12,37 +12,37 @@ export const API_ENDPOINTS = {
 
   // Etapa de despliegue (dev, prod, etc.)
   stage: "dev"
-};
+} as const;
 
 // URLs de desarrollo local
 export const LOCAL_URLS = {
   "frontend": "http://localhost:3000",
   "publicTests": "http://localhost:4700"
-};
+} as const;
 
 // Constantes para uso más fácil
 export const API_HTTP_ENDPOINT = "https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev";
 export const API_WEBSOCKET_ENDPOINT = "wss://w8dj7wxnl9.execute-api.us-east-1.amazonaws.com/dev";
 
 // Función para obtener URL completa de una ruta
-export function getApiUrl(path) {
+export function getApiUrl(path: string): string {
   // Eliminar slash inicial si existe
   const cleanPath = path.startsWith('/') ? path.substring(1) : path;
   return `${API_HTTP_ENDPOINT}/${cleanPath}`;
 }
 
 // Función para websocket
-export function getWebsocketUrl() {
+export function getWebsocketUrl(): string {
   return API_WEBSOCKET_ENDPOINT;
 }
 
 // Función para obtener URL de public-tests
-export function getPublicTestsUrl() {
+export function getPublicTestsUrl(): string {
   return LOCAL_URLS.publicTests || 'http://localhost:4700';
 }
 
 // Función para navegar a public-tests con researchID
-export function navigateToPublicTests(researchID) {
+export function navigateToPublicTests(researchID: string): void {
   const url = `${getPublicTestsUrl()}/${researchID}`;
   window.open(url, '_blank');
 }
