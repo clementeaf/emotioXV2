@@ -46,9 +46,91 @@ const EMOTION_EMOJIS = {
 };
 
 export function NEVQuestion({ question, data }: NEVQuestionProps) {
+  // Debug: Log de datos recibidos
+  console.log('[NEVQuestion] 🔍 Datos recibidos:', {
+    question,
+    data,
+    nevScores: data?.nevScores,
+    nevScoresLength: data?.nevScores?.length,
+    totalDataKeys: data ? Object.keys(data) : []
+  });
+
   // Procesar datos NEV
   const nevScores = data?.nevScores || [];
   const totalResponses = nevScores.length;
+
+  // Debug: Log de procesamiento
+  console.log('[NEVQuestion] 📊 Procesamiento de datos:', {
+    nevScores,
+    totalResponses,
+    averageScore: totalResponses > 0
+      ? Math.round((nevScores.reduce((a: number, b: number) => a + b, 0) / totalResponses) * 10) / 10
+      : 0
+  });
+
+  // Si no hay datos reales, mostrar mensaje informativo
+  if (totalResponses === 0) {
+    return (
+      <div className="space-y-6">
+        <Card className="p-6 space-y-6">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-medium">NEV - {question.title || 'Net Emotional Value'}</h3>
+              <Badge variant="secondary" className="bg-pink-100 text-pink-700">NEV Question</Badge>
+              <Badge variant="secondary" className="bg-blue-100 text-blue-700">Conditionality disabled</Badge>
+              {question.required && <Badge variant="secondary" className="bg-red-100 text-red-700">Required</Badge>}
+            </div>
+
+            <div className="flex items-start gap-8">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm text-gray-600">Question</span>
+                </div>
+                <p className="text-sm text-gray-800">
+                  {question.description || 'How would you rate the emotional value you receive from our product/service?'}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">Responses</span>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-semibold text-gray-400">0</span>
+                    <span className="text-sm text-gray-500">responses</span>
+                  </div>
+                </div>
+
+                <div className="w-24 h-24">
+                  <CircularProgress value={0} size={96} strokeWidth={8} />
+                  <div className="text-center mt-2">
+                    <span className="text-sm font-medium text-gray-400">0/7</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Mensaje de no datos */}
+          <div className="text-center py-8">
+            <div className="text-gray-500 mb-2">
+              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No hay datos disponibles</h3>
+            <p className="text-sm text-gray-600">
+              No se han recibido respuestas para esta pregunta SmartVOC.
+            </p>
+            <p className="text-xs text-gray-500 mt-2">
+              Los datos se mostrarán automáticamente cuando los participantes respondan.
+            </p>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   // Calcular métricas
   const averageScore = totalResponses > 0

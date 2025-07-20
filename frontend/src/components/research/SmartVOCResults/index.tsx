@@ -167,8 +167,8 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
     error: questionsError
   } = useSmartVOCQuestions(researchId);
 
-  // Forzar el uso de datos de prueba para demostración
-  const shouldUseTestData = true; // Temporalmente forzar datos de prueba
+  // Usar datos reales en lugar de datos de prueba
+  const shouldUseTestData = false; // Usar datos reales
 
   // Preparar datos para CPVCard
   const cpvTrendData = trustFlowData.length > 0 ? trustFlowData.map(item => ({

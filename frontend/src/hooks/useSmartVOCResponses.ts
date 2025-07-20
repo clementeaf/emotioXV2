@@ -69,6 +69,7 @@ export const useSmartVOCResponses = (researchId: string) => {
 
         if (response.data) {
           console.log(`[useSmartVOCResponses] ✅ Datos recibidos del endpoint existente`);
+          console.log(`[useSmartVOCResponses] 📊 Respuesta completa:`, response.data);
 
           // Procesar datos SmartVOC desde las respuestas
           const smartVOCData = processSmartVOCData(response.data);
@@ -77,7 +78,12 @@ export const useSmartVOCResponses = (researchId: string) => {
             totalResponses: smartVOCData.totalResponses,
             uniqueParticipants: smartVOCData.uniqueParticipants,
             npsScore: smartVOCData.npsScore,
-            cpvValue: smartVOCData.cpvValue
+            cpvValue: smartVOCData.cpvValue,
+            cvScores: smartVOCData.cvScores,
+            cvScoresLength: smartVOCData.cvScores?.length,
+            csatScores: smartVOCData.csatScores,
+            cesScores: smartVOCData.cesScores,
+            nevScores: smartVOCData.nevScores
           });
 
           setData(smartVOCData);

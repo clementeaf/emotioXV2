@@ -107,6 +107,16 @@ export function QuestionSelector({
   smartVOCData,
   className
 }: QuestionSelectorProps) {
+  // Debug: Log de datos recibidos
+  console.log('[QuestionSelector] 🔍 Datos recibidos:', {
+    researchId,
+    questionsCount: questions?.length,
+    smartVOCData,
+    cvScores: smartVOCData?.cvScores,
+    cvScoresLength: smartVOCData?.cvScores?.length,
+    totalDataKeys: smartVOCData ? Object.keys(smartVOCData) : []
+  });
+
   const [selectedQuestion, setSelectedQuestion] = useState<SmartVOCQuestion | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
 
