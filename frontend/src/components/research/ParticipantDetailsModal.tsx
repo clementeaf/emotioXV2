@@ -108,13 +108,62 @@ export function ParticipantDetailsModal({ participant, isOpen, onClose }: Partic
     });
   };
 
+  // 🎯 FUNCIÓN PARA FORMATEAR RESPUESTAS DE FORMA LEGIBLE
+  const formatResponse = (response: any): string => {
+    if (typeof response === 'string') {
+      return response;
+    }
+
+    if (typeof response === 'number') {
+      return response.toString();
+    }
+
+    if (typeof response === 'object' && response !== null) {
+      // Casos especiales para tipos de respuesta conocidos
+      if (response.gender && response.country && response.age) {
+        return `Género: ${response.gender} • País: ${response.country} • Edad: ${response.age}`;
+      }
+
+      if (response.selectedValue) {
+        return `Selección: ${response.selectedValue}`;
+      }
+
+      if (response.value !== undefined) {
+        return `Valor: ${response.value}`;
+      }
+
+      if (response.visited !== undefined) {
+        return response.visited ? 'Visitado' : 'No visitado';
+      }
+
+      if (response.selectedHitzone && response.clickPosition) {
+        return `Zona seleccionada: ${response.selectedHitzone} • Posición: (${response.clickPosition.x}, ${response.clickPosition.y})`;
+      }
+
+      if (response.imageSelections) {
+        const selections = Object.keys(response.imageSelections).length;
+        return `${selections} imagen(es) seleccionada(s)`;
+      }
+
+      // Para otros objetos, mostrar solo los valores principales
+      const mainValues = Object.entries(response)
+        .filter(([key, value]) => value !== null && value !== undefined && value !== '')
+        .map(([key, value]) => `${key}: ${value}`)
+        .join(' • ');
+
+      return mainValues || 'Sin datos específicos';
+    }
+
+    return 'Sin respuesta';
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl w-full max-w-5xl h-full max-h-[95vh] overflow-hidden flex flex-col border border-white/20">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-neutral-200">
+        <div className="flex items-center justify-between p-6 border-b border-neutral-200 bg-white/90 backdrop-blur-sm rounded-t-3xl">
           <div>
-            <h2 className="text-xl font-semibold text-neutral-900">
+            <h2 className="text-2xl font-bold text-neutral-900">
               Detalles del Participante
             </h2>
             <p className="text-sm text-neutral-600 mt-1">
@@ -125,38 +174,38 @@ export function ParticipantDetailsModal({ participant, isOpen, onClose }: Partic
             variant="ghost"
             size="sm"
             onClick={onClose}
-            className="h-8 w-8 p-0"
+            className="h-10 w-10 p-0 hover:bg-neutral-200 rounded-lg"
           >
-            <X className="h-4 w-4" />
+            <X className="h-5 w-5" />
           </Button>
         </div>
 
         {/* Tabs */}
-        <div className="border-b border-neutral-200">
+        <div className="border-b border-neutral-200 bg-white/50 backdrop-blur-sm">
           <div className="flex space-x-8 px-6">
             <button
               onClick={() => setActiveTab('overview')}
-              className={`py-3 px-1 border-b-2 font-medium text-sm ${activeTab === 'overview'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-neutral-500 hover:text-neutral-700'
+              className={`py-4 px-2 border-b-2 font-semibold text-sm transition-colors ${activeTab === 'overview'
+                ? 'border-blue-600 text-blue-700 bg-blue-50'
+                : 'border-transparent text-neutral-600 hover:text-neutral-800 hover:bg-neutral-50'
                 }`}
             >
               Resumen
             </button>
             <button
               onClick={() => setActiveTab('responses')}
-              className={`py-3 px-1 border-b-2 font-medium text-sm ${activeTab === 'responses'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-neutral-500 hover:text-neutral-700'
+              className={`py-4 px-2 border-b-2 font-semibold text-sm transition-colors ${activeTab === 'responses'
+                ? 'border-blue-600 text-blue-700 bg-blue-50'
+                : 'border-transparent text-neutral-600 hover:text-neutral-800 hover:bg-neutral-50'
                 }`}
             >
               Respuestas ({participant.responses.length})
             </button>
             <button
               onClick={() => setActiveTab('timeline')}
-              className={`py-3 px-1 border-b-2 font-medium text-sm ${activeTab === 'timeline'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-neutral-500 hover:text-neutral-700'
+              className={`py-4 px-2 border-b-2 font-semibold text-sm transition-colors ${activeTab === 'timeline'
+                ? 'border-blue-600 text-blue-700 bg-blue-50'
+                : 'border-transparent text-neutral-600 hover:text-neutral-800 hover:bg-neutral-50'
                 }`}
             >
               Cronología
@@ -165,7 +214,7 @@ export function ParticipantDetailsModal({ participant, isOpen, onClose }: Partic
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+        <div className="flex-1 p-6 overflow-y-auto bg-white/30 backdrop-blur-sm">
           {activeTab === 'overview' && (
             <div className="space-y-6">
               {/* Status and Progress */}
@@ -348,10 +397,7 @@ export function ParticipantDetailsModal({ participant, isOpen, onClose }: Partic
                     </CardHeader>
                     <CardContent>
                       <div className="text-sm text-neutral-700">
-                        {typeof response.response === 'object'
-                          ? JSON.stringify(response.response, null, 2)
-                          : String(response.response)
-                        }
+                        {formatResponse(response.response)}
                       </div>
                     </CardContent>
                   </Card>
@@ -375,10 +421,7 @@ export function ParticipantDetailsModal({ participant, isOpen, onClose }: Partic
                           {response.duration && ` • ${formatDuration(response.duration)}`}
                         </div>
                         <div className="text-sm text-neutral-700 mt-2">
-                          {typeof response.response === 'object'
-                            ? JSON.stringify(response.response, null, 2)
-                            : String(response.response)
-                          }
+                          {formatResponse(response.response)}
                         </div>
                       </div>
                     </div>
