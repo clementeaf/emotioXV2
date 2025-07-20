@@ -1,4 +1,5 @@
 export interface SmartVOCResultsProps {
+  researchId: string;
   className?: string;
 }
 

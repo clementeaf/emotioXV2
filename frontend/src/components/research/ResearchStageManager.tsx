@@ -50,7 +50,7 @@ function ResearchStageManagerContent({ researchId }: ResearchStageManagerProps) 
       case 'thank-you':
         return <ThankYouScreenForm researchId={researchId} />;
       case 'smart-voc-results':
-        return <SmartVOCResults />;
+        return <SmartVOCResults researchId={researchId} />;
       case 'cognitive-task-results':
         return <CognitiveTaskResults />;
       case 'research-in-progress':

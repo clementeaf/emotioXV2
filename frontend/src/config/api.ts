@@ -113,7 +113,7 @@ export const API_ENDPOINTS = {
 
   // Module Responses (para datos de public-tests)
   moduleResponses: {
-    getResponsesByResearch: '/research/{researchId}/module-responses',
+    getResponsesByResearch: '/module-responses/research/{researchId}',
     getResponsesForParticipant: '/research/{researchId}/participant/{participantId}/responses',
     saveResponse: '/module-responses',
     updateResponse: '/module-responses/{responseId}',
