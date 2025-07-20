@@ -30,10 +30,12 @@ export const WelcomeScreenFields: React.FC<WelcomeScreenFieldsProps> = ({
     <div className="space-y-4">
       {/* Campo Título */}
       <div>
+        <label htmlFor="welcome-screen-title" className="block text-sm font-medium text-neutral-700 mb-1">
+          Título
+        </label>
         <Input
           id="welcome-screen-title"
           name="welcome-screen-title"
-          label="Título"
           value={formData.title || ''}
           onChange={(e) => handleChange('title', e.target.value)}
           placeholder={DEFAULT_WELCOME_SCREEN_CONFIG.title}
@@ -60,13 +62,15 @@ export const WelcomeScreenFields: React.FC<WelcomeScreenFieldsProps> = ({
           autoComplete="off"
         />
       </div>
-      
+
       {/* Campo Texto Botón */}
       <div>
+        <label htmlFor="welcome-screen-button-text" className="block text-sm font-medium text-neutral-700 mb-1">
+          Texto del Botón de Inicio
+        </label>
         <Input
           id="welcome-screen-button-text"
           name="welcome-screen-button-text"
-          label="Texto del Botón de Inicio"
           value={formData.startButtonText || ''}
           onChange={(e) => handleChange('startButtonText', e.target.value)}
           placeholder={DEFAULT_WELCOME_SCREEN_CONFIG.startButtonText}
@@ -78,4 +82,4 @@ export const WelcomeScreenFields: React.FC<WelcomeScreenFieldsProps> = ({
       </div>
     </div>
   );
-}; 
+};

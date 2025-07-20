@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -63,7 +63,7 @@ export function UserProfileComponent({ className }: UserProfileComponentProps) {
       // <<< Comentar llamada a api.user.get() >>>
       /*
       const response = await api.user.get();
-      
+
       if (response.error) {
         setError(response.error);
       } else if (response.data) {
@@ -88,12 +88,12 @@ export function UserProfileComponent({ className }: UserProfileComponentProps) {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    
+
     if (name.includes('.')) {
       const [section, field] = name.split('.');
       const sectionKey = section as keyof UserProfile;
       const currentSectionValue = formData[sectionKey] || {};
-      
+
       setFormData({
         ...formData,
         [section]: {
@@ -134,7 +134,7 @@ export function UserProfileComponent({ className }: UserProfileComponentProps) {
 
     } catch (err) {
       // setError('Error al actualizar el perfil'); // Mantenido por el throw
-       setError(err instanceof Error ? err.message : 'Error desconocido al actualizar perfil');
+      setError(err instanceof Error ? err.message : 'Error desconocido al actualizar perfil');
       console.error(err);
     } finally {
       setLoading(false);
@@ -192,13 +192,18 @@ export function UserProfileComponent({ className }: UserProfileComponentProps) {
 
           {isEditing ? (
             <form onSubmit={handleSubmit} className="space-y-4">
-              <Input
-                label="Nombre"
-                name="name"
-                value={formData.name || ''}
-                onChange={handleInputChange}
-                placeholder="Tu nombre"
-              />
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-neutral-700 mb-1">
+                  Nombre
+                </label>
+                <Input
+                  id="name"
+                  name="name"
+                  value={formData.name || ''}
+                  onChange={handleInputChange}
+                  placeholder="Tu nombre"
+                />
+              </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">
@@ -213,13 +218,18 @@ export function UserProfileComponent({ className }: UserProfileComponentProps) {
                 />
               </div>
 
-              <Input
-                label="URL de Avatar"
-                name="avatar"
-                value={formData.avatar || ''}
-                onChange={handleInputChange}
-                placeholder="https://ejemplo.com/tu-avatar.jpg"
-              />
+              <div>
+                <label htmlFor="avatar" className="block text-sm font-medium text-neutral-700 mb-1">
+                  URL de Avatar
+                </label>
+                <Input
+                  id="avatar"
+                  name="avatar"
+                  value={formData.avatar || ''}
+                  onChange={handleInputChange}
+                  placeholder="https://ejemplo.com/tu-avatar.jpg"
+                />
+              </div>
 
               <div className="flex items-center space-x-2 mt-4">
                 <input
@@ -227,7 +237,7 @@ export function UserProfileComponent({ className }: UserProfileComponentProps) {
                   id="emailNotifications"
                   name="preferences.emailNotifications"
                   checked={formData.preferences?.emailNotifications || false}
-                  onChange={(e) => 
+                  onChange={(e) =>
                     setFormData({
                       ...formData,
                       preferences: {
@@ -328,4 +338,4 @@ export function UserProfileComponent({ className }: UserProfileComponentProps) {
       </div>
     </div>
   );
-} 
+}

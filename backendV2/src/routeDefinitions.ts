@@ -39,6 +39,11 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
   { pathPattern: /^\/module-responses\/[^\/]+$/, controllerType: 'module-responses' },
   { pathPattern: /^\/module-responses\/research\/[^\/]+$/, controllerType: 'module-responses' },
 
+  // Module Responses - Rutas específicas para SmartVOC (DEBE IR ANTES de las rutas generales)
+  { pathPattern: /^\/module-responses\/cpv\/[^\/]+$/, controllerType: 'module-responses' },
+  { pathPattern: /^\/module-responses\/trustflow\/[^\/]+$/, controllerType: 'module-responses' },
+  { pathPattern: /^\/module-responses\/smartvoc\/[^\/]+$/, controllerType: 'module-responses' },
+
   // Research Forms/Steps (NUEVA RUTA)
   { pathPattern: /^\/research\/[^\/]+\/forms$/, controllerType: 'researchForms' },
 

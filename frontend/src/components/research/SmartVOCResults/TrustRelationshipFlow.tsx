@@ -63,6 +63,14 @@ const CustomLegend = ({ payload }: any) => {
 };
 
 export const TrustRelationshipFlow = ({ data, className, hasData = true }: TrustRelationshipFlowProps) => {
+  // Debug logs para verificar datos
+  console.log('[TrustRelationshipFlow] 🔍 Props recibidas:', {
+    dataLength: data.length,
+    data: data,
+    hasData: hasData,
+    className: className
+  });
+
   return (
     <Card className={cn('p-6', className)}>
       <div className="space-y-4">

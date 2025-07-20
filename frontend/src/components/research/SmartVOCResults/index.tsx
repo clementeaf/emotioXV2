@@ -39,10 +39,6 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
     error: smartVOCError
   } = useSmartVOCResponses(researchId);
 
-  // Debug logs
-  console.log('[SmartVOCResults] 📊 CPV Data:', cpvData ? '✅' : '❌', '| Loading:', cpvLoading, '| Error:', cpvError ? '❌' : '✅');
-  console.log('[SmartVOCResults] 📊 Trust Flow Data:', trustFlowData.length > 0 ? '✅' : '❌', '| Loading:', trustFlowLoading, '| Error:', trustFlowError ? '❌' : '✅');
-
   // Preparar datos para CPVCard
   const cpvTrendData = trustFlowData.length > 0 ? trustFlowData.map(item => ({
     date: item.stage,
@@ -56,6 +52,16 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
   // Determinar si hay datos reales
   const hasCPVData = cpvData !== null && !cpvError;
   const hasTrustFlowData = trustFlowData.length > 0 && !trustFlowError;
+
+  // Debug logs
+  console.log('[SmartVOCResults] 📊 CPV Data:', cpvData ? '✅' : '❌', '| Loading:', cpvLoading, '| Error:', cpvError ? '❌' : '✅');
+  console.log('[SmartVOCResults] 📊 Trust Flow Data:', trustFlowData.length > 0 ? '✅' : '❌', '| Loading:', trustFlowLoading, '| Error:', trustFlowError ? '❌' : '✅');
+  console.log('[SmartVOCResults] 🔍 Trust Flow Data Details:', {
+    dataLength: trustFlowData.length,
+    data: trustFlowData,
+    hasData: hasTrustFlowData,
+    finalData: finalTrustFlowData
+  });
 
   return (
     <div className={cn('flex gap-8 p-8', className)}>

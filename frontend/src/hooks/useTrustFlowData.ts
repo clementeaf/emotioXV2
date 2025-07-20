@@ -151,6 +151,25 @@ export const useTrustFlowData = (researchId: string) => {
     isLoading,
     error,
     // Valores por defecto para evitar errores de renderizado
-    defaultData: []
+    defaultData: [
+      {
+        stage: '20 jul',
+        nps: 10,
+        nev: 5,
+        count: 1
+      },
+      {
+        stage: '21 jul',
+        nps: 8,
+        nev: 7,
+        count: 2
+      },
+      {
+        stage: '22 jul',
+        nps: 9,
+        nev: 6,
+        count: 3
+      }
+    ]
   };
 };

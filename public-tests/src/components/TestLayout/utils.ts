@@ -9,6 +9,7 @@ export const QUESTION_TYPE_MAP = {
   demographics: 'demographics',
 
   // SmartVOC questions
+  smartvoc: 'smartvoc',
   smartvoc_csat: 'smartvoc_csat',
   smartvoc_ces: 'smartvoc_ces',
   smartvoc_cv: 'smartvoc_cv',

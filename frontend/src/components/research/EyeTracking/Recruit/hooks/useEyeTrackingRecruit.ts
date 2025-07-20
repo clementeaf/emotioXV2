@@ -5,10 +5,10 @@ import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import {
-    DemographicQuestionKeys,
-    EyeTrackingRecruitStats,
-    LinkConfigKeys,
-    ParameterOptionKeys,
+  DemographicQuestionKeys,
+  EyeTrackingRecruitStats,
+  LinkConfigKeys,
+  ParameterOptionKeys,
 } from 'shared/interfaces/eyeTrackingRecruit.interface';
 
 import { useErrorLog } from '@/components/utils/ErrorLogger';
@@ -110,6 +110,7 @@ interface UseEyeTrackingRecruitResult {
   loading: boolean;
   saving: boolean;
   formData: EyeTrackingRecruitFormData;
+  setFormData: React.Dispatch<React.SetStateAction<EyeTrackingRecruitFormData>>;
   stats: EyeTrackingRecruitStats | null;
 
   // Estados para los switches principales
@@ -154,7 +155,7 @@ interface UseEyeTrackingRecruitResult {
   modalError: ErrorModalData | null;
   modalVisible: boolean;
   showConfirmModal: boolean;
-  apiErrors: {visible: boolean, title: string, message: string} | undefined;
+  apiErrors: { visible: boolean, title: string, message: string } | undefined;
 
   // Métodos para los modales
   closeModal: () => void;
@@ -271,7 +272,7 @@ const processApiResponse = (response: any): EyeTrackingRecruitFormData => {
   };
 
   // Si no hay respuesta, devolver la configuración predeterminada
-  if (!response) {return safeResponse;}
+  if (!response) { return safeResponse; }
 
   try {
     // ID
@@ -370,7 +371,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
   // Estados para los modales
   const [modalError, setModalError] = useState<ErrorModalData | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
-  const [apiErrors, setApiErrors] = useState<{visible: boolean, title: string, message: string} | undefined>(undefined);
+  const [apiErrors, setApiErrors] = useState<{ visible: boolean, title: string, message: string } | undefined>(undefined);
 
   // Nuevos estados para QR
   const [qrCodeData, setQrCodeData] = useState<string | null>(null);
@@ -1087,6 +1088,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     saving,
     formData,
     stats,
+    setFormData,
 
     // Estados para los switches principales
     demographicQuestionsEnabled,

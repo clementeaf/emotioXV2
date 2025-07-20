@@ -119,6 +119,8 @@ export const API_ENDPOINTS = {
     updateResponse: '/module-responses/{responseId}',
     deleteAllResponses: '/research/{researchId}/participant/{participantId}/responses',
     getSmartVOCResults: '/module-responses/smartvoc/{researchId}',
+    getCPVResults: '/module-responses/cpv/{researchId}',
+    getTrustFlowResults: '/module-responses/trustflow/{researchId}',
   },
 
   // Participants (para datos de public-tests)
