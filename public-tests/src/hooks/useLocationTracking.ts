@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { getApiUrl } from '../config/endpoints.js';
+import { getApiUrl } from '../config/endpoints';
 
 interface LocationData {
   latitude: number;

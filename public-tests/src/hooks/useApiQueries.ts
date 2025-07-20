@@ -1,5 +1,5 @@
 import { useMutation, UseMutationOptions, useQuery, useQueryClient, UseQueryOptions } from '@tanstack/react-query';
-import { getApiUrl } from '../config/endpoints.js';
+import { getApiUrl } from '../config/endpoints';
 import {
   getAvailableForms,
   getModuleResponses,

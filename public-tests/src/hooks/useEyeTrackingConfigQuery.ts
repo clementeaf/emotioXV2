@@ -1,5 +1,5 @@
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
-import { getApiUrl } from '../config/endpoints.js';
+import { getApiUrl } from '../config/endpoints';
 
 export interface EyeTrackingConfig {
   id: string;

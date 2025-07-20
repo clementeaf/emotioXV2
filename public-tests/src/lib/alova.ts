@@ -1,4 +1,4 @@
-import { API_HTTP_ENDPOINT } from '../config/endpoints.js';
+import { API_HTTP_ENDPOINT } from '../config/endpoints';
 
 const API_CONFIG = {
   baseURL: API_HTTP_ENDPOINT,
