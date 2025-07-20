@@ -260,11 +260,13 @@ export default function ResearchInProgressPage() {
             </div>
 
             {/* Participants Table */}
-            <ParticipantsTable
-              participants={participants}
-              onViewDetails={handleViewParticipantDetails}
-              researchId={researchId}
-            />
+            {researchId && (
+              <ParticipantsTable
+                participants={participants}
+                onViewDetails={handleViewParticipantDetails}
+                researchId={researchId}
+              />
+            )}
           </div>
         </TabsContent>
 
