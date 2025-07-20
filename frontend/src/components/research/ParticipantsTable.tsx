@@ -57,12 +57,6 @@ export function ParticipantsTable({ participants, onViewDetails, researchId }: P
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [participantDetails, setParticipantDetails] = useState<any>(null);
-  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
-
-  console.log('ParticipantsTable recibió participantes:', participants);
-  console.log('Longitud del array de participantes:', participants?.length);
-  console.log('Tipo de participantes:', typeof participants);
-  console.log('Es array?', Array.isArray(participants));
 
   const filteredParticipants = participants.filter(participant => {
     const matchesSearch = participant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -78,14 +72,9 @@ export function ParticipantsTable({ participants, onViewDetails, researchId }: P
   const handleParticipantClick = async (participant: Participant) => {
     setSelectedParticipant(participant);
     setIsModalOpen(true);
-    setIsLoadingDetails(true);
 
     try {
-      console.log('Cargando detalles del participante:', participant.id);
-      console.log('ResearchId:', researchId);
-      console.log('ParticipantId:', participant.id);
       const response = await researchInProgressAPI.getParticipantDetails(researchId, participant.id);
-      console.log('Respuesta de detalles:', response);
 
       if (response.success) {
         setParticipantDetails(response.data);
@@ -94,8 +83,6 @@ export function ParticipantsTable({ participants, onViewDetails, researchId }: P
       }
     } catch (error) {
       console.error('Error al cargar detalles del participante:', error);
-    } finally {
-      setIsLoadingDetails(false);
     }
   };
 

@@ -59,9 +59,6 @@ export default function ResearchInProgressPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  console.log('Estado actual de participantes:', participants);
-  console.log('Longitud del estado de participantes:', participants.length);
-
   useEffect(() => {
     const loadData = async () => {
       if (!researchId || authLoading || !token) return;
@@ -73,25 +70,15 @@ export default function ResearchInProgressPage() {
       setError(null);
 
       try {
-        console.log('Iniciando carga de datos para researchId:', researchId);
-        console.log('Token disponible:', !!token);
-
-        // Cargar métricas de overview
-        console.log('Llamando a getOverviewMetrics...');
         const metricsResponse = await researchInProgressAPI.getOverviewMetrics(researchId);
-        console.log('Respuesta de métricas:', metricsResponse);
+
         if (metricsResponse.success) {
           setStatus(metricsResponse.data);
         }
 
-        // Cargar participantes con estados
-        console.log('Llamando a getParticipantsWithStatus...');
         const participantsResponse = await researchInProgressAPI.getParticipantsWithStatus(researchId);
-        console.log('Respuesta de participantes:', participantsResponse);
-        console.log('Datos de participantes recibidos:', participantsResponse.data);
-        console.log('Longitud del array de participantes:', participantsResponse.data?.length);
+
         if (participantsResponse.success) {
-          console.log('Estableciendo participantes en el estado:', participantsResponse.data);
           setParticipants(participantsResponse.data || []);
         } else {
           console.error('Error en la respuesta de participantes:', participantsResponse);
@@ -118,10 +105,7 @@ export default function ResearchInProgressPage() {
     }
   };
 
-  const handleViewParticipantDetails = (participantId: string) => {
-    console.log('Ver detalles del participante:', participantId);
-    // Aquí se implementaría la lógica para ver detalles
-  };
+
 
   if (authLoading) {
     return (
@@ -263,7 +247,7 @@ export default function ResearchInProgressPage() {
             {researchId && (
               <ParticipantsTable
                 participants={participants}
-                onViewDetails={handleViewParticipantDetails}
+                onViewDetails={() => { }}
                 researchId={researchId}
               />
             )}
