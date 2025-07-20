@@ -38,7 +38,23 @@ export function getWebsocketUrl() {
 
 // Función para obtener URL de public-tests
 export function getPublicTestsUrl() {
-  return LOCAL_URLS.publicTests || 'http://localhost:4700';
+  // Detectar entorno de despliegue
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+
+    // Vercel deployment
+    if (hostname.includes('vercel.app') || hostname.includes('vercel.com')) {
+      return 'https://emotio-xv-2-public-tests.vercel.app';
+    }
+
+    // Local development
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('192.168.')) {
+      return 'http://localhost:4700';
+    }
+  }
+
+  // Fallback a Vercel
+  return 'https://emotio-xv-2-public-tests.vercel.app';
 }
 
 // Función para navegar a public-tests con researchID

@@ -50,11 +50,17 @@ const DEFAULT_ENDPOINTS: DynamicEndpoints = {
     if (typeof window !== 'undefined') {
       const hostname = window.location.hostname;
 
+      // Vercel deployment
+      if (hostname.includes('vercel.app') || hostname.includes('vercel.com')) {
+        return process.env.NEXT_PUBLIC_PUBLIC_TESTS_VERCEL_URL ||
+          'https://emotio-xv-2-public-tests.vercel.app';
+      }
+
       // AWS Amplify
       if (hostname.includes('amplifyapp.com') || hostname.includes('amplify.aws')) {
         return process.env.NEXT_PUBLIC_PUBLIC_TESTS_AWS_URL ||
-               process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL ||
-               'https://emotioxv2-public-tests.s3.amazonaws.com';
+          process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL ||
+          'https://emotioxv2-public-tests.s3.amazonaws.com';
       }
 
       // Local development
@@ -63,13 +69,13 @@ const DEFAULT_ENDPOINTS: DynamicEndpoints = {
       }
     }
 
-    // Fallback a local
-    return 'http://localhost:4700';
+    // Fallback a Vercel
+    return 'https://emotio-xv-2-public-tests.vercel.app';
   },
   navigateToPublicTests: (researchID: string) => {
     const baseUrl = process.env.NEXT_PUBLIC_PUBLIC_TESTS_AWS_URL ||
-                   process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL ||
-                   'http://localhost:4700';
+      process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL ||
+      'http://localhost:4700';
     const url = `${baseUrl}/${researchID}`;
 
     // console.log(`🌐 Navegando a public-tests: ${url}`);
@@ -133,11 +139,17 @@ export async function loadDynamicEndpoints(): Promise<DynamicEndpoints> {
                 if (typeof window !== 'undefined') {
                   const hostname = window.location.hostname;
 
+                  // Vercel deployment
+                  if (hostname.includes('vercel.app') || hostname.includes('vercel.com')) {
+                    return process.env.NEXT_PUBLIC_PUBLIC_TESTS_VERCEL_URL ||
+                      'https://emotio-xv-2-public-tests.vercel.app';
+                  }
+
                   // AWS Amplify
                   if (hostname.includes('amplifyapp.com') || hostname.includes('amplify.aws')) {
                     return process.env.NEXT_PUBLIC_PUBLIC_TESTS_AWS_URL ||
-                           process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL ||
-                           'https://emotioxv2-public-tests.s3.amazonaws.com';
+                      process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL ||
+                      'https://emotioxv2-public-tests.s3.amazonaws.com';
                   }
 
                   // Local development
@@ -146,13 +158,12 @@ export async function loadDynamicEndpoints(): Promise<DynamicEndpoints> {
                   }
                 }
 
-                // Fallback a local
-                return 'http://localhost:4700';
+                // Fallback a Vercel
+                return 'https://emotio-xv-2-public-tests.vercel.app';
               },
               navigateToPublicTests: (researchID: string) => {
-                const baseUrl = process.env.NEXT_PUBLIC_PUBLIC_TESTS_AWS_URL ||
-                               process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL ||
-                               'http://localhost:4700';
+                const baseUrl = process.env.NEXT_PUBLIC_PUBLIC_TESTS_VERCEL_URL ||
+                  'https://emotio-xv-2-public-tests.vercel.app';
                 const url = `${baseUrl}/${researchID}`;
 
                 // console.log(`🌐 Navegando a public-tests: ${url}`);
