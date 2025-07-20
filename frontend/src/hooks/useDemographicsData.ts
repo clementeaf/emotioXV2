@@ -73,6 +73,8 @@ export const useDemographicsData = (researchId: string) => {
       };
     }
 
+    console.log(`[useDemographicsData] 🔍 Procesando ${responses.length} participantes`);
+
     // Contadores para cada categoría
     const countryCounts: Record<string, number> = {};
     const ageCounts: Record<string, number> = {};
@@ -82,7 +84,7 @@ export const useDemographicsData = (researchId: string) => {
     const participantCounts: Record<string, number> = {};
 
     // Procesar cada participante
-    responses.forEach(participant => {
+    responses.forEach((participant, index) => {
       // Contar participantes únicos
       const participantKey = `${participant.participantId || 'unknown'}`;
       participantCounts[participantKey] = (participantCounts[participantKey] || 0) + 1;
@@ -129,52 +131,71 @@ export const useDemographicsData = (researchId: string) => {
           }
         });
       }
+
+      // Log de progreso cada 5 participantes
+      if ((index + 1) % 5 === 0) {
+        console.log(`[useDemographicsData] 📊 Procesados ${index + 1}/${responses.length} participantes`);
+      }
     });
 
-    // Convertir contadores a arrays con formato
-    const countries = Object.entries(countryCounts).map(([label, count], index) => ({
-      id: `country-${index + 1}`,
-      label,
-      count
-    }));
+    // Convertir contadores a arrays con formato y ordenar por count
+    const countries = Object.entries(countryCounts)
+      .sort(([, a], [, b]) => b - a) // Ordenar por count descendente
+      .map(([label, count], index) => ({
+        id: `country-${index + 1}`,
+        label,
+        count
+      }));
 
-    const ageRanges = Object.entries(ageCounts).map(([label, count], index) => ({
-      id: `age-${index + 1}`,
-      label,
-      count
-    }));
+    const ageRanges = Object.entries(ageCounts)
+      .sort(([, a], [, b]) => b - a)
+      .map(([label, count], index) => ({
+        id: `age-${index + 1}`,
+        label,
+        count
+      }));
 
-    const genders = Object.entries(genderCounts).map(([label, count], index) => ({
-      id: `gender-${index + 1}`,
-      label,
-      count
-    }));
+    const genders = Object.entries(genderCounts)
+      .sort(([, a], [, b]) => b - a)
+      .map(([label, count], index) => ({
+        id: `gender-${index + 1}`,
+        label,
+        count
+      }));
 
-    const educationLevels = Object.entries(educationCounts).map(([label, count], index) => ({
-      id: `edu-${index + 1}`,
-      label,
-      count
-    }));
+    const educationLevels = Object.entries(educationCounts)
+      .sort(([, a], [, b]) => b - a)
+      .map(([label, count], index) => ({
+        id: `edu-${index + 1}`,
+        label,
+        count
+      }));
 
-    const userIds = Object.entries(userIdCounts).map(([label, count], index) => ({
-      id: `user-${index + 1}`,
-      label,
-      count
-    }));
+    // Limitar User IDs a los primeros 20 para evitar UI sobrecargada
+    const userIds = Object.entries(userIdCounts)
+      .slice(0, 20) // Máximo 20 User IDs
+      .map(([label, count], index) => ({
+        id: `user-${index + 1}`,
+        label: label.length > 20 ? `${label.substring(0, 20)}...` : label,
+        count
+      }));
 
-    const participants = Object.entries(participantCounts).map(([label, count], index) => ({
-      id: `part-${index + 1}`,
-      label: `${new Date().toLocaleDateString('es-ES')}, ${label}`,
-      count
-    }));
+    const participants = Object.entries(participantCounts)
+      .slice(0, 20) // Máximo 20 participantes
+      .map(([label, count], index) => ({
+        id: `part-${index + 1}`,
+        label: `${new Date().toLocaleDateString('es-ES')}, ${label.length > 15 ? `${label.substring(0, 15)}...` : label}`,
+        count
+      }));
 
     console.log('[useDemographicsData] 📊 Datos demográficos procesados:', {
-      countries,
-      ageRanges,
-      genders,
-      educationLevels,
-      userIds,
-      participants
+      totalParticipants: responses.length,
+      countries: countries.length,
+      ageRanges: ageRanges.length,
+      genders: genders.length,
+      educationLevels: educationLevels.length,
+      userIds: userIds.length,
+      participants: participants.length
     });
 
     return {

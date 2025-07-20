@@ -1,17 +1,28 @@
 'use client';
 
-import React from 'react';
-
 import { CognitiveTaskQuestion } from '../types';
 
 import { AnalysisTabType } from './AnalysisTabs';
 import { ChoiceQuestionData } from './ChoiceResults';
+import { ImageSelectionData } from './ImageSelectionResults';
+import { LinearScaleData } from './LinearScaleResults';
+import { PreferenceTestData } from './PreferenceTestResults';
 import { RankingQuestionData } from './RankingResults';
+import { RatingData } from './RatingResults';
 
-import { QuestionInfo, MainContent, ChoiceResults, RankingResults } from './';
+import {
+  ChoiceResults,
+  ImageSelectionResults,
+  LinearScaleResults,
+  MainContent,
+  PreferenceTestResults,
+  QuestionInfo,
+  RankingResults,
+  RatingResults
+} from './';
 
 // Tipo de visualización para la pregunta
-export type QuestionViewType = 'sentiment' | 'choice' | 'ranking';
+export type QuestionViewType = 'sentiment' | 'choice' | 'ranking' | 'linear_scale' | 'rating' | 'preference' | 'image_selection';
 
 interface QuestionContainerProps {
   questionId: string;
@@ -24,6 +35,10 @@ interface QuestionContainerProps {
   sentimentData?: CognitiveTaskQuestion;
   choiceData?: ChoiceQuestionData;
   rankingData?: RankingQuestionData;
+  linearScaleData?: LinearScaleData;
+  ratingData?: RatingData;
+  preferenceTestData?: PreferenceTestData;
+  imageSelectionData?: ImageSelectionData;
   // Props específicos para la visualización de sentimiento
   initialActiveTab?: AnalysisTabType;
   themeImageSrc?: string;
@@ -44,6 +59,10 @@ export function QuestionContainer({
   sentimentData,
   choiceData,
   rankingData,
+  linearScaleData,
+  ratingData,
+  preferenceTestData,
+  imageSelectionData,
   initialActiveTab,
   themeImageSrc,
   choiceImageSrc,
@@ -65,7 +84,7 @@ export function QuestionContainer({
 
       {/* Contenido principal según el tipo de visualización */}
       {viewType === 'sentiment' && sentimentData && (
-        <MainContent 
+        <MainContent
           data={sentimentData}
           initialActiveTab={initialActiveTab}
           themeImageSrc={themeImageSrc}
@@ -73,7 +92,7 @@ export function QuestionContainer({
       )}
 
       {viewType === 'choice' && choiceData && (
-        <ChoiceResults 
+        <ChoiceResults
           data={choiceData}
           imageSrc={choiceImageSrc}
         />
@@ -84,6 +103,30 @@ export function QuestionContainer({
           data={rankingData}
         />
       )}
+
+      {viewType === 'linear_scale' && linearScaleData && (
+        <LinearScaleResults
+          data={linearScaleData}
+        />
+      )}
+
+      {viewType === 'rating' && ratingData && (
+        <RatingResults
+          data={ratingData}
+        />
+      )}
+
+      {viewType === 'preference' && preferenceTestData && (
+        <PreferenceTestResults
+          data={preferenceTestData}
+        />
+      )}
+
+      {viewType === 'image_selection' && imageSelectionData && (
+        <ImageSelectionResults
+          data={imageSelectionData}
+        />
+      )}
     </div>
   );
-} 
+}

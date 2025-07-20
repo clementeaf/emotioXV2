@@ -6,16 +6,22 @@ export { TaskCard } from './TaskCard';
 export { TaskList } from './TaskList';
 
 // Nuevos componentes
-export { CognitiveTaskHeader } from './CognitiveTaskHeader';
-export { QuestionInfo } from './QuestionInfo';
-export { CommentsList } from './CommentsList';
+export { AnalysisImage } from './AnalysisImage';
 export { AnalysisTabs, type AnalysisTabType } from './AnalysisTabs';
-export { SentimentAnalysisPanel } from './SentimentAnalysisPanel';
-export { ThemesPanel } from './ThemesPanel';
+export { ChoiceResults, type ChoiceOption, type ChoiceQuestionData } from './ChoiceResults';
+export { CognitiveTaskHeader } from './CognitiveTaskHeader';
+export { CommentsList } from './CommentsList';
 export { KeywordsPanel } from './KeywordsPanel';
 export { MainContent } from './MainContent';
+export { NavigationTestResults } from './NavigationTestResults';
 export { QuestionContainer, type QuestionViewType } from './QuestionContainer';
-export { AnalysisImage } from './AnalysisImage';
-export { ChoiceResults, type ChoiceOption, type ChoiceQuestionData } from './ChoiceResults';
-export { RankingResults, type RankingOption, type RankingDistribution, type RankingQuestionData } from './RankingResults';
-export { NavigationTestResults } from './NavigationTestResults'; 
+export { QuestionInfo } from './QuestionInfo';
+export { RankingResults, type RankingDistribution, type RankingOption, type RankingQuestionData } from './RankingResults';
+export { SentimentAnalysisPanel } from './SentimentAnalysisPanel';
+export { ThemesPanel } from './ThemesPanel';
+
+// Nuevos componentes para tipos de preguntas faltantes
+export { ImageSelectionResults, type ImageSelectionData } from './ImageSelectionResults';
+export { LinearScaleResults, type LinearScaleData } from './LinearScaleResults';
+export { PreferenceTestResults, type PreferenceTestData } from './PreferenceTestResults';
+export { RatingResults, type RatingData } from './RatingResults';

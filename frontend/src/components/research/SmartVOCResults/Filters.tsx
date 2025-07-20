@@ -40,7 +40,7 @@ export function Filters({ className, researchId }: FiltersProps) {
   const filterSections: FilterSection[] = [
     {
       title: 'Country',
-      initialVisibleItems: 3,
+      initialVisibleItems: 5, // Mostrar más items inicialmente
       items: demographicsData?.countries || [
         { id: 'country-1', label: 'Estonia' },
         { id: 'country-2', label: 'Chile' },
@@ -49,7 +49,7 @@ export function Filters({ className, researchId }: FiltersProps) {
     },
     {
       title: 'Age range',
-      initialVisibleItems: 3,
+      initialVisibleItems: 5,
       items: demographicsData?.ageRanges || [
         { id: 'age-1', label: '< 19', count: 1 },
         { id: 'age-2', label: '30-34', count: 4 },
@@ -65,7 +65,7 @@ export function Filters({ className, researchId }: FiltersProps) {
     },
     {
       title: 'Education level',
-      initialVisibleItems: 3,
+      initialVisibleItems: 5,
       items: demographicsData?.educationLevels || [
         { id: 'edu-1', label: 'High school graduate', count: 8 },
         { id: 'edu-2', label: 'Some college', count: 3 },
@@ -74,7 +74,7 @@ export function Filters({ className, researchId }: FiltersProps) {
     },
     {
       title: 'User ID',
-      initialVisibleItems: 3,
+      initialVisibleItems: 10, // Mostrar más User IDs inicialmente
       items: demographicsData?.userIds || [
         { id: 'user-1', label: 'e5adfa14-18be-433e-e5d4-ce8' },
         { id: 'user-2', label: 'eytd414-12he-123e-e52h4-ck85' },
@@ -83,7 +83,7 @@ export function Filters({ className, researchId }: FiltersProps) {
     },
     {
       title: 'Participants',
-      initialVisibleItems: 3,
+      initialVisibleItems: 10,
       items: demographicsData?.participants || [
         { id: 'part-1', label: '11 mar 2024, Chile' },
         { id: 'part-2', label: '11 mar 2024, Chile' },
@@ -91,6 +91,10 @@ export function Filters({ className, researchId }: FiltersProps) {
       ]
     }
   ];
+
+  // Mostrar resumen de datos si hay muchos participantes
+  const totalParticipants = demographicsData?.participants?.reduce((sum, item) => sum + item.count, 0) || 0;
+  const showDataSummary = totalParticipants > 10;
 
   const toggleSection = (title: string) => {
     setExpandedSections(prev => ({
@@ -129,6 +133,18 @@ export function Filters({ className, researchId }: FiltersProps) {
   return (
     <Card className={`p-4 ${className}`}>
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Filters</h3>
+
+      {/* Data summary for large datasets */}
+      {showDataSummary && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+          <div className="text-sm text-green-800">
+            <div className="font-medium">📊 Resumen de Datos</div>
+            <div>Total de participantes: {totalParticipants}</div>
+            <div>Países: {demographicsData?.countries?.length || 0}</div>
+            <div>Rangos de edad: {demographicsData?.ageRanges?.length || 0}</div>
+          </div>
+        </div>
+      )}
 
       {/* Notification box */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
