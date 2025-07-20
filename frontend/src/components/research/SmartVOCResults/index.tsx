@@ -202,7 +202,7 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
   });
 
   return (
-    <div className={cn('flex gap-8 p-8', className)}>
+    <div className={cn('flex gap-8 pt-4', className)}>
       <div className="flex-1 space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* CPVCard con manejo de errores individual */}
@@ -296,7 +296,7 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
         </div>
       </div>
 
-      <Filters className="w-80 shrink-0" />
+      <Filters className="w-80 shrink-0" researchId={researchId} />
     </div>
   );
 }

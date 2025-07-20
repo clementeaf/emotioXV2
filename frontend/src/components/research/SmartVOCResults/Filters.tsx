@@ -3,6 +3,7 @@ import { useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { useDemographicsData } from '@/hooks/useDemographicsData';
 
 import { Checkbox } from './ui/Checkbox';
 
@@ -18,9 +19,12 @@ interface FilterSection {
 
 interface FiltersProps {
   className?: string;
+  researchId: string;
 }
 
-export function Filters({ className }: FiltersProps) {
+export function Filters({ className, researchId }: FiltersProps) {
+  const { data: demographicsData, isLoading, error } = useDemographicsData(researchId);
+
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     'Country': true,
     'Age range': true,
@@ -32,30 +36,29 @@ export function Filters({ className }: FiltersProps) {
 
   const [showMoreSections, setShowMoreSections] = useState<Record<string, boolean>>({});
 
+  // Generar secciones de filtros basadas en datos reales
   const filterSections: FilterSection[] = [
     {
       title: 'Country',
       initialVisibleItems: 3,
-      items: [
+      items: demographicsData?.countries || [
         { id: 'country-1', label: 'Estonia' },
         { id: 'country-2', label: 'Chile' },
-        { id: 'country-3', label: 'Mexico' },
-        { id: 'country-4', label: 'Spain' }
+        { id: 'country-3', label: 'Mexico' }
       ]
     },
     {
       title: 'Age range',
       initialVisibleItems: 3,
-      items: [
+      items: demographicsData?.ageRanges || [
         { id: 'age-1', label: '< 19', count: 1 },
         { id: 'age-2', label: '30-34', count: 4 },
-        { id: 'age-3', label: '35-39', count: 8 },
-        { id: 'age-4', label: '40-44', count: 23 }
+        { id: 'age-3', label: '35-39', count: 8 }
       ]
     },
     {
       title: 'Gender',
-      items: [
+      items: demographicsData?.genders || [
         { id: 'gender-1', label: 'Male', count: 24 },
         { id: 'gender-2', label: 'Female', count: 23 }
       ]
@@ -63,32 +66,28 @@ export function Filters({ className }: FiltersProps) {
     {
       title: 'Education level',
       initialVisibleItems: 3,
-      items: [
+      items: demographicsData?.educationLevels || [
         { id: 'edu-1', label: 'High school graduate', count: 8 },
         { id: 'edu-2', label: 'Some college', count: 3 },
-        { id: 'edu-3', label: 'College graduate', count: 6 },
-        { id: 'edu-4', label: 'Some postgraduate work', count: 2 },
-        { id: 'edu-5', label: 'Post graduate degree', count: 12 }
+        { id: 'edu-3', label: 'College graduate', count: 6 }
       ]
     },
     {
       title: 'User ID',
       initialVisibleItems: 3,
-      items: [
+      items: demographicsData?.userIds || [
         { id: 'user-1', label: 'e5adfa14-18be-433e-e5d4-ce8' },
         { id: 'user-2', label: 'eytd414-12he-123e-e52h4-ck85' },
-        { id: 'user-3', label: 'y9dhcr89-11xk-643s-g7s9-ch73' },
-        { id: 'user-4', label: 'gtdo874-11ae-193b-f65h1-cl851' }
+        { id: 'user-3', label: 'y9dhcr89-11xk-643s-g7s9-ch73' }
       ]
     },
     {
       title: 'Participants',
       initialVisibleItems: 3,
-      items: [
+      items: demographicsData?.participants || [
         { id: 'part-1', label: '11 mar 2024, Chile' },
         { id: 'part-2', label: '11 mar 2024, Chile' },
-        { id: 'part-3', label: '11 mar 2024, Chile' },
-        { id: 'part-4', label: '11 mar 2024, Chile' }
+        { id: 'part-3', label: '11 mar 2024, Chile' }
       ]
     }
   ];
@@ -107,70 +106,93 @@ export function Filters({ className }: FiltersProps) {
     }));
   };
 
+  if (isLoading) {
+    return (
+      <Card className={`p-4 ${className}`}>
+        <div className="text-center py-8">
+          <div className="text-gray-500">Cargando filtros...</div>
+        </div>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className={`p-4 ${className}`}>
+        <div className="text-center py-8">
+          <div className="text-red-500">Error al cargar filtros: {error}</div>
+        </div>
+      </Card>
+    );
+  }
+
   return (
-    <Card className="max-h-[920px] flex flex-col">
-      <div className="p-4 flex-shrink-0">
-        <h2 className="text-lg font-semibold mb-4">Filters</h2>
-        
-        <div className="bg-blue-50 p-4 rounded-lg mb-4">
-          <p className="text-sm">New data was obtained</p>
-          <div className="flex justify-between items-center mt-1">
-            <p className="text-sm">Please, update study</p>
-            <Button variant="default" className="bg-blue-600 hover:bg-blue-700 text-white">
-              Update
-            </Button>
+    <Card className={`p-4 ${className}`}>
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">Filters</h3>
+
+      {/* Notification box */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-blue-800">
+            <div>New data was obtained</div>
+            <div>Please, update study</div>
           </div>
+          <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">
+            Update
+          </Button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 pb-4">
-        <div className="space-y-4">
-          {filterSections.map((section) => (
-            <div key={section.title}>
-              <div 
-                className="flex justify-between items-center cursor-pointer mb-2"
+      <div className="space-y-4">
+        {filterSections.map((section) => {
+          const isExpanded = expandedSections[section.title];
+          const showMore = showMoreSections[section.title];
+          const visibleItems = showMore
+            ? section.items
+            : section.items.slice(0, section.initialVisibleItems || section.items.length);
+
+          return (
+            <div key={section.title} className="border-b border-gray-200 pb-4 last:border-b-0">
+              <button
                 onClick={() => toggleSection(section.title)}
+                className="flex items-center justify-between w-full text-left font-medium text-gray-900 mb-2"
               >
-                <h3 className="font-medium text-sm">{section.title}</h3>
-                {expandedSections[section.title] ? (
-                  <ChevronUp className="h-4 w-4" />
+                {section.title}
+                {isExpanded ? (
+                  <ChevronUp className="h-4 w-4 text-gray-500" />
                 ) : (
-                  <ChevronDown className="h-4 w-4" />
+                  <ChevronDown className="h-4 w-4 text-gray-500" />
                 )}
-              </div>
-              
-              {expandedSections[section.title] && (
-                <div className="space-y-1.5">
-                  {section.items
-                    .slice(0, showMoreSections[section.title] ? undefined : section.initialVisibleItems)
-                    .map((item) => (
-                      <div key={item.id} className="flex items-center gap-2">
-                        <Checkbox id={item.id} />
-                        <label htmlFor={item.id} className="text-sm flex-1 truncate">
-                          {item.label}
-                        </label>
+              </button>
+
+              {isExpanded && (
+                <div className="space-y-2">
+                  {visibleItems.map((item) => (
+                    <div key={item.id} className="flex items-center">
+                      <Checkbox id={item.id} />
+                      <label htmlFor={item.id} className="ml-2 text-sm text-gray-700">
+                        {item.label}
                         {item.count !== undefined && (
-                          <span className="text-xs text-gray-500 flex-shrink-0">({item.count})</span>
+                          <span className="text-gray-500 ml-1">({item.count})</span>
                         )}
-                      </div>
-                    ))}
-                  
-                  {section.initialVisibleItems && section.items.length > section.initialVisibleItems && (
+                      </label>
+                    </div>
+                  ))}
+
+                  {section.items.length > (section.initialVisibleItems || section.items.length) && (
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleShowMore(section.title);
-                      }}
-                      className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                      onClick={() => toggleShowMore(section.title)}
+                      className="text-sm text-blue-600 hover:text-blue-800"
                     >
+                      {showMore ? 'Show less' : `Show ${section.items.length - (section.initialVisibleItems || section.items.length)} more`}
                     </button>
                   )}
                 </div>
               )}
             </div>
-          ))}
-        </div>
+          );
+        })}
       </div>
     </Card>
   );
-} 
+}

@@ -162,7 +162,6 @@ export default function ResearchInProgressPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Investigación en curso</h1>
           <p className="text-neutral-600 mt-1">
             Monitorea el progreso y estado actual de tu investigación
           </p>

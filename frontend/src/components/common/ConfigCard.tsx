@@ -16,7 +16,7 @@ export function ConfigCard({
   return (
     <div
       className={cn(
-        'p-8 max-h-[calc(100vh-160px)] min-h-[400px] overflow-y-auto',
+        'max-h-[calc(100vh-160px)] min-h-[400px] overflow-y-auto',
         className
       )}
       style={style}
