@@ -12,11 +12,9 @@ import { QuestionType } from 'shared/interfaces/question-types.enum';
 import { SmartVOCQuestion } from 'shared/interfaces/smart-voc.interface';
 import { CPVCard } from './CPVCard';
 import { Filters } from './Filters';
-import { NPSQuestion } from './NPSQuestion';
 import { QuestionSelector } from './QuestionSelector';
 import { TrustRelationshipFlow } from './TrustRelationshipFlow';
 import { SmartVOCResultsProps } from './types';
-import { VOCQuestion } from './VOCQuestion';
 
 // Hook real para obtener las preguntas de SmartVOC
 const useSmartVOCQuestions = (researchId: string) => {
@@ -297,16 +295,6 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Los MetricCards se renderizarán cuando haya datos reales */}
         </div>
-
-        {/* NPS Question con datos reales */}
-        <NPSQuestion monthlyData={smartVOCData?.monthlyNPSData || []} />
-
-        {/* VOC Question con datos reales */}
-        <VOCQuestion comments={smartVOCData?.vocResponses?.map(comment => ({
-          text: comment.text,
-          mood: 'Positive', // Placeholder - se puede mejorar con análisis de sentimientos
-          selected: false
-        })) || []} />
       </div>
 
       <Filters className="w-80 shrink-0" />

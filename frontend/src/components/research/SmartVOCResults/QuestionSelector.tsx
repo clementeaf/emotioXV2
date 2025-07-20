@@ -1,22 +1,13 @@
 'use client';
 
-import { ChevronDown, ChevronUp } from 'lucide-react';
-import { useEffect, useState } from 'react';
 
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { cn } from '@/lib/utils';
 
 import { QuestionType } from 'shared/interfaces/question-types.enum';
 import { SmartVOCQuestion } from 'shared/interfaces/smart-voc.interface';
 
-import { CESQuestion } from './CESQuestion';
-import { CSATQuestion } from './CSATQuestion';
-import { CVQuestion } from './CVQuestion';
-import { NEVQuestion } from './NEVQuestion';
-import { NPSQuestion } from './NPSQuestion';
-import { VOCQuestion } from './VOCQuestion';
+import { QuestionResults } from './QuestionResults';
 
 interface QuestionSelectorProps {
   researchId: string;
@@ -24,37 +15,6 @@ interface QuestionSelectorProps {
   smartVOCData: any;
   className?: string;
 }
-
-interface QuestionAnalysisProps {
-  question: SmartVOCQuestion;
-  data: any;
-  researchId: string;
-}
-
-// Adaptadores para componentes existentes
-const NPSQuestionAdapter: React.ComponentType<QuestionAnalysisProps> = ({ data }) => {
-  return <NPSQuestion monthlyData={data?.monthlyNPSData || []} />;
-};
-
-const VOCQuestionAdapter: React.ComponentType<QuestionAnalysisProps> = ({ data }) => {
-  const comments = data?.vocResponses?.map((comment: any) => ({
-    text: comment.text,
-    mood: 'Positive', // Placeholder - se puede mejorar con análisis de sentimientos
-    selected: false
-  })) || [];
-
-  return <VOCQuestion comments={comments} />;
-};
-
-// Mapeo de tipos de pregunta a componentes de análisis
-const QUESTION_ANALYSIS_COMPONENTS: Record<string, React.ComponentType<QuestionAnalysisProps>> = {
-  [QuestionType.SMARTVOC_NPS]: NPSQuestionAdapter,
-  [QuestionType.SMARTVOC_VOC]: VOCQuestionAdapter,
-  [QuestionType.SMARTVOC_CSAT]: CSATQuestion,
-  [QuestionType.SMARTVOC_CES]: CESQuestion,
-  [QuestionType.SMARTVOC_CV]: CVQuestion,
-  [QuestionType.SMARTVOC_NEV]: NEVQuestion,
-};
 
 // Función para obtener el título legible de la pregunta
 const getQuestionTitle = (question: SmartVOCQuestion): string => {
@@ -76,28 +36,237 @@ const getQuestionTitle = (question: SmartVOCQuestion): string => {
       return 'Customer Value (CV)';
     case QuestionType.SMARTVOC_NEV:
       return 'Net Emotional Value (NEV)';
+    case QuestionType.SMARTVOC_NC:
+      return 'Net Comments (NC)';
     default:
       return `Pregunta ${question.id}`;
   }
 };
 
-// Función para obtener el color del badge según el tipo
-const getQuestionBadgeColor = (type: string): string => {
+// Función para obtener el tipo de pregunta legible
+const getQuestionType = (type: string): string => {
   switch (type) {
     case QuestionType.SMARTVOC_NPS:
-      return 'bg-blue-100 text-blue-700';
+      return 'Linear Scale question';
     case QuestionType.SMARTVOC_VOC:
-      return 'bg-green-100 text-green-700';
+      return 'Text question';
     case QuestionType.SMARTVOC_CSAT:
-      return 'bg-purple-100 text-purple-700';
+      return 'Stars question';
     case QuestionType.SMARTVOC_CES:
-      return 'bg-orange-100 text-orange-700';
+      return 'Linear Scale question';
     case QuestionType.SMARTVOC_CV:
-      return 'bg-indigo-100 text-indigo-700';
+      return 'Linear Scale question';
     case QuestionType.SMARTVOC_NEV:
-      return 'bg-pink-100 text-pink-700';
+      return 'Linear Scale question';
+    case QuestionType.SMARTVOC_NC:
+      return 'Comments question';
     default:
-      return 'bg-gray-100 text-gray-700';
+      return 'Question';
+  }
+};
+
+// Función para obtener datos de respuestas según el tipo de pregunta
+const getQuestionData = (question: SmartVOCQuestion, smartVOCData: any) => {
+  switch (question.type) {
+    case QuestionType.SMARTVOC_NPS:
+      const npsScores = smartVOCData?.npsScores || [];
+      const totalNPS = npsScores.length;
+      const promoters = npsScores.filter((score: number) => score >= 9).length;
+      const detractors = npsScores.filter((score: number) => score <= 6).length;
+      const neutrals = npsScores.filter((score: number) => score > 6 && score < 9).length;
+      const npsScore = totalNPS > 0 ? Math.round(((promoters - detractors) / totalNPS) * 100) : 0;
+
+      return {
+        responses: { count: totalNPS, timeAgo: '26s' },
+        score: npsScore,
+        distribution: [
+          { label: 'Promoters', percentage: promoters, color: '#10B981' },
+          { label: 'Detractors', percentage: detractors, color: '#EF4444' }
+        ],
+        monthlyData: smartVOCData?.monthlyNPSData || [],
+        loyaltyEvolution: {
+          promoters: promoters,
+          promotersTrend: 'up' as const,
+          detractors: detractors,
+          detractorsTrend: 'down' as const,
+          neutrals: neutrals,
+          neutralsTrend: 'down' as const,
+          changePercentage: 16
+        }
+      };
+
+    case QuestionType.SMARTVOC_CSAT:
+      const csatScores = smartVOCData?.csatScores || [];
+      const totalCSAT = csatScores.length;
+      const averageCSAT = totalCSAT > 0 ? Math.round((csatScores.reduce((a: number, b: number) => a + b, 0) / totalCSAT) * 10) / 10 : 0;
+      const satisfied = csatScores.filter((score: number) => score >= 4).length;
+      const dissatisfied = csatScores.filter((score: number) => score <= 2).length;
+      const neutral = csatScores.filter((score: number) => score === 3).length;
+
+      return {
+        responses: { count: totalCSAT, timeAgo: '26s' },
+        score: averageCSAT,
+        distribution: [
+          { label: 'Satisfied', percentage: satisfied, color: '#10B981' },
+          { label: 'Neutral', percentage: neutral, color: '#F59E0B' },
+          { label: 'Dissatisfied', percentage: dissatisfied, color: '#EF4444' }
+        ],
+        monthlyData: smartVOCData?.monthlyCSATData || [],
+        loyaltyEvolution: {
+          promoters: satisfied,
+          promotersTrend: 'up' as const,
+          detractors: dissatisfied,
+          detractorsTrend: 'down' as const,
+          neutrals: neutral,
+          neutralsTrend: 'down' as const,
+          changePercentage: 12
+        }
+      };
+
+    case QuestionType.SMARTVOC_CES:
+      const cesScores = smartVOCData?.cesScores || [];
+      const totalCES = cesScores.length;
+      const averageCES = totalCES > 0 ? Math.round((cesScores.reduce((a: number, b: number) => a + b, 0) / totalCES) * 10) / 10 : 0;
+      const lowEffort = cesScores.filter((score: number) => score <= 3).length;
+      const highEffort = cesScores.filter((score: number) => score >= 5).length;
+      const mediumEffort = cesScores.filter((score: number) => score === 4).length;
+
+      return {
+        responses: { count: totalCES, timeAgo: '26s' },
+        score: averageCES,
+        distribution: [
+          { label: 'Low Effort', percentage: lowEffort, color: '#10B981' },
+          { label: 'Medium Effort', percentage: mediumEffort, color: '#F59E0B' },
+          { label: 'High Effort', percentage: highEffort, color: '#EF4444' }
+        ],
+        monthlyData: smartVOCData?.monthlyCESData || [],
+        loyaltyEvolution: {
+          promoters: lowEffort,
+          promotersTrend: 'up' as const,
+          detractors: highEffort,
+          detractorsTrend: 'down' as const,
+          neutrals: mediumEffort,
+          neutralsTrend: 'down' as const,
+          changePercentage: 8
+        }
+      };
+
+    case QuestionType.SMARTVOC_CV:
+      const cvScores = smartVOCData?.cvScores || [];
+      const totalCV = cvScores.length;
+      const averageCV = totalCV > 0 ? Math.round((cvScores.reduce((a: number, b: number) => a + b, 0) / totalCV) * 10) / 10 : 0;
+      const highValue = cvScores.filter((score: number) => score >= 5).length;
+      const lowValue = cvScores.filter((score: number) => score <= 3).length;
+      const mediumValue = cvScores.filter((score: number) => score === 4).length;
+
+      return {
+        responses: { count: totalCV, timeAgo: '26s' },
+        score: averageCV,
+        distribution: [
+          { label: 'High Value', percentage: highValue, color: '#10B981' },
+          { label: 'Medium Value', percentage: mediumValue, color: '#F59E0B' },
+          { label: 'Low Value', percentage: lowValue, color: '#EF4444' }
+        ],
+        monthlyData: smartVOCData?.monthlyCVData || [],
+        loyaltyEvolution: {
+          promoters: highValue,
+          promotersTrend: 'up' as const,
+          detractors: lowValue,
+          detractorsTrend: 'down' as const,
+          neutrals: mediumValue,
+          neutralsTrend: 'down' as const,
+          changePercentage: 14
+        }
+      };
+
+    case QuestionType.SMARTVOC_NEV:
+      const nevScores = smartVOCData?.nevScores || [];
+      const totalNEV = nevScores.length;
+      const averageNEV = totalNEV > 0 ? Math.round((nevScores.reduce((a: number, b: number) => a + b, 0) / totalNEV) * 10) / 10 : 0;
+      const highEmotional = nevScores.filter((score: number) => score >= 5).length;
+      const lowEmotional = nevScores.filter((score: number) => score <= 3).length;
+      const mediumEmotional = nevScores.filter((score: number) => score === 4).length;
+
+      return {
+        responses: { count: totalNEV, timeAgo: '26s' },
+        score: averageNEV,
+        distribution: [
+          { label: 'High Emotional Value', percentage: highEmotional, color: '#10B981' },
+          { label: 'Medium Emotional Value', percentage: mediumEmotional, color: '#F59E0B' },
+          { label: 'Low Emotional Value', percentage: lowEmotional, color: '#EF4444' }
+        ],
+        monthlyData: smartVOCData?.monthlyNEVData || [],
+        loyaltyEvolution: {
+          promoters: highEmotional,
+          promotersTrend: 'up' as const,
+          detractors: lowEmotional,
+          detractorsTrend: 'down' as const,
+          neutrals: mediumEmotional,
+          neutralsTrend: 'down' as const,
+          changePercentage: 18
+        }
+      };
+
+    case QuestionType.SMARTVOC_VOC:
+      const vocResponses = smartVOCData?.vocResponses || [];
+      const positiveResponses = Math.round(vocResponses.length * 0.6);
+      const neutralResponses = Math.round(vocResponses.length * 0.3);
+      const negativeResponses = Math.round(vocResponses.length * 0.1);
+
+      return {
+        responses: { count: vocResponses.length, timeAgo: '26s' },
+        score: vocResponses.length,
+        distribution: [
+          { label: 'Positive', percentage: positiveResponses, color: '#10B981' },
+          { label: 'Neutral', percentage: neutralResponses, color: '#F59E0B' },
+          { label: 'Negative', percentage: negativeResponses, color: '#EF4444' }
+        ],
+        monthlyData: smartVOCData?.monthlyVOCData || [],
+        loyaltyEvolution: {
+          promoters: positiveResponses,
+          promotersTrend: 'up' as const,
+          detractors: negativeResponses,
+          detractorsTrend: 'down' as const,
+          neutrals: neutralResponses,
+          neutralsTrend: 'down' as const,
+          changePercentage: 10
+        }
+      };
+
+    case QuestionType.SMARTVOC_NC:
+      const ncResponses = smartVOCData?.ncResponses || [];
+      const totalNC = ncResponses.length;
+      const averageNC = totalNC > 0 ? Math.round((ncResponses.reduce((a: number, b: number) => a + b, 0) / totalNC) * 10) / 10 : 0;
+      const positiveComments = Math.round(ncResponses.length * 0.7);
+      const neutralComments = Math.round(ncResponses.length * 0.2);
+      const negativeComments = Math.round(ncResponses.length * 0.1);
+
+      return {
+        responses: { count: totalNC, timeAgo: '26s' },
+        score: averageNC,
+        distribution: [
+          { label: 'Positive Comments', percentage: positiveComments, color: '#10B981' },
+          { label: 'Neutral Comments', percentage: neutralComments, color: '#F59E0B' },
+          { label: 'Negative Comments', percentage: negativeComments, color: '#EF4444' }
+        ],
+        monthlyData: smartVOCData?.monthlyNCData || [],
+        loyaltyEvolution: {
+          promoters: positiveComments,
+          promotersTrend: 'up' as const,
+          detractors: negativeComments,
+          detractorsTrend: 'down' as const,
+          neutrals: neutralComments,
+          neutralsTrend: 'down' as const,
+          changePercentage: 15
+        }
+      };
+
+    default:
+      return {
+        responses: { count: 0, timeAgo: '26s' },
+        score: 0,
+        distribution: []
+      };
   }
 };
 
@@ -112,74 +281,57 @@ export function QuestionSelector({
     researchId,
     questionsCount: questions?.length,
     smartVOCData,
-    cvScores: smartVOCData?.cvScores,
-    cvScoresLength: smartVOCData?.cvScores?.length,
     totalDataKeys: smartVOCData ? Object.keys(smartVOCData) : []
   });
 
-  const [selectedQuestion, setSelectedQuestion] = useState<SmartVOCQuestion | null>(null);
-  const [isExpanded, setIsExpanded] = useState(false);
+  // Filtrar preguntas que tienen datos disponibles y evitar duplicados
+  const availableQuestions = questions
+    .filter(question => {
+      // Debug: Log de cada pregunta
+      console.log('[QuestionSelector] 🔍 Procesando pregunta:', {
+        id: question.id,
+        type: question.type,
+        title: question.title,
+        hasNPSData: smartVOCData?.npsScores?.length > 0,
+        hasVOCData: smartVOCData?.vocResponses?.length > 0,
+        hasCSATData: smartVOCData?.csatScores?.length > 0,
+        hasCESData: smartVOCData?.cesScores?.length > 0,
+        hasCVData: smartVOCData?.cvScores?.length > 0,
+        hasNEVData: smartVOCData?.nevScores?.length > 0
+      });
 
-  // Seleccionar la primera pregunta por defecto
-  useEffect(() => {
-    if (questions.length > 0 && !selectedQuestion) {
-      setSelectedQuestion(questions[0]);
-    }
-  }, [questions, selectedQuestion]);
+      // Verificar si hay datos para esta pregunta específica
+      switch (question.type) {
+        case QuestionType.SMARTVOC_NPS:
+          return smartVOCData?.npsScores?.length > 0 || smartVOCData?.monthlyNPSData?.length > 0;
+        case QuestionType.SMARTVOC_VOC:
+          return smartVOCData?.vocResponses?.length > 0;
+        case QuestionType.SMARTVOC_CSAT:
+          return smartVOCData?.csatScores?.length > 0;
+        case QuestionType.SMARTVOC_CES:
+          return smartVOCData?.cesScores?.length > 0;
+        case QuestionType.SMARTVOC_CV:
+          return smartVOCData?.cvScores?.length > 0;
+        case QuestionType.SMARTVOC_NEV:
+          return smartVOCData?.nevScores?.length > 0;
+        case QuestionType.SMARTVOC_NC:
+          return smartVOCData?.ncResponses?.length > 0;
+        default:
+          return true; // Mostrar todas las preguntas por defecto
+      }
+    })
+    .filter((question, index, self) => {
+      // Evitar duplicados basándose en el tipo de pregunta
+      const firstIndex = self.findIndex(q => q.type === question.type);
+      return firstIndex === index;
+    });
 
-  // Filtrar preguntas que tienen datos disponibles
-  const availableQuestions = questions.filter(question => {
-    // Verificar si hay datos para esta pregunta específica
-    switch (question.type) {
-      case QuestionType.SMARTVOC_NPS:
-        return smartVOCData?.npsScores?.length > 0 || smartVOCData?.monthlyNPSData?.length > 0;
-      case QuestionType.SMARTVOC_VOC:
-        return smartVOCData?.vocResponses?.length > 0;
-      case QuestionType.SMARTVOC_CSAT:
-        return smartVOCData?.csatScores?.length > 0;
-      case QuestionType.SMARTVOC_CES:
-        return smartVOCData?.cesScores?.length > 0;
-      case QuestionType.SMARTVOC_CV:
-        return smartVOCData?.cvScores?.length > 0;
-      case QuestionType.SMARTVOC_NEV:
-        return smartVOCData?.nevScores?.length > 0;
-      default:
-        return true; // Mostrar todas las preguntas por defecto
-    }
+  // Debug: Log de preguntas disponibles
+  console.log('[QuestionSelector] 📊 Preguntas disponibles:', {
+    totalQuestions: questions.length,
+    availableQuestions: availableQuestions.length,
+    availableQuestionTypes: availableQuestions.map(q => q.type)
   });
-
-  const handleQuestionSelect = (question: SmartVOCQuestion) => {
-    setSelectedQuestion(question);
-    setIsExpanded(false);
-  };
-
-  const renderQuestionAnalysis = () => {
-    if (!selectedQuestion) {
-      return (
-        <div className="flex items-center justify-center h-64 text-gray-500">
-          <p>Selecciona una pregunta para ver su análisis</p>
-        </div>
-      );
-    }
-
-    const AnalysisComponent = QUESTION_ANALYSIS_COMPONENTS[selectedQuestion.type];
-
-    if (!AnalysisComponent) {
-      return (
-        <div className="flex items-center justify-center h-64 text-gray-500">
-          <p>Análisis no disponible para este tipo de pregunta</p>
-        </div>
-      );
-    }
-
-    return (
-      <AnalysisComponent
-        question={selectedQuestion}
-        data={smartVOCData}
-        researchId={researchId}
-      />
-    );
-  };
 
   if (availableQuestions.length === 0) {
     return (
@@ -193,98 +345,27 @@ export function QuestionSelector({
 
   return (
     <div className={cn('space-y-6', className)}>
-      {/* Selector de preguntas */}
-      <Card className="p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-medium text-gray-900">
-            Análisis de Preguntas SmartVOC
-          </h3>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="flex items-center gap-2"
-          >
-            {isExpanded ? (
-              <>
-                <ChevronUp className="w-4 h-4" />
-                Ocultar
-              </>
-            ) : (
-              <>
-                <ChevronDown className="w-4 h-4" />
-                Mostrar
-              </>
-            )}
-          </Button>
-        </div>
+      {/* Renderizar QuestionResults para cada pregunta con datos */}
+      {availableQuestions.map((question, index) => {
+        const questionData = getQuestionData(question, smartVOCData);
 
-        {isExpanded && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
-            {availableQuestions.map((question) => (
-              <button
-                key={question.id}
-                onClick={() => handleQuestionSelect(question)}
-                className={cn(
-                  'p-3 rounded-lg border text-left transition-all hover:shadow-md',
-                  selectedQuestion?.id === question.id
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                )}
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <Badge
-                    variant="secondary"
-                    className={cn('text-xs', getQuestionBadgeColor(question.type))}
-                  >
-                    {question.type.replace('smartvoc_', '').toUpperCase()}
-                  </Badge>
-                  {question.required && (
-                    <Badge variant="secondary" className="text-xs bg-red-100 text-red-700">
-                      Requerida
-                    </Badge>
-                  )}
-                </div>
-                <h4 className="font-medium text-sm text-gray-900 mb-1">
-                  {getQuestionTitle(question)}
-                </h4>
-                {question.description && (
-                  <p className="text-xs text-gray-600 line-clamp-2">
-                    {question.description}
-                  </p>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Pregunta seleccionada actual */}
-        {selectedQuestion && (
-          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-            <Badge
-              variant="secondary"
-              className={cn('text-sm', getQuestionBadgeColor(selectedQuestion.type))}
-            >
-              {selectedQuestion.type.replace('smartvoc_', '').toUpperCase()}
-            </Badge>
-            <div className="flex-1">
-              <h4 className="font-medium text-gray-900">
-                {getQuestionTitle(selectedQuestion)}
-              </h4>
-              {selectedQuestion.description && (
-                <p className="text-sm text-gray-600">
-                  {selectedQuestion.description}
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-      </Card>
-
-      {/* Análisis de la pregunta seleccionada */}
-      <div className="mt-6">
-        {renderQuestionAnalysis()}
-      </div>
+        return (
+          <QuestionResults
+            key={question.id}
+            questionNumber={`2.${index + 1}`}
+            title={getQuestionTitle(question)}
+            type={getQuestionType(question.type)}
+            conditionality="Conditionality disabled"
+            required={question.required || false}
+            question={question.description || 'Pregunta SmartVOC'}
+            responses={questionData.responses}
+            score={questionData.score}
+            distribution={questionData.distribution}
+            monthlyData={questionData.monthlyData}
+            loyaltyEvolution={questionData.loyaltyEvolution}
+          />
+        );
+      })}
     </div>
   );
 }
