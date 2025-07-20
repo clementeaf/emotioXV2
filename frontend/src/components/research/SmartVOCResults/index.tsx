@@ -12,7 +12,7 @@ import { QuestionType } from 'shared/interfaces/question-types.enum';
 import { SmartVOCQuestion } from 'shared/interfaces/smart-voc.interface';
 import { CPVCard } from './CPVCard';
 import { Filters } from './Filters';
-import { QuestionSelector } from './QuestionSelector';
+import QuestionSelector from './QuestionSelector';
 import { TrustRelationshipFlow } from './TrustRelationshipFlow';
 import { SmartVOCResultsProps } from './types';
 
@@ -264,7 +264,6 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
         {/* Selector de preguntas SmartVOC */}
         {!questionsLoading && !questionsError && (
           <QuestionSelector
-            researchId={researchId}
             questions={smartVOCQuestions}
             smartVOCData={smartVOCData}
           />

@@ -1,13 +1,12 @@
-import { Target } from 'lucide-react';
-import { 
-  ComposedChart, 
-  Bar, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer
+import {
+  Bar,
+  CartesianGrid,
+  ComposedChart,
+  Line,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
 } from 'recharts';
 
 import { Badge } from '@/components/ui/Badge';
@@ -58,7 +57,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
         <p className="text-sm text-gray-600 mb-2">{label}</p>
         {payload.map((entry: any, index: number) => (
           <div key={index} className="flex items-center gap-2">
-            <div 
+            <div
               className="w-2 h-2 rounded-full"
               style={{ backgroundColor: entry.color }}
             />
@@ -73,7 +72,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-export function QuestionResults({ 
+export function QuestionResults({
   questionNumber,
   title,
   type,
@@ -129,9 +128,9 @@ export function QuestionResults({
                   <span className="text-sm text-gray-600">{item.label}</span>
                   <span className="text-sm font-medium">{item.percentage}%</span>
                 </div>
-                <Progress 
-                  value={item.percentage} 
-                  className="h-2" 
+                <Progress
+                  value={item.percentage}
+                  className="h-2"
                   indicatorClassName={
                     item.color === 'green' ? 'bg-green-500' :
                       item.color === 'gray' ? 'bg-gray-400' :
@@ -144,76 +143,29 @@ export function QuestionResults({
         </div>
       </Card>
 
-      {monthlyData && (
+      {monthlyData && monthlyData.length > 0 && (
         <Card className="p-6 space-y-6">
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <h3 className="text-lg font-medium">2.5.- Question: Net Promoter Score (NPS)</h3>
-              <Badge variant="secondary" className="bg-green-100 text-green-700">Linear Scale question</Badge>
-              <Badge variant="secondary" className="bg-blue-100 text-blue-700">Conditionality disabled</Badge>
-              <Badge variant="secondary" className="bg-red-100 text-red-700">Required</Badge>
-            </div>
-
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Promoters</span>
-                  <span className="text-sm font-medium">78%</span>
-                </div>
-                <Progress 
-                  value={78} 
-                  className="h-2" 
-                  indicatorClassName="bg-green-500"
-                />
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Detractors</span>
-                  <span className="text-sm font-medium">22%</span>
-                </div>
-                <Progress 
-                  value={22} 
-                  className="h-2" 
-                  indicatorClassName="bg-red-500"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Target className="w-5 h-5 text-blue-600" />
-                <span className="text-sm">NPS' question</span>
-              </div>
-              <p className="text-sm text-gray-500">On a scale from 0-10, how likely are you to recommend [company] to a friend or colleague?</p>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600">Responses</span>
-                <span className="text-2xl font-semibold">28,635</span>
-                <span className="text-sm text-gray-500">26s</span>
-              </div>
-              <div className="w-24 h-24">
-                <CircularProgress value={63} size={96} strokeWidth={8} />
-              </div>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Tendencias Mensuales</h3>
             </div>
 
             <div className="h-[400px]">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={monthlyData}>
-                  <CartesianGrid 
-                    strokeDasharray="3 3" 
+                  <CartesianGrid
+                    strokeDasharray="3 3"
                     vertical={false}
                     stroke="#E5E7EB"
                   />
-                  <XAxis 
-                    dataKey="month" 
+                  <XAxis
+                    dataKey="month"
                     axisLine={false}
                     tickLine={false}
                     stroke="#9CA3AF"
                     fontSize={12}
                   />
-                  <YAxis 
+                  <YAxis
                     axisLine={false}
                     tickLine={false}
                     stroke="#9CA3AF"
@@ -221,22 +173,22 @@ export function QuestionResults({
                     domain={[0, 100]}
                   />
                   <Tooltip content={<CustomTooltip />} />
-                  <Bar 
-                    dataKey="promoters" 
-                    stackId="a" 
+                  <Bar
+                    dataKey="promoters"
+                    stackId="a"
                     fill="#4ADE80"
                     radius={[4, 4, 0, 0]}
                     name="Promoters"
                   />
-                  <Bar 
-                    dataKey="neutrals" 
-                    stackId="a" 
+                  <Bar
+                    dataKey="neutrals"
+                    stackId="a"
                     fill="#E5E7EB"
                     name="Neutrals"
                   />
-                  <Bar 
-                    dataKey="detractors" 
-                    stackId="a" 
+                  <Bar
+                    dataKey="detractors"
+                    stackId="a"
                     fill="#F87171"
                     name="Detractors"
                   />
@@ -326,4 +278,4 @@ export function QuestionResults({
       )}
     </div>
   );
-} 
+}
