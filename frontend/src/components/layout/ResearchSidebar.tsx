@@ -180,10 +180,11 @@ function ResearchSidebarContent({ researchId, className }: ResearchSidebarProps)
     if (researchId) {
       console.log('researchId', researchId);
       // Usar la URL de Vercel en producción, localhost en desarrollo
-      const isDevelopment = process.env.NODE_ENV === 'development';
+      const isDevelopment = window.location.hostname === 'localhost';
       const baseUrl = isDevelopment
         ? 'http://localhost:5173'
         : 'https://emotio-xv-2-public-tests.vercel.app';
+      console.log('🌐 Abriendo URL:', baseUrl);
       window.open(`${baseUrl}/?researchId=${researchId}`, '_blank');
     }
   };
