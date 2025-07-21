@@ -32,33 +32,35 @@ interface ImageFile {
   hitZones?: HitZone[];
 }
 
-interface NavigationFlowResultsProps {
-  data: {
-    question: string;
-    description?: string;
-    totalParticipants: number;
-    totalSelections: number;
-    researchId?: string;
-    imageSelections: {
-      [imageIndex: string]: {
-        hitzoneId: string;
-        click: {
-          x: number;
-          y: number;
-          hitzoneWidth: number;
-          hitzoneHeight: number;
-        };
+export interface NavigationFlowData {
+  question: string;
+  description?: string;
+  totalParticipants: number;
+  totalSelections: number;
+  researchId?: string;
+  imageSelections: {
+    [imageIndex: string]: {
+      hitzoneId: string;
+      click: {
+        x: number;
+        y: number;
+        hitzoneWidth: number;
+        hitzoneHeight: number;
       };
     };
-    selectedHitzone?: string;
-    clickPosition?: {
-      x: number;
-      y: number;
-      hitzoneWidth: number;
-      hitzoneHeight: number;
-    };
-    selectedImageIndex?: number;
   };
+  selectedHitzone?: string;
+  clickPosition?: {
+    x: number;
+    y: number;
+    hitzoneWidth: number;
+    hitzoneHeight: number;
+  };
+  selectedImageIndex?: number;
+}
+
+interface NavigationFlowResultsProps {
+  data: NavigationFlowData;
 }
 
 const convertHitZonesToPercentageCoordinates = (
@@ -162,16 +164,12 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
 
       try {
         setLoadingImages(true);
-        console.log('🔄 Cargando imágenes reales para researchId:', researchId);
         const cognitiveTask = await cognitiveTaskService.getByResearchId(researchId);
-        console.log('📊 Cognitive task cargado:', cognitiveTask);
 
         if (cognitiveTask?.questions) {
-          console.log('📋 Tipos de preguntas disponibles:', cognitiveTask.questions.map((q: any) => ({ type: q.type, questionKey: q.questionKey })));
           const navigationQuestion = cognitiveTask.questions.find((q: any) =>
             q.type === 'cognitive_navigation_flow' || q.questionKey === 'cognitive_navigation_flow'
           ) as any;
-          console.log('🧭 Navigation question encontrada:', navigationQuestion);
 
           if (navigationQuestion?.files && navigationQuestion.files.length > 0) {
             // Convertir los archivos a ImageFile con hitzones
@@ -225,8 +223,8 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
     loadRealImages();
   }, [researchId]);
 
-  // Usar el selectedImageIndex del backend como prioridad
-  const currentImageIndex = finalSelectedImageIndex ?? selectedImageIndex ?? 0;
+  // Usar el selectedImageIndex del backend como prioridad, pero permitir selección manual
+  const currentImageIndex = selectedImageIndex ?? finalSelectedImageIndex ?? 0;
 
   const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>): void => {
     const { naturalWidth, naturalHeight, width, height } = e.currentTarget;
@@ -285,7 +283,8 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
     'loadingImages': loadingImages,
     'selectedImage': selectedImage,
     'availableHitzones': availableHitzones.length,
-    'currentSelection': currentSelection
+    'currentSelection': currentSelection,
+    'showHeatmap': showHeatmap
   });
 
   if (!data || realImages.length === 0) {
@@ -309,7 +308,7 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Seleccionar Imagen */}
       <div className="mb-6">
         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -319,7 +318,10 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
           {realImages.map((image, index) => (
             <button
               key={index}
-              onClick={() => setSelectedImageIndex(index)}
+              onClick={() => {
+                console.log('🖱️ Click en imagen:', index);
+                setSelectedImageIndex(index);
+              }}
               className={`px-4 py-2 rounded-lg border transition-colors ${currentImageIndex === index
                 ? 'bg-blue-500 text-white border-blue-500'
                 : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
@@ -331,51 +333,8 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
         </div>
       </div>
 
-      {/* Tipo de visualización */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Tipo de Visualización
-        </label>
-        <div className="flex space-x-2">
-          <button
-            onClick={() => setShowHeatmap(true)}
-            className={`px-4 py-2 rounded-lg border transition-colors flex items-center space-x-2 ${showHeatmap
-              ? 'bg-red-500 text-white border-red-500'
-              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-              }`}
-          >
-            <span>🔥</span>
-            <span>Heat Map</span>
-          </button>
-          <button
-            onClick={() => setShowHeatmap(false)}
-            className={`px-4 py-2 rounded-lg border transition-colors flex items-center space-x-2 ${!showHeatmap
-              ? 'bg-blue-500 text-white border-blue-500'
-              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-              }`}
-          >
-            <span>📍</span>
-            <span>Click Map</span>
-          </button>
-        </div>
-      </div>
-
       {/* Área de visualización */}
       <div className="mb-6">
-        <h4 className="text-md font-semibold text-gray-800 mb-3">
-          Visualización - Imagen {currentImageIndex + 1}
-          {finalSelectedImageIndex !== null && finalSelectedImageIndex !== currentImageIndex && (
-            <span className="ml-2 text-sm text-blue-600 font-normal">
-              (Auto-seleccionada desde backend)
-            </span>
-          )}
-        </h4>
-        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-sm text-blue-800">
-            Resultados de Navigation Flow: Mostrando la misma imagen que se usa en la configuración, con los hitzones y clicks reales de los participantes.
-          </p>
-        </div>
-
         {/* Contenedor de imagen */}
         <div
           className="relative w-full max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden"
@@ -470,22 +429,6 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
         </div>
       </div>
 
-      {/* Detalles de Interacción */}
-      <div className="bg-gray-50 p-4 rounded-lg">
-        <h4 className="text-md font-semibold text-gray-800 mb-3">
-          Detalles de Interacción - Imagen {currentImageIndex + 1}
-        </h4>
-        {currentSelection ? (
-          <div className="space-y-2">
-            <p><strong>Hitzone ID:</strong> {currentSelection.hitzoneId}</p>
-            <p><strong>Ancho del Hitzone:</strong> {currentSelection.click.hitzoneWidth.toFixed(2)}px</p>
-            <p><strong>Alto del Hitzone:</strong> {currentSelection.click.hitzoneHeight.toFixed(2)}px</p>
-            <p><strong>Posición del Click:</strong> X: {currentSelection.click.x.toFixed(2)}, Y: {currentSelection.click.y.toFixed(2)}</p>
-          </div>
-        ) : (
-          <p className="text-gray-500">No hay interacciones registradas para esta imagen.</p>
-        )}
-      </div>
     </div>
   );
 };

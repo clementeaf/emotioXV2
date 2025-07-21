@@ -5,11 +5,9 @@ import { useParams } from 'next/navigation';
 import React from 'react';
 import {
   CognitiveTaskHeader,
-  DebugInfo,
   EmptyState,
   ErrorState,
   LoadingState,
-  NavigationTestResults,
   QuestionContainer
 } from './components';
 
@@ -49,13 +47,6 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
     return (
       <div className="space-y-6">
         <CognitiveTaskHeader title="2.0.- Cognitive task" />
-        <DebugInfo
-          loadingState={loadingState}
-          error={error}
-          participantCount={participantResponses.length}
-          processedDataCount={processedData.length}
-          researchId={researchId}
-        />
         <LoadingState message="Cargando resultados de tareas cognitivas..." />
       </div>
     );
@@ -66,13 +57,6 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
     return (
       <div className="space-y-6">
         <CognitiveTaskHeader title="2.0.- Cognitive task" />
-        <DebugInfo
-          loadingState={loadingState}
-          error={error}
-          participantCount={participantResponses.length}
-          processedDataCount={processedData.length}
-          researchId={researchId}
-        />
         <ErrorState error={error} onRetry={refetch} />
       </div>
     );
@@ -83,13 +67,6 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
     return (
       <div className="space-y-6">
         <CognitiveTaskHeader title="2.0.- Cognitive task" />
-        <DebugInfo
-          loadingState={loadingState}
-          error={error}
-          participantCount={participantResponses.length}
-          processedDataCount={processedData.length}
-          researchId={researchId}
-        />
         <EmptyState
           title="No hay datos de tareas cognitivas"
           message="Aún no se han registrado respuestas para las tareas cognitivas de esta investigación."
@@ -105,13 +82,6 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
     return (
       <div className="space-y-6">
         <CognitiveTaskHeader title="2.0.- Cognitive task" />
-        <DebugInfo
-          loadingState={loadingState}
-          error={error}
-          participantCount={participantResponses.length}
-          processedDataCount={processedData.length}
-          researchId={researchId}
-        />
 
         {processedData.map((questionData) => {
           console.log('[CognitiveTaskResults] 📊 Procesando pregunta:', questionData);
@@ -214,14 +184,6 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
             />
           );
         })}
-
-        {/* Navigation Test - Siempre mostrar si existe */}
-        <NavigationTestResults
-          questionId="3.7.-Navigation Test"
-          questionType="Navigation Test"
-          conditionalityDisabled={true}
-          required={true}
-        />
       </div>
     );
   }
@@ -230,13 +192,6 @@ export const CognitiveTaskResults: React.FC<CognitiveTaskResultsProps> = ({ rese
   return (
     <div className="space-y-6">
       <CognitiveTaskHeader title="2.0.- Cognitive task" />
-      <DebugInfo
-        loadingState={loadingState}
-        error={error}
-        participantCount={participantResponses.length}
-        processedDataCount={processedData.length}
-        researchId={researchId}
-      />
       <EmptyState
         title="Estado desconocido"
         message="No se pudo determinar el estado de los datos."
