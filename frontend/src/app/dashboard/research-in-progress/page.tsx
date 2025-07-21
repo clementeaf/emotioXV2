@@ -101,7 +101,12 @@ export default function ResearchInProgressPage() {
 
   const handleOpenPublicTests = () => {
     if (researchId) {
-      window.open(`http://localhost:5173/?researchId=${researchId}`, '_blank');
+      // Usar la URL de Vercel en producción, localhost en desarrollo
+      const isDevelopment = process.env.NODE_ENV === 'development';
+      const baseUrl = isDevelopment
+        ? 'http://localhost:5173'
+        : 'https://emotio-xv-2-public-tests.vercel.app';
+      window.open(`${baseUrl}/?researchId=${researchId}`, '_blank');
     }
   };
 
