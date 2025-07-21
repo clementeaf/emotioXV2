@@ -52,7 +52,7 @@ function ResearchStageManagerContent({ researchId }: ResearchStageManagerProps) 
       case 'smart-voc-results':
         return <SmartVOCResults researchId={researchId} />;
       case 'cognitive-task-results':
-        return <CognitiveTaskResults />;
+        return <CognitiveTaskResults researchId={researchId} />;
       case 'research-in-progress':
         return <ResearchInProgressPage />;
       case 'configuration':

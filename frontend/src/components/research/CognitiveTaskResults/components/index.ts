@@ -13,6 +13,7 @@ export { CognitiveTaskHeader } from './CognitiveTaskHeader';
 export { CommentsList } from './CommentsList';
 export { KeywordsPanel } from './KeywordsPanel';
 export { MainContent } from './MainContent';
+export { NavigationFlowResults, type NavigationFlowData } from './NavigationFlowResults';
 export { NavigationTestResults } from './NavigationTestResults';
 export { QuestionContainer, type QuestionViewType } from './QuestionContainer';
 export { QuestionInfo } from './QuestionInfo';
@@ -25,3 +26,9 @@ export { ImageSelectionResults, type ImageSelectionData } from './ImageSelection
 export { LinearScaleResults, type LinearScaleData } from './LinearScaleResults';
 export { PreferenceTestResults, type PreferenceTestData } from './PreferenceTestResults';
 export { RatingResults, type RatingData } from './RatingResults';
+
+// Componentes de estado
+export { DebugInfo } from './DebugInfo';
+export { EmptyState } from './EmptyState';
+export { ErrorState } from './ErrorState';
+export { LoadingState } from './LoadingState';

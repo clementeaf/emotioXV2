@@ -97,15 +97,25 @@ export function PreferenceTestResults({ data }: PreferenceTestResultsProps) {
           <div className="mb-6 p-4 bg-green-50 rounded-lg border border-green-200">
             <h4 className="text-md font-semibold text-green-800 mb-2">Opción Más Preferida</h4>
             <div className="flex items-center space-x-4">
-              {topPreferred.image && (
-                <div className="w-16 h-16 rounded-lg overflow-hidden bg-white border border-green-200">
+              <div className="w-16 h-16 rounded-lg overflow-hidden bg-white border border-green-200 flex items-center justify-center">
+                {topPreferred.image ? (
                   <img
                     src={topPreferred.image}
                     alt={topPreferred.name}
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                    }}
                   />
-                </div>
-              )}
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center">
+                    <span className="text-green-600 font-semibold text-xs">
+                      {topPreferred.name.charAt(0)}
+                    </span>
+                  </div>
+                )}
+              </div>
               <div>
                 <div className="text-lg font-semibold text-green-900">{topPreferred.name}</div>
                 <div className="text-sm text-green-700">
@@ -198,21 +208,31 @@ export function PreferenceTestResults({ data }: PreferenceTestResultsProps) {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {options.map((option) => (
-                <tr key={option.id} className="hover:bg-gray-50">
+              {options.map((option, index) => (
+                <tr key={option.id || `option-${index}`} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-sm font-medium text-gray-900">
                     {option.name}
                   </td>
                   <td className="px-4 py-3">
-                    {option.image && (
-                      <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 border">
+                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 border flex items-center justify-center">
+                      {option.image ? (
                         <img
                           src={option.image}
                           alt={option.name}
                           className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                          }}
                         />
-                      </div>
-                    )}
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                          <span className="text-gray-600 font-semibold text-xs">
+                            {option.name.charAt(0)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">
                     {option.selected}
@@ -254,17 +274,27 @@ export function PreferenceTestResults({ data }: PreferenceTestResultsProps) {
         <div className="mt-6">
           <h4 className="text-md font-semibold text-gray-800 mb-4">Comparación Visual</h4>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {options.map((option) => (
-              <div key={option.id} className="bg-white border border-gray-200 rounded-lg p-4 text-center">
-                {option.image && (
-                  <div className="w-full h-32 rounded-lg overflow-hidden bg-gray-100 mb-3">
+            {options.map((option, index) => (
+              <div key={option.id || `option-${index}`} className="bg-white border border-gray-200 rounded-lg p-4 text-center">
+                <div className="w-full h-32 rounded-lg overflow-hidden bg-gray-100 mb-3 flex items-center justify-center">
+                  {option.image ? (
                     <img
                       src={option.image}
                       alt={option.name}
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
                     />
-                  </div>
-                )}
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                      <span className="text-gray-600 font-semibold text-lg">
+                        {option.name.charAt(0)}
+                      </span>
+                    </div>
+                  )}
+                </div>
                 <div className="text-sm font-medium text-gray-900 mb-1">{option.name}</div>
                 <div className="text-xs text-gray-600">{option.selected} selecciones</div>
                 <div className="text-xs text-purple-600 font-medium">{option.percentage}%</div>

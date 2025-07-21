@@ -6,6 +6,7 @@ import { AnalysisTabType } from './AnalysisTabs';
 import { ChoiceQuestionData } from './ChoiceResults';
 import { ImageSelectionData } from './ImageSelectionResults';
 import { LinearScaleData } from './LinearScaleResults';
+import { NavigationFlowData } from './NavigationFlowResults';
 import { PreferenceTestData } from './PreferenceTestResults';
 import { RankingQuestionData } from './RankingResults';
 import { RatingData } from './RatingResults';
@@ -15,6 +16,7 @@ import {
   ImageSelectionResults,
   LinearScaleResults,
   MainContent,
+  NavigationFlowResults,
   PreferenceTestResults,
   QuestionInfo,
   RankingResults,
@@ -22,7 +24,7 @@ import {
 } from './';
 
 // Tipo de visualización para la pregunta
-export type QuestionViewType = 'sentiment' | 'choice' | 'ranking' | 'linear_scale' | 'rating' | 'preference' | 'image_selection';
+export type QuestionViewType = 'sentiment' | 'choice' | 'ranking' | 'linear_scale' | 'rating' | 'preference' | 'image_selection' | 'navigation_flow';
 
 interface QuestionContainerProps {
   questionId: string;
@@ -39,6 +41,7 @@ interface QuestionContainerProps {
   ratingData?: RatingData;
   preferenceTestData?: PreferenceTestData;
   imageSelectionData?: ImageSelectionData;
+  navigationFlowData?: NavigationFlowData;
   // Props específicos para la visualización de sentimiento
   initialActiveTab?: AnalysisTabType;
   themeImageSrc?: string;
@@ -63,6 +66,7 @@ export function QuestionContainer({
   ratingData,
   preferenceTestData,
   imageSelectionData,
+  navigationFlowData,
   initialActiveTab,
   themeImageSrc,
   choiceImageSrc,
@@ -125,6 +129,12 @@ export function QuestionContainer({
       {viewType === 'image_selection' && imageSelectionData && (
         <ImageSelectionResults
           data={imageSelectionData}
+        />
+      )}
+
+      {viewType === 'navigation_flow' && navigationFlowData && (
+        <NavigationFlowResults
+          data={navigationFlowData}
         />
       )}
     </div>
