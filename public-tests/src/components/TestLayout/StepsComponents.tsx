@@ -243,7 +243,13 @@ export const QuestionComponent: React.FC<QuestionComponentProps> = ({
             </div>
           </div>
         );
-      case 'cognitive':
+      case 'cognitive_short_text':
+      case 'cognitive_long_text':
+      case 'cognitive_single_choice':
+      case 'cognitive_multiple_choice':
+      case 'cognitive_linear_scale':
+      case 'cognitive_rating':
+      case 'cognitive_ranking':
         return (
           <div className="flex flex-col items-center justify-center h-full gap-6">
             <div className="text-center">

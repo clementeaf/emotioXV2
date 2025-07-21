@@ -117,28 +117,73 @@ export const SingleAndMultipleChoiceQuestion: React.FC<SingleAndMultipleChoiceQu
     choices,
     choicesLength: choices.length,
     value,
+    valueType: typeof value,
+    isArray: Array.isArray(value),
+    multiple,
+    valueStringified: JSON.stringify(value)
+  });
+
+  // 🎯 FORZAR VALOR CORRECTO PARA MÚLTIPLE
+  const currentValue = multiple && !Array.isArray(value) ? [] : value;
+
+  console.log('[SingleAndMultipleChoiceQuestion] 🎯 Valor corregido:', {
+    originalValue: value,
+    correctedValue: currentValue,
     multiple
   });
 
-  const isSelected = (id: string) =>
-    multiple && Array.isArray(value)
-      ? value.includes(id)
-      : value === id;
+  const isSelected = (id: string) => {
+    const selected = multiple && Array.isArray(currentValue)
+      ? currentValue.includes(id)
+      : currentValue === id;
+
+    console.log('[SingleAndMultipleChoiceQuestion] 🔍 Verificando selección:', {
+      id,
+      selected,
+      multiple,
+      currentValue,
+      isArray: Array.isArray(currentValue)
+    });
+
+    return selected;
+  };
 
   const handleClick = (id: string) => {
     console.log('[SingleAndMultipleChoiceQuestion] 🔄 Click en opción:', {
       id,
-      currentValue: value,
+      currentValue,
+      currentValueType: typeof currentValue,
+      isArray: Array.isArray(currentValue),
       multiple
     });
 
-    if (multiple && Array.isArray(value)) {
-      if (value.includes(id)) {
-        onChange(value.filter((v) => v !== id));
+    if (multiple) {
+      // 🎯 FORZAR COMPORTAMIENTO MÚLTIPLE
+      const currentArray = Array.isArray(currentValue) ? currentValue : [];
+
+      if (currentArray.includes(id)) {
+        const newValue = currentArray.filter((v) => v !== id);
+        console.log('[SingleAndMultipleChoiceQuestion] 🗑️ Removiendo opción:', {
+          id,
+          oldValue: currentArray,
+          newValue
+        });
+        onChange(newValue);
       } else {
-        onChange([...value, id]);
+        const newValue = [...currentArray, id];
+        console.log('[SingleAndMultipleChoiceQuestion] ➕ Agregando opción:', {
+          id,
+          oldValue: currentArray,
+          newValue
+        });
+        onChange(newValue);
       }
     } else {
+      console.log('[SingleAndMultipleChoiceQuestion] ⚠️ Modo single choice:', {
+        id,
+        oldValue: currentValue,
+        newValue: id
+      });
       onChange(id);
     }
   };

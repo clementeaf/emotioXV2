@@ -19,13 +19,13 @@ export const QUESTION_TYPE_MAP = {
   smartvoc_voc: 'smartvoc_voc',
 
   // Cognitive Task questions
-  cognitive_short_text: 'cognitive',
-  cognitive_long_text: 'cognitive',
-  cognitive_multiple_choice: 'cognitive',
-  cognitive_single_choice: 'cognitive',
-  cognitive_linear_scale: 'cognitive',
-  cognitive_rating: 'cognitive',
-  cognitive_ranking: 'cognitive',
+  cognitive_short_text: 'cognitive_short_text',
+  cognitive_long_text: 'cognitive_long_text',
+  cognitive_multiple_choice: 'cognitive_multiple_choice',
+  cognitive_single_choice: 'cognitive_single_choice',
+  cognitive_linear_scale: 'cognitive_linear_scale',
+  cognitive_rating: 'cognitive_rating',
+  cognitive_ranking: 'cognitive_ranking',
   cognitive_navigation_flow: 'cognitive_navigation_flow',
   cognitive_preference_test: 'cognitive_preference_test',
 

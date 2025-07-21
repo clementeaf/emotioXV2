@@ -29,7 +29,19 @@ const QuestionComponent: React.FC<{
   currentStepKey: string;
 }> = ({ question, currentStepKey }) => {
   const { setFormData, getFormData } = useFormDataStore();
-  const [value, setValue] = React.useState<any>(undefined);
+
+  // 🎯 INICIALIZAR VALOR CORRECTO DESDE EL INICIO
+  const initialValue = question.type === 'choice' && question.config?.multiple ? [] : undefined;
+  const [value, setValue] = React.useState<any>(initialValue);
+
+  console.log('[QuestionComponent] 🎯 Inicialización:', {
+    currentStepKey,
+    questionType: question.type,
+    isMultiple: question.config?.multiple,
+    initialValue,
+    initialValueType: typeof initialValue,
+    isArray: Array.isArray(initialValue)
+  });
 
   // Cargar valor guardado
   React.useEffect(() => {
@@ -38,7 +50,10 @@ const QuestionComponent: React.FC<{
       currentStepKey,
       savedData,
       questionType: question.type,
-      questionTitle: question.title
+      questionTitle: question.title,
+      isMultiple: question.config?.multiple,
+      configMultiple: question.config?.multiple,
+      currentValue: value
     });
 
     if (savedData) {
@@ -50,15 +65,32 @@ const QuestionComponent: React.FC<{
         setValue(savedValue);
       }
 
-      console.log('[QuestionComponent] ✅ Valor cargado:', {
+      console.log('[QuestionComponent] ✅ Valor cargado desde savedData:', {
         currentStepKey,
         savedValue,
         questionType: question.type
       });
     } else {
-      console.log('[QuestionComponent] ⚠️ No hay datos guardados para:', currentStepKey);
+      // 🎯 SOLO INICIALIZAR SI NO HAY DATOS GUARDADOS Y ES MÚLTIPLE
+      if (question.type === 'choice' && question.config?.multiple && !Array.isArray(value)) {
+        console.log('[QuestionComponent] 🎯 Forzando array vacío para selección múltiple:', {
+          currentStepKey,
+          questionType: question.type,
+          configMultiple: question.config?.multiple,
+          isMultiple: question.config?.multiple,
+          currentValue: value
+        });
+        setValue([]); // Array vacío para selección múltiple
+      } else {
+        console.log('[QuestionComponent] ⚠️ No hay datos guardados para:', {
+          currentStepKey,
+          questionType: question.type,
+          isMultiple: question.config?.multiple,
+          currentValue: value
+        });
+      }
     }
-  }, [currentStepKey, getFormData, question.type]);
+  }, [currentStepKey, getFormData, question.type, question.config?.multiple, value]);
 
   const handleChange = (newValue: any) => {
     console.log('[QuestionComponent] 🔄 Cambio de valor:', {
@@ -92,7 +124,9 @@ const QuestionComponent: React.FC<{
               currentStepKey,
               choices: question.choices,
               choicesLength: question.choices.length,
-              value
+              value,
+              multiple: question.config?.multiple,
+              config: question.config
             })}
             <SingleAndMultipleChoiceQuestion
               choices={question.choices}
@@ -183,14 +217,11 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
     );
   },
 
-  demographics: ({ contentConfiguration, currentQuestionKey }) => {
-    const demographicQuestions = contentConfiguration?.demographicQuestions || {};
-    return (
-      <DemographicForm
-        demographicQuestions={demographicQuestions as Record<string, any>}
-      />
-    );
-  },
+  demographics: ({ contentConfiguration, currentQuestionKey }) => (
+    <DemographicForm
+      demographicQuestions={contentConfiguration?.demographicQuestions || {} as Record<string, any>}
+    />
+  ),
 
   smartvoc: ({ contentConfiguration, currentQuestionKey }) => (
     <QuestionComponent
@@ -406,27 +437,47 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
     );
   },
 
-  cognitive_ranking: ({ contentConfiguration, currentQuestionKey }) => (
-    <div className='flex flex-col items-center justify-center h-full gap-6'>
-      <h2 className='text-2xl font-bold text-gray-800'>
-        {String(contentConfiguration?.title || 'Ordenar por Preferencia')}
-      </h2>
-      <p className='text-gray-600 text-center max-w-2xl'>
-        {String(contentConfiguration?.description || 'Arrastra los elementos para ordenarlos según tu preferencia')}
-      </p>
-      <div className='w-full max-w-2xl'>
-        <RankingList
-          items={Array.isArray(contentConfiguration?.items) ? contentConfiguration.items : []}
-          onMoveUp={() => { }}
-          onMoveDown={() => { }}
-          isSaving={false}
-          isApiLoading={false}
-          dataLoading={false}
-          currentQuestionKey={currentQuestionKey}
-        />
+  cognitive_ranking: ({ contentConfiguration, currentQuestionKey }) => {
+    console.log('[TestLayoutRenderer] 🎯 Renderizando cognitive_ranking:', {
+      contentConfiguration,
+      currentQuestionKey,
+      hasTitle: !!contentConfiguration?.title,
+      hasDescription: !!contentConfiguration?.description,
+      choices: contentConfiguration?.choices,
+      choicesLength: Array.isArray(contentConfiguration?.choices) ? contentConfiguration.choices.length : 0,
+      items: contentConfiguration?.items,
+      itemsLength: Array.isArray(contentConfiguration?.items) ? contentConfiguration.items.length : 0
+    });
+
+    // 🎯 EXTRAER TEXTO DE LAS CHOICES
+    const rankingItems = Array.isArray(contentConfiguration?.choices)
+      ? contentConfiguration.choices.map((choice: any) => choice.text || choice.id)
+      : [];
+
+    console.log('[TestLayoutRenderer] 🎯 Items para ranking:', rankingItems);
+
+    return (
+      <div className='flex flex-col items-center justify-center h-full gap-6'>
+        <h2 className='text-2xl font-bold text-gray-800'>
+          {String(contentConfiguration?.title || 'Ordenar por Preferencia')}
+        </h2>
+        <p className='text-gray-600 text-center max-w-2xl'>
+          {String(contentConfiguration?.description || 'Arrastra los elementos para ordenarlos según tu preferencia')}
+        </p>
+        <div className='w-full max-w-2xl'>
+          <RankingList
+            items={rankingItems}
+            onMoveUp={() => { }}
+            onMoveDown={() => { }}
+            isSaving={false}
+            isApiLoading={false}
+            dataLoading={false}
+            currentQuestionKey={currentQuestionKey}
+          />
+        </div>
       </div>
-    </div>
-  ),
+    );
+  },
 
   cognitive_short_text: ({ contentConfiguration, currentQuestionKey }) => {
     console.log('[TestLayoutRenderer] 🧠 Renderizando cognitive_short_text:', {
@@ -469,19 +520,34 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
     />
   ),
 
-  cognitive_multiple_choice: ({ contentConfiguration, currentQuestionKey }) => (
-    <QuestionComponent
-      question={{
-        title: String(contentConfiguration?.title || 'Selección Múltiple'),
-        questionKey: currentQuestionKey,
-        type: 'choice',
-        config: { ...contentConfiguration, multiple: true },
-        choices: Array.isArray(contentConfiguration?.choices) ? contentConfiguration.choices : [],
-        description: String(contentConfiguration?.description || 'Selecciona todas las opciones que apliquen')
-      }}
-      currentStepKey={currentQuestionKey}
-    />
-  ),
+  cognitive_multiple_choice: ({ contentConfiguration, currentQuestionKey }) => {
+    console.log('[TestLayoutRenderer] 🎯 Renderizando cognitive_multiple_choice:', {
+      contentConfiguration,
+      currentQuestionKey,
+      hasTitle: !!contentConfiguration?.title,
+      hasDescription: !!contentConfiguration?.description,
+      choices: contentConfiguration?.choices,
+      choicesLength: Array.isArray(contentConfiguration?.choices) ? contentConfiguration.choices.length : 0
+    });
+
+    const questionConfig = {
+      title: String(contentConfiguration?.title || 'Selección Múltiple'),
+      questionKey: currentQuestionKey,
+      type: 'choice',
+      config: { ...contentConfiguration, multiple: true },
+      choices: Array.isArray(contentConfiguration?.choices) ? contentConfiguration.choices : [],
+      description: String(contentConfiguration?.description || 'Selecciona todas las opciones que apliquen')
+    };
+
+    console.log('[TestLayoutRenderer] 🎯 Configuración de pregunta multiple_choice:', questionConfig);
+
+    return (
+      <QuestionComponent
+        question={questionConfig}
+        currentStepKey={currentQuestionKey}
+      />
+    );
+  },
 
   cognitive_single_choice: ({ contentConfiguration, currentQuestionKey }) => {
     console.log('[TestLayoutRenderer] 🎯 Renderizando cognitive_single_choice:', {
