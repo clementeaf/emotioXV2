@@ -158,8 +158,8 @@ export function ParticipantDetailsModal({ participant, isOpen, onClose }: Partic
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl w-full max-w-5xl h-full max-h-[95vh] overflow-hidden flex flex-col border border-white/20">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2">
+      <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl w-full h-full max-w-none max-h-none overflow-hidden flex flex-col border border-white/20">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-neutral-200 bg-white/90 backdrop-blur-sm rounded-t-3xl">
           <div>
