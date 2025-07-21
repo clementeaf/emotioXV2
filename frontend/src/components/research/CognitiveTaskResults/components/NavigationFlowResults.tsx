@@ -1,51 +1,145 @@
-'use client';
+import React, { useEffect, useRef, useState } from 'react';
+import { cognitiveTaskService } from '../../../../services/cognitiveTaskService';
 
-import { cognitiveTaskService } from '@/services/cognitiveTaskService';
-import s3Service from '@/services/s3Service';
-import { useEffect, useState } from 'react';
-
-export interface NavigationFlowData {
-  question: string;
-  description?: string;
-  totalParticipants: number;
-  totalSelections: number;
-  researchId?: string;
-  imageSelections: {
-    [imageIndex: string]: {
-      hitzoneId: string;
-      click: {
-        x: number;
-        y: number;
-        hitzoneWidth: number;
-        hitzoneHeight: number;
-      };
-    };
-  };
-  selectedHitzone?: string;
-  clickPosition?: {
+interface HitZone {
+  id: string;
+  region: {
     x: number;
     y: number;
-    hitzoneWidth: number;
-    hitzoneHeight: number;
+    width: number;
+    height: number;
   };
-  selectedImageIndex?: number;
+}
+
+interface ConvertedHitZone {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  originalCoords?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+}
+
+interface ImageFile {
+  id: string;
+  name: string;
+  url: string;
+  hitZones?: HitZone[];
 }
 
 interface NavigationFlowResultsProps {
-  data: NavigationFlowData;
+  data: {
+    question: string;
+    description?: string;
+    totalParticipants: number;
+    totalSelections: number;
+    researchId?: string;
+    imageSelections: {
+      [imageIndex: string]: {
+        hitzoneId: string;
+        click: {
+          x: number;
+          y: number;
+          hitzoneWidth: number;
+          hitzoneHeight: number;
+        };
+      };
+    };
+    selectedHitzone?: string;
+    clickPosition?: {
+      x: number;
+      y: number;
+      hitzoneWidth: number;
+      hitzoneHeight: number;
+    };
+    selectedImageIndex?: number;
+  };
 }
 
-export function NavigationFlowResults({ data }: NavigationFlowResultsProps) {
-  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
-  const [showHeatmap, setShowHeatmap] = useState(true);
-  const [realImages, setRealImages] = useState<string[]>([]);
+const convertHitZonesToPercentageCoordinates = (
+  hitZones: HitZone[] | undefined,
+  imageNaturalSize?: { width: number; height: number }
+): ConvertedHitZone[] => {
+  if (!hitZones || !Array.isArray(hitZones) || hitZones.length === 0) {
+    return [];
+  }
+
+  return hitZones.map(zone => {
+    // Validación defensiva para evitar errores
+    if (!zone) {
+      console.warn('⚠️ Hitzone inválido:', zone);
+      return {
+        id: 'unknown',
+        x: 0,
+        y: 0,
+        width: 0,
+        height: 0
+      };
+    }
+
+    // Manejar tanto estructura plana como anidada
+    let x, y, width, height;
+
+    if (zone.region) {
+      // Estructura anidada: {id, region: {x, y, width, height}}
+      const region = zone.region;
+      x = region.x || 0;
+      y = region.y || 0;
+      width = region.width || 0;
+      height = region.height || 0;
+    } else if ((zone as any).x !== undefined && (zone as any).y !== undefined) {
+      // Estructura plana: {id, x, y, width, height}
+      x = (zone as any).x || 0;
+      y = (zone as any).y || 0;
+      width = (zone as any).width || 0;
+      height = (zone as any).height || 0;
+    } else {
+      console.warn('⚠️ Hitzone con estructura desconocida:', zone);
+      return {
+        id: zone.id || 'unknown',
+        x: 0,
+        y: 0,
+        width: 0,
+        height: 0
+      };
+    }
+
+    if (imageNaturalSize && imageNaturalSize.width > 0 && imageNaturalSize.height > 0) {
+      return {
+        id: zone.id,
+        x: (x / imageNaturalSize.width) * 100,
+        y: (y / imageNaturalSize.height) * 100,
+        width: (width / imageNaturalSize.width) * 100,
+        height: (height / imageNaturalSize.height) * 100,
+        originalCoords: { x, y, width, height }
+      };
+    }
+
+    return {
+      id: zone.id,
+      x,
+      y,
+      width,
+      height
+    };
+  });
+};
+
+export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ data }) => {
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
+  const [showHeatmap, setShowHeatmap] = useState<boolean>(true);
+  const [imageNaturalSize, setImageNaturalSize] = useState<{ width: number; height: number } | null>(null);
+  const [imgRenderSize, setImgRenderSize] = useState<{ width: number; height: number } | null>(null);
+  const [realImages, setRealImages] = useState<ImageFile[]>([]);
   const [loadingImages, setLoadingImages] = useState(true);
+  const imageRef = useRef<HTMLImageElement>(null);
 
-  // Usar una imagen base64 inline como fallback (igual que el modal cuando hay error)
-  const fallbackImageUrl = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="%23f8fafc"/><rect x="50" y="50" width="700" height="100" fill="%2322c55e" rx="8"/><text x="400" y="105" font-family="Arial" font-size="24" text-anchor="middle" dominant-baseline="middle" fill="white">modelo</text><rect x="50" y="170" width="700" height="380" fill="%23fbbf24" rx="8"/><rect x="350" y="350" width="100" height="40" fill="%2322c55e" rx="6"/><text x="400" y="370" font-family="Arial" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="white">Continuar</text></svg>';
-  const [imgSize, setImgSize] = useState<{ width: number; height: number } | null>(null);
-  const [imgNatural, setImgNatural] = useState<{ width: number; height: number } | null>(null);
-
+  // Usar los datos que ya están procesados
   const {
     question,
     description,
@@ -68,37 +162,61 @@ export function NavigationFlowResults({ data }: NavigationFlowResultsProps) {
 
       try {
         setLoadingImages(true);
+        console.log('🔄 Cargando imágenes reales para researchId:', researchId);
         const cognitiveTask = await cognitiveTaskService.getByResearchId(researchId);
+        console.log('📊 Cognitive task cargado:', cognitiveTask);
 
         if (cognitiveTask?.questions) {
-          const navigationQuestion = cognitiveTask.questions.find(q =>
-            (typeof q.type === 'string' && q.type.includes('navigation_flow'))
-          );
+          console.log('📋 Tipos de preguntas disponibles:', cognitiveTask.questions.map((q: any) => ({ type: q.type, questionKey: q.questionKey })));
+          const navigationQuestion = cognitiveTask.questions.find((q: any) =>
+            q.type === 'cognitive_navigation_flow' || q.questionKey === 'cognitive_navigation_flow'
+          ) as any;
+          console.log('🧭 Navigation question encontrada:', navigationQuestion);
 
           if (navigationQuestion?.files && navigationQuestion.files.length > 0) {
-            const imageUrls = await Promise.all(
-              navigationQuestion.files.map(async (file) => {
-                if (file.s3Key) {
-                  try {
-                    return await s3Service.getDownloadUrl(file.s3Key);
-                  } catch (error) {
-                    console.error('Error obteniendo URL de imagen:', error);
-                    return fallbackImageUrl;
-                  }
-                }
-                return file.url || fallbackImageUrl;
-              })
-            );
-            setRealImages(imageUrls);
+            // Convertir los archivos a ImageFile con hitzones
+            const imagesWithHitzones: ImageFile[] = navigationQuestion.files.map((file: any, index: number) => {
+              console.log(`📋 Archivo ${index + 1}:`, {
+                name: file.name,
+                hitZones: file.hitZones,
+                hitZonesLength: file.hitZones?.length,
+                hitZonesStructure: file.hitZones?.[0]
+              });
+              return {
+                id: file.id || String(index + 1),
+                name: file.name || `Imagen ${index + 1}`,
+                url: file.url || file.s3Key || '',
+                hitZones: file.hitZones || []
+              };
+            });
+
+            console.log('🖼️ Imágenes con hitzones creadas:', imagesWithHitzones);
+            console.log('🔗 URLs de imágenes:', imagesWithHitzones.map(img => ({ name: img.name, url: img.url })));
+            setRealImages(imagesWithHitzones);
           } else {
-            setRealImages([fallbackImageUrl]);
+            // Fallback a imágenes placeholder si no hay archivos
+            setRealImages([
+              { id: '1', name: 'Imagen 1', url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="%23f8fafc"/><text x="400" y="300" font-family="Arial" font-size="24" text-anchor="middle" dominant-baseline="middle" fill="%23666">Imagen 1</text></svg>', hitZones: [] },
+              { id: '2', name: 'Imagen 2', url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="%23f8fafc"/><text x="400" y="300" font-family="Arial" font-size="24" text-anchor="middle" dominant-baseline="middle" fill="%23666">Imagen 2</text></svg>', hitZones: [] },
+              { id: '3', name: 'Imagen 3', url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="%23f8fafc"/><text x="400" y="300" font-family="Arial" font-size="24" text-anchor="middle" dominant-baseline="middle" fill="%23666">Imagen 3</text></svg>', hitZones: [] }
+            ]);
           }
         } else {
-          setRealImages([fallbackImageUrl]);
+          // Fallback a imágenes placeholder
+          setRealImages([
+            { id: '1', name: 'Imagen 1', url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="%23f8fafc"/><text x="400" y="300" font-family="Arial" font-size="24" text-anchor="middle" dominant-baseline="middle" fill="%23666">Imagen 1</text></svg>', hitZones: [] },
+            { id: '2', name: 'Imagen 2', url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="%23f8fafc"/><text x="400" y="300" font-family="Arial" font-size="24" text-anchor="middle" dominant-baseline="middle" fill="%23666">Imagen 2</text></svg>', hitZones: [] },
+            { id: '3', name: 'Imagen 3', url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="%23f8fafc"/><text x="400" y="300" font-family="Arial" font-size="24" text-anchor="middle" dominant-baseline="middle" fill="%23666">Imagen 3</text></svg>', hitZones: [] }
+          ]);
         }
       } catch (error) {
         console.error('Error cargando imágenes reales:', error);
-        setRealImages([fallbackImageUrl]);
+        // Fallback a imágenes placeholder
+        setRealImages([
+          { id: '1', name: 'Imagen 1', url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="%23f8fafc"/><text x="400" y="300" font-family="Arial" font-size="24" text-anchor="middle" dominant-baseline="middle" fill="%23666">Imagen 1</text></svg>', hitZones: [] },
+          { id: '2', name: 'Imagen 2', url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="%23f8fafc"/><text x="400" y="300" font-family="Arial" font-size="24" text-anchor="middle" dominant-baseline="middle" fill="%23666">Imagen 2</text></svg>', hitZones: [] },
+          { id: '3', name: 'Imagen 3', url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="%23f8fafc"/><text x="400" y="300" font-family="Arial" font-size="24" text-anchor="middle" dominant-baseline="middle" fill="%23666">Imagen 3</text></svg>', hitZones: [] }
+        ]);
       } finally {
         setLoadingImages(false);
       }
@@ -107,83 +225,117 @@ export function NavigationFlowResults({ data }: NavigationFlowResultsProps) {
     loadRealImages();
   }, [researchId]);
 
-  // Procesar las selecciones de imágenes
-  const imageIndexes = Object.keys(imageSelections).map(Number).sort((a, b) => a - b);
-  const currentImageIndex = selectedImageIndex ?? finalSelectedImageIndex ?? 0;
+  // Usar el selectedImageIndex del backend como prioridad
+  const currentImageIndex = finalSelectedImageIndex ?? selectedImageIndex ?? 0;
 
-  // Obtener la imagen actual
-  const currentImageUrl = realImages[currentImageIndex] || fallbackImageUrl;
-
-  // Generar datos de heatmap para la imagen actual
-  const generateHeatmapData = () => {
-    const heatmapData: Array<{ x: number; y: number; value: number }> = [];
-
-    if (imageSelections[currentImageIndex.toString()]) {
-      const click = imageSelections[currentImageIndex.toString()].click;
-      heatmapData.push({
-        x: click.x,
-        y: click.y,
-        value: 1
-      });
-    }
-
-    return heatmapData;
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>): void => {
+    const { naturalWidth, naturalHeight, width, height } = e.currentTarget;
+    setImageNaturalSize({ width: naturalWidth, height: naturalHeight });
+    setImgRenderSize({ width, height });
   };
 
-  return (
-    <div className="p-6">
-      {/* Información de la pregunta */}
-      <div className="mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">{question}</h3>
-        {description && (
-          <p className="text-sm text-gray-600 mb-4">{description}</p>
-        )}
+  function getImageDrawRect(
+    imgNatural: { width: number, height: number },
+    imgRender: { width: number, height: number }
+  ): { drawWidth: number; drawHeight: number; offsetX: number; offsetY: number } {
+    const imgRatio = imgNatural.width / imgNatural.height;
+    const renderRatio = imgRender.width / imgRender.height;
+    let drawWidth = imgRender.width;
+    let drawHeight = imgRender.height;
+    let offsetX = 0;
+    let offsetY = 0;
+    if (imgRatio > renderRatio) {
+      drawWidth = imgRender.width;
+      drawHeight = imgRender.width / imgRatio;
+      offsetY = (imgRender.height - drawHeight) / 2;
+    } else {
+      drawHeight = imgRender.height;
+      drawWidth = imgRender.height * imgRatio;
+      offsetX = (imgRender.width - drawWidth) / 2;
+    }
+    return { drawWidth, drawHeight, offsetX, offsetY };
+  }
 
-        {/* Estadísticas principales */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <div className="text-2xl font-bold text-blue-600">{totalSelections}</div>
-            <div className="text-sm text-blue-600">Selecciones</div>
-          </div>
-          <div className="bg-green-50 p-4 rounded-lg">
-            <div className="text-2xl font-bold text-green-600">{totalParticipants}</div>
-            <div className="text-sm text-green-600">Participantes</div>
-          </div>
-          <div className="bg-purple-50 p-4 rounded-lg">
-            <div className="text-2xl font-bold text-purple-600">{realImages.length}</div>
-            <div className="text-sm text-purple-600">Imágenes</div>
-          </div>
-          <div className="bg-orange-50 p-4 rounded-lg">
-            <div className="text-2xl font-bold text-orange-600">{selectedHitzone ? 'Sí' : 'No'}</div>
-            <div className="text-sm text-orange-600">Hitzone Seleccionado</div>
-          </div>
+  const selectedImage: ImageFile = realImages[currentImageIndex];
+  const availableHitzones: ConvertedHitZone[] = selectedImage?.hitZones && Array.isArray(selectedImage.hitZones)
+    ? convertHitZonesToPercentageCoordinates(selectedImage.hitZones, imageNaturalSize || undefined)
+    : [];
+
+  console.log('🎯 Hitzones disponibles:', {
+    selectedImage: selectedImage?.name,
+    hitZones: selectedImage?.hitZones,
+    hitZonesLength: selectedImage?.hitZones?.length,
+    hitZonesStructure: selectedImage?.hitZones?.[0],
+    availableHitzones: availableHitzones.length,
+    imageNaturalSize,
+    imgRenderSize
+  });
+
+  const currentSelection = imageSelections[currentImageIndex.toString()];
+
+  console.log('🔍 NavigationFlowResults Debug:', {
+    selectedImageIndex,
+    finalSelectedImageIndex,
+    currentImageIndex,
+    imageSelections,
+    images: realImages.length,
+    'selectedImageIndex from backend': finalSelectedImageIndex,
+    'will show image': currentImageIndex,
+    'data received': !!data,
+    'loadingImages': loadingImages,
+    'selectedImage': selectedImage,
+    'availableHitzones': availableHitzones.length,
+    'currentSelection': currentSelection
+  });
+
+  if (!data || realImages.length === 0) {
+    return (
+      <div className="text-center p-8">
+        <p className="text-gray-500">No hay datos de tareas cognitivas disponibles.</p>
+        <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-left">
+          <h5 className="font-semibold text-yellow-800 mb-2">Debug Info:</h5>
+          <pre className="text-xs text-yellow-700 overflow-auto">
+            {JSON.stringify({
+              data: !!data,
+              imagesLength: realImages.length,
+              finalSelectedImageIndex,
+              imageSelections: Object.keys(imageSelections),
+              loadingImages
+            }, null, 2)}
+          </pre>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Seleccionar Imagen */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Seleccionar Imagen
+        </label>
+        <div className="flex space-x-2">
+          {realImages.map((image, index) => (
+            <button
+              key={index}
+              onClick={() => setSelectedImageIndex(index)}
+              className={`px-4 py-2 rounded-lg border transition-colors ${currentImageIndex === index
+                ? 'bg-blue-500 text-white border-blue-500'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                }`}
+            >
+              Imagen {index + 1}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Selector de imágenes */}
-      {realImages.length > 1 && (
-        <div className="mb-6">
-          <h4 className="text-md font-semibold text-gray-800 mb-3">Seleccionar Imagen</h4>
-          <div className="flex space-x-2">
-            {realImages.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setSelectedImageIndex(index)}
-                className={`px-4 py-2 rounded-lg border transition-colors ${currentImageIndex === index
-                  ? 'bg-blue-500 text-white border-blue-500'
-                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                  }`}
-              >
-                Imagen {index + 1}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Controles de visualización */}
-      <div className="mb-6">
-        <h4 className="text-md font-semibold text-gray-800 mb-3">Tipo de Visualización</h4>
+      {/* Tipo de visualización */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Tipo de Visualización
+        </label>
         <div className="flex space-x-2">
           <button
             onClick={() => setShowHeatmap(true)}
@@ -212,175 +364,128 @@ export function NavigationFlowResults({ data }: NavigationFlowResultsProps) {
       <div className="mb-6">
         <h4 className="text-md font-semibold text-gray-800 mb-3">
           Visualización - Imagen {currentImageIndex + 1}
+          {finalSelectedImageIndex !== null && finalSelectedImageIndex !== currentImageIndex && (
+            <span className="ml-2 text-sm text-blue-600 font-normal">
+              (Auto-seleccionada desde backend)
+            </span>
+          )}
         </h4>
         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="text-sm text-blue-800">
-            <strong>📊 Resultados de Navigation Flow:</strong> Mostrando la misma imagen que se usa en la configuración, con los hitzones y clicks reales de los participantes.
-          </div>
+          <p className="text-sm text-blue-800">
+            Resultados de Navigation Flow: Mostrando la misma imagen que se usa en la configuración, con los hitzones y clicks reales de los participantes.
+          </p>
         </div>
-        <div className="relative bg-white border border-gray-200 rounded-lg p-4 flex items-center justify-center">
-          {/* Imagen real del backend */}
-          <div className="text-center">
-            <div
-              className="relative w-full max-w-4xl bg-white border border-gray-200 rounded-lg overflow-hidden"
-              style={{ aspectRatio: imgNatural ? `${imgNatural.width} / ${imgNatural.height}` : undefined }}
-            >
-              {/* Badge de demostración */}
-              <div className="absolute top-2 left-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded z-20">
-                {loadingImages ? 'Cargando...' : 'Imagen Real'}
-              </div>
 
-              {loadingImages ? (
-                <div className="flex items-center justify-center h-64 bg-gray-50">
-                  <div className="text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                    <p className="text-sm text-gray-600">Cargando imagen real...</p>
-                  </div>
-                </div>
-              ) : (
-                <img
-                  src={currentImageUrl}
-                  alt={`Imagen ${currentImageIndex + 1}`}
-                  className="w-full h-auto object-contain bg-white"
-                  draggable={false}
-                  onLoad={(e) => {
-                    const { naturalWidth, naturalHeight, width, height } = e.currentTarget;
-                    setImgNatural({ width: naturalWidth, height: naturalHeight });
-                    setImgSize({ width, height });
-                  }}
-                  style={{ display: 'block' }}
-                />
-              )}
+        {/* Contenedor de imagen */}
+        <div
+          className="relative w-full max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden"
+          style={{ aspectRatio: imageNaturalSize ? `${imageNaturalSize.width} / ${imageNaturalSize.height}` : undefined }}
+        >
+          {loadingImages ? (
+            <div className="flex items-center justify-center h-64 bg-gray-50">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                <p className="text-sm text-gray-600">Cargando imagen real...</p>
+              </div>
             </div>
+          ) : (
+            <img
+              ref={imageRef}
+              src={selectedImage.url}
+              alt={selectedImage.name || `Imagen ${currentImageIndex + 1}`}
+              className="w-full h-auto object-contain bg-white"
+              loading="lazy"
+              style={{ display: 'block' }}
+              onLoad={handleImageLoad}
+            />
+          )}
 
-            {/* Hitzone overlay */}
-            {imageSelections[currentImageIndex.toString()] && imgSize && imgNatural && (
-              <svg
-                width={imgSize.width}
-                height={imgSize.height}
-                style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none', width: imgSize.width, height: imgSize.height }}
-              >
-                {/* Hitzone rectangle */}
-                <rect
-                  x={imageSelections[currentImageIndex.toString()].click.x * (imgSize.width / imgNatural.width)}
-                  y={imageSelections[currentImageIndex.toString()].click.y * (imgSize.height / imgNatural.height)}
-                  width={imageSelections[currentImageIndex.toString()].click.hitzoneWidth * (imgSize.width / imgNatural.width)}
-                  height={imageSelections[currentImageIndex.toString()].click.hitzoneHeight * (imgSize.height / imgNatural.height)}
-                  fill="rgba(0,123,255,0.15)"
-                  stroke="#007bff"
-                  strokeWidth={2}
-                  rx={4}
-                />
-
-                {/* Click point */}
-                <circle
-                  cx={imageSelections[currentImageIndex.toString()].click.x * (imgSize.width / imgNatural.width)}
-                  cy={imageSelections[currentImageIndex.toString()].click.y * (imgSize.height / imgNatural.height)}
-                  r={6}
-                  fill={showHeatmap ? "#ef4444" : "#3b82f6"}
-                  stroke={showHeatmap ? "#dc2626" : "#1d4ed8"}
-                  strokeWidth={2}
-                />
-              </svg>
-            )}
+          {/* Badge de demostración */}
+          <div className="absolute top-2 left-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded z-20">
+            {loadingImages ? 'Cargando...' : `Imagen ${currentImageIndex + 1}`}
           </div>
+
+          {/* Renderizado de hitzones y clicks */}
+          {imageNaturalSize && imgRenderSize && !loadingImages && (
+            (() => {
+              const { drawWidth, drawHeight, offsetX, offsetY } = getImageDrawRect(imageNaturalSize, imgRenderSize);
+              return (
+                <div
+                  className="absolute top-0 left-0"
+                  style={{ width: imgRenderSize.width, height: imgRenderSize.height, pointerEvents: 'none' }}
+                >
+                  {availableHitzones.map((hitzone: ConvertedHitZone) => {
+                    const left = offsetX + (hitzone.originalCoords?.x ?? 0) * (drawWidth / imageNaturalSize.width);
+                    const top = offsetY + (hitzone.originalCoords?.y ?? 0) * (drawHeight / imageNaturalSize.height);
+                    const width = (hitzone.originalCoords?.width ?? 0) * (drawWidth / imageNaturalSize.width);
+                    const height = (hitzone.originalCoords?.height ?? 0) * (drawHeight / imageNaturalSize.height);
+
+                    console.log('🎯 Renderizando hitzone:', {
+                      hitzoneId: hitzone.id,
+                      originalCoords: hitzone.originalCoords,
+                      left,
+                      top,
+                      width,
+                      height,
+                      drawWidth,
+                      drawHeight,
+                      offsetX,
+                      offsetY
+                    });
+
+                    return (
+                      <div
+                        key={hitzone.id}
+                        className="absolute border-2 border-blue-400 bg-blue-500 bg-opacity-10"
+                        style={{
+                          left,
+                          top,
+                          width,
+                          height,
+                          pointerEvents: 'none',
+                        }}
+                      >
+                        {/* Renderizar click si existe para este hitzone */}
+                        {currentSelection && currentSelection.hitzoneId === hitzone.id && currentSelection.click && (
+                          <div className="absolute left-0 top-0 w-full h-full pointer-events-none">
+                            <div
+                              className="absolute bg-red-600 rounded-full border-2 border-white shadow"
+                              style={{
+                                left: `calc(${currentSelection.click.x}px - 6px)`,
+                                top: `calc(${currentSelection.click.y}px - 6px)`,
+                                width: 12,
+                                height: 12
+                              }}
+                              title="Punto de click"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()
+          )}
         </div>
       </div>
 
-      {/* Información detallada de clicks */}
-      <div className="mb-6">
-        <h4 className="text-md font-semibold text-gray-800 mb-3">Detalles de Interacción</h4>
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-          <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-            <h5 className="font-medium text-gray-900">Imagen {currentImageIndex + 1}</h5>
+      {/* Detalles de Interacción */}
+      <div className="bg-gray-50 p-4 rounded-lg">
+        <h4 className="text-md font-semibold text-gray-800 mb-3">
+          Detalles de Interacción - Imagen {currentImageIndex + 1}
+        </h4>
+        {currentSelection ? (
+          <div className="space-y-2">
+            <p><strong>Hitzone ID:</strong> {currentSelection.hitzoneId}</p>
+            <p><strong>Ancho del Hitzone:</strong> {currentSelection.click.hitzoneWidth.toFixed(2)}px</p>
+            <p><strong>Alto del Hitzone:</strong> {currentSelection.click.hitzoneHeight.toFixed(2)}px</p>
+            <p><strong>Posición del Click:</strong> X: {currentSelection.click.x.toFixed(2)}, Y: {currentSelection.click.y.toFixed(2)}</p>
           </div>
-          <div className="p-6">
-            {imageSelections[currentImageIndex.toString()] ? (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Hitzone ID
-                    </label>
-                    <div className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded border">
-                      {imageSelections[currentImageIndex.toString()].hitzoneId}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Posición del Click
-                    </label>
-                    <div className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded border">
-                      X: {imageSelections[currentImageIndex.toString()].click.x.toFixed(2)},
-                      Y: {imageSelections[currentImageIndex.toString()].click.y.toFixed(2)}
-                    </div>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Ancho del Hitzone
-                    </label>
-                    <div className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded border">
-                      {imageSelections[currentImageIndex.toString()].click.hitzoneWidth.toFixed(2)}px
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Alto del Hitzone
-                    </label>
-                    <div className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded border">
-                      {imageSelections[currentImageIndex.toString()].click.hitzoneHeight.toFixed(2)}px
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                No hay datos de interacción para esta imagen
-              </div>
-            )}
-          </div>
-        </div>
+        ) : (
+          <p className="text-gray-500">No hay interacciones registradas para esta imagen.</p>
+        )}
       </div>
-
-      {/* Resumen de todas las imágenes */}
-      {imageIndexes.length > 1 && (
-        <div>
-          <h4 className="text-md font-semibold text-gray-800 mb-3">Resumen de Todas las Imágenes</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {imageIndexes.map((index) => (
-              <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h5 className="font-medium text-gray-900">Imagen {index + 1}</h5>
-                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                    {imageSelections[index.toString()] ? 'Con datos' : 'Sin datos'}
-                  </span>
-                </div>
-                {imageSelections[index.toString()] ? (
-                  <div className="space-y-2 text-sm">
-                    <div>
-                      <span className="text-gray-600">Hitzone:</span>
-                      <span className="ml-2 text-gray-900 font-mono text-xs">
-                        {imageSelections[index.toString()].hitzoneId}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Click:</span>
-                      <span className="ml-2 text-gray-900 font-mono text-xs">
-                        ({imageSelections[index.toString()].click.x.toFixed(0)},
-                        {imageSelections[index.toString()].click.y.toFixed(0)})
-                      </span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-sm text-gray-500">Sin interacciones registradas</div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
-}
+};
