@@ -282,12 +282,14 @@ export function useCognitiveTaskResults(researchId: string) {
               questionData.navigationFlowData.selectedImageIndex = navResponse.selectedImageIndex;
 
               // Procesar imageSelections
-              if (navResponse.imageSelections) {
+              if (navResponse.imageSelections && questionData.navigationFlowData) {
                 Object.keys(navResponse.imageSelections).forEach(imageIndex => {
-                  questionData.navigationFlowData.imageSelections[imageIndex] = {
-                    hitzoneId: navResponse.imageSelections[imageIndex].hitzoneId,
-                    click: navResponse.imageSelections[imageIndex].click
-                  };
+                  if (questionData.navigationFlowData) {
+                    questionData.navigationFlowData.imageSelections[imageIndex] = {
+                      hitzoneId: navResponse.imageSelections[imageIndex].hitzoneId,
+                      click: navResponse.imageSelections[imageIndex].click
+                    };
+                  }
                 });
               }
             }
@@ -335,11 +337,11 @@ export function useCognitiveTaskResults(researchId: string) {
       console.log(`[useCognitiveTaskResults] ✅ Datos cargados: ${response.data.length} participantes`);
 
       // Filtrar solo respuestas de tareas cognitivas
-      const cognitiveResponses = response.data.filter(participant => {
+      const cognitiveResponses = response.data.filter((participant: any) => {
         console.log(`[useCognitiveTaskResults] 🔍 Revisando participante:`, participant.participantId);
         console.log(`[useCognitiveTaskResults] 📝 Respuestas del participante:`, participant.responses);
 
-        const hasCognitiveResponses = participant.responses?.some(response => {
+        const hasCognitiveResponses = participant.responses?.some((response: any) => {
           const isCognitive = response.questionKey?.startsWith('cognitive_');
           console.log(`[useCognitiveTaskResults] 🧠 Respuesta ${response.questionKey}:`, isCognitive ? '✅ COGNITIVA' : '❌ NO COGNITIVA');
           return isCognitive;
@@ -352,9 +354,9 @@ export function useCognitiveTaskResults(researchId: string) {
       console.log(`[useCognitiveTaskResults] 📊 Respuestas cognitivas: ${cognitiveResponses.length} participantes`);
 
       // Log detallado de las respuestas cognitivas
-      cognitiveResponses.forEach((participant, index) => {
+      cognitiveResponses.forEach((participant: any, index: number) => {
         console.log(`[useCognitiveTaskResults] 👤 Participante ${index + 1}:`, participant.participantId);
-        participant.responses.forEach((response, respIndex) => {
+        participant.responses.forEach((response: any, respIndex: number) => {
           if (response.questionType?.startsWith('cognitive_')) {
             console.log(`[useCognitiveTaskResults] 🧠 Respuesta cognitiva ${respIndex + 1}:`, {
               questionKey: response.questionKey,
