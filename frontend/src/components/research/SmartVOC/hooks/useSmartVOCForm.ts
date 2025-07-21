@@ -5,7 +5,7 @@ import { SmartVOCFormData } from 'shared/interfaces/smart-voc.interface';
 import { useAuth } from '@/providers/AuthProvider';
 
 
-import { QuestionType } from '../../../../../../shared/interfaces/question-types.enum';
+import { QuestionType } from 'shared/interfaces/question-types.enum';
 import { SmartVOCQuestion } from '../types';
 
 import { useSmartVOCMutations } from './useSmartVOCMutations';

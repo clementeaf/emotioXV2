@@ -1,5 +1,5 @@
+import { DashboardStatsProps } from '@/shared/interfaces/dashboard.interface';
 import { memo } from 'react';
-import { DashboardStatsProps } from '../../../../shared/interfaces/dashboard.interface';
 import { StatsCard } from './StatsCard';
 
 /**

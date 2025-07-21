@@ -13,7 +13,7 @@ import {
 
 import { useErrorLog } from '@/components/utils/ErrorLogger';
 import { eyeTrackingFixedAPI } from '@/lib/eye-tracking-api';
-import { QuestionType } from '../../../../../../../shared/interfaces/question-types.enum';
+import { QuestionType } from 'shared/interfaces/question-types.enum';
 
 
 // Interfaces

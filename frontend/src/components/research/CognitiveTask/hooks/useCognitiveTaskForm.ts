@@ -1,24 +1,24 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useState } from 'react';
 import {
-    CognitiveTaskFormData,
-    UploadedFile
+  CognitiveTaskFormData,
+  UploadedFile
 } from 'shared/interfaces/cognitive-task.interface';
 
 import { useAuth } from '@/providers/AuthProvider';
 import { cognitiveTaskService } from '@/services/cognitiveTaskService';
 
 import {
-    logFormDebugInfo
+  logFormDebugInfo
 } from '../../CognitiveTaskFormHelpers';
 import {
-    QUERY_KEYS
+  QUERY_KEYS
 } from '../constants';
 import type { ErrorModalData, Question, UICognitiveTaskFormData } from '../types';
 import { ValidationErrors } from '../types';
 import { debugQuestionsToSendLocal, filterValidQuestionsLocal } from '../utils/validateRequiredFields';
 
-import { QuestionType as GlobalQuestionType } from '../../../../../../shared/interfaces/question-types.enum';
+import { QuestionType as GlobalQuestionType } from 'shared/interfaces/question-types.enum';
 import { useCognitiveTaskFileUpload } from './useCognitiveTaskFileUpload';
 import { useCognitiveTaskModals } from './useCognitiveTaskModals';
 import { DEFAULT_STATE as DEFAULT_COGNITIVE_TASK_STATE, useCognitiveTaskState } from './useCognitiveTaskState';
@@ -265,7 +265,7 @@ export const useCognitiveTaskForm = (
 
   const saveMutation = useMutation<CognitiveTaskFormData, unknown, CognitiveTaskFormData>({
     mutationFn: async (dataToSave: CognitiveTaskFormData): Promise<CognitiveTaskFormData> => {
-      if (!researchId) {throw new Error('ID de investigación no encontrado');}
+      if (!researchId) { throw new Error('ID de investigación no encontrado'); }
 
       logFormDebugInfo('pre-save', dataToSave, null, { cognitiveTaskId });
 
@@ -284,7 +284,7 @@ export const useCognitiveTaskForm = (
         message: 'La configuración se guardó correctamente.',
         type: 'success'
       });
-      if (onSave) {onSave(data);}
+      if (onSave) { onSave(data); }
     },
     onError: (error) => {
       modals.showErrorModal({

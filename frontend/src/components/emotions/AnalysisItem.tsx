@@ -2,7 +2,7 @@ import { memo } from 'react';
 
 import { formatDate } from '@/utils/dateUtils';
 
-import { AnalysisItemProps } from '../../../../shared/interfaces/emotions.interface';
+import { AnalysisItemProps } from '@/shared/interfaces/emotions.interface';
 
 /**
  * Componente para mostrar un item de análisis reciente

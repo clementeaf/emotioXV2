@@ -1,8 +1,29 @@
 'use client';
 
-import React from 'react';
 
-import { EyeTrackingRecruitFormData } from '@/shared/interfaces/eyeTrackingRecruit.interface';
+// EyeTrackingRecruitFormData está definido en el hook useEyeTrackingRecruit
+interface EyeTrackingRecruitFormData {
+  id?: string;
+  researchId: string;
+  demographicQuestions: Record<string, {
+    enabled: boolean;
+    required: boolean;
+    options?: string[];
+    disqualifyingAges?: string[];
+    disqualifyingCountries?: string[];
+    disqualifyingGenders?: string[];
+    disqualifyingEducation?: string[];
+    disqualifyingIncomes?: string[];
+    disqualifyingEmploymentStatuses?: string[];
+    disqualifyingHours?: string[];
+    disqualifyingProficiencies?: string[];
+  }>;
+  linkConfig: Record<string, boolean>;
+  participantLimit: { enabled: boolean; value: number };
+  backlinks: Record<string, string>;
+  researchUrl: string;
+  parameterOptions: Record<string, boolean>;
+}
 
 interface ParticipantViewProps {
   formData: EyeTrackingRecruitFormData;
@@ -11,10 +32,10 @@ interface ParticipantViewProps {
   linkConfigEnabled?: boolean;
 }
 
-export function ParticipantView({ 
-  formData, 
-  onClose, 
-  demographicQuestionsEnabled = true, 
+export function ParticipantView({
+  formData,
+  onClose,
+  demographicQuestionsEnabled = true,
   linkConfigEnabled = true
 }: ParticipantViewProps) {
   const getOptionLabel = (key: string, value: string) => {
@@ -82,11 +103,11 @@ export function ParticipantView({
   };
 
   // Verificar si hay preguntas demográficas habilitadas, teniendo en cuenta el switch principal
-  const hasEnabledDemographicQuestions = demographicQuestionsEnabled && 
+  const hasEnabledDemographicQuestions = demographicQuestionsEnabled &&
     Object.values(formData.demographicQuestions).some(q => q.enabled);
 
   // Verificar si hay configuraciones de enlace habilitadas, teniendo en cuenta el switch principal
-  const hasEnabledLinkConfig = linkConfigEnabled && 
+  const hasEnabledLinkConfig = linkConfigEnabled &&
     Object.values(formData.linkConfig).some(value => value);
 
   // Verificar si hay parámetros habilitados
@@ -192,7 +213,7 @@ export function ParticipantView({
                     <span className="text-red-500 ml-1">Los campos marcados con * son obligatorios.</span>
                   )}
                 </p>
-                
+
                 <div className="space-y-4">
                   {Object.entries(formData.demographicQuestions)
                     .filter(([_, value]) => demographicQuestionsEnabled && value.enabled)
@@ -254,4 +275,4 @@ export function ParticipantView({
       </div>
     </div>
   );
-} 
+}

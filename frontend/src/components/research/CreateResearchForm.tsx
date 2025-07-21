@@ -14,7 +14,7 @@ import { useResearch } from '@/stores/useResearchStore';
 import {
   ResearchBasicData,
   ResearchType
-} from '../../../../shared/interfaces/research.model';
+} from 'shared/interfaces/research.model';
 
 
 interface Step {
@@ -115,7 +115,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
   // Efecto para manejar el comportamiento del placeholder en el select
   useEffect(() => {
     const selectEl = enterpriseSelectRef.current;
-    if (!selectEl) {return;}
+    if (!selectEl) { return; }
 
     // Función para ocultar la primera opción cuando el select está abierto
     const handleSelectFocus = () => {
@@ -175,7 +175,7 @@ export function CreateResearchForm({ className, onResearchCreated }: CreateResea
 
   const updateFormData = (field: string, value: any) => {
     // Crear una copia local de formData que podamos modificar
-    const currentFormData = {...formData};
+    const currentFormData = { ...formData };
 
     // Actualizar la copia local
     currentFormData.basic = {

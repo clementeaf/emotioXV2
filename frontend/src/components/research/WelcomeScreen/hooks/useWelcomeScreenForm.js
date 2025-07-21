@@ -50,7 +50,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.useWelcomeScreenForm = void 0;
 var react_1 = require("react");
 var welcomeScreenService_1 = require("@/services/welcomeScreenService");
-var question_types_enum_1 = require("../../../../../../shared/interfaces/question-types.enum");
+var question_types_enum_1 = require("../../../../shared/interfaces/question-types.enum");
 // Valor inicial: Usar WelcomeScreenData importada.
 // Necesita definir metadata si WelcomeScreenData la requiere.
 var INITIAL_FORM_DATA = {

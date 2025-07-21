@@ -30,7 +30,7 @@
         "../shared/*"
       ],
       "shared/*": [
-        "../shared/*"
+        "./src/shared/*"
       ]
     }
   },

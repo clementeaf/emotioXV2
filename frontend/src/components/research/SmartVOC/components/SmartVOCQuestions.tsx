@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Switch } from '@/components/ui/Switch';
 
-import { QuestionType } from '../../../../../../shared/interfaces/question-types.enum';
+import { QuestionType } from 'shared/interfaces/question-types.enum';
 import { UI_TEXTS } from '../constants';
 import { SmartVOCQuestion, SmartVOCQuestionsProps } from '../types';
 
@@ -52,7 +52,7 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
   // Obtener los tipos de preguntas ya existentes
   const existingQuestionTypes = questions
     .map(q => q.type)
-    .filter((t): t is QuestionType => ['CSAT','CES','CV','NEV','NPS','VOC'].includes(t));
+    .filter((t): t is QuestionType => ['CSAT', 'CES', 'CV', 'NEV', 'NPS', 'VOC'].includes(t));
 
   // Determinar si el campo de companyName debe mostrarse
   const showCompanyNameInput = questions.some(q => ['CSAT', 'NEV', 'NPS'].includes(q.type));
@@ -313,7 +313,7 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
               />
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                 <div className="text-xs text-amber-600 bg-amber-50 px-1 py-0.5 rounded">
-                    Se reutiliza en todas las preguntas aplicables
+                  Se reutiliza en todas las preguntas aplicables
                 </div>
               </div>
             </div>
@@ -327,7 +327,7 @@ export const SmartVOCQuestions: React.FC<SmartVOCQuestionsProps> = ({
             <h4 className="font-semibold text-neutral-900">{`Pregunta ${index + 1}: ${question.title}`}</h4>
             {questions.length > 1 && (
               <Button variant="ghost" className="text-red-500 hover:text-red-600" onClick={() => onRemoveQuestion(question.id)} disabled={disabled}>
-                 Eliminar
+                Eliminar
               </Button>
             )}
           </div>

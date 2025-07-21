@@ -1,6 +1,6 @@
 import { memo } from 'react';
 
-import { EmotionBarProps } from '../../../../shared/interfaces/emotions.interface';
+import { EmotionBarProps } from '@/shared/interfaces/emotions.interface';
 
 /**
  * Componente para mostrar una barra de progreso de emoción

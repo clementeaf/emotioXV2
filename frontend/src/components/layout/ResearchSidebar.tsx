@@ -11,7 +11,7 @@ import { researchAPI } from '@/lib/api';
 import { eyeTrackingFixedAPI } from '@/lib/eye-tracking-api';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
-import { Research } from '../../../../shared/interfaces/research.model';
+import { Research } from 'shared/interfaces/research.model';
 import { SidebarBase } from './SidebarBase';
 
 const sections: ResearchSection[] = [

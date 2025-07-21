@@ -1,6 +1,6 @@
 import { memo } from 'react';
 
-import { BulletPointProps } from '../../../../shared/interfaces/emotions.interface';
+import { BulletPointProps } from '@/shared/interfaces/emotions.interface';
 
 /**
  * Componente para mostrar un elemento de lista con punto de color

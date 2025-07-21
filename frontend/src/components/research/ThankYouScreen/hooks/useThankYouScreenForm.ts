@@ -3,20 +3,20 @@ import { useAuth } from '@/providers/AuthProvider';
 import thankYouScreenService from '@/services/thankYouScreenService';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { QuestionType } from '../../../../../../shared/interfaces/question-types.enum';
+import { QuestionType } from 'shared/interfaces/question-types.enum';
 
 import {
-    ERROR_MESSAGES,
-    QUERY_KEYS,
-    SUCCESS_MESSAGES
+  ERROR_MESSAGES,
+  QUERY_KEYS,
+  SUCCESS_MESSAGES
 } from '../constants';
 import {
-    DEFAULT_THANK_YOU_SCREEN_VALIDATION,
-    ErrorModalData,
-    ThankYouScreenConfig,
-    ThankYouScreenFormData,
-    UseThankYouScreenFormResult,
-    ValidationErrors
+  DEFAULT_THANK_YOU_SCREEN_VALIDATION,
+  ErrorModalData,
+  ThankYouScreenConfig,
+  ThankYouScreenFormData,
+  UseThankYouScreenFormResult,
+  ValidationErrors
 } from '../types';
 
 export const useThankYouScreenForm = (researchId: string): UseThankYouScreenFormResult => {
@@ -77,9 +77,9 @@ export const useThankYouScreenForm = (researchId: string): UseThankYouScreenForm
       } catch (error: any) {
         // Si es 404 o cualquier error relacionado con "not found", devolver objeto especial notFound
         if (error?.statusCode === 404 ||
-            error?.message?.includes('not found') ||
-            error?.message?.includes('THANK_YOU_SCREEN_NOT_FOUND') ||
-            error?.message?.includes('No se pudo obtener el cuerpo de la respuesta')) {
+          error?.message?.includes('not found') ||
+          error?.message?.includes('THANK_YOU_SCREEN_NOT_FOUND') ||
+          error?.message?.includes('No se pudo obtener el cuerpo de la respuesta')) {
           return { notFound: true };
         } else {
           // Solo mostrar en consola si NO es 404

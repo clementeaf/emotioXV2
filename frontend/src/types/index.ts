@@ -7,65 +7,65 @@
 // Interfaces de investigación
 // Enums exportados normalmente
 export {
-    ResearchStage, ResearchStatus, ResearchType
-} from '@shared/interfaces/research.interface';
+  ResearchStage, ResearchStatus, ResearchType
+} from '@/shared/interfaces/research.interface';
 
 // Interfaces y tipos exportados como tipos
 export type {
-    ResearchConfig, ResearchCreationResponse, ResearchFormData, ResearchRecord, ResearchUpdate, ResearchValidation
-} from '@shared/interfaces/research.interface';
+  ResearchConfig, ResearchCreationResponse, ResearchFormData, ResearchRecord, ResearchUpdate, ResearchValidation
+} from '@/shared/interfaces/research.interface';
 
 // Interfaces de nueva investigación
 export {
-    DEFAULT_NEW_RESEARCH,
-    FORM_STEPS
-} from '@shared/interfaces/newResearch.interface';
+  DEFAULT_NEW_RESEARCH,
+  FORM_STEPS
+} from '@/shared/interfaces/newResearch.interface';
 
 export type {
-    NewResearch
-} from '@shared/interfaces/newResearch.interface';
+  NewResearch
+} from '@/shared/interfaces/newResearch.interface';
 
 // Interfaces de Pantalla de Bienvenida
 export {
-    DEFAULT_WELCOME_SCREEN_CONFIG,
-    DEFAULT_WELCOME_SCREEN_VALIDATION
-} from '@shared/interfaces/welcome-screen.interface';
+  DEFAULT_WELCOME_SCREEN_CONFIG,
+  DEFAULT_WELCOME_SCREEN_VALIDATION
+} from '@/shared/interfaces/welcome-screen.interface';
 
 export type {
-    WelcomeScreenConfig, WelcomeScreenFormData, WelcomeScreenRecord, WelcomeScreenUpdate,
-    WelcomeScreenValidation
-} from '@shared/interfaces/welcome-screen.interface';
+  WelcomeScreenConfig, WelcomeScreenFormData, WelcomeScreenRecord, WelcomeScreenUpdate,
+  WelcomeScreenValidation
+} from '@/shared/interfaces/welcome-screen.interface';
 
 // Interfaces de SmartVOC
 export {
-    DEFAULT_SMART_VOC_FORM
-} from '@shared/interfaces/smart-voc.interface';
+  DEFAULT_SMART_VOC_FORM
+} from '@/shared/interfaces/smart-voc.interface';
 
 export type {
-    CESConfig, CSATConfig, CVConfig, ConditionalLogic, NEVConfig,
-    NPSConfig, QuestionConfig, QuestionConfigBase, SmartVOCFormData,
-    SmartVOCFormResponse, SmartVOCQuestion, VOCConfig
-} from '@shared/interfaces/smart-voc.interface';
+  CESConfig, ConditionalLogic, CSATConfig, CVConfig, NEVConfig,
+  NPSConfig, QuestionConfig, QuestionConfigBase, SmartVOCFormData,
+  SmartVOCFormResponse, SmartVOCQuestion, VOCConfig
+} from '@/shared/interfaces/smart-voc.interface';
 
 // Interfaces de Eye Tracking
 // Constantes y valores por defecto
 export {
-    DEFAULT_EYE_TRACKING_CONFIG, EYE_TRACKING_VALIDATION, type PresentationSequenceType,
-    // Exportamos los tipos como parte del namespace
-    type TrackingDeviceType
-} from '@shared/interfaces/eye-tracking.interface';
+  DEFAULT_EYE_TRACKING_CONFIG, EYE_TRACKING_VALIDATION, type PresentationSequenceType,
+  // Exportamos los tipos como parte del namespace
+  type TrackingDeviceType
+} from '@/shared/interfaces/eye-tracking.interface';
 
 // Type aliases exportados como tipos
 export type {
-    EyeTrackingAreaOfInterest, EyeTrackingAreaOfInterestConfig, EyeTrackingConfig, EyeTrackingFormData, EyeTrackingFormResponse, EyeTrackingModel, EyeTrackingStimuliConfig, EyeTrackingStimulus
-} from '@shared/interfaces/eye-tracking.interface';
+  EyeTrackingAreaOfInterest, EyeTrackingAreaOfInterestConfig, EyeTrackingConfig, EyeTrackingFormData, EyeTrackingFormResponse, EyeTrackingModel, EyeTrackingStimuliConfig, EyeTrackingStimulus
+} from '@/shared/interfaces/eye-tracking.interface';
 
 // Interfaces de Pantalla de Agradecimiento
 export {
-    DEFAULT_THANK_YOU_SCREEN_CONFIG,
-    DEFAULT_THANK_YOU_SCREEN_VALIDATION
-} from '@shared/interfaces/thank-you-screen.interface';
+  DEFAULT_THANK_YOU_SCREEN_CONFIG,
+  DEFAULT_THANK_YOU_SCREEN_VALIDATION
+} from '@/shared/interfaces/thank-you-screen.interface';
 
 export type {
-    ThankYouScreenConfig, ThankYouScreenFormData, ThankYouScreenModel, ThankYouScreenResponse
-} from '@shared/interfaces/thank-you-screen.interface';
+  ThankYouScreenConfig, ThankYouScreenFormData, ThankYouScreenModel, ThankYouScreenResponse
+} from '@/shared/interfaces/thank-you-screen.interface';

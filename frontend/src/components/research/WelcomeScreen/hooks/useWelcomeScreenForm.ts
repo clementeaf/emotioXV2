@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import welcomeScreenService, { WelcomeScreenData, WelcomeScreenRecord } from '@/services/welcomeScreenService';
-import { QuestionType } from '../../../../../../shared/interfaces/question-types.enum';
+import { QuestionType } from 'shared/interfaces/question-types.enum';
 import {
   ErrorModalData,
   UseWelcomeScreenFormResult,
@@ -81,7 +81,7 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
       const errorObj = error as { statusCode?: number; message?: string };
 
       if (errorObj?.statusCode === 404 ||
-          (errorObj?.message?.includes('not found') || errorObj?.message?.includes('WELCOME_SCREEN_NOT_FOUND'))) {
+        (errorObj?.message?.includes('not found') || errorObj?.message?.includes('WELCOME_SCREEN_NOT_FOUND'))) {
         setFormData({ ...INITIAL_FORM_DATA, researchId: actualResearchId, questionKey: QuestionType.WELCOME_SCREEN });
         setExistingScreen(null);
         setIsEmpty(true);
@@ -107,9 +107,9 @@ export const useWelcomeScreenForm = (researchId: string): UseWelcomeScreenFormRe
 
   const validateForm = (): boolean => {
     const errors: ValidationErrors = {};
-    if (!formData.title) {errors.title = 'El título es requerido';}
-    if (!formData.message) {errors.message = 'El mensaje es requerido';}
-    if (!formData.startButtonText) {errors.startButtonText = 'El texto del botón es requerido';}
+    if (!formData.title) { errors.title = 'El título es requerido'; }
+    if (!formData.message) { errors.message = 'El mensaje es requerido'; }
+    if (!formData.startButtonText) { errors.startButtonText = 'El texto del botón es requerido'; }
 
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;

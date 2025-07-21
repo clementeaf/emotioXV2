@@ -6,7 +6,10 @@ import React from 'react';
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { Spinner } from '@/components/ui/Spinner';
 import { cn } from '@/lib/utils';
-import { BacklinkKeys, DemographicQuestionKeys, ParameterOptionKeys } from '@/shared/interfaces/eyeTrackingRecruit.interface';
+import { DemographicQuestionKeys, ParameterOptionKeys } from '@/shared/interfaces/eyeTrackingRecruit.interface';
+
+// Definir BacklinkKeys localmente ya que no está exportado
+type BacklinkKeys = 'complete' | 'disqualified' | 'overquota';
 
 import { eyeTrackingFixedAPI } from '@/lib/eye-tracking-api';
 import { Trash2 } from 'lucide-react';
