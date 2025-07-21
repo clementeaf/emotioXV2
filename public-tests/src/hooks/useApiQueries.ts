@@ -13,6 +13,7 @@ import {
   ParticipantResponsesDocument,
   UpdateModuleResponseDto,
 } from '../lib/types';
+import { useFormDataStore } from '../stores/useFormDataStore';
 
 export function useAvailableFormsQuery(researchId: string, options?: UseQueryOptions<AvailableFormsResponse, Error>) {
 
@@ -90,6 +91,13 @@ export function useSaveModuleResponseMutation(options?: UseMutationOptions<Modul
       queryClient.invalidateQueries({
         queryKey: ['moduleResponses', variables.researchId, variables.participantId],
       });
+
+      // 🎯 GUARDAR RESULTADO DE CUOTA EN EL STORE SI EXISTE
+      if (data.quotaResult && variables.questionKey === 'thank_you_screen') {
+        const { setQuotaResult } = useFormDataStore.getState();
+        setQuotaResult(data.quotaResult);
+        console.log('[useSaveModuleResponseMutation] 🎯 Cuota verificada:', data.quotaResult);
+      }
     },
     ...options,
   });

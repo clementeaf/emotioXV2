@@ -47,14 +47,21 @@ export class ModuleResponseController {
       console.log(`[ModuleResponseController.saveResponse] ✅ Respuesta guardada exitosamente:`, {
         responseId: savedResponse.id,
         questionKey: savedResponse.questionKey,
-        responsesCount: Array.isArray(savedResponse.responses) ? savedResponse.responses.length : 0
+        responsesCount: Array.isArray(savedResponse.responses) ? savedResponse.responses.length : 0,
+        quotaResult: savedResponse.quotaResult
       });
+
+      // 🎯 INCLUIR RESULTADO DE CUOTA EN LA RESPUESTA
+      const responseData = {
+        ...savedResponse,
+        quotaResult: savedResponse.quotaResult
+      };
 
       return {
         statusCode: 201,
         headers: getCorsHeaders(event),
         body: JSON.stringify({
-          data: savedResponse,
+          data: responseData,
           status: 201
         })
       };

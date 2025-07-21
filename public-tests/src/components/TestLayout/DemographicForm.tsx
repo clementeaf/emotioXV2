@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useDemographicValidation } from '../../hooks/useDemographicValidation';
 import { useDisqualificationRedirect } from '../../hooks/useDisqualificationRedirect';
 import { useEyeTrackingConfigQuery } from '../../hooks/useEyeTrackingConfigQuery';
@@ -27,21 +27,30 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
     questionKey: 'demographics'
   });
 
-  // 🎯 VALIDACIÓN AUTOMÁTICA AL CAMBIAR VALORES
-  useEffect(() => {
+  // 🎯 FUNCIÓN PARA MANEJAR EL ENVÍO DEL FORMULARIO
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
     if (!eyeTrackingConfig?.demographicQuestions || !formValues) return;
 
-    // Solo validar si hay respuestas
-    const hasResponses = Object.values(formValues).some(value => value && value !== '');
-    if (!hasResponses) return;
-
-    const validationResult = validateDemographics(formValues as Record<string, string>, eyeTrackingConfig.demographicQuestions);
+    // Validar solo al presionar el botón
+    const formValuesString = Object.fromEntries(
+      Object.entries(formValues).map(([key, value]) => [key, String(value || '')])
+    ) as Record<string, string>;
+    const validationResult = validateDemographics(formValuesString, eyeTrackingConfig.demographicQuestions);
 
     if (validationResult.isDisqualified) {
-      console.log('[DemographicForm] Usuario descalificado automáticamente:', validationResult);
+      console.log('[DemographicForm] Usuario descalificado al enviar:', validationResult);
       redirectToDisqualification(eyeTrackingConfig, validationResult.reason);
+    } else {
+      // Si no está descalificado, continuar normalmente
+      console.log('[DemographicForm] Usuario calificado, continuando...');
+      const formValuesString = Object.fromEntries(
+        Object.entries(formValues).map(([key, value]) => [key, String(value || '')])
+      ) as Record<string, string>;
+      onSubmit?.(formValuesString);
     }
-  }, [formValues, eyeTrackingConfig, validateDemographics, redirectToDisqualification]);
+  };
 
   // Usar las preguntas demográficas de la configuración de eye-tracking si están disponibles
   const questionsToShow = eyeTrackingConfig?.demographicQuestions || demographicQuestions;
@@ -122,7 +131,7 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
           </div>
         </div>
       ) : (
-        <div className="w-full max-w-lg mx-auto flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="w-full max-w-lg mx-auto flex flex-col gap-4">
           {questions.map(q => (
             <div key={q.key} className="flex flex-col">
               <label className="font-medium mb-1 text-gray-700">
@@ -148,15 +157,10 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
                   </option>
                 ))}
               </select>
-              {/* 🎯 MOSTRAR ADVERTENCIA SI HAY OPCIONES DESCALIFICATORIAS */}
-              {q.disqualifyingOptions && q.disqualifyingOptions.length > 0 && (
-                <p className="text-xs text-red-500 mt-1">
-                  ⚠️ Algunas opciones pueden resultar en descalificación
-                </p>
-              )}
+
             </div>
           ))}
-        </div>
+        </form>
       )}
     </div>
   );

@@ -23,6 +23,11 @@ export interface ModuleResponse {
   metadata: Record<string, unknown>;
   createdAt: string;
   updatedAt?: string;
+  quotaResult?: {
+    status: 'QUALIFIED' | 'DISQUALIFIED_OVERQUOTA';
+    order: number;
+    quotaLimit: number;
+  };
 }
 
 export interface ParticipantResponsesDocument {

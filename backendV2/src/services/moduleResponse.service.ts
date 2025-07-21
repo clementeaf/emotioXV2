@@ -252,11 +252,16 @@ export class ModuleResponseService {
     }
 
     // 🎯 VERIFICAR CUOTA SI ES THANK_YOU_SCREEN
+    let quotaResult = null;
     if (questionKey === 'thank_you_screen') {
       try {
         console.log(`[ModuleResponseService] 🎯 Verificando cuota para participante ${participantId} en investigación ${researchId}`);
-        const quotaResult = await quotaManager.checkQuotaAndMarkParticipant(researchId, participantId);
+        quotaResult = await quotaManager.checkQuotaAndMarkParticipant(researchId, participantId);
         console.log(`[ModuleResponseService.saveModuleResponse] ✅ Resultado de cuota:`, quotaResult);
+
+        // 🎯 AGREGAR RESULTADO DE CUOTA AL DOCUMENTO
+        savedDocument.quotaResult = quotaResult;
+
       } catch (error) {
         console.error(`[ModuleResponseService.saveModuleResponse] ❌ Error verificando cuota:`, error);
         // No fallar el guardado si falla la verificación de cuota

@@ -744,6 +744,13 @@ const ThankYouScreenComponent: React.FC<{
   const isDisqualified = eyeTrackingConfig?.backlinks?.disqualified &&
     window.location.search.includes('disqualified=true');
 
+  // 🎯 VERIFICAR SI EXCEDE LA CUOTA DE PARTICIPANTES
+  // NOTA: El backend ya verifica la cuota automáticamente al guardar thank_you_screen
+  // y devuelve el resultado en la respuesta. Aquí verificamos si hay un parámetro de URL
+  // que indique overquota (para compatibilidad) o si el backend indicó overquota
+  const isOverQuota = window.location.search.includes('overquota=true') ||
+    (currentQuestionKey === 'thank_you_screen' && formDataStore.quotaResult?.status === 'DISQUALIFIED_OVERQUOTA');
+
   // 🎯 MOSTRAR LINK DE DESCALIFICACIÓN SI APLICA
   if (isDisqualified && eyeTrackingConfig?.backlinks?.disqualified) {
     return (
@@ -786,14 +793,91 @@ const ThankYouScreenComponent: React.FC<{
     );
   }
 
+  // 🎯 MOSTRAR LINK DE OVERQUOTA SI EXCEDE LA CUOTA
+  if (isOverQuota && eyeTrackingConfig?.backlinks?.overquota) {
+    return (
+      <div className='flex flex-col items-center justify-center h-full w-full'>
+        <div className="text-center max-w-md mx-auto">
+          <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            Cuota de participantes alcanzada
+          </h2>
+          <p className="text-gray-600 mb-6">
+            Lamentamos informarte que ya se ha alcanzado el límite máximo de participantes para esta investigación.
+          </p>
+
+          {/* 🎯 LINK DE OVERQUOTA */}
+          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+              Información adicional
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Para más información sobre futuras investigaciones, visita:
+            </p>
+            <a
+              href={eyeTrackingConfig.backlinks.overquota}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+              Ver futuras investigaciones
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+
+
+  // 🎯 MOSTRAR LINK DE COMPLETADO SI EXISTE
+  const hasCompleteLink = eyeTrackingConfig?.backlinks?.complete;
+
   return (
     <div className='flex flex-col items-center justify-center h-full w-full'>
-      <h2 className='text-2xl font-bold mb-2'>
-        {String(contentConfiguration?.title || 'Gracias por participar')}
-      </h2>
-      <p className='text-center text-gray-600'>
-        {String(contentConfiguration?.message || 'Agradecemos tus respuestas')}
-      </p>
+      <div className="text-center max-w-md mx-auto">
+        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <h2 className='text-2xl font-bold mb-2'>
+          {String(contentConfiguration?.title || 'Gracias por participar')}
+        </h2>
+        <p className='text-center text-gray-600 mb-6'>
+          {String(contentConfiguration?.message || 'Agradecemos tus respuestas')}
+        </p>
+
+        {/* 🎯 LINK DE COMPLETADO */}
+        {hasCompleteLink && (
+          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+              Información adicional
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Para más información sobre esta investigación, visita:
+            </p>
+            <a
+              href={eyeTrackingConfig?.backlinks?.complete}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+              Ver información de la investigación
+            </a>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

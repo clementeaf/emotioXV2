@@ -83,7 +83,12 @@ export const ParticipantResponsesDocumentSchema = z.object({
   metadata: ResponseMetadataSchema, // Metadata global del documento
   createdAt: z.string(), // ISO date string
   updatedAt: z.string(), // ISO date string
-  isCompleted: z.boolean().default(false) // Indica si todas las respuestas están completas
+  isCompleted: z.boolean().default(false), // Indica si todas las respuestas están completas
+  quotaResult: z.object({
+    status: z.enum(['QUALIFIED', 'DISQUALIFIED_OVERQUOTA']),
+    order: z.number(),
+    quotaLimit: z.number()
+  }).optional() // 🎯 RESULTADO DE VERIFICACIÓN DE CUOTA
 });
 
 /**

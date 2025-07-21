@@ -17,6 +17,9 @@ export { useMobileStepVerification } from './useMobileStepVerification';
 // Location tracking
 export { useLocationTracking } from './useLocationTracking';
 
+// Quota verification
+export { useQuotaVerification } from './useQuotaVerification';
+
 // Tipos y utilidades
 export * from './types';
 export { useResponseTiming } from './useResponseTiming';
