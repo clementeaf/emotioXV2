@@ -84,16 +84,28 @@ export const VOCTextQuestion: React.FC<VOCTextQuestionProps> = ({
   value,
   onChange,
   placeholder = 'Escribe tu respuesta aquí...',
-}) => (
-  <div className="w-full flex flex-col items-center">
-    <textarea
-      className="w-full max-w-md min-h-[150px] min-w-[350px] border border-gray-300 rounded p-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-400"
-      value={value || ''}
-      onChange={e => onChange?.(e.target.value)}
-      placeholder={placeholder}
-    />
-  </div>
-);
+}) => {
+  console.log('[VOCTextQuestion] 🧠 Renderizando textarea:', {
+    value,
+    placeholder,
+    hasOnChange: !!onChange
+  });
+
+  return (
+    <div className="w-full flex flex-col items-center">
+      <textarea
+        className="w-full max-w-md min-h-[150px] min-w-[350px] border border-gray-300 rounded p-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-400"
+        value={value || ''}
+        onChange={e => {
+          console.log('[VOCTextQuestion] 🔄 Cambio en textarea:', e.target.value);
+          onChange?.(e.target.value);
+        }}
+        placeholder={placeholder}
+        data-testid="cognitive-short-text-textarea"
+      />
+    </div>
+  );
+};
 
 export const SingleAndMultipleChoiceQuestion: React.FC<SingleAndMultipleChoiceQuestionProps> = ({
   choices,
@@ -101,12 +113,25 @@ export const SingleAndMultipleChoiceQuestion: React.FC<SingleAndMultipleChoiceQu
   onChange,
   multiple = false,
 }) => {
+  console.log('[SingleAndMultipleChoiceQuestion] 🎯 Renderizando opciones:', {
+    choices,
+    choicesLength: choices.length,
+    value,
+    multiple
+  });
+
   const isSelected = (id: string) =>
     multiple && Array.isArray(value)
       ? value.includes(id)
       : value === id;
 
   const handleClick = (id: string) => {
+    console.log('[SingleAndMultipleChoiceQuestion] 🔄 Click en opción:', {
+      id,
+      currentValue: value,
+      multiple
+    });
+
     if (multiple && Array.isArray(value)) {
       if (value.includes(id)) {
         onChange(value.filter((v) => v !== id));

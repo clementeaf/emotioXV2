@@ -37,13 +37,14 @@ const QuestionComponent: React.FC<{
     console.log('[QuestionComponent] 🔍 Cargando datos guardados:', {
       currentStepKey,
       savedData,
-      questionType: question.type
+      questionType: question.type,
+      questionTitle: question.title
     });
 
     if (savedData) {
       const savedValue = savedData.value || savedData.selectedValue;
       // 🎯 MANEJAR VALORES NULL/UNDEFINED PARA TEXTAREA
-      if (question.type === 'text' && (savedValue === null || savedValue === undefined)) {
+      if ((question.type === 'text' || question.type === 'cognitive_short_text' || question.type === 'cognitive_long_text') && (savedValue === null || savedValue === undefined)) {
         setValue('');
       } else {
         setValue(savedValue);
@@ -60,6 +61,13 @@ const QuestionComponent: React.FC<{
   }, [currentStepKey, getFormData, question.type]);
 
   const handleChange = (newValue: any) => {
+    console.log('[QuestionComponent] 🔄 Cambio de valor:', {
+      currentStepKey,
+      newValue,
+      questionType: question.type,
+      questionTitle: question.title
+    });
+
     setValue(newValue);
     setFormData(currentStepKey, { value: newValue });
   };
@@ -77,12 +85,22 @@ const QuestionComponent: React.FC<{
 
       <div className="w-full max-w-2xl">
         {question.type === 'choice' && (
-          <SingleAndMultipleChoiceQuestion
-            choices={question.choices}
-            value={value}
-            onChange={handleChange}
-            multiple={question.config?.multiple || false}
-          />
+          <>
+            {console.log('[QuestionComponent] 🎯 Renderizando choice para:', {
+              questionType: question.type,
+              questionTitle: question.title,
+              currentStepKey,
+              choices: question.choices,
+              choicesLength: question.choices.length,
+              value
+            })}
+            <SingleAndMultipleChoiceQuestion
+              choices={question.choices}
+              value={value}
+              onChange={handleChange}
+              multiple={question.config?.multiple || false}
+            />
+          </>
         )}
         {question.type === 'scale' && (
           <ScaleRangeQuestion
@@ -104,11 +122,34 @@ const QuestionComponent: React.FC<{
           />
         )}
         {question.type === 'text' && (
-          <VOCTextQuestion
-            value={value}
-            onChange={handleChange}
-            placeholder={question.config?.placeholder}
-          />
+          <>
+            {console.log('[QuestionComponent] 🧠 Renderizando textarea para:', {
+              questionType: question.type,
+              questionTitle: question.title,
+              currentStepKey,
+              value
+            })}
+            <VOCTextQuestion
+              value={value}
+              onChange={handleChange}
+              placeholder={question.config?.placeholder}
+            />
+          </>
+        )}
+        {(question.type === 'cognitive_short_text' || question.type === 'cognitive_long_text') && (
+          <>
+            {console.log('[QuestionComponent] 🧠 Renderizando textarea para cognitive:', {
+              questionType: question.type,
+              questionTitle: question.title,
+              currentStepKey,
+              value
+            })}
+            <VOCTextQuestion
+              value={value}
+              onChange={handleChange}
+              placeholder={question.config?.placeholder || 'Escribe tu respuesta aquí...'}
+            />
+          </>
         )}
       </div>
     </div>
@@ -387,19 +428,32 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
     </div>
   ),
 
-  cognitive_short_text: ({ contentConfiguration, currentQuestionKey }) => (
-    <QuestionComponent
-      question={{
-        title: String(contentConfiguration?.title || 'Respuesta Corta'),
-        questionKey: currentQuestionKey,
-        type: 'text',
-        config: contentConfiguration,
-        choices: [],
-        description: String(contentConfiguration?.description || 'Escribe tu respuesta')
-      }}
-      currentStepKey={currentQuestionKey}
-    />
-  ),
+  cognitive_short_text: ({ contentConfiguration, currentQuestionKey }) => {
+    console.log('[TestLayoutRenderer] 🧠 Renderizando cognitive_short_text:', {
+      contentConfiguration,
+      currentQuestionKey,
+      hasTitle: !!contentConfiguration?.title,
+      hasDescription: !!contentConfiguration?.description
+    });
+
+    const questionConfig = {
+      title: String(contentConfiguration?.title || 'Respuesta Corta'),
+      questionKey: currentQuestionKey,
+      type: 'cognitive_short_text', // ✅ CAMBIADO: Usar el tipo correcto
+      config: contentConfiguration,
+      choices: [],
+      description: String(contentConfiguration?.description || 'Escribe tu respuesta')
+    };
+
+    console.log('[TestLayoutRenderer] 🧠 Configuración de pregunta:', questionConfig);
+
+    return (
+      <QuestionComponent
+        question={questionConfig}
+        currentStepKey={currentQuestionKey}
+      />
+    );
+  },
 
   cognitive_long_text: ({ contentConfiguration, currentQuestionKey }) => (
     <QuestionComponent
@@ -429,19 +483,34 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
     />
   ),
 
-  cognitive_single_choice: ({ contentConfiguration, currentQuestionKey }) => (
-    <QuestionComponent
-      question={{
-        title: String(contentConfiguration?.title || 'Selección Única'),
-        questionKey: currentQuestionKey,
-        type: 'choice',
-        config: { ...contentConfiguration, multiple: false },
-        choices: Array.isArray(contentConfiguration?.choices) ? contentConfiguration.choices : [],
-        description: String(contentConfiguration?.description || 'Selecciona una opción')
-      }}
-      currentStepKey={currentQuestionKey}
-    />
-  ),
+  cognitive_single_choice: ({ contentConfiguration, currentQuestionKey }) => {
+    console.log('[TestLayoutRenderer] 🎯 Renderizando cognitive_single_choice:', {
+      contentConfiguration,
+      currentQuestionKey,
+      hasTitle: !!contentConfiguration?.title,
+      hasDescription: !!contentConfiguration?.description,
+      choices: contentConfiguration?.choices,
+      choicesLength: Array.isArray(contentConfiguration?.choices) ? contentConfiguration.choices.length : 0
+    });
+
+    const questionConfig = {
+      title: String(contentConfiguration?.title || 'Selección Única'),
+      questionKey: currentQuestionKey,
+      type: 'choice',
+      config: { ...contentConfiguration, multiple: false },
+      choices: Array.isArray(contentConfiguration?.choices) ? contentConfiguration.choices : [],
+      description: String(contentConfiguration?.description || 'Selecciona una opción')
+    };
+
+    console.log('[TestLayoutRenderer] 🎯 Configuración de pregunta single_choice:', questionConfig);
+
+    return (
+      <QuestionComponent
+        question={questionConfig}
+        currentStepKey={currentQuestionKey}
+      />
+    );
+  },
 
   cognitive_linear_scale: ({ contentConfiguration, currentQuestionKey }) => (
     <QuestionComponent
