@@ -121,6 +121,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
     updateDisqualifyingDailyHoursOnline,
     updateTechnicalProficiencyOptions,
     updateDisqualifyingTechnicalProficiencies,
+    handleAgeConfigSave,
     saveForm,
     generateRecruitmentLink,
     generateQRCode,
@@ -210,9 +211,9 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
     setAgeModalOpen(true);
   };
 
-  const handleAgeConfigSave = (options: string[], disqualifyingAges: string[]) => {
-    updateAgeOptions(options);
-    updateDisqualifyingAges(disqualifyingAges);
+  const handleAgeConfigSaveLocal = (options: string[], disqualifyingAges: string[]) => {
+    console.log('[handleAgeConfigSaveLocal] 🎯 Llamando a handleAgeConfigSave:', { options, disqualifyingAges });
+    handleAgeConfigSave(options, disqualifyingAges);
     // Aquí también actualizaríamos las edades descalificantes
     // Por ahora solo mostramos un toast con ambas informaciones
     toast.success(`Configuración de edad guardada con ${options.length} opciones válidas y ${disqualifyingAges.length} edades descalificantes`);
@@ -498,7 +499,9 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           type="checkbox"
                           id="trackLocation"
                           checked={formData.linkConfig.trackLocation}
-                          onChange={(e) => handleLinkConfigChange('trackLocation', e.target.checked)}
+                          onChange={(e) => {
+                            handleLinkConfigChange('trackLocation', e.target.checked);
+                          }}
                           disabled={!linkConfigEnabled}
                           className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                         />
@@ -791,7 +794,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
       <AgeConfigModal
         isOpen={ageModalOpen}
         onClose={() => setAgeModalOpen(false)}
-        onSave={handleAgeConfigSave}
+        onSave={handleAgeConfigSaveLocal}
         initialValidAges={formData.demographicQuestions.age.options || []}
         initialDisqualifyingAges={formData.demographicQuestions.age.disqualifyingAges || []}
       />

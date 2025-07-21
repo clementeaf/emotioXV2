@@ -101,24 +101,32 @@ export const useFormLoadingState = ({
         [key]: value
       };
 
-      // Guardar en el store
-      setFormData(questionKey, newValues);
+      // Guardar en el store después del render para evitar setState durante render
+      setTimeout(() => {
+        setFormData(questionKey, newValues);
+      }, 0);
 
       return newValues;
     });
-  }, [questionKey]);
+  }, [questionKey, setFormData]);
 
   // 🎯 GUARDAR EN EL STORE DESPUÉS DEL RENDER PARA EVITAR CONFLICTOS
   useEffect(() => {
     if (formValues && Object.keys(formValues).length > 0) {
       console.log(`[useFormLoadingState] 💾 Guardando en store para ${questionKey}:`, formValues);
-      setFormData(questionKey, formValues);
+      // Usar setTimeout para evitar setState durante render
+      setTimeout(() => {
+        setFormData(questionKey, formValues);
+      }, 0);
     }
   }, [formValues, questionKey, setFormData]);
 
   const saveToStore = useCallback((data: Record<string, unknown>) => {
-    setFormData(questionKey, data);
-  }, [questionKey]);
+    // Usar setTimeout para evitar setState durante render
+    setTimeout(() => {
+      setFormData(questionKey, data);
+    }, 0);
+  }, [questionKey, setFormData]);
 
   return {
     isLoading: isLoading || isLoadingResponses,

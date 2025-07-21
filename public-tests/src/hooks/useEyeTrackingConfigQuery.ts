@@ -23,6 +23,63 @@ export interface EyeTrackingConfig {
     saveResponseTimes?: boolean; // 🎯 NUEVA PROPIEDAD
     saveUserJourney?: boolean;
   };
+  // 🎯 AGREGADO: Backlinks para redirección
+  backlinks?: {
+    complete?: string;
+    disqualified?: string;
+    overquota?: string;
+  };
+  // 🎯 AGREGADO: Preguntas demográficas con criterios descalificatorios
+  demographicQuestions?: {
+    age?: {
+      enabled: boolean;
+      required: boolean;
+      options: string[];
+      disqualifyingAges?: string[];
+    };
+    country?: {
+      enabled: boolean;
+      required: boolean;
+      options: string[];
+      disqualifyingCountries?: string[];
+    };
+    gender?: {
+      enabled: boolean;
+      required: boolean;
+      options: string[];
+      disqualifyingGenders?: string[];
+    };
+    educationLevel?: {
+      enabled: boolean;
+      required: boolean;
+      options: string[];
+      disqualifyingEducation?: string[];
+    };
+    householdIncome?: {
+      enabled: boolean;
+      required: boolean;
+      options: string[];
+      disqualifyingIncomes?: string[];
+    };
+    employmentStatus?: {
+      enabled: boolean;
+      required: boolean;
+      options: string[];
+      disqualifyingEmploymentStatuses?: string[];
+    };
+    dailyHoursOnline?: {
+      enabled: boolean;
+      required: boolean;
+      options: string[];
+      disqualifyingHours?: string[];
+    };
+    technicalProficiency?: {
+      enabled: boolean;
+      required: boolean;
+      options: string[];
+      disqualifyingProficiencies?: string[];
+    };
+  };
 }
 
 /**

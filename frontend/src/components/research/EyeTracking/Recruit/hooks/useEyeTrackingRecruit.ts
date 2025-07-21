@@ -144,6 +144,9 @@ interface UseEyeTrackingRecruitResult {
   updateTechnicalProficiencyOptions: (options: string[]) => void;
   updateDisqualifyingTechnicalProficiencies: (disqualifyingProficiencies: string[]) => void;
 
+  // 🎯 NUEVA FUNCIÓN PARA MANEJAR CONFIGURACIÓN DE EDAD
+  handleAgeConfigSave: (validAges: string[], disqualifyingAges: string[]) => void;
+
   // Acciones
   saveForm: () => void;
   handleConfirmSave: () => Promise<void>;
@@ -713,6 +716,7 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
 
   // Función para actualizar las opciones de edad
   const updateAgeOptions = useCallback((options: string[]) => {
+    console.log('[updateAgeOptions] 🎯 Actualizando opciones de edad:', options);
     setFormData(prevData => ({
       ...prevData,
       demographicQuestions: {
@@ -727,16 +731,26 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
 
   // Función para actualizar las edades descalificantes
   const updateDisqualifyingAges = useCallback((disqualifyingAges: string[]) => {
-    setFormData(prevData => ({
-      ...prevData,
-      demographicQuestions: {
-        ...prevData.demographicQuestions,
-        age: {
-          ...prevData.demographicQuestions.age,
-          disqualifyingAges: disqualifyingAges
+    console.log('[updateDisqualifyingAges] 🎯 Actualizando edades descalificatorias:', disqualifyingAges);
+    setFormData(prevData => {
+      // 🎯 COMBINAR LAS EDADES DESCALIFICATORIAS CON LAS OPCIONES EXISTENTES
+      const currentOptions = prevData.demographicQuestions.age.options || [];
+      const allAges = Array.from(new Set([...currentOptions, ...disqualifyingAges]));
+
+      console.log('[updateDisqualifyingAges] 🎯 Opciones combinadas:', allAges);
+
+      return {
+        ...prevData,
+        demographicQuestions: {
+          ...prevData.demographicQuestions,
+          age: {
+            ...prevData.demographicQuestions.age,
+            options: allAges, // 🎯 INCLUIR TODAS LAS EDADES
+            disqualifyingAges: disqualifyingAges
+          }
         }
-      }
-    }));
+      };
+    });
   }, []);
 
   // Función para actualizar las opciones de países
@@ -933,6 +947,33 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
         }
       }
     }));
+  }, []);
+
+  // 🎯 NUEVA FUNCIÓN PARA MANEJAR CONFIGURACIÓN DE EDAD
+  const handleAgeConfigSave = useCallback((validAges: string[], disqualifyingAges: string[]) => {
+    console.log('[handleAgeConfigSave] 🎯 Iniciando configuración de edad:', { validAges, disqualifyingAges });
+
+    // 🎯 COMBINAR TODAS LAS EDADES (VÁLIDAS + DESCALIFICATORIAS) EN OPTIONS
+    const allAges = Array.from(new Set([...validAges, ...disqualifyingAges]));
+
+    console.log('[handleAgeConfigSave] 🎯 Edades combinadas:', allAges);
+
+    setFormData(prevData => {
+      const newData = {
+        ...prevData,
+        demographicQuestions: {
+          ...prevData.demographicQuestions,
+          age: {
+            ...prevData.demographicQuestions.age,
+            options: allAges, // 🎯 INCLUIR TODAS LAS EDADES
+            disqualifyingAges: disqualifyingAges
+          }
+        }
+      };
+
+      console.log('[handleAgeConfigSave] 🎯 Nuevos datos de edad:', newData.demographicQuestions.age);
+      return newData;
+    });
   }, []);
 
   // Acciones
@@ -1134,6 +1175,9 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     updateDisqualifyingDailyHoursOnline,
     updateTechnicalProficiencyOptions,
     updateDisqualifyingTechnicalProficiencies,
+
+    // 🎯 NUEVA FUNCIÓN PARA MANEJAR CONFIGURACIÓN DE EDAD
+    handleAgeConfigSave,
 
     // Acciones
     saveForm,

@@ -1,5 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useDemographicValidation } from '../../hooks/useDemographicValidation';
+import { useDisqualificationRedirect } from '../../hooks/useDisqualificationRedirect';
+import { useEyeTrackingConfigQuery } from '../../hooks/useEyeTrackingConfigQuery';
 import { useFormLoadingState } from '../../hooks/useFormLoadingState';
+import { useTestStore } from '../../stores/useTestStore';
 import { LoadingModal } from './LoadingModal';
 import { DemographicFormProps } from './types';
 
@@ -7,6 +11,13 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
   demographicQuestions,
   onSubmit
 }) => {
+  const { researchId } = useTestStore();
+  const { validateDemographics } = useDemographicValidation();
+  const { redirectToDisqualification } = useDisqualificationRedirect();
+
+  // Obtener configuración de eye-tracking
+  const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
+
   const {
     isLoading,
     hasLoadedData,
@@ -16,21 +27,65 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
     questionKey: 'demographics'
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (onSubmit) {
-      onSubmit(formValues as Record<string, string>);
-    }
-  };
+  // 🎯 VALIDACIÓN AUTOMÁTICA AL CAMBIAR VALORES
+  useEffect(() => {
+    if (!eyeTrackingConfig?.demographicQuestions || !formValues) return;
 
-  const questions = Object.entries(demographicQuestions)
-    .filter(([_, questionData]) => questionData.enabled)
-    .map(([key, questionData]) => ({
-      key,
-      enabled: questionData.enabled,
-      required: questionData.required,
-      options: questionData.options
-    }));
+    // Solo validar si hay respuestas
+    const hasResponses = Object.values(formValues).some(value => value && value !== '');
+    if (!hasResponses) return;
+
+    const validationResult = validateDemographics(formValues as Record<string, string>, eyeTrackingConfig.demographicQuestions);
+
+    if (validationResult.isDisqualified) {
+      console.log('[DemographicForm] Usuario descalificado automáticamente:', validationResult);
+      redirectToDisqualification(eyeTrackingConfig, validationResult.reason);
+    }
+  }, [formValues, eyeTrackingConfig, validateDemographics, redirectToDisqualification]);
+
+  // Usar las preguntas demográficas de la configuración de eye-tracking si están disponibles
+  const questionsToShow = eyeTrackingConfig?.demographicQuestions || demographicQuestions;
+
+  const questions = Object.entries(questionsToShow)
+    .filter(([_, questionData]) => questionData?.enabled)
+    .map(([key, questionData]) => {
+      const questionDataAny = questionData as any;
+
+      // 🎯 OBTENER OPCIONES DESCALIFICATORIAS
+      const disqualifyingOptions = questionDataAny?.disqualifyingAges ||
+        questionDataAny?.disqualifyingCountries ||
+        questionDataAny?.disqualifyingGenders ||
+        questionDataAny?.disqualifyingEducation ||
+        questionDataAny?.disqualifyingIncomes ||
+        questionDataAny?.disqualifyingEmploymentStatuses ||
+        questionDataAny?.disqualifyingHours ||
+        questionDataAny?.disqualifyingProficiencies || [];
+
+      // 🎯 USAR DIRECTAMENTE LAS OPTIONS DEL BACKEND (YA INCLUYEN DESCALIFICATORIAS)
+      const allOptions = questionData?.options || [];
+
+      // 🎯 ORDENAR OPCIONES DE EDAD EN ORDEN NUMÉRICO
+      const sortedOptions = key === 'age'
+        ? allOptions.sort((a, b) => {
+          // Extraer números de los rangos (ej: "18-24" -> 18, "65+" -> 65)
+          const getMinAge = (range: string) => {
+            if (range.includes('+')) {
+              return parseInt(range.replace('+', ''));
+            }
+            return parseInt(range.split('-')[0]);
+          };
+          return getMinAge(a) - getMinAge(b);
+        })
+        : allOptions;
+
+      return {
+        key,
+        enabled: questionData?.enabled || false,
+        required: questionData?.required || false,
+        options: sortedOptions, // 🎯 OPCIONES ORDENADAS
+        disqualifyingOptions
+      };
+    });
 
   // 🎯 MODAL DE CARGA
   if (isLoading) {
@@ -67,7 +122,7 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
           </div>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="w-full max-w-lg mx-auto flex flex-col gap-4">
+        <div className="w-full max-w-lg mx-auto flex flex-col gap-4">
           {questions.map(q => (
             <div key={q.key} className="flex flex-col">
               <label className="font-medium mb-1 text-gray-700">
@@ -82,13 +137,26 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
                 className="p-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
               >
                 <option value="">Selecciona una opción</option>
+                {/* 🎯 MOSTRAR TODAS LAS OPCIONES EN ORDEN NORMAL */}
                 {q.options.map((opt, i) => (
-                  <option key={i} value={opt}>{opt}</option>
+                  <option
+                    key={i}
+                    value={opt}
+                    className={q.disqualifyingOptions?.includes(opt) ? 'text-red-500' : ''}
+                  >
+                    {opt}
+                  </option>
                 ))}
               </select>
+              {/* 🎯 MOSTRAR ADVERTENCIA SI HAY OPCIONES DESCALIFICATORIAS */}
+              {q.disqualifyingOptions && q.disqualifyingOptions.length > 0 && (
+                <p className="text-xs text-red-500 mt-1">
+                  ⚠️ Algunas opciones pueden resultar en descalificación
+                </p>
+              )}
             </div>
           ))}
-        </form>
+        </div>
       )}
     </div>
   );
