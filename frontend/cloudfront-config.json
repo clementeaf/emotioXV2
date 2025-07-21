@@ -1,0 +1,47 @@
+{
+  "DistributionConfig": {
+    "CallerReference": "emotioxv2-frontend-2025",
+    "Comment": "EmotioXV2 Frontend",
+    "DefaultRootObject": "index.html",
+    "Origins": {
+      "Quantity": 1,
+      "Items": [
+        {
+          "Id": "S3-emotioxv2-frontend",
+          "DomainName": "emotioxv2-frontend.s3.amazonaws.com",
+          "S3OriginConfig": {
+            "OriginAccessIdentity": ""
+          }
+        }
+      ]
+    },
+    "DefaultCacheBehavior": {
+      "TargetOriginId": "S3-emotioxv2-frontend",
+      "ViewerProtocolPolicy": "redirect-to-https",
+      "TrustedSigners": {
+        "Enabled": false,
+        "Quantity": 0
+      },
+      "ForwardedValues": {
+        "QueryString": false,
+        "Cookies": {
+          "Forward": "none"
+        }
+      },
+      "MinTTL": 0,
+      "Compress": true
+    },
+    "CustomErrorResponses": {
+      "Quantity": 1,
+      "Items": [
+        {
+          "ErrorCode": 404,
+          "ResponsePagePath": "/index.html",
+          "ResponseCode": "200"
+        }
+      ]
+    },
+    "Enabled": true,
+    "PriceClass": "PriceClass_100"
+  }
+}
