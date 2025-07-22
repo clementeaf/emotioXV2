@@ -386,6 +386,11 @@ export const researchInProgressAPI = {
   getParticipantDetails: async (researchId: string, participantId: string): Promise<APIResponse<any>> => {
     return apiClient.get('researchInProgress', 'getParticipantDetails', { researchId, participantId });
   },
+
+  // 🎯 ELIMINAR PARTICIPANTE
+  deleteParticipant: async (researchId: string, participantId: string): Promise<APIResponse<boolean>> => {
+    return apiClient.delete('participants', 'deleteParticipant', { researchId, participantId });
+  },
 };
 
 // Exportar apiClient para uso en otros módulos

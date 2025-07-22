@@ -7,12 +7,13 @@ import { Input } from '@/components/ui/Input';
 import { researchInProgressAPI } from '@/lib/api';
 import {
   AlertCircle,
+  AlertTriangle,
   CheckCircle,
   Clock,
   Download,
   Eye,
-  MoreHorizontal,
-  Search
+  Search,
+  Trash2
 } from 'lucide-react';
 import { useState } from 'react';
 import { ParticipantDetailsModal } from './ParticipantDetailsModal';
@@ -31,6 +32,7 @@ interface ParticipantsTableProps {
   participants: Participant[];
   onViewDetails: (participantId: string) => void;
   researchId: string;
+  onParticipantDeleted?: (participantId: string) => void;
 }
 
 const statusConfig = {
@@ -51,12 +53,22 @@ const statusConfig = {
   }
 };
 
-export function ParticipantsTable({ participants, onViewDetails, researchId }: ParticipantsTableProps) {
+export function ParticipantsTable({
+  participants,
+  onViewDetails,
+  researchId,
+  onParticipantDeleted
+}: ParticipantsTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [participantDetails, setParticipantDetails] = useState<any>(null);
+
+  // 🎯 ESTADOS PARA ELIMINACIÓN
+  const [participantToDelete, setParticipantToDelete] = useState<Participant | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const filteredParticipants = participants.filter(participant => {
     const matchesSearch = participant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -92,6 +104,48 @@ export function ParticipantsTable({ participants, onViewDetails, researchId }: P
     setParticipantDetails(null);
   };
 
+  // 🎯 FUNCIÓN PARA ABRIR MODAL DE ELIMINACIÓN
+  const handleDeleteClick = (participant: Participant) => {
+    setParticipantToDelete(participant);
+    setIsDeleteModalOpen(true);
+  };
+
+  // 🎯 FUNCIÓN PARA ELIMINAR PARTICIPANTE
+  const handleDeleteParticipant = async () => {
+    if (!participantToDelete) return;
+
+    setIsDeleting(true);
+
+    try {
+      const response = await researchInProgressAPI.deleteParticipant(researchId, participantToDelete.id);
+
+      if (response.success) {
+        console.log('✅ Participante eliminado exitosamente');
+
+        // 🎯 NOTIFICAR AL COMPONENTE PADRE
+        onParticipantDeleted?.(participantToDelete.id);
+
+        // 🎯 CERRAR MODAL
+        setIsDeleteModalOpen(false);
+        setParticipantToDelete(null);
+      } else {
+        console.error('❌ Error eliminando participante:', response);
+        alert('Error al eliminar participante');
+      }
+    } catch (error) {
+      console.error('❌ Error eliminando participante:', error);
+      alert('Error al eliminar participante');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // 🎯 FUNCIÓN PARA CERRAR MODAL DE ELIMINACIÓN
+  const handleCloseDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+    setParticipantToDelete(null);
+  };
+
   return (
     <>
       <Card>
@@ -101,19 +155,16 @@ export function ParticipantsTable({ participants, onViewDetails, researchId }: P
               <Eye className="h-5 w-5" />
               Participantes ({participants.length})
             </CardTitle>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" />
-                Exportar
-              </Button>
-            </div>
+            <Button variant="outline" size="sm">
+              <Download className="h-4 w-4 mr-2" />
+              Exportar
+            </Button>
           </div>
         </CardHeader>
         <CardContent>
-          {/* Filtros */}
-          <div className="flex items-center gap-4 mb-4">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-500" />
+          <div className="flex gap-4 mb-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
                 placeholder="Buscar participantes..."
                 value={searchTerm}
@@ -124,7 +175,7 @@ export function ParticipantsTable({ participants, onViewDetails, researchId }: P
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 border border-neutral-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">Todos los estados</option>
               <option value="En proceso">En proceso</option>
@@ -133,106 +184,126 @@ export function ParticipantsTable({ participants, onViewDetails, researchId }: P
             </select>
           </div>
 
-          {/* Tabla */}
           <div className="overflow-x-auto">
-            <div className="max-h-[400px] overflow-y-auto">
-              <table className="w-full">
-                <thead className="sticky top-0 bg-white z-10">
-                  <tr className="border-b border-neutral-200">
-                    <th className="text-left py-3 px-4 font-medium text-neutral-700 bg-white">Participante</th>
-                    <th className="text-left py-3 px-4 font-medium text-neutral-700 bg-white">Estado</th>
-                    <th className="text-left py-3 px-4 font-medium text-neutral-700 bg-white">Progreso</th>
-                    <th className="text-left py-3 px-4 font-medium text-neutral-700 bg-white">Duración</th>
-                    <th className="text-left py-3 px-4 font-medium text-neutral-700 bg-white">Última actividad</th>
-                    <th className="text-left py-3 px-4 font-medium text-neutral-700 bg-white">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredParticipants.map((participant) => {
-                    const status = getStatusConfig(participant.status);
-                    const StatusIcon = status.icon;
+            <table className="w-full">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left py-3 px-4 font-medium">Participante</th>
+                  <th className="text-left py-3 px-4 font-medium">Estado</th>
+                  <th className="text-left py-3 px-4 font-medium">Progreso</th>
+                  <th className="text-left py-3 px-4 font-medium">Duración</th>
+                  <th className="text-left py-3 px-4 font-medium">Última actividad</th>
+                  <th className="text-left py-3 px-4 font-medium">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredParticipants.map((participant) => {
+                  const status = getStatusConfig(participant.status);
+                  const StatusIcon = status.icon;
 
-                    return (
-                      <tr
-                        key={participant.id}
-                        className="border-b border-neutral-100 hover:bg-neutral-50 cursor-pointer"
-                        onClick={() => handleParticipantClick(participant)}
-                      >
-                        <td className="py-3 px-4">
-                          <div>
-                            <div className="font-medium text-neutral-900">{participant.name}</div>
-                            <div className="text-sm text-neutral-500">{participant.email}</div>
+                  return (
+                    <tr key={participant.id} className="border-b hover:bg-gray-50">
+                      <td className="py-3 px-4">
+                        <div>
+                          <div className="font-medium">{participant.name}</div>
+                          <div className="text-sm text-gray-500">{participant.email}</div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <Badge className={status.color}>
+                          <StatusIcon className="h-3 w-3 mr-1" />
+                          {status.label}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-20 bg-gray-200 rounded-full h-2">
+                            <div
+                              className="bg-blue-600 h-2 rounded-full"
+                              style={{ width: `${participant.progress}%` }}
+                            />
                           </div>
-                        </td>
-                        <td className="py-3 px-4">
-                          <Badge className={`${status.color} flex items-center gap-1 w-fit`}>
-                            <StatusIcon className="h-3 w-3" />
-                            {status.label}
-                          </Badge>
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-2">
-                            <div className="w-16 bg-neutral-200 rounded-full h-2">
-                              <div
-                                className="bg-blue-600 h-2 rounded-full transition-all"
-                                style={{ width: `${participant.progress}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-sm text-neutral-600">{participant.progress}%</span>
-                          </div>
-                        </td>
-                        <td className="py-3 px-4 text-sm text-neutral-600">
-                          {participant.duration || '--'}
-                        </td>
-                        <td className="py-3 px-4 text-sm text-neutral-600">
-                          {participant.lastActivity}
-                        </td>
-                        <td className="py-3 px-4">
+                          <span className="text-sm text-gray-600">{participant.progress}%</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-gray-600">{participant.duration}</td>
+                      <td className="py-3 px-4 text-gray-600">{participant.lastActivity}</td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onViewDetails(participant.id);
-                            }}
-                            className="h-8 w-8 p-0"
+                            onClick={() => handleParticipantClick(participant)}
                           >
-                            <MoreHorizontal className="h-4 w-4" />
+                            <Eye className="h-4 w-4" />
                           </Button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteClick(participant)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-
-          {filteredParticipants.length === 0 && (
-            <div className="text-center py-8">
-              <div className="text-neutral-500 mb-2">No se encontraron participantes</div>
-              <div className="text-sm text-neutral-400">
-                {searchTerm ? 'Intenta con otros términos de búsqueda' : 'No hay participantes registrados'}
-              </div>
-            </div>
-          )}
         </CardContent>
       </Card>
 
-      {/* Modal de detalles del participante */}
-      <ParticipantDetailsModal
-        participant={participantDetails || (selectedParticipant ? {
-          id: selectedParticipant.id,
-          name: selectedParticipant.name,
-          email: selectedParticipant.email,
-          status: selectedParticipant.status,
-          progress: selectedParticipant.progress,
-          responses: [], // Por ahora vacío, se cargará desde el backend
-          isDisqualified: false
-        } : null)}
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-      />
+      {/* 🎯 MODAL DE DETALLES */}
+      {selectedParticipant && (
+        <ParticipantDetailsModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          participant={selectedParticipant}
+          details={participantDetails}
+        />
+      )}
+
+      {/* 🎯 MODAL DE CONFIRMACIÓN DE ELIMINACIÓN */}
+      {isDeleteModalOpen && participantToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <AlertTriangle className="h-6 w-6 text-red-500" />
+              <h3 className="text-lg font-semibold text-gray-900">
+                Eliminar participante
+              </h3>
+            </div>
+
+            <p className="text-gray-600 mb-6">
+              ¿Estás seguro de que quieres eliminar a <strong>{participantToDelete.name}</strong> ({participantToDelete.email})?
+            </p>
+
+            <p className="text-sm text-red-600 mb-6">
+              ⚠️ Esta acción no se puede deshacer. Se eliminarán todos los datos del participante.
+            </p>
+
+            <div className="flex gap-3 justify-end">
+              <Button
+                variant="outline"
+                onClick={handleCloseDeleteModal}
+                disabled={isDeleting}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteParticipant}
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Eliminando...' : 'Eliminar'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

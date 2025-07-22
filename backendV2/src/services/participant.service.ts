@@ -1,10 +1,10 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import {
-  DynamoDBDocumentClient,
-  PutCommand,
-  GetCommand,
-  QueryCommand,
   DeleteCommand,
+  DynamoDBDocumentClient,
+  GetCommand,
+  PutCommand,
+  QueryCommand,
   ScanCommand
 } from '@aws-sdk/lib-dynamodb';
 import { v4 as uuidv4 } from 'uuid';
@@ -24,8 +24,8 @@ export class ParticipantService {
     }
     const region: string = process.env.APP_REGION || 'us-east-1';
     const client = new DynamoDBClient({
-        region,
-        ...(process.env.IS_OFFLINE === 'true' && { endpoint: 'http://localhost:8000' })
+      region,
+      ...(process.env.IS_OFFLINE === 'true' && { endpoint: 'http://localhost:8000' })
     });
     const marshallOptions = { removeUndefinedValues: true };
     const unmarshallOptions = { wrapNumbers: false };
@@ -57,11 +57,11 @@ export class ParticipantService {
       await this.dynamoClient.send(command);
       return newParticipant;
     } catch (error: any) {
-        console.error('[ParticipantService.create] Error:', error);
-         if (error.name === 'ConditionalCheckFailedException') {
-             throw new ApiError('Conflict: Participant ID collision or already exists.', 409);
-        }
-        throw new ApiError(`Database Error: Could not create participant - ${error.message}`, 500);
+      console.error('[ParticipantService.create] Error:', error);
+      if (error.name === 'ConditionalCheckFailedException') {
+        throw new ApiError('Conflict: Participant ID collision or already exists.', 409);
+      }
+      throw new ApiError(`Database Error: Could not create participant - ${error.message}`, 500);
     }
   }
 
@@ -78,8 +78,8 @@ export class ParticipantService {
       const result = await this.dynamoClient.send(command);
       return result.Item as Participant || null;
     } catch (error: any) {
-        console.error('[ParticipantService.findById] Error:', error);
-        throw new ApiError(`Database Error: Could not retrieve participant by ID - ${error.message}`, 500);
+      console.error('[ParticipantService.findById] Error:', error);
+      throw new ApiError(`Database Error: Could not retrieve participant by ID - ${error.message}`, 500);
     }
   }
 
@@ -101,12 +101,12 @@ export class ParticipantService {
       const result = await this.dynamoClient.send(command);
       return result.Items?.[0] as Participant || null;
     } catch (error: any) {
-        console.error('[ParticipantService.findByEmail] Error:', error);
-         if ((error as Error).message?.includes('index')) {
-            console.error(`Error: GSI '${EMAIL_INDEX_NAME}' not found or not configured correctly for table ${this.tableName}.`);
-            throw new ApiError(`Configuration Error: Missing index for email lookup.`, 500);
-       }
-        throw new ApiError(`Database Error: Could not retrieve participant by email - ${error.message}`, 500);
+      console.error('[ParticipantService.findByEmail] Error:', error);
+      if ((error as Error).message?.includes('index')) {
+        console.error(`Error: GSI '${EMAIL_INDEX_NAME}' not found or not configured correctly for table ${this.tableName}.`);
+        throw new ApiError(`Configuration Error: Missing index for email lookup.`, 500);
+      }
+      throw new ApiError(`Database Error: Could not retrieve participant by email - ${error.message}`, 500);
     }
   }
 
@@ -123,8 +123,8 @@ export class ParticipantService {
       const result = await this.dynamoClient.send(command);
       return (result.Items as Participant[]) || [];
     } catch (error: any) {
-        console.error('[ParticipantService.findAll] Error:', error);
-        throw new ApiError(`Database Error: Could not retrieve all participants - ${error.message}`, 500);
+      console.error('[ParticipantService.findAll] Error:', error);
+      throw new ApiError(`Database Error: Could not retrieve all participants - ${error.message}`, 500);
     }
   }
 
@@ -141,10 +141,127 @@ export class ParticipantService {
       const result = await this.dynamoClient.send(command);
       return result.Attributes as Participant || null;
     } catch (error: any) {
-        console.error('[ParticipantService.delete] Error:', error);
-        throw new ApiError(`Database Error: Could not delete participant - ${error.message}`, 500);
+      console.error('[ParticipantService.delete] Error:', error);
+      throw new ApiError(`Database Error: Could not delete participant - ${error.message}`, 500);
+    }
+  }
+
+  /**
+   * Elimina todos los datos de un participante
+   */
+  async deleteParticipantData(researchId: string, participantId: string): Promise<void> {
+    const context = 'deleteParticipantData';
+
+    try {
+      // 🎯 ELIMINAR REGISTROS DE MODULE-RESPONSES
+      const moduleResponsesQuery = new QueryCommand({
+        TableName: this.tableName,
+        IndexName: 'ResearchIdIndex',
+        KeyConditionExpression: 'researchId = :researchId',
+        FilterExpression: 'participantId = :participantId',
+        ExpressionAttributeValues: {
+          ':researchId': researchId,
+          ':participantId': participantId
+        }
+      });
+
+      const moduleResponses = await this.dynamoClient.send(moduleResponsesQuery);
+
+      if (moduleResponses.Items && moduleResponses.Items.length > 0) {
+        // 🎯 ELIMINAR CADA REGISTRO
+        const deletePromises = moduleResponses.Items.map(item => {
+          const deleteCommand = new DeleteCommand({
+            TableName: this.tableName,
+            Key: {
+              id: item.id,
+              sk: item.sk
+            }
+          });
+          return this.dynamoClient.send(deleteCommand);
+        });
+
+        await Promise.all(deletePromises);
+        console.log(`[ParticipantService.deleteParticipantData] Registros de module-responses eliminados`, {
+          count: moduleResponses.Items.length
+        });
+      }
+
+      // 🎯 ELIMINAR REGISTROS DE PARTICIPANTS
+      const participantsQuery = new QueryCommand({
+        TableName: this.tableName,
+        IndexName: 'ResearchIdIndex',
+        KeyConditionExpression: 'researchId = :researchId',
+        FilterExpression: 'participantId = :participantId',
+        ExpressionAttributeValues: {
+          ':researchId': researchId,
+          ':participantId': participantId
+        }
+      });
+
+      const participants = await this.dynamoClient.send(participantsQuery);
+
+      if (participants.Items && participants.Items.length > 0) {
+        // 🎯 ELIMINAR CADA REGISTRO
+        const deletePromises = participants.Items.map(item => {
+          const deleteCommand = new DeleteCommand({
+            TableName: this.tableName,
+            Key: {
+              id: item.id,
+              sk: item.sk
+            }
+          });
+          return this.dynamoClient.send(deleteCommand);
+        });
+
+        await Promise.all(deletePromises);
+        console.log(`[ParticipantService.deleteParticipantData] Registros de participants eliminados`, {
+          count: participants.Items.length
+        });
+      }
+
+      // 🎯 ELIMINAR REGISTROS DE LOCATION-TRACKING
+      const locationQuery = new QueryCommand({
+        TableName: this.tableName,
+        IndexName: 'ResearchIdIndex',
+        KeyConditionExpression: 'researchId = :researchId',
+        FilterExpression: 'participantId = :participantId',
+        ExpressionAttributeValues: {
+          ':researchId': researchId,
+          ':participantId': participantId
+        }
+      });
+
+      const locations = await this.dynamoClient.send(locationQuery);
+
+      if (locations.Items && locations.Items.length > 0) {
+        // 🎯 ELIMINAR CADA REGISTRO
+        const deletePromises = locations.Items.map(item => {
+          const deleteCommand = new DeleteCommand({
+            TableName: this.tableName,
+            Key: {
+              id: item.id,
+              sk: item.sk
+            }
+          });
+          return this.dynamoClient.send(deleteCommand);
+        });
+
+        await Promise.all(deletePromises);
+        console.log(`[ParticipantService.deleteParticipantData] Registros de location-tracking eliminados`, {
+          count: locations.Items.length
+        });
+      }
+
+      console.log(`[ParticipantService.deleteParticipantData] Datos de participante eliminados exitosamente`, {
+        researchId,
+        participantId
+      });
+
+    } catch (error) {
+      console.error(`[ParticipantService.deleteParticipantData] Error eliminando datos de participante`, { error });
+      throw error;
     }
   }
 }
 
-export const participantService = new ParticipantService(); 
+export const participantService = new ParticipantService();

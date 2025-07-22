@@ -6,23 +6,23 @@ import { structuredLog } from '../utils/logging.util';
 const controller = new QuotaValidationController();
 
 /**
- * Función Lambda para validar participantes contra cuotas
+ * Función Lambda para analizar cuotas de participantes (SOLO ANÁLISIS)
  */
-export const validateParticipantQuotas = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-  const context = 'validateParticipantQuotas';
+export const analyzeParticipantQuotas = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+  const context = 'analyzeParticipantQuotas';
 
   try {
     // 🎯 MANEJAR CORS
     const corsResponse = await corsMiddleware(event);
     if (corsResponse) return corsResponse;
 
-    structuredLog('info', context, 'Validating participant quotas', {
+    structuredLog('info', context, 'Analyzing participant quotas', {
       path: event.path,
       method: event.httpMethod,
       body: event.body
     });
 
-    const result = await controller.validateParticipant(event);
+    const result = await controller.analyzeParticipantQuotas(event);
 
     // 🎯 AGREGAR HEADERS CORS A LA RESPUESTA
     return {
@@ -34,7 +34,7 @@ export const validateParticipantQuotas = async (event: APIGatewayProxyEvent): Pr
     };
 
   } catch (error) {
-    structuredLog('error', context, 'Unexpected error in validateParticipantQuotas', { error });
+    structuredLog('error', context, 'Unexpected error in analyzeParticipantQuotas', { error });
     return {
       statusCode: 500,
       headers: getCorsHeaders(event),
@@ -57,10 +57,9 @@ export const getQuotaStats = async (event: APIGatewayProxyEvent): Promise<APIGat
     const corsResponse = await corsMiddleware(event);
     if (corsResponse) return corsResponse;
 
-    structuredLog('info', context, 'Getting quota statistics', {
+    structuredLog('info', context, 'Getting quota stats', {
       path: event.path,
-      method: event.httpMethod,
-      pathParameters: event.pathParameters
+      method: event.httpMethod
     });
 
     const result = await controller.getQuotaStats(event);

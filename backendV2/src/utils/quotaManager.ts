@@ -27,7 +27,7 @@ export interface QuotaRecord {
 }
 
 export class QuotaManager {
-  constructor() {}
+  constructor() { }
 
   /**
    * Verifica cuota y marca participante como calificado o descalificado
@@ -44,6 +44,12 @@ export class QuotaManager {
       const eyeTrackingConfig = await eyeTrackingService.getByResearchId(researchId);
       if (!eyeTrackingConfig) {
         console.log(`[QuotaManager] ⚠️ No se encontró configuración para investigación: ${researchId}`);
+        return { status: ParticipantStatus.QUALIFIED, order: 1, quotaLimit: 999 };
+      }
+
+      // 🎯 NUEVO: VERIFICAR SI EL SISTEMA LEGACY DE CUOTAS ESTÁ HABILITADO
+      if (!eyeTrackingConfig.participantLimit?.enabled) {
+        console.log(`[QuotaManager] ⚠️ Sistema de cuotas legacy deshabilitado para investigación: ${researchId}`);
         return { status: ParticipantStatus.QUALIFIED, order: 1, quotaLimit: 999 };
       }
 

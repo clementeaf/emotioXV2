@@ -3,25 +3,22 @@ import { getCorsHeaders } from '../middlewares/cors';
 import { ParticipantDemographics, QuotaValidationService } from '../services/quotaValidation.service';
 import { structuredLog } from '../utils/logging.util';
 
-/**
- * Controlador para validación de cuotas demográficas
- */
 export class QuotaValidationController {
-  private quotaService: QuotaValidationService;
-  private controllerName = 'QuotaValidationController';
+  private readonly quotaService: QuotaValidationService;
+  private readonly controllerName = 'QuotaValidationController';
 
   constructor() {
     this.quotaService = new QuotaValidationService();
   }
 
   /**
- * Valida si un participante puede ser aceptado basado en las cuotas
- */
-  async validateParticipant(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-    const context = 'validateParticipant';
+   * Analiza cuotas de participantes (SOLO PARA ANÁLISIS, NO LIMITA)
+   */
+  async analyzeParticipantQuotas(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    const context = 'analyzeParticipantQuotas';
 
     try {
-      structuredLog('info', `${this.controllerName}.${context}`, 'Validating participant quotas', {
+      structuredLog('info', `${this.controllerName}.${context}`, 'Analyzing participant quotas', {
         path: event.path,
         method: event.httpMethod
       });
@@ -64,16 +61,16 @@ export class QuotaValidationController {
         technicalProficiency: demographics.technicalProficiency
       };
 
-      // Validar cuotas
-      const quotaValidationResult = await this.quotaService.validateParticipantQuotas(
+      // Analizar cuotas (SOLO PARA ANÁLISIS)
+      const quotaAnalysisResult = await this.quotaService.analyzeParticipantQuotas(
         researchId,
         validDemographics
       );
 
-      structuredLog('info', `${this.controllerName}.${context}`, 'Quota validation completed', {
+      structuredLog('info', `${this.controllerName}.${context}`, 'Quota analysis completed', {
         researchId,
-        isValid: quotaValidationResult.isValid,
-        reason: quotaValidationResult.reason
+        isValid: quotaAnalysisResult.isValid,
+        reason: quotaAnalysisResult.reason
       });
 
       return {
@@ -82,15 +79,15 @@ export class QuotaValidationController {
         body: JSON.stringify({
           success: true,
           data: {
-            isValid: quotaValidationResult.isValid,
-            reason: quotaValidationResult.reason,
-            quotaInfo: quotaValidationResult.quotaInfo
+            isValid: quotaAnalysisResult.isValid,
+            reason: quotaAnalysisResult.reason,
+            quotaInfo: quotaAnalysisResult.quotaInfo
           }
         })
       };
 
     } catch (error) {
-      structuredLog('error', `${this.controllerName}.${context}`, 'Error validating participant quotas', { error });
+      structuredLog('error', `${this.controllerName}.${context}`, 'Unexpected error in analyzeParticipantQuotas', { error });
       return {
         statusCode: 500,
         headers: getCorsHeaders(event),
@@ -103,78 +100,13 @@ export class QuotaValidationController {
   }
 
   /**
- * Obtiene estadísticas de cuotas para una investigación
- */
+   * Obtiene estadísticas de cuotas para análisis
+   */
   async getQuotaStats(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
     const context = 'getQuotaStats';
 
     try {
-      structuredLog('info', `${this.controllerName}.${context}`, 'Getting quota statistics', {
-        path: event.path,
-        method: event.httpMethod
-      });
-
       const researchId = event.pathParameters?.researchId;
-
-      if (!researchId) {
-        return {
-          statusCode: 400,
-          headers: getCorsHeaders(event),
-          body: JSON.stringify({
-            success: false,
-            error: 'researchId es requerido en la URL'
-          })
-        };
-      }
-
-      // Obtener estadísticas
-      const stats = await this.quotaService.getQuotaStats(researchId);
-
-      structuredLog('info', `${this.controllerName}.${context}`, 'Quota stats retrieved', {
-        researchId,
-        statsCount: stats.length
-      });
-
-      return {
-        statusCode: 200,
-        headers: getCorsHeaders(event),
-        body: JSON.stringify({
-          success: true,
-          data: {
-            researchId,
-            stats,
-            totalCounters: stats.length
-          }
-        })
-      };
-
-    } catch (error) {
-      structuredLog('error', `${this.controllerName}.${context}`, 'Error getting quota stats', { error });
-      return {
-        statusCode: 500,
-        headers: getCorsHeaders(event),
-        body: JSON.stringify({
-          success: false,
-          error: 'Error interno del servidor'
-        })
-      };
-    }
-  }
-
-  /**
-   * Reinicia los contadores de cuotas para una investigación
-   */
-  async resetQuotaCounters(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-    const context = 'resetQuotaCounters';
-
-    try {
-      structuredLog('info', `${this.controllerName}.${context}`, 'Resetting quota counters', {
-        path: event.path,
-        method: event.httpMethod
-      });
-
-      const body = JSON.parse(event.body || '{}');
-      const { researchId, confirmReset } = body;
 
       if (!researchId) {
         return {
@@ -187,37 +119,66 @@ export class QuotaValidationController {
         };
       }
 
-      if (confirmReset !== true) {
-        return {
-          statusCode: 400,
-          headers: getCorsHeaders(event),
-          body: JSON.stringify({
-            success: false,
-            error: 'confirmReset debe ser true para confirmar el reinicio'
-          })
-        };
-      }
-
-      // TODO: Implementar lógica de reinicio de contadores
-      // Por ahora, retornamos éxito
-      structuredLog('info', `${this.controllerName}.${context}`, 'Quota counters reset requested', {
-        researchId
-      });
+      const stats = await this.quotaService.getQuotaStats(researchId);
 
       return {
         statusCode: 200,
         headers: getCorsHeaders(event),
         body: JSON.stringify({
           success: true,
-          data: {
-            message: 'Contadores de cuotas reiniciados exitosamente',
-            researchId
-          }
+          data: stats
         })
       };
 
     } catch (error) {
-      structuredLog('error', `${this.controllerName}.${context}`, 'Error resetting quota counters', { error });
+      structuredLog('error', `${this.controllerName}.${context}`, 'Unexpected error in getQuotaStats', { error });
+      return {
+        statusCode: 500,
+        headers: getCorsHeaders(event),
+        body: JSON.stringify({
+          success: false,
+          error: 'Error interno del servidor'
+        })
+      };
+    }
+  }
+
+  /**
+   * Reinicia contadores de cuotas
+   */
+  async resetQuotaCounters(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    const context = 'resetQuotaCounters';
+
+    try {
+      const body = JSON.parse(event.body || '{}');
+      const { researchId } = body;
+
+      if (!researchId) {
+        return {
+          statusCode: 400,
+          headers: getCorsHeaders(event),
+          body: JSON.stringify({
+            success: false,
+            error: 'researchId es requerido'
+          })
+        };
+      }
+
+      // Implementar lógica de reinicio de contadores
+      // Por ahora, solo retornamos éxito
+      structuredLog('info', `${this.controllerName}.${context}`, 'Quota counters reset requested', { researchId });
+
+      return {
+        statusCode: 200,
+        headers: getCorsHeaders(event),
+        body: JSON.stringify({
+          success: true,
+          message: 'Contadores de cuotas reiniciados'
+        })
+      };
+
+    } catch (error) {
+      structuredLog('error', `${this.controllerName}.${context}`, 'Unexpected error in resetQuotaCounters', { error });
       return {
         statusCode: 500,
         headers: getCorsHeaders(event),

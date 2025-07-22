@@ -165,6 +165,12 @@ api:
         method: GET
         cors: true
 
+    # Eliminar participante específico
+    - http:
+        path: /research/{researchId}/participants/{participantId}
+        method: DELETE
+        cors: true
+
     # Ruta genérica para el resto
     - http:
         path: /{proxy+}
@@ -227,12 +233,12 @@ getLocationStats:
   environment:
     LOCATION_TRACKING_TABLE: ${self:provider.environment.LOCATION_TRACKING_TABLE}
 
-# --- FUNCIONES PARA VALIDACIÓN DE CUOTAS ---
-validateParticipantQuotas:
-  handler: src/functions/quotaValidation.validateParticipantQuotas
+# --- FUNCIONES PARA ANÁLISIS DE CUOTAS (NO LIMITA ENVÍO DE DATOS) ---
+analyzeParticipantQuotas:
+  handler: src/functions/quotaValidation.analyzeParticipantQuotas
   events:
     - http:
-        path: quota-validation/validate
+        path: quota-analysis/analyze
         method: POST
         cors: true
   environment:
@@ -242,7 +248,7 @@ getQuotaStats:
   handler: src/functions/quotaValidation.getQuotaStats
   events:
     - http:
-        path: quota-validation/stats/{researchId}
+        path: quota-analysis/stats/{researchId}
         method: GET
         cors: true
   environment:
@@ -252,7 +258,28 @@ resetQuotaCounters:
   handler: src/functions/quotaValidation.resetQuotaCounters
   events:
     - http:
-        path: quota-validation/reset
+        path: quota-analysis/reset
+        method: POST
+        cors: true
+  environment:
+    DYNAMODB_TABLE: ${self:provider.environment.DYNAMODB_TABLE}
+
+# --- FUNCIONES PARA MONITOREO EN TIEMPO REAL ---
+monitoringEvent:
+  handler: src/controllers/monitoring.controller.handleMonitoringEvent
+  events:
+    - http:
+        path: monitoring/event
+        method: POST
+        cors: true
+  environment:
+    DYNAMODB_TABLE: ${self:provider.environment.DYNAMODB_TABLE}
+
+monitoringSubscribe:
+  handler: src/controllers/monitoring.controller.subscribeToResearch
+  events:
+    - http:
+        path: monitoring/subscribe
         method: POST
         cors: true
   environment:

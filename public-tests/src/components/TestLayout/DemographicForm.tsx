@@ -1,107 +1,94 @@
-import React from 'react';
-import { useSaveModuleResponseMutation } from '../../hooks/useApiQueries';
-import { useDemographicValidation } from '../../hooks/useDemographicValidation';
+import React, { useState } from 'react';
 import { useDisqualificationRedirect } from '../../hooks/useDisqualificationRedirect';
 import { useEyeTrackingConfigQuery } from '../../hooks/useEyeTrackingConfigQuery';
-import { useFormLoadingState } from '../../hooks/useFormLoadingState';
+import { useMonitoringWebSocket } from '../../hooks/useMonitoringWebSocket';
 import { useTestStore } from '../../stores/useTestStore';
-import { DemographicQuotaValidator } from './DemographicQuotaValidator';
-import { LoadingModal } from './LoadingModal';
-import { DemographicFormProps } from './types';
+
+interface DemographicFormProps {
+  demographicQuestions: Record<string, any>;
+  onSubmit?: (data: Record<string, string>) => void;
+}
 
 export const DemographicForm: React.FC<DemographicFormProps> = ({
   demographicQuestions,
   onSubmit
 }) => {
-  const { researchId, participantId } = useTestStore();
-  const { validateDemographics } = useDemographicValidation();
-  const { redirectToDisqualification } = useDisqualificationRedirect();
-  const saveModuleResponse = useSaveModuleResponseMutation();
-
-  // Obtener configuración de eye-tracking
+  const { researchId } = useTestStore();
   const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
+  const { redirectToDisqualification } = useDisqualificationRedirect();
+  const { sendParticipantDisqualified, sendParticipantQuotaExceeded } = useMonitoringWebSocket();
+  const [formValues, setFormValues] = useState<Record<string, any>>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasLoadedData, setHasLoadedData] = useState(false);
 
-  const {
-    isLoading,
-    hasLoadedData,
-    formValues,
-    handleInputChange
-  } = useFormLoadingState({
-    questionKey: 'demographics'
-  });
+  // 🎯 FUNCIÓN PARA MANEJAR CAMBIOS EN LOS INPUTS
+  const handleInputChange = (key: string, value: string) => {
+    setFormValues(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
 
-  // 🎯 NUEVO: Función para guardar datos en DynamoDB
+  // 🎯 FUNCIÓN PARA GUARDAR DEMOGRÁFICOS EN BACKEND
   const saveDemographicsToBackend = async (demographicsData: Record<string, string>, isDisqualified: boolean = false) => {
     try {
-      console.log('[DemographicForm] 🎯 Guardando demográficos en DynamoDB:', {
-        demographicsData,
-        isDisqualified,
-        researchId,
-        participantId
-      });
+      setIsLoading(true);
+      const timestamp = new Date().toISOString();
+      const now = new Date().toISOString();
 
-      const response = await saveModuleResponse.mutateAsync({
-        researchId: researchId!,
-        participantId: participantId!,
+      const createData = {
+        researchId: researchId || '',
+        participantId: `participant-${Date.now()}`,
         questionKey: 'demographics',
-        responses: [
-          {
-            questionKey: 'demographics',
-            response: demographicsData,
-            timestamp: new Date().toISOString(),
-            createdAt: new Date().toISOString()
-          }
-        ],
+        responses: [{
+          questionKey: 'demographics',
+          response: demographicsData,
+          timestamp,
+          createdAt: now
+        }],
         metadata: {
           isDisqualified,
-          disqualificationReason: isDisqualified ? 'demographics' : undefined,
-          deviceInfo: {
-            userAgent: navigator.userAgent,
-            screenSize: `${screen.width}x${screen.height}`,
-            timestamp: new Date().toISOString()
-          },
-          formData: demographicsData
+          disqualificationType: 'demographics',
+          createdAt: now
         }
+      };
+
+      const response = await fetch(`${process.env.VITE_API_URL || 'http://localhost:3000'}/api/module-responses`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(createData)
       });
 
-      console.log('[DemographicForm] ✅ Demográficos guardados exitosamente:', response);
-      return response;
+      if (!response.ok) {
+        throw new Error(`Error guardando demográficos: ${response.status}`);
+      }
+
+      console.log('[DemographicForm] ✅ Demográficos guardados exitosamente');
+      return await response.json();
     } catch (error) {
       console.error('[DemographicForm] ❌ Error guardando demográficos:', error);
       // No lanzar error para no interrumpir el flujo
       return null;
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // 🎯 NUEVO: Manejar validación de cuotas con guardado
-  const handleQuotaValidation = async (isValid: boolean, reason?: string) => {
-    if (!isValid && formValues) {
-      console.log('[DemographicForm] 🎯 Usuario descalificado por cuota:', reason);
-
-      // 🎯 CONVERTIR FORM VALUES A FORMATO CORRECTO
-      const demographicsData = Object.fromEntries(
-        Object.entries(formValues).map(([key, value]) => [key, String(value || '')])
-      ) as Record<string, string>;
-
-      // 🎯 GUARDAR ANTES DE REDIRIGIR
-      await saveDemographicsToBackend(demographicsData, true);
-
-      // 🎯 REDIRIGIR A DESCALIFICACIÓN CON RAZÓN ESPECÍFICA
-      redirectToDisqualification(eyeTrackingConfig, reason || 'Cuota alcanzada');
+  // 🎯 FUNCIÓN PARA VALIDAR DEMOGRÁFICOS
+  const validateDemographics = (data: Record<string, string>, questions: Record<string, any>) => {
+    for (const [key, value] of Object.entries(data)) {
+      const question = questions[key];
+      if (question?.disqualifyingOptions?.includes(value)) {
+        return {
+          isDisqualified: true,
+          reason: `Opción descalificatoria seleccionada: ${value}`
+        };
+      }
     }
+    return { isDisqualified: false };
   };
-
-  // 🎯 NUEVO: Preparar demográficos para validación
-  const demographicsForValidation = formValues ? {
-    age: formValues.age as string,
-    country: formValues.country as string,
-    gender: formValues.gender as string,
-    educationLevel: formValues.educationLevel as string,
-    householdIncome: formValues.householdIncome as string,
-    employmentStatus: formValues.employmentStatus as string,
-    dailyHoursOnline: formValues.dailyHoursOnline as string,
-    technicalProficiency: formValues.technicalProficiency as string
-  } : {};
 
   // 🎯 FUNCIÓN PARA MANEJAR EL ENVÍO DEL FORMULARIO
   const handleSubmit = async (e: React.FormEvent) => {
@@ -123,6 +110,15 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
       // 🎯 GUARDAR ANTES DE REDIRIGIR
       await saveDemographicsToBackend(demographicsData, true);
 
+      // 🎯 ENVIAR EVENTO DE DESCALIFICACIÓN
+      const participantId = `participant-${Date.now()}`;
+      sendParticipantDisqualified(
+        participantId,
+        validationResult.reason || 'Descalificado por criterios demográficos',
+        demographicsData,
+        'demographics'
+      );
+
       // 🎯 REDIRIGIR A DESCALIFICACIÓN
       redirectToDisqualification(eyeTrackingConfig, validationResult.reason);
       return;
@@ -142,7 +138,7 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
   const questionsToShow = eyeTrackingConfig?.demographicQuestions || demographicQuestions;
 
   const questions = Object.entries(questionsToShow)
-    .filter(([_, questionData]) => questionData?.enabled)
+    .filter(([_, questionData]) => (questionData as any)?.enabled)
     .map(([key, questionData]) => {
       const questionDataAny = questionData as any;
 
@@ -157,11 +153,11 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
         questionDataAny?.disqualifyingProficiencies || [];
 
       // 🎯 USAR DIRECTAMENTE LAS OPTIONS DEL BACKEND (YA INCLUYEN DESCALIFICATORIAS)
-      const allOptions = questionData?.options || [];
+      const allOptions = questionDataAny?.options || [];
 
       // 🎯 ORDENAR OPCIONES DE EDAD EN ORDEN NUMÉRICO
       const sortedOptions = key === 'age'
-        ? allOptions.sort((a, b) => {
+        ? allOptions.sort((a: string, b: string) => {
           // Extraer números de los rangos (ej: "18-24" -> 18, "65+" -> 65)
           const getMinAge = (range: string) => {
             if (range.includes('+')) {
@@ -175,8 +171,8 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
 
       return {
         key,
-        enabled: questionData?.enabled || false,
-        required: questionData?.required || false,
+        enabled: questionDataAny?.enabled || false,
+        required: questionDataAny?.required || false,
         options: sortedOptions, // 🎯 OPCIONES ORDENADAS
         disqualifyingOptions
       };
@@ -184,7 +180,12 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
 
   // 🎯 MODAL DE CARGA
   if (isLoading) {
-    return <LoadingModal />;
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <span className="ml-2 text-sm text-gray-600">Guardando...</span>
+      </div>
+    );
   }
 
   // 🎯 VERIFICAR SI HAY PREGUNTAS CONFIGURADAS
@@ -192,12 +193,6 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
 
   return (
     <div className='flex flex-col items-center justify-center h-full gap-10'>
-      {/* 🎯 NUEVO: Validador de cuotas de demográficos */}
-      <DemographicQuotaValidator
-        demographics={demographicsForValidation}
-        onValidationComplete={handleQuotaValidation}
-      />
-
       <div className='mb-2 text-center'>
         <h3 className='text-lg font-semibold mb-2'>Preguntas Demográficas</h3>
         <p className='text-sm text-gray-600'>
@@ -239,7 +234,7 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
               >
                 <option value="">Selecciona una opción</option>
                 {/* 🎯 MOSTRAR TODAS LAS OPCIONES EN ORDEN NORMAL */}
-                {q.options.map((opt, i) => (
+                {q.options.map((opt: string, i: number) => (
                   <option
                     key={i}
                     value={opt}

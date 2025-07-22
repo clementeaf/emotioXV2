@@ -1,9 +1,9 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { participantService } from '../services/participant.service';
-import { getCorsHeaders } from '../middlewares/cors';
-import { z } from 'zod';
 import * as jwt from 'jsonwebtoken';
+import { z } from 'zod';
+import { getCorsHeaders } from '../middlewares/cors';
 import { NewResearchService } from '../services/newResearch.service';
+import { participantService } from '../services/participant.service';
 
 // Schema de validación para participantes
 const ParticipantSchema = z.object({
@@ -97,7 +97,7 @@ export class ParticipantController {
   async getById(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
     try {
       const id = event.pathParameters?.id;
-      
+
       if (!id) {
         return {
           statusCode: 400,
@@ -110,7 +110,7 @@ export class ParticipantController {
       }
 
       const participant = await participantService.findById(id);
-      
+
       if (!participant) {
         return {
           statusCode: 404,
@@ -176,7 +176,7 @@ export class ParticipantController {
   async delete(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
     try {
       const id = event.pathParameters?.id;
-      
+
       if (!id) {
         return {
           statusCode: 400,
@@ -189,7 +189,7 @@ export class ParticipantController {
       }
 
       const participant = await participantService.findById(id);
-      
+
       if (!participant) {
         return {
           statusCode: 404,
@@ -255,7 +255,7 @@ export class ParticipantController {
       }
 
       let participant = await participantService.findByEmail(validatedData.email);
-      
+
       if (participant) {
         if (participant.name !== validatedData.name) {
           console.warn(`[ParticipantController.login] Conflicto de nombre para email existente. Email: ${validatedData.email}, Nombre Guardado: ${participant.name}, Nombre Solicitado: ${validatedData.name}`);
@@ -279,8 +279,8 @@ export class ParticipantController {
       }
 
       const token = jwt.sign(
-        { 
-          id: participant.id, 
+        {
+          id: participant.id,
           email: participant.email,
           researchId: validatedData.researchId,
           type: 'participant'
@@ -299,7 +299,7 @@ export class ParticipantController {
               name: participant.name,
               email: participant.email
             },
-            token: token          
+            token: token
           },
           status: 200
         })
@@ -326,6 +326,64 @@ export class ParticipantController {
         body: JSON.stringify({
           error: error.message || 'Error interno en el login',
           status: error.statusCode || 500
+        })
+      };
+    }
+  }
+
+  /**
+   * Elimina un participante específico de una investigación
+   */
+  async deleteParticipant(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    try {
+      const researchId = event.pathParameters?.researchId;
+      const participantId = event.pathParameters?.participantId;
+
+      if (!researchId || !participantId) {
+        return {
+          statusCode: 400,
+          headers: getCorsHeaders(event),
+          body: JSON.stringify({
+            success: false,
+            error: 'researchId y participantId son requeridos'
+          })
+        };
+      }
+
+      // 🎯 ELIMINAR PARTICIPANTE DE DYNAMODB
+      const deleteData = {
+        researchId,
+        participantId,
+        deletedAt: new Date().toISOString(),
+        deletedBy: 'admin', // TODO: Obtener del token de autenticación
+        reason: 'Manual deletion from dashboard'
+      };
+
+      // 🎯 ELIMINAR REGISTROS RELACIONADOS
+      await participantService.deleteParticipantData(researchId, participantId);
+
+      return {
+        statusCode: 200,
+        headers: getCorsHeaders(event),
+        body: JSON.stringify({
+          success: true,
+          message: 'Participante eliminado correctamente',
+          data: {
+            researchId,
+            participantId,
+            deletedAt: deleteData.deletedAt
+          }
+        })
+      };
+
+    } catch (error) {
+      console.error('Error eliminando participante:', error);
+      return {
+        statusCode: 500,
+        headers: getCorsHeaders(event),
+        body: JSON.stringify({
+          success: false,
+          error: 'Error interno del servidor'
         })
       };
     }
@@ -383,4 +441,4 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
       })
     };
   }
-}; 
+};

@@ -14,6 +14,7 @@ const controllerImports = {
   'cognitive-task': () => import('./controllers/cognitiveTask.controller'),
   's3': () => import('./controllers/s3.controller'),
   'participants': () => import('./controllers/participant.controller'),
+  'monitoring': () => import('./controllers/monitoring.controller'),
 };
 
 // Función para obtener un handler de forma lazy
@@ -77,4 +78,4 @@ export async function getHandler(type: string): Promise<Function | null> {
     logger.error(`Tipo de controlador desconocido: ${type}`);
     return null;
   }
-} 
+}

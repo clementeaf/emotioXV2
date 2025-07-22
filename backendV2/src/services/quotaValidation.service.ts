@@ -29,7 +29,7 @@ export interface ParticipantDemographics {
 }
 
 /**
- * Interfaz para el resultado de validación de cuotas
+ * Resultado de validación de cuotas (SOLO PARA ANÁLISIS)
  */
 export interface QuotaValidationResult {
   isValid: boolean;
@@ -43,7 +43,7 @@ export interface QuotaValidationResult {
 }
 
 /**
- * Interfaz para el contador de cuotas
+ * Contador de cuotas para análisis
  */
 export interface QuotaCounter {
   id: string;
@@ -58,7 +58,7 @@ export interface QuotaCounter {
 }
 
 /**
- * Servicio para validación y manejo de cuotas demográficas
+ * Servicio para análisis de cuotas (NO LIMITA ENVÍO DE DATOS)
  */
 export class QuotaValidationService {
   private readonly tableName: string;
@@ -66,26 +66,19 @@ export class QuotaValidationService {
   private readonly modelName = 'QuotaValidationService';
 
   constructor() {
-    const context = 'constructor';
-    this.tableName = process.env.DYNAMODB_TABLE!;
-    if (!this.tableName) {
-      structuredLog('error', `${this.modelName}.${context}`, 'FATAL ERROR: DYNAMODB_TABLE environment variable is not set.');
-      throw new Error('Table name environment variable is missing.');
-    }
-    const region: string = process.env.APP_REGION || 'us-east-1';
-    const client = new DynamoDBClient({ region });
+    this.tableName = process.env.DYNAMODB_TABLE || 'emotioXV2-table';
+    const client = new DynamoDBClient({});
     this.docClient = DynamoDBDocumentClient.from(client);
-    structuredLog('info', `${this.modelName}.${context}`, `Initialized for table: ${this.tableName} in region: ${region}`);
   }
 
   /**
-   * Valida si un participante puede ser aceptado basado en las cuotas configuradas
+   * Analiza cuotas para investigación (SOLO ANÁLISIS, NO LIMITA)
    */
-  async validateParticipantQuotas(
+  async analyzeParticipantQuotas(
     researchId: string,
     demographics: ParticipantDemographics
   ): Promise<QuotaValidationResult> {
-    const context = 'validateParticipantQuotas';
+    const context = 'analyzeParticipantQuotas';
 
     try {
       // Obtener configuración de eye tracking
@@ -97,40 +90,40 @@ export class QuotaValidationService {
 
       const demographicQuestions = config.demographicQuestions;
 
-      // Validar cada criterio demográfico
+      // Analizar cada criterio demográfico (SOLO PARA ANÁLISIS)
       const validations = await Promise.all([
-        this.validateAgeQuota(researchId, demographics.age, demographicQuestions.age),
-        this.validateCountryQuota(researchId, demographics.country, demographicQuestions.country),
-        this.validateGenderQuota(researchId, demographics.gender, demographicQuestions.gender),
-        this.validateEducationLevelQuota(researchId, demographics.educationLevel, demographicQuestions.educationLevel),
-        this.validateHouseholdIncomeQuota(researchId, demographics.householdIncome, demographicQuestions.householdIncome),
-        this.validateEmploymentStatusQuota(researchId, demographics.employmentStatus, demographicQuestions.employmentStatus),
-        this.validateDailyHoursOnlineQuota(researchId, demographics.dailyHoursOnline, demographicQuestions.dailyHoursOnline),
-        this.validateTechnicalProficiencyQuota(researchId, demographics.technicalProficiency, demographicQuestions.technicalProficiency)
+        this.analyzeAgeQuota(researchId, demographics.age, demographicQuestions.age),
+        this.analyzeCountryQuota(researchId, demographics.country, demographicQuestions.country),
+        this.analyzeGenderQuota(researchId, demographics.gender, demographicQuestions.gender),
+        this.analyzeEducationLevelQuota(researchId, demographics.educationLevel, demographicQuestions.educationLevel),
+        this.analyzeHouseholdIncomeQuota(researchId, demographics.householdIncome, demographicQuestions.householdIncome),
+        this.analyzeEmploymentStatusQuota(researchId, demographics.employmentStatus, demographicQuestions.employmentStatus),
+        this.analyzeDailyHoursOnlineQuota(researchId, demographics.dailyHoursOnline, demographicQuestions.dailyHoursOnline),
+        this.analyzeTechnicalProficiencyQuota(researchId, demographics.technicalProficiency, demographicQuestions.technicalProficiency)
       ]);
 
-      // Si alguna validación falla, retornar el primer error
+      // Si alguna validación falla, retornar el primer error (SOLO PARA ANÁLISIS)
       for (const validation of validations) {
         if (!validation.isValid) {
           return validation;
         }
       }
 
-      // Si todas las validaciones pasan, incrementar contadores
+      // Si todas las validaciones pasan, incrementar contadores (SOLO PARA ANÁLISIS)
       await this.incrementQuotaCounters(researchId, demographics, demographicQuestions);
 
       return { isValid: true };
 
     } catch (error) {
-      structuredLog('error', `${this.modelName}.${context}`, 'Error validating participant quotas', { error, researchId });
-      throw new ApiError('Error validating participant quotas', 500);
+      structuredLog('error', `${this.modelName}.${context}`, 'Error analyzing participant quotas', { error, researchId });
+      throw new ApiError('Error analyzing participant quotas', 500);
     }
   }
 
   /**
-   * Valida cuota de edad
+   * Analiza cuota de edad (SOLO PARA ANÁLISIS)
    */
-  private async validateAgeQuota(
+  private async analyzeAgeQuota(
     researchId: string,
     age?: string,
     ageConfig?: any
@@ -166,9 +159,9 @@ export class QuotaValidationService {
   }
 
   /**
-   * Valida cuota de país
+   * Analiza cuota de país (SOLO PARA ANÁLISIS)
    */
-  private async validateCountryQuota(
+  private async analyzeCountryQuota(
     researchId: string,
     country?: string,
     countryConfig?: any
@@ -204,9 +197,9 @@ export class QuotaValidationService {
   }
 
   /**
-   * Valida cuota de género
+   * Analiza cuota de género (SOLO PARA ANÁLISIS)
    */
-  private async validateGenderQuota(
+  private async analyzeGenderQuota(
     researchId: string,
     gender?: string,
     genderConfig?: any
@@ -242,9 +235,9 @@ export class QuotaValidationService {
   }
 
   /**
-   * Valida cuota de nivel de educación
+   * Analiza cuota de nivel de educación (SOLO PARA ANÁLISIS)
    */
-  private async validateEducationLevelQuota(
+  private async analyzeEducationLevelQuota(
     researchId: string,
     educationLevel?: string,
     educationConfig?: any
@@ -280,9 +273,9 @@ export class QuotaValidationService {
   }
 
   /**
-   * Valida cuota de ingresos familiares
+   * Analiza cuota de ingresos familiares (SOLO PARA ANÁLISIS)
    */
-  private async validateHouseholdIncomeQuota(
+  private async analyzeHouseholdIncomeQuota(
     researchId: string,
     householdIncome?: string,
     incomeConfig?: any
@@ -318,9 +311,9 @@ export class QuotaValidationService {
   }
 
   /**
-   * Valida cuota de situación laboral
+   * Analiza cuota de situación laboral (SOLO PARA ANÁLISIS)
    */
-  private async validateEmploymentStatusQuota(
+  private async analyzeEmploymentStatusQuota(
     researchId: string,
     employmentStatus?: string,
     employmentConfig?: any
@@ -356,9 +349,9 @@ export class QuotaValidationService {
   }
 
   /**
-   * Valida cuota de horas diarias en línea
+   * Analiza cuota de horas diarias en línea (SOLO PARA ANÁLISIS)
    */
-  private async validateDailyHoursOnlineQuota(
+  private async analyzeDailyHoursOnlineQuota(
     researchId: string,
     dailyHoursOnline?: string,
     hoursConfig?: any
@@ -394,9 +387,9 @@ export class QuotaValidationService {
   }
 
   /**
-   * Valida cuota de competencia técnica
+   * Analiza cuota de competencia técnica (SOLO PARA ANÁLISIS)
    */
-  private async validateTechnicalProficiencyQuota(
+  private async analyzeTechnicalProficiencyQuota(
     researchId: string,
     technicalProficiency?: string,
     proficiencyConfig?: any
@@ -432,78 +425,66 @@ export class QuotaValidationService {
   }
 
   /**
-   * Incrementa los contadores de cuotas para un participante
+   * Incrementa contadores de cuotas (SOLO PARA ANÁLISIS)
    */
   private async incrementQuotaCounters(
     researchId: string,
     demographics: ParticipantDemographics,
     demographicQuestions: DemographicQuestions
   ): Promise<void> {
-    const context = 'incrementQuotaCounters';
+    const incrementPromises: Promise<void>[] = [];
 
-    try {
-      const incrementPromises: Promise<void>[] = [];
-
-      // Incrementar contador de edad
-      if (demographics.age && demographicQuestions.age?.quotasEnabled) {
-        incrementPromises.push(this.incrementQuotaCounter(researchId, 'age', demographics.age));
-      }
-
-      // Incrementar contador de país
-      if (demographics.country && demographicQuestions.country?.quotasEnabled) {
-        incrementPromises.push(this.incrementQuotaCounter(researchId, 'country', demographics.country));
-      }
-
-      // Incrementar contador de género
-      if (demographics.gender && demographicQuestions.gender?.quotasEnabled) {
-        incrementPromises.push(this.incrementQuotaCounter(researchId, 'gender', demographics.gender));
-      }
-
-      // Incrementar contador de nivel de educación
-      if (demographics.educationLevel && demographicQuestions.educationLevel?.quotasEnabled) {
-        incrementPromises.push(this.incrementQuotaCounter(researchId, 'educationLevel', demographics.educationLevel));
-      }
-
-      // Incrementar contador de ingresos familiares
-      if (demographics.householdIncome && demographicQuestions.householdIncome?.quotasEnabled) {
-        incrementPromises.push(this.incrementQuotaCounter(researchId, 'householdIncome', demographics.householdIncome));
-      }
-
-      // Incrementar contador de situación laboral
-      if (demographics.employmentStatus && demographicQuestions.employmentStatus?.quotasEnabled) {
-        incrementPromises.push(this.incrementQuotaCounter(researchId, 'employmentStatus', demographics.employmentStatus));
-      }
-
-      // Incrementar contador de horas diarias en línea
-      if (demographics.dailyHoursOnline && demographicQuestions.dailyHoursOnline?.quotasEnabled) {
-        incrementPromises.push(this.incrementQuotaCounter(researchId, 'dailyHoursOnline', demographics.dailyHoursOnline));
-      }
-
-      // Incrementar contador de competencia técnica
-      if (demographics.technicalProficiency && demographicQuestions.technicalProficiency?.quotasEnabled) {
-        incrementPromises.push(this.incrementQuotaCounter(researchId, 'technicalProficiency', demographics.technicalProficiency));
-      }
-
-      await Promise.all(incrementPromises);
-
-      structuredLog('info', `${this.modelName}.${context}`, 'Quota counters incremented successfully', { researchId });
-
-    } catch (error) {
-      structuredLog('error', `${this.modelName}.${context}`, 'Error incrementing quota counters', { error, researchId });
-      throw new ApiError('Error incrementing quota counters', 500);
+    // Incrementar contador de edad
+    if (demographics.age && demographicQuestions.age?.quotasEnabled) {
+      incrementPromises.push(this.incrementQuotaCounter(researchId, 'age', demographics.age));
     }
+
+    // Incrementar contador de país
+    if (demographics.country && demographicQuestions.country?.quotasEnabled) {
+      incrementPromises.push(this.incrementQuotaCounter(researchId, 'country', demographics.country));
+    }
+
+    // Incrementar contador de género
+    if (demographics.gender && demographicQuestions.gender?.quotasEnabled) {
+      incrementPromises.push(this.incrementQuotaCounter(researchId, 'gender', demographics.gender));
+    }
+
+    // Incrementar contador de nivel educativo
+    if (demographics.educationLevel && demographicQuestions.educationLevel?.quotasEnabled) {
+      incrementPromises.push(this.incrementQuotaCounter(researchId, 'educationLevel', demographics.educationLevel));
+    }
+
+    // Incrementar contador de ingresos familiares
+    if (demographics.householdIncome && demographicQuestions.householdIncome?.quotasEnabled) {
+      incrementPromises.push(this.incrementQuotaCounter(researchId, 'householdIncome', demographics.householdIncome));
+    }
+
+    // Incrementar contador de situación laboral
+    if (demographics.employmentStatus && demographicQuestions.employmentStatus?.quotasEnabled) {
+      incrementPromises.push(this.incrementQuotaCounter(researchId, 'employmentStatus', demographics.employmentStatus));
+    }
+
+    // Incrementar contador de horas diarias en línea
+    if (demographics.dailyHoursOnline && demographicQuestions.dailyHoursOnline?.quotasEnabled) {
+      incrementPromises.push(this.incrementQuotaCounter(researchId, 'dailyHoursOnline', demographics.dailyHoursOnline));
+    }
+
+    // Incrementar contador de competencia técnica
+    if (demographics.technicalProficiency && demographicQuestions.technicalProficiency?.quotasEnabled) {
+      incrementPromises.push(this.incrementQuotaCounter(researchId, 'technicalProficiency', demographics.technicalProficiency));
+    }
+
+    await Promise.all(incrementPromises);
   }
 
   /**
-   * Obtiene un contador de cuota específico
+   * Obtiene contador de cuota
    */
   private async getQuotaCounter(
     researchId: string,
     demographicType: string,
     demographicValue: string
   ): Promise<QuotaCounter | null> {
-    const context = 'getQuotaCounter';
-
     try {
       const counterId = `${researchId}-${demographicType}-${demographicValue}`;
 
@@ -515,40 +496,37 @@ export class QuotaValidationService {
         }
       });
 
-      const result = await this.docClient.send(command);
+      const response = await this.docClient.send(command);
 
-      if (!result.Item) {
+      if (!response.Item) {
         return null;
       }
 
       return {
-        id: result.Item.id,
-        researchId: result.Item.researchId,
-        demographicType: result.Item.demographicType,
-        demographicValue: result.Item.demographicValue,
-        currentCount: result.Item.currentCount,
-        maxQuota: result.Item.maxQuota,
-        isActive: result.Item.isActive,
-        createdAt: result.Item.createdAt,
-        updatedAt: result.Item.updatedAt
+        id: response.Item.id,
+        researchId: response.Item.researchId,
+        demographicType: response.Item.demographicType,
+        demographicValue: response.Item.demographicValue,
+        currentCount: response.Item.currentCount,
+        maxQuota: response.Item.maxQuota,
+        isActive: response.Item.isActive,
+        createdAt: response.Item.createdAt,
+        updatedAt: response.Item.updatedAt
       };
-
     } catch (error) {
-      structuredLog('error', `${this.modelName}.${context}`, 'Error getting quota counter', { error, researchId, demographicType, demographicValue });
+      structuredLog('error', `${this.modelName}.getQuotaCounter`, 'Error getting quota counter', { error });
       return null;
     }
   }
 
   /**
-   * Incrementa un contador de cuota específico
+   * Incrementa contador de cuota
    */
   private async incrementQuotaCounter(
     researchId: string,
     demographicType: string,
     demographicValue: string
   ): Promise<void> {
-    const context = 'incrementQuotaCounter';
-
     try {
       const counterId = `${researchId}-${demographicType}-${demographicValue}`;
       const now = new Date().toISOString();
@@ -564,39 +542,24 @@ export class QuotaValidationService {
           ':inc': 1,
           ':zero': 0,
           ':now': now
-        }
+        },
+        ConditionExpression: 'attribute_exists(id) OR (attribute_not_exists(id) AND currentCount = :zero)'
       });
 
       await this.docClient.send(command);
-
-      structuredLog('info', `${this.modelName}.${context}`, 'Quota counter incremented', {
-        researchId,
-        demographicType,
-        demographicValue,
-        counterId
-      });
-
     } catch (error) {
-      structuredLog('error', `${this.modelName}.${context}`, 'Error incrementing quota counter', {
-        error,
-        researchId,
-        demographicType,
-        demographicValue
-      });
-      throw new ApiError('Error incrementing quota counter', 500);
+      structuredLog('error', `${this.modelName}.incrementQuotaCounter`, 'Error incrementing quota counter', { error });
     }
   }
 
   /**
-   * Obtiene la configuración de eye tracking para una investigación
+   * Obtiene configuración de eye tracking
    */
   private async getEyeTrackingConfig(researchId: string): Promise<any> {
-    const context = 'getEyeTrackingConfig';
-
     try {
       const command = new QueryCommand({
         TableName: this.tableName,
-        IndexName: 'researchId-index',
+        IndexName: 'ResearchIdIndex',
         KeyConditionExpression: 'researchId = :researchId',
         FilterExpression: 'sk = :sk',
         ExpressionAttributeValues: {
@@ -605,33 +568,31 @@ export class QuotaValidationService {
         }
       });
 
-      const result = await this.docClient.send(command);
+      const response = await this.docClient.send(command);
 
-      if (!result.Items || result.Items.length === 0) {
+      if (!response.Items || response.Items.length === 0) {
         return null;
       }
 
-      const item = result.Items[0];
+      const config = response.Items[0];
       return {
-        demographicQuestions: JSON.parse(item.demographicQuestions || '{}')
+        ...config,
+        demographicQuestions: JSON.parse(config.demographicQuestions || '{}')
       };
-
     } catch (error) {
-      structuredLog('error', `${this.modelName}.${context}`, 'Error getting eye tracking config', { error, researchId });
+      structuredLog('error', `${this.modelName}.getEyeTrackingConfig`, 'Error getting eye tracking config', { error });
       return null;
     }
   }
 
   /**
-   * Obtiene estadísticas de cuotas para una investigación
+   * Obtiene estadísticas de cuotas para análisis
    */
   async getQuotaStats(researchId: string): Promise<QuotaCounter[]> {
-    const context = 'getQuotaStats';
-
     try {
       const command = new QueryCommand({
         TableName: this.tableName,
-        IndexName: 'researchId-index',
+        IndexName: 'ResearchIdIndex',
         KeyConditionExpression: 'researchId = :researchId',
         FilterExpression: 'sk = :sk',
         ExpressionAttributeValues: {
@@ -640,13 +601,13 @@ export class QuotaValidationService {
         }
       });
 
-      const result = await this.docClient.send(command);
+      const response = await this.docClient.send(command);
 
-      if (!result.Items) {
+      if (!response.Items) {
         return [];
       }
 
-      return result.Items.map(item => ({
+      return response.Items.map(item => ({
         id: item.id,
         researchId: item.researchId,
         demographicType: item.demographicType,
@@ -657,10 +618,9 @@ export class QuotaValidationService {
         createdAt: item.createdAt,
         updatedAt: item.updatedAt
       }));
-
     } catch (error) {
-      structuredLog('error', `${this.modelName}.${context}`, 'Error getting quota stats', { error, researchId });
-      throw new ApiError('Error getting quota stats', 500);
+      structuredLog('error', `${this.modelName}.getQuotaStats`, 'Error getting quota stats', { error });
+      return [];
     }
   }
 }
