@@ -4,6 +4,10 @@ interface QuotaResult {
   status: 'QUALIFIED' | 'DISQUALIFIED_OVERQUOTA';
   order: number;
   quotaLimit: number;
+  // 🎯 NUEVO: Propiedades para cuotas dinámicas
+  demographicType?: string;
+  demographicValue?: string;
+  reason?: string;
 }
 
 interface FormDataState {

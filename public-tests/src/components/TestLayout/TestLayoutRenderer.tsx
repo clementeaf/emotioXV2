@@ -193,12 +193,16 @@ const QuestionComponent: React.FC<{
 // 🎯 RENDERERS PARA DIFERENTES TIPOS DE COMPONENTES
 const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
   screen: ({ contentConfiguration, currentQuestionKey }) => {
+    // 🎯 OBTENER QUOTA RESULT DEL STORE
+    const quotaResult = useFormDataStore(state => state.quotaResult);
+
     // 🎯 COMPONENTE PARA thank_you_screen CON AUTO-GUARDADO
     if (currentQuestionKey === 'thank_you_screen') {
       return (
         <ThankYouScreenComponent
           contentConfiguration={contentConfiguration}
           currentQuestionKey={currentQuestionKey}
+          quotaResult={quotaResult} // 🎯 NUEVO: Pasar información de cuotas
         />
       );
     }
@@ -619,7 +623,8 @@ const UnknownStepComponent: React.FC<{ data: unknown }> = ({ data }) => (
 const ThankYouScreenComponent: React.FC<{
   contentConfiguration: Record<string, unknown>;
   currentQuestionKey: string;
-}> = ({ contentConfiguration, currentQuestionKey }) => {
+  quotaResult?: any; // 🎯 NUEVO: Prop para información de cuotas
+}> = ({ contentConfiguration, currentQuestionKey, quotaResult }) => {
   const { setFormData } = useFormDataStore();
   const { researchId, participantId } = useTestStore();
   const saveModuleResponseMutation = useSaveModuleResponseMutation();
@@ -794,6 +799,10 @@ const ThankYouScreenComponent: React.FC<{
 
   // 🎯 MOSTRAR LINK DE OVERQUOTA SI EXCEDE LA CUOTA
   if (isOverQuota && eyeTrackingConfig?.backlinks?.overquota) {
+    // 🎯 NUEVO: Obtener información específica de cuotas si está disponible
+    const quotaInfo = quotaResult;
+    const hasSpecificQuotaInfo = quotaInfo && quotaInfo.demographicType && quotaInfo.demographicValue;
+
     return (
       <div className='flex flex-col items-center justify-center h-full w-full'>
         <div className="text-center max-w-md mx-auto">
@@ -802,12 +811,36 @@ const ThankYouScreenComponent: React.FC<{
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Cuota de participantes alcanzada
-          </h2>
-          <p className="text-gray-600 mb-6">
-            Lamentamos informarte que ya se ha alcanzado el límite máximo de participantes para esta investigación.
-          </p>
+
+          {/* 🎯 NUEVO: Mostrar información específica de cuotas si está disponible */}
+          {hasSpecificQuotaInfo ? (
+            <>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Cuota alcanzada para {quotaInfo.demographicType}
+              </h2>
+              <p className="text-gray-600 mb-4">
+                Lamentamos informarte que ya se ha alcanzado el límite máximo de participantes
+                para el criterio: <strong>{quotaInfo.demographicType}</strong> con valor <strong>{quotaInfo.demographicValue}</strong>.
+              </p>
+              <div className="bg-orange-50 p-3 rounded-lg border border-orange-200 mb-4">
+                <p className="text-sm text-orange-800">
+                  <strong>Límite configurado:</strong> {quotaInfo.quotaLimit} participantes
+                </p>
+                <p className="text-sm text-orange-800">
+                  <strong>Participantes actuales:</strong> {quotaInfo.order}
+                </p>
+              </div>
+            </>
+          ) : (
+            <>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Cuota de participantes alcanzada
+              </h2>
+              <p className="text-gray-600 mb-6">
+                Lamentamos informarte que ya se ha alcanzado el límite máximo de participantes para esta investigación.
+              </p>
+            </>
+          )}
 
           {/* 🎯 LINK DE OVERQUOTA */}
           <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">

@@ -226,3 +226,34 @@ getLocationStats:
         authorizer: aws_iam
   environment:
     LOCATION_TRACKING_TABLE: ${self:provider.environment.LOCATION_TRACKING_TABLE}
+
+# --- FUNCIONES PARA VALIDACIÓN DE CUOTAS ---
+validateParticipantQuotas:
+  handler: src/functions/quotaValidation.validateParticipantQuotas
+  events:
+    - http:
+        path: quota-validation/validate
+        method: POST
+        cors: true
+  environment:
+    DYNAMODB_TABLE: ${self:provider.environment.DYNAMODB_TABLE}
+
+getQuotaStats:
+  handler: src/functions/quotaValidation.getQuotaStats
+  events:
+    - http:
+        path: quota-validation/stats/{researchId}
+        method: GET
+        cors: true
+  environment:
+    DYNAMODB_TABLE: ${self:provider.environment.DYNAMODB_TABLE}
+
+resetQuotaCounters:
+  handler: src/functions/quotaValidation.resetQuotaCounters
+  events:
+    - http:
+        path: quota-validation/reset
+        method: POST
+        cors: true
+  environment:
+    DYNAMODB_TABLE: ${self:provider.environment.DYNAMODB_TABLE}

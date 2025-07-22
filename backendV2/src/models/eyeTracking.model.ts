@@ -1,21 +1,21 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import {
-    DeleteCommand,
-    DynamoDBDocumentClient,
-    GetCommand,
-    PutCommand,
-    QueryCommand,
-    ScanCommand,
-    UpdateCommand
+  DeleteCommand,
+  DynamoDBDocumentClient,
+  GetCommand,
+  PutCommand,
+  QueryCommand,
+  ScanCommand,
+  UpdateCommand
 } from '@aws-sdk/lib-dynamodb';
 import { v4 as uuidv4 } from 'uuid';
 import {
-    Backlinks,
-    DemographicQuestions,
-    EyeTrackingRecruitConfig,
-    LinkConfig,
-    ParameterOptions,
-    ParticipantLimit
+  Backlinks,
+  DemographicQuestions,
+  EyeTrackingRecruitConfig,
+  LinkConfig,
+  ParameterOptions,
+  ParticipantLimit
 } from '../../../shared/interfaces/eyeTrackingRecruit.interface';
 import { ApiError } from '../utils/errors';
 import { structuredLog } from '../utils/logging.util';
@@ -41,42 +41,66 @@ export const DEFAULT_EYE_TRACKING_CONFIG: EyeTrackingFormData = {
     age: {
       enabled: false,
       required: false,
-      options: ['18-24', '25-34', '35-44', '45-54', '55-64', '65+']
+      options: ['18-24', '25-34', '35-44', '45-54', '55-64', '65+'],
+      // 🎯 NUEVO: SISTEMA DE CUOTAS DINÁMICAS
+      quotas: [],
+      quotasEnabled: false
     },
     country: {
       enabled: false,
       required: false,
-      options: ['ES', 'MX', 'AR', 'CO', 'CL', 'PE']
+      options: ['ES', 'MX', 'AR', 'CO', 'CL', 'PE'],
+      // 🎯 NUEVO: SISTEMA DE CUOTAS DINÁMICAS
+      quotas: [],
+      quotasEnabled: false
     },
     gender: {
       enabled: false,
       required: false,
-      options: ['M', 'F', 'O', 'P']
+      options: ['M', 'F', 'O', 'P'],
+      // 🎯 NUEVO: SISTEMA DE CUOTAS DINÁMICAS
+      quotas: [],
+      quotasEnabled: false
     },
     educationLevel: {
       enabled: false,
       required: false,
-      options: ['1', '2', '3', '4', '5', '6', '7']
+      options: ['1', '2', '3', '4', '5', '6', '7'],
+      // 🎯 NUEVO: SISTEMA DE CUOTAS DINÁMICAS
+      quotas: [],
+      quotasEnabled: false
     },
     householdIncome: {
       enabled: false,
       required: false,
-      options: ['1', '2', '3', '4', '5']
+      options: ['1', '2', '3', '4', '5'],
+      // 🎯 NUEVO: SISTEMA DE CUOTAS DINÁMICAS
+      quotas: [],
+      quotasEnabled: false
     },
     employmentStatus: {
       enabled: false,
       required: false,
-      options: ['employed', 'unemployed', 'student', 'retired']
+      options: ['employed', 'unemployed', 'student', 'retired'],
+      // 🎯 NUEVO: SISTEMA DE CUOTAS DINÁMICAS
+      quotas: [],
+      quotasEnabled: false
     },
     dailyHoursOnline: {
       enabled: false,
       required: false,
-      options: ['0-2', '2-4', '4-6', '6-8', '8+']
+      options: ['0-2', '2-4', '4-6', '6-8', '8+'],
+      // 🎯 NUEVO: SISTEMA DE CUOTAS DINÁMICAS
+      quotas: [],
+      quotasEnabled: false
     },
     technicalProficiency: {
       enabled: false,
       required: false,
-      options: ['beginner', 'intermediate', 'advanced', 'expert']
+      options: ['beginner', 'intermediate', 'advanced', 'expert'],
+      // 🎯 NUEVO: SISTEMA DE CUOTAS DINÁMICAS
+      quotas: [],
+      quotasEnabled: false
     }
   },
   linkConfig: {
@@ -195,26 +219,26 @@ export class EyeTrackingModel {
   }
 
   private mapToRecord(item: EyeTrackingDynamoItem): EyeTrackingRecord {
-      const demographicQuestions = JSON.parse(item.demographicQuestions || '{}') as DemographicQuestions;
-      const linkConfig = JSON.parse(item.linkConfig || '{}') as LinkConfig;
-      const participantLimit = JSON.parse(item.participantLimit || '{}') as ParticipantLimit;
-      const backlinks = JSON.parse(item.backlinks || '{}') as Backlinks;
-      const parameterOptions = JSON.parse(item.parameterOptions || '{}') as ParameterOptions;
-      const metadata = JSON.parse(item.metadata || '{}');
+    const demographicQuestions = JSON.parse(item.demographicQuestions || '{}') as DemographicQuestions;
+    const linkConfig = JSON.parse(item.linkConfig || '{}') as LinkConfig;
+    const participantLimit = JSON.parse(item.participantLimit || '{}') as ParticipantLimit;
+    const backlinks = JSON.parse(item.backlinks || '{}') as Backlinks;
+    const parameterOptions = JSON.parse(item.parameterOptions || '{}') as ParameterOptions;
+    const metadata = JSON.parse(item.metadata || '{}');
 
-      return {
-        id: item.id,
-        researchId: item.researchId,
-        demographicQuestions,
-        linkConfig,
-        participantLimit,
-        backlinks,
-        researchUrl: item.researchUrl,
-        parameterOptions,
-        metadata,
-        createdAt: new Date(item.createdAt),
-        updatedAt: new Date(item.updatedAt)
-      };
+    return {
+      id: item.id,
+      researchId: item.researchId,
+      demographicQuestions,
+      linkConfig,
+      participantLimit,
+      backlinks,
+      researchUrl: item.researchUrl,
+      parameterOptions,
+      metadata,
+      createdAt: new Date(item.createdAt),
+      updatedAt: new Date(item.updatedAt)
+    };
   }
 
   async create(data: EyeTrackingFormData, researchId: string): Promise<EyeTrackingRecord> {
@@ -246,24 +270,24 @@ export class EyeTrackingModel {
     const command = new PutCommand({ TableName: this.tableName, Item: item });
 
     try {
-        await this.docClient.send(command);
-        structuredLog('info', `${this.modelName}.${context}`, 'Configuración creada', { id: eyeTrackingId, researchId });
-        return this.mapToRecord(item);
+      await this.docClient.send(command);
+      structuredLog('info', `${this.modelName}.${context}`, 'Configuración creada', { id: eyeTrackingId, researchId });
+      return this.mapToRecord(item);
     } catch (error: any) {
-        structuredLog('error', `${this.modelName}.${context}`, 'Error detallado de DynamoDB PutCommand', { error: error, researchId, id: eyeTrackingId });
-        throw new ApiError(`DATABASE_ERROR: Error al crear la configuración de eye tracking: ${error.message}`, 500);
+      structuredLog('error', `${this.modelName}.${context}`, 'Error detallado de DynamoDB PutCommand', { error: error, researchId, id: eyeTrackingId });
+      throw new ApiError(`DATABASE_ERROR: Error al crear la configuración de eye tracking: ${error.message}`, 500);
     }
   }
 
   async getById(id: string): Promise<EyeTrackingRecord | null> {
     const context = 'getById';
     const command = new GetCommand({
-        TableName: this.tableName,
-        Key: {
-          id: id,
-          sk: EyeTrackingModel.SORT_KEY_VALUE
-        }
-      });
+      TableName: this.tableName,
+      Key: {
+        id: id,
+        sk: EyeTrackingModel.SORT_KEY_VALUE
+      }
+    });
 
     try {
       const result = await this.docClient.send(command);
@@ -274,23 +298,23 @@ export class EyeTrackingModel {
       structuredLog('debug', `${this.modelName}.${context}`, 'Configuración encontrada por ID', { id });
       return this.mapToRecord(result.Item as EyeTrackingDynamoItem);
     } catch (error: any) {
-        structuredLog('error', `${this.modelName}.${context}`, 'Error detallado de DynamoDB GetCommand', { error: error, id });
-        throw new ApiError(`DATABASE_ERROR: Error al obtener la configuración de eye tracking por ID: ${error.message}`, 500);
+      structuredLog('error', `${this.modelName}.${context}`, 'Error detallado de DynamoDB GetCommand', { error: error, id });
+      throw new ApiError(`DATABASE_ERROR: Error al obtener la configuración de eye tracking por ID: ${error.message}`, 500);
     }
   }
 
   async getByResearchId(researchId: string): Promise<EyeTrackingRecord | null> {
     const context = 'getByResearchId';
     const command = new QueryCommand({
-        TableName: this.tableName,
-        IndexName: 'researchId-index',
-        KeyConditionExpression: 'researchId = :rid',
-        FilterExpression: 'sk = :skVal',
-        ExpressionAttributeValues: {
-          ':rid': researchId,
-          ':skVal': EyeTrackingModel.SORT_KEY_VALUE
-        },
-      });
+      TableName: this.tableName,
+      IndexName: 'researchId-index',
+      KeyConditionExpression: 'researchId = :rid',
+      FilterExpression: 'sk = :skVal',
+      ExpressionAttributeValues: {
+        ':rid': researchId,
+        ':skVal': EyeTrackingModel.SORT_KEY_VALUE
+      },
+    });
 
     try {
       const result = await this.docClient.send(command);
@@ -299,12 +323,12 @@ export class EyeTrackingModel {
       }
       return this.mapToRecord(result.Items[0] as EyeTrackingDynamoItem);
     } catch (error: any) {
-        structuredLog('error', `${this.modelName}.${context}`, 'Error al obtener eye tracking por researchId (Query GSI)', { error: error, researchId });
-        if ((error as Error).message?.includes('index')) {
-           structuredLog('error', `${this.modelName}.${context}`, 'Índice GSI researchId-index no encontrado o mal configurado');
-           throw new ApiError("DATABASE_ERROR: Error de configuración de base de datos: falta índice para búsqueda.", 500);
-        }
-        throw new ApiError(`DATABASE_ERROR: Error al buscar configuración asociada a la investigación: ${error.message}`, 500);
+      structuredLog('error', `${this.modelName}.${context}`, 'Error al obtener eye tracking por researchId (Query GSI)', { error: error, researchId });
+      if ((error as Error).message?.includes('index')) {
+        structuredLog('error', `${this.modelName}.${context}`, 'Índice GSI researchId-index no encontrado o mal configurado');
+        throw new ApiError("DATABASE_ERROR: Error de configuración de base de datos: falta índice para búsqueda.", 500);
+      }
+      throw new ApiError(`DATABASE_ERROR: Error al buscar configuración asociada a la investigación: ${error.message}`, 500);
     }
   }
 
@@ -350,10 +374,10 @@ export class EyeTrackingModel {
     const currentMetadataObject = currentRecord.metadata || {};
     const incomingMetadata = data.metadata || {};
     const newMetadata = {
-        ...currentMetadataObject,
-        ...incomingMetadata,
-        updatedAt: now,
-        lastModifiedBy: incomingMetadata.lastModifiedBy || currentMetadataObject.lastModifiedBy || 'system'
+      ...currentMetadataObject,
+      ...incomingMetadata,
+      updatedAt: now,
+      lastModifiedBy: incomingMetadata.lastModifiedBy || currentMetadataObject.lastModifiedBy || 'system'
     };
     updateExpression += ', metadata = :metadata';
     expressionAttributeValues[':metadata'] = JSON.stringify(newMetadata);
@@ -377,8 +401,8 @@ export class EyeTrackingModel {
       structuredLog('info', `${this.modelName}.${context}`, 'Configuración actualizada', { id });
       return this.mapToRecord(result.Attributes as EyeTrackingDynamoItem);
     } catch (error: any) {
-        structuredLog('error', `${this.modelName}.${context}`, 'Error detallado de DynamoDB UpdateCommand', { error: error, id });
-        throw new ApiError(`DATABASE_ERROR: Error al actualizar la configuración de eye tracking: ${error.message}`, 500);
+      structuredLog('error', `${this.modelName}.${context}`, 'Error detallado de DynamoDB UpdateCommand', { error: error, id });
+      throw new ApiError(`DATABASE_ERROR: Error al actualizar la configuración de eye tracking: ${error.message}`, 500);
     }
   }
 
@@ -389,8 +413,8 @@ export class EyeTrackingModel {
     const context = 'delete';
     const existing = await this.getById(id);
     if (!existing) {
-        structuredLog('warn', `${this.modelName}.${context}`, 'Intento de eliminar configuración no existente', { id });
-        throw new ApiError(`EYE_TRACKING_CONFIG_NOT_FOUND: Configuración con ID ${id} no encontrada para eliminar.`, 404);
+      structuredLog('warn', `${this.modelName}.${context}`, 'Intento de eliminar configuración no existente', { id });
+      throw new ApiError(`EYE_TRACKING_CONFIG_NOT_FOUND: Configuración con ID ${id} no encontrada para eliminar.`, 404);
     }
 
     const command = new DeleteCommand({
@@ -405,8 +429,8 @@ export class EyeTrackingModel {
       await this.docClient.send(command);
       structuredLog('info', `${this.modelName}.${context}`, 'Configuración eliminada', { id });
     } catch (error: any) {
-        structuredLog('error', `${this.modelName}.${context}`, 'Error detallado de DynamoDB DeleteCommand', { error: error, id });
-        throw new ApiError(`DATABASE_ERROR: Error al eliminar la configuración de eye tracking: ${error.message}`, 500);
+      structuredLog('error', `${this.modelName}.${context}`, 'Error detallado de DynamoDB DeleteCommand', { error: error, id });
+      throw new ApiError(`DATABASE_ERROR: Error al eliminar la configuración de eye tracking: ${error.message}`, 500);
     }
   }
 
@@ -430,8 +454,8 @@ export class EyeTrackingModel {
       structuredLog('debug', `${this.modelName}.${context}`, `Scan completado, encontrados ${items.length} items.`);
       return items.map(item => this.mapToRecord(item as EyeTrackingDynamoItem));
     } catch (error: any) {
-        structuredLog('error', `${this.modelName}.${context}`, 'Error detallado de DynamoDB ScanCommand', { error: error });
-        throw new ApiError(`DATABASE_ERROR: Error al obtener todas las configuraciones de eye tracking: ${error.message}`, 500);
+      structuredLog('error', `${this.modelName}.${context}`, 'Error detallado de DynamoDB ScanCommand', { error: error });
+      throw new ApiError(`DATABASE_ERROR: Error al obtener todas las configuraciones de eye tracking: ${error.message}`, 500);
     }
   }
 }

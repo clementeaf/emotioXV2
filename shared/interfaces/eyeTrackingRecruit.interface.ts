@@ -28,6 +28,55 @@ export type ParameterOptionKeys =
   | 'saveResponseTimes'
   | 'saveUserJourney';
 
+// 🎯 NUEVAS INTERFACES PARA SISTEMA DE CUOTAS DINÁMICAS
+export interface AgeQuota {
+  ageRange: string;
+  quota: number;
+  isActive: boolean;
+}
+
+export interface CountryQuota {
+  country: string;
+  quota: number;
+  isActive: boolean;
+}
+
+export interface GenderQuota {
+  gender: string;
+  quota: number;
+  isActive: boolean;
+}
+
+export interface EducationLevelQuota {
+  educationLevel: string;
+  quota: number;
+  isActive: boolean;
+}
+
+export interface HouseholdIncomeQuota {
+  incomeLevel: string;
+  quota: number;
+  isActive: boolean;
+}
+
+export interface EmploymentStatusQuota {
+  employmentStatus: string;
+  quota: number;
+  isActive: boolean;
+}
+
+export interface DailyHoursOnlineQuota {
+  hoursRange: string;
+  quota: number;
+  isActive: boolean;
+}
+
+export interface TechnicalProficiencyQuota {
+  proficiencyLevel: string;
+  quota: number;
+  isActive: boolean;
+}
+
 // Estructura para las preguntas demográficas
 export interface DemographicQuestions {
   age: {
@@ -35,48 +84,72 @@ export interface DemographicQuestions {
     required: boolean;
     options?: string[]; // Rangos de edad predefinidos
     disqualifyingAges?: string[]; // Edades que descalifican
+    // 🎯 NUEVO: SISTEMA DE CUOTAS DINÁMICAS
+    quotas?: AgeQuota[];
+    quotasEnabled?: boolean;
   };
   country: {
     enabled: boolean;
     required: boolean;
     options?: string[]; // Lista de países o "all"
     disqualifyingCountries?: string[]; // Países que descalifican
+    // 🎯 NUEVO: SISTEMA DE CUOTAS DINÁMICAS
+    quotas?: CountryQuota[];
+    quotasEnabled?: boolean;
   };
   gender: {
     enabled: boolean;
     required: boolean;
     options?: string[]; // Lista de opciones de género
     disqualifyingGenders?: string[]; // Géneros que descalifican
+    // 🎯 NUEVO: SISTEMA DE CUOTAS DINÁMICAS
+    quotas?: GenderQuota[];
+    quotasEnabled?: boolean;
   };
   educationLevel: {
     enabled: boolean;
     required: boolean;
     options?: string[]; // Niveles de educación
     disqualifyingEducation?: string[]; // Niveles educativos que descalifican
+    // 🎯 NUEVO: SISTEMA DE CUOTAS DINÁMICAS
+    quotas?: EducationLevelQuota[];
+    quotasEnabled?: boolean;
   };
   householdIncome: {
     enabled: boolean;
     required: boolean;
     options?: string[]; // Rangos de ingresos
     disqualifyingIncomes?: string[]; // Ingresos que descalifican
+    // 🎯 NUEVO: SISTEMA DE CUOTAS DINÁMICAS
+    quotas?: HouseholdIncomeQuota[];
+    quotasEnabled?: boolean;
   };
   employmentStatus: {
     enabled: boolean;
     required: boolean;
     options?: string[]; // Estados de empleo
     disqualifyingEmploymentStatuses?: string[]; // Estados de empleo que descalifican
+    // 🎯 NUEVO: SISTEMA DE CUOTAS DINÁMICAS
+    quotas?: EmploymentStatusQuota[];
+    quotasEnabled?: boolean;
   };
   dailyHoursOnline: {
     enabled: boolean;
     required: boolean;
     options?: string[]; // Rangos de horas
     disqualifyingHours?: string[]; // Horas que descalifican
+    // 🎯 NUEVO: SISTEMA DE CUOTAS DINÁMICAS
+    quotas?: DailyHoursOnlineQuota[];
+    quotasEnabled?: boolean;
   };
   technicalProficiency: {
     enabled: boolean;
     required: boolean;
     options?: string[]; // Niveles de habilidad técnica
     disqualifyingProficiencies?: string[]; // Niveles de competencia que descalifican
+    // 🎯 NUEVO: SISTEMA DE CUOTAS DINÁMICAS
+    quotas?: TechnicalProficiencyQuota[];
+    quotasEnabled?: boolean;
   };
 }
 

@@ -1,14 +1,21 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import {
+  AgeQuota,
+  CountryQuota,
+  DailyHoursOnlineQuota,
   DemographicQuestionKeys,
+  EducationLevelQuota,
+  EmploymentStatusQuota,
   EyeTrackingRecruitStats,
+  GenderQuota,
+  HouseholdIncomeQuota,
   LinkConfigKeys,
   ParameterOptionKeys,
+  TechnicalProficiencyQuota,
 } from 'shared/interfaces/eyeTrackingRecruit.interface';
 
 import { useErrorLog } from '@/components/utils/ErrorLogger';
@@ -28,6 +35,8 @@ interface UseEyeTrackingRecruitProps {
 }
 
 // Definición de interfaces para datos del formulario
+// 🎯 LAS INTERFACES DE CUOTAS SE IMPORTAN DESDE shared/interfaces/eyeTrackingRecruit.interface.ts
+
 interface EyeTrackingRecruitFormData {
   id?: string;
   researchId: string;
@@ -38,48 +47,72 @@ interface EyeTrackingRecruitFormData {
       required: boolean;
       options: string[];
       disqualifyingAges?: string[];
+      // 🎯 NUEVO: SISTEMA DE CUOTAS DINÁMICAS
+      quotas?: AgeQuota[];
+      quotasEnabled?: boolean;
     };
     country: {
       enabled: boolean;
       required: boolean;
       options: string[];
       disqualifyingCountries?: string[];
+      // 🎯 NUEVO: SISTEMA DE CUOTAS DINÁMICAS
+      quotas?: CountryQuota[];
+      quotasEnabled?: boolean;
     };
     gender: {
       enabled: boolean;
       required: boolean;
       options: string[];
       disqualifyingGenders?: string[];
+      // 🎯 NUEVO: SISTEMA DE CUOTAS DINÁMICAS
+      quotas?: GenderQuota[];
+      quotasEnabled?: boolean;
     };
     educationLevel: {
       enabled: boolean;
       required: boolean;
       options: string[];
       disqualifyingEducation?: string[];
+      // 🎯 NUEVO: SISTEMA DE CUOTAS DINÁMICAS
+      quotas?: EducationLevelQuota[];
+      quotasEnabled?: boolean;
     };
     householdIncome: {
       enabled: boolean;
       required: boolean;
       options: string[];
       disqualifyingIncomes?: string[];
+      // 🎯 NUEVO: SISTEMA DE CUOTAS DINÁMICAS
+      quotas?: HouseholdIncomeQuota[];
+      quotasEnabled?: boolean;
     };
     employmentStatus: {
       enabled: boolean;
       required: boolean;
       options: string[];
       disqualifyingEmploymentStatuses?: string[];
+      // 🎯 NUEVO: SISTEMA DE CUOTAS DINÁMICAS
+      quotas?: EmploymentStatusQuota[];
+      quotasEnabled?: boolean;
     };
     dailyHoursOnline: {
       enabled: boolean;
       required: boolean;
       options: string[];
       disqualifyingHours?: string[];
+      // 🎯 NUEVO: SISTEMA DE CUOTAS DINÁMICAS
+      quotas?: DailyHoursOnlineQuota[];
+      quotasEnabled?: boolean;
     };
     technicalProficiency: {
       enabled: boolean;
       required: boolean;
       options: string[];
       disqualifyingProficiencies?: string[];
+      // 🎯 NUEVO: SISTEMA DE CUOTAS DINÁMICAS
+      quotas?: TechnicalProficiencyQuota[];
+      quotasEnabled?: boolean;
     };
   };
   linkConfig: {
@@ -144,8 +177,38 @@ interface UseEyeTrackingRecruitResult {
   updateTechnicalProficiencyOptions: (options: string[]) => void;
   updateDisqualifyingTechnicalProficiencies: (disqualifyingProficiencies: string[]) => void;
 
-  // 🎯 NUEVA FUNCIÓN PARA MANEJAR CONFIGURACIÓN DE EDAD
+  // 🎯 NUEVAS FUNCIONES PARA MANEJAR CONFIGURACIÓN DE EDAD CON CUOTAS
   handleAgeConfigSave: (validAges: string[], disqualifyingAges: string[]) => void;
+  handleAgeQuotasSave: (quotas: AgeQuota[]) => void;
+  toggleAgeQuotasEnabled: (enabled: boolean) => void;
+
+  // 🎯 NUEVAS FUNCIONES PARA MANEJAR CONFIGURACIÓN DE PAÍS CON CUOTAS
+  handleCountryQuotasSave: (quotas: CountryQuota[]) => void;
+  toggleCountryQuotasEnabled: (enabled: boolean) => void;
+
+  // 🎯 NUEVAS FUNCIONES PARA MANEJAR CONFIGURACIÓN DE GÉNERO CON CUOTAS
+  handleGenderQuotasSave: (quotas: GenderQuota[]) => void;
+  toggleGenderQuotasEnabled: (enabled: boolean) => void;
+
+  // 🎯 NUEVAS FUNCIONES PARA MANEJAR CONFIGURACIÓN DE NIVEL DE EDUCACIÓN CON CUOTAS
+  handleEducationLevelQuotasSave: (quotas: EducationLevelQuota[]) => void;
+  toggleEducationLevelQuotasEnabled: (enabled: boolean) => void;
+
+  // 🎯 NUEVAS FUNCIONES PARA MANEJAR CONFIGURACIÓN DE INGRESOS FAMILIARES CON CUOTAS
+  handleHouseholdIncomeQuotasSave: (quotas: HouseholdIncomeQuota[]) => void;
+  toggleHouseholdIncomeQuotasEnabled: (enabled: boolean) => void;
+
+  // 🎯 NUEVAS FUNCIONES PARA MANEJAR CONFIGURACIÓN DE SITUACIÓN LABORAL CON CUOTAS
+  handleEmploymentStatusQuotasSave: (quotas: EmploymentStatusQuota[]) => void;
+  toggleEmploymentStatusQuotasEnabled: (enabled: boolean) => void;
+
+  // 🎯 NUEVAS FUNCIONES PARA MANEJAR CONFIGURACIÓN DE HORAS DIARIAS EN LÍNEA CON CUOTAS
+  handleDailyHoursOnlineQuotasSave: (quotas: DailyHoursOnlineQuota[]) => void;
+  toggleDailyHoursOnlineQuotasEnabled: (enabled: boolean) => void;
+
+  // 🎯 NUEVAS FUNCIONES PARA MANEJAR CONFIGURACIÓN DE COMPETENCIA TÉCNICA CON CUOTAS
+  handleTechnicalProficiencyQuotasSave: (quotas: TechnicalProficiencyQuota[]) => void;
+  toggleTechnicalProficiencyQuotasEnabled: (enabled: boolean) => void;
 
   // Acciones
   saveForm: () => void;
@@ -199,48 +262,72 @@ const DEFAULT_CONFIG: EyeTrackingRecruitFormData = {
       enabled: false,
       required: false,
       options: [],
-      disqualifyingAges: []
+      disqualifyingAges: [],
+      // 🎯 NUEVO: SISTEMA DE CUOTAS DINÁMICAS
+      quotas: [],
+      quotasEnabled: false
     },
     country: {
       enabled: false,
       required: false,
-      options: []
+      options: [],
+      // 🎯 NUEVO: SISTEMA DE CUOTAS DINÁMICAS
+      quotas: [],
+      quotasEnabled: false
     },
     gender: {
       enabled: false,
       required: false,
       options: [],
-      disqualifyingGenders: []
+      disqualifyingGenders: [],
+      // 🎯 NUEVO: SISTEMA DE CUOTAS DINÁMICAS
+      quotas: [],
+      quotasEnabled: false
     },
     educationLevel: {
       enabled: false,
       required: false,
       options: [],
-      disqualifyingEducation: []
+      disqualifyingEducation: [],
+      // 🎯 NUEVO: SISTEMA DE CUOTAS DINÁMICAS
+      quotas: [],
+      quotasEnabled: false
     },
     householdIncome: {
       enabled: false,
       required: false,
       options: [],
-      disqualifyingIncomes: []
+      disqualifyingIncomes: [],
+      // 🎯 NUEVO: SISTEMA DE CUOTAS DINÁMICAS
+      quotas: [],
+      quotasEnabled: false
     },
     employmentStatus: {
       enabled: false,
       required: false,
       options: [],
-      disqualifyingEmploymentStatuses: []
+      disqualifyingEmploymentStatuses: [],
+      // 🎯 NUEVO: SISTEMA DE CUOTAS DINÁMICAS
+      quotas: [],
+      quotasEnabled: false
     },
     dailyHoursOnline: {
       enabled: false,
       required: false,
       options: [],
-      disqualifyingHours: []
+      disqualifyingHours: [],
+      // 🎯 NUEVO: SISTEMA DE CUOTAS DINÁMICAS
+      quotas: [],
+      quotasEnabled: false
     },
     technicalProficiency: {
       enabled: false,
       required: false,
       options: [],
-      disqualifyingProficiencies: []
+      disqualifyingProficiencies: [],
+      // 🎯 NUEVO: SISTEMA DE CUOTAS DINÁMICAS
+      quotas: [],
+      quotasEnabled: false
     }
   },
   linkConfig: {
@@ -354,7 +441,7 @@ const processApiResponse = (response: any): EyeTrackingRecruitFormData => {
 
 // Hook principal
 export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps): UseEyeTrackingRecruitResult {
-  const router = useRouter();
+
   const logger = useErrorLog();
   const queryClient = useQueryClient();
 
@@ -976,6 +1063,262 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     });
   }, []);
 
+  // 🎯 NUEVA FUNCIÓN PARA MANEJAR CUOTAS DE EDAD
+  const handleAgeQuotasSave = useCallback((quotas: AgeQuota[]) => {
+    console.log('[handleAgeQuotasSave] 🎯 Guardando cuotas de edad:', quotas);
+
+    setFormData(prevData => ({
+      ...prevData,
+      demographicQuestions: {
+        ...prevData.demographicQuestions,
+        age: {
+          ...prevData.demographicQuestions.age,
+          quotas: quotas
+        }
+      }
+    }));
+  }, []);
+
+  // 🎯 NUEVA FUNCIÓN PARA ACTIVAR/DESACTIVAR CUOTAS DE EDAD
+  const toggleAgeQuotasEnabled = useCallback((enabled: boolean) => {
+    console.log('[toggleAgeQuotasEnabled] 🎯 Cambiando estado de cuotas:', enabled);
+
+    setFormData(prevData => ({
+      ...prevData,
+      demographicQuestions: {
+        ...prevData.demographicQuestions,
+        age: {
+          ...prevData.demographicQuestions.age,
+          quotasEnabled: enabled
+        }
+      }
+    }));
+  }, []);
+
+  // 🎯 NUEVA FUNCIÓN PARA MANEJAR CUOTAS DE PAÍS
+  const handleCountryQuotasSave = useCallback((quotas: CountryQuota[]) => {
+    console.log('[handleCountryQuotasSave] 🎯 Guardando cuotas de país:', quotas);
+
+    setFormData(prevData => ({
+      ...prevData,
+      demographicQuestions: {
+        ...prevData.demographicQuestions,
+        country: {
+          ...prevData.demographicQuestions.country,
+          quotas: quotas
+        }
+      }
+    }));
+  }, []);
+
+  // 🎯 NUEVA FUNCIÓN PARA ACTIVAR/DESACTIVAR CUOTAS DE PAÍS
+  const toggleCountryQuotasEnabled = useCallback((enabled: boolean) => {
+    console.log('[toggleCountryQuotasEnabled] 🎯 Cambiando estado de cuotas de país:', enabled);
+
+    setFormData(prevData => ({
+      ...prevData,
+      demographicQuestions: {
+        ...prevData.demographicQuestions,
+        country: {
+          ...prevData.demographicQuestions.country,
+          quotasEnabled: enabled
+        }
+      }
+    }));
+  }, []);
+
+  // 🎯 NUEVA FUNCIÓN PARA MANEJAR CUOTAS DE GÉNERO
+  const handleGenderQuotasSave = useCallback((quotas: GenderQuota[]) => {
+    console.log('[handleGenderQuotasSave] 🎯 Guardando cuotas de género:', quotas);
+
+    setFormData(prevData => ({
+      ...prevData,
+      demographicQuestions: {
+        ...prevData.demographicQuestions,
+        gender: {
+          ...prevData.demographicQuestions.gender,
+          quotas: quotas
+        }
+      }
+    }));
+  }, []);
+
+  // 🎯 NUEVA FUNCIÓN PARA ACTIVAR/DESACTIVAR CUOTAS DE GÉNERO
+  const toggleGenderQuotasEnabled = useCallback((enabled: boolean) => {
+    console.log('[toggleGenderQuotasEnabled] 🎯 Cambiando estado de cuotas de género:', enabled);
+
+    setFormData(prevData => ({
+      ...prevData,
+      demographicQuestions: {
+        ...prevData.demographicQuestions,
+        gender: {
+          ...prevData.demographicQuestions.gender,
+          quotasEnabled: enabled
+        }
+      }
+    }));
+  }, []);
+
+  // 🎯 NUEVA FUNCIÓN PARA MANEJAR CUOTAS DE NIVEL DE EDUCACIÓN
+  const handleEducationLevelQuotasSave = useCallback((quotas: EducationLevelQuota[]) => {
+    console.log('[handleEducationLevelQuotasSave] 🎯 Guardando cuotas de nivel de educación:', quotas);
+
+    setFormData(prevData => ({
+      ...prevData,
+      demographicQuestions: {
+        ...prevData.demographicQuestions,
+        educationLevel: {
+          ...prevData.demographicQuestions.educationLevel,
+          quotas: quotas
+        }
+      }
+    }));
+  }, []);
+
+  // 🎯 NUEVA FUNCIÓN PARA ACTIVAR/DESACTIVAR CUOTAS DE NIVEL DE EDUCACIÓN
+  const toggleEducationLevelQuotasEnabled = useCallback((enabled: boolean) => {
+    console.log('[toggleEducationLevelQuotasEnabled] 🎯 Cambiando estado de cuotas de nivel de educación:', enabled);
+
+    setFormData(prevData => ({
+      ...prevData,
+      demographicQuestions: {
+        ...prevData.demographicQuestions,
+        educationLevel: {
+          ...prevData.demographicQuestions.educationLevel,
+          quotasEnabled: enabled
+        }
+      }
+    }));
+  }, []);
+
+  // 🎯 NUEVA FUNCIÓN PARA MANEJAR CUOTAS DE INGRESOS FAMILIARES
+  const handleHouseholdIncomeQuotasSave = useCallback((quotas: HouseholdIncomeQuota[]) => {
+    console.log('[handleHouseholdIncomeQuotasSave] 🎯 Guardando cuotas de ingresos familiares:', quotas);
+
+    setFormData(prevData => ({
+      ...prevData,
+      demographicQuestions: {
+        ...prevData.demographicQuestions,
+        householdIncome: {
+          ...prevData.demographicQuestions.householdIncome,
+          quotas: quotas
+        }
+      }
+    }));
+  }, []);
+
+  // 🎯 NUEVA FUNCIÓN PARA ACTIVAR/DESACTIVAR CUOTAS DE INGRESOS FAMILIARES
+  const toggleHouseholdIncomeQuotasEnabled = useCallback((enabled: boolean) => {
+    console.log('[toggleHouseholdIncomeQuotasEnabled] 🎯 Cambiando estado de cuotas de ingresos familiares:', enabled);
+
+    setFormData(prevData => ({
+      ...prevData,
+      demographicQuestions: {
+        ...prevData.demographicQuestions,
+        householdIncome: {
+          ...prevData.demographicQuestions.householdIncome,
+          quotasEnabled: enabled
+        }
+      }
+    }));
+  }, []);
+
+  // 🎯 NUEVA FUNCIÓN PARA MANEJAR CUOTAS DE SITUACIÓN LABORAL
+  const handleEmploymentStatusQuotasSave = useCallback((quotas: EmploymentStatusQuota[]) => {
+    console.log('[handleEmploymentStatusQuotasSave] 🎯 Guardando cuotas de situación laboral:', quotas);
+
+    setFormData(prevData => ({
+      ...prevData,
+      demographicQuestions: {
+        ...prevData.demographicQuestions,
+        employmentStatus: {
+          ...prevData.demographicQuestions.employmentStatus,
+          quotas: quotas
+        }
+      }
+    }));
+  }, []);
+
+  // 🎯 NUEVA FUNCIÓN PARA ACTIVAR/DESACTIVAR CUOTAS DE SITUACIÓN LABORAL
+  const toggleEmploymentStatusQuotasEnabled = useCallback((enabled: boolean) => {
+    console.log('[toggleEmploymentStatusQuotasEnabled] 🎯 Cambiando estado de cuotas de situación laboral:', enabled);
+
+    setFormData(prevData => ({
+      ...prevData,
+      demographicQuestions: {
+        ...prevData.demographicQuestions,
+        employmentStatus: {
+          ...prevData.demographicQuestions.employmentStatus,
+          quotasEnabled: enabled
+        }
+      }
+    }));
+  }, []);
+
+  // 🎯 NUEVA FUNCIÓN PARA MANEJAR CUOTAS DE HORAS DIARIAS EN LÍNEA
+  const handleDailyHoursOnlineQuotasSave = useCallback((quotas: DailyHoursOnlineQuota[]) => {
+    console.log('[handleDailyHoursOnlineQuotasSave] 🎯 Guardando cuotas de horas diarias en línea:', quotas);
+
+    setFormData(prevData => ({
+      ...prevData,
+      demographicQuestions: {
+        ...prevData.demographicQuestions,
+        dailyHoursOnline: {
+          ...prevData.demographicQuestions.dailyHoursOnline,
+          quotas: quotas
+        }
+      }
+    }));
+  }, []);
+
+  // 🎯 NUEVA FUNCIÓN PARA ACTIVAR/DESACTIVAR CUOTAS DE HORAS DIARIAS EN LÍNEA
+  const toggleDailyHoursOnlineQuotasEnabled = useCallback((enabled: boolean) => {
+    console.log('[toggleDailyHoursOnlineQuotasEnabled] 🎯 Cambiando estado de cuotas de horas diarias en línea:', enabled);
+
+    setFormData(prevData => ({
+      ...prevData,
+      demographicQuestions: {
+        ...prevData.demographicQuestions,
+        dailyHoursOnline: {
+          ...prevData.demographicQuestions.dailyHoursOnline,
+          quotasEnabled: enabled
+        }
+      }
+    }));
+  }, []);
+
+  // 🎯 NUEVA FUNCIÓN PARA MANEJAR CUOTAS DE COMPETENCIA TÉCNICA
+  const handleTechnicalProficiencyQuotasSave = useCallback((quotas: TechnicalProficiencyQuota[]) => {
+    console.log('[handleTechnicalProficiencyQuotasSave] 🎯 Guardando cuotas de competencia técnica:', quotas);
+
+    setFormData(prevData => ({
+      ...prevData,
+      demographicQuestions: {
+        ...prevData.demographicQuestions,
+        technicalProficiency: {
+          ...prevData.demographicQuestions.technicalProficiency,
+          quotas: quotas
+        }
+      }
+    }));
+  }, []);
+
+  // 🎯 NUEVA FUNCIÓN PARA ACTIVAR/DESACTIVAR CUOTAS DE COMPETENCIA TÉCNICA
+  const toggleTechnicalProficiencyQuotasEnabled = useCallback((enabled: boolean) => {
+    console.log('[toggleTechnicalProficiencyQuotasEnabled] 🎯 Cambiando estado de cuotas de competencia técnica:', enabled);
+
+    setFormData(prevData => ({
+      ...prevData,
+      demographicQuestions: {
+        ...prevData.demographicQuestions,
+        technicalProficiency: {
+          ...prevData.demographicQuestions.technicalProficiency,
+          quotasEnabled: enabled
+        }
+      }
+    }));
+  }, []);
+
   // Acciones
   const generateQRCode = useCallback(() => {
     const link = generateRecruitmentLink();
@@ -1176,8 +1519,38 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
     updateTechnicalProficiencyOptions,
     updateDisqualifyingTechnicalProficiencies,
 
-    // 🎯 NUEVA FUNCIÓN PARA MANEJAR CONFIGURACIÓN DE EDAD
+    // 🎯 NUEVAS FUNCIONES PARA MANEJAR CONFIGURACIÓN DE EDAD CON CUOTAS
     handleAgeConfigSave,
+    handleAgeQuotasSave,
+    toggleAgeQuotasEnabled,
+
+    // 🎯 NUEVAS FUNCIONES PARA MANEJAR CONFIGURACIÓN DE PAÍS CON CUOTAS
+    handleCountryQuotasSave,
+    toggleCountryQuotasEnabled,
+
+    // 🎯 NUEVAS FUNCIONES PARA MANEJAR CONFIGURACIÓN DE GÉNERO CON CUOTAS
+    handleGenderQuotasSave,
+    toggleGenderQuotasEnabled,
+
+    // 🎯 NUEVAS FUNCIONES PARA MANEJAR CONFIGURACIÓN DE NIVEL DE EDUCACIÓN CON CUOTAS
+    handleEducationLevelQuotasSave,
+    toggleEducationLevelQuotasEnabled,
+
+    // 🎯 NUEVAS FUNCIONES PARA MANEJAR CONFIGURACIÓN DE INGRESOS FAMILIARES CON CUOTAS
+    handleHouseholdIncomeQuotasSave,
+    toggleHouseholdIncomeQuotasEnabled,
+
+    // 🎯 NUEVAS FUNCIONES PARA MANEJAR CONFIGURACIÓN DE SITUACIÓN LABORAL CON CUOTAS
+    handleEmploymentStatusQuotasSave,
+    toggleEmploymentStatusQuotasEnabled,
+
+    // 🎯 NUEVAS FUNCIONES PARA MANEJAR CONFIGURACIÓN DE HORAS DIARIAS EN LÍNEA CON CUOTAS
+    handleDailyHoursOnlineQuotasSave,
+    toggleDailyHoursOnlineQuotasEnabled,
+
+    // 🎯 NUEVAS FUNCIONES PARA MANEJAR CONFIGURACIÓN DE COMPETENCIA TÉCNICA CON CUOTAS
+    handleTechnicalProficiencyQuotasSave,
+    toggleTechnicalProficiencyQuotasEnabled,
 
     // Acciones
     saveForm,

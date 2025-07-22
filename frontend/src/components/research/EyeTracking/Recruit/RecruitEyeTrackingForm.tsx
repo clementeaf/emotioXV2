@@ -26,6 +26,14 @@ import { HouseholdIncomeConfigModal } from './components/HouseholdIncomeConfigMo
 import { TechnicalProficiencyConfigModal } from './components/TechnicalProficiencyConfigModal';
 import { useEyeTrackingRecruit } from './hooks/useEyeTrackingRecruit';
 
+// 🎯 IMPORTAR TIPO PARA CUOTAS DE EDAD
+type AgeQuotaConfig = {
+  id: string;
+  ageRange: string;
+  quota: number;
+  isActive: boolean;
+};
+
 
 interface CheckboxProps {
   id?: string;
@@ -122,6 +130,22 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
     updateTechnicalProficiencyOptions,
     updateDisqualifyingTechnicalProficiencies,
     handleAgeConfigSave,
+    handleAgeQuotasSave,
+    toggleAgeQuotasEnabled,
+    handleCountryQuotasSave,
+    toggleCountryQuotasEnabled,
+    handleGenderQuotasSave,
+    toggleGenderQuotasEnabled,
+    handleEducationLevelQuotasSave,
+    toggleEducationLevelQuotasEnabled,
+    handleHouseholdIncomeQuotasSave,
+    toggleHouseholdIncomeQuotasEnabled,
+    handleEmploymentStatusQuotasSave,
+    toggleEmploymentStatusQuotasEnabled,
+    handleDailyHoursOnlineQuotasSave,
+    toggleDailyHoursOnlineQuotasEnabled,
+    handleTechnicalProficiencyQuotasSave,
+    toggleTechnicalProficiencyQuotasEnabled,
     saveForm,
     generateRecruitmentLink,
     generateQRCode,
@@ -218,6 +242,110 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
     // Por ahora solo mostramos un toast con ambas informaciones
     toast.success(`Configuración de edad guardada con ${options.length} opciones válidas y ${disqualifyingAges.length} edades descalificantes`);
     setAgeModalOpen(false);
+  };
+
+  // 🎯 NUEVAS FUNCIONES PARA MANEJAR CUOTAS DE EDAD
+  const handleAgeQuotasSaveLocal = (quotas: AgeQuotaConfig[]) => {
+    console.log('[handleAgeQuotasSaveLocal] 🎯 Guardando cuotas de edad:', quotas);
+    handleAgeQuotasSave(quotas);
+    toast.success(`Sistema de cuotas configurado con ${quotas.length} rangos de edad`);
+  };
+
+  const handleAgeQuotasToggleLocal = (enabled: boolean) => {
+    console.log('[handleAgeQuotasToggleLocal] 🎯 Cambiando estado de cuotas:', enabled);
+    toggleAgeQuotasEnabled(enabled);
+    toast.success(enabled ? 'Sistema de cuotas habilitado' : 'Sistema de cuotas deshabilitado');
+  };
+
+  // 🎯 NUEVAS FUNCIONES PARA MANEJAR CUOTAS DE PAÍS
+  const handleCountryQuotasSaveLocal = (quotas: any[]) => {
+    console.log('[handleCountryQuotasSaveLocal] 🎯 Guardando cuotas de país:', quotas);
+    handleCountryQuotasSave(quotas);
+    toast.success(`Sistema de cuotas configurado con ${quotas.length} países`);
+  };
+
+  const handleCountryQuotasToggleLocal = (enabled: boolean) => {
+    console.log('[handleCountryQuotasToggleLocal] 🎯 Cambiando estado de cuotas de país:', enabled);
+    toggleCountryQuotasEnabled(enabled);
+    toast.success(enabled ? 'Sistema de cuotas de país habilitado' : 'Sistema de cuotas de país deshabilitado');
+  };
+
+  // 🎯 NUEVAS FUNCIONES PARA MANEJAR CUOTAS DE GÉNERO
+  const handleGenderQuotasSaveLocal = (quotas: any[]) => {
+    console.log('[handleGenderQuotasSaveLocal] 🎯 Guardando cuotas de género:', quotas);
+    handleGenderQuotasSave(quotas);
+    toast.success(`Sistema de cuotas configurado con ${quotas.length} géneros`);
+  };
+
+  const handleGenderQuotasToggleLocal = (enabled: boolean) => {
+    console.log('[handleGenderQuotasToggleLocal] 🎯 Cambiando estado de cuotas de género:', enabled);
+    toggleGenderQuotasEnabled(enabled);
+    toast.success(enabled ? 'Sistema de cuotas de género habilitado' : 'Sistema de cuotas de género deshabilitado');
+  };
+
+  // 🎯 NUEVAS FUNCIONES PARA MANEJAR CUOTAS DE NIVEL DE EDUCACIÓN
+  const handleEducationLevelQuotasSaveLocal = (quotas: any[]) => {
+    console.log('[handleEducationLevelQuotasSaveLocal] 🎯 Guardando cuotas de nivel de educación:', quotas);
+    handleEducationLevelQuotasSave(quotas);
+    toast.success(`Sistema de cuotas configurado con ${quotas.length} niveles educativos`);
+  };
+
+  const handleEducationLevelQuotasToggleLocal = (enabled: boolean) => {
+    console.log('[handleEducationLevelQuotasToggleLocal] 🎯 Cambiando estado de cuotas de nivel de educación:', enabled);
+    toggleEducationLevelQuotasEnabled(enabled);
+    toast.success(enabled ? 'Sistema de cuotas de nivel de educación habilitado' : 'Sistema de cuotas de nivel de educación deshabilitado');
+  };
+
+  // 🎯 NUEVAS FUNCIONES PARA MANEJAR CUOTAS DE INGRESOS FAMILIARES
+  const handleHouseholdIncomeQuotasSaveLocal = (quotas: any[]) => {
+    console.log('[handleHouseholdIncomeQuotasSaveLocal] 🎯 Guardando cuotas de ingresos familiares:', quotas);
+    handleHouseholdIncomeQuotasSave(quotas);
+    toast.success(`Sistema de cuotas configurado con ${quotas.length} niveles de ingresos`);
+  };
+
+  const handleHouseholdIncomeQuotasToggleLocal = (enabled: boolean) => {
+    console.log('[handleHouseholdIncomeQuotasToggleLocal] 🎯 Cambiando estado de cuotas de ingresos familiares:', enabled);
+    toggleHouseholdIncomeQuotasEnabled(enabled);
+    toast.success(enabled ? 'Sistema de cuotas de ingresos familiares habilitado' : 'Sistema de cuotas de ingresos familiares deshabilitado');
+  };
+
+  // 🎯 NUEVAS FUNCIONES PARA MANEJAR CUOTAS DE SITUACIÓN LABORAL
+  const handleEmploymentStatusQuotasSaveLocal = (quotas: any[]) => {
+    console.log('[handleEmploymentStatusQuotasSaveLocal] 🎯 Guardando cuotas de situación laboral:', quotas);
+    handleEmploymentStatusQuotasSave(quotas);
+    toast.success(`Sistema de cuotas configurado con ${quotas.length} situaciones laborales`);
+  };
+
+  const handleEmploymentStatusQuotasToggleLocal = (enabled: boolean) => {
+    console.log('[handleEmploymentStatusQuotasToggleLocal] 🎯 Cambiando estado de cuotas de situación laboral:', enabled);
+    toggleEmploymentStatusQuotasEnabled(enabled);
+    toast.success(enabled ? 'Sistema de cuotas de situación laboral habilitado' : 'Sistema de cuotas de situación laboral deshabilitado');
+  };
+
+  // 🎯 NUEVAS FUNCIONES PARA MANEJAR CUOTAS DE HORAS DIARIAS EN LÍNEA
+  const handleDailyHoursOnlineQuotasSaveLocal = (quotas: any[]) => {
+    console.log('[handleDailyHoursOnlineQuotasSaveLocal] 🎯 Guardando cuotas de horas diarias en línea:', quotas);
+    handleDailyHoursOnlineQuotasSave(quotas);
+    toast.success(`Sistema de cuotas configurado con ${quotas.length} rangos de horas`);
+  };
+
+  const handleDailyHoursOnlineQuotasToggleLocal = (enabled: boolean) => {
+    console.log('[handleDailyHoursOnlineQuotasToggleLocal] 🎯 Cambiando estado de cuotas de horas diarias en línea:', enabled);
+    toggleDailyHoursOnlineQuotasEnabled(enabled);
+    toast.success(enabled ? 'Sistema de cuotas de horas diarias en línea habilitado' : 'Sistema de cuotas de horas diarias en línea deshabilitado');
+  };
+
+  // 🎯 NUEVAS FUNCIONES PARA MANEJAR CUOTAS DE COMPETENCIA TÉCNICA
+  const handleTechnicalProficiencyQuotasSaveLocal = (quotas: any[]) => {
+    console.log('[handleTechnicalProficiencyQuotasSaveLocal] 🎯 Guardando cuotas de competencia técnica:', quotas);
+    handleTechnicalProficiencyQuotasSave(quotas);
+    toast.success(`Sistema de cuotas configurado con ${quotas.length} niveles de competencia`);
+  };
+
+  const handleTechnicalProficiencyQuotasToggleLocal = (enabled: boolean) => {
+    console.log('[handleTechnicalProficiencyQuotasToggleLocal] 🎯 Cambiando estado de cuotas de competencia técnica:', enabled);
+    toggleTechnicalProficiencyQuotasEnabled(enabled);
+    toast.success(enabled ? 'Sistema de cuotas de competencia técnica habilitado' : 'Sistema de cuotas de competencia técnica deshabilitado');
   };
 
   const handleCountryConfigSave = (validCountries: string[], disqualifyingCountries: string[]) => {
@@ -795,8 +923,12 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
         isOpen={ageModalOpen}
         onClose={() => setAgeModalOpen(false)}
         onSave={handleAgeConfigSaveLocal}
+        onQuotasSave={handleAgeQuotasSaveLocal}
+        onQuotasToggle={handleAgeQuotasToggleLocal}
         initialValidAges={formData.demographicQuestions.age.options || []}
         initialDisqualifyingAges={formData.demographicQuestions.age.disqualifyingAges || []}
+        initialQuotas={formData.demographicQuestions.age.quotas as any || []}
+        quotasEnabled={formData.demographicQuestions.age.quotasEnabled || false}
       />
 
       {/* Modal para configuración de países */}
@@ -804,8 +936,12 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
         isOpen={countryModalOpen}
         onClose={() => setCountryModalOpen(false)}
         onSave={handleCountryConfigSave}
+        onQuotasSave={handleCountryQuotasSaveLocal}
+        onQuotasToggle={handleCountryQuotasToggleLocal}
         initialValidCountries={formData.demographicQuestions.country.options || []}
         initialDisqualifyingCountries={formData.demographicQuestions.country.disqualifyingCountries || []}
+        initialQuotas={formData.demographicQuestions.country.quotas as any || []}
+        quotasEnabled={formData.demographicQuestions.country.quotasEnabled || false}
       />
 
       {/* Modal para configuración de géneros */}
@@ -813,12 +949,16 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
         isOpen={genderModalOpen}
         onClose={() => setGenderModalOpen(false)}
         onSave={handleGenderConfigSave}
+        onQuotasSave={handleGenderQuotasSaveLocal}
+        onQuotasToggle={handleGenderQuotasToggleLocal}
         currentOptions={[
           { id: 'masculino', name: 'Masculino', isQualified: true },
           { id: 'femenino', name: 'Femenino', isQualified: true },
           { id: 'prefiero-no-especificar', name: 'Prefiero no especificar', isQualified: true }
         ]}
         currentDisqualified={formData.demographicQuestions.gender.disqualifyingGenders || []}
+        initialQuotas={formData.demographicQuestions.gender.quotas as any || []}
+        quotasEnabled={formData.demographicQuestions.gender.quotasEnabled || false}
       />
 
       {/* Modal para configuración de niveles educativos */}
@@ -826,6 +966,8 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
         isOpen={educationModalOpen}
         onClose={() => setEducationModalOpen(false)}
         onSave={handleEducationConfigSave}
+        onQuotasSave={handleEducationLevelQuotasSaveLocal}
+        onQuotasToggle={handleEducationLevelQuotasToggleLocal}
         currentOptions={[
           { id: 'basica', name: 'Básica', isQualified: true },
           { id: 'media', name: 'Media', isQualified: true },
@@ -834,6 +976,8 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
           { id: 'doctorado', name: 'Doctorado', isQualified: true }
         ]}
         currentDisqualified={formData.demographicQuestions.educationLevel.disqualifyingEducation || []}
+        initialQuotas={formData.demographicQuestions.educationLevel.quotas as any || []}
+        quotasEnabled={formData.demographicQuestions.educationLevel.quotasEnabled || false}
       />
 
       {/* Modal para configuración de ingresos familiares */}
@@ -841,6 +985,8 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
         isOpen={householdIncomeModalOpen}
         onClose={() => setHouseholdIncomeModalOpen(false)}
         onSave={handleHouseholdIncomeConfigSave}
+        onQuotasSave={handleHouseholdIncomeQuotasSaveLocal}
+        onQuotasToggle={handleHouseholdIncomeQuotasToggleLocal}
         currentOptions={[
           { id: 'nivel-1', name: 'Menos de 20.000€', isQualified: true },
           { id: 'nivel-2', name: '20.000€ - 40.000€', isQualified: true },
@@ -849,6 +995,8 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
           { id: 'nivel-5', name: 'Más de 80.000€', isQualified: true }
         ]}
         currentDisqualified={formData.demographicQuestions.householdIncome.disqualifyingIncomes || []}
+        initialQuotas={formData.demographicQuestions.householdIncome.quotas as any || []}
+        quotasEnabled={formData.demographicQuestions.householdIncome.quotasEnabled || false}
       />
 
       {/* Modal para configuración de situación laboral */}
@@ -856,6 +1004,8 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
         isOpen={employmentStatusModalOpen}
         onClose={() => setEmploymentStatusModalOpen(false)}
         onSave={handleEmploymentStatusConfigSave}
+        onQuotasSave={handleEmploymentStatusQuotasSaveLocal}
+        onQuotasToggle={handleEmploymentStatusQuotasToggleLocal}
         currentOptions={[
           { id: 'dependiente', name: 'Dependiente', isQualified: true },
           { id: 'independiente', name: 'Independiente', isQualified: true },
@@ -863,6 +1013,8 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
           { id: 'jubilado', name: 'Jubilado', isQualified: true }
         ]}
         currentDisqualified={formData.demographicQuestions.employmentStatus.disqualifyingEmploymentStatuses || []}
+        initialQuotas={formData.demographicQuestions.employmentStatus.quotas as any || []}
+        quotasEnabled={formData.demographicQuestions.employmentStatus.quotasEnabled || false}
       />
 
       {/* Modal para configuración de horas diarias en línea */}
@@ -870,6 +1022,8 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
         isOpen={dailyHoursOnlineModalOpen}
         onClose={() => setDailyHoursOnlineModalOpen(false)}
         onSave={handleDailyHoursOnlineConfigSave}
+        onQuotasSave={handleDailyHoursOnlineQuotasSaveLocal}
+        onQuotasToggle={handleDailyHoursOnlineQuotasToggleLocal}
         currentOptions={[
           { id: '0-2', name: '0-2 horas', isQualified: true },
           { id: '2-4', name: '2-4 horas', isQualified: true },
@@ -878,6 +1032,8 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
           { id: '8+', name: 'Más de 8 horas', isQualified: true }
         ]}
         currentDisqualified={formData.demographicQuestions.dailyHoursOnline.disqualifyingHours || []}
+        initialQuotas={formData.demographicQuestions.dailyHoursOnline.quotas as any || []}
+        quotasEnabled={formData.demographicQuestions.dailyHoursOnline.quotasEnabled || false}
       />
 
       {/* Modal para configuración de competencia técnica */}
@@ -885,6 +1041,8 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
         isOpen={technicalProficiencyModalOpen}
         onClose={() => setTechnicalProficiencyModalOpen(false)}
         onSave={handleTechnicalProficiencyConfigSave}
+        onQuotasSave={handleTechnicalProficiencyQuotasSaveLocal}
+        onQuotasToggle={handleTechnicalProficiencyQuotasToggleLocal}
         currentOptions={[
           { id: 'basico', name: 'Básico', isQualified: true },
           { id: 'intermedio', name: 'Intermedio', isQualified: true },
@@ -892,6 +1050,8 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
           { id: 'experto', name: 'Experto', isQualified: true }
         ]}
         currentDisqualified={formData.demographicQuestions.technicalProficiency.disqualifyingProficiencies || []}
+        initialQuotas={formData.demographicQuestions.technicalProficiency.quotas as any || []}
+        quotasEnabled={formData.demographicQuestions.technicalProficiency.quotasEnabled || false}
       />
 
       {/* Modal para confirmar eliminación */}

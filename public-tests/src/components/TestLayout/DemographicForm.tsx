@@ -1,9 +1,11 @@
 import React from 'react';
+import { useSaveModuleResponseMutation } from '../../hooks/useApiQueries';
 import { useDemographicValidation } from '../../hooks/useDemographicValidation';
 import { useDisqualificationRedirect } from '../../hooks/useDisqualificationRedirect';
 import { useEyeTrackingConfigQuery } from '../../hooks/useEyeTrackingConfigQuery';
 import { useFormLoadingState } from '../../hooks/useFormLoadingState';
 import { useTestStore } from '../../stores/useTestStore';
+import { DemographicQuotaValidator } from './DemographicQuotaValidator';
 import { LoadingModal } from './LoadingModal';
 import { DemographicFormProps } from './types';
 
@@ -11,9 +13,10 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
   demographicQuestions,
   onSubmit
 }) => {
-  const { researchId } = useTestStore();
+  const { researchId, participantId } = useTestStore();
   const { validateDemographics } = useDemographicValidation();
   const { redirectToDisqualification } = useDisqualificationRedirect();
+  const saveModuleResponse = useSaveModuleResponseMutation();
 
   // Obtener configuración de eye-tracking
   const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
@@ -27,30 +30,111 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
     questionKey: 'demographics'
   });
 
+  // 🎯 NUEVO: Función para guardar datos en DynamoDB
+  const saveDemographicsToBackend = async (demographicsData: Record<string, string>, isDisqualified: boolean = false) => {
+    try {
+      console.log('[DemographicForm] 🎯 Guardando demográficos en DynamoDB:', {
+        demographicsData,
+        isDisqualified,
+        researchId,
+        participantId
+      });
+
+      const response = await saveModuleResponse.mutateAsync({
+        researchId: researchId!,
+        participantId: participantId!,
+        questionKey: 'demographics',
+        responses: [
+          {
+            questionKey: 'demographics',
+            response: demographicsData,
+            timestamp: new Date().toISOString(),
+            createdAt: new Date().toISOString()
+          }
+        ],
+        metadata: {
+          isDisqualified,
+          disqualificationReason: isDisqualified ? 'demographics' : undefined,
+          deviceInfo: {
+            userAgent: navigator.userAgent,
+            screenSize: `${screen.width}x${screen.height}`,
+            timestamp: new Date().toISOString()
+          },
+          formData: demographicsData
+        }
+      });
+
+      console.log('[DemographicForm] ✅ Demográficos guardados exitosamente:', response);
+      return response;
+    } catch (error) {
+      console.error('[DemographicForm] ❌ Error guardando demográficos:', error);
+      // No lanzar error para no interrumpir el flujo
+      return null;
+    }
+  };
+
+  // 🎯 NUEVO: Manejar validación de cuotas con guardado
+  const handleQuotaValidation = async (isValid: boolean, reason?: string) => {
+    if (!isValid && formValues) {
+      console.log('[DemographicForm] 🎯 Usuario descalificado por cuota:', reason);
+
+      // 🎯 CONVERTIR FORM VALUES A FORMATO CORRECTO
+      const demographicsData = Object.fromEntries(
+        Object.entries(formValues).map(([key, value]) => [key, String(value || '')])
+      ) as Record<string, string>;
+
+      // 🎯 GUARDAR ANTES DE REDIRIGIR
+      await saveDemographicsToBackend(demographicsData, true);
+
+      // 🎯 REDIRIGIR A DESCALIFICACIÓN CON RAZÓN ESPECÍFICA
+      redirectToDisqualification(eyeTrackingConfig, reason || 'Cuota alcanzada');
+    }
+  };
+
+  // 🎯 NUEVO: Preparar demográficos para validación
+  const demographicsForValidation = formValues ? {
+    age: formValues.age as string,
+    country: formValues.country as string,
+    gender: formValues.gender as string,
+    educationLevel: formValues.educationLevel as string,
+    householdIncome: formValues.householdIncome as string,
+    employmentStatus: formValues.employmentStatus as string,
+    dailyHoursOnline: formValues.dailyHoursOnline as string,
+    technicalProficiency: formValues.technicalProficiency as string
+  } : {};
+
   // 🎯 FUNCIÓN PARA MANEJAR EL ENVÍO DEL FORMULARIO
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!eyeTrackingConfig?.demographicQuestions || !formValues) return;
 
-    // Validar solo al presionar el botón
-    const formValuesString = Object.fromEntries(
+    // 🎯 CONVERTIR FORM VALUES A FORMATO CORRECTO
+    const demographicsData = Object.fromEntries(
       Object.entries(formValues).map(([key, value]) => [key, String(value || '')])
     ) as Record<string, string>;
-    const validationResult = validateDemographics(formValuesString, eyeTrackingConfig.demographicQuestions);
+
+    // 🎯 VALIDAR DESCALIFICACIÓN POR SELECCIÓN
+    const validationResult = validateDemographics(demographicsData, eyeTrackingConfig.demographicQuestions);
 
     if (validationResult.isDisqualified) {
-      console.log('[DemographicForm] Usuario descalificado al enviar:', validationResult);
+      console.log('[DemographicForm] Usuario descalificado por selección:', validationResult);
+
+      // 🎯 GUARDAR ANTES DE REDIRIGIR
+      await saveDemographicsToBackend(demographicsData, true);
+
+      // 🎯 REDIRIGIR A DESCALIFICACIÓN
       redirectToDisqualification(eyeTrackingConfig, validationResult.reason);
-      // 🎯 NO LLAMAR onSubmit CUANDO HAY DESCALIFICACIÓN
       return;
     } else {
-      // Si no está descalificado, continuar normalmente
-      console.log('[DemographicForm] Usuario calificado, continuando...');
-      const formValuesString = Object.fromEntries(
-        Object.entries(formValues).map(([key, value]) => [key, String(value || '')])
-      ) as Record<string, string>;
-      onSubmit?.(formValuesString);
+      // 🎯 USUARIO CALIFICADO - GUARDAR Y CONTINUAR
+      console.log('[DemographicForm] Usuario calificado, guardando y continuando...');
+
+      // 🎯 GUARDAR EN BACKEND
+      await saveDemographicsToBackend(demographicsData, false);
+
+      // 🎯 CONTINUAR CON FLUJO NORMAL
+      onSubmit?.(demographicsData);
     }
   };
 
@@ -108,6 +192,12 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
 
   return (
     <div className='flex flex-col items-center justify-center h-full gap-10'>
+      {/* 🎯 NUEVO: Validador de cuotas de demográficos */}
+      <DemographicQuotaValidator
+        demographics={demographicsForValidation}
+        onValidationComplete={handleQuotaValidation}
+      />
+
       <div className='mb-2 text-center'>
         <h3 className='text-lg font-semibold mb-2'>Preguntas Demográficas</h3>
         <p className='text-sm text-gray-600'>
@@ -162,16 +252,6 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
 
             </div>
           ))}
-
-          {/* 🎯 BOTÓN GUARDAR Y CONTINUAR */}
-          <div className="flex justify-center mt-6">
-            <button
-              type="submit"
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-            >
-              Guardar y continuar
-            </button>
-          </div>
         </form>
       )}
     </div>

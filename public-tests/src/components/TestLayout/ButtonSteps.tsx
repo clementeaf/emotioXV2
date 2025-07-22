@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useAvailableFormsQuery, useModuleResponsesQuery, useSaveModuleResponseMutation, useUpdateModuleResponseMutation } from '../../hooks/useApiQueries';
+import { useDemographicValidation } from '../../hooks/useDemographicValidation';
+import { useDisqualificationRedirect } from '../../hooks/useDisqualificationRedirect';
 import { useEyeTrackingConfigQuery } from '../../hooks/useEyeTrackingConfigQuery';
 import { useResponseTiming } from '../../hooks/useResponseTiming';
 import { useUserJourneyTracking } from '../../hooks/useUserJourneyTracking';
@@ -23,6 +25,16 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
   const nextStep = getNextStep();
   const [isSaving, setIsSaving] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
+
+  // 🎯 HOOKS PARA DESCALIFICACIÓN
+  const { validateDemographics } = useDemographicValidation();
+  const { redirectToDisqualification } = useDisqualificationRedirect();
+
+  // 🎯 OBTENER CONFIGURACIÓN DE EYE-TRACKING
+  const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
+  const shouldTrackTiming = eyeTrackingConfig?.parameterOptions?.saveResponseTimes || false;
+  const shouldTrackUserJourney = eyeTrackingConfig?.parameterOptions?.saveUserJourney || false;
+
   const { data: moduleResponses } = useModuleResponsesQuery(
     researchId || '',
     participantId || ''
@@ -83,6 +95,8 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
   // Obtener el estado de los steps para navegación
   const { getNextStep: getStoreNextStep } = useStepStore();
   const storeNextStep = getStoreNextStep();
+
+
 
   // Log para depuración
   console.log('[ButtonSteps] Estado actual:', {
@@ -158,11 +172,6 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
 
   const isDisabled = isSaving || isNavigating;
 
-  // 🎯 OBTENER CONFIGURACIÓN DE EYE-TRACKING
-  const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
-  const shouldTrackTiming = eyeTrackingConfig?.parameterOptions?.saveResponseTimes || false;
-  const shouldTrackUserJourney = eyeTrackingConfig?.parameterOptions?.saveUserJourney || false;
-
   // 🎯 CRONOMETRAJE NO INTRUSIVO
   const { startTiming, endTiming, getTimingData, isTracking } = useResponseTiming({
     questionKey: currentQuestionKey,
@@ -185,6 +194,124 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
         setIsNavigating(false);
       }, 1000);
       return;
+    }
+
+    // 🎯 VERIFICAR DESCALIFICACIÓN PARA DEMOGRAPHICS
+    if (currentQuestionKey === 'demographics' && formData && eyeTrackingConfig?.demographicQuestions) {
+      // Convertir formData a formato string para validación
+      const formValuesString = Object.fromEntries(
+        Object.entries(formData).map(([key, value]) => [key, String(value || '')])
+      ) as Record<string, string>;
+
+      const validationResult = validateDemographics(formValuesString, eyeTrackingConfig.demographicQuestions);
+
+      if (validationResult.isDisqualified) {
+        console.log('[ButtonSteps] Usuario descalificado:', validationResult);
+
+        // 🎯 NUEVO: GUARDAR ANTES DE REDIRIGIR
+        try {
+          const timestamp = new Date().toISOString();
+          const now = new Date().toISOString();
+
+          // 🎯 OBTENER DATOS DE TIMING
+          const timingData = getTimingData();
+          const enhancedMetadata = buildTimingMetadata(currentQuestionKey, timingData, {});
+
+          // 🎯 OBTENER DATOS DE RECORRIDO
+          const journeyData = getJourneyData();
+          const finalMetadata = buildUserJourneyMetadata(journeyData, enhancedMetadata);
+
+          // 🎯 AGREGAR INFORMACIÓN DE DESCALIFICACIÓN AL METADATA
+          const disqualificationMetadata = {
+            ...finalMetadata,
+            isDisqualified: true,
+            disqualificationReason: validationResult.reason,
+            disqualificationType: 'demographics'
+          };
+
+          // 🎯 GUARDAR CON INFORMACIÓN DE DESCALIFICACIÓN
+          const createData: CreateModuleResponseDto = {
+            researchId: researchId || '',
+            participantId: participantId || '',
+            questionKey: currentQuestionKey,
+            responses: [{
+              questionKey: currentQuestionKey,
+              response: formData || {},
+              timestamp,
+              createdAt: now
+            }],
+            metadata: disqualificationMetadata
+          };
+
+          await saveMutation.mutateAsync(createData);
+          console.log('[ButtonSteps] ✅ Datos guardados antes de descalificación');
+        } catch (error) {
+          console.error('[ButtonSteps] ❌ Error guardando datos de descalificación:', error);
+          // Continuar con redirección aunque falle el guardado
+        }
+
+        // 🎯 REDIRIGIR A DESCALIFICACIÓN
+        redirectToDisqualification(eyeTrackingConfig, validationResult.reason);
+        return; // 🎯 NO CONTINUAR CON EL FLUJO NORMAL
+      }
+    }
+
+    // 🎯 NUEVO: VERIFICAR DESCALIFICACIÓN POR CUOTAS
+    const quotaResult = useFormDataStore.getState().quotaResult;
+    if (quotaResult && quotaResult.status === 'DISQUALIFIED_OVERQUOTA') {
+      console.log('[ButtonSteps] Usuario descalificado por cuota:', quotaResult);
+
+      // 🎯 GUARDAR ANTES DE REDIRIGIR
+      try {
+        const timestamp = new Date().toISOString();
+        const now = new Date().toISOString();
+
+        // 🎯 OBTENER DATOS DE TIMING
+        const timingData = getTimingData();
+        const enhancedMetadata = buildTimingMetadata(currentQuestionKey, timingData, {});
+
+        // 🎯 OBTENER DATOS DE RECORRIDO
+        const journeyData = getJourneyData();
+        const finalMetadata = buildUserJourneyMetadata(journeyData, enhancedMetadata);
+
+        // 🎯 AGREGAR INFORMACIÓN DE DESCALIFICACIÓN POR CUOTA AL METADATA
+        const quotaDisqualificationMetadata = {
+          ...finalMetadata,
+          isDisqualified: true,
+          disqualificationReason: quotaResult.reason || 'Cuota alcanzada',
+          disqualificationType: 'quota',
+          quotaInfo: {
+            demographicType: quotaResult.demographicType,
+            demographicValue: quotaResult.demographicValue,
+            currentCount: quotaResult.order,
+            maxQuota: quotaResult.quotaLimit
+          }
+        };
+
+        // 🎯 GUARDAR CON INFORMACIÓN DE DESCALIFICACIÓN POR CUOTA
+        const createData: CreateModuleResponseDto = {
+          researchId: researchId || '',
+          participantId: participantId || '',
+          questionKey: currentQuestionKey,
+          responses: [{
+            questionKey: currentQuestionKey,
+            response: formData || {},
+            timestamp,
+            createdAt: now
+          }],
+          metadata: quotaDisqualificationMetadata
+        };
+
+        await saveMutation.mutateAsync(createData);
+        console.log('[ButtonSteps] ✅ Datos guardados antes de descalificación por cuota');
+      } catch (error) {
+        console.error('[ButtonSteps] ❌ Error guardando datos de descalificación por cuota:', error);
+        // Continuar con redirección aunque falle el guardado
+      }
+
+      // 🎯 REDIRIGIR A DESCALIFICACIÓN POR CUOTA
+      redirectToDisqualification(eyeTrackingConfig, quotaResult.reason || 'Cuota alcanzada');
+      return; // 🎯 NO CONTINUAR CON EL FLUJO NORMAL
     }
 
     // 🎯 INICIAR CRONOMETRAJE (si está habilitado)
@@ -260,11 +387,10 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
       <button
         onClick={handleClick}
         disabled={isDisabled}
-        className={`px-8 py-3 rounded-lg font-semibold transition-all duration-200 ${
-          isDisabled
-            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            : 'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800'
-        }`}
+        className={`px-8 py-3 rounded-lg font-semibold transition-all duration-200 ${isDisabled
+          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          : 'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800'
+          }`}
       >
         {getButtonText()}
       </button>
