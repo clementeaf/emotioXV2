@@ -8,21 +8,25 @@ export const useDisqualificationRedirect = () => {
   ) => {
     console.log('[useDisqualificationRedirect] Usuario descalificado:', { reason });
 
-    // 🎯 REDIRIGIR AL THANK YOU SCREEN CON PARÁMETRO DE DESCALIFICACIÓN
+    // 🎯 CONSTRUIR URL PARA THANK YOU SCREEN CON PARÁMETROS DE DESCALIFICACIÓN
     const currentUrl = new URL(window.location.href);
-    currentUrl.searchParams.set('disqualified', 'true');
+    const baseUrl = currentUrl.origin + currentUrl.pathname;
 
-    // 🎯 AGREGAR RAZÓN SI EXISTE
+    // 🎯 AGREGAR PARÁMETROS DE DESCALIFICACIÓN
+    const params = new URLSearchParams();
+    params.set('disqualified', 'true');
+
     if (reason) {
-      currentUrl.searchParams.set('reason', encodeURIComponent(reason));
+      params.set('reason', encodeURIComponent(reason));
     }
 
-    console.log('[useDisqualificationRedirect] Redirigiendo a thank_you_screen con parámetros:', currentUrl.toString());
+    // 🎯 CONSTRUIR URL FINAL CON PARÁMETROS
+    const finalUrl = `${baseUrl}?${params.toString()}`;
 
-    // Use setTimeout to avoid setState during the render phase
-    setTimeout(() => {
-      window.location.href = currentUrl.toString();
-    }, 0);
+    console.log('[useDisqualificationRedirect] Redirigiendo con parámetros de descalificación:', finalUrl);
+
+    // 🎯 REDIRIGIR INMEDIATAMENTE
+    window.location.href = finalUrl;
   }, []);
 
   return { redirectToDisqualification };

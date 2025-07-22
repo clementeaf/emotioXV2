@@ -42,6 +42,8 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
     if (validationResult.isDisqualified) {
       console.log('[DemographicForm] Usuario descalificado al enviar:', validationResult);
       redirectToDisqualification(eyeTrackingConfig, validationResult.reason);
+      // 🎯 NO LLAMAR onSubmit CUANDO HAY DESCALIFICACIÓN
+      return;
     } else {
       // Si no está descalificado, continuar normalmente
       console.log('[DemographicForm] Usuario calificado, continuando...');
@@ -160,6 +162,16 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
 
             </div>
           ))}
+
+          {/* 🎯 BOTÓN GUARDAR Y CONTINUAR */}
+          <div className="flex justify-center mt-6">
+            <button
+              type="submit"
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            >
+              Guardar y continuar
+            </button>
+          </div>
         </form>
       )}
     </div>

@@ -747,9 +747,8 @@ const ThankYouScreenComponent: React.FC<{
   // 🎯 VERIFICAR SI EXCEDE LA CUOTA DE PARTICIPANTES
   // NOTA: El backend ya verifica la cuota automáticamente al guardar thank_you_screen
   // y devuelve el resultado en la respuesta. Aquí verificamos si hay un parámetro de URL
-  // que indique overquota (para compatibilidad) o si el backend indicó overquota
-  const isOverQuota = window.location.search.includes('overquota=true') ||
-    (currentQuestionKey === 'thank_you_screen' && formDataStore.quotaResult?.status === 'DISQUALIFIED_OVERQUOTA');
+  // que indique overquota (para compatibilidad)
+  const isOverQuota = window.location.search.includes('overquota=true');
 
   // 🎯 MOSTRAR LINK DE DESCALIFICACIÓN SI APLICA
   if (isDisqualified && eyeTrackingConfig?.backlinks?.disqualified) {
@@ -883,11 +882,10 @@ const ThankYouScreenComponent: React.FC<{
 };
 
 const TestLayoutRenderer: React.FC = () => {
-  // 🎯 TODOS LOS HOOKS AL INICIO - NUNCA CONDICIONALES
-  const currentQuestionKey = useStepStore(state => state.currentQuestionKey);
-  const { updateBackendResponses } = useStepStore();
-  const { getFormData } = useFormDataStore();
   const { researchId, participantId } = useTestStore();
+  const { currentQuestionKey, goToNextStep, updateBackendResponses } = useStepStore();
+  const { setFormData, getFormData } = useFormDataStore();
+  const quotaResult = useFormDataStore(state => state.quotaResult);
 
   // 🎯 VERIFICACIÓN MÓVIL EN STEPS
   const {
@@ -899,11 +897,6 @@ const TestLayoutRenderer: React.FC = () => {
     error: mobileCheckError,
     shouldShowBlockScreen
   } = useMobileStepVerification(researchId);
-
-  const { data: moduleResponses } = useModuleResponsesQuery(
-    researchId || '',
-    participantId || ''
-  );
 
   // 🎯 OBTENER CONFIGURACIÓN DE EYE-TRACKING
   const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
@@ -917,6 +910,9 @@ const TestLayoutRenderer: React.FC = () => {
 
   // 🎯 QUERY DE FORMS - SIEMPRE EJECUTAR
   const { data: formsData, isLoading, error } = useAvailableFormsQuery(researchId || '');
+
+  // 🎯 QUERY DE MODULE RESPONSES
+  const { data: moduleResponses } = useModuleResponsesQuery(researchId || '', participantId || '');
 
   // 🎯 EFFECTS DESPUÉS DE TODOS LOS HOOKS
   useEffect(() => {
