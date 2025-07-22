@@ -26,7 +26,8 @@ export const useMonitoringReceiver = (researchId: string) => {
     if (!token || !researchId) return;
 
     try {
-      const wsUrl = `${process.env.NEXT_PUBLIC_WS_URL || 'wss://w8dj7wxnl9.execute-api.us-east-1.amazonaws.com/dev'}/monitoring`;
+      // 🎯 CORREGIR URL: USAR LA URL CORRECTA DEL WEBSOCKET
+      const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'wss://w8dj7wxnl9.execute-api.us-east-1.amazonaws.com/dev';
       wsRef.current = new WebSocket(wsUrl);
 
       wsRef.current.onopen = () => {

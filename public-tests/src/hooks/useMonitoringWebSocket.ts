@@ -16,7 +16,9 @@ export const useMonitoringWebSocket = () => {
     if (!researchId) return;
 
     try {
-      const wsUrl = `${process.env.VITE_WS_URL || 'wss://w8dj7wxnl9.execute-api.us-east-1.amazonaws.com/dev'}/monitoring`;
+      // 🎯 USAR import.meta.env EN LUGAR DE process.env PARA VITE
+      // 🎯 CORREGIR URL: NO AGREGAR /monitoring AL WEBSOCKET
+      const wsUrl = import.meta.env.VITE_WS_URL || 'wss://w8dj7wxnl9.execute-api.us-east-1.amazonaws.com/dev';
       wsRef.current = new WebSocket(wsUrl);
 
       wsRef.current.onopen = () => {

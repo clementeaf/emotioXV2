@@ -1,7 +1,7 @@
 import {
-    APIGatewayProxyEvent,
-    APIGatewayProxyResult,
-    Context
+  APIGatewayProxyEvent,
+  APIGatewayProxyResult,
+  Context
 } from 'aws-lambda';
 import { type Logger as PinoLogger } from 'pino';
 import { HttpError, InternalServerError, NotFoundError } from './errors';
@@ -35,18 +35,94 @@ async function getHandler(type: string): Promise<Function | null> {
   if (handlers[type]) return handlers[type];
 
   if (type === 'websocket') {
-    // Keep WebSocket handler simple for now
+    // 🎯 IMPLEMENTAR WEBSOCKET HANDLER REAL
     try {
-      const websocketHandler = async (_event: any, _context: any) => {
-        return {
-          statusCode: 501,
-          body: JSON.stringify({ message: 'WebSocket service not implemented or under development' })
-        };
+      const websocketHandler = async (event: any, context: any, logger: any) => {
+        const routeKey = event.requestContext.routeKey;
+        logger.info(`WebSocket route: ${routeKey}`);
+
+        switch (routeKey) {
+          case '$connect':
+            logger.info('Nueva conexión WebSocket establecida');
+            return {
+              statusCode: 200,
+              body: JSON.stringify({ message: 'Connected' })
+            };
+
+          case '$disconnect':
+            logger.info('Conexión WebSocket cerrada');
+            return {
+              statusCode: 200,
+              body: JSON.stringify({ message: 'Disconnected' })
+            };
+
+          case '$default':
+          case 'message':
+            try {
+              const body = JSON.parse(event.body || '{}');
+              logger.info('Mensaje WebSocket recibido:', body);
+
+              // 🎯 MANEJAR DIFERENTES TIPOS DE MENSAJES
+              switch (body.type) {
+                case 'MONITORING_CONNECT':
+                  logger.info('Evento de monitoreo recibido:', body.data);
+                  return {
+                    statusCode: 200,
+                    body: JSON.stringify({
+                      message: 'Monitoring event received',
+                      data: body.data
+                    })
+                  };
+
+                case 'PARTICIPANT_LOGIN':
+                case 'PARTICIPANT_STEP':
+                case 'PARTICIPANT_DISQUALIFIED':
+                case 'PARTICIPANT_QUOTA_EXCEEDED':
+                case 'PARTICIPANT_COMPLETED':
+                  logger.info('Evento de participante recibido:', body);
+                  return {
+                    statusCode: 200,
+                    body: JSON.stringify({
+                      message: 'Participant event received',
+                      data: body.data
+                    })
+                  };
+
+                default:
+                  logger.warn('Tipo de mensaje no reconocido:', body.type);
+                  return {
+                    statusCode: 400,
+                    body: JSON.stringify({
+                      message: 'Unknown message type',
+                      type: body.type
+                    })
+                  };
+              }
+            } catch (parseError) {
+              logger.error('Error parseando mensaje WebSocket:', parseError);
+              return {
+                statusCode: 400,
+                body: JSON.stringify({
+                  message: 'Invalid JSON message'
+                })
+              };
+            }
+
+          default:
+            logger.warn('Ruta WebSocket no manejada:', routeKey);
+            return {
+              statusCode: 400,
+              body: JSON.stringify({
+                message: 'Unknown WebSocket route',
+                route: routeKey
+              })
+            };
+        }
       };
       handlers.websocket = websocketHandler;
       return websocketHandler;
     } catch (error) {
-      logger.error('Error loading placeholder WebSocket handler:', error);
+      logger.error('Error loading WebSocket handler:', error);
       return null;
     }
   }
@@ -178,8 +254,8 @@ async function handleHttpRequest(
 
     // Si no se encontró un controlador adecuado
     if (!controllerType) {
-       // Lanzar un error NotFoundError aquí en lugar de devolver directamente
-       throw new NotFoundError(`Ruta no encontrada: ${path}`);
+      // Lanzar un error NotFoundError aquí en lugar de devolver directamente
+      throw new NotFoundError(`Ruta no encontrada: ${path}`);
     }
 
     // Carga dinámica del controlador adecuado (lazy loading)
@@ -256,7 +332,7 @@ async function handleWebsocketRequest(
     // Usar HttpError aquí sería ideal si websocketHandler los lanza
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: 'Error en WebSocket'}), // Evitar exponer error directo
+      body: JSON.stringify({ message: 'Error en WebSocket' }), // Evitar exponer error directo
     };
   }
 }

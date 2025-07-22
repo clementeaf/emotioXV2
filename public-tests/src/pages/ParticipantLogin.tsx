@@ -178,7 +178,7 @@ export const ParticipantLogin = ({ onLoginSuccess, researchId }: ParticipantLogi
         </h2>
 
         {/* Información de dispositivo para debugging */}
-        {process.env.NODE_ENV === 'development' && (
+        {import.meta.env.DEV && (
           <div className="mb-4 p-3 bg-gray-100 rounded-lg text-xs text-gray-600">
             <p><strong>Dispositivo:</strong> {deviceType}</p>
             <p><strong>Permitir móvil:</strong> {allowMobile ? 'Sí' : 'No'}</p>

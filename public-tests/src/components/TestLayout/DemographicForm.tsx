@@ -53,7 +53,7 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
         }
       };
 
-      const response = await fetch(`${process.env.VITE_API_URL || 'http://localhost:3000'}/api/module-responses`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/module-responses`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
