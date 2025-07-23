@@ -84,13 +84,22 @@ export const useMonitoringWebSocket = () => {
 
   // 🎯 ENVIAR EVENTO
   const sendEvent = useCallback((event: MonitoringEvent) => {
+    console.log('[MonitoringWebSocket] 📤 sendEvent llamado:', {
+      type: event.type,
+      isConnected: isConnectedRef.current,
+      wsReadyState: wsRef.current?.readyState
+    });
+
     if (!wsRef.current || !isConnectedRef.current) {
       console.warn('[MonitoringWebSocket] ⚠️ WebSocket no conectado, evento no enviado:', event.type);
       return false;
     }
 
     try {
-      wsRef.current.send(JSON.stringify(event));
+      const messageString = JSON.stringify(event);
+      console.log('[MonitoringWebSocket] 📤 Enviando mensaje:', messageString);
+
+      wsRef.current.send(messageString);
       console.log('[MonitoringWebSocket] ✅ Evento enviado:', event.type);
       return true;
     } catch (error) {
@@ -101,7 +110,14 @@ export const useMonitoringWebSocket = () => {
 
   // 🎯 EVENTOS ESPECÍFICOS
   const sendParticipantLogin = useCallback((participantId: string, email?: string) => {
-    return sendEvent({
+    console.log('[MonitoringWebSocket] 🎯 sendParticipantLogin llamado:', {
+      participantId,
+      email,
+      researchId,
+      isConnected: isConnectedRef.current
+    });
+
+    const result = sendEvent({
       type: 'PARTICIPANT_LOGIN',
       data: {
         researchId: researchId || '',
@@ -112,6 +128,9 @@ export const useMonitoringWebSocket = () => {
         ipAddress: undefined // Se obtiene del servidor
       }
     });
+
+    console.log('[MonitoringWebSocket] 📡 Resultado de sendParticipantLogin:', result);
+    return result;
   }, [researchId, sendEvent]);
 
   const sendParticipantStep = useCallback((

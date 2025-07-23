@@ -151,8 +151,14 @@ export const useMonitoringReceiver = (researchId: string) => {
 
   // 🎯 MANEJAR EVENTOS DE MONITOREO
   const handleMonitoringEvent = useCallback((event: MonitoringEvent) => {
+    console.log('[useMonitoringReceiver] 📨 Procesando evento:', {
+      type: event.type,
+      data: event.data
+    });
+
     switch (event.type) {
       case 'PARTICIPANT_LOGIN':
+        console.log('[useMonitoringReceiver] 🎯 Llamando handleParticipantLogin');
         handleParticipantLogin(event.data);
         break;
       case 'PARTICIPANT_STEP':
@@ -171,15 +177,30 @@ export const useMonitoringReceiver = (researchId: string) => {
         handleParticipantError(event.data);
         break;
       default:
+        console.log('[useMonitoringReceiver] ⚠️ Evento no manejado:', event.type);
     }
   }, []);
 
   // 🎯 MANEJAR LOGIN DE PARTICIPANTE
   const handleParticipantLogin = useCallback((data: any) => {
+    console.log('[useMonitoringReceiver] 🎯 PARTICIPANT_LOGIN recibido:', {
+      participantId: data.participantId,
+      email: data.email,
+      researchId: data.researchId,
+      timestamp: data.timestamp
+    });
+
     setMonitoringData(prev => {
+      console.log('[useMonitoringReceiver] 📊 Estado anterior:', {
+        totalParticipants: prev.totalParticipants,
+        participants: prev.participants.map(p => ({ participantId: p.participantId, email: p.email }))
+      });
+
       const existingParticipant = prev.participants.find(p => p.participantId === data.participantId);
 
       if (existingParticipant) {
+        console.log('[useMonitoringReceiver] 🔄 Actualizando participante existente:', existingParticipant.participantId);
+
         // Actualizar participante existente
         const updatedParticipants = prev.participants.map(p =>
           p.participantId === data.participantId
@@ -187,13 +208,23 @@ export const useMonitoringReceiver = (researchId: string) => {
             : p
         );
 
-        return {
+        const newState = {
           ...prev,
           participants: updatedParticipants,
           activeParticipants: updatedParticipants.filter(p => p.status === 'in_progress').length,
           lastUpdate: data.timestamp
         };
+
+        console.log('[useMonitoringReceiver] ✅ Estado actualizado (existente):', {
+          totalParticipants: newState.totalParticipants,
+          activeParticipants: newState.activeParticipants,
+          participants: newState.participants.map(p => ({ participantId: p.participantId, email: p.email, status: p.status }))
+        });
+
+        return newState;
       } else {
+        console.log('[useMonitoringReceiver] 🆕 Agregando nuevo participante:', data.participantId);
+
         // Agregar nuevo participante
         const newParticipant: ParticipantStatus = {
           participantId: data.participantId,
@@ -205,13 +236,21 @@ export const useMonitoringReceiver = (researchId: string) => {
 
         const updatedParticipants = [...prev.participants, newParticipant];
 
-        return {
+        const newState = {
           ...prev,
           participants: updatedParticipants,
           totalParticipants: updatedParticipants.length,
           activeParticipants: updatedParticipants.filter(p => p.status === 'in_progress').length,
           lastUpdate: data.timestamp
         };
+
+        console.log('[useMonitoringReceiver] ✅ Estado actualizado (nuevo):', {
+          totalParticipants: newState.totalParticipants,
+          activeParticipants: newState.activeParticipants,
+          participants: newState.participants.map(p => ({ participantId: p.participantId, email: p.email, status: p.status }))
+        });
+
+        return newState;
       }
     });
   }, []);
@@ -343,11 +382,29 @@ export const useMonitoringReceiver = (researchId: string) => {
 
   // 🎯 CONECTAR AL MONTAR
   useEffect(() => {
+    console.log('[useMonitoringReceiver] 🔄 useEffect de conexión:', {
+      token: !!token,
+      researchId,
+      isLoadingEndpoints,
+      endpoints: !!endpoints,
+      isConnecting
+    });
+
     if (token && researchId && !isLoadingEndpoints && endpoints) {
+      console.log('[useMonitoringReceiver] ✅ Condiciones cumplidas, conectando...');
       connect();
+    } else {
+      console.log('[useMonitoringReceiver] ⚠️ No se conectó:', {
+        reason: !token ? 'No hay token' :
+          !researchId ? 'No hay researchId' :
+            isLoadingEndpoints ? 'Cargando endpoints' :
+              !endpoints ? 'No hay endpoints' :
+                isConnecting ? 'Ya conectando' : 'Desconocido'
+      });
     }
 
     return () => {
+      console.log('[useMonitoringReceiver] 🧹 Limpiando conexión');
       disconnect();
     };
   }, [token, researchId, endpoints, isLoadingEndpoints]);

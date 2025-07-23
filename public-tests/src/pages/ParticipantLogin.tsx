@@ -7,6 +7,7 @@ import FormField from '../components/common/FormField';
 import { MobileBlockedScreen } from '../components/common/MobileBlockedScreen';
 import { useEyeTrackingConfigQuery } from '../hooks/useEyeTrackingConfigQuery';
 import { useMobileDeviceCheck } from '../hooks/useMobileDeviceCheck';
+import { useMonitoringWebSocket } from '../hooks/useMonitoringWebSocket';
 import { apiRequest } from '../lib/alova';
 
 interface Participant {
@@ -42,6 +43,9 @@ export const ParticipantLogin = ({ onLoginSuccess, researchId }: ParticipantLogi
     error: mobileCheckError
   } = useMobileDeviceCheck(researchId, eyeTrackingConfig || null);
 
+  // 🎯 HOOK WEBSOCKET PARA NOTIFICACIONES
+  const { sendParticipantLogin } = useMonitoringWebSocket();
+
   const loginMutation = useMutation({
     mutationFn: async (data: { name: string; email: string; researchId: string }) => {
       return apiRequest<{ data: { participant: { id: string; name: string; email: string }; token: string } }>('participants/login', {
@@ -56,6 +60,16 @@ export const ParticipantLogin = ({ onLoginSuccess, researchId }: ParticipantLogi
         email: data.data.participant.email,
         token: data.data.token
       };
+
+      // 🎯 ENVIAR NOTIFICACIÓN WEBSOCKET DESPUÉS DEL LOGIN EXITOSO
+      sendParticipantLogin(participantData.id, participantData.email);
+
+      console.log('[ParticipantLogin] ✅ Login exitoso, notificación WebSocket enviada:', {
+        participantId: participantData.id,
+        email: participantData.email,
+        researchId
+      });
+
       onLoginSuccess(participantData);
     },
     onError: (error: Error) => {
@@ -157,9 +171,18 @@ export const ParticipantLogin = ({ onLoginSuccess, researchId }: ParticipantLogi
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    console.log('[ParticipantLogin] 🚀 handleSubmit ejecutado:', {
+      name: participant.name,
+      email: participant.email,
+      researchId
+    });
+
     if (!validateForm()) {
+      console.log('[ParticipantLogin] ❌ Validación falló');
       return;
     }
+
+    console.log('[ParticipantLogin] ✅ Validación exitosa, enviando login...');
 
     loginMutation.mutate({
       name: participant.name,

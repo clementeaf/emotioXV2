@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { useMonitoringReceiver } from '@/hooks/useMonitoringReceiver';
 import { researchInProgressAPI, setupAuthToken } from '@/lib/api';
 import { useAuth } from '@/providers/AuthProvider';
-import { Activity, CheckCircle, Clock, ExternalLink, Users, Wifi, WifiOff } from 'lucide-react';
+import { Activity, CheckCircle, Clock, ExternalLink, Users } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -49,8 +49,20 @@ export default function ResearchInProgressPage() {
   const researchId = searchParams?.get('research');
   const { token, authLoading } = useAuth();
 
+  console.log('[ResearchInProgress] 🚀 Componente inicializado:', {
+    researchId,
+    hasToken: !!token,
+    authLoading
+  });
+
   // 🎯 MONITOREO EN TIEMPO REAL
   const { isConnected, monitoringData, reconnect } = useMonitoringReceiver(researchId || '');
+
+  console.log('[ResearchInProgress] 📡 Estado del monitoreo:', {
+    isConnected,
+    hasMonitoringData: !!monitoringData,
+    participantsCount: monitoringData?.participants?.length || 0
+  });
 
   const [status, setStatus] = useState<ResearchStatus>({
     status: { value: '--', description: 'Cargando...', icon: 'chart-line' },
@@ -64,7 +76,26 @@ export default function ResearchInProgressPage() {
 
   // 🎯 ACTUALIZAR DATOS CON MONITOREO EN TIEMPO REAL
   useEffect(() => {
+    console.log('[ResearchInProgress] 🔄 useEffect monitoringData:', {
+      monitoringData: !!monitoringData,
+      researchId,
+      monitoringDataResearchId: monitoringData?.researchId,
+      participantsCount: monitoringData?.participants?.length || 0,
+      isConnected: isConnected
+    });
+
     if (monitoringData && monitoringData.researchId === researchId) {
+      console.log('[ResearchInProgress] ✅ Actualizando datos con monitoreo en tiempo real:', {
+        totalParticipants: monitoringData.totalParticipants,
+        activeParticipants: monitoringData.activeParticipants,
+        participants: monitoringData.participants.map(p => ({
+          participantId: p.participantId,
+          email: p.email,
+          status: p.status,
+          progress: p.progress
+        }))
+      });
+
       // 🎯 ACTUALIZAR ESTADÍSTICAS
       setStatus(prev => ({
         ...prev,
@@ -80,20 +111,31 @@ export default function ResearchInProgressPage() {
         }
       }));
 
-      // 🎯 ACTUALIZAR PARTICIPANTES
+      // 🎯 ACTUALIZAR PARTICIPANTES CON MEJOR MAPEADO
       const updatedParticipants: Participant[] = monitoringData.participants.map(p => ({
         id: p.participantId,
-        name: p.participantId,
+        name: p.email || `Participante ${p.participantId.slice(-6)}`, // Usar email o ID corto como nombre
         email: p.email || 'N/A',
-        status: p.status,
-        progress: p.progress,
+        status: p.status === 'in_progress' ? 'En proceso' :
+          p.status === 'completed' ? 'Completado' :
+            p.status === 'disqualified' ? 'Descalificado' : 'Por iniciar',
+        progress: p.progress || 0,
         duration: p.duration ? `${Math.round(p.duration / 1000)}s` : '--',
-        lastActivity: p.lastActivity
+        lastActivity: p.lastActivity ? new Date(p.lastActivity).toLocaleString('es-ES') : '--'
       }));
 
+      console.log('[ResearchInProgress] 📊 Participantes actualizados:', updatedParticipants);
+
       setParticipants(updatedParticipants);
+    } else {
+      console.log('[ResearchInProgress] ⚠️ No se actualizaron datos:', {
+        reason: !monitoringData ? 'No hay monitoringData' :
+          monitoringData.researchId !== researchId ? 'researchId no coincide' : 'Desconocido',
+        monitoringDataResearchId: monitoringData?.researchId,
+        currentResearchId: researchId
+      });
     }
-  }, [monitoringData, researchId]);
+  }, [monitoringData, researchId, isConnected]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -180,45 +222,41 @@ export default function ResearchInProgressPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* 🎯 HEADER CON ESTADO DE CONEXIÓN */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Investigación en curso</h1>
-          <p className="text-gray-600 mt-2">Monitorea el progreso y estado actual de tu investigación</p>
-        </div>
-
-        {/* 🎯 INDICADOR DE CONEXIÓN WEBSOCKET */}
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            {isConnected ? (
-              <>
-                <Wifi className="w-4 h-4 text-green-500" />
-                <span className="text-sm text-green-600">Monitoreo en vivo</span>
-              </>
-            ) : (
-              <>
-                <WifiOff className="w-4 h-4 text-red-500" />
-                <span className="text-sm text-red-600">Sin conexión</span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={reconnect}
-                  className="ml-2"
-                >
-                  Reconectar
-                </Button>
-              </>
-            )}
+      {/* 🎯 INDICADOR DE CONEXIÓN WEBSOCKET */}
+      <div className="mb-6 p-4 rounded-lg border">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            <span className="text-sm font-medium">
+              {isConnected ? 'Conectado en tiempo real' : 'Desconectado'}
+            </span>
           </div>
-
-          <Button
-            onClick={handleOpenPublicTests}
-            className="bg-black text-white hover:bg-gray-800"
-          >
-            <ExternalLink className="w-4 h-4 mr-2" />
-            Abrir vista de participante
-          </Button>
+          <div className="text-xs text-gray-500">
+            {monitoringData?.participants?.length || 0} participantes monitoreados
+          </div>
         </div>
+        {!isConnected && (
+          <button
+            onClick={reconnect}
+            className="mt-2 text-sm text-blue-600 hover:text-blue-800 underline"
+          >
+            Reconectar
+          </button>
+        )}
+      </div>
+
+      {/* 🎯 HEADER PRINCIPAL */}
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Investigación en Curso</h1>
+          <p className="text-gray-600 mt-2">
+            Monitoreo en tiempo real de participantes y progreso
+          </p>
+        </div>
+        <Button onClick={handleOpenPublicTests} variant="outline">
+          <ExternalLink className="w-4 h-4 mr-2" />
+          Abrir Public Tests
+        </Button>
       </div>
 
       {/* 🎯 TARJETAS DE ESTADÍSTICAS */}

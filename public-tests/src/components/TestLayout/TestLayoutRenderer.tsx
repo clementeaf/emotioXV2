@@ -3,6 +3,7 @@ import { useAvailableFormsQuery, useModuleResponsesQuery, useSaveModuleResponseM
 import { useDebugSteps } from '../../hooks/useDebugSteps';
 import { useEyeTrackingConfigQuery } from '../../hooks/useEyeTrackingConfigQuery';
 import { useMobileStepVerification } from '../../hooks/useMobileStepVerification';
+import { useMonitoringWebSocket } from '../../hooks/useMonitoringWebSocket';
 import { useUserJourneyTracking } from '../../hooks/useUserJourneyTracking';
 import { useFormDataStore } from '../../stores/useFormDataStore';
 import { useStepStore } from '../../stores/useStepStore';
@@ -917,6 +918,9 @@ const TestLayoutRenderer: React.FC = () => {
   const { setFormData, getFormData } = useFormDataStore();
   const quotaResult = useFormDataStore(state => state.quotaResult);
 
+  // 🎯 HOOK WEBSOCKET PARA NOTIFICACIONES
+  const { sendParticipantLogin, isConnected } = useMonitoringWebSocket();
+
   // 🎯 DEBUG HOOK PARA DIAGNOSTICAR PROBLEMAS
   useDebugSteps();
 
@@ -946,6 +950,28 @@ const TestLayoutRenderer: React.FC = () => {
 
   // 🎯 QUERY DE MODULE RESPONSES
   const { data: moduleResponses } = useModuleResponsesQuery(researchId || '', participantId || '');
+
+  // 🎯 ENVIAR EVENTO DE LOGIN CUANDO EL PARTICIPANTE INICIA LA SESIÓN
+  useEffect(() => {
+    if (researchId && participantId && isConnected) {
+      console.log('[TestLayoutRenderer] 🎯 Participante iniciando sesión:', {
+        researchId,
+        participantId,
+        isConnected
+      });
+
+      // 🎯 ENVIAR EVENTO DE LOGIN PARA NOTIFICAR AL FRONTEND
+      sendParticipantLogin(participantId, 'participant@test.com'); // Email por defecto para participantes existentes
+
+      console.log('[TestLayoutRenderer] ✅ Evento PARTICIPANT_LOGIN enviado para participante existente');
+    } else {
+      console.log('[TestLayoutRenderer] ⏳ Esperando conexión WebSocket:', {
+        researchId: !!researchId,
+        participantId: !!participantId,
+        isConnected
+      });
+    }
+  }, [researchId, participantId, isConnected, sendParticipantLogin]);
 
   // 🎯 EFFECTS DESPUÉS DE TODOS LOS HOOKS
   useEffect(() => {

@@ -88,23 +88,24 @@ const TestLayoutSidebar: React.FC<Props> = ({
               <ProgressDisplay current={1} total={totalSteps} />
             )}
 
-            {/* 🎯 STEPS LIST - SIEMPRE VISIBLE */}
-            <StepsList
-              key={sidebarKey}
-              steps={steps}
-              currentStepKey={currentQuestionKey}
-              isStepEnabled={isStepEnabled}
-            />
+            {/* 🎯 STEPS LIST - SOLO SI showProgressBar ES TRUE */}
+            {shouldShowProgressFeatures && (
+              <StepsList
+                key={sidebarKey}
+                steps={steps}
+                currentStepKey={currentQuestionKey}
+                isStepEnabled={isStepEnabled}
+              />
+            )}
 
-            {/* 🎯 BOTÓN PARA ELIMINAR TODAS LAS RESPUESTAS - SOLO SI showProgressBar ES TRUE */}
             {shouldShowProgressFeatures && (
               <div className="mt-6 p-4 border-t border-gray-200">
                 <button
                   onClick={handleDeleteAllResponses}
                   disabled={isDeleteDisabled}
                   className={`w-full px-4 py-2 text-sm font-medium rounded-md transition-colors ${isDeleteDisabled
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : 'bg-red-600 hover:bg-red-700 text-white'
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-red-600 hover:bg-red-700 text-white'
                     }`}
                 >
                   {isDeleting ? (
