@@ -169,6 +169,15 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
           }
         });
       }
+
+      // 🎯 AVANCE AUTOMÁTICO A LA SIGUIENTE IMAGEN
+      if (localSelectedImageIndex < images.length - 1) {
+        // Pequeño delay para que el usuario vea el feedback visual
+        setTimeout(() => {
+          setLocalSelectedImageIndex(localSelectedImageIndex + 1);
+          setLocalSelectedHitzone(null);
+        }, 500);
+      }
     }
   };
 
@@ -186,7 +195,11 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
   };
 
   const handleNextImage = (): void => {
-    if (localSelectedImageIndex < images.length - 1) {
+    // 🎯 VERIFICAR SI SE HA HECHO CLIC EN AL MENOS UN HITZONE DE LA IMAGEN ACTUAL
+    const currentImageSelection = imageSelections[localSelectedImageIndex.toString()];
+    const hasClickedHitzone = currentImageSelection && currentImageSelection.hitzoneId;
+
+    if (localSelectedImageIndex < images.length - 1 && hasClickedHitzone) {
       setLocalSelectedImageIndex(localSelectedImageIndex + 1);
       setLocalSelectedHitzone(null);
     }
@@ -198,8 +211,8 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
     : [];
 
   function getImageDrawRect(
-    imgNatural: {width: number, height: number},
-    imgRender: {width: number, height: number}
+    imgNatural: { width: number, height: number },
+    imgRender: { width: number, height: number }
   ): { drawWidth: number; drawHeight: number; offsetX: number; offsetY: number } {
     const imgRatio = imgNatural.width / imgNatural.height;
     const renderRatio = imgRender.width / imgRender.height;
@@ -249,7 +262,7 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
             <button
               className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
               onClick={handleNextImage}
-              disabled={localSelectedImageIndex === images.length - 1}
+              disabled={localSelectedImageIndex === images.length - 1 || !imageSelections[localSelectedImageIndex.toString()]}
             >
               Siguiente
             </button>
@@ -285,18 +298,13 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
                     return (
                       <div
                         key={hitzone.id}
-                        className={`absolute transition-all duration-300 border-2 ${
-                          localSelectedHitzone === hitzone.id
-                            ? 'border-green-600 bg-green-500 bg-opacity-20 shadow-lg'
-                            : 'border-blue-400 bg-blue-500 bg-opacity-10 hover:bg-blue-500 hover:bg-opacity-20'
-                        }`}
+                        className="absolute transition-all duration-300"
                         style={{
                           left,
                           top,
                           width,
                           height,
                           pointerEvents: 'auto',
-                          cursor: 'pointer',
                         }}
                         onClick={e => {
                           e.stopPropagation();
@@ -316,34 +324,7 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
                         }}
                         title={`Zona interactiva: ${hitzone.id}`}
                       >
-                        {/* Visualización de selección local */}
-                        {(() => {
-                          const selection = imageSelections[localSelectedImageIndex.toString()];
-
-                          if (!selection) {
-                            return null;
-                          }
-                          if (selection.hitzoneId !== hitzone.id) {
-                            return null;
-                          }
-                          const { click } = selection;
-                          const px = (click.x / (click.hitzoneWidth || 1)) * width;
-                          const py = (click.y / (click.hitzoneHeight || 1)) * height;
-                          return (
-                            <div className="absolute left-0 top-0 w-full h-full pointer-events-none">
-                              <div
-                                className="absolute bg-red-600 rounded-full border-2 border-white shadow"
-                                style={{
-                                  left: `calc(${px}px - 6px)`,
-                                  top: `calc(${py}px - 6px)`,
-                                  width: 12,
-                                  height: 12
-                                }}
-                                title="Punto de click"
-                              />
-                            </div>
-                          );
-                        })()}
+                        {/* 🎯 PUNTOS ROJOS ELIMINADOS - SIN FEEDBACK VISUAL */}
                       </div>
                     );
                   })}
