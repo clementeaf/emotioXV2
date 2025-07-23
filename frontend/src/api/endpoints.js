@@ -1,6 +1,6 @@
 // ARCHIVO GENERADO AUTOMÁTICAMENTE
 // NO MODIFICAR MANUALMENTE
-// Generado: 2025-07-22T23:24:51.691Z
+// Generado: 2025-07-23T11:09:37.818Z
 
 // Endpoints de API exportados desde backend
 export const API_ENDPOINTS = {
@@ -8,7 +8,7 @@ export const API_ENDPOINTS = {
   http: "https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev",
 
   // Endpoint WebSocket
-  ws: "wss://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev",
+  ws: "wss://w8dj7wxnl9.execute-api.us-east-1.amazonaws.com/dev",
 
   // Etapa de despliegue (dev, prod, etc.)
   stage: "dev"
@@ -17,13 +17,12 @@ export const API_ENDPOINTS = {
 // URLs de desarrollo local
 export const LOCAL_URLS = {
   "frontend": "http://localhost:3000",
-  "publicTests": "http://localhost:4700",
-  "generatedAt": "2025-01-07T15:30:00.000Z"
+  "publicTests": "http://localhost:4700"
 };
 
 // Constantes para uso más fácil
 export const API_HTTP_ENDPOINT = "https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev";
-export const API_WEBSOCKET_ENDPOINT = "wss://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev";
+export const API_WEBSOCKET_ENDPOINT = "wss://w8dj7wxnl9.execute-api.us-east-1.amazonaws.com/dev";
 
 // Función para obtener URL completa de una ruta
 export function getApiUrl(path) {

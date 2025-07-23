@@ -130,6 +130,7 @@ export const API_ENDPOINTS = {
     login: '/participants/login',
     create: '/participants',
     delete: '/participants/{id}',
+    deleteParticipant: '/research/{researchId}/participants/{participantId}',
   },
 
   // Research In Progress (para vista de investigación en curso)
@@ -138,6 +139,7 @@ export const API_ENDPOINTS = {
     getOverviewMetrics: '/research/{researchId}/metrics',
     getParticipantsByResearch: '/research/{researchId}/participants',
     getParticipantDetails: '/research/{researchId}/participants/{participantId}',
+    deleteParticipant: '/research/{researchId}/participants/{participantId}',
   },
 } as const;
 

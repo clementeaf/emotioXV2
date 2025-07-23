@@ -389,7 +389,7 @@ export const researchInProgressAPI = {
 
   // 🎯 ELIMINAR PARTICIPANTE
   deleteParticipant: async (researchId: string, participantId: string): Promise<APIResponse<boolean>> => {
-    return apiClient.delete('participants', 'deleteParticipant', { researchId, participantId });
+    return apiClient.delete('researchInProgress', 'deleteParticipant', { researchId, participantId });
   },
 };
 

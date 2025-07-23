@@ -269,6 +269,73 @@ export class ResearchInProgressController {
   }
 
   /**
+   * Eliminar participante específico de una investigación
+   */
+  async deleteParticipant(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    try {
+      const researchId = event.pathParameters?.researchId;
+      const participantId = event.pathParameters?.participantId;
+
+      if (!researchId || !participantId) {
+        return {
+          statusCode: 400,
+          headers: getCorsHeaders(event),
+          body: JSON.stringify({
+            success: false,
+            error: 'researchId y participantId son requeridos'
+          })
+        };
+      }
+
+      // 🎯 ELIMINAR PARTICIPANTE DE DYNAMODB
+      const deleteData = {
+        researchId,
+        participantId,
+        deletedAt: new Date().toISOString(),
+        deletedBy: 'admin', // TODO: Obtener del token de autenticación
+        reason: 'Manual deletion from dashboard'
+      };
+
+      // 🎯 INTENTAR ELIMINAR REGISTROS RELACIONADOS
+      try {
+        // Intentar método original primero
+        await participantService.deleteParticipantData(researchId, participantId);
+        console.log('✅ Eliminación exitosa usando método original');
+      } catch (error) {
+        console.warn('⚠️ Error con método original, intentando método simple:', error);
+        // Si falla el método original, usar el método simple
+        await participantService.deleteParticipantDataSimple(researchId, participantId);
+        console.log('✅ Eliminación exitosa usando método simple');
+      }
+
+      return {
+        statusCode: 200,
+        headers: getCorsHeaders(event),
+        body: JSON.stringify({
+          success: true,
+          message: 'Participante eliminado correctamente',
+          data: {
+            researchId,
+            participantId,
+            deletedAt: deleteData.deletedAt
+          }
+        })
+      };
+
+    } catch (error) {
+      console.error('Error eliminando participante:', error);
+      return {
+        statusCode: 500,
+        headers: getCorsHeaders(event),
+        body: JSON.stringify({
+          success: false,
+          error: 'Error interno del servidor'
+        })
+      };
+    }
+  }
+
+  /**
    * Obtener detalles completos de un participante específico
    */
   async getParticipantDetails(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
@@ -492,6 +559,9 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
     } else if (method === 'GET' && path.match(/^\/research\/[^\/]+\/participants$/)) {
       console.log('[ResearchInProgressHandler] Ejecutando getParticipantsByResearch');
       return controller.getParticipantsByResearch(event);
+    } else if (method === 'DELETE' && path.match(/^\/research\/[^\/]+\/participants\/[^\/]+$/)) {
+      console.log('[ResearchInProgressHandler] Ejecutando deleteParticipant');
+      return controller.deleteParticipant(event);
     }
 
     // Ruta no encontrada

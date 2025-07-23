@@ -150,115 +150,190 @@ export class ParticipantService {
    * Elimina todos los datos de un participante
    */
   async deleteParticipantData(researchId: string, participantId: string): Promise<void> {
-    const context = 'deleteParticipantData';
 
     try {
+      console.log(`[ParticipantService.deleteParticipantData] Iniciando eliminación para researchId=${researchId}, participantId=${participantId}`);
+
       // 🎯 ELIMINAR REGISTROS DE MODULE-RESPONSES
-      const moduleResponsesQuery = new QueryCommand({
-        TableName: this.tableName,
-        IndexName: 'ResearchIdIndex',
-        KeyConditionExpression: 'researchId = :researchId',
-        FilterExpression: 'participantId = :participantId',
-        ExpressionAttributeValues: {
-          ':researchId': researchId,
-          ':participantId': participantId
-        }
-      });
+      try {
+        const moduleResponsesQuery = new QueryCommand({
+          TableName: this.tableName,
+          IndexName: 'ResearchIdIndex',
+          KeyConditionExpression: 'researchId = :researchId',
+          FilterExpression: 'participantId = :participantId',
+          ExpressionAttributeValues: {
+            ':researchId': researchId,
+            ':participantId': participantId
+          }
+        });
 
-      const moduleResponses = await this.dynamoClient.send(moduleResponsesQuery);
+        const moduleResponses = await this.dynamoClient.send(moduleResponsesQuery);
 
-      if (moduleResponses.Items && moduleResponses.Items.length > 0) {
-        // 🎯 ELIMINAR CADA REGISTRO
-        const deletePromises = moduleResponses.Items.map(item => {
-          const deleteCommand = new DeleteCommand({
-            TableName: this.tableName,
-            Key: {
-              id: item.id,
-              sk: item.sk
-            }
+        if (moduleResponses.Items && moduleResponses.Items.length > 0) {
+          // 🎯 ELIMINAR CADA REGISTRO
+          const deletePromises = moduleResponses.Items.map(item => {
+            const deleteCommand = new DeleteCommand({
+              TableName: this.tableName,
+              Key: {
+                id: item.id,
+                sk: item.sk
+              }
+            });
+            return this.dynamoClient.send(deleteCommand);
           });
-          return this.dynamoClient.send(deleteCommand);
-        });
 
-        await Promise.all(deletePromises);
-        console.log(`[ParticipantService.deleteParticipantData] Registros de module-responses eliminados`, {
-          count: moduleResponses.Items.length
-        });
+          await Promise.all(deletePromises);
+          console.log(`[ParticipantService.deleteParticipantData] Registros de module-responses eliminados`, {
+            count: moduleResponses.Items.length
+          });
+        } else {
+          console.log(`[ParticipantService.deleteParticipantData] No se encontraron registros de module-responses para eliminar`);
+        }
+      } catch (error) {
+        console.warn(`[ParticipantService.deleteParticipantData] Error eliminando module-responses:`, error);
+        // Continuar con el proceso aunque falle esta parte
       }
 
       // 🎯 ELIMINAR REGISTROS DE PARTICIPANTS
-      const participantsQuery = new QueryCommand({
-        TableName: this.tableName,
-        IndexName: 'ResearchIdIndex',
-        KeyConditionExpression: 'researchId = :researchId',
-        FilterExpression: 'participantId = :participantId',
-        ExpressionAttributeValues: {
-          ':researchId': researchId,
-          ':participantId': participantId
-        }
-      });
+      try {
+        const participantsQuery = new QueryCommand({
+          TableName: this.tableName,
+          IndexName: 'ResearchIdIndex',
+          KeyConditionExpression: 'researchId = :researchId',
+          FilterExpression: 'participantId = :participantId',
+          ExpressionAttributeValues: {
+            ':researchId': researchId,
+            ':participantId': participantId
+          }
+        });
 
-      const participants = await this.dynamoClient.send(participantsQuery);
+        const participants = await this.dynamoClient.send(participantsQuery);
 
-      if (participants.Items && participants.Items.length > 0) {
-        // 🎯 ELIMINAR CADA REGISTRO
-        const deletePromises = participants.Items.map(item => {
-          const deleteCommand = new DeleteCommand({
-            TableName: this.tableName,
-            Key: {
-              id: item.id,
-              sk: item.sk
-            }
+        if (participants.Items && participants.Items.length > 0) {
+          // 🎯 ELIMINAR CADA REGISTRO
+          const deletePromises = participants.Items.map(item => {
+            const deleteCommand = new DeleteCommand({
+              TableName: this.tableName,
+              Key: {
+                id: item.id,
+                sk: item.sk
+              }
+            });
+            return this.dynamoClient.send(deleteCommand);
           });
-          return this.dynamoClient.send(deleteCommand);
-        });
 
-        await Promise.all(deletePromises);
-        console.log(`[ParticipantService.deleteParticipantData] Registros de participants eliminados`, {
-          count: participants.Items.length
-        });
+          await Promise.all(deletePromises);
+          console.log(`[ParticipantService.deleteParticipantData] Registros de participants eliminados`, {
+            count: participants.Items.length
+          });
+        } else {
+          console.log(`[ParticipantService.deleteParticipantData] No se encontraron registros de participants para eliminar`);
+        }
+      } catch (error) {
+        console.warn(`[ParticipantService.deleteParticipantData] Error eliminando participants:`, error);
+        // Continuar con el proceso aunque falle esta parte
       }
 
       // 🎯 ELIMINAR REGISTROS DE LOCATION-TRACKING
-      const locationQuery = new QueryCommand({
-        TableName: this.tableName,
-        IndexName: 'ResearchIdIndex',
-        KeyConditionExpression: 'researchId = :researchId',
-        FilterExpression: 'participantId = :participantId',
-        ExpressionAttributeValues: {
-          ':researchId': researchId,
-          ':participantId': participantId
-        }
-      });
+      try {
+        const locationQuery = new QueryCommand({
+          TableName: this.tableName,
+          IndexName: 'ResearchIdIndex',
+          KeyConditionExpression: 'researchId = :researchId',
+          FilterExpression: 'participantId = :participantId',
+          ExpressionAttributeValues: {
+            ':researchId': researchId,
+            ':participantId': participantId
+          }
+        });
 
-      const locations = await this.dynamoClient.send(locationQuery);
+        const locations = await this.dynamoClient.send(locationQuery);
 
-      if (locations.Items && locations.Items.length > 0) {
-        // 🎯 ELIMINAR CADA REGISTRO
-        const deletePromises = locations.Items.map(item => {
-          const deleteCommand = new DeleteCommand({
-            TableName: this.tableName,
-            Key: {
-              id: item.id,
-              sk: item.sk
-            }
+        if (locations.Items && locations.Items.length > 0) {
+          // 🎯 ELIMINAR CADA REGISTRO
+          const deletePromises = locations.Items.map(item => {
+            const deleteCommand = new DeleteCommand({
+              TableName: this.tableName,
+              Key: {
+                id: item.id,
+                sk: item.sk
+              }
+            });
+            return this.dynamoClient.send(deleteCommand);
           });
-          return this.dynamoClient.send(deleteCommand);
-        });
 
-        await Promise.all(deletePromises);
-        console.log(`[ParticipantService.deleteParticipantData] Registros de location-tracking eliminados`, {
-          count: locations.Items.length
-        });
+          await Promise.all(deletePromises);
+          console.log(`[ParticipantService.deleteParticipantData] Registros de location-tracking eliminados`, {
+            count: locations.Items.length
+          });
+        } else {
+          console.log(`[ParticipantService.deleteParticipantData] No se encontraron registros de location-tracking para eliminar`);
+        }
+      } catch (error) {
+        console.warn(`[ParticipantService.deleteParticipantData] Error eliminando location-tracking:`, error);
+        // Continuar con el proceso aunque falle esta parte
       }
 
-      console.log(`[ParticipantService.deleteParticipantData] Datos de participante eliminados exitosamente`, {
+      console.log(`[ParticipantService.deleteParticipantData] Proceso de eliminación completado`, {
         researchId,
         participantId
       });
 
     } catch (error) {
-      console.error(`[ParticipantService.deleteParticipantData] Error eliminando datos de participante`, { error });
+      console.error(`[ParticipantService.deleteParticipantData] Error general eliminando datos de participante`, { error });
+      throw error;
+    }
+  }
+
+  /**
+   * Elimina todos los datos de un participante (método alternativo más simple)
+   */
+  async deleteParticipantDataSimple(researchId: string, participantId: string): Promise<void> {
+    try {
+      console.log(`[ParticipantService.deleteParticipantDataSimple] Iniciando eliminación simple para researchId=${researchId}, participantId=${participantId}`);
+
+      // 🎯 ESCANEAR TODA LA TABLA PARA ENCONTRAR REGISTROS RELACIONADOS
+      const scanCommand = new ScanCommand({
+        TableName: this.tableName,
+        FilterExpression: 'researchId = :researchId AND participantId = :participantId',
+        ExpressionAttributeValues: {
+          ':researchId': researchId,
+          ':participantId': participantId
+        }
+      });
+
+      const scanResult = await this.dynamoClient.send(scanCommand);
+
+      if (scanResult.Items && scanResult.Items.length > 0) {
+        console.log(`[ParticipantService.deleteParticipantDataSimple] Encontrados ${scanResult.Items.length} registros para eliminar`);
+
+        // 🎯 ELIMINAR CADA REGISTRO ENCONTRADO
+        const deletePromises = scanResult.Items.map(item => {
+          const deleteCommand = new DeleteCommand({
+            TableName: this.tableName,
+            Key: {
+              id: item.id,
+              sk: item.sk || item.id // Usar id como fallback si sk no existe
+            }
+          });
+          return this.dynamoClient.send(deleteCommand);
+        });
+
+        await Promise.all(deletePromises);
+        console.log(`[ParticipantService.deleteParticipantDataSimple] Registros eliminados exitosamente`, {
+          count: scanResult.Items.length
+        });
+      } else {
+        console.log(`[ParticipantService.deleteParticipantDataSimple] No se encontraron registros para eliminar`);
+      }
+
+      console.log(`[ParticipantService.deleteParticipantDataSimple] Proceso de eliminación completado`, {
+        researchId,
+        participantId
+      });
+
+    } catch (error) {
+      console.error(`[ParticipantService.deleteParticipantDataSimple] Error eliminando datos de participante`, { error });
       throw error;
     }
   }

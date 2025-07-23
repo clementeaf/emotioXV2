@@ -421,6 +421,9 @@ export const mainHandler = async (event: APIGatewayProxyEvent): Promise<APIGatew
       return controller.delete(event);
     } else if (path === '/participants/login' && method === 'POST') {
       return controller.login(event);
+    } else if (method === 'DELETE' && path.match(/^\/research\/[\w-]+\/participants\/[\w-]+$/)) {
+      // 🎯 NUEVA RUTA: Eliminar participante específico de una investigación
+      return controller.deleteParticipant(event);
     }
 
     // Ruta no encontrada o método no permitido en ruta existente
