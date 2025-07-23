@@ -60,11 +60,7 @@ export interface StepsListProps {
 
 
 
-export interface TestLayoutSidebarProps {
-  steps: SidebarStep[];
-  isLoading: boolean;
-  error: Error | null;
-}
+// Eliminada definición duplicada de TestLayoutSidebarProps
 
 export interface DemographicQuestion {
   key: string;

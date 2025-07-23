@@ -119,6 +119,7 @@ interface EyeTrackingRecruitFormData {
     allowMobile: boolean;
     trackLocation: boolean;
     allowMultipleAttempts: boolean;
+    showProgressBar: boolean; // 🎯 NUEVO: Configuración de barra de progreso
   };
   participantLimit: {
     enabled: boolean;
@@ -333,7 +334,8 @@ const DEFAULT_CONFIG: EyeTrackingRecruitFormData = {
   linkConfig: {
     allowMobile: false,
     trackLocation: false,
-    allowMultipleAttempts: false
+    allowMultipleAttempts: false,
+    showProgressBar: false
   },
   participantLimit: {
     enabled: false,
@@ -396,7 +398,8 @@ const processApiResponse = (response: any): EyeTrackingRecruitFormData => {
       safeResponse.linkConfig = {
         allowMobile: response.linkConfig.allowMobile || false,
         trackLocation: response.linkConfig.trackLocation || false,
-        allowMultipleAttempts: response.linkConfig.allowMultipleAttempts || false
+        allowMultipleAttempts: response.linkConfig.allowMultipleAttempts || false,
+        showProgressBar: response.linkConfig.showProgressBar || false
       };
     }
 
@@ -716,7 +719,8 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
         linkConfig: {
           allowMobile: false,
           trackLocation: false,
-          allowMultipleAttempts: false
+          allowMultipleAttempts: false,
+          showProgressBar: false
         }
       }));
     }
@@ -1446,7 +1450,8 @@ export function useEyeTrackingRecruit({ researchId }: UseEyeTrackingRecruitProps
         linkConfig: {
           allowMobile: false,
           trackLocation: false,
-          allowMultipleAttempts: false
+          allowMultipleAttempts: false,
+          showProgressBar: false
         }
       }));
     }

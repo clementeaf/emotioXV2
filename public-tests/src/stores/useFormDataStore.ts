@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 interface QuotaResult {
   status: 'QUALIFIED' | 'DISQUALIFIED_OVERQUOTA';
@@ -21,40 +22,51 @@ interface FormDataState {
   clearQuotaResult: () => void;
 }
 
-export const useFormDataStore = create<FormDataState>((set, get) => ({
-  formData: {},
-  quotaResult: null,
+export const useFormDataStore = create<FormDataState>()(
+  persist(
+    (set, get) => ({
+      formData: {},
+      quotaResult: null,
 
-  setFormData: (questionKey: string, data: Record<string, unknown>) => {
-    set((state) => ({
-      formData: {
-        ...state.formData,
-        [questionKey]: data
+      setFormData: (questionKey: string, data: Record<string, unknown>) => {
+        set((state) => ({
+          formData: {
+            ...state.formData,
+            [questionKey]: data
+          }
+        }));
+      },
+
+      getFormData: (questionKey: string): Record<string, unknown> => {
+        return get().formData[questionKey] || {};
+      },
+
+      clearFormData: (questionKey: string) => {
+        set((state) => {
+          const newFormData = { ...state.formData };
+          delete newFormData[questionKey];
+          return { formData: newFormData };
+        });
+      },
+
+      clearAllFormData: () => {
+        set({ formData: {}, quotaResult: null });
+      },
+
+      setQuotaResult: (result: QuotaResult) => {
+        set({ quotaResult: result });
+      },
+
+      clearQuotaResult: () => {
+        set({ quotaResult: null });
       }
-    }));
-  },
-
-  getFormData: (questionKey: string): Record<string, unknown> => {
-    return get().formData[questionKey] || {};
-  },
-
-  clearFormData: (questionKey: string) => {
-    set((state) => {
-      const newFormData = { ...state.formData };
-      delete newFormData[questionKey];
-      return { formData: newFormData };
-    });
-  },
-
-  clearAllFormData: () => {
-    set({ formData: {}, quotaResult: null });
-  },
-
-  setQuotaResult: (result: QuotaResult) => {
-    set({ quotaResult: result });
-  },
-
-  clearQuotaResult: () => {
-    set({ quotaResult: null });
-  }
-}));
+    }),
+    {
+      name: 'emotio-form-data', // Nombre único para localStorage
+      partialize: (state) => ({
+        formData: state.formData,
+        quotaResult: state.quotaResult
+      })
+    }
+  )
+);

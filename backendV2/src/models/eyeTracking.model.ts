@@ -106,7 +106,8 @@ export const DEFAULT_EYE_TRACKING_CONFIG: EyeTrackingFormData = {
   linkConfig: {
     allowMobile: false,
     trackLocation: false,
-    allowMultipleAttempts: false
+    allowMultipleAttempts: false,
+    showProgressBar: false // 🎯 NUEVO: Configuración de barra de progreso
   },
   participantLimit: {
     enabled: false,

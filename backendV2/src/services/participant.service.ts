@@ -154,13 +154,12 @@ export class ParticipantService {
     try {
       console.log(`[ParticipantService.deleteParticipantData] Iniciando eliminación para researchId=${researchId}, participantId=${participantId}`);
 
-      // 🎯 ELIMINAR REGISTROS DE MODULE-RESPONSES
+      // 🎯 ELIMINAR REGISTROS DE MODULE-RESPONSES (usando la tabla correcta)
       try {
         const moduleResponsesQuery = new QueryCommand({
-          TableName: this.tableName,
-          IndexName: 'ResearchIdIndex',
-          KeyConditionExpression: 'researchId = :researchId',
-          FilterExpression: 'participantId = :participantId',
+          TableName: process.env.MODULE_RESPONSES_TABLE || 'emotioxv2-backend-module-responses-dev',
+          IndexName: 'ResearchParticipantIndex',
+          KeyConditionExpression: 'researchId = :researchId AND participantId = :participantId',
           ExpressionAttributeValues: {
             ':researchId': researchId,
             ':participantId': participantId
@@ -173,10 +172,9 @@ export class ParticipantService {
           // 🎯 ELIMINAR CADA REGISTRO
           const deletePromises = moduleResponses.Items.map(item => {
             const deleteCommand = new DeleteCommand({
-              TableName: this.tableName,
+              TableName: process.env.MODULE_RESPONSES_TABLE || 'emotioxv2-backend-module-responses-dev',
               Key: {
-                id: item.id,
-                sk: item.sk
+                id: item.id
               }
             });
             return this.dynamoClient.send(deleteCommand);
@@ -194,20 +192,18 @@ export class ParticipantService {
         // Continuar con el proceso aunque falle esta parte
       }
 
-      // 🎯 ELIMINAR REGISTROS DE PARTICIPANTS
+      // 🎯 ELIMINAR REGISTROS DE PARTICIPANTS (usando la tabla correcta)
       try {
-        const participantsQuery = new QueryCommand({
+        // Para la tabla de participants, usar Scan ya que no tiene el índice ResearchIdIndex
+        const participantsScan = new ScanCommand({
           TableName: this.tableName,
-          IndexName: 'ResearchIdIndex',
-          KeyConditionExpression: 'researchId = :researchId',
-          FilterExpression: 'participantId = :participantId',
+          FilterExpression: 'id = :participantId',
           ExpressionAttributeValues: {
-            ':researchId': researchId,
             ':participantId': participantId
           }
         });
 
-        const participants = await this.dynamoClient.send(participantsQuery);
+        const participants = await this.dynamoClient.send(participantsScan);
 
         if (participants.Items && participants.Items.length > 0) {
           // 🎯 ELIMINAR CADA REGISTRO
@@ -215,8 +211,7 @@ export class ParticipantService {
             const deleteCommand = new DeleteCommand({
               TableName: this.tableName,
               Key: {
-                id: item.id,
-                sk: item.sk
+                id: item.id
               }
             });
             return this.dynamoClient.send(deleteCommand);
@@ -231,46 +226,6 @@ export class ParticipantService {
         }
       } catch (error) {
         console.warn(`[ParticipantService.deleteParticipantData] Error eliminando participants:`, error);
-        // Continuar con el proceso aunque falle esta parte
-      }
-
-      // 🎯 ELIMINAR REGISTROS DE LOCATION-TRACKING
-      try {
-        const locationQuery = new QueryCommand({
-          TableName: this.tableName,
-          IndexName: 'ResearchIdIndex',
-          KeyConditionExpression: 'researchId = :researchId',
-          FilterExpression: 'participantId = :participantId',
-          ExpressionAttributeValues: {
-            ':researchId': researchId,
-            ':participantId': participantId
-          }
-        });
-
-        const locations = await this.dynamoClient.send(locationQuery);
-
-        if (locations.Items && locations.Items.length > 0) {
-          // 🎯 ELIMINAR CADA REGISTRO
-          const deletePromises = locations.Items.map(item => {
-            const deleteCommand = new DeleteCommand({
-              TableName: this.tableName,
-              Key: {
-                id: item.id,
-                sk: item.sk
-              }
-            });
-            return this.dynamoClient.send(deleteCommand);
-          });
-
-          await Promise.all(deletePromises);
-          console.log(`[ParticipantService.deleteParticipantData] Registros de location-tracking eliminados`, {
-            count: locations.Items.length
-          });
-        } else {
-          console.log(`[ParticipantService.deleteParticipantData] No se encontraron registros de location-tracking para eliminar`);
-        }
-      } catch (error) {
-        console.warn(`[ParticipantService.deleteParticipantData] Error eliminando location-tracking:`, error);
         // Continuar con el proceso aunque falle esta parte
       }
 

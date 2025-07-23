@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { getApiUrl } from '../../config/endpoints';
 import { useDisqualificationRedirect } from '../../hooks/useDisqualificationRedirect';
 import { useEyeTrackingConfigQuery } from '../../hooks/useEyeTrackingConfigQuery';
 import { useMonitoringWebSocket } from '../../hooks/useMonitoringWebSocket';
+import { useFormDataStore } from '../../stores/useFormDataStore';
+import { useParticipantStore } from '../../stores/useParticipantStore';
 import { useTestStore } from '../../stores/useTestStore';
 
 interface DemographicFormProps {
@@ -17,16 +20,70 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
   const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
   const { redirectToDisqualification } = useDisqualificationRedirect();
   const { sendParticipantDisqualified, sendParticipantQuotaExceeded } = useMonitoringWebSocket();
-  const [formValues, setFormValues] = useState<Record<string, any>>({});
+
+  // 🎯 USAR STORE PERSISTENTE EN LUGAR DE useState
+  const { formData, setFormData, getFormData } = useFormDataStore();
+  const { getParticipantId } = useParticipantStore();
   const [isLoading, setIsLoading] = useState(false);
   const [hasLoadedData, setHasLoadedData] = useState(false);
 
+  // 🎯 CARGAR DATOS PERSISTIDOS AL INICIALIZAR
+  useEffect(() => {
+    const savedData = getFormData('demographics');
+    if (savedData && Object.keys(savedData).length > 0) {
+      setHasLoadedData(true);
+      console.log('[DemographicForm] ✅ Datos cargados desde persistencia:', savedData);
+    }
+  }, [getFormData]);
+
+  // 🎯 FUNCIÓN PARA VERIFICAR SI YA SE ENVIARON DATOS AL BACKEND
+  const checkBackendData = async () => {
+    try {
+      const participantId = getParticipantId();
+      const apiUrl = getApiUrl(`module-responses/research/${researchId}`);
+
+      console.log('[DemographicForm] 🔍 Verificando datos en backend para participante:', participantId);
+
+      const response = await fetch(apiUrl);
+      if (response.ok) {
+        const data = await response.json();
+        const participantResponses = data.data?.find((item: any) =>
+          item.participantId === participantId &&
+          item.questionKey === 'demographics'
+        );
+
+        if (participantResponses && participantResponses.responses?.length > 0) {
+          const backendData = participantResponses.responses[0].response;
+          console.log('[DemographicForm] ✅ Datos encontrados en backend:', backendData);
+
+          // 🎯 CARGAR DATOS DEL BACKEND AL STORE LOCAL
+          setFormData('demographics', backendData);
+          setHasLoadedData(true);
+
+          console.log('[DemographicForm] ✅ Datos del backend cargados al store local');
+        }
+      }
+    } catch (error) {
+      console.error('[DemographicForm] ❌ Error verificando datos del backend:', error);
+    }
+  };
+
+  // 🎯 VERIFICAR DATOS DEL BACKEND AL INICIALIZAR
+  useEffect(() => {
+    if (researchId) {
+      checkBackendData();
+    }
+  }, [researchId]);
+
   // 🎯 FUNCIÓN PARA MANEJAR CAMBIOS EN LOS INPUTS
   const handleInputChange = (key: string, value: string) => {
-    setFormValues(prev => ({
-      ...prev,
+    const currentData = getFormData('demographics');
+    const updatedData = {
+      ...currentData,
       [key]: value
-    }));
+    };
+    setFormData('demographics', updatedData);
+    console.log('[DemographicForm] 📝 Datos actualizados:', updatedData);
   };
 
   // 🎯 FUNCIÓN PARA GUARDAR DEMOGRÁFICOS EN BACKEND
@@ -35,10 +92,13 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
       setIsLoading(true);
       const timestamp = new Date().toISOString();
       const now = new Date().toISOString();
+      const participantId = getParticipantId();
+
+      console.log('[DemographicForm] 🎯 Guardando demográficos para participante:', participantId);
 
       const createData = {
         researchId: researchId || '',
-        participantId: `participant-${Date.now()}`,
+        participantId: participantId,
         questionKey: 'demographics',
         responses: [{
           questionKey: 'demographics',
@@ -53,7 +113,10 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
         }
       };
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/module-responses`, {
+      const apiUrl = getApiUrl('module-responses');
+      console.log('[DemographicForm] 🌐 Enviando a:', apiUrl);
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -62,11 +125,13 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
       });
 
       if (!response.ok) {
-        throw new Error(`Error guardando demográficos: ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(`Error guardando demográficos: ${response.status} - ${errorText}`);
       }
 
-      console.log('[DemographicForm] ✅ Demográficos guardados exitosamente');
-      return await response.json();
+      const result = await response.json();
+      console.log('[DemographicForm] ✅ Demográficos guardados exitosamente:', result);
+      return result;
     } catch (error) {
       console.error('[DemographicForm] ❌ Error guardando demográficos:', error);
       // No lanzar error para no interrumpir el flujo
@@ -94,11 +159,18 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!eyeTrackingConfig?.demographicQuestions || !formValues) return;
+    if (!eyeTrackingConfig?.demographicQuestions) return;
+
+    // 🎯 OBTENER DATOS DEL STORE
+    const currentFormData = getFormData('demographics');
+    if (!currentFormData || Object.keys(currentFormData).length === 0) {
+      console.log('[DemographicForm] ⚠️ No hay datos para enviar');
+      return;
+    }
 
     // 🎯 CONVERTIR FORM VALUES A FORMATO CORRECTO
     const demographicsData = Object.fromEntries(
-      Object.entries(formValues).map(([key, value]) => [key, String(value || '')])
+      Object.entries(currentFormData).map(([key, value]) => [key, String(value || '')])
     ) as Record<string, string>;
 
     // 🎯 VALIDAR DESCALIFICACIÓN POR SELECCIÓN
@@ -111,7 +183,7 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
       await saveDemographicsToBackend(demographicsData, true);
 
       // 🎯 ENVIAR EVENTO DE DESCALIFICACIÓN
-      const participantId = `participant-${Date.now()}`;
+      const participantId = getParticipantId();
       sendParticipantDisqualified(
         participantId,
         validationResult.reason || 'Descalificado por criterios demográficos',
@@ -227,7 +299,7 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
               </label>
               <select
                 name={q.key}
-                value={(formValues[q.key] as string) || ''}
+                value={(getFormData('demographics')[q.key] as string) || ''}
                 onChange={(e) => handleInputChange(q.key, e.target.value)}
                 required={q.required}
                 className="p-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"

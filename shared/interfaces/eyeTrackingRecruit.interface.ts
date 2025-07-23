@@ -19,7 +19,8 @@ export type DemographicQuestionKeys =
 export type LinkConfigKeys =
   | 'allowMobile'
   | 'trackLocation'
-  | 'allowMultipleAttempts';
+  | 'allowMultipleAttempts'
+  | 'showProgressBar'; // 🎯 NUEVO: Configuración de barra de progreso
 
 // Tipos para las claves de las opciones de parámetros
 export type ParameterOptionKeys =
@@ -158,6 +159,7 @@ export interface LinkConfig {
   allowMobile: boolean; // Permitir dispositivos móviles
   trackLocation: boolean; // Rastrear ubicación del participante
   allowMultipleAttempts: boolean; // Permitir múltiples intentos del mismo participante
+  showProgressBar: boolean; // 🎯 NUEVO: Mostrar barra de progreso
 }
 
 // Estructura para el límite de participantes

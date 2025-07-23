@@ -192,10 +192,7 @@ const QuestionComponent: React.FC<{
 
 // 🎯 RENDERERS PARA DIFERENTES TIPOS DE COMPONENTES
 const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
-  screen: ({ contentConfiguration, currentQuestionKey }) => {
-    // 🎯 OBTENER QUOTA RESULT DEL STORE
-    const quotaResult = useFormDataStore(state => state.quotaResult);
-
+  screen: ({ contentConfiguration, currentQuestionKey, quotaResult, eyeTrackingConfig }) => {
     // 🎯 COMPONENTE PARA thank_you_screen CON AUTO-GUARDADO
     if (currentQuestionKey === 'thank_you_screen') {
       return (
@@ -203,6 +200,7 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
           contentConfiguration={contentConfiguration}
           currentQuestionKey={currentQuestionKey}
           quotaResult={quotaResult} // 🎯 NUEVO: Pasar información de cuotas
+          eyeTrackingConfig={eyeTrackingConfig} // 🎯 NUEVO: Pasar configuración
         />
       );
     }
@@ -624,13 +622,11 @@ const ThankYouScreenComponent: React.FC<{
   contentConfiguration: Record<string, unknown>;
   currentQuestionKey: string;
   quotaResult?: any; // 🎯 NUEVO: Prop para información de cuotas
-}> = ({ contentConfiguration, currentQuestionKey, quotaResult }) => {
+  eyeTrackingConfig?: any; // 🎯 NUEVO: Prop para configuración de eye-tracking
+}> = ({ contentConfiguration, currentQuestionKey, quotaResult, eyeTrackingConfig }) => {
   const { setFormData } = useFormDataStore();
   const { researchId, participantId } = useTestStore();
   const saveModuleResponseMutation = useSaveModuleResponseMutation();
-
-  // 🎯 MOVER HOOK AL NIVEL SUPERIOR
-  const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
 
   // 🎯 AUTO-GUARDAR CUANDO SE VISITA THANK YOU SCREEN
   React.useEffect(() => {
@@ -1132,7 +1128,7 @@ const TestLayoutRenderer: React.FC = () => {
     true;
 
   const renderedForm =
-    RENDERERS[questionType]?.({ contentConfiguration, currentQuestionKey }) ||
+    RENDERERS[questionType]?.({ contentConfiguration, currentQuestionKey, quotaResult, eyeTrackingConfig }) ||
     <UnknownStepComponent
       data={{
         questionKey: currentQuestionKey,

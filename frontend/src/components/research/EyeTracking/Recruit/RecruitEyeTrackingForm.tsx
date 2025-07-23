@@ -208,7 +208,7 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
           dailyHoursOnline: { enabled: false, required: false, options: [], disqualifyingHours: [] },
           technicalProficiency: { enabled: false, required: false, options: [], disqualifyingProficiencies: [] }
         },
-        linkConfig: { allowMobile: false, trackLocation: false, allowMultipleAttempts: false },
+        linkConfig: { allowMobile: false, trackLocation: false, allowMultipleAttempts: false, showProgressBar: true },
         participantLimit: { enabled: false, value: 50 },
         backlinks: { complete: '', disqualified: '', overquota: '' },
         researchUrl: `https://useremotion.com/link/${researchId}`,
@@ -646,6 +646,21 @@ export function RecruitEyeTrackingForm({ researchId, className }: RecruitEyeTrac
                           className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                         />
                         <label htmlFor="allowMultipleAttempts" className={`text-sm ${linkConfigEnabled ? 'cursor-pointer' : 'cursor-not-allowed'}`}>Se puede realizar varias veces dentro de una misma sesión</label>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="showProgressBar"
+                          checked={formData.linkConfig.showProgressBar}
+                          onChange={(e) => handleLinkConfigChange('showProgressBar', e.target.checked)}
+                          disabled={!linkConfigEnabled}
+                          className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
+                        />
+                        <label htmlFor="showProgressBar" className={`text-sm ${linkConfigEnabled ? 'cursor-pointer' : 'cursor-not-allowed'}`}>
+                          Mostrar barra de progreso en public-tests
+                          <span className="text-xs text-gray-500 ml-1">(permite actualizar respuestas previas)</span>
+                        </label>
                       </div>
                     </div>
                   </div>

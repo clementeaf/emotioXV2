@@ -15,26 +15,12 @@ const controllerImports = {
   's3': () => import('./controllers/s3.controller'),
   'participants': () => import('./controllers/participant.controller'),
   'monitoring': () => import('./controllers/monitoring.controller'),
+  'websocket': () => import('./controllers/websocket.controller'),
 };
 
 // Función para obtener un handler de forma lazy
 export async function getHandler(type: string): Promise<Function | null> {
   if (handlers[type]) return handlers[type];
-
-  // Manejo especial para WebSocket (si se mantiene aquí)
-  if (type === 'websocket') {
-    try {
-      const websocketHandler = async (_event: any, _context: any) => {
-        // Placeholder
-        return { statusCode: 501, body: JSON.stringify({ message: 'WebSocket not implemented' }) };
-      };
-      handlers.websocket = websocketHandler;
-      return websocketHandler;
-    } catch (error) {
-      logger.error({ err: error }, 'Error al cargar el handler WebSocket placeholder');
-      return null;
-    }
-  }
 
   // Buscar en el mapa de importadores
   const importer = controllerImports[type as keyof typeof controllerImports];

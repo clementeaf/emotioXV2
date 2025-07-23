@@ -1,101 +1,46 @@
-import { useQuery, UseQueryOptions } from '@tanstack/react-query';
-import { getApiUrl } from '../config/endpoints';
+import { useQuery } from '@tanstack/react-query';
+import { API_HTTP_ENDPOINT } from '../config/endpoints';
 
 export interface EyeTrackingConfig {
   id: string;
   researchId: string;
-  linkConfig?: {
-    allowMobile?: boolean;
-    allowMobileDevices?: boolean;
-    trackLocation?: boolean;  // ✅ AGREGADO: Configuración de tracking de ubicación
+  linkConfig: {
+    allowMobile: boolean;
+    trackLocation: boolean;
+    allowMultipleAttempts: boolean;
+    showProgressBar: boolean; // 🎯 NUEVO
   };
-  allowMobile?: boolean;
-  allowMobileDevices?: boolean;
-  trackLocation?: boolean;  // ✅ AGREGADO: Configuración de tracking de ubicación
-  participantLimit?: {
+  parameterOptions: {
+    saveDeviceInfo: boolean;
+    saveLocationInfo: boolean;
+    saveResponseTimes: boolean;
+    saveUserJourney: boolean;
+  };
+  participantLimit: {
+    enabled: boolean;
     value: number;
+  };
+  demographicQuestions: Record<string, any>;
+  backlinks: {
+    complete: string;
+    disqualified: string;
+    overquota: string;
   };
   createdAt: string;
   updatedAt: string;
-  parameterOptions?: {
-    saveDeviceInfo?: boolean;
-    saveLocationInfo?: boolean;
-    saveResponseTimes?: boolean; // 🎯 NUEVA PROPIEDAD
-    saveUserJourney?: boolean;
-  };
-  // 🎯 AGREGADO: Backlinks para redirección
-  backlinks?: {
-    complete?: string;
-    disqualified?: string;
-    overquota?: string;
-  };
-  // 🎯 AGREGADO: Preguntas demográficas con criterios descalificatorios
-  demographicQuestions?: {
-    age?: {
-      enabled: boolean;
-      required: boolean;
-      options: string[];
-      disqualifyingAges?: string[];
-    };
-    country?: {
-      enabled: boolean;
-      required: boolean;
-      options: string[];
-      disqualifyingCountries?: string[];
-    };
-    gender?: {
-      enabled: boolean;
-      required: boolean;
-      options: string[];
-      disqualifyingGenders?: string[];
-    };
-    educationLevel?: {
-      enabled: boolean;
-      required: boolean;
-      options: string[];
-      disqualifyingEducation?: string[];
-    };
-    householdIncome?: {
-      enabled: boolean;
-      required: boolean;
-      options: string[];
-      disqualifyingIncomes?: string[];
-    };
-    employmentStatus?: {
-      enabled: boolean;
-      required: boolean;
-      options: string[];
-      disqualifyingEmploymentStatuses?: string[];
-    };
-    dailyHoursOnline?: {
-      enabled: boolean;
-      required: boolean;
-      options: string[];
-      disqualifyingHours?: string[];
-    };
-    technicalProficiency?: {
-      enabled: boolean;
-      required: boolean;
-      options: string[];
-      disqualifyingProficiencies?: string[];
-    };
-  };
 }
 
-/**
- * Hook para obtener la configuración de eye-tracking de una investigación
- * Incluye configuración de dispositivos móviles y tracking de ubicación
- */
-export const useEyeTrackingConfigQuery = (
-  researchId: string,
-  options?: UseQueryOptions<EyeTrackingConfig, Error>
-) => {
-  return useQuery<EyeTrackingConfig, Error>({
+export function useEyeTrackingConfigQuery(researchId: string) {
+  return useQuery({
     queryKey: ['eyeTrackingConfig', researchId],
-    queryFn: async () => {
+    queryFn: async (): Promise<EyeTrackingConfig | null> => {
+      if (!researchId) {
+        return null;
+      }
+
       try {
-        // 🎯 CORREGIR: El endpoint espera /research/{researchId}/eye-tracking
-        const response = await fetch(`${getApiUrl('research')}/${researchId}/eye-tracking`, {
+        // 🎯 CORREGIR: Usar el endpoint correcto
+        const response = await fetch(`${API_HTTP_ENDPOINT}/research/${researchId}/eye-tracking`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -103,26 +48,22 @@ export const useEyeTrackingConfigQuery = (
         });
 
         if (!response.ok) {
-          throw new Error(`Error ${response.status}: ${response.statusText}`);
+          if (response.status === 404) {
+            console.log('[useEyeTrackingConfigQuery] No se encontró configuración para researchId:', researchId);
+            return null;
+          }
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         const data = await response.json();
-        console.log('[useEyeTrackingConfigQuery] Configuración obtenida:', data);
-
         return data;
       } catch (error) {
-        console.error('[useEyeTrackingConfigQuery] Error:', error);
-        throw error;
+        console.error('[useEyeTrackingConfigQuery] Error obteniendo configuración:', error);
+        return null;
       }
     },
     enabled: !!researchId,
-    staleTime: 1000 * 60 * 5, // 5 minutos
-    gcTime: 1000 * 60 * 10, // 10 minutos
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    refetchOnReconnect: false,
-    retry: 1,
-    retryDelay: 1000,
-    ...options,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    retry: 2,
   });
-};
+}

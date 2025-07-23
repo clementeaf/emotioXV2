@@ -135,18 +135,14 @@ export const useStepStore = create<StepStore>((set, get) => ({
     // 🎯 PERMITIR ACCESO A TODOS LOS STEPS COMPLETADOS
     if (state.hasBackendResponse(step.questionKey)) return true;
 
-    // 🎯 PERMITIR ACCESO AL SIGUIENTE STEP DISPONIBLE
+    // 🎯 PERMITIR ACCESO SOLO SI EL STEP ANTERIOR ESTÁ COMPLETADO
     const previousStep = state.steps[stepIndex - 1];
     if (previousStep && state.hasBackendResponse(previousStep.questionKey)) {
       return true;
     }
 
-    // 🎯 PERMITIR ACCESO SI NO HAY STEPS COMPLETADOS ANTES
-    const hasAnyCompletedBefore = state.steps.slice(0, stepIndex).some(s =>
-      state.hasBackendResponse(s.questionKey)
-    );
-
-    return !hasAnyCompletedBefore;
+    // 🎯 NO PERMITIR ACCESO A STEPS POSTERIORES SIN COMPLETAR EL ANTERIOR
+    return false;
   },
 
   getStepState: (stepIndex: number): StepStateInfo => {

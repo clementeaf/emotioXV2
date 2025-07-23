@@ -45,7 +45,7 @@ interface ParticipantDetails {
     city: string;
     ip: string;
   };
-  responses: ParticipantResponse[];
+  responses?: ParticipantResponse[];
   disqualificationReason?: string;
   isDisqualified: boolean;
 }
@@ -200,7 +200,7 @@ export function ParticipantDetailsModal({ participant, isOpen, onClose }: Partic
                 : 'border-transparent text-neutral-600 hover:text-neutral-800 hover:bg-neutral-50'
                 }`}
             >
-              Respuestas ({participant.responses.length})
+              Respuestas ({participant.responses?.length || 0})
             </button>
             <button
               onClick={() => setActiveTab('timeline')}
@@ -379,7 +379,7 @@ export function ParticipantDetailsModal({ participant, isOpen, onClose }: Partic
 
           {activeTab === 'responses' && (
             <div className="space-y-4">
-              {participant.responses.length === 0 ? (
+              {!participant.responses || participant.responses.length === 0 ? (
                 <div className="text-center py-8">
                   <Clock className="h-12 w-12 text-neutral-400 mx-auto mb-4" />
                   <p className="text-neutral-600">No hay respuestas registradas</p>
@@ -412,7 +412,7 @@ export function ParticipantDetailsModal({ participant, isOpen, onClose }: Partic
               <div className="relative">
                 <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-neutral-200"></div>
                 <div className="space-y-6">
-                  {participant.responses.map((response, index) => (
+                  {participant.responses?.map((response, index) => (
                     <div key={index} className="relative pl-8">
                       <div className="absolute left-0 top-2 w-2 h-2 bg-blue-500 rounded-full"></div>
                       <div className="bg-neutral-50 rounded-lg p-4">
@@ -426,7 +426,12 @@ export function ParticipantDetailsModal({ participant, isOpen, onClose }: Partic
                         </div>
                       </div>
                     </div>
-                  ))}
+                  )) || (
+                      <div className="text-center py-8">
+                        <Clock className="h-12 w-12 text-neutral-400 mx-auto mb-4" />
+                        <p className="text-neutral-600">No hay respuestas registradas</p>
+                      </div>
+                    )}
                 </div>
               </div>
             </div>

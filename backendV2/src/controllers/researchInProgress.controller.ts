@@ -57,7 +57,35 @@ export class ResearchInProgressController {
             progress = 100;
           } else if (responses.length > 0) {
             status = 'En proceso';
-            progress = Math.min((responses.length / 5) * 100, 90); // Estimación basada en número de respuestas
+
+            // 🎯 CALCULAR PROGRESO BASADO EN RESPUESTAS REALES
+            const responseTypes = responses.map(r => r.questionKey);
+            let calculatedProgress = 0;
+
+            // 🎯 MAPA DE PROGRESO POR TIPO DE RESPUESTA
+            const progressMap: Record<string, number> = {
+              'demographics': 20,      // 20% por demográficos
+              'welcome_screen': 40,    // 40% por pantalla de bienvenida
+              'eye_tracking': 60,      // 60% por eye tracking
+              'smart_voc': 80,         // 80% por smart VOC
+              'cognitive_task': 90,    // 90% por tarea cognitiva
+              'thank_you_screen': 100  // 100% por pantalla de agradecimiento
+            };
+
+            // 🎯 CALCULAR PROGRESO BASADO EN RESPUESTAS ENVIADAS
+            if (responseTypes.length > 0) {
+              const maxProgress = Math.max(...responseTypes.map(type => progressMap[type] || 0));
+              calculatedProgress = maxProgress;
+            }
+
+            progress = calculatedProgress;
+
+            console.log('[ResearchInProgressController] 📊 Progreso calculado:', {
+              participantId: participant.id,
+              responseTypes,
+              calculatedProgress,
+              progress
+            });
           }
 
           // Calcular última actividad

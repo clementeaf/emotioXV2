@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+// import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { useEffect, useState } from 'react';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import { LocationConsentModal } from './components/common/LocationConsentModal';
@@ -43,9 +43,7 @@ function App() {
   const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
 
   // Determinar si el tracking de ubicación está habilitado
-  const trackLocationEnabled = eyeTrackingConfig?.linkConfig?.trackLocation ||
-    eyeTrackingConfig?.trackLocation ||
-    false;
+  const trackLocationEnabled = eyeTrackingConfig?.linkConfig?.trackLocation || false;
 
   // Hook de tracking de ubicación
   const {
@@ -154,7 +152,7 @@ function App() {
           </Routes>
         </div>
       </Router>
-      <ReactQueryDevtools initialIsOpen={false} />
+      {/* <ReactQueryDevtools initialIsOpen={false} /> */}
     </QueryClientProvider>
   );
 }

@@ -147,6 +147,14 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
     response => response.questionKey === currentQuestionKey
   );
 
+  // 🎯 VERIFICAR SI HAY DATOS PERSISTIDOS LOCALMENTE
+  const { getFormData } = useFormDataStore();
+  const localData = getFormData(currentQuestionKey);
+  const hasLocalData = localData && Object.keys(localData).length > 0;
+
+  // 🎯 DETERMINAR SI EXISTE RESPUESTA (BACKEND O LOCAL)
+  const hasExistingResponse = existingResponse || hasLocalData;
+
   // Obtener el ID del documento principal para actualizaciones
   const documentId = moduleResponses?.id;
 
@@ -163,7 +171,7 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
       return 'Pasando a la siguiente pregunta';
     }
 
-    if (existingResponse) {
+    if (hasExistingResponse) {
       return 'Actualizar y continuar';
     } else {
       return 'Guardar y continuar';
@@ -310,7 +318,7 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
       }
 
       // 🎯 REDIRIGIR A DESCALIFICACIÓN POR CUOTA
-      redirectToDisqualification(eyeTrackingConfig, quotaResult.reason || 'Cuota alcanzada');
+      redirectToDisqualification(eyeTrackingConfig || undefined, quotaResult.reason || 'Cuota alcanzada');
       return; // 🎯 NO CONTINUAR CON EL FLUJO NORMAL
     }
 
@@ -334,7 +342,7 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
       const journeyData = getJourneyData();
       const finalMetadata = buildUserJourneyMetadata(journeyData, enhancedMetadata);
 
-      if (existingResponse) {
+      if (hasExistingResponse) {
         // UPDATE: Actualizar la respuesta existente
         const updateData: UpdateModuleResponseDto = {
           researchId: researchId || '',
@@ -344,7 +352,7 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
             questionKey: currentQuestionKey,
             response: formData || {},
             timestamp,
-            createdAt: existingResponse.createdAt || now,
+            createdAt: existingResponse?.createdAt || now,
             updatedAt: now
           }],
           metadata: finalMetadata // 🎯 METADATA CON TIMING Y RECORRIDO

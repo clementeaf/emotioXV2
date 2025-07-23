@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { MonitoringEvent } from '../../../shared/interfaces/websocket-events.interface';
+import { API_WEBSOCKET_ENDPOINT } from '../config/endpoints';
 import { useTestStore } from '../stores/useTestStore';
 
 /**
@@ -13,40 +14,54 @@ export const useMonitoringWebSocket = () => {
 
   // 🎯 CONECTAR AL WEBSOCKET
   const connect = useCallback(() => {
-    if (!researchId) return;
+    if (!researchId) {
+      console.log('[MonitoringWebSocket] ⚠️ No hay researchId, no se puede conectar');
+      return;
+    }
 
     try {
-      // 🎯 USAR import.meta.env EN LUGAR DE process.env PARA VITE
-      // 🎯 CORREGIR URL: NO AGREGAR /monitoring AL WEBSOCKET
-      const wsUrl = import.meta.env.VITE_WS_URL || 'wss://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev';
+      // 🎯 OBTENER URL DEL WEBSOCKET DESDE CONFIGURACIÓN
+      const wsUrl = import.meta.env.VITE_WS_URL || API_WEBSOCKET_ENDPOINT;
+
+      console.log('[MonitoringWebSocket] 🔌 Intentando conectar a:', wsUrl);
+
       wsRef.current = new WebSocket(wsUrl);
 
-      wsRef.current.onopen = () => {
-        console.log('[MonitoringWebSocket] ✅ Conectado al servidor de monitoreo');
-        isConnectedRef.current = true;
+      if (wsRef.current) {
+        wsRef.current.onopen = () => {
+          console.log('[MonitoringWebSocket] ✅ Conectado al servidor de monitoreo');
+          isConnectedRef.current = true;
 
-        // 🎯 ENVIAR EVENTO DE CONEXIÓN
-        sendEvent({
-          type: 'MONITORING_CONNECT',
-          data: {
-            researchId,
-            timestamp: new Date().toISOString()
+          // 🎯 ENVIAR EVENTO DE CONEXIÓN
+          if (researchId) {
+            sendEvent({
+              type: 'MONITORING_CONNECT',
+              data: {
+                researchId,
+                timestamp: new Date().toISOString()
+              }
+            });
           }
-        });
-      };
+        };
 
-      wsRef.current.onclose = () => {
-        console.log('[MonitoringWebSocket] ❌ Desconectado del servidor de monitoreo');
-        isConnectedRef.current = false;
-      };
+        wsRef.current.onclose = (event) => {
+          console.log('[MonitoringWebSocket] ❌ Desconectado del servidor de monitoreo:', {
+            code: event.code,
+            reason: event.reason,
+            wasClean: event.wasClean
+          });
+          isConnectedRef.current = false;
+        };
 
-      wsRef.current.onerror = (error) => {
-        console.error('[MonitoringWebSocket] ❌ Error en WebSocket:', error);
-        isConnectedRef.current = false;
-      };
+        wsRef.current.onerror = (error) => {
+          console.error('[MonitoringWebSocket] ❌ Error en WebSocket:', error);
+          isConnectedRef.current = false;
+        };
+      }
 
     } catch (error) {
       console.error('[MonitoringWebSocket] ❌ Error al conectar:', error);
+      isConnectedRef.current = false;
     }
   }, [researchId]);
 
