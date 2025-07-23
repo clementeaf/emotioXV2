@@ -29,7 +29,7 @@ const sections: ResearchSection[] = [
     id: 'recruit',
     title: 'Recruit',
     stages: [
-      { id: 'eye-tracking-recruit', title: 'Eye Tracking' }
+      { id: 'eye-tracking-recruit', title: 'Configuración de estudio' }
     ]
   },
   {

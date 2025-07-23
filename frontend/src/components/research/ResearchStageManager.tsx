@@ -86,7 +86,7 @@ function ResearchStageManagerContent({ researchId }: ResearchStageManagerProps) 
       case 'eye-tracking':
         return 'Configuración de seguimiento ocular';
       case 'eye-tracking-recruit':
-        return 'Configuración de reclutamiento ocular';
+        return 'Configuración de estudio';
       case 'thank-you':
         return 'Configuración de pantalla de agradecimiento';
       case 'configuration':
