@@ -1,13 +1,26 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { MonitoringEvent, ParticipantStatus, ResearchMonitoringData } from '../../../shared/interfaces/websocket-events.interface';
-import { useAuth } from './useAuth';
+import { useAuth } from '../providers/AuthProvider';
 
 /**
  * Hook para recibir eventos de monitoreo en tiempo real
  * En el dashboard del frontend
  */
 export const useMonitoringReceiver = (researchId: string) => {
-  const { token } = useAuth();
+  const { token: contextToken } = useAuth();
+
+  // 🎯 FALLBACK: OBTENER TOKEN DEL LOCALSTORAGE SI EL CONTEXTO NO FUNCIONA
+  const [localToken, setLocalToken] = useState<string | null>(null);
+  const [isConnecting, setIsConnecting] = useState(false);
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem('token');
+    setLocalToken(storedToken);
+  }, []);
+
+  // 🎯 USAR TOKEN DEL CONTEXTO O FALLBACK AL LOCALSTORAGE
+  const token = contextToken || localToken;
+
   const wsRef = useRef<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [monitoringData, setMonitoringData] = useState<ResearchMonitoringData>({
@@ -23,35 +36,55 @@ export const useMonitoringReceiver = (researchId: string) => {
 
   // 🎯 CONECTAR AL WEBSOCKET
   const connect = useCallback(() => {
-    if (!token || !researchId) return;
+    if (!token || !researchId || isConnecting) {
+      return;
+    }
+
+    setIsConnecting(true);
 
     try {
       // 🎯 CORREGIR URL: USAR LA URL CORRECTA DEL WEBSOCKET
-      const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'wss://w8dj7wxnl9.execute-api.us-east-1.amazonaws.com/dev';
+      const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'wss://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev';
+
       wsRef.current = new WebSocket(wsUrl);
 
       wsRef.current.onopen = () => {
-        console.log('[MonitoringReceiver] ✅ Conectado al servidor de monitoreo');
         setIsConnected(true);
+        setIsConnecting(false);
 
         // 🎯 SUSCRIBIRSE A EVENTOS DE LA INVESTIGACIÓN
-        wsRef.current?.send(JSON.stringify({
+        const subscribeMessage = {
           type: 'SUBSCRIBE_RESEARCH',
           data: {
             researchId,
             timestamp: new Date().toISOString()
           }
-        }));
+        };
+
+        // 🎯 VERIFICAR QUE EL WEBSOCKET ESTÉ LISTO ANTES DE ENVIAR
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          wsRef.current.send(JSON.stringify(subscribeMessage));
+        }
       };
 
-      wsRef.current.onclose = () => {
-        console.log('[MonitoringReceiver] ❌ Desconectado del servidor de monitoreo');
+      wsRef.current.onclose = (event) => {
         setIsConnected(false);
+        setIsConnecting(false);
+
+        // 🎯 DELAY ANTES DE RECONECTAR (5 SEGUNDOS)
+        if (event.code !== 1000) { // No es cierre limpio
+          setTimeout(() => {
+            // 🎯 VERIFICAR QUE NO ESTEMOS YA CONECTANDO
+            if (token && researchId && !isConnecting) {
+              connect();
+            }
+          }, 5000);
+        }
       };
 
       wsRef.current.onerror = (error) => {
-        console.error('[MonitoringReceiver] ❌ Error en WebSocket:', error);
         setIsConnected(false);
+        setIsConnecting(false);
       };
 
       wsRef.current.onmessage = (event) => {
@@ -59,12 +92,12 @@ export const useMonitoringReceiver = (researchId: string) => {
           const message: MonitoringEvent = JSON.parse(event.data);
           handleMonitoringEvent(message);
         } catch (error) {
-          console.error('[MonitoringReceiver] ❌ Error procesando mensaje:', error);
+          // Error silencioso para evitar spam
         }
       };
 
     } catch (error) {
-      console.error('[MonitoringReceiver] ❌ Error al conectar:', error);
+      setIsConnecting(false);
     }
   }, [token, researchId]);
 
@@ -79,8 +112,6 @@ export const useMonitoringReceiver = (researchId: string) => {
 
   // 🎯 MANEJAR EVENTOS DE MONITOREO
   const handleMonitoringEvent = useCallback((event: MonitoringEvent) => {
-    console.log('[MonitoringReceiver] 📡 Evento recibido:', event.type);
-
     switch (event.type) {
       case 'PARTICIPANT_LOGIN':
         handleParticipantLogin(event.data);
@@ -101,7 +132,6 @@ export const useMonitoringReceiver = (researchId: string) => {
         handleParticipantError(event.data);
         break;
       default:
-        console.warn('[MonitoringReceiver] ⚠️ Evento no manejado:', event.type);
     }
   }, []);
 
@@ -281,7 +311,7 @@ export const useMonitoringReceiver = (researchId: string) => {
     return () => {
       disconnect();
     };
-  }, [token, researchId, connect, disconnect]);
+  }, [token, researchId]);
 
   return {
     isConnected,

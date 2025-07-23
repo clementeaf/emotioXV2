@@ -61,7 +61,7 @@ export function ParticipantsTable({
 }: ParticipantsTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
+  const [selectedParticipant, setSelectedParticipant] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [participantDetails, setParticipantDetails] = useState<any>(null);
 
@@ -262,7 +262,6 @@ export function ParticipantsTable({
           isOpen={isModalOpen}
           onClose={handleCloseModal}
           participant={selectedParticipant}
-          details={participantDetails}
         />
       )}
 

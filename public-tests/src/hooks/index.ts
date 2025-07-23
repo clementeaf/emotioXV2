@@ -18,7 +18,6 @@ export { useMobileStepVerification } from './useMobileStepVerification';
 export { useLocationTracking } from './useLocationTracking';
 
 // Quota verification
-export { useDemographicQuotaValidation } from './useDemographicQuotaValidation';
 export { useQuotaVerification } from './useQuotaVerification';
 
 // Tipos y utilidades

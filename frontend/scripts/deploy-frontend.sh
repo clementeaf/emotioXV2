@@ -424,13 +424,41 @@ main() {
     select_environment
   fi
 
+  # 🎯 ESTABLECER VARIABLES DE ENTORNO PRIMERO
+  print_message "Estableciendo variables de entorno para: ${ENV}..."
+
+  case $ENV in
+    "dev")
+      export NEXT_PUBLIC_API_URL="https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev"
+      export NEXT_PUBLIC_WS_URL="wss://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev"
+      export NEXT_PUBLIC_ENV="development"
+      ;;
+    "test")
+      export NEXT_PUBLIC_API_URL="https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/test"
+      export NEXT_PUBLIC_WS_URL="wss://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/test"
+      export NEXT_PUBLIC_ENV="testing"
+      ;;
+    "prod")
+      export NEXT_PUBLIC_API_URL="https://8tgodyuvfj.execute-api.us-east-1.amazonaws.com/prod"
+      export NEXT_PUBLIC_WS_URL="wss://0x3ndqqhe9.execute-api.us-east-1.amazonaws.com/prod"
+      export NEXT_PUBLIC_ENV="production"
+      ;;
+  esac
+
+  print_success "Variables de entorno establecidas:"
+  print_message "API URL: $NEXT_PUBLIC_API_URL"
+  print_message "WebSocket URL: $NEXT_PUBLIC_WS_URL"
+
   # Validaciones críticas antes del build
-  validate_environment_variables
   test_backend_connectivity
   validate_critical_endpoints
-  validate_build_environment
 
   build_frontend
+
+  # Validar variables después de establecerlas
+  validate_environment_variables
+  validate_build_environment
+
   deploy_to_s3
   invalidate_cloudfront
   show_website_url

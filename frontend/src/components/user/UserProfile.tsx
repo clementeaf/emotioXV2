@@ -5,8 +5,8 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useApi } from '@/hooks/useApi';
-import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/providers/AuthProvider';
 
 interface UserProfile {
   name?: string;
@@ -33,7 +33,8 @@ interface UserProfileComponentProps {
 
 export function UserProfileComponent({ className }: UserProfileComponentProps) {
   const { api, loading: apiLoading } = useApi();
-  const { isAuthenticated } = useAuth();
+  const { token } = useAuth();
+  const isAuthenticated = !!token;
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

@@ -18,7 +18,7 @@ export const useMonitoringWebSocket = () => {
     try {
       // 🎯 USAR import.meta.env EN LUGAR DE process.env PARA VITE
       // 🎯 CORREGIR URL: NO AGREGAR /monitoring AL WEBSOCKET
-      const wsUrl = import.meta.env.VITE_WS_URL || 'wss://w8dj7wxnl9.execute-api.us-east-1.amazonaws.com/dev';
+      const wsUrl = import.meta.env.VITE_WS_URL || 'wss://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev';
       wsRef.current = new WebSocket(wsUrl);
 
       wsRef.current.onopen = () => {

@@ -2,59 +2,44 @@
 
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 import { authAPI } from '../lib/api';
-// <<< Comentar import AuthResponse si ya no se usa >>>
-// import type { AuthResponse } from '../lib/api';
 
-// <<< Definir AuthResponse localmente si es necesario >>>
-interface AuthResponse { 
+interface AuthResponse {
   token: string | undefined;
   user: { id: string | undefined; email: string | undefined; name: string | undefined; };
 }
 
 export const useAuth = () => {
   const router = useRouter();
+  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<any>(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
-  // <<< Eliminar requestOTPMutation >>>
-  /*
-  const requestOTPMutation = useMutation<
-    { message: string },
-    Error,
-    string
-  >({
-    mutationFn: async (email) => {
-      const response = await authAPI.requestOTP(email);
-      return { message: response.data.message || 'OTP enviado correctamente' };
-    }
-  });
-  */
+  // 🎯 CARGAR TOKEN DEL LOCALSTORAGE AL MONTAR
+  useEffect(() => {
+    const loadAuthFromStorage = () => {
+      try {
+        const storedToken = localStorage.getItem('token');
+        const storedUser = localStorage.getItem('user');
 
-  // <<< Eliminar validateOTPMutation >>>
-  /*
-  const validateOTPMutation = useMutation<
-    AuthResponse,
-    Error,
-    { email: string; otp: string }
-  >({
-    mutationFn: async ({ email, otp }) => {
-      const response = await authAPI.validateOTP(email, otp);
-      const { token, user } = response.data;
-      const authData = {
-        token,
-        user: {
-          id: user.id,
-          email: user.email
+        if (storedToken) {
+          setToken(storedToken);
         }
-      };
-      if (authData.token) {
-        localStorage.setItem('token', authData.token);
+
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
+        }
+      } catch (error) {
+        console.error('Error loading auth from storage:', error);
+      } finally {
+        setAuthLoading(false);
       }
-      router.push('/dashboard');
-      return authData;
-    }
-  });
-  */
+    };
+
+    loadAuthFromStorage();
+  }, []);
 
   const loginMutation = useMutation<
     AuthResponse,
@@ -63,7 +48,6 @@ export const useAuth = () => {
   >({
     mutationFn: async ({ email, password }) => {
       const response = await authAPI.login({ email, password });
-      // <<< Asumir que response.data tiene token y user opcionalmente >>>
       const data = response.data as { token?: string; user?: { id?: string; email?: string; name?: string } };
       const authData = {
         token: data.token,
@@ -73,9 +57,14 @@ export const useAuth = () => {
           name: data.user?.name
         }
       };
+
       if (authData.token) {
         localStorage.setItem('token', authData.token);
+        localStorage.setItem('user', JSON.stringify(authData.user));
+        setToken(authData.token);
+        setUser(authData.user);
       }
+
       router.push('/dashboard');
       return authData;
     }
@@ -89,41 +78,22 @@ export const useAuth = () => {
     mutationFn: async () => {
       const response = await authAPI.logout();
       localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setToken(null);
+      setUser(null);
       return { message: (response.data as { message?: string })?.message || 'Sesión cerrada correctamente' };
     }
   });
 
-  // <<< Ajustar currentUser y currentToken >>>
-  const currentUser = loginMutation.data?.user || null;
-  const currentToken = loginMutation.data?.token || null;
-
   return {
-    // <<< Eliminar requestOTP y validateOTP del retorno >>>
-    // requestOTP: (email: string) => requestOTPMutation.mutate(email),
-    // validateOTP: (email: string, otp: string) => 
-    //   validateOTPMutation.mutate({ email, otp }),
-    login: (email: string, password: string) =>
-      loginMutation.mutate({ email, password }),
-    logout: () => logoutMutation.mutate(),
-    // <<< Ajustar isLoading y error >>>
-    isLoading: 
-      // requestOTPMutation.isPending || 
-      // validateOTPMutation.isPending ||
-      loginMutation.isPending ||
-      logoutMutation.isPending,
-    error: 
-      // requestOTPMutation.error?.message || 
-      // validateOTPMutation.error?.message ||
-      loginMutation.error?.message ||
-      logoutMutation.error?.message || null,
-    user: currentUser,
-    token: currentToken,
-    isAuthenticated: !!currentToken,
-    // <<< Ajustar message >>>
-    message: 
-      // requestOTPMutation.data?.message || 
-      logoutMutation.data?.message
+    token,
+    user,
+    authLoading,
+    login: loginMutation.mutate,
+    logout: logoutMutation.mutate,
+    isLoggingIn: loginMutation.isPending,
+    isLoggingOut: logoutMutation.isPending,
+    loginError: loginMutation.error,
+    logoutError: logoutMutation.error
   };
 };
-
-export default useAuth; 

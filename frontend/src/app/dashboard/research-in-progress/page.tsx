@@ -149,8 +149,6 @@ export default function ResearchInProgressPage() {
         icon: 'users'
       }
     }));
-
-    console.log('✅ Participante eliminado:', participantId);
   };
 
   const handleOpenPublicTests = () => {
