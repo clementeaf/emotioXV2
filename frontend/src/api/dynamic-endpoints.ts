@@ -26,11 +26,11 @@ interface DynamicEndpoints {
   navigateToPublicTests: (researchID: string) => void;
 }
 
-// Endpoints por defecto (fallback)
+// Endpoints por defecto (fallback) - Solo variables de entorno
 const DEFAULT_ENDPOINTS: DynamicEndpoints = {
   API_ENDPOINTS: {
-    http: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
-    ws: process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001',
+    http: process.env.NEXT_PUBLIC_API_URL || '',
+    ws: process.env.NEXT_PUBLIC_WS_URL || '',
     stage: 'dev'
   },
   LOCAL_URLS: {
@@ -38,13 +38,14 @@ const DEFAULT_ENDPOINTS: DynamicEndpoints = {
     publicTests: 'http://localhost:4700',
     generatedAt: new Date().toISOString()
   },
-  API_HTTP_ENDPOINT: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
-  API_WEBSOCKET_ENDPOINT: process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001',
+  API_HTTP_ENDPOINT: process.env.NEXT_PUBLIC_API_URL || '',
+  API_WEBSOCKET_ENDPOINT: process.env.NEXT_PUBLIC_WS_URL || '',
   getApiUrl: (path: string) => {
     const cleanPath = path.startsWith('/') ? path.substring(1) : path;
-    return `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/${cleanPath}`;
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
+    return baseUrl ? `${baseUrl}/${cleanPath}` : '';
   },
-  getWebsocketUrl: () => process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001',
+  getWebsocketUrl: () => process.env.NEXT_PUBLIC_WS_URL || '',
   getPublicTestsUrl: () => {
     // Detectar entorno de despliegue
     if (typeof window !== 'undefined') {
@@ -83,103 +84,108 @@ const DEFAULT_ENDPOINTS: DynamicEndpoints = {
   }
 };
 
-// Función para cargar endpoints dinámicamente
+// Función simplificada para cargar endpoints dinámicamente
 export async function loadDynamicEndpoints(): Promise<DynamicEndpoints> {
   try {
-    // Intentar cargar desde diferentes ubicaciones
-    const endpointsUrls = [
-      '/api/endpoints.js',
-      '/config/endpoints.js',
-      '/endpoints.js'
-    ];
+    // 🎯 SOLO EN PRODUCCIÓN: Intentar cargar desde el servidor
+    if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1')) {
+      console.log('🔄 Entorno de producción detectado, intentando cargar endpoints dinámicos...');
 
-    for (const url of endpointsUrls) {
-      try {
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
-          }
-        });
+      const endpointsUrls = [
+        '/api/endpoints.js',
+        '/config/endpoints.js',
+        '/endpoints.js'
+      ];
 
-        if (response.ok) {
-          const text = await response.text();
+      for (const url of endpointsUrls) {
+        try {
+          const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache'
+            }
+          });
 
-          // Extraer los endpoints del archivo JS
-          const httpMatch = text.match(/http:\s*["']([^"']+)["']/);
-          const wsMatch = text.match(/ws:\s*["']([^"']+)["']/);
-          const stageMatch = text.match(/stage:\s*["']([^"']+)["']/);
+          if (response.ok) {
+            const text = await response.text();
 
-          if (httpMatch) {
-            const httpEndpoint = httpMatch[1];
-            const wsEndpoint = wsMatch ? wsMatch[1] : httpEndpoint.replace('https://', 'wss://').replace('http://', 'ws://');
-            const stage = stageMatch ? stageMatch[1] : 'dev';
+            // Extraer los endpoints del archivo JS
+            const httpMatch = text.match(/http:\s*["']([^"']+)["']/);
+            const wsMatch = text.match(/ws:\s*["']([^"']+)["']/);
+            const stageMatch = text.match(/stage:\s*["']([^"']+)["']/);
 
-            return {
-              API_ENDPOINTS: {
-                http: httpEndpoint,
-                ws: wsEndpoint,
-                stage
-              },
-              LOCAL_URLS: {
-                frontend: 'http://localhost:3000',
-                publicTests: 'http://localhost:4700',
-                generatedAt: new Date().toISOString()
-              },
-              API_HTTP_ENDPOINT: httpEndpoint,
-              API_WEBSOCKET_ENDPOINT: wsEndpoint,
-              getApiUrl: (path: string) => {
-                const cleanPath = path.startsWith('/') ? path.substring(1) : path;
-                return `${httpEndpoint}/${cleanPath}`;
-              },
-              getWebsocketUrl: () => wsEndpoint,
-              getPublicTestsUrl: () => {
-                // Detectar entorno de despliegue
-                if (typeof window !== 'undefined') {
-                  const hostname = window.location.hostname;
+            if (httpMatch) {
+              const httpEndpoint = httpMatch[1];
+              const wsEndpoint = wsMatch ? wsMatch[1] : httpEndpoint.replace('https://', 'wss://').replace('http://', 'ws://');
+              const stage = stageMatch ? stageMatch[1] : 'dev';
 
-                  // Vercel deployment
-                  if (hostname.includes('vercel.app') || hostname.includes('vercel.com')) {
-                    return process.env.NEXT_PUBLIC_PUBLIC_TESTS_VERCEL_URL ||
-                      'https://emotio-xv-2-public-tests.vercel.app';
+              console.log('✅ Endpoints dinámicos cargados desde servidor');
+              return {
+                API_ENDPOINTS: {
+                  http: httpEndpoint,
+                  ws: wsEndpoint,
+                  stage
+                },
+                LOCAL_URLS: {
+                  frontend: 'http://localhost:3000',
+                  publicTests: 'http://localhost:4700',
+                  generatedAt: new Date().toISOString()
+                },
+                API_HTTP_ENDPOINT: httpEndpoint,
+                API_WEBSOCKET_ENDPOINT: wsEndpoint,
+                getApiUrl: (path: string) => {
+                  const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+                  return `${httpEndpoint}/${cleanPath}`;
+                },
+                getWebsocketUrl: () => wsEndpoint,
+                getPublicTestsUrl: () => {
+                  // Detectar entorno de despliegue
+                  if (typeof window !== 'undefined') {
+                    const hostname = window.location.hostname;
+
+                    // Vercel deployment
+                    if (hostname.includes('vercel.app') || hostname.includes('vercel.com')) {
+                      return process.env.NEXT_PUBLIC_PUBLIC_TESTS_VERCEL_URL ||
+                        'https://emotio-xv-2-public-tests.vercel.app';
+                    }
+
+                    // AWS Amplify
+                    if (hostname.includes('amplifyapp.com') || hostname.includes('amplify.aws')) {
+                      return process.env.NEXT_PUBLIC_PUBLIC_TESTS_AWS_URL ||
+                        process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL ||
+                        'https://emotioxv2-public-tests.s3.amazonaws.com';
+                    }
+
+                    // Local development
+                    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('192.168.')) {
+                      return 'http://localhost:4700';
+                    }
                   }
 
-                  // AWS Amplify
-                  if (hostname.includes('amplifyapp.com') || hostname.includes('amplify.aws')) {
-                    return process.env.NEXT_PUBLIC_PUBLIC_TESTS_AWS_URL ||
-                      process.env.NEXT_PUBLIC_PUBLIC_TESTS_URL ||
-                      'https://emotioxv2-public-tests.s3.amazonaws.com';
-                  }
+                  // Fallback a Vercel
+                  return 'https://emotio-xv-2-public-tests.vercel.app';
+                },
+                navigateToPublicTests: (researchID: string) => {
+                  const baseUrl = process.env.NEXT_PUBLIC_PUBLIC_TESTS_VERCEL_URL ||
+                    'https://emotio-xv-2-public-tests.vercel.app';
+                  const url = `${baseUrl}/${researchID}`;
 
-                  // Local development
-                  if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('192.168.')) {
-                    return 'http://localhost:4700';
-                  }
+                  // console.log(`🌐 Navegando a public-tests: ${url}`);
+                  window.open(url, '_blank');
                 }
-
-                // Fallback a Vercel
-                return 'https://emotio-xv-2-public-tests.vercel.app';
-              },
-              navigateToPublicTests: (researchID: string) => {
-                const baseUrl = process.env.NEXT_PUBLIC_PUBLIC_TESTS_VERCEL_URL ||
-                  'https://emotio-xv-2-public-tests.vercel.app';
-                const url = `${baseUrl}/${researchID}`;
-
-                // console.log(`🌐 Navegando a public-tests: ${url}`);
-                window.open(url, '_blank');
-              }
-            };
+              };
+            }
           }
+        } catch (error) {
+          console.warn(`No se pudo cargar endpoints desde ${url}:`, error);
+          continue;
         }
-      } catch (error) {
-        console.warn(`No se pudo cargar endpoints desde ${url}:`, error);
-        continue;
       }
     }
 
-    // Si no se pudo cargar, usar endpoints por defecto
-    console.warn('No se pudieron cargar endpoints dinámicos, usando endpoints por defecto');
+    // 🎯 EN DESARROLLO O SI FALLA EN PRODUCCIÓN: Usar variables de entorno
+    console.log('🔄 Usando endpoints desde variables de entorno');
     return DEFAULT_ENDPOINTS;
 
   } catch (error) {

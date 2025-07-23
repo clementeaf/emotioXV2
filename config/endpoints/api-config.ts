@@ -55,12 +55,12 @@ const DEFAULT_ENDPOINTS: DynamicEndpoints = {
     generatedAt: new Date().toISOString()
   },
   API_HTTP_ENDPOINT: process.env.NEXT_PUBLIC_API_URL || 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev',
-  API_WEBSOCKET_ENDPOINT: process.env.NEXT_PUBLIC_WS_URL || 'wss://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev',
+  API_WEBSOCKET_ENDPOINT: process.env.NEXT_PUBLIC_WS_URL || 'wss://w8dj7wxnl9.execute-api.us-east-1.amazonaws.com/dev',
   getApiUrl: (path: string) => {
     const cleanPath = path.startsWith('/') ? path.substring(1) : path;
     return `${process.env.NEXT_PUBLIC_API_URL || 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev'}/${cleanPath}`;
   },
-  getWebsocketUrl: () => process.env.NEXT_PUBLIC_WS_URL || 'wss://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev',
+  getWebsocketUrl: () => process.env.NEXT_PUBLIC_WS_URL || 'wss://w8dj7wxnl9.execute-api.us-east-1.amazonaws.com/dev',
   getPublicTestsUrl: () => 'http://localhost:4700',
   navigateToPublicTests: (researchID: string) => {
     const url = `http://localhost:4700/${researchID}`;

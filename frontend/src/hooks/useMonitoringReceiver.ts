@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { MonitoringEvent, ParticipantStatus, ResearchMonitoringData } from '../../../shared/interfaces/websocket-events.interface';
+import { getDynamicEndpoints } from '../api/dynamic-endpoints';
 import { useAuth } from '../providers/AuthProvider';
+import { debugEnvironmentVariables } from '../utils/debug-env';
 
 /**
  * Hook para recibir eventos de monitoreo en tiempo real
  * En el dashboard del frontend
+ * USANDO ENDPOINTS DINÁMICOS
  */
 export const useMonitoringReceiver = (researchId: string) => {
   const { token: contextToken } = useAuth();
@@ -12,6 +15,8 @@ export const useMonitoringReceiver = (researchId: string) => {
   // 🎯 FALLBACK: OBTENER TOKEN DEL LOCALSTORAGE SI EL CONTEXTO NO FUNCIONA
   const [localToken, setLocalToken] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [endpoints, setEndpoints] = useState<any>(null);
+  const [isLoadingEndpoints, setIsLoadingEndpoints] = useState(true);
 
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
@@ -34,21 +39,55 @@ export const useMonitoringReceiver = (researchId: string) => {
     lastUpdate: new Date().toISOString()
   });
 
+  // 🎯 CARGAR ENDPOINTS DINÁMICOS
+  useEffect(() => {
+    const loadEndpoints = async () => {
+      try {
+        console.log('�� Cargando endpoints para monitoreo...');
+        const dynamicEndpoints = await getDynamicEndpoints();
+        setEndpoints(dynamicEndpoints);
+        console.log('✅ Endpoints de monitoreo cargados:', {
+          http: dynamicEndpoints.API_HTTP_ENDPOINT,
+          ws: dynamicEndpoints.API_WEBSOCKET_ENDPOINT
+        });
+      } catch (error) {
+        console.error('❌ Error cargando endpoints:', error);
+        setEndpoints(null);
+      } finally {
+        setIsLoadingEndpoints(false);
+      }
+    };
+
+    loadEndpoints();
+  }, []);
+
   // 🎯 CONECTAR AL WEBSOCKET
   const connect = useCallback(() => {
-    if (!token || !researchId || isConnecting) {
+    if (!token || !researchId || isConnecting || isLoadingEndpoints || !endpoints) {
       return;
     }
 
     setIsConnecting(true);
 
     try {
-      // 🎯 CORREGIR URL: USAR LA URL CORRECTA DEL WEBSOCKET
-      const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'wss://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev';
+      // 🎯 DIAGNÓSTICO: VERIFICAR VARIABLES DE ENTORNO
+      debugEnvironmentVariables();
+
+      // 🎯 USAR URL DINÁMICA DEL WEBSOCKET
+      const wsUrl = endpoints.API_WEBSOCKET_ENDPOINT;
+
+      if (!wsUrl) {
+        console.error('❌ No se pudo obtener URL de WebSocket desde endpoints dinámicos');
+        setIsConnecting(false);
+        return;
+      }
+
+      console.log('🔌 Intentando conectar a WebSocket dinámico:', wsUrl);
 
       wsRef.current = new WebSocket(wsUrl);
 
       wsRef.current.onopen = () => {
+        console.log('✅ WebSocket dinámico conectado exitosamente');
         setIsConnected(true);
         setIsConnecting(false);
 
@@ -64,15 +103,18 @@ export const useMonitoringReceiver = (researchId: string) => {
         // 🎯 VERIFICAR QUE EL WEBSOCKET ESTÉ LISTO ANTES DE ENVIAR
         if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
           wsRef.current.send(JSON.stringify(subscribeMessage));
+          console.log('📡 Mensaje de suscripción enviado:', subscribeMessage);
         }
       };
 
       wsRef.current.onclose = (event) => {
+        console.log('❌ WebSocket dinámico desconectado:', event.code, event.reason);
         setIsConnected(false);
         setIsConnecting(false);
 
         // 🎯 DELAY ANTES DE RECONECTAR (5 SEGUNDOS)
         if (event.code !== 1000) { // No es cierre limpio
+          console.log('🔄 Programando reconexión en 5 segundos...');
           setTimeout(() => {
             // 🎯 VERIFICAR QUE NO ESTEMOS YA CONECTANDO
             if (token && researchId && !isConnecting) {
@@ -83,6 +125,7 @@ export const useMonitoringReceiver = (researchId: string) => {
       };
 
       wsRef.current.onerror = (error) => {
+        console.error('❌ Error en WebSocket dinámico:', error);
         setIsConnected(false);
         setIsConnecting(false);
       };
@@ -90,16 +133,18 @@ export const useMonitoringReceiver = (researchId: string) => {
       wsRef.current.onmessage = (event) => {
         try {
           const message: MonitoringEvent = JSON.parse(event.data);
+          console.log('📨 Mensaje recibido en WebSocket dinámico:', message.type);
           handleMonitoringEvent(message);
         } catch (error) {
-          // Error silencioso para evitar spam
+          console.error('❌ Error procesando mensaje:', error);
         }
       };
 
     } catch (error) {
+      console.error('❌ Error al crear WebSocket dinámico:', error);
       setIsConnecting(false);
     }
-  }, [token, researchId]);
+  }, [token, researchId, endpoints, isLoadingEndpoints]);
 
   // 🎯 DESCONECTAR
   const disconnect = useCallback(() => {
@@ -304,14 +349,14 @@ export const useMonitoringReceiver = (researchId: string) => {
 
   // 🎯 CONECTAR AL MONTAR
   useEffect(() => {
-    if (token && researchId) {
+    if (token && researchId && !isLoadingEndpoints && endpoints) {
       connect();
     }
 
     return () => {
       disconnect();
     };
-  }, [token, researchId]);
+  }, [token, researchId, endpoints, isLoadingEndpoints]);
 
   return {
     isConnected,

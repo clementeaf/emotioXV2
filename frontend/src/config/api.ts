@@ -4,8 +4,8 @@
  * SOLO AWS Lambda - NUNCA localhost o desarrollo local
  */
 
-// URLs base - SOLO AWS Lambda
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev';
+// URLs base - Solo variables de entorno
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 export const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL || '';
 
 // Validación de seguridad - BLOQUEAR localhost completamente
@@ -16,8 +16,8 @@ if (typeof window !== 'undefined' && (API_BASE_URL.includes('localhost') || API_
   throw new Error('Configuración de API inválida: No se permite localhost en producción');
 }
 
-// URL de fallback segura de AWS Lambda
-const FALLBACK_API_URL = 'https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev';
+// URL de fallback segura - Solo si no hay configuración
+const FALLBACK_API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 export const SECURE_API_BASE_URL = API_BASE_URL.includes('localhost') || API_BASE_URL.includes('127.0.0.1')
   ? FALLBACK_API_URL
   : API_BASE_URL;
