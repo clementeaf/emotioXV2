@@ -2,13 +2,20 @@
 // NO MODIFICAR MANUALMENTE
 // Generado: 2025-07-20T16:20:17.392Z
 
+// 🎯 DETECTAR SI ESTAMOS EN DESARROLLO LOCAL
+const isDevelopment = import.meta.env.DEV || window.location.hostname === 'localhost';
+
 // Endpoints de API exportados desde backend
 export const API_ENDPOINTS = {
   // Endpoint HTTP API
-  http: "https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev",
+  http: isDevelopment
+    ? "http://localhost:3000"
+    : "https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev",
 
   // Endpoint WebSocket
-  ws: "wss://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev",
+  ws: isDevelopment
+    ? "ws://localhost:3001"
+    : "wss://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev",
 
   // Etapa de despliegue (dev, prod, etc.)
   stage: "dev"
@@ -22,8 +29,13 @@ export const LOCAL_URLS = {
 };
 
 // Constantes para uso más fácil
-export const API_HTTP_ENDPOINT = "https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev";
-export const API_WEBSOCKET_ENDPOINT = "wss://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev";
+export const API_HTTP_ENDPOINT = isDevelopment
+  ? "http://localhost:3000"
+  : "https://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev";
+
+export const API_WEBSOCKET_ENDPOINT = isDevelopment
+  ? "ws://localhost:3001"
+  : "wss://d5x2q3te3j.execute-api.us-east-1.amazonaws.com/dev";
 
 // Función para obtener URL completa de una ruta
 export function getApiUrl(path: string): string {

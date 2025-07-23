@@ -193,6 +193,15 @@ export const useStepStore = create<StepStore>()(
           return true;
         }
 
+        // 🎯 CASO ESPECIAL: SI ES welcome_screen Y demographics ESTÁ COMPLETADO LOCALMENTE
+        if (step.questionKey === 'welcome_screen') {
+          const demographicsCompleted = state.hasBackendResponse('demographics');
+          if (demographicsCompleted) {
+            console.log('[useStepStore] 🎯 welcome_screen puede acceder porque demographics está completado');
+            return true;
+          }
+        }
+
         // 🎯 NO PERMITIR ACCESO A STEPS POSTERIORES SIN COMPLETAR EL ANTERIOR
         return false;
       },

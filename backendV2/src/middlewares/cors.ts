@@ -10,12 +10,13 @@ function getAllowedOrigins(): string[] {
     'http://localhost:3000', // Frontend local (Next.js default)
     'http://localhost:4700', // Frontend local (Vite default for public-tests)
     'http://localhost:5173', // Otro puerto común de Vite
+    'http://localhost:5174', // Puerto alternativo de Vite
     'https://d2s9nr0bm47yl1.cloudfront.net', // Frontend principal
     'https://d2zt8ia21te5mv.cloudfront.net', // Public-tests CloudFront
     'http://54.90.132.233:3000', // Frontend EC2
     // Dominios de desarrollo local
-'http://localhost:3000', // Frontend local
-  'http://localhost:4700', // Public-tests local
+    'http://localhost:3000', // Frontend local
+    'http://localhost:4700', // Public-tests local
   ];
 
   // Combinar orígenes de la variable de entorno con los por defecto

@@ -9,18 +9,28 @@ export enum WebSocketEvent {
   TOKEN_REFRESH = 'TOKEN_REFRESH',
   TOKEN_REFRESHED = 'TOKEN_REFRESHED',
   ERROR = 'ERROR',
-  
+
   // Authentication events
   TOKEN_UPDATE = 'token.update',
-  
+
   // Connection events
   CONNECT = 'connect',
   DISCONNECT = 'disconnect',
-  
+
   // Emotion events
   EMOTION_CREATED = 'emotion.created',
   EMOTION_UPDATED = 'emotion.updated',
-  EMOTION_DELETED = 'emotion.deleted'
+  EMOTION_DELETED = 'emotion.deleted',
+
+  // 🎯 MONITORING EVENTS (from public-tests)
+  MONITORING_CONNECT = 'MONITORING_CONNECT',
+  PARTICIPANT_LOGIN = 'PARTICIPANT_LOGIN',
+  PARTICIPANT_STEP = 'PARTICIPANT_STEP',
+  PARTICIPANT_DISQUALIFIED = 'PARTICIPANT_DISQUALIFIED',
+  PARTICIPANT_QUOTA_EXCEEDED = 'PARTICIPANT_QUOTA_EXCEEDED',
+  PARTICIPANT_COMPLETED = 'PARTICIPANT_COMPLETED',
+  PARTICIPANT_ERROR = 'PARTICIPANT_ERROR',
+  PARTICIPANT_RESPONSE_SAVED = 'PARTICIPANT_RESPONSE_SAVED'
 }
 
 // Message Interfaces
@@ -41,6 +51,43 @@ export interface EmotionChangeMessage {
 export interface ErrorMessage {
   code: string;
   message: string;
+}
+
+// 🎯 MONITORING EVENT INTERFACES
+export interface MonitoringConnectData {
+  researchId: string;
+  timestamp: string;
+}
+
+export interface ParticipantLoginData {
+  researchId: string;
+  participantId: string;
+  email?: string;
+  timestamp: string;
+  userAgent?: string;
+  ipAddress?: string;
+}
+
+export interface ParticipantStepData {
+  researchId: string;
+  participantId: string;
+  stepName: string;
+  stepNumber: number;
+  totalSteps: number;
+  progress: number;
+  timestamp: string;
+  duration?: number;
+}
+
+export interface ParticipantResponseSavedData {
+  researchId: string;
+  participantId: string;
+  questionKey: string;
+  response: any;
+  timestamp: string;
+  stepNumber: number;
+  totalSteps: number;
+  progress: number;
 }
 
 // Configuration
@@ -93,4 +140,4 @@ export const isWebSocketMessage = <T>(value: unknown): value is WebSocketMessage
   value !== null &&
   'event' in value &&
   'data' in value &&
-  isWebSocketEvent((value as WebSocketMessage<T>).event); 
+  isWebSocketEvent((value as WebSocketMessage<T>).event);

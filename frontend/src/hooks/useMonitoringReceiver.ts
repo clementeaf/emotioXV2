@@ -43,7 +43,7 @@ export const useMonitoringReceiver = (researchId: string) => {
   useEffect(() => {
     const loadEndpoints = async () => {
       try {
-        console.log('�� Cargando endpoints para monitoreo...');
+        console.log('🔍 Cargando endpoints para monitoreo...');
         const dynamicEndpoints = await getDynamicEndpoints();
         setEndpoints(dynamicEndpoints);
         console.log('✅ Endpoints de monitoreo cargados:', {
@@ -73,16 +73,10 @@ export const useMonitoringReceiver = (researchId: string) => {
       // 🎯 DIAGNÓSTICO: VERIFICAR VARIABLES DE ENTORNO
       debugEnvironmentVariables();
 
-      // 🎯 USAR URL DINÁMICA DEL WEBSOCKET
-      const wsUrl = endpoints.API_WEBSOCKET_ENDPOINT;
+      // 🎯 USAR ENDPOINT CORRECTO DE AWS
+      const wsUrl = 'wss://w4eatadpf9.execute-api.us-east-1.amazonaws.com/dev';
 
-      if (!wsUrl) {
-        console.error('❌ No se pudo obtener URL de WebSocket desde endpoints dinámicos');
-        setIsConnecting(false);
-        return;
-      }
-
-      console.log('🔌 Intentando conectar a WebSocket dinámico:', wsUrl);
+      console.log('🔌 Intentando conectar a WebSocket de monitoreo:', wsUrl);
 
       wsRef.current = new WebSocket(wsUrl);
 
@@ -91,9 +85,9 @@ export const useMonitoringReceiver = (researchId: string) => {
         setIsConnected(true);
         setIsConnecting(false);
 
-        // 🎯 SUSCRIBIRSE A EVENTOS DE LA INVESTIGACIÓN
-        const subscribeMessage = {
-          type: 'SUBSCRIBE_RESEARCH',
+        // 🎯 ENVIAR EVENTO DE CONEXIÓN DE MONITOREO (mismo formato que public-tests)
+        const connectMessage = {
+          type: 'MONITORING_CONNECT',
           data: {
             researchId,
             timestamp: new Date().toISOString()
@@ -102,8 +96,8 @@ export const useMonitoringReceiver = (researchId: string) => {
 
         // 🎯 VERIFICAR QUE EL WEBSOCKET ESTÉ LISTO ANTES DE ENVIAR
         if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-          wsRef.current.send(JSON.stringify(subscribeMessage));
-          console.log('📡 Mensaje de suscripción enviado:', subscribeMessage);
+          wsRef.current.send(JSON.stringify(connectMessage));
+          console.log('📡 Mensaje de conexión de monitoreo enviado:', connectMessage);
         }
       };
 

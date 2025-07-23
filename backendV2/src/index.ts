@@ -6,6 +6,7 @@ import {
 import { type Logger as PinoLogger } from 'pino';
 import { HttpError, InternalServerError, NotFoundError } from './errors';
 import logger from './logger';
+import { corsMiddleware, getCorsHeaders } from './middlewares/cors';
 import { ROUTE_DEFINITIONS } from './routeDefinitions';
 import { APIGatewayEventWebsocketRequestContext } from './types/websocket';
 
@@ -205,25 +206,14 @@ async function handleHttpRequest(
   context: Context,
   requestLogger: PinoLogger
 ): Promise<APIGatewayProxyResult> {
-  // Configura headers CORS por defecto
-  const headers = {
-    'Access-Control-Allow-Origin': '*' /* Considera restringir esto en producción */,
-    'Access-Control-Allow-Credentials': true,
-    'Content-Type': 'application/json',
-  };
-
-  // Responde a solicitudes preflight OPTIONS
-  if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers: {
-        ...headers,
-        'Access-Control-Allow-Methods': 'GET, PUT, POST, DELETE, PATCH, OPTIONS' /* Incluir OPTIONS */,
-        'Access-Control-Allow-Headers': 'Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token, X-Requested-With' /* Revisar si se necesitan más */,
-      },
-      body: '',
-    };
+  // 🎯 APLICAR MIDDLEWARE CORS
+  const corsResponse = await corsMiddleware(event);
+  if (corsResponse) {
+    return corsResponse;
   }
+
+  // Configura headers CORS usando el middleware
+  const headers = getCorsHeaders(event);
 
   try {
     const path = event.path || '';

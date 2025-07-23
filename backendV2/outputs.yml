@@ -7,7 +7,6 @@ HttpApiUrl:
   Export:
     Name: ${self:service}-${self:provider.stage}-HttpApiUrl
 
-# Usando Fn::Sub para construir la URL (SIN barras invertidas antes de $)
 WebsocketApiUrl:
   Description: URL of the WebSocket API
   Value: !Sub "wss://${WebsocketsApi}.execute-api.${AWS::Region}.amazonaws.com/${sls:stage}"
@@ -24,4 +23,4 @@ Stage:
   Description: Etapa de despliegue
   Value: ${self:provider.stage}
   Export:
-    Name: ${self:service}-${self:provider.stage}-Stage 
+    Name: ${self:service}-${self:provider.stage}-Stage

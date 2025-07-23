@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useAvailableFormsQuery, useModuleResponsesQuery, useSaveModuleResponseMutation } from '../../hooks/useApiQueries';
+import { useDebugSteps } from '../../hooks/useDebugSteps';
 import { useEyeTrackingConfigQuery } from '../../hooks/useEyeTrackingConfigQuery';
 import { useMobileStepVerification } from '../../hooks/useMobileStepVerification';
 import { useUserJourneyTracking } from '../../hooks/useUserJourneyTracking';
@@ -915,6 +916,9 @@ const TestLayoutRenderer: React.FC = () => {
   const { currentQuestionKey, goToNextStep, updateBackendResponses } = useStepStore();
   const { setFormData, getFormData } = useFormDataStore();
   const quotaResult = useFormDataStore(state => state.quotaResult);
+
+  // 🎯 DEBUG HOOK PARA DIAGNOSTICAR PROBLEMAS
+  useDebugSteps();
 
   // 🎯 VERIFICACIÓN MÓVIL EN STEPS
   const {

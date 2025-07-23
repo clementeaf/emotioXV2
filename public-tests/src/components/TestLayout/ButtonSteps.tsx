@@ -203,16 +203,18 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
   const localData = getFormData(currentQuestionKey);
   const hasLocalData = localData && Object.keys(localData).length > 0;
 
-  // 🎯 DETERMINAR SI EXISTE RESPUESTA (BACKEND O LOCAL)
-  const hasExistingResponse = existingResponse || hasLocalData;
+  // 🎯 DETERMINAR SI EXISTE RESPUESTA (SOLO BACKEND)
+  const hasExistingResponse = !!existingResponse;
 
   // 🎯 LOG PARA DEBUG
   console.log('[ButtonSteps] 🔍 DETECCIÓN DE RESPUESTAS:', {
     currentQuestionKey,
     existingResponse: !!existingResponse,
+    existingResponseData: existingResponse,
     hasLocalData,
     hasExistingResponse,
     moduleResponses: moduleResponses?.responses?.map(r => r.questionKey),
+    moduleResponsesFull: moduleResponses,
     localData
   });
 
@@ -220,6 +222,14 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
   const documentId = moduleResponses?.id;
 
   const getButtonText = (): string => {
+    console.log('[ButtonSteps] 🎯 getButtonText:', {
+      isWelcomeScreen,
+      isSaving,
+      isNavigating,
+      hasExistingResponse,
+      currentQuestionKey
+    });
+
     if (isWelcomeScreen) {
       return 'Comenzar';
     }
