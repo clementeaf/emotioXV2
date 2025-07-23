@@ -946,6 +946,8 @@ const TestLayoutRenderer: React.FC = () => {
   // 🎯 EFFECTS DESPUÉS DE TODOS LOS HOOKS
   useEffect(() => {
     if (moduleResponses?.responses && researchId && participantId) {
+      console.log('[TestLayoutRenderer] 🎯 Procesando respuestas del backend:', moduleResponses.responses);
+
       const backendResponses = moduleResponses.responses.map((response: any) => {
         return {
           questionKey: response.questionKey,
@@ -953,6 +955,7 @@ const TestLayoutRenderer: React.FC = () => {
         };
       });
 
+      console.log('[TestLayoutRenderer] 🎯 Actualizando store de steps con:', backendResponses);
       updateBackendResponses(backendResponses);
 
       // 🎯 SINCRONIZAR CON FORM DATA STORE
@@ -967,20 +970,34 @@ const TestLayoutRenderer: React.FC = () => {
             value = backendResponse.response.selectedValue;
           } else if (backendResponse.response.response !== undefined) {
             value = backendResponse.response.response;
+          } else if (backendResponse.response.age !== undefined) {
+            // 🎯 CASO ESPECIAL PARA DEMOGRÁFICOS
+            value = backendResponse.response.age;
           }
 
           // 🎯 GUARDAR EN FORM DATA STORE
-          setFormData(backendResponse.questionKey, {
+          const formDataToSave = {
             value,
             selectedValue: value,
             response: backendResponse.response,
             timestamp: backendResponse.response.timestamp || new Date().toISOString()
-          });
+          };
+
+          // 🎯 PARA DEMOGRÁFICOS, GUARDAR TAMBIÉN EN EL FORMATO ESPERADO
+          if (backendResponse.questionKey === 'demographics') {
+            setFormData('demographics', {
+              ...formDataToSave,
+              age: value // 🎯 GUARDAR TAMBIÉN COMO age PARA COMPATIBILIDAD
+            });
+          } else {
+            setFormData(backendResponse.questionKey, formDataToSave);
+          }
 
           console.log('[TestLayoutRenderer] 🎯 Sincronizando respuesta:', {
             questionKey: backendResponse.questionKey,
             value,
-            response: backendResponse.response
+            response: backendResponse.response,
+            savedToFormData: backendResponse.questionKey === 'demographics' ? 'demographics' : backendResponse.questionKey
           });
         }
       });

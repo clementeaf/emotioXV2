@@ -3,6 +3,7 @@ import { useAvailableFormsQuery, useModuleResponsesQuery, useSaveModuleResponseM
 import { useDemographicValidation } from '../../hooks/useDemographicValidation';
 import { useDisqualificationRedirect } from '../../hooks/useDisqualificationRedirect';
 import { useEyeTrackingConfigQuery } from '../../hooks/useEyeTrackingConfigQuery';
+import { useMonitoringWebSocket } from '../../hooks/useMonitoringWebSocket';
 import { useResponseTiming } from '../../hooks/useResponseTiming';
 import { useUserJourneyTracking } from '../../hooks/useUserJourneyTracking';
 import { CreateModuleResponseDto, UpdateModuleResponseDto } from '../../lib/types';
@@ -34,6 +35,9 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
   const { data: eyeTrackingConfig } = useEyeTrackingConfigQuery(researchId || '');
   const shouldTrackTiming = eyeTrackingConfig?.parameterOptions?.saveResponseTimes || false;
   const shouldTrackUserJourney = eyeTrackingConfig?.parameterOptions?.saveUserJourney || false;
+
+  // 🎯 WEBSOCKET PARA MONITOREO EN TIEMPO REAL
+  const { sendParticipantStep } = useMonitoringWebSocket();
 
   const { data: moduleResponses } = useModuleResponsesQuery(
     researchId || '',
@@ -154,6 +158,16 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
 
   // 🎯 DETERMINAR SI EXISTE RESPUESTA (BACKEND O LOCAL)
   const hasExistingResponse = existingResponse || hasLocalData;
+
+  // 🎯 LOG PARA DEBUG
+  console.log('[ButtonSteps] 🔍 DETECCIÓN DE RESPUESTAS:', {
+    currentQuestionKey,
+    existingResponse: !!existingResponse,
+    hasLocalData,
+    hasExistingResponse,
+    moduleResponses: moduleResponses?.responses?.map(r => r.questionKey),
+    localData
+  });
 
   // Obtener el ID del documento principal para actualizaciones
   const documentId = moduleResponses?.id;
@@ -379,6 +393,31 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
         };
 
         await saveMutation.mutateAsync(createData);
+      }
+
+      // 🎯 ENVIAR EVENTO WEBSOCKET PARA MONITOREO EN TIEMPO REAL
+      if (participantId) {
+        const stepNumber = steps.findIndex(step => step.questionKey === currentQuestionKey) + 1;
+        const totalSteps = steps.length;
+        const progress = Math.round((stepNumber / totalSteps) * 100);
+
+        sendParticipantStep(
+          participantId,
+          currentQuestionKey,
+          stepNumber,
+          totalSteps,
+          progress,
+          timingData?.duration
+        );
+
+        console.log('[ButtonSteps] 📡 Evento WebSocket enviado:', {
+          participantId,
+          stepName: currentQuestionKey,
+          stepNumber,
+          totalSteps,
+          progress,
+          duration: timingData?.duration
+        });
       }
 
       // 🎯 FINALIZAR CRONOMETRAJE

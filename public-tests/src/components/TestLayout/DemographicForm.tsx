@@ -5,6 +5,7 @@ import { useEyeTrackingConfigQuery } from '../../hooks/useEyeTrackingConfigQuery
 import { useMonitoringWebSocket } from '../../hooks/useMonitoringWebSocket';
 import { useFormDataStore } from '../../stores/useFormDataStore';
 import { useParticipantStore } from '../../stores/useParticipantStore';
+import { useStepStore } from '../../stores/useStepStore';
 import { useTestStore } from '../../stores/useTestStore';
 
 interface DemographicFormProps {
@@ -60,7 +61,13 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
           setFormData('demographics', backendData);
           setHasLoadedData(true);
 
-          console.log('[DemographicForm] ✅ Datos del backend cargados al store local');
+          // 🎯 ACTUALIZAR EL STORE DE STEPS PARA REFLEJAR LA RESPUESTA
+          const { updateBackendResponses } = useStepStore.getState();
+          updateBackendResponses([
+            { questionKey: 'demographics', response: backendData }
+          ]);
+
+          console.log('[DemographicForm] ✅ Datos del backend cargados al store local y steps actualizados');
         }
       }
     } catch (error) {
@@ -304,6 +311,8 @@ export const DemographicForm: React.FC<DemographicFormProps> = ({
                 required={q.required}
                 className="p-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
               >
+                {/* 🎯 DEBUG: Mostrar valor actual */}
+                {console.log('[DemographicForm] 🔍 Valor para', q.key, ':', getFormData('demographics')[q.key])}
                 <option value="">Selecciona una opción</option>
                 {/* 🎯 MOSTRAR TODAS LAS OPCIONES EN ORDEN NORMAL */}
                 {q.options.map((opt: string, i: number) => (
