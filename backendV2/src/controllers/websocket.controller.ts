@@ -84,6 +84,9 @@ export class WebSocketController {
       case 'PARTICIPANT_QUOTA_EXCEEDED':
         return this.handleParticipantQuotaExceeded(event, body);
 
+      case 'PARTICIPANT_RESPONSE_SAVED':
+        return this.handleParticipantResponseSaved(event, body);
+
       default:
         console.log('[WebSocketController] ⚠️ Tipo de mensaje no reconocido:', body.type);
         return {
@@ -215,6 +218,36 @@ export class WebSocketController {
       headers: getCorsHeaders(event),
       body: JSON.stringify({
         message: 'Participant quota exceeded recorded',
+        connectionId,
+        timestamp: new Date().toISOString()
+      })
+    };
+  }
+
+  /**
+   * Maneja evento de respuesta guardada
+   */
+  private async handleParticipantResponseSaved(event: WebSocketEvent, data: any): Promise<APIGatewayProxyResult> {
+    const connectionId = event.requestContext.connectionId;
+
+    console.log('[WebSocketController] 💾 PARTICIPANT_RESPONSE_SAVED:', {
+      connectionId,
+      researchId: data.data?.researchId,
+      participantId: data.data?.participantId,
+      questionKey: data.data?.questionKey,
+      stepNumber: data.data?.stepNumber,
+      totalSteps: data.data?.totalSteps,
+      progress: data.data?.progress
+    });
+
+    // 🎯 AQUÍ PODRÍAS AGREGAR LÓGICA PARA NOTIFICAR AL DASHBOARD
+    // Por ejemplo, enviar el evento a otros clientes conectados al mismo researchId
+
+    return {
+      statusCode: 200,
+      headers: getCorsHeaders(event),
+      body: JSON.stringify({
+        message: 'Participant response saved recorded',
         connectionId,
         timestamp: new Date().toISOString()
       })

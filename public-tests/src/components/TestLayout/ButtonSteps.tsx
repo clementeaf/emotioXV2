@@ -37,7 +37,7 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
   const shouldTrackUserJourney = eyeTrackingConfig?.parameterOptions?.saveUserJourney || false;
 
   // 🎯 WEBSOCKET PARA MONITOREO EN TIEMPO REAL
-  const { sendParticipantStep } = useMonitoringWebSocket();
+  const { sendParticipantStep, sendParticipantResponseSaved } = useMonitoringWebSocket();
 
   const { data: moduleResponses } = useModuleResponsesQuery(
     researchId || '',
@@ -118,6 +118,30 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
         ...store.backendResponses,
         { questionKey: currentQuestionKey, response: formData || {} }
       ]);
+
+      // 🎯 ENVIAR EVENTO WEBSOCKET DE RESPUESTA GUARDADA
+      if (participantId) {
+        const currentStepIndex = steps.findIndex(step => step.questionKey === currentQuestionKey);
+        const progress = Math.round(((currentStepIndex + 1) / steps.length) * 100);
+
+        sendParticipantResponseSaved(
+          participantId,
+          currentQuestionKey,
+          formData || {},
+          currentStepIndex + 1,
+          steps.length,
+          progress
+        );
+
+        console.log('[ButtonSteps] 🎯 Evento WebSocket enviado: PARTICIPANT_RESPONSE_SAVED', {
+          participantId,
+          questionKey: currentQuestionKey,
+          stepNumber: currentStepIndex + 1,
+          totalSteps: steps.length,
+          progress
+        });
+      }
+
       setIsSaving(false);
       setTimeout(() => {
         goToNextStep();
@@ -131,6 +155,29 @@ export const ButtonSteps: React.FC<ButtonStepsProps> = ({
 
   const updateMutation = useUpdateModuleResponseMutation({
     onSuccess: () => {
+      // 🎯 ENVIAR EVENTO WEBSOCKET DE RESPUESTA ACTUALIZADA
+      if (participantId) {
+        const currentStepIndex = steps.findIndex(step => step.questionKey === currentQuestionKey);
+        const progress = Math.round(((currentStepIndex + 1) / steps.length) * 100);
+
+        sendParticipantResponseSaved(
+          participantId,
+          currentQuestionKey,
+          formData || {},
+          currentStepIndex + 1,
+          steps.length,
+          progress
+        );
+
+        console.log('[ButtonSteps] 🎯 Evento WebSocket enviado: PARTICIPANT_RESPONSE_SAVED (actualización)', {
+          participantId,
+          questionKey: currentQuestionKey,
+          stepNumber: currentStepIndex + 1,
+          totalSteps: steps.length,
+          progress
+        });
+      }
+
       setIsSaving(false);
       setIsNavigating(true);
 

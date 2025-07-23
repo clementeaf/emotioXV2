@@ -205,6 +205,30 @@ export const useMonitoringWebSocket = () => {
     });
   }, [researchId, sendEvent]);
 
+  // 🎯 ENVIAR EVENTO DE RESPUESTA GUARDADA
+  const sendParticipantResponseSaved = useCallback((
+    participantId: string,
+    questionKey: string,
+    response: any,
+    stepNumber: number,
+    totalSteps: number,
+    progress: number
+  ) => {
+    return sendEvent({
+      type: 'PARTICIPANT_RESPONSE_SAVED',
+      data: {
+        researchId: researchId || '',
+        participantId,
+        questionKey,
+        response,
+        timestamp: new Date().toISOString(),
+        stepNumber,
+        totalSteps,
+        progress
+      }
+    });
+  }, [researchId, sendEvent]);
+
   // 🎯 CONECTAR AL MONTAR
   useEffect(() => {
     if (researchId) {
@@ -223,6 +247,7 @@ export const useMonitoringWebSocket = () => {
     sendParticipantDisqualified,
     sendParticipantQuotaExceeded,
     sendParticipantCompleted,
-    sendParticipantError
+    sendParticipantError,
+    sendParticipantResponseSaved
   };
 };

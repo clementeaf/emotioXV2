@@ -87,6 +87,21 @@ export interface ParticipantErrorEvent {
   };
 }
 
+// 🎯 EVENTO PARA RESPUESTAS GUARDADAS
+export interface ParticipantResponseSavedEvent {
+  type: 'PARTICIPANT_RESPONSE_SAVED';
+  data: {
+    researchId: string;
+    participantId: string;
+    questionKey: string;
+    response: any;
+    timestamp: string;
+    stepNumber: number;
+    totalSteps: number;
+    progress: number;
+  };
+}
+
 // 🎯 UNION DE TODOS LOS EVENTOS
 export type MonitoringEvent =
   | MonitoringConnectEvent
@@ -95,7 +110,8 @@ export type MonitoringEvent =
   | ParticipantDisqualifiedEvent
   | ParticipantQuotaExceededEvent
   | ParticipantCompletedEvent
-  | ParticipantErrorEvent;
+  | ParticipantErrorEvent
+  | ParticipantResponseSavedEvent;
 
 // 🎯 INTERFACES PARA ESTADO DEL DASHBOARD
 export interface ParticipantStatus {
