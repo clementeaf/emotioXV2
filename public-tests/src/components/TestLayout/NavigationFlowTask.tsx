@@ -26,6 +26,16 @@ interface ClickPosition {
   hitzoneHeight: number;
 }
 
+// 🎯 NUEVA INTERFACE PARA RASTREO COMPLETO DE CLICS
+interface ClickTrackingData {
+  x: number;
+  y: number;
+  timestamp: number;
+  hitzoneId?: string; // undefined si el clic fue fuera de hitzone
+  imageIndex: number;
+  isCorrectHitzone: boolean;
+}
+
 interface HitZone {
   id: string;
   region: {
@@ -120,6 +130,8 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
   const [imageNaturalSize, setImageNaturalSize] = useState<{ width: number; height: number } | null>(null);
   const [imgRenderSize, setImgRenderSize] = useState<{ width: number; height: number } | null>(null);
   const [imageSelections, setImageSelections] = useState<Record<string, { hitzoneId: string, click: ClickPosition }>>({});
+  // 🎯 NUEVO ESTADO PARA RASTREO COMPLETO DE CLICS
+  const [allClicksTracking, setAllClicksTracking] = useState<ClickTrackingData[]>([]);
   const imageRef = useRef<HTMLImageElement>(null);
 
   const images: ImageFile[] = imageFiles;
@@ -149,6 +161,18 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
     }
   }, [currentQuestionKey]);
 
+  // 🎯 ENVIAR TODOS LOS CLICS AL BACKEND CUANDO SE COMPLETE EL STEP
+  useEffect(() => {
+    if (currentQuestionKey && allClicksTracking.length > 0) {
+      // Enviar todos los clics al backend para análisis
+      const { setFormData } = useFormDataStore.getState();
+      setFormData(currentQuestionKey, {
+        ...useFormDataStore.getState().formData[currentQuestionKey],
+        allClicksTracking: allClicksTracking
+      });
+    }
+  }, [allClicksTracking, currentQuestionKey]);
+
   const handleHitzoneClick = (hitzoneId: string, clickPos?: ClickPosition): void => {
     if (clickPos && typeof clickPos.hitzoneWidth === 'number' && typeof clickPos.hitzoneHeight === 'number') {
       setImageSelections(prev => ({
@@ -156,7 +180,7 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
         [localSelectedImageIndex.toString()]: { hitzoneId, click: clickPos }
       }));
 
-      // 🎯 GUARDAR EN FORMDATA
+      // 🎯 GUARDAR EN FORMDATA CON TODOS LOS CLICS
       if (currentQuestionKey) {
         const { setFormData } = useFormDataStore.getState();
         setFormData(currentQuestionKey, {
@@ -166,7 +190,9 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
           imageSelections: {
             ...imageSelections,
             [localSelectedImageIndex.toString()]: { hitzoneId, click: clickPos }
-          }
+          },
+          // 🎯 AGREGAR RASTREO COMPLETO DE CLICS
+          allClicksTracking: allClicksTracking
         });
       }
 
@@ -178,6 +204,59 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
           setLocalSelectedHitzone(null);
         }, 500);
       }
+    }
+  };
+
+  // 🎯 NUEVA FUNCIÓN PARA RASTREAR TODOS LOS CLICS
+  const handleImageClick = (e: React.MouseEvent<HTMLImageElement>): void => {
+    if (!imageRef.current || !imageNaturalSize) return;
+
+    const imgRect = imageRef.current.getBoundingClientRect();
+    const clickX = e.clientX - imgRect.left;
+    const clickY = e.clientY - imgRect.top;
+    const timestamp = Date.now();
+
+    // 🎯 VERIFICAR SI EL CLIC ESTÁ DENTRO DE ALGÚN HITZONE
+    let hitzoneId: string | undefined;
+    let isCorrectHitzone = false;
+
+    if (availableHitzones.length > 0) {
+      for (const hitzone of availableHitzones) {
+        const { drawWidth, drawHeight, offsetX, offsetY } = getImageDrawRect(imageNaturalSize, imgRenderSize!);
+        const left = offsetX + (hitzone.originalCoords?.x ?? 0) * (drawWidth / imageNaturalSize.width);
+        const top = offsetY + (hitzone.originalCoords?.y ?? 0) * (drawHeight / imageNaturalSize.height);
+        const width = (hitzone.originalCoords?.width ?? 0) * (drawWidth / imageNaturalSize.width);
+        const height = (hitzone.originalCoords?.height ?? 0) * (drawHeight / imageNaturalSize.height);
+
+        if (clickX >= left && clickX <= left + width && clickY >= top && clickY <= top + height) {
+          hitzoneId = hitzone.id;
+          isCorrectHitzone = true;
+          break;
+        }
+      }
+    }
+
+    // 🎯 REGISTRAR EL CLIC
+    const clickData: ClickTrackingData = {
+      x: clickX,
+      y: clickY,
+      timestamp,
+      hitzoneId,
+      imageIndex: localSelectedImageIndex,
+      isCorrectHitzone
+    };
+
+    setAllClicksTracking(prev => [...prev, clickData]);
+
+    // 🎯 ENVIAR AL BACKEND SI ES UN CLIC EN HITZONE
+    if (isCorrectHitzone && hitzoneId) {
+      const { drawWidth, drawHeight, offsetX, offsetY } = getImageDrawRect(imageNaturalSize, imgRenderSize!);
+      const relX = clickX - (offsetX + (availableHitzones.find(h => h.id === hitzoneId)?.originalCoords?.x ?? 0) * (drawWidth / imageNaturalSize.width));
+      const relY = clickY - (offsetY + (availableHitzones.find(h => h.id === hitzoneId)?.originalCoords?.y ?? 0) * (drawHeight / imageNaturalSize.height));
+      const width = (availableHitzones.find(h => h.id === hitzoneId)?.originalCoords?.width ?? 0) * (drawWidth / imageNaturalSize.width);
+      const height = (availableHitzones.find(h => h.id === hitzoneId)?.originalCoords?.height ?? 0) * (drawHeight / imageNaturalSize.height);
+
+      handleHitzoneClick(hitzoneId, { x: relX, y: relY, hitzoneWidth: width, hitzoneHeight: height });
     }
   };
 
@@ -281,6 +360,7 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
             loading="lazy"
             style={{ display: 'block' }}
             onLoad={handleImageLoad}
+            onClick={handleImageClick}
           />
           {imageNaturalSize && imgRenderSize && (
             (() => {
