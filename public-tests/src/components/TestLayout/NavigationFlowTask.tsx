@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useFormDataStore } from '../../stores/useFormDataStore';
 import { useStepStore } from '../../stores/useStepStore';
+import NavigationFlowDebugger from '../debug/NavigationFlowDebugger';
 
 // 🎯 INTERFAZ PARA RESPUESTAS DEL BACKEND
 interface BackendResponse {
@@ -15,6 +16,8 @@ interface BackendResponse {
       hitzoneWidth: number;
       hitzoneHeight: number;
     };
+    // 🎯 NUEVO: PERSISTENCIA DE PUNTOS VISUALES
+    visualClickPoints?: VisualClickPoint[];
     [key: string]: unknown;
   };
 }
@@ -42,6 +45,7 @@ interface VisualClickPoint {
   y: number;
   timestamp: number;
   isCorrect: boolean;
+  imageIndex: number; // 🎯 NUEVO: Para persistir por imagen
 }
 
 interface HitZone {
@@ -98,29 +102,19 @@ const convertHitZonesToPercentageCoordinates = (
   }
 
   return hitZones.map(zone => {
-    const region = zone.region;
-    const x = region.x || 0;
-    const y = region.y || 0;
-    const width = region.width || 0;
-    const height = region.height || 0;
-
-    if (imageNaturalSize && imageNaturalSize.width > 0 && imageNaturalSize.height > 0) {
-      return {
-        id: zone.id,
-        x: (x / imageNaturalSize.width) * 100,
-        y: (y / imageNaturalSize.height) * 100,
-        width: (width / imageNaturalSize.width) * 100,
-        height: (height / imageNaturalSize.height) * 100,
-        originalCoords: { x, y, width, height }
-      };
-    }
-
+    const { x, y, width, height } = zone.region;
     return {
       id: zone.id,
       x,
       y,
       width,
-      height
+      height,
+      originalCoords: {
+        x,
+        y,
+        width,
+        height
+      }
     };
   });
 };
@@ -140,8 +134,8 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
   const [imageSelections, setImageSelections] = useState<Record<string, { hitzoneId: string, click: ClickPosition }>>({});
   // 🎯 NUEVO ESTADO PARA RASTREO COMPLETO DE CLICS
   const [allClicksTracking, setAllClicksTracking] = useState<ClickTrackingData[]>([]);
-  // 🎯 NUEVO ESTADO PARA PUNTOS VISUALES ROJOS
-  const [visualClickPoints, setVisualClickPoints] = useState<VisualClickPoint[]>([]);
+  // 🎯 NUEVO ESTADO PARA PUNTOS VISUALES ROJOS - PERSISTENTES POR IMAGEN
+  const [visualClickPoints, setVisualClickPoints] = useState<Record<number, VisualClickPoint[]>>({});
   const imageRef = useRef<HTMLImageElement>(null);
 
   const images: ImageFile[] = imageFiles;
@@ -167,6 +161,19 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
         if (responseData.imageSelections) {
           setImageSelections(responseData.imageSelections as Record<string, { hitzoneId: string, click: ClickPosition }>);
         }
+        // 🎯 CARGAR PUNTOS VISUALES PERSISTIDOS
+        if (responseData.visualClickPoints && Array.isArray(responseData.visualClickPoints)) {
+          const pointsByImage: Record<number, VisualClickPoint[]> = {};
+          responseData.visualClickPoints.forEach((point: VisualClickPoint) => {
+            const imageIndex = point.imageIndex || 0;
+            if (!pointsByImage[imageIndex]) {
+              pointsByImage[imageIndex] = [];
+            }
+            pointsByImage[imageIndex].push(point);
+          });
+          setVisualClickPoints(pointsByImage);
+          console.log('🎯 Puntos visuales cargados desde backend:', pointsByImage);
+        }
       }
     }
   }, [currentQuestionKey]);
@@ -182,6 +189,29 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
       });
     }
   }, [allClicksTracking, currentQuestionKey]);
+
+  // 🎯 FUNCIÓN PARA PERSISTIR PUNTOS VISUALES
+  const persistVisualClickPoints = () => {
+    if (currentQuestionKey) {
+      const { setFormData } = useFormDataStore.getState();
+      // Convertir el objeto de puntos por imagen a un array plano para persistir
+      const allPoints: VisualClickPoint[] = [];
+      Object.entries(visualClickPoints).forEach(([imageIndex, points]) => {
+        points.forEach(point => {
+          allPoints.push({
+            ...point,
+            imageIndex: parseInt(imageIndex)
+          });
+        });
+      });
+
+      setFormData(currentQuestionKey, {
+        ...useFormDataStore.getState().formData[currentQuestionKey],
+        visualClickPoints: allPoints
+      });
+      console.log('🎯 Puntos visuales persistidos:', allPoints);
+    }
+  };
 
   const handleHitzoneClick = (hitzoneId: string, clickPos?: ClickPosition): void => {
     if (clickPos && typeof clickPos.hitzoneWidth === 'number' && typeof clickPos.hitzoneHeight === 'number') {
@@ -212,8 +242,6 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
         setTimeout(() => {
           setLocalSelectedImageIndex(localSelectedImageIndex + 1);
           setLocalSelectedHitzone(null);
-          // 🎯 LIMPIAR PUNTOS VISUALES AL CAMBIAR DE IMAGEN
-          setVisualClickPoints([]);
         }, 500);
       }
     }
@@ -260,15 +288,26 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
 
     setAllClicksTracking(prev => [...prev, clickData]);
 
-    // 🎯 AGREGAR PUNTO VISUAL ROJO
+    // 🎯 AGREGAR PUNTO VISUAL ROJO - PERSISTENTE POR IMAGEN
     const visualPoint: VisualClickPoint = {
       x: clickX,
       y: clickY,
       timestamp,
-      isCorrect: isCorrectHitzone
+      isCorrect: isCorrectHitzone,
+      imageIndex: localSelectedImageIndex
     };
 
-    setVisualClickPoints(prev => [...prev, visualPoint]);
+    setVisualClickPoints(prev => {
+      const newPoints = {
+        ...prev,
+        [localSelectedImageIndex]: [...(prev[localSelectedImageIndex] || []), visualPoint]
+      };
+
+      // 🎯 PERSISTIR INMEDIATAMENTE
+      setTimeout(() => persistVisualClickPoints(), 0);
+
+      return newPoints;
+    });
 
     // 🎯 ENVIAR AL BACKEND SI ES UN CLIC EN HITZONE
     if (isCorrectHitzone && hitzoneId) {
@@ -292,8 +331,7 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
     if (localSelectedImageIndex > 0) {
       setLocalSelectedImageIndex(localSelectedImageIndex - 1);
       setLocalSelectedHitzone(null);
-      // 🎯 LIMPIAR PUNTOS VISUALES AL CAMBIAR DE IMAGEN
-      setVisualClickPoints([]);
+      // 🎯 NO LIMPIAR PUNTOS VISUALES - SE MANTIENEN PERSISTENTES
     }
   };
 
@@ -305,8 +343,7 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
     if (localSelectedImageIndex < images.length - 1 && hasClickedHitzone) {
       setLocalSelectedImageIndex(localSelectedImageIndex + 1);
       setLocalSelectedHitzone(null);
-      // 🎯 LIMPIAR PUNTOS VISUALES AL CAMBIAR DE IMAGEN
-      setVisualClickPoints([]);
+      // 🎯 NO LIMPIAR PUNTOS VISUALES - SE MANTIENEN PERSISTENTES
     }
   };
 
@@ -316,8 +353,8 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
     : [];
 
   function getImageDrawRect(
-    imgNatural: { width: number, height: number },
-    imgRender: { width: number, height: number }
+    imgNatural: { width: number; height: number },
+    imgRender: { width: number; height: number }
   ): { drawWidth: number; drawHeight: number; offsetX: number; offsetY: number } {
     const imgRatio = imgNatural.width / imgNatural.height;
     const renderRatio = imgRender.width / imgRender.height;
@@ -336,6 +373,37 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
     }
     return { drawWidth, drawHeight, offsetX, offsetY };
   }
+
+  // 🎯 OBTENER PUNTOS VISUALES PARA LA IMAGEN ACTUAL
+  const currentImageClickPoints = visualClickPoints[localSelectedImageIndex] || [];
+
+  // 🎯 FUNCIONES PARA EL DEBUGGER
+  const handleClearPoints = () => {
+    setVisualClickPoints({});
+    console.log('🧹 Puntos visuales limpiados');
+  };
+
+  const handleExportData = () => {
+    const exportData = {
+      questionKey: currentQuestionKey,
+      visualClickPoints: visualClickPoints,
+      imageSelections: imageSelections,
+      allClicksTracking: allClicksTracking,
+      timestamp: new Date().toISOString()
+    };
+
+    console.log('📤 Datos exportados:', exportData);
+
+    // Crear archivo de descarga
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `navigation-flow-data-${Date.now()}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="flex flex-col bg-white p-6">
@@ -442,11 +510,12 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
                     </div>
                   )}
 
-                  {/* 🎯 PUNTOS VISUALES ROJOS */}
-                  {visualClickPoints.map((point, index) => (
+                  {/* 🎯 PUNTOS VISUALES ROJOS - PERSISTENTES */}
+                  {currentImageClickPoints.map((point, index) => (
                     <div
                       key={`${point.timestamp}-${index}`}
-                      className="absolute w-3 h-3 bg-red-500 rounded-full border-2 border-white shadow-lg pointer-events-none"
+                      className={`absolute w-3 h-3 rounded-full border-2 border-white shadow-lg pointer-events-none ${point.isCorrect ? 'bg-green-500' : 'bg-red-500'
+                        }`}
                       style={{
                         left: point.x - 6,
                         top: point.y - 6,
@@ -461,6 +530,14 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
           )}
         </div>
       </div>
+
+      {/* 🎯 DEBUGGER INTEGRADO */}
+      <NavigationFlowDebugger
+        currentImageIndex={localSelectedImageIndex}
+        visualClickPoints={visualClickPoints}
+        onClearPoints={handleClearPoints}
+        onExportData={handleExportData}
+      />
     </div>
   );
 };
