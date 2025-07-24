@@ -139,6 +139,15 @@ export interface ProcessedCognitiveData {
       hitzoneHeight: number;
     };
     selectedImageIndex?: number;
+    // 🎯 NUEVO: DATOS DE RASTREO COMPLETO DE CLICS
+    allClicksTracking?: Array<{
+      x: number;
+      y: number;
+      timestamp: number;
+      hitzoneId?: string;
+      imageIndex: number;
+      isCorrectHitzone: boolean;
+    }>;
   };
 }
 
@@ -291,6 +300,12 @@ export function useCognitiveTaskResults(researchId: string) {
                     };
                   }
                 });
+              }
+
+              // 🎯 PROCESAR allClicksTracking
+              if (navResponse.allClicksTracking && Array.isArray(navResponse.allClicksTracking)) {
+                questionData.navigationFlowData.allClicksTracking = navResponse.allClicksTracking;
+                console.log(`[useCognitiveTaskResults] 🔥 Procesando ${navResponse.allClicksTracking.length} clics de allClicksTracking`);
               }
             }
             break;

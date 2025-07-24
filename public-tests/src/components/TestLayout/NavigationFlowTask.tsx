@@ -36,6 +36,14 @@ interface ClickTrackingData {
   isCorrectHitzone: boolean;
 }
 
+// 🎯 NUEVA INTERFACE PARA PUNTOS VISUALES
+interface VisualClickPoint {
+  x: number;
+  y: number;
+  timestamp: number;
+  isCorrect: boolean;
+}
+
 interface HitZone {
   id: string;
   region: {
@@ -132,6 +140,8 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
   const [imageSelections, setImageSelections] = useState<Record<string, { hitzoneId: string, click: ClickPosition }>>({});
   // 🎯 NUEVO ESTADO PARA RASTREO COMPLETO DE CLICS
   const [allClicksTracking, setAllClicksTracking] = useState<ClickTrackingData[]>([]);
+  // 🎯 NUEVO ESTADO PARA PUNTOS VISUALES ROJOS
+  const [visualClickPoints, setVisualClickPoints] = useState<VisualClickPoint[]>([]);
   const imageRef = useRef<HTMLImageElement>(null);
 
   const images: ImageFile[] = imageFiles;
@@ -202,6 +212,8 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
         setTimeout(() => {
           setLocalSelectedImageIndex(localSelectedImageIndex + 1);
           setLocalSelectedHitzone(null);
+          // 🎯 LIMPIAR PUNTOS VISUALES AL CAMBIAR DE IMAGEN
+          setVisualClickPoints([]);
         }, 500);
       }
     }
@@ -248,6 +260,16 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
 
     setAllClicksTracking(prev => [...prev, clickData]);
 
+    // 🎯 AGREGAR PUNTO VISUAL ROJO
+    const visualPoint: VisualClickPoint = {
+      x: clickX,
+      y: clickY,
+      timestamp,
+      isCorrect: isCorrectHitzone
+    };
+
+    setVisualClickPoints(prev => [...prev, visualPoint]);
+
     // 🎯 ENVIAR AL BACKEND SI ES UN CLIC EN HITZONE
     if (isCorrectHitzone && hitzoneId) {
       const { drawWidth, drawHeight, offsetX, offsetY } = getImageDrawRect(imageNaturalSize, imgRenderSize!);
@@ -270,6 +292,8 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
     if (localSelectedImageIndex > 0) {
       setLocalSelectedImageIndex(localSelectedImageIndex - 1);
       setLocalSelectedHitzone(null);
+      // 🎯 LIMPIAR PUNTOS VISUALES AL CAMBIAR DE IMAGEN
+      setVisualClickPoints([]);
     }
   };
 
@@ -281,6 +305,8 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
     if (localSelectedImageIndex < images.length - 1 && hasClickedHitzone) {
       setLocalSelectedImageIndex(localSelectedImageIndex + 1);
       setLocalSelectedHitzone(null);
+      // 🎯 LIMPIAR PUNTOS VISUALES AL CAMBIAR DE IMAGEN
+      setVisualClickPoints([]);
     }
   };
 
@@ -415,6 +441,20 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
                       </div>
                     </div>
                   )}
+
+                  {/* 🎯 PUNTOS VISUALES ROJOS */}
+                  {visualClickPoints.map((point, index) => (
+                    <div
+                      key={`${point.timestamp}-${index}`}
+                      className="absolute w-3 h-3 bg-red-500 rounded-full border-2 border-white shadow-lg pointer-events-none"
+                      style={{
+                        left: point.x - 6,
+                        top: point.y - 6,
+                        zIndex: 10
+                      }}
+                      title={`Clic ${point.isCorrect ? 'correcto' : 'incorrecto'} - ${new Date(point.timestamp).toLocaleTimeString()}`}
+                    />
+                  ))}
                 </div>
               );
             })()

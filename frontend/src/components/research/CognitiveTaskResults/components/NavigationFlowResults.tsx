@@ -32,6 +32,16 @@ interface ImageFile {
   hitZones?: HitZone[];
 }
 
+// 🎯 INTERFACE PARA CLICS DE RASTREO
+interface ClickTrackingData {
+  x: number;
+  y: number;
+  timestamp: number;
+  hitzoneId?: string;
+  imageIndex: number;
+  isCorrectHitzone: boolean;
+}
+
 export interface NavigationFlowData {
   question: string;
   description?: string;
@@ -57,6 +67,8 @@ export interface NavigationFlowData {
     hitzoneHeight: number;
   };
   selectedImageIndex?: number;
+  // 🎯 NUEVO: DATOS DE RASTREO COMPLETO DE CLICS
+  allClicksTracking?: ClickTrackingData[];
 }
 
 interface NavigationFlowResultsProps {
@@ -135,11 +147,21 @@ const convertHitZonesToPercentageCoordinates = (
 export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ data }) => {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
   const [showHeatmap, setShowHeatmap] = useState<boolean>(true);
+  const [showCorrectClicks, setShowCorrectClicks] = useState<boolean>(true);
+  const [showIncorrectClicks, setShowIncorrectClicks] = useState<boolean>(true);
   const [imageNaturalSize, setImageNaturalSize] = useState<{ width: number; height: number } | null>(null);
   const [imgRenderSize, setImgRenderSize] = useState<{ width: number; height: number } | null>(null);
   const [realImages, setRealImages] = useState<ImageFile[]>([]);
   const [loadingImages, setLoadingImages] = useState(true);
   const imageRef = useRef<HTMLImageElement>(null);
+
+  // 🎯 ESTADO PARA ESTADÍSTICAS DE CLICS
+  const [clickStats, setClickStats] = useState({
+    totalClicks: 0,
+    correctClicks: 0,
+    incorrectClicks: 0,
+    accuracyRate: 0
+  });
 
   // Usar los datos que ya están procesados
   const {
@@ -151,8 +173,34 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
     selectedHitzone,
     clickPosition,
     selectedImageIndex: finalSelectedImageIndex,
-    researchId
+    researchId,
+    allClicksTracking
   } = data;
+
+  // 🎯 PROCESAR ESTADÍSTICAS DE CLICS
+  useEffect(() => {
+    if (allClicksTracking && Array.isArray(allClicksTracking)) {
+      const total = allClicksTracking.length;
+      const correct = allClicksTracking.filter(click => click.isCorrectHitzone).length;
+      const incorrect = total - correct;
+      const accuracy = total > 0 ? (correct / total) * 100 : 0;
+
+      setClickStats({
+        totalClicks: total,
+        correctClicks: correct,
+        incorrectClicks: incorrect,
+        accuracyRate: accuracy
+      });
+
+      console.log('📊 Estadísticas de clics procesadas:', {
+        total,
+        correct,
+        incorrect,
+        accuracy: `${accuracy.toFixed(1)}%`,
+        clicks: allClicksTracking
+      });
+    }
+  }, [allClicksTracking]);
 
   // Cargar imágenes reales desde el cognitive task
   useEffect(() => {
@@ -422,12 +470,137 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
                       </div>
                     );
                   })}
+
+                  {/* 🎯 RENDERIZAR TODOS LOS CLICS DE allClicksTracking */}
+                  {showHeatmap && allClicksTracking && Array.isArray(allClicksTracking) && (
+                    allClicksTracking
+                      .filter(click => click.imageIndex === currentImageIndex)
+                      .map((click, index) => {
+                        // 🎯 CONVERTIR COORDENADAS NATURALES A COORDENADAS DE RENDERIZADO
+                        const { drawWidth, drawHeight, offsetX, offsetY } = getImageDrawRect(imageNaturalSize, imgRenderSize);
+
+                        // 🎯 ESCALAR COORDENADAS NATURALES A COORDENADAS DE RENDERIZADO
+                        const scaledX = offsetX + (click.x / imageNaturalSize.width) * drawWidth;
+                        const scaledY = offsetY + (click.y / imageNaturalSize.height) * drawHeight;
+
+                        console.log('🎯 Renderizando clic:', {
+                          index,
+                          originalCoords: { x: click.x, y: click.y },
+                          scaledCoords: { x: scaledX, y: scaledY },
+                          isCorrect: click.isCorrectHitzone,
+                          imageIndex: click.imageIndex,
+                          currentImageIndex
+                        });
+
+                        // 🎯 MOSTRAR SOLO SI ESTÁ HABILITADO EL TIPO DE CLIC
+                        if ((click.isCorrectHitzone && !showCorrectClicks) ||
+                          (!click.isCorrectHitzone && !showIncorrectClicks)) {
+                          return null;
+                        }
+
+                        return (
+                          <div
+                            key={`${click.timestamp}-${index}`}
+                            className={`absolute w-4 h-4 rounded-full border-2 border-white shadow-lg pointer-events-none ${click.isCorrectHitzone ? 'bg-green-500' : 'bg-red-500'
+                              }`}
+                            style={{
+                              left: scaledX - 8,
+                              top: scaledY - 8,
+                              zIndex: 10
+                            }}
+                            title={`Clic ${click.isCorrectHitzone ? 'correcto' : 'incorrecto'} - ${new Date(click.timestamp).toLocaleTimeString()}`}
+                          >
+                            <span className="absolute -top-1 -right-1 bg-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center border border-gray-300">
+                              {index + 1}
+                            </span>
+                          </div>
+                        );
+                      })
+                  )}
                 </div>
               );
             })()
           )}
         </div>
       </div>
+
+      {/* 🎯 ESTADÍSTICAS Y CONTROLES DEL MAPA DE CALOR */}
+      {allClicksTracking && allClicksTracking.length > 0 && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Estadísticas del Mapa de Calor</h3>
+
+          {/* Estadísticas */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">{clickStats.totalClicks}</div>
+              <div className="text-sm text-gray-600">Total de Clics</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">{clickStats.correctClicks}</div>
+              <div className="text-sm text-gray-600">Clics Correctos</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-red-600">{clickStats.incorrectClicks}</div>
+              <div className="text-sm text-gray-600">Clics Incorrectos</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-purple-600">{clickStats.accuracyRate.toFixed(1)}%</div>
+              <div className="text-sm text-gray-600">Tasa de Precisión</div>
+            </div>
+          </div>
+
+          {/* Controles */}
+          <div className="space-y-3">
+            <div className="flex items-center space-x-4">
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={showHeatmap}
+                  onChange={(e) => setShowHeatmap(e.target.checked)}
+                  className="mr-2"
+                />
+                <span className="text-sm text-gray-700">Mostrar Mapa de Calor</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={showCorrectClicks}
+                  onChange={(e) => setShowCorrectClicks(e.target.checked)}
+                  className="mr-2"
+                />
+                <span className="text-sm text-gray-700">Mostrar Clics Correctos</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={showIncorrectClicks}
+                  onChange={(e) => setShowIncorrectClicks(e.target.checked)}
+                  className="mr-2"
+                />
+                <span className="text-sm text-gray-700">Mostrar Clics Incorrectos</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Leyenda */}
+          <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+            <h4 className="text-sm font-semibold text-gray-800 mb-2">Leyenda del Mapa de Calor</h4>
+            <div className="flex items-center space-x-4 text-sm">
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-green-500 rounded-full mr-2"></div>
+                <span className="text-gray-700">Verde = Clic Correcto</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-red-500 rounded-full mr-2"></div>
+                <span className="text-gray-700">Rojo = Clic Incorrecto</span>
+              </div>
+            </div>
+            <p className="text-xs text-gray-600 mt-2">
+              💡 El mapa de calor muestra cada clic individual con puntos numerados para identificar la secuencia
+            </p>
+          </div>
+        </div>
+      )}
 
     </div>
   );
