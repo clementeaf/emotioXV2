@@ -4,6 +4,83 @@ import { cognitiveTaskService } from '../../../../services/cognitiveTaskService'
 import { ConvertedHitZone, HitZone, ImageFile, NavigationFlowResultsProps, VisualClickPoint } from '../types';
 import { TransparentOverlay } from './TransparentOverlay';
 
+// 🎯 NUEVO: Interfaz para áreas de calor
+interface HeatmapArea {
+  x: number;
+  y: number;
+  radius: number;
+  intensity: number;
+  clicks: any[];
+  isCorrect: boolean;
+  colorLevel: 'yellow' | 'orange' | 'red'; // 🎯 NUEVO: Nivel de color progresivo
+}
+
+// 🎯 NUEVO: Función para crear heatmaps con intensidad progresiva
+const createHeatmapFromClicks = (clicks: any[], radius: number = 14): HeatmapArea[] => {
+  if (!clicks || clicks.length === 0) return [];
+
+  const heatmapAreas: HeatmapArea[] = [];
+  const processedClicks = new Set<number>();
+
+  clicks.forEach((click, index) => {
+    if (processedClicks.has(index)) return;
+
+    const nearbyClicks = [click];
+    processedClicks.add(index);
+
+    // Buscar clicks cercanos
+    clicks.forEach((otherClick, otherIndex) => {
+      if (otherIndex === index || processedClicks.has(otherIndex)) return;
+
+      const distance = Math.sqrt(
+        Math.pow(click.x - otherClick.x, 2) + Math.pow(click.y - otherClick.y, 2)
+      );
+
+      if (distance <= radius) {
+        nearbyClicks.push(otherClick);
+        processedClicks.add(otherIndex);
+      }
+    });
+
+    // Calcular centro del área de calor
+    const centerX = nearbyClicks.reduce((sum, c) => sum + c.x, 0) / nearbyClicks.length;
+    const centerY = nearbyClicks.reduce((sum, c) => sum + c.y, 0) / nearbyClicks.length;
+
+    // 🎯 NUEVO: Sistema de intensidad progresiva
+    const clickCount = nearbyClicks.length;
+    let intensity = 0;
+    let colorLevel: 'yellow' | 'orange' | 'red' = 'yellow'; // 🟡 Amarillo por defecto
+
+    if (clickCount >= 5) {
+      intensity = 1;
+      colorLevel = 'red'; // 🔴 Rojo - máxima coincidencia
+    } else if (clickCount >= 3) {
+      intensity = 0.7;
+      colorLevel = 'orange'; // 🟠 Naranja - coincidencia moderada
+    } else if (clickCount >= 2) {
+      intensity = 0.4;
+      colorLevel = 'yellow'; // 🟡 Amarillo - coincidencia inicial
+    } else {
+      intensity = 0.2;
+      colorLevel = 'yellow'; // 🟡 Amarillo - click único
+    }
+
+    const isCorrect = nearbyClicks.some(c => c.isCorrectHitzone || c.isCorrect);
+
+    heatmapAreas.push({
+      x: centerX,
+      y: centerY,
+      radius: radius * (1 + intensity * 0.3), // Radio variable según intensidad (reducido de 0.5 a 0.3)
+      intensity,
+      clicks: nearbyClicks,
+      isCorrect,
+      colorLevel // 🎯 NUEVO: Nivel de color
+    });
+  });
+
+  return heatmapAreas;
+};
+
 const convertHitZonesToPercentageCoordinates = (
   hitZones: HitZone[] | undefined,
   imageNaturalSize?: { width: number; height: number }
@@ -88,6 +165,8 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
 
   const [visualClickPoints, setVisualClickPoints] = useState<Record<number, VisualClickPoint[]>>({});
   const [allClicksTracking, setAllClicksTracking] = useState<any[]>([]);
+  const [heatmapAreas, setHeatmapAreas] = useState<Record<number, HeatmapArea[]>>({});
+  const [showHeatmapMode, setShowHeatmapMode] = useState<boolean>(true);
 
   const {
     imageSelections,
@@ -147,6 +226,17 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
         } else {
           setAllClicksTracking(allClicks);
           setVisualClickPoints(allVisualPoints);
+
+          // 🎯 NUEVO: Crear heatmaps para cada imagen
+          const newHeatmapAreas: Record<number, HeatmapArea[]> = {};
+          Object.keys(allVisualPoints).forEach(imageIndexStr => {
+            const imageIndex = parseInt(imageIndexStr);
+            const clicksForImage = allClicks.filter(click => click.imageIndex === imageIndex);
+            if (clicksForImage.length > 0) {
+              newHeatmapAreas[imageIndex] = createHeatmapFromClicks(clicksForImage);
+            }
+          });
+          setHeatmapAreas(newHeatmapAreas);
         }
       } else {
 
@@ -179,6 +269,17 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
         if (allClicks.length > 0 || Object.keys(allVisualPoints).length > 0) {
           setAllClicksTracking(allClicks);
           setVisualClickPoints(allVisualPoints);
+
+          // 🎯 NUEVO: Crear heatmaps para cada imagen
+          const newHeatmapAreas: Record<number, HeatmapArea[]> = {};
+          Object.keys(allVisualPoints).forEach(imageIndexStr => {
+            const imageIndex = parseInt(imageIndexStr);
+            const clicksForImage = allClicks.filter(click => click.imageIndex === imageIndex);
+            if (clicksForImage.length > 0) {
+              newHeatmapAreas[imageIndex] = createHeatmapFromClicks(clicksForImage);
+            }
+          });
+          setHeatmapAreas(newHeatmapAreas);
         }
       }
     }
@@ -307,6 +408,33 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
             <p className="text-xs text-red-600 mt-1">
               DEBUG: allClicksTracking.length = {allClicksTracking.length} | visualClickPoints keys = {Object.keys(visualClickPoints).join(', ')}
             </p>
+            {/* 🎯 NUEVO: Control de modo de visualización */}
+            <div className="mt-2 flex items-center space-x-2">
+              <button
+                onClick={() => setShowHeatmapMode(!showHeatmapMode)}
+                className={`px-3 py-1 text-xs rounded-lg border transition-colors ${showHeatmapMode
+                  ? 'bg-blue-500 text-white border-blue-500'
+                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  }`}
+              >
+                {showHeatmapMode ? '🌡️ Heatmap' : '🔘 Clicks'}
+              </button>
+              {showHeatmapMode && heatmapAreas[currentImageIndex] && (
+                <span className="text-xs text-blue-600">
+                  {heatmapAreas[currentImageIndex].length} áreas de calor
+                </span>
+              )}
+              {/* 🎯 NUEVO: Leyenda de colores */}
+              {showHeatmapMode && (
+                <div className="mt-2 text-xs text-gray-600">
+                  <div className="flex items-center space-x-2">
+                    <span>🟡 Inicial</span>
+                    <span>🟠 Moderada</span>
+                    <span>🔴 Máxima</span>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
           <div className="text-xs text-blue-600">
             {Array.isArray(data) && data.map((p, i) => (
@@ -404,7 +532,7 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
                     );
                   })}
 
-                  {config.showHeatmap && currentImageClickPoints.length > 0 && (
+                  {config.showHeatmap && !showHeatmapMode && currentImageClickPoints.length > 0 && (
                     <>
                       {currentImageClickPoints.map((point, index) => {
 
@@ -416,11 +544,11 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
                         return (
                           <div
                             key={`${point.timestamp}-${index}`}
-                            className={`absolute w-3 h-3 rounded-full border-2 border-white shadow-lg pointer-events-none ${point.isCorrect ? 'bg-green-500' : 'bg-red-500'
+                            className={`absolute w-2 h-2 rounded-full border border-white shadow-sm pointer-events-none ${point.isCorrect ? 'bg-green-500' : 'bg-red-500'
                               }`}
                             style={{
-                              left: point.x - 6,
-                              top: point.y - 6,
+                              left: point.x - 4,
+                              top: point.y - 4,
                               zIndex: 10
                             }}
                             title={`Clic ${point.isCorrect ? 'correcto' : 'incorrecto'} - ${new Date(point.timestamp).toLocaleTimeString()}`}
@@ -430,7 +558,7 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
                     </>
                   )}
 
-                  {config.showHeatmap && allClicksTracking && Array.isArray(allClicksTracking) && (
+                  {config.showHeatmap && !showHeatmapMode && allClicksTracking && Array.isArray(allClicksTracking) && (
                     <>
                       {allClicksTracking
                         .filter(click => click.imageIndex === currentImageIndex)
@@ -443,21 +571,64 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
                           return (
                             <div
                               key={`${click.timestamp}-${index}`}
-                              className={`absolute w-4 h-4 rounded-full border-2 border-white shadow-lg pointer-events-none ${click.isCorrectHitzone ? 'bg-green-500' : 'bg-red-500'
+                              className={`absolute w-2 h-2 rounded-full border border-white shadow-sm pointer-events-none ${click.isCorrectHitzone ? 'bg-green-500' : 'bg-red-500'
                                 }`}
                               style={{
-                                left: click.x - 8,
-                                top: click.y - 8,
+                                left: click.x - 4,
+                                top: click.y - 4,
                                 zIndex: 10
                               }}
                               title={`Clic ${click.isCorrectHitzone ? 'correcto' : 'incorrecto'} - ${new Date(click.timestamp).toLocaleTimeString()}`}
-                            >
-                              <span className="absolute -top-1 -right-1 bg-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center border border-gray-300">
-                                {index + 1}
-                              </span>
-                            </div>
+                            />
                           );
                         })}
+                    </>
+                  )}
+
+                  {/* 🎯 NUEVO: RENDERIZAR HEATMAPS */}
+                  {showHeatmapMode && heatmapAreas[currentImageIndex] && heatmapAreas[currentImageIndex].length > 0 && (
+                    <>
+                      {heatmapAreas[currentImageIndex].map((area, index) => {
+                        if ((area.isCorrect && !config.showCorrectClicks) ||
+                          (!area.isCorrect && !config.showIncorrectClicks)) {
+                          return null;
+                        }
+
+                        const left = offsetX + area.x - area.radius;
+                        const top = offsetY + area.y - area.radius;
+                        const diameter = area.radius * 2;
+
+                        return (
+                          <div
+                            key={`heatmap-${index}`}
+                            className="absolute rounded-full pointer-events-none"
+                            style={{
+                              left,
+                              top,
+                              width: diameter,
+                              height: diameter,
+                              background: (() => {
+                                // 🎯 NUEVO: Sistema de colores progresivos con 90% de intensidad
+                                const baseOpacity = area.colorLevel === 'yellow' ? 0.6 : 0.7; // Aumentado a ~90% de intensidad
+                                const intensityOpacity = area.intensity * 0.2; // Reducido para no exceder 90%
+
+                                switch (area.colorLevel) {
+                                  case 'red':
+                                    return `radial-gradient(circle, rgba(239, 68, 68, ${baseOpacity + intensityOpacity}) 0%, rgba(239, 68, 68, ${0.3 + intensityOpacity * 0.3}) 70%, transparent 100%)`;
+                                  case 'orange':
+                                    return `radial-gradient(circle, rgba(249, 115, 22, ${baseOpacity + intensityOpacity}) 0%, rgba(249, 115, 22, ${0.3 + intensityOpacity * 0.3}) 70%, transparent 100%)`;
+                                  case 'yellow':
+                                  default:
+                                    return `radial-gradient(circle, rgba(234, 179, 8, ${baseOpacity + intensityOpacity}) 0%, rgba(234, 179, 8, ${0.3 + intensityOpacity * 0.3}) 70%, transparent 100%)`;
+                                }
+                              })(),
+                              border: 'none', // 🎯 NUEVO: Sin bordes
+                              zIndex: 15
+                            }}
+                            title={`Área de calor - ${area.clicks.length} clicks - Nivel: ${area.colorLevel === 'red' ? '🔴 Máxima coincidencia' : area.colorLevel === 'orange' ? '🟠 Coincidencia moderada' : '🟡 Coincidencia inicial'}`}
+                          />
+                        );
+                      })}
                     </>
                   )}
                 </div>
