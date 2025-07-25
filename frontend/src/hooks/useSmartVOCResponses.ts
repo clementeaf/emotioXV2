@@ -35,12 +35,6 @@ interface SmartVOCResults {
     participantName: string;
     timestamp: string;
   }>;
-  ncResponses: Array<{
-    text: string;
-    participantId: string;
-    participantName: string;
-    timestamp: string;
-  }>;
   npsScores: number[];
   csatScores: number[];
   cesScores: number[];
@@ -134,7 +128,6 @@ export const useSmartVOCResponses = (researchId: string) => {
         monthlyNPSData: [],
         smartVOCResponses: [],
         vocResponses: [],
-        ncResponses: [],
         npsScores: [],
         csatScores: [],
         cesScores: [],
@@ -151,7 +144,6 @@ export const useSmartVOCResponses = (researchId: string) => {
     const nevScores: number[] = [];
     const cvScores: number[] = [];
     const vocResponses: any[] = [];
-    const ncResponses: any[] = [];
 
     // Función para parsear valores
     const parseResponseValue = (response: any): number => {
@@ -216,13 +208,6 @@ export const useSmartVOCResponses = (researchId: string) => {
               }
             } else if (response.questionKey.toLowerCase().includes('voc')) {
               vocResponses.push({
-                text: parseResponseText(response.response),
-                participantId: participant.participantId,
-                participantName: 'Participante',
-                timestamp: response.timestamp
-              });
-            } else if (response.questionKey.toLowerCase().includes('nc')) {
-              ncResponses.push({
                 text: parseResponseText(response.response),
                 participantId: participant.participantId,
                 participantName: 'Participante',
@@ -311,7 +296,6 @@ export const useSmartVOCResponses = (researchId: string) => {
       monthlyNPSData,
       smartVOCResponses: allSmartVOCResponses,
       vocResponses,
-      ncResponses,
       npsScores,
       csatScores,
       cesScores,

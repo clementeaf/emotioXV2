@@ -30,8 +30,6 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({ questions, smartVOC
         return smartVOCData?.cvScores?.length > 0;
       case QuestionType.SMARTVOC_NEV:
         return smartVOCData?.nevScores?.length > 0;
-      case QuestionType.SMARTVOC_NC:
-        return smartVOCData?.ncResponses?.length > 0;
       default:
         return true; // Mostrar todas las preguntas por defecto
     }
@@ -62,8 +60,6 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({ questions, smartVOC
         return 'Customer Value (CV)';
       case QuestionType.SMARTVOC_NEV:
         return 'Net Emotional Value (NEV)';
-      case QuestionType.SMARTVOC_NC:
-        return 'Net Comments (NC)';
       default:
         return `Pregunta ${question.id}`;
     }
@@ -84,8 +80,6 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({ questions, smartVOC
         return 'Linear Scale question';
       case QuestionType.SMARTVOC_NEV:
         return 'Linear Scale question';
-      case QuestionType.SMARTVOC_NC:
-        return 'Comments question';
       default:
         return 'Question';
     }
@@ -252,34 +246,6 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({ questions, smartVOC
             neutrals: neutralVOC,
             neutralsTrend: 'down' as const,
             changePercentage: 10
-          }
-        };
-
-      case QuestionType.SMARTVOC_NC:
-        const ncResponses = smartVOCData?.ncResponses || [];
-        const totalNC = ncResponses.length;
-        const averageNC = totalNC > 0 ? Math.round((ncResponses.reduce((a: number, b: number) => a + b, 0) / totalNC) * 10) / 10 : 0;
-        const positiveComments = Math.round(ncResponses.length * 0.7);
-        const neutralNC = Math.round(ncResponses.length * 0.2);
-        const negativeComments = Math.round(ncResponses.length * 0.1);
-
-        return {
-          responses: { count: totalNC, timeAgo: '26s' },
-          score: averageNC,
-          distribution: [
-            { label: 'Positive Comments', percentage: positiveComments, color: '#10B981' },
-            { label: 'Neutral Comments', percentage: neutralNC, color: '#F59E0B' },
-            { label: 'Negative Comments', percentage: negativeComments, color: '#EF4444' }
-          ],
-          monthlyData: smartVOCData?.monthlyNCData || [],
-          loyaltyEvolution: {
-            promoters: positiveComments,
-            promotersTrend: 'up' as const,
-            detractors: negativeComments,
-            detractorsTrend: 'down' as const,
-            neutrals: neutralNC,
-            neutralsTrend: 'down' as const,
-            changePercentage: 15
           }
         };
 

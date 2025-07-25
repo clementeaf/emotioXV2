@@ -89,20 +89,6 @@ export const useSmartVOCState = (researchId: string) => {
         config: {
           type: 'text'
         }
-      },
-      {
-        id: QuestionType.SMARTVOC_NC,
-        type: QuestionType.SMARTVOC_NC,
-        title: '',
-        description: '',
-        instructions: '',
-        showConditionally: false,
-        config: {
-          type: 'scale',
-          scaleRange: { start: 1, end: 5 },
-          startLabel: '',
-          endLabel: ''
-        }
       }
     ],
     randomizeQuestions: false,
@@ -229,20 +215,6 @@ export const useSmartVOCState = (researchId: string) => {
           showConditionally: false,
           config: {
             type: 'text'
-          }
-        },
-        {
-          id: 'nc-template',
-          type: QuestionType.SMARTVOC_NC,
-          title: 'NC',
-          description: '',
-          instructions: '',
-          showConditionally: false,
-          config: {
-            type: 'scale',
-            scaleRange: { start: 1, end: 5 },
-            startLabel: '',
-            endLabel: ''
           }
         }
       ]

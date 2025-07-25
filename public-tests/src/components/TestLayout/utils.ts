@@ -13,9 +13,8 @@ export const QUESTION_TYPE_MAP = {
   smartvoc_csat: 'smartvoc_csat',
   smartvoc_ces: 'smartvoc_ces',
   smartvoc_cv: 'smartvoc_cv',
-  smartvoc_nps: 'smartvoc_nps',
-  smartvoc_nc: 'smartvoc_nc',
   smartvoc_nev: 'smartvoc_nev',
+  smartvoc_nps: 'smartvoc_nps',
   smartvoc_voc: 'smartvoc_voc',
 
   // Cognitive Task questions

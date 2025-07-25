@@ -75,19 +75,6 @@ export const QUESTION_TEMPLATES: Partial<Record<QuestionType, Omit<SmartVOCQuest
       maxLength: 500
     }
   },
-  [QuestionType.SMARTVOC_NC]: {
-    type: QuestionType.SMARTVOC_NC,
-    title: 'NC',
-    description: '',
-    instructions: '',
-    showConditionally: false,
-    config: {
-      type: 'scale',
-      scaleRange: { start: 1, end: 5 },
-      startLabel: 'Muy insatisfecho',
-      endLabel: 'Muy satisfecho'
-    }
-  },
 };
 
 /**

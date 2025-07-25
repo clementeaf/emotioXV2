@@ -357,27 +357,6 @@ const RENDERERS: Record<string, (args: any) => React.ReactNode> = {
     />
   ),
 
-  smartvoc_nc: ({ contentConfiguration, currentQuestionKey }) => (
-    <QuestionComponent
-      question={{
-        title: String(contentConfiguration?.title || 'Pregunta NC'),
-        questionKey: currentQuestionKey,
-        type: 'scale',
-        config: {
-          min: 0,
-          max: 10,
-          leftLabel: 'No lo recomendaría',
-          rightLabel: 'Lo recomendaría',
-          startLabel: 'No lo recomendaría',
-          endLabel: 'Lo recomendaría'
-        },
-        choices: [],
-        description: String(contentConfiguration?.description || '¿Qué tan probable es que recomiendes nuestro servicio?')
-      }}
-      currentStepKey={currentQuestionKey}
-    />
-  ),
-
   cognitive: ({ contentConfiguration, currentQuestionKey }) => (
     <QuestionComponent
       question={{

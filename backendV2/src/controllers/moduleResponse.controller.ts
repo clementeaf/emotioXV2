@@ -406,8 +406,7 @@ export class ModuleResponseController {
               neutrals: 0,
               timeSeriesData: [],
               smartVOCResponses: [],
-              vocResponses: [],
-              ncResponses: []
+              vocResponses: []
             },
             message: 'No hay participantes en esta investigación',
             status: 200
@@ -450,7 +449,6 @@ export class ModuleResponseController {
       const nevScores: number[] = [];
       const cvScores: number[] = [];
       const vocResponses: any[] = [];
-      const ncResponses: any[] = [];
 
       // Agrupar respuestas por fecha para time series
       const responsesByDate: { [key: string]: any[] } = {};
@@ -496,13 +494,6 @@ export class ModuleResponseController {
                 }
               } else if (response.questionKey.toLowerCase().includes('voc')) {
                 vocResponses.push({
-                  text: parseResponseText(response.response),
-                  participantId: participant.id,
-                  participantName: participant.name || 'Participante',
-                  timestamp: response.timestamp
-                });
-              } else if (response.questionKey.toLowerCase().includes('nc')) {
-                ncResponses.push({
                   text: parseResponseText(response.response),
                   participantId: participant.id,
                   participantName: participant.name || 'Participante',
@@ -598,7 +589,6 @@ export class ModuleResponseController {
         // Respuestas detalladas
         smartVOCResponses: allSmartVOCResponses,
         vocResponses,
-        ncResponses,
 
         // Scores individuales para cálculos adicionales
         npsScores,

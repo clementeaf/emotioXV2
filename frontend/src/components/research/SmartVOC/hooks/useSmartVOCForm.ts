@@ -162,7 +162,6 @@ export const useSmartVOCForm = (researchId: string) => {
         case 'NEV': return QuestionType.SMARTVOC_NEV;
         case 'NPS': return QuestionType.SMARTVOC_NPS;
         case 'VOC': return QuestionType.SMARTVOC_VOC;
-        case 'NC': return QuestionType.SMARTVOC_NC;
         default: return `smartvoc_${type}`;
       }
     };

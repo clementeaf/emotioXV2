@@ -5,7 +5,6 @@ export enum QuestionType {
   SMARTVOC_NEV = 'smartvoc_nev',
   SMARTVOC_NPS = 'smartvoc_nps',
   SMARTVOC_VOC = 'smartvoc_voc',
-  SMARTVOC_NC = 'smartvoc_nc',
 
   // Cognitive Task types
   COGNITIVE_SHORT_TEXT = 'cognitive_short_text',
