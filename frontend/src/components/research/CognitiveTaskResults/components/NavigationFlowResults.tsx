@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigationFlowConfig } from '../../../../hooks/useNavigationFlowConfig';
 import { cognitiveTaskService } from '../../../../services/cognitiveTaskService';
 import { ConvertedHitZone, HitZone, ImageFile, NavigationFlowResultsProps, VisualClickPoint } from '../types';
+import { TransparentOverlay } from './TransparentOverlay';
 
 const convertHitZonesToPercentageCoordinates = (
   hitZones: HitZone[] | undefined,
@@ -253,15 +254,19 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
               </div>
             </div>
           ) : (
-            <img
-              ref={imageRef}
-              src={selectedImage.url}
-              alt={selectedImage.name || `Imagen ${currentImageIndex + 1}`}
-              className="w-full h-auto object-contain bg-white"
-              loading="lazy"
-              style={{ display: 'block' }}
-              onLoad={handleImageLoad}
-            />
+            <>
+              <img
+                ref={imageRef}
+                src={selectedImage.url}
+                alt={selectedImage.name || `Imagen ${currentImageIndex + 1}`}
+                className="w-full h-auto object-contain bg-white"
+                loading="lazy"
+                style={{ display: 'block' }}
+                onLoad={handleImageLoad}
+              />
+              {/* Capa transparente azulada con 30% de opacidad */}
+              <TransparentOverlay />
+            </>
           )}
 
           <div className="absolute top-2 left-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded z-20">
