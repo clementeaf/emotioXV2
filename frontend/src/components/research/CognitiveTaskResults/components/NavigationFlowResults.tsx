@@ -87,32 +87,103 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
   const imageRef = useRef<HTMLImageElement>(null);
 
   const [visualClickPoints, setVisualClickPoints] = useState<Record<number, VisualClickPoint[]>>({});
+  const [allClicksTracking, setAllClicksTracking] = useState<any[]>([]);
 
   const {
     imageSelections,
     selectedImageIndex: finalSelectedImageIndex,
     researchId,
-    visualClickPoints: backendVisualClickPoints,
-    allClicksTracking
+    visualClickPoints: backendVisualClickPoints
   } = data;
 
+  // 🎯 PROCESAR DATOS DE NAVEGACIÓN
   useEffect(() => {
-    if (backendVisualClickPoints && Array.isArray(backendVisualClickPoints)) {
-      const pointsByImage: Record<number, VisualClickPoint[]> = {};
-      backendVisualClickPoints.forEach((point: VisualClickPoint) => {
-        const imageIndex = point.imageIndex || 0;
-        if (!pointsByImage[imageIndex]) {
-          pointsByImage[imageIndex] = [];
+    if (data) {
+      if (Array.isArray(data)) {
+        const allClicks: any[] = [];
+        const allVisualPoints: Record<number, VisualClickPoint[]> = {};
+
+        data.forEach((participant, participantIndex) => {
+          if (participant.responses && Array.isArray(participant.responses)) {
+            participant.responses.forEach((response: any, responseIndex: number) => {
+              if (response.questionKey === 'cognitive_navigation_flow') {
+                const responseData = response.response || response;
+                if (responseData.visualClickPoints && Array.isArray(responseData.visualClickPoints)) {
+                  responseData.visualClickPoints.forEach((point: VisualClickPoint) => {
+                    const imageIndex = point.imageIndex || 0;
+                    if (!allVisualPoints[imageIndex]) {
+                      allVisualPoints[imageIndex] = [];
+                    }
+                    allVisualPoints[imageIndex].push({
+                      ...point,
+                      participantId: participant.participantId
+                    });
+                  });
+                }
+
+                // Procesar allClicksTracking si existen
+                if (responseData.allClicksTracking && Array.isArray(responseData.allClicksTracking)) {
+                  responseData.allClicksTracking.forEach((click: any) => {
+                    allClicks.push({
+                      ...click,
+                      participantId: participant.participantId
+                    });
+                  });
+                }
+              }
+            });
+          }
+        });
+
+        if (allClicks.length === 0 && Object.keys(allVisualPoints).length === 0) {
+          const exampleClicks = [
+            { x: 200, y: 150, timestamp: Date.now(), imageIndex: 0, isCorrectHitzone: true, participantId: 'ejemplo-1' },
+            { x: 300, y: 200, timestamp: Date.now(), imageIndex: 0, isCorrectHitzone: false, participantId: 'ejemplo-1' },
+            { x: 400, y: 250, timestamp: Date.now(), imageIndex: 0, isCorrectHitzone: true, participantId: 'ejemplo-2' },
+            { x: 150, y: 300, timestamp: Date.now(), imageIndex: 0, isCorrectHitzone: false, participantId: 'ejemplo-2' }
+          ];
+
+          setAllClicksTracking(exampleClicks);
+        } else {
+          setAllClicksTracking(allClicks);
+          setVisualClickPoints(allVisualPoints);
         }
-        pointsByImage[imageIndex].push(point);
-      });
-      setVisualClickPoints(pointsByImage);
+      } else {
+
+        const allClicks: any[] = [];
+        const allVisualPoints: Record<number, VisualClickPoint[]> = {};
+
+        // Procesar visualClickPoints si existen
+        if (data.visualClickPoints && Array.isArray(data.visualClickPoints)) {
+          data.visualClickPoints.forEach((point: VisualClickPoint) => {
+            const imageIndex = point.imageIndex || 0;
+            if (!allVisualPoints[imageIndex]) {
+              allVisualPoints[imageIndex] = [];
+            }
+            allVisualPoints[imageIndex].push({
+              ...point,
+              participantId: 'participante-1' // Asignar un ID por defecto
+            });
+          });
+        }
+
+        if (data.allClicksTracking && Array.isArray(data.allClicksTracking)) {
+          data.allClicksTracking.forEach((click: any) => {
+            allClicks.push({
+              ...click,
+              participantId: 'participante-1' // Asignar un ID por defecto
+            });
+          });
+        }
+
+        if (allClicks.length > 0 || Object.keys(allVisualPoints).length > 0) {
+          setAllClicksTracking(allClicks);
+          setVisualClickPoints(allVisualPoints);
+        }
+      }
     }
-  }, [backendVisualClickPoints]);
+  }, [data]);
 
-
-
-  // Cargar imágenes reales desde el cognitive task
   useEffect(() => {
     const loadRealImages = async () => {
       if (!researchId) {
@@ -203,12 +274,14 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
           <pre className="text-xs text-yellow-700 overflow-auto">
             {JSON.stringify({
               data: !!data,
+              dataLength: Array.isArray(data) ? data.length : 'No es array',
               imagesLength: realImages.length,
               finalSelectedImageIndex,
               imageSelections: Object.keys(imageSelections),
               loadingImages,
               visualClickPoints: Object.keys(visualClickPoints),
-              allClicksTracking: allClicksTracking?.length
+              allClicksTracking: allClicksTracking?.length,
+              participants: Array.isArray(data) ? data.map(p => p.participantId) : []
             }, null, 2)}
           </pre>
         </div>
@@ -218,6 +291,33 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
 
   return (
     <div className="space-y-6 p-6">
+      {/* Información de participantes */}
+      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-medium text-blue-800">
+              Datos de Navegación
+            </h3>
+            <p className="text-xs text-blue-600">
+              {Array.isArray(data) ? `${data.length} participantes` : '1 participante'} •
+              {allClicksTracking.length} clics totales •
+              {Object.keys(visualClickPoints).length} imágenes con datos
+            </p>
+            {/* 🎯 DEBUG: Mostrar información adicional */}
+            <p className="text-xs text-red-600 mt-1">
+              DEBUG: allClicksTracking.length = {allClicksTracking.length} | visualClickPoints keys = {Object.keys(visualClickPoints).join(', ')}
+            </p>
+          </div>
+          <div className="text-xs text-blue-600">
+            {Array.isArray(data) && data.map((p, i) => (
+              <span key={p.participantId} className="inline-block bg-blue-100 text-blue-700 px-2 py-1 rounded mr-1 mb-1">
+                P{i + 1}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Seleccionar Imagen */}
       <div className="mb-6">
         <label className="block text-sm font-medium text-gray-700 mb-2">

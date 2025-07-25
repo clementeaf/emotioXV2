@@ -200,6 +200,7 @@ export interface VisualClickPoint {
   timestamp: number;
   isCorrect: boolean;
   imageIndex: number;
+  participantId?: string;
 }
 
 // 🎯 INTERFACE PARA CLICS DE RASTREO (IGUAL QUE EN NavigationFlowTask.tsx)
@@ -210,6 +211,7 @@ export interface ClickTrackingData {
   hitzoneId?: string;
   imageIndex: number;
   isCorrectHitzone: boolean;
+  participantId?: string;
 }
 
 export interface NavigationFlowData {

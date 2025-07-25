@@ -146,6 +146,7 @@ export interface ProcessedCognitiveData {
       timestamp: number;
       isCorrect: boolean;
       imageIndex: number;
+      participantId?: string;
     }>;
     // 🎯 NUEVO: DATOS DE RASTREO COMPLETO DE CLICS
     allClicksTracking?: Array<{
@@ -155,6 +156,7 @@ export interface ProcessedCognitiveData {
       hitzoneId?: string;
       imageIndex: number;
       isCorrectHitzone: boolean;
+      participantId?: string;
     }>;
   };
 }
@@ -310,16 +312,34 @@ export function useCognitiveTaskResults(researchId: string) {
                 });
               }
 
-              // 🎯 PROCESAR visualClickPoints
+              // 🎯 PROCESAR visualClickPoints - ACUMULAR en lugar de sobrescribir
               if (navResponse.visualClickPoints && Array.isArray(navResponse.visualClickPoints)) {
-                questionData.navigationFlowData.visualClickPoints = navResponse.visualClickPoints;
-                console.log(`[useCognitiveTaskResults] 🎯 Procesando ${navResponse.visualClickPoints.length} puntos visuales de visualClickPoints`);
+                if (!questionData.navigationFlowData.visualClickPoints) {
+                  questionData.navigationFlowData.visualClickPoints = [];
+                }
+                // Agregar los puntos del participante actual con su ID
+                const pointsWithParticipantId = navResponse.visualClickPoints.map(point => ({
+                  ...point,
+                  participantId: participant.participantId
+                }));
+                questionData.navigationFlowData.visualClickPoints.push(...pointsWithParticipantId);
+                console.log(`[useCognitiveTaskResults] 🎯 Procesando ${navResponse.visualClickPoints.length} puntos visuales de visualClickPoints del participante ${participant.participantId}`);
+                console.log(`[useCognitiveTaskResults] 📊 Total acumulado de visualClickPoints: ${questionData.navigationFlowData.visualClickPoints.length}`);
               }
 
-              // 🎯 PROCESAR allClicksTracking
+              // 🎯 PROCESAR allClicksTracking - ACUMULAR en lugar de sobrescribir
               if (navResponse.allClicksTracking && Array.isArray(navResponse.allClicksTracking)) {
-                questionData.navigationFlowData.allClicksTracking = navResponse.allClicksTracking;
-                console.log(`[useCognitiveTaskResults] 🔥 Procesando ${navResponse.allClicksTracking.length} clics de allClicksTracking`);
+                if (!questionData.navigationFlowData.allClicksTracking) {
+                  questionData.navigationFlowData.allClicksTracking = [];
+                }
+                // Agregar los clicks del participante actual con su ID
+                const clicksWithParticipantId = navResponse.allClicksTracking.map(click => ({
+                  ...click,
+                  participantId: participant.participantId
+                }));
+                questionData.navigationFlowData.allClicksTracking.push(...clicksWithParticipantId);
+                console.log(`[useCognitiveTaskResults] 🔥 Procesando ${navResponse.allClicksTracking.length} clics de allClicksTracking del participante ${participant.participantId}`);
+                console.log(`[useCognitiveTaskResults] 📊 Total acumulado de allClicksTracking: ${questionData.navigationFlowData.allClicksTracking.length}`);
               }
             }
             break;
