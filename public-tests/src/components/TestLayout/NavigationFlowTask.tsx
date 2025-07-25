@@ -406,7 +406,7 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
   };
 
   return (
-    <div className="flex flex-col bg-white p-6">
+    <div className="flex flex-col bg-white p-6" data-testid="navigation-flow-task">
       <div className="w-full flex flex-col items-center">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-gray-800 mb-4">
@@ -486,6 +486,47 @@ export const NavigationFlowTask: React.FC<NavigationFlowTaskProps> = ({ stepConf
                           const imgRect = imageRef.current?.getBoundingClientRect();
                           const clickX = e.clientX - (imgRect?.left ?? 0);
                           const clickY = e.clientY - (imgRect?.top ?? 0);
+
+                          // 🎯 PRIMERO: CREAR PUNTO VISUAL VERDE (CLICK CORRECTO EN HITZONE)
+                          const timestamp = Date.now();
+                          const visualPoint: VisualClickPoint = {
+                            x: clickX,
+                            y: clickY,
+                            timestamp,
+                            isCorrect: true, // Verde porque está en hitzone
+                            imageIndex: localSelectedImageIndex
+                          };
+
+                          setVisualClickPoints(prev => {
+                            const newPoints = {
+                              ...prev,
+                              [localSelectedImageIndex]: [...(prev[localSelectedImageIndex] || []), visualPoint]
+                            };
+
+                            // 🎯 PERSISTIR INMEDIATAMENTE
+                            setTimeout(() => persistVisualClickPoints(), 0);
+
+                            return newPoints;
+                          });
+
+                          // 🎯 REGISTRAR EN RASTREO COMPLETO
+                          const clickData: ClickTrackingData = {
+                            x: clickX,
+                            y: clickY,
+                            timestamp,
+                            hitzoneId: hitzone.id,
+                            imageIndex: localSelectedImageIndex,
+                            isCorrectHitzone: true
+                          };
+
+                          setAllClicksTracking(prev => [...prev, clickData]);
+
+                          console.log('🎯 Punto verde creado para click en hitzone:', {
+                            hitzoneId: hitzone.id,
+                            position: { x: clickX, y: clickY },
+                            isCorrect: true
+                          });
+
                           // 2. Posición del hitzone dentro de la imagen renderizada
                           const left = offsetX + (hitzone.originalCoords?.x ?? 0) * (drawWidth / imageNaturalSize.width);
                           const top = offsetY + (hitzone.originalCoords?.y ?? 0) * (drawHeight / imageNaturalSize.height);
