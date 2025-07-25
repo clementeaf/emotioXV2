@@ -160,4 +160,89 @@ export interface SummaryMetrics {
   trendVsHistory: number;
   trendVsLastEvaluation: string;
   trendVsAverage: number;
-} 
+}
+
+export interface HitZone {
+  id: string;
+  region: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+}
+
+export interface ConvertedHitZone {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  originalCoords?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+}
+
+export interface ImageFile {
+  id: string;
+  name: string;
+  url: string;
+  hitZones?: HitZone[];
+}
+
+// 🎯 INTERFACE PARA PUNTOS VISUALES (IGUAL QUE EN NavigationFlowTask.tsx)
+export interface VisualClickPoint {
+  x: number;
+  y: number;
+  timestamp: number;
+  isCorrect: boolean;
+  imageIndex: number;
+}
+
+// 🎯 INTERFACE PARA CLICS DE RASTREO (IGUAL QUE EN NavigationFlowTask.tsx)
+export interface ClickTrackingData {
+  x: number;
+  y: number;
+  timestamp: number;
+  hitzoneId?: string;
+  imageIndex: number;
+  isCorrectHitzone: boolean;
+}
+
+export interface NavigationFlowData {
+  question: string;
+  description?: string;
+  totalParticipants: number;
+  totalSelections: number;
+  researchId?: string;
+  imageSelections: {
+    [imageIndex: string]: {
+      hitzoneId: string;
+      click: {
+        x: number;
+        y: number;
+        hitzoneWidth: number;
+        hitzoneHeight: number;
+      };
+    };
+  };
+  selectedHitzone?: string;
+  clickPosition?: {
+    x: number;
+    y: number;
+    hitzoneWidth: number;
+    hitzoneHeight: number;
+  };
+  selectedImageIndex?: number;
+  // 🎯 NUEVO: PUNTOS VISUALES PERSISTIDOS
+  visualClickPoints?: VisualClickPoint[];
+  // 🎯 NUEVO: DATOS DE RASTREO COMPLETO DE CLICS
+  allClicksTracking?: ClickTrackingData[];
+}
+
+export interface NavigationFlowResultsProps {
+  data: NavigationFlowData;
+}

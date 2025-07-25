@@ -1,90 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useNavigationFlowConfig } from '../../../../hooks/useNavigationFlowConfig';
 import { cognitiveTaskService } from '../../../../services/cognitiveTaskService';
-
-interface HitZone {
-  id: string;
-  region: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  };
-}
-
-interface ConvertedHitZone {
-  id: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  originalCoords?: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  };
-}
-
-interface ImageFile {
-  id: string;
-  name: string;
-  url: string;
-  hitZones?: HitZone[];
-}
-
-// 🎯 INTERFACE PARA PUNTOS VISUALES (IGUAL QUE EN NavigationFlowTask.tsx)
-interface VisualClickPoint {
-  x: number;
-  y: number;
-  timestamp: number;
-  isCorrect: boolean;
-  imageIndex: number;
-}
-
-// 🎯 INTERFACE PARA CLICS DE RASTREO (IGUAL QUE EN NavigationFlowTask.tsx)
-interface ClickTrackingData {
-  x: number;
-  y: number;
-  timestamp: number;
-  hitzoneId?: string;
-  imageIndex: number;
-  isCorrectHitzone: boolean;
-}
-
-export interface NavigationFlowData {
-  question: string;
-  description?: string;
-  totalParticipants: number;
-  totalSelections: number;
-  researchId?: string;
-  imageSelections: {
-    [imageIndex: string]: {
-      hitzoneId: string;
-      click: {
-        x: number;
-        y: number;
-        hitzoneWidth: number;
-        hitzoneHeight: number;
-      };
-    };
-  };
-  selectedHitzone?: string;
-  clickPosition?: {
-    x: number;
-    y: number;
-    hitzoneWidth: number;
-    hitzoneHeight: number;
-  };
-  selectedImageIndex?: number;
-  // 🎯 NUEVO: PUNTOS VISUALES PERSISTIDOS
-  visualClickPoints?: VisualClickPoint[];
-  // 🎯 NUEVO: DATOS DE RASTREO COMPLETO DE CLICS
-  allClicksTracking?: ClickTrackingData[];
-}
-
-interface NavigationFlowResultsProps {
-  data: NavigationFlowData;
-}
+import { ConvertedHitZone, HitZone, ImageFile, NavigationFlowResultsProps, VisualClickPoint } from '../types';
 
 const convertHitZonesToPercentageCoordinates = (
   hitZones: HitZone[] | undefined,
@@ -156,43 +73,28 @@ const convertHitZonesToPercentageCoordinates = (
 };
 
 export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ data }) => {
+  const {
+    config,
+    placeholderImages
+  } = useNavigationFlowConfig();
+
   const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
-  const [showHeatmap, setShowHeatmap] = useState<boolean>(true);
-  const [showCorrectClicks, setShowCorrectClicks] = useState<boolean>(true);
-  const [showIncorrectClicks, setShowIncorrectClicks] = useState<boolean>(true);
   const [imageNaturalSize, setImageNaturalSize] = useState<{ width: number; height: number } | null>(null);
   const [imgRenderSize, setImgRenderSize] = useState<{ width: number; height: number } | null>(null);
   const [realImages, setRealImages] = useState<ImageFile[]>([]);
   const [loadingImages, setLoadingImages] = useState(true);
   const imageRef = useRef<HTMLImageElement>(null);
 
-  // 🎯 ESTADO PARA PUNTOS VISUALES PERSISTIDOS (IGUAL QUE EN NavigationFlowTask.tsx)
   const [visualClickPoints, setVisualClickPoints] = useState<Record<number, VisualClickPoint[]>>({});
 
-  // 🎯 ESTADO PARA ESTADÍSTICAS DE CLICS
-  const [clickStats, setClickStats] = useState({
-    totalClicks: 0,
-    correctClicks: 0,
-    incorrectClicks: 0,
-    accuracyRate: 0
-  });
-
-  // Usar los datos que ya están procesados
   const {
-    question,
-    description,
-    totalParticipants,
-    totalSelections,
     imageSelections,
-    selectedHitzone,
-    clickPosition,
     selectedImageIndex: finalSelectedImageIndex,
     researchId,
     visualClickPoints: backendVisualClickPoints,
     allClicksTracking
   } = data;
 
-  // 🎯 CARGAR PUNTOS VISUALES DESDE EL BACKEND (IGUAL QUE EN NavigationFlowTask.tsx)
   useEffect(() => {
     if (backendVisualClickPoints && Array.isArray(backendVisualClickPoints)) {
       const pointsByImage: Record<number, VisualClickPoint[]> = {};
@@ -204,34 +106,10 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
         pointsByImage[imageIndex].push(point);
       });
       setVisualClickPoints(pointsByImage);
-      console.log('🎯 Puntos visuales cargados desde backend:', pointsByImage);
     }
   }, [backendVisualClickPoints]);
 
-  // 🎯 PROCESAR ESTADÍSTICAS DE CLICS
-  useEffect(() => {
-    if (allClicksTracking && Array.isArray(allClicksTracking)) {
-      const total = allClicksTracking.length;
-      const correct = allClicksTracking.filter(click => click.isCorrectHitzone).length;
-      const incorrect = total - correct;
-      const accuracy = total > 0 ? (correct / total) * 100 : 0;
 
-      setClickStats({
-        totalClicks: total,
-        correctClicks: correct,
-        incorrectClicks: incorrect,
-        accuracyRate: accuracy
-      });
-
-      console.log('📊 Estadísticas de clics procesadas:', {
-        total,
-        correct,
-        incorrect,
-        accuracy: `${accuracy.toFixed(1)}%`,
-        clicks: allClicksTracking
-      });
-    }
-  }, [allClicksTracking]);
 
   // Cargar imágenes reales desde el cognitive task
   useEffect(() => {
@@ -251,14 +129,7 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
           ) as any;
 
           if (navigationQuestion?.files && navigationQuestion.files.length > 0) {
-            // Convertir los archivos a ImageFile con hitzones
             const imagesWithHitzones: ImageFile[] = navigationQuestion.files.map((file: any, index: number) => {
-              console.log(`📋 Archivo ${index + 1}:`, {
-                name: file.name,
-                hitZones: file.hitZones,
-                hitZonesLength: file.hitZones?.length,
-                hitZonesStructure: file.hitZones?.[0]
-              });
               return {
                 id: file.id || String(index + 1),
                 name: file.name || `Imagen ${index + 1}`,
@@ -267,33 +138,16 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
               };
             });
 
-            console.log('🖼️ Imágenes con hitzones creadas:', imagesWithHitzones);
-            console.log('🔗 URLs de imágenes:', imagesWithHitzones.map(img => ({ name: img.name, url: img.url })));
             setRealImages(imagesWithHitzones);
           } else {
-            // Fallback a imágenes placeholder si no hay archivos
-            setRealImages([
-              { id: '1', name: 'Imagen 1', url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="%23f8fafc"/><text x="400" y="300" font-family="Arial" font-size="24" text-anchor="middle" dominant-baseline="middle" fill="%23666">Imagen 1</text></svg>', hitZones: [] },
-              { id: '2', name: 'Imagen 2', url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="%23f8fafc"/><text x="400" y="300" font-family="Arial" font-size="24" text-anchor="middle" dominant-baseline="middle" fill="%23666">Imagen 2</text></svg>', hitZones: [] },
-              { id: '3', name: 'Imagen 3', url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="%23f8fafc"/><text x="400" y="300" font-family="Arial" font-size="24" text-anchor="middle" dominant-baseline="middle" fill="%23666">Imagen 3</text></svg>', hitZones: [] }
-            ]);
+            setRealImages(placeholderImages);
           }
         } else {
-          // Fallback a imágenes placeholder
-          setRealImages([
-            { id: '1', name: 'Imagen 1', url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="%23f8fafc"/><text x="400" y="300" font-family="Arial" font-size="24" text-anchor="middle" dominant-baseline="middle" fill="%23666">Imagen 1</text></svg>', hitZones: [] },
-            { id: '2', name: 'Imagen 2', url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="%23f8fafc"/><text x="400" y="300" font-family="Arial" font-size="24" text-anchor="middle" dominant-baseline="middle" fill="%23666">Imagen 2</text></svg>', hitZones: [] },
-            { id: '3', name: 'Imagen 3', url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="%23f8fafc"/><text x="400" y="300" font-family="Arial" font-size="24" text-anchor="middle" dominant-baseline="middle" fill="%23666">Imagen 3</text></svg>', hitZones: [] }
-          ]);
+          setRealImages(placeholderImages);
         }
       } catch (error) {
         console.error('Error cargando imágenes reales:', error);
-        // Fallback a imágenes placeholder
-        setRealImages([
-          { id: '1', name: 'Imagen 1', url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="%23f8fafc"/><text x="400" y="300" font-family="Arial" font-size="24" text-anchor="middle" dominant-baseline="middle" fill="%23666">Imagen 1</text></svg>', hitZones: [] },
-          { id: '2', name: 'Imagen 2', url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="%23f8fafc"/><text x="400" y="300" font-family="Arial" font-size="24" text-anchor="middle" dominant-baseline="middle" fill="%23666">Imagen 2</text></svg>', hitZones: [] },
-          { id: '3', name: 'Imagen 3', url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="%23f8fafc"/><text x="400" y="300" font-family="Arial" font-size="24" text-anchor="middle" dominant-baseline="middle" fill="%23666">Imagen 3</text></svg>', hitZones: [] }
-        ]);
+        setRealImages(placeholderImages);
       } finally {
         setLoadingImages(false);
       }
@@ -302,7 +156,6 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
     loadRealImages();
   }, [researchId]);
 
-  // Usar el selectedImageIndex del backend como prioridad, pero permitir selección manual
   const currentImageIndex = selectedImageIndex ?? finalSelectedImageIndex ?? 0;
 
   const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>): void => {
@@ -338,47 +191,7 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
     ? convertHitZonesToPercentageCoordinates(selectedImage.hitZones, imageNaturalSize || undefined)
     : [];
 
-  // 🎯 OBTENER PUNTOS VISUALES PARA LA IMAGEN ACTUAL (IGUAL QUE EN NavigationFlowTask.tsx)
   const currentImageClickPoints = visualClickPoints[currentImageIndex] || [];
-
-  console.log('🎯 Hitzones disponibles:', {
-    selectedImage: selectedImage?.name,
-    hitZones: selectedImage?.hitZones,
-    hitZonesLength: selectedImage?.hitZones?.length,
-    hitZonesStructure: selectedImage?.hitZones?.[0],
-    availableHitzones: availableHitzones.length,
-    imageNaturalSize,
-    imgRenderSize,
-    currentImageClickPoints: currentImageClickPoints.length,
-    visualClickPointsKeys: Object.keys(visualClickPoints),
-    allClicksTrackingLength: allClicksTracking?.length
-  });
-
-  // 🎯 DEBUG: Mostrar puntos visuales para la imagen actual
-  console.log('🎯 Puntos visuales para imagen', currentImageIndex, ':', currentImageClickPoints);
-
-  const currentSelection = imageSelections[currentImageIndex.toString()];
-
-  console.log('🔍 NavigationFlowResults Debug:', {
-    selectedImageIndex,
-    finalSelectedImageIndex,
-    currentImageIndex,
-    imageSelections,
-    images: realImages.length,
-    'selectedImageIndex from backend': finalSelectedImageIndex,
-    'will show image': currentImageIndex,
-    'data received': !!data,
-    'loadingImages': loadingImages,
-    'selectedImage': selectedImage,
-    'availableHitzones': availableHitzones.length,
-    'currentSelection': currentSelection,
-    'showHeatmap': showHeatmap,
-    'visualClickPoints': Object.keys(visualClickPoints),
-    'currentImageClickPoints': currentImageClickPoints.length,
-    'allClicksTracking': allClicksTracking?.length,
-    'backendVisualClickPoints': backendVisualClickPoints?.length,
-    'data keys': Object.keys(data || {})
-  });
 
   if (!data || realImages.length === 0) {
     return (
@@ -414,7 +227,6 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
             <button
               key={index}
               onClick={() => {
-                console.log('🖱️ Click en imagen:', index);
                 setSelectedImageIndex(index);
               }}
               className={`px-4 py-2 rounded-lg border transition-colors ${currentImageIndex === index
@@ -428,9 +240,7 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
         </div>
       </div>
 
-      {/* Área de visualización */}
       <div className="mb-6">
-        {/* Contenedor de imagen */}
         <div
           className="relative w-full max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden"
           style={{ aspectRatio: imageNaturalSize ? `${imageNaturalSize.width} / ${imageNaturalSize.height}` : undefined }}
@@ -454,12 +264,10 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
             />
           )}
 
-          {/* Badge de demostración */}
           <div className="absolute top-2 left-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded z-20">
             {loadingImages ? 'Cargando...' : `Imagen ${currentImageIndex + 1}`}
           </div>
 
-          {/* Renderizado de hitzones y clicks */}
           {imageNaturalSize && imgRenderSize && !loadingImages && (
             (() => {
               const { drawWidth, drawHeight, offsetX, offsetY } = getImageDrawRect(imageNaturalSize, imgRenderSize);
@@ -474,19 +282,6 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
                     const width = (hitzone.originalCoords?.width ?? 0) * (drawWidth / imageNaturalSize.width);
                     const height = (hitzone.originalCoords?.height ?? 0) * (drawHeight / imageNaturalSize.height);
 
-                    console.log('🎯 Renderizando hitzone:', {
-                      hitzoneId: hitzone.id,
-                      originalCoords: hitzone.originalCoords,
-                      left,
-                      top,
-                      width,
-                      height,
-                      drawWidth,
-                      drawHeight,
-                      offsetX,
-                      offsetY
-                    });
-
                     return (
                       <div
                         key={hitzone.id}
@@ -500,27 +295,16 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
                         }}
                         title={`Zona interactiva: ${hitzone.id}`}
                       >
-                        {/* 🎯 SIN FEEDBACK VISUAL - IGUAL QUE EN NavigationFlowTask.tsx */}
                       </div>
                     );
                   })}
 
-                  {/* 🎯 RENDERIZAR PUNTOS VISUALES PERSISTIDOS (IGUAL QUE EN NavigationFlowTask.tsx) */}
-                  {showHeatmap && currentImageClickPoints.length > 0 && (
+                  {config.showHeatmap && currentImageClickPoints.length > 0 && (
                     <>
-                      {console.log('🎯 Renderizando', currentImageClickPoints.length, 'puntos visuales para imagen', currentImageIndex)}
                       {currentImageClickPoints.map((point, index) => {
-                        console.log('🎯 Renderizando punto visual:', {
-                          index,
-                          coords: { x: point.x, y: point.y },
-                          isCorrect: point.isCorrect,
-                          imageIndex: point.imageIndex,
-                          currentImageIndex
-                        });
 
-                        // 🎯 MOSTRAR SOLO SI ESTÁ HABILITADO EL TIPO DE CLIC
-                        if ((point.isCorrect && !showCorrectClicks) ||
-                          (!point.isCorrect && !showIncorrectClicks)) {
+                        if ((point.isCorrect && !config.showCorrectClicks) ||
+                          (!point.isCorrect && !config.showIncorrectClicks)) {
                           return null;
                         }
 
@@ -541,24 +325,13 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
                     </>
                   )}
 
-                  {/* 🎯 RENDERIZAR TODOS LOS CLICS DE allClicksTracking (COMO FALLBACK) */}
-                  {showHeatmap && allClicksTracking && Array.isArray(allClicksTracking) && (
+                  {config.showHeatmap && allClicksTracking && Array.isArray(allClicksTracking) && (
                     <>
-                      {console.log('🎯 Usando allClicksTracking como fallback, puntos para imagen', currentImageIndex, ':', allClicksTracking.filter(click => click.imageIndex === currentImageIndex).length)}
                       {allClicksTracking
                         .filter(click => click.imageIndex === currentImageIndex)
                         .map((click, index) => {
-                          console.log('🎯 Renderizando clic de allClicksTracking:', {
-                            index,
-                            coords: { x: click.x, y: click.y },
-                            isCorrect: click.isCorrectHitzone,
-                            imageIndex: click.imageIndex,
-                            currentImageIndex
-                          });
-
-                          // 🎯 MOSTRAR SOLO SI ESTÁ HABILITADO EL TIPO DE CLIC
-                          if ((click.isCorrectHitzone && !showCorrectClicks) ||
-                            (!click.isCorrectHitzone && !showIncorrectClicks)) {
+                          if ((click.isCorrectHitzone && !config.showCorrectClicks) ||
+                            (!click.isCorrectHitzone && !config.showIncorrectClicks)) {
                             return null;
                           }
 
