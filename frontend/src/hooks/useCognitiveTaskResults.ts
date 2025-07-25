@@ -139,6 +139,14 @@ export interface ProcessedCognitiveData {
       hitzoneHeight: number;
     };
     selectedImageIndex?: number;
+    // 🎯 NUEVO: PUNTOS VISUALES PERSISTIDOS
+    visualClickPoints?: Array<{
+      x: number;
+      y: number;
+      timestamp: number;
+      isCorrect: boolean;
+      imageIndex: number;
+    }>;
     // 🎯 NUEVO: DATOS DE RASTREO COMPLETO DE CLICS
     allClicksTracking?: Array<{
       x: number;
@@ -300,6 +308,12 @@ export function useCognitiveTaskResults(researchId: string) {
                     };
                   }
                 });
+              }
+
+              // 🎯 PROCESAR visualClickPoints
+              if (navResponse.visualClickPoints && Array.isArray(navResponse.visualClickPoints)) {
+                questionData.navigationFlowData.visualClickPoints = navResponse.visualClickPoints;
+                console.log(`[useCognitiveTaskResults] 🎯 Procesando ${navResponse.visualClickPoints.length} puntos visuales de visualClickPoints`);
               }
 
               // 🎯 PROCESAR allClicksTracking

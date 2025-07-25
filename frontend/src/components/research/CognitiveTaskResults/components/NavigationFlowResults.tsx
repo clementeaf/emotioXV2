@@ -32,7 +32,16 @@ interface ImageFile {
   hitZones?: HitZone[];
 }
 
-// 🎯 INTERFACE PARA CLICS DE RASTREO
+// 🎯 INTERFACE PARA PUNTOS VISUALES (IGUAL QUE EN NavigationFlowTask.tsx)
+interface VisualClickPoint {
+  x: number;
+  y: number;
+  timestamp: number;
+  isCorrect: boolean;
+  imageIndex: number;
+}
+
+// 🎯 INTERFACE PARA CLICS DE RASTREO (IGUAL QUE EN NavigationFlowTask.tsx)
 interface ClickTrackingData {
   x: number;
   y: number;
@@ -67,6 +76,8 @@ export interface NavigationFlowData {
     hitzoneHeight: number;
   };
   selectedImageIndex?: number;
+  // 🎯 NUEVO: PUNTOS VISUALES PERSISTIDOS
+  visualClickPoints?: VisualClickPoint[];
   // 🎯 NUEVO: DATOS DE RASTREO COMPLETO DE CLICS
   allClicksTracking?: ClickTrackingData[];
 }
@@ -155,6 +166,9 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
   const [loadingImages, setLoadingImages] = useState(true);
   const imageRef = useRef<HTMLImageElement>(null);
 
+  // 🎯 ESTADO PARA PUNTOS VISUALES PERSISTIDOS (IGUAL QUE EN NavigationFlowTask.tsx)
+  const [visualClickPoints, setVisualClickPoints] = useState<Record<number, VisualClickPoint[]>>({});
+
   // 🎯 ESTADO PARA ESTADÍSTICAS DE CLICS
   const [clickStats, setClickStats] = useState({
     totalClicks: 0,
@@ -174,8 +188,25 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
     clickPosition,
     selectedImageIndex: finalSelectedImageIndex,
     researchId,
+    visualClickPoints: backendVisualClickPoints,
     allClicksTracking
   } = data;
+
+  // 🎯 CARGAR PUNTOS VISUALES DESDE EL BACKEND (IGUAL QUE EN NavigationFlowTask.tsx)
+  useEffect(() => {
+    if (backendVisualClickPoints && Array.isArray(backendVisualClickPoints)) {
+      const pointsByImage: Record<number, VisualClickPoint[]> = {};
+      backendVisualClickPoints.forEach((point: VisualClickPoint) => {
+        const imageIndex = point.imageIndex || 0;
+        if (!pointsByImage[imageIndex]) {
+          pointsByImage[imageIndex] = [];
+        }
+        pointsByImage[imageIndex].push(point);
+      });
+      setVisualClickPoints(pointsByImage);
+      console.log('🎯 Puntos visuales cargados desde backend:', pointsByImage);
+    }
+  }, [backendVisualClickPoints]);
 
   // 🎯 PROCESAR ESTADÍSTICAS DE CLICS
   useEffect(() => {
@@ -307,6 +338,9 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
     ? convertHitZonesToPercentageCoordinates(selectedImage.hitZones, imageNaturalSize || undefined)
     : [];
 
+  // 🎯 OBTENER PUNTOS VISUALES PARA LA IMAGEN ACTUAL (IGUAL QUE EN NavigationFlowTask.tsx)
+  const currentImageClickPoints = visualClickPoints[currentImageIndex] || [];
+
   console.log('🎯 Hitzones disponibles:', {
     selectedImage: selectedImage?.name,
     hitZones: selectedImage?.hitZones,
@@ -314,8 +348,14 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
     hitZonesStructure: selectedImage?.hitZones?.[0],
     availableHitzones: availableHitzones.length,
     imageNaturalSize,
-    imgRenderSize
+    imgRenderSize,
+    currentImageClickPoints: currentImageClickPoints.length,
+    visualClickPointsKeys: Object.keys(visualClickPoints),
+    allClicksTrackingLength: allClicksTracking?.length
   });
+
+  // 🎯 DEBUG: Mostrar puntos visuales para la imagen actual
+  console.log('🎯 Puntos visuales para imagen', currentImageIndex, ':', currentImageClickPoints);
 
   const currentSelection = imageSelections[currentImageIndex.toString()];
 
@@ -332,7 +372,12 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
     'selectedImage': selectedImage,
     'availableHitzones': availableHitzones.length,
     'currentSelection': currentSelection,
-    'showHeatmap': showHeatmap
+    'showHeatmap': showHeatmap,
+    'visualClickPoints': Object.keys(visualClickPoints),
+    'currentImageClickPoints': currentImageClickPoints.length,
+    'allClicksTracking': allClicksTracking?.length,
+    'backendVisualClickPoints': backendVisualClickPoints?.length,
+    'data keys': Object.keys(data || {})
   });
 
   if (!data || realImages.length === 0) {
@@ -347,7 +392,9 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
               imagesLength: realImages.length,
               finalSelectedImageIndex,
               imageSelections: Object.keys(imageSelections),
-              loadingImages
+              loadingImages,
+              visualClickPoints: Object.keys(visualClickPoints),
+              allClicksTracking: allClicksTracking?.length
             }, null, 2)}
           </pre>
         </div>
@@ -443,7 +490,7 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
                     return (
                       <div
                         key={hitzone.id}
-                        className="absolute border-2 border-blue-400 bg-blue-500 bg-opacity-10"
+                        className="absolute transition-all duration-300"
                         style={{
                           left,
                           top,
@@ -451,71 +498,89 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
                           height,
                           pointerEvents: 'none',
                         }}
+                        title={`Zona interactiva: ${hitzone.id}`}
                       >
-                        {/* Renderizar click si existe para este hitzone */}
-                        {currentSelection && currentSelection.hitzoneId === hitzone.id && currentSelection.click && (
-                          <div className="absolute left-0 top-0 w-full h-full pointer-events-none">
-                            <div
-                              className="absolute bg-red-600 rounded-full border-2 border-white shadow"
-                              style={{
-                                left: `calc(${currentSelection.click.x}px - 6px)`,
-                                top: `calc(${currentSelection.click.y}px - 6px)`,
-                                width: 12,
-                                height: 12
-                              }}
-                              title="Punto de click"
-                            />
-                          </div>
-                        )}
+                        {/* 🎯 SIN FEEDBACK VISUAL - IGUAL QUE EN NavigationFlowTask.tsx */}
                       </div>
                     );
                   })}
 
-                  {/* 🎯 RENDERIZAR TODOS LOS CLICS DE allClicksTracking */}
-                  {showHeatmap && allClicksTracking && Array.isArray(allClicksTracking) && (
-                    allClicksTracking
-                      .filter(click => click.imageIndex === currentImageIndex)
-                      .map((click, index) => {
-                        // 🎯 CONVERTIR COORDENADAS NATURALES A COORDENADAS DE RENDERIZADO
-                        const { drawWidth, drawHeight, offsetX, offsetY } = getImageDrawRect(imageNaturalSize, imgRenderSize);
-
-                        // 🎯 ESCALAR COORDENADAS NATURALES A COORDENADAS DE RENDERIZADO
-                        const scaledX = offsetX + (click.x / imageNaturalSize.width) * drawWidth;
-                        const scaledY = offsetY + (click.y / imageNaturalSize.height) * drawHeight;
-
-                        console.log('🎯 Renderizando clic:', {
+                  {/* 🎯 RENDERIZAR PUNTOS VISUALES PERSISTIDOS (IGUAL QUE EN NavigationFlowTask.tsx) */}
+                  {showHeatmap && currentImageClickPoints.length > 0 && (
+                    <>
+                      {console.log('🎯 Renderizando', currentImageClickPoints.length, 'puntos visuales para imagen', currentImageIndex)}
+                      {currentImageClickPoints.map((point, index) => {
+                        console.log('🎯 Renderizando punto visual:', {
                           index,
-                          originalCoords: { x: click.x, y: click.y },
-                          scaledCoords: { x: scaledX, y: scaledY },
-                          isCorrect: click.isCorrectHitzone,
-                          imageIndex: click.imageIndex,
+                          coords: { x: point.x, y: point.y },
+                          isCorrect: point.isCorrect,
+                          imageIndex: point.imageIndex,
                           currentImageIndex
                         });
 
                         // 🎯 MOSTRAR SOLO SI ESTÁ HABILITADO EL TIPO DE CLIC
-                        if ((click.isCorrectHitzone && !showCorrectClicks) ||
-                          (!click.isCorrectHitzone && !showIncorrectClicks)) {
+                        if ((point.isCorrect && !showCorrectClicks) ||
+                          (!point.isCorrect && !showIncorrectClicks)) {
                           return null;
                         }
 
                         return (
                           <div
-                            key={`${click.timestamp}-${index}`}
-                            className={`absolute w-4 h-4 rounded-full border-2 border-white shadow-lg pointer-events-none ${click.isCorrectHitzone ? 'bg-green-500' : 'bg-red-500'
+                            key={`${point.timestamp}-${index}`}
+                            className={`absolute w-3 h-3 rounded-full border-2 border-white shadow-lg pointer-events-none ${point.isCorrect ? 'bg-green-500' : 'bg-red-500'
                               }`}
                             style={{
-                              left: scaledX - 8,
-                              top: scaledY - 8,
+                              left: point.x - 6,
+                              top: point.y - 6,
                               zIndex: 10
                             }}
-                            title={`Clic ${click.isCorrectHitzone ? 'correcto' : 'incorrecto'} - ${new Date(click.timestamp).toLocaleTimeString()}`}
-                          >
-                            <span className="absolute -top-1 -right-1 bg-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center border border-gray-300">
-                              {index + 1}
-                            </span>
-                          </div>
+                            title={`Clic ${point.isCorrect ? 'correcto' : 'incorrecto'} - ${new Date(point.timestamp).toLocaleTimeString()}`}
+                          />
                         );
-                      })
+                      })}
+                    </>
+                  )}
+
+                  {/* 🎯 RENDERIZAR TODOS LOS CLICS DE allClicksTracking (COMO FALLBACK) */}
+                  {showHeatmap && allClicksTracking && Array.isArray(allClicksTracking) && (
+                    <>
+                      {console.log('🎯 Usando allClicksTracking como fallback, puntos para imagen', currentImageIndex, ':', allClicksTracking.filter(click => click.imageIndex === currentImageIndex).length)}
+                      {allClicksTracking
+                        .filter(click => click.imageIndex === currentImageIndex)
+                        .map((click, index) => {
+                          console.log('🎯 Renderizando clic de allClicksTracking:', {
+                            index,
+                            coords: { x: click.x, y: click.y },
+                            isCorrect: click.isCorrectHitzone,
+                            imageIndex: click.imageIndex,
+                            currentImageIndex
+                          });
+
+                          // 🎯 MOSTRAR SOLO SI ESTÁ HABILITADO EL TIPO DE CLIC
+                          if ((click.isCorrectHitzone && !showCorrectClicks) ||
+                            (!click.isCorrectHitzone && !showIncorrectClicks)) {
+                            return null;
+                          }
+
+                          return (
+                            <div
+                              key={`${click.timestamp}-${index}`}
+                              className={`absolute w-4 h-4 rounded-full border-2 border-white shadow-lg pointer-events-none ${click.isCorrectHitzone ? 'bg-green-500' : 'bg-red-500'
+                                }`}
+                              style={{
+                                left: click.x - 8,
+                                top: click.y - 8,
+                                zIndex: 10
+                              }}
+                              title={`Clic ${click.isCorrectHitzone ? 'correcto' : 'incorrecto'} - ${new Date(click.timestamp).toLocaleTimeString()}`}
+                            >
+                              <span className="absolute -top-1 -right-1 bg-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center border border-gray-300">
+                                {index + 1}
+                              </span>
+                            </div>
+                          );
+                        })}
+                    </>
                   )}
                 </div>
               );
@@ -525,7 +590,7 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
       </div>
 
       {/* 🎯 ESTADÍSTICAS Y CONTROLES DEL MAPA DE CALOR */}
-      {allClicksTracking && allClicksTracking.length > 0 && (
+      {(allClicksTracking && allClicksTracking.length > 0) || (currentImageClickPoints && currentImageClickPoints.length > 0) ? (
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Estadísticas del Mapa de Calor</h3>
 
@@ -596,12 +661,11 @@ export const NavigationFlowResults: React.FC<NavigationFlowResultsProps> = ({ da
               </div>
             </div>
             <p className="text-xs text-gray-600 mt-2">
-              💡 El mapa de calor muestra cada clic individual con puntos numerados para identificar la secuencia
+              💡 El mapa de calor muestra cada clic individual con puntos para identificar la secuencia
             </p>
           </div>
         </div>
-      )}
-
+      ) : null}
     </div>
   );
 };
