@@ -1,19 +1,6 @@
-import {
-  Bar,
-  CartesianGrid,
-  ComposedChart,
-  Line,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis
-} from 'recharts';
 
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
-import { CircularProgress } from '@/components/ui/CircularProgress';
-
-import Progress from './ui/Progress';
 
 interface QuestionResultProps {
   questionNumber: string;
@@ -50,26 +37,43 @@ interface QuestionResultProps {
   };
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-100">
-        <p className="text-sm text-gray-600 mb-2">{label}</p>
-        {payload.map((entry: any, index: number) => (
-          <div key={index} className="flex items-center gap-2">
-            <div
-              className="w-2 h-2 rounded-full"
-              style={{ backgroundColor: entry.color }}
-            />
-            <span className="text-sm font-medium">
-              {entry.name}: {entry.value}%
-            </span>
-          </div>
-        ))}
+// Componente para el gauge circular azul
+const BlueGauge = ({ value, size = 120 }: { value: number; size?: number }) => {
+  const radius = size / 2 - 8;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDasharray = `${(value / 100) * circumference} ${circumference}`;
+
+  return (
+    <div className="relative" style={{ width: size, height: size }}>
+      <svg className="w-full h-full" viewBox={`0 0 ${size} ${size}`}>
+        {/* Fondo del gauge */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="#E5E7EB"
+          strokeWidth="8"
+        />
+        {/* Valor del gauge */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="#3B82F6"
+          strokeWidth="8"
+          strokeDasharray={strokeDasharray}
+          strokeDashoffset={circumference / 4}
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        />
+      </svg>
+      {/* Valor en el centro */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="text-3xl font-bold text-gray-900">{value}</span>
       </div>
-    );
-  }
-  return null;
+    </div>
+  );
 };
 
 export function QuestionResults({
@@ -86,196 +90,72 @@ export function QuestionResults({
   loyaltyEvolution
 }: QuestionResultProps) {
   return (
-    <div className="space-y-6">
-      <Card className="p-6 space-y-6">
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <h3 className="text-lg font-medium">{questionNumber}- Question: {title}</h3>
-            <Badge variant="secondary" className="bg-green-100 text-green-700">{type}</Badge>
-            <Badge variant="secondary" className="bg-blue-100 text-blue-700">{conditionality}</Badge>
-            {required && <Badge variant="secondary" className="bg-red-100 text-red-700">Required</Badge>}
-          </div>
+    <Card className="p-6 space-y-6">
+      <div className="space-y-4">
+        {/* Header con badges */}
+        <div className="flex items-center gap-2">
+          <h3 className="text-lg font-medium">{questionNumber}- Question: {title}</h3>
+          <Badge variant="secondary" className="bg-green-100 text-green-700">{type}</Badge>
+          <Badge variant="secondary" className="bg-blue-100 text-blue-700">{conditionality}</Badge>
+          {required && <Badge variant="secondary" className="bg-red-100 text-red-700">Required</Badge>}
+        </div>
 
-          <div className="flex items-start gap-8">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-sm text-gray-600">Question</span>
-              </div>
-              <p className="text-sm text-gray-800">{question}</p>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">Responses</span>
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-semibold">{responses.count}</span>
-                  <span className="text-sm text-gray-500">{responses.timeAgo}</span>
-                </div>
-              </div>
-
-              <div className="w-24 h-24">
-                <CircularProgress value={score} size={96} strokeWidth={8} />
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-6">
+        {/* Layout principal: barras horizontales + responses + gauge */}
+        <div className="flex items-start gap-8">
+          {/* Barras horizontales */}
+          <div className="flex-1 space-y-4">
             {distribution.map((item, index) => (
               <div key={index} className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">{item.label}</span>
                   <span className="text-sm font-medium">{item.percentage}%</span>
                 </div>
-                <Progress
-                  value={item.percentage}
-                  className="h-2"
-                  indicatorClassName={
-                    item.color === 'green' ? 'bg-green-500' :
-                      item.color === 'gray' ? 'bg-gray-400' :
-                        'bg-red-500'
-                  }
-                />
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div
+                    className="h-3 rounded-full"
+                    style={{
+                      width: `${item.percentage}%`,
+                      backgroundColor: item.color === '#10B981' ? '#10B981' :
+                        item.color === '#F59E0B' ? '#F59E0B' : '#EF4444'
+                    }}
+                  />
+                </div>
               </div>
             ))}
           </div>
-        </div>
-      </Card>
 
-      {monthlyData && monthlyData.length > 0 && (
-        <Card className="p-6 space-y-6">
-          <div className="space-y-4">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Tendencias Mensuales</h3>
-            </div>
-
-            <div className="h-[400px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={monthlyData}>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    vertical={false}
-                    stroke="#E5E7EB"
-                  />
-                  <XAxis
-                    dataKey="month"
-                    axisLine={false}
-                    tickLine={false}
-                    stroke="#9CA3AF"
-                    fontSize={12}
-                  />
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    stroke="#9CA3AF"
-                    fontSize={12}
-                    domain={[0, 100]}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Bar
-                    dataKey="promoters"
-                    stackId="a"
-                    fill="#4ADE80"
-                    radius={[4, 4, 0, 0]}
-                    name="Promoters"
-                  />
-                  <Bar
-                    dataKey="neutrals"
-                    stackId="a"
-                    fill="#E5E7EB"
-                    name="Neutrals"
-                  />
-                  <Bar
-                    dataKey="detractors"
-                    stackId="a"
-                    fill="#F87171"
-                    name="Detractors"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="npsRatio"
-                    stroke="#4F46E5"
-                    strokeWidth={2}
-                    dot={{ r: 4, fill: '#4F46E5' }}
-                    activeDot={{ r: 6 }}
-                    name="NPS Ratio"
-                  />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </div>
-
-            {loyaltyEvolution && (
-              <div className="flex justify-between items-start mt-8">
-                <div>
-                  <h3 className="text-lg font-medium mb-4">Loyalty's Evolution</h3>
-                  {loyaltyEvolution.changePercentage && (
-                    <div className="text-green-600 font-medium">
-                      +{loyaltyEvolution.changePercentage}% Since last month
-                    </div>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-3 gap-8">
-                  <div className="text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <span className="text-2xl font-semibold">{loyaltyEvolution.promoters ?? 0}%</span>
-                      {loyaltyEvolution.promotersTrend && (
-                        loyaltyEvolution.promotersTrend === 'up' ? (
-                          <svg className="w-5 h-5 text-green-600" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M10 17a.75.75 0 01-.75-.75V5.612L5.29 9.77a.75.75 0 01-1.08-1.04l5.25-5.5a.75.75 0 011.08 0l5.25 5.5a.75.75 0 11-1.08 1.04l-3.96-4.158V16.25A.75.75 0 0110 17z" clipRule="evenodd" />
-                          </svg>
-                        ) : (
-                          <svg className="w-5 h-5 text-red-600" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M10 3a.75.75 0 01.75.75v10.638l3.96-4.158a.75.75 0 111.08 1.04l-5.25 5.5a.75.75 0 01-1.08 0l-5.25-5.5a.75.75 0 111.08-1.04l3.96 4.158V3.75A.75.75 0 0110 3z" clipRule="evenodd" />
-                          </svg>
-                        )
-                      )}
-                    </div>
-                    <span className="text-sm text-gray-600">Promoters</span>
-                  </div>
-
-                  <div className="text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <span className="text-2xl font-semibold">{loyaltyEvolution.detractors ?? 0}%</span>
-                      {loyaltyEvolution.detractorsTrend && (
-                        loyaltyEvolution.detractorsTrend === 'up' ? (
-                          <svg className="w-5 h-5 text-red-600" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M10 3a.75.75 0 01.75.75v10.638l3.96-4.158a.75.75 0 111.08 1.04l-5.25 5.5a.75.75 0 01-1.08 0l-5.25-5.5a.75.75 0 111.08-1.04l3.96 4.158V3.75A.75.75 0 0110 3z" clipRule="evenodd" />
-                          </svg>
-                        ) : (
-                          <svg className="w-5 h-5 text-green-600" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M10 17a.75.75 0 01-.75-.75V5.612L5.29 9.77a.75.75 0 01-1.08-1.04l5.25-5.5a.75.75 0 011.08 0l5.25 5.5a.75.75 0 11-1.08 1.04l-3.96-4.158V16.25A.75.75 0 0110 17z" clipRule="evenodd" />
-                          </svg>
-                        )
-                      )}
-                    </div>
-                    <span className="text-sm text-gray-600">Detractors</span>
-                  </div>
-
-                  <div className="text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <span className="text-2xl font-semibold">{loyaltyEvolution.neutrals ?? 0}%</span>
-                      {loyaltyEvolution.neutralsTrend && (
-                        loyaltyEvolution.neutralsTrend === 'up' ? (
-                          <svg className="w-5 h-5 text-green-600" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M10 17a.75.75 0 01-.75-.75V5.612L5.29 9.77a.75.75 0 01-1.08-1.04l5.25-5.5a.75.75 0 011.08 0l5.25 5.5a.75.75 0 11-1.08 1.04l-3.96-4.158V16.25A.75.75 0 0110 17z" clipRule="evenodd" />
-                          </svg>
-                        ) : (
-                          <svg className="w-5 h-5 text-red-600" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M10 3a.75.75 0 01.75.75v10.638l3.96-4.158a.75.75 0 111.08 1.04l-5.25 5.5a.75.75 0 01-1.08 0l-5.25-5.5a.75.75 0 111.08-1.04l3.96 4.158V3.75A.75.75 0 0110 3z" clipRule="evenodd" />
-                          </svg>
-                        )
-                      )}
-                    </div>
-                    <span className="text-sm text-gray-600">Neutrals</span>
-                  </div>
-                </div>
+          {/* Responses y Gauge */}
+          <div className="flex flex-col items-center gap-4">
+            {/* Responses */}
+            <div className="text-center">
+              <div className="text-sm text-gray-600 mb-1">Responses</div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-semibold">{responses.count.toLocaleString()}</span>
+                <span className="text-sm text-gray-500">{responses.timeAgo}</span>
               </div>
-            )}
+            </div>
+
+            {/* Gauge circular azul */}
+            <BlueGauge value={score} />
           </div>
-        </Card>
-      )}
-    </div>
+        </div>
+
+        {/* Pregunta con icono de target */}
+        <div className="flex items-start gap-3 pt-4 border-t border-gray-100">
+          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M10 2a8 8 0 100 16 8 8 0 000-16zM10 4a6 6 0 110 12 6 6 0 010-12zM10 6a4 4 0 100 8 4 4 0 000-8zM10 8a2 2 0 110 4 2 2 0 010-4z" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm text-gray-800 font-medium">
+              {title.includes('CSAT') ? "CSAT's question:" :
+                title.includes('CES') ? "CES's question:" :
+                  title.includes('CV') ? "CV's question:" : "Question:"} {question}
+            </p>
+          </div>
+        </div>
+      </div>
+    </Card>
   );
 }

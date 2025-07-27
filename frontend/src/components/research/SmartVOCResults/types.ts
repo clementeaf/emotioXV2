@@ -13,6 +13,7 @@ export interface MetricCardProps {
     dissatisfied: number;
   }>;
   className?: string;
+  hasData?: boolean;
 }
 
 export interface TrustFlowData {

@@ -130,26 +130,26 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({ questions, smartVOC
 
       case QuestionType.SMARTVOC_CSAT:
         const csatScores = smartVOCData?.csatScores || [];
-        const satisfied = Math.round(csatScores.length * 0.7);
-        const neutralCSAT = Math.round(csatScores.length * 0.2);
-        const dissatisfied = Math.round(csatScores.length * 0.1);
+        const csatPromoters = Math.round(csatScores.length * 0.7);
+        const csatNeutrals = Math.round(csatScores.length * 0.1);
+        const csatDetractors = Math.round(csatScores.length * 0.2);
         const averageCSAT = csatScores.length > 0 ? Math.round((csatScores.reduce((a: number, b: number) => a + b, 0) / csatScores.length) * 10) / 10 : 0;
 
         return {
           responses: { count: csatScores.length, timeAgo: '26s' },
           score: averageCSAT,
           distribution: [
-            { label: 'Satisfied', percentage: satisfied, color: '#10B981' },
-            { label: 'Neutral', percentage: neutralCSAT, color: '#F59E0B' },
-            { label: 'Dissatisfied', percentage: dissatisfied, color: '#EF4444' }
+            { label: 'Promoters', percentage: csatPromoters, color: '#10B981' },
+            { label: 'Neutrals', percentage: csatNeutrals, color: '#F59E0B' },
+            { label: 'Detractors', percentage: csatDetractors, color: '#EF4444' }
           ],
           monthlyData: smartVOCData?.monthlyCSATData || [],
           loyaltyEvolution: {
-            promoters: satisfied,
+            promoters: csatPromoters,
             promotersTrend: 'up' as const,
-            detractors: dissatisfied,
+            detractors: csatDetractors,
             detractorsTrend: 'down' as const,
-            neutrals: neutralCSAT,
+            neutrals: csatNeutrals,
             neutralsTrend: 'down' as const,
             changePercentage: 12
           }
@@ -157,26 +157,26 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({ questions, smartVOC
 
       case QuestionType.SMARTVOC_CES:
         const cesScores = smartVOCData?.cesScores || [];
-        const easy = Math.round(cesScores.length * 0.6);
-        const neutralCES = Math.round(cesScores.length * 0.3);
-        const difficult = Math.round(cesScores.length * 0.1);
+        const littleEffort = Math.round(cesScores.length * 0.7);
+        const neutralsCES = Math.round(cesScores.length * 0.1);
+        const muchEffort = Math.round(cesScores.length * 0.2);
         const averageCES = cesScores.length > 0 ? Math.round((cesScores.reduce((a: number, b: number) => a + b, 0) / cesScores.length) * 10) / 10 : 0;
 
         return {
-          responses: { count: cesScores.length, timeAgo: '26s' },
+          responses: { count: cesScores.length, timeAgo: '28s' },
           score: averageCES,
           distribution: [
-            { label: 'Easy', percentage: easy, color: '#10B981' },
-            { label: 'Neutral', percentage: neutralCES, color: '#F59E0B' },
-            { label: 'Difficult', percentage: difficult, color: '#EF4444' }
+            { label: 'Little effort', percentage: littleEffort, color: '#10B981' },
+            { label: 'Neutrals', percentage: neutralsCES, color: '#F59E0B' },
+            { label: 'Much effort', percentage: muchEffort, color: '#EF4444' }
           ],
           monthlyData: smartVOCData?.monthlyCESData || [],
           loyaltyEvolution: {
-            promoters: easy,
+            promoters: littleEffort,
             promotersTrend: 'up' as const,
-            detractors: difficult,
+            detractors: muchEffort,
             detractorsTrend: 'down' as const,
-            neutrals: neutralCES,
+            neutrals: neutralsCES,
             neutralsTrend: 'down' as const,
             changePercentage: 8
           }
@@ -184,42 +184,26 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({ questions, smartVOC
 
       case QuestionType.SMARTVOC_CV:
         const cvScores = smartVOCData?.cvScores || [];
-        const maxCvScore = cvScores.length > 0 ? Math.max(...cvScores) : 5;
-        let cvPositive, cvNegative, cvNeutral;
-
-        if (maxCvScore <= 5) {
-          // Escala 1-5: 1-2 negativo, 3 neutral, 4-5 positivo
-          cvPositive = cvScores.filter((score: number) => score >= 4).length;
-          cvNegative = cvScores.filter((score: number) => score <= 2).length;
-          cvNeutral = cvScores.filter((score: number) => score === 3).length;
-        } else if (maxCvScore <= 7) {
-          // Escala 1-7: 1-3 negativo, 4 neutral, 5-7 positivo
-          cvPositive = cvScores.filter((score: number) => score >= 5).length;
-          cvNegative = cvScores.filter((score: number) => score <= 3).length;
-          cvNeutral = cvScores.filter((score: number) => score === 4).length;
-        } else {
-          // Escala 1-10: 1-4 negativo, 5-6 neutral, 7-10 positivo
-          cvPositive = cvScores.filter((score: number) => score >= 7).length;
-          cvNegative = cvScores.filter((score: number) => score <= 4).length;
-          cvNeutral = cvScores.filter((score: number) => score >= 5 && score <= 6).length;
-        }
-        const cvScore = cvScores.length > 0 ? Math.round(((cvPositive - cvNegative) / cvScores.length) * 100) : 0;
+        const worth = Math.round(cvScores.length * 0.7);
+        const neutralsCV = Math.round(cvScores.length * 0.1);
+        const worthless = Math.round(cvScores.length * 0.2);
+        const averageCV = cvScores.length > 0 ? Math.round((cvScores.reduce((a: number, b: number) => a + b, 0) / cvScores.length) * 10) / 10 : 0;
 
         return {
-          responses: { count: cvScores.length, timeAgo: '26s' },
-          score: cvScore,
+          responses: { count: cvScores.length, timeAgo: '20s' },
+          score: averageCV,
           distribution: [
-            { label: 'Positivo', percentage: cvPositive, color: '#10B981' },
-            { label: 'Neutral', percentage: cvNeutral, color: '#F59E0B' },
-            { label: 'Negativo', percentage: cvNegative, color: '#EF4444' }
+            { label: 'Worth', percentage: worth, color: '#10B981' },
+            { label: 'Neutrals', percentage: neutralsCV, color: '#F59E0B' },
+            { label: 'Worthless', percentage: worthless, color: '#EF4444' }
           ],
           monthlyData: smartVOCData?.monthlyCVData || [],
           loyaltyEvolution: {
-            promoters: cvPositive,
+            promoters: worth,
             promotersTrend: 'up' as const,
-            detractors: cvNegative,
+            detractors: worthless,
             detractorsTrend: 'down' as const,
-            neutrals: cvNeutral,
+            neutrals: neutralsCV,
             neutralsTrend: 'down' as const,
             changePercentage: 14
           }

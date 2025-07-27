@@ -12,6 +12,8 @@ import { QuestionType } from 'shared/interfaces/question-types.enum';
 import { SmartVOCQuestion } from 'shared/interfaces/smart-voc.interface';
 import { CPVCard } from './CPVCard';
 import { Filters } from './Filters';
+import { MetricCard } from './MetricCard';
+import { QuestionResults } from './QuestionResults';
 import QuestionSelector from './QuestionSelector';
 import { TrustRelationshipFlow } from './TrustRelationshipFlow';
 import { SmartVOCResultsProps } from './types';
@@ -202,8 +204,9 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
   });
 
   return (
-    <div className={cn('flex gap-8 pt-4', className)}>
-      <div className="flex-1 space-y-8">
+    <div className={cn('pt-4', className)}>
+      {/* Contenido superior sin sidebar */}
+      <div className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* CPVCard con manejo de errores individual */}
           <div className="md:col-span-1">
@@ -264,8 +267,8 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
           </div>
         </div>
 
-        {/* Selector de preguntas SmartVOC */}
-        {!questionsLoading && !questionsError && (
+        {/* Selector de preguntas SmartVOC - Solo se muestra cuando hay datos */}
+        {!questionsLoading && !questionsError && smartVOCQuestions.length > 0 && (
           <QuestionSelector
             questions={smartVOCQuestions}
             smartVOCData={smartVOCData}
@@ -294,12 +297,109 @@ export function SmartVOCResults({ researchId, className }: SmartVOCResultsProps)
           </div>
         )}
 
+        {/* Mensaje cuando no hay preguntas disponibles */}
+        {!questionsLoading && !questionsError && smartVOCQuestions.length === 0 && (
+          <div className="text-center py-8">
+            <p className="text-gray-500">No hay preguntas SmartVOC disponibles con datos.</p>
+          </div>
+        )}
+
+        {/* Las 3 tarjetas de métricas siempre están presentes */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Los MetricCards se renderizarán cuando haya datos reales */}
+          {/* Customer Satisfaction */}
+          <MetricCard
+            title="Customer Satisfaction"
+            score={0}
+            question="How are feeling your customers when they interact with you?"
+            data={[]}
+            hasData={false}
+          />
+
+          {/* Customer Effort Score */}
+          <MetricCard
+            title="Customer Effort Score"
+            score={0}
+            question="How much effort do they need to do to complete a task?"
+            data={[]}
+            hasData={false}
+          />
+
+          {/* Cognitive Value */}
+          <MetricCard
+            title="Cognitive Value"
+            score={0}
+            question="Is there value in your solution ove the memory of customers?"
+            data={[]}
+            hasData={false}
+          />
         </div>
       </div>
 
-      <Filters className="w-80 shrink-0" researchId={researchId} />
+      {/* Sección con sidebar alineado con "1.0.- Smart VOC" */}
+      <div className="flex gap-8 mt-8">
+        <div className="flex-1">
+          {/* Sección detallada "1.0.- Smart VOC" */}
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">1.0.- Smart VOC</h2>
+
+            <div className="space-y-6">
+              {/* 2.1.- Question: Customer Satisfaction Score (CSAT) */}
+              <QuestionResults
+                questionNumber="2.1"
+                title="Customer Satisfaction Score (CSAT)"
+                type="Linear Scale question"
+                conditionality="Conditionality disabled"
+                required={true}
+                question="How would you rate your overall satisfaction level with [company]?"
+                responses={{ count: 28635, timeAgo: '26s' }}
+                score={53}
+                distribution={[
+                  { label: 'Promoters', percentage: 70, color: '#10B981' },
+                  { label: 'Neutrals', percentage: 10, color: '#F59E0B' },
+                  { label: 'Detractors', percentage: 20, color: '#EF4444' }
+                ]}
+              />
+
+              {/* 2.2.- Question: Customer Effort Score (CES) */}
+              <QuestionResults
+                questionNumber="2.2"
+                title="Customer Effort Score (CES)"
+                type="Linear Scale question"
+                conditionality="Conditionality disabled"
+                required={true}
+                question="It was easy for me to handle my issue today"
+                responses={{ count: 24625, timeAgo: '28s' }}
+                score={45}
+                distribution={[
+                  { label: 'Little effort', percentage: 70, color: '#10B981' },
+                  { label: 'Neutrals', percentage: 10, color: '#F59E0B' },
+                  { label: 'Much effort', percentage: 20, color: '#EF4444' }
+                ]}
+              />
+
+              {/* 2.3.- Question: Cognitive Value (CV) */}
+              <QuestionResults
+                questionNumber="2.3"
+                title="Cognitive Value (CV)"
+                type="Linear Scale question"
+                conditionality="Conditionality disabled"
+                required={true}
+                question="This was the best app my eyes had see"
+                responses={{ count: 31162, timeAgo: '25s' }}
+                score={61}
+                distribution={[
+                  { label: 'Worth', percentage: 70, color: '#10B981' },
+                  { label: 'Neutrals', percentage: 10, color: '#F59E0B' },
+                  { label: 'Worthless', percentage: 20, color: '#EF4444' }
+                ]}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Sidebar de filtros alineado con la sección "1.0.- Smart VOC" */}
+        <Filters className="w-80 shrink-0" researchId={researchId} />
+      </div>
     </div>
   );
 }
