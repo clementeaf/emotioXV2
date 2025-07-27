@@ -11,6 +11,7 @@ interface CPVData {
   cesPercentage: number;  // % OF POSITIVE RESULTS - % OF NEGATIVE RESULTS
   cvValue: number;        // Cognitive Value: % OF POSITIVE RESULTS - % OF NEGATIVE RESULTS
   nevValue: number;       // Net Emotional Value: % Emociones positivas - % Emociones negativas
+  npsValue: number;       // Net Promoter Score: % PROMOTERS - % DETRACTORS
   peakValue?: number;     // Valor pico para el gráfico
 }
 
@@ -89,6 +90,7 @@ export const useCPVData = (researchId: string) => {
         cesPercentage: 0,
         cvValue: 0,
         nevValue: 0,
+        npsValue: 0,
         peakValue: 0
       };
     }
@@ -199,6 +201,11 @@ export const useCPVData = (researchId: string) => {
     const totalNPS = npsScores.length;
     const retention = totalNPS > 0 ? Math.round(((promoters + neutrals) / totalNPS) * 100) : 0;
 
+    // Calcular NPS (Net Promoter Score): % PROMOTERS - % DETRACTORS
+    const npsPromotersPercentage = totalNPS > 0 ? Math.round((promoters / totalNPS) * 100) : 0;
+    const npsDetractorsPercentage = totalNPS > 0 ? Math.round((detractors / totalNPS) * 100) : 0;
+    const npsValue = npsPromotersPercentage - npsDetractorsPercentage; // Ecuación NPS
+
     // Determinar impacto y tendencia
     const impact = totalNPS > 0 && promoters > detractors ? 'Alto' : totalNPS > 0 ? 'Medio' : 'Bajo';
     const trend = totalNPS > 0 && promoters > detractors ? 'Positiva' : totalNPS > 0 ? 'Neutral' : 'Negativa';
@@ -216,6 +223,7 @@ export const useCPVData = (researchId: string) => {
       cesPercentage,
       cvValue,
       nevValue,
+      npsValue,
       peakValue
     };
   };
@@ -235,6 +243,7 @@ export const useCPVData = (researchId: string) => {
       cesPercentage: 0,  // % OF POSITIVE RESULTS - % OF NEGATIVE RESULTS - se calculará con datos reales
       cvValue: 0,        // Cognitive Value - se calculará con datos reales
       nevValue: 0,       // Net Emotional Value - se calculará con datos reales
+      npsValue: 0,       // Net Promoter Score - se calculará con datos reales
       peakValue: 0 // Valor pico - se calculará con datos reales
     }
   };
