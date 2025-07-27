@@ -198,8 +198,8 @@ export const useCPVData = (researchId: string) => {
       retention: 92,
       impact: 'Alto',
       trend: 'Positiva',
-      csatPercentage: 85, // % de registros 4 y 5
-      cesPercentage: 25,  // % de registros 1 y 2
+      csatPercentage: 59.63, // % de registros 4 y 5 (como en la imagen)
+      cesPercentage: 55.25,  // % de registros 1 y 2 (como en la imagen)
       peakValue: 83.62 // Valor pico como en la imagen
     }
   };
