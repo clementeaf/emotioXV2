@@ -2,8 +2,8 @@ const path = require('path');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Configuración para exportación estática
-  output: 'export',
+  // Configuración para desarrollo y producción
+  // output: 'export', // Comentado para desarrollo
   // Configuración para imágenes y rutas
   images: {
     unoptimized: true,

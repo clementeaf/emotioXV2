@@ -90,7 +90,8 @@ export const MetricCard = ({ title, score, question, data, className, hasData = 
                 title === 'Customer Effort Score' ? 'CES' :
                   title === 'Cognitive Value' ? 'CV' : ''} {(score || 0).toFixed(2)}
             </span>
-            <div className="flex items-center text-green-600 text-sm">
+            {/* Trend indicator removed - no mock data */}
+            <div className="flex items-center text-gray-400 text-sm">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 20 20"
@@ -103,7 +104,7 @@ export const MetricCard = ({ title, score, question, data, className, hasData = 
                   clipRule="evenodd"
                 />
               </svg>
-              +2.5%
+              --
             </div>
           </div>
         ) : (

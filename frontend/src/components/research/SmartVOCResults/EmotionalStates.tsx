@@ -31,8 +31,8 @@ export function EmotionalStates({
   emotionalStates,
   longTermClusters,
   shortTermClusters,
-  totalResponses = 28635,
-  responseTime = '26s',
+  totalResponses = 0,
+  responseTime = '0s',
   positivePercentage: customPositivePercentage,
   negativePercentage: customNegativePercentage
 }: EmotionalStatesProps) {
@@ -71,7 +71,7 @@ export function EmotionalStates({
           </div>
           <div className="flex items-center mt-4">
             <Target className="w-12 h-12 text-blue-600" />
-            <span className="text-4xl font-bold text-blue-600 ml-2">56</span>
+            <span className="text-4xl font-bold text-blue-600 ml-2">0</span>
           </div>
         </div>
       </div>
